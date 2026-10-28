@@ -1,11 +1,31 @@
-# Native debugging — NEX language 0.16
+Toolchain0.124 keeps DAP runtime arguments solely in launch.args. Common
+initCommands load the formatter and checked source context. The raw LLDB CLI
+adds one settings command itself; clients must not duplicate DAP args through
+target.run-args. This fixes foreign catalogue and other native runtime flags,
+including quoted/Unicode paths, without changing source language021.
 
-Current source language is 0.16. Debug information describes real native parameters,
+# Native debugging — NEX language 0.20
+
+Current source language is0.20. Logical task debugging has a separate narrow
+native path; discover `task_debugging` and read [its current contract](task-debugging.md).
+Complete current SDK, regression and platform acceptance have separate receipts.
+
+Synchronous debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.
 DWARF uses the C language code for debugger interoperability; this does not add
 C or C++ expression semantics to NEX.
+
+Toolchain0.89 fixes adapter shutdown on macOS/Linux. Its client/backend input
+readers use interruptible descriptor reads and a wake pipe, then join before
+stdio destruction. Backend EOF, client EOF, malformed packets and SIGINT/SIGTERM
+also interrupt a partial header/body. This avoids a Python3.9 fatal buffered-stdin
+lock during interpreter finalization when a client leaves stdin open. SDK
+acceptance now checks the adapter's actual exit status so an aborted adapter
+cannot pass merely because earlier breakpoint/watch requests succeeded.
+This changes no source syntax, effects, ownership semantics or language version.
+The matching installed SDK/editor/live debugger gates remain required.
 
 ## Stop and inspect
 
@@ -188,3 +208,17 @@ Checked native runtime failures can be resolved through `nex run --json` or
 `nex diagnose --manifest DEBUG.json --log STDERR.log --revision HASH`. See the
 [native diagnostic guide](native-diagnostics.md) for archived sources, local IDs,
 operator request logs, bounds and attribution limits.
+
+InstalledSDK0.89 acceptance also exercises the result-propagation sample through
+native/reference/TypeScript, checks profile ownership/completed calls, then
+replays archived source and runs a standalone binary without compiler resources.
+These are required evidence, not a new workflow phase or relaxed criterion.
+
+## CPU worker thread discovery
+
+Some LLDB DAP backends return a one-shot launch-time thread list after a worker
+has stopped. If a successful list omits the actual stopped thread, the NEX
+adapter requests one fresh list before replying to the editor. A second omission
+or a changed stop fails inspection. It never invents threads or resumes the
+process. CPU callback breakpoints and pure watches use the same archived source
+projections and matching compiler as ordinary frames.

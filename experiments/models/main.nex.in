@@ -1,0 +1,21 @@
+module model_application;
+import "std/model.nex" as m;
+import "std/compute.nex" as c;
+server extern fn model_run(values:list<bytes>,kind:i64)->result<list<bytes>> !{ffi}=foreign("model","model_run","@PIN@");
+pub fn definition()->m::Model{return @MODEL@;}
+fn cpu()->m::Device{return m::Device(c::Kind::CPU(),"onnx-cpu","ONNX CPU","API20",@PROVENANCE@,[definition()]);}
+fn npu()->m::Device{return m::Device(c::Kind::NPU(),"zhouyi-npu","ONNX Zhouyi","API20",@PROVENANCE@,[definition()]);}
+server fn provider(request:m::Request,device:m::Device)->result<m::Response> !{ffi}{
+ let job:m::Request=m::validate_request(request)?;
+ if job.model!=definition(){return err("E_MODEL_BINDING","request differs from this pinned artifact/port/precision binding");}
+ var kind:i64=0;
+ if device==npu(){kind=1;}else{if device!=cpu(){return err("E_MODEL_UNAVAILABLE","device is outside this prepared provider");}}
+ var data:list<bytes>=[];var i:i64=0;while i<len(job.inputs){data=push(data,job.inputs[i].data);i=i+1;}
+ let results:list<bytes>=model_run(data,kind)?;
+ if len(results)!=len(job.model.outputs){return err("E_MODEL_RESPONSE","native output count disagrees with model");}
+ var outputs:list<m::Tensor>=[];i=0;while i<len(results){let p:m::Port=job.model.outputs[i];outputs=push(outputs,m::tensor(p.name,p.dtype,p.shape,results[i])?);i=i+1;}
+ return ok(m::Response(1,job.id,job.model.sha256,job.model.precision,outputs,device,false,""));
+}
+pub server fn devices()->m::Context{return unwrap(m::context(@DEVICES@,provider));}
+pub server fn run(inputs:list<m::Tensor>,kind:c::Kind,fallback:c::Fallback)->result<m::Response> !{ffi}{return m::execute(devices(),m::request("model-inference",definition(),inputs,c::Selection(kind,""),fallback));}
+@EXAMPLE@

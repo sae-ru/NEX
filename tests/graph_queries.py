@@ -26,7 +26,7 @@ class GraphQueries(harness.ToolchainCase):
     def project(self, source=MAIN, library=LIBRARY, directory=None):
         directory = directory or self.root
         directory.mkdir(exist_ok=True)
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
         (directory/'main.nex').write_text(source)
         (directory/'library.nex').write_text(library)
         revision = self.cli('check',cwd=directory)['revision']

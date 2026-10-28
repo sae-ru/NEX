@@ -1,0 +1,17 @@
+module task_file_reads;
+
+server fn count(path:str)->result<i64> !{task,fs}{
+  let text:str=file_read_text(path)?;
+  return ok(len(text));
+}
+
+server fn work()->result<i64> !{task,fs}{
+  return with_tasks(2,server fn(scope:task_scope)->result<i64> !{task,fs}{
+    let reader:task<result<i64>>=task_spawn(scope,server fn()->result<i64> !{task,fs}{
+      return count("input.txt");
+    });
+    return task_wait(reader);
+  });
+}
+
+server fn main()->i64 !{task,fs}{return unwrap(work());}

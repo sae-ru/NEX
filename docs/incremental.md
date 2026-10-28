@@ -1,6 +1,6 @@
-# Native compilation and toolchains — toolchain 0.28
+# Native compilation and toolchains
 
-Current source language is 0.16. The native compiler produces a separate object
+Current source language is 0.18. The native compiler produces a separate object
 for each reachable concrete function, including lifted closures and generic
 specializations. It can
 reuse those objects across semantic revisions, entry points and source-based or
@@ -303,3 +303,62 @@ may skip cleanup and profile output. Language0.16 and graph histories need no
 migration; native objects use the new matching private runtime/compiler ABI.
 Fallible allocation/profiling/request registration completes before a handle is
 committed to its owner; a failed constructor cannot leave a dangling owner entry.
+
+## Shared emission analysis in development0.93
+
+One checked build computes its callable bridge targets and CPU runtime requirement
+once. Aggregate and per-function emitters read this immutable context and their
+selected function sets. This removes repeated whole-closure/name scans while
+retaining external declarations, callable bridges, worker call scopes, diagnostic
+operation sites, private project ABI and cache inputs. Normal IR verification
+remains enabled; standalone MLIR/Wasm generation computes its own analysis.
+The reference/TypeScript/runtime language semantics are unchanged.
+
+A20-module/2,000-function comparison compiled1,980 actual LLVM inputs for each
+compiler, compared every MLIR/LLVM unit after exact compiler-provenance handling,
+then checked zero warm compilations and one compiled/1,979 reused objects after
+a leaf edit. Cold wall times were299.583s and113.567s on one concurrently loaded
+macOS host. This is scoped build-work evidence; full10,000-function acceptance,
+isolated throughput, runtime/C++ comparisons and model cost remain pending.
+
+## Long native build commands in development0.94
+
+Clang and GNU-compatible native build tools must accept GNU-style UTF-8
+`@response-file` arguments. Toolchain wrappers must forward them unchanged to
+the real tool. The compiler uses a response file when an argument vector exceeds
+64KiB or LLVM reports that it exceeds host limits. Native image links share this
+path. Application execution keeps its original argument vector.
+
+Arguments are quoted individually, preserving spaces, quotes, backslashes and
+Unicode. The compiler creates an owned0700 directory and0600 file, removes it on
+success and retains its path in failure diagnostics. Its existing safe TMPDIR
+handling applies to build tools. Current validation targets macOS/Linux Clang
+and LLVM ar; native Windows-hosted toolchain encoding/driver validation remains
+pending. The response dialect does not make unsupported toolchains supported.
+
+The actual0.93 100module/10,000function gate compiled all9,900 objects but failed
+with posix_spawn E2BIG at linking. The tested0.94 helper links those retained
+objects without recompiling/changing them, verifies DWARF and executes the
+expected49,460,406 result. That recovery is scoped evidence, not a passed0.93
+or full0.94 scale gate. Complete0.94 cold/warm/edit/standalone acceptance remains
+required.
+
+## Compiler input reads in0.96
+
+The development compiler reads raw bytes in64KiB blocks without seeking or
+assuming a reported file size. Explicit EOF/error checks and owned FILE cleanup
+preserve complete input or produce E_FILE; a failed directory read is not an
+empty successful input. Source UTF8 validation remains after reading. Runtime
+file APIs, language syntax, native value layouts and migration rules are unchanged.
+The [standard C file interface](https://eel.is/c++draft/c.files) supplies these
+independent EOF/error indicators. Every artifact/cache digest and exact source
+comparison still executes; this change removes per-character iterator work.
+
+The actual095native10k gate passes with9900cold/0warm/1edited compilation and
+both archived revisions after physical source paths are removed. Its warm69.021s
+sample identifies the remaining cache-read cost. See [the095scale receipt](evidence/native-scale-0.95.0.json).
+The0.96 [reader comparison](evidence/compiler-inputs-0.96.0.json) checks every
+byte of retained MachO/146MBMLIR/24MBJSON through both actual frontend libraries.
+Those concurrent-host observations include output/verification cost and do not
+establish the final full096build speed. Full100/SDK/platform/editor/history and
+independent native10000gates remain separate pending acceptance.

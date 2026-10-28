@@ -8,7 +8,7 @@
       "const": "nex.task/1"
     },
     "language": {
-      "const": "0.16"
+      "const": "0.24"
     },
     "id": {
       "$ref": "#/$defs/id"
@@ -91,6 +91,9 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -185,6 +188,13 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
+              },
+              "task_debug": {
+                "type": "boolean",
+                "description": "Native application build preparation only; task_debug true requires a dedicated debug-profile configuration in a captured project. It never launches an inferior."
               }
             },
             "required": [
@@ -285,6 +295,9 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -426,7 +439,8 @@
                     "io",
                     "db",
                     "fs",
-                    "ffi"
+                    "ffi",
+                    "task"
                   ]
                 },
                 "minItems": 0,
@@ -514,6 +528,15 @@
                     "additionalProperties": {
                       "$ref": "#/$defs/decimal"
                     }
+                  },
+                  "max_p95_latency_ns": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "max_p99_latency_ns": {
+                    "$ref": "#/$defs/decimal"
+                  },
+                  "min_requests_per_second": {
+                    "$ref": "#/$defs/decimal"
                   }
                 },
                 "required": [],
@@ -547,6 +570,21 @@
               },
               "configuration": {
                 "$ref": "#/$defs/id"
+              },
+              "workload": {
+                "$ref": "#/$defs/path"
+              },
+              "workload_hash": {
+                "$ref": "#/$defs/hash"
+              },
+              "server_workers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 8
+              },
+              "task_limits": {
+                "$ref": "#/$defs/task_limits"
               }
             },
             "required": [
@@ -585,7 +623,10 @@
                 "then": {
                   "properties": {
                     "target": {
-                      "const": "native"
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
                     }
                   }
                 }
@@ -599,9 +640,57 @@
                 "then": {
                   "properties": {
                     "target": {
-                      "const": "native"
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
                     }
                   }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "workload"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "const": "server"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "budget": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "max_p95_latency_ns"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "max_p99_latency_ns"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "min_requests_per_second"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "hardware",
+                    "workload"
+                  ]
                 }
               }
             ],
@@ -611,6 +700,16 @@
               ],
               "toolchain_hash": [
                 "toolchain"
+              ],
+              "workload": [
+                "workload_hash",
+                "configuration"
+              ],
+              "workload_hash": [
+                "workload"
+              ],
+              "server_workers": [
+                "workload"
               ]
             }
           },
@@ -654,7 +753,7 @@
           },
           {
             "type": "object",
-            "description": "Package a project-backed program using its declared configuration. Compiler requires program.project and an executable, server or web component. This builds/captures but never executes the application.",
+            "description": "Package a project-backed program using its declared configuration. Compiler requires program.project and an executable, server or web component. This builds/captures but never executes the application. Reachable native/server external bindings require foreign_hash and a current operator catalogue; preparation never initializes the module.",
             "properties": {
               "id": {
                 "$ref": "#/$defs/id"
@@ -691,6 +790,9 @@
               },
               "notices_hash": {
                 "$ref": "#/$defs/hash"
+              },
+              "foreign_hash": {
+                "$ref": "#/$defs/hash"
               }
             },
             "required": [
@@ -714,7 +816,26 @@
               "notices_hash": [
                 "notices"
               ]
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "foreign_hash"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "enum": [
+                        "native",
+                        "server"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       },
@@ -874,6 +995,28 @@
         "checks"
       ],
       "additionalProperties": false
+    },
+    "task_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      }
     }
   }
 }

@@ -31,15 +31,103 @@ def completion_inputs(build):
     if 'completion_schema' not in build and 'completion_inputs' not in build:
         return []
     inputs = build.get('completion_inputs')
-    if build.get('completion_schema') == 'nex.native-completion/3':
-        if not isinstance(inputs, list) or not 4 <= len(inputs) <= 1024:
+    if build.get('completion_schema') == 'nex.native-completion/7':
+        mode = build.get('completion_mode')
+        if mode not in ('static-archive', 'static-application', 'pic-stage', 'shared-image', 'shared-application'):
+            raise ValueError('invalid debug completion mode')
+        if not isinstance(inputs, list) or not 7 <= len(inputs) <= 16384:
+            raise ValueError('invalid debug completion input limit')
+        result = []; position = 0
+        def kind():
+            row = inputs[position] if position < len(inputs) else None
+            return row.get('kind') if isinstance(row, dict) else None
+        def take(k, path):
+            nonlocal position
+            if position >= len(inputs) or inputs[position] != {'kind': k, 'path': path}:
+                raise ValueError('invalid debug completion path/kind/order')
+            result.append(path); position += 1
+        for k, path in [('abi', 'library-abi.json'), ('task_provider', 'task-provider.json'),
+                        ('debug_catalog', 'task-debug-catalog.json'), ('debug_sources', 'task-debug-sources.json')]:
+            take(k, path)
+        for k, pattern, maximum in [('debug_source_bundle', r'debugger/components/[A-Za-z_][A-Za-z_0-9]{0,63}/source-bundle\.json', 128),
+                                     ('debug_source_projection', r'debugger/source-cache/[0-9a-f]{64}/source\.nex', 8192)]:
+            previous = ''; count = 0
+            while kind() == k:
+                path = inputs[position].get('path')
+                if not isinstance(path, str) or not re.fullmatch(pattern, path) or path <= previous or count >= maximum:
+                    raise ValueError('invalid debug source inventory')
+                previous = path; count += 1; take(k, path)
+            if not count: raise ValueError('missing debug source inventory')
+        shared = mode in ('shared-image', 'shared-application')
+        if shared:
+            take('link_inputs', 'image-inputs.json'); take('objects', 'objects.a')
+        count = 0
+        while kind() == 'static_library':
+            if count >= 128: raise ValueError('too many debug static libraries')
+            prefix = 'libraries/%d' % count
+            for k, suffix in [('static_library', '.a'), ('static_task_provider', '.task-provider.json'),
+                              ('static_debug_catalog', '.task-debug-catalog.json'), ('static_debug_sources', '.task-debug-sources.json')]:
+                take(k, prefix+suffix)
+            count += 1
+        images = []; providers = []
+        while kind() == 'owned_image':
+            path = inputs[position].get('path')
+            if (not shared or not isinstance(path, str) or not re.fullmatch(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', path) or
+                    (images and path <= images[-1]) or len(images) >= 129):
+                raise ValueError('invalid debug owned image')
+            images.append(path); take('owned_image', path)
+        if shared and not images: raise ValueError('debug shared closure needs its runtime')
+        while kind() == 'owned_task_provider':
+            path = inputs[position].get('path')
+            suffix = '.task-provider.json'
+            if (not isinstance(path, str) or not path.endswith(suffix) or path[:-len(suffix)] not in images or
+                    (providers and path <= providers[-1]) or len(providers) >= 128):
+                raise ValueError('invalid debug owned provider')
+            providers.append(path); prefix = path[:-len(suffix)]
+            take('owned_task_provider', path); take('owned_debug_catalog', prefix+'.task-debug-catalog.json'); take('owned_debug_sources', prefix+'.task-debug-sources.json')
+        previous = ''
+        while kind() == 'owned_symbols':
+            path = inputs[position].get('path'); allowed = False
+            if not isinstance(path, str) or path <= previous: raise ValueError('invalid debug symbol order')
+            for owned in images:
+                if not owned.endswith('.dylib'): continue
+                prefix = owned+'.dSYM/Contents/'; basename = PurePosixPath(owned).name
+                allowed |= path in (prefix+'Info.plist', prefix+'Resources/DWARF/'+basename)
+                allowed |= bool(re.fullmatch(re.escape(prefix)+r'Resources/Relocations/[A-Za-z_0-9]+/'+re.escape(basename)+r'\.yml', path))
+            if not allowed: raise ValueError('invalid debug owned symbols')
+            previous = path; take('owned_symbols', path)
+        for k, path in [('debug_manifest', 'debug.json'), ('debug_formatter', 'debugger/lldb_nex.py'), ('debug_adapter', 'debugger/nex_dap.py')]: take(k, path)
+        if mode in ('static-application', 'shared-application') and '-apple-' in build.get('compiler_target', ''):
+            for path in ('debug-symbols.complete', 'app.dSYM/Contents/Info.plist', 'app.dSYM/Contents/Resources/DWARF/app'):
+                take('root_symbols', path)
+        if position != len(inputs): raise ValueError('unexpected debug completion tail')
+        return result
+    if build.get('completion_schema') == 'nex.native-completion/4':
+        if (not isinstance(inputs, list) or not 2 <= len(inputs) <= 258 or
+                (len(inputs) - 2) % 2):
+            raise ValueError('invalid retained static task completion limit')
+        expected = ['library-abi.json', 'task-provider.json']
+        for index in range((len(inputs) - 2) // 2):
+            expected += ['libraries/%d.a' % index,
+                         'libraries/%d.task-provider.json' % index]
+        if inputs != expected:
+            raise ValueError('invalid retained static task completion path/order')
+        return inputs
+    if build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5', 'nex.native-completion/6'):
+        profile = build['completion_schema'] == 'nex.native-completion/6'
+        task = profile or build['completion_schema'] == 'nex.native-completion/5'
+        mode = build.get('completion_mode')
+        if profile and mode not in ('static-archive', 'static-application', 'pic-stage', 'shared-image', 'shared-application'):
+            raise ValueError('invalid profile completion mode')
+        shared = not profile or mode in ('shared-image', 'shared-application')
+        if not isinstance(inputs, list) or not (3 if profile else 4) <= len(inputs) <= (2048 if profile else 1024):
             raise ValueError('invalid retained native image completion limit')
         result = []
         position = 0
 
         def take(kind, path):
             nonlocal position
-            if inputs[position] != {'kind': kind, 'path': path}:
+            if position >= len(inputs) or inputs[position] != {'kind': kind, 'path': path}:
                 raise ValueError('invalid retained native image completion path/kind/order')
             result.append(path)
             position += 1
@@ -49,14 +137,27 @@ def completion_inputs(build):
             return value.get('kind') if isinstance(value, dict) else None
 
         take('abi', 'library-abi.json')
-        take('link_inputs', 'image-inputs.json')
-        take('objects', 'objects.a')
+        if task:
+            take('task_provider', 'task-provider.json')
+        if profile:
+            take('profile_catalog', 'task-profile-catalog.json')
+        if shared:
+            take('link_inputs', 'image-inputs.json')
+            take('objects', 'objects.a')
         archives = 0
         while position < len(inputs) and kind() == 'static_library':
             if archives >= 128:
                 raise ValueError('too many retained static libraries')
             take('static_library', 'libraries/%d.a' % archives)
+            if task:
+                take('static_task_provider', 'libraries/%d.task-provider.json' % archives)
+            if profile:
+                take('static_profile_catalog', 'libraries/%d.task-profile-catalog.json' % archives)
             archives += 1
+        if not shared:
+            if position != len(inputs):
+                raise ValueError('static profile completion cannot contain image inputs')
+            return result
         image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
         images = []
         while position < len(inputs) and kind() == 'owned_image':
@@ -68,6 +169,17 @@ def completion_inputs(build):
             take('owned_image', path)
         if not images:
             raise ValueError('retained image build requires its runtime')
+        providers = []
+        while task and position < len(inputs) and kind() == 'owned_task_provider':
+            path = inputs[position].get('path')
+            if (not isinstance(path, str) or not path.endswith('.task-provider.json') or
+                    path[:-len('.task-provider.json')] not in images or
+                    (providers and path <= providers[-1]) or len(providers) >= 128):
+                raise ValueError('invalid retained owned task provider')
+            providers.append(path)
+            take('owned_task_provider', path)
+            if profile:
+                take('owned_profile_catalog', path[:-len('.task-provider.json')]+'.task-profile-catalog.json')
         previous = ''
         while position < len(inputs):
             value = inputs[position]
@@ -226,7 +338,7 @@ def system_dependencies(program, owned_names=()):
 
 def owned_image_paths(manifest, build):
     paths = completion_inputs(build)
-    shared = build.get('completion_schema') == 'nex.native-completion/3'
+    shared = build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5') or (build.get('completion_schema') == 'nex.native-completion/6' and build.get('completion_mode') in ('shared-image', 'shared-application'))
     if not shared:
         if 'owned_images' in manifest:
             raise ValueError('legacy capsule cannot add owned images')

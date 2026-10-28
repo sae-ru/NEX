@@ -1,4 +1,40 @@
+Toolchain0.135.1 adds a mandatory38th installed acceptance phase,
+`structured-task-tcp`. It runs the installed pinned-provider source and delivery
+helpers:36 actual AST/debug/release socket cases,22 target-policy rejections,
+18 authority/pin/integrity rejections, client pruning and moved source-deleted
+package execution. Reports and actual helper/compiler hashes must match. This
+phase does not replace the earlier37 gates. Toolchain0.134.4..0.135.0 receipts
+retain their37-phase contract. See [the TCP guide](tcp-provider.md). Complete
+matching current SDK and distribution acceptance remains pending.
+
+# Development0.133.3: SDK migration acceptance correction
+
+The SDK019-history gate now keeps current language separate from each migrated
+revision hash. Language/revision/namespace/16-table assertions remain strict.
+This is a Python acceptance correction; compiler/runtime/TypeScript/grammar and
+language-pack bytes match frozen169. Public023 and private024 scopes are unchanged.
+Actual CLI gate and complete installed SDK acceptance are separate requirements.
+
 # Installed SDK acceptance and handoff
+
+The current0.122 candidate workflow has33 phases, adding `model-contract` after
+the0.121 compute phase. It checks the installed public model import, finite F32
+bytes, native/reference/TypeScript observations, managed cleanup, installed
+provider preparation files, archived replay with physical standard library files
+absent, and standalone execution with compiler resources unavailable. This is
+library delivery; native model inference keeps its separate provider/device gates.
+The exact0.121 local checkpoint passed32 phases/584 commands. Matching0.122 full
+regression, installed SDK and platform receipts remain pending.
+
+The preserved0.119 workflow has31 phases, including `task-provider-debugging`.
+The preceding0.118/125b installed checkpoint passed30 phases/557 commands;
+that receipt does not certify the current compiler. The new phase verifies
+static/shared debug artifacts, immutable completion7, source-deleted capture,
+package and replay. With `--live`, actual LLDB-backed NEX-DAP sessions inspect
+provider locals/pure watches, next/in/out, stale references and graceful exit.
+Full delivery requires a completed report for the exact compiler and resources.
+The separate opt-in [Q1–Q5 quality pack](../experiments/quality/README.md) does
+not add phases to this SDK workflow.
 
 For first installation, application creation, Git versioning and Hermes/Codex
 setup, use the Russian [quickstart](quickstart.md). This page describes SDK
@@ -16,6 +52,13 @@ For private compiler runtime libraries, add `--package-notices FILE` containing
 operator `nex.sdk-notices/1` components with their full local license texts.
 Acceptance merges these with its application/foreign fixture notices; only
 components actually used by each package are copied.
+The same explicit catalogue is forwarded to the public file-write delivery
+subprocess, which packages static, shared and mixed task-provider applications.
+That subprocess records the catalogue path/hash and requires it to remain
+unchanged; the SDK report verifies that it received the selected catalogue.
+For a standalone invocation, pass `--package-notices FILE` to
+`share/nex/tests/task_write_delivery.py` together with its compiler/resources.
+The packaging command still rejects an undeclared private runtime dependency.
 
 The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
@@ -28,6 +71,15 @@ Unicode/NUL agreement, source-deleted replay and a packaged file application
 executed with compiler resources unavailable. File access requires no SQLite or
 JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
+
+The0.114 candidate adds a twenty-sixth phase, `structured-task-profile`.
+It requires the matching native task profiler descriptor, exact source-call
+counts across suspension, balanced shallow managed pools and explicit event-only
+timeline loss. It also exercises an archived revision after deleting sources,
+a copied instrumented executable with compiler resources unavailable, source-only
+project limits and reviewed profile capture/replay after deleting the project.
+This candidate workflow is under integration; its existence does not establish a
+passed SDK gate. Each accepted receipt identifies its actual toolchain and phases.
 
 The 0.60 workflow has twenty-three phases. Its `wasm-compute` phase requires
 LLVM 22.1 Clang and `wasm-ld` and current Node.js. It checks exact BigInt results,
@@ -81,6 +133,13 @@ python3 '/absolute/moved NEX SDK/share/nex/tools/sdk_acceptance.py' \
 Select the host Apple SDK with `SDKROOT` as above, or use an explicit native
 `--toolchain` configuration with `sysroot`. The bundle does not carry Apple SDK
 headers or depend on Homebrew's machine-specific Clang config files.
+
+If the compiler has no configured Wasm linker, set `NEX_WASM_LD` to an executable
+LLVM22.1 `wasm-ld` when assembling the bundle. The packager validates its actual
+version and captures its bytes/notices under the relative SDK host descriptor;
+an empty, missing or incompatible explicit override fails before copying the
+SDK. The maintained macOS distribution helper clears this assembly override
+before checking moved/restored copies, which must select the bundled linker.
 
 The packager currently runs on macOS. It copies the installed compiler, matching
 resources, Clang/llvm-ar/dsymutil, Clang builtin/runtime resources, libc++ headers,
@@ -443,3 +502,89 @@ The application resumes with exit0 and old handles must be rejected. Without
 --live the report explicitly leaves live_dap_pages false; it does not claim a
 native process interaction. The matching distribution validators require all21
 phases in order, including this one.
+Development0.98.1 fixes acceptance of explicitly reviewed private runtime notices.
+The acceptance runner uses matching `--package-notices` entries before automatic
+Debian ownership lookup, retains all supplied entries in captured package tasks,
+and supplies them to project packaging. Identical relocated license texts can
+deduplicate; conflicting versions, roots or license bytes for one component name
+fail explicitly. This changes the validation workflow, not source language,
+compiler/runtime ABI or migration. Original0.94 Astra failures remain retained.
+
+
+Development0.100 also copies every reviewed license into the owned project
+before computing task notice pins. External library roots keep their reviewed
+identity; complete license bytes are captured within project bounds. This fixes
+a real last-phase installed102 acceptance failure with --package-notices.
+A separate reviewed corrected driver passes24phases/427commands on the exact
+installed102 compiler; the original102 driver remains unchanged. Matching
+installed acceptance of this source must still be run.
+
+
+Toolchain0.117 adds the29th installed workflow phase, `shared-task-providers`.
+It discovers the distinct shared-fixed descriptor, builds real checked provider
+images, verifies defined accessors/component ownership and executes the loader
+with exactly one common runtime. It separates unused read-code support from the
+root grant, captures ordered completion5 raw pins and original bytes, verifies
+package provenance against relocated image SHA256, deletes source/cache and
+executes both copied and packaged closures with loader tracing before replay.
+The phase body alone is a scoped proof; full matching installedSDK29 acceptance
+and supported platform gates are separately recorded. Static123's phase and
+provider1/completion4 contract remain required and unchanged.
+# Public task HTTP/TLS delivery (SDK0.134.4)
+
+The matching SDK workflow requires37 ordered phases, including
+`structured-task-http`. It executes the installed, indexed
+`tests/task_http_server.py` helper with the actual installed compiler. The
+helper builds debug/release task servers and retains148 checks,50 HTTP request
+outcomes,14 clean server exits, verified HTTPS certificates and exact
+E_CANCELLED diagnostics after real disconnects with an opened File. Compiler,
+helper, image and metadata hashes bind this evidence to the SDK. Native/AST
+Unicode and NUL behavior, authenticated principals, file grants, path limits,
+compiled ceilings, runtime control and source-absent app execution are checked.
+
+`validate_completed_report` keeps the older34/35/36-phase contracts for their
+original toolchains;0.134.0..0.134.3 still require36. A0.134.4 receipt cannot
+omit the37th phase, its declared phase list, indexed helper or actual request/
+cleanup evidence. Passing the isolated HTTP receipt check does not bypass any
+other SDK requirement. Archive/moved SDK, supported platform and whole-project
+acceptance remain separate. App-source absence is distinct from compiler-source
+fallback absence: promotion tests temporarily hide the exact compiled source
+prefix and pass it to `--forbid-source` throughout the installed workflow.
+
+The source/runtime implementation is unchanged from the188 HTTP cohort. This
+delivery update installs/indexes its extended helper and strengthens SDK receipt
+validation. It adds no source syntax, language migration, dependency or notice.
+
+The maintained macOS distribution wrapper gives each moved/restored full SDK
+workflow a bounded18000-second budget. Its summary counts the phases in the
+actually validated receipt, including37 for0.134.4, rather than the historical
+34-phase base tuple. Individual SDK operations retain their own shorter limits;
+this wrapper does not relax any receipt or isolation check.
+
+
+### Read-only standard-library replay acceptance
+
+The model-contract gate never renames files in the installed SDK. It copies its
+text resources into the writable evidence project and removes model.nex and
+compute.nex only from that private projection. NEX_RESOURCE_DIR explicitly selects
+that projection; doctor must identify its runtime, and fresh imports of each
+missing standard library must fail with E_RESOURCE. The original project source
+and native build cache are removed, then the archived revision must rebuild
+without a cache hit and agree in reference and native execution. A copied
+standalone binary also runs with resources unavailable. The receipt records the
+projection, both negative controls, selected runtime and unchanged installed
+library hashes. Existing full phase, resource inventory and kernel write-denial
+checks remain mandatory. This gate establishes library replay, not native model
+inference or general GPU/NPU execution.
+
+### C/C++ producer paths in relocated SDKs
+
+The installed source-resource and debugger gates encode marker paths as UTF-8
+bytes in fixed-width C octal escapes. JSON string encoding is not a C literal
+encoder: non-BMP characters become surrogate pairs which Clang rejects, and
+control characters can also produce invalid universal characters. The native
+regression compiles and runs both C11 and C++20 probes and checks the exact
+filesystem path containing emoji, quotes, a backslash, newline, tab and a digit
+after non-ASCII bytes. Paths are separate argv values, never shell fragments.
+SDK read/write isolation and all existing resource lifetime checks remain in
+force; this fixes producer preparation rather than changing NEX semantics.

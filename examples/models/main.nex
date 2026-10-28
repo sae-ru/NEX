@@ -1,0 +1,10 @@
+module model_input;
+import "std/model.nex" as m;
+fn checks()->unit{
+ let x:m::Tensor=unwrap(m::from_exact_i32("X",[3,2],[-2,-1,0,1,2,3]));
+ assert(unwrap(m::to_exact_i32(x))==[-2,-1,0,1,2,3]);
+ assert(error_code(m::tensor("X",m::DType::F32(),[1],unwrap(bytes([0,0,128,127]))))=="E_MODEL_NONFINITE");
+ assert(m::is_sha256("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+}
+fn main()->unit!{io}{checks();print(encode_base64(unwrap(m::from_exact_i32("X",[3,2],[-2,-1,0,1,2,3])).data));}
+test fn finite_tensor()->unit{checks();}

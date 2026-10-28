@@ -42,11 +42,15 @@ Value operation(const std::function<Value(Database&)> &call,bool writable){
 }
 }
 struct Database::Impl {
-  Connection connection;std::string principal;bool writable,active=false,failed=false;
-  Impl(const std::string &path,const std::string &principal,bool writable):connection(path),principal(principal),writable(writable){
+  Connection connection;std::string principal;bool writable,active=false,failed=false,pendingStart=false;
+  Impl(const std::string &path,const std::string &principal,bool writable,bool deferred):connection(path),principal(principal),writable(writable),pendingStart(deferred){
     unicodeOffsets(principal,false);if(principal.empty()||principal.size()>256||principal.find('\0')!=std::string::npos)throw DataError("VALIDATION","invalid database principal");
-    execute(connection.db,writable?"BEGIN IMMEDIATE":"BEGIN");active=true;
+    if(!deferred)start();
   }
+  void start(){
+    execute(connection.db,writable?"BEGIN IMMEDIATE":"BEGIN");active=true;pendingStart=false;
+  }
+  void ensureStarted(){if(pendingStart)start();}
 };
 void Database::initialize(const std::string &path){
   Connection connection(path);
@@ -66,38 +70,40 @@ void Database::initialize(const std::string &path){
     if(count!=2)throw DataError("E_STORE_SCHEMA","incompatible storage primary index");
   }
 }
-Database::Database(const std::string &path,const std::string &principal,bool writable):impl(std::make_unique<Impl>(path,principal,writable)){}
+Database::Database(const std::string &path,const std::string &principal,bool writable):Database(path,principal,writable,TransactionStart::Immediate){}
+Database::Database(const std::string &path,const std::string &principal,bool writable,TransactionStart start):impl(std::make_unique<Impl>(path,principal,writable,start==TransactionStart::OnFirstOperation)){}
 Database::~Database(){rollback();}
-void Database::rollback(){if(impl->active){sqlite3_exec(impl->connection.db,"ROLLBACK",nullptr,nullptr,nullptr);impl->active=false;}}
+void Database::rollback(){impl->pendingStart=false;if(impl->active){sqlite3_exec(impl->connection.db,"ROLLBACK",nullptr,nullptr,nullptr);impl->active=false;}}
 Value Database::commit(){
-  if(!impl->active)return failure("E_STORE","transaction is no longer active");
+  if(!impl->active&&!impl->pendingStart)return failure("E_STORE","transaction is no longer active");
   if(impl->failed){rollback();return failure("TRANSACTION_ABORTED","a storage operation failed; transaction rolled back");}
+  if(impl->pendingStart){impl->pendingStart=false;return success(Value(1,true));}
   try{execute(impl->connection.db,"COMMIT");impl->active=false;return success(Value(1,true));}
   catch(const DataError &e){rollback();return failure(e.code,e.what());}
 }
 Value Database::get(const std::string &key){
   if(!validKey(key))return failure("VALIDATION","invalid storage key");
   try{
-    Statement q(impl->connection.db,"SELECT value FROM nex_kv WHERE owner=? AND key=?");q.text(1,impl->principal);q.text(2,key);
+    impl->ensureStarted();Statement q(impl->connection.db,"SELECT value FROM nex_kv WHERE owner=? AND key=?");q.text(1,impl->principal);q.text(2,key);
     if(!q.row())return failure("NOT_FOUND","storage key does not exist");return success(Value(string(q.value(0))));
   }catch(const DataError &e){impl->failed=true;return failure(e.code,e.what());}
 }
 Value Database::put(const std::string &key,const std::string &value){
   if(!impl->writable||!validKey(key)||value.size()>1024*1024){impl->failed=true;return failure("VALIDATION","write is not allowed or storage key/value exceeds limits");}
   try{
-    Statement q(impl->connection.db,"INSERT INTO nex_kv(owner,key,value) VALUES(?,?,?) ON CONFLICT(owner,key) DO UPDATE SET value=excluded.value");q.text(1,impl->principal);q.text(2,key);
+    impl->ensureStarted();Statement q(impl->connection.db,"INSERT INTO nex_kv(owner,key,value) VALUES(?,?,?) ON CONFLICT(owner,key) DO UPDATE SET value=excluded.value");q.text(1,impl->principal);q.text(2,key);
     verify(impl->connection.db,sqlite3_bind_blob(q.statement,3,value.data(),int(value.size()),SQLITE_TRANSIENT));q.row();return success(Value(1,true));
   }catch(const DataError &e){impl->failed=true;return failure(e.code,e.what());}
 }
 Value Database::remove(const std::string &key){
   if(!impl->writable||!validKey(key)){impl->failed=true;return failure("VALIDATION","write is not allowed or storage key is invalid");}
-  try{Statement q(impl->connection.db,"DELETE FROM nex_kv WHERE owner=? AND key=?");q.text(1,impl->principal);q.text(2,key);q.row();return success(Value(sqlite3_changes(impl->connection.db)!=0,true));}
+  try{impl->ensureStarted();Statement q(impl->connection.db,"DELETE FROM nex_kv WHERE owner=? AND key=?");q.text(1,impl->principal);q.text(2,key);q.row();return success(Value(sqlite3_changes(impl->connection.db)!=0,true));}
   catch(const DataError &e){impl->failed=true;return failure(e.code,e.what());}
 }
 Value Database::keys(const std::string &prefix){
   if(!validKey(prefix,true))return failure("VALIDATION","invalid storage prefix");
   try{
-    Statement q(impl->connection.db,"SELECT key FROM nex_kv WHERE owner=? AND substr(key,1,length(?))=? ORDER BY key COLLATE BINARY LIMIT 10001");q.text(1,impl->principal);q.text(2,prefix);q.text(3,prefix);
+    impl->ensureStarted();Statement q(impl->connection.db,"SELECT key FROM nex_kv WHERE owner=? AND substr(key,1,length(?))=? ORDER BY key COLLATE BINARY LIMIT 10001");q.text(1,impl->principal);q.text(2,prefix);q.text(3,prefix);
     auto data=std::make_shared<Data>(Data::List);while(q.row()){if(data->values.size()==10000)return failure("LIMIT","storage key result exceeds item limit");data->values.emplace_back(string(q.value(0)));}return success(Value(data));
   }catch(const DataError &e){impl->failed=true;return failure(e.code,e.what());}
 }

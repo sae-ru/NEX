@@ -1,4 +1,20 @@
+Current language023 retains source task/ffi and genuine external-resource transfer to the
+structured scheduler and adds whole-file task writes; read task-foreign-prototype.md
+and task-file-writes-prototype.md. This is distinct from the
+acceptance-task JSON format below. Acceptance contracts and proof snapshots must
+be regenerated for the current semantic revision while retaining reviewed
+requirements, clauses and budgets. Source/SDK/platform receipts remain separate.
+
 # Tasks and acceptance evidence
+
+Language0.19 structured source tasks can be checked, executed and replayed by
+an external `nex.task/1` acceptance contract. Its `effects` checks accept `task`
+alongside `io`, `db`, `fs` and `ffi`. These two uses of “task” have separate roles:
+the source effect controls structured scheduling, while this JSON document pins
+reviewed acceptance criteria and records their observations. See
+[the source language](language.md), [lifetimes](task-lifetimes.md) and
+[explicit migration from0.18](task-migration.md). Earlier cohort notes below
+retain their historical language references and evidence scopes.
 
 Toolchain0.80 advertises `isolated_replay_graph` and `readonly_receipt_replay`.
 Replay preflights saved inputs in an owned temporary graph, then preserves its
@@ -17,7 +33,8 @@ or ancestor project. Invalid preflight creates no published output run.
 
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.16; this is a development-tool protocol.
+LLM vendor. Discover the actual source language with `nex describe --json`; this JSON format
+is a development-tool protocol, independent of that language version.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
 
@@ -121,6 +138,75 @@ not a browser application build or an independent TypeScript typecheck.
 Native executables/archives and notices, web `dist`, modules and API generated
 sources are copied to the run's artifacts. Build metadata can refer to shared
 cache paths; copied binaries are not promised to be portable SDK bundles.
+
+## Structured source tasks and effect acceptance (0.19)
+
+For ordinary source programs without a project object, `init` scaffolds their
+actual hash-pinned task-effect tests and an available application build entry.
+Native `test` checks execute compiled continuations and compare against the
+independent reference scheduler. Web `test` checks execute the generated
+TypeScript task scheduler and compare against the reference; they preserve
+source yields, scope/future waits and channels. A source `run` check compares
+native/reference stdout and the reviewed exit status as usual. Skipped or
+unsupported execution does not satisfy a requirement. Project-backed execution
+retains the separate rules in [project tasks](project-tasks.md).
+
+An effects check inspects declared effects throughout the selected reachable
+function/closure graph. Its `allowed_effects` entries can be `io`, `db`, `fs`,
+`ffi` or `task`; unknown names return `E_TASK` during preflight. For example:
+
+```json
+{
+  "id": "task-effects",
+  "program": "app",
+  "kind": "effects",
+  "target": "source",
+  "symbols": ["structured_tasks::main"],
+  "allowed_effects": ["task"],
+  "allowed_realms": ["shared"]
+}
+```
+
+Link this check to a reviewed requirement whose binding is reached by that
+symbol. An empty list requires pure declarations in the whole selected closure.
+Omitting `task` therefore fails the effects check when a reached function or
+closure declares it; the receipt lists the violating symbol/effect pairs and
+the linked requirement is not satisfied. Other independent checks still run.
+A valid allowlist and a successful `check` preflight do not mean the acceptance
+policy has passed: `run` records that observation. Changing an allowlist changes
+`task_hash` and requires the same explicit review as any other acceptance edit.
+
+An allowlist is a restriction, not an execution grant. `task` does not grant
+asynchronous IO or relax realms, file/foreign restrictions, pure/task-only
+scope/spawn callback effects, or lifetime checks. A root that prints and
+schedules requires both `io` and `task` in its selected closure's allowlist.
+Known ownership escapes remain checker errors; unresolved flow keeps mandatory
+runtime guards. Do not remove assertions, limits or scope checks to pass a task.
+
+A `build` check with `target: "web"`, `mode: "module"` can emit a standalone
+task-effect entry. Its copied artifacts include `nex-task-runtime.ts` and a
+public `nex.typescript-map/1` with the checked0.19 revision, source hash and
+`execution: "task-generator"`. This remains module emission, not an independent
+TypeScript typecheck or browser/UI adapter acceptance. Task entries in the
+synchronous main-thread NEX UI entries remain unsupported. Dedicated browser
+task workers, native providers, whole-file reads and native task debug/profile
+have separate contracts and actual capability fields; see browser-workers.md,
+task-providers.md, task-file-reads.md and task-debugging.md. A module-emission
+check alone does not establish any of those integrations or their acceptance.
+
+`run` captures the selected task source bundle, reviewed test hashes and the
+matching native/TypeScript runtime resources. Replay rechecks those captured
+inputs and reruns both selected test targets even after physical source/task
+files are deleted. It preserves the original project HEAD, graph rows/IDs and
+input receipt, with new replay graph/history in `NEW_RUN/state`. An ordinary
+run adds its receipt to project task history; that history write is expected.
+Use `--revision` to select a reviewed archived source candidate without moving
+HEAD, and keep the matching compiler/resources for replay.
+
+`timeout_seconds` bounds each owned check process, including its compilation;
+it does not override the native structured executor's separate budget/deadline
+or scope limits. Per-application task CLI controls, current SDK/platform delivery
+and complete static region inference retain their separately reported status.
 
 ## Pinned native toolchains
 
@@ -246,9 +332,10 @@ fully frozen. Replay rechecks behavior with the recorded NEX inputs; it does
 not promise bit-for-bit builds or deterministic performance. Inspect the normal
 compiler/runtime and third-party trust boundaries before interpreting evidence.
 
-Source-level task annotations, dynamic coverage, dependent generated-program
-steps, task scheduling, automatic requirement discovery, broader agent editing
-operations and measured cross-model trials remain pending.
+Source-level acceptance annotations, dynamic coverage, dependent generated-program
+steps, automatic scheduling of acceptance checks, automatic requirement discovery,
+broader agent editing operations and measured cross-model trials remain pending.
+Structured source scheduling itself follows the separate0.19 contract above.
 
 Language 0.7 links a reached generic instance back to its original function/type template, including phantom type arguments, so requirements can bind source declarations while tests exercise concrete instances. This is static lineage, not dynamic coverage of every instantiation. Profile max_calls budgets use exact concrete instance names from the measured report; a source-template name without a measured row remains unobserved and cannot pass.
 
@@ -315,3 +402,6 @@ Native modules remain trusted code with ordinary OS actions and dependency
 lookup. Capturing inventoried members does not freeze the OS, all transitive
 libraries or external state, and does not provide a sandbox. Automatic dependency
 closure packaging and callbacks into NEX remain pending.
+
+
+The development toolchain0.106 adds [explicit task execution limits](task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.

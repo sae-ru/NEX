@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Installed Linux SDK: authoring, native/web semantics, tasks, ELF and storage."""
+import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -16,8 +18,14 @@ import urllib.request
 
 
 def main():
-    sdk=Path(sys.argv[1]).resolve();nex=sdk/'bin/nex';resources=sdk/'share/nex'
-    report={'ok':False};output=Path('/build/sdk-smoke.json')
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('sdk',type=Path)
+    parser.add_argument('--source',type=Path,default=Path('/src'))
+    parser.add_argument('--output-root',type=Path,default=Path('/build'))
+    args=parser.parse_args()
+    sdk=args.sdk.resolve();nex=sdk/'bin/nex';resources=sdk/'share/nex';source=args.source.resolve();output_root=args.output_root.resolve()
+    output_root.mkdir(parents=True,exist_ok=True)
+    report={'schema':'nex.linux-sdk-smoke/2','ok':False};output=output_root/'sdk-smoke.json'
     with tempfile.TemporaryDirectory(prefix='nex-linux-sdk-') as temporary:
         root=Path(temporary);env={**os.environ,'NEX_RESOURCE_DIR':str(resources)}
         def cli(*args,cwd=None):
@@ -25,29 +33,32 @@ def main():
             value=json.loads(p.stdout);assert p.returncode==0,(args,p.stdout,p.stderr);return value
         try:
             descriptor=cli('describe');doctor=cli('doctor');assert 'linux' in doctor['host']
-            assert descriptor['version']=='0.16' and cli('guide','--kind','linux')['text']
             pack=json.loads((resources/'llm/language-pack.json').read_text())
+            language=doctor['language']
+            assert language in ('0.23','0.24') and descriptor['version']==pack['language_version']==language
+            assert cli('guide','--kind','linux')['text']
+            report.update(language=language,toolchain=doctor['version'],compiler_sha256=hashlib.sha256(nex.read_bytes()).hexdigest(),helper_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
             indexed=[*pack['documents'].values(),*pack['examples'].values()]
             for name in indexed:
-                assert (resources/name).read_bytes()==(Path('/src')/name).read_bytes(),name
+                assert (resources/name).read_bytes()==(source/name).read_bytes(),name
             constrained=root/'constraints';constrained.mkdir();shutil.copyfile(resources/'examples/constraints.nex',constrained/'main.nex')
-            (constrained/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (constrained/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             constrained_output=cli('eval',cwd=constrained)['stdout'];assert constrained_output=='NEX 🧠\n42\n[1,2,3]\n'
             assert cli('run',cwd=constrained)['stdout']==constrained_output;cli('test',cwd=constrained);cli('test','--target','web',cwd=constrained)
             report['constrained_backends']='native/interpreter/TypeScript passed'
             matched=root/'matching';matched.mkdir();shutil.copyfile(resources/'examples/matching.nex',matched/'main.nex')
-            (matched/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (matched/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             assert cli('eval',cwd=matched)['stdout']=='42\none:42\n7\n';assert cli('run',cwd=matched)['stdout']=='42\none:42\n7\n'
             cli('test',cwd=matched);cli('test','--target','web',cwd=matched);report['matching_backends']='native/interpreter/TypeScript passed'
 
             for name in ('main.nex','model.nex'):shutil.copyfile(resources/'examples/generics'/name,root/name)
-            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             checked=cli('check');assert cli('context','--symbol','main')['symbol']=='generics::main'
             expected=cli('eval')['stdout'];cli('test');cli('test','--target','web')
             built=cli('build');assert built['host_compatible']
             metadata=json.loads(Path(built['metadata']).read_text());assert metadata['linker'].endswith('/ld.lld')
             subprocess.run(['llvm-dwarfdump','--verify',built['executable']],check=True,stdout=subprocess.DEVNULL)
-            exported=Path('/build/standalone-app');cli('build','--output',exported)
+            exported=output_root/'standalone-app';cli('build','--output',exported)
             independent=subprocess.run([str(exported)],env={**env,'NEX_RESOURCE_DIR':'/unavailable'},capture_output=True,text=True,timeout=20)
             assert (independent.returncode,independent.stdout)==(0,expected),independent.stderr
             dependencies=subprocess.check_output(['ldd',str(exported)],text=True)
@@ -63,7 +74,7 @@ def main():
             assert cli('run','--revision',checked['revision'])['stdout']==expected
             replay=cli('task',acceptance['output'],'--kind','replay','--toolchains',catalog)
             assert replay['task_hash']==acceptance['task_hash'] and replay['status']=='passed'
-            evidence=Path('/build/sdk-evidence');evidence.mkdir(exist_ok=True)
+            evidence=output_root/'sdk-evidence';evidence.mkdir(exist_ok=True)
             saved=[]
             for result in (acceptance,replay):
                 destination=evidence/result['run_id']
@@ -72,9 +83,9 @@ def main():
             (evidence/'native.json').write_text(json.dumps(snapshot['manifest']))
             (evidence/'catalog.json').write_text(json.dumps({'linux':'native.json'}))
             report.update(task_document=task,toolchain_manifest=snapshot['manifest'],toolchain_catalog={'linux':'native.json'},receipts=saved)
-            shared=Path('/build/sdk-shared-work');shared.mkdir(exist_ok=True)
+            shared=output_root/'sdk-shared-work';shared.mkdir(exist_ok=True)
             (shared/'main.nex').write_text('module shared_linux; fn main() -> unit !{io} { print(7); } test fn example() -> unit { assert(3 + 4 == 7); }')
-            (shared/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (shared/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             cli('check',cwd=shared);assert cli('run',cwd=shared)['stdout']=='7\n'
             shared_task=cli('task',shared/'main.nex','--kind','init',cwd=shared)
             shared_file=shared/'task.json';shared_file.write_text(json.dumps(shared_task))
@@ -82,10 +93,10 @@ def main():
             shared_replay=cli('task',shared_run['output'],'--kind','replay',cwd=shared)
             assert shared_replay['status']=='passed'
             proof=root/'proof';shutil.copytree(resources/'examples/verification',proof)
-            (proof/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (proof/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             verified=cli('verify','--contracts',proof/'contracts.json',cwd=proof);assert verified['ok'] and verified['functions'] and all(f['status']=='proven' for f in verified['functions'])
             service=root/'service';service.mkdir()
-            (service/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+            (service/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
             (service/'main.nex').write_text('''module linux_sdk_server;
 import "std/http.nex" as http;
 server fn handle(request:http::Request) -> http::Response !{db} {

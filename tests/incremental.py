@@ -266,7 +266,7 @@ pub fn value(n: i64) -> str {
         package.mkdir()
         library = package / 'numbers.nex'
         library.write_text('module inc::numbers; pub fn add(n: i64) -> i64 { return n + 1; }')
-        (self.root / 'nex.json').write_text(json.dumps({'language': '0.16', 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}))
+        (self.root / 'nex.json').write_text(json.dumps({'language': '0.24', 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}))
         self.left.write_text('module inc::left; import "numbers/numbers.nex" as numbers; pub fn value(n: i64) -> i64 { return numbers::add(n); }')
         self.cli('lock')
         first, _ = self.build()

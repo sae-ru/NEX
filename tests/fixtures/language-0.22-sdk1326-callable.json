@@ -1,0 +1,72 @@
+{
+  "schema": "nex.genuine022-sdk1326-fixture/1",
+  "language": "0.22",
+  "sdk": {
+    "toolchain": "0.132.6",
+    "compiler_sha256": "a75421b899a7e47d617a8ef6257123f75db4ee4f9869fe2aa11c3be6b87bb1a8"
+  },
+  "head": "f11640898210487ebc903997f69509d70cd5d38c99414eb5c71fa2becc02f548",
+  "revisions": [
+    {
+      "revision": "37973de19e1a6060803d0c3a20846eba65a79c3ce9988ddbd38b5698e7a7d4a5",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(42)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "42\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    },
+    {
+      "revision": "01ec5ac682c69d253d5472e34bbe577c80508e2015f0f07f6ffe593ec60f4a10",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(43)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "43\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    },
+    {
+      "revision": "f11640898210487ebc903997f69509d70cd5d38c99414eb5c71fa2becc02f548",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(44)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "44\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 12,
+    "graph_edges": 24,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 5,
+    "nodes": 15,
+    "operation_functions": 15,
+    "operation_ids": 24,
+    "operation_versions": 72,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "sql_sha256": "4e34432137a9facceadde894b7fecec47eb161e8ea304fb9b28f5181a4e6e103"
+}

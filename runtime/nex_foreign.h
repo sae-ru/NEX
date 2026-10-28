@@ -19,6 +19,25 @@ public:
   ForeignScope(const ForeignScope&)=delete;
   ForeignScope &operator=(const ForeignScope&)=delete;
 };
+// Private source-task context. Capture on the explicitly authorized caller;
+// later binds retain that lexical/request authority across task resumes. Ending
+// the original scope revokes it; a copied snapshot never renews authorization.
+class CapturedForeignScope {
+  struct Impl;std::shared_ptr<const Impl> impl;
+  explicit CapturedForeignScope(std::shared_ptr<const Impl>);
+  friend CapturedForeignScope captureForeignScope(bool);
+public:
+  CapturedForeignScope()=default;
+  void check()const;
+  ForeignSignature signature(const std::string &)const;
+  ForeignFunction bind(const std::string &,std::function<void()> poll={})const;
+  ForeignCallLimits callLimits()const;
+  ResourceAccess valueAccess()const;
+  // The bounded transport reservation survives raw IO-ticket admission. It
+  // remains held until the prepared typed snapshot is admitted or discarded.
+  std::shared_ptr<void> reserveTransport()const;
+};
+CapturedForeignScope captureForeignScope(bool unavailableDeferred=false);
 // Used by the interpreter and native value bridge. A retained context cannot
 // extend its lexical authority. No module pointer or owner crosses this API.
 Value invokeScopedForeign(const std::string &binding,std::span<const Value> arguments,

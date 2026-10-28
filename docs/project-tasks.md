@@ -95,7 +95,8 @@ capture is bounded to64MiB,8192 files/aliases,32 configurations and128 component
 Source candidates retain their ordinary16MiB bundle limit. Native build artifacts
 retain first-party images beside their executable; web artifacts retain `dist`.
 Build copies are distinct from deployment packages and relocated debugger
-sessions. Server workloads and dedicated task/editor debugging remain pending.
+sessions. [Server workload profile tasks](task-workloads.md) require the separately
+advertised0.83 capability; dedicated task/editor debugging remains pending.
 
 ## Package acceptance
 
@@ -164,3 +165,25 @@ before and after its command. Bounds are128 components,128 roots/64 licenses per
 component,256 distinct license files,1MiB per text and8MiB total license text;
 the formatted catalogue is limited to1MiB and snapshot to16MiB. This mechanism
 records the supplied provenance; operators remain responsible for its accuracy.
+
+Candidate0.84 native/server `package` checks accept `foreign_hash`. Reachable
+external bindings require that pin and a current trusted `--foreign HOST.json`
+on check/run/replay. Readonly check validates signatures and authority without
+preparing/initializing modules. Capture includes the reviewed operator bundle
+inventory and the compiler-selected `foreign_bundle.py` helper. Packaging uses
+actual declared binary edges and per-application grants; its receipt identifies
+the derived deployment revision separately from the original program. Replay
+still needs current operator trust and any native loader dependencies outside
+the bundle inventory; receipt paths never select executable compiler resources.
+
+For explicit module provenance, the runner projects matching reviewed original
+notice roots onto **exact captured foreign inventory members**. It retains the
+original root list and captured license bytes, adds no directory-wide authority
+and writes the derived catalogue under artifacts with its own hash. Current
+operator grants and captured module/notice bytes are checked around this step.
+At most8192 member mappings and16MiB of derived notice JSON are accepted. Current
+operator bundle locations must still match the reviewed provenance roots;
+relocating those roots requires a reviewed notice/task update.
+
+
+The development toolchain0.106 adds [explicit task execution limits](task-limits.md): native application ceilings, reference/TypeScript host controls, reviewed project configurations and captured acceptance/replay. Source language0.19 and stored identities remain unchanged; current SDK/platform acceptance is reported separately.

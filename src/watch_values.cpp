@@ -26,6 +26,7 @@ WatchValues::V WatchValues::decode(const Ref &r,const JSON &wire){
 WatchValues::V WatchValues::proxy(std::string binding,Type type,Array path,std::string identity,Array relative,std::vector<std::string> lineage){
   if(refs.size()>=10000||path.size()>56)throw Error("E_DEBUG_LIMIT","stopped-frame reference budget exceeded");
   Ref r{nullptr,std::move(binding),std::move(type),std::move(path),std::move(identity),std::move(relative),std::move(lineage)};
+  if(isExternalResource(program,r.type))throw Error("E_DEBUG_UNAVAILABLE","opaque external resources have no watch proxy authority");
   if(!r.type.heap())return decode(r,read(r,"value"));
   auto captured=reads.find(key(r.binding,r.path,"value"));
   if(captured!=reads.end()&&captured->second->get("value"))return decode(r,read(r,"value"));

@@ -1,8 +1,12 @@
+#include "nex/task_machine.h"
+#include "nex/task_frontend.h"
+#include "nex/task_reference.h"
 #include "nex/language.h"
 #include "nex/watch_values.h"
 #include <algorithm>
 #include "nex/operations.h"
 #include "nex_value.h"
+#include "nex_parallel_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
 #include "nex_files.h"
@@ -17,14 +21,25 @@ using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
   nexrt::FileScope files;
+  E atomRoot;unsigned outerDepth=0;
+  const TaskControlPoll *controlPoll=nullptr;
   const Program &p; uint64_t limit; Evaluation result;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
+  std::vector<SourceException> caughtExceptions;
+  struct PopScope {
+    decltype(frames) &stack;bool active=true;
+    ~PopScope(){if(active)stack.back().pop_back();}
+  };
+  struct PopCaught {
+    std::vector<SourceException> &stack;
+    ~PopCaught(){stack.pop_back();}
+  };
   const std::map<std::string,Type> *watchTypes=nullptr;
   std::unique_ptr<WatchValues> watch;
   std::map<const void*,std::string> sites;
   V full(const V &value){return watch?watch->concrete(value):value;}
-  void step(Span s){if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
+  void step(Span s){if(controlPoll&&*controlPoll)(*controlPoll)(s);if(++result.steps>limit)throw Error("E_LIMIT","interpreter step limit exceeded",s);}
   V &local(const std::string &name,Span span={}) {
     for(auto i=frames.back().rbegin();i!=frames.back().rend();++i){if(auto lazy=i->lazy.find(name);lazy!=i->lazy.end()){auto value=lazy->second();i->values[name]=std::move(value);i->lazy.erase(lazy);}if(i->values.contains(name))return i->values.at(name);}
     if(watchTypes&&frames.size()==1&&watchTypes->contains(name)){
@@ -33,7 +48,7 @@ class Interpreter {
     throw Error("E_INTERNAL","checked local is missing");
   }
   V expression(E e) {
-    try{step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
+    try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
     catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
     catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
@@ -55,15 +70,19 @@ class Interpreter {
     };if(!pattern(p->args[i],child))return false;}return true;
   }
   V matching(E e){
-    auto value=expression(e->args[0]);for(auto arm:e->arms){frames.back().emplace_back();
+    auto value=expression(e->args[0]);for(auto arm:e->arms){frames.back().emplace_back();PopScope scope{frames};
       if(pattern(arm->pattern,[value]{return value;})&&(!arm->guard||expression(e->args[arm->guard]).scalar)){
-        V result;if(e->statementMatch)block(arm->body,false);else result=expression(e->args[arm->value]);frames.back().pop_back();return result;
-      }frames.back().pop_back();
+        V result;if(e->statementMatch)block(arm->body,false);else result=expression(e->args[arm->value]);return result;
+      }
     }throw Error("E_MATCH","no checked match arm accepted the value",e->span);
   }
   V expr(E e) {
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
+    if(e->kind==Expr::Propagate){auto value=expression(e->args[0]);
+      if(!(watch?watch->isSuccess(value):nexrt::isSuccess(value)))throw Returned{value};
+      return watch?watch->unwrap(value):nexrt::unwrap(value);
+    }
     if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
     if(e->kind==Expr::Floating)return V::floating(nexrt::floatValue(e->number));
@@ -78,6 +97,24 @@ class Interpreter {
       if(p.hasStructure(e->text)){
         auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
+      }
+      if(e->text=="parallel_map"){
+        auto items=full(args[0]);auto callback=watch?watch->callable(args[1]):args[1];auto workers=full(args[2]).scalar;
+        if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);
+        if(items.object->values.size()>nexrt::parallelMaximumItems)throw Error("E_LIMIT","parallel input exceeds 65536 items",e->span);
+        auto poll=[&]{step(e->span);};nexrt::validateParallelValue(items,poll);nexrt::validateParallelValue(callback,poll);
+        auto output=std::make_shared<nexrt::Data>(nexrt::Data::List);output->values.resize(items.object->values.size());std::exception_ptr failure;
+        for(size_t i=0;i<items.object->values.size();++i)try{
+          poll();auto value=call(p.function(callback.object->text),{items.object->values[i]},&callback);
+          nexrt::validateParallelValue(value,poll);output->values[i]=std::move(value);
+        }catch(const Error &error){
+          if(error.code=="E_LIMIT"||error.code=="E_TIMEOUT"||error.code=="E_CANCELLED"||error.code=="E_MEMORY")throw;
+          if(!failure)failure=std::current_exception();
+        }catch(const nexrt::DataError &error){
+          if(error.code=="E_LIMIT"||error.code=="E_MEMORY")throw;
+          if(!failure)failure=std::make_exception_ptr(Error(error.code,error.what(),e->span));
+        }
+        if(failure)std::rethrow_exception(failure);return V(std::move(output));
       }
       if(e->text=="ok")return nexrt::success(args[0]);
       if(e->text=="bytes")return nexrt::bytesFromIntegers(full(args[0]));
@@ -95,6 +132,10 @@ class Interpreter {
       if(e->text=="encode_json")return V(nexrt::string(nexrt::encodeJSON(full(args[0]))));
       if(e->text=="decode_json")return nexrt::decodeJSON(full(args[0]).object->text,json(wireSchema(p,e->annotation),false));
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
+      if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text)){
+        auto value=full(args[0]);auto resource=nexrt::externalResource(value.object);step(e->span);
+        return V(e->text=="resource_close"?resource.close():resource.isOpen(),true);
+      }
       if(streamFileBuiltins().contains(e->text)){
         auto poll=[&]{step(e->span);};
         if(e->text=="file_close"||e->text=="file_is_open"){
@@ -172,6 +213,7 @@ class Interpreter {
   }
   void block(const std::vector<S> &body,bool scoped=true) {
     if(scoped)frames.back().emplace_back();
+    PopScope scope{frames,scoped};
     for(auto s:body) {
       try{step(s->span);
       switch(s->kind) {
@@ -182,21 +224,47 @@ class Interpreter {
       case Stmt::If:block(expression(s->expr).scalar?s->body:s->alternative);break;
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
       case Stmt::Match:matching(s->expr);break;
+      case Stmt::Try:{
+        try{block(s->body);}
+        catch(const SourceException &error){
+          frames.back().emplace_back();PopScope handler{frames};
+          frames.back().back().values[s->name]=V(nexrt::string(error.code));
+          frames.back().back().values[s->catchMessage]=V(nexrt::string(error.message));
+          caughtExceptions.push_back(error);PopCaught caught{caughtExceptions};
+          block(s->alternative,false);
+        }
+        break;
       }
-      }catch(Error &error){if(error.operationSite.empty()){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
+      case Stmt::Throw:{
+        if(!s->expr){
+          if(caughtExceptions.empty())throw Error("E_RETHROW","bare throw has no current lexical exception",s->span);
+          throw caughtExceptions.back();
+        }
+        auto code=expression(s->expr->args[0]);auto message=expression(s->expr->args[1]);
+        throw SourceException(full(code).object->text,full(message).object->text,s->span);
+      }
+      }
+      }catch(Error &error){if(error.operationSite.empty()&&sites.contains(s.get())){error.operationSite=sites.at(s.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
     }
-    if(scoped)frames.back().pop_back();
   }
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
-    if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
+    if(atomRoot&&(f.effects.contains("fs")||f.effects.contains("db")||f.effects.contains("ffi")))
+      throw Error("E_TASK_UNIMPLEMENTED","task atoms cannot execute synchronous resource helpers",f.span);
+    if(frames.size()+outerDepth>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
     if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
-    frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
+    frames.emplace_back(1);struct PopFrame {decltype(frames)&stack;~PopFrame(){stack.pop_back();}} pop{frames};
+    for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}
-    frames.pop_back();return value;
+    return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit):p(p),limit(limit){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
+    atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
+    try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
+    catch(Error &error){error.output=result.output;throw;}
+  }
   llvm::json::Value inspect(E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
     watchTypes=&types;watch=std::make_unique<WatchValues>(p,types,values,captures,compiledCallables);frames.emplace_back(1);V value;
     llvm::json::Value wire=nullptr;std::string display="unit";bool truncated=false;
@@ -213,12 +281,40 @@ public:
       auto value=call(f,{});
       if(f.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}
     }catch(Error &e){e.output=result.output;throw;}
+    catch(SourceException &e){e.output=result.output;throw;}
     return result;
   }
 };
 }
-Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit){return Interpreter(p,stepLimit).run(entry);}
+TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth,const TaskControlPoll *controlPoll){
+  if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
+  if(atom&&atom->kind==Expr::Call&&taskFileBuiltin(atom->text))
+    throw Error("E_TASK_UNIMPLEMENTED","file operations cannot enter synchronous task atom evaluation",atom->span);
+  return Interpreter(p,limit,true,controlPoll).atom(std::move(atom),values,depth);
+}
+Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit,const nexrt::TaskExecutionLimits *taskLimits){
+  rejectUnloweredTasks(p,"reference execution");
+  const auto &function=p.function(entry);
+  if(taskLimits&&!nexrt::validTaskExecutionLimits(*taskLimits))throw Error("E_OPTION","invalid task execution limits",function.span);
+  const bool taskExecution=isPublicTaskLanguage(p)&&usesTaskEffects(p,entry);
+  if(taskLimits&&!taskExecution)
+    throw Error("E_OPTION","task execution limits require a task-effect entry",function.span);
+  if(taskExecution){
+    if(!function.typeParameters.empty()||std::any_of(function.typeArguments.begin(),function.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be concrete",function.span);
+    if(!function.params.empty())throw Error("E_ENTRY","entry must take no arguments",function.span);
+    auto actual=evaluateTaskReference(p,entry,{},stepLimit,{},taskLimits);Evaluation result;
+    result.output=std::move(actual.output);result.steps=actual.steps;
+    if(function.result!=Type::Unit){auto parsed=llvm::json::parse(nexrt::representation(actual.value));if(!parsed)throw Error("E_INTERNAL",llvm::toString(parsed.takeError()));result.value=std::move(*parsed);}
+    return result;
+  }
+  return Interpreter(p,stepLimit).run(entry);
+}
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
+  rejectUnloweredTasks(p,"reference inspection");
+  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
+}
+llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
+  if(!sourceExceptionTasksPrototype(p))throw Error("E_LANGUAGE_VERSION","private watch requires the checked task/exception frontend");
   try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
 }
 }

@@ -5,6 +5,12 @@
 #include "nex_io.h"
 #include "nex_json.h"
 #include "nex_auth.h"
+#ifdef NEX_PRIVATE_TASK_PROFILE_HTTP
+#include "nex_profile.h"
+#endif
+#ifdef NEX_ASYNC_TASKS
+#include "nex_task_limits.h"
+#endif
 #ifdef NEX_FOREIGN_ENABLED
 #include "nex_foreign.h"
 #endif
@@ -18,7 +24,12 @@
 #include <optional>
 #include <regex>
 
+#ifdef NEX_ASYNC_TASKS
+extern "C" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *request,unsigned workers);
+extern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits();
+#else
 extern "C" nexrt::Handle *nex_server_dispatch(nexrt::Handle *request);
+#endif
 namespace {
 namespace fs=std::filesystem;
 volatile std::sig_atomic_t interrupted=0;
@@ -85,11 +96,24 @@ struct Config {
   std::string host="127.0.0.1",auth,database,assets,cert,key,foreign;
   std::set<std::string> cors;
   int port=8080,workers=8,queue=64;uint64_t budget=1000000,timeout=5000;
+#ifdef NEX_ASYNC_TASKS
+  nexrt::TaskExecutionLimits taskLimits;
+#endif
 };
 Config config(int argc,char **argv){
   Config c;
+#ifdef NEX_ASYNC_TASKS
+  auto ceilings=nex_server_task_limits();
+  if(!ceilings)throw std::runtime_error("compiled HTTP task limits are absent");
+  c.taskLimits=nexrt::parseTaskExecutionArguments(*ceilings,argc,argv);
+#endif
   for(int i=1;i<argc;++i){
     std::string option=argv[i];if(i+1==argc)throw std::runtime_error("server option requires a value");std::string value=argv[++i];
+#ifdef NEX_ASYNC_TASKS
+    // The shared parser above validates the reserved namespace, duplicate
+    // arguments and immutable ceilings before the server opens any resources.
+    if(option.starts_with("--nex-task-"))continue;
+#endif
     if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;else if(option=="--foreign")c.foreign=value;
     else if(option=="--cors-origin"){if(!corsOrigin(value)||!c.cors.insert(value).second||c.cors.size()>16)throw std::runtime_error("CORS requires1..16 distinct exact origins; wildcard, null, credentials and paths are unsupported");}
     else{
@@ -102,6 +126,10 @@ Config config(int argc,char **argv){
       else throw std::runtime_error("unknown or out-of-range server option");
     }
   }
+#ifdef NEX_ASYNC_TASKS
+  c.budget=std::min(c.budget,c.taskLimits.steps);
+  c.timeout=std::min(c.timeout,c.taskLimits.timeoutMs);
+#endif
   if(c.auth.empty()||c.database.empty())throw std::runtime_error("server requires --auth FILE and --database FILE");
   if(c.cert.empty()!=c.key.empty())throw std::runtime_error("TLS requires both --cert FILE and --key FILE");
   if(!c.assets.empty()){
@@ -119,6 +147,11 @@ std::string mime(const fs::path &path){
 int main(int argc,char **argv){
   try{
     auto c=config(argc,argv);
+#ifdef NEX_PRIVATE_TASK_PROFILE_HTTP
+    // The collector is prepared by the private host before workers start.
+    // These are common per-request limits, not a process-wide execution budget.
+    nexrt::taskProfileLimits(c.taskLimits,{c.budget,c.timeout,c.taskLimits.workers});
+#endif
 #ifdef NEX_FOREIGN_ENABLED
     if(c.foreign.empty())c.foreign=nexrt::packagedForeignCatalogue();
     auto foreign=c.foreign.empty()?std::shared_ptr<nexrt::ForeignLibraries>{}:nexrt::loadForeignLibraries(c.foreign);
@@ -175,12 +208,18 @@ int main(int argc,char **argv){
         std::unique_ptr<nexrt::ForeignScope> foreignScope;if(foreign)foreignScope=std::make_unique<nexrt::ForeignScope>(foreign);
 #endif
         bool writable=request.method!="GET"&&request.method!="HEAD"&&request.method!="OPTIONS";
-        nexrt::Database db(c.database,*user,writable);nexrt::StorageScope capability(db);
+        nexrt::Database db(c.database,*user,writable,nexrt::Database::TransactionStart::OnFirstOperation);nexrt::StorageScope capability(db);
         auto input=std::make_shared<nexrt::Data>(nexrt::Data::Record);input->text="std::http::Request";
         input->names={"method","path","query","body","user","request_id"};
         auto query=request.target.find('?');
         for(const auto &text:{request.method,request.path,query==std::string::npos?std::string():request.target.substr(query+1),request.body,*user,id})input->values.emplace_back(nexrt::string(text));
-        auto argument=nexrt::makeHandle(nexrt::Value(input));auto returned=nex_server_dispatch(argument);auto result=nexrt::readHandle(returned).object;
+        auto argument=nexrt::makeHandle(nexrt::Value(input));
+#ifdef NEX_ASYNC_TASKS
+        auto returned=nex_server_task_dispatch(argument,c.taskLimits.workers);
+#else
+        auto returned=nex_server_dispatch(argument);
+#endif
+        auto result=nexrt::readHandle(returned).object;
         if(result->kind!=nexrt::Data::Record||result->text!="std::http::Response"||result->values.size()!=3)throw nexrt::Trap("E_RESPONSE","invalid response ABI",0);
         auto status=result->values[0].scalar;auto body=result->values[1].object->text,contentType=result->values[2].object->text;
         if(status<200||status>599||body.size()>1024*1024||contentType.empty()||contentType.size()>256||!std::all_of(contentType.begin(),contentType.end(),[](unsigned char c){return c>=32&&c<127;}))throw nexrt::Trap("E_RESPONSE","invalid response value",0);
@@ -188,7 +227,11 @@ int main(int argc,char **argv){
         if(status<300){auto committed=db.commit();if(!nexrt::isSuccess(committed)){error(response,503,committed.object->text,id);return;}}
         else db.rollback();
         response.status=int(status);response.set_content(std::move(body),contentType);
-      }catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));if(auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap))nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located->source,id.c_str());}
+      }
+#ifdef NEX_SOURCE_EXCEPTION_HTTP
+      catch(const nexrt::NativeSourceException &failure){error(response,500,"E_SOURCE_EXCEPTION",id);nexrt::printNativeSourceException(failure,id.c_str());}
+#endif
+      catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));if(auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap))nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located->source,id.c_str());}
       catch(const nexrt::DataError &failure){error(response,failure.code=="E_UTF8"?400:503,failure.code,id);}
       catch(const std::exception &){error(response,500,"E_RUNTIME",id);}
     };

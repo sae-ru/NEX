@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/task-debug-source-union-1.json",
+  "title": "NEX checked component source union",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "nex.task-debug-source-union/1"
+    },
+    "mode": {
+      "enum": [
+        "static",
+        "shared-fixed"
+      ]
+    },
+    "artifact_kind": {
+      "enum": [
+        "code-archive",
+        "pic-stage",
+        "shared-image",
+        "application"
+      ]
+    },
+    "owner_image": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+          },
+          "owner_image": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entry": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^[^\\u0000]*$"
+          },
+          "exports": {
+            "type": "array",
+            "maxItems": 16384,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^[^\\u0000]*$"
+            }
+          },
+          "language": {
+            "enum": [
+              "0.19",
+              "0.20",
+              "0.21",
+              "0.22",
+              "0.23",
+              "0.24"
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bundle_file": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000]+$"
+          },
+          "bundle_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "definitions": {
+            "type": "array",
+            "maxItems": 16384,
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "^[^\\u0000]*$"
+                },
+                "function_hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "function_source_hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "source_unit_hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "debug_path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "^[^\\u0000]*$"
+                },
+                "contract": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "retained": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "function_hash",
+                "function_source_hash",
+                "source_unit_hash",
+                "debug_path",
+                "contract",
+                "line",
+                "retained"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "component",
+          "owner_image",
+          "entry",
+          "exports",
+          "language",
+          "revision",
+          "source_hash",
+          "bundle_file",
+          "bundle_hash",
+          "definitions"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "mode",
+    "artifact_kind",
+    "owner_image",
+    "components"
+  ],
+  "additionalProperties": false
+}

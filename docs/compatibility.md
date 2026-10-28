@@ -1,6 +1,6 @@
 # Versions, compatibility and explicit migration
 
-Toolchain 0.56.1 uses source language 0.16, graph schema 4 and the canonical
+Development toolchain0.134.0 uses source language0.24, graph schema 4 and the canonical
 formats recorded in docs/language.md. Discover `project_features` and retrieve this guide with
 `nex guide --kind compatibility --json`. The language pack indexes
 `llm/project.schema.json` for authoring current project manifests.
@@ -10,7 +10,7 @@ formats recorded in docs/language.md. Discover `project_features` and retrieve t
 ```json
 {
   "schema": "nex.project/1",
-  "language": "0.16",
+  "language": "0.24",
   "entry": "main.nex",
   "libraries": { "numbers": "./vendor/numbers" }
 }
@@ -80,7 +80,7 @@ new revision; do not weaken requirements to make a migration pass.
 
 | Artifact | Current policy |
 | --- | --- |
-| Source language | Explicit declared version; current 0.16. Old archived source requires matching SDK or explicit recheck/migration. |
+| Source language | Explicit declared version; current0.24. Old archived source requires matching SDK or explicit recheck/migration. |
 | Project manifest | `nex.project/1`; legacy omitted metadata accepted; unknown declared schema rejected. |
 | Local graph database | Current schema 4; supported schema 1–3 upgrades retain rows/IDs and an explicit journal base. Old tools must use their original compatible database. |
 | Graph/source export | Versioned JSON with source language and exact bundle. Import derives destination-local IDs; complete graph recovery preserves lineage. |
@@ -93,3 +93,34 @@ Never infer compatibility from a shared major/minor number alone. JSON Schema
 checks document shape; the installed compiler enforces version, graph and
 semantic rules. Broader stable-ABI, platform/device and reproducible-distribution
 validation remains pending as recorded in `STATUS.md` and `PLAN.md`.
+
+Language0.17 result propagation is additive syntax with an appended AST kind15;
+existing function/structure/enum/program formats retain old kind numbering.
+Program identities include the new language. Preserve a complete snapshot and
+SDK0.81 for0.16 artifacts; explicitly migrate the archived bundle, verify all old
+rows/IDs remain, then export a new0.17 project. Never edit the original version
+field as a substitute. See [result propagation](error-propagation.md).
+
+Language0.18 adds the reserved parallel_map intrinsic. Keep the0.17 SDK and a
+complete store snapshot. Explicit migration rechecks archived source and retains
+old rows/IDs/schema; conflicting old declaration names require an explicit
+reviewed exported-source repair. The genuine017 fixture has two actual revisions,
+including a reserved-name conflict; no stored version/source is relabeled.
+
+## Language0.19 task migration
+
+Language0.19 reserves ten task intrinsics and `task`, `channel`, `task_scope`
+type names. Retained018 bundles use the original parser and canonical hashes;
+public019 recheck creates a new revision while preserving old rows/IDs. Conflicting
+declarations need an explicit reviewed source repair. The physical manifest is
+not automatically rewritten. See [the migration procedure](task-migration.md).
+
+## Language0.20 task file reads
+
+The two read builtins suspend only in actual server task/fs functions.019 is
+rechecked under its original rules before a separate020 migration target.
+Callable realm/effects remain exact; fs-only helpers require reviewed task/fs
+declarations before task use. All historical rows/IDs/schema remain unchanged;
+program/14 includes actual language and therefore gives distinct revisions.
+Migration preflight precedes mutable destination access. See [migration](task-migration.md)
+and [the exact source/target boundary](task-file-reads.md).

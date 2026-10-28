@@ -11,6 +11,15 @@ int main(int argc,char **argv) {
     auto parsed=llvm::json::parse(argv[3]);
     if(!parsed)throw Error("E_JSON",llvm::toString(parsed.takeError()));
     auto o=parsed->getAsObject();if(!o)throw Error("E_JSON","expected options object");
+    if(auto file=o->getString("native_tool_arguments")){
+      auto payload=llvm::json::parse(readFile(file->str()));
+      if(!payload)throw Error("E_JSON",llvm::toString(payload.takeError()));
+      auto values=payload->getAsArray();if(!values)throw Error("E_OPTION","native tool arguments must be an array");
+      std::vector<std::string> command;
+      for(const auto &value:*values){auto text=value.getAsString();if(!text)throw Error("E_OPTION","native tool argument must be text");command.push_back(text->str());}
+      auto status=executeNativeBuildTool(command);
+      std::cout<<json(llvm::json::Object{{"status",status}})<<'\n';return status;
+    }
     if(auto completion=o->getObject("completion_metadata")){
       llvm::json::Array paths;for(const auto &path:nativeCompletionInputs(*completion))paths.push_back(path);
       std::cout<<json(llvm::json::Object{{"paths",std::move(paths)}})<<'\n';return 0;
@@ -28,6 +37,7 @@ int main(int argc,char **argv) {
     if(auto libraries=o->getArray("libraries"))for(const auto &library:*libraries){
       auto l=library.getAsObject();NativeLibraryInput input;
       input.path=l->getString("artifact")->str();input.digest=l->getString("hash")->str();input.abi=l->getString("library_abi")->str();
+      input.parallelCalls=l->getBoolean("parallel").value_or(false);
       for(const auto &[name,contract]:*l->getObject("contracts"))input.contracts[name.str()]=contract.getAsString()->str();
       options.libraries.push_back(std::move(input));
     }
@@ -35,7 +45,7 @@ int main(int argc,char **argv) {
     auto built=build(program,argv[2],options);
     llvm::json::Object contracts;for(const auto &[name,contract]:built.functionContracts)contracts[name]=contract;
     std::cout<<json(llvm::json::Object{{"artifact",built.executable},{"hash",hash(readFile(built.executable))},
-      {"key",built.key},{"cached",built.cached},{"library_abi",built.libraryABI},{"contracts",std::move(contracts)},
+      {"key",built.key},{"cached",built.cached},{"library_abi",built.libraryABI},{"contracts",std::move(contracts)},{"parallel",built.parallelCalls},
       {"metadata",(std::filesystem::path(built.executable).parent_path()/"build.json").string()},
       {"compilation",built.compilation},{"compiled_functions",built.compiledFunctions},{"reused_functions",built.reusedFunctions}})<<'\n';
     return 0;

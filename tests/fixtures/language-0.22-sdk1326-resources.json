@@ -1,0 +1,72 @@
+{
+  "schema": "nex.genuine022-sdk1326-fixture/1",
+  "language": "0.22",
+  "sdk": {
+    "toolchain": "0.132.6",
+    "compiler_sha256": "a75421b899a7e47d617a8ef6257123f75db4ee4f9869fe2aa11c3be6b87bb1a8"
+  },
+  "head": "7fccf106f80fa407fcff6ac670c90a288e6669bd6d22064d3df828cb895720c6",
+  "revisions": [
+    {
+      "revision": "e965ce98caa364bce1cc3f0460a69478ff4b986037f2bc75c24f864d22d82fcc",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::resources;\npub server resource Session;\npub server resource Buffer<T>;\nserver fn forward(x:Buffer<i64>)->Buffer<i64>{return x;}\nfn answer()->i64{return 42;}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "42\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    },
+    {
+      "revision": "05184a21dcfc429cd550692848a17072aed4bb258ca6b528c23abe3f4a702896",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::resources;\npub server resource Session;\npub server resource Buffer<T>;\nserver fn forward(x:Buffer<i64>)->Buffer<i64>{return x;}\nfn answer()->i64{return 43;}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "43\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    },
+    {
+      "revision": "7fccf106f80fa407fcff6ac670c90a288e6669bd6d22064d3df828cb895720c6",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::resources;\npub server resource Session;\npub server resource Buffer<T>;\nserver fn forward(x:Buffer<i64>)->Buffer<i64>{return x;}\nfn answer()->i64{return 44;}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "stdout": "44\n",
+      "value": null,
+      "old_native_reference": true,
+      "old_web_tests": true
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 4,
+    "declaration_versions": 12,
+    "edges": 6,
+    "graph_edges": 30,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 4,
+    "nodes": 12,
+    "operation_functions": 12,
+    "operation_ids": 17,
+    "operation_versions": 51,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "sql_sha256": "ce75df9e7fc77357599829d021f5e32eedb577874048aa7c7979d72eee755e4b"
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "nex.compute121-local-delivery/2",
+  "ok": true,
+  "toolchain": "0.121.0",
+  "language": "0.20",
+  "compiler_sha256": "8f4762167926929174cd12d2e80f23ff3dca86a85d88e1b9d21d761f1c5f9e9e",
+  "source": "build/prototype-130-compute-api-source-v1",
+  "source_files": 1066,
+  "original_full": {
+    "groups": 153,
+    "passed_groups": 149,
+    "failed_groups": [
+      "task_external_typescript",
+      "task_file_reads_typescript",
+      "task_typescript_public",
+      "task_typescript_steps"
+    ],
+    "Wasm_internal_skips": true,
+    "seconds": 4730.34
+  },
+  "verified_composite": {
+    "original_accepted_groups": 148,
+    "repeated_TypeScript_groups": 4,
+    "repeated_Wasm_group": 1,
+    "unique_groups": 153,
+    "failures": 0,
+    "pristine_full_pass": false,
+    "source_and_compiler_unchanged": true
+  },
+  "actual_Wasm_tests": 8,
+  "SDK": "/Users/sae/projects/NEX/build/sdk-0.121.0-macos-arm64-local",
+  "installed_phases": 32,
+  "installed_commands": 584,
+  "live_debug_and_browser_required": true,
+  "SDK_report": "/Users/sae/projects/NEX/build/compute-130-sdk32-delivery-v5/SDK-workflow/report.json",
+  "SDK_report_sha256": "71beef2573fcda6108b9c8f09e7e13d52d2b3c3e311ce9e014644ddb2723c59c",
+  "SDK_documentation_derivative": [
+    "docs/compute.md",
+    "llm/SYSTEM_PROMPT.md"
+  ],
+  "original_compiled_source_path_absent": true,
+  "kernel_source_isolation": false,
+  "source_prefix_restored": true,
+  "primary081": {
+    "ok": true,
+    "source_files": 792,
+    "implementation_source_files": 791,
+    "documentation_reconciliation": "build/root081-documentation-reconciliation-v1.json",
+    "source_tree": "74d01e0d407c11154d9a2f71a88f3e2ef68a5881",
+    "graph47_all16_tables_schema_ids_git_and_index_preserved": true,
+    "phase": "complete",
+    "primary_full_verification_complete": true
+  },
+  "current_full_Linux121_acceptance": false,
+  "portable_bundle": false,
+  "experimental_model_provider_133_accepted": false,
+  "full_objective_complete": false,
+  "retained_failures": [
+    "initial loopback sandbox denial",
+    "four TypeScript environment failures",
+    "unsupported noncapturing CTest selector, zero-test result rejected",
+    "SDK4 explicit Wasm linker missing; existing LLD22.1.8 selected without compiler changes"
+  ],
+  "updated_utc": "2026-10-23T22:31:52.912479+00:00",
+  "actual_browser_engines": 3,
+  "actual_browser_cases": 18,
+  "actual_browser_projects": {
+    "chromium": 6,
+    "firefox": 6,
+    "webkit": 6
+  },
+  "actual_browser_report": "build/compute121-browser-preflight-v1/report.json",
+  "SDK_browser_flag_scope": "production build and Node tests; actual headless18-case proof is separate",
+  "installedSDK_actual_worker_execution": false
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/project-static-task-linkage-1.json",
+  "title": "Source-checked static task machine ownership and import plan",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema", "component", "execution_abi", "definitions", "imports", "exports"],
+  "properties": {
+    "schema": {"const": "nex.project-static-task-linkage/1"},
+    "component": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"},
+    "execution_abi": {"const": 3},
+    "definitions": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["function", "contract"],
+      "properties": {"function": {"$ref": "native-task-provider.schema.json#/$defs/function"}, "contract": {"$ref": "native-task-provider.schema.json#/$defs/hash"}}
+    }},
+    "imports": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["function", "provider", "contract", "calling_mode"],
+      "properties": {
+        "function": {"$ref": "native-task-provider.schema.json#/$defs/function"},
+        "provider": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"},
+        "contract": {"$ref": "native-task-provider.schema.json#/$defs/hash"},
+        "calling_mode": {"enum": ["task-code/3", "sync/1"]}
+      }
+    }},
+    "exports": {"type": "object", "propertyNames": {"$ref": "native-task-provider.schema.json#/$defs/function"}, "additionalProperties": {"$ref": "native-task-provider.schema.json#/$defs/export"}}
+  }
+}

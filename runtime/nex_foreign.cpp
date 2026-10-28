@@ -57,14 +57,26 @@ std::shared_ptr<Binding> binding(const std::string &text){
 struct State {
   std::atomic<bool> active{true};const std::thread::id thread=std::this_thread::get_id();
   const std::shared_ptr<ForeignLibraries> libraries;const ForeignScopeLimits limits;
+  ResourceDomain modules;
+  ResourceDomain resources;
+  ResourceDomain transports{2};
+  std::mutex metadataMutex;
   uint64_t metadata=0;std::map<std::string,std::shared_ptr<Binding>> bindings;
-  State(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits):libraries(std::move(libraries)),limits(limits){}
+  State(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits):libraries(std::move(libraries)),limits(limits),modules(this->libraries->moduleLimit()),resources(this->libraries->resourceLimit()){}
   void check()const{if(!active.load())invalid("E_FFI_SCOPE","foreign scope has ended");if(thread!=std::this_thread::get_id())invalid("E_FFI_THREAD","foreign context belongs to another thread");}
 };
 thread_local std::vector<std::weak_ptr<State>> contexts;
 std::shared_ptr<State> current(){
   while(!contexts.empty()){auto state=contexts.back().lock();if(state&&state->active.load()){state->check();return state;}contexts.pop_back();}
   invalid("E_FFI_GRANT","foreign calls require an explicit host scope");
+}
+std::shared_ptr<Binding> resolve(const std::shared_ptr<State> &state,const std::string &text){
+  if(text.size()>1048576)invalid("E_FFI_LIMIT","foreign binding exceeds 1 MiB");
+  std::lock_guard lock(state->metadataMutex);
+  if(auto found=state->bindings.find(text);found!=state->bindings.end())return found->second;
+  if(state->bindings.size()>=state->limits.bindings||text.size()>state->limits.metadataBytes-state->metadata)
+    invalid("E_FFI_LIMIT","foreign binding cache budget exceeded");
+  auto selected=binding(text);state->bindings.emplace(text,selected);state->metadata+=text.size();return selected;
 }
 }
 std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &configuration){
@@ -79,7 +91,9 @@ std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &config
   if(info.st_size<0||uint64_t(info.st_size)>1048576)invalid("E_FFI_LIMIT","foreign host configuration exceeds 1 MiB");
   std::string text;std::array<char,65536> chunk{};
   for(;;){auto n=::read(file.fd,chunk.data(),chunk.size());if(n<0){if(errno==EINTR)continue;invalid("E_FFI_IO","cannot read foreign host configuration");}if(!n)break;if(uint64_t(n)>1048576-text.size())invalid("E_FFI_LIMIT","foreign host configuration exceeds 1 MiB");text.append(chunk.data(),size_t(n));}
-  auto doc=parse(text,"E_FFI_GRANT");keys(doc,{"schema","libraries","module_limit"},"E_FFI_GRANT");
+  auto doc=parse(text,"E_FFI_GRANT");
+  if(!doc.is_object()||!doc.contains("schema")||!doc.contains("libraries")||!doc.contains("module_limit"))invalid("E_FFI_GRANT","missing foreign host field");
+  for(auto it=doc.begin();it!=doc.end();++it)if(it.key()!="schema"&&it.key()!="libraries"&&it.key()!="module_limit"&&it.key()!="resource_limit"&&it.key()!="resource_bytes")invalid("E_FFI_GRANT","unknown foreign host field");
   if(doc.at("schema")!="nex.foreign-host/1")invalid("E_FFI_GRANT","unsupported foreign host configuration");auto limit=integer(doc.at("module_limit"),"E_FFI_GRANT");
   if(!limit||limit>4096)invalid("E_FFI_GRANT","foreign module limit must be 1..4096");const auto &libraries=doc.at("libraries");
   if(!libraries.is_object()||libraries.size()>128)invalid("E_FFI_GRANT","foreign host catalogue exceeds 128 libraries");
@@ -94,7 +108,10 @@ std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &config
     if(path.string().size()>4096)invalid("E_FFI_GRANT","resolved grant directory exceeds path byte limit");
     grants.emplace(item.key(),ForeignLibraryGrant{path.string(),std::move(pin),std::move(names)});
   }
-  return std::make_shared<ForeignLibraries>(std::move(grants),size_t(limit));
+  auto resources=doc.contains("resource_limit")?integer(doc.at("resource_limit"),"E_FFI_GRANT"):64;
+  auto bytes=doc.contains("resource_bytes")?integer(doc.at("resource_bytes"),"E_FFI_GRANT"):64*1048576;
+  if(!resources||resources>4096||!bytes||bytes>uint64_t(1024)*1024*1024)invalid("E_FFI_GRANT","foreign resource limits exceed supported bounds");
+  return std::make_shared<ForeignLibraries>(std::move(grants),size_t(limit),size_t(resources),bytes);
 }
 struct ForeignScope::Impl {std::shared_ptr<State> state;};
 ForeignScope::ForeignScope(std::shared_ptr<ForeignLibraries> libraries,ForeignScopeLimits limits){
@@ -106,23 +123,53 @@ ForeignScope::ForeignScope(std::shared_ptr<ForeignLibraries> libraries,ForeignSc
   if(contexts.size()>=64)invalid("E_FFI_LIMIT","foreign scope nesting exceeds 64");
   auto state=std::make_shared<State>(std::move(libraries),limits);auto value=std::make_unique<Impl>();value->state=state;contexts.push_back(state);impl=std::move(value);
 }
-ForeignScope::~ForeignScope(){if(impl)impl->state->active=false;}
+ForeignScope::~ForeignScope(){if(impl){impl->state->active=false;impl->state->resources.revoke();impl->state->modules.revoke();}}
+struct CapturedForeignScope::Impl {
+  std::shared_ptr<State> state;
+  ResourceAccess access;
+  ResourceAccess values;
+};
+CapturedForeignScope::CapturedForeignScope(std::shared_ptr<const Impl> value):impl(std::move(value)){}
+CapturedForeignScope captureForeignScope(bool unavailableDeferred){
+  std::shared_ptr<State> state;
+  try{state=current();}catch(const DataError &error){if(unavailableDeferred&&error.code=="E_FFI_GRANT")return {};throw;}
+  auto *domain=&state->modules;
+  if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*domain))domain=joined;
+  auto *values=&state->resources;
+  if(auto binder=resource_detail::requestBinder)if(auto joined=binder(*values))values=joined;
+  return CapturedForeignScope(std::make_shared<CapturedForeignScope::Impl>(CapturedForeignScope::Impl{state,domain->access(),values->access()}));
+}
+void CapturedForeignScope::check()const{
+  if(!impl)invalid("E_FFI_GRANT","task foreign calls require a captured explicit host scope");
+  if(!impl->state->active.load())invalid("E_FFI_SCOPE","captured foreign scope has ended");
+  impl->access.check();impl->values.check();
+}
+ForeignCallLimits CapturedForeignScope::callLimits()const{check();return impl->state->limits.call;}
+ResourceAccess CapturedForeignScope::valueAccess()const{check();return impl->values;}
+std::shared_ptr<void> CapturedForeignScope::reserveTransport()const{
+  check();struct Reservation{};
+  auto owner=impl->state->transports.make<Reservation>([](const ResourcePermit &permit){permit.check();return std::make_unique<Reservation>();});
+  // A physical lease retains the bounded slot even if its domain is revoked.
+  return std::make_shared<ResourceLease<Reservation>>(owner.acquire());
+}
+ForeignSignature CapturedForeignScope::signature(const std::string &text)const{check();return resolve(impl->state,text)->signature;}
+ForeignFunction CapturedForeignScope::bind(const std::string &text,std::function<void()> poll)const{
+  check();auto retained=*this;
+  auto checked=[retained,poll=std::move(poll)]{retained.check();if(poll)poll();retained.check();};
+  auto selected=resolve(impl->state,text);
+  return impl->state->libraries->bindWithResourceScope(selected->library,selected->name,selected->signature,selected->pin,impl->access,std::move(checked));
+}
 Value invokeScopedForeign(const std::string &description,std::span<const Value> arguments,std::function<void()> poll){
   auto state=current();if(description.size()>1048576)invalid("E_FFI_LIMIT","foreign binding exceeds 1 MiB");
   if(arguments.size()>4096)invalid("E_FFI_LIMIT","foreign argument pack exceeds 4096 values");auto text=description;
   // Inputs and callback storage must survive a poll destroying caller wrappers.
   std::vector<Value> retained(arguments.begin(),arguments.end());
   auto checked=[state,poll=std::move(poll)]{state->check();if(poll)poll();state->check();};
-  std::shared_ptr<Binding> selected;auto found=state->bindings.find(text);
-  if(found!=state->bindings.end())selected=found->second;
-  else{
-    if(state->bindings.size()>=state->limits.bindings||text.size()>state->limits.metadataBytes-state->metadata)invalid("E_FFI_LIMIT","foreign binding cache budget exceeded");
-    selected=binding(text);state->bindings.emplace(text,selected);state->metadata+=text.size();
-  }
+  auto selected=resolve(state,text);
   auto function=state->libraries->bind(selected->library,selected->name,selected->signature,selected->pin,checked);
-  return function.invoke(retained,checked,state->limits.call);
+  return function.invokeWithResourceScope(retained,state->resources.access(),checked,state->limits.call);
 }
 void resetForeignScopes()noexcept{
-  while(!contexts.empty()){auto state=contexts.back().lock();contexts.pop_back();if(state){state->active=false;state->libraries->revoke();}}
+  while(!contexts.empty()){auto state=contexts.back().lock();contexts.pop_back();if(state){state->active=false;state->resources.revoke();state->modules.revoke();state->libraries->revoke();}}
 }
 }

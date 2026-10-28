@@ -1,0 +1,311 @@
+{
+  "schema": "nex.platform-checkpoints/1",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "primary": "0.81.0/language0.16; unchanged with original47revisions/all16tables/schema/IDs",
+  "095_linux": {
+    "schema": "nex.project-task-linux/1",
+    "ok": true,
+    "state": "passed",
+    "source": "/Users/sae/projects/NEX/build/working-095-native-plan-index",
+    "source_files": 862,
+    "source_manifest": "/Users/sae/projects/NEX/build/native-095-native-plan-index-source-manifest-v1.json",
+    "candidate_dap_reader_fix": true,
+    "candidate_result_propagation": true,
+    "language": "0.18",
+    "source_operations": true,
+    "root_project_tasks_support": true,
+    "root_promoted": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T03:39:19.664315+00:00",
+    "seconds": 5271.803,
+    "previous_failed_full_regression": "build/native-089-dap-reader-macos-controller-v1.json",
+    "phase": "complete",
+    "baseline094_platform_verified": true,
+    "command": [
+      "python3",
+      "/Users/sae/projects/NEX/build/working-095-native-plan-index/tools/linux/check.py",
+      "--source",
+      "/Users/sae/projects/NEX/build/working-095-native-plan-index",
+      "--output",
+      "/Users/sae/projects/NEX/build/linux-095-native-plan-index-arm64-v1",
+      "--arch",
+      "arm64",
+      "--jobs",
+      "4",
+      "--skip-image-build",
+      "--image",
+      "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+      "--live"
+    ],
+    "exit_code": 0,
+    "verification": "/Users/sae/projects/NEX/build/linux-095-native-plan-index-arm64-v1/verification.json",
+    "sdk_phases": 24,
+    "sdk_commands": 421,
+    "indexed_resources": 245,
+    "regression_groups": 99,
+    "sdk_compiler_sha256": "6baa784b039a825a48b62cf3ba51c91d8504b8d2b5da6b7740c014929fff4e73"
+  },
+  "096_mac": {
+    "schema": "nex.dap-reader-macos/1",
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "source": "/Users/sae/projects/NEX/build/working-096-buffered-compiler-inputs",
+    "files": 865,
+    "language": "0.18",
+    "phases": [
+      {
+        "name": "build",
+        "status": "passed",
+        "code": 0,
+        "seconds": 0.763
+      },
+      {
+        "name": "full100",
+        "status": "passed",
+        "code": 0,
+        "seconds": 1001.602
+      },
+      {
+        "name": "install",
+        "status": "passed",
+        "code": 0,
+        "seconds": 0.201
+      },
+      {
+        "name": "sdk24",
+        "status": "passed",
+        "code": 0,
+        "seconds": 630.78
+      }
+    ],
+    "root_promoted": false,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T03:44:34.239347+00:00",
+    "seconds": 1634.601,
+    "previous_failed_full_regression": "build/native-089-dap-reader-macos-controller-v1.json",
+    "baseline095_platform_verified": true,
+    "compiler_sha256": "bc7efd3762e05465becd02cf78fbd8ee95ecd544224fba74f5c9d509374881ce",
+    "regression_groups": 100,
+    "sdk": "/Users/sae/projects/NEX/build/sdk-096-buffered-compiler-inputs-install",
+    "sdk_phases": 24,
+    "pending": "installed editor, Linux full/source-free/live, full historical preservation and remaining language/platform/quality work"
+  },
+  "096_additional": {
+    "schema": "nex.dap-reader-additional/1",
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "phases": [
+      {
+        "name": "installed-ide",
+        "status": "passed",
+        "code": 0,
+        "seconds": 42.456
+      },
+      {
+        "name": "installed-cpu-debug",
+        "status": "passed",
+        "code": 0,
+        "seconds": 3.05
+      },
+      {
+        "name": "complete016-migration",
+        "status": "passed",
+        "code": 0,
+        "seconds": 26.893
+      }
+    ],
+    "root_promoted": false,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T03:45:55.259857+00:00",
+    "seconds": 1694.006,
+    "compiler_sha256": "bc7efd3762e05465becd02cf78fbd8ee95ecd544224fba74f5c9d509374881ce",
+    "installed_ide_report": "/Users/sae/projects/NEX/build/buffered-compiler-inputs-096-installed-ide-controller-v1.json",
+    "complete_migration_report": "/Users/sae/projects/NEX/build/complete016-migration-096-installed-v1/report.json"
+  },
+  "096_linux": {
+    "schema": "nex.project-task-linux/1",
+    "ok": true,
+    "state": "passed",
+    "source": "/Users/sae/projects/NEX/build/working-096-buffered-compiler-inputs",
+    "source_files": 865,
+    "source_manifest": "/Users/sae/projects/NEX/build/native-096-buffered-compiler-inputs-source-manifest-v1.json",
+    "candidate_dap_reader_fix": true,
+    "candidate_result_propagation": true,
+    "language": "0.18",
+    "source_operations": true,
+    "root_project_tasks_support": true,
+    "root_promoted": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T04:12:25.468238+00:00",
+    "seconds": 3306.143,
+    "previous_failed_full_regression": "build/native-089-dap-reader-macos-controller-v1.json",
+    "phase": "complete",
+    "baseline095_platform_verified": true,
+    "command": [
+      "python3",
+      "/Users/sae/projects/NEX/build/working-096-buffered-compiler-inputs/tools/linux/check.py",
+      "--source",
+      "/Users/sae/projects/NEX/build/working-096-buffered-compiler-inputs",
+      "--output",
+      "/Users/sae/projects/NEX/build/linux-096-buffered-compiler-inputs-arm64-v1",
+      "--arch",
+      "arm64",
+      "--jobs",
+      "4",
+      "--skip-image-build",
+      "--image",
+      "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+      "--live"
+    ],
+    "exit_code": 0,
+    "verification": "/Users/sae/projects/NEX/build/linux-096-buffered-compiler-inputs-arm64-v1/verification.json",
+    "sdk_phases": 24,
+    "sdk_commands": 421,
+    "indexed_resources": 245,
+    "regression_groups": 100,
+    "sdk_compiler_sha256": "4d9df95b399d5a862138ef77b99868713251ecd7ee3afd1aa66a4bb309868d2e"
+  },
+  "097_mac": {
+    "schema": "nex.dap-reader-macos/1",
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "source": "/Users/sae/projects/NEX/build/working-097-browser-workers",
+    "files": 876,
+    "language": "0.18",
+    "phases": [
+      {
+        "name": "build",
+        "status": "passed",
+        "code": 0,
+        "seconds": 0.698
+      },
+      {
+        "name": "full101",
+        "status": "passed",
+        "code": 0,
+        "seconds": 1021.708
+      },
+      {
+        "name": "install",
+        "status": "passed",
+        "code": 0,
+        "seconds": 0.208
+      },
+      {
+        "name": "sdk24",
+        "status": "passed",
+        "code": 0,
+        "seconds": 624.606
+      }
+    ],
+    "root_promoted": false,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T04:12:19.760710+00:00",
+    "seconds": 2048.921,
+    "previous_failed_full_regression": "build/native-089-dap-reader-macos-controller-v1.json",
+    "baseline096_platform_verified": true,
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "regression_groups": 101,
+    "sdk": "/Users/sae/projects/NEX/build/sdk-097-browser-workers-install",
+    "sdk_phases": 24,
+    "pending": "installed editor, Linux full/source-free/live, full historical preservation and remaining language/platform/quality work"
+  },
+  "097_additional": {
+    "schema": "nex.dap-reader-additional/1",
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "phases": [
+      {
+        "name": "installed-ide",
+        "status": "passed",
+        "code": 0,
+        "seconds": 37.743
+      },
+      {
+        "name": "installed-cpu-debug",
+        "status": "passed",
+        "code": 0,
+        "seconds": 2.482
+      },
+      {
+        "name": "complete016-migration",
+        "status": "passed",
+        "code": 0,
+        "seconds": 24.119
+      }
+    ],
+    "root_promoted": false,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "updated": "2026-10-22T04:13:28.463747+00:00",
+    "seconds": 2105.898,
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "installed_ide_report": "/Users/sae/projects/NEX/build/browser-workers-097-installed-ide-controller-v1.json",
+    "complete_migration_report": "/Users/sae/projects/NEX/build/complete016-migration-097-installed-v1/report.json"
+  },
+  "097_installed_actual_browser_workers": {
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "sdk": "/Users/sae/projects/NEX/build/sdk-097-browser-workers-install",
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "language": "0.18",
+    "toolchain": "0.97.0",
+    "source_tree": "ae2269343c383bdb17f9b9b67b20a0420bce708c",
+    "physical_source_deleted": true,
+    "archived_build": true,
+    "actual_worker_execution": true,
+    "assets_sha256": {
+      "index.html": "1d56b56391c311303a0db262735b88e7f999c44235952c8f99214aad9ea935cc",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/worker-entry-D3lfdnkM.js": "08f6f41750b28e3a8e4facd615d0f825e31b0bd5fa254e35ab0ccc3b325f7901",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/worker-entry-D3lfdnkM.js.map": "9ac7ab26bafd35fc0d6e5636a9bf8bafa037b565fae6e4437256fa45816e5c77",
+      "assets/index-C37l7fMq.js.map": "797bf352d2b716c497f463534b840fb11019196df69aa5258223af1eaa3b9e85",
+      "assets/index-C37l7fMq.js": "7c79153a4cfdf0df7ce9bc3ce4bc0c6f327ef6d55748b577169c6c709a10b722"
+    },
+    "full_objective_complete": false,
+    "seconds": 5.753,
+    "updated": "2026-10-22T04:23:43.661739+00:00",
+    "command": [
+      "python3",
+      "/Users/sae/projects/NEX/build/working-097-browser-workers/tests/workers_browser.py",
+      "/Users/sae/projects/NEX/build/sdk-097-browser-workers-acceptance-v1/worker-browser/.nex/build/e87c4baad5e7c7fc45630bfe89e735aabadee9ab7e34c06daa3f69e45002cc69/web",
+      "--browsers-path",
+      "/Users/sae/projects/NEX/build/playwright-browsers"
+    ],
+    "exit_code": 0,
+    "browser_stats": {
+      "startTime": "2026-10-22T04:23:38.545Z",
+      "duration": 4986.799,
+      "expected": 15,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "assets_unchanged": true
+  },
+  "097_linux": "pending currentfull101/live22/source-freeSDK24",
+  "096_mac_sdk": {
+    "ok": true,
+    "compiler_sha256": "bc7efd3762e05465becd02cf78fbd8ee95ecd544224fba74f5c9d509374881ce",
+    "phases": 24,
+    "commands": 421,
+    "indexed_resources": 245
+  },
+  "097_mac_sdk": {
+    "ok": true,
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "phases": 24,
+    "commands": 425,
+    "indexed_resources": 246
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "nex.genuine023-expanded-stream-fixture/1",
+  "producer_toolchain": "0.133.5",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "65e45e386272025627da730c1bb49c3c05a80345a0b9aa19c50b790087808b21",
+  "SQL_sha256": "f123dd3b90930648b227164e10e6b9aa866012d1d55070c6dbe4998080d8dd4d",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex"
+  },
+  "lock": null,
+  "head": "f8856b0ec18f44b3c5c681f291aabebbcb654bd5c8bbf348378808aff77f8070",
+  "revisions": [
+    {
+      "revision": "09b7b90de7daa544ee20b655c98282e2953822b6ea0a075095fb48545076a9d4",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=42-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==42);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 42;}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=42-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==42);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 42;}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+      },
+      "expected_value": 42,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "acfbcffadd3c3d50862aaf97f810c2f4dd8e524cfe88893bd85162461e9e91e9",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=43-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==43);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 43;}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=43-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==43);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 43;}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+      },
+      "expected_value": 43,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "f8856b0ec18f44b3c5c681f291aabebbcb654bd5c8bbf348378808aff77f8070",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=44-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==44);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 44;}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::callable;struct Fn<T>{run:fn(T)->T;}\nfn invoke<T>(f:fn(T)->T,value:T)->T{return f(value);}\nserver fn main()->i64 !{task,fs}{let offset:i64=44-1;let add:Fn<i64>=Fn(fn(x:i64)->i64{return x+offset;});assert(invoke(add.run,1)==44);\nlet text:str=\"Привет 🧠\";assert(len(text)==8);assert(1.5+2.5==4.0);let f:file=unwrap(file_open_read(\"input\"));assert(unwrap(file_size(f))==6);assert(file_close(f));return 44;}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+      },
+      "expected_value": 44,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 3,
+    "declaration_versions": 9,
+    "edges": 6,
+    "graph_edges": 30,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 6,
+    "nodes": 18,
+    "operation_functions": 18,
+    "operation_ids": 79,
+    "operation_versions": 237,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false
+}

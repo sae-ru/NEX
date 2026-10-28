@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.81.0 LANGUAGES C CXX)
+project(NEX VERSION 0.135.30 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -38,21 +38,25 @@ foreach(NEX_INPUT IN LISTS NEX_COMPILER_FILES)
 endforeach()
 string(SHA256 NEX_BUILD_ID "${NEX_BUILD_INPUTS}")
 
-add_library(nex_frontend src/frontend_diagnostics.cpp src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/debug_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp src/foreign_schema.cpp runtime/nex_foreign.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_json.cpp runtime/nex_store.cpp runtime/nex_files.cpp)
+add_library(nex_frontend src/frontend_diagnostics.cpp src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/debug_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp src/foreign_schema.cpp runtime/nex_foreign.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_json.cpp runtime/nex_store.cpp runtime/nex_files.cpp)
 target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp)
-target_sources(nex_frontend PRIVATE src/editor.cpp)
-target_include_directories(nex_frontend PUBLIC include)
+target_sources(nex_frontend PRIVATE src/migration.cpp)
+target_sources(nex_frontend PRIVATE src/editor.cpp src/task_frontend.cpp src/task_lifetime.cpp src/task_ir.cpp src/task_machine.cpp src/task_ast.cpp src/task_reference.cpp)
+target_sources(nex_frontend PRIVATE runtime/runtime.cpp)
+target_include_directories(nex_frontend PUBLIC include runtime)
 target_include_directories(nex_frontend PRIVATE runtime)
 target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3 OpenSSL::Crypto ${CMAKE_DL_LIBS})
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
-add_library(nex_native_backend STATIC src/backend.cpp src/native_toolchain.cpp src/incremental.cpp)
+add_library(nex_native_backend STATIC src/backend.cpp src/private_task_modules.cpp src/native_toolchain.cpp
+  src/native_image_identity.cpp src/incremental.cpp src/task_debug_manifest.cpp)
 target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
 target_include_directories(nex PRIVATE runtime)
-target_sources(nex PRIVATE src/core_dump.cpp)
-target_sources(nex PRIVATE src/task_package.cpp)
+target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
+target_sources(nex PRIVATE src/task_profile_report.cpp)
+target_sources(nex PRIVATE src/task_package.cpp src/server_workload.cpp src/task_workload.cpp)
 target_sources(nex PRIVATE src/wasm.cpp src/project_build.cpp src/native_images.cpp src/debug_session.cpp src/project_capture.cpp)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_include_directories(nex SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
@@ -74,8 +78,166 @@ target_compile_definitions(nex_native_backend PRIVATE ${NEX_NATIVE_DEFINITIONS})
 target_include_directories(nex_native_backend PRIVATE runtime)
 target_include_directories(nex_native_backend SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_compile_options(nex_native_backend PRIVATE -Wall -Wextra -Wpedantic)
+get_target_property(NEX_PRIVATE_PROJECT_SOURCES nex SOURCES)
+list(REMOVE_ITEM NEX_PRIVATE_PROJECT_SOURCES src/main.cpp)
+add_executable(nex_task_stream_project_probe tests/task_stream_project_probe.cpp ${NEX_PRIVATE_PROJECT_SOURCES})
+target_link_libraries(nex_task_stream_project_probe PRIVATE nex_native_backend nex_frontend MLIR SQLite::SQLite3 ${NEX_Z3_LIBRARY})
+target_include_directories(nex_task_stream_project_probe PRIVATE runtime)
+target_include_directories(nex_task_stream_project_probe SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS} ${NEX_Z3_INCLUDE})
+target_compile_definitions(nex_task_stream_project_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_stream_project_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_stream_project COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_project.py $<TARGET_FILE:nex_task_stream_project_probe> $<TARGET_FILE:nex> $<TARGET_FILE:nex_source_resource_probe> --complete-tooling)
+set_tests_properties(task_stream_project PROPERTIES TIMEOUT 3600)
 add_executable(nex_native_staging_probe tests/native_staging.cpp)
 target_link_libraries(nex_native_staging_probe PRIVATE nex_native_backend)
+add_executable(nex_task_native_emit_probe tests/task_native_emit.cpp)
+target_link_libraries(nex_task_native_emit_probe PRIVATE nex_native_backend)
+add_executable(nex_task_typescript_emit_probe tests/task_typescript_emit.cpp src/typescript.cpp)
+target_link_libraries(nex_task_typescript_emit_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_task_typescript_emit_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(nex_source_resource_probe tests/source_resource_probe.cpp src/typescript.cpp)
+target_link_libraries(nex_source_resource_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_source_resource_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_file_stream_mixed COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_mixed.py $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(task_file_stream_mixed PROPERTIES TIMEOUT 1800)
+add_test(NAME source_external_resources COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resources.py $<TARGET_FILE:nex_source_resource_probe>
+  ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --nex $<TARGET_FILE:nex>)
+set_tests_properties(source_external_resources PROPERTIES TIMEOUT 600)
+add_test(NAME source_task_foreign_prototype COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_foreign_context_probe>)
+set_tests_properties(source_task_foreign_prototype PROPERTIES TIMEOUT 600)
+add_test(NAME source_task_resource_prototype COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_resource_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_owned_foreign_context_probe>)
+set_tests_properties(source_task_resource_prototype PROPERTIES TIMEOUT 900)
+add_executable(nex_resource_transfers_probe tests/resource_transfers.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_resource_transfers_probe PRIVATE runtime)
+target_link_libraries(nex_resource_transfers_probe PRIVATE Threads::Threads)
+target_compile_options(nex_resource_transfers_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_definitions(nex_resource_transfers_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+add_test(NAME atomic_resource_transfers COMMAND nex_resource_transfers_probe)
+add_executable(nex_task_owned_foreign_context_probe tests/task_owned_foreign_context.cpp)
+target_link_libraries(nex_task_owned_foreign_context_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_owned_foreign_context_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(nex_task_foreign_context_probe tests/task_foreign_context.cpp)
+target_link_libraries(nex_task_foreign_context_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_foreign_context_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_task_foreign_genuine021_origins COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_origins.py $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(source_task_foreign_genuine021_origins PROPERTIES TIMEOUT 120)
+add_test(NAME public_task_foreign_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_foreign_context_probe> --compiler $<TARGET_FILE:nex>)
+add_test(NAME public_task_resource_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_resource_source.py $<TARGET_FILE:nex_source_resource_probe>
+  --context-probe $<TARGET_FILE:nex_task_owned_foreign_context_probe> --compiler $<TARGET_FILE:nex>)
+set_tests_properties(public_task_foreign_source public_task_resource_source PROPERTIES TIMEOUT 1800)
+
+add_test(NAME source_task_foreign_genuine021_history COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_history.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex_source_resource_probe> $<TARGET_FILE:nex>)
+set_tests_properties(source_task_foreign_genuine021_history PROPERTIES TIMEOUT 900)
+add_test(NAME public_task_foreign_language_migration COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(public_task_foreign_language_migration PROPERTIES TIMEOUT 1800)
+
+add_test(NAME resource_language_migration COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(resource_language_migration PROPERTIES TIMEOUT 600)
+add_test(NAME source_resource_debugger COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resource_debug.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(source_resource_debugger PROPERTIES TIMEOUT 300)
+add_executable(nex_resource_dependencies_probe tests/resource_dependencies.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_resource_dependencies_probe PRIVATE runtime)
+target_link_libraries(nex_resource_dependencies_probe PRIVATE Threads::Threads)
+target_compile_options(nex_resource_dependencies_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_definitions(nex_resource_dependencies_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+add_test(NAME resource_dependency_lifetimes COMMAND nex_resource_dependencies_probe)
+set_tests_properties(resource_dependency_lifetimes PROPERTIES TIMEOUT 60)
+add_test(NAME dependent_resource_source COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_dependency_source.py --compiler $<TARGET_FILE:nex>)
+set_tests_properties(dependent_resource_source PROPERTIES TIMEOUT 1800)
+
+add_executable(nex_resource_executor_probe tests/resource_executor.cpp runtime/nex_resource_executor.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp)
+target_include_directories(nex_resource_executor_probe PRIVATE runtime)
+target_compile_options(nex_resource_executor_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_resource_executor_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+add_library(nex_resource_executor_fixture MODULE tests/resource_executor_module.cpp)
+target_include_directories(nex_resource_executor_fixture PRIVATE runtime)
+add_test(NAME owned_resource_executor COMMAND nex_resource_executor_probe $<TARGET_FILE:nex_resource_executor_fixture>)
+set_tests_properties(owned_resource_executor PROPERTIES TIMEOUT 90)
+add_executable(nex_resource_regions_probe tests/resource_regions.cpp runtime/runtime.cpp runtime/nex_files.cpp
+  runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp runtime/nex_task_external.cpp)
+target_include_directories(nex_resource_regions_probe PRIVATE runtime)
+target_compile_definitions(nex_resource_regions_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_options(nex_resource_regions_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_resource_regions_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+add_test(NAME logical_resource_regions COMMAND nex_resource_regions_probe)
+set_tests_properties(logical_resource_regions PROPERTIES TIMEOUT 90)
+add_executable(nex_reference_resource_regions_probe tests/resource_regions_reference.cpp)
+target_link_libraries(nex_reference_resource_regions_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_reference_resource_regions_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(nex_reference_retirement_race_probe tests/reference_retirement_race.cpp src/task_reference.cpp)
+target_link_libraries(nex_reference_retirement_race_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_definitions(nex_reference_retirement_race_probe PRIVATE NEX_REFERENCE_RETIREMENT_TEST_HOOK)
+add_test(NAME reference_retirement_progress COMMAND nex_reference_retirement_race_probe)
+set_tests_properties(reference_retirement_progress PROPERTIES TIMEOUT 30)
+add_test(NAME reference_resource_regions COMMAND nex_reference_resource_regions_probe)
+set_tests_properties(reference_resource_regions PROPERTIES TIMEOUT 90)
+add_executable(nex_reference_request_resources_probe tests/resource_requests_reference.cpp)
+target_link_libraries(nex_reference_request_resources_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_reference_request_resources_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME reference_request_resources COMMAND nex_reference_request_resources_probe)
+set_tests_properties(reference_request_resources PROPERTIES TIMEOUT 120)
+foreach(NEX_REQUEST_GATE request_resource_regions native_request_resources)
+  add_executable(nex_${NEX_REQUEST_GATE}_probe tests/${NEX_REQUEST_GATE}.cpp
+    runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_external_resource.cpp
+    runtime/nex_resource_executor.cpp runtime/nex_task_external.cpp)
+  target_include_directories(nex_${NEX_REQUEST_GATE}_probe PRIVATE runtime)
+  target_compile_definitions(nex_${NEX_REQUEST_GATE}_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+  target_compile_options(nex_${NEX_REQUEST_GATE}_probe PRIVATE -Wall -Wextra -Wpedantic)
+  target_link_libraries(nex_${NEX_REQUEST_GATE}_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+  add_test(NAME ${NEX_REQUEST_GATE} COMMAND nex_${NEX_REQUEST_GATE}_probe)
+  set_tests_properties(${NEX_REQUEST_GATE} PROPERTIES TIMEOUT 120)
+endforeach()
+add_executable(nex_task_value_retirement_probe tests/task_value_retirement.cpp runtime/runtime.cpp
+  runtime/nex_files.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp runtime/nex_task_external.cpp)
+target_include_directories(nex_task_value_retirement_probe PRIVATE runtime)
+target_compile_definitions(nex_task_value_retirement_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_options(nex_task_value_retirement_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_task_value_retirement_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+add_test(NAME task_value_retirement COMMAND nex_task_value_retirement_probe)
+set_tests_properties(task_value_retirement PROPERTIES TIMEOUT 90)
+
+add_test(NAME task_typescript_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript.py $<TARGET_FILE:nex_task_typescript_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
+set_tests_properties(task_typescript_steps PROPERTIES TIMEOUT 600)
+add_test(NAME task_native_steps COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_native.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_task_native_emit_probe> $<TARGET_FILE:nex_task_reference_probe>)
+set_tests_properties(task_native_steps PROPERTIES TIMEOUT 1200)
+add_executable(nex_native_plan_probe tests/native_plan.cpp)
+target_link_libraries(nex_native_plan_probe PRIVATE nex_native_backend)
+add_executable(nex_task_static_provider_boundary_probe tests/task_static_provider_boundary.cpp)
+target_link_libraries(nex_task_static_provider_boundary_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_static_provider_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_static_provider_boundary_native COMMAND nex_task_static_provider_boundary_probe)
+set_tests_properties(task_static_provider_boundary_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_provider_profile_boundary_probe tests/task_provider_profile_boundary.cpp)
+target_link_libraries(nex_task_provider_profile_boundary_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_provider_profile_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_provider_profile_boundary_native COMMAND nex_task_provider_profile_boundary_probe)
+set_tests_properties(task_provider_profile_boundary_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_provider_debug_boundary_probe tests/task_provider_debug_boundary.cpp)
+target_link_libraries(nex_task_provider_debug_boundary_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_provider_debug_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_provider_debug_boundary_native COMMAND nex_task_provider_debug_boundary_probe)
+set_tests_properties(task_provider_debug_boundary_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_shared_provider_boundary_probe tests/task_shared_provider_boundary.cpp)
+target_link_libraries(nex_task_shared_provider_boundary_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_shared_provider_boundary_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_shared_provider_boundary_native COMMAND nex_task_shared_provider_boundary_probe)
+set_tests_properties(task_shared_provider_boundary_native PROPERTIES TIMEOUT 120)
 set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}" INSTALL_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_LIBRARY_DIR}")
 install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
@@ -84,8 +246,49 @@ install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION sha
 install(FILES AGENTS.md README.md STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY tools/tcp_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
+install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-opencl
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/cix-p1/include/ DESTINATION share/nex/tools/owned-opencl/include)
+install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_source_resources.py DESTINATION share/nex/tools)
+install(FILES tests/resource_dependency_source.py tests/source_resource_cli.py tests/dependent_resource_module.c tests/legacy_resource_prefix_module.c DESTINATION share/nex/tests)
+install(FILES tests/fixtures/ffi-resource-prefix-0.130/nex_ffi.h tests/fixtures/ffi-resource-prefix-0.130/README.md DESTINATION share/nex/tests/fixtures/ffi-resource-prefix-0.130)
+install(FILES tools/sdk_resource_executor.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_resource_regions.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_request_resources.py DESTINATION share/nex/tools)
+install(FILES tests/request_resource_regions.cpp DESTINATION share/nex/tools RENAME request_resource_regions_acceptance.cpp)
+install(FILES tests/native_request_resources.cpp DESTINATION share/nex/tools RENAME native_request_resources_acceptance.cpp)
+install(FILES tests/resource_regions.cpp DESTINATION share/nex/tools RENAME resource_regions_acceptance.cpp)
+install(FILES tools/sdk_task_value_retirement.py DESTINATION share/nex/tools)
+install(FILES tests/task_value_retirement.cpp DESTINATION share/nex/tools RENAME task_value_retirement_acceptance.cpp)
+install(FILES tests/resource_executor.cpp DESTINATION share/nex/tools RENAME resource_executor_acceptance.cpp)
+install(FILES tests/resource_executor_module.cpp DESTINATION share/nex/tools)
+install(FILES tests/source_resource_debug.py DESTINATION share/nex/tools RENAME resource_debug_acceptance.py)
+file(GLOB NEX_RESOURCE_MIGRATION_FIXTURES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.json"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.20-sdk122-resource-*.sql")
+install(FILES ${NEX_RESOURCE_MIGRATION_FIXTURES} DESTINATION share/nex/examples/resource-migration)
+file(GLOB NEX_TASK_FOREIGN_MIGRATION_FIXTURES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.21-sdk128-task-foreign-*.json"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.21-sdk128-task-foreign-*.sql")
+install(FILES ${NEX_TASK_FOREIGN_MIGRATION_FIXTURES} DESTINATION share/nex/examples/task-foreign-migration)
+install(FILES experiments/quality/scale_100x100.py
+  experiments/quality/acceptance_support.py experiments/quality/server_web_edit.py
+  experiments/quality/server_web_edit.spec.mjs experiments/quality/type_edit_workflow.py
+  experiments/quality/task_cleanup_workflow.py experiments/quality/repair_workflow.py
+  experiments/quality/quality_dap.py experiments/quality/run_acceptance.py DESTINATION share/nex/tools)
+install(FILES tests/task_provider_debug_lifetime.py DESTINATION share/nex/tools RENAME quality_task_fence.py)
+install(FILES tests/task_provider_debug_lifetime.cpp DESTINATION share/nex/tools RENAME quality_task_fence.cpp)
+install(FILES tests/fixtures/language-0.19-sdk115-history.json tests/fixtures/language-0.19-sdk115-history.sql tests/fixtures/language-0.19-sdk115-tasks.json tests/fixtures/language-0.19-sdk115-tasks.sql tests/fixtures/language-0.19-sdk115-fs-helper.json tests/fixtures/language-0.19-sdk115-fs-helper.sql DESTINATION share/nex/examples/task-migration)
 install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
@@ -95,13 +298,55 @@ install(FILES tools/foreign_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)
 install(DIRECTORY editor DESTINATION share/nex PATTERN node_modules EXCLUDE PATTERN "*.vsix" EXCLUDE)
 enable_testing()
+add_test(NAME owned_device_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/device_contract.py $<TARGET_FILE:nex>)
+set_tests_properties(owned_device_contract PROPERTIES TIMEOUT 300)
+add_test(NAME sdk_operator_notices COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_notices.py)
+add_test(NAME native_tool_arguments COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_tools.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
+set_tests_properties(native_tool_arguments PROPERTIES TIMEOUT 600)
+add_test(NAME parallel_mapping COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/parallel.py $<TARGET_FILE:nex>)
+set_tests_properties(parallel_mapping PROPERTIES TIMEOUT 1200)
+add_test(NAME result_propagation COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/propagation.py $<TARGET_FILE:nex>)
+set_tests_properties(result_propagation PROPERTIES TIMEOUT 1200)
+add_test(NAME compute_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/compute.py $<TARGET_FILE:nex>)
+set_tests_properties(compute_contract PROPERTIES TIMEOUT 1200)
+add_test(NAME model_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/model.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(model_contract PROPERTIES TIMEOUT 1200)
+add_test(NAME discovery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/discovery.py $<TARGET_FILE:nex>)
+set_tests_properties(discovery PROPERTIES TIMEOUT 120)
 add_test(NAME project_packaging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_packaging.py $<TARGET_FILE:nex>)
 set_tests_properties(project_packaging PROPERTIES COST 100 TIMEOUT 1200)
+add_test(NAME project_foreign_packaging COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_foreign_packaging.py $<TARGET_FILE:nex>)
+set_tests_properties(project_foreign_packaging PROPERTIES COST 180 TIMEOUT 1800)
 add_test(NAME native_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_images.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
 set_tests_properties(native_images PROPERTIES COST 100 TIMEOUT 1200)
 add_test(NAME native_staging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_staging.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
 set_tests_properties(native_staging PROPERTIES COST 90 TIMEOUT 1200)
+add_test(NAME native_plan COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_plan.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_plan_probe>)
+set_tests_properties(native_plan PROPERTIES COST 10 TIMEOUT 120)
+add_test(NAME frontend_io COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/frontend_io.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_plan_probe>)
+set_tests_properties(frontend_io PROPERTIES COST 10 TIMEOUT 120)
 add_test(NAME project_build COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_build.py $<TARGET_FILE:nex>)
+add_executable(nex_task_provider_profile_report_probe tests/task_provider_profile_report.cpp src/task_profile_report.cpp)
+target_link_libraries(nex_task_provider_profile_report_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_options(nex_task_provider_profile_report_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_provider_profile_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile.py $<TARGET_FILE:nex> --report-probe $<TARGET_FILE:nex_task_provider_profile_report_probe>)
+set_tests_properties(task_provider_profile_native PROPERTIES COST 60 TIMEOUT 1200)
+add_test(NAME task_provider_debugging_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debugging.py $<TARGET_FILE:nex>)
+set_tests_properties(task_provider_debugging_native PROPERTIES COST 60 TIMEOUT 1200)
+add_test(NAME task_provider_profile_lifetime_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile_lifetime.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_profile_lifetime.cpp)
+set_tests_properties(task_provider_profile_lifetime_native PROPERTIES COST 60 TIMEOUT 300)
+add_test(NAME task_provider_debug_lifetime_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debug_lifetime.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_provider_debug_lifetime.cpp)
+set_tests_properties(task_provider_debug_lifetime_native PROPERTIES COST 60 TIMEOUT 300)
+
+add_test(NAME task_static_provider_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_static_provider.py $<TARGET_FILE:nex>)
+set_tests_properties(task_static_provider_native PROPERTIES COST 60 TIMEOUT 1200)
+
+add_test(NAME task_shared_provider_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider.py $<TARGET_FILE:nex>)
+set_tests_properties(task_shared_provider_native PROPERTIES COST 60 TIMEOUT 1200)
+
+add_test(NAME task_shared_provider_lifetime_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider_lifetime.py $<TARGET_FILE:nex> ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_shared_provider_lifetime.cpp)
+set_tests_properties(task_shared_provider_lifetime_native PROPERTIES COST 60 TIMEOUT 300)
 add_test(NAME project_actions COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_actions.py $<TARGET_FILE:nex>)
 add_test(NAME project_tasks COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_tasks.py $<TARGET_FILE:nex>)
 add_test(NAME project_package_tasks COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_package_tasks.py $<TARGET_FILE:nex>)
@@ -132,6 +377,76 @@ set_tests_properties(traits PROPERTIES COST 60 TIMEOUT 1200)
 add_executable(nex_constructor_types_probe tests/constructor_types.cpp)
 target_link_libraries(nex_constructor_types_probe PRIVATE nex_frontend)
 add_test(NAME constructor_types_native COMMAND nex_constructor_types_probe)
+add_executable(nex_task_frontend_probe tests/task_frontend.cpp src/typescript.cpp)
+target_link_libraries(nex_task_frontend_probe PRIVATE nex_native_backend)
+target_compile_options(nex_task_frontend_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_frontend_native COMMAND nex_task_frontend_probe ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.18-task-names.json)
+add_executable(nex_task_lifetime_probe tests/task_lifetime_probe.cpp)
+target_link_libraries(nex_task_lifetime_probe PRIVATE nex_frontend)
+target_compile_options(nex_task_lifetime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_lifetime_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_lifetime.py $<TARGET_FILE:nex_task_lifetime_probe> $<TARGET_FILE:nex_task_reference_probe> $<TARGET_FILE:nex>)
+add_executable(nex_task_migration_probe tests/task_migration_probe.cpp src/project.cpp src/graph_store.cpp src/operation_store.cpp src/change_store.cpp runtime/runtime.cpp)
+target_include_directories(nex_task_migration_probe PRIVATE runtime)
+target_compile_definitions(nex_task_migration_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_VERSION="${PROJECT_VERSION}" NEX_BUILD_ID="${NEX_BUILD_ID}")
+target_link_libraries(nex_task_migration_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_migration_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_migration_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
+add_test(NAME task_application_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_application.py $<TARGET_FILE:nex>)
+set_tests_properties(task_application_native PROPERTIES TIMEOUT 1200)
+add_executable(nex_task_application_runtime_probe tests/task_application_runtime.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp)
+target_include_directories(nex_task_application_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_application_runtime_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_application_runtime_probe PRIVATE Threads::Threads)
+add_test(NAME task_application_runtime COMMAND nex_task_application_runtime_probe)
+add_executable(nex_task_http_request_probe tests/task_http_request.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp)
+target_include_directories(nex_task_http_request_probe PRIVATE runtime)
+target_compile_definitions(nex_task_http_request_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_options(nex_task_http_request_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_task_http_request_probe PRIVATE Threads::Threads)
+add_test(NAME task_http_request_host COMMAND nex_task_http_request_probe)
+set_tests_properties(task_http_request_host PROPERTIES TIMEOUT 120)
+add_test(NAME task_http_request_compiled COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_http_compiled.py $<TARGET_FILE:nex>)
+set_tests_properties(task_http_request_compiled PROPERTIES TIMEOUT 300)
+add_test(NAME task_http_server COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_http_server.py $<TARGET_FILE:nex>)
+set_tests_properties(task_http_server PROPERTIES TIMEOUT 600)
+add_executable(nex_task_limits_runtime_probe tests/task_limits_runtime.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp)
+target_include_directories(nex_task_limits_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_limits_runtime_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_limits_runtime_probe PRIVATE Threads::Threads)
+add_test(NAME task_limits_runtime COMMAND nex_task_limits_runtime_probe)
+add_test(NAME task_limits_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_limits_native.py $<TARGET_FILE:nex>)
+set_tests_properties(task_limits_native PROPERTIES TIMEOUT 600)
+add_executable(nex_task_typescript_public_probe tests/task_typescript_public.cpp src/typescript.cpp src/web.cpp src/task_process.cpp)
+target_link_libraries(nex_task_typescript_public_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_include_directories(nex_task_typescript_public_probe PRIVATE runtime)
+target_compile_options(nex_task_typescript_public_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_typescript_public COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript_public.py $<TARGET_FILE:nex_task_typescript_public_probe> $<TARGET_FILE:nex_task_reference_probe> --compiler $<TARGET_FILE:nex>)
+set_tests_properties(task_typescript_public PROPERTIES TIMEOUT 600)
+add_executable(nex_task_ir_probe tests/task_ir.cpp)
+target_include_directories(nex_task_ir_probe PRIVATE runtime)
+target_link_libraries(nex_task_ir_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_ir_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_ir_native COMMAND nex_task_ir_probe)
+add_executable(nex_task_ast_probe tests/task_ast.cpp)
+target_include_directories(nex_task_ast_probe PRIVATE runtime)
+target_link_libraries(nex_task_ast_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_ast_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_ast_native COMMAND nex_task_ast_probe)
+add_executable(nex_task_reference_probe tests/task_reference.cpp runtime/runtime.cpp)
+target_include_directories(nex_task_reference_probe PRIVATE runtime)
+target_compile_definitions(nex_task_reference_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_reference_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_reference_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_reference_native COMMAND nex_task_reference_probe)
+add_executable(nex_task_reference_limits_probe tests/task_reference_limits.cpp runtime/runtime.cpp)
+target_include_directories(nex_task_reference_limits_probe PRIVATE runtime)
+target_compile_definitions(nex_task_reference_limits_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_reference_limits_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_reference_limits_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_limits_reference COMMAND nex_task_reference_limits_probe)
+
 add_test(NAME string_debug COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/string_debug.py $<TARGET_FILE:nex>)
 add_test(NAME string_debug_provider COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/string_debug_provider.py ${CMAKE_CURRENT_SOURCE_DIR}/debug/lldb_nex.py)
 set_tests_properties(string_debug PROPERTIES COST 60 TIMEOUT 1200)
@@ -175,12 +490,39 @@ add_test(NAME resource_debug COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_debug.py $<TARGET_FILE:nex>)
 add_test(NAME sdk_archives COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_archives.py)
+add_test(NAME provider_preparation_source COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/provider_preparation.py $<TARGET_FILE:nex>)
+set_tests_properties(provider_preparation_source PROPERTIES TIMEOUT 180)
 add_test(NAME packaging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/packaging.py $<TARGET_FILE:nex>)
 add_test(NAME foreign_packaging COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/foreign_packaging.py $<TARGET_FILE:nex>)
 set_tests_properties(foreign_packaging PROPERTIES COST 180 TIMEOUT 1800)
 find_package(Threads REQUIRED)
+add_executable(nex_owned_functions_probe tests/owned_functions.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+target_include_directories(nex_owned_functions_probe PRIVATE runtime)
+target_compile_definitions(nex_owned_functions_probe PRIVATE NEX_PROFILE_ENABLED NEX_STRUCTURED_WORKERS)
+target_compile_options(nex_owned_functions_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_owned_functions_probe PRIVATE Threads::Threads)
+add_test(NAME owned_functions_runtime COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/owned_functions.py $<TARGET_FILE:nex_owned_functions_probe>)
+set_tests_properties(owned_functions_runtime PROPERTIES TIMEOUT 60)
+add_executable(nex_structured_workers_probe tests/structured_workers.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+target_include_directories(nex_structured_workers_probe PRIVATE runtime)
+target_compile_definitions(nex_structured_workers_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_PROFILE_ENABLED)
+target_compile_options(nex_structured_workers_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_structured_workers_probe PRIVATE Threads::Threads)
+add_test(NAME structured_workers_runtime COMMAND nex_structured_workers_probe)
+set_tests_properties(structured_workers_runtime PROPERTIES TIMEOUT 30)
+add_executable(nex_task_scheduler_probe tests/task_scheduler.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+target_include_directories(nex_task_scheduler_probe PRIVATE runtime)
+target_compile_definitions(nex_task_scheduler_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_PROFILE_ENABLED)
+target_compile_options(nex_task_scheduler_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_task_scheduler_probe PRIVATE Threads::Threads)
+add_test(NAME task_scheduler_runtime COMMAND nex_task_scheduler_probe)
+set_tests_properties(task_scheduler_runtime PROPERTIES TIMEOUT 45)
+add_test(NAME compiled_workers_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/compiled_workers.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_native_staging_probe>)
+set_tests_properties(compiled_workers_native PROPERTIES TIMEOUT 300)
 if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_executable(nex_task_process_probe tests/task_process.cpp src/task_process.cpp)
   target_link_libraries(nex_task_process_probe PRIVATE nex_frontend Threads::Threads)
@@ -193,7 +535,7 @@ endif()
 add_library(nex_foreign_test_module MODULE tests/foreign_module.c)
 target_include_directories(nex_foreign_test_module PRIVATE runtime)
 set_target_properties(nex_foreign_test_module PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_VISIBILITY_PRESET hidden)
-add_executable(nex_foreign_scope_probe tests/foreign_scope.cpp runtime/nex_foreign.cpp runtime/foreign_runtime.cpp runtime/runtime.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
+add_executable(nex_foreign_scope_probe tests/foreign_scope.cpp runtime/nex_foreign.cpp runtime/foreign_runtime.cpp runtime/runtime.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
 target_include_directories(nex_foreign_scope_probe PRIVATE runtime)
 target_compile_options(nex_foreign_scope_probe PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(nex_foreign_scope_probe PRIVATE Threads::Threads OpenSSL::Crypto ${CMAKE_DL_LIBS})
@@ -202,19 +544,24 @@ add_test(NAME foreign_scope_native COMMAND nex_foreign_scope_probe $<TARGET_FILE
 set_tests_properties(foreign_scope_native PROPERTIES TIMEOUT 120)
 add_library(nex_ffi_test_module MODULE tests/ffi_module.c)
 add_library(nex_ffi_test_missing MODULE tests/ffi_module.c)
+add_library(nex_ffi_executable_module MODULE tests/ffi_executable_module.c)
+target_include_directories(nex_ffi_executable_module PRIVATE runtime)
+target_link_libraries(nex_ffi_executable_module PRIVATE ${CMAKE_DL_LIBS})
+set_target_properties(nex_ffi_executable_module PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_VISIBILITY_PRESET hidden)
+add_executable(nex_ffi_executable_worker tests/ffi_executable_worker.c)
 target_compile_definitions(nex_ffi_test_missing PRIVATE NEX_FFI_TEST_NO_ENTRY)
 foreach(NEX_FFI_MODULE_TARGET nex_ffi_test_module nex_ffi_test_missing)
   target_include_directories(${NEX_FFI_MODULE_TARGET} PRIVATE runtime)
   set_target_properties(${NEX_FFI_MODULE_TARGET} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_VISIBILITY_PRESET hidden)
 endforeach()
-add_executable(nex_ffi_loader_probe tests/ffi_loader.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
+add_executable(nex_ffi_loader_probe tests/ffi_loader.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
 target_include_directories(nex_ffi_loader_probe PRIVATE runtime)
 target_compile_options(nex_ffi_loader_probe PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(nex_ffi_loader_probe PRIVATE Threads::Threads OpenSSL::Crypto ${CMAKE_DL_LIBS})
-add_dependencies(nex_ffi_loader_probe nex_ffi_test_module nex_ffi_test_missing)
-add_test(NAME ffi_loader_native COMMAND nex_ffi_loader_probe $<TARGET_FILE:nex_ffi_test_module> $<TARGET_FILE:nex_ffi_test_missing>)
+add_dependencies(nex_ffi_loader_probe nex_ffi_test_module nex_ffi_test_missing nex_ffi_executable_module nex_ffi_executable_worker)
+add_test(NAME ffi_loader_native COMMAND nex_ffi_loader_probe $<TARGET_FILE:nex_ffi_test_module> $<TARGET_FILE:nex_ffi_test_missing> $<TARGET_FILE:nex_ffi_executable_module> $<TARGET_FILE:nex_ffi_executable_worker>)
 set_tests_properties(ffi_loader_native PROPERTIES TIMEOUT 120)
-add_executable(nex_ffi_runtime_probe tests/ffi_runtime.cpp tests/ffi_producer.c runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
+add_executable(nex_ffi_runtime_probe tests/ffi_runtime.cpp tests/ffi_producer.c runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
 set_source_files_properties(tests/ffi_producer.c PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/ffi-0.37")
 target_include_directories(nex_ffi_runtime_probe PRIVATE runtime)
 target_compile_options(nex_ffi_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
@@ -222,13 +569,14 @@ set_target_properties(nex_ffi_runtime_probe PROPERTIES C_STANDARD 11 C_STANDARD_
 target_link_libraries(nex_ffi_runtime_probe PRIVATE Threads::Threads)
 add_test(NAME ffi_runtime_native COMMAND nex_ffi_runtime_probe)
 set_tests_properties(ffi_runtime_native PROPERTIES TIMEOUT 60)
-add_executable(nex_ffi_typed_probe tests/ffi_typed.cpp examples/ffi/producer.c runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
+add_executable(nex_ffi_typed_probe tests/ffi_typed.cpp examples/ffi/producer.c runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_files.cpp runtime/nex_json.cpp)
 target_include_directories(nex_ffi_typed_probe PRIVATE runtime)
 target_compile_options(nex_ffi_typed_probe PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(nex_ffi_typed_probe PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 target_link_libraries(nex_ffi_typed_probe PRIVATE Threads::Threads)
 add_test(NAME ffi_typed_native COMMAND nex_ffi_typed_probe)
 set_tests_properties(ffi_typed_native PROPERTIES TIMEOUT 60)
+include(experiments/typed-resources/probes.cmake)
 add_test(NAME ffi_types COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ffi_types.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_ffi_typed_probe>)
 add_executable(nex_resource_values_probe tests/resource_values.cpp runtime/runtime.cpp runtime/nex_json.cpp runtime/nex_files.cpp runtime/files_runtime.cpp)
@@ -304,6 +652,15 @@ add_test(NAME sdk_host COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_host.py $<TARGET_FILE:nex>)
 add_test(NAME profiling COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/profiling.py $<TARGET_FILE:nex>)
+add_test(NAME server_workload COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_workload.py $<TARGET_FILE:nex>)
+set_tests_properties(server_workload PROPERTIES COST 180 TIMEOUT 900)
+add_test(NAME server_debug COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/server_debug.py $<TARGET_FILE:nex>)
+set_tests_properties(server_debug PROPERTIES COST 100 TIMEOUT 900)
+add_test(NAME task_workloads COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_workloads.py $<TARGET_FILE:nex>)
+set_tests_properties(task_workloads PROPERTIES COST 180 TIMEOUT 1200)
 add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/verification.py $<TARGET_FILE:nex>)
 add_test(NAME tasks COMMAND ${Python3_EXECUTABLE}
@@ -325,8 +682,11 @@ if(NEX_NODE_EXECUTABLE)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/web.py $<TARGET_FILE:nex>)
   add_test(NAME web_commands COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/web_commands.py $<TARGET_FILE:nex>)
+  add_test(NAME web_workers COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/web_workers.py $<TARGET_FILE:nex>)
   set_tests_properties(web PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
   set_tests_properties(web_commands PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
+  set_tests_properties(web_workers PROPERTIES ENVIRONMENT "NEX_NODE=${NEX_NODE_EXECUTABLE}")
 endif()
 
 add_test(NAME enums COMMAND ${Python3_EXECUTABLE}
@@ -349,3 +709,522 @@ add_test(NAME bytes_debug COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes_debug.py $<TARGET_FILE:nex>)
 add_test(NAME numbers COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/numbers.py $<TARGET_FILE:nex>)
+
+add_test(NAME task_limits_workflow COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_limits_workflow.py $<TARGET_FILE:nex>)
+set_tests_properties(task_limits_workflow PROPERTIES TIMEOUT 900)
+
+add_executable(nex_file_read_lease_probe tests/file_read_lease.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_compile_definitions(nex_file_read_lease_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_file_read_lease_probe PRIVATE runtime)
+target_link_libraries(nex_file_read_lease_probe PRIVATE Threads::Threads)
+add_test(NAME task_external_file_lease COMMAND nex_file_read_lease_probe)
+set_tests_properties(task_external_file_lease PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_file_write_host_probe tests/task_file_write_host.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_compile_definitions(nex_task_file_write_host_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_task_file_write_host_probe PRIVATE runtime)
+target_link_libraries(nex_task_file_write_host_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_file_write_host_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_external_file_write_host COMMAND nex_task_file_write_host_probe)
+set_tests_properties(task_external_file_write_host PROPERTIES TIMEOUT 120)
+add_executable(nex_task_file_stream_host_probe tests/task_file_stream_host.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_compile_definitions(nex_task_file_stream_host_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_task_file_stream_host_probe PRIVATE runtime)
+target_link_libraries(nex_task_file_stream_host_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_file_stream_host_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_external_file_stream_host COMMAND nex_task_file_stream_host_probe)
+set_tests_properties(task_external_file_stream_host PROPERTIES TIMEOUT 120)
+add_test(NAME task_file_stream_source_boundaries COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_boundaries.py $<TARGET_FILE:nex> --retained-probe $<TARGET_FILE:nex_task_stream_source_probe>)
+set_tests_properties(task_file_stream_source_boundaries PROPERTIES TIMEOUT 600)
+install(FILES tools/sdk_task_streams.py DESTINATION share/nex/tools)
+install(FILES tests/task_file_stream_host.cpp DESTINATION share/nex/tools RENAME task_file_stream_host_acceptance.cpp)
+
+add_executable(nex_task_file_regions_probe tests/task_file_regions.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_compile_definitions(nex_task_file_regions_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_task_file_regions_probe PRIVATE runtime)
+target_link_libraries(nex_task_file_regions_probe PRIVATE Threads::Threads)
+add_test(NAME task_file_regions_host COMMAND nex_task_file_regions_probe)
+set_tests_properties(task_file_regions_host PROPERTIES TIMEOUT 120)
+add_executable(nex_task_stream_source_probe tests/task_stream_source_probe.cpp src/typescript.cpp)
+target_link_libraries(nex_task_stream_source_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+add_test(NAME task_file_stream_source COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_source.py $<TARGET_FILE:nex_task_stream_source_probe>)
+add_test(NAME task_file_stream_requirements COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_requirements.py $<TARGET_FILE:nex_task_stream_source_probe>)
+set_tests_properties(task_file_stream_requirements PROPERTIES TIMEOUT 900)
+add_test(NAME task_file_stream_control COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_control.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_task_stream_source_probe>)
+add_executable(nex_task_stream_inflight_probe tests/task_stream_inflight_probe.cpp)
+target_link_libraries(nex_task_stream_inflight_probe PRIVATE nex_frontend Threads::Threads)
+target_include_directories(nex_task_stream_inflight_probe PRIVATE runtime)
+target_compile_definitions(nex_task_stream_inflight_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_options(nex_task_stream_inflight_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_executable(nex_file_io_observation_probe tests/file_io_observation.cpp)
+target_link_libraries(nex_file_io_observation_probe PRIVATE nex_frontend Threads::Threads)
+target_include_directories(nex_file_io_observation_probe PRIVATE runtime)
+target_compile_options(nex_file_io_observation_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME file_io_observation COMMAND nex_file_io_observation_probe)
+set_tests_properties(file_io_observation PROPERTIES TIMEOUT 60)
+add_test(NAME task_marker_record COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_marker_record.py)
+set_tests_properties(task_marker_record PROPERTIES TIMEOUT 30)
+add_test(NAME public_task_stream_histories COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_cli_histories.py $<TARGET_FILE:nex>)
+set_tests_properties(public_task_stream_histories PROPERTIES TIMEOUT 3600)
+install(FILES tests/task_stream_delivery.py tests/task_stream_cli_histories.py tests/task_stream_ffi_fixture.py DESTINATION share/nex/tests)
+file(GLOB NEX_TASK_STREAM_MIGRATION_FIXTURES CONFIGURE_DEPENDS tests/fixtures/language-0.23-sdk1335-stream-*.json tests/fixtures/language-0.23-sdk1335-stream-*.sql tests/fixtures/language-0.23-sdk1335-mixed-*.json tests/fixtures/language-0.23-sdk1335-mixed-*.sql)
+install(FILES ${NEX_TASK_STREAM_MIGRATION_FIXTURES} DESTINATION share/nex/examples/task-stream-migration)
+add_test(NAME public_task_stream_delivery COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_delivery.py $<TARGET_FILE:nex>)
+set_tests_properties(public_task_stream_delivery PROPERTIES TIMEOUT 1800)
+add_test(NAME task_file_stream_inflight COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_inflight.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_task_stream_source_probe> $<TARGET_FILE:nex_task_stream_inflight_probe>)
+set_tests_properties(task_file_stream_inflight PROPERTIES TIMEOUT 1800)
+set_tests_properties(task_file_stream_control PROPERTIES TIMEOUT 1800)
+set_tests_properties(task_file_stream_source PROPERTIES TIMEOUT 1800)
+add_executable(nex_task_write_source_probe tests/task_write_source_probe.cpp src/typescript.cpp)
+add_executable(nex_task_write_provider_probe tests/task_write_provider_probe.cpp src/native_images.cpp)
+add_executable(nex_task_stream_provider_probe tests/task_stream_provider_probe.cpp src/native_images.cpp)
+target_link_libraries(nex_task_stream_provider_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_definitions(nex_task_stream_provider_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_stream_provider_boundary COMMAND nex_task_stream_provider_probe boundary)
+add_test(NAME task_stream_provider COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_provider.py $<TARGET_FILE:nex_task_stream_provider_probe>)
+set_tests_properties(task_stream_provider PROPERTIES TIMEOUT 2400)
+target_link_libraries(nex_task_write_provider_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_definitions(nex_task_write_provider_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME task_write_provider_boundary COMMAND nex_task_write_provider_probe boundary)
+add_test(NAME task_write_provider COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_provider.py $<TARGET_FILE:nex_task_write_provider_probe>)
+set_tests_properties(task_write_provider PROPERTIES TIMEOUT 1800)
+add_test(NAME public_task_write_delivery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(public_task_write_delivery PROPERTIES TIMEOUT 2400)
+install(FILES tests/task_write_delivery.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.22-sdk131-task-writes.json tests/fixtures/language-0.22-sdk131-task-writes.sql DESTINATION share/nex/examples/task-write-migration)
+add_test(NAME public_task_write_histories COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_histories.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(public_task_write_histories PROPERTIES TIMEOUT 2400)
+add_test(NAME public_task_write_observability COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_observability.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+set_tests_properties(public_task_write_observability PROPERTIES TIMEOUT 1200)
+install(FILES tests/task_write_histories.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.22-sdk1326-README.md DESTINATION share/nex/examples/task-write-history RENAME README.md)
+install(FILES
+  tests/fixtures/language-0.22-sdk1326-resources.json tests/fixtures/language-0.22-sdk1326-resources.sql
+  tests/fixtures/language-0.22-sdk1326-nominal.json tests/fixtures/language-0.22-sdk1326-nominal.sql
+  tests/fixtures/language-0.22-sdk1326-callable.json tests/fixtures/language-0.22-sdk1326-callable.sql
+  tests/fixtures/language-0.22-sdk1326-imports.json tests/fixtures/language-0.22-sdk1326-imports.sql
+  tests/fixtures/language-0.22-sdk1326-tasks.json tests/fixtures/language-0.22-sdk1326-tasks.sql
+  tests/fixtures/language-0.22-sdk1326-model-compute-device-imports.json tests/fixtures/language-0.22-sdk1326-model-compute-device-imports.sql.xz.b85
+  DESTINATION share/nex/examples/task-write-history)
+target_link_libraries(nex_task_write_source_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+add_executable(nex_task_stream_migration_probe tests/task_stream_migration_probe.cpp src/project.cpp src/graph_store.cpp src/operation_store.cpp src/change_store.cpp)
+target_link_libraries(nex_task_stream_migration_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+add_test(NAME task_file_stream_migration COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_migration.py $<TARGET_FILE:nex_task_stream_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(task_file_stream_migration PROPERTIES TIMEOUT 1200)
+add_test(NAME task_file_stream_histories COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_histories.py $<TARGET_FILE:nex_task_stream_migration_probe> $<TARGET_FILE:nex> $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(task_file_stream_histories PROPERTIES TIMEOUT 1800)
+add_test(NAME task_file_stream_ffi_histories COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_stream_ffi_histories.py $<TARGET_FILE:nex_task_stream_migration_probe> $<TARGET_FILE:nex> $<TARGET_FILE:nex_source_resource_probe>)
+set_tests_properties(task_file_stream_ffi_histories PROPERTIES TIMEOUT 2400)
+target_compile_definitions(nex_task_stream_migration_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_VERSION="${PROJECT_VERSION}" NEX_BUILD_ID="${NEX_BUILD_ID}")
+add_executable(nex_task_write_migration_probe tests/task_write_migration_probe.cpp src/project.cpp src/graph_store.cpp src/operation_store.cpp src/change_store.cpp)
+target_link_libraries(nex_task_write_migration_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_definitions(nex_task_write_migration_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_VERSION="${PROJECT_VERSION}" NEX_BUILD_ID="${NEX_BUILD_ID}")
+target_compile_options(nex_task_write_migration_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_write_migration COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_migration.py $<TARGET_FILE:nex_task_write_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(task_write_migration PROPERTIES TIMEOUT 1200)
+add_executable(nex_task_stream_protocol_probe tests/task_stream_protocol.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_task_frame.cpp)
+target_compile_definitions(nex_task_stream_protocol_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_task_stream_protocol_probe PRIVATE runtime)
+target_link_libraries(nex_task_stream_protocol_probe PRIVATE Threads::Threads)
+add_test(NAME task_file_stream_protocol COMMAND nex_task_stream_protocol_probe)
+
+add_executable(nex_task_file_cleanup_probe tests/task_file_cleanup.cpp runtime/runtime.cpp runtime/nex_files.cpp)
+target_include_directories(nex_task_file_cleanup_probe PRIVATE runtime)
+target_link_libraries(nex_task_file_cleanup_probe PRIVATE Threads::Threads)
+add_test(NAME task_file_cleanup_host COMMAND nex_task_file_cleanup_probe)
+set_tests_properties(task_file_cleanup_host PROPERTIES TIMEOUT 60)
+add_executable(nex_task_write_protocol_probe tests/task_write_protocol.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_task_frame.cpp)
+target_compile_definitions(nex_task_write_protocol_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_task_write_protocol_probe PRIVATE runtime)
+target_link_libraries(nex_task_write_protocol_probe PRIVATE Threads::Threads)
+add_test(NAME task_write_protocol COMMAND nex_task_write_protocol_probe)
+add_test(NAME task_write_source COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_source.py $<TARGET_FILE:nex_task_write_source_probe>)
+set_tests_properties(task_write_source PROPERTIES TIMEOUT 1200)
+
+add_executable(nex_task_reference_external_probe tests/task_reference_external.cpp runtime/runtime.cpp)
+target_include_directories(nex_task_reference_external_probe PRIVATE runtime)
+target_compile_definitions(nex_task_reference_external_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_reference_external_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_reference_external_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_external_reference COMMAND nex_task_reference_external_probe)
+add_executable(nex_task_reference_files_probe tests/task_reference_files.cpp)
+target_link_libraries(nex_task_reference_files_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_task_reference_files_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_file_reads_reference COMMAND nex_task_reference_files_probe)
+set_tests_properties(task_file_reads_reference PROPERTIES TIMEOUT 120)
+add_executable(nex_task_file_frontend_probe tests/task_file_frontend.cpp)
+target_link_libraries(nex_task_file_frontend_probe PRIVATE nex_frontend Threads::Threads)
+add_test(NAME task_file_reads_frontend COMMAND nex_task_file_frontend_probe)
+add_executable(nex_task_file_reads_native_runtime_probe tests/task_file_read_native_runtime.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp)
+target_include_directories(nex_task_file_reads_native_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_file_reads_native_runtime_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_file_reads_native_runtime_probe PRIVATE Threads::Threads)
+add_test(NAME task_file_reads_native_runtime COMMAND nex_task_file_reads_native_runtime_probe)
+set_tests_properties(task_file_reads_native_runtime PROPERTIES TIMEOUT 120)
+add_test(NAME task_file_reads_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_file_reads_native.py $<TARGET_FILE:nex>)
+set_tests_properties(task_file_reads_native PROPERTIES TIMEOUT 900)
+add_test(NAME task_file_reads_typescript COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript_files.py $<TARGET_FILE:nex_task_typescript_public_probe>)
+set_tests_properties(task_file_reads_typescript PROPERTIES TIMEOUT 180)
+add_test(NAME task_file_migration_native COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_file_migration.py $<TARGET_FILE:nex_task_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(task_external_reference PROPERTIES TIMEOUT 120)
+
+add_test(NAME task_external_typescript COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_typescript_external.py $<TARGET_FILE:nex_task_typescript_public_probe>)
+set_tests_properties(task_external_typescript PROPERTIES TIMEOUT 180)
+target_link_libraries(nex_frontend PUBLIC Threads::Threads)
+
+foreach(NEX_TASK_KERNEL_TARGET IN ITEMS nex_task_migration_probe nex_task_application_runtime_probe nex_task_http_request_probe nex_task_limits_runtime_probe nex_task_reference_probe nex_task_reference_limits_probe nex_task_scheduler_probe nex_task_reference_external_probe)
+  target_sources(${NEX_TASK_KERNEL_TARGET} PRIVATE runtime/nex_task_external.cpp)
+endforeach()
+add_executable(nex_task_external_probe tests/task_external.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
+target_include_directories(nex_task_external_probe PRIVATE runtime)
+target_compile_definitions(nex_task_external_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_task_external_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_external_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_external_native COMMAND nex_task_external_probe)
+
+# This probe exercises the collector API independently of the scheduler bridge.
+add_executable(nex_task_profile_collector_probe tests/task_profile_collector.cpp runtime/nex_task_profile.cpp)
+target_include_directories(nex_task_profile_collector_probe PRIVATE runtime)
+target_link_libraries(nex_task_profile_collector_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_profile_collector_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_collector_native COMMAND nex_task_profile_collector_probe)
+set_tests_properties(task_profile_collector_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_profile_runtime_probe tests/task_profile_runtime.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp
+  runtime/nex_task_profile.cpp runtime/nex_profile.cpp
+  runtime/third_party/tracy/public/TracyClient.cpp)
+target_include_directories(nex_task_profile_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_profile_runtime_probe PRIVATE
+  NEX_PROFILE_ENABLED NEX_TASK_PROFILE_ENABLED NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS
+  TRACY_ENABLE TRACY_ON_DEMAND TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME
+  TRACY_ONLY_LOCALHOST TRACY_NO_BROADCAST TRACY_NO_CODE_TRANSFER TRACY_NO_CALLSTACK
+  TRACY_NO_SYSTEM_TRACING TRACY_NO_SAMPLING TRACY_NO_CRASH_HANDLER TRACY_NO_FRAME_IMAGE)
+target_link_libraries(nex_task_profile_runtime_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+target_compile_options(nex_task_profile_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_runtime_native COMMAND nex_task_profile_runtime_probe)
+set_tests_properties(task_profile_runtime_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_profile_registry_probe tests/task_profile_registry.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp
+  runtime/nex_task_profile.cpp runtime/nex_profile.cpp
+  runtime/third_party/tracy/public/TracyClient.cpp)
+target_include_directories(nex_task_profile_registry_probe PRIVATE runtime)
+target_compile_definitions(nex_task_profile_registry_probe PRIVATE
+  NEX_PROFILE_ENABLED NEX_TASK_PROFILE_ENABLED NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS
+  TRACY_ENABLE TRACY_ON_DEMAND TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME
+  TRACY_ONLY_LOCALHOST TRACY_NO_BROADCAST TRACY_NO_CODE_TRANSFER TRACY_NO_CALLSTACK
+  TRACY_NO_SYSTEM_TRACING TRACY_NO_SAMPLING TRACY_NO_CRASH_HANDLER TRACY_NO_FRAME_IMAGE)
+target_link_libraries(nex_task_profile_registry_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+target_compile_options(nex_task_profile_registry_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_registry_native COMMAND nex_task_profile_registry_probe)
+set_tests_properties(task_profile_registry_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_profile_report_probe tests/task_profile_report.cpp src/task_profile_report.cpp)
+target_link_libraries(nex_task_profile_report_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_options(nex_task_profile_report_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_report_native COMMAND nex_task_profile_report_probe)
+set_tests_properties(task_profile_report_native PROPERTIES TIMEOUT 60)
+
+add_test(NAME task_profile_workflow_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_profile_workflow.py $<TARGET_FILE:nex>)
+set_tests_properties(task_profile_workflow_native PROPERTIES TIMEOUT 1800)
+
+add_test(NAME task_profile_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_profile_native.py $<TARGET_FILE:nex>)
+set_tests_properties(task_profile_native PROPERTIES TIMEOUT 900)
+
+add_executable(nex_task_profile_versioned_probe tests/task_profile_versioned.cpp
+  src/profiling.cpp src/task_profile_report.cpp src/task_process.cpp)
+target_link_libraries(nex_task_profile_versioned_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_profile_versioned_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_profile_versioned_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_profile_versioned_native COMMAND nex_task_profile_versioned_probe
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.19-sdk115-tasks.json
+  ${CMAKE_CURRENT_BINARY_DIR}/task-profile-versioned-evidence)
+set_tests_properties(task_profile_versioned_native PROPERTIES TIMEOUT 600)
+set_tests_properties(task_external_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_debug_build_probe tests/task_debug_build.cpp)
+target_link_libraries(nex_task_debug_build_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_debug_build_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_debug_build_probe PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(nex_task_debug_runtime_probe tests/task_debug_runtime.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp runtime/nex_task_debug.cpp)
+target_include_directories(nex_task_debug_runtime_probe PRIVATE runtime)
+target_compile_definitions(nex_task_debug_runtime_probe PRIVATE
+  NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_TASK_DEBUG_ENABLED)
+target_link_libraries(nex_task_debug_runtime_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_debug_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_runtime_native COMMAND nex_task_debug_runtime_probe)
+set_tests_properties(task_debug_runtime_native PROPERTIES TIMEOUT 120)
+
+add_executable(nex_task_debug_registry_probe tests/task_debug_registry.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_task_frame.cpp runtime/nex_task_application.cpp runtime/nex_task_debug.cpp)
+target_include_directories(nex_task_debug_registry_probe PRIVATE runtime)
+target_compile_definitions(nex_task_debug_registry_probe PRIVATE
+  NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_TASK_DEBUG_ENABLED NEX_TASK_DEBUG_COMPLETION_ENABLED)
+target_link_libraries(nex_task_debug_registry_probe PRIVATE Threads::Threads)
+target_compile_options(nex_task_debug_registry_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_registry_native COMMAND nex_task_debug_registry_probe)
+set_tests_properties(task_debug_registry_native PROPERTIES TIMEOUT 120)
+
+add_test(NAME task_debugging_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_debugging.py $<TARGET_FILE:nex>
+  $<TARGET_FILE:nex_task_debug_build_probe>
+  --versioned-probe $<TARGET_FILE:nex_task_debug_versioned_probe>)
+set_tests_properties(task_debugging_native PROPERTIES TIMEOUT 900)
+
+add_executable(nex_task_debug_ir_probe tests/task_debug_ir.cpp)
+target_link_libraries(nex_task_debug_ir_probe PRIVATE nex_frontend)
+target_compile_options(nex_task_debug_ir_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_ir_native COMMAND nex_task_debug_ir_probe)
+set_tests_properties(task_debug_ir_native PROPERTIES TIMEOUT 60)
+
+add_executable(nex_task_debug_versioned_probe tests/task_debug_versioned.cpp)
+target_link_libraries(nex_task_debug_versioned_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_task_debug_versioned_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+target_compile_options(nex_task_debug_versioned_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME task_debug_versioned_native COMMAND nex_task_debug_versioned_probe
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/language-0.19-sdk115-tasks.json
+  ${CMAKE_CURRENT_BINARY_DIR}/task-debug-versioned-evidence)
+set_tests_properties(task_debug_versioned_native PROPERTIES TIMEOUT 600)
+
+add_test(NAME task_debug_native COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_debug_native.py
+  $<TARGET_FILE:nex_task_debug_build_probe> $<TARGET_FILE:nex>)
+set_tests_properties(task_debug_native PROPERTIES TIMEOUT 900)
+
+# Resource-region/value transfer is part of TaskGroup. Standalone runtimes need
+# the same host resource implementation, including when source transport is off.
+get_directory_property(NEX_LOCAL_TARGETS BUILDSYSTEM_TARGETS)
+foreach(NEX_LOCAL_TARGET IN LISTS NEX_LOCAL_TARGETS)
+  get_target_property(NEX_LOCAL_DEFINITIONS ${NEX_LOCAL_TARGET} COMPILE_DEFINITIONS)
+  get_target_property(NEX_LOCAL_SOURCES ${NEX_LOCAL_TARGET} SOURCES)
+  if("NEX_ASYNC_TASKS" IN_LIST NEX_LOCAL_DEFINITIONS OR "runtime/nex_files.cpp" IN_LIST NEX_LOCAL_SOURCES)
+    foreach(NEX_OWNED_RUNTIME runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+      if(NOT NEX_OWNED_RUNTIME IN_LIST NEX_LOCAL_SOURCES)
+        target_sources(${NEX_LOCAL_TARGET} PRIVATE ${NEX_OWNED_RUNTIME})
+      endif()
+    endforeach()
+  endif()
+endforeach()
+
+# Private asynchronous TCP kernel. Public source network operations remain gated.
+add_test(NAME dns_policy COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/dns_policy.py)
+add_test(NAME dns_library COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/dns_library.py $<TARGET_FILE:nex>)
+set_tests_properties(dns_policy PROPERTIES TIMEOUT 30)
+set_tests_properties(dns_library PROPERTIES TIMEOUT 300)
+set(NEX_CARES_PREFIX "" CACHE PATH "Explicit static PIC c-ares1.34.9 prefix for DNS operational conformance")
+if(NEX_CARES_PREFIX AND (APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux"))
+  add_test(NAME task_dns_source COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/dns_provider/verify.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --cares-prefix ${NEX_CARES_PREFIX})
+  add_test(NAME task_dns_delivery COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/dns_provider/verify_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --cares-prefix ${NEX_CARES_PREFIX})
+  set_tests_properties(task_dns_source task_dns_delivery PROPERTIES TIMEOUT 900)
+endif()
+if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_executable(nex_task_network_probe tests/task_network.cpp runtime/nex_task_network.cpp runtime/nex_task_external.cpp)
+  target_include_directories(nex_task_network_probe PRIVATE runtime)
+  target_compile_options(nex_task_network_probe PRIVATE -Wall -Wextra -Wpedantic)
+  target_link_libraries(nex_task_network_probe PRIVATE Threads::Threads)
+  add_test(NAME task_network_transport COMMAND nex_task_network_probe)
+  set_tests_properties(task_network_transport PROPERTIES TIMEOUT 90)
+  add_test(NAME task_tcp_source COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/tcp_provider/verify.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+  add_test(NAME task_tcp_delivery COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/tcp_provider/verify_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(task_tcp_source task_tcp_delivery PROPERTIES TIMEOUT 900)
+endif()
+
+# Ordinary HTTP client: portable validation always runs; real IO requires an
+# explicitly selected, separately built static dependency cohort.
+add_test(NAME http_client_policy COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/http_provider/check_inputs.py)
+add_test(NAME http_client_library COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/http_client_library.py $<TARGET_FILE:nex>)
+set_tests_properties(http_client_policy PROPERTIES TIMEOUT 30)
+set_tests_properties(http_client_library PROPERTIES TIMEOUT 300)
+add_test(NAME http_stream_library COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/http_stream_library.py $<TARGET_FILE:nex>)
+set_tests_properties(http_stream_library PROPERTIES TIMEOUT 300)
+set(NEX_HTTP_PREFIX "" CACHE PATH "Explicit static PIC curl/nghttp2/c-ares prefix for HTTP client conformance")
+if(NEX_HTTP_PREFIX AND (APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux"))
+  add_test(NAME task_http_client_source COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/http_provider/verify.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --http-prefix ${NEX_HTTP_PREFIX})
+  add_test(NAME task_http_client_delivery COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/http_provider/verify_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --http-prefix ${NEX_HTTP_PREFIX})
+  set_tests_properties(task_http_client_source task_http_client_delivery PROPERTIES TIMEOUT 1200)
+  foreach(transport http1 https1 https2)
+    add_test(NAME http_stream_${transport}_functional COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/http_stream_provider/verify_functional.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --http-prefix ${NEX_HTTP_PREFIX} --transport ${transport})
+    set_tests_properties(http_stream_${transport}_functional PROPERTIES TIMEOUT 1200)
+  endforeach()
+  add_test(NAME http_stream_delivery_functional COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/http_stream_provider/verify_functional.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} --http-prefix ${NEX_HTTP_PREFIX} --transport https2 --case download-file --package)
+  set_tests_properties(http_stream_delivery_functional PROPERTIES TIMEOUT 1200)
+endif()
+
+# Private exception frontend/reference work; public source remains024.
+add_executable(nex_source_exception_probe tests/source_exception_prototype.cpp src/typescript.cpp)
+target_link_libraries(nex_source_exception_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_source_exception_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_exception_prototype COMMAND nex_source_exception_probe)
+set_tests_properties(source_exception_prototype PROPERTIES TIMEOUT 120)
+add_test(NAME source_exception_discovery COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_discovery.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exception_discovery PROPERTIES TIMEOUT 120)
+
+# Private native/reference source-exception agreement; no public build selection.
+add_executable(nex_source_exception_native_probe tests/source_exception_native.cpp src/typescript.cpp)
+target_link_libraries(nex_source_exception_native_probe PRIVATE nex_native_backend ${CMAKE_DL_LIBS})
+set_target_properties(nex_source_exception_native_probe PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME source_exception_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_native.py $<TARGET_FILE:nex_source_exception_native_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_exception_native PROPERTIES TIMEOUT 1200)
+
+add_test(NAME source_exception_typescript COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_typescript.py $<TARGET_FILE:nex_source_exception_native_probe>)
+set_tests_properties(source_exception_typescript PROPERTIES TIMEOUT 1200)
+
+add_executable(nex_source_exception_tasks_probe tests/source_exception_tasks.cpp src/typescript.cpp)
+target_link_libraries(nex_source_exception_tasks_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_source_exception_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_exception_tasks_reference COMMAND nex_source_exception_tasks_probe)
+set_tests_properties(source_exception_tasks_reference PROPERTIES TIMEOUT 120)
+
+add_test(NAME source_exception_task_agreement COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_agreement.py $<TARGET_FILE:nex_source_exception_tasks_probe> $<TARGET_FILE:nex_source_exception_native_probe>)
+set_tests_properties(source_exception_task_agreement PROPERTIES TIMEOUT 120)
+
+add_test(NAME source_exception_tasks_typescript COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_tasks_typescript.py $<TARGET_FILE:nex_source_exception_tasks_probe>)
+set_tests_properties(source_exception_tasks_typescript PROPERTIES TIMEOUT 1200)
+
+add_executable(nex_source_exception_lifetime_probe tests/source_exception_lifetimes.cpp)
+target_link_libraries(nex_source_exception_lifetime_probe PRIVATE nex_native_backend nex_frontend Threads::Threads)
+target_compile_options(nex_source_exception_lifetime_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_exception_task_lifetimes COMMAND nex_source_exception_lifetime_probe)
+set_tests_properties(source_exception_task_lifetimes PROPERTIES TIMEOUT 120)
+
+add_test(NAME source_exception_lifetime_compatibility COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_lifetime_compatibility.py $<TARGET_FILE:nex_source_exception_lifetime_probe>)
+set_tests_properties(source_exception_lifetime_compatibility PROPERTIES TIMEOUT 120)
+
+add_test(NAME source_exception_task_ir_reference COMMAND nex_source_exception_tasks_probe --task-ir)
+set_tests_properties(source_exception_task_ir_reference PROPERTIES TIMEOUT 120)
+add_executable(nex_source_exception_task_ir_probe tests/source_exception_task_ir.cpp)
+target_link_libraries(nex_source_exception_task_ir_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_source_exception_task_ir_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_exception_task_ir_machine COMMAND nex_source_exception_task_ir_probe)
+add_test(NAME source_exception_task_ir_agreement COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_ir_agreement.py $<TARGET_FILE:nex_source_exception_tasks_probe>)
+set_tests_properties(source_exception_task_ir_agreement PROPERTIES TIMEOUT 1200)
+add_executable(nex_source_exception_task_native_emit_probe tests/source_exception_task_native.cpp)
+target_link_libraries(nex_source_exception_task_native_emit_probe PRIVATE nex_native_backend)
+add_test(NAME source_exception_host COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_host.py
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe>
+  $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --watch-compiler $<TARGET_FILE:nex>)
+set_tests_properties(source_exception_host PROPERTIES TIMEOUT 2400)
+add_test(NAME source_exception_task_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_native.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_exception_task_native PROPERTIES TIMEOUT 2400)
+add_executable(nex_source_exception_task_scheduler_probe tests/source_exception_task_scheduler.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_source_exception_task_scheduler_probe PRIVATE runtime)
+target_compile_definitions(nex_source_exception_task_scheduler_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_PROFILE_ENABLED)
+target_compile_options(nex_source_exception_task_scheduler_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_source_exception_task_scheduler_probe PRIVATE Threads::Threads)
+add_test(NAME source_exception_task_scheduler COMMAND nex_source_exception_task_scheduler_probe)
+set_tests_properties(source_exception_task_scheduler PROPERTIES TIMEOUT 120)
+add_test(NAME source_exception_task_native_profile COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_profile.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_exception_task_native_profile PROPERTIES TIMEOUT 2400)
+add_test(NAME source_exception_task_native_debug COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_debug.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_exception_task_native_debug PROPERTIES TIMEOUT 2400)
+add_test(NAME source_exception_task_lldb COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(source_exception_task_lldb PROPERTIES TIMEOUT 2400)
+add_test(NAME source_exception_task_watch COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++ --watch-compiler $<TARGET_FILE:nex>)
+set_tests_properties(source_exception_task_watch PROPERTIES TIMEOUT 2400)
+
+add_executable(nex_source_exception_http_request_probe tests/source_exception_http_request.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp
+  runtime/nex_task_external.cpp runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_source_exception_http_request_probe PRIVATE runtime)
+target_compile_definitions(nex_source_exception_http_request_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_compile_options(nex_source_exception_http_request_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_source_exception_http_request_probe PRIVATE Threads::Threads)
+add_test(NAME source_exception_http_request_host COMMAND nex_source_exception_http_request_probe)
+set_tests_properties(source_exception_http_request_host PROPERTIES TIMEOUT 120)
+add_test(NAME source_exception_http COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_http.py
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++ --openssl-include ${OPENSSL_INCLUDE_DIR}
+  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --sqlite-library ${SQLite3_LIBRARY})
+set_tests_properties(source_exception_http PROPERTIES TIMEOUT 1800)
+
+add_test(NAME source_exception_module_http COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http.py
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  --openssl-include ${OPENSSL_INCLUDE_DIR}
+  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --sqlite-library ${SQLite3_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-runtime)
+set_tests_properties(source_exception_module_http PROPERTIES TIMEOUT 2400 RESOURCE_LOCK private_exception_http_runtime)
+
+add_executable(nex_source_exception_modules_probe tests/source_exception_modules.cpp)
+target_link_libraries(nex_source_exception_modules_probe PRIVATE nex_native_backend)
+
+add_test(NAME source_exception_modules COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_modules.py
+  $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
+set_tests_properties(source_exception_modules PROPERTIES TIMEOUT 2400 FIXTURES_SETUP private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
+
+add_test(NAME source_exception_frontiers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_frontiers.py
+  $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
+set_tests_properties(source_exception_frontiers PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
+
+add_test(NAME source_exception_instances COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_instances.py
+  $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
+set_tests_properties(source_exception_instances PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
+
+add_test(NAME source_exception_module_profile COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_profile.py
+  $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-profile-runtime)
+set_tests_properties(source_exception_module_profile PROPERTIES TIMEOUT 3000 RESOURCE_LOCK private_exception_module_profile_runtime)
+add_test(NAME source_exception_module_http_profile COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http_profile.py
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  --openssl-include ${OPENSSL_INCLUDE_DIR}
+  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --sqlite-library ${SQLite3_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-profile-runtime)
+set_tests_properties(source_exception_module_http_profile PROPERTIES TIMEOUT 3000 RESOURCE_LOCK private_exception_module_http_profile_runtime)
+
+add_test(NAME source_exception_module_debug COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_debug.py
+  $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
+  --debug-compiler $<TARGET_FILE:nex> --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-debug-runtime)
+set_tests_properties(source_exception_module_debug PROPERTIES TIMEOUT 3600 RESOURCE_LOCK private_exception_module_debug_runtime)
+
+add_test(NAME source_exception_module_http_debug COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http_debug.py
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  --debug-compiler $<TARGET_FILE:nex> --openssl-include ${OPENSSL_INCLUDE_DIR}
+  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  --sqlite-library ${SQLite3_LIBRARY}
+  --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-debug-runtime)
+set_tests_properties(source_exception_module_http_debug PROPERTIES TIMEOUT 3600 RESOURCE_LOCK private_exception_module_http_debug_runtime)
+
+add_executable(nex_store_transactions_probe tests/store_transactions.cpp runtime/nex_store.cpp)
+target_include_directories(nex_store_transactions_probe PRIVATE runtime)
+target_link_libraries(nex_store_transactions_probe PRIVATE SQLite::SQLite3 Threads::Threads)
+target_compile_options(nex_store_transactions_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME store_transactions_native COMMAND nex_store_transactions_probe)
+set_tests_properties(store_transactions_native PROPERTIES TIMEOUT 30)

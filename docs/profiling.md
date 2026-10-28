@@ -1,3 +1,100 @@
+# Checked task-provider profiling (toolchain0.118 integration)
+
+A distinct `task_provider_profiling` descriptor and
+[guide](task-provider-profiling.md) describe development static/fixed-shared
+provider recording. Check actual enablement; provider3/raw3 are not silently substituted
+for ordinary task2 or synchronous1. No source language or execution ABI3 change
+is introduced. Current full/installedSDK/platform acceptance remains pending.
+
+# Native structured-task profiling (toolchain0.114 candidate)
+
+Working121 implements this path; its complete acceptance is pending. Query
+`nex describe --field task_profiling --json` on the compiler you actually use.
+Use the following workflow only when that descriptor reports `source_support`.
+The supported CLI boundary is language0.20 standalone applications and source-only
+native projects on macOS/Linux. Older graph revisions retain their language;
+follow the explicit migration guide before using them through the current CLI.
+
+```sh
+nex profile main.nex --task-workers 2 --task-steps 2000000 \
+  --task-timeout-ms 10000 --events 1000 --scenario "task workload" --json
+nex project --kind profile --component app --events 1000 --json
+```
+
+The direct command sets the same reviewed execution ceilings as build/run.
+Project ceilings come from `configurations.NAME.task_limits`; arguments after
+`--` may lower the executable's embedded ceilings with `--nex-task-*` options.
+Reports preserve configured and effective limits, executor workers and the
+separate outer process timeout. Cooperative task deadlines do not guarantee
+termination of a blocking host syscall or replace process supervision.
+
+Task output uses `nex.profile/2` and bounded `nex.profile-session/2`; copied
+instrumented executables can write `nex.profile-runtime/2` through
+`NEX_PROFILE_OUTPUT`. Synchronous programs retain schema1 and its existing wall
+metrics. A source invocation counts once across yields, parks and worker changes.
+Direct/indirect calls and nested scope callbacks retain logical parent identity;
+spawned jobs have a separate spawn relationship. Each source function is matched
+against the selected immutable graph or captured project before attribution.
+
+`inclusive_cpu_ns` and `self_cpu_ns` accumulate per-thread CPU within active
+source segments. They exclude suspension; spawned-task CPU is not charged to its
+parent invocation. `active_elapsed_ns` includes OS descheduling within a segment.
+`lifetime_ns` includes queueing, waits and descendants, so overlapping lifetimes
+must not be added as whole-process time. Task queue/wait/drain durations and
+executor CPU have separate scheduler fields. Executor CPU includes runtime work
+and owned cleanup on its worker; it is not whole-process CPU or disk latency.
+Scheduler durations use samples around scheduler transactions and can include
+validation/setup overhead; they do not identify exact OS event instants.
+
+`completeness` separately describes aggregates, timeline, memory and each clock
+family. A full timeline buffer, including `--events 0`, preserves source-call
+and shallow-memory totals when their corresponding completeness flags are true.
+Reviewed `max_calls` and peak handle/object budgets require those flags; timeline
+loss alone does not invalidate them. Numeric/clock failures and omitted records
+are explicit. A truncated timeline never proves a complete call tree.
+
+The two managed memory pools retain their shallow handle/object meaning.
+Collector storage is reported separately. Neither measurement is total RAM,
+retained payload ownership, scheduler backing storage or file transport memory.
+Instrumentation changes costs; reports make no speed guarantee.
+
+Task Tracy capture, combined task debugging/profiling, reference/TypeScript/browser task
+profiling, task HTTP handlers, binary providers and other platforms remain
+pending. `NEX_TRACY=1` on a task profile image must fail before workers or source
+execution. Synchronous Tracy behavior below remains a separate supported path.
+
+# Private task collector foundation (toolchain0.113)
+
+The source includes `runtime/nex_task_profile.h/.cpp` and a dedicated native
+collector probe. Frozen120 verifies this private instrumentation module alone;
+it has no task scheduler, frame-driver, emitted source or public CLI integration.
+Its `nex profile` rejects task applications and its private task execution ABI2
+is unchanged. Working121 integrates a separate ABI3 descriptor/site layout.
+A module probe cannot establish correct profiling of a compiled task program.
+
+The module separates run-local task/invocation identity, logical lifetime,
+per-worker source execution segments and CPU versus elapsed clocks. Its own
+bounded recording metadata is not application heap/RSS, retained Value ownership,
+file transport usage or scheduler wait-state evidence. Those require later hooks
+and independent acceptance. Task Tracy, logical source debugging, providers,
+server/browser/reference profilers and other platforms remain pending.
+
+Private C++ callers register immutable site metadata and allocate recording
+storage before work starts. Runtime hooks are noexcept; a disabled collector
+allocates no State and reads no clocks. Resume/source guards stay on their creating
+thread; detached logical task/invocation tokens may move between workers.
+Same-thread non-LIFO teardown is repaired and marks the measurement incomplete.
+Attached guards share a fixed4096-per-thread limit across collectors. A failed
+enabled resume suppresses nested recording and pauses the current source interval
+until the last failed guard retires, preventing attribution to the prior task.
+Drop/incomplete and clock-availability fields must be checked before using counts
+or timings as evidence. No current CLI consumes this private snapshot protocol.
+
+For actual native project servers, use the bounded [server workload flow](server-workload.md)
+with `project --kind profile --workload FILE`. It preserves static/dynamic edges,
+checks HTTP expectations and records request metrics with native function/memory
+profiles. Server debugging and workload task capture/replay remain pending.
+
 # Native profiling
 
 Toolchain 0.10 instruments reachable native NEX functions in `--profile profile` builds. Language 0.5 semantics, effects and source syntax are unchanged. Debug/release builds do not include the profiler or its hooks. TypeScript/browser and GPU profiling remain separate pending work.
@@ -44,3 +141,9 @@ On the exercised macOS host, starting upstream capture before the application li
 Optional upstream acceptance: `python3 tests/tracy_capture.py build/nex --capture PATH_TO_TRACY_CAPTURE --export PATH_TO_TRACY_CSVEXPORT` performs three direct captures, checks exact function/call agreement and frozen source paths, and saves traces/CSV plus `acceptance.json`. `--inspect PATH` additionally checks named pool balance and embedded build identity with the helper in `tests/tracy_inspect.cpp`, linked against the same upstream TracyServer/headers/configuration. These tools are not prerequisites of the default CTest suite or installed SDK.
 
 Generic functions are measured per concrete specialization, using logical names such as `model::identity<i64>`. Resolve that name through context for its source-template link and arguments. Template declarations and uncompiled watch-only helpers do not create native measurements; source-family aggregation is not implemented.
+
+Host-native profile commands supervise a complete process group with bounded
+stdout/stderr (8MiB each), timeout and interruption diagnostics. Native temporary
+files use an owned private root and are removed after descendants stop, including
+sealed FFI module snapshots. Forced termination does not guarantee a runtime
+profile or language destructors.

@@ -66,16 +66,17 @@ class SourceFFI(harness.ToolchainCase):
     def test_project_actions_require_current_operator_grants_and_execute_effectful_tests_once(self):
         self.program('''module actionffi;
 server extern fn echo(value:str)->str !{ffi}=foreign("test","echo","@PIN@");
+server extern fn other(value:str)->str !{ffi}=foreign("test","other","@PIN@");
 pub server fn exported(value:str)->str !{ffi}{return echo(value);}
 server fn main()->unit !{ffi,io}{print(exported("unused"));}
-''', {'echo':'echo'})
+''', {'echo':'echo','other':'echo'})
         core=self.root/'core';core.mkdir();self.file.rename(core/'main.nex')
         app=self.root/'app';app.mkdir();(app/'main.nex').write_text('''module actionconsumer;
 import "../core/main.nex" as c;
 server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
 server test fn granted()->unit !{ffi}{assert(c::exported("test")=="test");}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'measured':{'profile':'profile'}},'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
@@ -96,6 +97,9 @@ server test fn granted()->unit !{ffi}{assert(c::exported("test")=="test");}
         self.assertEqual((self.root/'relative-events').read_text().count('C'),1);self.assertFalse((outside/'relative-events').exists())
         self.catalogue['libraries']['test']['exports']=[];self.host.write_text(json.dumps(self.catalogue))
         action('run','--foreign',self.host,ok=False);self.assertEqual(self.events().count('C'),3)
+        self.catalogue['libraries']['test']['exports']=['other'];self.host.write_text(json.dumps(self.catalogue))
+        denied=action('test','--symbol','granted','--foreign',self.host,ok=False)
+        self.assertEqual(denied['code'],'E_TASK_FOREIGN_BINDING');self.assertEqual(self.events().count('C'),3)
 
     def test_static_archive_calls_foreign_module_through_one_consumer_runtime(self):
         self.program('''module archiveffi;
@@ -108,7 +112,7 @@ server fn main()->unit !{ffi,io}{print(exported("ok"));}
 import "../core/main.nex" as c;
 server fn main()->unit !{ffi,io}{print(c::exported("Я🧠"));}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'}},'components':{
                 'core':{'kind':'static_library','root':'core','entry':'core/main.nex','entry_function':'exported'},
@@ -262,7 +266,7 @@ server test fn checks()->unit!{ffi}{assert(invoke(native::echo)==42);}
     def test_migration_preserves_genuine_014_history_and_ordinary_identifier_names(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text());self.source(fixture['source']);old=self.historical_store('0.14')['revision'];self.file.unlink()
         with sqlite3.connect(self.root/'.nex/graph.db') as db:ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall();source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
-        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.16');self.assertNotEqual(current['revision'],old)
+        self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate');self.assertEqual(current['language'],'0.24');self.assertNotEqual(current['revision'],old)
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],fixture['stdout']);self.assertEqual(self.cli('run','--revision','HEAD',timeout=120)['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
         with sqlite3.connect(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids);self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source);self.assertEqual(db.execute('SELECT language FROM revisions WHERE hash=?',(old,)).fetchone()[0],'0.14')
@@ -338,10 +342,11 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
             self.program('''module interop;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");server fn main()->unit!{ffi,io}{print(echo(42));}''',{'echo':'echo'})
             session=self.cli('debug','--kind','nex-dap','--foreign',self.host,timeout=120)
             symbol=self.cli('context','--symbol','echo')['native_symbol']
-            commands=session['launch']['initCommands']+['settings set target.disable-aslr false','breakpoint set -n '+symbol,'run','nex-eval x','continue']
-            arguments=[shutil.which('lldb'),'--batch',session['launch']['program']]
-            for command in commands:arguments+=['-o',command]
-            result=subprocess.run(arguments,capture_output=True,text=True,timeout=60,env={**os.environ,**self.env})
+            self.assertEqual(session['launch']['args'],['--nex-foreign',str(self.host)])
+            self.assertFalse(any('target.run-args' in command for command in session['launch']['initCommands']))
+            result=self.cli('debug','--foreign',self.host,'--','--no-lldbinit','--batch',
+                '-o','settings set target.disable-aslr false','-o','breakpoint set -n '+symbol,
+                '-o','run','-o','nex-eval x','-o','continue',machine=False,env=self.env,timeout=60)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             self.assertNotIn('unknown or ambiguous option',result.stdout+result.stderr)
             values=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]

@@ -1,0 +1,79 @@
+{
+  "schema": "nex.compiler-input-evidence/1",
+  "ok": true,
+  "toolchain": "0.96.0",
+  "language": "0.18",
+  "compiler_sha256": "bc7efd3762e05465becd02cf78fbd8ee95ecd544224fba74f5c9d509374881ce",
+  "implementation": "64KiB raw fread with explicit ferror/feof, no seek or size assumption; FILE owned with C++ RAII",
+  "runtime_or_language_changed": false,
+  "application_runtime_abi_changed": false,
+  "all_cache_byte_verification_preserved": true,
+  "final_focused_groups": 17,
+  "frontend_io_cases": 5,
+  "semantic_utf8_split_offset": 65534,
+  "frontend_observations": [
+    "all256octets/empty/exact64KiB/partial/multipleblocks",
+    "fragmentedFIFO with held writer",
+    "missingfile and directory failures E_FILE",
+    "null device; Linux procfs case awaits Linux execution",
+    "UTF8 scalar split across64KiB:check/reference/native/nativeTests/TypeScriptTests; invalidUTF8 rejected E_UTF8"
+  ],
+  "retained_initial_failure": "std::ifstream::read implementation treated a macOS directory read as empty EOF; unchanged directory assertion failed; explicit C stream error check fixes it",
+  "initial_failed_report": "build/buffered-compiler-inputs-096-prototype-controller-v1.json",
+  "focused_report": "build/buffered-compiler-inputs-096-prototype-controller-v2.json",
+  "comparison_report": "build/buffered-compiler-inputs-096-io-comparison-v1/report.json",
+  "comparison_report_sha256": "6c919b97c0d783900386f7b866ffea88dce7400b5241ace466623470e6028ee0",
+  "scope": "Actual095/096 compiler input readers behind identical private probe source. Complete byte-for-byte stdout comparison with real retained095 artifacts; process time includes output pipe and comparison. Concurrent macOS host, not a full-build or isolated IO-throughput claim.",
+  "provenance": {
+    "baseline_nex_sha256": "60fd37c40976bfafbef10d2fe30edc32c14724373329c68ff569ec1c7d4fb4cf",
+    "candidate_nex_sha256": "bc7efd3762e05465becd02cf78fbd8ee95ecd544224fba74f5c9d509374881ce",
+    "baseline_frontend_sha256": "ea2aa7a0ea1ec420976c5f483171d99111cd8bf9860228ca74630a8e46ca7d73",
+    "candidate_frontend_sha256": "73857ebf2c84a9b39c050d3d1ad1fe5d8d91ea819c7ee297f89baa1a55fa96ed",
+    "shared_probe_source_sha256": "eeeee2c2cefb6607b3d48a14065efd7190878a9926281f9d16462033511272d4",
+    "candidate_language_source_sha256": "087e127341f38ab695d27329b12ba72e81a64f5dfa1cd5b4efdc46b1e293feec"
+  },
+  "inputs": {
+    "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/app": {
+      "bytes": 14749024,
+      "sha256": "00e826056214a57b854ba5bbd960ffb393065355bacc939c41c9944101c82cd7"
+    },
+    "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/program.mlir": {
+      "bytes": 146622526,
+      "sha256": "c37cd709dd9ba502dc1be76dae448794ad2d4967a13e78d185d9fd258428b1c6"
+    },
+    "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/compilation.json": {
+      "bytes": 24072879,
+      "sha256": "3cb022ba4d5a059e986419e455686fb353ac8eda2af9877e0b611778a8882e59"
+    }
+  },
+  "summaries": [
+    {
+      "input": "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/app",
+      "bytes": 14749024,
+      "baseline_median_seconds": 0.5043025409999995,
+      "candidate_median_seconds": 0.041847291999999925
+    },
+    {
+      "input": "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/program.mlir",
+      "bytes": 146622526,
+      "baseline_median_seconds": 4.746908583,
+      "candidate_median_seconds": 0.14495833299999994
+    },
+    {
+      "input": "/Users/sae/projects/NEX/build/scale100x100-095-frontend-v1/project/.nex/build/1b4df8e27b90dc9c3bc65931fb43f25e26eeb67b304250b5e8d8a365a5df6ebb/compilation.json",
+      "bytes": 24072879,
+      "baseline_median_seconds": 0.8045158750000008,
+      "candidate_median_seconds": 0.04826054100000121
+    }
+  ],
+  "repetitions_per_input_and_implementation": 3,
+  "observations": 18,
+  "all_bytes_compared": true,
+  "all_retained_inputs_unchanged": true,
+  "not_established": [
+    "currentfullnative10000cold/warm/edit speedup",
+    "full100 regression/SDK/platform/editor/migration",
+    "Linux procfs/newreader execution",
+    "general runtime parity or model cost"
+  ]
+}

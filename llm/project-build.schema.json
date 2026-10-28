@@ -168,6 +168,9 @@
           },
           "toolchain": {
             "$ref": "#/$defs/path"
+          },
+          "task_limits": {
+            "$ref": "#/$defs/task_limits"
           }
         }
       }
@@ -184,7 +187,29 @@
       "minLength": 1,
       "maxLength": 4096,
       "pattern": "^[^\\\\:\\u0000]+$"
+    },
+    "task_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        }
+      }
     }
   },
-  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume checked native archives. Dynamic edges consume separately linked shared libraries and one common runtime on macOS/Linux. All binary edges require exact compiler/toolchain/runtime ABI, checked source and explicit generic instantiation. Project foreign-pin projection, packaged debug provenance, Windows DLLs, source GPU/NPU adapters, binary-only packages and full-static executable policy remain pending."
+  "description": "Filesystem containment, normalized paths, disjoint roots, acyclic direct dependencies, language, entry contracts and locks are compiler-checked. Source edges compile reachable source. Static edges consume checked native archives. Dynamic edges consume separately linked shared libraries and one common runtime on macOS/Linux. All binary edges require exact compiler/toolchain/runtime ABI, checked source and explicit generic instantiation. Host project foreign packaging uses exact project-wide pin projection and per-application grants. Packaged debug provenance, Windows DLLs, source GPU/NPU adapters, binary-only packages and full-static executable policy remain pending."
 }

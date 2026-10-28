@@ -1,0 +1,65 @@
+module std::dns;
+
+pub struct Request { authority:str; hostname:str; answer_limit:i64; timeout_ms:i64; }
+pub struct Client { lookup:server fn(Request)->result<list<str>> !{task,ffi}; }
+pub server fn client_context(lookup:server fn(Request)->result<list<str>> !{task,ffi})->Client {
+  return Client(lookup);
+}
+pub fn request(authority:str,hostname:str,answer_limit:i64,timeout_ms:i64)->Request {
+  return Request(authority,hostname,answer_limit,timeout_ms);
+}
+pub fn validate(value:Request)->result<bool> {
+  if len(value.authority)<1||len(value.authority)>64{return err("VALIDATION","DNS authority name must contain1..64 scalars");}
+  if value.answer_limit<1||value.answer_limit>64{return err("VALIDATION","DNS answer limit must be1..64");}
+  if value.timeout_ms<1||value.timeout_ms>30000{return err("VALIDATION","DNS timeout must be1..30000ms");}
+  let name:bytes=utf8_bytes(value.hostname);
+  if len(name)<1||len(name)>254{return err("VALIDATION","DNS hostname exceeds its wire limit");}
+  var end:i64=len(name);
+  if name[end-1]==46{end=end-1;}
+  if end<1||end>253{return err("VALIDATION","invalid DNS hostname");}
+  var i:i64=0;var label:i64=0;var previous:i64=0;
+  while i<end {
+    let ch:i64=name[i];
+    if ch==46 {
+      if label<1||previous==45{return err("VALIDATION","invalid DNS label");}
+      label=0;
+    } else {
+      let alpha:bool=(ch>=65&&ch<=90)||(ch>=97&&ch<=122);
+      if !alpha&&!(ch>=48&&ch<=57)&&ch!=45{return err("VALIDATION","DNS names require ASCII or explicit IDNA A-labels");}
+      if label==0&&ch==45{return err("VALIDATION","DNS label begins with a hyphen");}
+      label=label+1;
+      if label>63{return err("VALIDATION","DNS label exceeds63 bytes");}
+    }
+    previous=ch;i=i+1;
+  }
+  if label<1||previous==45{return err("VALIDATION","invalid final DNS label");}
+  return ok(true);
+}
+pub server fn execute(ctx:Client,value:Request)->result<list<str>> !{task,ffi} {
+  let valid:bool=validate(value)?;
+  return ctx.lookup(value);
+}
+pub server fn lookup(ctx:Client,authority:str,hostname:str,timeout_ms:i64)->result<list<str>> !{task,ffi} {
+  return execute(ctx,request(authority,hostname,64,timeout_ms));
+}
+test fn validation()->unit {
+  assert(is_ok(validate(request("public","Example.COM.",16,1000))));
+  assert(is_ok(validate(request("public","xn--e1afmkfd.xn--p1ai",16,1000))));
+  assert(error_code(validate(request("public","-bad.example",16,1000)))=="VALIDATION");
+  assert(error_code(validate(request("public","a..example",16,1000)))=="VALIDATION");
+  assert(error_code(validate(request("public","пример.рф",16,1000)))=="VALIDATION");
+  assert(error_code(validate(request("public","example.com",0,1000)))=="VALIDATION");
+}
+test fn hostname_boundaries()->unit {
+  var label:str="";var i:i64=0;
+  while i<63{label=label+"a";i=i+1;}
+  assert(is_ok(validate(request("public",label+".test",64,30000))));
+  assert(error_code(validate(request("public",label+"a.test",64,30000)))=="VALIDATION");
+  var tail:str="";i=0;while i<61{tail=tail+"a";i=i+1;}
+  let longest:str=label+"."+label+"."+label+"."+tail;
+  assert(len(longest)==253);
+  assert(is_ok(validate(request("public",longest+".",64,30000))));
+  assert(error_code(validate(request("public",longest+"a.",64,30000)))=="VALIDATION");
+  assert(error_code(validate(request("public",".",64,30000)))=="VALIDATION");
+  assert(error_code(validate(request("public","bad-.test",64,30000)))=="VALIDATION");
+}

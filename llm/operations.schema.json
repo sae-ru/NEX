@@ -11,7 +11,7 @@
       ]
     },
     "language": {
-      "const": "0.16"
+      "const": "0.24"
     },
     "revision": {
       "type": "string",

@@ -9,8 +9,15 @@
 #include <vector>
 #include "llvm/Support/JSON.h"
 
+namespace nexrt { struct TaskExecutionLimits; }
+
 namespace nex {
-inline constexpr const char *languageVersion = "0.16";
+inline constexpr const char *languageVersion = "0.24";
+inline constexpr const char *taskCandidateLanguageVersion = "0.24";
+// Append semantic versions: retained ordinal values and archived interpretation
+// must never change when the public compiler default advances.
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype };
+inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TaskStreams024;
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -23,8 +30,16 @@ struct Error : std::runtime_error {
   Error(std::string code, std::string message, Span span = {})
       : std::runtime_error(std::move(message)), code(std::move(code)), span(span) {}
 };
+// Explicitly raised source errors are separate from checked traps and request
+// control. Private025 handlers must never catch Error, DataError or cancellation.
+struct SourceException : std::exception {
+  std::string code,message,output;Span span;
+  SourceException(std::string code,std::string message,Span span)
+      :code(std::move(code)),message(std::move(message)),span(std::move(span)){}
+  const char *what()const noexcept override{return message.c_str();}
+};
 struct Type {
-  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor, Projection } kind = Unknown;
+  enum Kind { I64, Bool, Unit, Unknown, Str, List, Record, Result, Parameter, Function, F64, Bytes, File, Constructor, Projection, Task, Channel, TaskScope } kind = Unknown;
   std::string name; std::shared_ptr<Type> element; std::vector<Type> arguments;
   unsigned constructorArity=0;
   std::string realm="shared";std::set<std::string> effects;
@@ -32,17 +47,23 @@ struct Type {
   Type(Kind kind) : kind(kind) {}
   static Type list(Type item) { Type t(List); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type result(Type item) { Type t(Result); t.element=std::make_shared<Type>(std::move(item)); return t; }
+  static Type task(Type item) { Type t(Task); t.element=std::make_shared<Type>(std::move(item)); return t; }
+  static Type channel(Type item) { Type t(Channel); t.element=std::make_shared<Type>(std::move(item)); return t; }
   static Type record(std::string name) { Type t(Record); t.name=std::move(name); return t; }
   static Type constructor(std::string name,unsigned arity) { Type t(Constructor);t.name=std::move(name);t.constructorArity=arity;return t; }
   static Type function(std::vector<Type> parameters,Type result,std::string realm="shared",std::set<std::string> effects={}) {
     Type t(Function);t.arguments=std::move(parameters);t.element=std::make_shared<Type>(std::move(result));t.realm=std::move(realm);t.effects=std::move(effects);return t;
   }
-  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File; }
+  bool heap() const { return kind==Str||kind==List||kind==Record||kind==Result||kind==Function||kind==Bytes||kind==File||kind==Task||kind==Channel||kind==TaskScope; }
   bool operator==(const Type &other) const {
     return kind==other.kind && name==other.name && constructorArity==other.constructorArity && arguments==other.arguments && realm==other.realm && effects==other.effects && ((!element&&!other.element) || (element&&other.element&&*element==*other.element));
   }
 };
 std::string typeName(Type type);
+// Only the current function body: nested lambdas have separate return boundaries.
+struct Function;
+bool propagatesResult(const Function &function);
+bool usesParallelMap(const Function &function);
 std::string floatLiteral(int64_t bits);
 struct Pattern;
 using P = std::shared_ptr<Pattern>;
@@ -55,7 +76,7 @@ template<class F> void visitPattern(P pattern,F visit){visit(pattern);for(auto c
 struct MatchArm;
 struct Function;
 struct Expr {
-  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda, Floating } kind;
+  enum Kind { Integer, Boolean, Name, Unary, Binary, Call, String, List, Field, Index, Match, Invoke, FunctionRef, Lambda, Floating, Propagate } kind;
   Span span;SourceRange sourceRange;unsigned syntaxHeight=1; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;
@@ -67,10 +88,12 @@ struct Expr {
 };
 using E = std::shared_ptr<Expr>;
 struct Stmt {
-  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match } kind;
+  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw } kind;
   Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
   std::vector<std::shared_ptr<Stmt>> body, alternative;
   std::vector<std::shared_ptr<MatchArm>> arms;
+  // Only Try uses this second immutable string binding. Empty on retained ASTs.
+  std::string catchMessage;
 };
 using S = std::shared_ptr<Stmt>;
 struct Param { std::string name; Type type; Span span; };
@@ -82,9 +105,13 @@ struct Variant { std::string name; std::vector<Param> fields; Span span; int64_t
 struct Structure {
   std::string name; std::vector<Param> fields; Span span; bool exported=false; std::string owner,localName,unit;
   bool enumeration=false; std::vector<Variant> variants;
+  bool opaqueResource=false;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  // Non-semantic physical name origin. In particular, the contextual word in
+  // `server resource resource;` is not the declaration's identifier token.
+  std::optional<Span> nameOrigin;
   std::vector<Param*> members(){std::vector<Param*> result;for(auto &f:fields)result.push_back(&f);for(auto &v:variants)for(auto &f:v.fields)result.push_back(&f);return result;}
   std::vector<const Param*> members()const{std::vector<const Param*> result;for(const auto &f:fields)result.push_back(&f);for(const auto &v:variants)for(const auto &f:v.fields)result.push_back(&f);return result;}
 };
@@ -112,7 +139,7 @@ struct Endpoint {
   std::string name,localName,owner,unit,method,path,target;
   int64_t successStatus=200; Span span;
 };
-struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; };
+struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; bool taskPrototype=false; SourceLanguage sourceLanguage=SourceLanguage::Language018; };
 struct Trait {
   std::string name,localName,owner,unit;Span span;bool exported=false;
   unsigned selfArity=0;
@@ -142,6 +169,10 @@ struct Program {
   std::vector<Implementation> implementations;
   std::vector<EditorName> editorNames;
   bool traitsPrepared=false;
+  // Task syntax/continuations are shared by public019/020 and guarded raw018
+  // development frontend. sourceLanguage distinguishes their semantic identity.
+  bool taskPrototype=false;
+  SourceLanguage sourceLanguage=SourceLanguage::Language018;
   std::string entryUnit;
   std::map<std::string,SourceUnit> units;
   std::map<std::string,Function> functionTemplates;
@@ -159,20 +190,47 @@ struct Program {
   std::string definition(const Implementation &implementation) const;
   std::string location(const Span &span) const;
 };
+// The checked program's semantic version, separate from the installed public
+// compiler default. Historical programs retain their explicit identity.
+const char *programLanguage(SourceLanguage language);
+const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);
+// Compiler-private frontend/reference experiment. Normal source/project parsing
+// remains024; this identity cannot be loaded from a public project manifest.
+Program parseSourceExceptionsPrototype(std::string source,std::string path);
+// Separate compiler-private cooperative task/exception experiment.
+Program parseSourceExceptionTasksPrototype(std::string source,std::string path);
+// Select syntax and semantic identity before checking, never by retagging a
+// program already checked under the public default.
+Program parseVersioned(std::string source,std::string path,SourceLanguage language,
+    bool editorNames=false,bool editorDetails=false);
+Program parseLegacy018(std::string source,std::string path,
+    bool editorNames=false,bool editorDetails=false);
 E parseExpression(std::string source,std::string path,unsigned maxTokens=0);
+E parseSourceExceptionWatchPrototype(std::string source,std::string path,unsigned maxTokens=0);
 S parseStatement(std::string source,std::string path,unsigned maxTokens=0);
 P parsePattern(std::string source,std::string path,unsigned maxTokens=0);
 Type parseType(std::string source);
 void bindExpression(const Program &program,const std::string &function,E expression);
 Type checkExpression(Program &program,const std::string &function,E expression,const std::map<std::string,Type> &locals);
+llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &,E,const std::map<std::string,Type> &,
+    const llvm::json::Object &,uint64_t,const llvm::json::Array *captures=nullptr,bool demand=false,
+    const std::set<std::string> *compiledCallables=nullptr);
 // Check explicit physical-project version/format without opening its graph store.
-void validateProjectMetadata(const std::string &root);
+void validateProjectMetadata(const std::string &root,SourceLanguage language=currentSourceLanguage);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
     const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);
+// Explicit compiler-owned source selection; never inferred from nex.json.
+// Rechecks physical sources and matching locks without opening a graph Store.
+Program loadVersionedProgram(const std::string &entry,const std::string &root,SourceLanguage language,
+    bool enforceLock=true,const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);
 // Same lexer as the parser, for checked editor projections; no source identities.
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file);
 Program loadBundle(const llvm::json::Value &bundle,const std::string &root);
+// Explicit versioned recheck; no physical manifest relabel or auto-detection.
+//018 uses the retained legacy parser;019/020 keep their own semantic checks.
+Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &root,
+    const std::string &language);
 // Binding-only source syntax for reference projection. Never pass it to a
 // backend: separately check both the original and projected source bundles.
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root);
@@ -201,7 +259,13 @@ std::string json(const llvm::json::Value &value, bool pretty = true);
 std::string hash(const std::string &text);
 std::string revision(const Program &program);
 llvm::json::Value describe();
-const std::set<std::string> &builtinNames();
+const std::set<std::string> &builtinNames(bool tasks=true,bool resources=false);
+const std::set<std::string> &externalResourceBuiltins();
+bool supportsExternalResources(const Program &program);
+bool isExternalResource(const Program &program,const Type &type);
+bool containsExternalResource(const Program &program,const Type &type);
+bool containsNonTaskResource(const Program &program,const Type &type);
+std::pair<std::string,std::string> sourceResourceClass(const Program &program,const Structure &declaration);
 const std::set<std::string> &streamFileBuiltins();
 bool containsFile(const Program &program,const Type &type);
 llvm::json::Value wireSchema(const Program &program,const Type &type);
@@ -209,7 +273,8 @@ llvm::json::Value foreignSignature(const Program &program,const Function &functi
 llvm::json::Value foreignBinding(const Program &program,const Function &function);
 struct Evaluation { llvm::json::Value value = nullptr; std::string output; uint64_t steps = 0; };
 Evaluation evaluate(const Program &program, const std::string &entry = "main",
-                    uint64_t stepLimit = 1000000);
+                    uint64_t stepLimit = 1000000,
+                    const nexrt::TaskExecutionLimits *taskLimits = nullptr);
 // Typed wire values are decoded lazily, preserving short-circuit behavior when
 // a referenced stopped-frame value is unavailable. No target process is called.
 llvm::json::Value evaluateExpression(const Program &program,E expression,const std::map<std::string,Type> &types,

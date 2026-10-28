@@ -13,11 +13,42 @@ import unittest
 import support as harness
 
 
+STRUCTURED_SOURCE = '''module taskdemo;
+pub fn solve()->i64 !{task}{
+ return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
+  let queue:channel<i64>=channel_new<i64>(scope,0);
+  let captured:i64=40;
+  let sender:task<unit>=task_spawn(scope,fn()->unit !{task}{
+   task_yield();assert(task_send(queue,captured+2));assert(task_close(queue));
+  });
+  let value:i64=unwrap(task_recv(queue));task_wait(sender);
+  assert(!is_ok(task_recv(queue)));return value;
+ });
+}
+fn main()->i64 !{io,task}{print(solve());return 0;}
+test fn examples()->unit !{task}{assert(solve()==42);}
+'''
+
+
 class Tasks(harness.ToolchainCase):
+    def test_new_capture_and_replay_use_canonical_owned_output_directories(self):
+        task=self.scaffold();task['checks']=[];task['requirements']=[]
+        self.requirement(task,{'id':'effects','kind':'effects','target':'source',
+            'symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
+        physical=self.root/'physical-runs';physical.mkdir()
+        alias=self.root/'run-alias';alias.symlink_to(physical,target_is_directory=True)
+        run=self.task('run','--directory',alias/'captured')
+        receipt=Path(run['output'])
+        self.assertEqual(receipt,(physical/'captured/receipt.json').resolve(strict=True))
+        self.assertEqual(receipt,receipt.resolve(strict=True))
+        replay=self.cli('task',receipt,'--kind','replay','--directory',alias/'replayed',timeout=180)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],run['programs'])
+        self.assertEqual(Path(replay['output']),(physical/'replayed/receipt.json').resolve(strict=True))
+
     def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
         ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
-        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'ancestor.nex'}));self.cli('check',outer)
-        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'ancestor.nex'}));self.cli('check',outer)
+        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
         self.root=child;self.file=child/'main.nex';task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
         run=self.task('run','--directory',ancestor/'captures/run');receipt=Path(run['output'])
@@ -75,6 +106,123 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         task['requirements'].append({'id': check['id'], 'text': 'Exercise an explicit acceptance condition',
             'bindings': [{'program': check['program'], 'kind': kind, 'symbol': symbol}],
             'targets': [check['target']], 'checks': [check['id']]})
+
+    def structured_receipt(self, receipt, revision):
+        """Check actual backend observations, not only acceptance status flags."""
+        folder=Path(receipt).parent;saved=json.loads(Path(receipt).read_text())
+        self.assertEqual(saved['status'],'passed')
+        self.assertEqual(saved['programs'][0]['revision'],revision)
+        self.assertTrue(all(row['status']=='passed' for row in saved['checks']))
+        rows={row['id']:row for row in saved['checks']}
+        for name,target in [('test-0','native'),('test-task-web','web')]:
+            test,=rows[name]['tests'];self.assertEqual(test['symbol'],'taskdemo::examples');self.assertTrue(test['ok'])
+            command=json.loads((folder/test['receipt']).read_text())
+            self.assertEqual(command['exit_code'],0);self.assertFalse(command['timed_out']);self.assertFalse(command['output_limit']);self.assertEqual(command['interrupted'],0)
+            actual,=command['response']['tests']
+            self.assertEqual(actual['name'],'taskdemo::examples');self.assertTrue(actual['ok']);self.assertFalse(actual.get('skipped',False))
+            self.assertEqual(actual['native'],target=='native');self.assertEqual(actual['web'],target=='web')
+        observed=rows['observe-task']
+        for backend in ['reference','native']:
+            command=json.loads((folder/observed[backend]).read_text())
+            self.assertEqual(command['exit_code'],0)
+            self.assertEqual(command['response']['stdout'],'42\n')
+            self.assertEqual(command['response']['value' if backend=='reference' else 'exit_code'],0)
+        self.assertEqual(rows['task-effects']['violations'],[])
+        self.assertEqual(rows['entry-effects']['violations'],[])
+        module=folder/'artifacts/task-module/module'
+        mapping=json.loads((module/'nex-map.json').read_text())
+        self.assertEqual(mapping['schema'],'nex.typescript-map/1');self.assertEqual(mapping['language'],saved['language'])
+        self.assertEqual(mapping['revision'],revision);self.assertEqual(mapping['execution'],'task-generator')
+        self.assertTrue((module/'nex-task-runtime.ts').is_file())
+        for path in ['runtime/nex_task_application.cpp','web/nex-task-runtime.ts']:
+            self.assertTrue((folder/'inputs/resources'/path).is_file())
+        return saved
+
+    def test_public_structured_source_task_contract_native_typescript_and_source_deleted_replay(self):
+        descriptor=self.cli('describe');self.assertTrue(descriptor['structured_tasks_runtime']['source_support'])
+        schema=json.loads((harness.REPO/'llm/task.schema.json').read_text())
+        effect_shape=next(value for value in schema['properties']['checks']['items']['oneOf']
+                          if value['properties']['kind'].get('const')=='effects')
+        self.assertEqual(set(effect_shape['properties']['allowed_effects']['items']['enum']),set(descriptor['effects']))
+        self.source('module retained_head;fn main()->i64{return 71;}')
+        head=self.cli('check')['revision'];database=self.root/'.nex/graph.db';original=harness.database_rows(database)
+        task=self.scaffold(STRUCTURED_SOURCE);candidate=task['programs'][0]['baseline_revision']
+        self.assertEqual(task['language'],descriptor['version']);self.assertNotEqual(candidate,head)
+        context=self.cli('context','--symbol','taskdemo::solve','--revision',candidate)
+        self.assertEqual(context['revision'],candidate)
+        self.assertEqual(self.cli('history')['head'],head)
+        web=copy.deepcopy(next(check for check in task['checks'] if check['kind']=='test'))
+        web.update(id='test-task-web',target='web')
+        self.requirement(task,web,'taskdemo::solve')
+        self.requirement(task,{'id':'observe-task','kind':'run','target':'native','entry':'taskdemo::main',
+                              'expect':{'stdout':'42\n','exit_code':0}},'taskdemo::solve')
+        self.requirement(task,{'id':'task-effects','kind':'effects','target':'source','symbols':['taskdemo::solve'],
+                              'allowed_effects':['task'],'allowed_realms':['shared']},'taskdemo::solve')
+        self.requirement(task,{'id':'entry-effects','kind':'effects','target':'source','symbols':['taskdemo::main'],
+                              'allowed_effects':['io','task'],'allowed_realms':['shared']},'taskdemo::main')
+        self.requirement(task,{'id':'task-module','kind':'build','target':'web','mode':'module','entry':'taskdemo::solve'},'taskdemo::solve')
+        self.save(task);prepared=harness.database_rows(database)
+        self.assertEqual(prepared[0],original[0])
+        for name,rows in original[1].items():
+            self.assertLessEqual(set(rows),set(prepared[1][name]),name)
+        self.assertEqual(prepared[1]['head'],original[1]['head'])
+        checked=self.task('check','--revision',candidate)
+        self.assertTrue(checked['ok']);self.assertTrue(all(c['status']=='ready' for c in checked['checks']))
+        self.assertEqual(harness.database_rows(database),prepared)
+        self.assertFalse((self.root/'.nex/tasks').exists());self.assertFalse((self.root/'.nex/build').exists())
+        result=self.task('run','--revision',candidate,'--task-hash',checked['task_hash'],'--directory',self.root/'structured-run')
+        self.assertEqual(result['task_hash'],checked['task_hash'])
+        saved=self.structured_receipt(result['output'],candidate)
+        after=harness.database_rows(database);self.assertEqual(after[0],prepared[0])
+        for name,rows in prepared[1].items():
+            if name!='task_runs':self.assertEqual(after[1][name],rows,name)
+        self.assertEqual(self.task('history')['runs'][0]['status'],'passed')
+        self.file.unlink();self.taskfile.unlink()
+        receipt=Path(result['output']);inputs=receipt.parent/'inputs'
+        import hashlib
+        before_inputs={p.relative_to(inputs).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                       for p in inputs.rglob('*') if p.is_file()}
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'structured-replay',timeout=180)
+        self.assertEqual(replay['task_hash'],result['task_hash']);self.assertEqual(replay['programs'],result['programs'])
+        self.structured_receipt(replay['output'],candidate)
+        self.assertEqual(harness.database_rows(database),after)
+        self.assertEqual(self.cli('history')['head'],head)
+        self.assertEqual(before_inputs,{p.relative_to(inputs).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                                      for p in inputs.rglob('*') if p.is_file()})
+        self.assertEqual(json.loads(receipt.read_text()),saved)
+        state=Path(replay['output']).parent/'state'
+        self.assertTrue((state/'.nex/graph.db').is_file())
+        self.assertEqual(self.cli('task',state/'task.json','--kind','history')['runs'][0]['status'],'passed')
+
+    def test_structured_task_effect_allowlist_omission_and_unknown_effect_preserve_graph(self):
+        task=self.scaffold(STRUCTURED_SOURCE);task['checks']=[];task['requirements']=[]
+        self.requirement(task,{'id':'allowed','kind':'effects','target':'source','symbols':['taskdemo::solve'],
+                              'allowed_effects':['task']},'taskdemo::solve')
+        self.requirement(task,{'id':'omitted','kind':'effects','target':'source','symbols':['taskdemo::solve'],
+                              'allowed_effects':[]},'taskdemo::solve')
+        self.save(task);database=self.root/'.nex/graph.db';before=harness.database_rows(database)
+        # A valid policy can fail acceptance: preflight is not a passed effects observation.
+        checked=self.task('check');self.assertTrue(checked['ok']);self.assertEqual(harness.database_rows(database),before)
+        result=self.task('run','--task-hash',checked['task_hash'],ok=False)
+        self.assertEqual(result['status'],'not_satisfied')
+        rows={row['id']:row for row in result['checks']}
+        self.assertEqual(rows['allowed']['status'],'passed');self.assertEqual(rows['allowed']['violations'],[])
+        self.assertEqual(rows['omitted']['status'],'failed')
+        self.assertTrue(rows['omitted']['violations'])
+        self.assertTrue(all(row.get('effect')=='task' for row in rows['omitted']['violations']))
+        self.assertIn({'symbol':'taskdemo::solve','effect':'task'},rows['omitted']['violations'])
+        after=harness.database_rows(database);self.assertEqual(before[0],after[0])
+        for name,values in before[1].items():
+            if name!='task_runs':self.assertEqual(after[1][name],values,name)
+        self.assertEqual(self.task('history')['runs'][0]['status'],'not_satisfied')
+        for effect in ['async','network']:
+            invalid=copy.deepcopy(task);invalid['checks'][0]['allowed_effects']=['task',effect];self.save(invalid)
+            for kind in ['check','run']:
+                destination=self.root/('unknown-'+effect+'-'+kind)
+                arguments=[] if kind=='check' else ['--directory',destination]
+                error=self.task(kind,*arguments,ok=False)
+                self.assertEqual(error['code'],'E_TASK');self.assertIn('unknown effect',error['message'])
+                self.assertFalse(destination.exists());self.assertEqual(harness.database_rows(database),after)
 
     def test_scaffold_head_preservation_selection_and_readonly_check(self):
         task = self.scaffold()

@@ -1,0 +1,84 @@
+{
+  "schema": "nex.genuine023-expanded-stream-fixture/1",
+  "producer_toolchain": "0.133.5",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "65e45e386272025627da730c1bb49c3c05a80345a0b9aa19c50b790087808b21",
+  "SQL_sha256": "15a0944cbc91a59caa654349d551cc443f4f58de4d7a7cb9e9ebcc1fa2c91810",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex"
+  },
+  "lock": null,
+  "head": "ceb48bb56225c3fdb056b4cbe3ba4fc3f343f246d5e1db45ec17f633101b6a4d",
+  "revisions": [
+    {
+      "revision": "11d588efd7fba949d3c4e0d241f4019360274b54335178976208993c55c0166e",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 42;}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 42;}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+      },
+      "expected_value": 42,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "a2aba0df6604ece5a2cf1bbf6da4b370df8eefb42a2b845247126298299add42",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 43;}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 43;}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+      },
+      "expected_value": 43,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    },
+    {
+      "revision": "ceb48bb56225c3fdb056b4cbe3ba4fc3f343f246d5e1db45ec17f633101b6a4d",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 44;}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::aliases;enum Maybe{Some(value:file);None;}struct Packet{files:list<file>;result:result<file>;tag:Maybe;}\nserver fn main()->i64 !{task,fs}{let f:file=unwrap(file_open_read(\"input\"));let p:Packet=Packet([f,f],ok(f),Maybe::Some(f));let alias:file=unwrap(p.result);\nassert(alias==p.files[0]);assert(unwrap(file_read(alias,3))==utf8_bytes(\"abc\"));assert(unwrap(file_read(p.files[1],3))==utf8_bytes(\"def\"));assert(file_close(alias));assert(!file_is_open(f));return 44;}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+      },
+      "expected_value": 44,
+      "old_error": "E_TASK_UNIMPLEMENTED",
+      "old_value": null
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 3,
+    "declaration_versions": 9,
+    "edges": 0,
+    "graph_edges": 24,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 3,
+    "nodes": 9,
+    "operation_functions": 9,
+    "operation_ids": 67,
+    "operation_versions": 201,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false
+}

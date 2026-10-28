@@ -1,5 +1,19 @@
 # Linux compiler and development chain
 
+Clang sanitizer builds require the matching `libclang-rt-22-dev` package, pinned
+to the same LLVM22.1.8 APT version as the compiler. The maintained development
+Dockerfile includes it. For an existing verified image, build the separate
+`tools/linux/Sanitizers.Dockerfile` with `TOOLCHAIN_IMAGE` set to its verified
+local tag, and record both immutable image IDs and the installed package version.
+The TCP experiment uses actual loopback IPv4/IPv6 with external network disabled;
+its normal, ASAN/UBSAN and TSAN scopes are separate from compiler/SDK acceptance.
+
+The live shared-image/core-capsule test places its temporary project under
+`/build/live-image-tmp`. On a host bind mount this exercises a filesystem distinct
+from container `/tmp`, with literal percent signs and Unicode in the fixture
+path. Toolchain0.134.5 keeps capsule publication staging beside its destination;
+the test also verifies that a repeated export preserves the existing capsule.
+
 Native application packaging uses `readelf`, `ldd` and patchelf 0.18.0; the
 development recipe now installs the pinned patchelf package. Older retained
 images need that packaging dependency before running the new `packaging` suite.
@@ -155,3 +169,24 @@ packaging image adds patchelf; clean runtime and archive verification run withou
 LLVM/MLIR/Z3/Clang packages, source mounts or external network. The system GCC C/C++
 SDK and GNU runtime remain prerequisites. [The SDK guide](sdk.md) defines the
 copied closure, notice inventory, relocation/archive gates and scope limits.
+
+### POSIX file runtime standard headers
+
+The file runtime explicitly includes <optional> for its pending creation
+settlement guard. Linux libstdc++ must compile this code without depending on
+Apple libc++ transitive standard-library includes. This is a source portability
+correction, with unchanged file ownership, cancellation and physical-settlement
+semantics. The original frozen191 Linux compiler diagnostics are retained in
+the local linux191-arm64-v1/build.log; matching current Linux verification is a
+separate requirement from prior macOS or historical Linux receipts.
+
+### Current SDK smoke language and recovery output
+
+The smoke helper requires actual describe, doctor and installed language-pack
+versions to agree, supporting the reviewed023 and024 cohorts. Every new test
+project uses that discovered language rather than a stale023 literal. Its302
+unique indexed files (303 manifest references) still match the supplied source.
+Use `--source MATCHING_CHECKOUT --output-root NEW_EVIDENCE` to retain an earlier
+failed run while exercising an installed compiler. Defaults `/src` and `/build`
+preserve the container workflow. This helper correction does not change the
+compiler, existing graphs, runtime semantics or the separate source-free SDK gate.

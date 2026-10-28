@@ -14,6 +14,16 @@ and16 NPU calls/96 values. All16 NPU profiles identify only
 
 ## Prepare and execute
 
+The existing0.70 fixture has also been retested on the same physical board with
+a private0.92/language0.18 SDK and explicit migration of a copied genuine0.16
+graph. Reference/native Debug/Release tests and runs, native profile,
+source-deleted archived replay and standalone execution pass. Native tests run
+both reference and native paths: ten fixture executions produce30 GPU calls
+and20 exclusively Zhouyi NPU calls, with CPU fallback disabled. Original graph
+rows/schema and the original fixture remain preserved. This does not expand
+the fixed adapter API or establish generic accelerator support.
+See [the0.92 receipt](../../docs/evidence/cix-p1-ffi-0.92.0.json).
+
 Use an installed, matching Linux ARM64 NEX SDK, system GCC with C++20, and the
 configured CIX driver environment. Preparation creates a new project, derives
 signatures with the actual compiler, builds a module, pins its manifest and

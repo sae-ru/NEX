@@ -44,8 +44,8 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
     for(size_t i=0;i<t.arguments.size();++i){auto expected=slots==c.constructorParameters.end()?0:slots->second.at(i);if(kind(t.arguments[i],c,work,depth+1)!=expected)return fail("nominal argument has the wrong constructor kind");}
     return 0;
   }
-  if(t.kind==Type::List||t.kind==Type::Result) {
-    if(!t.element||!t.arguments.empty()||kind(*t.element,c,work,depth+1)!=0)
+  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel) {
+    if(!t.element||!t.arguments.empty()||kind(*t.element,c,work,depth+1,t.kind==Type::Task)!=0)
       return fail("aggregate payload must be a value type");
     return 0;
   }
@@ -73,6 +73,8 @@ Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Wo
     throw Error("E_GENERIC_KIND","expected an unapplied type constructor",work.span);
   if(constructor.name=="list")return Type::list(std::move(args.front()));
   if(constructor.name=="result")return Type::result(std::move(args.front()));
+  if(constructor.name=="task")return Type::task(std::move(args.front()));
+  if(constructor.name=="channel")return Type::channel(std::move(args.front()));
   auto value=Type::record(constructor.name);value.arguments=std::move(args);return value;
 }
 Type substitute(const Type &source,const TypeSubstitution &bindings,const KindContext &context,
@@ -99,8 +101,8 @@ bool occurs(const std::string &name,const Type &type,Work &work,unsigned depth=0
 }
 struct Application {Type constructor;std::vector<Type> arguments;};
 std::optional<Application> application(const Type &type) {
-  if(type.kind==Type::List||type.kind==Type::Result)
-    return Application{Type::constructor(type.kind==Type::List?"list":"result",1),{*type.element}};
+  if(type.kind==Type::List||type.kind==Type::Result||type.kind==Type::Task||type.kind==Type::Channel)
+    return Application{Type::constructor(type.kind==Type::List?"list":type.kind==Type::Result?"result":type.kind==Type::Task?"task":"channel",1),{*type.element}};
   if(type.kind==Type::Record&&!type.arguments.empty())
     return Application{Type::constructor(type.name,type.arguments.size()),type.arguments};
   if(type.kind==Type::Parameter&&!type.arguments.empty()) {

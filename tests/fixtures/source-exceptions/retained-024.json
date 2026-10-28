@@ -1,0 +1,105 @@
+{
+  "schema": "nex.private-exception-retained-origin/1",
+  "language": "0.24",
+  "baseline_toolchain": "0.135.8",
+  "source": "module retained;fn throw(value:i64)->i64{return value;}fn main()->i64{let catch:i64=throw(42);return catch;}\n",
+  "functions": {
+    "retained::throw": {
+      "hash": "01ef2d91c14786b86b02c403994035f995452257635b30450b41fd7ed7c269c9",
+      "definition": {
+        "body": [
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [],
+              "kind": 2,
+              "operator": "value",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 4,
+            "name": "",
+            "type": "unknown"
+          }
+        ],
+        "effects": [],
+        "format": "nex.function/13",
+        "name": "retained::throw",
+        "owner": "retained",
+        "parameters": [
+          {
+            "name": "value",
+            "type": "i64"
+          }
+        ],
+        "public": false,
+        "realm": "shared",
+        "result": "i64",
+        "template": "",
+        "test": false,
+        "type_arguments": [],
+        "type_bounds": {},
+        "type_parameter_kinds": [],
+        "type_parameters": []
+      }
+    },
+    "retained::main": {
+      "hash": "16b4ee406e959e02f158ecb180fc85af5496d07020c92f4d53aec32718d78732",
+      "definition": {
+        "body": [
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [
+                {
+                  "args": [],
+                  "kind": 0,
+                  "operator": "",
+                  "type": "i64",
+                  "value": 42
+                }
+              ],
+              "kind": 5,
+              "operator": "retained::throw",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 0,
+            "name": "catch",
+            "type": "i64"
+          },
+          {
+            "body": [],
+            "else": [],
+            "expression": {
+              "args": [],
+              "kind": 2,
+              "operator": "catch",
+              "type": "i64",
+              "value": 0
+            },
+            "kind": 4,
+            "name": "",
+            "type": "unknown"
+          }
+        ],
+        "effects": [],
+        "format": "nex.function/13",
+        "name": "retained::main",
+        "owner": "retained",
+        "parameters": [],
+        "public": false,
+        "realm": "shared",
+        "result": "i64",
+        "template": "",
+        "test": false,
+        "type_arguments": [],
+        "type_bounds": {},
+        "type_parameter_kinds": [],
+        "type_parameters": []
+      }
+    }
+  }
+}

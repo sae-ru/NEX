@@ -1,5 +1,12 @@
 # Как дать NEX другой LLM
 
+В toolchain0.87 начните с `llm/BOOTSTRAP.md` и
+`nex describe --kind index --json`. Получайте нужный раздел через
+`nex describe --field PATH --json`, сохраняя compiler_build/descriptor_hash.
+Для старого SDK остаётся полное `nex describe --json`. Это сокращает выдачу
+discovery; весь авторитетный workflow и нужные разделы спецификации обязательны.
+Полную стоимость задачи измеряем по [критериям качества](../docs/quality.md).
+
 Пакет языка — обычные текстовые файлы и команды CLI. Подойдут модель в чате, агент с терминалом и локальная модель. Способ подключения модели не меняет правила языка или проверки компилятора.
 
 ## Что передать модели
@@ -125,3 +132,61 @@ For source-reference navigation, keep the exact declaration file/byte interval f
 static подключает проверенный архив. Храните exports и зависимости в
 nex.build.json. План явно перечисляет consumer_instantiations для generics;
 отсутствующий обычный экспорт должен быть исправлен в контракте библиотеки.
+
+
+## Исходные задачи и миграция0.20
+
+Перед использованием задач запросите `nex describe --json` и прочитайте
+`docs/language.md`, `docs/grammar.ebnf`, `docs/task-lifetimes.md` и
+`docs/task-migration.md`. Реальные типы — `task_scope`, `task<T>` (включая
+`task<unit>`) и `channel<T>` с не-unit данными. Все десять intrinsic-вызовов
+требуют `!{task}`: `with_tasks`, `task_spawn`, `task_wait`, `task_cancel`,
+`channel_new`, `task_send`, `task_recv`, `task_close`, `task_yield`,
+`current_task_scope`. Callback области получает `task_scope`, callback запуска
+не имеет аргументов. Оба могут быть чистыми или иметь только эффект `task`
+в доступном realm. В020 также разрешён ровно server task/fs callback при
+явных task/fs у вызывающего. Только два чтения файлов поддерживают эту связь;
+читайте docs/task-file-reads.md. fs-only helper из task отклоняется с E_EFFECT;
+`io/db/ffi` callbacks остаются неподдержанными. Ключевых слов async/await
+нет; обычные имена async/await/spawn/send/recv/cancel/close/yield сохраняются.
+
+Компилятор заранее отклоняет известные утечки полномочий через helpers,
+generics, aggregates и captures с `E_TASK_LIFETIME`. Неизвестные вызовы,
+получаемые из channel значения, рекурсия, widening циклов и исчерпанный бюджет
+анализа сохраняют обязательные runtime-проверки. Успех не доказывает полную
+статическую безопасность lifetime. Данные могут содержать полномочия только
+своего или родительского scope; заимствование предка разрешено, выход
+полномочий завершающегося потомка запрещён. Правила действуют и внутри
+immutable snapshots/closures. Файлы не пересекают task-границы, task-полномочия
+не проходят wire/JSON/API/storage/foreign/browser workers или parallel_map.
+
+В native macOS/Linux приложениях и проверенных source/static/fixed-shared проектах используются
+компилированные continuations. Общие defaults —1000000 шагов,5000ms и pool16;
+`with_tasks` принимает1..16 workers и сохраняет ограничения предков. Настройки
+этих defaults через CLI/проект описаны в docs/task-limits.md. Reference и TypeScript
+выполняют независимое cooperative scheduling; это не доказательство физического
+CPU overlap. Standalone task-экспорты TypeScript возвращают task.Step<T> и
+запускаются scheduler host; pure-модули остаются синхронными. Main-thread UI entries
+сохраняют pure synchronous контракты и отклоняют reachable task effects/callables.
+Отдельно, при browser_workers.structured_tasks=true, worker_compute допускает
+ровно task и получает собственный scheduler внутри dedicated Worker. Только wire
+input/output пересекает сообщения; scopes/futures/channels остаются внутри.
+Лимиты этого scheduler:1000000 шагов/5000ms/logical workers16, один JS thread.
+Отмена/timeout host завершает dedicated Worker; task IO в нём недоступен.
+См. docs/browser-workers.md.
+Чтение целых файлов и native task debug/profile имеют отдельные объявленные
+контракты. Для static/fixed-shared providers проверяйте task_providers,
+task_shared_providers, task_provider_profiling и task_provider_debugging.
+Общие task writes/streams/db/ffi/network, runtime load/unload, task server/UI
+adapters, прочие native targets и полная текущая SDK/platform-приёмка остаются pending.
+
+Для018 сохраните matching SDK, исходники и полный snapshot графа. Выполняйте
+явный `migrate` исходного архива либо отдельного reviewed source candidate;
+конфликтующие новые reserved declarations переименовываются по identifier tokens
+в новом bundle. Старые revision/language/source/IDs не переписываются, критерии
+приёмки не ослабляются. Новая019 ревизия выбирается через `--revision HEAD`,
+пока не экспортирован отдельный019 проект. Проверьте сохранность всех старых
+строк/DDL/IDs, новые language-envelopes/journal, source replay, export и
+повторный recheck без нового перехода HEAD; конфликты HEAD требуют согласования
+со свежим контекстом. Подробные команды и реальные fixtures описаны в migration
+guide, а scoped test evidence не заменяет общую приёмку текущего SDK/платформы.

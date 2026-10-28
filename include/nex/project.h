@@ -4,10 +4,13 @@
 #include "nex/graph_queries.h"
 #include <filesystem>
 namespace nex {
+enum class StoreOpenMode { ReadWrite, ReadOnly };
 class Store {
   struct Impl; std::unique_ptr<Impl> impl;
 public:
-  explicit Store(const std::filesystem::path &directory);
+  // ReadOnly never creates a directory, initializes/upgrades schema or writes
+  // identity/journal state. Use it for migration origin preflight.
+  explicit Store(const std::filesystem::path &directory,StoreOpenMode mode=StoreOpenMode::ReadWrite);
   ~Store();
   std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={});
   llvm::json::Value graph(const Program &program);
@@ -23,6 +26,7 @@ public:
   std::string source(const std::string &revision);
   std::string headRevision();
   std::string revisionLanguage(const std::string &revision);
+  bool containsRevision(const std::string &revision);
   llvm::json::Value bundle(const std::string &revision);
   void recordTask(const std::string &id,const std::string &task,const std::string &taskHash,const std::string &status,const std::string &report,const std::string &reportHash);
   llvm::json::Value taskHistory(const std::string &task,unsigned limit=50);

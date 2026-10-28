@@ -16,6 +16,104 @@ REPO = harness.REPO
 
 
 class Toolchain(harness.ToolchainCase):
+    def test_external_completion_and_public_file_read_descriptor_and_pack_agree(self):
+        descriptor = self.cli('describe')
+        pack = json.loads((REPO/'llm/language-pack.json').read_text())
+        external = descriptor['task_external_completion']
+        self.assertEqual(external, pack['task_external_completion'])
+        self.assertEqual(external['status'], 'experimental_private_trusted_host_kernel')
+        for field in ('source_support', 'source_syntax_changed', 'canonical_formats_changed', 'stable_host_abi'):
+            self.assertIs(external[field], False)
+        self.assertTrue(external['public_source_async_io'])
+        self.assertEqual(external['guide'], pack['documents']['task_external_completion'])
+        self.assertTrue((REPO/external['guide']).is_file())
+        self.assertEqual(self.cli('guide', '--kind', 'task-external')['text'], (REPO/external['guide']).read_text())
+        self.assertEqual(external['typescript']['executor_workers'], 1)
+        self.assertTrue(external['file_read_lease']['source_lowering'])
+        self.assertTrue(external['reference']['source_io_lowering'])
+        reads = descriptor['task_file_reads']
+        self.assertEqual(reads, pack['task_file_reads'])
+        self.assertEqual(reads['language'], '0.24')
+        self.assertTrue(reads['source_support'] and reads['reference'] and reads['physical_drain'])
+        self.assertEqual(reads['function_effects'], ['task', 'fs'])
+        self.assertEqual(reads['realm'], 'server')
+        self.assertTrue(reads['writes']);self.assertTrue(descriptor['task_file_writes']['public_enabled'])
+        self.assertEqual(reads['guide'], pack['documents']['task_file_reads'])
+        self.assertEqual(self.cli('guide', '--kind', 'task-file-reads')['text'], (REPO/reads['guide']).read_text())
+        self.assertTrue(reads['streams'] and reads['task_debug_profile'])
+        self.assertIs(reads['binary_providers'], True)
+        self.assertIs(reads['provider_source_required'], True)
+        self.assertEqual(reads['provider_linkage'], ['static','shared-fixed'])
+        providers = descriptor['task_providers']
+        self.assertEqual(providers, pack['task_providers'])
+        self.assertIs(providers['public_enabled'], True)
+        self.assertIs(providers['static_linkage'], True)
+        self.assertIs(providers['dynamic_linkage'], False)
+        shared=descriptor['task_shared_providers']
+        self.assertEqual(shared,pack['task_shared_providers'])
+        self.assertIs(shared['public_enabled'],True)
+        self.assertEqual((shared['record_schema'],shared['plan_schema'],shared['completion_schema']),
+            ('nex.native-task-provider/8','nex.project-task-linkage/8','nex.native-completion/5'))
+        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(5,88,40))
+        for field in ('authority_transport','callable_transport','imported_function_values','profiling',
+                      'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
+            self.assertIs(shared[field],False)
+        for field in ('typescript', 'windows', 'wasm', 'http_task_handlers'):
+            self.assertFalse(reads[field])
+        profiled=descriptor['task_provider_profiling']
+        self.assertEqual(profiled,pack['task_provider_profiling'])
+        self.assertEqual((profiled['language'],profiled['configuration']),('0.24','profile'))
+        self.assertEqual((profiled['execution_task_abi'],profiled['descriptor_bytes'],profiled['registry_abi'],profiled['registry_bytes']),
+            (5,88,1,32))
+        for field,value in {'record_schema':'nex.native-task-provider/9','catalog_schema':'nex.task-profile-catalog/1',
+                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/9',
+                'retained_build_schema':'nex.retained-native-task-build/3','runtime_schema':'nex.profile-runtime/3',
+                'report_schema':'nex.profile/3','session_schema':'nex.profile-session/3','build_schema':'nex.profile-build/2'}.items():
+            self.assertEqual(profiled[field],value)
+        self.assertIs(profiled['source_required'],True)
+        self.assertEqual(profiled['source_support'],profiled['public_enabled'])
+        self.assertEqual(profiled['guide'],pack['documents']['task_provider_profiling'])
+        self.assertEqual(self.cli('guide','--kind','task-provider-profile')['text'],(REPO/profiled['guide']).read_text())
+        if profiled['public_enabled']:
+            self.assertTrue(profiled['supported_actions']);self.assertIs(profiled['reviewed_capture_replay'],True)
+        else:
+            self.assertEqual(profiled['supported_actions'],[]);self.assertIs(profiled['reviewed_capture_replay'],False)
+        for field in ('authority_transport','callable_transport','logical_debugging','combined_debug_profile',
+                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','windows','wasm'):
+            self.assertIs(profiled[field],False)
+        debugging=descriptor['task_provider_debugging']
+        self.assertEqual(debugging,pack['task_provider_debugging'])
+        self.assertEqual((debugging['language'],debugging['configuration']),('0.24','debug'))
+        self.assertEqual((debugging['execution_task_abi'],debugging['descriptor_bytes'],debugging['registry_abi'],
+            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(5,88,1,32,2,200))
+        self.assertEqual(debugging['maximum_total_registries_including_root'],128)
+        self.assertEqual((debugging['record_schema'],debugging['catalog_schema'],debugging['source_union_schema'],
+            debugging['completion_schema'],debugging['manifest_schema'],debugging['view_schema'],debugging['frame_schema']),
+            ('nex.native-task-provider/10','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
+             'nex.native-completion/7','nex.debug/3','nex.task-debug-view/2','nex.debug-frame/4'))
+        self.assertEqual(debugging['source_support'],debugging['public_enabled'])
+        self.assertEqual(debugging['guide'],pack['documents']['task_provider_debugging'])
+        self.assertEqual(self.cli('guide','--kind','task-provider-debug')['text'],(REPO/debugging['guide']).read_text())
+        if debugging['public_enabled']:self.assertEqual(debugging['supported_actions'],['plan','build','debug','package'])
+        else:self.assertEqual(debugging['supported_actions'],[])
+        for field in ('ordinary_pure_helper_logical_frames','combined_debug_profile','runtime_load_unload',
+                      'authority_transport','callable_transport','foreign','binary_only','http_task_handlers',
+                      'reference','typescript','windows','wasm','language_migration_required'):
+            self.assertIs(debugging[field],False)
+
+    def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
+        descriptor=self.cli('describe');pack=json.loads((REPO/'llm/language-pack.json').read_text())
+        self.assertEqual(descriptor['source_concurrency'],pack['source_concurrency'])
+        self.assertTrue(descriptor['source_concurrency']['source_operations'])
+        self.assertFalse(descriptor['source_concurrency']['browser_workers'])
+        self.assertEqual(self.cli('guide','--kind','concurrency')['text'],(REPO/pack['documents']['concurrency_design']).read_text())
+        self.source('module mapped;fn main()->unit!{io}{print(parallel_map([1,2],fn(x:i64)->i64{return x+40;},2));}')
+        self.assertEqual(self.cli('eval')['stdout'],'[41,42]\n');self.assertEqual(self.cli('run')['stdout'],'[41,42]\n')
+        before=harness.database_rows(self.root/'.nex/graph.db')
+        self.source('module reserved;fn parallel_map(x:i64)->i64{return x+1;}fn main()->unit{}')
+        self.assertEqual(self.cli('check',ok=False)['code'],'E_DUPLICATE')
+        self.assertEqual(harness.database_rows(self.root/'.nex/graph.db'),before)
+
     def test_starter_and_real_native_binary(self):
         self.cli("init", ".")
         self.cli("check")
@@ -211,7 +309,7 @@ test fn branches() -> unit {
 
     def test_pack_and_discovery_match_executable_example(self):
         descriptor = self.cli("describe")
-        self.assertEqual(descriptor["version"], "0.16")
+        self.assertEqual(descriptor["version"], "0.24")
         pack = json.loads((REPO / "llm/language-pack.json").read_text())
         self.assertEqual(pack["language_version"], descriptor["version"])
         self.assertIn("web_ui", descriptor["features"])
@@ -391,11 +489,11 @@ fn main() -> unit !{io} { print(response().message); }
             db.execute("INSERT INTO head VALUES(1,?)", (old,))
         self.assertEqual(self.cli("graph", ok=False)["code"], "E_LANGUAGE_VERSION")
         migrated = self.cli("migrate")
-        self.assertEqual(migrated["language"], "0.16")
+        self.assertEqual(migrated["language"], "0.24")
         self.assertEqual(migrated["declared_original_revision"], old)
         self.assertNotEqual(migrated["revision"], old)
         history = self.cli("history")
-        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.16"})
+        self.assertEqual({r["language"] for r in history["revisions"]}, {"0.1", "0.24"})
         self.cli("export", "--revision", old, "-o", self.root / "legacy.nex")
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")

@@ -130,7 +130,7 @@ class TaskForeign(harness.ToolchainCase):
             for directory,dirs,files in os.walk(harness.REPO/name):
                 dirs[:]=[n for n in dirs if n not in excluded]
                 resources+=sum((Path(directory)/name).is_file() for name in files)
-        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py'))
+        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py'))
         # Task + program, two catalogue files, and three original bundle members.
         remaining=8192-resources-7
         original=json.loads((self.root/'bundle/manifest.json').read_text());index=0
@@ -215,7 +215,9 @@ class TaskForeign(harness.ToolchainCase):
         self.catalogue_report=self.cli('foreign',self.host)
         task=self.cli('task',self.file,'--kind','init');task['checks']=[];task['requirements']=[]
         self.add(task,{'id':'timeout','kind':'run','target':'native','entry':'taskffi::main',
-            'timeout_seconds':1,'expect':{'stdout':'42\n','exit_code':0}})
+            # Integrity checks and module loading share this budget. Allow
+            # startup so this case actually tests reaping entered native code.
+            'timeout_seconds':5,'expect':{'stdout':'42\n','exit_code':0}})
         self.save(task)
         ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
         directory=self.root/'controlled-timeout'
@@ -269,7 +271,7 @@ class TaskForeign(harness.ToolchainCase):
         (self.root/'library').mkdir();self.file.rename(self.root/'library/main.nex');(self.root/'app').mkdir()
         (self.root/'app/main.nex').write_text('''module taskffi;import "../library/main.nex" as l;
 server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->unit!{ffi}{assert(l::invoke()==42);}''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'profile':{'profile':'profile'}},'components':{
                 'library':{'kind':'shared_library','root':'library','entry':'library/main.nex','entry_function':'invoke'},

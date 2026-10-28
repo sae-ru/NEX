@@ -1,0 +1,158 @@
+{
+  "schema": "nex.browser-workers-evidence/1",
+  "toolchain": "0.97.0",
+  "language": "0.18",
+  "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+  "focused": {
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "phases": [
+      {
+        "name": "focused",
+        "command": [
+          "ctest",
+          "--test-dir",
+          "/Users/sae/projects/NEX/build/native-097-browser-workers",
+          "--output-on-failure",
+          "-j",
+          "3",
+          "-R",
+          "^(web_workers|web_commands|web|discovery|parallel_mapping|frontend_io)$"
+        ],
+        "exit_code": 0,
+        "seconds": 35.614
+      },
+      {
+        "name": "production",
+        "command": [
+          "python3",
+          "/Users/sae/projects/NEX/build/check-097-production-workers-v3.py"
+        ],
+        "exit_code": 0,
+        "seconds": 6.427
+      }
+    ],
+    "source": "/Users/sae/projects/NEX/build/working-097-browser-workers",
+    "language": "0.18",
+    "toolchain": "0.97.0",
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "full_objective_complete": false,
+    "retained_failures": [
+      "build/browser-workers-097-focused-v1.log:Node strip-only constructor parameter property",
+      "build/browser-workers-097-focused-v3.log:old generated-file inventory missing new stub"
+    ],
+    "seconds": 42.456,
+    "updated": "2026-10-22T03:35:38.048064+00:00",
+    "focused_groups": 6,
+    "production_cases": 15,
+    "production_report": "build/browser-workers-097-production-v3/report.json"
+  },
+  "production": {
+    "ok": true,
+    "state": "passed",
+    "phase": "complete",
+    "phases": [
+      {
+        "name": "build",
+        "command": [
+          "/Users/sae/projects/NEX/build/native-097-browser-workers/nex",
+          "build",
+          "/Users/sae/projects/NEX/build/browser-workers-097-production-v3/project/main.nex",
+          "--target",
+          "web",
+          "--profile",
+          "release",
+          "--json"
+        ],
+        "exit_code": 0,
+        "seconds": 1.42
+      },
+      {
+        "name": "three-engines",
+        "command": [
+          "python3",
+          "/Users/sae/projects/NEX/build/working-097-browser-workers/tests/workers_browser.py",
+          "/Users/sae/projects/NEX/build/browser-workers-097-production-v3/project/.nex/build/0c452c48132863ad654583cc4ead6ea773c31131b76b0c6f25f4fed96e6f8645/web",
+          "--browsers-path",
+          "/Users/sae/projects/NEX/build/playwright-browsers"
+        ],
+        "exit_code": 0,
+        "seconds": 4.956
+      }
+    ],
+    "full_objective_complete": false,
+    "installed_sdk": false,
+    "compiler_sha256": "3d320e5a6329933f650d5c4259f19cab9beff81653579a4199aabebc8f7f515e",
+    "seconds": 6.386,
+    "updated": "2026-10-22T03:35:37.927663+00:00",
+    "build": {
+      "build_key": "0c452c48132863ad654583cc4ead6ea773c31131b76b0c6f25f4fed96e6f8645",
+      "cached": false,
+      "directory": "/Users/sae/projects/NEX/build/browser-workers-097-production-v3/project/.nex/build/0c452c48132863ad654583cc4ead6ea773c31131b76b0c6f25f4fed96e6f8645/web",
+      "dist": "/Users/sae/projects/NEX/build/browser-workers-097-production-v3/project/.nex/build/0c452c48132863ad654583cc4ead6ea773c31131b76b0c6f25f4fed96e6f8645/web/dist",
+      "node": "v22.22.3\n",
+      "npm": "10.9.8\n",
+      "ok": true,
+      "profile": "release",
+      "revision": "a226f2d0fecda4592445678f48e890202679b421beb0e8ef250babe9fc36c276",
+      "schema": "nex.web-build/1"
+    },
+    "assets": {
+      "index.html": "1d56b56391c311303a0db262735b88e7f999c44235952c8f99214aad9ea935cc",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/worker-entry-D3lfdnkM.js": "08f6f41750b28e3a8e4facd615d0f825e31b0bd5fa254e35ab0ccc3b325f7901",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/worker-entry-D3lfdnkM.js.map": "9ac7ab26bafd35fc0d6e5636a9bf8bafa037b565fae6e4437256fa45816e5c77",
+      "assets/index-C37l7fMq.js.map": "797bf352d2b716c497f463534b840fb11019196df69aa5258223af1eaa3b9e85",
+      "assets/index-C37l7fMq.js": "7c79153a4cfdf0df7ce9bc3ce4bc0c6f327ef6d55748b577169c6c709a10b722"
+    },
+    "server_and_unused_absent_from_all_assets": true,
+    "browser_stats": {
+      "startTime": "2026-10-22T03:35:33.244Z",
+      "duration": 4621.468000000001,
+      "expected": 15,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "actual_production_worker_cases": 15
+  },
+  "sources_sha256": {
+    "src/web.cpp": "22d3b10f7bc7453e3fc3eec20fb6dd245560ae1e0093cffeacf8bc8a442f1e8c",
+    "web/workers.ts": "31ec1c282edfe17e833b761bd89eb962ce6b1901fa4ccae1b76b4ebcb96b853d",
+    "web/worker-entry.ts": "db95170baedc5048a332b90cd786b5a3477653e4a4942124f64a0b8cbe9d0a74",
+    "web/app.tsx": "bc7ebd69d140f7cf77d744f2be67d1acbb6b8cd43c7feeb754be16ce65786331",
+    "web/net.ts": "59191699c18b308d62cccda772adac7f439007e632b91ed79d0792bcef25b8f2",
+    "lib/worker.nex": "62ee1fd1f2202cdaf6b13b0a6efbea5ca8a8705e2680d2730382a09cc43ffb1c",
+    "examples/workers/main.nex": "747c10a7bf5781b63740b4182ccbf9c9872c3b45b675ae42542042451bdb97f1",
+    "tests/web_workers.py": "f2e5130b8563dfa49c5a50db2b410a88a9b214228d041edbf74e9d1310dc7658",
+    "tests/worker-runner.ts": "e90cf9fa2e117b0ad194c840a1a7fbf37873061963651b8402892d1a36a9a3ae",
+    "tests/workers-browser.spec.js": "d4f7f773ed9162f82d937dc9107368abf5d7b1cdd85b2987a33b703b6a8e308d",
+    "tests/workers_browser.py": "9457d48315b797eafa635811d40b79a461fab3f9afe9f00ab43b7578c2fbe09d",
+    "tools/sdk_acceptance.py": "de11de8695c3a00ae59fcef11a4c22d0b17355380d246562179d31f7fdeddc1a"
+  },
+  "unchanged_from_frozen096": {
+    "web/package.json": true,
+    "web/package-lock.json": true,
+    "web/THIRD_PARTY_NOTICES.txt": true,
+    "web/nex-runtime.ts": true,
+    "web/nex-bytes.ts": true,
+    "src/typescript.cpp": true,
+    "src/interpreter.cpp": true,
+    "runtime/runtime.cpp": true,
+    "runtime/nex_ffi.h": true
+  },
+  "contract": "typed nominal std::worker::Command<Input> opts in; separate pure wire worker_compute; legacy same-name helpers remain ordinary",
+  "full_objective_complete": false,
+  "pending": [
+    "full101",
+    "installed SDK24 including new worker/archive phase",
+    "Linux full/source-free/live",
+    "five installed IDE profiles",
+    "complete016-to018 migration",
+    "general native tasks/channels/async",
+    "general GPU/NPU API",
+    "remaining platform/quality/delivery requirements"
+  ]
+}

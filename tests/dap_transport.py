@@ -1,10 +1,13 @@
 """DAP framing, reference separation and ownership on client disconnect."""
 import base64
+import errno
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
+import signal
 import sys
 import threading
 import unittest
@@ -26,6 +29,59 @@ class Transport(harness.ToolchainCase):
             value=adapter.read_packet(stream)
             if value is None:return messages
             messages.append(value)
+
+    def test_task_mode_uses_logical_ids_and_never_worker_stepping(self):
+        bridge=self.bridge()
+        bridge.client({'seq':1,'type':'request','command':'launch','arguments':{'nexTaskDebug':True,'program':'/owned/app'}})
+        self.assertTrue(bridge.task_mode)
+        self.assertNotIn('nexTaskDebug',self.messages(self.backend.stdin)[0]['arguments'])
+        bridge.server({'seq':80,'type':'event','event':'stopped','body':{'threadId':999,'reason':'breakpoint'}})
+        stop=self.messages(self.output)[-1]
+        self.assertNotIn('threadId',stop['body']);self.assertTrue(stop['body']['allThreadsStopped'])
+        bridge.client({'seq':2,'type':'request','command':'next','arguments':{'threadId':42,'singleThread':True}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['command'],'evaluate')
+        request=json.loads(base64.b64decode(sent['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'command':'next','arguments':{'task_id':42,'defer_continue':True}})
+        bridge.server({'seq':81,'type':'response','request_seq':2,'command':'evaluate','success':True,'body':{'result':'{"armed":true}'}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['command'],'continue')
+        self.assertEqual(sent['arguments'],{'threadId':999,'singleThread':False})
+        bridge.server({'seq':82,'type':'response','request_seq':2,'command':'continue','success':True,'body':{}})
+        bridge.server({'seq':83,'type':'event','event':'continued','body':{'threadId':999}})
+        bridge.server({'seq':84,'type':'event','event':'stopped','body':{'threadId':1000}})
+        bridge.client({'seq':3,'type':'request','command':'continue','arguments':{'threadId':42,'singleThread':True}})
+        bridge.server({'seq':85,'type':'response','request_seq':3,'command':'evaluate','success':True,'body':{'result':'{"armed":true}'}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['arguments'],{'threadId':1000,'singleThread':False})
+
+    def test_task_frames_locals_and_watch_references_expire_with_stop(self):
+        bridge=self.bridge();bridge.task_mode=True
+        bridge.client({'seq':1,'type':'request','command':'stackTrace','arguments':{'threadId':42}})
+        stack={'schema':'nex.task-debug-stack/1','task_id':42,'frames':[{'id':900,'index':0,'name':'mod::child','file':'/frozen/source.nex','line':7,'column':3}]}
+        bridge.server({'seq':10,'type':'response','request_seq':1,'command':'evaluate','success':True,'body':{'result':json.dumps(stack)}})
+        frame=self.messages(self.output)[-1]['body']['stackFrames'][0]['id']
+        bridge.client({'seq':2,'type':'request','command':'scopes','arguments':{'frameId':frame}})
+        reference=self.messages(self.output)[-1]['body']['scopes'][0]['variablesReference']
+        bridge.client({'seq':3,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
+        request=json.loads(base64.b64decode(self.messages(self.backend.stdin)[-1]['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'command':'values','arguments':{'task_id':42,'frame_index':0}})
+        bridge.client({'seq':4,'type':'request','command':'evaluate','arguments':{'expression':'x+1','frameId':frame,'context':'watch'}})
+        request=json.loads(base64.b64decode(self.messages(self.backend.stdin)[-1]['arguments']['expression'].split(' ',1)[1]))
+        self.assertEqual(request,{'expression':'x+1','task_id':42,'frame_index':0})
+        bridge.server({'seq':11,'type':'event','event':'continued','body':{'threadId':999}})
+        bridge.server({'seq':12,'type':'response','request_seq':3,'command':'evaluate','success':True,'body':{'result':'{}'}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+        bridge.client({'seq':5,'type':'request','command':'scopes','arguments':{'frameId':frame}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+
+    def test_task_watch_does_not_forward_native_expression_or_mutation(self):
+        bridge=self.bridge();bridge.task_mode=True
+        for sequence,command,arguments in [(1,'evaluate',{'expression':'`expression dangerous()','context':'repl'}),
+                (2,'setVariable',{'name':'x','value':'99'}),(3,'setExpression',{'expression':'x','value':'99'})]:
+            bridge.client({'seq':sequence,'type':'request','command':command,'arguments':arguments})
+            self.assertFalse(self.messages(self.output)[-1]['success'])
+        self.assertEqual(self.messages(self.backend.stdin),[])
 
     def test_utf8_framing_and_rejected_ambiguous_or_oversized_packets(self):
         stream=io.BytesIO();value={'type':'event','event':'output','body':{'output':'\u0410\x00\U0001f98a'}}
@@ -68,6 +124,96 @@ class Transport(harness.ToolchainCase):
             timer.cancel()
             if process.poll() is None:process.terminate();process.communicate(timeout=10)
 
+    def backend(self, body):
+        backend=self.root/'backend'
+        backend.write_text('#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\n'+body)
+        backend.chmod(0o755)
+        return backend
+
+    def launch(self, backend):
+        return subprocess.Popen([sys.executable,str(harness.REPO/'debug/nex_dap.py'),'--backend',str(backend)],
+                                stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    def test_backend_eof_joins_client_reader_while_client_stdin_remains_open(self):
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\n')
+        for attempt in range(5):
+            process=self.launch(backend)
+            try:
+                self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+                process.wait(timeout=10)
+                self.assertFalse(process.stdin.closed)
+                error=process.stderr.read()
+                self.assertEqual(process.returncode,0,error)
+                self.assertNotIn(b'Fatal Python',error)
+            finally:
+                if process.poll() is None:process.kill();process.wait(timeout=5)
+                process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_dirty_backend_writer_cleanup_preserves_normal_eof(self):
+        read_end,write_end=os.pipe()
+        writer=os.fdopen(write_end,'wb')
+        output=io.BytesIO()
+        try:
+            writer.write(b'undelivered disconnect')
+            os.close(read_end);read_end=None
+            adapter.close_backend_pipes(SimpleNamespace(stdin=writer,stdout=output))
+            self.assertTrue(writer.closed)
+            self.assertTrue(output.closed)
+        finally:
+            if read_end is not None:os.close(read_end)
+            if not writer.closed:writer.close()
+
+    def test_backend_cleanup_keeps_other_io_failures_and_closes_output(self):
+        class FailedInput:
+            def close(self):raise OSError(errno.EIO,'fixture close failed')
+        output=io.BytesIO()
+        with self.assertRaises(OSError) as error:
+            adapter.close_backend_pipes(SimpleNamespace(stdin=FailedInput(),stdout=output))
+        self.assertEqual(error.exception.errno,errno.EIO)
+        self.assertTrue(output.closed)
+
+    def test_signal_interrupts_partial_headers_and_bodies_and_joins_readers(self):
+        marker=self.root/'disconnect.json'
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\nwhile True:\n r=read_packet(sys.stdin.buffer)\n if r is None:break\n if r.get("command")=="disconnect":\n  Path('+repr(str(marker))+').write_text(json.dumps(r));break\n')
+        for incoming in [b'Content-Length: 100',b'Content-Length: 100\r\n\r\n{']:
+            for signum in [signal.SIGTERM,signal.SIGINT]:
+                with self.subTest(packet=incoming,signum=signum):
+                    process=self.launch(backend)
+                    try:
+                        self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+                        process.stdin.write(incoming);process.stdin.flush()
+                        process.send_signal(signum);process.wait(timeout=10)
+                        self.assertEqual(process.returncode,0,process.stderr.read())
+                        self.assertTrue(json.loads(marker.read_text())['arguments']['terminateDebuggee'])
+                    finally:
+                        if process.poll() is None:process.kill();process.wait(timeout=5)
+                        process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_bad_packet_exits_without_aborting_with_client_pipe_still_open(self):
+        backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\nwhile True:\n r=read_packet(sys.stdin.buffer)\n if r is None or r.get("command")=="disconnect":break\n')
+        process=self.launch(backend)
+        try:
+            self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
+            process.stdin.write(b'Content-Length: 0\r\nContent-Length: 0\r\n\r\n');process.stdin.flush()
+            process.wait(timeout=10);self.assertEqual(process.returncode,1)
+            error=process.stderr.read();self.assertIn(b'duplicate DAP content length',error);self.assertNotIn(b'Fatal Python',error)
+        finally:
+            if process.poll() is None:process.kill();process.wait(timeout=5)
+            process.stdin.close();process.stdout.close();process.stderr.close()
+
+    def test_installed_sdk_client_rejects_adapter_failure_on_shutdown(self):
+        spec=importlib.util.spec_from_file_location('nex_sdk_acceptance',harness.REPO/'tools/sdk_acceptance.py')
+        sdk=importlib.util.module_from_spec(spec);spec.loader.exec_module(sdk)
+        client=sdk.DAP([sys.executable,'-c','raise SystemExit(70)'],self.root,os.environ.copy())
+        client.process.wait(timeout=10)
+        with self.assertRaisesRegex(RuntimeError,'exit 70'):client.close()
+        self.assertFalse(client.reader.is_alive())
+        from debugging import DAP as TestDAP
+        client=TestDAP([sys.executable,'-c','raise SystemExit(70)'],self.root)
+        client.process.wait(timeout=10)
+        with self.assertRaisesRegex(RuntimeError,'exit 70'):client.close()
+        self.assertFalse(client.reader.is_alive())
+
     def test_native_pages_bound_work_keep_requested_offsets_and_expire_on_resume(self):
         bridge=self.bridge()
         bridge.server({'seq':1,'type':'response','command':'variables','request_seq':0,'success':True,'body':{'variables':[{'name':'large','type':'bytes','variablesReference':900,'indexedVariables':4194304}]}})
@@ -88,6 +234,36 @@ class Transport(harness.ToolchainCase):
         bridge.server({'seq':100,'type':'event','event':'continued','body':{'threadId':1}})
         bridge.client({'seq':4,'type':'request','command':'variables','arguments':{'variablesReference':reference}})
         self.assertFalse(self.messages(self.output)[-1]['success'])
+
+    def test_threads_refresh_stale_launch_list_and_preserve_request_identity(self):
+        bridge=self.bridge()
+        stop={'seq':100,'type':'event','event':'stopped','body':{'threadId':500,'allThreadsStopped':True,'reason':'breakpoint'}}
+        bridge.server(stop)
+        request={'seq':10,'type':'request','command':'threads'}
+        bridge.client(dict(request));self.assertEqual(self.messages(self.backend.stdin)[-1],request)
+        stale={'seq':101,'type':'response','request_seq':10,'command':'threads','success':True,
+            'body':{'threads':[{'id':400,'name':'main'}]}}
+        bridge.server(stale)
+        self.assertEqual(self.messages(self.backend.stdin),[request,request])
+        self.assertEqual(len(self.messages(self.output)),1);self.assertEqual(bridge.frames,{})
+        threads=[{'id':400,'name':'main'},{'id':500,'name':'worker'},{'id':600,'name':'worker'}]
+        bridge.server({'seq':102,'type':'response','request_seq':10,'command':'threads','success':True,'body':{'threads':threads}})
+        reply=self.messages(self.output)[-1];self.assertEqual(reply['request_seq'],10);self.assertEqual(reply['body']['threads'],threads)
+        bridge.client({'seq':11,'type':'request','command':'threads'})
+        bridge.server({'seq':103,'type':'event','event':'continued','body':{'threadId':500}})
+        bridge.server({'seq':104,'type':'response','request_seq':11,'command':'threads','success':True,'body':{'threads':threads}})
+        self.assertFalse(self.messages(self.output)[-1]['success'])
+        bridge.server(dict(stop,seq=105));bridge.client({'seq':12,'type':'request','command':'threads'})
+        bridge.server(dict(stale,seq=106,request_seq=12))
+        bridge.server({'seq':107,'type':'event','event':'continued','body':{'threadId':500}})
+        bridge.server({'seq':108,'type':'response','request_seq':12,'command':'threads','success':True,'body':{'threads':threads}})
+        self.assertFalse(self.messages(self.output)[-1]['success']);self.assertEqual(bridge.pending,{})
+        bridge.server(dict(stop,seq=109));bridge.client({'seq':13,'type':'request','command':'threads'})
+        bridge.server(dict(stale,seq=110,request_seq=13));bridge.server(dict(stale,seq=111,request_seq=13))
+        self.assertIn('absent',self.messages(self.output)[-1]['message']);self.assertEqual(bridge.pending,{})
+        bridge.client({'seq':14,'type':'request','command':'threads'})
+        bridge.server({'seq':112,'type':'response','request_seq':14,'command':'threads','success':False,'message':'worker exited'})
+        self.assertIn('worker exited',self.messages(self.output)[-1]['message']);self.assertEqual(bridge.pending,{})
 
     def test_native_page_rejects_invalid_bounds_and_backend_overflow(self):
         bridge=self.bridge();reference=bridge.allocate({'backend':77})

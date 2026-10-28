@@ -3,6 +3,7 @@
 #include <openssl/evp.h>
 #include <atomic>
 #include <barrier>
+#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -40,7 +41,7 @@ struct Request {
 };
 }
 int main(int argc,char **argv){try{
-  require(argc==3,"usage: ffi_loader MODULE MISSING_ENTRY_MODULE");fs::path module=fs::canonical(argv[1]),missing=fs::canonical(argv[2]);unsigned count=0;
+  require(argc==3||argc==5,"usage: ffi_loader MODULE MISSING_ENTRY_MODULE [EXECUTABLE_MODULE WORKER]");fs::path module=fs::canonical(argv[1]),missing=fs::canonical(argv[2]);unsigned count=0;
   auto run=[&](const char *name,auto body){int before=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==before,"descriptor leak");++count;std::cout<<"PASS "<<name<<std::endl;};
   run("canonical signature digest is independent of object key order",[]{auto first=integer();ForeignSignature reordered(R"({"types":[{"kind":"i64"}],"result":0,"parameters":[0],"schema":"nex.foreign-signature/1"})");require(foreignSignatureDigest(first)=="67271321265625b9f0499796f5997cf2f9c6161ed418867840d9551d879f987d"&&foreignSignatureDigest(first)==foreignSignatureDigest(reordered),"canonical digest differs");});
   run("explicit catalogue and export subset are required before initialization",[&]{Fixture f(module);ForeignLibraries empty({});error("E_FFI_GRANT",[&]{f.bind(empty);});ForeignLibraries restricted({{"test",f.grant({"wrong"})}});error("E_FFI_GRANT",[&]{f.bind(restricted);});require(f.events().empty(),"denied grant initialized code");});
@@ -64,5 +65,13 @@ int main(int argc,char **argv){try{
   run("request revocation invalidates escaped bindings",[&]{Fixture f(module);ForeignLibraries libs(f.grants());ForeignFunction function;{Request scope;function=f.bind(libs);require(invoke(function).scalar==42,"request call failed");scope.root.revoke();require(!function.isOpen(),"request cancellation retained authority");error("E_RESOURCE_SCOPE",[&]{invoke(function);});}require(f.events()=="IGCD","request image not released");});
   run("same-module reentrant bind is rejected without deadlock",[&]{Fixture f(module);ForeignLibraries libs(f.grants());bool attempted=false;auto function=f.bind(libs,[&]{if(!attempted&&f.events()=="I"){attempted=true;error("E_FFI_REENTRANT",[&]{f.bind(libs);});}});require(attempted&&invoke(function).scalar==42,"reentry path was not exercised");});
   run("concurrent callers share initialization and independently retain leases",[&]{Fixture f(module);ForeignLibraries libs(f.grants());std::barrier start(8);std::atomic<bool> failed=false;std::vector<std::thread> threads;for(int i=0;i<8;++i)threads.emplace_back([&]{try{start.arrive_and_wait();auto function=f.bind(libs);for(int j=0;j<16;++j)require(invoke(function).scalar==42,"concurrent echo differs");}catch(...){failed=true;}});for(auto &t:threads)t.join();require(!failed,"concurrent bind/call failed");auto events=f.events();require(std::count(events.begin(),events.end(),'I')==1&&std::count(events.begin(),events.end(),'G')==1&&std::count(events.begin(),events.end(),'C')==128,"concurrent initialization/call counts differ");});
+  run("executable inventory rejects invalid fields before loading any code",[&]{for(int mode=0;mode<7;++mode){Fixture f(module);if(mode==0)f.manifest["executables"]=true;if(mode==1)f.manifest["executables"]="module";if(mode==2)f.manifest["executables"]=J::array({"absent"});if(mode==3)f.manifest["executables"]=J::array({"module","module"});if(mode==4)f.manifest["executables"]=J::array({"../module"});if(mode==5)f.manifest["executables"]=J::array({7});if(mode==6){f.manifest["executables"]=J::array();f.manifest["unknown"]=true;}f.save();ForeignLibraries libs(f.grants());error("E_FFI_MANIFEST",[&]{f.bind(libs);});require(f.events().empty(),"invalid executable inventory initialized code");}});
+  if(argc==5){
+    const auto executableModule=fs::canonical(argv[3]),worker=fs::canonical(argv[4]);
+    auto prepare=[&](Fixture &f){fs::copy_file(worker,f.bundle/"worker");f.manifest["files"].push_back(J{{"path","worker"},{"sha256",sha(read(f.bundle/"worker"))}});};
+    run("original executable bits alone do not grant snapshot execution",[&]{Fixture f(executableModule);prepare(f);fs::permissions(f.bundle/"worker",fs::perms::owner_all);f.save();ForeignLibraries libs(f.grants());auto function=f.bind(libs);require(invoke(function).scalar==-EACCES,"unlisted helper acquired execution permission");});
+    run("explicit pinned helper executes from a readonly private snapshot",[&]{Fixture f(executableModule);prepare(f);fs::permissions(f.bundle/"worker",fs::perms::owner_read);f.manifest["executables"]=J::array({"worker"});f.save();ForeignLibraries libs(f.grants());auto function=f.bind(libs);require(invoke(function).scalar==42,"pinned readonly helper did not execute");fs::remove(f.bundle/"worker");write(f.bundle/"worker","changed source");require(invoke(function).scalar==42,"original helper replacement affected snapshot execution");});
+    run("executable helper hashes are checked before module initialization",[&]{Fixture f(module);prepare(f);f.manifest["executables"]=J::array({"worker"});f.save();write(f.bundle/"worker","wrong bytes");ForeignLibraries libs(f.grants());error("E_FFI_HASH",[&]{f.bind(libs);});require(f.events().empty(),"modified helper initialized module");});
+  }
   std::cout<<"native module loader: "<<count<<" cases passed\n";return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

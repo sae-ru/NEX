@@ -1,0 +1,57 @@
+module std::http_stream;
+import "./http_client.nex" as http;
+
+pub server resource Body;
+pub struct Request {
+ authority:str;method:str;url:str;headers:list<http::Header>;body:bytes;
+ total_limit:i64;timeout_ms:i64;redirect_limit:i64;protocol:str;
+}
+pub struct Response {status:i64;headers:list<http::Header>;body:Body;protocol:str;url:str;}
+pub struct Chunk {data:bytes;done:bool;}
+pub struct Client {
+ open:server fn(Request)->result<Response> !{task,ffi};
+ read:server fn(Body,i64)->result<Chunk> !{task,ffi};
+}
+pub server fn client_context(open:server fn(Request)->result<Response> !{task,ffi},read:server fn(Body,i64)->result<Chunk> !{task,ffi})->Client{return Client(open,read);}
+pub fn request(authority:str,method:str,url:str,body:bytes,total_limit:i64,timeout_ms:i64)->Request{return Request(authority,method,url,[],body,total_limit,timeout_ms,0,"auto");}
+pub fn validate(value:Request)->result<bool>{
+ if value.total_limit<1||value.total_limit>1073741824{return err("VALIDATION","HTTP stream total limit must be1..1073741824 bytes");}
+ return http::validate(http::Request(value.authority,value.method,value.url,value.headers,value.body,65536,value.timeout_ms,value.redirect_limit,value.protocol));
+}
+pub server fn open(ctx:Client,value:Request)->result<Response> !{task,ffi}{let valid:bool=validate(value)?;return ctx.open(value);}
+pub server fn get(ctx:Client,authority:str,url:str,total_limit:i64,timeout_ms:i64)->result<Response> !{task,ffi}{return open(ctx,request(authority,"GET",url,utf8_bytes(""),total_limit,timeout_ms));}
+pub server fn read(ctx:Client,body:Body,maximum:i64)->result<Chunk> !{task,ffi}{
+ if maximum<1||maximum>65536{return err("VALIDATION","HTTP stream read size must be1..65536 bytes");}
+ if !resource_is_open(body){return err("E_HTTP_STREAM_CLOSED","HTTP body is closed");}
+ return ctx.read(body,maximum);
+}
+pub server fn close(body:Body)->bool !{task,ffi}{return resource_close(body);}
+pub server fn download(ctx:Client,value:Request,path:str)->result<i64> !{task,ffi,fs}{
+ let response:Response=open(ctx,value)?;
+ if response.status<200||response.status>=300{close(response.body);return err("HTTP_STATUS","HTTP status "+str(response.status));}
+ let opened:result<file>=file_open_write(path);
+ if !is_ok(opened){close(response.body);return err(error_code(opened),error_message(opened));}
+ let destination:file=unwrap(opened);var total:i64=0;var done:bool=false;
+ while !done{
+  let next:result<Chunk>=read(ctx,response.body,65536);
+  if !is_ok(next){file_close(destination);close(response.body);return err(error_code(next),error_message(next));}
+  let part:Chunk=unwrap(next);var offset:i64=0;
+  while offset<len(part.data){
+   let written:result<i64>=file_write(destination,slice(part.data,offset,len(part.data)-offset));
+   if !is_ok(written){file_close(destination);close(response.body);return err(error_code(written),error_message(written));}
+   let count:i64=unwrap(written);
+   if count<1||count>len(part.data)-offset{file_close(destination);close(response.body);return err("E_FILE_WRITE","file write made no valid progress");}
+   offset=offset+count;total=total+count;
+  }
+  done=part.done;
+ }
+ close(response.body);let flushed:result<bool>=file_flush(destination);file_close(destination);
+ if !is_ok(flushed){return err(error_code(flushed),error_message(flushed));}
+ if !unwrap(flushed){return err("E_FILE_WRITE","file flush did not complete");}
+ return ok(total);
+}
+
+test fn portable_requests()->unit{
+ let value:Request=request("backend","GET","https://example.test/",utf8_bytes(""),1048576,3000);
+ assert(is_ok(validate(value)));
+}

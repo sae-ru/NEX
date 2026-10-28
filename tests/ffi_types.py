@@ -93,7 +93,7 @@ test fn check_model()->unit{}
             source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('ffi','--revision','HEAD','--symbol','legacy_foreign_names::resource_callback',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.16');self.assertNotEqual(current['revision'],old)
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.24');self.assertNotEqual(current['revision'],old)
         contract=self.cli('ffi','--revision','HEAD','--symbol','legacy_foreign_names::resource_callback')
         self.assertEqual(contract['types'],[{'kind':'function','name':'server fn(file)->file'}])
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout'])

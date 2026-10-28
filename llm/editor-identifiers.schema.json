@@ -28,7 +28,7 @@
       "const": true
     },
     "language": {
-      "const": "0.16"
+      "const": "0.24"
     },
     "compiler": {
       "type": "object",
@@ -117,7 +117,8 @@
               "enum",
               "trait",
               "impl",
-              "endpoint"
+              "endpoint",
+              "resource"
             ]
           },
           "file": {
@@ -245,7 +246,8 @@
               "builtin_bound",
               "builtin_function",
               "literal",
-              "syntax"
+              "syntax",
+              "resource"
             ]
           },
           "detail": {

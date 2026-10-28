@@ -1,3 +1,5 @@
+#include "nex/task_frontend.h"
+#include "nex/task_lifetime.h"
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/traits.h"
@@ -7,11 +9,14 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cctype>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <cstdlib>
 #include <functional>
@@ -26,6 +31,9 @@ std::string typeName(Type t) {
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
+    case Type::Task:return "task<"+typeName(*t.element)+">";
+    case Type::Channel:return "channel<"+typeName(*t.element)+">";
+    case Type::TaskScope:return "task_scope";
     case Type::Function:{std::string result=t.realm=="shared"?"fn(":t.realm+" fn(";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=",";result+=typeName(t.arguments[i]);}result+=")->"+(t.element->kind==Type::Function?"("+typeName(*t.element)+")":typeName(*t.element));if(!t.effects.empty()){result+="!{";for(const auto &effect:t.effects){if(result.back()!='{')result+=",";result+=effect;}result+="}";}return result;}
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     case Type::Parameter:return t.arguments.empty()?"$"+t.name:genericName("$"+t.name,t.arguments);
@@ -33,20 +41,36 @@ std::string typeName(Type t) {
     case Type::Constructor:return t.name;
     default: return "unknown"; }
 }
-const std::set<std::string> &builtinNames(){
+const std::set<std::string> &builtinNames(bool tasks,bool resources){
   static const std::set<std::string> names=[] {
     std::set<std::string> result={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes","file"};
-    result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
+    result.insert("parallel_map");result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
   }();
-  return names;
+  static const std::set<std::string> extended=[&]{auto result=names;result.insert(taskBuiltins().begin(),taskBuiltins().end());result.insert({"task","channel","task_scope"});return result;}();
+  static const std::set<std::string> owned=[&]{auto result=names;result.insert(externalResourceBuiltins().begin(),externalResourceBuiltins().end());return result;}();
+  static const std::set<std::string> all=[&]{auto result=extended;result.insert(externalResourceBuiltins().begin(),externalResourceBuiltins().end());return result;}();
+  return resources?(tasks?all:owned):(tasks?extended:names);
 }
+const std::set<std::string> &externalResourceBuiltins(){static const std::set<std::string> names={"resource_close","resource_is_open"};return names;}
+bool supportsExternalResources(const Program &p){return sourceExceptionTasksPrototype(p)||p.sourceLanguage==SourceLanguage::OwnedResources021||p.sourceLanguage==SourceLanguage::TaskForeign022||p.sourceLanguage==SourceLanguage::TaskWrites023||p.sourceLanguage==SourceLanguage::TaskStreams024;}
 const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
 std::string readFile(const std::string &path) {
-  std::ifstream in(path, std::ios::binary);
+  std::unique_ptr<std::FILE,decltype(&std::fclose)> in(std::fopen(path.c_str(),"rb"),&std::fclose);
   if (!in) throw Error("E_FILE", "cannot read " + path);
-  return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+  // Read raw bytes without requiring a seekable file or trusting its reported
+  // size. Cache artifacts are large; per-character iterator work is expensive
+  // in development compilers. A short final block still contributes its bytes.
+  std::array<char,64*1024> buffer;
+  std::string text;
+  while(true){
+    auto count=std::fread(buffer.data(),1,buffer.size(),in.get());
+    if(std::ferror(in.get()))throw Error("E_FILE","cannot read "+path);
+    text.append(buffer.data(),count);
+    if(std::feof(in.get()))return text;
+    if(!count)throw Error("E_FILE","cannot read "+path);
+  }
 }
 void writeFile(const std::string &path, const std::string &text) {
   auto parent = std::filesystem::path(path).parent_path();
@@ -115,6 +139,28 @@ std::string Program::definition(const Endpoint &e)const {
 }
 std::string Program::definition(const Trait &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
 std::string Program::definition(const Implementation &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
+bool propagatesResult(const Function &function){
+  bool found=false;
+  std::function<void(E)> expression;
+  std::function<void(const std::vector<S>&)> block;
+  expression=[&](E e){if(!e||found)return;if(e->kind==Expr::Propagate){found=true;return;}
+    for(auto a:e->args)expression(a);for(auto arm:e->arms)block(arm->body);};
+  block=[&](const std::vector<S> &body){for(auto s:body){
+    if(found)return;
+    expression(s->expr);
+    // A statement match aliases its arms through Expr::Match as well. The
+    // expression traversal already visited them; visiting both is exponential.
+    if(s->kind!=Stmt::Match)childBlocks(s,block);
+  }};
+  block(function.body);return found;
+}
+bool usesParallelMap(const Function &function){
+  bool found=false;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> block;
+  expression=[&](E e){if(!e||found)return;if(e->kind==Expr::Call&&e->text=="parallel_map"){found=true;return;}
+    for(auto a:e->args)expression(a);for(auto arm:e->arms)block(arm->body);};
+  block=[&](const std::vector<S>&body){for(auto s:body){if(found)return;expression(s->expr);if(s->kind!=Stmt::Match)childBlocks(s,block);}};
+  block(function.body);return found;
+}
 std::string Program::location(const Span &span)const {
   if(units.contains(span.file))return units.at(span.file).path;return span.file.empty()?path:span.file;
 }
@@ -163,7 +209,7 @@ public:
     } else {
       std::string pair = source.substr(i, 2);
       if (pair == "=>" || pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
-      else if (std::string("(){}[]:;.,+-*/%<>=!").find(c) != std::string::npos) advance();
+      else if (std::string("(){}[]:;.,+-*/%<>=!?").find(c) != std::string::npos) advance();
       else throw Error("E_LEX", "unexpected character", s);
     }
     s.end = i; return {source.substr(s.begin, i-s.begin), s, kind};
@@ -171,7 +217,7 @@ public:
 };
 class Parser {
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
-  bool captureNames=false,captureDetails=false;std::map<std::string,Span> parameterOrigins;
+  bool captureNames=false,captureDetails=false,sourceExceptions=false;std::map<std::string,Span> parameterOrigins;
   void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
     if(!captureNames)return;
     if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
@@ -202,7 +248,7 @@ class Parser {
   }
   Token name() {
     static const std::set<std::string> reserved = {"module","fn","test","let","var","return","if","else","while","true","false","client","server","shared","i64","f64","bool","unit","str","list","struct","pub","import","as"};
-    if (peek().kind != Token::Id || reserved.contains(peek().text))
+    if (peek().kind != Token::Id || reserved.contains(peek().text) || (sourceExceptions&&(peek().text=="try"||peek().text=="catch"||peek().text=="throw")))
       throw Error("E_PARSE", "expected identifier", peek().span);
     return take();
   }
@@ -219,14 +265,14 @@ class Parser {
   std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false){
     if(!keep)clearParameters();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
     do{auto parameter=name();auto arity=constructorArity();
-      if(parameter.text=="bytes"||parameter.text=="file"||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
+      if(parameter.text=="bytes"||parameter.text=="file"||(p.taskPrototype&&std::set<std::string>{"task","channel","task_scope"}.contains(parameter.text))||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
       if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most64 parameters",parameter.span);
       if(captureNames){parameterOrigins[parameter.text]=parameter.span;editorName("parameter_declaration",parameter.text,parameter.span,parameter.span);}
       result.push_back(parameter.text);arities.push_back(arity);bounds.emplace_back();if(accept(":"))bounds.back()=constraintNames();
     }while(accept(","));typeEnd();return result;
   }
   std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
-  std::set<std::string> effects(){std::set<std::string> result;if(accept("!")){expect("{");if(!accept("}")){do{auto effect=name();if(!result.insert(effect.text).second)throw Error("E_EFFECT","duplicate effect",effect.span);}while(accept(","));expect("}");}}return result;}
+  std::set<std::string> effects(){std::set<std::string> result;if(accept("!")){expect("{");if(!accept("}")){do{auto effect=sourceExceptions&&peek().text=="throw"?take():name();if(!result.insert(effect.text).second)throw Error("E_EFFECT","duplicate effect",effect.span);}while(accept(","));expect("}");}}return result;}
   Type type() {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
@@ -241,6 +287,12 @@ class Parser {
     if(t.text=="f64")return Type::F64;
     if(t.text=="bytes"&&peek().text!="::")return Type::Bytes;
     if(t.text=="file"&&peek().text!="::")return Type::File;
+    if(p.taskPrototype&&t.text=="task_scope"&&peek().text!="::")return Type::TaskScope;
+    if(p.taskPrototype&&(t.text=="task"||t.text=="channel")&&peek().text!="::"){
+      if(peek().text!="<")return Type::constructor(t.text,1);
+      expect("<");auto item=type();typeEnd();
+      return t.text=="task"?Type::task(std::move(item)):Type::channel(std::move(item));
+    }
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
       if(t.text=="list"&&peek().text!="<")return Type::constructor("list",1);
       expect("<");auto item=type();
@@ -342,10 +394,11 @@ class Parser {
       }
     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
     e->sourceRange=syntaxRange(token.span.begin);boundExpression(e);
-    while(peek().text=="."||peek().text=="["||peek().text=="(") {
+    while(peek().text=="."||peek().text=="["||peek().text=="("||peek().text=="?") {
       if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
-      if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
+      if(op.text=="?"){b->kind=Expr::Propagate;b->text="?";}
+      else if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
       else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
       b->sourceRange=syntaxRange(e->sourceRange.begin);boundExpression(b);e=b;
@@ -375,6 +428,16 @@ class Parser {
     if(peek().text=="let" || peek().text=="var") {
       s->kind=take().text=="let" ? Stmt::Let : Stmt::Var; s->name=name().text;
       expect(":"); s->type=type(); expect("="); s->expr=expression(); expect(";");
+    } else if(sourceExceptions&&accept("try")) {
+      s->kind=Stmt::Try;s->body=block();expect("catch");expect("(");s->name=name().text;
+      expect(",");s->catchMessage=name().text;expect(")");s->alternative=block();
+    } else if(sourceExceptions&&accept("throw")) {
+      s->kind=Stmt::Throw;
+      if(!accept(";")){
+        expect("(");s->expr=std::make_shared<Expr>();s->expr->kind=Expr::List;s->expr->span=s->span;
+        s->expr->args.push_back(expression());expect(",");s->expr->args.push_back(expression());
+        expect(")");expect(";");s->expr->sourceRange=syntaxRange(s->span.begin);boundExpression(s->expr);
+      }
     } else if(accept("return")) {
       s->kind=Stmt::Return; if(!accept(";")){s->expr=expression();expect(";");}
     } else if(accept("if")) {
@@ -388,8 +451,10 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
-    p.source=std::move(source);p.path=std::move(path);
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions) {
+    p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
+    if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
+    if(exceptions)p.sourceLanguage=SourceLanguage::SourceExceptions025Prototype;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
@@ -415,6 +480,12 @@ public:
         expect("as");auto alias=name();dependency.alias=alias.text;editorName("alias",alias.text,alias.span);dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
+      if(supportsExternalResources(p)&&(peek().text=="resource"||((peek().text=="server"||peek().text=="client"||peek().text=="shared")&&peek(1).text=="resource"))){
+        auto realm=peek().text=="resource"?"shared":take().text;expect("resource");
+        if(realm!="server")throw Error("E_REALM","opaque resource declarations require server realm",start);
+        Structure s;s.span=start;s.exported=exported;s.opaqueResource=true;auto identifier=name();s.name=identifier.text;s.nameOrigin=identifier.span;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);s.span.end=expect(";").span.end;
+        p.structures.push_back(std::move(s));clearParameters();continue;
+      }
       if(accept("trait")){
         Trait value;value.span=start;value.exported=exported;auto traitName=name();value.name=traitName.text;auto selfOrigin=traitName.span;
         if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity();typeEnd();}
@@ -460,7 +531,7 @@ public:
       bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities);expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->"); f.result=type();
-      if(accept("!")) {expect("{");if(!accept("}")){do {auto n=name();if(!f.effects.insert(n.text).second)throw Error("E_EFFECT","duplicate effect",n.span);}while(accept(","));expect("}");}}
+      f.effects=effects();
       if(external){
         expect("=");expect("foreign");expect("(");
         auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
@@ -474,8 +545,15 @@ public:
 struct Binding {Type type;bool mutableValue;};
 class Checker {
   Program &p; Function *f=nullptr; std::vector<std::map<std::string,Binding>> scopes;
+  unsigned exceptionHandlers=0,exceptionCatches=0;
+  bool exceptionPrototype()const{return p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype;}
+  bool allowsEffect(const std::string &effect)const{return f->effects.contains(effect)||(exceptionPrototype()&&effect=="throw"&&exceptionHandlers);}
+  void prototypeEffects(const Function &fn)const{
+    if(exceptionPrototype())for(const auto &effect:fn.effects)if(effect!="io"&&effect!="throw"&&!(p.taskPrototype&&(effect=="task"||effect=="fs"||effect=="ffi")))
+      throw Error("E_EXCEPTION_STAGE","private source exception prototype supports pure/io/throw; task/fs/ffi require its dedicated task parser",fn.span);
+  }
   struct CaptureScope {size_t boundary;std::map<std::string,Binding> bindings;};
-  std::vector<CaptureScope*> captures;bool watching=false;
+  std::vector<CaptureScope*> captures;bool watching=false;Function *watchBoundary=nullptr;
   bool hasLocal(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return true;return false;}
   bool localFunction(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return it->at(name).type.kind==Type::Function;return false;}
   Binding lookup(const std::string &name,Span span) {
@@ -497,13 +575,14 @@ class Checker {
     if(f)resourceRealm(t,f->realm,span);
   }
   void resourceRealm(const Type &type,const std::string &realm,Span span){
+    if(realm!="server"&&containsExternalResource(p,type))throw Error("E_REALM","external resource values require a server function, including aggregate and capture types",span);
     if(realm!="server"&&containsFile(p,type))throw Error("E_REALM","file values require a server function, including aggregate and capture types",span);
   }
   void unify(Type formal,Type actual,std::map<std::string,Type> &bound,Span span){
     if(formal.kind==Type::Projection){auto resolved=resolveType(p,substituteType(formal,bound),span);if(resolved==actual)return;if(resolved.kind==Type::Projection)throw Error("E_GENERIC_INFER","associated projections do not infer their Self type",span);unify(resolved,actual,bound,span);return;}
     if(formal.kind==Type::Parameter&&!formal.arguments.empty()){
       auto shape=constructorPattern(p,actual);Type head;std::vector<Type> args;
-      if(shape.kind==Type::List||shape.kind==Type::Result){head=Type::constructor(shape.kind==Type::List?"list":"result",1);args={*shape.element};}
+      if(shape.kind==Type::List||shape.kind==Type::Result||shape.kind==Type::Task||shape.kind==Type::Channel){head=Type::constructor(shape.kind==Type::List?"list":shape.kind==Type::Result?"result":shape.kind==Type::Task?"task":"channel",1);args={*shape.element};}
       else if(shape.kind==Type::Record&&!shape.arguments.empty()){head=Type::constructor(shape.name,shape.arguments.size());args=shape.arguments;}
       else if(shape.kind==Type::Parameter&&!shape.arguments.empty()){head=shape;head.arguments.clear();args=shape.arguments;}
       else throw Error("E_GENERIC_INFER","cannot infer an applied constructor from this type",span);
@@ -558,6 +637,13 @@ class Checker {
   }
   Type signature(const Function &fn){std::vector<Type> args;for(const auto &param:fn.params)args.push_back(param.type);return Type::function(std::move(args),fn.result,fn.realm,fn.effects);}
   void callableRealm(const Type &type,Span span){if(type.realm!="shared"&&type.realm!=f->realm)throw Error("E_REALM","callable realm "+type.realm+" is unavailable from "+f->realm,span);}
+  void taskFileCall(const std::set<std::string> &effects,Span span,bool foreignLeaf=false){
+    if(supportsTaskFileReads(p)&&f->effects.contains("task")&&
+        effects.contains("fs")&&!effects.contains("task"))
+      throw Error("E_EFFECT","a filesystem helper called from a task must explicitly declare both task and fs",span);
+    if(supportsTaskForeignCalls(p)&&f->effects.contains("task")&&effects.contains("ffi")&&!effects.contains("task")&&!foreignLeaf)
+      throw Error("E_EFFECT","a source ffi helper called from a task must explicitly declare both task and ffi",span);
+  }
   Type reference(E e,Type expected){
     const Function *target=&p.function(e->text,e->span);
     if(!target->typeParameters.empty()){
@@ -577,16 +663,99 @@ class Checker {
     fn.result=*signatureType.element;for(size_t i=0;i<fn.params.size();++i)fn.params[i].type=signatureType.arguments[i];
     fn.owner=outer->owner;fn.unit=outer->unit;fn.localName=outer->localName+"::$lambda_"+std::to_string(e->number);fn.name=outer->name+"::"+(watching?"$watch_lambda_":"$lambda_")+std::to_string(e->number);fn.closureOwner=outer->name;fn.closure=true;
     if(fn.name.size()>4096)throw Error("E_FUNCTION_LIMIT","closure target name exceeds 4096 bytes",e->span);
+    prototypeEffects(fn);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;exceptionHandlers=exceptionCatches=0;
     auto boundary=scopes.size();CaptureScope capture{boundary,{}};scopes.emplace_back();captures.push_back(&capture);f=&fn;fn.dependencies.clear();
     try{
       for(const auto &param:fn.params)define(param.name,{param.type,false},param.span);
       if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all closure paths return a value",fn.span);
-    }catch(...){captures.pop_back();scopes.resize(boundary);f=outer;throw;}
-    captures.pop_back();scopes.resize(boundary);f=outer;fn.captures.clear();e->args.clear();
+    }catch(...){captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;throw;}
+    captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;fn.captures.clear();e->args.clear();
     for(const auto &[name,value]:capture.bindings){fn.captures.push_back({name,value.type,e->span});auto argument=std::make_shared<Expr>();argument->kind=Expr::Name;argument->span=e->span;argument->text=name;argument->type=value.type;e->args.push_back(std::move(argument));}
     if(fn.captures.size()>1024)throw Error("E_FUNCTION_LIMIT","closure exceeds 1024 captures",e->span);
     if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
     fn.checked=true;e->text=fn.name;e->type=signatureType;p.functions.push_back(fn);f->dependencies.insert(fn.name);return e->type;
+  }
+  Type taskCallback(E callback,const std::vector<Type> &parameters,Type expected){
+    Type hint;
+    if(callback->kind==Expr::Name&&callback->typeArguments.empty()&&
+        !hasLocal(callback->localName.empty()?callback->text:callback->localName)){
+      const auto &target=p.function(callback->text,callback->span);
+      if(!target.typeParameters.empty()&&target.params.size()==parameters.size()){
+        std::map<std::string,Type> bound;
+        for(size_t i=0;i<parameters.size();++i)unify(target.params[i].type,parameters[i],bound,callback->span);
+        if(expected!=Type::Unknown)unify(target.result,expected,bound,callback->span);
+        if(std::all_of(target.typeParameters.begin(),target.typeParameters.end(),[&](const auto &name){return bound.contains(name);}))
+          hint=substituteType(signature(target),bound);
+      }
+    }
+    auto type=expr(callback,hint);
+    if(type.kind!=Type::Function||type.arguments.size()!=parameters.size())
+      throw Error("E_TASK_TYPE","task callback has an incorrect function signature",callback->span);
+    for(size_t i=0;i<parameters.size();++i)same(type.arguments[i],parameters[i],callback->span);
+    callableRealm(type,callback->span);
+    // Source errors travel through the future/drain channel. Spawning a child
+    // does not deliver them; wait/with_tasks checks the caller's throw context.
+    auto hostEffects=type.effects;if(sourceExceptionTasksPrototype(p))hostEffects.erase("throw");
+    const bool fileCallback=supportsTaskFileReads(p)&&type.realm=="server"&&
+      hostEffects==std::set<std::string>{"fs","task"};
+    const bool foreignCallback=supportsTaskForeignCalls(p)&&type.realm=="server"&&hostEffects.contains("task")&&hostEffects.contains("ffi")&&
+      std::all_of(hostEffects.begin(),hostEffects.end(),[](const auto &effect){return effect=="task"||effect=="ffi"||effect=="fs";});
+    if(foreignCallback){
+      if(f->realm!="server"||!std::includes(f->effects.begin(),f->effects.end(),hostEffects.begin(),hostEffects.end()))
+        throw Error("E_EFFECT","a task/ffi callback requires the server caller's complete declared effects",callback->span);
+    }else if(fileCallback){
+      if(f->realm!="server"||!f->effects.contains("fs")||!f->effects.contains("task"))
+        throw Error("E_EFFECT","a task/fs callback requires a server caller declaring task and fs",callback->span);
+    }else for(const auto &effect:type.effects)if(effect!="task"&&!(sourceExceptionTasksPrototype(p)&&effect=="throw"))
+      throw Error("E_EFFECT",supportsTaskFileReads(p)?
+        "task callbacks must be pure, task-only, or server task/fs with caller authorization":
+        "task callbacks may declare only the task effect",callback->span);
+    auto unsupportedResource=[&](const Type &value){return !supportsTaskFileStreams(p)&&(supportsTaskForeignCalls(p)?containsFile(p,value):containsNonTaskResource(p,value));};
+    if(unsupportedResource(type))throw Error("E_TASK_TYPE","task callback signatures cannot carry file resources",callback->span);
+    if(callback->kind==Expr::Lambda||callback->kind==Expr::FunctionRef){
+      const auto &target=p.function(callback->text,callback->span);
+      for(const auto &capture:target.captures)if(unsupportedResource(capture.type))
+        throw Error("E_TASK_TYPE","task callbacks cannot capture file resources",callback->span);
+    }
+    return *type.element;
+  }
+  Type taskCall(E e,Type expected){
+    if(!f->effects.contains("task"))throw Error("E_EFFECT",e->text+" requires declared effect task",e->span);
+    auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+    if(sourceExceptionTasksPrototype(p)&&(e->text=="with_tasks"||e->text=="task_wait")&&!allowsEffect("throw"))
+      throw Error("E_EFFECT",e->text+" may deliver a task source exception and requires throw or a lexical try",e->span);
+    if(e->text=="with_tasks"){
+      arity(2);same(expr(e->args[0],Type::I64),Type::I64,e->args[0]->span);
+      return taskCallback(e->args[1],{Type::TaskScope},expected);
+    }
+    if(e->text=="task_spawn"){
+      arity(2);same(expr(e->args[0],Type::TaskScope),Type::TaskScope,e->args[0]->span);
+      return Type::task(taskCallback(e->args[1],{},expected.kind==Type::Task?*expected.element:Type()));
+    }
+    if(e->text=="current_task_scope"){arity(0);return Type::TaskScope;}
+    if(e->text=="task_yield"){arity(0);return Type::Unit;}
+    if(e->text=="channel_new"){
+      arity(2);same(expr(e->args[0],Type::TaskScope),Type::TaskScope,e->args[0]->span);
+      same(expr(e->args[1],Type::I64),Type::I64,e->args[1]->span);
+      if(e->typeArguments.size()>1)throw Error("E_GENERIC_ARITY","channel_new accepts one payload type",e->span);
+      auto item=e->typeArguments.empty()?(expected.kind==Type::Channel?*expected.element:Type()):e->typeArguments[0];
+      if(item==Type::Unknown)throw Error("E_INFER","channel_new needs a payload type or channel<T> context",e->span);
+      validType(item,e->span);
+      if(!supportsTaskFileStreams(p)&&(supportsTaskForeignCalls(p)?containsFile(p,item):containsNonTaskResource(p,item)))throw Error("E_TASK_TYPE","channel payloads cannot carry file resources",e->span);
+      return Type::channel(std::move(item));
+    }
+    arity(e->text=="task_send"?2:1);
+    auto value=expr(e->args[0]);
+    if(e->text=="task_wait"||e->text=="task_cancel"){
+      if(value.kind!=Type::Task)throw Error("E_TASK_TYPE",e->text+" requires task<T>",e->args[0]->span);
+      return e->text=="task_cancel"?Type(Type::Bool):*value.element;
+    }
+    if(value.kind!=Type::Channel)throw Error("E_TASK_TYPE",e->text+" requires channel<T>",e->args[0]->span);
+    if(e->text=="task_send"){
+      same(expr(e->args[1],*value.element),*value.element,e->args[1]->span);return Type::Bool;
+    }
+    if(e->text=="task_recv")return Type::result(*value.element);
+    return Type::Bool;
   }
   Type expr(E e,Type expected={}) {
     switch(e->kind) {
@@ -596,7 +765,7 @@ class Checker {
       auto type=expr(e->args[0]);if(type.kind!=Type::Function)throw Error("E_TYPE","called expression is not a function",e->span);
       if(e->args.size()!=type.arguments.size()+1)throw Error("E_ARITY","incorrect number of callable arguments",e->span);
       for(size_t i=0;i<type.arguments.size();++i)same(expr(e->args[i+1],type.arguments[i]),type.arguments[i],e->args[i+1]->span);
-      callableRealm(type,e->span);for(const auto &effect:type.effects)if(!f->effects.contains(effect))throw Error("E_EFFECT","indirect call requires declared effect "+effect,e->span);e->type=*type.element;break;
+      callableRealm(type,e->span);for(const auto &effect:type.effects)if(!allowsEffect(effect))throw Error("E_EFFECT","indirect call requires declared effect "+effect,e->span);taskFileCall(type.effects,e->span);e->type=*type.element;break;
     }
     case Expr::Match:matching(e,expected,false);break;
     case Expr::Integer:e->type=(expected.kind==Type::Parameter||expected.kind==Type::Projection)&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
@@ -621,6 +790,13 @@ class Checker {
       e->type=base==Type::Str?Type(Type::Str):base==Type::Bytes?Type(Type::I64):*base.element;break;
     }
     case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
+    case Expr::Propagate: {
+      if(watching&&f==watchBoundary)throw Error("E_DEBUG_RETURN","result propagation needs an executing function; use a pure helper or inspect the result",e->span);
+      if(f->result.kind!=Type::Result)throw Error("E_RESULT_RETURN","postfix ? requires the current function to return result<T>",e->span);
+      auto operand=expr(e->args[0],expected==Type::Unknown?Type():Type::result(expected));
+      if(operand.kind!=Type::Result)throw Error("E_TYPE","postfix ? requires a result<T> operand",e->span);
+      e->type=*operand.element;break;
+    }
     case Expr::Unary: {
       auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):satisfiesConstraint(p,expected,"number")?expected:Type());
       if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"number"))throw Error("E_TYPE","unary - requires number constraint, i64 or f64",e->span);
@@ -649,8 +825,53 @@ class Checker {
         if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","function values do not accept type arguments at invocation",e->span);
         auto callee=std::make_shared<Expr>();callee->kind=Expr::Name;callee->text=local;callee->span=e->span;e->args.insert(e->args.begin(),std::move(callee));e->kind=Expr::Invoke;e->text.clear();return expr(e,expected);
       }
-      if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
+      if(!e->typeArguments.empty()&&builtinNames(p.taskPrototype,supportsExternalResources(p)).contains(e->text)&&!(p.taskPrototype&&e->text=="channel_new"))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+      if(p.taskPrototype&&taskBuiltins().contains(e->text)){e->type=taskCall(e,expected);break;}
+      if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text)){
+        arity(1);auto type=expr(e->args[0]);
+        if(!isExternalResource(p,type))throw Error("E_RESOURCE_TYPE",e->text+" requires an opaque resource owner",e->args[0]->span);
+        if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
+        if(!f->effects.contains("ffi"))throw Error("E_EFFECT",e->text+" requires declared effect ffi",e->span);
+        e->type=Type::Bool;break;
+      }
+      if(e->text=="parallel_map"){
+        arity(3);Type items,callback;bool callbackTyped=false;
+        auto checkCallback=[&](Type value){
+          if(value.kind!=Type::Function||value.arguments.size()!=1||*value.element==Type::Unit)
+            throw Error("E_PARALLEL_TYPE","parallel_map needs a one-argument value-returning callback",e->args[1]->span);
+          callableRealm(value,e->args[1]->span);
+          if(!value.effects.empty())throw Error("E_EFFECT","parallel_map callback must have no declared effects",e->args[1]->span);
+          if(containsNonTaskResource(p,value)||containsTaskAuthority(p,value))throw Error("E_PARALLEL_TYPE","parallel_map callback signature cannot contain file or task resources",e->args[1]->span);
+        };
+        try{items=expr(e->args[0]);}catch(const Error &error){
+          if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;
+          callback=expr(e->args[1]);callbackTyped=true;checkCallback(callback);
+          items=expr(e->args[0],Type::list(callback.arguments[0]));
+        }
+        if(items.kind!=Type::List)throw Error("E_TYPE","parallel_map input must be a list",e->args[0]->span);
+        if(containsNonTaskResource(p,items)||containsTaskAuthority(p,items))throw Error("E_PARALLEL_TYPE","parallel_map input cannot contain file or task resources",e->args[0]->span);
+        if(!callbackTyped){
+          Type hint;
+          if(e->args[1]->kind==Expr::Name&&!hasLocal(e->args[1]->localName.empty()?e->args[1]->text:e->args[1]->localName)&&e->args[1]->typeArguments.empty()){
+            const auto &target=p.function(e->args[1]->text,e->args[1]->span);
+            if(!target.typeParameters.empty()&&target.params.size()==1){
+              std::map<std::string,Type> bound;unify(target.params[0].type,*items.element,bound,e->args[1]->span);
+              if(expected.kind==Type::List)unify(target.result,*expected.element,bound,e->args[1]->span);
+              if(std::all_of(target.typeParameters.begin(),target.typeParameters.end(),[&](const auto&name){return bound.contains(name);}))hint=substituteType(signature(target),bound);
+            }
+          }
+          callback=expr(e->args[1],hint);checkCallback(callback);
+        }
+        if(p.taskPrototype&&(e->args[1]->kind==Expr::Lambda||e->args[1]->kind==Expr::FunctionRef)){
+          const auto &target=p.function(e->args[1]->text,e->args[1]->span);
+          for(const auto &capture:target.captures)if(containsTaskAuthority(p,capture.type)||containsExternalResource(p,capture.type))
+            throw Error("E_PARALLEL_TYPE","parallel_map callbacks cannot capture task, channel or external resource authority",e->args[1]->span);
+        }
+        same(*items.element,callback.arguments[0],e->args[0]->span);
+        same(expr(e->args[2],Type::I64),Type::I64,e->args[2]->span);
+        e->type=Type::list(*callback.element);break;
+      }
       if(e->text=="as_f64"||e->text=="as_i64"){
         arity(1);auto input=e->text=="as_f64"?Type(Type::I64):Type(Type::F64);
         same(expr(e->args[0],input),input,e->span);e->type=e->text=="as_f64"?Type(Type::F64):Type::result(Type::I64);break;
@@ -710,6 +931,7 @@ class Checker {
       }
       if(p.hasStructure(e->text)) {
         const auto &declaration=p.structure(e->text);
+        if(declaration.opaqueResource)throw Error("E_RESOURCE_CONSTRUCTOR","opaque resources have no source constructor; use a granted external factory",e->span);
         if(!declaration.typeParameters.empty()){
           const auto &raw=p.structureTemplates.at(declaration.name);auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
           auto arguments=infer(raw.typeParameters,raw.fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);e->text=instance.name;e->typeArguments=arguments;
@@ -757,7 +979,11 @@ class Checker {
       if(callee.test)throw Error("E_TEST","test functions cannot be called",e->span);
       if(callee.params.size()!=e->args.size())throw Error("E_ARITY","incorrect number of arguments to '"+e->text+"'",e->span);
       for(size_t j=0;j<e->args.size();++j)same(expr(e->args[j],callee.params[j].type),callee.params[j].type,e->args[j]->span);
-      for(const auto &effect:callee.effects)if(!f->effects.contains(effect))throw Error("E_EFFECT","call requires declared effect "+effect,e->span);
+      for(const auto &effect:callee.effects)if(!allowsEffect(effect))throw Error("E_EFFECT","call requires declared effect "+effect,e->span);
+      taskFileCall(callee.effects,e->span,callee.foreign.has_value());
+      if(supportsTaskForeignCalls(p)&&f->effects.contains("task")&&callee.foreign&&
+          (containsFile(p,callee.result)||std::any_of(callee.params.begin(),callee.params.end(),[&](const auto &parameter){return containsFile(p,parameter.type);})))
+        throw Error("E_TASK_TYPE","task foreign calls cannot transport file authority",e->span);
       if(callee.realm!="shared" && callee.realm!=f->realm)throw Error("E_REALM","direct call from "+f->realm+" to "+callee.realm+" is forbidden",e->span);
       f->dependencies.insert(callee.name);e->type=callee.result;break;
     }
@@ -767,7 +993,7 @@ class Checker {
   bool block(const std::vector<S> &body,bool newScope=true) {
     if(newScope)scopes.emplace_back(); bool returns=false;
     for(const auto &s:body) {
-      if(returns)throw Error("E_UNREACHABLE","statement after unconditional return",s->span);
+      if(returns)throw Error("E_UNREACHABLE",exceptionPrototype()?"statement after unconditional control exit":"statement after unconditional return",s->span);
       switch(s->kind) {
       case Stmt::Let:case Stmt::Var:
         validType(s->type,s->span);
@@ -783,12 +1009,26 @@ class Checker {
       }
       case Stmt::Match:returns=matching(s->expr,{},true);s->type=s->expr->args[0]->type;break;
       case Stmt::While:same(expr(s->expr,Type::Bool),Type::Bool,s->span);block(s->body);break;
+      case Stmt::Try:{
+        if(!exceptionPrototype())throw Error("E_LANGUAGE_VERSION","source exception syntax requires its explicit prototype parser",s->span);
+        ++exceptionHandlers;bool a=block(s->body);--exceptionHandlers;
+        scopes.emplace_back();define(s->name,{Type::Str,false},s->span);define(s->catchMessage,{Type::Str,false},s->span);
+        ++exceptionCatches;bool b=block(s->alternative,false);--exceptionCatches;scopes.pop_back();
+        s->type=Type::Str;returns=a&&b;break;
+      }
+      case Stmt::Throw:{
+        if(!exceptionPrototype())throw Error("E_LANGUAGE_VERSION","source exception syntax requires its explicit prototype parser",s->span);
+        if(!s->expr&&!exceptionCatches)throw Error("E_RETHROW","bare throw requires a lexical catch in the current function",s->span);
+        if(!allowsEffect("throw"))throw Error("E_EFFECT","uncaught source throw requires declared effect throw",s->span);
+        if(s->expr)same(expr(s->expr,Type::list(Type::Str)),Type::list(Type::Str),s->span);
+        s->type=Type::Unit;returns=true;break;
+      }
       }
     }
     if(newScope)scopes.pop_back();return returns;
   }
   void functionBody(Function &fn){
-    if(fn.checked)return;auto previous=f;auto previousScopes=std::move(scopes);f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
+    if(fn.checked)return;prototypeEffects(fn);auto previous=f;auto previousScopes=std::move(scopes);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;exceptionHandlers=exceptionCatches=0;f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
     try{
       for(auto &parameter:fn.params){validType(parameter.type,parameter.span);define(parameter.name,{parameter.type,false},parameter.span);}
       validType(fn.result,fn.span,true);
@@ -796,23 +1036,24 @@ class Checker {
       else if(fn.foreign)(void)foreignSignature(p,fn);
       else if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
       fn.checked=true;
-    }catch(...){f=previous;scopes=std::move(previousScopes);throw;}
-    f=previous;scopes=std::move(previousScopes);
+    }catch(...){f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;throw;}
+    f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;
   }
 public:
   explicit Checker(Program &p):p(p){}
   Type watch(const std::string &function,E expression,const std::map<std::string,Type> &locals){
     auto selected=function;
     prepareGenerics(p);
-    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();watching=true;
+    auto context=p.function(selected);context.effects.clear();context.dependencies.clear();f=&context;scopes.emplace_back();watching=true;watchBoundary=&context;
     for(const auto &[name,value]:locals){auto type=value;validType(type,expression->span);define(name,{type,false},expression->span);}
     auto result=expr(expression);for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);return result;
   }
   void run() {
     prepareTraits(p);prepareGenerics(p);
     std::set<std::string> names;
-    const auto &builtins=builtinNames();
+    const auto &builtins=builtinNames(p.taskPrototype,supportsExternalResources(p));
     for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
+      if(s.opaqueResource&&(!supportsExternalResources(p)||s.enumeration||!s.fields.empty()||!s.variants.empty()))throw Error("E_RESOURCE_DECLARATION","invalid opaque resource declaration or source version",s.span);
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
       auto fields=[&](auto &members){std::set<std::string> seen;for(auto &field:members){if(!seen.insert(field.name).second)throw Error("E_DUPLICATE","duplicate field '"+field.name+"'",field.span);validType(field.type,field.span);}};
       fields(s.fields);if(s.enumeration&&s.variants.empty())throw Error("E_ENUM","an enum requires at least one variant",s.span);
@@ -827,9 +1068,10 @@ public:
         auto identifier=[](const std::string &v){auto letter=[](char c){return(c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_';};return !v.empty()&&v.size()<=128&&letter(v.front())&&std::all_of(v.begin(),v.end(),[&](char c){return letter(c)||(c>='0'&&c<='9');});};
         const auto &binding=*fn.foreign;if(!identifier(binding.library)||!identifier(binding.symbol)||binding.manifest.size()!=64||binding.manifest.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_FFI_BINDING","external binding requires logical ASCII library/export names and a lowercase SHA-256 manifest pin",fn.span);
       }
+      if(fn.foreign&&(fn.effects.contains("task")||containsTaskAuthority(p,fn.result)||std::any_of(fn.params.begin(),fn.params.end(),[&](const auto &param){return containsTaskAuthority(p,param.type);})))throw Error("E_TASK_TYPE","foreign declarations cannot carry task authority or suspend",fn.span);
       validType(fn.result,fn.span,true);
       for(auto &parameter:fn.params)validType(parameter.type,parameter.span);
-      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(exceptionPrototype()&&effect=="throw"))throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
       if(fn.effects.contains("ffi")&&fn.realm!="server")throw Error("E_REALM","ffi effect requires a server function",fn.span);
       if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
       if(fn.effects.contains("fs")&&fn.realm!="server")throw Error("E_REALM","fs effect requires a server function",fn.span);
@@ -891,6 +1133,7 @@ llvm::json::Value exprJSON(E e) {
 llvm::json::Array blockJSON(const std::vector<S> &body) {
   llvm::json::Array out;
   for(auto s:body){llvm::json::Object item{{"kind",int64_t(s->kind)},{"name",s->name},{"type",typeName(s->type)},{"expression",exprJSON(s->expr)},{"body",blockJSON(s->body)},{"else",blockJSON(s->alternative)}};
+    if(s->kind==Stmt::Try)item["catch_message"]=s->catchMessage;
     out.push_back(std::move(item));}
   return out;
 }
@@ -904,7 +1147,25 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
   }
 }
 }
-Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails).run();}
+Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
+  switch(language){
+  case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:break;
+  default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
+  }
+  sourceUTF8(source,path,"unit");
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024).run();
+  p.sourceLanguage=language;return p;
+}
+Program parseSourceExceptionsPrototype(std::string source,std::string path){
+  sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",false,false,false,false,true).run();
+}
+Program parseSourceExceptionTasksPrototype(std::string source,std::string path){
+  sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",false,false,true,false,true).run();
+}
+Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){return parseVersioned(std::move(source),std::move(path),currentSourceLanguage,editorNames,editorDetails);}
+Program parseLegacy018(std::string source,std::string path,bool names,bool details){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",names,details,false).run();}
+Program parseTaskPrototype(std::string source,std::string path,bool names,bool details){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",names,details,true).run();}
 std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
   sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
   for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
@@ -913,7 +1174,7 @@ std::vector<SourceToken> sourceTokens(const std::string &source,const std::strin
   return result;
 }
 void check(Program &p){
-  try{Checker(p).run();}catch(Error &error){
+  try{Checker(p).run();if(isPublicTaskLanguage(p)&&std::any_of(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.effects.contains("task");}))(void)analyzeTaskLifetimes(p);}catch(Error &error){
     std::map<std::string,std::string> sources;
     for(const auto &[key,unit]:p.units)sources[key]=unit.source;
     if(sources.empty())sources[p.path]=p.source;
@@ -921,10 +1182,11 @@ void check(Program &p){
   }
 }
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
-Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type").typeOnly();}
-E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression").expressionOnly();}
-S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement").statementOnly();}
-P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern").patternOnly();}
+Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type",false,false,true).typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true).expressionOnly();}
+E parseSourceExceptionWatchPrototype(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,true).expressionOnly();}
+S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement",false,false,true).statementOnly();}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern",false,false,true).patternOnly();}
 llvm::json::Array canonicalKinds(const std::vector<std::string> &names,const std::vector<unsigned> &kinds){llvm::json::Array result;for(size_t i=0;i<names.size();++i)result.push_back(int64_t(i<kinds.size()?kinds[i]:0));return result;}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
@@ -938,7 +1200,7 @@ llvm::json::Value canonical(const Function &f) {
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format",s.enumeration?"nex.enum/4":"nex.structure/5"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  llvm::json::Object result{{"format",s.opaqueResource?"nex.resource/1":s.enumeration?"nex.enum/4":"nex.structure/5"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
   result["type_parameter_kinds"]=canonicalKinds(s.typeParameters,s.typeArities);
   if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}result["variants"]=std::move(variants);}
   else{llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});result["fields"]=std::move(fields);}return result;
@@ -956,6 +1218,7 @@ llvm::json::Value canonical(const Implementation &value){
   return llvm::json::Object{{"format","nex.implementation/1"},{"name",value.name},{"owner",value.owner},{"public",value.exported},{"trait",value.trait},{"self",typeName(value.self)},{"type_parameters",std::move(parameters)},{"type_parameter_kinds",canonicalKinds(value.typeParameters,value.typeArities)},{"type_bounds",canonicalBounds(value.typeParameters,value.typeBounds)},{"associated_types",std::move(aliases)},{"methods",std::move(methods)}};
 }
 std::string revision(const Program &p) {
+  rejectUnarchivedTasks(p,"revision storage");
   std::map<std::string,std::string> ordered;
   for(const auto &f:p.functions)if(f.templateName.empty()&&!f.closure&&!f.traitSignature)ordered[f.name]=json(canonical(f),false);
   llvm::json::Object functions;for(const auto &[name,text]:ordered)functions[name]=text;
@@ -964,11 +1227,291 @@ std::string revision(const Program &p) {
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
   llvm::json::Object traits,implementations;for(const auto &value:p.traits)traits[value.name]=canonical(value);for(const auto &value:p.implementations)implementations[value.name]=canonical(value);
-  return hash(json(llvm::json::Object{{"format","nex.program/14"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
+  return hash(json(llvm::json::Object{{"format","nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
+    {"source_exception_prototype",llvm::json::Object{
+      {"status","private_task_consumer_instances_experiment"},
+      {"source_support",false},
+      {"public_language","0.24"},
+      {"prototype_identity","0.25-prototype"},
+      {"private_parser","parseSourceExceptionsPrototype"},
+      {"guide","docs/source-exceptions-prototype.md"},
+      {"guide_kind","exception-prototype"},
+      {"grammar","docs/source-exceptions-prototype.ebnf"},
+      {"probe","nex_source_exception_probe"},
+      {"pure_io_reference",true},
+      {"explicit_throw_effect",true},
+      {"payload",llvm::json::Array{"str code","str message"}},
+      {"lexical_catch_and_rethrow",true},
+      {"Result_question_mark_changed",false},
+      {"checked_traps_catchable",false},
+      {"native",false},
+      {"private_native_emitter","emitSourceExceptionsPrototypeMLIR"},
+      {"private_native_probe","nex_source_exception_native_probe"},
+      {"private_native_sequential_experiment",true},
+      {"typescript",false},
+      {"private_typescript_emitter","emitSourceExceptionsPrototypeTypeScript"},
+      {"private_typescript_sequential_experiment",true},
+      {"private_typescript_runtime","web/nex-source-exception-runtime.ts"},
+      {"tasks",false},
+      {"private_task_parser","parseSourceExceptionTasksPrototype"},
+      {"private_task_reference_experiment",true},
+      {"private_task_native",true},
+      {"private_task_native_emitter","emitSourceExceptionTasksPrototypeNative"},
+      {"private_task_native_probe","nex_source_exception_task_native_emit_probe"},
+      {"private_task_native_guide","docs/source-exception-native-tasks.md"},
+      {"private_task_native_guide_kind","exception-native-tasks"},
+      {"private_task_native_descriptor_abi","0x4e45585400002501"},
+      {"private_task_native_physical_workers",true},
+      {"private_task_native_complete_delivery",false},
+      {"private_task_native_global_resource_fatal",true},
+      {"private_task_native_implicit_scope_cleanup",true},
+      {"private_task_native_profile",true},
+      {"private_task_native_profile_emitter","emitSourceExceptionTasksPrototypeNativeProfile"},
+      {"private_task_native_profile_guide","docs/source-exception-task-control-profile.md"},
+      {"private_task_native_profile_guide_kind","exception-task-control-profile"},
+      {"private_task_native_profile_conformance","source_exception_task_native_profile"},
+      {"private_task_native_profile_cli",false},
+      {"private_task_native_debug",true},
+      {"private_task_native_debug_emitter","emitSourceExceptionTasksPrototypeNativeDebug"},
+      {"private_task_native_debug_guide","docs/source-exception-task-debug.md"},
+      {"private_task_native_debug_guide_kind","exception-task-debug"},
+      {"private_task_native_debug_conformance","source_exception_task_native_debug"},
+      {"private_task_native_debug_context_schema","nex.private-task-debug/1"},
+      {"private_task_native_debug_loader","nex-load-private-task-debug"},
+      {"private_task_native_debug_LLDB_guide","docs/source-exception-task-lldb.md"},
+      {"private_task_native_debug_LLDB_guide_kind","exception-task-lldb"},
+      {"private_task_native_debug_LLDB_conformance","source_exception_task_lldb"},
+      {"private_task_native_debug_expressions",true},
+      {"private_task_native_debug_inspector","inspect-private-task"},
+      {"private_task_native_debug_expression_protocol","nex.private-task-debug-expression/1"},
+      {"private_task_native_debug_frame_capture",true},
+      {"private_task_native_debug_source_context","nex.private-task-source/2"},
+      {"private_task_native_debug_watch_guide","docs/source-exception-task-watch.md"},
+      {"private_task_native_debug_watch_guide_kind","exception-task-watch"},
+      {"private_task_native_debug_watch_conformance","source_exception_task_watch"},
+      {"private_task_native_debug_source_modules",true},
+      {"private_task_native_host_bridges",true},
+      {"private_task_native_host_descriptor_abi","0x4e45585400002502"},
+      {"private_task_native_host_effects",llvm::json::Array{"task","fs","ffi","throw"}},
+      {"private_task_native_host_guide","docs/source-exception-host.md"},
+      {"private_task_native_host_guide_kind","exception-host"},
+      {"private_task_native_host_conformance","source_exception_host"},
+      {"private_task_native_host_http",true},
+      {"private_task_native_host_binary_providers",true},
+      {"private_task_native_host_typescript",false},
+      {"private_task_native_module_planner","planSourceExceptionTaskModules"},
+      {"private_task_native_module_emitter","emitSourceExceptionTaskModule"},
+      {"private_task_native_module_validator","validateSourceExceptionTaskModule"},
+      {"private_task_native_module_guide","docs/source-exception-modules.md"},
+      {"private_task_native_module_guide_kind","exception-modules"},
+      {"private_task_native_module_conformance","source_exception_modules"},
+      {"private_task_native_module_architecture_schema","llm/private-task-architecture.schema.json"},
+      {"private_task_native_module_record","nex.private-task-module/1"},
+      {"private_task_native_module_static",true},
+      {"private_task_native_module_shared_fixed",true},
+      {"private_task_native_module_callbacks",true},
+      {"private_task_native_module_owned_resources",true},
+      {"private_task_native_module_task_authority",true},
+      {"private_task_native_module_uniform_ABI","0x4e45585400002502"},
+      {"private_task_native_module_public_build",false},
+      {"private_task_native_module_HTTP",true},
+      {"private_task_native_module_HTTP_architecture_schema","llm/private-task-architecture-v4.schema.json"},
+      {"private_task_native_module_HTTP_record","nex.private-task-module/4"},
+      {"private_task_native_module_HTTP_plan","nex.private-task-modules/4"},
+      {"private_task_native_module_HTTP_guide","docs/source-exception-module-http.md"},
+      {"private_task_native_module_HTTP_guide_kind","exception-module-http"},
+      {"private_task_native_module_HTTP_conformance","source_exception_module_http"},
+      {"private_task_native_module_profile",true},
+      {"private_task_native_module_profile_architecture_schema","llm/private-task-architecture-v5.schema.json"},
+      {"private_task_native_module_profile_record","nex.private-task-module/5"},
+      {"private_task_native_module_profile_plan","nex.private-task-modules/5"},
+      {"private_task_native_module_profile_catalog","nex.private-task-profile-catalog/1"},
+      {"private_task_native_module_profile_raw","nex.profile-runtime/3"},
+      {"private_task_native_module_profile_guide","docs/source-exception-module-profile.md"},
+      {"private_task_native_module_profile_guide_kind","exception-module-profile"},
+      {"private_task_native_module_profile_conformance","source_exception_module_profile"},
+      {"private_task_native_module_HTTP_profile",true},
+      {"private_task_native_module_HTTP_profile_conformance","source_exception_module_http_profile"},
+      {"private_task_native_module_HTTP_profile_request_ID_correlation",false},
+      {"private_task_native_module_profile_public_CLI",false},
+      {"private_task_native_module_logical_debug",true},
+      {"private_task_native_module_debug_context_builder","sourceExceptionTaskModuleDebugContext"},
+      {"private_task_native_module_debug_architecture_schema","llm/private-task-architecture-v6.schema.json"},
+      {"private_task_native_module_debug_record","nex.private-task-module/6"},
+      {"private_task_native_module_debug_plan","nex.private-task-modules/6"},
+      {"private_task_native_module_debug_catalog","nex.private-task-debug-catalog/1"},
+      {"private_task_native_module_debug_context","nex.private-task-debug/2"},
+      {"private_task_native_module_debug_frame","nex.private-task-debug-frame/2"},
+      {"private_task_native_module_debug_guide","docs/source-exception-module-debug.md"},
+      {"private_task_native_module_debug_guide_kind","exception-module-debug"},
+      {"private_task_native_module_debug_conformance","source_exception_module_debug"},
+      {"private_task_native_module_debug_public_CLI",false},
+      {"private_task_native_module_HTTP_logical_debug",true},
+      {"private_task_native_module_HTTP_debug_conformance","source_exception_module_http_debug"},
+      {"private_task_native_module_HTTP_debug_request_ID","req.request_id"},
+      {"private_task_native_module_HTTP_debug_terminal_marker","nex_task_debug_completion_marker"},
+      {"private_task_native_module_mixed_frontiers",true},
+      {"private_task_native_module_mixed_schema","llm/private-task-architecture-v2.schema.json"},
+      {"private_task_native_module_mixed_record","nex.private-task-module/2"},
+      {"private_task_native_module_image_plan","nex.private-task-modules/2"},
+      {"private_task_native_module_frontier_guide","docs/source-exception-frontiers.md"},
+      {"private_task_native_module_frontier_guide_kind","exception-frontiers"},
+      {"private_task_native_module_frontier_conformance","source_exception_frontiers"},
+      {"private_task_native_module_unique_physical_image",true},
+      {"private_task_native_module_consumer_trait_specializations",true},
+      {"private_task_native_instance_catalogue","describeSourceExceptionTaskInstances"},
+      {"private_task_native_instance_catalogue_schema","nex.private-task-instances/1"},
+      {"private_task_native_instance_catalogue_template_filter",true},
+      {"private_task_native_instance_catalogue_default_limit",64},
+      {"private_task_native_instance_catalogue_max_limit",256},
+      {"private_task_native_instance_architecture_schema","llm/private-task-architecture-v3.schema.json"},
+      {"private_task_native_instance_record","nex.private-task-module/3"},
+      {"private_task_native_instance_plan","nex.private-task-modules/3"},
+      {"private_task_native_instance_guide","docs/source-exception-instances.md"},
+      {"private_task_native_instance_guide_kind","exception-instances"},
+      {"private_task_native_instance_conformance","source_exception_instances"},
+      {"private_task_native_instance_private_support",true},
+      {"private_task_native_instance_trait_witnesses",true},
+      {"private_task_native_instance_automatic_placement",false},
+      {"private_task_native_http_emitter","emitSourceExceptionTasksPrototypeNativeHttp"},
+      {"private_task_native_http_guide","docs/source-exception-http.md"},
+      {"private_task_native_http_guide_kind","exception-http"},
+      {"private_task_native_http_conformance","source_exception_http"},
+      {"private_task_native_http_host_conformance","source_exception_http_request_host"},
+      {"private_task_native_http_runtime","executeSourceExceptionTaskHttpRequest"},
+      {"private_task_native_http_configured_runtime","executeConfiguredSourceExceptionTaskHttpRequest"},
+      {"private_task_native_http_unhandled_status",500},
+      {"private_task_native_http_unhandled_code","E_SOURCE_EXCEPTION"},
+      {"private_task_native_http_profile",false},
+      {"private_task_native_http_logical_debug",false},
+      {"private_task_native_http_async_DB",false},
+      {"private_task_native_http_public_build",false},
+
+      {"private_task_native_debug_IDE",false},
+      {"private_task_native_debug_capture_replay",false},
+      {"private_task_native_debug_cli",false},
+      {"private_task_native_debug_LLDB_DAP",true},
+      {"private_task_native_debug_all_stop",true},
+
+      {"private_task_guide","docs/source-exception-tasks-prototype.md"},
+      {"private_task_guide_kind","exception-tasks-prototype"},
+      {"private_task_probe","nex_source_exception_tasks_probe"},
+
+      {"private_task_typescript",true},
+      {"private_task_typescript_emitter","emitSourceExceptionTasksPrototypeTypeScript"},
+      {"private_task_typescript_runner","task.runSourceExceptionPrototype"},
+      {"private_task_lifetime_analysis",true},
+      {"private_task_lifetime_guide","docs/source-exception-lifetimes.md"},
+      {"private_task_lifetime_guide_kind","exception-lifetimes"},
+      {"private_task_lifetime_probe","nex_source_exception_lifetime_probe"},
+      {"private_task_lifetime_complete_region_inference",false},
+      {"private_task_ir",true},
+      {"private_task_ir_lowering","lowerTaskFunction"},
+      {"private_task_ir_execution","evaluateSourceExceptionTaskIRPrototype"},
+      {"private_task_ir_guide","docs/source-exception-task-ir.md"},
+      {"private_task_ir_guide_kind","exception-task-ir"},
+      {"private_task_ir_probe","nex_source_exception_task_ir_probe"},
+      {"private_task_ir_shared_serial_coordinator",true},
+      {"private_task_ir_compiled_native_execution",false},
+      {"private_task_ir_physical_workers",false},
+      {"task_error_effect_policy","task_wait and with_tasks require throw or a lexical try"},
+      {"public_project_selection",false},
+      {"migration_implemented",false},
+      {"pending",llvm::json::Array{"native compiler/SDK/binary/debug/profile acceptance","native task/future/drain and worker/runtime integration; complete region inference","resource/FFI/binary/debug/profile integration and accepted boundaries","explicit history-preserving024-to025 migration and retained histories","current compiler/SDK/platform acceptance","typed exception payloads, filters/finally and general effect handlers"}}
+    }},
+    {"http_response_streams",llvm::json::Object{
+      {"status","development_pinned_task_FFI_HTTP_response_streams"},
+      {"source_support",true},
+      {"source_language","0.24"},
+      {"new_source_syntax",false},
+      {"source_ABI_changed",false},
+      {"guide","docs/http-streams.md"},
+      {"guide_kind","http-stream"},
+      {"library","lib/http_stream.nex"},
+      {"preparer","tools/http_stream_provider/prepare.py"},
+      {"operator_schema","llm/http-targets.schema.json"},
+      {"functional_verifier","tools/http_stream_provider/verify_functional.py"},
+      {"realms",llvm::json::Array{"server"}},
+      {"effects",llvm::json::Array{"task","ffi"}},
+      {"download_effects",llvm::json::Array{"task","ffi","fs"}},
+      {"native",true},
+      {"reference_execution","checked AST task calls through the pinned native provider"},
+      {"browser_execution",false},
+      {"portable_request_validation",true},
+      {"operations",llvm::json::Array{"open","get","read","close","download"}},
+      {"body_is_genuine_opaque_resource",true},
+      {"aliases_share_cursor",true},
+      {"close_affects_aliases",true},
+      {"reads_serialized_by_provider",true},
+      {"concurrent_read_order","caller must sequence tasks when byte order matters"},
+      {"short_reads_allowed",true},
+      {"repeated_EOF_before_close",true},
+      {"protocols",llvm::json::Array{"HTTP/1.1","HTTPS","HTTP/2"}},
+      {"maximum_request_body_bytes",int64_t(524288)},
+      {"maximum_response_total_bytes",int64_t(1073741824)},
+      {"maximum_read_bytes",int64_t(65536)},
+      {"maximum_adapter_pending_bytes",int64_t(16384)},
+      {"backpressure","curl delivery pauses while the single pending slot is occupied; a later read resumes it"},
+      {"background_progress_while_idle",false},
+      {"shared_connection_pool",false},
+      {"general_reactor",false},
+      {"maximum_timeout_ms",int64_t(30000)},
+      {"timeout_includes_gaps_between_reads",true},
+      {"physical_transfer_retired_at",llvm::json::Array{"EOF","explicit close","read error","owning scope cleanup"}},
+      {"logical_capacity_released_at",llvm::json::Array{"explicit close","read error","owning scope cleanup"}},
+      {"retained_C_call_tokens",false},
+      {"download_handles_partial_writes",true},
+      {"download_flushes_and_closes",true},
+      {"download_atomic_rename",false},
+      {"download_error_can_leave_partial_file",true},
+      {"dependency_and_OS_heap_in_staging_bound",false},
+      {"original_parent_cancel_deadline_preserved",true},
+      {"installed_SDK_accepted",false},
+      {"pending",llvm::json::Array{"matching current ordinary compiler regression, complete installed/moved SDK and platform delivery","persistent connection pools/reactor, streaming uploads and finer total memory quotas","network debug/profile integration and asynchronous database drivers","Windows/mobile and broader CPU/platform execution"}},
+      {"delivery_functional_verifier","tools/http_stream_provider/verify_functional.py"},
+      {"delivery_functional_options",llvm::json::Array{"--transport","https2","--case","download-file","--package"}},
+      {"read_call_statistics",llvm::json::Object{{"prefix_counters_preserved",int64_t(10)},{"reads_started_index",int64_t(10)},{"reads_finished_index",int64_t(11)},{"current_readers_index",int64_t(12)},{"peak_readers_index",int64_t(13)},{"physical_provider_calls_including_cursor_waiters",true},{"source_CPU_overlap_claimed_for_AST",false}}}
+    }},
+    {"http_client_provider",llvm::json::Object{{"status","development_pinned_task_FFI_HTTP_client"},{"source_support",true},{"source_language","0.24"},{"new_source_syntax",false},{"source_ABI_changed",false},{"guide","docs/http-client.md"},{"guide_kind","http-client"},{"library","lib/http_client.nex"},{"preparer","tools/http_provider/prepare.py"},{"dependency_builder","tools/http_provider/build_dependency.py"},{"operator_schema","llm/http-targets.schema.json"},{"input_conformance","tools/http_provider/check_inputs.py"},{"conformance","tools/http_provider/verify.py"},{"delivery_conformance","tools/http_provider/verify_delivery.py"},{"sanitizer_runner","tools/http_provider/sanitizers/run.py"},{"realms",llvm::json::Array{"server"}},{"effects",llvm::json::Array{"task","ffi"}},{"native",true},{"reference_execution","checked AST task calls through the pinned native provider"},{"browser_execution",false},{"portable_request_validation",true},{"explicit_foreign_grant",true},{"operator_policy_compiled_and_pinned",true},{"protocols",llvm::json::Array{"HTTP/1.1","HTTP/2","HTTPS"}},{"HTTP_allowed_only_by_explicit_policy",true},{"TLS",llvm::json::Object{{"minimum_version","1.2"},{"verify_peer",true},{"verify_hostname",true},{"explicit_captured_CA_bundle",true},{"ambient_CA_fallback",false},{"client_certificates",false},{"explicit_OCSP_CRL_policy",false}}},{"dependencies",llvm::json::Object{{"curl","8.23.0"},{"nghttp2","1.70.0"},{"c-ares","1.34.9"},{"OpenSSL","selected SDK libraries with captured hashes"},{"curl_nghttp2_cares_static_PIC",true},{"ambient_TLS_keylog_disabled_by_recorded_patch",true},{"PGP_verified",false}}},{"maximum_resolvers",int64_t(4)},{"maximum_authorities",int64_t(16)},{"maximum_request_body_bytes",int64_t(524288)},{"maximum_reply_body_bytes",int64_t(524288)},{"default_reply_limit_bytes",int64_t(262144)},{"maximum_copied_request_reply_bytes",int64_t(1044480)},{"maximum_headers_per_direction",int64_t(64)},{"maximum_header_bytes_per_direction",int64_t(65536)},{"maximum_URL_bytes",int64_t(8192)},{"maximum_timeout_ms",int64_t(30000)},{"default_redirect_limit",int64_t(0)},{"maximum_redirects",int64_t(8)},{"cross_origin_redirects_require_operator_policy",true},{"HTTPS_downgrade_allowed",false},{"credentials_stripped_on_origin_change",true},{"system_DNS_fallback",false},{"ambient_proxy_credentials",false},{"automatic_content_decompression",false},{"cross_call_connection_pool",false},{"fresh_C_tokens_on_IO_worker",true},{"provider_instance_capacity",llvm::json::Object{{"default",int64_t(16)},{"minimum",int64_t(1)},{"maximum",int64_t(64)},{"held_through_result_construction",true},{"physical_retirement_required",true},{"machine_wide_quota",false}}},{"source_FFI_pool",llvm::json::Object{{"IO_workers",int64_t(2)},{"maximum_reserved_bytes",int64_t(8388608)},{"reserved_bytes_per_call",int64_t(4194304)}}},{"dependency_heap_in_NEX_reservation",false},{"own_timeout_error","E_HTTP_TIMEOUT"},{"capacity_error","E_HTTP_BUSY"},{"original_parent_cancel_deadline_preserved",true},{"native_provider_process_sandbox",false},{"public_URL_private_IP_filter",false},{"installed_SDK_accepted",false},{"pending",llvm::json::Array{"matching0.135.7 compiler/full/installed/moved SDK acceptance","OpenSSL/compiler/generated-IR sanitizer instrumentation and fuzzing","untrusted-provider OS/process isolation and public-URL address-range profiles","persistent streams/backpressure, shared connection pools/reactor and finer total memory quotas","network debug/profile, automatic IDNA and asynchronous database drivers","Windows/mobile and broader CPU/platform execution"}}}},
+    {"dns_provider",llvm::json::Object{{"status","development_pinned_task_FFI_DNS_provider"},{"source_support",true},{"source_language","0.24"},{"new_source_syntax",false},{"source_ABI_changed",false},{"guide","docs/dns-provider.md"},{"guide_kind","dns"},{"library","lib/dns.nex"},{"preparer","tools/dns_provider/prepare.py"},{"dependency_builder","tools/dns_provider/build_dependency.py"},{"conformance","tools/dns_provider/verify.py"},{"delivery_conformance","tools/dns_provider/verify_delivery.py"},{"operator_schema","llm/dns-targets.schema.json"},{"realms",llvm::json::Array{"server"}},{"effects",llvm::json::Array{"task","ffi"}},{"native",true},{"independent_reference",true},{"browser_execution",false},{"explicit_foreign_grant",true},{"operator_targets_compiled_and_pinned",true},{"fresh_C_tokens_on_IO_worker",true},{"live_tokens_forwarded_to_other_pool",false},{"dependency",llvm::json::Object{{"name","c-ares"},{"version","1.34.9"},{"archive_sha256","9364b70a12eb59a06830fb488d9357f90100dff0d98b23ea3593a183d43e6f2f"},{"static_PIC",true},{"explicit_download_or_offline_archive",true},{"PGP_verified",false}}},{"maximum_resolvers",int64_t(4)},{"maximum_authorities",int64_t(16)},{"maximum_answers",int64_t(64)},{"maximum_hostname_bytes_before_root_dot",int64_t(253)},{"maximum_timeout_ms",int64_t(30000)},{"answer_order","deduplicated canonical IP strings in lexical order"},{"resolver_transport","numeric IPv4/IPv6; UDP with TCP fallback"},{"system_search_hosts_fallback",false},{"returned_addresses_probed",false},{"cross_call_cache",false},{"dependency_heap_in_NEX_reservation",false},{"provider_instance_capacity",llvm::json::Object{{"default",int64_t(16)},{"minimum",int64_t(1)},{"maximum",int64_t(64)},{"held_through_result_construction",true},{"physical_retirement_required",true},{"machine_wide_quota",false}}},{"source_FFI_pool",llvm::json::Object{{"IO_workers",int64_t(2)},{"maximum_reserved_bytes",int64_t(8388608)},{"reserved_bytes_per_call",int64_t(4194304)}}},{"own_timeout_error","E_DNS_TIMEOUT"},{"capacity_error","E_DNS_BUSY"},{"original_parent_cancel_deadline_preserved",true},{"installed_SDK_accepted",false},{"pending",llvm::json::Array{"matching current compiler/full/sanitizer/installed/moved SDK/package/platform acceptance","DNS-to-TCP connection integration and TLS/HTTP clients","Unicode-to-IDNA conversion, DNSSEC/DoT/DoH","cache/reused-channel/reactor policy and finer copied-call reservations","network debug/profile integration and asynchronous database drivers"}}}},
+    {"tcp_provider",llvm::json::Object{{"status","development_pinned_task_FFI_TCP_provider"},{"source_support",true},{"source_language","0.24"},{"new_source_syntax",false},{"source_ABI_changed",false},{"guide","docs/tcp-provider.md"},{"guide_kind","tcp"},{"library","lib/tcp.nex"},{"preparer","tools/tcp_provider/prepare.py"},{"conformance","tools/tcp_provider/verify.py"},{"delivery_conformance","tools/tcp_provider/verify_delivery.py"},{"operator_schema","llm/tcp-targets.schema.json"},{"realms",llvm::json::Array{"server"}},{"effects",llvm::json::Array{"task","ffi"}},{"native",true},{"independent_reference",true},{"browser_execution",false},{"explicit_foreign_grant",true},{"operator_targets_compiled_and_pinned",true},{"fresh_C_tokens_on_IO_worker",true},{"live_tokens_forwarded_to_other_pool",false},{"maximum_endpoints",int64_t(16)},{"maximum_body_bytes",int64_t(524288)},{"maximum_reply_bytes",int64_t(524288)},{"maximum_combined_body_reply_bytes",int64_t(1044480)},{"maximum_timeout_ms",int64_t(30000)},{"provider_instance_capacity",llvm::json::Object{{"default",int64_t(16)},{"minimum",int64_t(1)},{"maximum",int64_t(64)},{"physical_retirement_required",true},{"machine_wide_quota",false}}},{"source_FFI_pool",llvm::json::Object{{"IO_workers",int64_t(2)},{"maximum_reserved_bytes",int64_t(8388608)},{"reserved_bytes_per_call",int64_t(4194304)}}},{"own_timeout_error","E_NETWORK_TIMEOUT"},{"capacity_error","E_NETWORK_BUSY"},{"original_parent_cancel_deadline_preserved",true},{"installed_SDK_accepted",false},{"pending",llvm::json::Array{"matching full/sanitizer/installed/moved SDK/platform acceptance","DNS/TLS/HTTP and persistent streaming","reactor multiplexing and finer copied-call reservations","dedicated network debug/profile integration","asynchronous database drivers"}}}},
+    {"task_network_transport",llvm::json::Object{{"status","private_trusted_host_TCP_kernel"},{"source_support",false},{"public_enabled",false},{"stable_host_abi",false},{"guide","docs/task-network-transport.md"},{"header","runtime/nex_task_network.h"},{"probe","nex_task_network_probe"},{"platforms",llvm::json::Array{"macOS","Linux"}},{"transport","nonblocking IPv4/IPv6 TCP; one request/write EOF/bounded reply through peer EOF"},{"authority","explicit operator endpoint allowlist and revocable ResourceAccess; no worker TLS or environment grants"},{"maximum_endpoints",int64_t(16)},{"maximum_input_bytes",int64_t(1048576)},{"maximum_reply_bytes",int64_t(1048576)},{"maximum_timeout_ms",int64_t(30000)},{"queue_time_in_deadline",true},{"parent_control_inherited",true},{"source_values_on_workers",false},{"socket_close_before_physical_publication",true},{"automatic_retry",false},{"pending",llvm::json::Array{"native network builtins remain unimplemented; pinned task/FFI provider indexed separately as tcp_provider","DNS/TLS/HTTP and connection reuse","persistent streaming, backpressure and protocol integration","network debug/profile and full SDK/platform acceptance","asynchronous database transport"}}}},
+    {"task_foreign_prototype",llvm::json::Object{{"status","public022_source_ffi_owned_transfers"},{"source_support",true},{"public_enabled",true},{"private_source_language",languageVersion},{"public_source_language",languageVersion},{"guide","docs/task-foreign-prototype.md"},{"native",true},{"independent_reference",true},{"copied_typed_data",true},{"external_resource_transport",true},{"public022_migration_complete",true},{"installed_SDK_accepted",false},{"module_value_quotas_separate",true},{"private_task_local_resources",true},{"owned_completion_channel",true},{"generic_completion_contains_owners",false},{"private_cross_task_resource_transport",true},{"atomic_owner_transfer",true},{"resource_authority_on_demand",true},{"maximum_task_snapshot_owners",int64_t(4096)},{"maximum_ffi_snapshot_owners",int64_t(64)},{"explicit_history_migration",true},{"guide_kind","task-foreign-source"},{"fixed_provider_FFI_exports",false}}},
+    {"task_value_retirement",llvm::json::Object{{"status","private_native_scheduler"},{"source_syntax",false},{"source_resource_transport",true},{"stable_host_abi",false},{"guide","docs/task-value-retirement.md"},{"destruction","outside scheduler mutex"},{"cleanup_admission","intrusive queues and three retained root slots per admitted job; no allocation during retirement"},{"completion","task, logical scope and group publication wait their retired value roots"},{"channel_slot_reuse","after actual retired values and buffer storage destruction"},{"aliases","independently retained passive aliases and successful root results keep existing ownership"},{"retained_roots_per_job",int64_t(3)},{"suspending_api_cleanup","Suspending calls transfer their tagged roots to a Job-owned fence before unlock; source workers remain available"},{"api_cleanup","API guards retire only their own tagged roots; stack-owned fences survive batches taken by other workers"},{"scope_closure","deduplicated preallocated completion queue;256 nested scopes without recursive native closure"},{"source_task_FFI_bridge",true},{"actual_GPU_NPU_resources",false}}},
+    {"resource_regions",llvm::json::Object{{"status","private_trusted_host_native_and_reference_schedulers"},{"dependency_graph",llvm::json::Object{{"status","development_typed_C_and_Cpp_host_API"},{"introduced_toolchain","0.131.0"},{"source_parent_creation",false},{"source_FFI_parent_construction",true},{"C_table_parent_creation",true},{"C_table_prefix","NEX_FFI_V1_RESOURCE_PARENTS_SIZE"},{"physical_parent_leases",true},{"original_parent_grants_rechecked",true},{"atomic_logical_dependency_promotion",true},{"metadata_retains_no_payload",true},{"maximum_direct_parents",int64_t(16)},{"maximum_objects_including_child",int64_t(4096)},{"maximum_dependency_depth",int64_t(256)},{"guide","docs/resource-regions.md"}}},{"source_support",false},{"source_task_bridge",true},{"frame_value_transport",true},{"native_scheduler",true},{"reference_scheduler",true},{"actual_GPU_NPU_resources",false},{"stable_host_abi",false},{"guide","docs/resource-regions.md"},{"header","runtime/nex_resource_region.h"},{"native_group_enable","TaskGroup::enableResourceRegions(optional genuine request parent) before spawning"},{"native_current_authority","task root or owned inner scope on workers; group root on coordinator"},{"physical_access","explicit coordinator-captured grant/request; no per-resume TLS lookup"},{"ancestry","same scheduler ancestry or genuine request ancestor; sibling groups and foreign requests rejected"},{"promotion","explicit trusted ancestor transfer, reserving destination ownership before cross-graph return; aliases retain physical identity"},{"close","logical revocation under scheduler lock where applicable; destructor request outside locks; native and independent reference task/scope publication after complete physical fence"},{"root_retirement","group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement"},{"maximum",llvm::json::Object{{"scope_nodes_including_root",int64_t(1025)},{"scope_depth",int64_t(256)},{"owners",int64_t(4096)},{"physical_joined_domains",int64_t(8)},{"task_nodes",int64_t(65536)},{"task_depth",int64_t(256)},{"request_group_links",int64_t(1024)},{"reference_task_nodes",int64_t(4096)}}},{"pending",llvm::json::Array{"actual device bindings and matching compiler/SDK/platform delivery"}},{"reference_enable","TaskReferenceExternalHost::resourceRegions and optional genuine resourceRequestParent before evaluation"},{"reference_current_authority","task root or owned inner scope via coordinator-only prepareInRegion/admitInRegion"},{"reference_cleanup","task/scope publication after complete physical settlement; root and unexpected unwind drain operations, frames and resources"},{"native_task_regions",true},{"native_request_parent",true},{"reference_task_regions",true},{"reference_request_parent",true},{"source_language",languageVersion}}},
+    {"resource_executor",llvm::json::Object{{"status","private_trusted_host"},{"source_support",false},{"source_task_bridge",true},{"C_resource_executor_binding",false},{"actual_GPU_NPU_resources",false},{"stable_host_abi",false},{"guide","docs/resource-executor.md"},{"header","runtime/nex_resource_executor.h"},{"construction_and_cleanup","one owning thread"},{"cleanup_admission","pre-reserved bounded slot before factory; finalizer cannot be rejected after close"},{"quota_release","after destructor and code-pin release; admitted borrows retain complete physical owner"},{"operation_completion","run returns only after actual fence/IPC settlement; operation destructor precedes completion publication"},{"cancellation","queued work does not start; running work retains leases and reservations until physical settlement"},{"close","reject new admission; retain all previously reserved finalizers"},{"drain","current queue/running work only; idle owners remain live"},{"finish","close admission, wait all reserved resources/operations, join worker"},{"declared_capacity_only",true},{"maximum",llvm::json::Object{{"resources",int64_t(4096)},{"operations",int64_t(64)},{"reserved_bytes",int64_t(8388608)}}},{"pending",llvm::json::Array{"actual model/device session and buffer bindings","vendor-specific fences and failure settlement","matching full compiler, installed SDK and platform delivery"}}}},
+    {"source_resources",llvm::json::Object{{"source_support",true},{"public_enabled",true},{"language",languageVersion},{"syntax","[pub] server resource Name<T...>;"},{"operations",llvm::json::Array{"resource_close(Resource) -> bool","resource_is_open(Resource) -> bool"}},{"server_only",true},{"effect","ffi"},{"opaque_declarations",true},{"generic_resources",true},{"source_constructor",false},{"reference",true},{"native",true},{"typescript",false},{"wire",false},{"source_task_bridge",true},{"async_completion",true},{"migration","explicit origin recheck; retained old rows/schema/IDs; reviewed graph repairs for builtin conflicts"},{"guide","docs/source-resources.md"},{"acceptance_pending",llvm::json::Array{"matching full compiler regression","installed SDK and supported native platforms"}},{"debugger",llvm::json::Object{{"LLDB_opaque_alias_view",true},{"DAP_opaque_alias_view",true},{"archived_source",true},{"ordinary_pure_watches",true},{"resource_watch_proxy_authority",false},{"runtime_arguments","DAP launch.args; raw LLDB CLI run-args exactly once"}}}}},
+    {"scoped_discovery",llvm::json::Object{{"schema","nex.discovery/1"},{"schema_file","llm/discovery.schema.json"},
+      {"index_command","nex describe --kind index --json"},{"field_command","nex describe --field PATH --json"},
+      {"full_command","nex describe --json"},{"guide","docs/discovery.md"},{"bootstrap_prompt","llm/BOOTSTRAP.md"},
+      {"field_bytes",256},{"path_components",8},{"graph_store_opened",false},{"source_read",false}}},
+    {"model",llvm::json::Object{{"status","development_checked_model_library"},{"source_support",true},{"contract_version",int64_t(1)},{"language",languageVersion},{"language_migration_required",false},{"guide","docs/models.md"},{"import","std/model.nex"},{"tensor_dtypes",llvm::json::Array{"f32","u8","i8","i32"}},{"immutable_row_major_bytes",true},{"f32_encoding","finite IEEE754 binary32 little-endian bytes"},{"implicit_f64_narrowing",false},{"maximum_rank",int64_t(4)},{"maximum_elements_per_port",int64_t(262144)},{"maximum_ports_per_direction",int64_t(16)},{"maximum_combined_io_bytes",int64_t(786432)},{"precision_policies",llvm::json::Array{"match-cpu","vendor"}},{"exact_integer_f32_helper_range",llvm::json::Array{int64_t(-16777216),int64_t(16777216)}},{"tensor_native",true},{"tensor_reference",true},{"tensor_typescript",true},{"provider_context",true},{"provider_realm","server"},{"provider_effects",llvm::json::Array{"ffi"}},{"context_wire",false},{"context_host_grant",false},{"explicit_cpu_fallback",true},{"builtin_cpu_inference",false},{"builtin_gpu_inference",false},{"builtin_npu_inference",false},{"owned_model_handles",false},{"source_task_bridge",false},{"provider_preparation",llvm::json::Object{{"tool","tools/models/prepare.py"},{"status","experimental_pinned_ONNX_child"},{"native_targets",llvm::json::Array{"linux-arm64"}},{"runtime_C_API",int64_t(20)},{"maximum_model_bytes",int64_t(33554432)},{"device_initialized_during_preparation",false},{"candidate_NPU_provider","ZhouyiExecutionProvider"},{"runtime_digest_is_immutable_pin",false},{"driver_and_operator_dependencies_bundled",false}}},{"pending",llvm::json::Array{"matching full regression and installed SDK acceptance","matching compiler/provider platform delivery","other model formats and dynamic/scalar shapes","owned model/device resources and persistent/async worker lifetime"}}}},
+    {"device",llvm::json::Object{{"status","development_owned_device_library"},{"guide","docs/device.md"},{"import","std/device.nex"},{"contract_version",int64_t(1)},{"source_support",true},{"language",languageVersion},{"language_migration_required",false},{"provider_realm","server"},{"provider_effects",llvm::json::Array{"task","ffi"}},{"opaque_session",true},{"opaque_buffer",true},{"immutable_tensor_metadata",true},{"hidden_physical_parent_retention",true},{"source_task_bridge",true},{"context_wire",false},{"explicit_cpu_fallback",true},{"builtin_gpu",false},{"builtin_npu",false},{"experimental_opencl_provider",true},{"provider_preparation","tools/owned-opencl/prepare.py"},{"provider_delivery","experimental_operator_preparation"},{"opencl_success_reply_validation","serialized_decode_and_physical_drain_on_fault"},{"opencl_unique_allocation_ids",true},{"fault_verification","tools/owned-opencl/faults.py"},{"log_verification","tools/owned-opencl/logs.py"},{"opencl_diagnostics",llvm::json::Object{{"transport","drained_pipe"},{"capture","bounded_first_and_last"},{"maximum_saved_bytes",int64_t(65536)},{"process_file_size_limit",false}}},{"opencl_operations",llvm::json::Array{"add_u8","affine_u8"}},{"maximum_rank",int64_t(4)},{"maximum_elements",int64_t(262144)},{"maximum_tensor_bytes",int64_t(1048576)},{"opencl_maximum_upload_bytes",int64_t(1044480)},{"pending",llvm::json::Array{"matching full regression, installed SDK and platform acceptance","owned NPU/model adapters","device-loss recovery/reset","float tensors, additional operations and general kernels","concurrent queues and explicit fence values"}}}},
+    {"compute",llvm::json::Object{{"status","development_checked_library_contract"},{"guide","docs/compute.md"},{"import","std/compute.nex"},{"contract_version",int64_t(1)},{"source_support",true},{"language",languageVersion},{"language_migration_required",false},{"tensor_dtypes",llvm::json::Array{"u8","i8","i32"}},{"operations",llvm::json::Array{"add_u8","affine_u8","matmul_i8_i32"}},{"immutable_row_major_bytes",true},{"maximum_rank",int64_t(4)},{"maximum_elements",int64_t(262144)},{"maximum_bytes",int64_t(1048576)},{"cpu_maximum_multiply_accumulates",int64_t(1048576)},{"cpu_backend","checked NEX source"},{"cpu_reference",true},{"cpu_native",true},{"cpu_typescript",true},{"provider_context",true},{"provider_realm","server"},{"provider_effects",llvm::json::Array{"ffi"}},{"context_wire",false},{"explicit_cpu_fallback",true},{"builtin_gpu",false},{"builtin_npu",false},{"source_task_bridge",false},{"owned_device_buffers",false},{"pending",llvm::json::Array{"matching full regression and installed SDK acceptance","real common-API OpenCL/RKNN/Zhouyi providers and device tests","float tensors and additional operations","general kernels/models","owned resources and persistent/async worker lifetime"}}}},
+    {"source_concurrency",llvm::json::Object{{"status","development_ordered_cpu_mapping"},{"guide","docs/concurrency-design.md"},{"language",languageVersion},{"operation","parallel_map"},{"source_operations",true},{"internal_runtime_prototype",true},{"emitted_runtime_enabled",true},{"runtime_inclusion","reachable program or linked provider requirement"},{"stable_host_abi",false},{"development_compile_definition","NEX_STRUCTURED_WORKERS"},{"callback_effects",llvm::json::Array{}},{"callback_realm","shared or current caller realm"},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"native_execution","bounded joined CPU threads"},{"reference_execution","sequential semantic oracle"},{"typescript_execution","sequential synchronous evaluation"},{"browser_workers",false},{"maximum_workers",int64_t(16)},{"maximum_items",int64_t(65536)},{"maximum_value_graph_nodes",int64_t(262144)},{"callback_call_depth",int64_t(256)},{"standalone_group_steps",int64_t(1000000)},{"standalone_group_timeout_ms",int64_t(5000)},{"hosted_budget","inherit existing request control"},{"capture_guard","reject hidden file graphs before callbacks start"},{"source_async_await",false},{"pending",llvm::json::Array{"full_current_regression","installed_sdk","platform_editor_debug_profile_validation","integration of parallel_map/source tasks with the separate typed browser-worker adapter","task IO beyond whole-file reads/writes and task host adapters","other_cpu_targets","gpu","npu"}}}},
+    {"task_file_streams_prototype",llvm::json::Object{{"status","development_public024_source_file_streams"},{"language","0.24"},{"public_language","0.24"},{"public_enabled",true},{"source_support",true},{"private_source_support",true},{"execution_ABI",int64_t(5)},{"retained_execution_ABIs",llvm::json::Array{int64_t(3),int64_t(4)}},{"retained_provider_masks",llvm::json::Array{int64_t(31),int64_t(799)}},{"guide","docs/task-file-streams.md"},{"operations",llvm::json::Array{"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"}},{"explicit_physical_grants",true},{"logical_file_owners",true},{"atomic_mixed_resource_transfer",true},{"source_values_on_IO_workers",false},{"native_source_lowering",true},{"independent_AST_source_lowering",true},{"public_history_migration_complete",true},{"pending",llvm::json::Array{"matching full regression, fresh sanitizers, installed SDK and platform acceptance","streaming network/DB and task HTTP provider/debug/profile delivery"}},{"image_requirements",llvm::json::Object{{"scope","reachable checked native task instructions and retained file values"},{"read_operations",llvm::json::Array{"file_read_text","file_read_bytes","file_open_read","file_read"}},{"write_operations",llvm::json::Array{"file_write_text","file_write_bytes","file_open_write","file_open_append","file_write","file_flush"}},{"owner_operations",llvm::json::Array{"file_seek","file_size","file_close","file_is_open"}},{"stream_image_flag_for_all_stream_operations",true},{"standalone_metadata",llvm::json::Array{"task_file_reads","task_file_writes","task_file_streams"}},{"declarations_grant_OS_authority",false},{"retained_file_values_require_stream_image",true}}},{"file_cleanup",llvm::json::Object{{"owning_executor",true},{"reserved_before_open",true},{"logical_close","immediate shared revocation"},{"physical_release","queued after final admitted lease"},{"quota_and_region_fence_until_settled",true},{"source_open_requires_executor",true},{"legacy_host_default_inline_unchanged",true}}},{"source_providers",llvm::json::Object{{"private_enabled",true},{"public_enabled",true},{"schemas",llvm::json::Array{"nex.native-task-provider/8","nex.native-task-provider/9","nex.native-task-provider/10"}},{"schema_file","llm/native-stream-task-provider.schema.json"},{"requirements_mask",int64_t(3871)},{"typed_file_exports",true},{"static",true},{"shared_fixed",true},{"root_application_schema","nex.native-task-application/3"},{"profile_debug_metadata",true},{"C_FFI_file_transport",false},{"wire_file_transport",false},{"CLI_plan_capture_package_debug_profile_delivery",true},{"guide","docs/task-stream-providers.md"}}},{"project_integration",llvm::json::Object{{"status","development_public024_source_project_integration"},{"guide","docs/task-stream-project.md"},{"public_enabled",true},{"source_selection","explicit compiler-owned SourceLanguage; never inferred from nex.json or capture JSON"},{"project_plan",true},{"plan_schemas",llvm::json::Array{"nex.project-static-task-linkage/3","nex.project-task-linkage/8","nex.project-task-linkage/9","nex.project-task-linkage/10"}},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"separate_read_write_stream_requirements",true},{"capture_rechecks_checked_source",true},{"source_deleted_replay",true},{"native_packages",true},{"native_task_profiles",true},{"native_provider_logical_debugger",true},{"file_identity_watch",true},{"file_watch_reconstructs_IO_authority",false},{"effectful_watch",false},{"ordinary_project_CLI_024_build",true}}},{"physical_IO_observation",llvm::json::Object{{"private_host_only",true},{"public_enabled",false},{"stable_host_ABI",false},{"guide","docs/task-stream-inflight.md"},{"POSIX_streams",true},{"native_source",true},{"independent_AST_source",true},{"before_and_after_actual_calls",true},{"callbacks_outside_cursor_mutex",true},{"event_fields",llvm::json::Array{"operation","phase","argument","result","error"}},{"source_values_or_descriptors_in_events",false},{"observer_grants_authority",false},{"explicit_revocable_host_domain",true},{"physical_quota_until_retirement",true},{"exceptional_exit_completion",true},{"strict_one_shot_admission",true},{"source_task_cancel_inflight",true},{"arbitrary_syscall_interruption",false},{"post_IO_rollback",false},{"matching_platform_acceptance",false}}}}},
+    {"task_file_streams",llvm::json::Object{{"status","development_public024_source_file_streams"},{"language","0.24"},{"public_language","0.24"},{"public_enabled",true},{"source_support",true},{"private_source_support",true},{"execution_ABI",int64_t(5)},{"retained_execution_ABIs",llvm::json::Array{int64_t(3),int64_t(4)}},{"retained_provider_masks",llvm::json::Array{int64_t(31),int64_t(799)}},{"guide","docs/task-file-streams.md"},{"operations",llvm::json::Array{"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"}},{"explicit_physical_grants",true},{"logical_file_owners",true},{"atomic_mixed_resource_transfer",true},{"source_values_on_IO_workers",false},{"native_source_lowering",true},{"independent_AST_source_lowering",true},{"public_history_migration_complete",true},{"pending",llvm::json::Array{"matching full regression, fresh sanitizers, installed SDK and platform acceptance","streaming network/DB and task HTTP provider/debug/profile delivery"}},{"image_requirements",llvm::json::Object{{"scope","reachable checked native task instructions and retained file values"},{"read_operations",llvm::json::Array{"file_read_text","file_read_bytes","file_open_read","file_read"}},{"write_operations",llvm::json::Array{"file_write_text","file_write_bytes","file_open_write","file_open_append","file_write","file_flush"}},{"owner_operations",llvm::json::Array{"file_seek","file_size","file_close","file_is_open"}},{"stream_image_flag_for_all_stream_operations",true},{"standalone_metadata",llvm::json::Array{"task_file_reads","task_file_writes","task_file_streams"}},{"declarations_grant_OS_authority",false},{"retained_file_values_require_stream_image",true}}},{"file_cleanup",llvm::json::Object{{"owning_executor",true},{"reserved_before_open",true},{"logical_close","immediate shared revocation"},{"physical_release","queued after final admitted lease"},{"quota_and_region_fence_until_settled",true},{"source_open_requires_executor",true},{"legacy_host_default_inline_unchanged",true}}},{"source_providers",llvm::json::Object{{"private_enabled",true},{"public_enabled",true},{"schemas",llvm::json::Array{"nex.native-task-provider/8","nex.native-task-provider/9","nex.native-task-provider/10"}},{"schema_file","llm/native-stream-task-provider.schema.json"},{"requirements_mask",int64_t(3871)},{"typed_file_exports",true},{"static",true},{"shared_fixed",true},{"root_application_schema","nex.native-task-application/3"},{"profile_debug_metadata",true},{"C_FFI_file_transport",false},{"wire_file_transport",false},{"CLI_plan_capture_package_debug_profile_delivery",true},{"guide","docs/task-stream-providers.md"}}},{"project_integration",llvm::json::Object{{"status","development_public024_source_project_integration"},{"guide","docs/task-stream-project.md"},{"public_enabled",true},{"source_selection","explicit compiler-owned SourceLanguage; never inferred from nex.json or capture JSON"},{"project_plan",true},{"plan_schemas",llvm::json::Array{"nex.project-static-task-linkage/3","nex.project-task-linkage/8","nex.project-task-linkage/9","nex.project-task-linkage/10"}},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"separate_read_write_stream_requirements",true},{"capture_rechecks_checked_source",true},{"source_deleted_replay",true},{"native_packages",true},{"native_task_profiles",true},{"native_provider_logical_debugger",true},{"file_identity_watch",true},{"file_watch_reconstructs_IO_authority",false},{"effectful_watch",false},{"ordinary_project_CLI_024_build",true}}},{"physical_IO_observation",llvm::json::Object{{"private_host_only",true},{"public_enabled",false},{"stable_host_ABI",false},{"guide","docs/task-stream-inflight.md"},{"POSIX_streams",true},{"native_source",true},{"independent_AST_source",true},{"before_and_after_actual_calls",true},{"callbacks_outside_cursor_mutex",true},{"event_fields",llvm::json::Array{"operation","phase","argument","result","error"}},{"source_values_or_descriptors_in_events",false},{"observer_grants_authority",false},{"explicit_revocable_host_domain",true},{"physical_quota_until_retirement",true},{"exceptional_exit_completion",true},{"strict_one_shot_admission",true},{"source_task_cancel_inflight",true},{"arbitrary_syscall_interruption",false},{"post_IO_rollback",false},{"matching_platform_acceptance",false}}}}},
+    {"task_file_streams_host",llvm::json::Object{{"status","experimental_trusted_host_streams"},{"language","0.24"},{"guide","docs/task-file-stream-host.md"},{"header","runtime/nex_task_file_stream.h"},{"source_support",true},{"public_enabled",true},{"stable_host_abi",false},{"platforms",llvm::json::Array{"macOS","Linux"}},{"actions",llvm::json::Array{"open_read","open_write","open_append","read","write","seek","size","flush"}},{"explicit_captured_grants",true},{"worker_ambient_authority",false},{"typed_one_shot_open",true},{"raw_file_id_transport",false},{"snapshot_write_inputs",true},{"shared_cursor_serialization",true},{"cross_task_ordering_guaranteed",false},{"maximum_chunk_bytes",int64_t(1048576)},{"io_workers",int64_t(2)},{"maximum_pending",int64_t(64)},{"reserved_transport_bytes",int64_t(8388608)},{"physical_drain",true},{"post_IO_rollback",false},{"total_process_RAM_bound",false},{"source_semantics_changed",false},{"retained_history_changed",false},{"pending",llvm::json::Array{"matching current installed SDK and native platform acceptance","streaming network/DB and task HTTP provider/debug/profile delivery"}}}},
+    {"task_file_writes_prototype",llvm::json::Object{{"status","development_public_whole_file_writes"},{"guide","docs/task-file-writes-prototype.md"},{"language","0.24"},{"public_language","0.24"},{"source_support",true},{"private_source_support",true},{"public_enabled",true},{"native",true},{"reference",true},{"typescript_server_files",false},{"execution_ABI",int64_t(5)},{"retained_provider_ABI",int64_t(3)},{"retained_provider_mask",int64_t(31)},{"descriptor_bytes",int64_t(88)},{"operations",llvm::json::Array{"file_write_text(str,str) -> result<bool>","file_write_bytes(str,bytes) -> result<bool>"}},{"function_effects",llvm::json::Array{"task","fs"}},{"realm","server"},{"explicit_write_grant",true},{"snapshot_inputs",true},{"physical_drain",true},{"postcommit_rollback",false},{"public_migration_complete",false},{"pending",llvm::json::Array{"matching genuine022 public migration and retained capture/replay/package acceptance","matching CLI/editor/debug/profile/SDK/platform delivery","async networking/DB and task HTTP provider/debug/profile delivery"}},{"private_history_migration_verified",true},{"migration_guide","docs/task-write-migration.md"},{"private_static_shared_providers",true},{"private_provider_mask",int64_t(799)},{"private_provider_schemas",llvm::json::Array{"nex.native-task-provider/5","nex.native-task-provider/6","nex.native-task-provider/7"}},{"provider_guide","docs/task-write-providers.md"},{"provider_schema_file","llm/native-write-task-provider.schema.json"},{"write_requirement_metadata",true},{"static_shared_providers",true},{"provider_mask",int64_t(3871)},{"provider_schemas",llvm::json::Array{"nex.native-task-provider/8","nex.native-task-provider/9","nex.native-task-provider/10"}}}},
+    {"task_file_writes",llvm::json::Object{{"status","development_public_whole_file_writes"},{"guide","docs/task-file-writes-prototype.md"},{"language","0.24"},{"public_language","0.24"},{"source_support",true},{"private_source_support",true},{"public_enabled",true},{"native",true},{"reference",true},{"typescript_server_files",false},{"execution_ABI",int64_t(5)},{"retained_provider_ABI",int64_t(3)},{"retained_provider_mask",int64_t(31)},{"descriptor_bytes",int64_t(88)},{"operations",llvm::json::Array{"file_write_text(str,str) -> result<bool>","file_write_bytes(str,bytes) -> result<bool>"}},{"function_effects",llvm::json::Array{"task","fs"}},{"realm","server"},{"explicit_write_grant",true},{"snapshot_inputs",true},{"physical_drain",true},{"postcommit_rollback",false},{"public_migration_complete",false},{"pending",llvm::json::Array{"matching genuine022 public migration and retained capture/replay/package acceptance","matching CLI/editor/debug/profile/SDK/platform delivery","async networking/DB and task HTTP provider/debug/profile delivery"}},{"private_history_migration_verified",true},{"migration_guide","docs/task-write-migration.md"},{"private_static_shared_providers",true},{"private_provider_mask",int64_t(799)},{"private_provider_schemas",llvm::json::Array{"nex.native-task-provider/5","nex.native-task-provider/6","nex.native-task-provider/7"}},{"provider_guide","docs/task-write-providers.md"},{"provider_schema_file","llm/native-write-task-provider.schema.json"},{"write_requirement_metadata",true},{"static_shared_providers",true},{"provider_mask",int64_t(3871)},{"provider_schemas",llvm::json::Array{"nex.native-task-provider/8","nex.native-task-provider/9","nex.native-task-provider/10"}}}},
+    {"task_file_writes_host",llvm::json::Object{{"status","private_trusted_host_whole_file_writes"},{"guide","docs/task-file-writes-host.md"},{"header","runtime/nex_task_file_write.h"},{"source_support",true},{"reference_source_support",true},{"language",languageVersion},{"stable_host_abi",false},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"authority","explicit coordinator-captured revocable FileWriteGrant; read-only capability cannot be upgraded"},{"input_snapshot","exact visible bytes; no source Values or mutable backing storage on worker"},{"maximum_file_bytes",int64_t(1048576)},{"maximum_path_bytes",int64_t(4096)},{"reservation","owned input bytes plus retained path bytes"},{"atomic_replacement",true},{"commit","temporary write, fsync, final control/authority check, rename"},{"crash_durable_directory",false},{"postcommit_cancellation","result may be suppressed after complete publication; no rollback"},{"physical_drain",true},{"pending",llvm::json::Array{"matching full regression, installed SDK and platform acceptance","async networking/DB and task HTTP provider/debug/profile delivery"}}}},
+    {"task_file_reads",llvm::json::Object{{"status","development_public_whole_file_reads"},{"guide","docs/task-file-reads.md"},{"language","0.24"},{"source_support",true},{"operations",llvm::json::Array{"file_read_text(str) -> result<str>","file_read_bytes(str) -> result<bytes>"}},{"function_effects",llvm::json::Array{"task","fs"}},{"realm","server"},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"reference",true},{"typescript",false},{"windows",false},{"wasm",false},{"http_task_handlers",false},{"binary_providers",true},{"writes",true},{"streams",true},{"task_debug_profile",true},{"authority","root coordinator captures explicit revocable FileReadGrant; task/fs does not choose an OS root"},{"fs_only_helpers_in_task","E_EFFECT; explicitly declare task and fs"},{"ordinary_errors","typed result at attempted read, including absent capability and invalid UTF-8"},{"fatal_errors","traps, cancellation, revoked authority and execution limits abort/drain; first fatal retained"},{"physical_drain",true},{"source_admission","owning scheduler after physical settlement and authority/control checks"},{"io_workers",int64_t(2)},{"maximum_pending",int64_t(64)},{"reserved_transport_bytes",int64_t(8388608)},{"maximum_file_bytes",int64_t(1048576)},{"maximum_path_bytes",int64_t(4096)},{"maximum_whole_file_reservations",int64_t(7)},{"total_process_ram_bound",false},{"migration","explicit019-to020 checked recheck; original rows/IDs/schema retained"},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}},{"task_profile",true},{"task_debug",true},{"provider_linkage",llvm::json::Array{"static","shared-fixed"}},{"provider_source_required",true}}},
+    {"task_providers",llvm::json::Object{{"status","development_static_native_tasks"},{"public_enabled",true},{"language","0.24"},{"guide","docs/task-providers.md"},{"record_schema","nex.native-task-provider/8"},{"record_schema_file","llm/native-stream-task-provider.schema.json"},{"plan_schema","nex.project-static-task-linkage/3"},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"execution_task_abi",int64_t(5)},{"descriptor_bytes",int64_t(88)},{"abi_offset",int64_t(40)},{"source_required",true},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"static_linkage",true},{"supported_actions",llvm::json::Array{"build","run","test","build-test","package"}},{"checked_task_io",true},{"provider_file_reads",true},{"reviewed_capture_replay",true},{"runtime_ownership","one root application executor, request control and file grant; code-only provider archives"},{"authority_transport",false},{"callable_transport",false},{"imported_function_values",false},{"dynamic_linkage",false},{"profiling",false},{"logical_debugging",false},{"http_task_handlers",false},{"foreign",false},{"binary_only",false},{"unload",false},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}},{"provider_file_writes",true},{"provider_file_streams",true},{"file_owner_transport",true}}},
+    {"task_shared_providers",llvm::json::Object{{"status","development_checked_fixed_native_task_images"},{"public_enabled",true},{"language","0.24"},{"guide","docs/task-shared-providers.md"},{"record_schema","nex.native-task-provider/8"},{"record_schema_file","llm/native-stream-task-provider.schema.json"},{"plan_schema","nex.project-task-linkage/8"},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"completion_schema","nex.native-completion/5"},{"retained_build_schema","nex.retained-native-task-build/2"},{"execution_task_abi",int64_t(5)},{"descriptor_bytes",int64_t(88)},{"abi_offset",int64_t(40)},{"source_required",true},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"linkage","fixed OS startup load closure"},{"mixed_static_shared",true},{"ownership","checked definitions owned once per application load closure; independent roots have independent ledgers"},{"runtime_ownership","one common runtime and one root executor, request control, file grant and limits"},{"application_entry","declared task entry in final executable; no application code DSO"},{"checked_task_io",true},{"provider_file_reads",true},{"reviewed_capture_replay",true},{"supported_actions",llvm::json::Array{"build","run","test","build-test","package"}},{"authority_transport",false},{"callable_transport",false},{"imported_function_values",false},{"profiling",false},{"logical_debugging",false},{"http_task_handlers",false},{"foreign",false},{"binary_only",false},{"runtime_load_unload",false},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}},{"provider_file_writes",true},{"provider_file_streams",true},{"file_owner_transport",true}}},
+    {"task_provider_debugging",llvm::json::Object{{"status","development_checked_native_task_provider_debugging"},{"public_enabled",true},{"source_support",true},{"language","0.24"},{"guide","docs/task-provider-debugging.md"},{"source_required",true},{"configuration","debug"},{"execution_task_abi",int64_t(5)},{"descriptor_bytes",int64_t(88)},{"registry_abi",int64_t(1)},{"registry_bytes",int64_t(32)},{"catalog_abi",int64_t(2)},{"catalog_bytes",int64_t(200)},{"maximum_total_registries_including_root",int64_t(128)},{"record_schema","nex.native-task-provider/10"},{"catalog_schema","nex.task-debug-catalog/1"},{"source_union_schema","nex.task-debug-source-union/1"},{"completion_schema","nex.native-completion/7"},{"manifest_schema","nex.debug/3"},{"view_schema","nex.task-debug-view/2"},{"frame_schema","nex.debug-frame/4"},{"supported_actions",llvm::json::Array{"plan","build","debug","package"}},{"ordinary_pure_helper_logical_frames",false},{"combined_debug_profile",false},{"runtime_load_unload",false},{"authority_transport",false},{"callable_transport",false},{"foreign",false},{"binary_only",false},{"http_task_handlers",false},{"reference",false},{"typescript",false},{"windows",false},{"wasm",false},{"language_migration_required",false},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"linkage_modes",llvm::json::Array{"static","shared-fixed"}},{"record_schema_file","llm/native-stream-task-provider.schema.json"},{"plan_schema","nex.project-task-linkage/10"},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"provider_file_writes",true},{"provider_file_streams",true},{"file_owner_transport",true}}},
+    {"task_provider_profiling",llvm::json::Object{{"status","development_checked_native_task_provider_profiles"},{"public_enabled",true},{"source_support",true},{"language","0.24"},{"guide","docs/task-provider-profiling.md"},{"configuration","profile"},{"source_required",true},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"static_linkage",true},{"fixed_shared_linkage",true},{"execution_task_abi",int64_t(5)},{"descriptor_bytes",int64_t(88)},{"registry_abi",int64_t(1)},{"registry_bytes",int64_t(32)},{"record_schema","nex.native-task-provider/9"},{"catalog_schema","nex.task-profile-catalog/1"},{"completion_schema","nex.native-completion/6"},{"plan_schema","nex.project-task-linkage/9"},{"retained_build_schema","nex.retained-native-task-build/3"},{"runtime_schema","nex.profile-runtime/3"},{"report_schema","nex.profile/3"},{"session_schema","nex.profile-session/3"},{"build_schema","nex.profile-build/2"},{"supported_actions",llvm::json::Array{"build","run","profile","package"}},{"collector_ownership","one collector and one checked registry batch per running application physical load closure"},{"source_attribution","checked component source catalogs, including unused concrete provider definitions"},{"source_calls","one logical activation across suspension and image boundaries"},{"root_limits_and_grants","preserved root execution policy; catalogs do not grant authority"},{"reviewed_capture_replay",true},{"logical_debugging",false},{"combined_debug_profile",false},{"runtime_load_unload",false},{"authority_transport",false},{"callable_transport",false},{"foreign",false},{"binary_only",false},{"http_task_handlers",false},{"tracy",false},{"reference",false},{"typescript",false},{"windows",false},{"wasm",false},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}},{"profile_configuration_test_builds",true},{"measured_test_sessions",false},{"record_schema_file","llm/native-stream-task-provider.schema.json"},{"plan_schema_file","llm/project-stream-task-linkage.schema.json"},{"provider_file_writes",true},{"provider_file_streams",true},{"file_owner_transport",true}}},
+    {"task_profiling",llvm::json::Object{{"status","development_native_source_tasks"},{"source_support",true},{"guide","docs/profiling.md"},{"cli_language",languageVersion},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"execution_task_abi",int64_t(5)},{"runtime_schema","nex.profile-runtime/2"},{"report_schema","nex.profile/2"},{"session_schema","nex.profile-session/2"},{"source_only_project",true},{"reviewed_capture_replay",true},{"task_file_reads",true},{"source_calls","one logical activation; not one scheduler resume"},{"clocks",llvm::json::Array{"thread CPU in active source segments","active monotonic elapsed","logical lifetime wall"}},{"scheduler_metrics",llvm::json::Array{"ready","future","send","receive","scope","external","drain","executor CPU/elapsed"}},{"completeness",llvm::json::Array{"aggregates","timeline","memory","cpu","elapsed","lifetime"}},{"event_only_truncation_preserves_aggregates",true},{"memory_scope","managed shallow handles and Data objects; not total heap/RAM"},{"limits",llvm::json::Object{{"events",int64_t(1000000)},{"sites",int64_t(16384)},{"tasks",int64_t(4096)},{"active_invocations",int64_t(65536)},{"guards_per_thread",int64_t(4096)},{"live_allocations",int64_t(1000000)},{"report_bytes",int64_t(67108864)}}},{"tracy",false},{"async_debugger",false},{"reference",false},{"typescript",false},{"http_task_handlers",false},{"binary_providers",false},{"windows",false},{"wasm",false},{"acceptance_pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance"}}}},
+    {"task_debugging",llvm::json::Object{{"status","development_native_source_tasks"},{"source_support",true},{"guide","docs/task-debugging.md"},{"language",languageVersion},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"execution_task_abi",int64_t(5)},{"catalog_abi",int64_t(1)},{"manifest_schema","nex.debug/2"},{"view_schema","nex.task-debug-view/1"},{"frame_schema","nex.debug-frame/3"},{"process_model","LLDB all-stop; read-only borrowed safe-point/accepted-park inspection"},{"public_launch",true},{"nex_dap",true},{"raw_dap",false},{"source_only_project",true},{"logical_step",true},{"inferior_function_evaluation",false},{"source_value_retention",false},{"deadline_advances_while_stopped",true},{"limits",llvm::json::Object{{"tasks",int64_t(4096)},{"live_frames",int64_t(65536)},{"stack_depth",int64_t(256)},{"locals",int64_t(256)},{"codes",int64_t(16384)},{"points",int64_t(262144)},{"bindings",int64_t(65536)},{"visible_indices",int64_t(1048576)},{"metadata_text_bytes",int64_t(16777216)},{"metadata_bytes",int64_t(67108864)},{"host_manifest_bytes",int64_t(8388608)}}},{"pending",llvm::json::Array{"matching delivery regression and installed SDK acceptance","supported native platform acceptance","native helper logical-stack merge","target name before first activation","HTTP task handler debugging","browser/TypeScript/reference and other platforms","combined task debug/profile"}},{"schema_files",llvm::json::Object{{"view","llm/task-debug-view.schema.json"},{"frame","llm/task-debug-frame.schema.json"},{"expression","llm/task-debug-expression.schema.json"}}},{"source_cli","nex debug FILE --kind nex-dap --json"},{"project_cli","nex project --kind debug --component NAME --adapter nex-dap --json"},{"combined_debug_profile",false},{"queued_target_name",false},{"lldb_commands",llvm::json::Array{"nex-tasks","nex-task-select TASK_ID","nex-task-stack [TASK_ID]","nex-task-values [TASK_ID [FRAME_INDEX]]","nex-task-break function QUALIFIED_NAME","nex-task-break line FILE LINE","nex-task-next [TASK_ID]","nex-task-in [TASK_ID]","nex-task-out [TASK_ID]"}},{"dap_requests",llvm::json::Array{"threads","stackTrace","scopes","variables","evaluate","next","stepIn","stepOut","continue"}},{"provider_debugging_contract","task_provider_debugging; separate catalog ABI2/debug3, not source-only ABI1"}}},
+    {"task_profile_collector",llvm::json::Object{{"status","development_integrated_native_tasks"},{"guide","docs/profiling.md"},{"header","runtime/nex_task_profile.h"},{"probe","nex_task_profile_collector_probe"},{"source_support",true},{"runtime_integration",true},{"public_profile_enabled",true},{"execution_task_abi_changed",true},{"measurement_scope","native compiled source tasks; public CLI language024; see task_profiling scope"}}},
+    {"task_external_completion",llvm::json::Object{{"status","experimental_private_trusted_host_kernel"},{"guide","docs/task-external.md"},{"source_support",false},{"public_source_async_io",true},{"source_syntax_changed",false},{"canonical_formats_changed",false},{"stable_host_abi",false},{"transport","owned bounded host bytes/results; no source Value, Handle or frame transported to I/O workers"},{"tickets","driver and logical owner; slot generation; single acceptance"},{"cancellation","request cancellation; retain physical lease and quota until operation settlement; drain before owner completion"},{"admission","owning scheduler only; validate concrete host schema and authority before source publication"},{"memory_bound","declared retained transport payload; not total host/process memory"},{"maximum",llvm::json::Object{{"pending",int64_t(64)},{"reserved_bytes",int64_t(8388608)},{"result_payload_bytes",int64_t(1048576)},{"io_workers_native_reference",int64_t(2)}}},{"native",llvm::json::Object{{"header","runtime/nex_task_external.h"},{"group_header","runtime/nex_tasks.h"},{"entry_points",llvm::json::Array{"TaskExternalPool","TaskGroup::submitExternal","TaskGroup::awaitExternal"}},{"io_execution","separate bounded joined host worker pool"}}},{"reference",llvm::json::Object{{"header","include/nex/task_reference_external.h"},{"entry_point","evaluateTaskReference"},{"host","TaskReferenceExternalHost"},{"coordinator","independent serial checked AST scheduler"},{"hook","private checked task_yield interception; source response remains unit"},{"source_io_lowering",true}}},{"typescript",llvm::json::Object{{"runtime","web/nex-task-runtime.ts"},{"host_api",llvm::json::Array{"hostPending","hostAwait"}},{"executor_workers",int64_t(1)},{"settlement","trusted HostOperation.settled Promise means physical quiescence"},{"admission","trusted schema decoder; checked capability-free copied immutable NEX graph"}}},{"file_read_lease",llvm::json::Object{{"header","runtime/nex_files.h"},{"capture","captureFileReadLease"},{"adapter_header","runtime/nex_task_file_read.h"},{"adapter","PreparedTaskFileRead"},{"grant","coordinator-captured revocation-aware lexical/request lease; no worker TLS discovery"},{"source_lowering",true},{"windows",false},{"grant_type","FileReadGrant"},{"capture_grant","captureFileReadGrant"},{"grant_per_path_ambient_lookup",false},{"unavailable_grant_deferred",true},{"retained_path_storage","exact owned bytes up to4096"}}},{"pending",llvm::json::Array{"streaming file IO","source db/network task lowering","browser filesystem and task network/UI/worker adapters","combined task debug/profile, Tracy and binary-provider ABI","full current regression, installed SDK and platform acceptance"}},{"public_source_guide","docs/task-file-reads.md"},{"public_source_subset",llvm::json::Array{"file_read_text","file_read_bytes","file_write_text","file_write_bytes"}}}},
+    {"task_execution_limits",llvm::json::Object{{"status","development_explicit_task_limits"},{"source_syntax_changed",false},{"guide","docs/task-limits.md"},{"native_header","runtime/nex_task_limits.h"},{"defaults",llvm::json::Object{{"steps",int64_t(1000000)},{"timeout_ms",int64_t(5000)},{"workers",int64_t(16)}}},{"maximum",llvm::json::Object{{"steps",int64_t(9007199254740991)},{"timeout_ms",int64_t(3600000)},{"workers",int64_t(16)}}},{"cli_options",llvm::json::Array{"--task-steps","--task-timeout-ms","--task-workers"}},{"launcher_options",llvm::json::Array{"--nex-task-steps","--nex-task-timeout-ms","--nex-task-workers"}},{"launcher_can_only_lower",true},{"ambient_environment",false},{"project_field","configurations.NAME.task_limits"},{"acceptance_field","checks[].task_limits (nonproject build/run/test/profile)"},{"reference_executor_workers",int64_t(1)},{"typescript_executor_workers",int64_t(1)},{"identical_step_thresholds",false},{"deadline","one cooperative monotonic root deadline; children cannot renew it"},{"process_supervision","separate outer timeout; forced termination does not prove joined cleanup"}}},
+    {"http_storage_transactions",llvm::json::Object{{"transaction_start","first storage operation"},{"unused_scope","no SQL transaction"},{"mutating_methods_begin","BEGIN IMMEDIATE"},{"read_methods_begin","BEGIN"},{"busy_timeout_ms",int64_t(1000)},{"automatic_handler_retry",false},{"async_database",false},{"legacy_CXX_constructor","immediate"},{"guide","docs/server.md"},{"conformance","store_transactions_native"}}},
+    {"structured_tasks_runtime",llvm::json::Object{{"status","development_source_task_file_reads020"},{"source_support",true},{"guide","docs/tasks-runtime-design.md"},{"header","runtime/nex_tasks.h"},{"probe","nex_task_scheduler_probe"},{"development_definitions",llvm::json::Array{"NEX_STRUCTURED_WORKERS","NEX_ASYNC_TASKS"}},{"ordinary_applications_enabled",true},{"http_server",llvm::json::Object{{"public_enabled",true},{"minimum_language","0.24"},{"target","server"},{"profiles",llvm::json::Array{"debug","release"}},{"platforms",llvm::json::Array{"macOS","Linux"}},{"request_control","one inherited parent budget/deadline/cancellation; joined completion"},{"compiled_limits","immutable ceilings; --nex-task-* may only lower; HTTP --budget/--timeout-ms are capped"},{"filesystem","operator-configured grants captured in the existing request; whole-file and owned streams"},{"async_network",false},{"async_database",false},{"task_provider_images",false},{"task_profiling",false},{"logical_task_debugging",false},{"probe","task_http_server"},{"installed_SDK_accepted",false}}},{"http_request_host_prototype",llvm::json::Object{{"status","trusted_CXX_runtime_with_public_native_HTTP_adapter"},{"entry_point","executeTaskHttpRequest"},{"header","runtime/nex_task_application.h"},{"execution_task_abi",int64_t(5)},{"public_source_target",true},{"caller_request_required",true},{"inherits_step_budget_deadline_cancellation",true},{"owned_request_snapshot",true},{"joined_completion",true},{"implicit_file_or_foreign_grants",false},{"explicit_IO_host_context",true},{"async_network",false},{"async_database",false},{"synthetic_probe","task_http_request_host"},{"compiled_NEX_probe","task_http_request_compiled"},{"public_server_probe","task_http_server"},{"configured_entry_point","executeConfiguredTaskHttpRequest"}}},{"scheduler","bounded ready ring; parked coroutine waits do not block OS workers"},{"maximum_workers",int64_t(16)},{"default_task_slots",int64_t(4096)},{"maximum_task_slots",int64_t(65536)},{"maximum_channels",int64_t(1024)},{"maximum_total_channel_slots",int64_t(65536)},{"channel_rendezvous",true},{"nested_task_depth",int64_t(256)},{"request_control","shared atomic budget/deadline/cancellation; coordinator-only host callback"},{"task_input_output","owned immutable Value snapshots; scoped task authority checked by owner ancestry; no raw Handle across suspension"},{"pending",llvm::json::Array{"complete static region/lifetime inference","async db/network","non-native task debugging/profiling","runtime provider load/unload","full current installed SDK and platform delivery","NEX UI adapter task integration","task limit SDK/platform acceptance"}},{"private_native_steps",llvm::json::Object{{"entry_point","emitTaskNativeStep"},{"probe","nex_task_native_emit_probe"},{"scheduler_request","task_yield"},{"frame_values","owned snapshots; resume-local Handle leases"},{"public_build_enabled",true},{"task_calls",true},{"task_scope_channels",true},{"debug_profile",false},{"task_closure_descriptors",true},{"combined_call_depth",int64_t(256)},{"logical_scope_worker_caps",true},{"authority_graph_validation",true},{"region_type_system_complete",false},{"scheduler_requests",llvm::json::Array{"task_yield","with_tasks","task_spawn","task_wait","channel_new","task_send","task_recv","task_close","task_cancel","current_task_scope","file_read_text","file_read_bytes","file_write_text","file_write_bytes","checked direct extern call","file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"}},{"root_task_depth",int64_t(1)},{"profile",true},{"debug",true}}},{"private_ast_steps",llvm::json::Object{{"entry_point","TaskAstMachine"},{"probe","nex_task_ast_probe"},{"control","checked AST actions; no TaskIR lowering or execution"},{"owned_values",true},{"maximum_call_depth",int64_t(256)},{"transport","TaskTransition"},{"scheduler_integrated",true},{"public_build_enabled",false},{"host_effects","pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; db/network rejected"},{"maximum_pending_actions",int64_t(262144)}}},{"private_ast_scheduler",llvm::json::Object{{"entry_point","evaluateTaskReference"},{"probe","nex_task_reference_probe"},{"control","independent checked AST scheduler; no TaskIR or native TaskGroup dispatch"},{"scheduler_integrated",true},{"cooperative",true},{"physical_cpu_overlap",false},{"scope_future_channel_requests",int64_t(10)},{"owned_capability_family","reference; immutable family and weak scheduler identity"},{"scope_graph_validation",true},{"maximum_tasks",int64_t(4096)},{"maximum_scopes",int64_t(1024)},{"maximum_channels",int64_t(1024)},{"maximum_channel_slots",int64_t(65536)},{"maximum_pending_actions_per_task",int64_t(262144)},{"public_build_enabled",true},{"host_effects","pure/io atoms, server task/fs whole-file and stream IO, task/ffi typed calls and genuine file/resource owner transport; db/network rejected"},{"stalled_channels","E_TASK_DEADLOCK"},{"root_task_depth",int64_t(1)}}},{"private_typescript_tasks",llvm::json::Object{{"entry_point","emitTaskTypeScript"},{"probe","nex_task_typescript_emit_probe"},{"runtime","web/nex-task-runtime.ts"},{"execution","checked source generators and independent cooperative queue"},{"source_requests",int64_t(10)},{"internal_checkpoint_request","$poll"},{"checkpoint_interval",int64_t(64)},{"pure_helpers_resumable",true},{"maximum_call_depth",int64_t(256)},{"root_task_depth",int64_t(1)},{"maximum_task_nesting",int64_t(256)},{"maximum_tasks",int64_t(4096)},{"maximum_scopes",int64_t(1024)},{"maximum_channels",int64_t(1024)},{"maximum_channel_slots",int64_t(65536)},{"owned_values","immutable snapshots; private weak owner brands; canonical opaque identities"},{"scope_graph_validation",true},{"event_loop","MessageChannel turns; statement/loop compiler checkpoints"},{"result_propagation","current generated source function boundary"},{"source_map","nex.typescript-map/1 for public019..024; nex.private-typescript-task-map/1 for private018"},{"public_build_enabled",true},{"nex_ui_adapter_tasks",false},{"host_effects","shared/client pure and io atoms; server/file/foreign rejected"},{"debug_profile",false},{"physical_cpu_overlap",false}}},{"private_lifetime_analysis",llvm::json::Object{{"entry_point","analyzeTaskLifetimes"},{"probe","nex_task_lifetime_probe"},{"guide","docs/task-lifetimes.md"},{"report_schema","nex.private-task-lifetime/1"},{"known_owner_diagnostics",true},{"ancestor_borrowing",true},{"interprocedural_captures",true},{"aggregate_projections",true},{"fully_static",false},{"mandatory_runtime_guards",true},{"default_analysis_steps",int64_t(262144)},{"maximum_analysis_steps",int64_t(1048576)},{"maximum_active_functions",int64_t(128)},{"maximum_join_depth",int64_t(32)},{"abstract_loop_iterations",int64_t(2)},{"budget_exhaustion","deferred runtime obligation"},{"ordinary_check_invokes_pass",true},{"public_source_tasks",true}}},{"language","0.24"},{"types",llvm::json::Array{"task_scope","task<T>","channel<T>"}},{"effect","task"},{"callback_effects",llvm::json::Array{"pure","task","server task/fs with caller task/fs","server task/ffi with optional fs and complete caller effects"}},{"native_platforms",llvm::json::Array{"macOS 64-bit","Linux 64-bit"}},{"native_application","compiled continuations in standalone or checked fixed-load images; one bounded joined TaskGroup"},{"source_only_project",true},{"migration_guide","docs/task-migration.md"},{"standalone_group_steps",int64_t(1000000)},{"standalone_group_timeout_ms",int64_t(5000)},{"runtime_inclusion","reachable task effect"}}},
+    {"browser_workers",llvm::json::Object{{"status","development_browser_task_jobs"},{"structured_tasks",true},{"compute_effects","empty or exactly task"},{"task_execution","one independent cooperative scheduler per dedicated Worker"},{"task_limits",llvm::json::Object{{"steps",1000000},{"timeout_ms",5000},{"workers",16}}},{"task_authority_transport",false},{"task_io",false},{"main_thread_tasks",false},{"source_support",true},{"guide","docs/browser-workers.md"},{"library","std/worker.nex"},{"compute_entry","worker_compute"},{"commands_entry","worker_commands"},{"execution","dedicated module Worker per running job"},{"maximum_running",2},{"maximum_pending",32},{"maximum_batch",64},{"maximum_timeout_ms",60000},{"wire_bytes",1048576},{"input_output","checked wire values; no functions or files"},{"deadline","queue and worker startup included; host timer termination"},{"delivery","at most once per accepted job; no delivery after close"},{"source_async_await",false},{"parallel_map_workers",false},{"pending",llvm::json::Array{"production_browser_validation","full_current_regression","installed_sdk","platform_editor_validation","task IO beyond whole-file reads/writes and task host adapters"}}}},
     {"wasm_features",llvm::json::Object{{"source_support",true},{"status","experimental_scalar_compute_validation_pending"},
       {"command","nex build FILE --target wasm --entry NAME --profile debug|release --json"},{"guide","docs/wasm.md"},
       {"target","wasm32-unknown-unknown"},{"abi",1},{"types",llvm::json::Array{"i64","bool","unit"}},
@@ -976,8 +1519,14 @@ llvm::json::Value describe() {
       {"javascript_i64","BigInt"},{"host_imports",false},{"wrapper","(await createNexWasm(bytes)).call(argumentArray, {budget})"},
       {"limits",llvm::json::Object{{"functions",128},{"operations",8192},{"function_operations",512},{"parameters",32},{"call_depth",64},{"maximum_budget",10000000},{"memory_bytes",16777216},{"module_bytes",8388608}}},
       {"pending",llvm::json::Array{"full_current_regression","native_reference_typescript_wasm_matrix","actual_browsers","installed_and_portable_sdk","comparable_performance","general_wasm_applications","wasi","f64","heap_values"}}}},
-    {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","file","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
-    {"effects",llvm::json::Array{"io","db","fs","ffi"}},
+    {"result_propagation",llvm::json::Object{{"operator","?"},{"guide","docs/error-propagation.md"},
+      {"operand","result<T>"},{"enclosing_return","result<U>"},{"success","payload"},{"failure","return unchanged code/message from current function"},
+      {"evaluations",1},{"nested_expressions",true},{"lambda_boundary","nearest function"},{"native_owned_function_cleanup",true},
+      {"native_owner_depth",4096},{"watch_top_level",false},{"pure_watch_helpers",true},{"scalar_verification",false},
+      {"checked_traps_caught",false},{"source_try_catch_throw",false},{"explicit_016_migration",true},
+      {"integration_pending",llvm::json::Array{"complete_source_and_sdk_regression","platform_execution","installed_editor","migration_and_preservation_gates"}}}},
+    {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","file","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values","task_scope","task<T>","channel<T>"}},
+    {"effects",llvm::json::Array{"io","db","fs","ffi","task"}},
     {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","immutable_binary_files","atomic_binary_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
     {"file_limits",llvm::json::Object{{"text_bytes",1048576},{"binary_bytes",1048576},{"path_bytes",4096},{"path_components",128}}},
     {"file_platforms",llvm::json::Array{"macos","linux"}},
@@ -988,8 +1537,9 @@ llvm::json::Value describe() {
       {"source_support",true},{"status","experimental_source_ffi"},{"abi_version",1},
       {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
       {"signature_schema","nex.foreign-signature/1"},{"signature_command","nex ffi FILE --symbol NAME --json"},
+      {"owned_external_host",llvm::json::Object{{"source_support",true},{"status","development_typed_C_loader_resources"},{"guide","docs/external-resources-design.md"},{"header","runtime/nex_ffi_resources.h"},{"value_kind",15},{"C_resource_construction",true},{"C_parent_construction",true},{"result_reachable_construction_only",true},{"actual_module_callback_ownership",true},{"per_image_borrow_origin",true},{"call_thread_borrow_lifetime",true},{"lexical_and_request_revocation",true},{"physical_capacity_retained",true},{"source_resource_types",true},{"source_task_bridge",true},{"device_executor",false},{"actual_GPU_NPU_resources",false}}},
       {"invocation_context",llvm::json::Object{{"source_support",true},{"host_schema","nex.foreign-host/1"},{"binding_schema","nex.foreign-binding/1"},{"header","runtime/nex_foreign.h"},{"native_header","runtime/nex_foreign_abi.h"},{"features",llvm::json::Array{"explicit_regular_file_catalogue","relative_operator_paths","no_ambient_grants","lexical_thread_contexts","snapshotted_call_storage","bounded_binding_cache","request_rebinding","native_managed_value_bridge","sticky_native_source_traps","terminal_module_cleanup"}},{"limits",llvm::json::Object{{"configuration_bytes",1048576},{"binding_bytes",1048576},{"cached_bindings",4096},{"cached_binding_utf8_bytes",67108864},{"scope_depth",64},{"arguments",4096}}}}},
-      {"module_loading",llvm::json::Object{{"source_support",true},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
+      {"module_loading",llvm::json::Object{{"source_support",true},{"executable_members",true},{"executable_members_field","executables"},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
       {"features",llvm::json::Array{"source_external_declarations","server_ffi_effect","pinned_source_bindings","interpreter_native_calls","browser_server_exclusion","call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},
       {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
       {"pending",llvm::json::Array{"current_platform_validation","callbacks_into_nex","stable_abi_validation"}}}},
@@ -1001,7 +1551,7 @@ llvm::json::Value describe() {
       {"pending",llvm::json::Array{"general_resource_types","stable_ffi_abi","async_tasks","full_platform_sdk_validation"}}}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
-    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]","file_open_read(str) -> result<file> !{fs} [server]","file_open_write(str) -> result<file> !{fs} [server]","file_open_append(str) -> result<file> !{fs} [server]","file_read(file, i64) -> result<bytes> !{fs} [server]","file_write(file, bytes) -> result<i64> !{fs} [server]","file_seek(file, i64) -> result<i64> !{fs} [server]","file_size(file) -> result<i64> !{fs} [server]","file_flush(file) -> result<bool> !{fs} [server]","file_close(file) -> bool !{fs} [server]","file_is_open(file) -> bool !{fs} [server]"}},
+    {"builtins",llvm::json::Array{"with_tasks(i64, fn(task_scope)->T !{task}) -> T !{task} [callback pure, task, or authorized server task/fs]","task_spawn(task_scope, fn()->T !{task}) -> task<T> !{task} [callback pure, task, or authorized server task/fs]","task_wait(task<T>) -> T !{task}","task_yield() -> unit !{task}","current_task_scope() -> task_scope !{task}","channel_new<T>(task_scope, i64) -> channel<T> !{task}","task_send(channel<T>, T) -> bool !{task}","task_recv(channel<T>) -> result<T> !{task}","task_close(channel<T>) -> bool !{task}","task_cancel(task<T>) -> bool !{task}","parallel_map(list<T>, fn(T)->U, i64) -> list<U> [available-realm pure callback]","as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]","file_open_read(str) -> result<file> !{fs} [server]","file_open_write(str) -> result<file> !{fs} [server]","file_open_append(str) -> result<file> !{fs} [server]","file_read(file, i64) -> result<bytes> !{fs} [server]","file_write(file, bytes) -> result<i64> !{fs} [server]","file_seek(file, i64) -> result<i64> !{fs} [server]","file_size(file) -> result<i64> !{fs} [server]","file_flush(file) -> result<bool> !{fs} [server]","file_close(file) -> bool !{fs} [server]","file_is_open(file) -> bool !{fs} [server]"}},
     {"binary_features",llvm::json::Array{"immutable_contiguous_octets","retained_slice_owners","copied_mutable_host_boundaries","checked_byte_updates","strict_utf8_codecs","canonical_padded_base64","typed_json_base64","binary_files","generic_add_and_wire","bounded_binary_watches"}},
     {"binary_limits",llvm::json::Object{{"octet_min",0},{"octet_max",255},{"standalone_json_raw_bytes",786429},{"partial_watch_slice_octets",255}}},
     {"binary_guide","docs/bytes.md"},
@@ -1021,11 +1571,12 @@ llvm::json::Value describe() {
     {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
     {"editor_features",llvm::json::Array{"installed_vscode_extension_sources","fresh_compiler_debug_session","byte_checked_original_source_mapping","frozen_source_fallback","workspace_trust_gate","vscode_stdio_language_client","unsaved_source_diagnostics","checked_hover_definition_symbols","versioned_document_updates","checked_symbol_references","project_architecture_debug_launch","pinned_project_launch_plans","dirty_project_buffer_gate"}},
     {"editor_extension_manifest","editor/vscode/package.json"},
-    {"editor_project_debug",llvm::json::Object{{"command","nex.debugProject"},{"extension_version","0.6.0"},{"launch_field","project"},{"fields",llvm::json::Array{"manifest","component","configuration"}},{"native_executable_only",true},{"plan_checks","before and after native debug preparation"},{"declared_binary_dependencies",true},{"unsaved_compiled_sources_rejected",true},{"guide","docs/editor.md"}}},
+    {"editor_project_debug",llvm::json::Object{{"command","nex.debugProject"},{"extension_version","0.7.0"},{"minimum_server_toolchain","0.85.0"},{"kinds",llvm::json::Array{"executable","server"}},{"foreign_launch_field","foreign"},{"launch_field","project"},{"fields",llvm::json::Array{"manifest","component","configuration"}},{"native_executable_only",false},{"plan_checks","before and after native debug preparation"},{"declared_binary_dependencies",true},{"unsaved_compiled_sources_rejected",true},{"guide","docs/editor.md"}}},
     {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"identifiers_command","nex analyze FILE --details [--overlay FILE] --json"},{"identifiers_schema","llm/editor-identifiers.schema.json"},{"identifiers_format","nex.analysis/3"},{"identifiers_limits",llvm::json::Object{{"entries",200000},{"identifier_json_bytes",8388608},{"detail_utf8_bytes",16384}}},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields","type_annotations_and_arguments","lexical_type_parameters","trait_contracts_and_implementation_bindings","enum_variant_declarations","import_aliases"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
     {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.6.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
     {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp_wider_editor_matrix","lsp_completion_references_rename","studio","marketplace_publication"}},
     {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads","paged_native_indexed_roots","bounded_backend_variables_requests","constant_time_indexed_child_lookup","frame_module_identity_guard","core_recorded_mapping_image_guard"}},
+    {"native_debug_session",llvm::json::Object{{"schema","nex.debug-session/1"},{"schema_file","llm/debug-session.schema.json"},{"guide","docs/server-debugging.md"},{"application_kinds",llvm::json::Array{"executable","http_server"}},{"host_only",true},{"request_deadlines_preserved",true},{"argument_limits",llvm::json::Object{{"arguments",128},{"member_bytes",4096},{"total_bytes",65536}}}}},
     {"native_debug_image_binding",llvm::json::Object{{"selected_frame","executable_or_captured_owned_native_image"},{"function_names_are_not_image_identity",true},{"owned_image_hash","sha256"},{"owned_image_uuid",true},{"requires_matching_manifest",true},{"linux_core_requires_recorded_mapping",true},{"ambiguous_same_path_image_rejected",true},{"content_addressed_build_directory",true},{"recorded_mapping_sources",llvm::json::Array{"minidump_memory_region","elf_nt_file"}}}},
     {"native_core",llvm::json::Object{{"schema","nex.core-report/1"},{"guide","docs/core-debugging.md"},{"reader","debug/core_report.py"},{"formats",llvm::json::Array{"elf64","macho64","minidump64"}},{"readonly",true},{"requires_retained_build",true},{"requires_matching_compiler",true},{"portable_capsule",true},{"owned_images",true},{"capsule",llvm::json::Object{{"schema","nex.core-capsule/1"},{"schema_document","llm/core-capsule.schema.json"},{"helper","tools/core_capsule.py"},{"matching_host_only",true},{"original_paths_required",false},{"source_foreign_declarations",false},{"non_system_dependencies",false},{"captured_first_party_images",true},{"file_limit",int64_t(4096)},{"total_bytes_limit",int64_t(35433480192)},{"copy_timeout_seconds",int64_t(900)}}},{"operation_precision","explicit_source_candidates"},{"limits",llvm::json::Object{{"core_bytes",int64_t(32)*1024*1024*1024},{"threads",64},{"frames",64},{"timeout_seconds_default",60},{"timeout_seconds_maximum",300}}}}},
     {"native_debug_pages",llvm::json::Object{{"root_types",llvm::json::Array{"list<T>","bytes"}},{"page_items",1000},{"maximum_index",2147483647},{"maximum_indexed_children",2147483647},{"page_schema","llm/dap-native-page.schema.json"},{"metadata_field","body.nex.native_page"},{"requires_matching_nex_dap_bridge",true},{"native_preview_not_exact_wire_value",true}}},
@@ -1044,7 +1595,7 @@ llvm::json::Value describe() {
     {"snapshot_external_artifacts_included",false},{"snapshot_guide","docs/snapshots.md"},{"snapshot_schema","llm/graph-snapshot.schema.json"},
     {"project_features",llvm::json::Array{"declared_source_language_guard","root_version_preflight_before_store","reachable_library_language_guard","declared_project_schema_guard","legacy_omitted_metadata","archived_manifest_independence"}},
     {"project_manifest_schema","llm/project.schema.json"},{"compatibility_guide","docs/compatibility.md"},
-    {"project_build",llvm::json::Object{{"manifest_schema","nex.project-build/1"},{"manifest_file","nex.build.json"},{"schema_file","llm/project-build.schema.json"},{"guide","docs/project-build.md"},{"plan_command","nex project --kind plan --json"},{"build_command","nex project --kind build --json"},{"package_command","nex project --kind package --directory NEW_DIRECTORY --json"},{"test_build_command","nex project --kind build-test --component NAME --symbol TEST --json"},{"project_task_guide","docs/project-tasks.md"},{"project_capture_schema","llm/project-capture.schema.json"},{"run_command","nex project --kind run --component NAME --json"},{"test_command","nex project --kind test --json"},{"debug_command","nex project --kind debug --component NAME --adapter nex-dap --json"},{"profile_command","nex project --kind profile --component NAME --configuration PROFILE_CONFIG --json"},{"action_schema_file","llm/project-action.schema.json"},{"package_schema","nex.project-package/1"},{"package_schema_file","llm/project-package.schema.json"},{"artifact_kinds",llvm::json::Array{"source","executable","static_library","shared_library","server","web"}},{"dependency_linkage",llvm::json::Array{"source","static","dynamic"}},{"features",llvm::json::Array{"disjoint_component_roots","checked_direct_import_edges","acyclic_component_dependencies","named_build_configurations","readonly_checked_plan","captured_source_closures","native_and_web_artifacts","checked_static_archive_consumption","multiple_concrete_library_exports","single_application_runtime","macos_linux_shared_images","captured_owned_image_closure","shared_image_lldb_frames","shared_image_core_capsules","project_application_packages","project_web_distribution_packages","project_binary_execution","project_owned_tests","project_test_build_only","project_architecture_tasks","project_architecture_replay","project_native_debug_descriptors","project_native_profiles","captured_project_diagnostics","explicit_consumer_template_instantiations","no_graph_head_synchronization"}},{"limits",llvm::json::Object{{"manifest_bytes",262144},{"components",128},{"configurations",32},{"selected_source_bytes",67108864},{"plan_bytes",8388608},{"tests",256},{"test_response_bytes",32768}}},{"pending",llvm::json::Array{"windows_dll_output","project_foreign_pin_projection","packaged_debug_provenance","server_workload_profile_and_debug","project_editor_commands","fully_static_executables","resolved_artifact_dependency_report","source_concurrency","gpu_npu_adapters"}}}},
+    {"project_build",llvm::json::Object{{"foreign_projection_schema","llm/project-foreign-projection.schema.json"},{"foreign_package_option","--foreign HOST.json"},{"manifest_schema","nex.project-build/1"},{"manifest_file","nex.build.json"},{"schema_file","llm/project-build.schema.json"},{"guide","docs/project-build.md"},{"plan_command","nex project --kind plan --json"},{"build_command","nex project --kind build --json"},{"package_command","nex project --kind package --directory NEW_DIRECTORY --json"},{"test_build_command","nex project --kind build-test --component NAME --symbol TEST --json"},{"project_task_guide","docs/project-tasks.md"},{ "task_workload_guide","docs/task-workloads.md"},{"task_workload_state_schema","llm/task-workload-state.schema.json"},{"project_capture_schema","llm/project-capture.schema.json"},{"run_command","nex project --kind run --component NAME --json"},{"test_command","nex project --kind test --json"},{"debug_command","nex project --kind debug --component NAME --adapter nex-dap --json"},{"profile_command","nex project --kind profile --component NAME --configuration PROFILE_CONFIG --json"},{"server_workload",llvm::json::Object{{"schema","nex.server-workload/1"},{"schema_file","llm/server-workload.schema.json"},{"result_schema","llm/server-workload-result.schema.json"},{"guide","docs/server-workload.md"},{"runner","tools/server_workload.py"},{"profile_command","nex project --kind profile --component NAME --configuration PROFILE_CONFIG --workload FILE --json"},{"definition_bytes",1048576},{"maximum_requests",4096},{"maximum_concurrency",64},{"loopback_only",true},{"task_capture_replay",true}}},{"action_schema_file","llm/project-action.schema.json"},{"package_schema","nex.project-package/1"},{"package_schema_file","llm/project-package.schema.json"},{"artifact_kinds",llvm::json::Array{"source","executable","static_library","shared_library","server","web"}},{"dependency_linkage",llvm::json::Array{"source","static","dynamic"}},{"features",llvm::json::Array{"disjoint_component_roots","checked_direct_import_edges","acyclic_component_dependencies","named_build_configurations","readonly_checked_plan","captured_source_closures","native_and_web_artifacts","checked_static_archive_consumption","multiple_concrete_library_exports","single_application_runtime","macos_linux_shared_images","captured_owned_image_closure","shared_image_lldb_frames","shared_image_core_capsules","project_application_packages","project_foreign_pin_projection","per_application_foreign_grants","project_foreign_package_tasks","project_web_distribution_packages","project_binary_execution","project_owned_tests","project_test_build_only","project_architecture_tasks","project_architecture_replay","project_native_debug_descriptors","project_server_debug_descriptors","editor_http_server_launches","project_native_profiles","project_server_workload_profiles","captured_project_diagnostics","explicit_consumer_template_instantiations","no_graph_head_synchronization"}},{"limits",llvm::json::Object{{"manifest_bytes",262144},{"components",128},{"configurations",32},{"selected_source_bytes",67108864},{"plan_bytes",8388608},{"tests",256},{"test_response_bytes",32768}}},{"pending",llvm::json::Array{"windows_dll_output","packaged_debug_provenance","server_workload_debug","project_task_editor_commands","fully_static_executables","resolved_artifact_dependency_report","source_concurrency","gpu_npu_adapters"}}}},
     {"string_debug_features",llvm::json::Array{"unicode_scalar_shape","bounded_text_range_captures","whole_string_compatibility","binding_and_callable_alias_range_consistency","readonly_utf8_streaming_provider","per_stop_checkpoint_cache"}},
     {"string_debug_limits",llvm::json::Object{{"range_scalars",4096},{"range_bytes",16384},{"provider_chunk_bytes",65536},{"provider_scan_bytes",32*1048576},{"observed_text_scalars",100000}}},
     {"string_debug_capture_kind","text_range"},{"string_debug_guide","docs/string-debug.md"},{"string_debug_schema","llm/text-range.schema.json"},
@@ -1065,7 +1616,8 @@ llvm::json::Value describe() {
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},
     {"debug_wire_schema","llm/debug-wire.schema.json"},{"debug_value_protocol","nex.debug-wire/1"},{"debug_runtime_view","nex.runtime-view/3"},{"debug_expression_protocol","nex.debug-expression/3"},
-    {"build_features",llvm::json::Array{"native_checked_i64_ssa","cold_integer_failure_calls","cold_native_assertions","native_module_compilation","native_function_compilation","function_source_invalidation","frozen_debug_source_maps","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy","relative_host_sdk","explicit_archive_debug_tools","ios_explicit_sdk_archives","windows_explicit_gnu_ucrt_core"}},
+    {"native_tool_arguments",llvm::json::Object{{"guide","docs/incremental.md"},{"response_file_dialect","GNU"},{"encoding","UTF-8"},{"application_argv_unchanged",true},{"private_directory_mode","0700"},{"private_file_mode","0600"},{"successful_files_removed",true},{"failed_files_retained_in_diagnostic",true},{"hosts",llvm::json::Array{"macos","linux"}},{"windows_host_validation","pending"}}},
+    {"build_features",llvm::json::Array{"gnu_native_tool_response_files","native_checked_i64_ssa","cold_integer_failure_calls","cold_native_assertions","native_module_compilation","native_function_compilation","function_source_invalidation","frozen_debug_source_maps","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy","relative_host_sdk","explicit_archive_debug_tools","ios_explicit_sdk_archives","windows_explicit_gnu_ucrt_core"}},
     {"windows_core_target",llvm::json::Object{{"architectures",llvm::json::Array{"x86_64","aarch64"}},{"environment","gnu"},
       {"runtime","ucrt-static"},{"artifacts",llvm::json::Array{"executable","static_library"}},{"profiles",llvm::json::Array{"debug","release"}},
       {"explicit_toolchain",true},{"explicit_component_notices",true},{"host_execution",false},{"application_packaging",false},
@@ -1086,7 +1638,7 @@ llvm::json::Value describe() {
     {"application_package_platforms",llvm::json::Array{"macos","linux"}},
     {"application_package_schema","llm/application-package.schema.json"},
     {"application_package_guide","docs/packaging.md"},
-    {"application_package_foreign",llvm::json::Object{{"source_support",true},
+    {"application_package_foreign",llvm::json::Object{{"source_support",true},{"project_support",true},
       {"projection_schema","llm/foreign-projection.schema.json"},
       {"preparation_schema","llm/foreign-package.schema.json"},
       {"features",llvm::json::Array{"explicit_operator_grant","reachable_library_exports","recursive_native_dependencies","complete_component_notices","relocated_manifest_pins","checked_source_projection","preserved_graph_history","preserved_module_image_identity","executable_relative_catalogue","captured_file_integrity"}},
@@ -1099,7 +1651,7 @@ llvm::json::Value describe() {
     {"profile_guide","docs/profiling.md"},
     {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},
     {"verification_guide","docs/verification.md"},
-    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","isolated_replay_graph","readonly_receipt_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay","owned_foreign_temporary_files","project_architecture_tasks","project_architecture_replay","project_configurations","direct_project_native_supervision","project_task_packages","pinned_package_notices"}},
+    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","isolated_replay_graph","readonly_receipt_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay","owned_foreign_temporary_files","project_architecture_tasks","project_architecture_replay","project_configurations","direct_project_native_supervision","project_task_packages","project_foreign_package_tasks","pinned_package_notices","project_task_server_workloads","captured_workload_inputs","synthetic_workload_runtime_state","hardware_bound_request_budgets"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
     {"task_catalogue_command","nex foreign HOST.json --json"},{"task_foreign_field","foreign_hash"},
     {"trait_features",llvm::json::Array{"parametric_contracts","named_implementations","associated_value_types","constructor_kinds","generic_methods","ordinary_function_bindings","static_dispatch","method_references","overlap_rejection","orphan_ownership","finite_witnesses","source_declaration_patches","history_preserving_015_migration"}},

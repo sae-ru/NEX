@@ -1,5 +1,6 @@
 #include "nex_ffi_host.h"
 #include "nex_ffi_types.h"
+#include "nex_ffi_resources.h"
 #include <algorithm>
 #include <atomic>
 #include <cstring>
@@ -35,6 +36,8 @@ uint32_t kind(const Value &v){
   case Data::Enum:return NEX_FFI_ENUM;case Data::Success:return NEX_FFI_SUCCESS;
   case Data::Failure:return NEX_FFI_FAILURE;case Data::Closure:return NEX_FFI_FUNCTION;
   case Data::File:return NEX_FFI_FILE;
+  case Data::External:return NEX_FFI_EXTERNAL_RESOURCE;
+  case Data::TaskScope:case Data::Task:case Data::Channel:fail(NEX_FFI_TYPE);
   }
   fail(NEX_FFI_TYPE);
 }
@@ -44,6 +47,8 @@ struct State {
   ForeignCallLimits limits;
   std::map<nex_ffi_ref,Entry> refs;
   std::shared_ptr<TypedContext> types;
+  std::shared_ptr<ResourceContext> resources;
+  std::vector<ExternalResourceBorrow> borrows;
   std::vector<Value> arguments;
   std::map<nex_ffi_type,size_t> typeRefs;
   std::map<size_t,nex_ffi_type> typeTokens;
@@ -51,6 +56,7 @@ struct State {
   std::exception_ptr hostTrap;
   uint64_t operations=0,copiedBytes=0;
   bool polling=false;
+  unsigned creating=0;
   explicit State(ForeignCallLimits limits,std::function<void()> poll):limits(limits),poll(std::move(poll)){}
   void charge(uint64_t count){require(count<=limits.copiedBytes-copiedBytes,NEX_FFI_LIMIT);copiedBytes+=count;}
   const Entry &entry(nex_ffi_ref ref) const {auto i=refs.find(ref);require(i!=refs.end(),NEX_FFI_REF);return i->second;}
@@ -88,7 +94,7 @@ struct Registration {
     {std::lock_guard lock(r.mutex);auto i=r.calls.find(id);if(i!=r.calls.end()){retained=std::move(i->second);r.calls.erase(i);}}
     // Lookups on other threads can retain State, but never read these owner-only
     // fields. Release payloads and callback targets on the invoking thread.
-    if(retained){retained->refs.clear();retained->arguments.clear();retained->types.reset();retained->poll={};retained->hostTrap={};}
+    if(retained){retained->refs.clear();retained->arguments.clear();retained->borrows.clear();retained->resources.reset();retained->types.reset();retained->poll={};retained->hostTrap={};}
   }
 };
 template<class F> nex_ffi_status guarded(nex_ffi_call call,F body) noexcept {
@@ -108,6 +114,10 @@ template<class F> nex_ffi_status guarded(nex_ffi_call call,F body) noexcept {
     if(e.code=="E_LIMIT")return NEX_FFI_LIMIT;
     if(e.code=="E_FFI_TYPE")return NEX_FFI_TYPE;
     if(e.code=="E_FFI_LIMIT")return NEX_FFI_LIMIT;
+    if(e.code=="E_RESOURCE_TYPE")return NEX_FFI_TYPE;
+    if(e.code=="E_RESOURCE_SCOPE")return NEX_FFI_SCOPE;
+    if(e.code=="E_RESOURCE_CLOSED")return NEX_FFI_RESOURCE_CLOSED;
+    if(e.code=="E_RESOURCE_LIMIT"||e.code=="E_RESOURCE_BYTES"||e.code=="E_RESOURCE_DEPENDENCY_LIMIT"||e.code=="E_RESOURCE_REGION_LIMIT")return NEX_FFI_LIMIT;
     return NEX_FFI_INTERNAL;
   }catch(const std::bad_alloc &){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_LIMIT;}
   catch(...){return state&&state->hostTrap?NEX_FFI_HOST_TRAP:NEX_FFI_INTERNAL;}
@@ -189,7 +199,46 @@ nex_ffi_status makeNominal(nex_ffi_call c,nex_ffi_type r,uint64_t v,const nex_ff
 });}
 nex_ffi_status signatureSize(nex_ffi_call c,uint64_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().description().size();});}
 nex_ffi_status copySignature(nex_ffi_call c,uint64_t off,uint8_t *p,uint64_t cap,uint64_t *o) noexcept {return guarded(c,[&](State &s){const auto &text=s.typed().description();copy(s,{reinterpret_cast<const uint8_t*>(text.data()),text.size()},off,p,cap,o);});}
-const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature};
+extern const nex_ffi_api_v1 api;
+const ExternalResource &resource(State &s,nex_ffi_ref ref){
+  auto &v=s.entry(ref).value;require(kind(v)==NEX_FFI_EXTERNAL_RESOURCE,NEX_FFI_TYPE);
+  const auto &r=externalResource(v.object);
+  require(r.identity()&&s.typed().resourceDeclared(r.typeName(),r.typeHash()),NEX_FFI_TYPE);return r;
+}
+nex_ffi_status resourceCreateWithParents(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,const nex_ffi_ref *parents,uint64_t parentCount,nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy,void *user,nex_ffi_ref *o)noexcept{return guarded(c,[&](State &s){
+  output(o);auto type=s.type(t);auto [name,identity]=s.typed().resource(type);
+  require(s.typed().resourceConstructible(type)&&bool(s.resources),NEX_FFI_TYPE);
+  require(s.creating<16&&s.refs.size()+s.creating<s.limits.references,NEX_FFI_LIMIT);
+  require(parentCount<=16,NEX_FFI_LIMIT);require(!parentCount||parents,NEX_FFI_ARGUMENT);
+  std::vector<ExternalResource> captured;captured.reserve(size_t(parentCount));
+  for(uint64_t i=0;i<parentCount;++i)captured.push_back(resource(s,parents[i]));
+  s.resources->callbacks(factory,destroy);s.charge(sizeof(ExternalData));
+  struct Creating {unsigned &count;explicit Creating(unsigned &n):count(n){++count;}~Creating(){--count;}} creating(s.creating);
+  s.hostPoll();auto value=s.resources->create(name,identity,bytes,destroy,[&](void **object,const ResourcePermit &permit){
+    permit.check();s.hostPoll();nex_ffi_status status;
+    try{status=factory(&api,c,user,object);}
+    catch(...){if(s.hostTrap)std::rethrow_exception(s.hostTrap);throw DataError("E_FFI_EXCEPTION","resource factory threw across its C boundary");}
+    s.hostPoll();permit.check();if(status!=NEX_FFI_OK)fail(status);
+  },captured);
+  s.hostPoll();*o=s.add(Value(externalValue(std::move(value))));
+});}
+nex_ffi_status resourceCreate(nex_ffi_call c,nex_ffi_type t,uint64_t bytes,nex_ffi_resource_factory_v1 factory,nex_ffi_resource_destroy_v1 destroy,void *user,nex_ffi_ref *o)noexcept{
+  return resourceCreateWithParents(c,t,bytes,nullptr,0,factory,destroy,user,o);
+}
+nex_ffi_status resourceBorrow(nex_ffi_call c,nex_ffi_ref r,nex_ffi_type t,void **o)noexcept{return guarded(c,[&](State &s){
+  output(o);auto [name,identity]=s.typed().resource(s.type(t));
+  require(bool(s.resources),NEX_FFI_TYPE);require(s.borrows.size()<s.limits.references,NEX_FFI_LIMIT);
+  s.hostPoll();auto value=resource(s,r);
+  require(value.typeName()==name&&value.typeHash()==identity,NEX_FFI_TYPE);
+  auto lease=s.resources->borrow(value,name,identity);auto pointer=s.resources->pointer(lease,name,identity);
+  // Native pointers last through this call even after release(ref), alias close,
+  // request cancellation or catalogue revocation. The API grants no later use.
+  s.borrows.push_back(std::move(lease));s.hostPoll();*o=pointer;
+});}
+nex_ffi_status resourceClose(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);s.hostPoll();auto value=resource(s,r);*o=value.close()?1:0;});}
+nex_ffi_status resourceIsOpen(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).isOpen()?1:0;});}
+nex_ffi_status resourceIdentity(nex_ffi_call c,nex_ffi_ref r,uint64_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).identity();});}
+const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature,resourceCreate,resourceBorrow,resourceClose,resourceIsOpen,resourceIdentity,resourceCreateWithParents};
 }
 
 extern "C" const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi,uint32_t minimum){
@@ -197,7 +246,7 @@ extern "C" const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi,uint32_t minimum){
 }
 namespace nexrt {
 namespace {
-Value invoke(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits,std::shared_ptr<foreign_detail::TypedContext> types){
+Value invoke(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits,std::shared_ptr<foreign_detail::TypedContext> types,std::shared_ptr<foreign_detail::ResourceContext> resources={}){
   if(!callback||!limits.references||limits.references>65536||!limits.copiedBytes||limits.copiedBytes>67108864||!limits.operations||limits.operations>1048576)
     throw DataError("E_FFI_CONFIG","invalid foreign callback or limits");
   if(arguments.size()>4096||arguments.size()>limits.references)throw DataError("E_FFI_LIMIT","too many foreign arguments");
@@ -205,7 +254,7 @@ Value invoke(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void 
   try{
     auto state=std::make_shared<State>(limits,std::move(poll));std::vector<nex_ffi_ref> refs;refs.reserve(arguments.size());
     for(const auto &value:arguments)refs.push_back(state->add(value));
-    state->types=std::move(types);if(state->types)state->arguments.assign(arguments.begin(),arguments.end());
+    state->types=std::move(types);state->resources=std::move(resources);if(state->types)state->arguments.assign(arguments.begin(),arguments.end());
     Registration registration(state);state->hostPoll();
     if(state->types)state->types->arguments(state->arguments,[&]{state->hostPoll();});
     nex_ffi_ref out=0;nex_ffi_status status;
@@ -220,4 +269,7 @@ Value invoke(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void 
 }
 Value invokeForeign(nex_ffi_callback_v1 callback,std::span<const Value> arguments,void *user,std::function<void()> poll,ForeignCallLimits limits){return invoke(callback,arguments,user,std::move(poll),limits,{});}
 Value invokeForeignTyped(nex_ffi_callback_v1 callback,std::span<const Value> arguments,const ForeignSignature &signature,void *user,std::function<void()> poll,ForeignCallLimits limits){return invoke(callback,arguments,user,std::move(poll),limits,std::make_shared<foreign_detail::TypedContext>(signature));}
+namespace foreign_detail {
+Value invokeForeignTypedResources(nex_ffi_callback_v1 callback,std::span<const Value> arguments,const ForeignSignature &signature,void *user,std::function<void()> poll,ForeignCallLimits limits,std::shared_ptr<ResourceContext> resources){return invoke(callback,arguments,user,std::move(poll),limits,std::make_shared<TypedContext>(signature),std::move(resources));}
+}
 }

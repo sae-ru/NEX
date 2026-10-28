@@ -160,7 +160,8 @@ class DAP:
                 self.messages.put(error)
             finally:
                 self.messages.put(None)
-        threading.Thread(target=read, daemon=True).start()
+        self.reader = threading.Thread(target=read, daemon=True)
+        self.reader.start()
 
     def send(self, command, arguments=None):
         self.sequence += 1
@@ -196,15 +197,20 @@ class DAP:
     def close(self):
         try:
             if self.process.poll() is None:
-                self.request("disconnect", {"terminateDebuggee": True})
+                self.send("disconnect", {"terminateDebuggee": True})
+                self.process.stdin.close()
                 self.process.wait(timeout=5)
         finally:
             if self.process.poll() is None:
                 self.process.kill()
                 self.process.wait(timeout=5)
             self.process.stdin.close()
+            self.reader.join(timeout=5)
             self.process.stdout.close()
             self.log.close()
+        if self.reader.is_alive():raise RuntimeError("DAP output reader failed to stop")
+        if self.process.returncode != 0:
+            raise RuntimeError("DAP adapter failed during shutdown: exit " + str(self.process.returncode))
 
 
 if LIVE:

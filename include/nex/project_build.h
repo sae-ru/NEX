@@ -4,6 +4,7 @@
 #include "nex/profiling.h"
 
 namespace nex {
+struct ProjectPackageProjection;
 struct ProjectBuildOptions {
   std::string kind = "plan", component, configuration, directory;
   std::string compilerVersion, compilerBuild;
@@ -18,6 +19,15 @@ struct ProjectBuildOptions {
   std::string testFunction, selectedTest, expectedPlanHash;
   std::map<std::string,std::string> sourceOverlays;
   bool archivedSources = false;
+  std::string workload;
+  // Compiler-owned projection; never accepted from a manifest, task or CLI.
+  std::shared_ptr<const ProjectPackageProjection> packageProjection;
+  // Compiler-owned prepare-only task build-check selection; never inferred
+  // merely from a configuration whose optimization profile is debug.
+  bool taskDebug=false;
+  // Compiler-owned explicit source selection, not a manifest/CLI option.
+  // Ordinary callers retain the current public language and reject private024.
+  SourceLanguage sourceLanguage=currentSourceLanguage;
 };
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.

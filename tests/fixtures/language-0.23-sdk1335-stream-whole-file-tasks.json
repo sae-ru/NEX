@@ -1,0 +1,84 @@
+{
+  "schema": "nex.genuine023-expanded-stream-fixture/1",
+  "producer_toolchain": "0.133.5",
+  "producer_language": "0.23",
+  "producer_compiler_sha256": "65e45e386272025627da730c1bb49c3c05a80345a0b9aa19c50b790087808b21",
+  "SQL_sha256": "2fdd9daebc019582e4ee8860a3e9ac5437200149245176225d0a243fa4d9e859",
+  "project_manifest": {
+    "schema": "nex.project/1",
+    "language": "0.23",
+    "entry": "main.nex"
+  },
+  "lock": null,
+  "head": "652c162d5f1e5860f9ee08fd05f7528563b7c230ba4f1f52f5dd4010a7e4df0f",
+  "revisions": [
+    {
+      "revision": "196d59e6e170ec4fc4e8a1d68a47b28a90de8fe675f0c53e9d918d47b18301f1",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 42;});}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 42;});}\n\nclient fn client_value()->i64{return 42;}\ntest fn pure_answer()->unit{assert(42>41);}\n"
+      },
+      "expected_value": 42,
+      "old_error": null,
+      "old_value": 42
+    },
+    {
+      "revision": "174534b9e2012a06c46d9567ba22a523cf8a060604a696ef210939fbb2287d92",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 43;});}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 43;});}\n\nclient fn client_value()->i64{return 43;}\ntest fn pure_answer()->unit{assert(43>42);}\n"
+      },
+      "expected_value": 43,
+      "old_error": null,
+      "old_value": 43
+    },
+    {
+      "revision": "652c162d5f1e5860f9ee08fd05f7528563b7c230ba4f1f52f5dd4010a7e4df0f",
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 44;});}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "physical_files": {
+        "main.nex": "module histories::whole_file;struct Writer<T>{run:server fn(str,T)->result<bool> !{task,fs};}\nserver fn save(path:str,data:bytes)->result<bool> !{task,fs}{task_yield();return file_write_bytes(path,data);}\nserver fn main()->i64 !{task,fs}{let writer:Writer<bytes>=Writer(save);let data:bytes=utf8_bytes(\"Привет 🧠\");\nreturn with_tasks(1,server fn(s:task_scope)->i64 !{task,fs}{let done:task<result<bool>>=task_spawn(s,server fn()->result<bool> !{task,fs}{return writer.run(\"output\",data);});assert(unwrap(task_wait(done)));assert(unwrap(file_read_bytes(\"output\"))==data);return 44;});}\n\nclient fn client_value()->i64{return 44;}\ntest fn pure_answer()->unit{assert(44>43);}\n"
+      },
+      "expected_value": 44,
+      "old_error": null,
+      "old_value": 44
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 3,
+    "declaration_versions": 9,
+    "edges": 9,
+    "graph_edges": 36,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 6,
+    "nodes": 18,
+    "operation_functions": 18,
+    "operation_ids": 64,
+    "operation_versions": 192,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "all_revisions_produced_by_actual023_SDK": true,
+  "retagged_history": false
+}

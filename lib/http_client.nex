@@ -1,0 +1,81 @@
+module std::http_client;
+
+pub struct Header { name:str; value:bytes; }
+pub struct Request {
+  authority:str; method:str; url:str; headers:list<Header>; body:bytes;
+  reply_limit:i64; timeout_ms:i64; redirect_limit:i64; protocol:str;
+}
+pub struct Response { status:i64; headers:list<Header>; body:bytes; protocol:str; url:str; }
+pub struct Client { send:server fn(Request)->result<Response> !{task,ffi}; }
+pub server fn client_context(send:server fn(Request)->result<Response> !{task,ffi})->Client {return Client(send);}
+pub fn header(name:str,value:str)->Header {return Header(name,utf8_bytes(value));}
+pub fn request(authority:str,method:str,url:str,body:bytes,timeout_ms:i64)->Request {
+  return Request(authority,method,url,[],body,262144,timeout_ms,0,"auto");
+}
+pub fn with_header(value:Request,name:str,text:str)->Request {
+  return Request(value.authority,value.method,value.url,push(value.headers,header(name,text)),value.body,value.reply_limit,value.timeout_ms,value.redirect_limit,value.protocol);
+}
+pub fn limits(value:Request,reply_limit:i64,redirect_limit:i64,protocol:str)->Request {
+  return Request(value.authority,value.method,value.url,value.headers,value.body,reply_limit,value.timeout_ms,redirect_limit,protocol);
+}
+fn ascii_lower(value:str)->str {
+  let data:bytes=utf8_bytes(value);var octets:list<i64>=[];var i:i64=0;
+  while i<len(data){let ch:i64=data[i];if ch>=65&&ch<=90{octets=push(octets,ch+32);}else{octets=push(octets,ch);}i=i+1;}
+  return unwrap(decode_utf8(unwrap(bytes(octets))));
+}
+fn token(ch:i64)->bool {
+  return (ch>=65&&ch<=90)||(ch>=97&&ch<=122)||(ch>=48&&ch<=57)||ch==33||ch==35||ch==36||ch==37||ch==38||ch==39||ch==42||ch==43||ch==45||ch==46||ch==94||ch==95||ch==96||ch==124||ch==126;
+}
+pub fn url_component(value:str)->str {
+  let data:bytes=utf8_bytes(value);let hex:str="0123456789ABCDEF";var text:str="";var i:i64=0;
+  while i<len(data){let ch:i64=data[i];if (ch>=65&&ch<=90)||(ch>=97&&ch<=122)||(ch>=48&&ch<=57)||ch==45||ch==46||ch==95||ch==126{text=text+unwrap(decode_utf8(unwrap(bytes([ch]))));}else{text=text+"%"+slice(hex,ch/16,1)+slice(hex,ch%16,1);}i=i+1;}
+  return text;
+}
+pub fn validate(value:Request)->result<bool> {
+  let authority:bytes=utf8_bytes(value.authority);let method:bytes=utf8_bytes(value.method);let url:bytes=utf8_bytes(value.url);
+  if len(authority)<1||len(authority)>64{return err("VALIDATION","HTTP authority must contain1..64 bytes");}
+  if len(method)<1||len(method)>32{return err("VALIDATION","HTTP method must contain1..32 token bytes");}
+  var i:i64=0;while i<len(method){if !token(method[i]){return err("VALIDATION","invalid HTTP method");}i=i+1;}
+  if ascii_lower(value.method)=="connect"{return err("VALIDATION","CONNECT tunneling is not a request operation");}
+  if len(url)<8||len(url)>8192{return err("VALIDATION","HTTP URL must contain8..8192 bytes");}
+  i=0;while i<len(url){if url[i]<33||url[i]>126{return err("VALIDATION","URLs require ASCII with percent-encoded UTF-8 components");}i=i+1;}
+  if !(ascii_lower(slice(value.url,0,7))=="http://"||(len(url)>=8&&ascii_lower(slice(value.url,0,8))=="https://")){return err("VALIDATION","HTTP URL requires an explicit http or https scheme");}
+  if value.reply_limit<1||value.reply_limit>524288||len(value.body)>524288{return err("VALIDATION","HTTP body or reply limit exceeds512KiB");}
+  if value.method=="HEAD"&&len(value.body)>0{return err("VALIDATION","HEAD requires an empty body");}
+  if value.timeout_ms<1||value.timeout_ms>30000{return err("VALIDATION","HTTP timeout must be1..30000ms");}
+  if value.redirect_limit<0||value.redirect_limit>8{return err("VALIDATION","HTTP redirects must be0..8");}
+  if value.protocol!="auto"&&value.protocol!="1.1"&&value.protocol!="2"{return err("VALIDATION","HTTP protocol must be auto,1.1 or2");}
+  if len(value.headers)>64{return err("VALIDATION","HTTP request has more than64 headers");}
+  var header_bytes:i64=0;i=0;
+  while i<len(value.headers){
+    let item:Header=value.headers[i];let name:bytes=utf8_bytes(item.name);
+    if len(name)<1||len(name)>128||len(item.value)>8192{return err("VALIDATION","HTTP header exceeds its field limit");}
+    var j:i64=0;while j<len(name){if !token(name[j]){return err("VALIDATION","invalid HTTP header name");}j=j+1;}
+    let lower:str=ascii_lower(item.name);
+    if lower=="host"||lower=="connection"||lower=="proxy-connection"||lower=="proxy-authorization"||lower=="content-length"||lower=="transfer-encoding"||lower=="upgrade"||lower=="te"||lower=="trailer"||lower=="expect"{return err("VALIDATION","transport-owned HTTP header");}
+    j=0;while j<len(item.value){let ch:i64=item.value[j];if (ch<32&&ch!=9)||ch==127{return err("VALIDATION","control byte in HTTP header");}j=j+1;}
+    header_bytes=header_bytes+len(name)+len(item.value)+4;
+    if header_bytes>65536{return err("VALIDATION","HTTP request headers exceed64KiB");}i=i+1;
+  }
+  if len(value.body)+value.reply_limit+len(url)+len(authority)+len(method)+header_bytes+65536+8192>1044480{return err("VALIDATION","HTTP copied request/reply budget exceeds1020KiB");}
+  return ok(true);
+}
+pub server fn execute(ctx:Client,value:Request)->result<Response> !{task,ffi} {let valid:bool=validate(value)?;return ctx.send(value);}
+pub server fn get(ctx:Client,authority:str,url:str,timeout_ms:i64)->result<Response> !{task,ffi} {return execute(ctx,request(authority,"GET",url,utf8_bytes(""),timeout_ms));}
+pub server fn post(ctx:Client,authority:str,url:str,body:bytes,timeout_ms:i64)->result<Response> !{task,ffi} {return execute(ctx,request(authority,"POST",url,body,timeout_ms));}
+pub fn text(value:Response)->result<str> {return decode_utf8(value.body);}
+pub fn json<T:wire>(value:Response)->result<T> {let body:str=decode_utf8(value.body)?;return decode_json<T>(body);}
+pub fn require_success(value:Response)->result<Response> {if value.status<200||value.status>=300{return err("HTTP_STATUS","HTTP status "+str(value.status));}return ok(value);}
+pub server fn get_json<T:wire>(ctx:Client,authority:str,url:str,timeout_ms:i64)->result<T> !{task,ffi} {let response:Response=get(ctx,authority,url,timeout_ms)?;let accepted:Response=require_success(response)?;return json<T>(accepted);}
+
+test fn portable_request_and_response()->unit {
+  let value:Request=request("backend","GET","https://example.test/items",utf8_bytes(""),1000);
+  assert(is_ok(validate(value)));assert(is_ok(validate(with_header(value,"Accept","application/json"))));
+  assert(error_code(validate(with_header(value,"Content-Length","0")))=="VALIDATION");
+  assert(error_code(validate(with_header(value,"X-Value","bad\r\nheader")))=="VALIDATION");
+  assert(error_code(validate(limits(value,0,0,"auto")))=="VALIDATION");
+  assert(error_code(validate(request("backend","CONNECT","https://example.test/",utf8_bytes(""),1000)))=="VALIDATION");
+  assert(url_component("Я🧠 &")=="%D0%AF%F0%9F%A7%A0%20%26");assert(url_component("a-b.c_~")=="a-b.c_~");
+  assert(unwrap(json<i64>(Response(200,[],utf8_bytes(encode_json(42)),"2","https://example.test/")))==42);
+  assert(error_code(require_success(Response(404,[],utf8_bytes("missing"),"1.1","http://example.test/")))=="HTTP_STATUS");
+}

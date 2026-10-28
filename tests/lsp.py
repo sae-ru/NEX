@@ -115,7 +115,7 @@ class Client:
 class LanguageServer(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
         self.source('module app; fn twice(n:i64)->i64{return n*2;} fn main()->i64{return twice(21);}')
         self.clients=[]
 
@@ -170,11 +170,11 @@ class LanguageServer(harness.ToolchainCase):
         value=json.loads(manifest.read_text());value['language']='0.15';manifest.write_text(json.dumps(value))
         self.assertEqual(self.cli('analyze',self.file,ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertFalse((self.root/'.nex').exists())
-        value['language']='0.16'
+        value['language']='0.24'
         value['libraries']={'dep':'library'}
         manifest.write_text(json.dumps(value))
         library=self.root/'library';library.mkdir()
-        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'model.nex'}))
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'model.nex'}))
         dependency=library/'model.nex';dependency.write_text('module dep;pub fn answer()->i64{return 1;}')
         self.source('module app;import "dep/model.nex" as d;fn main()->i64{return d::answer();}')
         self.cli('lock',self.file)
@@ -727,7 +727,7 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         report=json.loads(result.stdout)
         self.assertTrue(report['ok']);self.assertTrue(report['source_and_graph_unchanged'])
-        self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertEqual(report['messages_sent'],29);self.assertEqual(report['stderr'],'')
+        self.assertTrue(report['type_reference_checks']);self.assertTrue(report['identifier_checks']);self.assertTrue(report['resource_checks']);self.assertEqual(report['messages_sent'],35);self.assertEqual(report['stderr'],'')
 
 
 if __name__=='__main__':

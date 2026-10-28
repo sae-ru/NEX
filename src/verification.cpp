@@ -94,6 +94,7 @@ class Engine {
   }
   Sym expression(E e,State &state,bool spec=false){
     poll();if(!e)return {context.bool_val(true),Type::Unit};
+    if(e->kind==Expr::Propagate)throw Stop{"unsupported","result propagation is outside scalar verification",e->span};
     if(e->kind==Expr::Match)throw Stop{"unsupported","match expressions are outside scalar verification",e->span};
     if(e->kind==Expr::Floating||e->type==Type::F64)throw Stop{"unsupported","f64 is outside integer/boolean verification",e->span};
     if(e->type==Type::Bytes)throw Stop{"unsupported","binary values are outside integer/boolean verification",e->span};
@@ -171,6 +172,7 @@ class Engine {
         poll();if(path.returned){next.push_back(std::move(path));continue;}
         auto &state=path.state;
         switch(s->kind){
+        case Stmt::Try:case Stmt::Throw:throw Stop{"unsupported","source exception contracts require explicit verification semantics",s->span};
         case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr,state);if(value.type!=Type::I64&&value.type!=Type::Bool)throw Stop{"unsupported","only scalar locals are verified",s->span};state.scopes.back().insert_or_assign(s->name,value);next.push_back(std::move(path));break;}
         case Stmt::Assign:{auto value=expression(s->expr,state);state.lookup(s->name,s->span)=value;next.push_back(std::move(path));break;}
         case Stmt::Expression:expression(s->expr,state);next.push_back(std::move(path));break;

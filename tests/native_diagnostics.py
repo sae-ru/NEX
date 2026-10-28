@@ -124,7 +124,7 @@ fn main()->unit!{io}{print(sibling());print(broken());}
         self.file.unlink()
         child=subprocess.run([standalone],capture_output=True,text=True,timeout=30)
         self.assertEqual(child.returncode,70)
-        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.16","entry":"main.nex"}');self.cli('import',archive,cwd=other)
+        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.24","entry":"main.nex"}');self.cli('import',archive,cwd=other)
         log=self.root/'standalone.log';log.write_text(child.stderr)
         mapped=self.cli('diagnose','--revision','HEAD','--manifest',built['debug_manifest'],'--log',log,cwd=other)['diagnostics'][0]
         self.assertEqual(mapped['status'],'mapped')
@@ -167,12 +167,14 @@ fn main()->unit!{io}{print(sibling());print(broken());}
         data=self.root/'data';data.mkdir();env={'NEX_FILES_ROOT':str(data)}
         self.source('module file_trap;server fn main()->unit!{fs}{let text:str=unwrap(file_read_text("missing"));}')
         expected=self.cli('eval',env=env,ok=False)
-        native=self.cli('run',env=env,ok=False)
-        mapped=native['native_diagnostics']['diagnostics'][0]
-        self.assertEqual(native['exit_code'],70)
-        self.assertEqual(mapped['status'],'mapped')
-        self.assertEqual(mapped['report']['code'],'E_RESULT')
-        self.assertEqual(mapped['operation_id'],expected['operation_id'])
+        for profile in ('debug','release'):
+            with self.subTest(profile=profile):
+                native=self.cli('run','--profile',profile,env=env,ok=False)
+                self.assertEqual(native.get('exit_code'),70,native)
+                mapped=native['native_diagnostics']['diagnostics'][0]
+                self.assertEqual(mapped['status'],'mapped')
+                self.assertEqual(mapped['report']['code'],'E_RESULT')
+                self.assertEqual(mapped['operation_id'],expected['operation_id'])
 
     def test_external_grant_failure_maps_to_its_checked_native_wrapper(self):
         self.source('module foreigns;server extern fn call()->i64!{ffi}=foreign("test","call","'+'0'*64+'");server fn main()->i64!{ffi}{return call();}')

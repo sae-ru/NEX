@@ -1,4 +1,9 @@
-# Text and binary files — language 0.16
+# Text and binary files
+
+Language0.20 additionally supports the two whole-file reads in explicit server
+`!{task,fs}` functions; see [task file reads](task-file-reads.md). Ordinary
+fs-only functions retain the synchronous contract below. Writes/streaming/task
+HTTP handlers/browser filesystem remain outside that task subset.
 
 Whole-text intrinsics were introduced in language 0.12, binary intrinsics in
 0.13 and owned streaming files in 0.14. This guide describes their current

@@ -14,8 +14,10 @@ inline Value readEnvironment(const std::string &name){
 class Database {
   struct Impl;std::unique_ptr<Impl> impl;
 public:
+  enum class TransactionStart { Immediate, OnFirstOperation };
   static void initialize(const std::string &path);
   Database(const std::string &path,const std::string &principal,bool writable);
+  Database(const std::string &path,const std::string &principal,bool writable,TransactionStart start);
   ~Database();
   Database(const Database&)=delete;
   Database &operator=(const Database&)=delete;

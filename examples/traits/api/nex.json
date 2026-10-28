@@ -1,6 +1,8 @@
 {
   "schema": "nex.project/1",
-  "language": "0.16",
+  "language": "0.24",
   "entry": "service.nex",
-  "libraries": { "helpers": "helpers" }
+  "libraries": {
+    "helpers": "helpers"
+  }
 }

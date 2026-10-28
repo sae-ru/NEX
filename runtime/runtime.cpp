@@ -4,6 +4,17 @@
 #include <limits>
 #include "nex_host.h"
 #include "nex_io.h"
+#include "nex_source_error.h"
+#ifdef NEX_ASYNC_TASKS
+#include "nex_tasks.h"
+#include "nex_task_values.h"
+#endif
+#ifdef NEX_STRUCTURED_WORKERS
+#include "nex_parallel.h"
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#endif
 #include <chrono>
 #include <unordered_set>
 #include <algorithm>
@@ -18,8 +29,25 @@ extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{
 namespace nexrt {
 namespace {
 thread_local RequestScope *currentRequest=nullptr;
-struct ApplicationState {Handle *head=nullptr;};
+struct ApplicationState {
+  Handle *head=nullptr;ApplicationState *parent=nullptr;int64_t token=0;
+  RequestScope *request=nullptr;ApplicationState *application=nullptr;
+};
 thread_local ApplicationState *currentApplication=nullptr;
+struct FunctionOwners {
+  ApplicationState *current=nullptr,*available=nullptr;size_t depth=0;
+  ~FunctionOwners(){while(available){auto *next=available->parent;delete available;available=next;}}
+  int64_t enter();
+  void leave(Handle *kept)noexcept;
+  void unwind(size_t baseline)noexcept{while(depth>baseline)leave(nullptr);}
+};
+thread_local FunctionOwners functionOwners;
+std::atomic<int64_t> nextFunctionOwner{1};
+ApplicationState *ownershipState(){
+  auto *state=functionOwners.current;
+  if(state&&state->request==currentRequest&&state->application==currentApplication)return state;
+  return currentRequest?nullptr:currentApplication;
+}
 std::atomic<int64_t> liveHandles{0};
 thread_local std::vector<void(*)() noexcept> resourceCleanups;
 }
@@ -32,7 +60,7 @@ void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=res
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
-  ApplicationState *applicationOwner=owner?nullptr:currentApplication;
+  ApplicationState *applicationOwner=ownershipState();
   Handle *previous=nullptr,*next=nullptr;
   explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){
     // Profiling and request registration can allocate. Never leave a failed
@@ -40,66 +68,322 @@ struct Handle {
     profileAllocate(this,sizeof(Handle),0);
     try{if(owner)owner->track(this);}
     catch(...){profileFree(this);throw;}
-    if(applicationOwner){next=applicationOwner->head;if(next)next->previous=this;applicationOwner->head=this;}
+    if(applicationOwner)attach(applicationOwner);
     ++liveHandles;
   }
   ~Handle(){
     profileFree(this);if(owner)owner->untrack(this);
-    if(applicationOwner){if(previous)previous->next=next;else applicationOwner->head=next;if(next)next->previous=previous;}
+    detach();
     --liveHandles;
+  }
+  void detach()noexcept{
+    if(applicationOwner){if(previous)previous->next=next;else applicationOwner->head=next;if(next)next->previous=previous;}
+    applicationOwner=nullptr;previous=next=nullptr;
+  }
+  void attach(ApplicationState *state)noexcept{
+    applicationOwner=state;previous=nullptr;next=state?state->head:nullptr;
+    if(state){if(next)next->previous=this;state->head=this;}
   }
 };
 namespace {
+int64_t FunctionOwners::enter(){
+  if(!currentRequest&&!currentApplication)throw DataError("E_CONTEXT","function ownership requires an application or request scope");
+  if(depth>=4096)throw DataError("E_LIMIT","function ownership depth exceeds 4096");
+  auto token=nextFunctionOwner.load(std::memory_order_relaxed);
+  while(token<std::numeric_limits<int64_t>::max()&&!nextFunctionOwner.compare_exchange_weak(token,token+1,std::memory_order_relaxed)){}
+  if(token==std::numeric_limits<int64_t>::max())throw DataError("E_LIMIT","function ownership identities exhausted");
+  // Reuse frames by depth. Enter may allocate; leave/unwind never allocate and
+  // no extra field or per-value registry is added to managed Handle objects.
+  auto *state=available;if(state)available=state->parent;else state=new ApplicationState;
+  state->parent=current;state->head=nullptr;state->token=token;
+  state->request=currentRequest;state->application=currentApplication;
+  current=state;++depth;return token;
+}
+void FunctionOwners::leave(Handle *kept)noexcept{
+  auto *state=current;bool transfer=kept&&kept->applicationOwner==state;
+  if(transfer)kept->detach();
+  current=state->parent;--depth;
+  while(state->head)delete state->head;
+  if(transfer)kept->attach(ownershipState());
+  state->token=0;state->parent=available;available=state;
+}
 // This ownership boundary does not grant request capabilities, budgets or
 // cancellation. CLI file/foreign authorization and hosted RequestScope behavior
 // remain independent. Intrusive tracking allocates no per-handle registry node.
 struct ApplicationScope {
   ApplicationState state;
+  size_t functionBaseline=functionOwners.depth;
   ApplicationState *previous=currentApplication;
   ApplicationScope(){currentApplication=&state;}
   ~ApplicationScope(){
     profileUnwind();
+    functionOwners.unwind(functionBaseline);
     while(state.head)delete state.head;
     cleanupRuntimeResources();currentApplication=previous;
   }
 };
 }
+struct RequestScope::Control {
+  std::atomic<uint64_t> steps{0};
+  uint64_t budget;
+  std::chrono::steady_clock::time_point deadline;
+  std::atomic<bool> cancelled{false},active{true},exhausted{false};
+  Control(uint64_t budget,uint64_t timeoutMs):budget(budget),
+    deadline(std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs)){}
+};
 struct RequestScope::Impl {
   std::unordered_set<Handle*> handles;
   ResourceDomain resources;
   std::map<const void*,std::unique_ptr<ResourceDomain>,std::less<>> resourceBindings;
-  uint64_t steps=0,budget;
-  std::chrono::steady_clock::time_point deadline;
-  std::atomic<bool> cancelled{false};
-  std::atomic<bool> active{true};
+  std::shared_ptr<Control> control;
   std::function<bool()> cancellation;
+  bool worker=false;
+  bool preserveParentProfile=false;
+  size_t functionBaseline=functionOwners.depth;
+  const std::atomic<bool> *workerStop=nullptr;
+#ifdef NEX_ASYNC_TASKS
+  std::shared_ptr<const task_detail::Cancellation> taskStop;
+#endif
+  explicit Impl(std::shared_ptr<Control> control):control(std::move(control)){}
 };
-RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>()){
+RequestScope::RequestScope(uint64_t budget,uint64_t timeoutMs):impl(std::make_shared<Impl>(std::make_shared<Control>(budget,timeoutMs))){
   if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
-  impl->budget=budget;impl->deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(timeoutMs);currentRequest=this;
+  currentRequest=this;
   resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
 }
-RequestScope::~RequestScope(){impl->active=false;profileUnwind();impl->resources.revoke();while(!impl->handles.empty())delete *impl->handles.begin();currentRequest=nullptr;resource_detail::requestBinder=nullptr;}
+RequestScope::RequestScope(std::shared_ptr<Control> control,const std::atomic<bool> *workerStop):impl(std::make_shared<Impl>(std::move(control))){
+  if(currentRequest)throw Trap("E_CONTEXT","nested request scope is not supported",0);
+  impl->worker=true;impl->workerStop=workerStop;currentRequest=this;
+  resource_detail::requestBinder=[](const ResourceDomain &capability){return &currentRequest->bindResources(capability);};
+}
+RequestScope::~RequestScope(){
+  if(!impl->worker)impl->control->active=false;
+  if(!impl->preserveParentProfile)profileUnwind();impl->resources.revoke();functionOwners.unwind(impl->functionBaseline);while(!impl->handles.empty())delete *impl->handles.begin();
+  if(impl->worker)cleanupRuntimeResources();
+  currentRequest=nullptr;resource_detail::requestBinder=nullptr;
+}
 void RequestScope::track(Handle *p){impl->handles.insert(p);}
 void RequestScope::untrack(Handle *p){impl->handles.erase(p);}
-void RequestScope::cancel(){impl->cancelled=true;impl->resources.revoke();}
+void RequestScope::cancel(){impl->control->cancelled=true;impl->resources.revoke();}
 ResourceDomain &RequestScope::bindResources(const ResourceDomain &capability){
   auto key=capability.scopeKey();auto found=impl->resourceBindings.find(key);
   if(found==impl->resourceBindings.end())found=impl->resourceBindings.emplace(key,std::make_unique<ResourceDomain>(impl->resources.combine(capability))).first;
   return *found->second;
 }
-void RequestScope::setCancellation(std::function<bool()> check){impl->cancellation=std::move(check);}
-void RequestScope::poll(int64_t line,bool forceCancellation){
-  auto state=impl;
-  if(forceCancellation||(state->steps%64)==0){
-    auto cancellation=state->cancellation;
-    if(cancellation&&cancellation())state->cancelled=true;
-  }
-  if(!state->active){state->resources.revoke();throw Trap("E_CANCELLED","request scope has ended",line);}
-  if(state->cancelled){state->resources.revoke();throw Trap("E_CANCELLED","request was cancelled",line);}
-  if(++state->steps>state->budget){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
-  if(std::chrono::steady_clock::now()>=state->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
+void RequestScope::setCancellation(std::function<bool()> check){
+  if(impl->worker)throw Trap("E_CONTEXT","worker cannot replace the request cancellation callback",0);
+  impl->cancellation=std::move(check);
 }
+void RequestScope::poll(int64_t line,bool forceCancellation){checkExecution(line,forceCancellation,true);}
+std::chrono::steady_clock::time_point RequestScope::deadline()const noexcept{return impl->control->deadline;}
+std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline()noexcept{
+  if(currentRequest)return currentRequest->deadline();
+  return std::nullopt;
+}
+void RequestScope::checkExecution(int64_t line,bool forceCancellation,bool consumeStep){
+  auto state=impl;auto control=state->control;
+  // The host's cancellation callback belongs to the coordinator thread. Worker
+  // polls only read shared atomic state; waiting coordinators still run it.
+  if(!state->worker&&(forceCancellation||(control->steps.load()%64)==0)){
+    auto cancellation=state->cancellation;
+    if(cancellation&&cancellation())control->cancelled=true;
+  }
+  if(!control->active){state->resources.revoke();throw Trap("E_CANCELLED","request scope has ended",line);}
+  if(control->cancelled){state->resources.revoke();throw Trap("E_CANCELLED","request was cancelled",line);}
+  if(state->workerStop&&state->workerStop->load()){state->resources.revoke();throw Trap("E_CANCELLED","worker group was cancelled",line);}
+  if(consumeStep){
+    auto steps=control->steps.load();
+    while(steps<control->budget&&!control->steps.compare_exchange_weak(steps,steps+1)){}
+    if(steps>=control->budget)control->exhausted=true;
+  }
+  if(control->exhausted){state->resources.revoke();throw Trap("E_LIMIT","request execution budget exceeded",line);}
+  if(std::chrono::steady_clock::now()>=control->deadline){state->resources.revoke();throw Trap("E_TIMEOUT","request deadline exceeded",line);}
+#ifdef NEX_ASYNC_TASKS
+  if(state->taskStop&&state->taskStop->stopped())throw Trap("E_CANCELLED","task was cancelled",line);
+#endif
+}
+#ifdef NEX_STRUCTURED_WORKERS
+namespace {
+thread_local size_t parallelDepth=0;
+thread_local size_t parallelCallDepth=0;
+struct ParallelDepth {
+  ParallelDepth(){++parallelDepth;}
+  ~ParallelDepth(){--parallelDepth;}
+};
+void parallelValueCheck(const Value &value){
+  validateParallelValue(value,[]{pollHostOperation(0);});
+}
+}
+#ifdef NEX_ASYNC_TASKS
+size_t exchangeCompiledTaskDepth(size_t depth){
+  if(depth>256)throw DataError("E_LIMIT","compiled task call depth exceeds 256");
+  auto previous=parallelCallDepth;parallelCallDepth=depth;return previous;
+}
+#endif
+struct ParallelAccess {
+  static Value applicationCompiled(const Value &items,const Value &environment,int64_t workers,CompiledParallelBridge bridge,ParallelValueKind input,ParallelValueKind output,SourceLocation location){
+    RequestScope scope;scope.impl->preserveParentProfile=true;
+    return parallelCompiledValues(items,environment,workers,bridge,input,output,location);
+  }
+  static Value run(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
+    auto *owner=currentRequest;
+    if(!owner)throw Trap("E_CONTEXT","parallel workers require an active request scope",location);
+    return hostOperation(location,[&]{
+      if(!callback)throw DataError("E_CONTEXT","parallel callback is missing");
+      if(workers<1||workers>parallelMaximumWorkers)throw DataError("E_RANGE","parallel worker count must be in 1..16");
+      if(items.tag!=Value::Object||!items.object||items.object->kind!=Data::List)throw DataError("E_TYPE","parallel input must be a list");
+      if(items.object->values.size()>parallelMaximumItems)throw DataError("E_LIMIT","parallel input exceeds 65536 items");
+      owner->checkExecution(location,true,false);
+      parallelValueCheck(items);parallelValueCheck(environment);
+      const Value inputs=items,captures=environment;
+      auto output=std::make_shared<Data>(Data::List);output->values.resize(inputs.object->values.size());
+      std::vector<std::exception_ptr> failures(output->values.size());
+      auto invoke=[&](size_t index){
+        auto value=hostOperation(location,[&]{
+          pollHostOperation(location);
+          auto result=callback(inputs.object->values[index],captures);
+          parallelValueCheck(result);pollHostOperation(location);return result;
+        });
+        output->values[index]=std::move(value);
+      };
+      if(parallelDepth){
+        // A nested pure group runs on its existing worker. It cannot multiply
+        // operating-system threads or introduce a nested request capability.
+        for(size_t i=0;i<output->values.size();++i)try{invoke(i);}catch(...){failures[i]=std::current_exception();}
+      }else if(!output->values.empty()){
+        std::atomic<size_t> next{0},finished{0};std::atomic<bool> stop{false};bool started=false;
+        std::mutex mutex;std::condition_variable ready;
+        auto control=owner->impl->control;
+        const size_t count=std::min(size_t(workers),output->values.size());
+        std::exception_ptr coordinatorFailure;
+        // Declared last: every partial construction/failure joins before any
+        // captured state, input, output or completion primitive can be destroyed.
+        std::vector<std::jthread> threads;threads.reserve(count);
+        try{
+          for(size_t worker=0;worker<count;++worker)threads.emplace_back([&]{
+            ParallelDepth depth;
+            {std::unique_lock lock(mutex);ready.wait(lock,[&]{return started||stop.load();});}
+            for(;;){
+              if(stop.load())break;
+              auto index=next.fetch_add(1);if(index>=output->values.size())break;
+              try{RequestScope scope(control,&stop);invoke(index);}
+              catch(...){failures[index]=std::current_exception();}
+            }
+            ++finished;ready.notify_all();
+          });
+          {std::lock_guard lock(mutex);started=true;}ready.notify_all();
+          std::unique_lock lock(mutex);
+          while(finished.load()!=count){
+            lock.unlock();owner->checkExecution(location,true,false);lock.lock();
+            ready.wait_for(lock,std::chrono::milliseconds(2),[&]{return finished.load()==count;});
+          }
+        }catch(...){
+          coordinatorFailure=std::current_exception();
+          {std::lock_guard lock(mutex);stop=true;}ready.notify_all();
+        }
+        for(auto &thread:threads)thread.join();
+        if(coordinatorFailure)std::rethrow_exception(coordinatorFailure);
+      }
+      // Global cancellation, exhaustion and elapsed deadlines take precedence
+      // over ordinary per-item errors. Waiting never adds execution steps.
+      owner->checkExecution(location,true,false);
+      // A callback can hit a resource bound without exhausting the shared step
+      // counter (for example call depth or an output graph bound). Such failures
+      // must not be hidden by an ordinary lower-index arithmetic error.
+      for(const auto &failure:failures)if(failure)try{std::rethrow_exception(failure);}
+      catch(const Trap &error){
+        if(error.code=="E_LIMIT"||error.code=="E_TIMEOUT"||error.code=="E_CANCELLED"||error.code=="E_MEMORY")throw;
+      }catch(const std::bad_alloc &){throw;}catch(...){/* Ordinary trusted callback failure: select by input order below. */}
+      for(const auto &failure:failures)if(failure)std::rethrow_exception(failure);
+      return Value(std::move(output));
+    });
+  }
+};
+Value parallelValues(const Value &items,const Value &environment,int64_t workers,ParallelCallback callback,SourceLocation location){
+  return ParallelAccess::run(items,environment,workers,callback,location);
+}
+namespace {
+struct CompiledParallelResult {Value value;bool assigned=false;};
+thread_local CompiledParallelResult *activeParallelResult=nullptr;
+struct CompiledParallelCall {
+  const size_t baseline=functionOwners.depth;
+  const size_t callBaseline=parallelCallDepth;
+  CompiledParallelResult *previous=activeParallelResult;
+  explicit CompiledParallelCall(CompiledParallelResult &result){
+    functionOwners.enter();activeParallelResult=&result;
+  }
+  CompiledParallelCall(const CompiledParallelCall&)=delete;
+  CompiledParallelCall &operator=(const CompiledParallelCall&)=delete;
+  ~CompiledParallelCall(){activeParallelResult=previous;functionOwners.unwind(baseline);parallelCallDepth=callBaseline;}
+};
+bool parallelKindValid(ParallelValueKind kind){
+  return kind==ParallelValueKind::I64||kind==ParallelValueKind::Bool||
+    kind==ParallelValueKind::F64||kind==ParallelValueKind::Heap;
+}
+void parallelKindCheck(const Value &value,ParallelValueKind kind){
+  bool valid=kind==ParallelValueKind::Heap?value.tag==Value::Object:
+    kind==ParallelValueKind::F64?value.tag==Value::Floating:
+    kind==ParallelValueKind::Bool?value.tag==Value::Boolean:value.tag==Value::Integer;
+  if(!valid)throw DataError("E_PARALLEL_VALUE","compiled worker value differs from its checked ABI kind");
+  if(value.tag==Value::Boolean&&(value.scalar<0||value.scalar>1))
+    throw DataError("E_PARALLEL_VALUE","compiled worker boolean is not canonical");
+  if(value.tag==Value::Floating)(void)value.floating();
+}
+void assignParallelResult(void *destination,Value value){
+  // Check thread/nesting identity before dereferencing the opaque destination.
+  if(!destination||destination!=activeParallelResult)
+    throw DataError("E_CONTEXT","compiled worker result is outside its callback");
+  if(activeParallelResult->assigned)
+    throw DataError("E_PARALLEL_RESULT","compiled worker returned more than one value");
+  activeParallelResult->value=std::move(value);activeParallelResult->assigned=true;
+}
+Value compiledParallelInvoke(const Value &item,const Value &context){
+  auto bridge=reinterpret_cast<CompiledParallelBridge>(context.object->code);
+  CompiledParallelResult result;
+  {
+    CompiledParallelCall call(result);
+    auto *environment=makeHandle(context.object->values[0]);
+    auto *heap=item.tag==Value::Object?makeHandle(item):nullptr;
+    bridge(environment,item.tag==Value::Object?0:item.scalar,heap,&result);
+    if(parallelCallDepth!=call.callBaseline)throw DataError("E_INTERNAL_SCOPE","compiled worker did not close every call scope");
+    if(!result.assigned)throw DataError("E_PARALLEL_RESULT","compiled worker returned no value");
+    parallelKindCheck(result.value,ParallelValueKind(context.object->values[1].scalar));
+    // Result Value retains the immutable payload before job-local handles and
+    // every unfinished nested ownership frame are released on this scope exit.
+  }
+  return std::move(result.value);
+}
+}
+Value parallelCompiledValues(const Value &items,const Value &environment,int64_t workers,
+    CompiledParallelBridge bridge,ParallelValueKind input,ParallelValueKind output,SourceLocation location){
+  return hostOperation(location,[&]{
+    if(!currentRequest)throw DataError("E_CONTEXT","compiled workers require an active request scope");
+    if(!bridge||!parallelKindValid(input)||!parallelKindValid(output))
+      throw DataError("E_CONTEXT","invalid compiled worker bridge or ABI kind");
+    if(workers<1||workers>parallelMaximumWorkers)
+      throw DataError("E_RANGE","parallel worker count must be in 1..16");
+    if(environment.tag!=Value::Object||!environment.object||
+       environment.object->kind!=Data::Closure||!environment.object->code)
+      throw DataError("E_FUNCTION","compiled worker requires a callable environment");
+    if(items.tag!=Value::Object||!items.object||items.object->kind!=Data::List)
+      throw DataError("E_TYPE","compiled worker input must be a list");
+    if(items.object->values.size()>parallelMaximumItems)
+      throw DataError("E_LIMIT","parallel input exceeds 65536 items");
+    for(size_t i=0;i<items.object->values.size();++i){
+      parallelKindCheck(items.object->values[i],input);
+      if((i%64)==0)pollHostOperation(location);
+    }
+    auto context=std::make_shared<Data>(Data::Closure);
+    context->code=reinterpret_cast<void*>(bridge);
+    context->values={environment,Value(int64_t(output))};
+    return parallelValues(items,Value(std::move(context)),workers,compiledParallelInvoke,location);
+  });
+}
+#endif
+#ifdef NEX_ASYNC_TASKS
+#include "nex_tasks_impl.h"
+#include "nex_task_values_impl.h"
+#endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
 namespace {
@@ -129,6 +413,7 @@ std::pair<std::string,bool> diagnosticText(const char *text,size_t maximum){
   return {std::move(result),truncated};
 }
 }
+std::string copyNativeSourceRecord(const NativeSite *site)noexcept{return sourceRecord(site);}
 LocatedTrap::LocatedTrap(const Trap &trap,std::string source):Trap(trap.code,trap.what(),trap.line),source(std::move(source)){}
 [[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location){
   if(dynamic_cast<const LocatedTrap*>(&trap)||!location.site)throw;
@@ -143,6 +428,13 @@ void printNativeTrap(const char *code,const char *message,int64_t line,const std
     if(request)record+=",\"request_id\":"+nexrt::quoted(diagnosticText(request,256).first);record+="}";
     std::fprintf(stderr,"NEX_NATIVE_TRAP %s\n",record.c_str());
   }catch(...){/* Error reporting must not replace the original failure. */}
+}
+void printNativeSourceException(const NativeSourceException &error,const char *request)noexcept{
+  try{
+    std::string record="NEX_SOURCE_EXCEPTION {\"code\":"+quoted(error.code)+",\"message\":"+quoted(error.message)+",\"line\":"+std::to_string(error.line)+",\"source\":"+(error.source.empty()?"null":error.source);
+    if(request)record+=",\"request_id\":"+quoted(request);record+="}\n";
+    std::fwrite(record.data(),1,record.size(),stderr);
+  }catch(...){/* Reporting must not replace the original source failure. */}
 }
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){runtimeFail(code,message,SourceLocation{line});}
 [[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location){
@@ -181,6 +473,117 @@ Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
 }
 }
 extern "C" {
+#ifdef NEX_STRUCTURED_WORKERS
+static Handle *impl_nex_parallel_map(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    if(!items||!environment)throw nexrt::DataError("E_PARALLEL_VALUE","parallel_map requires input and callback handles");
+    if(!nexrt::inRequestScope()&&!nexrt::currentApplication)throw nexrt::DataError("E_CONTEXT","parallel_map requires an application or request scope");
+    auto values=nexrt::readHandle(items),captures=nexrt::readHandle(environment);nexrt::Value result;
+    auto run=[&]{return nexrt::parallelCompiledValues(values,captures,workers,reinterpret_cast<nexrt::CompiledParallelBridge>(bridge),nexrt::ParallelValueKind(input),nexrt::ParallelValueKind(output),location);};
+    if(nexrt::inRequestScope())result=run();
+    else result=nexrt::ParallelAccess::applicationCompiled(values,captures,workers,reinterpret_cast<nexrt::CompiledParallelBridge>(bridge),nexrt::ParallelValueKind(input),nexrt::ParallelValueKind(output),location);
+    // A CLI group's scope has ended. Allocate the coordinator result under its
+    // original application/function owner, never under the expired request.
+    return nexrt::makeHandle(result);
+  });
+}
+Handle *nex_parallel_map(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,int64_t line){return impl_nex_parallel_map(items,environment,workers,bridge,input,output,{line});}
+Handle *nex_parallel_map_at(Handle *items,Handle *environment,int64_t workers,void *bridge,int64_t input,int64_t output,int64_t line,const nexrt::NativeSite *site){return impl_nex_parallel_map(items,environment,workers,bridge,input,output,{line,site});}
+static void impl_nex_parallel_enter(nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{if(nexrt::parallelDepth){if(nexrt::parallelCallDepth>=256)throw nexrt::DataError("E_LIMIT","parallel callback call depth exceeds 256");++nexrt::parallelCallDepth;}});
+}
+void nex_parallel_enter(){impl_nex_parallel_enter({});}
+void nex_parallel_enter_at(const nexrt::NativeSite *site){impl_nex_parallel_enter({0,site});}
+static void impl_nex_parallel_leave(nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{if(nexrt::parallelDepth){if(!nexrt::parallelCallDepth)throw nexrt::DataError("E_CONTEXT","parallel callback call scope is unbalanced");--nexrt::parallelCallDepth;}});
+}
+void nex_parallel_leave(){impl_nex_parallel_leave({});}
+void nex_parallel_leave_at(const nexrt::NativeSite *site){impl_nex_parallel_leave({0,site});}
+static void impl_nex_parallel_return_i64(void *destination,int64_t value,int64_t tag,nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{nexrt::assignParallelResult(destination,nexrt::Value::taggedScalar(value,tag));});
+}
+void nex_parallel_return_i64(void *destination,int64_t value,int64_t tag){impl_nex_parallel_return_i64(destination,value,tag,{});}
+void nex_parallel_return_i64_at(void *destination,int64_t value,int64_t tag,const nexrt::NativeSite *site){impl_nex_parallel_return_i64(destination,value,tag,{0,site});}
+static void impl_nex_parallel_return_heap(void *destination,Handle *value,nexrt::SourceLocation location){
+  nexrt::hostOperation(location,[&]{
+    if(!value)throw nexrt::DataError("E_PARALLEL_RESULT","compiled worker returned a null heap handle");
+    nexrt::assignParallelResult(destination,nexrt::readHandle(value));
+  });
+}
+void nex_parallel_return_heap(void *destination,Handle *value){impl_nex_parallel_return_heap(destination,value,{});}
+void nex_parallel_return_heap_at(void *destination,Handle *value,const nexrt::NativeSite *site){impl_nex_parallel_return_heap(destination,value,{0,site});}
+#else
+// Project-library objects can be reused by a consumer with no reachable map.
+// Keep their call-scope ABI available without enabling a worker runtime.
+void nex_parallel_enter(){}
+void nex_parallel_enter_at(const nexrt::NativeSite*){}
+void nex_parallel_leave(){}
+void nex_parallel_leave_at(const nexrt::NativeSite*){}
+#endif
+static int64_t impl_nex_owned_enter(nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{return nexrt::functionOwners.enter();});
+}
+int64_t nex_owned_enter(){return impl_nex_owned_enter(nexrt::SourceLocation{});}
+int64_t nex_owned_enter_at(const nexrt::NativeSite *site){return impl_nex_owned_enter(nexrt::SourceLocation{0,site});}
+static void impl_nex_owned_leave(int64_t token,Handle *kept,nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    auto *frame=nexrt::functionOwners.current;
+    if(!frame||frame->token!=token||frame->request!=nexrt::currentRequest||frame->application!=nexrt::currentApplication)
+      throw nexrt::DataError("E_CONTEXT","function ownership token does not match the current scope");
+    nexrt::functionOwners.leave(kept);
+  });
+}
+void nex_owned_leave(int64_t token,Handle *kept){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{});}
+void nex_owned_leave_at(int64_t token,Handle *kept,const nexrt::NativeSite *site){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{0,site});}
+// Private source errors are immutable managed records, never host traps. Their
+// two source strings retain length and the copied native site survives rethrow.
+extern "C++" { namespace {
+constexpr const char *sourceErrorMarker="NEX_PRIVATE_SOURCE_ERROR_V1:";
+using NativeSourceException=nexrt::NativeSourceException;
+const nexrt::Data &sourceError(Handle *handle){
+  if(!handle||handle->data->kind!=nexrt::Data::Record||!handle->data->text.starts_with(sourceErrorMarker)||handle->data->values.size()!=2)
+    throw nexrt::DataError("E_RUNTIME","invalid private source error");
+  return *handle->data;
+}
+} }
+static void impl_nex_owned_promote(Handle *handle,int64_t token,SourceLocation location){
+  nexrt::hostOperation(location,[&]{
+    if(!handle)return;
+    auto *target=nexrt::functionOwners.current;
+    while(target&&target->token!=token)target=target->parent;
+    if(!target||target->request!=nexrt::currentRequest||target->application!=nexrt::currentApplication)
+      throw nexrt::DataError("E_CONTEXT","slot owner is not an active enclosing scope");
+    // Slots receive owned handles, never a caller's borrowed parameter handle.
+    auto *owner=nexrt::functionOwners.current;
+    while(owner&&owner!=handle->applicationOwner)owner=owner->parent;
+    if(!owner)throw nexrt::DataError("E_CONTEXT","stored handle has no active owner");
+    if(handle->applicationOwner!=target){handle->detach();handle->attach(target);}
+  });
+}
+void nex_owned_promote(Handle *handle,int64_t token){impl_nex_owned_promote(handle,token,{});}
+void nex_owned_promote_at(Handle *handle,int64_t token,const nexrt::NativeSite *site){impl_nex_owned_promote(handle,token,{0,site});}
+static Handle *impl_nex_source_error_new(Handle *code,Handle *message,SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    if(!code||!message||code->data->kind!=nexrt::Data::String||message->data->kind!=nexrt::Data::String)
+      throw nexrt::DataError("E_RUNTIME","source error payload must contain strings");
+    auto data=std::make_shared<nexrt::Data>(nexrt::Data::Record);
+    data->text=sourceErrorMarker+nexrt::sourceRecord(location.site);data->ordinal=location.line;
+    data->values={nexrt::Value(code->data),nexrt::Value(message->data)};return owned(std::move(data));
+  });
+}
+Handle *nex_source_error_new(Handle *code,Handle *message,int64_t line){return impl_nex_source_error_new(code,message,{line});}
+Handle *nex_source_error_new_at(Handle *code,Handle *message,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_new(code,message,{line,site});}
+static Handle *impl_nex_source_error_field(Handle *error,size_t index,SourceLocation location){return nexrt::hostOperation(location,[&]{return owned(sourceError(error).values.at(index).object);});}
+Handle *nex_source_error_code(Handle *error){return impl_nex_source_error_field(error,0,{});}
+Handle *nex_source_error_code_at(Handle *error,const nexrt::NativeSite *site){return impl_nex_source_error_field(error,0,{0,site});}
+Handle *nex_source_error_message(Handle *error){return impl_nex_source_error_field(error,1,{});}
+Handle *nex_source_error_message_at(Handle *error,const nexrt::NativeSite *site){return impl_nex_source_error_field(error,1,{0,site});}
+static void impl_nex_source_error_unhandled(Handle *error,SourceLocation location){
+  auto exception=nexrt::hostOperation(location,[&]{const auto &data=sourceError(error);NativeSourceException result;result.code=data.values[0].object->text;result.message=data.values[1].object->text;result.source=data.text.substr(std::strlen(sourceErrorMarker));result.line=data.ordinal;return result;});
+  throw exception;
+}
+void nex_source_error_unhandled(Handle *error){impl_nex_source_error_unhandled(error,{});}
+void nex_source_error_unhandled_at(Handle *error,const nexrt::NativeSite *site){impl_nex_source_error_unhandled(error,{0,site});}
 static int64_t impl_nex_add(int64_t a,int64_t b,nexrt::SourceLocation line){
   return nexrt::hostOperation(line,[&]() -> int64_t {int64_t r;if(__builtin_add_overflow(a,b,&r))fail("E_OVERFLOW","i64 arithmetic overflow",line);return r;});
 }
@@ -456,7 +859,10 @@ static void impl_nex_print_heap(Handle *p, nexrt::SourceLocation location){
 void nex_print_heap(Handle *p){return impl_nex_print_heap(p, nexrt::SourceLocation{});}
 void nex_print_heap_at(Handle *p, const nexrt::NativeSite *nex_site){return impl_nex_print_heap(p, nexrt::SourceLocation{0,nex_site});}
 static void impl_nex_runtime_finish(nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> void {nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);});
+  return nexrt::hostOperation(location,[&]() -> void {
+    if(nexrt::functionOwners.depth)fail("E_INTERNAL_SCOPE","compiler did not close every function ownership scope",location);
+    nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);
+  });
 }
 void nex_runtime_finish(){return impl_nex_runtime_finish(nexrt::SourceLocation{});}
 void nex_runtime_finish_at(const nexrt::NativeSite *nex_site){return impl_nex_runtime_finish(nexrt::SourceLocation{0,nex_site});}
@@ -467,6 +873,9 @@ static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *con
     auto result=reinterpret_cast<int64_t(*)(int64_t,const char *const *)>(entry)(argc,argv);
     impl_nex_runtime_finish(location);
     return result;
+  }catch(const NativeSourceException &error){
+    std::fflush(stdout);
+    nexrt::printNativeSourceException(error);
   }catch(const nexrt::Trap &trap){
     std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",trap.code.c_str(),trap.what(),static_cast<long long>(trap.line));
     auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap);

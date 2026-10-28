@@ -14,7 +14,7 @@ function deferred(name) {
 async function run() {
   const folder = vscode.workspace.workspaceFolders?.[0];assert.ok(folder);assert.equal(vscode.workspace.isTrusted, true);
   const extension = vscode.extensions.getExtension('sae-ru.nex-language-tools');assert.ok(extension);
-  assert.equal(extension.packageJSON.version, '0.6.0');
+  assert.equal(extension.packageJSON.version, '0.7.0');
   assert.ok(path.resolve(extension.extensionPath).startsWith(path.resolve(process.env.NEX_EDITOR_EXTENSIONS) + path.sep));
   assert.ok(fs.existsSync(path.join(extension.extensionPath, 'project-command.js')));
   await extension.activate();

@@ -1,3 +1,1654 @@
+# HTTP storage transaction start233
+
+Toolchain0.135.30 starts an HTTP SQL transaction at the first storage operation.
+Handlers without DB access hold no writer lease. Actual storage keeps its
+method-based read/write policy,1000ms busy timeout, atomic commit/rollback and
+principal isolation. The old C++ constructor remains eager. Source syntax,
+public language0.24, graph history and task/provider ABIs are unchanged.
+Public025 integration, complete SDK/platform acceptance and PLAN work stay open.
+Sanitizers are authorized; security audit/fuzz campaigns remain deferred.
+
+# Private modular HTTP debugging232 experiment
+
+Toolchain0.135.29 adds matching HTTP debug hosting, actual request-ID watches
+and a terminal-step marker outside scheduler/debug locks. Public language stays
+0.24; the private ABI2502/catalogABI2 keep their sizes and meanings. Static,
+shared and mixed HTTP programs use the same source/consumer/image context/2.
+Read [the module debug guide](docs/source-exception-module-debug.md).
+Public025 migration, full SDK/platform delivery and remaining PLAN work stay open.
+Sanitizers are authorized; audit/fuzz campaigns remain deferred.
+
+# Private module debugging231 experiment
+
+Toolchain0.135.28 adds architecture/6 debug instrumentation, records/6 and an
+explicit unarchived source/consumer/image context. Static/shared/mixed application
+frames use the common catalog ABI2, LLDB/DAP and checked watch/capture. Public
+language stays0.24. Read [the module debug guide](docs/source-exception-module-debug.md).
+HTTP debug hosting/request selection, public build/debug CLI/SDK, broader delivery
+and explicit025 migration remain pending. Sanitizers are user-authorized;
+audit/fuzz campaigns remain deferred. The full goal stays open.
+
+# Private module profiling230 experiment
+
+Toolchain0.135.27 adds architecture/5 profile instrumentation and per-component
+registries. Static/shared/mixed applications and HTTP hosts use one collector;
+the catalog retains actual source/template, machine component and image owners.
+Public language stays0.24. Read [the module profile guide](docs/source-exception-module-profile.md).
+Request-ID attribution, module logical debug, public build/profile CLI/SDK,
+broader delivery and explicit025 migration remain pending. Sanitizers are
+user-reauthorized; audit/fuzz campaigns remain deferred. The full goal stays open.
+
+# Private modular HTTP229 experiment
+
+Toolchain0.135.26 adds explicit architecture/4 host selection and module/4 HTTP
+root descriptors. Source errors and owned cleanup cross static/shared/mixed
+code images, including consumer-owned trait instances, under one ABI2502 runtime.
+Public language stays0.24. Read [the modular HTTP guide](docs/source-exception-module-http.md).
+Public build/SDK, module profile/logical debug, broader platform delivery and
+explicit history-preserving025 migration remain pending. Security checks are
+user-deferred; the original full goal remains open.
+
+# Private checked watch/capture223 experiment
+
+Toolchain0.135.20 adds explicit inspect-private-task and shared checked expression
+inspection over unarchived source contexts, including snapshot-only module imports.
+Private LLDB/DAP watches use actual retained values, type/effect checking, bounded
+lazy reads and out-of-process evaluation. Captured frames can be inspected after
+execution without source files or a graph revision. Public language stays0.24;
+ordinary025 publication, IDE/crash-capsule/replay, full SDK/platform acceptance and
+history-preserving migration remain pending. Read source-exception-task-watch.md
+and the actual descriptor. Security-specific campaigns remain user-deferred.
+
+# Private source LLDB/DAP222 experiment
+
+Toolchain0.135.19 emits an explicitly unarchived private task debug context.
+An opt-in nex-load-private-task-debug loader connects private ABI2501 frames to
+actual all-stop LLDB and the existing logical DAP stack/locals/step bridge. Catch
+shadowing, caller values, rethrow, cleanup and deadlines while stopped have
+separate functional conformance. Public language stays0.24. Read
+source-exception-task-lldb.md and the actual descriptor. Checked expressions,
+private IDE/capture/replay integration, full SDK/platform acceptance and explicit
+history-preserving025 migration remain pending. Security checks stay deferred.
+
+# Private source task debug221 experiment
+
+Toolchain0.135.18 adds emitSourceExceptionTasksPrototypeNativeDebug with actual
+native checkpoints and lexical catch/caller visibility. A separate controller
+pauses the owning continuation, reads stable live frame values and resumes it;
+source/control exits retire the non-owning catalog. Public language stays0.24.
+Read source-exception-task-debug.md and the actual descriptor. Public025,
+process all-stop/LLDB/DAP/IDE, debug/capture/replay CLI and complete SDK/platform
+acceptance plus history-preserving migration remain pending.
+
+# Private task control/profile220 experiment
+
+Toolchain0.135.17 fixes canonical child resource-fatal delivery to blocked owners
+and implicit owned-scope source cleanup. Native source-failed tasks now profile
+as Aborted. A dedicated emitSourceExceptionTasksPrototypeNativeProfile produces
+registered native task instrumentation and real raw schema2 reports. Public
+language stays0.24; private ABI2501 is unchanged. Read
+source-exception-task-control-profile.md and the actual descriptor. Public025,
+profile CLI/replay, debug, host-resource integration and full SDK/platform
+acceptance/history-preserving migration remain pending.
+
+# Private native task exception219 experiment
+
+Toolchain0.135.16 adds emitSourceExceptionTasksPrototypeNative: explicit exception
+TaskIR becomes verified MLIR/LLVM and executes on physical TaskGroup workers.
+Owned handlers and source failures survive calls/yield/wait; future/drain delivery
+preserves original payload/site and runtime/control priority. The descriptor uses
+private ABI0x4e45585400002501; published ABI3/4/5 remain distinct. Public language
+stays0.24. See docs/source-exception-native-tasks.md and actual capabilities.
+This is a compiler-private experiment; resource/FFI/binary/debug/profile and full
+compiler/SDK/platform acceptance plus history-preserving025 migration are pending.
+
+# Private exception TaskIR218 experiment
+
+Toolchain0.135.15 adds explicit handler/unwind instructions and an independent
+TaskIR machine selected through evaluateSourceExceptionTaskIRPrototype. It shares
+the existing serial coordinator; ordinary AST reference execution stays AST-only.
+This stage does not execute compiled native task code or physical CPU workers.
+Public language remains0.24. See docs/source-exception-task-ir.md and actual
+source_exception_prototype capabilities. Native frames/scheduler, full platform/
+SDK acceptance and explicit history-preserving025 migration remain pending.
+
+# Exception lifetime flow217 / toolchain0.135.14, public language0.24
+
+Extends the shared task authority model with binding identities, projected
+exceptional states, normal/throw outcomes and handler-aware joins. The private
+Task025 experiment now has bounded lifetime analysis; unknown/widened paths keep
+mandatory runtime checks. Native task exception lowering and public025/SDK
+migration remain pending. Read [the lifetime guide](docs/source-exception-lifetimes.md).
+The full original goal remains active and security campaigns remain deferred.
+
+# Private TypeScript task exceptions216 / toolchain0.135.13, public language0.24
+
+Adds a dedicated checked TypeScript generator emitter and a per-driver source
+error channel, with future observation/repeated waits and joined group close.
+The independent AST/reference and generated TypeScript share the same source
+semantics; runtime/control failures stay distinct. Public projects, native task
+exceptions, static lifetime integration, UI/worker/SDK and025 migration remain
+pending. Read [the private task guide](docs/source-exception-tasks-prototype.md).
+The full original goal remains active. User-deferred security campaigns stay off.
+
+# Private reference task exceptions215 / toolchain0.135.12, public language0.24
+
+Adds a separate private task/exception parser and checked-AST handlers, future
+source-error delivery and joined group close in the independent reference
+scheduler. Wait/close use explicit throw effects; cancellation, budgets and
+runtime traps remain distinct. Native/TypeScript task continuations and lifetime
+integration remain pending and rejected. Read
+[the task exception experiment](docs/source-exception-tasks-prototype.md).
+This does not publish025 or finish the full language/toolchain goal. The user's
+security campaigns remain deferred; only ordinary functional work proceeds.
+
+# Private TypeScript exception214 experiment / toolchain0.135.11, public language0.24
+
+Adds a dedicated C++ TypeScript emitter, branded immutable user-error helper and
+private operation/source mapping. Generated handlers rethrow runtime traps,
+host errors and Result propagation; lexical rethrow preserves the original site.
+Public source/build/archival, browser UI, Wasm, tasks and explicit025 migration
+remain gated. Ordinary strict TypeScript/reference/native fixture comparisons
+and compiler/platform acceptance are separate gates. Read
+[the private guide](docs/source-exceptions-prototype.md). Security campaigns
+remain deferred by the user's request; the full original objective remains open.
+
+# Private native exception213 experiment / toolchain0.135.10, public language0.24
+
+Adds a dedicated C++ native emitter with explicit error output slots, lexical
+try/handler ownership frames and transfers for outer-variable assignments.
+Public builds/archival and TypeScript/Wasm/tasks remain gated. Ordinary native/
+reference comparisons exercise actual generated code at O0/O2; compiler, SDK,
+platform and migration acceptance are separate gates. Read
+[the private guide](docs/source-exceptions-prototype.md). User-deferred security
+checks remain off. This does not complete the original language/toolchain goal.
+
+# Private exception212 prototype / toolchain0.135.9, public language0.24
+
+Adds an opt-in C++ frontend and sequential reference experiment with a distinct
+0.25-prototype identity: try/catch, explicit throw effect and lexical rethrow.
+Normal source/project commands remain024; native/TypeScript/Wasm, tasks and
+public migration are unfinished and private emission is rejected explicitly.
+Read docs/source-exceptions-prototype.md. Matching prototype/retained024 tests
+and compiler/SDK/platform acceptance remain separate gates. This does not
+complete the original full objective. User-deferred security checks stay off.
+
+# HTTP211 stream prototype — intended toolchain0.135.8 / language0.24
+
+Adds ordinary std/http_stream.nex with an opaque Body, incremental Chunk reads,
+explicit close and chunked download to a regular file. It uses existing source
+resources and task/ffi/fs operations; there is no language syntax or ABI change.
+The provider retains one curl transfer across calls, pauses delivery when its
+single16KiB staging slot is occupied, and releases the connection at EOF/close.
+
+Combined source preflight on SDK0.135.7 passes36 ordinary cases per platform
+on macOS ARM64 and Linux ARM64: HTTP1, HTTPS/HTTP1 and HTTPS/HTTP2, each with
+AST/debug/release large-body reads, EOF/close, downloads and child-task handoff.
+The2MiB+17byte downloaded files match the peer bytes. A separate C++ engine
+probe verifies all bytes and redirect continuation; it is not NEX source
+execution. HTTPS peer receipts independently record the negotiated protocol.
+
+The continuation preflight on SDK0.135.8 adds9 actual simultaneous-reader
+cases per platform across all three transports and AST/debug/release. An owned
+peer releases its body only after two physical provider calls are observed;
+the returned chunks retain one cursor order. A moved HTTPS2 download application
+passes after its original test project and public CA file are removed, with
+all2MiB+17bytes and complete static dependency licenses checked.
+
+Source registration adds http_response_streams, the http-stream guide and
+indexed examples/helpers. Ordinary CTest groups include portable values,
+all three transports with simultaneous readers and a positive relocated
+application download. Matching current compiler/SDK acceptance and broader
+platforms have separate pending gates. Primary081/016 and its graph/Git remain
+preserved. User-deferred checks are not run.
+
+# HTTP210 source-provider candidate — intended toolchain0.135.7 / language0.24
+
+Adds the ordinary checked std/http_client.nex library and an explicit pinned
+HTTP/1.1+HTTPS/HTTP2 task/FFI provider using curl8.23.0, nghttp2 1.70.0,
+c-ares1.34.9 and selected OpenSSL. Syntax, source ABI, frontend/interpreter/
+backend semantics and the source language version remain unchanged.
+See [the HTTP client guide](docs/http-client.md). Preparation uses explicit
+operator domain/port/method/resolver/CA policies; it grants no ambient proxy,
+netrc, system-DNS fallback or TLS keylog file authority.
+
+Source preflight on the verified0.135.6 SDK passes90 actual AST/debug/release
+cases per Mac/Linux ARM64 host, plus client pruning and relocated HTTP/HTTPS
+packages after deleting original source/CA. The typed host/runtime/module and
+static curl/nghttp2/c-ares pass126 normal/ASAN-UBSAN/TSAN case executions per
+host; OpenSSL, compiler/generated IR and macOS leak detection are excluded.
+Current operator/dependency validation passes57 rejection cases per host.
+
+This is an experimental source candidate. Matching0.135.7 compiler build, full regression and current installed SDK
+acceptance remain pending. Capability/guide/resource/CMake registration is
+implemented and awaits actual new-compiler validation. Fuzzing, OpenSSL/generated-IR instrumentation,
+process isolation, public-URL address-range restrictions, persistent streams,
+network debug/profile and broader original platform/language/Studio work stay
+open. Primary081/016, the original graph and Git are preserved. All work remains
+local; no new GitHub/stand export or primary SDK promotion occurs.
+
+Older entries below retain their original checkpoint and validation scopes.
+
+# Source209 — packaging helper and macOS c-ares alignment
+
+Toolchain0.135.6/language0.24 C++, runtime ABI, CMake, frontend, interpreter,
+MLIR/TypeScript and grammar remain identical208. Linux's shared test packaging
+helper now composes across independent test classes; all5 affected Linux groups
+passed on the same208 compiler. The original208 full-run failures stay recorded.
+
+Fully instrumented c-ares exposed a packed-pointer alignment UB on macOS. The
+explicit dependency builder now applies an exact hash-checked byte-addressing
+patch, preserves original/effective source manifests and ships patch identity.
+macOS preparation rejects older unpatched prefixes; Linux source stays upstream.
+The maintained typed DNS sanitizer harness checks real C-API/runtime/module and
+separately instrumented c-ares. Exact208 Linux passed120 cases; the macOS
+alignment diagnostic passed80 ASAN/UBSAN/TSAN cases. See docs/dns-provider.md.
+Final209 builder, normal source/package, installed SDK and platform acceptance
+remain separate pending gates. This is a local candidate; primary081, graph,
+Git and all original broader requirements remain preserved/open.
+
+# DNS208 development candidate — toolchain0.135.6 / language0.24
+
+Adds an ordinary checked `std/dns.nex` library and an operator-prepared pinned
+c-ares1.34.9 task/FFI provider for64-bit macOS/Linux. Explicit numeric resolvers,
+domain authority, answer/time/call bounds and physical retirement are required.
+DNS results contain addresses and create no connection authority. See
+[DNS guide](docs/dns-provider.md), `nex describe --field dns_provider --json`
+and `nex guide --kind dns --json`. The separate static PIC dependency is built
+only on explicit request and its full license/source identity travels with the
+module. Base SDK compilation does not link c-ares or download it.
+
+The earlier45-case macOS/Linux ARM64 preflight used SDK0.135.4 and an earlier
+provider revision. Final208 compiler, repeated conformance, sanitizer, installed
+SDK and moved-package acceptance remain pending. Syntax, language version,
+checker/interpreter/backend semantics and runtime ABI are unchanged. The
+primary0.81 installation, graph and Git history remain unchanged. TLS/HTTP,
+DNS-to-TCP integration and all broader planned work remain open.
+
+SQLite fixtures207 / toolchain0.135.5 / language0.24 prepares the complete
+actual ELF dependency closure when a test copies the selected SQLite library.
+The original Astra193 fixture copies SQLite away from ICU; clean root RUNPATH
+cannot find those children. Independent fixture preparation now captures all
+resolved non-platform inputs, bounded to128 images/256MiB, preserves SONAME
+aliases, gives each copy an origin-relative path, rejects unresolved inputs
+and verifies original library bytes remain unchanged. Notice discovery uses a
+clean loader environment. No production resolver or provenance rule is relaxed.
+The same real NEX storage scenario on one206 compiler fails with the206 fixture
+and passes with207 against an actual doctor-selected private SDK containing
+system SQLite plus two owned DSOs. Complete installed SQLite/GCC notices and
+owned MIT are retained. A separate source/SDK-free container verifies15 package
+files,5 absent-input controls, actual packaged loader paths, Unicode output and
+a real SQLite database. The normal Linux packaging suite passes7 tests.
+Compiler C++, CMake, runtime, frontend, interpreter, MLIR, TypeScript, language
+specification, grammar and language pack remain byte-identical to206. This is
+conformance-only source work; matching206 full/SDK acceptance and207 Mac tests
+remain separate gates. Actual current-source Astra execution, general explicit
+runtime search policies and all original future requirements remain open.
+Primary081/016, graph and Git are preserved. Current work is saved locally only.
+
+ELF loader context206 / toolchain0.135.5 / language0.24 retains each root
+image's actual loader resolution while collecting its transitive dependencies.
+A real executable with inherited DT_RPATH runs, but the old collector failed
+when standalone inspection of its child lost that path. The same new regression
+fails on the unchanged205 helper and passes on206: three nested owned DSOs,
+source-deleted moved execution, actual packaged loader paths, non-inherited
+RUNPATH rejection and conflicting deep-provider rejection across cached roots.
+Notice catalogues add no search authority. Inputs unresolved in their real root
+context still fail; general explicit search policies and the remaining Astra
+SQLite/ICU fixture causes are not declared resolved. Frontend, native backends,
+interpreter, TypeScript, runtime, language specification, grammar and language
+pack remain unchanged. Full203/SDK38 Mac/Linux have completed; current205 and
+matching206 build, full regression, installed SDK and platform gates remain
+separate. Primary081/016 and the full original objective remain unchanged.
+
+Shared owned pthread205 / toolchain0.135.4 / language0.24 gives the separately
+built shared runtime the owned executor's pthread dependency even when source
+tasks, parallel calls, profiling and FFI are absent. The exact approved193
+two-DSO/file test on Astra fails with real pthread_create/pthread_join link
+errors and passes unchanged with an explicit operator -pthread driver,
+including execution after original sources/images are removed. The ordinary
+application backend fix199 did not cover this independent runtime builder.
+Runtime compilation and shared linking now select pthread from the actual
+executor component; the runtime cache seed records that selection. The real
+two-DSO moved-execution case covers debug and release. No source task workers
+or language/ABI changes are enabled by this link dependency. Current build,
+focused/full/SDK/platform verification remains required. Local204 private
+runtime packaging has independent4250-pin proof; full203 and SDK204 still
+retain their own pending scopes. Primary081/016 and the full objective remain.
+
+Nested notices204 / toolchain0.135.3 / language0.24 forwards the explicitly
+selected SDK notice catalogue into public file-write delivery and all three
+static/shared/mixed project packages. The real Astra193 SDK run passed22 phases
+then failed because that subprocess omitted the catalogue; the same retained
+static project packages successfully with the authentic existing notices.
+The helper pins its catalogue path/hash, and the parent verifies that selection.
+No provenance checks are relaxed. Compiler/runtime/CMake/language/ABI remain
+byte-identical to203; all original failures, current full203 tests and the broad
+objective stay preserved. Matching private-runtime and installed SDK proof is
+still required. This local source204 snapshot has not been exported to stands
+or backed up to GitHub; the pending GitHub question concerns exact source203.
+
+ELF identity203 / toolchain0.135.3 / language0.24 explicitly requests a
+SHA-1 GNU build ID for every final Linux native application link. Source193
+on Astra produced a real profile application without any build ID under its
+existing Clang; the same approved example with an operator flag has an ID.
+The task-debug-only request did not cover ordinary captured/profile images.
+The static-provider profile regression now suppresses the driver's implicit
+build ID while preserving a later explicit compiler selection; actual source
+counts, completed task lifetimes and physical image validation must still pass.
+Source language/ABI, runtime, other backends and shared-image link policy stay
+unchanged. Current build/focused/full/SDK/platform proof remains required.
+Earlier199 Mac/Linux full214 and Linux live22 have independent proof; SDK202
+and Astra193 retain their exact scopes and original failures. Primary081/016
+and the full original objective stay preserved.
+
+SDK bootstrap202 / toolchain0.135.2 / language0.24 validates its fixed38
+registered workflow actions before discovery without reading an uninitialized
+doctor response. The source199 full214 Mac run passed; its SDK run retained a
+real KeyError before any phase. This is an acceptance-driver correction only:
+compiler/frontend/backends/runtime/root CMake/spec/grammar are unchanged. Full
+matching SDK38 retry remains required. The original broad objective, all older
+failures and primary081/016 history stay preserved.
+
+TCP sanitizer multiarch201 / toolchain0.135.2 / language0.24 selects exact
+OpenSSL include/crypto/SSL paths from the actual doctor response for the optional
+sanitizer host. Explicit root=/usr did not find libcrypto in Linux multiarch;
+the source200 maintained-runner failure is preserved. The original six-variant
+C++ matrix remains valid under its original build settings. Compiler, runtime,
+root CMake, language/ABI and C++ case sources are unchanged. Matching maintained
+wrapper checks on Mac/Linux and installed delivery remain pending; main199
+full/SDK38 and the original broad objective stay open. Primary081 is preserved.
+
+TCP sanitizer200 / toolchain0.135.2 / language0.24 adds an optional installed
+typed-host sanitizer driver. Compiler/frontend/backends/runtime and source ABI
+are byte-identical to199. The actual C++ typed C API, copied task/FFI bridge,
+loaded pinned TCP provider and IO pool pass Mac/Linux normal/ASAN-UBSAN/TSAN,
+192 case executions/216 real sockets. Flags and symbols are independently
+verified573 evidence pins. No compiler/generated LLVM IR instrumentation is
+claimed; Mac LSan is disabled and Linux LSan enabled. Two initial test-harness
+failures are retained: explicit two-context module quota and concurrent logical/
+physical revocation error precedence. The maintained wrapper's scoped discovery
+and OpenSSL selection are checked separately. Main199 full214/SDK38/Linux and
+Astra193 continue under their original source scopes. The original full objective
+and all broader unfinished integrations remain open; primary081/016 is preserved.
+
+Owned pthread199 / toolchain0.135.2 / language0.24 makes POSIX native
+owned-cleanup runtime linkage explicit even for fs/resource-only applications.
+Astra193's actual unchanged file diagnostic test failed before execution:
+ld.lld could not resolve pthread_create/pthread_join from nex_resource_executor.o.
+Newer glibc merges pthread into libc and had hidden this dependency locally.
+The owned executor compilation and final non-archive link now select -pthread;
+its runtime-object cache identity records the changed compilation setting.
+Source semantics, source version and task ABI stay unchanged. Actual current
+build/focused/full/SDK/platform verification remains pending; source198's full
+run and separate source193 stand receipt retain their original scopes.
+Primary081/016, original graph/Git state and the full objective stay preserved.
+
+TCP198 / toolchain0.135.1 / language0.24 adds a checked std/tcp library and
+operator-prepared pinned native module using the existing copied task/FFI bridge.
+Actual NEX AST/debug/release calls pass36 loopback cases on the previous197
+compiler: binary IPv4/IPv6, limits/reset, own timeout/reuse, single-CPU progress,
+parent cancellation/deadline and ResourceDomain-backed provider call capacity.
+This adds no source syntax, effect, ABI or implicit migration. Exact targets are
+compiled into the pinned module; the explicit foreign catalogue still grants
+execution. Delivery negatives, matching full/SAN/Linux and installed SDK proof
+remain pending. A cleanup-only DAP BrokenPipeError fix preserves other errors;
+15 DAP tests pass. Primary081/016 and the original full objective stay preserved.
+Source197 exact Mac full212 and source196 Linux full211/live22/source-free SDK37
+have now passed independently checked logs, commands, resources and binaries.
+The old Mac196 full DAP failure remains recorded; it is not a pass.
+
+Network197 / toolchain0.135.0 / language0.24 adds a private trusted-host TCP
+kernel on the existing external IO pool: exact operator-granted IPv4/IPv6
+endpoints, copied binary inputs, nonblocking connect/send/read, queue-inclusive
+deadlines, cancellation/revocation checks, bounded replies and socket settlement
+before completion.87 actual loopback checks pass on macOS normal/ASAN-UBSAN/TSAN
+and Linux normal/ASAN-UBSAN/TSAN. Each variant runs87 checks on actual sockets.
+The separate Linux image retains pinned compiler-rt22.1.8 and original image layers.
+CMake registers the same kernel as a separate conformance target. Discovery,
+language pack, host guide and LLM prompt explicitly keep source_support false.
+No source syntax, language migration, task ABI or existing source semantics change.
+Source/native/reference network bridges, DNS/TLS/HTTP/streaming, async DB and
+matching compiler/SDK/platform delivery remain open alongside the entire original
+objective. Primary081/016, previous SDKs and graph/Git history stay preserved.
+
+Capsule196 / toolchain0.134.5 / language0.24 creates core-capsule staging
+beside the destination using a literal POSIX path. The general LLVM temporary
+helper redirected percent-bearing parents to /tmp, breaking exclusive publication
+across filesystems in the actual Linux installed-live DSO test. The original193
+failure and direct filesystem controls are retained. Existing destinations remain
+protected by exclusive rename; OS publication errors now retain their reason.
+Language, runtime, grammar, graph identities and frontend semantics are unchanged.
+Matching build/full/live/SDK/platform acceptance is pending. Primary081/016 and
+the complete original objective remain preserved and open.
+
+Quality195 / toolchain0.134.4 / language0.24 adds explicit024 checked-core
+comparison and fixes inherited Python-driver RSS on Linux with a tiny C launcher.
+Both actual100M-step/five-repeat observations pass, independently verified271 pins.
+Mac NEX/checked-C++ medians0.316214/0.314782s; Linux ARM64 VM0.361694/0.308447s.
+Linux misses the initial90-percent throughput target in this observation; general
+parity, large-application quality and model/token savings remain open. Legacy018
+remains the helper default, with discovery/doctor agreement required.
+Mac193 moved/restored SDKs each passed37 phases/740 commands/302 indexed resources;
+11614 evidence pins and2996 normalized archive members are independently verified.
+Exact191 full211 passes;193's only raw core change is a direct optional include,
+with eight equal Darwin preprocessing pairs and current focused3/46guards/live
+Unicode DAP. Linux193 full211 passed; its stale023 smoke helper is corrected to
+actual checked023/024 discovery and passes on installed024. Linux live/source-free
+SDK recovery remains pending. Compiler/runtime/spec/grammar/pack/CMake match193.
+Primary081/016 and the complete original objective remain preserved and open.
+
+SDK Unicode193 / toolchain0.134.4 / language0.24 encodes producer marker
+paths as UTF-8 bytes in C/C++ string literals. JSON surrogate pairs are not valid
+C universal characters; the exact readonly moved191 failure is retained. The
+source-resource and actual debugger producer paths share the corrected encoder.
+A real C11/C++20 compile/run regression covers emoji, quotes, backslashes,
+controls and adjacent digits. Linux192's direct <optional> fix is retained.
+No language/ABI changes. Matching moved/archive/platform acceptance is pending;
+primary081/016 and the original full objective remain preserved and open.
+
+Linux portability192 / toolchain0.134.4 / language0.24 adds the direct
+<optional> include required by the POSIX file runtime. The exact frozen191
+Linux ARM64 build failure is retained; macOS had supplied this standard header
+transitively. No language, runtime semantics, ABI or dependencies change.
+Fresh matching Linux build/full/installed SDK acceptance is pending. MacOS191
+full and readonly moved/archive SDK checks remain separate live scopes.
+Primary081/016 and the original full objective remain preserved and open.
+
+Readonly SDK191 / toolchain0.134.4 / language0.24 corrects the model replay
+acceptance to use a private explicitly selected resource projection. Its model
+and compute sources are absent, fresh imports must fail, and the archived
+revision is rebuilt after deleting native caches. Installed SDK sources remain
+unchanged. Frozen190's timeout/actual phase-count fixes are retained. The original
+190 kernel-isolated failure is retained. Actual readonly relocated/archive SDK
+acceptance is pending; primary081/016 and the full remaining objective remain.
+
+Distribution190 / toolchain0.134.4 / language0.24 corrects the maintained
+macOS moved/restored SDK workflow budget and its actual phase count. All
+compiler/runtime/core source and installed SDK189 input resources are unchanged.
+Actual kernel-isolated relocation/archive acceptance remains pending. Primary081
+and the entire original goal are preserved. Older entries retain their scopes.
+
+Delivery189 / toolchain0.134.4 / language0.24 adds mandatory37-phase installed
+SDK acceptance for public task HTTP/verified HTTPS. The indexed helper retains
+148 checks,50 request outcomes,14 clean server exits and exact cancellation
+codes;45 archive/receipt guard tests pass. Compiler/runtime source and version
+are byte-identical to188. Installed source-absent37-phase, full188211 and matching
+platform delivery remain pending. Primary081/016 is preserved; the complete
+original objective remains open. Older entries retain their historical scopes.
+
+Development188 / toolchain0.134.4 / language0.24: public native task HTTP
+handlers now use a dedicated descriptor bridge in debug/release, inheriting
+request control and operator file grants. Actual HTTP preflight passed132
+checks across two profiles, including source-absent execution and disconnect
+cleanup. Full build and11 focused CTest groups passed. Async network/DB, HTTP task providers/profile/debug, matching full/
+SAN/SDK/platform acceptance and the complete original objective remain open.
+The approved primary081/016 is not replaced. Older entries below retain their
+historical scopes. See docs/server.md and structured_tasks_runtime.http_server.
+
+# Development0.134.2: current source task discovery and example project
+
+Current type-patch, scalar verification and acceptance-task examples have024
+snapshot/content/intent pins issued by the actual compiler. Replacement bodies,
+pre/postconditions, loop annotations, task requirements and budgets are preserved.
+Historical SDK fixtures are unchanged; metadata refresh is verified in isolated copies.
+
+Current task profile/debug discovery advertises execution ABI5, matching emitted
+TaskStreams024 code. The checkout example project declares024; original historical
+fixtures and the primary081 project remain unchanged. Runtime ABI, source semantics,
+grammar and stored identities are unchanged. Matching full/SAN/SDK/platform delivery
+and all original broader requirements remain pending.
+
+# Development0.134.1: public024 provider profile capture
+
+Acceptance-task profiling includes the checked ABI5 component source union
+(linkage9), alongside strict retained linkage3/6. Private startup-linked lifetime
+drivers now require the current ABI5 descriptors; physical completion, cancellation,
+profile/debug catalog ownership and single-runtime checks remain unchanged.
+No source semantics, grammar, provider ABI, grants or historical records change.
+Matching regression, sanitizers, installed SDK and platform delivery remain pending;
+all original language/server/accelerator/UI/mobile/Studio/converter goals remain open.
+
+# Development0.134.0: public source language0.24 candidate
+
+Ordinary source/project commands select TaskStreams024. Checked server task/fs
+functions support opened File IO and genuine File owner captures/results across
+structured tasks. Static/fixed-shared source providers use ABI5 records8/9/10;
+read/write/stream requirements never grant OS authority. The same source semantics
+are executed by native continuations and the independent AST interpreter.
+
+Explicit migration verifies retained018..023 origin identity before checking024
+and before opening a writable Store. Original rows/schema/IDs and physical files
+remain; export creates a separate current-language project. Merely editing a
+manifest does not migrate a graph. Retained023 parsing and ABI3/4 stay intact.
+See [source file streams](docs/task-file-streams.md). Current compiler, full/SAN,
+installed SDK and platform acceptance remain independent pending gates. The
+accepted SDK0.133.5 and primary081 have not been replaced. All original broader
+language/server/accelerator/UI/mobile/Studio/converter requirements remain open.
+
+# Development0.133.12: source alias-close and genuine mixed histories
+
+The private024 physical IO suite covers source alias-close during read, write,
+append, flush, seek and size, in addition to existing host/source controls:
+62 native/independent-AST pairs on12 compiled NEX images. A closed alias loses
+logical access while physical leases and quotas remain until IO retirement.
+Visible completed writes are retained; cancellation/close promises no rollback.
+
+Four real installed SDK1335 histories add12 original023 revisions combining
+File/whole-file IO with C11/C++20 opaque resources and task captures. Explicit
+migration retains all16 tables and original identities, rechecks external
+signatures and ownership, and records any new-platform binary-pin projection
+only in the new024 candidate. Original pinned runtime execution is reported
+only when actually available. See docs/task-stream-ffi-histories.md.
+
+This adds conformance and test-host integration, with no compiler/runtime source
+semantics, syntax, canonical identities, public023 or historical rule changes.
+Matching full/SAN/SDK/platform acceptance and public024 delivery remain open,
+as do all original language/server/accelerator/UI/mobile/Studio requirements.
+
+# Development0.133.11: private physical IO and marker conformance
+
+Private024 actual syscall gates exercise held leases/quota, host cancellation,
+deadline, domain revocation, trusted host failure and source task_cancel across
+native continuations and independent AST execution. Exceptional completion keeps
+strict one-shot admission and preserves E_RESOURCE_SCOPE/E_TASK_HOST diagnostics.
+An exact publisher-local fallback addresses instrumented marker prologues without
+inferior execution, disabled sanitizers or relaxed formatter/image/publication
+checks. Normal and sanitized delivery must be verified for this exact source.
+Public023/default and the complete original project scope remain unchanged.
+
+# Development0.133.10: private024 pure-helper requirements fix
+
+The native file requirement classifier lifts reachable pure helpers before
+inspection, consistently with actual continuation emission. Pure generic
+callables and File identity helpers remain valid checked source; no new effect,
+grant, syntax, public024 switch or historical revision reinterpretation is added.
+Five real SDK1335 histories/15 revisions extend migration conformance. Current
+full/SAN/SDK/platform acceptance is separate and is not inferred from focused
+tests; all original project requirements remain open.
+
+# Development0.133.9: explicit private024 project delivery
+
+Compiler-owned source selection now rechecks024 physical projects and their
+matching locks without deriving the parser from untrusted metadata or opening
+a graph Store. Ordinary CLI/default projects retain023. ABI5 project linkage
+records distinguish read/write/stream requirements, task-code/5 imports and
+strict retained ABI3/4. Captures recheck the selected language, source ownership
+and exact plan before replay; native packages record the checked program language.
+Native profile readers and source-backed LLDB/DAP accept ABI5. Private024 File
+bindings expose only diagnostic identities in pure watches; filesystem/effectful
+operations remain rejected. No File IO authority is reconstructed by a watch.
+Read docs/task-stream-project.md. Public024 publication, explicit migration,
+remaining in-flight source IO/history cases and matching full/SAN/SDK/platform
+acceptance remain pending. The entire original project scope remains open.
+
+# Development0.133.8: private024 mixed file/resource conformance
+
+Actual NEX programs retain a genuine File and a genuine C11/C++20 opaque
+resource in the same immutable graph. Twenty-four native/independent-AST pairs
+exercise captures, futures, sibling channels, returned closures, nested aliases,
+scoped cleanup/quota reuse, function-local errors, readonly grants, checked
+abort and source task_cancel. Nine invalid FFI/wire entry checks retain the
+existing rejection; public023 and client-only pruning stay unchanged. This adds
+conformance, not C FFI File transport, arbitrary in-flight syscall cancellation,
+public024 publication or platform acceptance. Read docs/task-stream-mixed.md.
+Compiler/runtime/spec/grammar/language-pack semantics match175; the toolchain
+identity and test registry change. Matching full/SAN/SDK acceptance keeps its
+separate evidence and all original project requirements remain open.
+
+# Development0.133.7: private024 native source file providers
+
+Private024 source providers have explicit ABI5 records8/9/10 and root stage3.
+Checked File parameters/results, including immutable aggregates, cross static
+and fixed shared source boundaries under the same application runtime and
+resource-region guards. File-bearing retained task values request the stream
+image flag independently of read/write operations. Image/component/root flags
+never grant OS authority. ABI3/4, public023 and provider masks31/799 stay strict;
+ABI5 provider mask3871 excludes standalone source FFI bits. Profile/debug source
+metadata accepts explicit024; full CLI project-plan/capture/replay/package/
+debug/profile and public024 delivery remain separate pending work. Compiler,
+source/provider conformance, full/SAN/SDK/platform acceptance must be verified.
+All original language/server/accelerator/UI/mobile/Studio/converter/measurement
+requirements remain in scope. There is no grammar or public language change.
+
+# Development0.133.6: private024 source control conformance
+
+Twelve actual compiled-NEX/independent-AST pairs pass across six native images:
+real TaskGroup/stop-token cancellation at file boundaries, real request timeout,
+coordinator grant revocation, multi-module calls, checked overflow/assertion,
+source task_cancel with an opened file and function-local ? errors with70 scopes.
+The trusted native host requires zero IO credits and cleanup reservations and
+restored managed-value counts; reference caller-region settlement must be ready
+before return. Detached native runs preserve the exact written prefix. This
+checks source boundaries, not cancellation during an arbitrarily blocked syscall.
+Compiler/runtime/spec/grammar/pack source bytes match173; this adds conformance
+and staging/observation helpers, with a toolchain identity update. Public023 and
+retained ABI3/4/history are unchanged. Public024, additional in-flight/mixed
+cases, ABI5 provider/capture/package/debug/profile, current SDK/platform and all
+original language/server/accelerator/UI/Studio/converter/measurement work remain.
+
+# Development0.133.5: owning cleanup for private024 source files
+
+Every private024 source open reserves an owning executor cleanup slot before
+physical file construction. Native host contexts and the independent AST
+scheduler provide this executor explicitly. Logical close revokes all aliases
+immediately; the last physical lease queues the complete payload/destructor,
+file quota and settlement fence on that executor. No cleanup admission or
+allocation is needed at final release, including after the executor closes.
+Cancellation, discarded opens, factory failure and resource-region retirement
+retain physical settlement. A missing source cleanup executor is rejected;
+legacy host opens without an executor preserve their existing inline contract.
+This does not promise bounded OS close latency, rollback or directory durability.
+Public023/default, retained ABI3/4 and syntax/history remain unchanged. Controlled
+source cancellation, ABI5 provider/capture/package/debug/profile, public024 and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, GPU/NPU, UI/mobile, Studio, converter and measurement work remains open.
+
+# Development0.133.4: precise private024 task file requirements
+
+ABI5 image read/write flags and standalone build metadata now classify checked
+reachable task instructions consistently. Read/open-read and write/open-write/
+append/flush have separate flags; seek/size/close/is_open retain the existing
+opened owner without requesting another root read/write grant. All stream
+operations set the stream image flag and enable the owning task IO machinery.
+Unreachable helpers cannot add grants. Declared effects and image metadata do
+not grant OS authority or upgrade a read-only file. Public023/default, retained
+ABI3/4 descriptors and their build metadata, grammar and history stay unchanged.
+Public024, physical-close offload, provider/capture/package/debug/profile and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, accelerator, UI/mobile, Studio and converter requirements remain open.
+
+# Development0.133.3: SDK migration acceptance correction
+
+The SDK019-history gate now keeps current language separate from each migrated
+revision hash. Language/revision/namespace/16-table assertions remain strict.
+This is a Python acceptance correction; compiler/runtime/TypeScript/grammar and
+language-pack bytes match frozen169. Public023 and private024 scopes are unchanged.
+Actual CLI gate and complete installed SDK acceptance are separate requirements.
+
+# Private024 source stream integration (development0.133.3)
+
+Explicit C++ source APIs may select TaskStreams024. Ordinary CLI/default projects
+remain language023; changing nex.json does not enable024. The existing stream
+syntax suspends inside server task/fs functions. Files created by such opens
+have real logical owners, physical request/root grants and retirement fences.
+Native ABI5 appends stream requests and requires explicit stream bits. Retained
+ABI3/4 masks and public023 stream rejection are unchanged. File-bearing source
+captures/results/futures/channels/closures use atomic mixed external/file owner
+transfer; no file authority crosses browser/wire/FFI/unstructured parallel paths.
+Source/physical conformance, explicit transactional migration, public publication,
+provider/capture/package/debug/profile contracts and current SDK/platform delivery
+remain pending. This is implemented private code, not a completed language release.
+
+# Development0.133.2: private asynchronous file-stream foundation
+
+Trusted hosts can prepare bounded open/read/write/seek/size/flush operations
+under captured original grants. Genuine opened owners use a one-shot typed
+channel; IO workers carry no source Values or raw file IDs. Immutable write
+snapshots, shared cursors, partial counts, physical quotas and cancellation/
+deadline settlement have actual host conformance. Query task_file_streams_host
+and read docs/task-file-stream-host.md. Public language023 still rejects
+reachable file-bearing task execution; source ownership/lowering/migration and
+all remaining original requirements are pending. This changes no grammar or
+semantic identity. Complete regression/SAN/SDK/platform acceptance is separate.
+The compact prompt again includes snapshot/recovery commands; its current byte
+count is 9538. Prior candidate statistics below keep their original scope.
+Primary081 and its history remain separate and preserved.
+
+# Development0.133.1 candidate: current example contracts
+
+Current023 example revisions and proof intent hashes are regenerated by the
+compiler. Intent includes the source language; the old hash is checked with
+SDK1326 before rebinding. Mathematical clauses, loop strategies, type-patch
+replacements, task requirements, tests and budgets remain exact. The native
+read suite checks real023 writes with denied/allowed grants; retained022 write
+rejection remains in the explicit retained-language suites. Compiler/runtime/
+adapter bytes match the preceding166 candidate. Full188/SAN/installedSDK35
+acceptance remains required; the approved primary081 and history are separate.
+
+# Development0.133.1: compact current language contract
+
+The model-independent coding prompt now describes current0.23 rules without
+accumulated milestone instructions; detailed indexed guides remain on demand.
+Six genuine SDK1326/022 histories (18 revisions) are maintained conformance
+fixtures. Source tests exercise actual write DAP resumes and complete profiles;
+the installed SDK gate additionally requires the18 archived migrations. The
+9,215-byte prompt replaces87,830 bytes; this measures document bytes, not total
+LLM token cost or coding quality.
+Whole-file write discovery agrees across task/runtime sections and the language
+pack. Standalone Python/Node editor acceptance discovers the actual compiler
+language instead of creating hardcoded022 projects. Source language, grammar,
+canonical identities and explicit migration rules are unchanged. Matching full
+regression, installed SDK and platform acceptance remain required. Primary081
+and its history remain separate. All original runtime/NPU/UI/mobile/Studio/
+converter/quality requirements remain open.
+
+# Development0.133.0 / language0.23
+
+Ordinary CLI projects now support checked whole-file writes inside server task/fs
+functions, including separately compiled static/shared providers. ABI4 uses
+explicit record/plan/root write requirements; retained022 parsing and ABI3
+records remain strict. Use explicit `nex migrate` for old graph HEADs; changing
+nex.json alone is never a migration. Captured old-language tasks require their
+matching retained SDK or a newly reviewed capture after source migration.
+
+This is a development candidate. Matching complete regression, fresh relevant
+sanitizers, installed SDK035 and current platform/stand acceptance remain open.
+The approved primary081 checkout and its history are separate and preserved.
+Read docs/task-file-writes-prototype.md and docs/task-write-providers.md.
+Earlier notes below retain their historical scopes and do not override023.
+
+# Development0.132.7: explicit private023 write-provider contracts
+
+Separate static/shared task images use ABI4 provider records5/6/7, precise
+write-image requirements and one root grant/runtime. Legacy ABI3/mask31 and
+public022 remain unchanged. Private native/reference static/shared debug,
+release/profile and logical-debug metadata paths are checked independently;
+public023 migration, capture/replay/package, matching full/SAN/SDK/platform
+acceptance and the entire original project scope remain open.
+Read docs/task-write-providers.md.
+
+# Development0.132.6: shared explicit migration and HEAD-language integrity
+
+Genuine022 histories are rechecked through the same read-only origin/target
+preflight as the CLI before private023 Store transactions. Automatic live sync
+cannot switch HEAD language, including a race with an explicit migration;
+readonly preflight prevents old-schema initialization on this refusal. Public022
+stays unchanged. Private023 publication, write-provider contracts, matching full
+regression/SAN/SDK/platform delivery and all original requirements remain open.
+Read docs/task-write-migration.md.
+
+# Development0.132.5: explicit private023 source writes
+
+TaskIR/native continuations and the independent AST scheduler suspend checked
+whole-file writes with genuine root write grants and exact owned snapshots.
+Execution ABI4 appends write requests without widening retained ABI3/mask31.
+Public language022/default/history are unchanged; explicit023 publication,
+genuine022 migration, new provider contracts and matching SDK/platform delivery
+remain pending. Read docs/task-file-writes-prototype.md. The complete original
+runtime/compute/NPU/UI/mobile/Studio/converter/quality scope remains open.
+
+# Development0.132.4: private asynchronous whole-file write foundation
+
+Trusted hosts capture an explicit revocable write grant and snapshot bounded
+input bytes before submitting IO. The worker reuses checked temporary+fsync+
+rename replacement; physical retirement precedes completion/credit return.
+Late cancellation can suppress admission after commit without claiming rollback.
+Source language0.22 still rejects task writes; source/reference/native/provider
+integration and an explicit compatible migration remain pending. Normal host,
+sanitizer, full regression and SDK/platform receipts have separate scopes.
+All existing NPU/runtime/UI/platform/Studio requirements remain open.
+
+# Development0.132.3: bound diagnostic capture without limiting driver caches
+
+A private drained pipe captures at most64KiB of first/last worker diagnostics.
+The worker no longer sets a process-wide8MiB file-size limit that also restricted
+vendor shader caches. Controlled old-limit SIGXFSZ and real9MiB cache/stdout GPU
+probes verify the boundary. Matching frozen/SAN/SDK acceptance is separate.
+All remaining language/runtime/platform/NPU/UI/Studio requirements stay open.
+
+# Development0.132.2: validate complete device acknowledgements
+
+Successful worker replies are checked under the Session command lock before
+committing unique buffer IDs. Malformed replies drain actual storage before
+failed construction returns capacity; later operations report E_DEVICE_LOST.
+The original source/runtime/platform/NPU/Studio scope remains open. Matching
+frozen regression, sanitizers and SDK delivery have separate gates.
+
+# Development0.132.1: reference fence publication race
+
+A sanitizer run of frozen132 found a false E_TASK_DEADLOCK after valid source
+output while finalization raced the independent AST idle checks. A controlled
+physical handoff reproduces the old failure; the fix keeps an unconsumed ready
+fence as possible progress until task/scope publication. Four controlled cases,
+384 async stress iterations and genuine channel-deadlock rejection pass in
+preflight. Matching frozen full regression, sanitizers, GPU and SDK are required.
+
+# Development0.132 device candidate
+
+The ordinary owned-device library and experimental persistent OpenCL worker
+are implemented. Physical GPU tests, full regression, sanitizers and installed
+SDK delivery have separate receipts; no general accelerator/platform completion
+is implied. Cancellation waits physical completion rather than killing a worker.
+Recovery/reset, owned NPU and additional operations remain open. Read docs/device.md.
+
+# Development0.130 / language022: publication candidate
+
+Ordinary parse/load/CLI now selects TaskForeign022. Retained018/019/020/021
+origins keep their parsers and identities; explicit migration preflights source
+and origin before writes. Native provider/debug readers accept022 alongside
+retained formats without widening ABI3 mask31. Capability metadata, grammar,
+language pack and model-independent instructions describe the source-only
+task/FFI owned-resource bridge. Full current delivery is pending; no primary,
+installed SDK or hardware acceptance is implied. Earlier receipts retain scope.
+
+# Development0.126: private native logical resource regions
+
+The trusted native TaskGroup adapter can enable explicit logical resource regions.
+It preserves256 scope depth with bounded physical joins, checked ancestry and
+explicit ancestor promotion. Scope exit parks until its complete physical cleanup
+fence; destructors run outside scheduler locks and on a supplied executor when
+required. Root group retirement owns the remaining promoted resources.
+Query `resource_regions`; read [the exact host scope](docs/resource-regions.md).
+Source task/FFI/value transport, independent reference scheduling, request-parent
+transfer and actual devices remain pending. Language0.21 and primary081 stay intact.
+
+# Development0.125: executor-owned external cleanup
+
+The private trusted host executor constructs and destroys selected external
+resources on one owning thread. Cleanup slots are reserved before factories;
+logical close/cancel retains physical leases and object/byte quota until the
+actual destructor and code-pin release finish. Operation completion follows
+physical settlement and destruction of its retained host operation.
+Query `resource_executor`; read [its precise scope](docs/resource-executor.md).
+Source-task ownership, C executor binding and actual GPU/NPU objects are still
+pending. Language0.21, public guards and historical canonical identities are
+unchanged. This separate development tree does not promote primary0.81.
+
+# Development0.124: resource debugger arguments and current example pins
+
+DAP launch uses its args array exactly once; raw LLDB CLI receives one run-args
+command. Both ordinary and project debug commands follow the same rule. A real
+resource debugger gate checks quoted operator paths, archived source, alias IDs,
+pure watch refusal, stale references and graceful cleanup. Source language stays
+021, with no canonical or graph migration change from0.123. Current proof/task
+and type-patch snapshots are regenerated while retaining reviewed clauses,
+checks, outputs and budgets. Full matching delivery acceptance remains required.
+
+# Development0.123 / language0.21: opaque source resources
+
+The current candidate enables server resource declarations, genuine typed extern
+owners, server/ffi alias close/status and explicit history-preserving migration.
+Graph type identities remain stable; editor/LSP projections distinguish resource
+declarations and exact name tokens. See [source resources](docs/source-resources.md).
+Matching full compiler/SDK/platform acceptance is still in progress. Source task
+completion, owned GPU/NPU resources and actual resource debugging remain pending.
+The approved primary0.81 checkout is separate and is not promoted by this work.
+
+# Historical private137 source integration
+
+Explicit internal0.21 source staging adds server resource declarations, generic
+resource identities, typed extern owners and server/ffi close/status operations.
+The reference and MLIR backends execute these through actual pinned C11/C++20
+modules. Constructors, wire/browser/task/channel/parallel authority transport
+are rejected. Public CLI/default language remains0.20; migration, public
+resource publication and actual device/task integration remain pending.
+Read [the private boundary](docs/external-resources-design.md).
+
+The first scoped probe passed28 source cases/51 commands, two real native
+applications and C++ factory throw cleanup. All12 genuine020 revisions recheck
+to their original hashes. The maintained gate additionally checks native
+throw/checked-trap exits with live owners. Matching current regression, installed
+SDK, actual resource debugging and migration gates remain separate required work.
+
+# Private136: typed external-resource C and loader integration
+
+This cohort adds an append-only C resource suffix, result-reachable constructors,
+actual pinned module callback/borrow ownership, physical capacity retention and
+lexical/request revocation. Its normal seven-group private host/compatibility gate
+passed, including21 new C boundary cases and the preceding21 owned-value cases.
+Sanitizer, compiler/runtime integration and platform gates for this exact cohort
+remain pending. Source resource declarations, task/FFI tickets and actual owned
+GPU/NPU resources are still unavailable. Read
+[the exact contract](docs/external-resources-design.md).
+
+The preserved134/0.122 compiler separately passed fresh full154, installedSDK33
+(595 commands/280 resources), and18 actual Chromium/Firefox/WebKit task cases.
+That accepted local SDK has its own exact compiler SHA and does not validate new
+private136 code. Primary0.81 and original graph history remain unchanged.
+
+# Private135: owned external value foundation
+
+A separate host prototype now adds typed external resource owners, physical byte
+budgets, managed values and C opaque forwarding. Public source resource types,
+typed construction, device executors and task/ffi integration remain pending.
+Read [the implementation contract and required integration](docs/external-resources-design.md).
+This changes no source language or migration and does not enable owned handles
+in std/model. The frozen134 candidate and its historical full154/SDK33 gates remain
+separate and unchanged. The private host foundation passed21 cases, existing
+file/C compatibility and3 suites each under ASAN/UBSAN and TSAN. Normal evidence
+is composite3 after correcting a missing request scope in the new task test;
+the original failure remains retained. See [scope](docs/evidence/owned-external-host-foundation.json).
+The reference guard has syntax validation; public source behavior and matching
+compiler/platform delivery still require their own implementation and gates.
+
+# Development0.122: installed named model contract
+
+This candidate integrates `std/model.nex`, exact discovery/guide/prompt metadata,
+installed ONNX provider preparation and matching library/SDK checks. Language0.20
+and primary0.81 are unchanged. Build, four focused groups (including9 model
+cases/29 compiler commands) and the exact installed model phase passed. That
+phase used12 commands with the original compiler source path hidden, standard
+model/compute files absent for replay, and standalone resources unavailable.
+See [the scope](docs/evidence/model-sdk-0.122-development.json). Full matching154
+regression, installedSDK33 and platform delivery remain pending. The verified0.121 core and compatible0.120
+experimental provider receipts below retain their original scope.
+
+# Verified local0.121 and experimental models
+
+The unchanged0.121 compiler passed an audited153-group composite (148 original
+plus4 TypeScript repeats and the complete8-case Wasm group), installedSDK32/584
+commands with its original source path absent, and a separate18-case run in
+Chromium/Firefox/WebKit. See [the exact local scope](docs/evidence/compute-0.121-local.json).
+Primary0.81 and graph history are preserved. Full current Linux121/portable
+bundle and remaining PLAN work are separate.
+
+The experimental [named model API](experiments/models/README.md) passed its
+source contract tests and compatible0.120 CIX provider acceptance. Current
+MatchCPU receipts contain14 actual NPU calls,28 selected CPU calls,14 separately
+attributed CPU references,14588 checked selected output values and126 bit-exact
+reference values. Mul and Add/Sub models ran on NPU; two-input MatMul was refused
+with CPU EP fallback disabled, followed only by explicitly requested CPU fallback.
+Vendor precision separately passed3 CPU/3 NPU calls without a CPU oracle.
+All three application source files were absent for MatchCPU replay/standalone;
+native managed memory balanced and17 controlled production-broker cases passed.
+Returned791 files and118 raw ORT profiles (including retained v2) were verified.
+See [the exact evidence](docs/evidence/named-models-0.121-development.json).
+This remains outside installed0.121; arbitrary graphs, other runtimes/platforms,
+owned model/device resources and source task integration remain pending.
+
+# Current portable common OpenCL development
+
+One preparation workflow generates ordinary-source common compute projects for
+CIX and RK3588 using each installed OpenCL loader. Both passed49GPU calls,
+1835078 exact valid outputs,7 explicit overflow errors, nativeRelease tests,
+profile, source-deleted replay and standalone with pinned external bundles.
+Each pinned worker passed20 boundary cases/14actualGPU calls/524321 validvalues;
+the same broker additionally passed11 CPU transport/cancellation cases on CIX.
+Returned203 files were independently verified. See [scope and hashes](docs/evidence/portable-opencl-0.121-development.json).
+This is compatible0.120/language0.20 source/provider execution. The0.121 core
+passed the composite153 and matching SDK32 described above; original failures
+and their successful targeted repeats are retained. Primary0.81 stays preserved.
+The stdlibrary delta from130 is one comment, with unchanged function text.
+Owned resources/task bridge, generic kernels/models, discovery and PLAN remain open.
+
+# Current compute/OpenCL development
+
+The0.121 ordinary-source compute contract has checked CPU operations and a real
+experimental full-U8 OpenCL provider on RK3588. Independent returned evidence:
+90 rawGPU calls/30780 valid output values/10 overflow errors; common Context
+49GPU calls/1835078 valid values/7 overflow errors and21NPU calls/4480 values;
+20 direct-worker cases plus11 process-boundary cases. All device results use
+the compatible0.120 compiler. See [scope and counts](docs/evidence/compute-opencl-0.121-development.json).
+The unchanged0.121 compiler core passed the composite153 and installed SDK32
+described above; the four failed TypeScript groups passed with the pinned path.
+Primary0.81/lang0.16 is preserved. General ownership/resources, task dispatch,
+float/model support, provider discovery and the remaining PLAN are open.
+
+# Working130: common compute contract
+
+Development0.121/language0.20 adds ordinary-source tensors and CPU operations,
+checked provider selection, response validation and explicit fallback. Focused six-case CPU/native/TypeScript/reference, overflow/limits, negative
+provider/context/realm cases and owned profile pass; matching compute/discovery/
+SDK archive workflow groups pass3/3. Compiler build passes;
+complete regression/SDK and actual common GPU/NPU adapters remain pending.
+Primary081 and accepted129 recovery are preserved.
+
+# Working128: browser structured task hosting
+
+Toolchain0.120/language0.20 connects task-only worker_compute to its own
+cooperative TypeScript scheduler inside a dedicated module Worker. This is an
+adapter change: no syntax, canonical identity, execution ABI or migration change.
+UI entries remain pure; only wire values cross messages. The matching
+frozen implementation acceptance passed full152, installed SDK31/575 and18
+cases in Chromium/Firefox/WebKit. Astra/CIX/RK3588 physical results have separate
+scopes; see [current acceptance](docs/stand-acceptance-0.120.md).
+Original primary081 and accepted119 source/compiler/SDKs remain preserved.
+
+# Working126: checked provider logical task debugging
+
+Toolchain0.119.0/language0.20 enables development source-backed static and fixed
+startup-linked shared provider debugging. Seven actual LLDB/NEX-DAP scenarios
+and separate normal/ASAN/UBSAN/LSAN/TSAN physical-drain preflights pass on macOS
+ARM64. Relocation derives new image/symbol references from immutable raw pins;
+Darwin completion7 retains the root dSYM and packages it beside the executable.
+Source-deleted capture/package/replay and substituted-path/symbol rejection are
+exercised. Full matching152-group regression, installedSDK31 and platform gates
+require separate final receipts; preflights do not certify that delivery.
+Provider4/catalog1/source-union1 and catalogABI2 are separate tooling formats;
+executionABI3/88, old source-only debug2 and profile3 retain their contracts.
+See docs/task-provider-debugging.md. No language migration or primary081
+promotion is introduced.
+
+# Preserved125: checked native task-provider profiling development slice
+
+Toolchain0.118/language0.20 enables one collector and checked registry batch
+across static and fixed startup-linked task providers. Provider3/catalog1,
+completion6/linkage3/retained3/request3 and raw/saved/session3 are separate tooling
+formats; source syntax/canonical/migration and execution ABI3 remain unchanged.
+The matching ten-case source/report suite, including canonical cache-parent alias
+and internal-input symlink boundaries, passed. A separate private physical-drain
+fence/sanitizers and the exact scoped SDK30 phase body passed. Preserved125b has
+Mac composite148 (147 original groups plus corrected boundary55/39) and scoped
+Linux composite11 (10 original groups plus corrected boundary). Matching installed
+SDK30 passed30 phases/557 commands/269 resources with original compiled source
+path absent and restored unchanged. Original failures remain retained; no pristine
+full148/fullLinux/kernel-isolation claim. Exact identities and sanitizer scope:
+[the125b summary](docs/evidence/toolchain-0.118.0-task-provider-profiling.json).
+This accepted baseline does not validate126.
+Profile-configuration test/build-test paths have an additional checked matrix;
+measured profile sessions for tests remain unsupported. Provider3 itself does not
+enable the distinct126 debugger. Runtime load/unload, combined
+debug/profile, Tracy tasks, HTTP/foreign, authority/callable transport and
+non-native profilers remain unsupported. See docs/task-provider-profiling.md.
+Primary081 and prior checkpoints remain unchanged.
+
+# Preserved124d: fixed shared task providers
+
+Toolchain0.117.2/language0.20 passed a pristine full144 regression and matching
+installedSDK29/542 commands, with its original compiled source path absent and
+restored unchanged. Seven scoped LinuxARM64 groups and the separate actual
+startup-linked private image fence/sanitizers passed. This fixes atomic cached
+image publication while preserving loaded mappings and treats literal percent,
+Unicode and quote characters in parent paths as data. Original124b/c failures
+remain retained; they are not relabelled as passes. Exact identities and limits:
+[the124d summary](docs/evidence/toolchain-0.117.2-task-shared-providers.json).
+These are development-checkpoint results, without full Linux/installed Linux SDK,
+kernel source-isolation, root promotion or whole-objective completion claims.
+Provider profiling belongs to the separate125 slice above.
+
+# Preserved123/123b: concrete static task providers
+
+Toolchain0.116/language0.20 integrates source-checked concrete static task
+archives, descriptor accessors and one root executor/grant/limits. Its17-case
+source suite, strict boundary checks and reviewed capture/replay/package passed.
+Preserved regression is explicit composite141:140 passed original groups plus
+the repaired21-case integration group on the same frozen compiler. The original
+stale capability assertion failure remains retained; no pristine full141 rerun
+is claimed. InstalledSDK28/523 commands/262 indexed resources and four scoped
+Linux groups/17 actual cases passed. Exact hashes and limits are in
+[the123b summary](docs/evidence/toolchain-0.116.0-task-providers.json).
+This does not validate124 shared integration or complete the objective.
+
+# Preserved122: logical native task debugger integration
+
+Toolchain0.115/language0.20 integrates separately versioned debug catalog ABI1,
+compiled safe points and logical LLDB/nex-dap inspection/stepping. Its immutable
+acceptance is [recorded separately](docs/evidence/toolchain-0.115.0-task-debug.json):
+composite139 means138 retained passes plus one corrected9-case server workload
+group using the same implementation/compiler. The original full139 failure is
+retained; no pristine complete rerun is claimed. InstalledSDK27/504 commands,
+three scoped Linux groups with10 actual LLDB/DAP cases and bounded runtime
+sanitizer checks passed. Execution ABI3/source/canonical/history are unchanged.
+Those receipts cover122/122b only. Primary081 is preserved; no full objective
+completion or123 provider acceptance follows from them.
+
+# Working121: native source task-profile integration in progress
+
+Toolchain0.114/language0.20 is integrating the private120 collector with native
+jobs, retained source frames, emitted site metadata and checked CLI/project/task
+reports. Complete candidate acceptance remains pending.
+Source language/canonical history/migration remain020; a separate
+private compiled-task ABI3 transition is implemented consistently.
+Initial actual source/profile CLI, five project/capture/replay workflows,
+the60-case report validator and a separately executed installed SDK profile
+phase pass. These mutable scoped results do not replace the complete frozen
+134-group regression, SDK26, sanitizer and platform gates. The final source suite
+passed31 commands, including six successful scenarios, checked failure cleanup
+and strict raw Tracy rejection before source output/report creation.
+Frozen120 independently passed cleanallbuild, focused12, strict42-case macOS
+ASAN/UBSAN/LSAN+TSAN and scoped Linux Clang22 release/GCC13 sanitizer probes;
+its full129 gate passed in1071.867s and its matching installed SDK25/486 commands
+passed in663.640s. Its969 source files and primary081 remain unchanged.
+Frozen119b full128 and its matching installedSDK25/486 commands passed.
+Exact receipts retain all scopes and failed attempts.
+Primary081/source/graph/Git remain preserved. No full-objective completion.
+
+# Working120: private logical task-profile collector foundation
+
+Toolchain0.113/language0.20 is developing a bounded private collector module and
+independent native probe for logical invocation/TLS/clock ownership. No scheduler,
+frame-driver, compiler emission or public task-profile integration is enabled.
+Existing debug/profile rejections, task execution ABI2, semantics, grammar and
+history migration remain unchanged. Its clean allbuild,12 focused groups,
+129 full regression groups and scoped sanitizer/module probes passed.
+Matching installed SDK25/486 commands passed. Primary081 remains preserved.
+Current editor fixtures and verified119b type/proof/intent pin repairs are included.
+A CLI regression checks bundled proof snapshots/task intent, preserving criteria.
+The complete public task profiler requires a later integrated acceptance stage.
+
+# Working118: consistent pending-capability discovery
+
+Toolchain0.111/language0.20 retains117 public file-read implementation and fixes
+one metadata mismatch: browser_workers.pending had different unfinished-task
+wording in describe and language-pack. Frozen117 passed cleanallbuild,25/26
+focused groups and five strict sanitizer probes per sanitizer, but discovery
+failed on this exact comparison. Its failure receipt is retained; no full117
+or117 SDK acceptance is claimed. Current118 complete acceptance is pending.
+Runtime/compiler semantic source, language020, grammar and history migration
+are unchanged. Primary081 remains preserved. The full objective is active.
+
+# Working117: public task file reads with explicit020 migration
+
+Toolchain0.110/language0.20 connects file_read_text/bytes to actual server task/fs
+suspension. Explicit root FileReadGrant, raw bounded host transport and checked
+scheduler admission preserve cancellation/drain, UTF-8 and result boundaries.
+The independent AST reference and native continuations have separate execution.
+Migration verifies genuine018/019 origins and preserves history/IDs/schema;
+current physical projects and output schemas use020. Implementation and complete
+current acceptance are in progress; no accepted release is claimed.
+
+Frozen115 passed full122 and matching SDK24/438, strict sanitizers, three scoped
+production browser engines and21 Linux ARM64 groups. Frozen116 passed common build, focused20, strict sanitizers, full122 and
+matching installedSDK24/438.
+Older records below describe their own immutable snapshots. Primary081 remains
+preserved; public bridge117 does not inherit acceptance from older kernels.
+Broader IO/debug/profile/providers/UI/accelerators/delivery/quality remain open.
+
+# Working116: private explicit root file-read grant
+
+Toolchain0.109 / language0.19 retains the verified115 transport and adds a
+host-only FileReadGrant captured once from the root coordinator. Per-path
+preparation survives temporary task-resume scopes, honors lexical/root request
+revocation and never discovers worker permissions. Missing authority reports
+CAPABILITY only at check/lease, not at entry; a future source driver must turn
+ordinary preparation errors into typed results before ticket admission. A retained
+4096-byte path now uses exactly4096 owned payload bytes; measured std::string
+storage at that boundary required4103 bytes on the checked platform.
+
+Standalone45 scheduler and42 non-task compatibility cases pass; independent
+review found no further actionable issue. Current common build/full regression,
+sanitizers, installed SDK and platform acceptance are pending. Public source
+async IO and task/fs callback widening remain unsupported in019. Their future
+integration requires explicit020 identity and019 history-preserving migration.
+No source keyword/type/canonical shape is changed by this private foundation.
+Writes, streaming/db/ffi/tasks-in-HTTP/providers/browser filesystem remain pending.
+
+Frozen115 separately passed122 groups, strict sanitizers, three production
+browser engines (87 private host cases each), and21 Linux ARM64 groups. Its
+matching installed SDK is being checked. Primary081 and history are unchanged.
+Historical entries below apply to their own source snapshots.
+
+# Working115: external-completion ownership correction
+
+Toolchain0.108 / language0.19 corrects independently reproduced private114
+failures: normal parent scope drain consumed a live child's external ticket;
+post-operation cancellation masked a returned fatal error; a late physical
+failure replaced an already-selected fatal error at native join. Coordinator
+admission allocation failures also require preserved fatal priority. Frozen114 and
+its reproducing probes are retained. It is not an accepted release.
+
+Current115 shared build, focused/full regression, sanitizers, installed SDK and
+platform checks are pending. Public source async IO remains disabled. The exact
+previous113 passed118 regression groups and installedSDK24/438 commands.
+Primary081 and its complete history remain preserved; the full objective is
+still active. The records below refer to their own historical source stages.
+
+# Working114: private external completion transport
+
+Toolchain0.107 / language0.19 adds experimental native, independent reference
+and TypeScript host-completion kernels. Tickets bind a scheduler, logical owner,
+slot generation and single acceptance. Physical operation retirement, rather
+than a cancellation request, releases transport reservations and permits owner
+completion. Separate native/reference host pools have at most two workers.
+The private file-read adapter captures a revocable physical lease explicitly;
+workers do not discover permissions from ambient TLS or create source Values.
+See [the exact contract](docs/task-external.md). No source asynchronous IO,
+source fs/db/ffi task lowering or stable host ABI is enabled.
+
+Individual kernel checks and an initial shared build have passed; the final
+frozen114 build, combined focused/full regression, sanitizers, installed SDK
+and platform acceptance are pending. Current source is not an accepted release.
+Frozen113 separately passed all118 regression groups in1034.269s; its matching
+installed SDK passed24 phases/438 commands. That evidence does not validate114.
+Primary081 and its history remain unchanged. Task debug/profile, provider/UI
+integration, general GPU/NPU, remaining platform delivery and cross-model
+quality/cost evidence remain required by the active objective.
+
+Previous entries below retain their original stage-specific status.
+
+# Public019 integration corrections (working110)
+
+This snapshot keeps toolchain0.105/language019. The previous integration's full
+regression exposed reference diagnostic guards inherited from private018 mode:
+ordinary019 errors lost their operation sites/IDs. The site map now determines
+attribution, while raw private atoms retain their bounded no-map path.
+An additional boundary audit found pure nested task authority signatures could
+cross a native library ABI without a task effect. Provider lifetime support
+remains pending; those exports and task-effect callable signatures are rejected
+explicitly. Current shared build and18 focused CTest groups pass, including corrected
+operation sites, native/TypeScript agreement, migration and32 standalone native
+executions. Ten nested ABI signatures and an additional library export are
+rejected; internal task helpers and source-only projects still pass. The LSP
+acceptance fixtures and example patch pin now explicitly match019. Profile
+options/native-host checks retain their earlier diagnostic precedence. Full114
+and installed-SDK/platform acceptance are pending. Source109 and its
+raw failed regression (101/114 pass) and backup remain preserved. Primary081 and
+the full objective are unchanged.
+
+# Working109: public language0.19 integration
+
+Toolchain0.105.0 connects task types/effect and conservative lifetime checking to
+native compiled continuations, reference evaluation, TypeScript generators and
+real018 history migration. The shared CMake build passes. Focused checks pass: native15xdebug/release,
+TypeScript11 source scenarios, migration66 requests, lifetime91 fixtures and
+ordinary graph/version/history/integration groups. Full114 acceptance is pending;
+this source is not an accepted release.
+Native task applications and source-only projects are supported by the new path;
+binary task providers, asynchronous IO, task debugger/profile, NEX UI integration,
+complete static region inference and current full SDK/platform delivery remain
+pending. Primary081 is preserved. This does not complete the full objective.
+
+Frozen108 passed full110, strict ASan/UBSan/LSan and TSan gates, and eight scoped
+Linux ARM64 groups. Those receipts apply to its exact private-task source,
+not current109 or a full Linux/installed SDK claim. Previous entries below record
+historical implementation stages and their original pending work.
+
+# Working108 private authority-flow diagnostics
+
+Toolchain0.104.0/language0.18 adds early source diagnostics for known task
+capability escapes. Ancestor borrowing, helpers, callable factories and precise
+aggregate projections retain useful values. Unknown calls, channel payloads,
+recursion, joins and loop widening retain mandatory runtime obligations. This
+is not complete static region typing or public source integration. See
+[the lifetime contract](docs/task-lifetimes.md). Early analysis91source scenarios and33additional independent AST runs pass.
+These include borrowed/owned helpers, closures, empty capability containers,
+phantom types and conditionally selected channels. The first29new lifetime
+fixtures also agree on native O0/O2 and strict generated TypeScript7.0.2.
+Current native91/TS100/full110, sanitizers, installed SDK and platform acceptance
+remain pending; whole CMake build passes.
+
+Frozen107 completed full109 in1014.958s, strict ASan/UBSan/LSan and TSan gates
+with AST/IR/reference and native58xO0/O2, plus seven scoped LinuxARM64 groups.
+Linux container gates took136.38s; these are not a full Linux suite or installed
+SDK proof. Primary081 remains preserved.019 migration, complete lifetime/effect
+integration, asyncIO/debug/profile/provider lifetime and delivery remain required.
+
+# Working107 private generated TypeScript task execution
+
+This separate toolchain0.103.0/language0.18 source emits checked client/shared
+functions as generators with an independent event-loop scope/future/channel
+scheduler. Node67 source scenarios agree with independent AST, including58
+native-suite fixture inputs; strict TypeScript7.0.2 checking and16 trusted-host
+protocol/lifetime/cleanup guards pass. Host timers cancel a checked pure helper
+through compiler checkpoints. Standalone production Chromium/Firefox/WebKit
+responsiveness has separate one-program evidence and does not enable the NEX UI
+task adapter. Current full109/sanitizer/platform/installed-SDK acceptance remains
+pending. Public source tasks stay disabled pending complete lifetime/effect
+contracts,019 migration, async IO/debug/profile/provider lifetime and delivery.
+
+A boundary discrepancy was reproduced: earlier AST and initial TS counted the
+root at depth0 and allowed257 total task levels. Native counts root at1.
+Working107 aligns both; checked255-descendant success and256-descendant rejection
+pass native O0/O2. Data's immutable owner-family tag now occupies header alignment
+space: measured macOS ARM64 sizeof(Data) returns from106's112 to104 bytes, matching
+105. This is a layout measurement, not broad performance evidence. Frozen106
+passed full108, strict AST/reference/IR sanitizers and six Linux groups; its exact
+receipts remain scoped to its old source and tests. Primary081 is preserved.
+
+Toolchain0.98 development source adds an internal C++20 coroutine task/channel
+scheduler, enabled only in a private runtime probe. NEX source async/tasks/channels
+and their MLIR/reference/TypeScript integrations remain pending; ordinary
+applications do not enable this prototype. Final13focusedgroups pass; the
+38-case coroutine probe passes strictASan/UBSan/TSan on macOS and normal
+Clang/GCC plus GCCASan/UBSan on LinuxARM64. A real initial TSan race was
+fixed; raw failure is retained. Full102/SDK/platform gates remain pending. See [the design](docs/tasks-runtime-design.md).
+
+Toolchain0.97 development source adds typed dedicated browser worker jobs.
+Six focused groups and15 actual production worker cases in Chromium/Firefox/
+WebKit pass on the exact current compiler; full101/SDK/platform acceptance
+remains pending. No release/platform acceptance is implied. See [browser workers](docs/browser-workers.md).
+
+# Development0.96 / language0.18 — raw buffered compiler inputs
+
+The actual095native100module/10000function gate passes: cold9900/warm0/edit1,
+standalone original/edited outputs and both archived revisions after source
+paths move outside the project. Warm observation69.021s versus the earlier
+09481.494s is recorded with concurrent-host scope. A live sample of that actual
+095warm process identifies per-character readFile work inside cache validation.
+
+Compiler inputs now use64KiB fread blocks, explicit ferror/feof and C++ RAII
+FILE cleanup. No size/seek assumption, text normalization, source/runtime/ABI
+layout change or weaker cache check is introduced. The first std::ifstream::read
+variant treated a macOS directory as empty EOF; the new directory assertion
+exposed this and the raw failed receipt remains. Explicit stream-error checking
+fixes it without weakening that test.
+
+All17 focused groups pass. The new five-case IO group covers every octet,
+empty/exact/partial/multiple blocks, fragmented FIFO, failed reads, /dev/null and
+a real UTF8 scalar split at byte65534 across the64KiB boundary. Native/reference/
+TypeScript tests agree; invalidUTF8 remains E_UTF8. Its Linux procfs case is
+pending actual Linux execution. The same private probe compiled against real
+095/096frontend libraries compares every output byte from MachO/MLIR/JSON
+artifacts across18observations and retains their unchanged hashes. Median
+read/output/comparison wall for146.6MBMLIR is4.747s versus0.145s, for14.7MBMachO
+0.504s versus0.042s and for24.1MBJSON0.805s versus0.048s on the concurrent Mac.
+This is not a complete-build or isolated throughput measurement. Current096
+native10000/full100/SDK/platform/editor/history gates remain pending.
+
+Frozen094Mac/Linuxfull98, installedSDK24, Linuxlive22/source-free acceptance,
+five installed editor profiles, CPUworkerDAP and complete016->018migration now
+pass. Frozen095Macfull99passed; its SDK/Linux acceptance continues. Primary081
+is unchanged. Generalasync/tasks/channels/browserworkers, accelerators, platform
+delivery, model-cost quality and reviewed primary integration remain open.
+
+# Development0.95 / language0.18 — readonly native planning index
+
+The actual0.94 full10,000-function native gate passes: cold9,900 compiled,
+warm0compiled/9,900reused, one changed leaf1compiled/9,899reused and original/
+edited standalone outputs. Both archived revisions execute after their physical
+sources move outside the project. Cold/warm/edit observations are577.309s,
+81.494s and116.048s on a concurrently used Mac; no isolated throughput claim.
+The original093E2BIG and090timeout remain retained. See the exact scale receipt.
+
+An81.356s cached diagnostic confirms no LLVM compilation. Its live sample
+locates repeated linear function searches inside native planning. Candidate095
+uses an index scoped to that readonly operation; no mutable Program keeps
+pointers or cached indices. First-match local/exact precedence and generic local
+names containing qualified arguments are preserved. A shared private receipt
+probe linked against actual094/095 libraries produces byte-exact plans for
+seven programs in normal/all-callable modes, including9,900units. The large
+checked-load/plan/serialization observation changes17.225s to3.945s (normal)
+and19.550s to4.177s (all-callable). This is not a full095warm-build measurement.
+
+The final15 focused groups pass. The first new plan fixture omitted
+required local type annotations and failed parsing; its raw failure is retained.
+The corrected four cases pass, covering module/generic names, layouts, callable
+bridges, dependency edges and missing-name diagnostics. Final full99/SDK/platform/
+editor/migration and native scale gates remain pending. Language018/runtime/canonical formats/ABI contracts are unchanged.
+
+The opt-in checked-core experiment now has a reusable runner. Initial operational
+smoke1/2 exposed a CLI variable shadowed by subprocess argv; a distinct settings
+object fixes it. The final operational smoke passes with the exact final095
+compiler; short smoke timings are not throughput evidence. Its recorded094
+single positive integer kernel takes median0.307272s NEX,0.292982s checked C++
+and9.922024s CPython for100million steps over five repetitions, with other
+verification running. All five additional input observations agree. It does
+not establish general parity or model-cost savings. Current094full98/SDK/Linux
+and installed acceptance continue;093Macfull97/SDK24 and complete migration/
+five installed IDE profiles pass after preserving four successful observations
+and resuming the fifth with a shorter private macOS socket path.
+
+# Development0.94 / language0.18 — bounded native tool arguments
+
+Actual0.93 native scale compiled9,900 functions, then failed at posix_spawn:
+its2.17MB link command exceeded the host argv limit. Native build tools now use
+GNU UTF-8 response files for large commands. Native image linking shares the
+helper; applications retain literal argv. Owned0700 directories/0600 files are
+removed on success; failures preserve exact inputs and a useful path.
+
+The first new test exposed default temporary-directory mode0750; explicit
+private modes fix it. Fourteen focused groups then pass, including real Clang
+and LLVM ar requests beyond host argv limits with spaces/quotes/backslashes/
+percent/Unicode paths. The helper also linked all9,900 retained actual093 objects,
+verified their unchanged bytes and DWARF, and executed49,460,406 correctly.
+The original093 scale failure remains retained; this recovery does not turn it
+into acceptance. Full09498-group/SDK/platform/editor/migration and independent
+cold/warm/edit/standalone scale gates remain pending. Language0.18 and its
+canonical identity/runtime/source semantics are unchanged.
+
+Frozen092 passes Mac/Linux full97, installedSDK24, Linux live22 and source-free
+acceptance, five actual installed IDE profiles, installed CPU-worker debugging
+and complete primary016->018 migration. On the actual CIX
+board, its private SDK passes CPU Debug/Release/reference/profile checks with
+four overlapping workers, balanced managed pools, source-deleted replay and a
+standalone AArch64 application without SDK dependencies. OldSDK070 and the
+system installation are unchanged. Its existing fixed accelerator fixture also
+passes with the private092 SDK:30 GPU calls and20 exclusively Zhouyi NPU calls,
+both profiles/reference/tests, balanced managed profile, archived source-deleted
+replay and standalone execution. Genuine016 history is preserved through
+explicit migration in a copy. Both harness failures are retained in the exact
+092 receipt. General GPU/NPU source APIs remain unfinished.
+Approved primary081 remains unchanged and the full objective is not complete.
+
+# Development 0.93 / language 0.18 — native emission analysis
+
+A sample of the actual0.90 10,000-function build found repeated whole-closure
+callable analysis in every function emitter; linear name resolution made this
+work cubic. Native builds now share their already checked callable/CPU analysis
+across aggregate and per-function IR emission, with readonly selected sets.
+Standalone emit/Wasm paths retain their local analysis. No language, canonical
+format, runtime, ownership or explicit migration change is introduced.
+
+Twelve focused groups pass. A same-source20-module/2,000-function comparison
+compiled1,980 functions under each0.92/0.93 compiler:299.583s versus113.567s.
+All1,980 MLIR and LLVM units match after normalizing only the exact compiler
+build identity (including its encoded form) and DWARF compiler version. Source,
+semantic and operation identities remain exact. Warm reuse is0/1,980; editing
+one leaf compiles1/reuses1,979. Original/edited standalone outputs and archived
+source-deleted replay pass. Other verification ran concurrently; this single
+host observation does not prove isolated throughput, runtime parity or model
+cost. An initial comparison omitted the required compiler_build difference;
+its failed receipt is retained, and the corrected check verified those exact
+identities before reusing the completed cold artifacts and continuing checks.
+
+Complete10,000-function native scale and matching full97/SDK/platform/editor
+acceptance remain pending. Frozen0.92 has separate full gates in progress;
+frozen0.91 has passed Mac/Linux full96, SDK24, live Linux, five installed editor
+profiles and complete primary0.16 migration. Approved primary0.81 is unchanged.
+The broad language/development-chain objective remains incomplete.
+
+# Development 0.92 / language 0.18 — source CPU mapping candidate
+
+Source parallel_map has checker/reference/native/TypeScript implementations.
+Actual native profile events show overlapping callbacks on distinct CPU threads;
+reference/TypeScript execute serially. Ten focused CTest groups pass, including
+source semantics, genuine0.17 migration, static/dynamic providers and runtime
+ownership. The mixed ordinary-error/recursion-limit regression passes after
+fixing global resource-error priority. Private actual-NEX7 and runtime26 suites
+pass ASan/UBSan with strict leak/error settings and ThreadSanitizer.
+A source-deleted live worker breakpoint/watch/resume passes. A stale first LLDB
+thread-list response is refreshed once only when it omits the actual stopped
+thread; transport checks retain stop identity and checked normal shutdown.
+A production TypeScript/Vite CPU-map application passes actual capture/update
+interaction in Chromium, Firefox and WebKit. This is serial browser execution,
+not browser worker support. Current SDK/editor fixtures use language0.18.
+Full matching regression, installed SDK24, Linux, editor and complete historical
+migration gates remain pending. The approved primary remains0.81/language0.16.
+Historical receipts below keep their original scopes; this candidate is not an
+accepted release or completion of the full objective.
+
+# Development 0.91 / language 0.17 — compiled worker boundary
+
+The compiler-private CPU bridge creates job-local handles, passes scalar bits,
+checks result ABI kinds, retains heap/callable outputs and unwinds owned frames
+on all exits. It is enabled only by NEX_STRUCTURED_WORKERS. Ordinary emitted
+runtimes and the frontend/reference/TypeScript source capabilities are unchanged;
+source concurrency is pending. Actual NEX closure bodies are built into a
+code-only archive for the new native integration test. Full final acceptance of
+this source remains pending. Previous 0.90 platform gates retain their own scope.
+
+# Isolated candidate 0.90 / language 0.17 — validation pending
+
+The 0.89 full95 regression failed the same four groups on macOS and Linux:
+exponential duplicate statement-match traversal; two fresh-fixture copies of an
+already-used example graph; and an example patch pinned to language 0.16.
+Version 0.90 fixes those causes without relaxing their assertions or timeouts.
+Five focused groups pass, including the 30-deep match/native/TypeScript case.
+Two unchanged test methods also pass with the actual used 0.89 example as input.
+Full95/SDK24, Linux live/source-free, installed editor and migration validation
+for this exact frozen source remain pending. Earlier receipts below keep their
+original source scopes. Primary 0.81 is preserved separately and retains the
+known DAP shutdown defect. This candidate is not an accepted release.
+
+Development toolchain0.89/language0.17 fixes a confirmed Python3.9 DAP adapter
+shutdown abort: wake and join both input readers before destroying stdio; SDK
+acceptance rejects abnormal adapter exits. Nine transport tests pass on the same
+Python3.9 interpreter. New full/installed/platform validation remains pending.
+The approved primary remains0.81/language0.16; earlier notes below are historical
+cohorts. Source result propagation is carried forward from the saved0.88 draft.
+
+Development toolchain0.88/language0.17 adds a **candidate** postfix result
+propagation operator `?`. Parsing, checking and all three execution backends are
+implemented in this isolated source; complete migration/platform/SDK/editor gates
+remain pending. See [the contract](docs/error-propagation.md). Earlier cohort
+notes below refer to their original versions. General source try/catch/throw,
+source concurrency and CPU/GPU/NPU adapters remain pending. No production parity
+or complete LLM-token saving is claimed.
+
+# Mutable0.88 error-propagation draft (not integrated)
+
+Compiler-private function ownership boundaries are being implemented so a future
+propagation operation can release unnamed argument/constructor temporaries and
+preserve its returned value. Scope/request/application/worker cleanup is coordinated.
+Source `?` is not implemented; language remains0.16 until a coherent0.17 checker,
+all backends, specification and migration exist. See the pending
+[design journal](docs/error-propagation-design.md). The first19-case runtime
+prototype passes, including complete files/quotas, source diagnostics, allocation
+faults, stale/cross-thread/context tokens, worker reuse and failure cleanup. Six
+focused CTest groups pass1.21seconds. The same19 cases pass ASan/UBSan and TSan;
+source operator integration and broad/SDK/platform validation remain pending.
+Frozen085/086/087 and approved primary081 remain unchanged.
+
+# Development cohort0.87 (not integrated)
+
+Readonly capability index and dotted-field projections bind exact descriptor
+values to language/toolchain/compiler-build/hash identity. Default full describe
+remains available. A short bootstrap routes models to relevant guides/context;
+all source syntax and language0.16 identities remain unchanged. The
+[quality contract](docs/quality.md) defines large-system, correctness,
+performance and full-task LLM-cost targets; those targets are not achieved claims.
+Focused and broad0.87 verification are pending.
+
+The frozen0.85 Mac full91 and installed SDK24 pass. Four final installed editor
+profiles pass; its independently generated source-server fixture incorrectly
+asserted project owned-image metadata and failed. Its original failure remains;
+the corrected owned fixture checks the actual inlined source-provider contract.
+Linux full91/all21 live suites pass, but source-free SDK foreign project task
+packaging correctly rejects missing Crypto provenance. This cohort captures the
+installed Debian provider's complete reviewed license inputs before the task;
+it does not relax provenance or silently grant --dpkg-notices during replay.
+
+# Development cohort0.86 (not integrated)
+
+Internal native structured-worker groundwork shares the parent request budget,
+cancellation and absolute deadline while keeping per-job handle/resource cleanup.
+Ordered immutable results, joined failures and bounded nested scheduling are
+implemented behind NEX_STRUCTURED_WORKERS. Ordinary emitted runtimes do not
+enable this prototype. Source concurrency and all new syntax remain pending;
+language0.16 is unchanged. See [the contract](docs/concurrency-design.md).
+The0.85 LSP fixture's stale extension0.6 literal is explicitly corrected to0.7
+in this cohort; frozen0.85 remains unchanged. Full0.86 validation is pending.
+
+# Development cohort0.85 (not integrated)
+
+Native server debug preparation now retains actual source/archive/shared
+providers, checked HTTP application kind, host ABI and explicit runtime args.
+Extension0.7 supports source/project server launches, reviewed foreign fields
+and bounded individual arguments. Plans/source aliases/dirty buffers/trust
+remain checked. Native budgets, ownership and request deadlines are unchanged.
+
+Prototype Mac descriptor/source/real HTTP worker/provider stops, source-deleted
+watch and request completion, graceful shutdown, stopped-deadline timeout and
+SQLite rollback pass4 cases in76.447seconds. Actual project/source editor source
+breakpoints and Unicode watch pass2 cases in28.836seconds. Node25 contract cases
+pass. Initial retained fixtures appended --json to runtime args and replaced
+editor source-map commands; corrected fixtures preserve the actual launch.
+Updated7-case bounded-argument/live worker/editor suite passes93.580seconds;
+current Node39 cases pass. The original FFI project regression with a valid
+catalogue granting only an unrelated export passes99.049seconds; it still
+rejects the selected test before initialization. An earlier new negative
+fixture used an invalid empty grant and expected the wrong diagnostic; retained
+evidence shows E_FFI_GRANT, and the corrected valid denied grant exercises
+E_TASK_FOREIGN_BINDING. Actual installed VSIX0.7 project/server commands, runtime
+input UI, original provider breakpoint, Unicode watch, response and graceful
+exit pass in two fresh private profiles in31.098seconds. These are prototype
+checks; frozen full91/SDK/Linux and matching final installed extension gates
+remain mandatory. Language0.16 syntax/canonical identities/history stay unchanged.
+
+Frozen0.84 6f19a671 passes89/90 groups on Mac and Linux ARM64. Both complete
+reports stop at source_ffi's existing project test: a new packaging catalogue
+annotation entered its private test-plan hash but not its build plan. SDK gates
+were not reached. This source excludes deployment-only annotations from private
+test-entry plans while retaining parent exact reachable-grant validation; the
+existing regression and denied-grant test must pass. Frozen816-file source,
+GitHub2fe5a4c6 and original failure evidence remain unchanged.
+
+# Development cohort0.84 (not integrated)
+
+Project foreign packaging prepares selected app exports once, projects exact
+literal pins across physical shared/source/archive components, reloads/rechecks
+binary contracts and consumes the actual native images. Each deployed app gets
+only its reachable grants; foreign-free HTTP entries skip common-runtime foreign
+configuration. Original source/lock/Store stay untouched. Input aliases, metadata,
+catalogue, helper and toolchain identities are checked around native tools.
+Package tasks pin current operator trust and retain captured inventories; exact
+member provenance mappings preserve reviewed notice roots and license bytes.
+Language0.16 is unchanged. Prototype focused5 checks pass200.940seconds, including direct deployment,
+per-app grants, profile ownership, module integrity, same-byte alias rejection
+and source-deleted task package replay. Earlier prototype foreign/task/project
+package regression4 groups pass699.07seconds; full final-source90/installed SDK/
+Linux validation is still required before considering promotion. Earlier focused failures retain
+test fixture glob/lock/static-index/API-path mistakes and a genuine captured
+module provenance refusal; the new mapping does not grant directory-wide trust.
+
+Frozen portable0.82 2953e041 passes Mac/Linux full88, installed SDK24/379 commands/
+230 resources, plus Linux20 live suites. Initial0.82 C11/core-reader failures
+remain separate. Frozen0.83 cd3c89d8 passes Mac/Linux full89; Linux20 live and
+source-free/network-disabled SDK24/384 commands/232 resources pass. Its matching
+Mac installed SDK24/384 commands/232 resources also passes. Both completed
+cohorts are recorded in build/server-workload-082-083-complete-evidence-v1.json
+of the primary workspace. Approved primary0.81 remains unchanged.
+
+# Development cohort0.83 (not integrated)
+
+Project server profile checks pin SHA-256 workload bytes, preserve actual binary
+providers and supervise the trusted runner/native descendants directly. Each
+check creates a fresh synthetic user/credential/database, excluded from receipt
+inputs and cleaned after execution. Readonly check needs no credentials. Captured
+workloads and current trusted runner replay after source deletion with readonly
+receipts and an isolated output graph. Existing operator FFI/toolchain grants
+remain explicit. Request p95/p99/rate budgets require reviewed hardware; exact
+integer rate comparisons avoid overflow. Doctor now exposes readonly CPU identity.
+
+Focused preflight passes7.244seconds; actual two-check fresh-state measurement
+and readonly source-deleted replay passes102.031seconds; impossible p95/uint64
+rate and unsupported-hardware checks pass43.562seconds. An initial replay attempt
+retains task timeout diagnostics and a test cleanup-order mistake; new command
+receipts add chosen timeout and elapsed time for inspection. The full task timeout/SIGINT/explicit-FFI/fork cleanup case passes151.734seconds.
+The expanded hardware/budget/bad-response/captured-input-tamper case passes
+56.215seconds, including unchanged graph rows after rejected replay. The earlier
+4second cancellation fixture expired during preparation; its corrected30second
+case measures a long sequence of bounded250ms requests and reaches native code
+before the timeout, then interrupts an uncooperative callback separately.
+Matching full89 and installed SDK/platform gates remain pending.
+Language0.16 syntax/canonical/effect/realm/ownership semantics are unchanged.
+
+Initial frozen0.82 Linux passes87/88 groups: only its strict-C11 usleep fixture
+fails. The portable fixture passes Mac/Linux. Initial0.82 Macfull88 passes, but
+SDK24 fails a bounded core reader during capsule export; the same compiler and
+inputs independently export/read successfully in19.275seconds. Original failure
+is retained; portable full Mac/Linux/SDK acceptance remains mandatory. Primary
+verified0.81 source/compiler/Git and all47 revisions/all16tables/schema/IDs remain.
+Server debugging, dedicated task/editor commands, source concurrency, general
+accelerators, source-foreign packages and broader platform delivery remain open.
+
+# Portable0.82 fixture revision (not integrated)
+
+Frozen0.82 sourcebbd93663 passes the Mac server workload group; its Linux group
+passes7/8 cases but strict C11 correctly rejects undeclared usleep in the new
+forked-heartbeat C fixture. This revision selects POSIX200809L and nanosleep
+with time.h. Compiler/runtime/source grammar are unchanged. The portable
+fixture now passes on Linux ARM64 in82.464seconds and macOS in80.672seconds,
+including project timeout/SIGINT, source profile cancellation, descendant and
+sealed-module cleanup. Compiler/runtime source bytes match the first revision
+exactly; its complete frozen Mac/Linux/SDK verification remains pending. Original
+failed evidence and the verified primary0.81 remain preserved.
+
+# Development cohort0.82 (not integrated)
+
+Bounded server workload metadata drives project native profiles under the real
+source/static/dynamic architecture. The readonly plan validates data before
+sources/tools and pins definition/helper hashes. The runner owns a fresh
+loopback HTTP listener; credentials stay runtime environment values. Profiles
+include expected/completed requests, warmup, concurrent phase latency/rates and
+actual provider call/memory attribution. Language0.16 is unchanged.
+
+Two public command/preflight cases pass32.613seconds. Native timeout/SIGINT
+supervision with an uncooperative FFI callback and forked heartbeat descendant
+passes39.094seconds: the group stops, sealed module snapshots are cleaned and
+all pre-existing graph rows/schema/IDs remain. Earlier retained failures found
+test argument/source-fixture mistakes, insufficient startup time and real
+read-only snapshot cleanup; corrected observations preserve the checks.
+The matching profiler/workload CTest pair passes125.25seconds, including ordinary
+source-profile descendant cleanup. Operator replacement of the workload after
+the actual listener starts is rejected in24.152seconds without accepting a
+profile or leaving temporary files. The earlier attempt to mutate through a
+request correctly failed its missing file capability; that boundary is unchanged.
+The full regression, installed SDK24 and Linux validation remain pending.
+Public workload task capture/replay, server debugging, source concurrency,
+general accelerators and broader platform delivery remain pending.
+
 # Verified primary0.81
 
 The explicitly approved0.77→0.81 transition is complete. Primary full87 passes
@@ -2359,3 +4010,29 @@ root promotion, release or full objective completion claim.
 Isolated implementation adds `nex.project-build/1`, component ownership/import DAG checks, named build configurations, read-only plans and actual native/static-archive/server/web orchestration. Dependencies currently compile source; separately built archives are not consumed by those source edges. Full79/installed SDK/platform/root-integration gates remain pending. Earlier0.70 evidence retains its exact source and binary scopes.
 
 On a physical CIX P1 ARM64 board, a private patched0.70 Linux development SDK launches and builds/runs ten language examples in debug/release; all20 native outputs match the interpreter and copied binaries run without NEX/LLVM/MLIR/Z3 dependencies. Checked overflow traps in both profiles. Separately, Mali OpenCL checked196608 integer outputs and a fixed-shape3x2 ONNX fixture passed three Zhouyi NPU runs with CPU EP fallback disabled, actual Zhouyi profile placement and `/dev/aipu` open. Direct accelerator calls from NEX and broad hardware support remain pending.
+# Working106 private AST task scheduling
+
+This separate development source is toolchain0.102.0/language0.18. Its reference
+scheduler dispatches all ten staged task operations independently of TaskIR and
+native TaskGroup. The56 retained source scenarios match expected values/errors
+with actual yields/scopes/channels. The private control probe has32 source cases
+and243 checks, including aggregate action limits. Focused native scheduler,
+frontend, IR and reference checks pass. Current106 full108, sanitizer, installed
+SDK and platform gates need their own evidence. Frozen105 full107 and strict
+AST/IR sanitizer checks passed. Public task syntax/execution stays disabled;
+TypeScript scheduling, region typing,019 migration, asynchronous IO/debug/profile
+and delivery remain pending. Primary081 and graph history are preserved.
+
+# Private150: on-demand logical resource authority (validation pending)
+
+Independent AST snapshots now acquire actor/receiver resource authority only
+after complete graph validation finds genuine external owners. Task/FFI in both
+native and AST adapters captures logical ownership synchronously only for an
+actual resource-bearing signature. Pure completion/channel values remain
+independent of logical resource revocation; physical grants, cancellation,
+late owned admission and ended-owner rejection remain required. Three new
+explicit022 AST regressions complement the unchanged legacy request test;
+FFI context probes cover skipped data-only acquisition and mandatory owned
+acquisition. Public021, public022 migration and installed/platform/device
+acceptance are unchanged. Matching full build/regression/sanitizers are pending.
+

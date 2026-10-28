@@ -1,5 +1,5 @@
 {
   "schema": "nex.project/1",
   "entry": "main.nex",
-  "language": "0.16"
+  "language": "0.24"
 }

@@ -18,6 +18,10 @@ import urllib.request
 import support as harness
 
 
+def loader_environment():
+    return {k:v for k,v in os.environ.items() if k not in ('LD_LIBRARY_PATH','LD_PRELOAD')}
+
+
 class Packaging(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -38,9 +42,46 @@ class Packaging(harness.ToolchainCase):
                     if name.startswith('/') and not name.startswith(('/usr/lib/', '/System/Library/')):
                         pending.append(name)
             else:
-                listing = subprocess.check_output(['ldd', path], text=True)
+                listing = subprocess.check_output(['ldd', path], text=True, env=loader_environment())
+                self.assertNotIn('=> not found', listing, 'unresolved ELF fixture dependency: '+str(path))
                 pending += re.findall(r'=>\s+(/.*?)\s+\(0x', listing)
         return found
+
+    def copy_elf_fixture_closure(self, original, prefix):
+        """Prepare an independently loadable test input, without the packager."""
+        original=Path(original).resolve(strict=True)
+        listing=subprocess.check_output(['ldd',original],text=True,env=loader_environment())
+        self.assertNotIn('=> not found',listing,'unresolved ELF fixture dependency: '+str(original))
+        platform_libraries={'libc.so.6','libm.so.6','libpthread.so.0','libdl.so.2',
+                            'librt.so.1','libresolv.so.2','libutil.so.1',
+                            'ld-linux-aarch64.so.1','ld-linux-x86-64.so.2'}
+        aliases={};inputs={original}
+        for name,value in re.findall(r'^\s*(\S+)\s*=>\s*(.*?)\s+\(0x',listing,re.M):
+            if Path(name).name in platform_libraries:continue
+            path=Path(value).resolve(strict=True);inputs.add(path);aliases[name]=path
+        self.assertLessEqual(len(inputs),128)
+        self.assertLessEqual(sum(p.stat().st_size for p in inputs),256*1024*1024)
+        names={};digests={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
+        for path in sorted(inputs):
+            self.assertNotIn(path.name,names,'ELF fixture basename collision: '+path.name)
+            names[path.name]=path;target=prefix/path.name;shutil.copy2(path,target)
+            subprocess.run(['patchelf','--set-rpath','$ORIGIN',target],check=True)
+            dynamic=subprocess.check_output(['readelf','-d',path],text=True)
+            match=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic)
+            if match:aliases[match[1]]=path
+        for name,path in aliases.items():
+            self.assertEqual(Path(name).name,name,'ELF fixture SONAME must be a filename')
+            self.assertNotIn(name,('','.','..'))
+            alias=prefix/name;target=prefix/path.name
+            if alias.exists():self.assertEqual(alias.resolve(),target)
+            else:alias.symlink_to(target.name)
+        for path,digest in digests.items():self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),digest)
+        library=prefix/original.name
+        captured=subprocess.check_output(['ldd',library],text=True,env=loader_environment())
+        self.assertNotIn('=> not found',captured)
+        for name,value in re.findall(r'^\s*(\S+)\s*=>\s*(.*?)\s+\(0x',captured,re.M):
+            if Path(name).name not in platform_libraries:self.assertIn(prefix.resolve(),Path(value).resolve().parents)
+        return library
 
     def notice(self, roots):
         license_file = self.root / 'fixture-license.txt'
@@ -77,18 +118,36 @@ class Packaging(harness.ToolchainCase):
         original = Path(doctor['native_sqlite_library']).resolve()
         prefix.mkdir(parents=True)
         library = prefix / original.name
-        shutil.copy2(original, library)
         if platform.system() == 'Darwin':
+            shutil.copy2(original, library)
             subprocess.run(['/usr/bin/install_name_tool', '-id', '@rpath/' + library.name, library], check=True)
         else:
-            dynamic = subprocess.check_output(['readelf', '-d', library], text=True)
-            soname = re.search(r'\(SONAME\).*?\[([^]]+)\]', dynamic).group(1)
-            if soname != library.name:
-                (prefix / soname).symlink_to(library.name)
+            library=self.copy_elf_fixture_closure(original,prefix)
         config = self.root / 'toolchain.json'
         config.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host'],
             'sqlite': {'include': doctor['native_sqlite_include'], 'library': str(library)}}))
         return config, library
+
+    @unittest.skipUnless(platform.system()=='Linux','actual private ELF fixture closure')
+    def test_fixture_copy_keeps_transitive_libraries_without_ambient_loader_paths(self):
+        doctor=self.cli('doctor');compiler=doctor['native_compiler'];original=self.root/'original % 🧠';original.mkdir()
+        (original/'leaf.c').write_text('int leaf(void){return 40;}\n')
+        (original/'provider.c').write_text('int leaf(void);int answer(void){return leaf()+2;}\n')
+        leaf=original/'libnex_fixture_leaf.so.1';provider=original/'libnex_fixture_provider.so.1'
+        for argv in ([compiler,'-x','c','-shared','-fPIC',original/'leaf.c','-Wl,-soname,'+leaf.name,'-o',leaf],
+                     [compiler,'-x','c','-shared','-fPIC',original/'provider.c','-L'+str(original),'-l:'+leaf.name,
+                      '-Wl,-soname,'+provider.name,'-Wl,-rpath,$ORIGIN','-o',provider]):
+            subprocess.run(list(map(str,argv)),check=True,env=loader_environment())
+        probe=self.root/'probe.c';probe.write_text('#include <dlfcn.h>\n#include <stdio.h>\nint main(int argc,char **argv){if(argc!=2)return 2;void *h=dlopen(argv[1],RTLD_NOW);if(!h){puts(dlerror());return 3;}int(*f)(void)=(int(*)(void))dlsym(h,"answer");if(!f)return 4;printf("%d\\n",f());return dlclose(h)!=0;}\n')
+        binary=self.root/'probe';subprocess.run([compiler,'-x','c',str(probe),'-ldl','-o',str(binary)],check=True)
+        copied=self.root/'copied % 🧠';copied.mkdir();library=self.copy_elf_fixture_closure(provider,copied)
+        self.assertIn(leaf.name,{p.name for p in copied.iterdir()})
+        missing=self.root/'missing';missing.mkdir();leaf.unlink()
+        with self.assertRaisesRegex(AssertionError,'unresolved ELF fixture dependency'):
+            self.copy_elf_fixture_closure(provider,missing)
+        shutil.rmtree(original)
+        child=subprocess.run([binary,library],capture_output=True,text=True,env=loader_environment())
+        self.assertEqual((child.returncode,child.stdout),(0,'42\n'),child.stderr)
 
     def test_pure_archived_revision_relocates_without_sources_or_build(self):
         self.source('module packed; fn main() -> i64 !{io} { print("Я🧠"); return 7; }')

@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"nex.dns-targets/1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","resolvers","authorities"],
+  "properties":{
+    "schema":{"const":"nex.dns-targets/1"},
+    "maximum_calls":{"type":"integer","minimum":1,"maximum":64,"default":16},
+    "resolvers":{"type":"array","minItems":1,"maxItems":4,"items":{
+      "type":"object","additionalProperties":false,"required":["address","port"],
+      "properties":{"address":{"type":"string","description":"Unique numeric unicast IPv4/IPv6 without scope ID; enforced by preparer"},"port":{"type":"integer","minimum":1,"maximum":65535}}
+    }},
+    "authorities":{"type":"array","minItems":1,"maxItems":16,"items":{
+      "type":"object","additionalProperties":false,"required":["name","domain","subdomains"],
+      "properties":{"name":{"type":"string","pattern":"^[A-Za-z0-9_.-]{1,64}$"},"domain":{"type":"string","description":"ASCII DNS name with labels1..63 and total1..253 bytes, optional final dot; explicit * requires subdomains=true"},"subdomains":{"type":"boolean"}}
+    }}
+  },
+  "$comment":"The preparer additionally rejects duplicate fields/names/resolvers, malformed UTF-8, invalid labels, symlink/FIFO/special input and more than1MiB. Names are lowercased and the optional final dot removed. A name matches its domain exactly, or its strict dot-boundary descendants when enabled."
+}

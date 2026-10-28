@@ -7,7 +7,9 @@ native scopes. Computed values have independent, paged, read-only references.
 import argparse
 import base64
 import json
+import os
 import queue
+import select
 import signal
 import subprocess
 import sys
@@ -17,6 +19,51 @@ import time
 MAX_PACKET = 8 * 1024 * 1024
 MAX_REFERENCES = 100000
 MAX_VARIABLES_PAGE = 1000
+
+
+class ReaderStopped(Exception):
+    pass
+
+
+class InterruptibleReader:
+    """POSIX DAP pipe reader with a wake descriptor and no buffered-I/O lock.
+
+    One thread owns each input descriptor. The shared wake pipe remains readable
+    until both threads join, so stopping also interrupts an unfinished packet.
+    Native DAP hosting currently targets macOS/Linux.
+    """
+    def __init__(self, stream, stopped, wake):
+        self.descriptor = stream.fileno()
+        self.stopped, self.wake = stopped, wake
+        self.buffer = bytearray()
+
+    def fill(self):
+        if self.stopped.is_set():
+            raise ReaderStopped()
+        select.select([self.descriptor, self.wake], [], [])
+        if self.stopped.is_set():
+            raise ReaderStopped()
+        chunk = os.read(self.descriptor, 65536)
+        self.buffer.extend(chunk)
+        return bool(chunk)
+
+    def take(self, size):
+        value = bytes(self.buffer[:size])
+        del self.buffer[:size]
+        return value
+
+    def readline(self, limit):
+        while True:
+            newline = self.buffer.find(b'\n', 0, limit)
+            if newline >= 0:
+                return self.take(newline + 1)
+            if len(self.buffer) >= limit or not self.fill():
+                return self.take(min(limit, len(self.buffer)))
+
+    def read(self, size):
+        if not self.buffer:
+            self.fill()
+        return self.take(min(size, len(self.buffer)))
 
 
 def read_packet(stream):
@@ -143,6 +190,78 @@ class Bridge:
         self.next_reference = 1
         self.epoch = 0
         self.max_client_sequence = 0
+        self.stopped_thread = None
+        self.task_mode = False
+        self.next_frame = 1
+        self.native_stopped_thread = None
+
+    def logical(self, request, command, arguments=None):
+        arguments = dict(arguments or {})
+        if command in ('next', 'in', 'out', 'continue'):
+            arguments['defer_continue'] = True
+        payload = base64.b64encode(json.dumps({'command': command, 'arguments': arguments or {}},
+                                            ensure_ascii=False).encode('utf-8')).decode('ascii')
+        backend = {'seq': request['seq'], 'type': 'request', 'command': 'evaluate',
+                   'arguments': {'context': 'repl', 'expression': '`nex-task-request-encoded ' + payload}}
+        self.pending[request['seq']] = {'request': request, 'kind': 'task_' + command, 'epoch': self.epoch}
+        write_packet(self.backend.stdin, backend)
+
+    def logical_response(self, pending, message):
+        request = pending['request']; command = request['command']; args = request.get('arguments', {})
+        if pending['kind'] == 'task_native_continue':
+            return self.response(request, {} if command != 'continue' else message.get('body', {}),
+                                 None if message.get('success') else message.get('message', message.get('body', {})))
+        if pending['epoch'] != self.epoch and command not in ('next', 'stepIn', 'stepOut', 'setBreakpoints', 'setFunctionBreakpoints'):
+            return self.response(request, error='logical task stop changed during inspection')
+        if not message.get('success'):
+            return self.response(request, error=message.get('message', message.get('body', {})))
+        try:
+            result = json.loads(message.get('body', {}).get('result', '').strip())
+            if not isinstance(result, dict):
+                raise ValueError('logical debugger returned a non-object')
+            if command in ('next', 'stepIn', 'stepOut', 'continue'):
+                if result.get('armed') is not True or self.native_stopped_thread is None:
+                    raise ValueError('logical resume requires its current all-stop worker event')
+                self.pending[request['seq']] = {'request': request, 'kind': 'task_native_continue', 'epoch': self.epoch}
+                return write_packet(self.backend.stdin, {'seq': request['seq'], 'type': 'request', 'command': 'continue',
+                    'arguments': {'threadId': self.native_stopped_thread, 'singleThread': False}})
+            if command == 'threads':
+                if result.get('schema') != 'nex.task-debug-tasks/1':
+                    raise ValueError('logical task list schema differs')
+                return self.response(request, {'threads': [{'id': task['id'],
+                    'name': 'task ' + str(task['id']) + ': ' + task.get('function', task['state']) +
+                            (' [' + task['wait_reason'] + ']' if task['wait_reason'] != 'none' else '')}
+                    for task in result['tasks']], 'nex': result})
+            if command == 'stackTrace':
+                if result.get('schema') != 'nex.task-debug-stack/1':
+                    raise ValueError('logical stack schema differs')
+                rows = []
+                start, count = args.get('startFrame', 0), args.get('levels', 0)
+                if type(start) is not int or type(count) is not int or start < 0 or count < 0:
+                    raise ValueError('invalid logical stack page')
+                for frame in result['frames'][start:start + min(count or 256, 256)]:
+                    if self.next_frame > 2147483647 or len(self.frames) >= 65536:
+                        raise ValueError('logical frame reference budget exhausted')
+                    identity = self.next_frame; self.next_frame += 1
+                    self.frames[identity] = {'task_id': result['task_id'], 'frame_index': frame['index']}
+                    rows.append({'id': identity, 'name': frame['name'], 'line': frame['line'], 'column': frame['column'],
+                                 'source': {'path': frame['file'], 'name': os.path.basename(frame['file'])},
+                                 'presentationHint': 'normal'})
+                return self.response(request, {'stackFrames': rows, 'totalFrames': len(result['frames']), 'nex': result})
+            if command == 'variables':
+                if result.get('schema') != 'nex.task-debug-values/1':
+                    raise ValueError('logical values schema differs')
+                start, count = args.get('start', 0), args.get('count', 0)
+                if type(start) is not int or type(count) is not int or start < 0 or count < 0:
+                    raise ValueError('invalid logical variables page')
+                variables = [{'name': entry['name'], 'type': entry['type'],
+                              'value': entry.get('preview', '<' + entry.get('unavailable', 'unavailable') + '>'),
+                              'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
+                             for entry in result['variables'][start:start + min(count or 1000, 1000)]]
+                return self.response(request, {'variables': variables, 'nex': result})
+            return self.response(request, result if command in ('setBreakpoints', 'setFunctionBreakpoints') else {})
+        except (KeyError, TypeError, ValueError) as error:
+            return self.response(request, error=str(error) + ': ' + str(message.get('body', {}))[:4096])
 
     def emit(self, message):
         original = message.get('seq')
@@ -267,6 +386,36 @@ class Bridge:
             return self.response(request, error='too many outstanding DAP requests')
         original = json.loads(json.dumps(request))
         command, args = request['command'], request.get('arguments', {})
+        if command == 'launch':
+            self.task_mode = args.pop('nexTaskDebug', False) is True
+        if self.task_mode:
+            if command in ('setExpression', 'setVariable'):
+                return self.response(request, error='logical task values are read-only')
+            if command == 'threads':
+                return self.logical(original, 'tasks')
+            if command == 'stackTrace':
+                return self.logical(original, 'stack', {'task_id': args.get('threadId')})
+            if command == 'scopes':
+                stored = self.frames.get(args.get('frameId'))
+                if stored is None:
+                    return self.response(request, error='unknown or stale logical frame')
+                reference = self.allocate({'logical': dict(stored)})
+                return self.response(request, {'scopes': [{'name': 'NEX retained locals', 'variablesReference': reference,
+                                                          'expensive': False, 'presentationHint': 'locals'}]})
+            if command == 'variables':
+                stored = self.references.get(args.get('variablesReference'))
+                if stored and 'logical' in stored:
+                    return self.logical(original, 'values', stored['logical'])
+            if command in ('next', 'stepIn', 'stepOut', 'continue'):
+                if any(value['kind'] in ('task_next', 'task_in', 'task_out', 'task_continue', 'task_native_continue') for value in self.pending.values()):
+                    return self.response(request, error='another logical resume is pending')
+                return self.logical(original, {'next': 'next', 'stepIn': 'in', 'stepOut': 'out', 'continue': 'continue'}[command],
+                                    {'task_id': args.get('threadId')})
+            if command == 'setBreakpoints':
+                return self.logical(original, 'breakpoints', {'source': args.get('source', {}).get('path', ''),
+                                                             'breakpoints': args.get('breakpoints', [])})
+            if command == 'setFunctionBreakpoints':
+                return self.logical(original, 'function_breakpoints', {'breakpoints': args.get('breakpoints', [])})
         if command in ('setExpression', 'setVariable'):
             return self.response(request, error='NEX expression adapter does not mutate stopped values')
         reference = args.get('variablesReference')
@@ -300,6 +449,8 @@ class Bridge:
             if not isinstance(expression, str) or not expression or len(expression.encode('utf-8')) > 8192:
                 return self.response(request, error='NEX expression requires 1..8192 UTF-8 bytes')
             native = args.get('context') == 'repl' and expression.startswith('`')
+            if self.task_mode and native:
+                return self.response(request, error='logical task watches accept pure NEX expressions only')
             if not native:
                 payload = {'expression': expression}
                 if 'frameId' in args:
@@ -310,6 +461,8 @@ class Bridge:
                 args['expression'] = '`nex-eval-encoded ' + encoded
                 args['context'] = 'repl'
                 kind = 'expression'
+        if command == 'threads' and self.stopped_thread is not None:
+            kind = 'threads_initial'
         self.pending[request['seq']] = {'request': original, 'kind': kind, 'epoch': self.epoch}
         write_packet(self.backend.stdin, request)
 
@@ -318,10 +471,36 @@ class Bridge:
         if message.get('type') == 'event' and message.get('event') in ('continued', 'stopped', 'terminated', 'exited'):
             self.epoch += 1
             self.references.clear(); self.backend_references.clear(); self.frames.clear()
+            thread = message.get('body', {}).get('threadId') if message.get('event') == 'stopped' else None
+            self.stopped_thread = thread if type(thread) is int and thread > 0 else None
+            self.native_stopped_thread = self.stopped_thread
+            if self.task_mode:
+                # A physical worker is not a logical task. The subsequent
+                # threads/stack query reads the current verified task catalog.
+                message.setdefault('body', {}).pop('threadId', None)
+                if message['event'] == 'stopped':
+                    message['body']['allThreadsStopped'] = True
+                self.stopped_thread = None
         if message.get('type') == 'response':
             pending = self.pending.pop(message.get('request_seq'), None)
             if pending is not None:
+                if pending['kind'].startswith('task_'):
+                    return self.logical_response(pending, message)
                 request = pending['request']
+                if request['command'] == 'threads' and pending['epoch'] != self.epoch:
+                    return self.response(request, error='process stop changed during thread inspection')
+                if request['command'] == 'threads' and message.get('success') and self.stopped_thread is not None:
+                    threads = message.get('body', {}).get('threads', [])
+                    if not any(thread.get('id') == self.stopped_thread for thread in threads):
+                        # LLDB can return its one-shot launch-time list even
+                        # after a worker has stopped. A list missing the actual
+                        # stopped thread is contradictory: request one fresh
+                        # list, then fail if the backend still omits it. Reuse
+                        # the identity only after its first exchange finishes.
+                        if pending['kind'] == 'threads_initial':
+                            self.pending[request['seq']] = {'request': request, 'kind': 'threads_retry', 'epoch': self.epoch}
+                            return write_packet(self.backend.stdin, request)
+                        return self.response(request, error='stopped thread is absent from backend thread list')
                 if request['command'] in ('variables', 'scopes', 'stackTrace') and pending['epoch'] != self.epoch:
                     return self.response(request, error='process stop changed during inspection')
                 if request['command'] == 'initialize' and message.get('success'):
@@ -346,7 +525,7 @@ class Bridge:
                     result = message.get('body', {}).get('result', '').strip()
                     try:
                         data = json.loads(result)
-                        if data.get('schema') != 'nex.expression/1' or not data.get('ok'):
+                        if data.get('schema') not in ('nex.expression/1', 'nex.task-expression/1', 'nex.task-expression/2', 'nex.private-task-expression/1') or not data.get('ok'):
                             raise ValueError('backend did not return a NEX expression result')
                         if data['type'] == 'unit':
                             variable = {'value': 'unit', 'type': 'unit', 'variablesReference': 0}
@@ -368,6 +547,20 @@ class Bridge:
         self.emit(message)
 
 
+def close_backend_pipes(backend):
+    # A failed disconnect flush may leave buffered bytes. Closing that writer
+    # flushes again after the backend has already closed its read end. This
+    # expected cleanup EPIPE must neither turn normal EOF into failure nor mask
+    # the original protocol error. Always close the backend output as well.
+    try:
+        try:
+            backend.stdin.close()
+        except BrokenPipeError:
+            pass
+    finally:
+        backend.stdout.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--backend', required=True, help='trusted installed lldb-dap executable')
@@ -375,20 +568,34 @@ def main():
     backend = subprocess.Popen([args.backend], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     events = queue.Queue(maxsize=8)
     stopped = [False]
+    readers_stopped = threading.Event()
+    wake_read, wake_write = os.pipe()
     def interrupted(*_):stopped[0] = True
     signal.signal(signal.SIGINT, interrupted); signal.signal(signal.SIGTERM, interrupted)
+    def publish(value):
+        while not readers_stopped.is_set():
+            try:
+                events.put(value, timeout=.1)
+                return True
+            except queue.Full:
+                pass
+        return False
     def reader(label, stream):
         try:
+            stream = InterruptibleReader(stream, readers_stopped, wake_read)
             while True:
                 message = read_packet(stream)
-                events.put((label, message))
-                if message is None:return
+                if not publish((label, message)) or message is None:return
+        except ReaderStopped:
+            return
         except Exception as error:
-            events.put(('error', error))
-    for label, stream in [('client', sys.stdin.buffer), ('server', backend.stdout)]:
-        threading.Thread(target=reader, args=(label, stream), daemon=True).start()
+            publish(('error', error))
+    readers = []
     bridge = Bridge(backend, sys.stdout.buffer)
     try:
+        for label, stream in [('client', sys.stdin.buffer), ('server', backend.stdout)]:
+            thread = threading.Thread(target=reader, args=(label, stream))
+            thread.start(); readers.append(thread)
         while not stopped[0]:
             try:label, message = events.get(timeout=.1)
             except queue.Empty:continue
@@ -401,19 +608,29 @@ def main():
                     bridge.response(message, error=error)
             else:bridge.server(message)
     finally:
-        if backend.poll() is None:
+        try:
+            if backend.poll() is None:
+                try:
+                    write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
+                    deadline = time.monotonic() + 5
+                    while backend.poll() is None and time.monotonic() < deadline:
+                        try:events.get(timeout=.1)
+                        except queue.Empty:pass
+                    if backend.poll() is None:raise subprocess.TimeoutExpired(args.backend,5)
+                except (BrokenPipeError, subprocess.TimeoutExpired):
+                    backend.terminate()
+                    try:backend.wait(timeout=2)
+                    except subprocess.TimeoutExpired:backend.kill();backend.wait(timeout=2)
+        finally:
+            readers_stopped.set()
+            os.write(wake_write, b'x')
             try:
-                write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
-                deadline = time.monotonic() + 5
-                while backend.poll() is None and time.monotonic() < deadline:
-                    try:events.get(timeout=.1)
-                    except queue.Empty:pass
-                if backend.poll() is None:raise subprocess.TimeoutExpired(args.backend,5)
-            except (BrokenPipeError, subprocess.TimeoutExpired):
-                backend.terminate()
-                try:backend.wait(timeout=2)
-                except subprocess.TimeoutExpired:backend.kill();backend.wait(timeout=2)
-        backend.stdin.close(); backend.stdout.close()
+                for thread in readers:thread.join(timeout=2)
+                if any(thread.is_alive() for thread in readers):
+                    raise RuntimeError('DAP input reader did not stop')
+            finally:
+                os.close(wake_read); os.close(wake_write)
+                close_backend_pipes(backend)
 
 
 if __name__ == '__main__':

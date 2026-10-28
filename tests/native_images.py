@@ -13,7 +13,7 @@ class NativeImages(harness.ToolchainCase):
         super().setUp()
         self.root=self.root/'images % 🧠';self.root.mkdir()
         for name in ('model','producer','consumer','app'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
         (self.root/'model/value.nex').write_text('''module model;
 pub struct Payload{text:str;data:bytes;values:list<f64>;callback:fn(i64)->i64;}
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
@@ -62,10 +62,10 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         p=subprocess.run([str(artifact)],cwd='/',capture_output=True,text=True,env=env,timeout=30)
         self.assertEqual(p.returncode,code,p.stdout+p.stderr)
         return p
-    def test_real_two_dsos_static_frontier_one_runtime_and_moved_execution(self):
+    def two_dsos_static_frontier_one_runtime_and_moved_execution(self,profile):
         self.cli('test','--symbol','values');self.cli('test','--symbol','values','--target','web')
         graph=(self.root/'.nex/graph.db').read_bytes()
-        built=self.build();artifacts=self.artifacts(built)
+        built=self.build(profile);artifacts=self.artifacts(built)
         self.assertEqual((self.root/'.nex/graph.db').read_bytes(),graph)
         self.assertEqual(self.execute(artifacts['app']['artifact']).stdout,'NEX_IMAGES_OK\n')
         self.assertEqual((self.root/'data/data.bin').read_bytes(),'Я🧠'.encode())
@@ -86,6 +86,10 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         shutil.rmtree(self.root/'app');shutil.rmtree(self.root/'producer');shutil.rmtree(self.root/'consumer');shutil.rmtree(self.root/'model')
         shutil.rmtree(executable.parent.parent)
         self.assertEqual(self.execute(moved/'app').stdout,'NEX_IMAGES_OK\n')
+    def test_real_two_dsos_static_frontier_one_runtime_and_moved_execution(self):
+        self.two_dsos_static_frontier_one_runtime_and_moved_execution('debug')
+    def test_release_two_dsos_static_frontier_one_runtime_and_moved_execution(self):
+        self.two_dsos_static_frontier_one_runtime_and_moved_execution('release')
     def test_warm_cache_and_app_only_edit_preserve_provider_and_runtime_bytes(self):
         first=self.build();warm=self.build();a=self.artifacts(first);b=self.artifacts(warm)
         self.assertTrue(all(v['cached'] for v in b.values()))
@@ -222,6 +226,10 @@ def __lldb_init_module(debugger,internal_dict):
         aliased=copy.deepcopy(meta);aliased['program']=str(alias/'app');manifest.write_text(json.dumps(aliased))
         exported=self.cli('core',core,'--manifest',alias/'debug.json','--export',capsule,'--expression','held',timeout=180)
         self.assertTrue(exported['read_after_export'])
+        receipt=(capsule/'capsule.json').read_bytes()
+        rejected=self.cli('core',core,'--manifest',alias/'debug.json','--export',capsule,ok=False,timeout=180)
+        self.assertEqual(rejected['code'],'E_CORE_CAPSULE')
+        self.assertEqual((capsule/'capsule.json').read_bytes(),receipt)
         alias.unlink();alias_parent.rmdir()
         for name in ('model','producer','consumer','app'):shutil.rmtree(self.root/name)
         cache=Path(app['artifact']).parent.parent;shutil.rmtree(cache)

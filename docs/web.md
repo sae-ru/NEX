@@ -1,6 +1,42 @@
+Language0.20 task file reads are server-only native/reference operations.
+TypeScript/Node and the browser have no source filesystem bridge. Reachable
+server functions remain rejected, and unreachable server readers remain absent
+from emitted client/shared code. Task workers have no filesystem authority. This does not widen the synchronous UI
+entry contract or alter browser dependencies/notices.
+
+Language0.19/0.20 standalone TypeScript modules execute reachable task effects through
+generated resumable functions and the independent event-loop task runtime.
+Ordinary `nex test --target web` awaits that scheduler; source suspension remains
+present. Public maps retain the checked source revision and operation sites.
+The pure synchronous title/initial/update/view contracts stay unchanged. Task
+functions or reachable task callables at those UI boundaries are rejected with
+`E_TASK_UNIMPLEMENTED`. Toolchain0.120 additionally hosts task-only worker_compute
+in a dedicated module Worker; read browser-workers.md for its scheduler, limits
+and wire-only boundary. Main-thread asynchronous UI entries remain pending. Synchronous standalone exports with
+task-authority signatures but no reachable task effect are also pending. Pure
+helpers with those signatures work inside an emitted task execution scope.
+See [the task runtime contract](tasks-runtime-design.md).
+
+Toolchain0.97 adds [typed browser worker jobs](browser-workers.md) through
+ordinary worker_compute/worker_commands entries. Actual worker execution has
+separate production-engine and installed-SDK evidence. Synchronous parallel_map
+keeps the semantics below; task-effect browser-worker integration is described in browser-workers.md.
+
+Language0.18 adds ordered CPU map semantics to the synchronous TypeScript
+backend through serial evaluation, checked closure metadata and bounded group
+polling. This does not provide browser workers. Pure value/error agreement and
+reachable client/shared-only generation remain required; npm/lock/notices are
+unchanged. See [concurrency](concurrency-design.md).
+
+Language0.17 candidate emits `?` through a private result-propagation sentinel
+and a boundary in the current generated function. Runtime traps are rethrown.
+This reuses the pinned browser runtime without changing npm dependencies or
+notices, and retains reachable client/shared-only output and source mapping.
+See [result propagation](error-propagation.md); full integration gates remain.
+
 # NEX browser backend and application contract
 
-The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
+The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). Task-driven UI integration, asynchronous task I/O and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
 
 ## Build and run
 
@@ -185,7 +221,44 @@ For a standalone checked module:
 ./build/nex emit examples/data.nex --kind typescript --entry main --directory build/ts-module
 ```
 
-The result contains `program.ts`, its `nex-runtime.ts` and mapping metadata. The selected function is exported as `entry`, with other emitted names qualified through the compiler's native-symbol encoding. This does not install React or require an application contract.
+The result contains `program.ts`, `nex-runtime.ts`, `nex-bytes.ts` and mapping
+metadata. The selected function is exported as `entry`, with other emitted names
+qualified through the compiler's native-symbol encoding. This does not install
+React or require an application contract. A module without reachable task effects
+keeps ordinary synchronous exports; its map records `execution: "synchronous"`.
+An unused task declaration does not change that contract.
+
+If a reachable function or callable has the `task` effect, the module also
+contains `nex-task-runtime.ts` and its map records `execution: "task-generator"`.
+Exports return `task.Step<T>` generators, including pure helpers in that closure.
+A pure factory returning a task callable therefore selects this execution mode.
+The trusted JavaScript/TypeScript host starts and awaits the scheduler explicitly:
+
+```typescript
+import { entry } from './program.ts';
+import * as task from './nex-task-runtime.ts';
+
+const controller = new AbortController();
+const result = await task.run(task.call(() => entry()), {
+  signal: controller.signal,
+});
+```
+
+For a parameterized export, pass the same immutable inputs both to `entry` and
+as `task.call`'s second argument, for example
+`task.call(() => entry(input), [input])`, so the host boundary validates them.
+Calling a generator export alone does not execute its body. The scheduler
+preserves scopes, futures, FIFO channels, result-propagation boundaries and
+cooperative cancellation. Generated statement/loop checkpoints let host timers
+and an AbortSignal run during a long pure helper. Cancellation unwinds generated
+function cleanup and drains owned descendants before the run completes.
+JavaScript owns managed heap reclamation; this scheduler does not provide OS
+thread parallelism or asynchronous file/network/FFI authority. Standalone task
+execution alone does not enable task entries in synchronous React entries
+or establish browser UI/platform acceptance. Toolchain0.120 has a separate
+dedicated task-worker host, described in browser-workers.md and advertised
+by browser_workers.structured_tasks; it accepts task-only compute with wire
+input/output and does not grant external IO.
 
 ## Tests
 
@@ -195,7 +268,7 @@ library/export identifiers and manifest pins from emitted client code. Use a
 checked HTTP endpoint to call server functionality from a browser. A browser
 test receives no native-library authority from `--foreign`.
 
-`nex test --target web` runs reachable-project shared/client tests in the interpreter and in generated TypeScript using Node, comparing successful exit/output. Server tests are explicitly reported as skipped. This checks language semantics and is distinct from browser UI tests. Native tests remain `nex test` without the web target; a client test is not a native entry.
+`nex test --target web` runs reachable-project shared/client tests in the interpreter and in generated TypeScript using Node, comparing successful exit/output. Language0.19 task tests use the independent asynchronous reference scheduler and await `task.run` for the generated module; they retain source yields and structured waits. Server tests are explicitly reported as skipped. This checks language semantics and is distinct from browser UI tests. Native tests remain `nex test` without the web target; a client test is not a native entry.
 
 Language 0.4's result<T> and typed JSON also compile to the browser backend. Wire i64 values use canonical decimal strings; decode_json<T> reconstructs BigInt/nominal immutable values and returns recoverable errors. Strict duplicate-key, Unicode, field-shape and resource checks match the native/interpreter codec. The request adapter uses this boundary; codecs themselves remain pure.
 

@@ -38,3 +38,10 @@ reference and TypeScript tests pass under that producer. The fixture is for
 future explicit0.16 migration; its existence does not establish that migration
 or source traits are already implemented. Original rows and source are never
 relabelled as a newer language.
+
+`language-0.16.sql` and its JSON metadata were captured using the genuine
+approved installed SDK0.81 (compiler SHAe80d88b85dc0b4ddc55137658221f1f6beedc87324da705623355d30c1785bc1).
+Native/reference and TypeScript tests ran on the original0.16 program before
+capture. Result forwarding, generics, Unicode and an ordinary propagate local
+are preserved, without relabeling source, SQL, revisions or IDs. The0.17
+propagation suite explicitly migrates that archive and checks every old row.

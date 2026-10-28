@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/task-profile-catalog-1.json",
+  "title": "Checked component task profile sites and physical owners; semantic hash excludes image output digests",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "registry_abi",
+    "mode",
+    "artifact_kind",
+    "owner_image",
+    "registries"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.task-profile-catalog/1"
+    },
+    "registry_abi": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "static",
+        "shared-fixed"
+      ]
+    },
+    "artifact_kind": {
+      "enum": [
+        "code-archive",
+        "pic-stage",
+        "shared-image",
+        "application"
+      ]
+    },
+    "owner_image": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "registries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "component",
+          "accessor",
+          "owner_image",
+          "sites"
+        ],
+        "properties": {
+          "component": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+          },
+          "accessor": {
+            "type": "string",
+            "pattern": "^nex_task_profile_registry_[A-Za-z_][A-Za-z_0-9]{0,63}_v1$"
+          },
+          "owner_image": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sites": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16384,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "function_hash",
+                "function_source_hash",
+                "source_unit_hash",
+                "debug_path",
+                "contract",
+                "line"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "function_hash": {
+                  "$ref": "native-task-provider.schema.json#/$defs/hash"
+                },
+                "function_source_hash": {
+                  "$ref": "native-task-provider.schema.json#/$defs/hash"
+                },
+                "source_unit_hash": {
+                  "$ref": "native-task-provider.schema.json#/$defs/hash"
+                },
+                "debug_path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 32768
+                },
+                "contract": {
+                  "$ref": "native-task-provider.schema.json#/$defs/hash"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Matching compiler additionally checks strict component/function ordering, unique and exhaustive identities, total16384 sites/16MiB text and exact checked source/image attribution."
+}

@@ -73,7 +73,7 @@ struct Index {
     for(const auto &[_,f]:p.functionTemplates)if(!f.traitSignature)functionInfo(f);
     auto structureInfo=[&](const Structure &s){
       if(!s.templateName.empty())return;typeParameters(s);
-      if(declarations.contains(s.name))information[key(declarations.at(s.name))]={s.enumeration?"enum":"struct",std::string(s.exported?"pub ":"")+(s.enumeration?"enum ":"struct ")+s.name+generics(s)};
+      if(declarations.contains(s.name))information[key(declarations.at(s.name))]={s.opaqueResource?"resource":s.enumeration?"enum":"struct",std::string(s.exported?"pub ":"")+(s.opaqueResource?"server resource ":s.enumeration?"enum ":"struct ")+s.name+generics(s)};
       for(const auto &variant:s.variants){auto name=s.name+"::"+variant.name;std::string text="enum variant "+s.name+generics(s)+"::"+variant.name+"(";
         for(size_t i=0;i<variant.fields.size();++i){const auto &field=variant.fields[i];if(i)text+=", ";text+=field.name+": "+shown(field.type);valueBinding({field.span.file,field.span.begin,field.span.end},"field",field.name,field.type);}text+=")";
         if(variants.contains(name))information[key(variants.at(name))]={"variant",text};
@@ -231,8 +231,10 @@ struct Index {
       if(it->identifier&&it->text==name)return {span.file,it->span.begin,it->span.end};
     throw Error("E_ANALYSIS_RANGE","source declaration has no exact name token",span);
   }
-  void declaration(const std::string &name,const std::string &local,const std::string &kind,const Span &span,const std::string &detail){
-    auto selected=selection(span,local);declarations[name]=selected;tick();
+  void declaration(const std::string &name,const std::string &local,const std::string &kind,const Span &span,const std::string &detail,const std::optional<Span> &origin={}){
+    auto selected=origin?Location{origin->file,origin->begin,origin->end}:selection(span,local);
+    if(origin&&(origin->file!=span.file||origin->begin<span.begin||origin->end>span.end||origin->end<origin->begin||p.units.at(span.file).source.substr(origin->begin,origin->end-origin->begin)!=local))throw Error("E_ANALYSIS_RANGE","declaration name origin differs from its physical token",span);
+    declarations[name]=selected;tick();
     binding(selected);if(details)information[key(selected)]={kind,detail};
     symbols.push_back(Object{{"symbol",name},{"name",local},{"kind",kind},{"file",span.file},
       {"range",interval(span.begin,span.end)},{"selection",interval(selected.begin,selected.end)},{"detail",detail}});
@@ -336,8 +338,9 @@ struct Index {
     auto addFunction=[&](const Function &f){if(!f.closure&&!f.traitSignature&&f.templateName.empty())declaration(f.name,f.localName,"function",f.span,signature(f));};
     for(const auto &f:p.functions)addFunction(f);
     for(const auto &[_,f]:p.functionTemplates)addFunction(f);
-    auto addStructure=[&](const Structure &s){if(s.templateName.empty()){
-      declaration(s.name,s.localName,s.enumeration?"enum":"struct",s.span,(s.enumeration?"enum ":"struct ")+s.localName);
+    std::set<std::string> indexedStructures;
+    auto addStructure=[&](const Structure &s){if(s.templateName.empty()&&indexedStructures.insert(s.name).second){
+      declaration(s.name,s.localName,s.opaqueResource?"resource":s.enumeration?"enum":"struct",s.span,(s.opaqueResource?"server resource ":s.enumeration?"enum ":"struct ")+s.localName,s.nameOrigin);
       for(const auto &field:s.fields)valueBinding({field.span.file,field.span.begin,field.span.end},"field",field.name,field.type);
       if(references)for(const auto &variant:s.variants){auto at=Location{variant.span.file,variant.span.begin,variant.span.end};variants[s.name+"::"+variant.name]=at;binding(at);}
     }};
@@ -349,7 +352,7 @@ struct Index {
     sourceNames();
     for(const auto &f:p.functions)if(!f.closure&&!f.traitSignature&&f.templateName.empty())function(f);
     for(const auto &[_,f]:p.functionTemplates)function(f);
-    Object result{{"schema",details?"nex.analysis/3":references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",languageVersion},{"revision",revision(p)},
+    Object result{{"schema",details?"nex.analysis/3":references?"nex.analysis/2":"nex.analysis/1"},{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},
       {"entry",p.entryUnit},{"files",std::move(files)},{"symbols",std::move(symbols)},{"expressions",std::move(expressions)},
       {"graph_written",false},{"source_written",false},{"executed",false}};
     identifierDetails(result);

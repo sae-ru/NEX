@@ -16,7 +16,7 @@ class Editor(harness.ToolchainCase):
         compiler=Path(harness.NEX);installed=compiler.parent.parent/'share/nex/editor/vscode/session.js'
         return installed if compiler.parent.name=='bin' and installed.is_file() else harness.REPO/'editor/vscode/session.js'
     def project_session(self):
-        project=self.root/'project "quoted" \\ % 🧠';shutil.copytree(harness.REPO/'examples/project-tasks',project)
+        project=self.root/'project "quoted" \\ % 🧠';shutil.copytree(harness.REPO/'examples/project-tasks',project,ignore=shutil.ignore_patterns('.nex'))
         (project/'task.json').unlink()
         (project/'core/value.nex').write_text('''module project_task::core;
 pub fn make(offset:i64)->(fn(i64)->i64){

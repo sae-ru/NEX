@@ -68,9 +68,11 @@ void recordHeadChange(sqlite3 *db,const std::string &before,const std::string &a
   auto previous=latest(db,before);if(before==after)return;
   auto sequence=previous.empty()?int64_t(1):*previous.getInteger("sequence");if(!previous.empty()){if(sequence==std::numeric_limits<int64_t>::max())throw Error("E_CHANGE","change sequence exhausted");++sequence;}
   Query clock(db,"SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')");if(!clock.row())throw Error("E_STORE","cannot read change timestamp");
+  Query language(db,"SELECT language FROM revisions WHERE hash=?");language.bind(1,after);
+  if(!language.row())throw Error("E_REVISION","change target revision is missing");
   Object record{{"schema","nex.change/1"},{"namespace",graphIdentityNamespace(db)},{"sequence",sequence},
     {"previous_change",previous.empty()?"":string(previous,"hash")},{"previous_revision",before},{"revision",after},{"source_hash",sourceHash},
-    {"language",languageVersion},{"action",info.action},{"command",info.command},{"actor",info.actor},{"note",info.note},{"request_hash",info.requestHash},
+    {"language",language.text(0)},{"action",info.action},{"command",info.command},{"actor",info.actor},{"note",info.note},{"request_hash",info.requestHash},
     {"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"created",clock.text(0)}};
   auto data=json(std::move(record),false);if(data.size()>16384)throw Error("E_CHANGE","change record exceeds 16384 bytes");
   Query insert(db,"INSERT INTO change_journal(sequence,revision,hash,data) VALUES(?,?,?,?)");insert.bind(1,std::to_string(sequence));insert.bind(2,after);insert.bind(3,hash(data));insert.bind(4,data);insert.row();

@@ -85,6 +85,9 @@ def package(args):
                       assembler_sha256=sdk_archive.digest(assembler),
                       archive_helper_sha256=sdk_archive.digest(Path(sdk_archive.__file__)))
         run('assemble', [python, assembler, '--sdk', sdk, '--output', case/'stage', '--notices', notices], environment)
+        # Assembly captures the explicitly selected linker into sdk-host.json.
+        # Relocated checks must use that relative selection, not the old prefix.
+        environment.pop('NEX_WASM_LD', None)
         moved = case/'moved SDK, % 🧠'; (case/'stage').rename(moved)
         manifest, _, _ = sdk_archive.inventory(moved)
         original_paths = [sdk] + [Path(item['source']).resolve() for item in manifest['files'].values() if 'source' in item]
@@ -136,7 +139,7 @@ raise RuntimeError('SDK remained writable')
                        '--output', target, '--browser']
             if args.live:
                 command.append('--live')
-            run(label+'-workflow', command, environment)
+            run(label+'-workflow', command, environment, timeout=18000)
             accepted = json.loads((target/'report.json').read_text())
             sdk_acceptance.validate_completed_report(accepted)
             if accepted['compiler_sha256'] != sdk_archive.digest(prefix/'bin/nex'):
@@ -148,7 +151,7 @@ raise RuntimeError('SDK remained writable')
             sdk_archive.inventory(prefix, allow_python_cache=False)
             copied = output/(label+'-acceptance.json'); shutil.copyfile(target/'report.json', copied)
             return {'ok': True, 'report': str(copied), 'working_report': str(target/'report.json'),
-                    'phases': len(sdk_acceptance.ACCEPTANCE_PHASES), 'seconds': accepted['seconds'], 'live_debugger': args.live,
+                    'phases': len(accepted['phases']), 'seconds': accepted['seconds'], 'live_debugger': args.live,
                     'browser_build': True, 'compiler_sha256': accepted['compiler_sha256'],
                     'configured_read_roots_denied': True, 'sdk_write_denied': True,
                     'negative_read_controls': len(probes)}

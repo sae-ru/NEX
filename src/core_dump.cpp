@@ -9,6 +9,7 @@
 #include "llvm/Support/Error.h"
 #include <array>
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <cstdio>
 #include <fcntl.h>
@@ -52,6 +53,15 @@ JSON read(const fs::path &path,uint64_t limit){return parseNativeManifest(text(p
 const Object &object(const JSON &value){auto result=value.getAsObject();if(!result)throw Error("E_CORE_BUILD","expected a debug build object");return *result;}
 std::string required(const Object &value,const char *key){auto result=value.getString(key);if(!result||result->empty()||result->size()>16384||result->contains('\0'))throw Error("E_CORE_BUILD",std::string("missing/invalid debug field: ")+key);return result->str();}
 struct Temporary{fs::path path;~Temporary(){if(!path.empty()){std::error_code ignored;fs::remove_all(path,ignored);}}};
+std::string capsuleStagingDirectory(const fs::path &parent){
+  // Publication must stay on the destination filesystem. The general LLVM
+  // staging helper redirects percent-bearing paths to /tmp for object writers;
+  // capsule files do not use LLVM filename models. POSIX mkdtemp treats the
+  // complete parent literally and creates a private adjacent directory.
+  auto model=(parent/"nex-core-capsule-XXXXXX").string();
+  if(!::mkdtemp(model.data()))throw Error("E_CORE_CAPSULE",std::string("cannot create adjacent core capsule staging directory: ")+std::strerror(errno));
+  return model;
+}
 void validateCoreOptions(const CoreOptions &options){
   if(options.timeout<1||options.timeout>300||options.thread<-1||options.thread>63||options.frame<-1||options.frame>63||options.expression.size()>8192)throw Error("E_CORE_LIMIT","core inspection requires timeout1..300, thread/frame0..63 and expression at most8192 bytes");
 }
@@ -185,7 +195,7 @@ JSON inspectCore(const CoreOptions &options){
   auto child=runTaskProcess({lldb,"--no-lldbinit","--batch","--no-use-colors","-o","settings set target.load-script-from-symbol-file false","-o","settings set symbols.enable-external-lookup false","-o","command script import "+json(script,false)},temporary.path.string(),{{"NEX_CORE_REQUEST",request.string()}},options.timeout,(temporary.path/"logs").string());
   input.samePath(core);if(input.sha()!=before)throw Error("E_CORE_CHANGED","core bytes changed during inspection");
   for(const auto &[path,sha]:ownedHashes)if(Input(path,512*1048576).sha()!=sha)throw Error("E_CORE_CHANGED","owned image changed during core inspection");
-  if(child.timedOut||child.outputLimit||child.interrupted||child.process.code!=0)throw Error("E_CORE_READ","native core reader failed or exceeded its deadline/output limit: "+child.process.errors.substr(0,4096));
+  if(child.timedOut||child.outputLimit||child.interrupted||child.process.code!=0)throw Error("E_CORE_READ","native core reader failed (exit="+std::to_string(child.process.code)+", timeout="+std::to_string(child.timedOut)+", output_limit="+std::to_string(child.outputLimit)+", signal="+std::to_string(child.interrupted)+", deadline_seconds="+std::to_string(options.timeout)+"): "+child.process.errors.substr(0,4096));
   std::string marker="NEX_CORE_RESULT ";JSON report=nullptr;unsigned found=0;llvm::StringRef remaining(child.process.output);
   while(!remaining.empty()){auto [line,rest]=remaining.split('\n');remaining=rest;if(line.consume_front(marker)){if(++found!=1)throw Error("E_CORE_READ","duplicate native core report");report=parseNativeManifest(line.str());}}
   if(found!=1||!report.getAsObject())throw Error("E_CORE_READ","native core reader returned no checked report: "+child.process.errors.substr(0,4096));
@@ -221,7 +231,7 @@ JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){
   requireCapsuleProgram(loadBundle(read(original.parent_path()/"source-bundle.json",16*1048576),original.parent_path().string()));
   auto inspected=inspectCore(options);const auto &initial=object(inspected);const auto *core=initial.getObject("core");
   if(!core)throw Error("E_CORE_CAPSULE","core export lacks checked input identity");
-  Temporary staging{createTemporaryDirectory("nex-core-capsule",parent.string())};
+  Temporary staging{capsuleStagingDirectory(parent)};
   auto copied=capsuleWork(Object{{"mode","export"},{"work",staging.path.string()},{"manifest",original.string()},{"core",fs::absolute(options.core).lexically_normal().string()},{"core_sha256",required(*core,"sha256")},{"identity",capsuleIdentity()}});
   auto verified=inspectCoreCapsule(staging.path.string(),options);const auto &v=object(verified);const auto *binding=v.getObject("capsule");
   if(!binding)throw Error("E_CORE_CAPSULE","core export lacks verified capsule inventory");
@@ -231,8 +241,9 @@ JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){
   int status=int(::syscall(SYS_renameat2,AT_FDCWD,staging.path.c_str(),AT_FDCWD,destination.c_str(),RENAME_NOREPLACE));
 #else
   int status=-1;
+  errno=ENOTSUP;
 #endif
-  if(status!=0)throw Error("E_CORE_CAPSULE","cannot publish capsule without replacing an existing destination");
+  if(status!=0)throw Error("E_CORE_CAPSULE",std::string("cannot publish capsule without replacing an existing destination: ")+std::strerror(errno));
   staging.path.clear();
   return Object{{"schema","nex.core-capsule-export/1"},{"ok",true},{"directory",destination.string()},{"manifest",(destination/"capsule.json").string()},{"manifest_sha256",required(*binding,"manifest_sha256")},{"build_key",required(v,"build_key")},{"revision",required(v,"revision")},{"files",object(copied).getInteger("files").value_or(0)},{"bytes",object(copied).getInteger("bytes").value_or(0)},{"read_after_export",true},{"inferior_execution",false}};
 }

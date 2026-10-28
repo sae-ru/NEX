@@ -18,6 +18,7 @@
     "fields": {"type": "array", "maxItems": 1024, "items": {"type": "object", "additionalProperties": false, "required": ["name", "type"], "properties": {"name": {"$ref": "#/$defs/identifier"}, "type": {"$ref": "#/$defs/index"}}}},
     "type": {
       "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "name", "identity"], "properties": {"kind": {"const": "resource"}, "name": {"type": "string", "maxLength": 128, "pattern": "^[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*(?![\\s\\S])"}, "identity": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"}}},
         {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"enum": ["i64", "f64", "bool", "str", "bytes", "file", "unit"]}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": {"kind": {"enum": ["list", "result"]}, "item": {"$ref": "#/$defs/index"}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "name"], "properties": {"kind": {"const": "function"}, "name": {"$ref": "#/$defs/name"}}},

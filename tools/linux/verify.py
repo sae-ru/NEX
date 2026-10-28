@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -26,6 +27,24 @@ def main():
     try:
         run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3'])
         run('build',['cmake','--build','/build','-j',str(args.jobs)])
+        # Private TypeScript runtime probes require a real strict type checker.
+        # Hydrate the same pinned lock already cached by the toolchain image;
+        # the container remains offline and the source mount remains read-only.
+        dependencies=root/'web-dependencies';dependencies.mkdir()
+        for name in ('package.json','package-lock.json'):
+            shutil.copyfile(Path('/src/web')/name,dependencies/name)
+        cache=os.environ.get('NEX_NPM_CACHE')
+        if not cache or not Path(cache).is_dir():
+            raise RuntimeError('NEX_NPM_CACHE must select the populated locked offline cache')
+        run('typescript-dependencies',['npm','--prefix',str(dependencies),'ci',
+            '--cache',cache,'--offline','--ignore-scripts','--no-audit','--no-fund'])
+        tsc=dependencies/'node_modules/typescript/bin/tsc'
+        if not tsc.is_file():raise RuntimeError('locked TypeScript compiler was not installed')
+        os.environ['NEX_TSC']=str(tsc)
+        report['typescript']={'compiler':str(tsc),
+            'version':json.loads((dependencies/'node_modules/typescript/package.json').read_text())['version'],
+            'lock_sha256':hashlib.sha256((dependencies/'package-lock.json').read_bytes()).hexdigest(),
+            'cache':cache,'offline':True,'ignore_scripts':True}
         run('ctest',['ctest','--test-dir','/build','--output-on-failure','-j',str(args.jobs)])
         text=(root/'Testing/Temporary/LastTest.log').read_text()
         report['case_counts']=[int(n) for n in re.findall(r'Ran (\d+) tests? in ',text)]
@@ -42,12 +61,18 @@ def main():
                 'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
             run('live-project-archives',['python3','/src/tests/project_build.py','/build/sdk/bin/nex','--live',
                 'Projects.test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources'])
-            run('live-project-images',['python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
+            # /build can be a different filesystem from /tmp. This real capsule
+            # fixture also includes literal percent signs and Unicode paths.
+            image_temp=root/'live-image-tmp';image_temp.mkdir()
+            run('live-project-images',['env','TMPDIR='+str(image_temp),'python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
                 'NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images'])
             run('live-project-actions',['python3','/src/tests/project_actions.py','/build/sdk/bin/nex','--live',
                 'Actions.test_live_project_debugger_and_built_web_preview'])
             run('live-project-editor',['python3','/src/tests/editor.py','/build/sdk/bin/nex','--live',
                 'Editor.test_project_original_provider_breakpoint_and_watch'])
+            run('live-server-debug',['python3','/src/tests/server_debug.py','/build/sdk/bin/nex','--live'])
+            run('live-cpu-map',['python3','/src/tests/parallel.py','/build/sdk/bin/nex','--live',
+                'Parallel.test_live_worker_breakpoint_watch_and_resume_after_source_deletion'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

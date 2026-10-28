@@ -1,152 +1,727 @@
-# Current verified checkpoint and next work
+# HTTP storage transaction start233
 
-- [x] Integrate explicitly approved0.81 and verify primary full87, SDK24/375,
-  actual installed extension0.6 and strict0.77/0.81 compatibility.
-- [x] Preserve original47 graph revisions/all16tables/schema/IDs, Git HEAD/index,
-  frozen source backup and recoverable0.77 source/compiler.
-- [ ] Complete isolated bounded native server workload profile command, schemas,
-  SDK acceptance and cancellation/temporary-file cleanup; validate before integration.
-- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
-  project packaging, remaining task/editor commands and broader platform delivery.
+Toolchain0.135.30 starts an HTTP SQL transaction at the first storage operation.
+Handlers without DB access hold no writer lease. Actual storage keeps its
+method-based read/write policy,1000ms busy timeout, atomic commit/rollback and
+principal isolation. The old C++ constructor remains eager. Source syntax,
+public language0.24, graph history and task/provider ABIs are unchanged.
+Public025 integration, complete SDK/platform acceptance and PLAN work stay open.
+Sanitizers are authorized; security audit/fuzz campaigns remain deferred.
 
-[Recorded0.81 evidence](docs/evidence/toolchain-0.81.0.json) supersedes the earlier
-pending integration steps below. This plan is not an implemented-feature list.
+# Private modular HTTP debugging232 experiment
 
-# Current0.81 project editor debugging
+Toolchain0.135.29 adds matching HTTP debug hosting, actual request-ID watches
+and a terminal-step marker outside scheduler/debug locks. Public language stays
+0.24; the private ABI2502/catalogABI2 keep their sizes and meanings. Static,
+shared and mixed HTTP programs use the same source/consumer/image context/2.
+Read [the module debug guide](docs/source-exception-module-debug.md).
+Public025 migration, full SDK/platform delivery and remaining PLAN work stay open.
+Sanitizers are authorized; audit/fuzz campaigns remain deferred.
 
-- Validate explicit project launch configuration and component/configuration UI.
-- Preserve actual binary edges, selected entry identity, original source aliases,
-  dirty-buffer/trust gates and fresh adapter commands.
-- Verify actual installed VSIX source/provider breakpoints, watches and completion.
-- Verify owned reference error strings and corrected notice fixture on Linux/SDK.
-- Run full87/installed SDK/Linux checks for the exact final frozen source.
-- Keep primary source/compiler promotion separate until explicitly approved.
-- Continue server workloads, task/editor commands, concurrency, accelerators and
-  remaining language/development-chain delivery.
+TCP sanitizer200 / toolchain0.135.2 / language0.24 adds an optional installed
+typed-host sanitizer driver. Compiler/frontend/backends/runtime and source ABI
+are byte-identical to199. The actual C++ typed C API, copied task/FFI bridge,
+loaded pinned TCP provider and IO pool pass Mac/Linux normal/ASAN-UBSAN/TSAN,
+192 case executions/216 real sockets. Flags and symbols are independently
+verified573 evidence pins. No compiler/generated LLVM IR instrumentation is
+claimed; Mac LSan is disabled and Linux LSan enabled. Two initial test-harness
+failures are retained: explicit two-context module quota and concurrent logical/
+physical revocation error precedence. The maintained wrapper's scoped discovery
+and OpenSSL selection are checked separately. Main199 full214/SDK38/Linux and
+Astra193 continue under their original source scopes. The original full objective
+and all broader unfinished integrations remain open; primary081/016 is preserved.
 
-# Current0.80 replay isolation
+TCP198 progress: bounded server TCP is available through the existing typed
+task/FFI bridge and an operator-prepared pinned std/tcp provider. It introduces
+no new source syntax, effect or language migration. DNS/TLS/HTTP protocols,
+persistent streaming, reactor multiplexing, async DB and dedicated network
+profile/debug integration remain pending. Current installed acceptance now
+requires38 phases; matching full/platform/distribution proof is still required.
+This does not complete the network roadmap or the full original objective.
 
-- Validate private preflight/output graph state and preserved local IDs.
-- Keep enclosing/source/input graphs untouched and support readonly receipts.
-- Verify source/project/package replay, exact8192-file inventory and SDK boundary.
-- Run full87/installed SDK/Linux on one frozen source cohort.
-- Primary integration requires the explicit approval requested by automatic
-  approval review; do not retry that rejected automatic promotion indirectly.
-- Continue server workloads, task/editor tooling, concurrency, accelerators and
-  remaining language/development delivery after the corrected gates.
+Network197 / toolchain0.135.0 / language0.24 adds a private trusted-host TCP
+kernel on the existing external IO pool: exact operator-granted IPv4/IPv6
+endpoints, copied binary inputs, nonblocking connect/send/read, queue-inclusive
+deadlines, cancellation/revocation checks, bounded replies and socket settlement
+before completion.87 actual loopback checks pass on macOS normal/ASAN-UBSAN/TSAN
+and Linux normal/ASAN-UBSAN/TSAN. Each variant runs87 checks on actual sockets.
+The separate Linux image retains pinned compiler-rt22.1.8 and original image layers.
+CMake registers the same kernel as a separate conformance target. Discovery,
+language pack, host guide and LLM prompt explicitly keep source_support false.
+No source syntax, language migration, task ABI or existing source semantics change.
+Source/native/reference network bridges, DNS/TLS/HTTP/streaming, async DB and
+matching compiler/SDK/platform delivery remain open alongside the entire original
+objective. Primary081/016, previous SDKs and graph/Git history stay preserved.
 
-# Current0.79 project package tasks
+Capsule196 / toolchain0.134.5 / language0.24 creates core-capsule staging
+beside the destination using a literal POSIX path. The general LLVM temporary
+helper redirected percent-bearing parents to /tmp, breaking exclusive publication
+across filesystems in the actual Linux installed-live DSO test. The original193
+failure and direct filesystem controls are retained. Existing destinations remain
+protected by exclusive rename; OS publication errors now retain their reason.
+Language, runtime, grammar, graph identities and frontend semantics are unchanged.
+Matching build/full/live/SDK/platform acceptance is pending. Primary081/016 and
+the complete original objective remain preserved and open.
 
-- Complete and verify native/server/web package acceptance checks with captured
-  resources, source-free replay, current provenance and confined package aliases.
-- Preserve build-only semantics: package success does not establish app execution.
-- Complete frozen0.78 full/SDK/Linux checks before root integration.
-- Continue server workloads, task/editor tooling, source concurrency, general
-  accelerators and the remaining language/development chain.
+Quality195 / toolchain0.134.4 / language0.24 adds explicit024 checked-core
+comparison and fixes inherited Python-driver RSS on Linux with a tiny C launcher.
+Both actual100M-step/five-repeat observations pass, independently verified271 pins.
+Mac NEX/checked-C++ medians0.316214/0.314782s; Linux ARM64 VM0.361694/0.308447s.
+Linux misses the initial90-percent throughput target in this observation; general
+parity, large-application quality and model/token savings remain open. Legacy018
+remains the helper default, with discovery/doctor agreement required.
+Mac193 moved/restored SDKs each passed37 phases/740 commands/302 indexed resources;
+11614 evidence pins and2996 normalized archive members are independently verified.
+Exact191 full211 passes;193's only raw core change is a direct optional include,
+with eight equal Darwin preprocessing pairs and current focused3/46guards/live
+Unicode DAP. Linux193 full211 passed; its stale023 smoke helper is corrected to
+actual checked023/024 discovery and passes on installed024. Linux live/source-free
+SDK recovery remains pending. Compiler/runtime/spec/grammar/pack/CMake match193.
+Primary081/016 and the complete original objective remain preserved and open.
 
-# Current0.78 development chain
+SDK Unicode193 / toolchain0.134.4 / language0.24 encodes producer marker
+paths as UTF-8 bytes in C/C++ string literals. JSON surrogate pairs are not valid
+C universal characters; the exact readonly moved191 failure is retained. The
+source-resource and actual debugger producer paths share the corrected encoder.
+A real C11/C++20 compile/run regression covers emoji, quotes, backslashes,
+controls and adjacent digits. Linux192's direct <optional> fix is retained.
+No language/ABI changes. Matching moved/archive/platform acceptance is pending;
+primary081/016 and the original full objective remain preserved and open.
 
-- Complete and validate architecture-preserving task check/run/replay with
-  reviewed test/context hashes and current operator catalogues.
-- Verify direct native run/test/profile supervision, forced termination and
-  descendant/private-snapshot cleanup; preserve original failing evidence.
-- Integrate only after full regression, installed SDK and platform checks.
-- Continue package task checks, server workloads, editor/Studio integration,
-  source concurrency, general accelerators and remaining platform delivery.
-- Preserve language history, semantic invariants and prior SDKs/source recoveries.
+Linux portability192 / toolchain0.134.4 / language0.24 adds the direct
+<optional> include required by the POSIX file runtime. The exact frozen191
+Linux ARM64 build failure is retained; macOS had supplied this standard header
+transitively. No language, runtime semantics, ABI or dependencies change.
+Fresh matching Linux build/full/installed SDK acceptance is pending. MacOS191
+full and readonly moved/archive SDK checks remain separate live scopes.
+Primary081/016 and the original full objective remain preserved and open.
 
-# Current0.73 implementation work
+Readonly SDK191 / toolchain0.134.4 / language0.24 corrects the model replay
+acceptance to use a private explicitly selected resource projection. Its model
+and compute sources are absent, fresh imports must fail, and the archived
+revision is rebuilt after deleting native caches. Installed SDK sources remain
+unchanged. Frozen190's timeout/actual phase-count fixes are retained. The original
+190 kernel-isolated failure is retained. Actual readonly relocated/archive SDK
+acceptance is pending; primary081/016 and the full remaining objective remain.
 
-- Integrate verified PIC object staging into final dynamic project linking.
-- Complete0.73 application failure cleanup and shared-profiler identity gates,
-  preserving normal outputs, process codes, diagnostics, grants and no added
-  request budget. Keep old SDKs/source/history and original failed reports.
-- Then finish shared-image provenance, debugger/core/packaging and selected
-  project execution flows; concurrency/accelerator/platform work remains open.
+Distribution190 / toolchain0.134.4 / language0.24 corrects the maintained
+macOS moved/restored SDK workflow budget and its actual phase count. All
+compiler/runtime/core source and installed SDK189 input resources are unchanged.
+Actual kernel-isolated relocation/archive acceptance remains pending. Primary081
+and the entire original goal are preserved. Older entries retain their scopes.
 
-# Checkpoint0.72: consumed native archives and reproducible tools
+Delivery189 / toolchain0.134.4 / language0.24 adds mandatory37-phase installed
+SDK acceptance for public task HTTP/verified HTTPS. The indexed helper retains
+148 checks,50 request outcomes,14 clean server exits and exact cancellation
+codes;45 archive/receipt guard tests pass. Compiler/runtime source and version
+are byte-identical to188. Installed source-absent37-phase, full188211 and matching
+platform delivery remain pending. Primary081/016 is preserved; the complete
+original objective remains open. Older entries retain their historical scopes.
 
-- [x] Consume checked static archives, explicit export closures and transitive binary dependencies with one final runtime.
-- [x] Preserve module origins across entry/import/package aliases, source-deleted watches and moved core capsules.
-- [x] Handle old-glibc child cwd, SQLite timestamp defaults, private GNU runtime provenance and executable-tool aliases.
-- [x] Pass actual root full80/SDK24/348/213, current Linux80/17live/source-free SDK, installed IDE,6cross configurations/15artifacts/3iOS links/x64 Wine,3browser static-model API and genuine071/072 compatibility.
-- [x] Preserve all47 revisions/all16 tables/schema/IDs and normal Git HEAD/index; keep old SDKs and original failures.
-- [ ] Integrate general shared-library output/consumption, one shared runtime, dynamic debug/core/profile/package bindings and explicit binary dependency reports.
-- [ ] Complete project task/replay/editor and server workloads above0.76 package and0.77 application run/debug/test/profile candidates; validate exact installed SDKs.
-- [ ] Implement source concurrency and general CPU/GPU/NPU interfaces; keep research and fixed hardware FFI tests separate.
-- [ ] Continue native platform delivery, IDE completion/rename, Studio and all remaining full-language/development-chain work.
+Development188 / toolchain0.134.4 / language0.24: public native task HTTP
+handlers now use a dedicated descriptor bridge in debug/release, inheriting
+request control and operator file grants. Actual HTTP preflight passed132
+checks across two profiles, including source-absent execution and disconnect
+cleanup. Full build and11 focused CTest groups passed. Async network/DB, HTTP task providers/profile/debug, matching full/
+SAN/SDK/platform acceptance and the complete original objective remain open.
+The approved primary081/016 is not replaced. Older entries below retain their
+historical scopes. See docs/server.md and structured_tasks_runtime.http_server.
 
-# Checkpoint0.71: checked project architecture
+# Development0.134.2: current source task discovery and example project
 
-- [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.
-- [x] Build executable/archive/server/web outputs using explicit source dependencies; keep binary linkage limits visible.
-- [x] Pass actual root full79 and installed SDK24/344/209; retain original macOS/Linux735 scopes and16 Linux live suites.
-- [x] Verify9 project cross artifacts,3 iOS final links, project x64 Wine and12 real-browser full-stack/restart cases.
-- [x] Preserve genuine0.70/0.71 wire/canonical/store compatibility, actual installed IDE,9 fresh root PE builds/17 Wine cases and47 revisions/all16 root tables/schema/Git.
-- [x] Implement actual archive consumption (delivered in0.72; absent in0.71).
-- [ ] Implement shared dependency consumption/output and explicit resolved dependency reports.
-- [ ] Implement source task scheduling and general CPU/GPU/NPU APIs; retain fixed CIX0.70 FFI evidence separately.
-- [ ] Continue broader platform delivery, IDE completion/rename and the remaining full development-chain requirements.
+Current type-patch, scalar verification and acceptance-task examples have024
+snapshot/content/intent pins issued by the actual compiler. Replacement bodies,
+pre/postconditions, loop annotations, task requirements and budgets are preserved.
+Historical SDK fixtures are unchanged; metadata refresh is verified in isolated copies.
 
-# Verified0.70 identifier-description checkpoint
+Current task profile/debug discovery advertises execution ABI5, matching emitted
+TaskStreams024 code. The checkout example project declares024; original historical
+fixtures and the primary081 project remain unchanged. Runtime ABI, source semantics,
+grammar and stored identities are unchanged. Matching full/SAN/SDK/platform delivery
+and all original broader requirements remain pending.
 
-- [x] Add explicit analysis/3 with exact word descriptions and null builtin targets.
-- [x] Keep source language0.16, canonical formats and strict analysis/1-/2 shapes.
-- [x] Finish scoped full regression, installed SDK and actual private IDE/platform gates.
-- [x] Integrate after checks while preserving Git and all47 graph revisions/all16 tables.
-- [ ] Continue completion/rename, recovery/indexing and the remaining development chain.
+# Development0.134.1: public024 provider profile capture
 
-# Current0.69 editor checkpoint
+Acceptance-task profiling includes the checked ABI5 component source union
+(linkage9), alongside strict retained linkage3/6. Private startup-linked lifetime
+drivers now require the current ABI5 descriptors; physical completion, cancellation,
+profile/debug catalog ownership and single-runtime checks remain unchanged.
+No source semantics, grammar, provider ABI, grants or historical records change.
+Matching regression, sanitizers, installed SDK and platform delivery remain pending;
+all original language/server/accelerator/UI/mobile/Studio/converter goals remain open.
 
-- [x] Validate precise parser/binder type, trait, member and import reference projection.
-- [x] Run full regression, installed SDK and actual private IDE acceptance for this source.
-- [x] Promote only after gates, preserving normal Git and all47 graph revisions/all16 tables.
-- [ ] Keep untested platforms and the remaining full development-chain objective pending.
+# Development0.134.0: public source language0.24 candidate
 
-# Текущее состояние: toolchain0.68 / язык0.16
+Ordinary source/project commands select TaskStreams024. Checked server task/fs
+functions support opened File IO and genuine File owner captures/results across
+structured tasks. Static/fixed-shared source providers use ABI5 records8/9/10;
+read/write/stream requirements never grant OS authority. The same source semantics
+are executed by native continuations and the independent AST interpreter.
 
-- [x] Добавить точные семантические ссылки для функций, значений/присваиваний,
-  полей структур и конструкторов/образцов; сохранить строгий analysis/1, а новый
-  индекс выдавать явно как analysis/2. Wildcard `_` не объявляет переменную.
-- [x] Подключить VS Code0.3: поиск ссылок, версии всех подключённых буферов,
-  немедленный запрос после правки импорта и защита от смены манифеста.
-- [x] Проверить собственный root full78/SDK23/332/197, настоящий установленный
-  VSIX и свежие9PE/17Wine. Отдельно сохранить candidate Mac/Linux и16live Linux
-  с явной границей между14 первоначальными и2 возобновлёнными проверками.
-- [x] Сохранить все47 ревизий, все16 таблиц/схему и обычный Git HEAD/index.
-- [ ] Дополнить ссылки в аннотациях типов, trait/impl и import-alias синтаксисе,
-  межпроектные буферы и закрытые недостижимые файлы с точными границами контекста.
-- [ ] Добавить completion/rename, восстановление после синтаксических ошибок
-  и инкрементальный индекс; продолжить оставшуюся работу над языком/runtime/
-  платформами ниже. Фактические области проверок — STATUS.md и
-  docs/evidence/toolchain-0.68.0.json.
+Explicit migration verifies retained018..023 origin identity before checking024
+and before opening a writable Store. Original rows/schema/IDs and physical files
+remain; export creates a separate current-language project. Merely editing a
+manifest does not migrate a graph. Retained023 parsing and ABI3/4 stay intact.
+See [source file streams](docs/task-file-streams.md). Current compiler, full/SAN,
+installed SDK and platform acceptance remain independent pending gates. The
+accepted SDK0.133.5 and primary081 have not been replaced. All original broader
+language/server/accelerator/UI/mobile/Studio/converter requirements remain open.
 
-# Language contract status: 20 October 2026
+# Development0.133.12: source alias-close and genuine mixed histories
 
-- The language 0.16 pack describes implemented graph patches/aliases, stopped
-  pure expressions, streaming files, source FFI and target restrictions.
-- Matching macOS/Linux installed SDKs pass 23 phases/329 commands/180 resources;
-  41 focused documented commands cover transactional rejection and genuine
-  history-preserving migration. Exact evidence is in
-  docs/evidence/language-contract-0.65.0.json.
-- Cross-provider coding evaluation, identity-preserving source rename and the
-  platform/development integrations below remain future work.
+The private024 physical IO suite covers source alias-close during read, write,
+append, flush, seek and size, in addition to existing host/source controls:
+62 native/independent-AST pairs on12 compiled NEX images. A closed alias loses
+logical access while physical leases and quotas remain until IO retirement.
+Visible completed writes are retained; cancellation/close promises no rollback.
 
-# Toolchain0.65 Windows runtime progress
+Four real installed SDK1335 histories add12 original023 revisions combining
+File/whole-file IO with C11/C++20 opaque resources and task captures. Explicit
+migration retains all16 tables and original identities, rechecks external
+signatures and ownership, and records any new-platform binary-pin projection
+only in the new024 candidate. Original pinned runtime execution is reported
+only when actually available. See docs/task-stream-ffi-histories.md.
 
-- Unicode environment and explicit target SQLite are verified by real PE/archive
-  cross-builds, cache/source replay, root76/SDK23 and17 fresh x86-64 Wine cases.
-- Windows filesystem/resource calls remain unavailable until actual Windows/NTFS
-  validates reparse boundaries, protected ACLs, pinned roots/parents, opened-reader
-  replacement and cancellation cleanup. Wine failures remain recorded.
-- Windows-hosted development, HTTP/foreign/plugin adapters, packaging/distribution
-  and the broader language/development-chain objective remain pending.
+This adds conformance and test-host integration, with no compiler/runtime source
+semantics, syntax, canonical identities, public023 or historical rule changes.
+Matching full/SAN/SDK/platform acceptance and public024 delivery remain open,
+as do all original language/server/accelerator/UI/mobile/Studio requirements.
+
+# Development0.133.11: private in-flight IO and verified marker records
+
+The maintained physical IO suite has56 native/AST pairs on6 compiled images,
+11 host observation/one-shot tests and10 marker-provenance boundaries. It checks
+actual source task_cancel while IO is held, not only host-request cancellation.
+Actual TSAN/DAP, full regression, SDK and platform acceptance remain separate
+until their receipts pass. Genuine mixed023 File/FFI histories, explicit public024
+migration/CLI, async network/DB and every other original requirement remain open.
+
+# Development0.133.10: genuine023 histories and pure helpers
+
+The private024 history suite covers five actual SDK1335 archives and all15
+revisions, including pure generic callables and File identity helpers. A native
+requirement-classification bug exposed by this suite is fixed. This does not
+complete controlled in-flight IO, mixed FFI histories, public024 migration/CLI,
+matching full/SAN/SDK/platform acceptance or the remaining full project plan.
+
+# Development0.133.9: explicit private024 project delivery
+
+Compiler-owned source selection now rechecks024 physical projects and their
+matching locks without deriving the parser from untrusted metadata or opening
+a graph Store. Ordinary CLI/default projects retain023. ABI5 project linkage
+records distinguish read/write/stream requirements, task-code/5 imports and
+strict retained ABI3/4. Captures recheck the selected language, source ownership
+and exact plan before replay; native packages record the checked program language.
+Native profile readers and source-backed LLDB/DAP accept ABI5. Private024 File
+bindings expose only diagnostic identities in pure watches; filesystem/effectful
+operations remain rejected. No File IO authority is reconstructed by a watch.
+Read docs/task-stream-project.md. Public024 publication, explicit migration,
+remaining in-flight source IO/history cases and matching full/SAN/SDK/platform
+acceptance remain pending. The entire original project scope remains open.
+
+# Development0.133.8: private024 mixed file/resource conformance
+
+Actual NEX programs retain a genuine File and a genuine C11/C++20 opaque
+resource in the same immutable graph. Twenty-four native/independent-AST pairs
+exercise captures, futures, sibling channels, returned closures, nested aliases,
+scoped cleanup/quota reuse, function-local errors, readonly grants, checked
+abort and source task_cancel. Nine invalid FFI/wire entry checks retain the
+existing rejection; public023 and client-only pruning stay unchanged. This adds
+conformance, not C FFI File transport, arbitrary in-flight syscall cancellation,
+public024 publication or platform acceptance. Read docs/task-stream-mixed.md.
+Compiler/runtime/spec/grammar/language-pack semantics match175; the toolchain
+identity and test registry change. Matching full/SAN/SDK acceptance keeps its
+separate evidence and all original project requirements remain open.
+
+# Development0.133.7: private024 native source file providers
+
+Private024 source providers have explicit ABI5 records8/9/10 and root stage3.
+Checked File parameters/results, including immutable aggregates, cross static
+and fixed shared source boundaries under the same application runtime and
+resource-region guards. File-bearing retained task values request the stream
+image flag independently of read/write operations. Image/component/root flags
+never grant OS authority. ABI3/4, public023 and provider masks31/799 stay strict;
+ABI5 provider mask3871 excludes standalone source FFI bits. Profile/debug source
+metadata accepts explicit024; full CLI project-plan/capture/replay/package/
+debug/profile and public024 delivery remain separate pending work. Compiler,
+source/provider conformance, full/SAN/SDK/platform acceptance must be verified.
+All original language/server/accelerator/UI/mobile/Studio/converter/measurement
+requirements remain in scope. There is no grammar or public language change.
+
+# Development0.133.6: private024 source control conformance
+
+Twelve actual compiled-NEX/independent-AST pairs pass across six native images:
+real TaskGroup/stop-token cancellation at file boundaries, real request timeout,
+coordinator grant revocation, multi-module calls, checked overflow/assertion,
+source task_cancel with an opened file and function-local ? errors with70 scopes.
+The trusted native host requires zero IO credits and cleanup reservations and
+restored managed-value counts; reference caller-region settlement must be ready
+before return. Detached native runs preserve the exact written prefix. This
+checks source boundaries, not cancellation during an arbitrarily blocked syscall.
+Compiler/runtime/spec/grammar/pack source bytes match173; this adds conformance
+and staging/observation helpers, with a toolchain identity update. Public023 and
+retained ABI3/4/history are unchanged. Public024, additional in-flight/mixed
+cases, ABI5 provider/capture/package/debug/profile, current SDK/platform and all
+original language/server/accelerator/UI/Studio/converter/measurement work remain.
+
+# Development0.133.5: owning cleanup for private024 source files
+
+Every private024 source open reserves an owning executor cleanup slot before
+physical file construction. Native host contexts and the independent AST
+scheduler provide this executor explicitly. Logical close revokes all aliases
+immediately; the last physical lease queues the complete payload/destructor,
+file quota and settlement fence on that executor. No cleanup admission or
+allocation is needed at final release, including after the executor closes.
+Cancellation, discarded opens, factory failure and resource-region retirement
+retain physical settlement. A missing source cleanup executor is rejected;
+legacy host opens without an executor preserve their existing inline contract.
+This does not promise bounded OS close latency, rollback or directory durability.
+Public023/default, retained ABI3/4 and syntax/history remain unchanged. Controlled
+source cancellation, ABI5 provider/capture/package/debug/profile, public024 and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, GPU/NPU, UI/mobile, Studio, converter and measurement work remains open.
+
+# Development0.133.4: precise private024 task file requirements
+
+ABI5 image read/write flags and standalone build metadata now classify checked
+reachable task instructions consistently. Read/open-read and write/open-write/
+append/flush have separate flags; seek/size/close/is_open retain the existing
+opened owner without requesting another root read/write grant. All stream
+operations set the stream image flag and enable the owning task IO machinery.
+Unreachable helpers cannot add grants. Declared effects and image metadata do
+not grant OS authority or upgrade a read-only file. Public023/default, retained
+ABI3/4 descriptors and their build metadata, grammar and history stay unchanged.
+Public024, physical-close offload, provider/capture/package/debug/profile and
+matching full/SAN/SDK/platform acceptance remain pending. All original language,
+server, accelerator, UI/mobile, Studio and converter requirements remain open.
+
+# Private024 source stream integration (development0.133.3)
+
+Explicit C++ source APIs may select TaskStreams024. Ordinary CLI/default projects
+remain language023; changing nex.json does not enable024. The existing stream
+syntax suspends inside server task/fs functions. Files created by such opens
+have real logical owners, physical request/root grants and retirement fences.
+Native ABI5 appends stream requests and requires explicit stream bits. Retained
+ABI3/4 masks and public023 stream rejection are unchanged. File-bearing source
+captures/results/futures/channels/closures use atomic mixed external/file owner
+transfer; no file authority crosses browser/wire/FFI/unstructured parallel paths.
+Source/physical conformance, explicit transactional migration, public publication,
+provider/capture/package/debug/profile contracts and current SDK/platform delivery
+remain pending. This is implemented private code, not a completed language release.
+
+# Development0.133.2: private asynchronous file-stream foundation
+
+Trusted hosts can prepare bounded open/read/write/seek/size/flush operations
+under captured original grants. Genuine opened owners use a one-shot typed
+channel; IO workers carry no source Values or raw file IDs. Immutable write
+snapshots, shared cursors, partial counts, physical quotas and cancellation/
+deadline settlement have actual host conformance. Query task_file_streams_host
+and read docs/task-file-stream-host.md. Public language023 still rejects
+reachable file-bearing task execution; source ownership/lowering/migration and
+all remaining original requirements are pending. This changes no grammar or
+semantic identity. Complete regression/SAN/SDK/platform acceptance is separate.
+The compact prompt again includes snapshot/recovery commands; its current byte
+count is 9538. Prior candidate statistics below keep their original scope.
+Primary081 and its history remain separate and preserved.
+
+# Development0.133.1 candidate: current example contracts
+
+Current023 example revisions and proof intent hashes are regenerated by the
+compiler. Intent includes the source language; the old hash is checked with
+SDK1326 before rebinding. Mathematical clauses, loop strategies, type-patch
+replacements, task requirements, tests and budgets remain exact. The native
+read suite checks real023 writes with denied/allowed grants; retained022 write
+rejection remains in the explicit retained-language suites. Compiler/runtime/
+adapter bytes match the preceding166 candidate. Full188/SAN/installedSDK35
+acceptance remains required; the approved primary081 and history are separate.
+
+# Development0.133.1: compact current language contract
+
+The model-independent coding prompt now describes current0.23 rules without
+accumulated milestone instructions; detailed indexed guides remain on demand.
+Six genuine SDK1326/022 histories (18 revisions) are maintained conformance
+fixtures. Source tests exercise actual write DAP resumes and complete profiles;
+the installed SDK gate additionally requires the18 archived migrations. The
+9,215-byte prompt replaces87,830 bytes; this measures document bytes, not total
+LLM token cost or coding quality.
+Whole-file write discovery agrees across task/runtime sections and the language
+pack. Standalone Python/Node editor acceptance discovers the actual compiler
+language instead of creating hardcoded022 projects. Source language, grammar,
+canonical identities and explicit migration rules are unchanged. Matching full
+regression, installed SDK and platform acceptance remain required. Primary081
+and its history remain separate. All original runtime/NPU/UI/mobile/Studio/
+converter/quality requirements remain open.
+
+# Development0.133.0 / language0.23
+
+Ordinary CLI projects now support checked whole-file writes inside server task/fs
+functions, including separately compiled static/shared providers. ABI4 uses
+explicit record/plan/root write requirements; retained022 parsing and ABI3
+records remain strict. Use explicit `nex migrate` for old graph HEADs; changing
+nex.json alone is never a migration. Captured old-language tasks require their
+matching retained SDK or a newly reviewed capture after source migration.
+
+This is a development candidate. Matching complete regression, fresh relevant
+sanitizers, installed SDK035 and current platform/stand acceptance remain open.
+The approved primary081 checkout and its history are separate and preserved.
+Read docs/task-file-writes-prototype.md and docs/task-write-providers.md.
+Earlier notes below retain their historical scopes and do not override023.
+
+# Development0.132.7: explicit private023 write-provider contracts
+
+Separate static/shared task images use ABI4 provider records5/6/7, precise
+write-image requirements and one root grant/runtime. Legacy ABI3/mask31 and
+public022 remain unchanged. Private native/reference static/shared debug,
+release/profile and logical-debug metadata paths are checked independently;
+public023 migration, capture/replay/package, matching full/SAN/SDK/platform
+acceptance and the entire original project scope remain open.
+Read docs/task-write-providers.md.
+
+# Development0.132.6: shared explicit migration and HEAD-language integrity
+
+Genuine022 histories are rechecked through the same read-only origin/target
+preflight as the CLI before private023 Store transactions. Automatic live sync
+cannot switch HEAD language, including a race with an explicit migration;
+readonly preflight prevents old-schema initialization on this refusal. Public022
+stays unchanged. Private023 publication, write-provider contracts, matching full
+regression/SAN/SDK/platform delivery and all original requirements remain open.
+Read docs/task-write-migration.md.
+
+# Development0.132.5: explicit private023 source writes
+
+TaskIR/native continuations and the independent AST scheduler suspend checked
+whole-file writes with genuine root write grants and exact owned snapshots.
+Execution ABI4 appends write requests without widening retained ABI3/mask31.
+Public language022/default/history are unchanged; explicit023 publication,
+genuine022 migration, new provider contracts and matching SDK/platform delivery
+remain pending. Read docs/task-file-writes-prototype.md. The complete original
+runtime/compute/NPU/UI/mobile/Studio/converter/quality scope remains open.
+
+# Development0.132.4: private asynchronous whole-file write foundation
+
+The native host IO bridge now supports revocable, snapshotted, atomic whole-file
+writes. Public source task writes, independent-reference/native adapters,
+provider integration, migration, streams/network/DB and matching SDK/platform
+delivery remain pending. This precursor does not replace any original language,
+compute/NPU/UI/mobile/Studio or quality requirement.
+
+# Development0.132.3: bound diagnostic capture without limiting driver caches
+
+A private drained pipe captures at most64KiB of first/last worker diagnostics.
+The worker no longer sets a process-wide8MiB file-size limit that also restricted
+vendor shader caches. Controlled old-limit SIGXFSZ and real9MiB cache/stdout GPU
+probes verify the boundary. Matching frozen/SAN/SDK acceptance is separate.
+All remaining language/runtime/platform/NPU/UI/Studio requirements stay open.
+
+# Development0.132.2: validate complete device acknowledgements
+
+Successful worker replies are checked under the Session command lock before
+committing unique buffer IDs. Malformed replies drain actual storage before
+failed construction returns capacity; later operations report E_DEVICE_LOST.
+The original source/runtime/platform/NPU/Studio scope remains open. Matching
+frozen regression, sanitizers and SDK delivery have separate gates.
+
+# Current development0.132.1: reference physical completion handoff
+
+- [x] Reproduce false reference deadlock at a controlled physical finalizer handoff.
+- [x] Keep unconsumed retirements as progress until coordinator publication; exclude terminal jobs/scopes.
+- [x] Check root/scope/future/cancel handoffs,384 async stress cases and real channel deadlock.
+- [ ] Complete matching frozen regression, ASAN/UBSAN/TSAN, actual GPU and installed SDK.
+
+All owned GPU/NPU, runtime/platform/Studio and original full requirements remain.
+
+# Current development0.132: owned devices
+
+- [x] Add ordinary checked Session/Buffer/Tensor library and persistent pinned OpenCL worker.
+- [x] Test real GPU ownership/hidden parents and cancellation/deadline after physical enqueue.
+- [ ] Complete matching frozen regression, sanitizers and installed SDK acceptance.
+- [ ] Verify matching Linux/stand delivery, recovery/reset, owned NPU and remaining operations.
+
+The original full project scope below remains active.
+
+# Current152: publish source task/FFI and owned transfer in language022
+
+- [x] Enable ordinary022 parse/load and retain old semantic parsers/IDs.
+- [x] Extend deliberate provider/debug/version formats without widening ABI3.
+- [ ] Verify real public CLI021->022 migration, actual C11/C++20 calls/owners,
+  native/reference agreement, client isolation and rejected boundaries.
+- [ ] Complete matching full regression, installed SDK and platform delivery.
+- [ ] Continue all original IO/device/GPU/NPU/UI/mobile/Studio/converter and
+  quality/multi-LLM requirements; this release is not the full objective.
+
+# Current141: logical resources in the private native scheduler
+
+- [x] Separate logical ancestry from bounded physical grants; retain256 native scope depth.
+- [x] Track complete physical cleanup fences, including invisible failed publication; integrate private native scope/root retirement and explicit promotion.
+- [ ] Complete exact compiler/installed SDK/platform delivery for this stage.
+- [ ] Connect the independent reference scheduler, source value cleanup/transport, request-parent transfer and trusted FFI completion; preserve all original device/platform/quality requirements.
+
+# Current140: physical resource executor integration
+
+- [x] Implement a bounded owning-thread host executor, pre-reserved cleanup and complete physical owner retirement.
+- [ ] Complete cancellation/physical fence/module unload/quota tests and strict sanitizers, matching compiler/SDK/platform delivery.
+- [ ] Connect logical source-task ownership, trusted FFI completion and actual model/device resources; retain all remaining original requirements.
+
+Development0.123/language021 now implements opaque source resource declarations,
+checked native/reference operations, graph/editor context and explicit migration.
+Focused source, genuine020-history and installed-resource-phase acceptance are
+recorded separately; full current delivery is still required. Logical task/device
+ownership, actual resource debugging and the remaining full plan below stay open.
+
+# Current private135 resource integration
+
+- [x] Verify the host owned-value/byte-budget/module lifetime foundation and existing file/C compatibility under sanitizers.
+- [ ] Connect opaque source declarations, graph identities, typed FFI construction and genuine020 migration.
+- [ ] Implement device executor cleanup/fences and task/ffi completion ownership, then verify actual devices and complete delivery gates.
+
+# Current0.122 model SDK integration
+
+- [x] Install `std/model.nex` and provider preparation with matching describe/guide/prompt.
+- [x] Verify public import, finite F32, response/precision/fallback and rejected boundaries across native/reference/TypeScript.
+- [ ] Verify source-free installed SDK model phase, full matching regression and platform delivery.
+- [ ] Continue owned model/device resources, task/async bridge and all remaining original PLAN requirements.
+
+# Current development: toolchain0.121 / language0.20
+
+- [x] Implement ordinary-source checked Tensor/Request/Response/Device/Context and CPU operations.
+- [x] Check native/TypeScript/reference numerical semantics, overflow/limits, provider selection/response/fallback and realm/wire boundaries.
+- [x] Build LLVM/MLIR22.1 compiler and verify compute/discovery/SDK-report contract focused groups.
+- [x] Verify local0.121 via composite153 (148 original +4 TypeScript and actualWasm repeats), installedSDK32/584 and actual three-engine18 browser cases; original failures retained.
+- [x] Verify the common source Context against actual RK3588 GPU/NPU with pinned leafworkers using compatible0.120/language0.20:49GPU calls,21NPU calls. This is not full0.121 platform acceptance.
+- [x] Extend experimental OpenCL U8 Add/Affine to scales0..255,262144 elements and explicit overflow; verify real device, malformed frames, cancellation/reap and CPU oracle.
+- [x] Generate common-GPU projects with an explicitly selected installed OpenCL loader; matching CIX and RK3588 numerical/native/profile/replay/standalone and worker boundary tests passed.
+- [x] Verify an experimental named static-tensor ONNX model contract, finite F32 bytes, explicit MatchCPU/Vendor precision and pinned CPU/Zhouyi child dispatch on CIX; retain unsupported MatMul placement, explicit fallback and17 process cases. This is outside installed0.121 and is not arbitrary-model NPU support.
+- [ ] Add remaining operations/providers, owned buffers/resources, async/task bridge and general kernels/models.
+
+The original complete PLAN scope below remains active. Primary081 is preserved.
 
 # План разработки NEX
 
-Обновлён: 20 октября 2026 года.
+Обновлён: 23 октября 2026 года.
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
+
+## Текущий шаг: toolchain0.120 / язык0.20
+
+- [x] Соединить task-only worker_compute с отдельным scheduler в Web Worker,
+  сохранив чистые main-thread UI/command entries и wire-only boundary.
+- [x] Проверить реальные каналы/spawn/wait, ошибки, отмену/timeout, отзывчивость
+  UI и отсутствие server-кода в Chromium/Firefox/WebKit, затем matching SDK.
+- [x] Проверить новый SDK на Astra x86-64 и CIX ARM64; GPU/NPU fixed adapters
+  имеют отдельную область и не означают завершение общего accelerator API.
+- [ ] Продолжить общий GPU/NPU API и остальные платформенные этапы после этого блока.
+
+Дополнительный RK3588S: CPU/web/packaging и30 GPU-вызовов прошли;
+NPU bytes-FFI после исправления DMA прошёл30 вызовов/6400 значений,
+min/max формы и fullint8 — отдельные6 вызовов/16448 значений. Все результаты
+и отличия documentation/experimental additions от frozen0.120 приведены в
+[текущей приёмке](docs/stand-acceptance-0.120.md). Общая цель остаётся активной.
+
+## Сохранённый126–127: toolchain0.119 / язык0.20
+
+- [ ] Связать checked component source union и original runtime registries с
+  LLDB/NEX-DAP для static/fixed-shared provider task frames.
+- [ ] Проверить реальные locals/watch42, next/in/out через yield/call/return,
+  stale/image/source rejection и source-deleted delivery до public enablement.
+- [ ] Пройти точные regression/SDK/platform gates нового snapshot. ExecutionABI3,
+  исходный язык020 и миграция не меняются; runtime unload/profile+debug pending.
+
+## Сохранённый125: toolchain0.118 / язык0.20
+
+- [x] Связать checked component registries с единым task collector через
+  static/shared provider boundaries, сохранив once-per-source-call semantics.
+- [x] Проверить source-count oracle, zero-call provider-only generics, actual
+  component/image attribution, limits/grants и cleanup без подмены RAM/CPU metrics.
+- [x] Проверить строгие raw3/catalog/image negatives, self-consistent wrong-owner
+  ledgers, canonical cache-parent aliases, physical fence и отдельные sanitizers.
+- [x] Проверить matching actual10 и reviewed capture/replay/raw package provenance;
+  точное тело SDK30 отдельно прошло15 командами, с каждым actual CWD/build key.
+- [x] Сохранить явный Mac composite148 (147 original groups + corrected boundary55/39),
+  scoped Linux composite11 (10 + corrected boundary) и установленный SDK30/557 команд.
+  Original failures сохранены; pristine full148/fullLinux/kernel isolation не заявлены.
+  См. docs/evidence/toolchain-0.118.0-task-provider-profiling.json.
+  Язык020, explicit migration и execution ABI3 не меняются. Profile test/build-test,
+  provider logical debugging, runtime unload, Tracy/HTTP/foreign остаются pending.
+
+## Сохранённый124d: toolchain0.117.2 / язык0.20
+
+- [x] Связать конкретные task-экспорты через OS startup-loaded shared images,
+  смешанные static/shared frontiers и один общий runtime/root executor.
+- [x] Проверить symbols/loader, per-application owners, immutable/result/Unicode,
+  grant/limits, независимые roots и source-deleted retained replay/package/copy.
+- [x] Исправить реальный124b cache-image SIGSEGV atomic publication и124c literal
+  parent-path regressions; сохранить все исходные failures и loaded-image test.
+- [x] Пройти новый pristine full144, установленный SDK29/542 команды и семь
+  scoped LinuxARM64 groups; см. docs/evidence/toolchain-0.117.2-task-shared-providers.json.
+  Это отдельный development checkpoint; full Linux/installed Linux SDK, kernel
+  source isolation и root promotion не заявлены. Язык020/execution ABI3 прежние.
+
+## Сохранённый123: toolchain0.116 / язык0.20
+
+- [x] Связать конкретные task-экспорты через настоящие статические архивы,
+  сохранив checked source, единственного machine-owner и один root executor.
+- [x] Проверить provider chains, immutable aggregate/result/Unicode semantics,
+  root file grant/limits, pins/cache, captured replay и standalone package.
+- [x] Проверить fail-closed границы authority/callable и неподдержанные режимы;
+  сохранить существующие синхронные File/callback архивы.
+- [x] После действительного native proof включить точную candidate discovery;
+  пройдены17 permanent cases и отдельное тело SDK-фазы19 командами.
+- [x] Сохранить честный composite141:140 исходных passed groups плюс исправленный
+  integration21 на том же frozen compiler; исходная ошибка не удалена.
+  Установленный SDK28/523 и отдельные Linux4/17 прошли; см.
+  docs/evidence/toolchain-0.116.0-task-providers.json.
+  Shared providers,
+  task profile/debug через provider и unload не входят в этот шаг.
+
+## Сохранённый122: toolchain0.115 / язык0.20
+
+- [x] Добавить отдельный bounded debug catalog ABI1 без удержания значений программы;
+  private runtime109 проверок/614 остановок прошёл строгие sanitizers.
+- [x] Сохранить лексические binding IDs и реальные source safe points при TaskIR lowering;
+  9 случаев/183 проверки подтверждают неизменность инструкций исполнения.
+- [x] Подключить логические задачи, стеки, locals и шаги в LLDB/nex-dap;
+  10 настоящих LLDB/DAP сценариев и39 native-команд пройдены.
+- [x] Проверить archived-source inspection, явные лимиты и cleanup;
+  новая фаза установленного SDK отдельно пройдена с настоящим DAP.
+- [x] Сохранить composite139:138 исходных passes и один исправленный9-case
+  workload group на том же компиляторе, с исходной ошибкой без сокрытия.
+  Установленный SDK27/504 и отдельные три LinuxARM64 группы с10 LLDB/DAP
+  случаями пройдены; см. docs/evidence/toolchain-0.115.0-task-debug.json.
+
+## Зафиксированный121: toolchain0.114 / язык0.20
+
+- [x] Проверить private bounded task-profile collector: once-per-invocation,
+  перенос между потоками, TLS, CPU/elapsed clocks, ownership и явные drops.
+- [x] Подключить проверенный collector к task driver/compiler и public CLI
+  для native020; проверить реальные вызовы, отчёты, проектные лимиты и replay.
+- [x] Проверить точный121:134 группы, установленный SDK26/498 команд,
+  строгие sanitizers и отдельные9 групп Linux с GCC sanitizer runtime probe.
+  Эти платформенные результаты имеют собственные ограниченные области проверки.
+
+- [x] Соединить public019 parser/checker/graph с native compiled continuations,
+  независимыми AST/TypeScript schedulers и conservative lifetime checking.
+- [x] Проверить настоящую018 миграцию с сохранением истории и явными отказами
+  неподдержанных task ABI; сохранить первичный проект081 без изменения.
+- [x] Добавить явные лимиты шагов, дедлайна и task workers в CLI, проектные
+  конфигурации и acceptance tasks. Точный113 прошёл118 групп регрессии;
+  его установленный SDK прошёл24 этапа и438 команд.
+- [x] Подготовить private host-completion kernels и явную file-read lease:
+  ограниченная очередь, билеты владельца и поколения, физическое завершение
+  после отмены. Публичные асинхронные файловые операции ещё не подключены.
+- [x] Исправить воспроизводимые отказы114 и проверить точный115: full122,
+  sanitizers, три браузерных движка и21 группа Linux; SDK24/438 пройден.
+- [x] Подготовить explicit root FileReadGrant, проверить45/42 сценария
+  и независимо проверить код без изменения семантики языка019.
+- [x] Завершить общий прогон116:122 группы и installedSDK24/438.
+- [x] Подключить два whole-file source read в явной версии020 с миграцией019,
+  согласованными эффектами и backend'ами. Точный119b прошёл128 групп
+  регрессии и установленный SDK25/486 команд на macOS.
+- [ ] Проверить текущую файловую интеграцию на полной платформенной матрице;
+  завершить provider logical debugging и NEX UI task adapter. Source-only native
+  task debugger/profile и static/fixed-shared provider profiling имеют отдельные
+  реализованные slices выше; arbitrary runtime load/unload остаётся pending.
+- [ ] Завершить общий GPU/NPU API, оставшиеся платформы и измерения
+  качества/суммарной стоимости задач для нескольких LLM.
+
+## История этапов
+
+## Сохранённый этап: toolchain0.96 / язык0.18
+
+- [x] Найти задержку настоящей095warm10k-сборки и заменить посимвольное чтение
+  compiler inputs блочным64КиБ с проверкой ошибок и RAII закрытием файла.
+- [x] Проверить17целевых групп, реальные rawbinary/FIFO/UTF8-boundary/rejection
+  сценарии и все байты трёх настоящих146МБ/24МБ/15МБ артефактов в18наблюдениях.
+- [x] Сохранить096 native10000 cold9900/warm0/edit1 и обе архивные ревизии после
+  удаления исходников; см. docs/evidence/native-scale-0.96.0.json.
+- [ ] Оставшаяся на момент096 приёмка full100/SDK/платформ/IDE/истории хранится
+  как исторический статус. Текущий SDK требует собственного matching gate.
+- [x] Позднейшие этапы отдельно подключили browser workers и structured
+  tasks/channels; их точные текущие границы сообщает describe. Оптимизация096
+  сама по себе не была завершением языка или всей цепочки.
+
+## Сохранённый кандидат: toolchain0.95 / язык0.18
+
+- [x] Найти причину медленного кэшированного плана на настоящем проекте
+  из10,000 функций; добавить индекс только на время readonly-планирования.
+- [x] Сравнить точные байты планов семи программ с настоящими библиотеками094,
+  включая9,900 функций, generic/local names, layouts и callable bridges.
+- [x] Сохранить полный native100x10000 результат094 и узкий NEX/C++/Python
+  эксперимент; добавить воспроизводимый opt-in runner.
+- [x] Проверить полный независимый native cold9900/warm0/edit1/standalone
+  и обе архивные ревизии после удаления исходных путей проекта.
+- [ ] Завершить окончательный095: full99/SDK/платформы/IDE/история
+  и оставшиеся требования качества/языка.
+
+## Сохранённый кандидат: toolchain0.94 / язык0.18
+
+- [x] Исправить реальный E2BIG после компиляции9,900 функций: GNU response files
+  для native build/image tools с сохранением буквальных аргументов приложений.
+- [x] Проверить настоящие Clang/LLVM ar сверх лимита ОС и сохранённые9,900
+  NEX-объектов: линковка, проверка DWARF и исполнение верного результата.
+- [x] Завершить независимый native100x10000 cold/warm/edit/standalone
+  и обе архивные ревизии после удаления исходных путей проекта.
+- [ ] Завершить полные98 групп, SDK, платформы, редактор и миграцию истории.
+
+## Сохранённый кандидат: toolchain0.93 / язык0.18
+
+- [x] Вынести повторный анализ callable/CPU-замыкания из генерации отдельных
+  объектов, сохранив нормальную проверку MLIR/LLVM и локальный emit/Wasm путь.
+- [x] Проверить12 целевых групп, одинаковый IR1,980 функций с точным учётом
+  идентичности компилятора, реальные вызовы Clang, warm reuse и правку1 функции.
+- [ ] Завершить нативную проверку100 модулей/10,000 функций, полные97 групп,
+  установленный SDK, платформы, редактор и остальные критерии качества.
+
+## Сохранённый кандидат: toolchain 0.92 / язык 0.18
+
+- [x] Подключить ordered CPU map к checker/reference/native/TypeScript;
+  actual native threads и serial semantics других backend'ов различаются явно.
+- [x] Сохранить настоящую0.17 фикстуру с двумя ревизиями, включая конфликт
+  нового имени; проверить миграцию, старую историю и resource/capture guards.
+- [x] Исправить приоритет resource errors; проверить scalar/generic/value matrix,
+  binary-provider reuse, реальные worker debug/profile и три браузера.
+- [ ] Завершить полную приёмку точного0.92 SDK/платформ/редактора/миграции.
+- [ ] Добавить реальную асинхронную интеграцию browser workers и общие задачи,
+  каналы/async, CPU/GPU/NPU и оставшиеся платформенные/качественные проверки.
+
+## Сохранённая основа: toolchain 0.91 / язык 0.17
+
+- [x] Подключить private-границу вызова скомпилированного замыкания к CPU workers:
+  локальные handles, scalar bits, один retained result и очистка всех выходов.
+- [x] Добавить проверки настоящих NEX-функций, возвращённых замыканий,
+  checked-ошибок и результата `?`, отрицательные ABI/ownership-сценарии.
+- [x] Завершить sanitizers, Mac/Linux full96, SDK24, Linux live, пять IDE-профилей
+  и полную миграцию основной истории0.16 в язык0.17 для точного снимка0.91.
+- [ ] Подключить source-операцию: типы/эффекты/захваты, reference и TypeScript,
+  native lowering, явную миграцию, SDK/debug/profile и документацию для LLM.
+  Private-прототип не является готовой многопоточностью исходного языка.
+
+## Сохранённая основа: toolchain 0.90 / язык 0.17
+
+- [x] Реализовать типизированный `?` во frontend, interpreter, native и TypeScript,
+  правила cleanup и явную миграцию из настоящих архивов 0.16.
+- [x] Проверить на прототипе полную копию основного графа: все 47 исторических
+  ревизий и строки всех 16 таблиц сохранены; четыре ревизии 0.16 явно мигрированы.
+- [x] Исправить подтверждённое падение Python DAP при завершении; проверять
+  нормальный exit адаптера в SDK и тестовых клиентах.
+- [x] Исправить повторный обход statement-match и актуализировать учебный patch.
+  Пять целевых групп 0.90 прошли; полный прогон 0.89 сохранил четыре отказа.
+- [x] Проверить frontend/interpreter/историю/контекст проекта из 100 модулей
+  и 10 000 функций. На момент0.90 нативная сборка ещё не была проверена;
+  отдельные094–096 receipts выше фиксируют последующую проверку.
+- [x] Заморозить и сохранить точный 0.90 в проверенной резервной ветке.
+- [ ] Завершить full95, installed SDK24,
+  Linux live/source-free, установленный редактор и повтор миграции через SDK.
+- [ ] Проверить cold/warm/edit нативную сборку крупного проекта и реальные
+  baseline C++/Python; измерить полную стоимость задач для нескольких LLM.
+- [ ] Подключить безопасную source concurrency ко всем backend'ам; завершить
+  необходимые границы обработки ошибок, общие CPU/GPU/NPU и платформы.
+- [ ] После готовности языка реализовать [конвертер C++/Python](docs/project-porting-design.md)
+  для явного подмножества с отчётом о неподдержанных конструкциях.
+
+Одобренный основной проект 0.81 / язык 0.16 сохранён отдельно. Его историческая
+приёмка не проверяла нормальный shutdown DAP и не закрывает найденный дефект.
+Нижележащие этапы — дорожная карта и исторические записи; актуальный набор
+возможностей нужно получать от фактического `nex describe`.
 
 ## 1. Цель проекта
 
@@ -719,3 +1294,12 @@ Windows, физические мобильные/Intel-цели, Android NDK/nat
 - [ ] Add actual component archive consumption, shared-library exports/ownership ABI, explicit full-static policy and resolved binary dependency reports.
 - [ ] Add safe structured CPU tasks/channels and separate asynchronous I/O.
 - [ ] Implement GPU/NPU adapters callable from NEX and verify actual device placement/fallback policy. CIX P1 OpenCL and Zhouyi probes have passed separately; probes alone do not complete NEX integration.
+
+## Proposed C++/Python project porting tool (pending)
+
+See [the design](docs/project-porting-design.md). No converter command is
+implemented. Start with a defined typed subset, deterministic AST conversion,
+explicit unsupported diagnostics, optional reviewed native bridges and original
+vs NEX differential validation. LLM repairs require bounded context, compiler
+checks and unchanged acceptance criteria. Complete the language/development
+chain first; measure complete task cost rather than claim automatic full ports.

@@ -47,3 +47,13 @@ extern "C" nexrt::Handle * nex_foreign_invoke(const char *binding,int64_t size,
                                             nexrt::Handle *arguments,int64_t line){return impl_nex_foreign_invoke(binding, size, arguments, line);}
 extern "C" nexrt::Handle * nex_foreign_invoke_at(const char *binding,int64_t size,
                                             nexrt::Handle *arguments,int64_t line, const nexrt::NativeSite *nex_site){return impl_nex_foreign_invoke(binding, size, arguments, nexrt::SourceLocation{line,nex_site});}
+static int64_t resourceOperation(nexrt::Handle *handle,nexrt::SourceLocation line,bool close){
+  return nexrt::hostOperation(line,[&]() -> int64_t {
+    auto value=nexrt::readHandle(handle);auto resource=nexrt::externalResource(value.object);
+    nexrt::pollHostOperation(line);return close?resource.close():resource.isOpen();
+  });
+}
+extern "C" int64_t nex_resource_close(nexrt::Handle *handle,int64_t line){return resourceOperation(handle,line,true);}
+extern "C" int64_t nex_resource_close_at(nexrt::Handle *handle,int64_t line,const nexrt::NativeSite *site){return resourceOperation(handle,nexrt::SourceLocation{line,site},true);}
+extern "C" int64_t nex_resource_is_open(nexrt::Handle *handle,int64_t line){return resourceOperation(handle,line,false);}
+extern "C" int64_t nex_resource_is_open_at(nexrt::Handle *handle,int64_t line,const nexrt::NativeSite *site){return resourceOperation(handle,nexrt::SourceLocation{line,site},false);}

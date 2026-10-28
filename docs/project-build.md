@@ -1,6 +1,26 @@
+# Language023 task-provider builds
+
+Current task images use execution ABI4, provider records5/6/7 and explicit write
+requirements. Static plans use `nex.project-static-task-linkage/2`; fixed shared,
+profiled and logical-debug plans use `nex.project-task-linkage/5`, `/6` and `/7`.
+Their schemas are in `llm/project-write-task-linkage.schema.json`. Retained ABI3
+plans remain strict; no old tag acquires writes. Runtime authority is supplied
+by the operator, never by a manifest flag. See task-write-providers.md.
+
 # Checked project architecture and builds
 
-## Project actions (candidate0.77)
+Checked native task projects support concrete [static archives](task-providers.md)
+and [fixed startup-linked shared images](task-shared-providers.md). Source and
+resource-free concrete export contracts remain required. Each application owns
+one runtime/executor/limits/file authority. Instrumented
+[provider profiles](task-provider-profiling.md) and
+[logical debugging](task-provider-debugging.md) have distinct descriptors/formats.
+Query each actual capability; callable/authority transport and arbitrary runtime
+loading/unloading remain unsupported. For debug-profile artifacts use
+`project --kind plan|build|package --task-debug`; `project --kind debug` selects
+logical instrumentation inherently. Ordinary debug-profile build/run is separate.
+
+## Project actions
 
 Toolchain0.78 adds [acceptance tasks and captured replay](project-tasks.md).
 `project --kind build-test --symbol TEST` compiles one native owned test under
@@ -40,9 +60,13 @@ Client/web tests use the reachable TypeScript projection. Pure tests additionall
 compare interpreter observations; pure shared tests also compare TypeScript; effectful tests execute once in their selected
 backend, preserving explicit runtime capabilities. A failed assertion remains a
 failed test even when both backends reject it. At most256 tests are selected. Each returned row is bounded to32KiB. Larger observations retain a full private result file at `report`; the response includes UTF-8-safe output prefixes and byte counts.
-Full UI/API workloads and project package task checks remain pending.
+Full UI/API workloads retain separate validation. Project package task checks
+and workload profile captures/replay are supported; see project-tasks.md.
 
-Debug/profile currently select native executable components. Debug emits the
+Debug selects native executable or server components (server support0.85).
+Profile selects native executables; toolchain0.82 also supports
+server profile with an explicit bounded [workload](server-workload.md) and a
+profile configuration. Debug emits the
 same `nex.debug-session/1` descriptor as a source command, nested under
 `observation`; use its exact adapter command, launch program, cwd and source map.
 `--adapter lldb|dap|nex-dap` chooses the frontend; an interactive LLDB run is
@@ -57,8 +81,10 @@ persistent graph IDs are null with `identity_scope:"captured_project"`.
 debug/profile/native-diagnostic reports retain their stated contracts. Explicit
 `--foreign HOST.json` grants are checked before execution and around commands;
 receipts and environment variables do not grant foreign authority. Browser
-preview accepts no foreign catalogue. Source-foreign project packaging, native
-server workload debug/profile and dedicated editor commands and package task checks remain pending.
+preview accepts no foreign catalogue. Project foreign packaging and captured
+workload profile tasks are supported. Automatic workload debugger/task replay
+and dedicated task editor commands remain pending. See server-debugging.md
+for actual worker frames, runtime inputs and preserved request deadlines.
 
 Toolchain0.71 adds `nex project`. This is external build metadata, separate from
 the existing source/language/library manifest `nex.json` (`nex.project/1`). It
@@ -194,7 +220,7 @@ locally compiled functions, including nested imports through package aliases.
 Use the complete projection path from its `debug.json` when placing a library
 source breakpoint. A matching captured LLDB formatter can inspect the same
 locals and pure watches after original source deletion; keep the retained build
-workspace or export a checked core capsule. Candidate0.77 project actions use these actual artifacts for native run/test/debug/profile. Project task/replay integration remains pending.
+workspace or export a checked core capsule. Candidate0.77 project actions use these actual artifacts for native run/test/debug/profile. Project task/replay integration preserves these binary edges; see project-tasks.md.
 
 Retained builds declare `nex.native-completion/2` and an ordered bounded
 `completion_inputs` list: the ABI record, then captured dependency archives.
@@ -350,6 +376,58 @@ on its intended host before treating execution as verified.
 Credentials, keys, databases and operator runtime settings are supplied after
 packaging. Serve a web directory from its matching configured server/static
 host; browser route fallback and API configuration retain their existing rules.
-Project foreign-pin projection, debug/core provenance for rewritten packaged
-images, Windows installers and project task/replay/editor flows remain pending. Use source packaging for the existing explicitly reviewed foreign
-catalogue workflow; do not silently replace a binary project edge with source.
+Debug/core provenance for rewritten packaged images, Windows installers and
+dedicated task/editor debugging remain pending. Project package task/replay is
+described in project-tasks.md; it preserves actual binary edges.
+
+## Foreign project packages (candidate0.84)
+
+```sh
+nex project --kind plan --foreign /operator/host.json --json
+nex project --kind package --foreign /operator/host.json \
+  --notices notices.json --directory /new/deployment --json
+```
+
+The original locked project, every selected source closure, direct dependency
+edge, concrete export, private binary contract and toolchain fingerprint are
+checked before preparation. The readonly plan checks source signatures and
+current operator grants; it invokes no native tool and initializes no module.
+Packaging currently requires a matching macOS/Linux host target for foreign
+module dependency discovery. The normal native provenance/notice rules apply.
+
+The compiler prepares the union of actually reachable app/server exports once.
+Only exact external manifest literal tokens are projected in memory across all
+selected components sharing those physical declarations. It reloads/checks the
+projection and revalidates the declared binary contracts, then consumes the
+actual archives and shared images. Original sources, lock and Store stay
+unchanged. Input aliases, source/metadata bytes, catalogue and compiler helpers
+are checked around preparation, compilation and final publication.
+
+Each application receives a separate `foreign/host.json` containing only that
+application's reachable libraries/exports and the original operator module
+quota. Shared providers use the same projected pins. Apps without reachable
+externals receive no catalogue, including HTTP companions linked to a common
+foreign-enabled runtime. The runtime resolves the default relative to the
+actual executable, including a shared runtime loaded from `lib/`.
+
+`project.json.foreign_projection` records `nex.project-foreign-projection/1`,
+the original plan/catalogue and source/derived identities for every selected
+component. Per-app `application.json.foreign_projection` has `scope: project`
+and a narrowed preparation/catalogue. A source closure can include changes
+needed by another selected application; these do not grant authority to call
+those exports. The manifest inventories bind the actual relocated native bytes.
+No module constructor, application, database or runtime credential is executed
+or created during packaging. Verify relocated output on its destination host.
+Candidate focused checks and full platform/installed SDK acceptance have
+separate evidence; do not infer a completed release from this design contract.
+
+### Fixed startup-linked task image cohort
+
+Toolchain0.117 enables a candidate separate `shared-fixed` task cohort.
+Check `task_shared_providers.public_enabled` before selecting it and read
+[task-shared-providers.md](task-shared-providers.md). Its plan uses
+`nex.project-task-linkage/2` and per-application load ownership; its strict
+provider2 records and completion5 pins preserve source identity and actual image
+provenance. Independent application roots may embed the same static provider;
+multiple copies in one loaded process closure reject before tools. Runtime
+load/unload and provider task debug/profile remain unsupported.

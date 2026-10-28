@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.private-task-architecture/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "mode", "application", "components"],
+  "properties": {
+    "schema": {"const": "nex.private-task-architecture/1"},
+    "mode": {"enum": ["static", "shared-fixed"]},
+    "application": {"type": "string", "minLength": 1, "maxLength": 64},
+    "components": {
+      "type": "object", "minProperties": 1, "maxProperties": 128,
+      "propertyNames": {"pattern": "^[A-Za-z0-9_-]{1,64}$"},
+      "additionalProperties": {"$ref": "#/$defs/component"}
+    }
+  },
+  "$defs": {
+    "strings": {"type": "array", "maxItems": 4096, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "component": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entry", "units", "exports", "dependencies"],
+      "properties": {
+        "entry": {"type": "string", "minLength": 1},
+        "units": {"allOf": [{"$ref": "#/$defs/strings"}], "minItems": 1},
+        "exports": {"$ref": "#/$defs/strings"},
+        "dependencies": {"$ref": "#/$defs/strings"}
+      }
+    }
+  },
+  "description": "Private025 checked-source architecture. The compiler must rederive source ownership, signatures, lifetimes, requirements and the dependency closure. Not a public project manifest or binary-only verification."
+}

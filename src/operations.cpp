@@ -1,12 +1,13 @@
 #include "nex/operations.h"
 #include <functional>
 #include <algorithm>
+#include <array>
 
 namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
-const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating"};
-const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match"};
+const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating","propagate_result"};
+const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match","try","throw"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
   std::vector<std::map<std::string,std::string>> scopes;
@@ -34,15 +35,22 @@ class Tree {
     if(e->kind==Expr::Floating)definition["literal"]=floatLiteral(e->number);
     auto index=add(path,parent,role,ordinal,kind,kind,e->span,std::move(definition),e.get(),e->sourceRange,"expression");
     if(e->kind==Expr::Name)nodes[index].binding=binding(e->text);
-    if(e->kind==Expr::Call&&!builtinNames().contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
+    if(e->kind==Expr::Call&&!builtinNames(p.taskPrototype,supportsExternalResources(p)).contains(e->text)&&!p.hasStructure(e->text)&&!p.variant(e->text))nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)nodes[index].callee=p.function(e->text).name;
     if(e->kind==Expr::Match){expression(e->args[0],path,"argument",0);arms(e,path);}
     else for(unsigned i=0;i<e->args.size();++i)expression(e->args[i],path,"argument",i);
   }
-  void block(const std::vector<S> &body,const std::string &parent,const std::string &role,Span span,bool scoped){
+  void block(const std::vector<S> &body,const std::string &parent,const std::string &role,Span span,bool scoped,const S &handler={}){
     auto path=parent.empty()?role:parent+"/"+role;
     add(path,parent,role,0,"block","block",span,Object{{"kind","block"}});
     if(scoped)scopes.emplace_back();
+    if(handler){
+      std::array<std::string,2> names{handler->name,handler->catchMessage};
+      for(unsigned i=0;i<names.size();++i){auto key=path+"/parameter/"+std::to_string(i);
+        add(key,path,"parameter",i,"exception.binding",names[i],span,Object{{"kind","exception.binding"},{"name",names[i]},{"type","str"}});
+        scopes.back()[names[i]]=key;
+      }
+    }
     for(unsigned i=0;i<body.size();++i){
       auto s=body[i];auto key=path+"/statement/"+std::to_string(i),kind=std::string("statement.")+stmtKinds[s->kind];
       auto anchor=kind+":"+s->name;if(s->kind==Stmt::Expression&&s->expr&&s->expr->kind==Expr::Call)anchor+=":"+s->expr->text;
@@ -53,6 +61,7 @@ class Tree {
       if(s->kind==Stmt::Match)arms(s->expr,key);
       if(s->kind==Stmt::If||s->kind==Stmt::While)block(s->body,key,"body",s->span,true);
       if(s->kind==Stmt::If)block(s->alternative,key,"else",s->span,true);
+      if(s->kind==Stmt::Try){block(s->body,key,"body",s->span,true);block(s->alternative,key,"catch",s->span,true,s);}
     }
     if(scoped)scopes.pop_back();
   }

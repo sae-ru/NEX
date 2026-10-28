@@ -1,4 +1,44 @@
+# Private source exception HTTP experiment
+
+The dedicated0.25-prototype emitter and trusted HTTP host are documented in
+[source-exception-http.md](source-exception-http.md). They retain separate private
+entry points. Ordinary public024 server builds retain the contract below.
+
 # NEX native server and runtime capabilities
+
+Toolchain0.134.4 adds native language0.24 task HTTP handlers in debug/release.
+For example, a `server fn handle(Request)->Response !{task,fs}` can schedule
+structured CPU work and use whole-file/owned stream operations. The generated
+server bridge calls the checked task descriptor rather than a synchronous
+function or a standalone process entry. Requests keep the original HTTP
+principal, step budget, deadline and disconnect/shutdown cancellation. Their
+joined task executor drains admitted work and retires owned resources before
+the ordinary HTTP response validation/transaction boundary.
+
+Compile-time `--task-steps`, `--task-timeout-ms` and `--task-workers` embed
+immutable ceilings. Launch-time `--nex-task-steps`, `--nex-task-timeout-ms` and
+`--nex-task-workers` may only lower them; malformed, duplicate, unknown or
+excessive values fail before startup. Existing HTTP `--budget` and
+`--timeout-ms` are capped by those effective task limits. HTTP `--workers`
+still sizes the request thread pool, separately from each joined task executor.
+Ambient `NEX_TASK_*` variables do not select these limits.
+
+Filesystem effects confer no root or write authority: the operator configures
+`NEX_FILES_ROOT` and, for writes, `NEX_FILES_WRITE=1`. Capture occurs inside the
+original request and retains its revocation/cleanup lineage. Missing/read-only
+grants fail on attempted IO, not merely because an unused branch declares fs.
+File effects cannot acquire socket/database authority. The existing HTTP
+transport and SQLite transaction wrapper remain blocking; async network/DB,
+streaming network responses, task-provider image linking into servers, task
+HTTP profiling and logical task debugging remain pending. Profile/task-debug
+builds fail explicitly rather than emitting an unverified server path. Retained
+pre0.24 task HTTP builds remain rejected and require explicit migration.
+
+The `task_http_server` integration test runs actual HTTP requests in both
+profiles, including source-absent execution, two authenticated users, Unicode
+and NUL bodies, concurrent requests, task file/stream IO, grant denial and path
+containment, traps, budgets, deadlines and disconnect cleanup. Matching full
+regression, installed SDK and platform delivery are separate acceptance gates.
 
 Source language 0.4 adds recoverable results, typed JSON, environment access and a SQLite capability. Since toolchain 0.5.0, a checked handler can compile to a native HTTP/HTTPS server. Toolchain 0.6.0 connects browser applications through explicit request commands. The server uses cpp-httplib 0.61.0, OpenSSL 3 and SQLite; the executable does not need NEX, LLVM, a model or Node to run. Those native runtime libraries must be present on its host. See `STATUS.md` for the exact verified environment and tests.
 
@@ -62,7 +102,16 @@ server fn save(text: str) -> result<bool> !{db} {
 
 Keys are nonempty valid strings of at most 1024 bytes without NUL. Prefixes for `store_keys` may be empty and are matched literally, not as SQL patterns. Values are valid UTF-8 strings up to 1 MiB and may contain embedded NUL. Use typed JSON to store models. `store_get` returns `NOT_FOUND` for an absent key; `store_put` returns success true; `store_remove` returns whether a row existed; keys are ordered by SQLite binary collation and limited to 10,000 results.
 
-All operations use prepared statements and a runtime-injected principal partition. A request cannot choose another user's partition by changing its JSON, a key or an ordinary Request value. GET/HEAD/OPTIONS have read transactions and reject mutation. Other handled methods use `BEGIN IMMEDIATE`, so read/modify/write sequences see a consistent serialized writer transaction. A 2xx response commits after the final scope check; other statuses, traps, cancellation and storage mutation failures roll back. Ignoring a failed write cannot commit earlier partial writes. Missing-key reads are ordinary recoverable outcomes. SQLite WAL and per-connection FULL synchronous mode are used; conflicts/timeouts return `STORE_BUSY`, other SQL failures return `E_STORE`, and an already failed transaction returns `TRANSACTION_ABORTED`. The KV table shape and binary principal/key collation are checked; incompatible tables return `E_STORE_SCHEMA`. The host does not replay a handler after a failed/uncertain commit.
+All operations use prepared statements and a runtime-injected principal partition. A request cannot choose another user's partition by changing its JSON, a key or an ordinary Request value. The HTTP scope validates its database/principal immediately, but starts its SQL
+transaction at the first `store_*` operation. A handler that never accesses the
+KV store opens no transaction and takes no SQLite writer lease, including POST
+handlers performing file/FFI/CPU work. GET/HEAD/OPTIONS start read transactions
+and reject mutation. Other handled methods use `BEGIN IMMEDIATE` from their first
+storage operation, so read/modify/write sequences retain a consistent serialized
+writer transaction. The first storage operation can return `STORE_BUSY`; the
+handler is never replayed automatically. The final commit of an unused scope
+succeeds without issuing SQL. The existing three-argument runtime C++ Database
+constructor retains eager transaction start for other hosts. A 2xx response commits after the final scope check; other statuses, traps, cancellation and storage mutation failures roll back. Ignoring a failed write cannot commit earlier partial writes. Missing-key reads are ordinary recoverable outcomes. SQLite WAL and per-connection FULL synchronous mode are used; conflicts/timeouts return `STORE_BUSY`, other SQL failures return `E_STORE`, and an already failed transaction returns `TRANSACTION_ABORTED`. The KV table shape and binary principal/key collation are checked; incompatible tables return `E_STORE_SCHEMA`. The host does not replay a handler after a failed/uncertain commit.
 
 Outside an HTTP request, server-realm source may use storage from the interpreter/native CLI by setting a filesystem `NEX_DATABASE` path and optional `NEX_STORAGE_OWNER` (default `local`). In-memory/URI database modes are rejected for this durable capability. Each standalone operation is then individually atomic; a sequence of CLI calls is not one transaction. Missing configuration returns `CAPABILITY`. `read_env(name) !{io}` is also server-only and returns a result. Runtime configuration is not compiled into browser assets. Request budgets are cooperative checks, not a process or memory sandbox for arbitrary hostile native code.
 
@@ -86,3 +135,10 @@ rejected before authentication/body buffering or mutation. Same-origin browser
 calls and clients without Origin retain their normal authenticated behavior.
 Wildcards, `null`, credentials, paths and cookies are unsupported. See
 [mobile API setup](mobile-api.md) for the origin format and TLS requirements.
+SDK0.134.4 delivery additionally requires the installed `structured-task-http`
+phase. It checks HTTP and verified HTTPS task servers in both profiles, actual
+retained responses, explicit File grants, disconnect E_CANCELLED and clean
+server shutdown. See sdk.md for its37-phase contract and the separate
+compiler-source fallback isolation requirement. Source syntax and the runtime
+HTTP adapter are unchanged by this SDK delivery update.
+

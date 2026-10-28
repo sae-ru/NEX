@@ -43,7 +43,7 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
                 'failure':('result<i64>',{'error':{'code':'EXAMPLE','message':'recoverable error'}}),
                 'empty':('list<str>',[]),
                 'selection':('debugging::model::Selection',{'case':'Chosen','fields':{'id':'40','ignored':'999','samples':['selected']}})}
-        self.frame={'schema':'nex.debug-frame/1','language':'0.16','revision':identity['revision'],
+        self.frame={'schema':'nex.debug-frame/1','language':'0.24','revision':identity['revision'],
                     'build_key':identity['build_key'],'function':'debugging::app::inspect',
                     'stop':{'process_id':'100','thread_id':'101','frame_id':0,'stop_id':'1'},
                     'bindings':[{'name':n,'type':t,'value':v} for n,(t,v) in values.items()], 'truncated':False}

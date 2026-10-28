@@ -9,7 +9,7 @@
       "const": "nex.project-capture/1"
     },
     "language": {
-      "const": "0.16"
+      "const": "0.24"
     },
     "project_root": {
       "$ref": "#/$defs/path"
@@ -100,6 +100,22 @@
             },
             "native_toolchain_hash": {
               "$ref": "#/$defs/hash"
+            },
+            "task_linkage": {
+              "oneOf": [
+                {
+                  "$ref": "project-static-task-linkage.schema.json"
+                },
+                {
+                  "$ref": "project-task-linkage.schema.json"
+                },
+                {
+                  "$ref": "project-profiled-task-linkage.schema.json"
+                },
+                {
+                  "$ref": "project-write-task-linkage.schema.json"
+                }
+              ]
             }
           },
           "required": [

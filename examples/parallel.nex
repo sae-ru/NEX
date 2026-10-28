@@ -1,0 +1,24 @@
+module parallel_example;
+
+fn identity<T>(value:T)->T{return value;}
+fn decorated(values:list<i64>,prefix:str)->list<result<str>>{
+  return parallel_map(values,fn(n:i64)->result<str>{
+    let held:list<str>=[prefix,"owned temporary"];
+    assert(len(held)==2);
+    if n<0{return ok("unnamed"+err<str>("NEGATIVE","negative input")?);}
+    return ok(prefix+str(n));
+  },4);
+}
+
+fn compute(n:i64)->i64{
+  var i:i64=0;var total:i64=0;
+  while i<2000{total=total+n+i;i=i+1;}
+  return total;
+}
+fn computed()->list<i64>{return parallel_map([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],compute,4);}
+fn main()->unit!{io}{print(decorated([40,-1,42],"value="));print(computed()[15]);}
+test fn ordered_values()->unit{
+  assert(decorated([40,-1,42],"value=")==[ok("value=40"),err<str>("NEGATIVE","negative input"),ok("value=42")]);
+  assert(parallel_map([1.5,2.5],identity,2)==[1.5,2.5]);
+  assert(computed()[15]==2029000);
+}

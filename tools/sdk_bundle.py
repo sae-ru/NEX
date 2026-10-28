@@ -30,6 +30,19 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def selected_wasm_linker(doctor, environment):
+    """Package the explicit linker used by Wasm builds, even with no CMake default."""
+    if 'NEX_WASM_LD' not in environment:
+        return doctor
+    selected = shutil.which(environment['NEX_WASM_LD'], path=environment.get('PATH'))
+    if not selected:
+        raise ValueError('NEX_WASM_LD must select an executable LLVM 22.1 wasm-ld')
+    # Keep the selected filename for multicall LLVM tools' argv[0] dispatch.
+    if 'LLD 22.1.' not in run([selected, '--version'], env=environment):
+        raise ValueError('NEX_WASM_LD requires wasm-ld from LLVM 22.1.x')
+    return {**doctor, 'wasm_linker': str(Path(selected).absolute())}
+
+
 def system_path(path):
     return str(path).startswith(('/usr/lib/', '/System/Library/'))
 
@@ -210,6 +223,7 @@ class Bundle:
         environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
         environment.pop('NEX_CLANG', None)
         doctor = json.loads(run([self.sdk / 'bin/nex', 'doctor', '--json'], env=environment))
+        doctor = selected_wasm_linker(doctor, environment)
         if doctor.get('sdk_manifest') or not doctor.get('native_archiver'):
             raise ValueError('input must be an unbundled installed SDK with host-tool discovery (0.27+)')
         shutil.copytree(self.sdk, self.output, symlinks=True)
@@ -351,32 +365,64 @@ class LinuxBundle(Bundle):
                       'ld-linux-aarch64.so.1', 'ld-linux-x86-64.so.2'}
     CXX_LIBRARIES = {'libstdc++.so.6', 'libgcc_s.so.1'}
 
-    def collect_elf(self, source, destination):
+    def elf_loader_context(self, source):
+        # Resolve once from the actual load root. Running ldd on each child
+        # discards an executable's inherited DT_RPATH and can choose different
+        # providers from the ones its loader actually selected.
+        resolved = {}
+        for line in run(['ldd', source], env=self.environment).splitlines():
+            match = re.match(r'\s*(\S+)\s+=>\s+(.*?)\s+\(0x', line)
+            if match:
+                name, path = match.group(1), Path(match.group(2)).resolve(strict=True)
+                if not path.is_file():
+                    raise ValueError('ELF loader selected a non-file: ' + str(path))
+                if name in resolved and resolved[name] != path:
+                    raise ValueError('ELF image has inconsistent loader contexts: ' + name)
+                resolved[name] = path
+        return resolved
+
+    def collect_elf(self, source, destination, loader_context=None, visited=None):
         source = source.resolve(strict=True)
+        if loader_context is None:
+            loader_context = self.elf_loader_context(source)
+        if visited is None:
+            visited = set()
+        def selected(name):
+            original = Path(name).resolve() if Path(name).is_absolute() else loader_context.get(name)
+            if original is None or not original.is_file():
+                raise ValueError('unresolved ELF dependency ' + name + ' of ' + str(source))
+            return original
         # LLVM installs multicall tools such as ld.lld and wasm-ld as
         # aliases of one ELF file. Each copied destination needs its own
         # origin-relative dependency rewrite while preserving its argv[0].
         key = (source, destination)
+        if key in visited:
+            return
+        visited.add(key)
         if key in self.images:
+            image = self.images[key]
+            for name, original in image['loader_bindings'].items():
+                if selected(name) != original:
+                    raise ValueError('ELF image has inconsistent loader contexts: ' + name + ' of ' + str(source))
+            # A shared intermediary can have identical immediate dependencies
+            # while a deeper provider differs between two application roots.
+            for name, original in image['dependency_sources'].items():
+                self.collect_elf(original, image['dependency_targets'][image['dependencies'][name]].resolve(),
+                                 loader_context, visited)
             return
         if any(image['destination'] == destination for image in self.images.values()):
             raise ValueError('duplicate ELF image destination: ' + str(destination))
         dynamic = run(['readelf', '-d', source])
         needed = re.findall(r'\(NEEDED\).*?\[([^]]+)\]', dynamic)
-        resolved = {}
-        for line in run(['ldd', source], env=self.environment).splitlines():
-            match = re.match(r'\s*(\S+)\s+=>\s+(.*?)\s+\(0x', line)
-            if match:
-                resolved[match.group(1)] = Path(match.group(2)).resolve()
-        image = {'destination': destination, 'dependencies': {}, 'dependency_targets': {}}
+        image = {'destination': destination, 'dependencies': {}, 'dependency_targets': {},
+                 'loader_bindings': {}, 'dependency_sources': {}}
         self.images[key] = image
         for name in needed:
             if Path(name).name in self.HOST_LIBRARIES - self.CXX_LIBRARIES:
                 self.system_libraries.add(name)
                 continue
-            original = Path(name).resolve() if Path(name).is_absolute() else resolved.get(name)
-            if original is None or not original.is_file():
-                raise ValueError('unresolved ELF dependency ' + name + ' of ' + str(source))
+            original = selected(name)
+            image['loader_bindings'][name] = original
             if (Path(name).name in self.CXX_LIBRARIES and
                     any(Path(root).resolve() in original.parents for root in ('/lib', '/lib64', '/usr/lib', '/usr/lib64'))):
                 self.system_libraries.add(name)
@@ -392,8 +438,9 @@ class LinuxBundle(Bundle):
                     alias_path.symlink_to(target.name)
             image['dependencies'][name] = alias
             image['dependency_targets'][alias] = alias_path
+            image['dependency_sources'][name] = original
             self.destinations[original] = target
-            self.collect_elf(original, target)
+            self.collect_elf(original, target, loader_context, visited)
 
     def assemble(self, patchelf):
         environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
@@ -401,6 +448,7 @@ class LinuxBundle(Bundle):
             environment.pop(name, None)
         self.environment = environment
         doctor = json.loads(run([self.sdk / 'bin/nex', 'doctor', '--json'], env=environment))
+        doctor = selected_wasm_linker(doctor, environment)
         if doctor.get('sdk_manifest') or not doctor.get('native_linker'):
             raise ValueError('input must be an unbundled installed Linux SDK with LLVM LLD')
         if tuple(map(int, doctor['version'].split('.')[:2])) < (0, 28):

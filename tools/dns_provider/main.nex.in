@@ -1,0 +1,12 @@
+module dns_example;
+import "std/dns.nex" as dns;
+server extern fn lookup_raw(authority:str,hostname:str,answer_limit:i64,timeout_ms:i64)->result<list<str>> !{ffi}=foreign("dns","lookup","@PIN@");
+server extern fn statistics_raw()->list<i64> !{ffi}=foreign("dns","statistics","@PIN@");
+server fn lookup_provider(value:dns::Request)->result<list<str>> !{task,ffi} {
+  return lookup_raw(value.authority,value.hostname,value.answer_limit,value.timeout_ms);
+}
+pub server fn make_client()->dns::Client {return dns::client_context(lookup_provider);}
+client fn client_value()->i64 {return 42;}
+server fn main()->unit !{task,ffi,io} {
+  print(encode_json(dns::lookup(make_client(),"@AUTHORITY@","@HOSTNAME@",5000)));
+}

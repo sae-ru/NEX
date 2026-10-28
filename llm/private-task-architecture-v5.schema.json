@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.private-task-architecture/5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "mode",
+    "application",
+    "components",
+    "host",
+    "instrumentation"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.private-task-architecture/5"
+    },
+    "mode": {
+      "const": "mixed-fixed"
+    },
+    "application": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "components": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "host": {
+      "enum": [
+        "application",
+        "http"
+      ]
+    },
+    "instrumentation": {
+      "const": "profile"
+    }
+  },
+  "$defs": {
+    "strings": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "units",
+        "exports",
+        "dependencies",
+        "linkage",
+        "instantiations"
+      ],
+      "properties": {
+        "entry": {
+          "type": "string",
+          "minLength": 1
+        },
+        "units": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/strings"
+            }
+          ],
+          "minItems": 1
+        },
+        "exports": {
+          "$ref": "#/$defs/strings"
+        },
+        "dependencies": {
+          "$ref": "#/$defs/strings"
+        },
+        "linkage": {
+          "enum": [
+            "application",
+            "static",
+            "shared"
+          ]
+        },
+        "instantiations": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    }
+  },
+  "description": "Compiler-private source-backed instrumented module cohort. Every component has one source/machine/image owner and one exact checked profile registry. Public language and execution ABI do not change. The compiler must rederive records and all source identities; JSON shape does not validate binaries."
+}

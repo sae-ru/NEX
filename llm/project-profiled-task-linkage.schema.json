@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/project-profiled-task-linkage-3.json",
+  "title": "Checked instrumented task component plan; source-only profile expectations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "component",
+    "execution_abi",
+    "definitions",
+    "imports",
+    "exports",
+    "mode",
+    "load_closure",
+    "profiling"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.project-task-linkage/3"
+    },
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+    },
+    "execution_abi": {
+      "const": 3
+    },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "function",
+          "contract"
+        ],
+        "properties": {
+          "function": {
+            "$ref": "native-task-provider.schema.json#/$defs/function"
+          },
+          "contract": {
+            "$ref": "native-task-provider.schema.json#/$defs/hash"
+          }
+        }
+      }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "function",
+          "provider",
+          "contract",
+          "calling_mode"
+        ],
+        "properties": {
+          "function": {
+            "$ref": "native-task-provider.schema.json#/$defs/function"
+          },
+          "provider": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+          },
+          "contract": {
+            "$ref": "native-task-provider.schema.json#/$defs/hash"
+          },
+          "calling_mode": {
+            "enum": [
+              "task-code/3",
+              "sync/1"
+            ]
+          }
+        }
+      }
+    },
+    "exports": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "native-task-provider.schema.json#/$defs/function"
+      },
+      "additionalProperties": {
+        "$ref": "native-task-provider.schema.json#/$defs/export"
+      }
+    },
+    "mode": {
+      "enum": [
+        "static",
+        "shared-fixed"
+      ]
+    },
+    "load_closure": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "root",
+            "images"
+          ],
+          "properties": {
+            "root": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "images": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 129,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "component",
+                  "kind",
+                  "definitions",
+                  "static_components",
+                  "dynamic_components"
+                ],
+                "properties": {
+                  "component": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "kind": {
+                    "enum": [
+                      "application",
+                      "shared-image"
+                    ]
+                  },
+                  "definitions": {
+                    "type": "array",
+                    "maxItems": 65536,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "function",
+                        "source_component",
+                        "contract"
+                      ],
+                      "properties": {
+                        "function": {
+                          "$ref": "native-task-provider.schema.json#/$defs/function"
+                        },
+                        "source_component": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "contract": {
+                          "$ref": "native-task-provider.schema.json#/$defs/hash"
+                        }
+                      }
+                    }
+                  },
+                  "static_components": {
+                    "type": "array",
+                    "maxItems": 128,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "dynamic_components": {
+                    "type": "array",
+                    "maxItems": 128,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "profiling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "registry_abi",
+        "sites"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.project-task-profile/1"
+        },
+        "registry_abi": {
+          "const": 1
+        },
+        "sites": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16384,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "function_hash",
+              "function_source_hash",
+              "source_unit_hash",
+              "contract",
+              "line"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "function_hash": {
+                "$ref": "native-task-provider.schema.json#/$defs/hash"
+              },
+              "function_source_hash": {
+                "$ref": "native-task-provider.schema.json#/$defs/hash"
+              },
+              "source_unit_hash": {
+                "$ref": "native-task-provider.schema.json#/$defs/hash"
+              },
+              "contract": {
+                "$ref": "native-task-provider.schema.json#/$defs/hash"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

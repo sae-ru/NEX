@@ -1,0 +1,7 @@
+(* Private025 frontend experiment only; normative public grammar remains024. *)
+try_statement = "try", block, "catch", "(", identifier, ",", identifier, ")", block ;
+throw_statement = "throw", "(", expression, ",", expression, ")", ";" ;
+rethrow_statement = "throw", ";" ;
+(* Both payload expressions are str; catch bindings are immutable str values.
+   Unhandled raises/calls require effect throw. Catch regions are lexical and
+   do not cross function/lambda boundaries. Checked traps remain separate. *)

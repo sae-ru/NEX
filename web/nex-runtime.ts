@@ -25,6 +25,23 @@ export function unwrap<T extends Value>(value: Result<T>, site?: Site): T {
 }
 export function errorCode<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.code : ''; }
 export function errorMessage<T extends Value>(value: Result<T>): string { return value[TYPE] === 'nex.result.error' ? value.error.message : ''; }
+// Private non-value sentinel: only an emitted function boundary handles it.
+class ResultPropagation {
+  readonly failure: Failure;
+  constructor(failure: Failure) { this.failure = failure; }
+}
+export function propagate<T extends Value>(value: Result<T>): T {
+  if (value[TYPE] === 'nex.result.error') throw new ResultPropagation(value);
+  return value.ok;
+}
+export function resultScope<T extends Value>(body: () => Result<T>): Result<T> {
+  try { return body(); }
+  catch (error) { if (error instanceof ResultPropagation) return error.failure; throw error; }
+}
+// Generated resumable functions use the same source return boundary.
+export function propagatedFailure(error: unknown): Failure | undefined {
+  return error instanceof ResultPropagation ? error.failure : undefined;
+}
 export type Site = readonly [file: string, line: number, column: number, operationSite?: string];
 export class NexError extends Error {
   readonly code: string;
@@ -34,6 +51,70 @@ export class NexError extends Error {
   }
 }
 function fail(code: string, message: string, site?: Site): never { throw new NexError(code, message, site); }
+// The synchronous TypeScript backend evaluates ordered CPU maps serially. It
+// provides the same pure value/error contract, not browser worker parallelism.
+const callableCaptures = new WeakMap<Callable, ReadonlyArray<Value>>();
+const privateTaskValues = new WeakMap<object, 'task_scope' | 'task' | 'channel'>();
+// These annotations classify values for ordinary equality/printing/map guards;
+// they never grant authority in the private task scheduler's separate owner map.
+export function annotateTaskValue(value: RecordValue, kind: 'task_scope' | 'task' | 'channel'): void { privateTaskValues.set(value, kind); }
+export function captureValues(callback: Callable): ReadonlyArray<Value> | undefined { return callableCaptures.get(callback); }
+export function captured<F extends Callable>(values: ReadonlyArray<Value>, callback: F): F {
+  callableCaptures.set(callback, Object.freeze([...values])); return callback;
+}
+type ParallelControl = { steps: number; depth: number; deadline: number };
+let parallelControl: ParallelControl | undefined;
+export function parallelPoll(site?: Site): void {
+  if (!parallelControl) return;
+  if (++parallelControl.steps > 1000000) fail('E_LIMIT', 'parallel execution budget exceeded', site);
+  if (performance.now() >= parallelControl.deadline) fail('E_TIMEOUT', 'parallel execution deadline exceeded', site);
+}
+export function parallelEnter(site?: Site): void {
+  if (!parallelControl) return;
+  if (parallelControl.depth >= 256) fail('E_LIMIT', 'parallel callback call depth exceeds 256', site);
+  parallelPoll(site); ++parallelControl.depth;
+}
+export function parallelLeave(): void { if (parallelControl) --parallelControl.depth; }
+function parallelValue(value: Value, site?: Site): void {
+  const pending: Value[] = [value], seen = new Set<object>(); let members = 1;
+  while (pending.length) {
+    const next = pending.pop()!;
+    if (next === null || next === undefined) fail('E_PARALLEL_VALUE', 'parallel value is not a NEX value', site);
+    if (typeof next !== 'object' && typeof next !== 'function') continue;
+    if (privateTaskValues.has(next)) fail('E_PARALLEL_VALUE', 'parallel value cannot contain task authority', site);
+    if (seen.has(next)) continue; seen.add(next);
+    if (seen.size > 262144) fail('E_LIMIT', 'parallel value graph exceeds its object limit', site);
+    if (seen.size % 64 === 0) parallelPoll(site);
+    let children: ReadonlyArray<Value>;
+    if (typeof next === 'function') {
+      const captures = callableCaptures.get(next);
+      if (!captures) fail('E_PARALLEL_VALUE', 'parallel callback has no checked capture metadata', site);
+      children = captures;
+    } else if (next instanceof ByteBuffer) children = [];
+    else children = Array.isArray(next) ? next : Object.values(next);
+    if (children.length > 262144 - members) fail('E_LIMIT', 'parallel value graph exceeds its member limit', site);
+    members += children.length; for (const child of children) pending.push(child);
+  }
+}
+export function validateParallelValue(value: Value, site?: Site): void { parallelValue(value, site); }
+export function parallelMap<T extends Value, U extends Value>(items: ReadonlyArray<T>, callback: (item: T) => U, workers: bigint, site?: Site): ReadonlyArray<U> {
+  if (workers < 1n || workers > 16n) fail('E_RANGE', 'parallel worker count must be in 1..16', site);
+  if (items.length > 65536) fail('E_LIMIT', 'parallel input exceeds 65536 items', site);
+  const previous = parallelControl;
+  if (!parallelControl) parallelControl = {steps: 0, depth: 0, deadline: performance.now() + 5000};
+  try {
+    parallelPoll(site); parallelValue(items, site); parallelValue(callback, site);
+    const output: U[] = []; let failure: NexError | undefined;
+    for (const item of items) {
+      try { parallelPoll(site); const value = callback(item); parallelValue(value, site); output.push(value); }
+      catch (error) {
+        if (!(error instanceof NexError) || ['E_LIMIT', 'E_TIMEOUT', 'E_CANCELLED', 'E_MEMORY'].includes(error.code)) throw error;
+        if (!failure) failure = error;
+      }
+    }
+    parallelPoll(site); if (failure) throw failure; return list(output);
+  } finally { parallelControl = previous; }
+}
 const MIN = -9223372036854775808n, MAX = 9223372036854775807n;
 export function checked(value: bigint, site?: Site): bigint {
   if (value < MIN || value > MAX) fail('E_OVERFLOW', 'i64 arithmetic overflow', site);
@@ -149,6 +230,7 @@ function isList(value: Value): value is ReadonlyArray<Value> { return Array.isAr
 export function equal(a: Value, b: Value): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (privateTaskValues.has(a) || privateTaskValues.has(b)) return false;
   if (a instanceof ByteBuffer || b instanceof ByteBuffer) return a instanceof ByteBuffer && b instanceof ByteBuffer && a.equals(b);
   if (isList(a)) return isList(b) && a.length === b.length && a.every((item, i) => equal(item, b[i]));
   if (isList(b) || a[TYPE] !== b[TYPE] || a[CASE] !== b[CASE]) return false;
@@ -163,6 +245,8 @@ export function representation(value: Value): string {
   if (typeof value === 'function') return quoted('<function>');
   if (typeof value === 'string') return quoted(value);
   if (typeof value !== 'object') return String(value);
+  const taskKind = privateTaskValues.get(value);
+  if (taskKind !== undefined) return quoted('<' + taskKind + '>');
   if (value instanceof ByteBuffer) return quoted(value.base64());
   if (isList(value)) return '[' + value.map(representation).join(',') + ']';
   const fields = '{' + Object.keys(value).map(key => quoted(key) + ':' + representation(value[key])).join(',') + '}';

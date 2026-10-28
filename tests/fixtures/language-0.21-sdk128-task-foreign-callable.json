@@ -1,0 +1,4413 @@
+{
+  "schema": "nex.language-021-task-foreign-migration-fixture/1",
+  "language": "0.21",
+  "sdk": {
+    "compiler_sha256": "40fcbef8657a74f1f51339ed45876808f2d657ed93da8e22a7838c9234b70975",
+    "native_reference_and_TypeScript": true
+  },
+  "head": "8c9174c94f567df7eb5ccb7b46ee879460f4fa56b3a56394175b8d910d353c35",
+  "revisions": [
+    {
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(42)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==42);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "declaration_graph": {
+        "identity_policy": "nex.graph-identity/1",
+        "language": "0.21",
+        "namespace": "35efad8bef5000b18a23ac5d1c726455",
+        "nodes": [
+          {
+            "context_hash": "e6f3e6ab08717a01821e96a222271ffefee187895491979d1b365198c1bc1b1d",
+            "definition": {
+              "format": "nex.module/1",
+              "imports": [],
+              "members": [
+                {
+                  "hash": "dee76355e4954fa52a273d927e1b11e5b2593f8f28b6af3b68bdef537ad7320a",
+                  "kind": "function",
+                  "symbol": "old021::callable::answer"
+                },
+                {
+                  "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                  "kind": "function",
+                  "symbol": "old021::callable::main"
+                },
+                {
+                  "hash": "483d3d9cbeea8229272bcea521bccf7fca0a910ad3aaac17ac1dd9dee3ee1a68",
+                  "kind": "function",
+                  "symbol": "old021::callable::retained_answer"
+                },
+                {
+                  "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                  "kind": "function",
+                  "symbol": "old021::callable::select"
+                }
+              ],
+              "name": "old021::callable"
+            },
+            "definition_bytes": 603,
+            "definition_omitted": false,
+            "derived": false,
+            "editable": false,
+            "file": "main.nex",
+            "hash": "ec61a8ca8eb1fa71e76be5d76816658748eee40e1f8d3f54d83bfdf483b3982c",
+            "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+            "kind": "module",
+            "module": "old021::callable",
+            "path": "",
+            "reference_count": 4,
+            "references": [
+              {
+                "context_hash": "9b964c6de3fcadfccce5429fa2bcc7ec67f0aae662acedc323ff50781dd29304",
+                "hash": "dee76355e4954fa52a273d927e1b11e5b2593f8f28b6af3b68bdef537ad7320a",
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::answer"
+              },
+              {
+                "context_hash": "f29fa5be4aa006632bbadd3d5016ca605faccd4dc176a0dd50bd1f9e796ebc4b",
+                "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::main"
+              },
+              {
+                "context_hash": "5e4e9c08cab45b59403dd2038f06942cb5a277328c653b04832a4b676a4e0252",
+                "hash": "483d3d9cbeea8229272bcea521bccf7fca0a910ad3aaac17ac1dd9dee3ee1a68",
+                "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::retained_answer"
+              },
+              {
+                "context_hash": "591453417297ef001d28ecf87af718f1fec7cb33e87598b979698232c7234608",
+                "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "references_truncated": false,
+            "source": "",
+            "source_bytes": 0,
+            "source_truncated": false,
+            "symbol": "old021::callable"
+          }
+        ],
+        "offset": 0,
+        "revision": "92e29a813ed2a952b539d6cbcb6d0971ceef04d88bd681eb02f92945dd93883f",
+        "schema": "nex.declarations/1",
+        "total": 1,
+        "truncated": false
+      },
+      "endpoints": [],
+      "identity_namespace": "35efad8bef5000b18a23ac5d1c726455",
+      "language": "0.21",
+      "module": "old021::callable",
+      "modules": [
+        {
+          "context_hash": "e6f3e6ab08717a01821e96a222271ffefee187895491979d1b365198c1bc1b1d",
+          "file": "main.nex",
+          "hash": "ec61a8ca8eb1fa71e76be5d76816658748eee40e1f8d3f54d83bfdf483b3982c",
+          "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+          "imports": [],
+          "name": "old021::callable"
+        }
+      ],
+      "nodes": [
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 2,
+                      "operator": "value",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 13,
+                  "lambda": {
+                    "body": [
+                      {
+                        "body": [],
+                        "else": [],
+                        "expression": {
+                          "args": [],
+                          "kind": 2,
+                          "operator": "value",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        "kind": 4,
+                        "name": "",
+                        "type": "unknown"
+                      }
+                    ],
+                    "captures": [
+                      {
+                        "name": "value",
+                        "type": "i64"
+                      }
+                    ],
+                    "closure_owner": "old021::callable::select",
+                    "effects": [],
+                    "format": "nex.function/13",
+                    "name": "old021::callable::select::$lambda_0",
+                    "owner": "old021::callable",
+                    "parameters": [],
+                    "public": false,
+                    "realm": "shared",
+                    "result": "i64",
+                    "template": "",
+                    "test": false,
+                    "type_arguments": [],
+                    "type_bounds": {},
+                    "type_parameter_kinds": [],
+                    "type_parameters": []
+                  },
+                  "operator": "old021::callable::select::$lambda_0",
+                  "type": "fn()->i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select",
+            "owner": "old021::callable",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "public": false,
+            "realm": "shared",
+            "result": "fn()->i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+              "name": "old021::callable::select::$lambda_0"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+          "id": "767cccdc3d25b6803e6c59d7a149dffd",
+          "line": 2,
+          "local_name": "select",
+          "module": "old021::callable",
+          "name": "old021::callable::select",
+          "native_symbol": "nex_6_old021_8_callable_6_select",
+          "source": "fn select(value:i64)->fn()->i64{return fn()->i64{return value;};}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 42
+                        }
+                      ],
+                      "kind": 5,
+                      "operator": "old021::callable::select",
+                      "type": "fn()->i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 11,
+                  "operator": "",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "767cccdc3d25b6803e6c59d7a149dffd",
+              "name": "old021::callable::select"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "dee76355e4954fa52a273d927e1b11e5b2593f8f28b6af3b68bdef537ad7320a",
+          "id": "dc3bb6e61328c9c774ce22738cfde897",
+          "line": 3,
+          "local_name": "answer",
+          "module": "old021::callable",
+          "name": "old021::callable::answer",
+          "native_symbol": "nex_6_old021_8_callable_6_answer",
+          "source": "fn answer()->i64{return select(42)();}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 5,
+                      "operator": "old021::callable::answer",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "print",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [
+              "io"
+            ],
+            "format": "nex.function/13",
+            "name": "old021::callable::main",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+          "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+          "line": 4,
+          "local_name": "main",
+          "module": "old021::callable",
+          "name": "old021::callable::main",
+          "native_symbol": "nex_6_old021_8_callable_4_main",
+          "source": "fn main()->unit !{io}{print(answer());}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 5,
+                          "operator": "old021::callable::answer",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 42
+                        }
+                      ],
+                      "kind": 4,
+                      "operator": "==",
+                      "type": "bool",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "assert",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::retained_answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": true,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "483d3d9cbeea8229272bcea521bccf7fca0a910ad3aaac17ac1dd9dee3ee1a68",
+          "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+          "line": 5,
+          "local_name": "retained_answer",
+          "module": "old021::callable",
+          "name": "old021::callable::retained_answer",
+          "native_symbol": "nex_6_old021_8_callable_15_retained_answer",
+          "source": "test fn retained_answer()->unit{assert(answer()==42);}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [],
+                  "kind": 2,
+                  "operator": "value",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "captures": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "closure_owner": "old021::callable::select",
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select::$lambda_0",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [],
+          "file": "main.nex",
+          "hash": "0bf756b3c92c65ab64d9cfcb19d60fbcf479908bd2e563bc90aa39da43db00ed",
+          "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+          "line": 2,
+          "local_name": "select::$lambda_0",
+          "module": "old021::callable",
+          "name": "old021::callable::select::$lambda_0",
+          "native_symbol": "nex_inst_bdd09f4e2a71eb832d9ee69f0c0846b07ff45c1fa0ab0677565f5b10dd97796b",
+          "source": "fn()->i64{return value;}"
+        }
+      ],
+      "operation_graph": {
+        "identity_policy": "nex.operation-identity/1",
+        "identity_scope": "local_store",
+        "language": "0.21",
+        "nodes": [
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "parameter",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 48,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "7f3efcaec63e1cd9cfbaeceb3507458b9005bf0b3cccfecb1ed15429ea0c149d",
+            "id": "5348c3e920133e1ac184211cf46744b2",
+            "kind": "parameter",
+            "location": {
+              "byte_begin": 35,
+              "byte_end": 40,
+              "column": 11,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "parameter/0",
+            "references": [],
+            "role": "parameter",
+            "site": "139bdef308202e91c728bede086ada69fe759ea4a9f3ecb49ef7f616cd103257",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "d656cdc11edbfe8cda123f326f651424",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "ead461792f6897ee54b997de4b047e0a9395f388f2ab5bb4b991f78e746c13db",
+            "id": "51501d9710f3647f941b2c327ac7b436",
+            "kind": "block",
+            "location": {
+              "byte_begin": 25,
+              "byte_end": 90,
+              "column": 1,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "0c4cbfa7887a48a033503008b4d63dc322070b151ca8f4815fed4140680bf45b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "0de9a6370066e6e4864363e89c15160201d9e325b588b9bf6465090c12bd0487",
+            "id": "d656cdc11edbfe8cda123f326f651424",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 57,
+              "byte_end": 63,
+              "column": 33,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "51501d9710f3647f941b2c327ac7b436",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583",
+            "source_range": {
+              "byte_begin": 57,
+              "byte_end": 89,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bd79608041d7d2cc70fbc4fada2ea357",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.lambda",
+              "number": "0",
+              "text": "old021::callable::select::$lambda_0",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 105,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "5c2180c8f8c3a2e06ea016adf0ff88941b4732df8e9aa9dcfdda085fcacbfc1d",
+            "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "kind": "expression.lambda",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d656cdc11edbfe8cda123f326f651424",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+                "role": "callee",
+                "symbol": "old021::callable::select::$lambda_0"
+              }
+            ],
+            "role": "expression",
+            "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403",
+            "source_range": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "bd79608041d7d2cc70fbc4fada2ea357",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "5348c3e920133e1ac184211cf46744b2",
+                "role": "binding"
+              }
+            ],
+            "role": "argument",
+            "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "7ce34cc0fe67a06b022d8aaec179d462",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "ba8d692e13c8a2ed6d514f42a4c06eb09e955099d611c56db95f96b72f090798"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "c25175fd769f95d3c2636936cb5df0f6be1f392b9c1332a9e23e366f01c7b8ed",
+            "id": "7f82da9f741749586d25c8e5b9db177a",
+            "kind": "block",
+            "location": {
+              "byte_begin": 91,
+              "byte_end": 129,
+              "column": 1,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "dc3bb6e61328c9c774ce22738cfde897",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "9db5acb72150d7a1804eaf55a61901406b4c0bc6336895fd602098c288753e67",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c586b822e7888ccdabbc3c10f59bdde2",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "61131c85f8c255e106aa8d658cc08cc97bae32122f1f2c32f2a9a12c825c3f76"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "7775577672061f28dda90c4f0247c70f367cdd786536769bb26b1971e4531a2c",
+            "id": "7ce34cc0fe67a06b022d8aaec179d462",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 108,
+              "byte_end": 114,
+              "column": 18,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7f82da9f741749586d25c8e5b9db177a",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "ba8d692e13c8a2ed6d514f42a4c06eb09e955099d611c56db95f96b72f090798",
+            "source_range": {
+              "byte_begin": 108,
+              "byte_end": 128,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "92103eefc22370812893bfd7644ef0970988c5dbfb0e1d6ed4307810a38d8df2"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.invoke",
+              "number": "0",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 64,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "a048ed2dc14076a56b62a793f0e90a95cb3f2bc9f5f64a98afaaa0e42884f7ea",
+            "id": "c586b822e7888ccdabbc3c10f59bdde2",
+            "kind": "expression.invoke",
+            "location": {
+              "byte_begin": 125,
+              "byte_end": 126,
+              "column": 35,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7ce34cc0fe67a06b022d8aaec179d462",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "61131c85f8c255e106aa8d658cc08cc97bae32122f1f2c32f2a9a12c825c3f76",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 127,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "8b2b10a3824ded84878454cef39f2fd6",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "ab51421cd78cda02e76cd0c08bd40a21d1f8460cb07128e9f86d77ee894d24a5"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::select",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 92,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "93802d0a9ef0c397b1129233e6b7703741cc15f42a9b61bae955c6f5cc1cf82a",
+            "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 115,
+              "byte_end": 121,
+              "column": 25,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "c586b822e7888ccdabbc3c10f59bdde2",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "role": "callee",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "role": "argument",
+            "site": "92103eefc22370812893bfd7644ef0970988c5dbfb0e1d6ed4307810a38d8df2",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 125,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "42",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+            "id": "8b2b10a3824ded84878454cef39f2fd6",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "column": 32,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "ab51421cd78cda02e76cd0c08bd40a21d1f8460cb07128e9f86d77ee894d24a5",
+            "source_range": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3fbd847d34f797854f9e5a4f7d734f82",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "e6db8b355c6172164e2fa0a0a5fcb0a9ac4ff7e190711c3063e8b6a79f42e2b1",
+            "id": "8062ee83b91f29ece18a10b1b6d29100",
+            "kind": "block",
+            "location": {
+              "byte_begin": 130,
+              "byte_end": 169,
+              "column": 1,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "c10039539c4c575eb808abc8c331c8310851229b23388e64cbee95fcb241e66b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "576b53e7113e0d7fbce7abd7cd2dc2b5a3daa2cf956f83e5058e6e00c476cb86",
+            "id": "3fbd847d34f797854f9e5a4f7d734f82",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "8062ee83b91f29ece18a10b1b6d29100",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 168,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3bd9249e2533c4089e3eaca846d1e015",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "print",
+              "type": "unit"
+            },
+            "definition_bytes": 68,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "6c09008d5f67812d15da0f50ac4bcc409c8af374acc9a5c76835004912ac2857",
+            "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "3fbd847d34f797854f9e5a4f7d734f82",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 167,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "3bd9249e2533c4089e3eaca846d1e015",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 158,
+              "byte_end": 164,
+              "column": 29,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb",
+            "source_range": {
+              "byte_begin": 158,
+              "byte_end": 166,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "7e8085d2dcde0defec3bcd243ba09896e801ea709bbf20da10d636f7f01782a2"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "96ecbd4a938ae49dd5c2977abe9e7add0cf6ee48a1229d60215ad02c122f80a2",
+            "id": "51e40e41dad73fd9f774f9596592b6dc",
+            "kind": "block",
+            "location": {
+              "byte_begin": 170,
+              "byte_end": 224,
+              "column": 1,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "19b161de57b09a8363dc2eae29f5190abd6a15e5154fc9996bccdcf1a59cd0d6",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "ab833289557dfa7bb01d0479cd496cc5944413d47132035e673bc67eaba675e1"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "05f8a89d0332d6447153874f2b5a036a62717091e962f810a9d1b1574af126d7",
+            "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "51e40e41dad73fd9f774f9596592b6dc",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "7e8085d2dcde0defec3bcd243ba09896e801ea709bbf20da10d636f7f01782a2",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 223,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c71ede3db7eea9581e27ab15813808d4",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "6d34035cf8373100152a91bff31b0f41561d3d818a33cba9fee2cb7d2f4776aa"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "assert",
+              "type": "unit"
+            },
+            "definition_bytes": 69,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "5734365055023a32ddc72c6a46783cf8d0b4484699524b253ee9d1de2ee56851",
+            "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "ab833289557dfa7bb01d0479cd496cc5944413d47132035e673bc67eaba675e1",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 222,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 2,
+            "children": [
+              {
+                "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "7804dbd72f7908d78123b2d8fcd5412adde508ad13f61f97b080f9e79bc80f1d"
+              },
+              {
+                "id": "59f1548971a2ca4c05e68d29d4f64982",
+                "ordinal": 1,
+                "role": "argument",
+                "site": "62ebb8ed89c6ee27b96981b4b16693440b03560055716d36d79d9a33d54b4c99"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.binary",
+              "number": "0",
+              "text": "==",
+              "type": "bool"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "a22a826384aee12fe8b05b15fcaffa5b8af31e72241c036309ce91f660dcc347",
+            "id": "c71ede3db7eea9581e27ab15813808d4",
+            "kind": "expression.binary",
+            "location": {
+              "byte_begin": 217,
+              "byte_end": 219,
+              "column": 48,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "6d34035cf8373100152a91bff31b0f41561d3d818a33cba9fee2cb7d2f4776aa",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 209,
+              "byte_end": 215,
+              "column": 40,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "7804dbd72f7908d78123b2d8fcd5412adde508ad13f61f97b080f9e79bc80f1d",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 217,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "42",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "cccd157b490e616fa0d8719c5e445fe7fd57fafa0e17bebb910632f8e8f5a1fd",
+            "id": "59f1548971a2ca4c05e68d29d4f64982",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "column": 50,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 1,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/1",
+            "references": [],
+            "role": "argument",
+            "site": "62ebb8ed89c6ee27b96981b4b16693440b03560055716d36d79d9a33d54b4c99",
+            "source_range": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "capture",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 46,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "0281d9e7332998c3f745e3b8f95aae7d04b88332dfd8689b8c1f66d4db9cceab",
+            "id": "0ac6898e56332f96a0013379f0fbaf86",
+            "kind": "capture",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "capture/0",
+            "references": [],
+            "role": "capture",
+            "site": "8edcf8fe9ab9a201feee82dfcfbeecdbf6c5631ce76179113e8eefa3d770ef43",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "9625ae3929c68b70529a73202713a688",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "dc776587b7ca89588ea95001656d3aff64a1c8531e9ad20f4600cb38b812b831",
+            "id": "e7248d65e4ae15a7d0d2d44891a89228",
+            "kind": "block",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "5c411b8d9395cba6554fd9045bac1c7e532451514138b1edc42bd153ca21c3ad",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "d41a5966355bc4926a35415c48e6bc6417603d0ba91b5d4b9846df2007f9d277",
+            "id": "9625ae3929c68b70529a73202713a688",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 74,
+              "byte_end": 80,
+              "column": 50,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "e7248d65e4ae15a7d0d2d44891a89228",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631",
+            "source_range": {
+              "byte_begin": 74,
+              "byte_end": 87,
+              "editable": false,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "column": 57,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "9625ae3929c68b70529a73202713a688",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "0ac6898e56332f96a0013379f0fbaf86",
+                "role": "binding"
+              }
+            ],
+            "role": "expression",
+            "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b",
+            "source_range": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "editable": false,
+              "kind": "expression"
+            }
+          }
+        ],
+        "offset": 0,
+        "revision": "92e29a813ed2a952b539d6cbcb6d0971ceef04d88bd681eb02f92945dd93883f",
+        "schema": "nex.operations/1",
+        "source_hash": "a6e3ee94f2f7539e134ace476d4e661b2034a546983242e98d66ebbfab14efe6",
+        "total": 24,
+        "truncated": false
+      },
+      "path": "/Users/sae/projects/NEX/build/source-task146-genuine021-fixtures-v4/callable/main.nex",
+      "revision": "92e29a813ed2a952b539d6cbcb6d0971ceef04d88bd681eb02f92945dd93883f",
+      "schema": "nex.graph/2",
+      "source": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(42)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==42);}\n",
+      "structures": []
+    },
+    {
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(43)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==43);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "declaration_graph": {
+        "identity_policy": "nex.graph-identity/1",
+        "language": "0.21",
+        "namespace": "35efad8bef5000b18a23ac5d1c726455",
+        "nodes": [
+          {
+            "context_hash": "e0efe2a6e6c4eead623924c59552aa053b26582c94c1db9060b653635a5c7894",
+            "definition": {
+              "format": "nex.module/1",
+              "imports": [],
+              "members": [
+                {
+                  "hash": "8b5a396086af360e21e6aeb5e5442d0bafd56de7ca649ff007a10d24f4b899d2",
+                  "kind": "function",
+                  "symbol": "old021::callable::answer"
+                },
+                {
+                  "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                  "kind": "function",
+                  "symbol": "old021::callable::main"
+                },
+                {
+                  "hash": "4abcf414028a54723b3971a0102d6015b2c3a53180a3a368d763e28c1f35b1ff",
+                  "kind": "function",
+                  "symbol": "old021::callable::retained_answer"
+                },
+                {
+                  "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                  "kind": "function",
+                  "symbol": "old021::callable::select"
+                }
+              ],
+              "name": "old021::callable"
+            },
+            "definition_bytes": 603,
+            "definition_omitted": false,
+            "derived": false,
+            "editable": false,
+            "file": "main.nex",
+            "hash": "960f2b33312f2190bdd21184334f316f42ddbd2d3745e2b6eee4c8131c1cdf9d",
+            "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+            "kind": "module",
+            "module": "old021::callable",
+            "path": "",
+            "reference_count": 4,
+            "references": [
+              {
+                "context_hash": "c18b5662c3910128aa4746b6e1adefa41242cb931262297fabd10da8673dbfce",
+                "hash": "8b5a396086af360e21e6aeb5e5442d0bafd56de7ca649ff007a10d24f4b899d2",
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::answer"
+              },
+              {
+                "context_hash": "05a94b09cc2bf606ed04fff70560ab257962bcb21b90d962bda2c50f216632c5",
+                "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::main"
+              },
+              {
+                "context_hash": "2c4ca9d0b2b9c4eddb5e510132a7930ab928b20f0f3e8e407595e8b648715076",
+                "hash": "4abcf414028a54723b3971a0102d6015b2c3a53180a3a368d763e28c1f35b1ff",
+                "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::retained_answer"
+              },
+              {
+                "context_hash": "591453417297ef001d28ecf87af718f1fec7cb33e87598b979698232c7234608",
+                "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "references_truncated": false,
+            "source": "",
+            "source_bytes": 0,
+            "source_truncated": false,
+            "symbol": "old021::callable"
+          }
+        ],
+        "offset": 0,
+        "revision": "3606ff7248a3f2d5738c3aa55db2a91de7fb3cfc9a9c1016f2b1625475696262",
+        "schema": "nex.declarations/1",
+        "total": 1,
+        "truncated": false
+      },
+      "endpoints": [],
+      "identity_namespace": "35efad8bef5000b18a23ac5d1c726455",
+      "language": "0.21",
+      "module": "old021::callable",
+      "modules": [
+        {
+          "context_hash": "e0efe2a6e6c4eead623924c59552aa053b26582c94c1db9060b653635a5c7894",
+          "file": "main.nex",
+          "hash": "960f2b33312f2190bdd21184334f316f42ddbd2d3745e2b6eee4c8131c1cdf9d",
+          "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+          "imports": [],
+          "name": "old021::callable"
+        }
+      ],
+      "nodes": [
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 2,
+                      "operator": "value",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 13,
+                  "lambda": {
+                    "body": [
+                      {
+                        "body": [],
+                        "else": [],
+                        "expression": {
+                          "args": [],
+                          "kind": 2,
+                          "operator": "value",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        "kind": 4,
+                        "name": "",
+                        "type": "unknown"
+                      }
+                    ],
+                    "captures": [
+                      {
+                        "name": "value",
+                        "type": "i64"
+                      }
+                    ],
+                    "closure_owner": "old021::callable::select",
+                    "effects": [],
+                    "format": "nex.function/13",
+                    "name": "old021::callable::select::$lambda_0",
+                    "owner": "old021::callable",
+                    "parameters": [],
+                    "public": false,
+                    "realm": "shared",
+                    "result": "i64",
+                    "template": "",
+                    "test": false,
+                    "type_arguments": [],
+                    "type_bounds": {},
+                    "type_parameter_kinds": [],
+                    "type_parameters": []
+                  },
+                  "operator": "old021::callable::select::$lambda_0",
+                  "type": "fn()->i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select",
+            "owner": "old021::callable",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "public": false,
+            "realm": "shared",
+            "result": "fn()->i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+              "name": "old021::callable::select::$lambda_0"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+          "id": "767cccdc3d25b6803e6c59d7a149dffd",
+          "line": 2,
+          "local_name": "select",
+          "module": "old021::callable",
+          "name": "old021::callable::select",
+          "native_symbol": "nex_6_old021_8_callable_6_select",
+          "source": "fn select(value:i64)->fn()->i64{return fn()->i64{return value;};}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 43
+                        }
+                      ],
+                      "kind": 5,
+                      "operator": "old021::callable::select",
+                      "type": "fn()->i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 11,
+                  "operator": "",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "767cccdc3d25b6803e6c59d7a149dffd",
+              "name": "old021::callable::select"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "8b5a396086af360e21e6aeb5e5442d0bafd56de7ca649ff007a10d24f4b899d2",
+          "id": "dc3bb6e61328c9c774ce22738cfde897",
+          "line": 3,
+          "local_name": "answer",
+          "module": "old021::callable",
+          "name": "old021::callable::answer",
+          "native_symbol": "nex_6_old021_8_callable_6_answer",
+          "source": "fn answer()->i64{return select(43)();}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 5,
+                      "operator": "old021::callable::answer",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "print",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [
+              "io"
+            ],
+            "format": "nex.function/13",
+            "name": "old021::callable::main",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+          "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+          "line": 4,
+          "local_name": "main",
+          "module": "old021::callable",
+          "name": "old021::callable::main",
+          "native_symbol": "nex_6_old021_8_callable_4_main",
+          "source": "fn main()->unit !{io}{print(answer());}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 5,
+                          "operator": "old021::callable::answer",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 43
+                        }
+                      ],
+                      "kind": 4,
+                      "operator": "==",
+                      "type": "bool",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "assert",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::retained_answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": true,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "4abcf414028a54723b3971a0102d6015b2c3a53180a3a368d763e28c1f35b1ff",
+          "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+          "line": 5,
+          "local_name": "retained_answer",
+          "module": "old021::callable",
+          "name": "old021::callable::retained_answer",
+          "native_symbol": "nex_6_old021_8_callable_15_retained_answer",
+          "source": "test fn retained_answer()->unit{assert(answer()==43);}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [],
+                  "kind": 2,
+                  "operator": "value",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "captures": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "closure_owner": "old021::callable::select",
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select::$lambda_0",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [],
+          "file": "main.nex",
+          "hash": "0bf756b3c92c65ab64d9cfcb19d60fbcf479908bd2e563bc90aa39da43db00ed",
+          "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+          "line": 2,
+          "local_name": "select::$lambda_0",
+          "module": "old021::callable",
+          "name": "old021::callable::select::$lambda_0",
+          "native_symbol": "nex_inst_bdd09f4e2a71eb832d9ee69f0c0846b07ff45c1fa0ab0677565f5b10dd97796b",
+          "source": "fn()->i64{return value;}"
+        }
+      ],
+      "operation_graph": {
+        "identity_policy": "nex.operation-identity/1",
+        "identity_scope": "local_store",
+        "language": "0.21",
+        "nodes": [
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "parameter",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 48,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "7f3efcaec63e1cd9cfbaeceb3507458b9005bf0b3cccfecb1ed15429ea0c149d",
+            "id": "5348c3e920133e1ac184211cf46744b2",
+            "kind": "parameter",
+            "location": {
+              "byte_begin": 35,
+              "byte_end": 40,
+              "column": 11,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "parameter/0",
+            "references": [],
+            "role": "parameter",
+            "site": "139bdef308202e91c728bede086ada69fe759ea4a9f3ecb49ef7f616cd103257",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "d656cdc11edbfe8cda123f326f651424",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "ead461792f6897ee54b997de4b047e0a9395f388f2ab5bb4b991f78e746c13db",
+            "id": "51501d9710f3647f941b2c327ac7b436",
+            "kind": "block",
+            "location": {
+              "byte_begin": 25,
+              "byte_end": 90,
+              "column": 1,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "0c4cbfa7887a48a033503008b4d63dc322070b151ca8f4815fed4140680bf45b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "0de9a6370066e6e4864363e89c15160201d9e325b588b9bf6465090c12bd0487",
+            "id": "d656cdc11edbfe8cda123f326f651424",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 57,
+              "byte_end": 63,
+              "column": 33,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "51501d9710f3647f941b2c327ac7b436",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583",
+            "source_range": {
+              "byte_begin": 57,
+              "byte_end": 89,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bd79608041d7d2cc70fbc4fada2ea357",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.lambda",
+              "number": "0",
+              "text": "old021::callable::select::$lambda_0",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 105,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "5c2180c8f8c3a2e06ea016adf0ff88941b4732df8e9aa9dcfdda085fcacbfc1d",
+            "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "kind": "expression.lambda",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d656cdc11edbfe8cda123f326f651424",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+                "role": "callee",
+                "symbol": "old021::callable::select::$lambda_0"
+              }
+            ],
+            "role": "expression",
+            "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403",
+            "source_range": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "bd79608041d7d2cc70fbc4fada2ea357",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "5348c3e920133e1ac184211cf46744b2",
+                "role": "binding"
+              }
+            ],
+            "role": "argument",
+            "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "7ce34cc0fe67a06b022d8aaec179d462",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "4f73d4061c9589009cf8afb4604f64b7db1f0e3914c4d97714349d687dcd59ed"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "2db0aecadff0ae72bd93c758b3cff6b76b17d8144dfbd2aa47f57d676b5ca6ba",
+            "id": "7f82da9f741749586d25c8e5b9db177a",
+            "kind": "block",
+            "location": {
+              "byte_begin": 91,
+              "byte_end": 129,
+              "column": 1,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "dc3bb6e61328c9c774ce22738cfde897",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "c4e35dffc39be9572b59b577b34cd9cd638f780bd462b54f2bcad8960d4c2bbb",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c586b822e7888ccdabbc3c10f59bdde2",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "646b5b58f807e4ece88a8cf0c821cefa039e0a9ccebe033fefe0400bb1873fc1"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "5fb72aa32e4be059ab8b56070c0ae9c5134995f76580a861301e24bc75a8c7d8",
+            "id": "7ce34cc0fe67a06b022d8aaec179d462",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 108,
+              "byte_end": 114,
+              "column": 18,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7f82da9f741749586d25c8e5b9db177a",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "4f73d4061c9589009cf8afb4604f64b7db1f0e3914c4d97714349d687dcd59ed",
+            "source_range": {
+              "byte_begin": 108,
+              "byte_end": 128,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "489d9154381f56830b43ebc3f80881c87fe1de8bc6b978dfcd79da6086dd4887"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.invoke",
+              "number": "0",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 64,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "e85c48d63c2fcc53dac302969d702cd6abb735f1d76e4366c5fa98f9d72edfd9",
+            "id": "c586b822e7888ccdabbc3c10f59bdde2",
+            "kind": "expression.invoke",
+            "location": {
+              "byte_begin": 125,
+              "byte_end": 126,
+              "column": 35,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7ce34cc0fe67a06b022d8aaec179d462",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "646b5b58f807e4ece88a8cf0c821cefa039e0a9ccebe033fefe0400bb1873fc1",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 127,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "8b2b10a3824ded84878454cef39f2fd6",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "1f72ddbd35af97e808e44bdb3cfdbda082f51919b68d3ddfabdb6ae798a39ed6"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::select",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 92,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "eb6c26b1ab7cff63f89461e948c201a184f7151bb51c54603f7cb733261d6671",
+            "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 115,
+              "byte_end": 121,
+              "column": 25,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "c586b822e7888ccdabbc3c10f59bdde2",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "role": "callee",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "role": "argument",
+            "site": "489d9154381f56830b43ebc3f80881c87fe1de8bc6b978dfcd79da6086dd4887",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 125,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "43",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "55a9ec5842cd0f6efb11cace57234159b9a62c05a7899b35b699f0cb9d019845",
+            "id": "8b2b10a3824ded84878454cef39f2fd6",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "column": 32,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "1f72ddbd35af97e808e44bdb3cfdbda082f51919b68d3ddfabdb6ae798a39ed6",
+            "source_range": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3fbd847d34f797854f9e5a4f7d734f82",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "e6db8b355c6172164e2fa0a0a5fcb0a9ac4ff7e190711c3063e8b6a79f42e2b1",
+            "id": "8062ee83b91f29ece18a10b1b6d29100",
+            "kind": "block",
+            "location": {
+              "byte_begin": 130,
+              "byte_end": 169,
+              "column": 1,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "c10039539c4c575eb808abc8c331c8310851229b23388e64cbee95fcb241e66b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "576b53e7113e0d7fbce7abd7cd2dc2b5a3daa2cf956f83e5058e6e00c476cb86",
+            "id": "3fbd847d34f797854f9e5a4f7d734f82",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "8062ee83b91f29ece18a10b1b6d29100",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 168,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3bd9249e2533c4089e3eaca846d1e015",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "print",
+              "type": "unit"
+            },
+            "definition_bytes": 68,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "6c09008d5f67812d15da0f50ac4bcc409c8af374acc9a5c76835004912ac2857",
+            "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "3fbd847d34f797854f9e5a4f7d734f82",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 167,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "3bd9249e2533c4089e3eaca846d1e015",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 158,
+              "byte_end": 164,
+              "column": 29,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb",
+            "source_range": {
+              "byte_begin": 158,
+              "byte_end": 166,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "c25c7a61cd644acedc447c9ee336a14639dbc57dff323c8d67bdc7c40f7d72c9"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "a5e58059daadfc39b57cd54701a6e8a2cd534c3ef68f5c9cc776e0419539d951",
+            "id": "51e40e41dad73fd9f774f9596592b6dc",
+            "kind": "block",
+            "location": {
+              "byte_begin": 170,
+              "byte_end": 224,
+              "column": 1,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "2b89955dcfd3604cba20f96f61fcee7778b865cab30623635024f0299caba2e2",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "d8fe70fe5b94586df11c5f7e180079e56a7e67041f33a7f5fed9adc5bbbbdec3"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "f7ae53ab613bbe7ba98e82ab627703c8f743b0870b9806ee1412aa37a7d75a34",
+            "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "51e40e41dad73fd9f774f9596592b6dc",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "c25c7a61cd644acedc447c9ee336a14639dbc57dff323c8d67bdc7c40f7d72c9",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 223,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c71ede3db7eea9581e27ab15813808d4",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "87a8ecf88664b67a5225d54c0558d4377231cb4b1a1113edcbced4fdd5d45a7f"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "assert",
+              "type": "unit"
+            },
+            "definition_bytes": 69,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "1605788273d87509b9176f15b5327e606e68d8a9f5786ebf5918b90752275ca1",
+            "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "d8fe70fe5b94586df11c5f7e180079e56a7e67041f33a7f5fed9adc5bbbbdec3",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 222,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 2,
+            "children": [
+              {
+                "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "0ac9788b1ae38701ad49842582fb24ac6733dfd80e63c9271a6a7d7685c9c8b8"
+              },
+              {
+                "id": "59f1548971a2ca4c05e68d29d4f64982",
+                "ordinal": 1,
+                "role": "argument",
+                "site": "62b39cce409bcb479c0ccf60ca23e7c432479fd843aaf42d31d8e666775389ba"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.binary",
+              "number": "0",
+              "text": "==",
+              "type": "bool"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "ff22e94834769e7458deb8c9fda354572596ddac5e5971ce6a48dc0189e30005",
+            "id": "c71ede3db7eea9581e27ab15813808d4",
+            "kind": "expression.binary",
+            "location": {
+              "byte_begin": 217,
+              "byte_end": 219,
+              "column": 48,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "87a8ecf88664b67a5225d54c0558d4377231cb4b1a1113edcbced4fdd5d45a7f",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 209,
+              "byte_end": 215,
+              "column": 40,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "0ac9788b1ae38701ad49842582fb24ac6733dfd80e63c9271a6a7d7685c9c8b8",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 217,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "43",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "55a9ec5842cd0f6efb11cace57234159b9a62c05a7899b35b699f0cb9d019845",
+            "id": "59f1548971a2ca4c05e68d29d4f64982",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "column": 50,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 1,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/1",
+            "references": [],
+            "role": "argument",
+            "site": "62b39cce409bcb479c0ccf60ca23e7c432479fd843aaf42d31d8e666775389ba",
+            "source_range": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "capture",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 46,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "0281d9e7332998c3f745e3b8f95aae7d04b88332dfd8689b8c1f66d4db9cceab",
+            "id": "0ac6898e56332f96a0013379f0fbaf86",
+            "kind": "capture",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "capture/0",
+            "references": [],
+            "role": "capture",
+            "site": "8edcf8fe9ab9a201feee82dfcfbeecdbf6c5631ce76179113e8eefa3d770ef43",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "9625ae3929c68b70529a73202713a688",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "dc776587b7ca89588ea95001656d3aff64a1c8531e9ad20f4600cb38b812b831",
+            "id": "e7248d65e4ae15a7d0d2d44891a89228",
+            "kind": "block",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "5c411b8d9395cba6554fd9045bac1c7e532451514138b1edc42bd153ca21c3ad",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "d41a5966355bc4926a35415c48e6bc6417603d0ba91b5d4b9846df2007f9d277",
+            "id": "9625ae3929c68b70529a73202713a688",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 74,
+              "byte_end": 80,
+              "column": 50,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "e7248d65e4ae15a7d0d2d44891a89228",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631",
+            "source_range": {
+              "byte_begin": 74,
+              "byte_end": 87,
+              "editable": false,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "column": 57,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "9625ae3929c68b70529a73202713a688",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "0ac6898e56332f96a0013379f0fbaf86",
+                "role": "binding"
+              }
+            ],
+            "role": "expression",
+            "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b",
+            "source_range": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "editable": false,
+              "kind": "expression"
+            }
+          }
+        ],
+        "offset": 0,
+        "revision": "3606ff7248a3f2d5738c3aa55db2a91de7fb3cfc9a9c1016f2b1625475696262",
+        "schema": "nex.operations/1",
+        "source_hash": "c81b1fc1c83499c699b95e24f6ea5193904b975a79defabc295065f0157c04e2",
+        "total": 24,
+        "truncated": false
+      },
+      "path": "/Users/sae/projects/NEX/build/source-task146-genuine021-fixtures-v4/callable/main.nex",
+      "revision": "3606ff7248a3f2d5738c3aa55db2a91de7fb3cfc9a9c1016f2b1625475696262",
+      "schema": "nex.graph/2",
+      "source": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(43)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==43);}\n",
+      "structures": []
+    },
+    {
+      "bundle": {
+        "entry": "main.nex",
+        "files": {
+          "main.nex": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(44)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==44);}\n"
+        },
+        "schema": "nex.sources/1"
+      },
+      "declaration_graph": {
+        "identity_policy": "nex.graph-identity/1",
+        "language": "0.21",
+        "namespace": "35efad8bef5000b18a23ac5d1c726455",
+        "nodes": [
+          {
+            "context_hash": "7c23fa749c30be08cd88989d800b450c4089d335e2cb9cfcdc1856b9fb3fff6b",
+            "definition": {
+              "format": "nex.module/1",
+              "imports": [],
+              "members": [
+                {
+                  "hash": "53e111f2374f7a8a4faee964ce8a77f79d2644a4d7eb90605ea466fc70f411e3",
+                  "kind": "function",
+                  "symbol": "old021::callable::answer"
+                },
+                {
+                  "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                  "kind": "function",
+                  "symbol": "old021::callable::main"
+                },
+                {
+                  "hash": "02f6c09f62e28e2f02dee3e732d47248b0dc0b9c1a832339dbdbfa2a0c6be7d9",
+                  "kind": "function",
+                  "symbol": "old021::callable::retained_answer"
+                },
+                {
+                  "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                  "kind": "function",
+                  "symbol": "old021::callable::select"
+                }
+              ],
+              "name": "old021::callable"
+            },
+            "definition_bytes": 603,
+            "definition_omitted": false,
+            "derived": false,
+            "editable": false,
+            "file": "main.nex",
+            "hash": "9301cc57a4ba29a9e3d0b99c9b694d2302a885d0844f71dc8f155d4eaa2a1c05",
+            "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+            "kind": "module",
+            "module": "old021::callable",
+            "path": "",
+            "reference_count": 4,
+            "references": [
+              {
+                "context_hash": "58ec653d1fa92588b1fd6bc4c42c804afe63d9af6a3f4c4d55f5c5b1f943f18b",
+                "hash": "53e111f2374f7a8a4faee964ce8a77f79d2644a4d7eb90605ea466fc70f411e3",
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::answer"
+              },
+              {
+                "context_hash": "04cde869f427a1bf1da71e285e29d92ea52f373be0614bdf716d02767286ca00",
+                "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+                "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::main"
+              },
+              {
+                "context_hash": "77f8cc2d92772ca8c3f50ef1fc00fa943549316a3a5a0d9ba2a1938796c62753",
+                "hash": "02f6c09f62e28e2f02dee3e732d47248b0dc0b9c1a832339dbdbfa2a0c6be7d9",
+                "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::retained_answer"
+              },
+              {
+                "context_hash": "591453417297ef001d28ecf87af718f1fec7cb33e87598b979698232c7234608",
+                "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "kind": "function",
+                "path": "",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "references_truncated": false,
+            "source": "",
+            "source_bytes": 0,
+            "source_truncated": false,
+            "symbol": "old021::callable"
+          }
+        ],
+        "offset": 0,
+        "revision": "8c9174c94f567df7eb5ccb7b46ee879460f4fa56b3a56394175b8d910d353c35",
+        "schema": "nex.declarations/1",
+        "total": 1,
+        "truncated": false
+      },
+      "endpoints": [],
+      "identity_namespace": "35efad8bef5000b18a23ac5d1c726455",
+      "language": "0.21",
+      "module": "old021::callable",
+      "modules": [
+        {
+          "context_hash": "7c23fa749c30be08cd88989d800b450c4089d335e2cb9cfcdc1856b9fb3fff6b",
+          "file": "main.nex",
+          "hash": "9301cc57a4ba29a9e3d0b99c9b694d2302a885d0844f71dc8f155d4eaa2a1c05",
+          "id": "de4fc7e0cc281bc835d4f4a0d02ac441",
+          "imports": [],
+          "name": "old021::callable"
+        }
+      ],
+      "nodes": [
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 2,
+                      "operator": "value",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 13,
+                  "lambda": {
+                    "body": [
+                      {
+                        "body": [],
+                        "else": [],
+                        "expression": {
+                          "args": [],
+                          "kind": 2,
+                          "operator": "value",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        "kind": 4,
+                        "name": "",
+                        "type": "unknown"
+                      }
+                    ],
+                    "captures": [
+                      {
+                        "name": "value",
+                        "type": "i64"
+                      }
+                    ],
+                    "closure_owner": "old021::callable::select",
+                    "effects": [],
+                    "format": "nex.function/13",
+                    "name": "old021::callable::select::$lambda_0",
+                    "owner": "old021::callable",
+                    "parameters": [],
+                    "public": false,
+                    "realm": "shared",
+                    "result": "i64",
+                    "template": "",
+                    "test": false,
+                    "type_arguments": [],
+                    "type_bounds": {},
+                    "type_parameter_kinds": [],
+                    "type_parameters": []
+                  },
+                  "operator": "old021::callable::select::$lambda_0",
+                  "type": "fn()->i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select",
+            "owner": "old021::callable",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "public": false,
+            "realm": "shared",
+            "result": "fn()->i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+              "name": "old021::callable::select::$lambda_0"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "6d3eca57c4923547ff3153f93e8aa23ecdcfe0c4c833a1398c8f3198ddcaa406",
+          "id": "767cccdc3d25b6803e6c59d7a149dffd",
+          "line": 2,
+          "local_name": "select",
+          "module": "old021::callable",
+          "name": "old021::callable::select",
+          "native_symbol": "nex_6_old021_8_callable_6_select",
+          "source": "fn select(value:i64)->fn()->i64{return fn()->i64{return value;};}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 44
+                        }
+                      ],
+                      "kind": 5,
+                      "operator": "old021::callable::select",
+                      "type": "fn()->i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 11,
+                  "operator": "",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "767cccdc3d25b6803e6c59d7a149dffd",
+              "name": "old021::callable::select"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "53e111f2374f7a8a4faee964ce8a77f79d2644a4d7eb90605ea466fc70f411e3",
+          "id": "dc3bb6e61328c9c774ce22738cfde897",
+          "line": 3,
+          "local_name": "answer",
+          "module": "old021::callable",
+          "name": "old021::callable::answer",
+          "native_symbol": "nex_6_old021_8_callable_6_answer",
+          "source": "fn answer()->i64{return select(44)();}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [],
+                      "kind": 5,
+                      "operator": "old021::callable::answer",
+                      "type": "i64",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "print",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [
+              "io"
+            ],
+            "format": "nex.function/13",
+            "name": "old021::callable::main",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "992ad78d7bcc8825ff3a35ebd060f873210a3dc21eabb8ceab5e1d8f2a86c722",
+          "id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+          "line": 4,
+          "local_name": "main",
+          "module": "old021::callable",
+          "name": "old021::callable::main",
+          "native_symbol": "nex_6_old021_8_callable_4_main",
+          "source": "fn main()->unit !{io}{print(answer());}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [],
+                          "kind": 5,
+                          "operator": "old021::callable::answer",
+                          "type": "i64",
+                          "value": 0
+                        },
+                        {
+                          "args": [],
+                          "kind": 0,
+                          "operator": "",
+                          "type": "i64",
+                          "value": 44
+                        }
+                      ],
+                      "kind": 4,
+                      "operator": "==",
+                      "type": "bool",
+                      "value": 0
+                    }
+                  ],
+                  "kind": 5,
+                  "operator": "assert",
+                  "type": "unit",
+                  "value": 0
+                },
+                "kind": 3,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::retained_answer",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "unit",
+            "template": "",
+            "test": true,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [
+            {
+              "id": "dc3bb6e61328c9c774ce22738cfde897",
+              "name": "old021::callable::answer"
+            }
+          ],
+          "file": "main.nex",
+          "hash": "02f6c09f62e28e2f02dee3e732d47248b0dc0b9c1a832339dbdbfa2a0c6be7d9",
+          "id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+          "line": 5,
+          "local_name": "retained_answer",
+          "module": "old021::callable",
+          "name": "old021::callable::retained_answer",
+          "native_symbol": "nex_6_old021_8_callable_15_retained_answer",
+          "source": "test fn retained_answer()->unit{assert(answer()==44);}"
+        },
+        {
+          "definition": {
+            "body": [
+              {
+                "body": [],
+                "else": [],
+                "expression": {
+                  "args": [],
+                  "kind": 2,
+                  "operator": "value",
+                  "type": "i64",
+                  "value": 0
+                },
+                "kind": 4,
+                "name": "",
+                "type": "unknown"
+              }
+            ],
+            "captures": [
+              {
+                "name": "value",
+                "type": "i64"
+              }
+            ],
+            "closure_owner": "old021::callable::select",
+            "effects": [],
+            "format": "nex.function/13",
+            "name": "old021::callable::select::$lambda_0",
+            "owner": "old021::callable",
+            "parameters": [],
+            "public": false,
+            "realm": "shared",
+            "result": "i64",
+            "template": "",
+            "test": false,
+            "type_arguments": [],
+            "type_bounds": {},
+            "type_parameter_kinds": [],
+            "type_parameters": []
+          },
+          "dependencies": [],
+          "file": "main.nex",
+          "hash": "0bf756b3c92c65ab64d9cfcb19d60fbcf479908bd2e563bc90aa39da43db00ed",
+          "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+          "line": 2,
+          "local_name": "select::$lambda_0",
+          "module": "old021::callable",
+          "name": "old021::callable::select::$lambda_0",
+          "native_symbol": "nex_inst_bdd09f4e2a71eb832d9ee69f0c0846b07ff45c1fa0ab0677565f5b10dd97796b",
+          "source": "fn()->i64{return value;}"
+        }
+      ],
+      "operation_graph": {
+        "identity_policy": "nex.operation-identity/1",
+        "identity_scope": "local_store",
+        "language": "0.21",
+        "nodes": [
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "parameter",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 48,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "7f3efcaec63e1cd9cfbaeceb3507458b9005bf0b3cccfecb1ed15429ea0c149d",
+            "id": "5348c3e920133e1ac184211cf46744b2",
+            "kind": "parameter",
+            "location": {
+              "byte_begin": 35,
+              "byte_end": 40,
+              "column": 11,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "parameter/0",
+            "references": [],
+            "role": "parameter",
+            "site": "139bdef308202e91c728bede086ada69fe759ea4a9f3ecb49ef7f616cd103257",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "d656cdc11edbfe8cda123f326f651424",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "ead461792f6897ee54b997de4b047e0a9395f388f2ab5bb4b991f78e746c13db",
+            "id": "51501d9710f3647f941b2c327ac7b436",
+            "kind": "block",
+            "location": {
+              "byte_begin": 25,
+              "byte_end": 90,
+              "column": 1,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "767cccdc3d25b6803e6c59d7a149dffd",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "0c4cbfa7887a48a033503008b4d63dc322070b151ca8f4815fed4140680bf45b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "0de9a6370066e6e4864363e89c15160201d9e325b588b9bf6465090c12bd0487",
+            "id": "d656cdc11edbfe8cda123f326f651424",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 57,
+              "byte_end": 63,
+              "column": 33,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "51501d9710f3647f941b2c327ac7b436",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "a50ad9510e44c76165db9cb246a5321ecf9acb396586f136a332c5134bce3583",
+            "source_range": {
+              "byte_begin": 57,
+              "byte_end": 89,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bd79608041d7d2cc70fbc4fada2ea357",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.lambda",
+              "number": "0",
+              "text": "old021::callable::select::$lambda_0",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 105,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "5c2180c8f8c3a2e06ea016adf0ff88941b4732df8e9aa9dcfdda085fcacbfc1d",
+            "id": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "kind": "expression.lambda",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d656cdc11edbfe8cda123f326f651424",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "d1d942cbf9d3ae7a087e84967d63b93a",
+                "role": "callee",
+                "symbol": "old021::callable::select::$lambda_0"
+              }
+            ],
+            "role": "expression",
+            "site": "d6e502245ead6b008d9a52740af9253bfd561c63181318bf9e033d4566752403",
+            "source_range": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select",
+            "function_id": "767cccdc3d25b6803e6c59d7a149dffd",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "bd79608041d7d2cc70fbc4fada2ea357",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "35dd9d55caff53bc960be5e7dcc64e1f",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "5348c3e920133e1ac184211cf46744b2",
+                "role": "binding"
+              }
+            ],
+            "role": "argument",
+            "site": "0d6eb18c172325ddf30dc1f8adbf80f8b65978ecf992a9d78dc8fcb0f53b27de",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "7ce34cc0fe67a06b022d8aaec179d462",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "fedf2e262bb3f9e53240e8be87424d0c788889588c9e0dcbe95951b1e8933e95"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "00a8ef1de8e47f6630fa2b0c3398c9c75e22a353090eabfa068aa19d765bfe1c",
+            "id": "7f82da9f741749586d25c8e5b9db177a",
+            "kind": "block",
+            "location": {
+              "byte_begin": 91,
+              "byte_end": 129,
+              "column": 1,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "dc3bb6e61328c9c774ce22738cfde897",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "11748d5403fe90ec5bc86ff2a5f0db4a32f9fc91b3228e288a428ab35e18744d",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c586b822e7888ccdabbc3c10f59bdde2",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "71e5b6b17c7c179a030b28d95eb8b44619679c6f36e3136260c34455c983a9c4"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "2892bfa4fb1ac99605f2c8a1b089ffc4d26996a4ee7e2e421a61a17f63277a86",
+            "id": "7ce34cc0fe67a06b022d8aaec179d462",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 108,
+              "byte_end": 114,
+              "column": 18,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7f82da9f741749586d25c8e5b9db177a",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "fedf2e262bb3f9e53240e8be87424d0c788889588c9e0dcbe95951b1e8933e95",
+            "source_range": {
+              "byte_begin": 108,
+              "byte_end": 128,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "226963f09c4e650cc57db2a7a7afbe7fc4becae24b78839309e37906ac5bf705"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.invoke",
+              "number": "0",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 64,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "37a3dab3d5f4b2eb846d07f394ea33547ad332bde037909755e9d7456961d6df",
+            "id": "c586b822e7888ccdabbc3c10f59bdde2",
+            "kind": "expression.invoke",
+            "location": {
+              "byte_begin": 125,
+              "byte_end": 126,
+              "column": 35,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "7ce34cc0fe67a06b022d8aaec179d462",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "71e5b6b17c7c179a030b28d95eb8b44619679c6f36e3136260c34455c983a9c4",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 127,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "8b2b10a3824ded84878454cef39f2fd6",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "daec9d459694ce458f650a2330d85db52ea627a61a89b8ca9ad004f0c69d497d"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::select",
+              "type": "fn()->i64"
+            },
+            "definition_bytes": 92,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "626efff853b65dd5d30ee0b6ba69ab2248f1921fab6a18355e56204c946b5a24",
+            "id": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 115,
+              "byte_end": 121,
+              "column": 25,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "c586b822e7888ccdabbc3c10f59bdde2",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "767cccdc3d25b6803e6c59d7a149dffd",
+                "role": "callee",
+                "symbol": "old021::callable::select"
+              }
+            ],
+            "role": "argument",
+            "site": "226963f09c4e650cc57db2a7a7afbe7fc4becae24b78839309e37906ac5bf705",
+            "source_range": {
+              "byte_begin": 115,
+              "byte_end": 125,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "44",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::answer",
+            "function_id": "dc3bb6e61328c9c774ce22738cfde897",
+            "hash": "e66c2275484c1944be4a61034dc56cc3bff5e7556655cb6ccf37eb7aecd42cfe",
+            "id": "8b2b10a3824ded84878454cef39f2fd6",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "column": 32,
+              "file": "main.nex",
+              "line": 3
+            },
+            "ordinal": 0,
+            "parent": "6ad8e0d101cfa1d0db60aa4790e46407",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "daec9d459694ce458f650a2330d85db52ea627a61a89b8ca9ad004f0c69d497d",
+            "source_range": {
+              "byte_begin": 122,
+              "byte_end": 124,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3fbd847d34f797854f9e5a4f7d734f82",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "e6db8b355c6172164e2fa0a0a5fcb0a9ac4ff7e190711c3063e8b6a79f42e2b1",
+            "id": "8062ee83b91f29ece18a10b1b6d29100",
+            "kind": "block",
+            "location": {
+              "byte_begin": 130,
+              "byte_end": 169,
+              "column": 1,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "c10039539c4c575eb808abc8c331c8310851229b23388e64cbee95fcb241e66b",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "576b53e7113e0d7fbce7abd7cd2dc2b5a3daa2cf956f83e5058e6e00c476cb86",
+            "id": "3fbd847d34f797854f9e5a4f7d734f82",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "8062ee83b91f29ece18a10b1b6d29100",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "55e5479101e7f981fe293a89bf11e22454c4a15f9ad2277070ca405b9919f347",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 168,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "3bd9249e2533c4089e3eaca846d1e015",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "print",
+              "type": "unit"
+            },
+            "definition_bytes": 68,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "6c09008d5f67812d15da0f50ac4bcc409c8af374acc9a5c76835004912ac2857",
+            "id": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 152,
+              "byte_end": 157,
+              "column": 23,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "3fbd847d34f797854f9e5a4f7d734f82",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "0aba66a015d1bc0d7a166ba1a5eb6d178d741c8d85cff66d7ae4f448e681cd4e",
+            "source_range": {
+              "byte_begin": 152,
+              "byte_end": 167,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::main",
+            "function_id": "5c7d5fa4fc6ded8a855ec418a73b3920",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "3bd9249e2533c4089e3eaca846d1e015",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 158,
+              "byte_end": 164,
+              "column": 29,
+              "file": "main.nex",
+              "line": 4
+            },
+            "ordinal": 0,
+            "parent": "bf93ae5a51108a8f5f315a38fe3de3ac",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "6e1ebbe04cd29dda7aeedbfd3f6f7201adb16165e3c9bab191b8ec5415abf3bb",
+            "source_range": {
+              "byte_begin": 158,
+              "byte_end": 166,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "0bc54ecdfbaf6398f04a8f94ebead097e793350802e135ad38c3d7e0f77cbf21"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "1d3d8d191c13e12c1828614047205664ad4c2c038746dbf893b52e6b0e7457ec",
+            "id": "51e40e41dad73fd9f774f9596592b6dc",
+            "kind": "block",
+            "location": {
+              "byte_begin": 170,
+              "byte_end": 224,
+              "column": 1,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "e61315fe202ca29a109de2fe858a754cf809df6257322219384e2b08aeab7ef6",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "451b9f1e3badf5c5c9713f3047b21dac5dbe8d2950262192b98809cd2b3c7548"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.expression",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 58,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "afe0f058af93da6281f5304228f0587e4622965b13a33b230e79483baf3f9a11",
+            "id": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "kind": "statement.expression",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "51e40e41dad73fd9f774f9596592b6dc",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "0bc54ecdfbaf6398f04a8f94ebead097e793350802e135ad38c3d7e0f77cbf21",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 223,
+              "editable": true,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "c71ede3db7eea9581e27ab15813808d4",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "b75af466927a6e0445ab506e7b1c9895691bafaa186a71353912de796f2adb75"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "assert",
+              "type": "unit"
+            },
+            "definition_bytes": 69,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "e8873d4bbcb47cfad83ae83672279f17fe57fa894959576592e69ad7ed75cff3",
+            "id": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 202,
+              "byte_end": 208,
+              "column": 33,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "f2e34c02253f9b9e4db8fdb7793a0401",
+            "path": "body/statement/0/expression/0",
+            "references": [],
+            "role": "expression",
+            "site": "451b9f1e3badf5c5c9713f3047b21dac5dbe8d2950262192b98809cd2b3c7548",
+            "source_range": {
+              "byte_begin": 202,
+              "byte_end": 222,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 2,
+            "children": [
+              {
+                "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+                "ordinal": 0,
+                "role": "argument",
+                "site": "2ecf115e4d66935b1939622bdda6ab47a9ea82f067e5daae139e6b249ce4993e"
+              },
+              {
+                "id": "59f1548971a2ca4c05e68d29d4f64982",
+                "ordinal": 1,
+                "role": "argument",
+                "site": "c8db6494f782833a0eb6a1c5bc358fe6e31d770dbdc0e9bc6468bef8ac469b9a"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.binary",
+              "number": "0",
+              "text": "==",
+              "type": "bool"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "1500c05def2f63ff6742884fabbbfb87175e164024d68981af563cccdd1f7248",
+            "id": "c71ede3db7eea9581e27ab15813808d4",
+            "kind": "expression.binary",
+            "location": {
+              "byte_begin": 217,
+              "byte_end": 219,
+              "column": 48,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "58af2ce95f849d1caff2d5b1a70a2d46",
+            "path": "body/statement/0/expression/0/argument/0",
+            "references": [],
+            "role": "argument",
+            "site": "b75af466927a6e0445ab506e7b1c9895691bafaa186a71353912de796f2adb75",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.call",
+              "number": "0",
+              "text": "old021::callable::answer",
+              "type": "i64"
+            },
+            "definition_bytes": 86,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "405f9351ac7b1aaaeb95e93c37465398a8464c4d655d4864ee0ee3714354356e",
+            "id": "91b9d77ed0d6cb6ef49252a9f2c248a3",
+            "kind": "expression.call",
+            "location": {
+              "byte_begin": 209,
+              "byte_end": 215,
+              "column": 40,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 0,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/0",
+            "references": [
+              {
+                "id": "dc3bb6e61328c9c774ce22738cfde897",
+                "role": "callee",
+                "symbol": "old021::callable::answer"
+              }
+            ],
+            "role": "argument",
+            "site": "2ecf115e4d66935b1939622bdda6ab47a9ea82f067e5daae139e6b249ce4993e",
+            "source_range": {
+              "byte_begin": 209,
+              "byte_end": 217,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.integer",
+              "number": "44",
+              "text": "",
+              "type": "i64"
+            },
+            "definition_bytes": 66,
+            "definition_omitted": false,
+            "function": "old021::callable::retained_answer",
+            "function_id": "f08bc42dbcaa2546f594a7b22e5f7b1e",
+            "hash": "e66c2275484c1944be4a61034dc56cc3bff5e7556655cb6ccf37eb7aecd42cfe",
+            "id": "59f1548971a2ca4c05e68d29d4f64982",
+            "kind": "expression.integer",
+            "location": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "column": 50,
+              "file": "main.nex",
+              "line": 5
+            },
+            "ordinal": 1,
+            "parent": "c71ede3db7eea9581e27ab15813808d4",
+            "path": "body/statement/0/expression/0/argument/0/argument/1",
+            "references": [],
+            "role": "argument",
+            "site": "c8db6494f782833a0eb6a1c5bc358fe6e31d770dbdc0e9bc6468bef8ac469b9a",
+            "source_range": {
+              "byte_begin": 219,
+              "byte_end": 221,
+              "editable": true,
+              "kind": "expression"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "capture",
+              "name": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 46,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "0281d9e7332998c3f745e3b8f95aae7d04b88332dfd8689b8c1f66d4db9cceab",
+            "id": "0ac6898e56332f96a0013379f0fbaf86",
+            "kind": "capture",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "capture/0",
+            "references": [],
+            "role": "capture",
+            "site": "8edcf8fe9ab9a201feee82dfcfbeecdbf6c5631ce76179113e8eefa3d770ef43",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "9625ae3929c68b70529a73202713a688",
+                "ordinal": 0,
+                "role": "statement",
+                "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "block"
+            },
+            "definition_bytes": 16,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "dc776587b7ca89588ea95001656d3aff64a1c8531e9ad20f4600cb38b812b831",
+            "id": "e7248d65e4ae15a7d0d2d44891a89228",
+            "kind": "block",
+            "location": {
+              "byte_begin": 64,
+              "byte_end": 88,
+              "column": 40,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "path": "body",
+            "references": [],
+            "role": "body",
+            "site": "5c411b8d9395cba6554fd9045bac1c7e532451514138b1edc42bd153ca21c3ad",
+            "source_range": null
+          },
+          {
+            "child_count": 1,
+            "children": [
+              {
+                "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+                "ordinal": 0,
+                "role": "expression",
+                "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b"
+              }
+            ],
+            "children_truncated": false,
+            "definition": {
+              "kind": "statement.return",
+              "name": "",
+              "type": "unknown"
+            },
+            "definition_bytes": 54,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "d41a5966355bc4926a35415c48e6bc6417603d0ba91b5d4b9846df2007f9d277",
+            "id": "9625ae3929c68b70529a73202713a688",
+            "kind": "statement.return",
+            "location": {
+              "byte_begin": 74,
+              "byte_end": 80,
+              "column": 50,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "e7248d65e4ae15a7d0d2d44891a89228",
+            "path": "body/statement/0",
+            "references": [],
+            "role": "statement",
+            "site": "8f4c06b2fab8740528c6f6eeec0c7c52783cbe5c0df036014331585333fba631",
+            "source_range": {
+              "byte_begin": 74,
+              "byte_end": 87,
+              "editable": false,
+              "kind": "statement"
+            }
+          },
+          {
+            "child_count": 0,
+            "children": [],
+            "children_truncated": false,
+            "definition": {
+              "kind": "expression.name",
+              "number": "0",
+              "text": "value",
+              "type": "i64"
+            },
+            "definition_bytes": 67,
+            "definition_omitted": false,
+            "function": "old021::callable::select::$lambda_0",
+            "function_id": "d1d942cbf9d3ae7a087e84967d63b93a",
+            "hash": "8aadfc10b0f7ee3aecbc015559c800d1ae46035152d1df3bb6021a136172478b",
+            "id": "dd7fee0e6a3f94d71ea9e66cf4d68e92",
+            "kind": "expression.name",
+            "location": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "column": 57,
+              "file": "main.nex",
+              "line": 2
+            },
+            "ordinal": 0,
+            "parent": "9625ae3929c68b70529a73202713a688",
+            "path": "body/statement/0/expression/0",
+            "references": [
+              {
+                "id": "0ac6898e56332f96a0013379f0fbaf86",
+                "role": "binding"
+              }
+            ],
+            "role": "expression",
+            "site": "4ba918ab7267ccd8d7813dd53aec60d588a1c08ff8514850c7d047d2448f3d5b",
+            "source_range": {
+              "byte_begin": 81,
+              "byte_end": 86,
+              "editable": false,
+              "kind": "expression"
+            }
+          }
+        ],
+        "offset": 0,
+        "revision": "8c9174c94f567df7eb5ccb7b46ee879460f4fa56b3a56394175b8d910d353c35",
+        "schema": "nex.operations/1",
+        "source_hash": "e9264f55b357b73d095b5db6c74a6092202b44a91faa7e9366437f28cedf65a7",
+        "total": 24,
+        "truncated": false
+      },
+      "path": "/Users/sae/projects/NEX/build/source-task146-genuine021-fixtures-v4/callable/main.nex",
+      "revision": "8c9174c94f567df7eb5ccb7b46ee879460f4fa56b3a56394175b8d910d353c35",
+      "schema": "nex.graph/2",
+      "source": "module old021::callable;\nfn select(value:i64)->fn()->i64{return fn()->i64{return value;};}\nfn answer()->i64{return select(44)();}\nfn main()->unit !{io}{print(answer());}\ntest fn retained_answer()->unit{assert(answer()==44);}\n",
+      "structures": []
+    }
+  ],
+  "tables": {
+    "change_journal": 3,
+    "declaration_ids": 1,
+    "declaration_versions": 3,
+    "edges": 12,
+    "graph_edges": 24,
+    "head": 1,
+    "identity_links": 0,
+    "identity_revisions": 3,
+    "metadata": 4,
+    "node_ids": 5,
+    "nodes": 15,
+    "operation_functions": 15,
+    "operation_ids": 24,
+    "operation_versions": 72,
+    "revisions": 3,
+    "task_runs": 0
+  },
+  "sql_sha256": "ca8e97bb62252e3727447367f9f12c100fc685b39c2849e912c75e54e92b9a83"
+}

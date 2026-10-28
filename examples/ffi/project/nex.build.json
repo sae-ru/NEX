@@ -1,0 +1,18 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "release",
+  "configurations": {
+    "release": {"profile": "release"},
+    "measured": {"profile": "profile"}
+  },
+  "components": {
+    "core": {
+      "kind": "shared_library", "root": "core", "entry": "core/main.nex",
+      "entry_function": "contract"
+    },
+    "app": {
+      "kind": "executable", "root": "app", "entry": "app/main.nex",
+      "dependencies": {"core": "dynamic"}
+    }
+  }
+}

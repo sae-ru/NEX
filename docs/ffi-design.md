@@ -1,3 +1,15 @@
+# Pinned executable members in toolchain0.132
+
+A bundle may declare an optional `executables` array of unique paths already
+listed and hashed in `files`. The loader hashes every member before loading
+code, then seals listed executable files0500, all other files0400 and directories0500.
+Original source permission bits grant no execution authority. Unlisted files
+remain nonexecutable. Unknown, duplicate, malformed and unpinned executable paths
+are rejected before initialization. Old manifests retain their original modes.
+Query `foreign_boundary.module_loading.executable_members` before preparing
+such bundles. The manifest bytes and explicit export grants remain pinned;
+this does not sandbox trusted native code or initialize hardware during inspection.
+
 # Foreign calls and versioned C transport
 
 Development 0.41 / language 0.15 adds experimental source declarations, checked
@@ -150,6 +162,13 @@ The original 0.37 table prefix and ABI major 1 remain unchanged. New table slots
 come after `NEX_FFI_V1_TRANSPORT_SIZE`. New clients must negotiate their required
 table size; separately compiled old C producers keep using their original
 prefix. Type queries/constructors on an untyped call return `NEX_FFI_TYPE`.
+
+Private host development appends a second suffix for genuine owned external
+resources. It uses `NEX_FFI_V1_TYPED_SIZE` for the preceding table and
+`NEX_FFI_V1_RESOURCE_SIZE` for the resource suffix. Result-reachable type tokens,
+actual module code pins, origin-checked call-local borrows and explicit operator
+value quotas are described in [the resource contract](external-resources-design.md).
+This adds no source resource declaration, source task/FFI bridge or device handle.
 
 `argument_type` and `result_type` return call-local `nex_ffi_type` tokens.
 `type_child`/`type_child_count` inspect list/result element types or ordered

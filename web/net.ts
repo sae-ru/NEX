@@ -85,8 +85,7 @@ export class RequestRunner {
     this.deliver = deliver; this.fetcher = fetcher;
   }
 
-  run(commands: ReadonlyArray<Command>): void {
-    if (this.closed) return;
+  private prepare(commands: ReadonlyArray<Command>): Map<string, Prepared> {
     if (!Array.isArray(commands) || commands.length > 64) invalid('At most 64 commands are allowed per event');
     // Validate the entire batch before sending, aborting or changing anything.
     const active = new Set(this.pending.keys()), started = new Set<string>();
@@ -120,6 +119,12 @@ export class RequestRunner {
       started.add(command.id); active.add(command.id);
       if (active.size > 32) invalid('At most 32 requests may be pending');
     }
+    return prepared;
+  }
+  validate(commands: ReadonlyArray<Command>): void { if (!this.closed) this.prepare(commands); }
+  run(commands: ReadonlyArray<Command>): void {
+    if (this.closed) return;
+    const prepared = this.prepare(commands);
     for (const command of commands) {
       if (command.kind === 'cancel_all') {
         for (const pending of [...this.pending.values()]) this.finish(pending, 0, '', 'E_CANCELED', 'Request canceled');

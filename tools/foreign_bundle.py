@@ -258,6 +258,8 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                                      'files': inventory, **details}
             result_libraries[name] = {**prepared[identity], 'exports': sorted(grant['exports'])}
         final_host = {'schema': 'nex.foreign-host/1',
+                     'resource_limit': reviewed['normalized_catalogue']['resource_limit'],
+                     'resource_bytes': reviewed['normalized_catalogue']['resource_bytes'],
                      'module_limit': reviewed['normalized_catalogue']['module_limit'], 'libraries': {
             name: {'directory': 'bundles/' + record['manifest_sha256'],
                    'manifest_sha256': record['manifest_sha256'], 'exports': record['exports']}

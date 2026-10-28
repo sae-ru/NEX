@@ -171,7 +171,7 @@ JSON buildWasm(const Program &p,const std::string &directory,const std::string &
   Array parameters,functions;for(const auto &parameter:entry.params)parameters.push_back(typeName(parameter.type));
   for(const auto &f:p.functions)if(names.contains(f.name))functions.push_back(Object{{"symbol",f.name},
    {"function_hash",hash(json(canonical(f),false))},{"source_hash",hash(p.definition(f))},{"operations",operationSites(p,f)}});
-  JSON descriptor=Object{{"schema","nex.wasm-module/1"},{"toolchain",NEX_VERSION},{"language",languageVersion},
+  JSON descriptor=Object{{"schema","nex.wasm-module/1"},{"toolchain",NEX_VERSION},{"language",programLanguage(p)},
    {"compiler_build",NEX_BUILD_ID},{"revision",revision(p)},{"build_key",key},{"entry",entry.name},
    {"target","wasm32-unknown-unknown"},{"abi",1},{"parameters",std::move(parameters)},{"result",typeName(entry.result)},
    {"native_symbol",nativeSymbol(entry.name)},{"module_sha256",sha256(wasm)},{"exports",std::move(exports)},

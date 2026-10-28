@@ -41,6 +41,20 @@ Assembly requires Python 3.9+, the matching platform inspection tools, and
 Linux paths must not contain a colon, which is an ELF search-list delimiter.
 Only copies are rewritten; original binaries/libraries remain unchanged.
 
+Linux dependency collection keeps the actual loader resolution of each root
+image throughout its transitive closure. An executable's inherited `DT_RPATH`
+therefore still selects its libraries when a child has no search path of its
+own. `DT_RUNPATH` is not treated as inherited. Reusing one captured image under
+two roots that select different transitive providers fails assembly, including
+when its immediate dependencies are unchanged. This avoids selecting a provider
+according to traversal order. Relocation still verifies that each captured
+dependency resolves inside the completed package with a clean loader environment.
+
+Notice catalogues provide provenance; they do not add library search paths.
+An input whose dependencies are unresolved in its actual root loader context
+still fails. General explicit dependency search policies, arbitrary `dlopen`
+discovery and cross-distribution compatibility remain separate work.
+
 Libraries from a bundled NEX SDK use that SDK's component inventory and complete
 notices automatically. Their actual bytes must still match `sdk-bundle.json`.
 For developer builds or external dependencies, declare full provenance using
@@ -168,3 +182,13 @@ workflow. Project packages have relative entries and file inventories in
 `project.json`; shared images use exact compiler-owned provenance while external
 libraries still require their real notices. Assembly remains separate from
 execution, graph history and deployment.
+
+Candidate0.84 extends the same preparation/provenance rules to declared
+macOS/Linux project architectures. `project --kind package --foreign HOST.json`
+projects exact manifest literals consistently across shared/source/archive
+components while preserving actual binary edges. Each app receives only its
+reachable grants. Original files, lock and graph stay unchanged; source/derived
+identities are retained in `nex.project-foreign-projection/1`. See
+[project packaging](project-build.md#foreign-project-packages-candidate084) and
+[package tasks](project-tasks.md). Deployment-image debug/core provenance stays
+pending; an assembled package still needs destination execution checks.

@@ -28,7 +28,7 @@ class WindowsConfiguration(harness.ToolchainCase):
 class WindowsTargets(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
         self.config = self.root/'toolchain.json'
         self.notices = self.root/'runtime-notices.txt'
         files = [TOOLS/'LICENSE.TXT', *sorted((TOOLS/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]
