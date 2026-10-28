@@ -1,6 +1,6 @@
-# Native debugging — NEX toolchain 0.15
+# Native debugging — NEX language 0.16
 
-Current source language is 0.10. Debug information describes real native parameters,
+Current source language is 0.16. Debug information describes real native parameters,
 stack locations, scalar types and lexical binding scopes. Heap types are named
 aliases for their actual runtime handles. They are not fabricated inline C
 structures. LLDB reads their contents through the matching captured formatter.
@@ -29,7 +29,8 @@ continue
 Line 12 is inside the inner binding of `total`. Both the outer `40` and inner
 `42` remain represented with their own scopes. At line 14 only the outer binding
 is in scope; line 16 observes its updated value `43`. The imported increment
-function has its own captured `sources/model.nex` and parameter/local records.
+function has its own immutable projection and parameter/local records; find its
+path through the `sources` entries in `debug.json`.
 Use `nex context --symbol NAME` to obtain a function's exact `native_symbol` for
 a name breakpoint. Debugger function display may use that native linkage name.
 
@@ -38,6 +39,16 @@ including archived sources and reused native modules. A source-based debug comma
 `nex debug --revision HASH` to debug a stored revision even after original files
 were changed or deleted. `debug.json` maps original paths to their projections
 and records the semantic revision, build key, function names and native symbols.
+
+Within a project build cache, a virtual DWARF source origin identifies its
+logical module, independently of entry/import roles or package aliases. A
+static provider and its consumer therefore map the same origin to the same
+captured module text. Projections use a content-derived directory and the
+filename `source.nex`; select the full projection path for an unambiguous file
+breakpoint. Unrelated edits can still reuse function objects when their emitted
+source coordinates have not changed. Core capsules retain canonical source
+storage and preserve historical imported DWARF basenames when preparing a
+verified temporary workspace.
 
 If the host prevents launching children under a debugger, ordinary compiled
 execution may still work. Report that limitation directly: source/symbol lookup
@@ -76,6 +87,35 @@ each stop; do not reuse a previous frame's locations.
 
 ## Editor / Debug Adapter Protocol
 
+Toolchain0.57 adds native indexed pages to the matching NEX stdio bridge
+(`--kind nex-dap`). Native `list<T>` and `bytes` roots advertise their actual
+indexed child counts, up to2147483647. Text previews remain bounded to32
+elements. A DAP `variables` request can start at a later index without reading
+the preceding elements. Both `start` and `count` must be nonnegative signed32
+integers; omitted/zero `count` means at most1000 children. Larger requested
+counts also return at most1000. Native replies add `body.nex.native_page` with
+`start`, `requested_count`, `returned_count` and `limit:1000`, described by
+`llm/dap-native-page.schema.json`. The matching bridge rejects oversized backend
+pages. A named-only request on a NEX indexed root returns no children.
+
+Use standard stack/scopes requests, then the root's `variablesReference` and
+`indexedVariables` to request pages. References expire on execution or a new
+stop, and replies from an earlier stop are rejected. These are read-only native
+previews from this runtime's DWARF layout, not complete wire values, retained
+frame captures or interpreter inputs. Plain `--kind dap` uses LLDB directly and
+does not apply the bridge's1000-child request bound. Named aggregate previews,
+very large indexed counts beyond the DAP bound and direct string expansion
+retain their separate limits. String scalar windows use the existing checked
+expression/capture protocol.
+
+`examples/debugging/pages.nex` creates a32768-element list and4MiB byte value.
+Run `python3 tests/native_pages.py build/nex --live` for actual late-index,
+default/oversized-page, filter, unchanged-stop and stale-reference checks.
+The default suite skips actual process launches unless `--live` is supplied.
+
+For the NEX VS Code extension and original-file breakpoint mapping, see
+[editor.md](editor.md). Its package and current compiler acceptance are separate.
+
 ```sh
 nex debug examples/debugging/main.nex --kind dap --json
 ```
@@ -94,9 +134,29 @@ children, stepping and resume/exit handling. In an LLDB DAP REPL, the command
 debugger. Without `--json` and with the default `--kind lldb`, it starts LLDB;
 arguments after `--` go to LLDB.
 
+Darwin LLDB cannot track loaded images when an executable's physical path
+contains a literal backslash. For those project/build paths, `nex debug` uses
+an owned mode-0700 native build cache in a temporary location without backslashes.
+The project build directory retains its cache pointer; repeat descriptors reuse
+the same owned cache. LLDB, raw DAP and the NEX DAP bridge all receive the actual
+executable/manifest paths from that cache. Source identity, frozen source maps,
+build checks and application working directory retain their normal contracts.
+Keep the reported cache while debugging. If the system removes temporary files,
+request a fresh descriptor to rebuild it. Ordinary run/build outputs remain in
+their selected build directory.
+
 For source-operation candidates at a stop, use `nex-operation` and resolve its deterministic site through `nex context --site KEY --revision HASH`. Co-located candidates are explicit; see [operations.md](operations.md) for local persistent identities, exact source hashes and optimized-PC limits.
 
 ## Integrity and validation
+
+NEX frame reports, operation candidates and exact watches require the selected
+frame to belong to the same loaded executable module as the manifest context.
+A matching function name or pathname is insufficient: LLDB can load a core's
+actual executable alongside another selected image. A different loaded module
+is rejected before variables are captured or graph identities are assigned.
+This guard does not authenticate process data or add a portable core archive
+format. Core use through raw LLDB options still requires matching artifacts and
+its own platform validation.
 
 The native build key includes the formatter content. Cache hits verify the
 captured formatter/stdio adapter, exact debug manifest, all projected source contents and,
@@ -123,3 +183,8 @@ maps, crash/core workflows and other target platforms
 remain parts of the open development plan.
 
 Native function/managed shallow allocation profiling and optional Tracy CPU capture are documented in [profiling.md](profiling.md).
+
+Checked native runtime failures can be resolved through `nex run --json` or
+`nex diagnose --manifest DEBUG.json --log STDERR.log --revision HASH`. See the
+[native diagnostic guide](native-diagnostics.md) for archived sources, local IDs,
+operator request logs, bounds and attribution limits.

@@ -5,6 +5,9 @@
 #include "nex_io.h"
 #include "nex_json.h"
 #include "nex_auth.h"
+#ifdef NEX_FOREIGN_ENABLED
+#include "nex_foreign.h"
+#endif
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <array>
@@ -13,6 +16,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <regex>
 
 extern "C" nexrt::Handle *nex_server_dispatch(nexrt::Handle *request);
 namespace {
@@ -52,15 +56,42 @@ void error(httplib::Response &response,int status,const std::string &code,const 
   response.status=status;response.set_content("{\"error\":{\"code\":"+nexrt::quoted(code)+",\"message\":\"request failed\"},\"request_id\":"+nexrt::quoted(id)+"}","application/json; charset=utf-8");response.set_header("Cache-Control","no-store");
 }
 bool inside(const fs::path &path,const fs::path &root){auto relative=path.lexically_relative(root);for(const auto &part:relative)if(part=="..")return false;return !relative.is_absolute();}
+bool corsOrigin(const std::string &value){
+  if(value=="capacitor://localhost")return true;
+  if(value.size()>300)return false;
+  static const std::regex pattern(R"((https?)://([a-z0-9.-]+)(:([1-9][0-9]{0,4}))?)");
+  std::smatch match;if(!std::regex_match(value,match,pattern))return false;
+  auto host=match[2].str();if(host.size()>253)return false;
+  size_t begin=0;do {auto end=host.find('.',begin);if(end==std::string::npos)end=host.size();auto label=host.substr(begin,end-begin);
+    if(label.empty()||label.size()>63||label.front()=='-'||label.back()=='-')return false;
+    begin=end+1;
+  }while(begin<=host.size());
+  if(match[4].matched){auto port=std::stoi(match[4].str());if(port>65535||(match[1]=="https"&&port==443)||(match[1]=="http"&&port==80))return false;}
+  return true;
+}
+bool corsMethod(const std::string &method){return method=="GET"||method=="HEAD"||method=="POST"||method=="PUT"||method=="PATCH"||method=="DELETE"||method=="OPTIONS";}
+bool corsHeaders(const httplib::Request &request){
+  auto count=request.get_header_value_count("Access-Control-Request-Headers");if(count==0)return true;if(count!=1)return false;
+  auto value=request.get_header_value("Access-Control-Request-Headers");if(value.empty()||value.size()>128)return false;
+  size_t begin=0;std::set<std::string> seen;
+  do {auto end=value.find(',',begin);if(end==std::string::npos)end=value.size();auto name=value.substr(begin,end-begin);
+    auto first=name.find_first_not_of(" \t"),last=name.find_last_not_of(" \t");if(first==std::string::npos)return false;name=name.substr(first,last-first+1);
+    std::transform(name.begin(),name.end(),name.begin(),[](unsigned char c){return char(std::tolower(c));});
+    if((name!="authorization"&&name!="content-type")||!seen.insert(name).second)return false;
+    begin=end+1;
+  }while(begin<=value.size());return true;
+}
 struct Config {
-  std::string host="127.0.0.1",auth,database,assets,cert,key;
+  std::string host="127.0.0.1",auth,database,assets,cert,key,foreign;
+  std::set<std::string> cors;
   int port=8080,workers=8,queue=64;uint64_t budget=1000000,timeout=5000;
 };
 Config config(int argc,char **argv){
   Config c;
   for(int i=1;i<argc;++i){
     std::string option=argv[i];if(i+1==argc)throw std::runtime_error("server option requires a value");std::string value=argv[++i];
-    if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;
+    if(option=="--host")c.host=value;else if(option=="--auth")c.auth=value;else if(option=="--database")c.database=value;else if(option=="--static")c.assets=value;else if(option=="--cert")c.cert=value;else if(option=="--key")c.key=value;else if(option=="--foreign")c.foreign=value;
+    else if(option=="--cors-origin"){if(!corsOrigin(value)||!c.cors.insert(value).second||c.cors.size()>16)throw std::runtime_error("CORS requires1..16 distinct exact origins; wildcard, null, credentials and paths are unsupported");}
     else{
       uint64_t number=0;auto parsed=std::from_chars(value.data(),value.data()+value.size(),number);if(parsed.ec!=std::errc()||parsed.ptr!=value.data()+value.size())throw std::runtime_error("invalid numeric server option");
       if(option=="--port"&&number<=65535)c.port=int(number);
@@ -87,7 +118,15 @@ std::string mime(const fs::path &path){
 }
 int main(int argc,char **argv){
   try{
-    auto c=config(argc,argv);auto auth=credentials(c.auth);nexrt::Database::initialize(c.database);
+    auto c=config(argc,argv);
+#ifdef NEX_FOREIGN_ENABLED
+    if(c.foreign.empty())c.foreign=nexrt::packagedForeignCatalogue();
+    auto foreign=c.foreign.empty()?std::shared_ptr<nexrt::ForeignLibraries>{}:nexrt::loadForeignLibraries(c.foreign);
+    if(foreign&&!c.assets.empty()){auto root=fs::weakly_canonical(c.assets);if(inside(fs::weakly_canonical(c.foreign),root))throw std::runtime_error("foreign catalogue must be outside the static root");for(const auto &directory:foreign->grantedDirectories())if(inside(fs::weakly_canonical(directory),root))throw std::runtime_error("foreign module directories must be outside the static root");}
+#else
+    if(!c.foreign.empty())throw std::runtime_error("server has no external calls");
+#endif
+    auto auth=credentials(c.auth);nexrt::Database::initialize(c.database);
     std::unique_ptr<httplib::Server> server;
     if(c.cert.empty())server=std::make_unique<httplib::Server>();else server=std::make_unique<httplib::SSLServer>(c.cert.c_str(),c.key.c_str());
     if(!server->is_valid())throw std::runtime_error("HTTP/TLS server configuration is invalid");
@@ -96,6 +135,29 @@ int main(int argc,char **argv){
     server->set_default_headers({{"X-Content-Type-Options","nosniff"}});
     server->Get("/health",[](const auto &,auto &response){response.set_content("{\"ok\":true}","application/json");response.set_header("Cache-Control","no-store");});
     server->set_pre_request_handler([&](const auto &request,auto &response){
+      if(request.path.starts_with("/api/")&&!c.cors.empty()){
+        // Decide before authentication/body buffering. Preflight never enters NEX
+        // or a data transaction. A denied Origin cannot perform a mutation.
+        response.set_header("Cache-Control","no-store");
+        auto count=request.get_header_value_count("Origin");auto origin=request.get_header_value("Origin");
+        bool preflight=request.has_header("Access-Control-Request-Method")||request.has_header("Access-Control-Request-Headers");
+        response.set_header("Vary",preflight?"Origin, Access-Control-Request-Method, Access-Control-Request-Headers":"Origin");
+        auto denied=[&](int status,const char *code){error(response,status,code);response.set_header("Connection","close");return httplib::Server::HandlerResponse::Handled;};
+        if(count>1||(count==1&&(origin.empty()||!corsOrigin(origin))))return denied(403,"CORS_ORIGIN");
+        bool allowed=count==1&&c.cors.contains(origin);
+        bool same=count==1&&request.get_header_value_count("Host")==1&&origin==std::string(c.cert.empty()?"http://":"https://")+request.get_header_value("Host");
+        if(count==1&&!allowed&&!same)return denied(403,"CORS_ORIGIN");
+        if(allowed){response.set_header("Access-Control-Allow-Origin",origin);response.set_header("Access-Control-Expose-Headers","X-Request-Id");}
+        if(preflight){
+          if(request.method!="OPTIONS"||!allowed||request.get_header_value_count("Access-Control-Request-Method")!=1||
+             !corsMethod(request.get_header_value("Access-Control-Request-Method"))||!corsHeaders(request)||
+             request.has_header("Transfer-Encoding")||request.get_header_value_count("Content-Length")>1||
+             (request.has_header("Content-Length")&&request.get_header_value("Content-Length")!="0"))return denied(400,"CORS_PREFLIGHT");
+          response.status=204;response.set_header("Access-Control-Allow-Methods","GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
+          response.set_header("Access-Control-Allow-Headers","Authorization, Content-Type");response.set_header("Connection","close");
+          return httplib::Server::HandlerResponse::Handled;
+        }
+      }
       if(request.path.starts_with("/api/")&&!authenticate(request,auth)){error(response,401,"UNAUTHORIZED");response.set_header("WWW-Authenticate","Bearer");response.set_header("Connection","close");return httplib::Server::HandlerResponse::Handled;}
       if(request.path.starts_with("/api/")&&request.has_header("Content-Length")){
         auto text=request.get_header_value("Content-Length");uint64_t size=0;auto parsed=std::from_chars(text.data(),text.data()+text.size(),size);
@@ -109,6 +171,9 @@ int main(int argc,char **argv){
       auto user=authenticate(request,auth);if(!user){error(response,401,"UNAUTHORIZED",id);return;}
       try{
         nexrt::RequestScope scope(c.budget,c.timeout);scope.setCancellation([&]{return interrupted||request.is_connection_closed();});scope.poll();
+#ifdef NEX_FOREIGN_ENABLED
+        std::unique_ptr<nexrt::ForeignScope> foreignScope;if(foreign)foreignScope=std::make_unique<nexrt::ForeignScope>(foreign);
+#endif
         bool writable=request.method!="GET"&&request.method!="HEAD"&&request.method!="OPTIONS";
         nexrt::Database db(c.database,*user,writable);nexrt::StorageScope capability(db);
         auto input=std::make_shared<nexrt::Data>(nexrt::Data::Record);input->text="std::http::Request";
@@ -123,7 +188,7 @@ int main(int argc,char **argv){
         if(status<300){auto committed=db.commit();if(!nexrt::isSuccess(committed)){error(response,503,committed.object->text,id);return;}}
         else db.rollback();
         response.status=int(status);response.set_content(std::move(body),contentType);
-      }catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));}
+      }catch(const nexrt::Trap &trap){error(response,trap.code=="E_TIMEOUT"?504:trap.code=="E_CANCELLED"?499:trap.code=="E_LIMIT"?429:500,trap.code,id);std::fprintf(stderr,"request %s: %s at NEX line %lld\n",id.c_str(),trap.code.c_str(),static_cast<long long>(trap.line));if(auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap))nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located->source,id.c_str());}
       catch(const nexrt::DataError &failure){error(response,failure.code=="E_UTF8"?400:503,failure.code,id);}
       catch(const std::exception &){error(response,500,"E_RUNTIME",id);}
     };

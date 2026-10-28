@@ -36,6 +36,8 @@ class Generics(harness.ToolchainCase):
             ('test fn wrong<T>() -> unit {}', 'E_TEST'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {let b:Box = Box(1);}', 'E_GENERIC_ARITY'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {Box<unit>(print(1));}', 'E_TYPE'),
+            ('fn id<T>(x:T)->T{return x;} fn wrong()->unit{id<unit>;}', 'E_TYPE'),
+            ('fn wrong<F<_>>(value:F<unit>)->unit{}', 'E_TYPE'),
             ('struct Box<T> {v:T;} fn wrong() -> unit {Box<i64,str>(1);}', 'E_GENERIC_ARITY'),
             ('fn id<T>(x:T) -> T {return x;} fn wrong() -> unit {id<i64>(true);}', 'E_TYPE'),
             ('fn id<T>(x:T) -> T {return x;} fn wrong() -> unit {id<i64,str>(1);}', 'E_GENERIC_ARITY'),
@@ -129,8 +131,8 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
         else:
             fixture=self.historical_store('0.6');old=fixture['revision'];old_graph=fixture['graph'];old_nodes=fixture['operations']
         self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.10');self.assertNotEqual(current['revision'],old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.10'})
+        current=self.cli('migrate');self.assertEqual(current['language'],'0.16');self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.16'})
         graph=self.cli('graph');nodes=self.cli('operations','--symbol','value')['nodes']
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in old_graph['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in old_nodes})
@@ -204,7 +206,7 @@ fn observe<T>(box:Box<T>) -> unit !{io} {print(box.value);}
 fn main() -> unit !{io} {observe(Box(41));}
 ''')
         session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text());revision=session['revision']
-        frame={'schema':'nex.debug-frame/1','language':'0.10','revision':revision,'build_key':manifest['build_key'],
+        frame={'schema':'nex.debug-frame/1','language':'0.16','revision':revision,'build_key':manifest['build_key'],
                'function':'watches::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'box','type':'watches::Box<i64>','value':{'value':'41'}}],'truncated':False}
         path=self.root/'frame.json';path.write_text(json.dumps(frame))

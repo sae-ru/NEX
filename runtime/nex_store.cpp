@@ -32,10 +32,10 @@ struct Statement {
 bool validKey(const std::string &key,bool prefix=false){return (prefix||!key.empty())&&key.size()<=1024&&key.find('\0')==std::string::npos;}
 Value operation(const std::function<Value(Database&)> &call,bool writable){
   if(currentDatabase)return call(*currentDatabase);
-  const char *path=std::getenv("NEX_DATABASE"),*owner=std::getenv("NEX_STORAGE_OWNER");
-  if(!path||!*path)return failure("CAPABILITY","database capability is not configured");
   try{
-    Database::initialize(path);Database database(path,owner?owner:"local",writable);auto result=call(database);
+    auto path=platform::environment("NEX_DATABASE"),owner=platform::environment("NEX_STORAGE_OWNER");
+    if(!path||path->empty())return failure("CAPABILITY","database capability is not configured");
+    Database::initialize(*path);Database database(*path,owner?*owner:"local",writable);auto result=call(database);
     if(!isSuccess(result)){database.rollback();return result;}
     auto committed=database.commit();return isSuccess(committed)?result:committed;
   }catch(const DataError &e){return failure(e.code,e.what());}

@@ -1,23 +1,98 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "NEX protocol 2 function or endpoint replacement patch",
+  "title": "NEX protocol 2 atomic declaration and source-operation replacement patch",
   "type": "object",
   "additionalProperties": false,
-  "required": ["expected_revision", "replacements"],
+  "required": [
+    "expected_revision",
+    "replacements"
+  ],
   "properties": {
-    "expected_revision": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "expected_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+    },
     "replacements": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["name", "source"],
-        "properties": {
-          "name": {"type": "string", "pattern": "^([A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$"},
-          "source": {"type": "string", "minLength": 1}
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "source"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^([A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*(?![\\s\\S])"
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "function",
+                  "endpoint",
+                  "type",
+                  "trait",
+                  "impl"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operation_id",
+              "source"
+            ],
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}(?![\\s\\S])"
+              },
+              "kind": {
+                "const": "operation"
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 1000
+    },
+    "expected_source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+      "description": "Exact archived source-bundle digest from operation context. Required for operation edits."
+    }
+  },
+  "if": {
+    "properties": {
+      "replacements": {
+        "contains": {
+          "type": "object",
+          "required": [
+            "operation_id"
+          ]
         }
       }
-    }
+    },
+    "required": [
+      "replacements"
+    ]
+  },
+  "then": {
+    "required": [
+      "expected_source_hash"
+    ]
   }
 }

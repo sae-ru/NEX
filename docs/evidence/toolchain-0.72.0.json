@@ -1,0 +1,91 @@
+{
+  "schema": "nex.toolchain-checkpoint/1",
+  "toolchain": "0.72.0",
+  "language": "0.16",
+  "full_objective_complete": false,
+  "accepted_release": false,
+  "implementation_source_tree": "1f24a09cd71ee7cf203359b7a70d03e243505669",
+  "implementation_source_files": 756,
+  "root": {
+    "compiler_sha256": "ae7db3947b533f0b84d90fbf1bb1904b1210214a87e15174def414674ff7e83d",
+    "regression_groups": 80,
+    "regression_seconds": 747.94,
+    "sdk_phases": 24,
+    "sdk_commands": 348,
+    "indexed_resources": 213,
+    "sdk_seconds": 430.563,
+    "graph_revisions": 47,
+    "graph_tables": 16,
+    "all_schema_rows_ids_preserved": true,
+    "normal_git_head_index_unchanged": true
+  },
+  "linux_same_implementation": {
+    "build_compiler_sha256": "03ebceb6714c667f30d5489bc5b2ce1721e17f1392f62d502101214c4bfcad74",
+    "installed_compiler_sha256": "7cd52b045449676139fd817cd9e19a49974d6f06e1b4e5f16edfcedcab4421a2",
+    "build_install_elf_rpath_rewrite": "Separate hashes retained; do not equate installed/build files.",
+    "regression_groups": 80,
+    "regression_seconds": 697.66,
+    "live_groups": 17,
+    "sdk_phases": 24,
+    "sdk_commands": 348,
+    "sdk_seconds": 284.664,
+    "source_checkout_mounted_for_sdk": false,
+    "sdk_network": "none"
+  },
+  "root_additional": {
+    "installed_vsix": true,
+    "private_profiles_only": true,
+    "cross_configurations": 6,
+    "cross_artifacts": 15,
+    "ios_final_linked_images": 3,
+    "x64_wine_archive_application": true,
+    "actual_windows_os_execution": false,
+    "actual_ios_device_execution": false,
+    "browser_engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "browser_ui_api_restart_cases": 12,
+    "server_model_archive_actually_consumed": true,
+    "genuine071_072_strict_analysis_payloads_and_all_store_rows_preserved": true
+  },
+  "separate_astra_receipts": {
+    "platform": "Astra Linux1.7.4 x86_64 VMware guest,glibc2.28",
+    "sdk24_compiler_sha256": "d1645599edf45a11afad28d124e25d558460ae42c8d42b2d7779f982e19843a1",
+    "sdk24_source_backup": "1306f233f8747b4fc506427f866a48a81809f716",
+    "sdk_phases": 24,
+    "sdk_commands": 348,
+    "native_toolchain_alias_compiler_sha256": "82e2a52c78e92b3e11580f8da353f85c4bce7fad8fce9d25a19f6773a9873c82",
+    "native_toolchain_alias_targeted_groups": 2,
+    "current_root_host_execution_verified": false
+  },
+  "retained_failures": [
+    "Initial glibc spawn-chdir API absence,SQLite3.54 timestamp authorization and private C++ runtime/provenance failures retain their original candidates.",
+    "Linux/Mac candidate temporary-basename assertion failed; the stronger exact manifest-origin check passed13 cases, and actual root fresh80 passed.",
+    "Mac candidate SDKv2 lacked explicit optional NEX_WASM_LD; v3 and actual root configured22.1.8 passed."
+  ],
+  "research_shared_runtime": {
+    "compiler_feature_available": false,
+    "macos_and_linux_two_dsos_one_runtime": true,
+    "guide": "experiments/shared-runtime/README.md"
+  },
+  "pending": [
+    "general shared_library/dynamic output and consumption",
+    "fully-static policy/resolved OS dependency report",
+    "combined project execution/debug/test/profile/package/task/replay",
+    "source concurrency",
+    "general CPU/GPU/NPU adapters",
+    "broader platform/device execution",
+    "IDE completion/rename",
+    "cross-provider quality/token measurements",
+    "remaining full development-chain objective"
+  ],
+  "final_documentation_delta": "Overview/quickstart/evidence and optional research files only; compiled implementation,grammar,canonical identities and all213 indexed resources remain unchanged.",
+  "documented_source_checkpoint": {
+    "commit": "0216bed1589f82e24cba0374ae9c61f9b623ce63",
+    "tree": "4798e5e8e9857b1786cee8ab430ca85e2457d18a",
+    "branch": "codex/backup-nex-20261021-032145",
+    "scope": "Verified compiler source plus coherent0.72 documentation; quickstart pins this immutable source."
+  }
+}

@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "NEX native toolchain",
+  "description": "Native target configuration. iOS static archives require a macOS host, explicit versioned device/simulator target and matching Xcode sysroot; the compiler validates SDK platform, architecture and deployment range. This schema does not establish target execution support. Windows GNU core builds require explicit compiler/linker/archiver/sysroot, UCRT static runtime selection and operator-supplied component notices.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -67,6 +68,48 @@
     "linker": {
       "type": "string",
       "minLength": 1
+    },
+    "archiver": {
+      "type": "string",
+      "minLength": 1
+    },
+    "debug_packager": {
+      "type": "string",
+      "minLength": 1
+    },
+    "windows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "notices"
+      ],
+      "properties": {
+        "runtime": {
+          "const": "ucrt-static"
+        },
+        "notices": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "windows"
+        ]
+      },
+      "then": {
+        "required": [
+          "compiler",
+          "linker",
+          "archiver",
+          "sysroot"
+        ]
+      }
+    }
+  ]
 }

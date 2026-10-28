@@ -1,0 +1,12 @@
+module string_debug;
+struct Box{label:str;}
+fn make(text:str)->(fn(i64,i64)->str){return fn(start:i64,count:i64)->str{return slice(text,start,count);};}
+fn observe(text:str,box:Box,reply:result<str>,failure:result<i64>,callback:fn(i64,i64)->str,alias:fn(i64,i64)->str)->unit!{io}{
+ print(len(text)); // STRING_STOP
+ print(callback(len(text)-4,4));print(alias(0,1));print(box.label);print(is_ok(reply));print(error_code(failure));
+}
+fn main()->unit!{io}{
+ var text:str="A🌍\u0000λ";var i:i64=0;while i<19{text=text+text;i=i+1;}
+ let callback:fn(i64,i64)->str=make(text);
+ observe(text,Box("box 🌍\u0000"),ok("ok🌍\u0000"),err<i64>("E🌍","failure 🌍\u0000"),callback,callback);
+}

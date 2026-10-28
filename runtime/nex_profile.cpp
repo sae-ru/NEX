@@ -16,7 +16,16 @@
 #include <unordered_map>
 #include <vector>
 
+// A final NEX executable supplies the strong exact build identity. A trusted
+// native host may omit it; do not fabricate a graph revision for that process.
+// Keep this weak default preemptible when the runtime lives in a shared image.
+#ifdef NEX_SHARED_PROFILE_RUNTIME
+extern "C" __attribute__((weak)) const char *nex_profile_build_info(){return nullptr;}
+#else
+// Legacy profile archives retain their strong archived build identity. A weak
+// definition here could stop an archive linker extracting that identity unit.
 extern "C" const char *nex_profile_build_info();
+#endif
 
 namespace {
 using Clock=std::chrono::steady_clock;
@@ -57,7 +66,8 @@ struct Thread {std::vector<Frame> frames;uint64_t skipped=0,id=0;};
 thread_local Thread thread;
 void shutdown(){state().finish();}
 State::State(){
-  identity=nex_profile_build_info();
+  const char *build=nex_profile_build_info();
+  identity=build?build:"null";
   if(auto *path=std::getenv("NEX_PROFILE_OUTPUT"))output=path;
   auto *request=std::getenv("NEX_TRACY");tracy=request&&std::strcmp(request,"1")==0;
   enabled=!output.empty()||tracy;

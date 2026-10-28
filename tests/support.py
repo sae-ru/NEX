@@ -15,6 +15,19 @@ NEX = str(Path(sys.argv.pop(1)).resolve())
 REPO = Path(__file__).resolve().parents[1]
 
 
+def database_rows(path):
+    """Complete logical graph state, including local IDs and task history."""
+    # SQLite can need WAL sidecars even for SELECTs after the writer exits.
+    # Open an existing DB, then prohibit SQL writes while comparing every row.
+    connection=sqlite3.connect(path.resolve().as_uri()+'?mode=rw',uri=True)
+    connection.execute('PRAGMA query_only=ON')
+    try:
+        schema=connection.execute('SELECT * FROM sqlite_master ORDER BY name').fetchall()
+        tables=[r[0] for r in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+        return schema,{name:sorted(connection.execute('SELECT * FROM "'+name+'"').fetchall(),key=repr) for name in tables}
+    finally:connection.close()
+
+
 class ToolchainCase(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="nex test ")

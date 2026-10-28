@@ -1,0 +1,309 @@
+{
+  "schema": "nex.graph-identity-evidence/1",
+  "toolchain": "0.44.0",
+  "language": "0.15",
+  "graph_database_schema": 3,
+  "identity_schema": 1,
+  "identity_policy": "nex.graph-identity/1",
+  "recorded_at": "2026-10-18T17:54:21.677152+00:00",
+  "status": "corrected_macos_linux_arm64_full_and_sdk_passed",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "source_sha256": {
+    "CMakeLists.txt": "e53fb03122ad098d10483c9694948d679b7f5735bd03677089d7d6964e3dcb1a",
+    "include/nex/graph_store.h": "1a1cceca83763db44a6da2f8a9d8b9473cca857d597a68b67f4df65fa47aa2f8",
+    "include/nex/project.h": "aa016da9cd3f3621be5ac3e2954409086364b645bc9501138de267320c327139",
+    "src/graph_store.cpp": "613dbc3ee68b647218b4c53a33eb9abdf0bf92beba50a45b8e991c9f289988af",
+    "src/project.cpp": "89c3ba53e8f02352eac8fffe94c5c2a52279376c424ab1453bb333629884490b",
+    "src/main.cpp": "837d6565da2f7f542d6971deec941497a03fc0464674e109034a60899c3bb68e",
+    "src/language.cpp": "cd4a2fe5b3e497265d6c03fa0adf3491f09b5cad0e806dc9646b7b7c0bcd3f92",
+    "tests/graph_identities.py": "351612a7669fa529613644f0d9321c0f2b5fd1a533d8d0f5e8f8b84b9ef5ef51",
+    "tests/fixtures/graph-0.43.json": "11f25ec3b6b788baa433d8e290c37ca0b58f7b5d690243baa586b5a138f5dee5",
+    "tests/fixtures/graph-0.43.sql": "73a7dc8e412c22e63e670ec4ddf84e34b053bb76ed5dc584231de49c3ad5033c",
+    "tools/sdk_acceptance.py": "0b5edca47febf61c41c52a2ba2213f0abf4f76e73c26b0f4abd724a9589fa0c5",
+    "docs/graph.md": "95de151fda4dbd07ddb1aa896c7167d6c268d4cd6079f8abbcdc14c12acee775",
+    "docs/protocol.md": "75e01ff101a3a9f5b8d0cc7159ca76bdc2c8f16677f3659d168a530b54784aba",
+    "docs/language.md": "168f86985cde9c7b8af3623fc9d77ce63289582fc94bce43f691228460fab978",
+    "docs/grammar.ebnf": "80e823c76e1d012f2bba8ec50c44b2e1ba9b888d9d2d42534b2499c2c8df90af",
+    "llm/SYSTEM_PROMPT.md": "8e73d7f9295f23de8a79691d64bbb9b4aaa1089cb73ff1c98fea150c57845dbe",
+    "llm/language-pack.json": "f7906e441ef8ac3e3edd92c8ffa2cf1ab97bd1d5547ac5206480f6f8c59e8221",
+    "llm/graph-identity.schema.json": "06d067adfa9da8a697316d4fb0520c944b0e51f73af810b85a7d6c55056b37f4"
+  },
+  "implemented": [
+    "persistent_module_and_declared_type_nodes",
+    "source_and_generic_instance_type_ids",
+    "canonical_content_separate_from_ids",
+    "transitive_dependency_context_with_recursive_components",
+    "bounded_utf8_declaration_context",
+    "explicit_snapshot_scoped_cross_store_aliases",
+    "atomic_reconciliation_pages_with_expected_head",
+    "strict_bounded_regular_file_manifest_input",
+    "history_preserving_schema_3_backfill",
+    "single_visit_statement_match_dependency_walk"
+  ],
+  "checks": {
+    "baseline_macos_full": {
+      "ok": true,
+      "scope": "baseline before duplicate match-arm traversal correction",
+      "groups": 51,
+      "python_cases": 387,
+      "seconds": 2234.13,
+      "compiler_sha256": "c705b20367d3bfbdb06fde9f8d9964996b34f8386fd4668c4bb02725a7c90508",
+      "last_test_sha256": "d4232be52c7d6d214880f9991661956b7b6e7d2efa4b249d3c2e91061ecbd5eb",
+      "sdk_verification": "build/graph-044-macos-sdk-verification.json",
+      "linux_verification": "build/graph-044-linux-verification.json",
+      "correction_validated": false
+    },
+    "baseline_linux_full_chain": {
+      "ok": true,
+      "at": "2026-10-18T17:10:14.929730+00:00",
+      "verification_sha256": "3843c3d207b06fdf5e9f8385ed6e4331b3144927c19e675c82a5c27c1ac70d14",
+      "sdk_report_sha256": "ce4c875fb0c44a1ca914a460851c41c040b1bc224fc67164476d1244a433a7ec",
+      "compiler_sha256": "371eea2deb2b6b0273255c77edf15187db25ad3e5fbafd90d7c652dd44ffd728",
+      "sdk_compiler_sha256": "3d8235e44354ffd4a89ae0073bf6630232ca40334a0ae25b3c80384ebb06cbea",
+      "python_cases": 387,
+      "full_ctest_groups": 51,
+      "source_free_sdk_phases": 13,
+      "source_free_sdk_seconds": 210.435,
+      "graph_mappings": 166,
+      "live_suites": [
+        "live-debugging",
+        "live-expressions",
+        "live-generics",
+        "live-constraints",
+        "live-matching",
+        "live-function_debug",
+        "live-bytes_debug",
+        "live-resource_debug",
+        "live-numbers",
+        "live-incremental",
+        "live-source-ffi"
+      ],
+      "environment": {
+        "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "image_id": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "target_arch": "arm64",
+        "docker_server_arch": "arm64",
+        "emulated": false
+      },
+      "source_checkout_mounted": false,
+      "network": "none"
+    },
+    "baseline_macos_sdk": {
+      "ok": true,
+      "at": "2026-10-18T16:45:16.489936+00:00",
+      "report_sha256": "28f67df65b3e811f4dce3d0ea3c4dc4b48d4992a1c161c0409c3e9ebd80ee439",
+      "compiler_sha256": "c705b20367d3bfbdb06fde9f8d9964996b34f8386fd4668c4bb02725a7c90508",
+      "phases": 13,
+      "graph_reconciliation": {
+        "source_namespace": "1af0243b3c88df8176301f551f703eea",
+        "target_namespace": "52e7c5bf7149912f1e3949d65b4a59c0",
+        "mappings": 166,
+        "resolved": {
+          "language": "0.15",
+          "manifest_hash": "5a08176ae2614b4d0a3f3b8c08b8438f0e5a07037b6e8317d5c32c23e3f0c8dd",
+          "schema": "nex.identity-resolution/1",
+          "source": {
+            "id": "8ecf0e16677d7c96a6d4030beb28f665",
+            "namespace": "1af0243b3c88df8176301f551f703eea",
+            "revision": "c339ff409245fcec91a30702095bfb4c8a4b6eb13b316aec35f3a220e8d5e909"
+          },
+          "target": {
+            "namespace": "52e7c5bf7149912f1e3949d65b4a59c0",
+            "node": {
+              "context_hash": "cceda70909af5476c2f529798e9e046c94de6a16c32d8ed9c9bdbc85a664a582",
+              "hash": "222ee6801c9f97041f306b34006fab7fca4c38e46e5a3af9d01abce444b55963",
+              "id": "869ce5a5cb49ed85b8d5793ced470024",
+              "kind": "function",
+              "path": "",
+              "symbol": "handoff::choose"
+            },
+            "revision": "c339ff409245fcec91a30702095bfb4c8a4b6eb13b316aec35f3a220e8d5e909"
+          }
+        },
+        "destination_ids_unchanged": true
+      },
+      "elapsed_seconds": 279.559
+    },
+    "corrected_focused": {
+      "ok": true,
+      "cases": 17,
+      "seconds": 11.198,
+      "log": "build/graph-identities-044-corrected-root.log"
+    },
+    "nested_match_reproducer": {
+      "depth": 25,
+      "results": [
+        {
+          "compiler": "nex-043-corrected-verified",
+          "exit_code": 0,
+          "seconds": 0.067,
+          "diagnostic": ""
+        },
+        {
+          "compiler": "nex",
+          "timeout": true,
+          "seconds": 3.004
+        }
+      ]
+    },
+    "nested_match_corrected": {
+      "ok": true,
+      "depth": 25,
+      "corrected_seconds": 0.0423,
+      "baseline": "build/graph-044-nested-match-baseline.json",
+      "same_semantic_revision": "bfcdcf6b097eb323ce69985867171ed9d930a926b1c020760854a59c3c8ca6bd"
+    },
+    "corrected_macos_full": {
+      "ok": true,
+      "at": "2026-10-18T17:41:12.009219+00:00",
+      "scope": "corrected macOS ARM64 full regression",
+      "groups": 51,
+      "python_cases": 389,
+      "cpp_probes": 10,
+      "seconds": 1165.35,
+      "ctest_parallel_level": 2,
+      "compiler_sha256": "8d3a17fb03f7f053c28a1532862c3dd07383e74085387726419728d72a07e20b",
+      "last_test_sha256": "685d25647ec3e9508e204f2e7f4ebf520333f323254e5ac47452dc0f4d8f1f8e",
+      "source_snapshot": "build/source-044-corrected-validation",
+      "all_snapshot_source_hashes_match": true
+    },
+    "corrected_macos_sdk": {
+      "ok": true,
+      "at": "2026-10-18T17:24:24.909396+00:00",
+      "report_sha256": "6bec27091f1b352bae7a89d1a0c4d0ca8200a8838dfe84231a8281e309d5546c",
+      "compiler_sha256": "8d3a17fb03f7f053c28a1532862c3dd07383e74085387726419728d72a07e20b",
+      "phases": 13,
+      "seconds": 289.973,
+      "graph_mappings": 166,
+      "correction_included": true
+    },
+    "corrected_linux_full_chain": {
+      "ok": true,
+      "at": "2026-10-18T17:53:12.925763+00:00",
+      "groups": 51,
+      "python_cases": 389,
+      "cpp_probes": 10,
+      "ctest_seconds": 999.31,
+      "compiler_sha256": "82091956ffdc62550987e91302e5ab5b5e423a711e003797308b8170719ea7d8",
+      "sdk_compiler_sha256": "27beea88cb31b3aed95bf3e38ca0701c7087d878a69670e136295555f462fea5",
+      "last_test_sha256": "725d43fba5d1bea0d711f58b43ef474c679f0e9071720d7b71f9eddbf280ae08",
+      "verification_sha256": "5d1aae180eb1b14ac020b3f7bc666c0339f32b36a8a4abd43c61bbf4f434b985",
+      "sdk_report_sha256": "676e06f34c2c281324ed418828c9584e816a86d74b6ba4fe93ff82a17d8e6994",
+      "sdk_phases": 13,
+      "sdk_seconds": 207.806,
+      "live_suites": [
+        "live-debugging",
+        "live-expressions",
+        "live-generics",
+        "live-constraints",
+        "live-matching",
+        "live-function_debug",
+        "live-bytes_debug",
+        "live-resource_debug",
+        "live-numbers",
+        "live-incremental",
+        "live-source-ffi"
+      ],
+      "graph_mappings": 166,
+      "source_checkout_mounted": false,
+      "network": "none",
+      "environment": {
+        "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "image_id": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "target_arch": "arm64",
+        "docker_server_arch": "arm64",
+        "emulated": false
+      }
+    },
+    "corrected_schema_validation": {
+      "ok": true,
+      "validator": "jsonschema 4.25.1",
+      "schema_sha256": "06d067adfa9da8a697316d4fb0520c944b0e51f73af810b85a7d6c55056b37f4",
+      "compiler_sha256": "8d3a17fb03f7f053c28a1532862c3dd07383e74085387726419728d72a07e20b",
+      "validated_real_artifacts": {
+        "page": "851945483d10a31481da4c7d8056d6f2ca98caa55f45ecd557d181f4ee7907bc",
+        "declarations": "a8d5404140b3276fb126f1bf1d6bf48816eeeb11a2b2276be6e8d82c17176faf",
+        "context": "c97c60c08021aad338cbdab74171090daab66cceea98a725e7b66aec346366db",
+        "reconciliation": "1f0dd27fdd5a907f2136e4ad72cff8fae836eb92bbf27105b072a430b5d2be60",
+        "resolution": "ab656d64263d8d43772e6848a675cf97d4615d8d912f1170b2ab8e943c025ec7"
+      },
+      "rejected_malformed_artifacts": [
+        "page:namespace",
+        "page:selection",
+        "reconciliation:head_unchanged",
+        "resolution:target",
+        "context:node",
+        "declarations:nodes",
+        "page:missing_source_hash"
+      ],
+      "remote_schema_access": false,
+      "artifact_directory": "/Users/sae/projects/NEX/build/graph-044-corrected-schema-artifacts"
+    },
+    "identity_records_unchanged_by_walk_fix": {
+      "ok": true,
+      "all_records_unchanged": true,
+      "records": 56,
+      "revision": "37bc32351efdb6e7b8f09cfaeeb51e9324b7c8aff168648e726accb524196da8",
+      "baseline_compiler_sha256": "c705b20367d3bfbdb06fde9f8d9964996b34f8386fd4668c4bb02725a7c90508",
+      "corrected_compiler_sha256": "8d3a17fb03f7f053c28a1532862c3dd07383e74085387726419728d72a07e20b"
+    },
+    "baseline_old_writer_compatibility": {
+      "ok": true,
+      "old_compiler_sha256": "6b2cd13abc6b39a29995ebd0ae267b585091d3aaab47df1644109e72c762db82",
+      "new_compiler_sha256": "c705b20367d3bfbdb06fde9f8d9964996b34f8386fd4668c4bb02725a7c90508",
+      "before_revision": "ef456f2bec7f4b2e8a2a72f3af4b8a7a4c0d8d8ea3fca960f7b95d64290db9d1",
+      "after_revision": "a0779e2cd192a792556923952d70a9c9b83e2db84868a49abedd9c2adad5b144",
+      "old_writer_after_extension": true,
+      "new_reader_backfills_old_writer_revision": true,
+      "declaration_ids_preserved": true,
+      "original_revision_row_unchanged": true,
+      "database_schema": 3
+    },
+    "baseline_generic_closure_probe": {
+      "ok": true,
+      "generic_closures_across_different_instantiations": true,
+      "captured_closure_source_scope": true,
+      "source_revision": "37bc32351efdb6e7b8f09cfaeeb51e9324b7c8aff168648e726accb524196da8",
+      "target_revision": "84fb3a7c92ea6612718ad249ca3f51a04090018ea55e7d18230c87ca999de18a",
+      "mappings": 16
+    },
+    "baseline_maximum_page_probe": {
+      "ok": true,
+      "total_operation_nodes": 2005,
+      "page_nodes": 1000,
+      "manifest_bytes": 306189,
+      "export_seconds": 0.1561,
+      "reconcile_seconds": 0.2029,
+      "observational_timings_only": true
+    }
+  },
+  "historical_fixture": {
+    "schema": "nex.historical-graph-fixture/1",
+    "producer_toolchain": "0.43.0",
+    "language": "0.15",
+    "compiler_sha256": "6b2cd13abc6b39a29995ebd0ae267b585091d3aaab47df1644109e72c762db82",
+    "sql_sha256": "73a7dc8e412c22e63e670ec4ddf84e34b053bb76ed5dc584231de49c3ad5033c",
+    "revision": "8a0c1e3d4cef2d0f3e4fed96d27ab149c5834cbcdb272521f194e9eb00643ae2",
+    "stdout": "43\n",
+    "database_schema": 3,
+    "identity_extension_present": false
+  },
+  "unchanged_runtime_and_historical_fixture_files": 171,
+  "limits": {
+    "declaration_nodes": 100000,
+    "dependency_edges": 2000000,
+    "page_nodes": 1000,
+    "manifest_bytes": 4194304,
+    "context_source_bytes": 4096,
+    "context_definition_bytes": 8192,
+    "context_reference_previews": 100
+  },
+  "remaining": [
+    "source type/module replacement API is not part of 0.44; source type replacements are in isolated 0.45 development",
+    "broader current Release, sanitizer, x86-64 and SDK distribution matrix",
+    "Windows/mobile/other platform adapters, callbacks, general resources, async and remaining language/toolchain plan",
+    "comparative multi-model/token measurements",
+    "full requested language and development chain"
+  ]
+}

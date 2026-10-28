@@ -1,0 +1,151 @@
+{
+  "schema": "nex.development-evidence/1",
+  "milestone": "editor_extension_prototype",
+  "created": "2026-10-19T10:06:04.992727+00:00",
+  "status": "installed_vscode_macos_scoped_acceptance_passed",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "compiler_toolchain": "0.55.0",
+  "compiler_source_language": "0.16",
+  "compiler_sha256": "b9bf4c64e92312e5a9a22d8327811b165b6d8221154a0292794954801aab4073",
+  "editor_extension_version": "0.1.0",
+  "unit_tests": {
+    "passed": 9,
+    "terminal_exit_code": 0,
+    "log": "build/editor-056-source-map-focused.log",
+    "log_sha256": "96b65156fbf984db992dd11e71fa343fef091b7a1b8a480b95a8a452ec8e8b87"
+  },
+  "package": {
+    "archive": "build/nex-language-tools-0.1.0-source-map.vsix",
+    "sha256": "0ab54491862296f5ede1972241b351774fb68d475f383b779f4173fe6acbd25d",
+    "bytes": 7167,
+    "all_packaged_sources_equal_current": true,
+    "runtime_npm_dependencies": 0,
+    "packager": "@vscode/vsce@4.0.0",
+    "test_tool": "@vscode/test-electron@3.1.0"
+  },
+  "installed_host": {
+    "ok": true,
+    "editor_version": "1.142.0",
+    "editor_architecture": "arm64",
+    "installed_extension_path": "/Users/sae/projects/NEX/build/editor-056-source-map-installed-host-acceptance/extensions/sae-ru.nex-language-tools-0.1.0",
+    "installed_extension_version": "0.1.0",
+    "physical_source_breakpoint": true,
+    "native_stack_scopes": true,
+    "pure_watch": {
+      "build_key": "7a4127c1b867d445f1a209dbe8fc861eba6d3eb7cd6d4122aa5195f329d270c1",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "total + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [
+        "total"
+      ],
+      "read_paths": [
+        {
+          "binding": "total",
+          "kind": "value",
+          "path": []
+        }
+      ],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 3,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "73176",
+        "stop_id": "13",
+        "thread_id": "87273761"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "trait_watch": {
+      "build_key": "7a4127c1b867d445f1a209dbe8fc861eba6d3eb7cd6d4122aa5195f329d270c1",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "Readable<Box<i64>>::get(Box<i64>(40)) + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [],
+      "read_paths": [],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 8,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "73176",
+        "stop_id": "13",
+        "thread_id": "87273761"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "native_output": "42\r\n",
+    "native_resume_and_termination": true,
+    "controlled_test_profile": true,
+    "user_profile_modified": false
+  },
+  "installed_host_terminal_exit_code": 0,
+  "installed_host_report_sha256": "8ebbb0757e5133c58c0ae743517cb9560ee2cf952be2db776ece94fe77ad1fa1",
+  "initial_installed_host_failure": {
+    "ok": false,
+    "terminal_exit_code": 1,
+    "vsix_sha256": "bdcb0c28f9d2730282abce2d2c7e978a19b8272565a92f39194b121f68c1c85a",
+    "log": "build/editor-056-installed-host-acceptance.log",
+    "log_sha256": "dbee37e3fafeb27003e96540acb088236988b72842440486e137fe0b6d5bf416",
+    "actual_installed_vscode": "1.142.0 darwin-arm64",
+    "observed": "Installed package activates; native program runs and prints42, but a breakpoint on the original file is not verified/hit. LLDB debug paths currently map only to frozen cache.",
+    "correction": "Map each debug source path to its corresponding original only after byte equality with its frozen projection; preserve frozen fallback and manifest/build identity."
+  },
+  "limits": [
+    "Actual IDE acceptance currently macOS ARM64 and VS Code1.142.0 only",
+    "Test profile is controlled; restricted/virtual/no-trust-change paths are unit tested",
+    "Compiler/SDK language-wide acceptance is separately scoped",
+    "Toolchain source/SDK packaging integration and complete regression remain pending",
+    "LSP, direct large-root DAP pages, optimized-PC/core mapping and NEX Studio remain pending",
+    "Original-file equality is checked at debug preparation; stop and relaunch after edits",
+    "No public Marketplace publication or project license selection"
+  ]
+}

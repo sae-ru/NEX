@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/project-capture-1.json",
+  "title": "Checked physical project input projection for task replay",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "nex.project-capture/1"
+    },
+    "language": {
+      "const": "0.16"
+    },
+    "project_root": {
+      "$ref": "#/$defs/path"
+    },
+    "manifest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "component": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "architecture_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "original_project_manifest_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "files": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 8192,
+      "propertyNames": {
+        "$ref": "#/$defs/path"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "links": {
+      "type": "object",
+      "maxProperties": 8192,
+      "propertyNames": {
+        "$ref": "#/$defs/path"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "directories": {
+      "type": "array",
+      "maxItems": 8192,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "expectations": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 128,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "enum": [
+                "source",
+                "executable",
+                "static_library",
+                "shared_library",
+                "server",
+                "web"
+              ]
+            },
+            "entry": {
+              "type": "string"
+            },
+            "entry_function": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "revision": {
+              "$ref": "#/$defs/hash"
+            },
+            "source_bundle_hash": {
+              "$ref": "#/$defs/hash"
+            },
+            "native_toolchain_hash": {
+              "$ref": "#/$defs/hash"
+            }
+          },
+          "required": [
+            "name",
+            "kind",
+            "entry",
+            "entry_function",
+            "revision",
+            "source_bundle_hash"
+          ]
+        }
+      }
+    },
+    "function_owners": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "toolchains": {
+      "type": "object",
+      "maxProperties": 32,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "$ref": "#/$defs/hash"
+          },
+          "target": {
+            "type": "string"
+          },
+          "host_compatible": {
+            "type": "boolean"
+          },
+          "manifest": {
+            "type": "object"
+          },
+          "identity": {
+            "type": "object"
+          },
+          "explicit": {
+            "type": "boolean"
+          },
+          "file": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "hash",
+          "target",
+          "host_compatible",
+          "manifest",
+          "identity",
+          "explicit",
+          "file"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^fs(?:/.*)?$",
+      "description": "Normalized relative path confined to the owned fs namespace; the compiler additionally checks containment, canonical aliases, byte limits and current operator trust."
+    }
+  },
+  "required": [
+    "schema",
+    "language",
+    "project_root",
+    "manifest",
+    "component",
+    "architecture_hash",
+    "original_project_manifest_hash",
+    "files",
+    "links",
+    "directories",
+    "expectations",
+    "function_owners",
+    "toolchains"
+  ]
+}

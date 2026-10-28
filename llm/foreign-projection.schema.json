@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.dev/schemas/foreign-projection-1.json",
+  "title": "NEX checked native packaging source projection",
+  "type": "object",
+  "required": [
+    "schema",
+    "source_revision",
+    "packaged_revision",
+    "source_hash",
+    "packaged_source_hash",
+    "catalogue_hash",
+    "changes",
+    "preparation"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.foreign-projection/1"
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "packaged_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "packaged_source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalogue_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "function",
+          "library",
+          "export",
+          "source_manifest_sha256",
+          "manifest_sha256"
+        ],
+        "properties": {
+          "function": {
+            "type": "string"
+          },
+          "library": {
+            "type": "string"
+          },
+          "export": {
+            "type": "string"
+          },
+          "source_manifest_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "manifest_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "preparation": {
+      "$ref": "https://nex.dev/schemas/foreign-package-1.json"
+    }
+  },
+  "description": "The compiled revision changes only reachable external manifest literal tokens. Both revisions are retained without editing materialized sources or moving HEAD. The derived revision, build key and binary hash identify the artifact actually compiled."
+}

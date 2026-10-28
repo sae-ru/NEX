@@ -1,11 +1,38 @@
 #include "nex/web.h"
 #include "nex/backend.h"
+#include "nex/task_process.h"
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <cstdlib>
 
 namespace nex {
 namespace {
+// Node's ESM file URLs reject literal backslashes in POSIX paths. Vite also
+// normalizes them as separators. Keep the generated project at its real path,
+// but execute identical files from an owned temporary directory when needed.
+class ToolDirectory {
+  std::filesystem::path original,temporary;
+public:
+  explicit ToolDirectory(const std::filesystem::path &directory):original(std::filesystem::absolute(directory)){
+    namespace fs=std::filesystem;
+    if(fs::weakly_canonical(original).string().find('\\')==std::string::npos)return;
+    auto base=fs::canonical(fs::temp_directory_path());
+    if(base.string().find('\\')!=std::string::npos)base=fs::canonical("/tmp");
+    temporary=createTemporaryDirectory("nex-web",base.string());
+  }
+  ToolDirectory(const ToolDirectory&)=delete;
+  ToolDirectory& operator=(const ToolDirectory&)=delete;
+  ~ToolDirectory(){if(!temporary.empty()){std::error_code ignored;std::filesystem::remove_all(temporary,ignored);}}
+  const std::filesystem::path &path()const{return temporary.empty()?original:temporary;}
+  bool relocated()const{return !temporary.empty();}
+  void retain(const std::string &name){
+    if(!relocated())return;
+    namespace fs=std::filesystem;
+    fs::remove_all(original/name);
+    std::error_code error;fs::rename(temporary/name,original/name,error);
+    if(error){fs::copy(temporary/name,original/name,fs::copy_options::recursive|fs::copy_options::copy_symlinks);}
+  }
+};
 void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result){
   bool valid=!f.test&&f.realm!="server"&&f.effects.empty()&&f.result==result&&f.params.size()==params.size();
   if(valid)for(size_t i=0;i<params.size();++i)if(f.params[i].type!=params[i])valid=false;
@@ -47,10 +74,11 @@ Project prepare(const Program &p){
   std::map<std::string,std::string> files;
   files["src/program.ts"]=module.source;
   files["src/nex-runtime.ts"]=readFile(resourceFile("web/nex-runtime.ts"));
+  files["src/nex-bytes.ts"]=readFile(resourceFile("web/nex-bytes.ts"));
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));
-  for(const auto &file:{"app.tsx","renderer.tsx","net.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
+  for(const auto &file:{"app.tsx","renderer.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
   files["tests/smoke.spec.js"]=readFile(resourceFile("web/smoke.spec.js"));
   files["public/THIRD_PARTY_NOTICES.txt"]=readFile(resourceFile("web/THIRD_PARTY_NOTICES.txt"));
   files["README.md"]="# Generated NEX web application\n\nEdit NEX sources and regenerate this directory.\n\nRun `npm ci --ignore-scripts`, `npm run build`, then `npm run preview`.\nThe `dist` directory contains the client application; configure SPA route fallback to index.html.\nNo NEX compiler or model is needed to serve/run the result.\n\nOptional pure commands(before, after, event) describes bounded same-origin /api/ requests and cancellation using std/net.nex. Responses return as typed JSON in ordinary web events. Configure credentials at runtime; no token is bundled by NEX. Serve this dist with the native HTTP server's --static option for a same-origin API. See the installed web/server guides for contracts and limits.\n";
@@ -70,6 +98,35 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
   return result;
 }
 }
+ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout){
+  namespace fs=std::filesystem;
+  auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
+  writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
+  writeFile((folder/"test.ts").string(),"import { entry } from './program.ts';\nentry();\n");
+  ToolDirectory runner(folder);
+  if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})
+    fs::copy_file(folder/name,runner.path()/name);
+  const char *node=std::getenv("NEX_NODE");
+  return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);
+}
+llvm::json::Value previewWebApp(const std::string &directory,const std::vector<std::string> &arguments,unsigned timeout,bool machine){
+  namespace fs=std::filesystem;
+  if(!fs::is_regular_file(fs::path(directory)/"dist/index.html"))throw Error("E_WEB_TOOL","preview requires a completed web distribution");
+  ToolDirectory runner(directory);
+  if(runner.relocated())fs::copy(directory,runner.path(),fs::copy_options::recursive|fs::copy_options::copy_symlinks);
+  const char *npm=std::getenv("NEX_NPM");
+  std::vector<std::string> command{npm?npm:"npm","--prefix",runner.path().string(),"run","preview","--","--host","127.0.0.1"};
+  command.insert(command.end(),arguments.begin(),arguments.end());
+  if(!machine){auto code=execute(command);return llvm::json::Object{{"exit_code",code},{"ok",code==0}};}
+  auto logs=createTemporaryDirectory("nex-web-preview");
+  try{
+    auto child=runTaskProcess(command,runner.path().string(),{},timeout,logs);fs::remove_all(logs);
+    auto code=child.timedOut?124:child.outputLimit?125:child.process.code;
+    return llvm::json::Object{{"ok",code==0},{"exit_code",code},{"stdout",child.process.output},{"stderr",child.process.errors},
+      {"timed_out",child.timedOut},{"output_limit",child.outputLimit},{"interrupted",child.interrupted}};
+  }catch(...){fs::remove_all(logs);throw;}
+}
+llvm::json::Value inspectWebApp(const Program &p){return prepare(p).metadata;}
 llvm::json::Value generateWebApp(const Program &p,const std::string &directory){
   namespace fs=std::filesystem;
   auto project=prepare(p);fs::path output=fs::absolute(directory);
@@ -95,12 +152,15 @@ llvm::json::Value buildWebApp(const Program &p,const std::string &directory,cons
   }
   if(!cached){
     materialize(project,folder);
+    ToolDirectory runner(folder);
+    if(runner.relocated())materialize(project,runner.path());
     auto cache=cacheOverride?std::string(cacheOverride):(fs::absolute(directory)/"npm-cache").string();
-    auto install=capture({npm,"--prefix",folder.string(),"ci","--ignore-scripts","--no-audit","--no-fund","--cache",cache},180);
+    auto install=capture({npm,"--prefix",runner.path().string(),"ci","--ignore-scripts","--no-audit","--no-fund","--cache",cache},180);
     if(install.code)throw Error("E_WEB_TOOL","npm ci failed:\n"+install.output+install.errors);
-    std::vector<std::string> command={npm,"--prefix",folder.string(),"run","build"};
+    std::vector<std::string> command={npm,"--prefix",runner.path().string(),"run","build"};
     if(profile=="debug")command.insert(command.end(),{"--","--minify","false"});
     auto built=capture(command,180);if(built.code)throw Error("E_WEB_TOOL","TypeScript/Vite build failed:\n"+built.output+built.errors);
+    runner.retain("dist");runner.retain("node_modules");
     auto hashes=distHashes(dist);if(hashes.getAsNull())throw Error("E_WEB_TOOL","Vite did not produce dist/index.html");
     writeFile(marker.string(),json(llvm::json::Object{{"key",key},{"dist",std::move(hashes)}})+"\n");
   }

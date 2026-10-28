@@ -1,5 +1,44 @@
 # Model-independent NEX language pack
 
+For installation, first-project commands, Git/graph preservation and a shared
+application AGENTS.md for Hermes/Codex, start with the Russian
+[quickstart](../docs/quickstart.md).
+
+Toolchain0.70 adds explicit `analyze --details` / `nex.analysis/3` and
+`editor-identifiers.schema.json`. Discover `editor_analysis.identifiers_command`
+for exact source identifier descriptions, explicit null builtin targets and
+bounded output. Legacy analysis/1 and analysis/2 remain separate contracts.
+Language0.16 and canonical identities are unchanged. See [LSP](../docs/lsp.md).
+
+Toolchain 0.52 adds [captured-source frontend diagnostics](../docs/frontend-diagnostics.md). Discover its feature/limit fields and `frontend-diagnostics.schema.json`. Failed candidates have their own bounded source context; their diagnostic IDs do not allocate graph nodes or replace revision guards.
+
+Toolchain 0.51 checks declared physical project and reachable configured-library languages. Read [compatibility](../docs/compatibility.md), query `project_features` and use `project.schema.json`. Archived migration/execution stays independent of stale physical metadata.
+
+Toolchain 0.50 adds consistent [graph snapshots and recovery](../docs/snapshots.md). Discover `snapshot_features`, `snapshot_limits` and `graph-snapshot.schema.json`; preserve the full database to retain local IDs/history. Source export and graph import have different identity semantics. External artifacts, application data and matching SDKs are separate.
+
+
+Toolchain 0.49 adds [local change history and guarded restore](../docs/history.md).
+Discover `history_features` and use `history.schema.json`. Declared author/note
+labels describe provenance without authenticating identity; earlier revisions
+are retained without fabricated transition records.
+
+Toolchain 0.48 adds source-operation replacements by local ID. Read the actual
+descriptor, `operations.schema.json`, `patch.schema.json` and the
+[operation-edit walkthrough](../examples/operation-patches/README.md). Exact
+source guards, fragment/range limits and whole-candidate checking apply.
+
+Toolchain 0.45 adds atomic replacements of existing source structs/enums and
+their affected functions/endpoints. Discover `patch_entities` first; use
+`patch.schema.json`, typed context editability and `examples/type-patches`.
+Optional replacement `kind` is checked, source templates regenerate generic
+instances, and a failed full-bundle check preserves HEAD/history.
+
+Toolchain 0.44 adds [the graph guide](../docs/graph.md) and
+`graph-identity.schema.json` for bounded module/type context and explicit,
+atomic identity reconciliation between checked stores. Source namespace,
+revision and ID form a reference; destination IDs and history remain local.
+Use the installed descriptor to discover support before issuing these commands.
+
 The installed pack also contains [the SDK handoff guide](../docs/sdk.md) and
 `tools/sdk_acceptance.py`. Its maintained scenario exercises discovery, a failed
 reviewed task, graph repair/import, backend agreement, profiling and archived
@@ -28,7 +67,7 @@ Browser authoring uses ordinary NEX functions and `std/web.nex`, with a checked 
 
 Source changes and graph changes are separate workflows. Follow the materialization rules in `docs/protocol.md`. Use `describe` to detect version differences instead of guessing that another installation implements the roadmap.
 
-Language 0.10 retains graph/context protocol 2 and qualified symbol identities such as `example::model::create`. A replacement's source still starts with its local declaration, such as `pub fn create` or `endpoint create_row(...) = create;`. Keep the returned visibility and import aliases. The compiler checks the complete candidate, including callers in other modules. `nex export --directory PATH` creates a portable editable project with vendored dependency sources; it requires a new or empty directory. Older stored language revisions require explicit migration.
+Current language 0.16 uses graph/context protocol 2 and qualified symbol identities such as `example::model::create`. A replacement's source starts with its existing local declaration: function, endpoint, struct/enum, trait or named implementation, as advertised by `patch_entities`. Keep the returned visibility and import aliases. The compiler checks the complete candidate, including callers in other modules. `nex export --directory PATH` creates a portable editable project with vendored dependency sources; it requires a new or empty directory. Older stored language revisions require explicit migration.
 
 Recoverable result<T>, typed JSON and server capabilities are described by the matching language/server guides. Native HTTP builds and principal-partitioned SQLite storage are available. The optional pure commands entry with std/net.nex now connects browser events to bounded same-origin HTTP requests; typed response envelopes feed the ordinary update function. examples/fullstack shares checked models with the native server and exercises durable authenticated CRUD. Language 0.5 endpoint declarations now generate the native dispatcher, extracted model SDK, pure typed command/response helpers and OpenAPI. Models use the matching api guide and nex api to inspect/generate these contracts; general source async/await remains unsupported.
 
@@ -36,7 +75,7 @@ The pack is useful for interoperability; it does not by itself prove that every 
 
 The native debugging guide is available as `nex guide --kind debug --json`. The toolchain advertises its actual debug capabilities separately from language features. Session descriptors connect any compatible DAP client to an installed `lldb-dap`; the read-only `nex-values` command gives models bounded, revision-attributed frame previews. This does not measure cross-model debugging quality or implement a model-specific debugger.
 
-For native incremental compilation, retrieve `nex guide --kind build --json`. Build responses keep per-invocation compiled/reused module counts and a report path; the report contains source/ABI/type fingerprints and dependency indexes. Use normal bounded `context --symbol` queries to investigate a specific function rather than copying a whole build graph into model context. Cached objects never replace source checking or observable test validation.
+For native incremental compilation, retrieve `nex guide --kind build --json`. Build responses keep per-invocation compiled/reused function and module counts and a report path; the report contains per-function source/ABI/type fingerprints and dependency indexes. Same-file body edits can reuse siblings; complete frontend checking remains required. Matching source maps select each session's frozen complete files. Use normal bounded `context --symbol` queries to investigate a specific function rather than copying a whole build graph into model context. Cached objects never replace source checking or observable test validation.
 
 `nex guide --kind profile --json` supplies the tenth installed guide. `nex profile FILE --scenario TEXT --json` returns bounded graph-attributed function measurements and the saved full timeline report. Use its exact revision and inspect measurement/drop limits before optimizing.
 
@@ -48,11 +87,11 @@ The thirteenth guide is `nex guide --kind expression --json`; `llm/debug-frame.s
 
 Toolchain 0.14 adds `debug-frame-v2.schema.json` for partial stopped-frame captures. `nex inspect --kind demand` discovers actual reads through the checked interpreter; agents must preserve stop/build identity and report unavailable data. The original full-frame schema remains supported. `examples/debugging/large.nex` exercises large lists and unread sibling payloads.
 
-Toolchain 0.15 adds the operation guide/schema and a paged operation-query interface. Local identities persist separately from deterministic compiled-site keys; preserve the graph database for identity lineage. The current source language is 0.10.
+Toolchain 0.15 introduced the operation guide/schema and a paged operation-query interface. Local identities persist separately from deterministic compiled-site keys; preserve the graph database for identity lineage. The current source language is0.16; a toolchain introduction version does not select source syntax.
 
 Toolchain 0.16 / language 0.6 adds nominal enums, exhaustive match statements and strict tagged wire schemas. Give a model the updated spec, grammar, prompt and compiler descriptor together. `examples/enums/main.nex` covers data-carrying variants, recursive trees and JSON. Old language snapshots require explicit migration and reviewed task/proof regeneration; retain the matching old SDK for saved receipts/frames.
 
-Toolchain 0.17 / language 0.7 adds parametrically checked generic functions/structures/enums, argument/context inference and concrete specialization across native/TypeScript, JSON/API and watches. Source templates stay editable; derived instance context links back to the declaration. The installed compiler exposes exact generic capabilities and resource bounds. Custom traits/higher-kinded types are pending. `examples/generics` demonstrates recursive generic models and reusable functions.
+Toolchain 0.17 / language 0.7 adds parametrically checked generic functions/structures/enums, argument/context inference and concrete specialization across native/TypeScript, JSON/API and watches. Source templates stay editable; derived instance context links back to the declaration. The installed compiler exposes exact generic capabilities and resource bounds. Language 0.16 additionally implements user traits, associated value types and fixed constructor parameters; see `docs/traits.md`. Type defaults, type lambdas and general higher-kinded inference remain pending. `examples/generics` demonstrates recursive generic models and reusable functions.
 
 Native platform configuration is described by `nex guide --kind build --json` and `toolchain.schema.json`. Read the emitted target/host-compatibility metadata; macOS cross-build success does not certify execution on Intel. The configuration is ordinary JSON and works across model providers.
 
@@ -62,7 +101,7 @@ Toolchain 0.21 / language 0.8 adds builtin generic bounds `add`, `ordered` and `
 
 Toolchain 0.22 / language 0.9 adds checked nested/literal/record/result/exact-list patterns, ordered guards and value matches, including pure lazy watches. Retrieve `nex guide --kind match`; guards do not establish coverage and discarded payloads are not demanded. Legacy simple enum operation paths are preserved by explicit 0.8 migration. Retain SDK 0.21 for original frames/receipts.
 
-Language 0.10 callable debugging has a separate `debug-wire.schema.json` and
+Language 0.13 callable debugging has a separate `debug-wire.schema.json` and
 is documented in the expression guide. Stopped function values must match a
 compiled checked target, exact signature/effects/realm and immutable capture
 layout. Preserve same-stop alias identities, supply only exact demanded reads,
@@ -70,7 +109,63 @@ and report unavailable captures. `computed:N` identities describe helper-created
 values and are not native capture inputs. Application JSON still rejects
 callables; query the actual compiler and matching guide before using these capabilities.
 
-Language 0.10 / toolchain 0.23 adds typed function values, immutable snapshot
-closures and the wire constraint. Retrieve `nex guide --kind function`; the
+Language 0.10 / toolchain 0.23 introduced typed function values, immutable snapshot
+closures and the wire constraint; language 0.12 retains them. Retrieve `nex guide --kind function`; the
 matching specification/grammar/prompt and debug-wire schema are in this pack.
 Actual platform/SDK verification remains recorded in STATUS.md.
+
+Toolchain 0.29 adds native application packaging without a source-language
+change. Query `application_package_*` capabilities and read the indexed
+`application_packaging` guide/schema and `application_package_acceptance` tool.
+Assembly manifests deliberately retain `execution_verified:false`; use separate
+deployed runtime evidence before reporting a package as execution-verified.
+Register indexed schema documents by `$id` for offline resolution of package
+schema references. New captures use `notices_root:"catalogue"` for component
+license paths. Original module pins govern shared versus independent image state;
+`source_identity_file` records that source identity in the relocated inventory.
+
+Toolchain 0.30 / language 0.12 adds server-only `fs` text-file operations.
+Retrieve `nex guide --kind files` and inspect `file_features`, `file_limits`,
+`file_platforms` and `file_environment`. Standalone programs need an explicit
+absolute `NEX_FILES_ROOT`; writes additionally need `NEX_FILES_WRITE=1`. HTTP
+requests do not inherit these permissions. Keep SDK 0.29 for language 0.11
+receipts/frames; explicit migration retains old sources/history. Current full
+platform/installed-SDK validation is recorded separately in STATUS.md.
+
+Language 0.13 adds immutable bytes. Use `nex guide --kind bytes` for checked codecs, octet operations, JSON/API encoding, binary file capabilities and explicit 0.12 migration. The language pack includes this guide for every model.
+
+Language 0.14 adds server-only `file` resources. Retrieve `nex guide --kind
+resources` and `resource_features`. Model-independent code uses explicit `fs`,
+checked results, immutable owner aliases and scoped revocation. Files cannot be
+JSON/API/browser values; pure watches receive opaque identities without IO
+authority. Migration from genuine 0.13 snapshots is explicit and preserves
+history; reserved old declarations require reviewed repairs.
+
+Language 0.15 adds concrete server-only `extern` functions with `ffi`. Query
+`nex guide --kind ffi --json`, export the actual signature with `nex ffi`, and
+obtain a separately trusted host catalogue for execution. Source pins identify
+code and confer no authority. Use `--foreign HOST.json` for direct execution;
+callbacks into NEX remain pending. Native package dependency closures are added
+in 0.43, with explicit grants and a checked, history-preserving source-pin
+projection. Read `application_packaging`, `foreign_package_schema` and
+`foreign_projection_schema` before using it. The indexed source template is materialized by SDK
+acceptance with a real manifest pin.
+
+Toolchain 0.42 adds `nex foreign HOST.json --json` for read-only inventory
+verification and a location-independent operator fingerprint. Reviewed native
+task execution checks pin it as `foreign_hash`; task check/run/replay also require
+current explicit `--foreign HOST.json`. Captures include binary members and
+notices, while the receipt itself confers no execution authority. The prompt,
+task schema and task/FFI guides describe these same rules.
+
+The [native diagnostics schema](native-diagnostics.schema.json) describes bounded
+process reports and checked local mappings. The [guide](../docs/native-diagnostics.md)
+covers standalone/HTTP logs and source-deleted graph recovery.
+
+Development toolchain 0.66 adds model-independent `nex analyze` and a stdio language server. Read `docs/lsp.md`; the indexed source overlay and checked analysis schemas define the readonly editor interface. Actual IDE-client and broader integration acceptance remain pending.
+
+The toolchain0.67 candidate adds the VS Code0.2 client for the model-independent stdio LSP. The language pack indexes its runtime sources, lock and Node acceptance helper. IDE edits use unsaved versioned source; models still validate ordinary check/test/task or guarded graph patches.
+
+The0.72 candidate adds checked static archive dependencies to project builds.
+The same project guide/schema describes concrete export roots, the private ABI
+and explicit consumer generic instantiation; source checking remains required.

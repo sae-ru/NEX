@@ -81,7 +81,7 @@ nex export --revision HEAD --directory ../lesson-fixed --json
 
 `apply` обновляет граф и сохраняет историю, но не переписывает рабочие `.nex` файлы. После правки используйте `--revision HEAD`, пока не экспортируете новый проект. Каталог экспорта должен быть новым или пустым. Вызов с прежним исходным файлом повторно загрузит его содержимое и может вернуть старую версию функции в HEAD. На `E_CONFLICT` запросите свежий контекст и пересоберите правку.
 
-Замена существующих функций и endpoint-деклараций может быть атомарной сразу в нескольких модулях. Добавление определений, изменение импортов и структур выполняются через экспорт и редактирование исходников с последующим `check`; такие операции нельзя придумывать в JSON replacements.
+Замена существующих функций, endpoint-деклараций и исходных struct/enum может быть атомарной сразу в нескольких модулях. Для типов сначала проверьте `type` в `patch_entities` установленного компилятора. Заменяйте тип вместе с затронутыми конструкторами, сигнатурами и исчерпывающими match; generic-экземпляры пересоздаются из исходного шаблона. Необязательный `kind` (`type`, `function`, `endpoint`) должен совпадать с выбранным объявлением. Пример: `examples/type-patches`. Добавление определений и изменение импортов выполняются через экспорт и редактирование исходников с последующим `check`; таких операций в JSON replacements нет.
 
 ## Как оценивать пригодность пакета
 
@@ -106,3 +106,22 @@ nex export --revision HEAD --directory ../lesson-fixed --json
 не изменяются. Статическая связь требования с графом не доказывает полноту
 тестов или человеческой формулировки. Снимки не замораживают всю ОС, внешние
 инструменты и окружение; границы повторения описаны в руководстве.
+
+For checked source references, query describe.editor_analysis and use its advertised references_command/schema. Keep analysis/1 consumers on the default command. Treat the new occurrence locations as bounded captured-source metadata and continue normal check/test/task acceptance after any edit.
+
+For source-reference navigation, keep the exact declaration file/byte interval from the checked occurrence. Do not conflate a trait method with its implementation function, an enum qualifier with its variant, an import alias with its imported symbol, or equally spelled parameters in different generic scopes. Default analysis/1 remains available; these source projections add no graph identity or source-edit authority.
+
+Для точных подсказок идентификаторов используйте `editor_analysis.identifiers_command`
+и схему analysis/3, если их сообщает установленный компилятор. `--details` нельзя
+совмещать с `--references`; старые форматы остаются отдельными командами.
+`detail:null` означает слово синтаксиса без семантической подсказки,
+`definition:null` — отсутствие физического определения. Нельзя заменять их
+описанием окружающего выражения. Сигнатура обобщённой функции описывает исходный
+шаблон, а тип чтения значения может быть конкретным. Лимиты и сохранность
+версии контекста обязательны; эти сведения не выполняют переименование и не
+дают права записи графа.
+
+Для нативных компонентов читайте project guide: source компилирует исходники,
+static подключает проверенный архив. Храните exports и зависимости в
+nex.build.json. План явно перечисляет consumer_instantiations для generics;
+отсутствующий обычный экспорт должен быть исправлен в контракте библиотеки.

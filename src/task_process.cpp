@@ -23,6 +23,13 @@
 #else
 extern char **environ;
 #endif
+#if defined(__linux__)
+#if !defined(__GLIBC__)
+#define NEX_TASK_FORK_SPAWN 1
+#elif !__GLIBC_PREREQ(2,29) || defined(NEX_TASK_PROCESS_TEST_FORK)
+#define NEX_TASK_FORK_SPAWN 1
+#endif
+#endif
 #endif
 namespace nex {
 #if defined(__APPLE__) || defined(__linux__)
@@ -40,6 +47,7 @@ struct Guard {
   posix_spawn_file_actions_t files{};posix_spawnattr_t attributes{};
   sigset_t blocked{},oldMask{};struct sigaction oldInt{},oldTerm{};
   bool fileReady=false,attributeReady=false,maskReady=false,intReady=false,termReady=false;pid_t child=0;
+  int spawnRead=-1,spawnWrite=-1;
   Guard(){
     if(active.test_and_set())throw Error("E_TASK_PROCESS","task process supervisor is already active");
   }
@@ -49,10 +57,55 @@ struct Guard {
     supervisedGroup=0;
     if(intReady)::sigaction(SIGINT,&oldInt,nullptr);if(termReady)::sigaction(SIGTERM,&oldTerm,nullptr);
     if(maskReady)::sigprocmask(SIG_SETMASK,&oldMask,nullptr);
+    if(spawnRead>=0)::close(spawnRead);if(spawnWrite>=0)::close(spawnWrite);
     if(fileReady)::posix_spawn_file_actions_destroy(&files);if(attributeReady)::posix_spawnattr_destroy(&attributes);active.clear();
   }
   void check(int code,const char *operation){if(code)throw Error("E_TASK_PROCESS",std::string(operation)+": "+std::strerror(code));}
 };
+#ifdef NEX_TASK_FORK_SPAWN
+// glibc before2.29 has no spawn chdir action. Never change the parent's cwd:
+// prepare all storage before fork and use only async-signal-safe child calls.
+pid_t spawnWithDirectory(Guard &guard,const char *executable,const char *directory,
+  const char *out,const char *err,char *const *args,char *const *environment){
+  int pipes[2];if(::pipe2(pipes,O_CLOEXEC)!=0)guard.check(errno,"task spawn status pipe");
+  guard.spawnRead=pipes[0];guard.spawnWrite=pipes[1];
+  for(auto *fd:{&guard.spawnRead,&guard.spawnWrite})if(*fd<3){
+    int replacement=::fcntl(*fd,F_DUPFD_CLOEXEC,3);if(replacement<0)guard.check(errno,"task spawn status descriptor");
+    ::close(*fd);*fd=replacement;
+  }
+  struct sigaction defaults{};defaults.sa_handler=SIG_DFL;::sigemptyset(&defaults.sa_mask);
+  auto child=::fork();if(child<0)guard.check(errno,"task spawn");
+  if(child==0){
+    ::close(guard.spawnRead);
+    auto fail=[&](){
+      int code=errno;const char *data=reinterpret_cast<const char*>(&code);size_t left=sizeof(code);
+      while(left){auto count=::write(guard.spawnWrite,data,left);if(count<0&&errno==EINTR)continue;if(count<=0)break;data+=count;left-=size_t(count);}
+      ::_exit(127);
+    };
+    if(::setpgid(0,0)!=0)fail();
+    if(::chdir(directory)!=0)fail();
+    auto redirect=[&](const char *path,int destination,int flags){
+      int fd=::open(path,flags,0600);if(fd<0)fail();
+      if(fd!=destination){if(::dup2(fd,destination)<0)fail();::close(fd);}
+    };
+    redirect("/dev/null",0,O_RDONLY);redirect(out,1,O_WRONLY|O_CREAT|O_TRUNC);redirect(err,2,O_WRONLY|O_CREAT|O_TRUNC);
+    if(::sigaction(SIGINT,&defaults,nullptr)!=0||::sigaction(SIGTERM,&defaults,nullptr)!=0)fail();
+    if(::sigprocmask(SIG_SETMASK,&guard.oldMask,nullptr)!=0)fail();
+    ::execve(executable,args,environment);fail();
+  }
+  guard.child=child;supervisedGroup=child;
+  ::close(guard.spawnWrite);guard.spawnWrite=-1;
+  int code=0;size_t received=0;
+  while(received<sizeof(code)){
+    auto count=::read(guard.spawnRead,reinterpret_cast<char*>(&code)+received,sizeof(code)-received);
+    if(count<0&&errno==EINTR)continue;if(count<0)guard.check(errno,"task spawn status");if(count==0)break;received+=size_t(count);
+  }
+  ::close(guard.spawnRead);guard.spawnRead=-1;
+  if(received&&received!=sizeof(code))throw Error("E_TASK_PROCESS","incomplete task spawn status");
+  if(received)guard.check(code,"task spawn");
+  return child;
+}
+#endif
 }
 #endif
 TaskProcessResult runTaskProcess(const std::vector<std::string> &arguments,const std::string &directory,
@@ -73,22 +126,33 @@ TaskProcessResult runTaskProcess(const std::vector<std::string> &arguments,const
   std::vector<std::string> entries;for(const auto &[key,value]:environment)entries.push_back(key+"="+value);
   std::vector<char*> args,env;for(const auto &arg:arguments)args.push_back(const_cast<char*>(arg.c_str()));args.push_back(nullptr);for(auto &entry:entries)env.push_back(entry.data());env.push_back(nullptr);
   Guard guard;
+#ifndef NEX_TASK_FORK_SPAWN
   guard.check(::posix_spawn_file_actions_init(&guard.files),"spawn file actions");guard.fileReady=true;
   guard.check(::posix_spawnattr_init(&guard.attributes),"spawn attributes");guard.attributeReady=true;
   guard.check(::posix_spawn_file_actions_addchdir_np(&guard.files,directory.c_str()),"task working directory");
   guard.check(::posix_spawn_file_actions_addopen(&guard.files,0,"/dev/null",O_RDONLY,0),"task stdin");
   guard.check(::posix_spawn_file_actions_addopen(&guard.files,1,out.c_str(),O_WRONLY|O_CREAT|O_TRUNC,0600),"task stdout");
   guard.check(::posix_spawn_file_actions_addopen(&guard.files,2,err.c_str(),O_WRONLY|O_CREAT|O_TRUNC,0600),"task stderr");
+#endif
   sigemptyset(&guard.blocked);sigaddset(&guard.blocked,SIGINT);sigaddset(&guard.blocked,SIGTERM);
   if(::sigprocmask(SIG_BLOCK,&guard.blocked,&guard.oldMask)!=0)throw Error("E_TASK_PROCESS","cannot block task setup signals");guard.maskReady=true;
+#ifndef NEX_TASK_FORK_SPAWN
   guard.check(::posix_spawnattr_setpgroup(&guard.attributes,0),"task process group");
   guard.check(::posix_spawnattr_setsigmask(&guard.attributes,&guard.oldMask),"task signal mask");
   guard.check(::posix_spawnattr_setsigdefault(&guard.attributes,&guard.blocked),"task signal defaults");
   guard.check(::posix_spawnattr_setflags(&guard.attributes,POSIX_SPAWN_SETPGROUP|POSIX_SPAWN_SETSIGMASK|POSIX_SPAWN_SETSIGDEF),"task spawn flags");
+#endif
   struct sigaction handler{};handler.sa_handler=interrupt;handler.sa_mask=guard.blocked;
   if(::sigaction(SIGINT,&handler,&guard.oldInt)!=0)throw Error("E_TASK_PROCESS","cannot install task interrupt handler");guard.intReady=true;
   if(::sigaction(SIGTERM,&handler,&guard.oldTerm)!=0)throw Error("E_TASK_PROCESS","cannot install task termination handler");guard.termReady=true;
-  interruptedSignal=0;pid_t child=0;guard.check(::posix_spawn(&child,executable->c_str(),&guard.files,&guard.attributes,args.data(),env.data()),"task spawn");guard.child=child;supervisedGroup=child;
+  interruptedSignal=0;pid_t child=0;
+#ifdef NEX_TASK_FORK_SPAWN
+  auto outPath=out.string(),errPath=err.string();
+  child=spawnWithDirectory(guard,executable->c_str(),directory.c_str(),outPath.c_str(),errPath.c_str(),args.data(),env.data());
+#else
+  guard.check(::posix_spawn(&child,executable->c_str(),&guard.files,&guard.attributes,args.data(),env.data()),"task spawn");
+#endif
+  guard.child=child;supervisedGroup=child;
   ::sigprocmask(SIG_SETMASK,&guard.oldMask,nullptr);
   auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(seconds);TaskProcessResult result{};
   for(;;){

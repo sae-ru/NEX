@@ -1,6 +1,7 @@
 FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 ARG TARGETARCH
 ARG LLVM_APT_VERSION=1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80
+ARG PATCHELF_VERSION=0.18.0-1.1build1
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg xz-utils unzip \
     && curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o /tmp/llvm.asc \
@@ -11,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
        clang-22="${LLVM_APT_VERSION}" llvm-22-dev="${LLVM_APT_VERSION}" \
        libmlir-22-dev="${LLVM_APT_VERSION}" mlir-22-tools="${LLVM_APT_VERSION}" \
        lld-22="${LLVM_APT_VERSION}" lldb-22="${LLVM_APT_VERSION}" \
-       cmake make g++ python3 libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev \
+       cmake make g++ python3 libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
     && rm -rf /var/lib/apt/lists/* /tmp/llvm.asc
 RUN case "$TARGETARCH" in \
       arm64) node_arch=arm64; node_hash=1c4a9933a5e45bc88f54f70b5f91232c127ec49f1a5989d23fb85824c7adf9b7; \

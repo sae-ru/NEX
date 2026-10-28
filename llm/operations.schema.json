@@ -11,7 +11,7 @@
       ]
     },
     "language": {
-      "const": "0.10"
+      "const": "0.16"
     },
     "revision": {
       "type": "string",
@@ -187,6 +187,56 @@
               ],
               "additionalProperties": false
             }
+          },
+          "source_range": {
+            "description": "Exact archived UTF-8 syntax interval, separate from diagnostic location. Null for synthetic nodes. Added in toolchain 0.48; older reports omit it.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "byte_begin",
+                  "byte_end",
+                  "editable"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "expression",
+                      "statement",
+                      "pattern"
+                    ]
+                  },
+                  "byte_begin": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "byte_end": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "editable": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          },
+          "source_preview": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Context only. Prefix bounded to 4096 UTF-8 bytes, ending on a scalar boundary."
+          },
+          "source_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_truncated": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -209,7 +259,22 @@
           "children_truncated",
           "references"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "source_preview": [
+            "source_bytes",
+            "source_truncated",
+            "source_range"
+          ],
+          "source_bytes": [
+            "source_preview",
+            "source_truncated"
+          ],
+          "source_truncated": [
+            "source_preview",
+            "source_bytes"
+          ]
+        }
       }
     },
     "ancestors": {
@@ -266,5 +331,18 @@
     "required": [
       "ancestors"
     ]
+  },
+  "else": {
+    "properties": {
+      "nodes": {
+        "items": {
+          "not": {
+            "required": [
+              "source_preview"
+            ]
+          }
+        }
+      }
+    }
   }
 }

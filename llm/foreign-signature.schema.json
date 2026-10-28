@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.foreign-signature/1",
+  "title": "Experimental NEX C value signature",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "parameters", "result", "types"],
+  "properties": {
+    "schema": {"const": "nex.foreign-signature/1"},
+    "parameters": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/index"}},
+    "result": {"$ref": "#/$defs/index"},
+    "types": {"type": "array", "minItems": 1, "maxItems": 4096, "items": {"$ref": "#/$defs/type"}}
+  },
+  "$defs": {
+    "index": {"type": "integer", "minimum": 0, "maximum": 4095},
+    "name": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+    "fields": {"type": "array", "maxItems": 1024, "items": {"type": "object", "additionalProperties": false, "required": ["name", "type"], "properties": {"name": {"$ref": "#/$defs/identifier"}, "type": {"$ref": "#/$defs/index"}}}},
+    "type": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"enum": ["i64", "f64", "bool", "str", "bytes", "file", "unit"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "item"], "properties": {"kind": {"enum": ["list", "result"]}, "item": {"$ref": "#/$defs/index"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "name"], "properties": {"kind": {"const": "function"}, "name": {"$ref": "#/$defs/name"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "name", "fields"], "properties": {"kind": {"const": "record"}, "name": {"$ref": "#/$defs/name"}, "fields": {"$ref": "#/$defs/fields"}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "name", "variants"], "properties": {"kind": {"const": "enum"}, "name": {"$ref": "#/$defs/name"}, "variants": {"type": "array", "minItems": 1, "maxItems": 4096, "items": {"type": "object", "additionalProperties": false, "required": ["name", "fields"], "properties": {"name": {"$ref": "#/$defs/identifier"}, "fields": {"$ref": "#/$defs/fields"}}}}}}
+      ]
+    }
+  },
+  "description": "Type indices refer only to this flat table, not to C tokens. Runtime validation additionally enforces byte/field budgets, reachable and unique identities, valid indices, unit restrictions and nominal recursion. Function values may only forward original compatible authorities. This metadata does not enable source external declarations."
+}

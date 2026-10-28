@@ -1,8 +1,14 @@
 # NEX browser backend and application contract
 
-The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await, SSR and Wasm remain unfinished.
+The compiler generates TypeScript from the checked NEX graph. The application adapter renders immutable `std/web.nex` view values using React; Vite builds HTML/CSS/JavaScript. LLVM remains the native backend. Browser code does not embed the interpreter, compiler or an LLM. Toolchain 0.6.0 introduced browser HTTP commands; 0.7.0/language 0.5 adds checked endpoint declarations, generated helpers and response validation before event delivery (`docs/api.md`). General source async/await and SSR remain unfinished. The experimental scalar [Wasm compute adapter](wasm.md) is separate from this TypeScript application backend.
 
 ## Build and run
+
+Candidate0.77 `nex project --kind run --component NAME` previews the completed
+web component using its locked Vite installation. It binds loopback by default;
+pass preview options after `--`. JSON capture requires an explicit timeout.
+Compiler-owned temporary staging also supports literal backslash paths during
+this preview. The process result does not establish actual browser UI execution.
 
 Web development requires Node.js 22.18+ and npm. The checked dependency lock currently uses React/React DOM 19.3.1, TypeScript 7.0.2, Vite 8.3.4 and Playwright 1.64.1. These are exact versions in `web/package-lock.json`, rather than `latest` installs. [Vite's compatibility guide](https://vite.dev/guide/) describes its Node requirement; NEX additionally requires Node's TypeScript stripping for differential tests.
 
@@ -26,6 +32,18 @@ npm run dev
 Generation requires a new or empty directory. Make program changes in NEX and regenerate. The default CSS is a small application stylesheet; asset packaging and an extension mechanism for application-specific CSS/components are pending.
 
 The compiler's build cache checks every produced asset's hash, including source maps; modified or missing assets trigger a rebuild. Stored-revision builds use the archived NEX source bundle. Browser builds additionally need the matching installed web adapter, Node/npm and locked development packages. `NEX_NODE` selects the Node tool used for TypeScript tests, `NEX_NPM` selects npm, and `NEX_NPM_CACHE` selects its package cache. Browser runtime needs none of those development tools. `debug` disables Vite minification; `profile` and `release` retain the default production minification. All three emit source maps for generated TypeScript; the profile mode does not add a profiler.
+
+On POSIX, Node's module loader and Vite cannot use a project path containing a
+literal backslash. Compiler-managed tests and builds execute identical generated
+files in an owned temporary directory for those paths, including physical paths
+reached through aliases. Generated sources, maps, dependencies and completed
+assets remain in the reported project/cache directory; temporary execution files
+are removed on success or failure. For direct npm development/preview of an
+editable generated project, choose a directory without a literal backslash.
+Compiler temporary staging also falls back to the system `/tmp` when the
+physical `TMPDIR` contains `%`, which LLVM treats as a filename template marker.
+Compiler-launched native build tools receive the same safe temporary base in
+that case; application execution keeps the caller's environment.
 
 ## Application functions
 
@@ -58,6 +76,21 @@ client fn view(state: State) -> web::View {
 
 The larger `examples/web/main.nex` exercises local text input, forms, immutable updates/deletion and routing. It remains a memory-only example. `examples/fullstack/client.nex` and `server.nex` use a shared `model.nex` for persistent authenticated tasks.
 
+`examples/numbers-web.nex` uses finite `f64` state, generic arithmetic and a
+captured callback. JSON input decodes through `decode_json<f64>`; rejected input
+retains the previous value/history. Build it with the same web commands, then
+run `python3 tests/numbers_browser.py GENERATED_PROJECT --browsers-path CACHE`
+for its opt-in production Chromium/Firefox/WebKit interaction checks. The
+installed SDK acceptance workflow requires this project's native/TypeScript
+transitions and, with `--browser`, its locked production build.
+
+`examples/bytes-web.nex` exercises immutable byte state, generic concatenation,
+captured binary callbacks, retained slices and strict base64/UTF-8 edits. Rejected
+base64 preserves the current value and history. Build it with the same commands;
+`python3 tests/bytes_web_browser.py GENERATED_PROJECT --browsers-path CACHE`
+checks its production UI in Chromium, Firefox and WebKit. The SDK acceptance
+workflow includes its native/TypeScript transitions and optional production build.
+
 ## Request commands and responses
 
 Import `std/net.nex` and optionally define this fifth pure client/shared entry:
@@ -87,7 +120,9 @@ Requests permit GET/HEAD/POST/PUT/PATCH/DELETE/OPTIONS, same-origin `/api/` path
 
 Completion dispatches `Event(action, encoded_response, current_path)`. `net::response(event)` returns `result<net::Response>` using the standard strict codec. Check the envelope, request ID, `body` result and HTTP `status`; then decode the body as the shared application model with `decode_json<T>`. HTTP 4xx/5xx are ordinary responses with their status/body. Transport failures produce body errors: `E_NETWORK`, `E_TIMEOUT`, `E_CANCELED`, `E_UTF8` or `E_LIMIT`. Their messages omit URLs, tokens and native error details. A response is delivered at most once. Unmount aborts work and suppresses late events; sign-out should clear state and issue `cancel_all`.
 
-Cancellation/timeouts are cooperative at the server and do not prove a mutation was rolled back: it may have committed before the connection ended. Refresh to determine the durable result. The adapter does not automatically retry mutations. Out-of-order response handling belongs in the pure update function; the example checks IDs across cancellation/logout/re-entry. Tokens are entered at runtime and retained only in page memory in the example; reload requires sign-in again. Never put credentials in NEX client source or static assets. Account registration, cookie sessions and cross-origin APIs are outside this adapter's current contract.
+Cancellation/timeouts are cooperative at the server and do not prove a mutation was rolled back: it may have committed before the connection ended. Refresh to determine the durable result. The adapter does not automatically retry mutations. Out-of-order response handling belongs in the pure update function; the example checks IDs across cancellation/logout/re-entry. Tokens are entered at runtime and retained only in page memory in the example; reload requires sign-in again. Never put credentials in NEX client source or static assets. Account registration and cookie sessions remain pending. An operator can configure
+one explicit HTTPS API origin through the trusted host metadata described in
+[mobile API configuration](mobile-api.md); request commands cannot choose hosts.
 
 Build both sides and serve them from the native host:
 
@@ -128,6 +163,16 @@ Bindings support `click`, `input`, `change`, `submit` and `navigate`. The adapte
 
 ## Semantics, isolation and diagnostics
 
+The mobile project adapter in toolchain0.62 uses the same checked View values.
+On an exact `capacitor://localhost` iOS origin, relative routes and asset paths
+are allowed. Explicit custom-scheme URLs, authority-relative paths and other
+opaque origins remain rejected. Navigation compares this full local origin;
+two URL.origin values of `null` do not establish same origin. Browser HTTP(S)
+and mail/tel link behavior is unchanged. Without explicit API host configuration, network commands require an HTTP(S)
+application origin. Toolchain0.63 adds an explicit HTTPS API origin, checked
+independently of commands, for mobile and separately hosted clients. It retains
+strict streaming limits, cancellation, redirects and credentials policy. See [mobile projects](mobile.md) for the separate native steps.
+
 NEX `i64` becomes TypeScript `bigint` with explicit range checks on arithmetic. BigInt is never converted to a JavaScript number for arithmetic. Division/remainder, left-to-right operand evaluation, short-circuiting, lexical scope, Unicode scalar indexing/slicing, nominal equality and immutable aggregate behavior follow the reference interpreter. Conversion to JavaScript array indices happens only after bounds checking. Browser input rejects unpaired UTF-16 surrogates at the boundary. Managed values use frozen arrays/records and the JavaScript garbage collector; native reference-counted handles are a backend detail.
 
 The emitter traverses only the functions reachable from selected client/shared entries. Server functions cannot be emitted as entries; the checker also rejects direct cross-realm calls. Unreachable definitions and their literals do not enter generated TypeScript or its source maps. Full archived sources remain local development artifacts and are not copied into browser assets. This is code separation; it does not implement server authorization or secret management.
@@ -143,6 +188,12 @@ For a standalone checked module:
 The result contains `program.ts`, its `nex-runtime.ts` and mapping metadata. The selected function is exported as `entry`, with other emitted names qualified through the compiler's native-symbol encoding. This does not install React or require an application contract.
 
 ## Tests
+
+Language 0.15 external functions require the server realm and `ffi`. Browser
+generation rejects reaching them and excludes unused server declarations,
+library/export identifiers and manifest pins from emitted client code. Use a
+checked HTTP endpoint to call server functionality from a browser. A browser
+test receives no native-library authority from `--foreign`.
 
 `nex test --target web` runs reachable-project shared/client tests in the interpreter and in generated TypeScript using Node, comparing successful exit/output. Server tests are explicitly reported as skipped. This checks language semantics and is distinct from browser UI tests. Native tests remain `nex test` without the web target; a client test is not a native entry.
 

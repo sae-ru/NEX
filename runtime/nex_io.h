@@ -1,12 +1,15 @@
 #pragma once
 #include "nex_value.h"
+#include "nex_platform.h"
 #include <cstdlib>
 
 namespace nexrt {
 inline Value readEnvironment(const std::string &name){
   if(name.empty()||name.size()>256||name.find_first_of("=\0",0,2)!=std::string::npos)return failure("VALIDATION","invalid environment variable name");
-  const char *text=std::getenv(name.c_str());if(!text)return failure("NOT_FOUND","environment variable is not defined");
-  try{return success(Value(string(text)));}catch(const DataError &){return failure("E_UTF8","environment value is not valid UTF-8");}
+  try{
+    auto text=platform::environment(name);if(!text)return failure("NOT_FOUND","environment variable is not defined");
+    return success(Value(string(*text)));
+  }catch(const DataError &error){return failure(error.code,error.what());}
 }
 class Database {
   struct Impl;std::unique_ptr<Impl> impl;

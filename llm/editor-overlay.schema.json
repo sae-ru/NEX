@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.dev/schema/editor-overlay-1.json",
+  "title": "NEX source editor overlay",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "files"],
+  "properties": {
+    "schema": {"const": "nex.overlay/1"},
+    "files": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {"pattern": "^/.*[.]nex$"},
+      "additionalProperties": {"type": "string", "maxLength": 1048576},
+      "description": "Keys must additionally be canonical absolute paths; source text is bounded to 1 MiB of UTF-8 bytes per file. Full overlay JSON is bounded to 16 MiB."
+    }
+  }
+}

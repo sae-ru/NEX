@@ -1,4 +1,5 @@
 #include "nex/profiling.h"
+#include "nex/task_process.h"
 #include "llvm/TargetParser/Host.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -10,14 +11,21 @@
 
 namespace nex {
 llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::json::Value graph,const ProfileOptions &options){
-  llvm::SmallString<128> temporary;
-  if(auto ec=llvm::sys::fs::createUniqueDirectory("nex-profile",temporary))throw Error("E_FILE",ec.message());
-  auto directory=std::filesystem::path(temporary.str().str()),raw=directory/"runtime.json";
+  auto directory=std::filesystem::path(createTemporaryDirectory("nex-profile")),raw=directory/"runtime.json";
   try{
     // env is launched directly, with no shell expansion. Override a parent's
     // Tracy setting: local reports never start a profiler listener implicitly.
     auto started=std::chrono::system_clock::now();
-    auto process=capture({"env","NEX_TRACY=0","NEX_PROFILE_OUTPUT="+raw.string(),"NEX_PROFILE_EVENTS="+std::to_string(options.events),built.executable},options.timeout);
+    std::vector<std::string> arguments{"env","NEX_TRACY=0","NEX_PROFILE_OUTPUT="+raw.string(),"NEX_PROFILE_EVENTS="+std::to_string(options.events),built.executable};arguments.insert(arguments.end(),options.arguments.begin(),options.arguments.end());
+    ProcessResult process;
+    if(options.directory.empty())process=capture(arguments,options.timeout);
+    else{
+      auto child=runTaskProcess(arguments,options.directory,options.environment,options.timeout,(directory/"logs").string());
+      if(child.interrupted&&options.interrupted)options.interrupted(child.interrupted);
+      if(child.timedOut)throw Error("E_PROFILE_TIMEOUT","profile process exhausted its timeout");
+      if(child.outputLimit)throw Error("E_PROFILE_OUTPUT","profile process exhausted its output limit");
+      process=std::move(child.process);if(child.timedOut)process.code=124;else if(child.outputLimit)process.code=125;
+    }
     if(!std::filesystem::is_regular_file(raw)||std::filesystem::file_size(raw)>256*1024*1024)throw Error("E_PROFILE","profile runtime did not produce a bounded report; process stderr: "+process.errors);
     auto parsed=llvm::json::parse(readFile(raw.string()));
     if(!parsed)throw Error("E_PROFILE","profile runtime produced invalid JSON");
@@ -28,15 +36,27 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
     auto nodes=graph.getAsObject()->getArray("nodes");
     std::map<std::string,const llvm::json::Object*> nodeIndex;
     for(const auto &node:*nodes)nodeIndex.emplace(node.getAsObject()->getString("name")->str(),node.getAsObject());
+    auto manifest=llvm::json::parse(readFile((std::filesystem::path(built.executable).parent_path()/"debug.json").string()));
+    if(!manifest||!manifest->getAsObject())throw Error("E_PROFILE","invalid profile debug manifest");
+    std::map<std::string,std::string> sourcePaths;
+    if(auto sources=manifest->getAsObject()->getArray("sources"))for(const auto &source:*sources){
+      if(auto value=source.getAsObject())if(auto anchor=value->getString("debug_path"))
+        if(auto projection=value->getString("projection"))sourcePaths[anchor->str()]=projection->str();
+    }
     for(auto &value:*functions){
       auto function=value.getAsObject();bool matched=false;
       auto name=function?function->getString("name"):std::nullopt;
       if(name&&nodeIndex.contains(name->str())){const auto &node=*nodeIndex.at(name->str());
         if(function->getString("content_hash")==node.getString("hash")){
-          (*function)["node_id"]=node.getString("id")->str();(*function)["source_file"]=node.getString("file")->str();matched=true;
+          auto id=node.getString("id");(*function)["node_id"]=id?llvm::json::Value(id->str()):llvm::json::Value(nullptr);
+          if(!id)(*function)["identity_scope"]="captured_project";
+          (*function)["source_file"]=node.getString("file")->str();matched=true;
         }
       }
       if(!matched)throw Error("E_PROFILE","measured function does not match the selected graph revision");
+      if(auto file=function->getString("file");file&&sourcePaths.contains(file->str())){
+        auto anchor=file->str();(*function)["debug_path"]=anchor;(*function)["file"]=sourcePaths.at(anchor);
+      }
     }
     auto sinceEpoch=std::chrono::duration_cast<std::chrono::milliseconds>(started.time_since_epoch()).count();
     (*report)["schema"]="nex.profile/1";(*report)["ok"]=process.code==0;(*report)["exit_code"]=process.code;

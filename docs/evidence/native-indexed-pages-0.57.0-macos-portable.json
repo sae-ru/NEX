@@ -1,0 +1,76 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T15:10:30.216468+00:00",
+  "ok": true,
+  "status": "verified_scoped",
+  "terminal_exit_code": 0,
+  "toolchain": "0.57.0",
+  "language": "0.16",
+  "source_manifest": "build/native-pages-057-validation-snapshot.json",
+  "source_files": 615,
+  "source_tree": "6d04719cb45740d6bc398e1ce03055fddce2eccb",
+  "input_compiler_sha256": "60843de6ec7a4ce473317feac046bc0f5d77ba2d56d14feb4a5cb9c1b4e3e8b3",
+  "bundled_compiler_sha256": "67d5657113c26b5f1ffd92bb4b43fcea85b61e014be2d8266acc9cbf3f1cbaf5",
+  "acceptance_tool_sha256": "1cf1f260d307c6f89531f363740297a485b1b57df8d5522843032460c769e170",
+  "moved_phases": 21,
+  "restored_phases": 21,
+  "workflows": {
+    "moved": {
+      "phases": 21,
+      "commands": 312,
+      "seconds": 425.88,
+      "expected_rejections_or_traps": 16,
+      "resource_count": 141,
+      "all_indexed_resources_match_frozen_source": true,
+      "report": "build/sdk-057-native-pages-macos-distribution/moved-acceptance.json",
+      "report_sha256": "0ad0a4f2cfdf54196ecc3b894939264506a5095e7f6fbdd326ef48dc1962dac4"
+    },
+    "restored": {
+      "phases": 21,
+      "commands": 312,
+      "seconds": 454.333,
+      "expected_rejections_or_traps": 16,
+      "resource_count": 141,
+      "all_indexed_resources_match_frozen_source": true,
+      "report": "build/sdk-057-native-pages-macos-distribution/restored-acceptance.json",
+      "report_sha256": "99dd8e95c4a52b7af7279444e182a4a2c91a732af8479e1e23e47d0269e6253d"
+    }
+  },
+  "seconds": 915.134,
+  "live_debugger": true,
+  "browser_build": true,
+  "npm_offline": true,
+  "external_network_blocked": false,
+  "configured_source_and_dependency_roots_kernel_read_denied": [
+    "/Users/sae/projects/NEX",
+    "/opt/homebrew/Cellar/llvm@22/22.1.8",
+    "/opt/homebrew/Cellar/openssl@3/3.6.3",
+    "/opt/homebrew/Cellar/zstd/1.5.7_1",
+    "/opt/local"
+  ],
+  "negative_read_controls_per_workflow": 5,
+  "sdk_kernel_write_denied": true,
+  "host": "arm64-apple-darwin27.0.0",
+  "minimum_macos": "27.0",
+  "external_prerequisites": [
+    "Apple command line tools/SDK and system C++ runtime/linker",
+    "Python 3.9+",
+    "Node.js/npm for browser builds",
+    "host LLDB/lldb-dap for live debugging"
+  ],
+  "archive": {
+    "path": "/Users/sae/projects/NEX/build/sdk-057-native-pages-macos-distribution/nex-sdk-0.57.0-macos-arm64-development.tar.gz",
+    "sha256": "e8926e1359bf56b02fb4b2834535f45b49ff60e145f8d3e431407a338b0f0825",
+    "bytes": 117818687,
+    "files_in_inventory": 2574,
+    "excluded_python_cache_files": []
+  },
+  "outer_report_sha256": "621c1b04c7c033edc3374692e9010f6d1dedf9870e90c9f6870e0c6f8e6110ec",
+  "preceding_toolchain_evidence": "docs/evidence/sdk-distribution-0.56.1.json",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "remaining": [
+    "Root promotion needs current root build/full68 and installed SDK21",
+    "Broader platform/device/release validation and complete PLAN"
+  ]
+}

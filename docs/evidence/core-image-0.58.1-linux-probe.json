@@ -1,0 +1,106 @@
+{
+  "ok": true,
+  "scope": "Preserved Linux LLDB MDMP mismatch feasibility; SBModule-only guard is insufficient, not a passing product acceptance.",
+  "format": "minidump",
+  "core_sha256": "39ae3928e891a709e17e3962306bc0923dfb2ac662f3ab79212a71801cefb65e",
+  "core_bytes": 301352,
+  "matching": {
+    "same_module": true,
+    "frame_module": "/build/image-probe/.nex/build/440f36e4d361f1d99e86e0793f593ab79da6d4f051d1767d7ee437a0a6a9d343/app",
+    "frame_uuid": "6858A967-5644-EEEC-74D4-9CA871CDC38C-C49C9133",
+    "expected_uuid": "6858A967-5644-EEEC-74D4-9CA871CDC38C-C49C9133",
+    "plugin": "minidump",
+    "region": {
+      "ok": true,
+      "name": "/build/image-probe/.nex/build/440f36e4d361f1d99e86e0793f593ab79da6d4f051d1767d7ee437a0a6a9d343/app",
+      "start": "0xaaaada353000",
+      "end": "0xaaaada392000"
+    },
+    "modules": [
+      {
+        "path": "/build/image-probe/.nex/build/440f36e4d361f1d99e86e0793f593ab79da6d4f051d1767d7ee437a0a6a9d343/app",
+        "uuid": "6858A967-5644-EEEC-74D4-9CA871CDC38C-C49C9133"
+      },
+      {
+        "path": "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+        "uuid": "A4F68558-7208-3BFB-B0D3-FA476D335F0D-EE573A6C"
+      },
+      {
+        "path": "[vdso](0x0000ffffbddd0000)",
+        "uuid": "957A5340-985E-B133-AFA6-414E516AB6E2-0B0F7DAC"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libstdc++.so.6",
+        "uuid": "7C239D17-4372-7054-CAA3-DF1AB866BFA7-2CD4DD93"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libm.so.6",
+        "uuid": "4B6FD8FE-F48E-4EE3-1A7B-F6559FE94A59-F51EB141"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libgcc_s.so.1",
+        "uuid": "D4CDA90A-FC8E-B822-CC2E-DE7761E5A026-972E4D6D"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libc.so.6",
+        "uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2"
+      }
+    ]
+  },
+  "mismatch": {
+    "same_module": true,
+    "frame_module": "/build/image-probe/.nex/build/b81889a1a0323d96979e737c4f1333bbbd822261bcbce4f2fba57163bf0e4736/app",
+    "frame_uuid": "6DD3E0C6-E19A-5FE3-3983-3C6D0ACE3E8B-090EF346",
+    "expected_uuid": "6DD3E0C6-E19A-5FE3-3983-3C6D0ACE3E8B-090EF346",
+    "plugin": "minidump",
+    "region": {
+      "ok": true,
+      "name": "/build/image-probe/.nex/build/440f36e4d361f1d99e86e0793f593ab79da6d4f051d1767d7ee437a0a6a9d343/app",
+      "start": "0xaaaada353000",
+      "end": "0xaaaada392000"
+    },
+    "modules": [
+      {
+        "path": "/build/image-probe/.nex/build/b81889a1a0323d96979e737c4f1333bbbd822261bcbce4f2fba57163bf0e4736/app",
+        "uuid": "6DD3E0C6-E19A-5FE3-3983-3C6D0ACE3E8B-090EF346"
+      },
+      {
+        "path": "/build/image-probe/.nex/build/440f36e4d361f1d99e86e0793f593ab79da6d4f051d1767d7ee437a0a6a9d343/app",
+        "uuid": "6858A967-5644-EEEC-74D4-9CA871CDC38C-C49C9133"
+      },
+      {
+        "path": "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+        "uuid": "A4F68558-7208-3BFB-B0D3-FA476D335F0D-EE573A6C"
+      },
+      {
+        "path": "[vdso](0x0000ffffbddd0000)",
+        "uuid": "957A5340-985E-B133-AFA6-414E516AB6E2-0B0F7DAC"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libstdc++.so.6",
+        "uuid": "7C239D17-4372-7054-CAA3-DF1AB866BFA7-2CD4DD93"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libm.so.6",
+        "uuid": "4B6FD8FE-F48E-4EE3-1A7B-F6559FE94A59-F51EB141"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libgcc_s.so.1",
+        "uuid": "D4CDA90A-FC8E-B822-CC2E-DE7761E5A026-972E4D6D"
+      },
+      {
+        "path": "/lib/aarch64-linux-gnu/libc.so.6",
+        "uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2"
+      }
+    ]
+  },
+  "formatter_overlay": {
+    "ok": true,
+    "case_count": 1,
+    "same_path_executable_replacement_rejected": true,
+    "matching_installed_sdk": false,
+    "log_sha256": "70744fec837500b06ce927b2c4b7e60c979865b61daa9597b53838cc2ffce15e"
+  },
+  "accepted_release": false,
+  "full_objective_complete": false
+}

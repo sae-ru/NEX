@@ -1,0 +1,180 @@
+{
+  "schema": "nex.resource-value-evidence/1",
+  "toolchain": "0.35.0",
+  "language": "0.13",
+  "created_at": "2026-10-18T06:47:24.464388+00:00",
+  "source_resource_support": false,
+  "scope": "internal managed file payloads, native runtime streaming calls and joined request ownership; no source resource syntax or stable FFI",
+  "source_sha256": {
+    "runtime/nex_value.h": "9d050c729e3a60bbf9473816d6d26cf8c65e3f2da6bcb654e968fc1adad78355",
+    "runtime/nex_file_resource.h": "c4617beed1a5d73731a3198b2515c0d90616e84dd54bd8c3696692961750ed27",
+    "runtime/nex_file_abi.h": "3150b3b0e2d94634a459e9b3bd05657b645c67f7126dd793b26e83daac6612ec",
+    "runtime/nex_resource.h": "89b8833a16630926519778094a62210803c93ed3834411a0327bcac3c5e7401d",
+    "runtime/nex_files.h": "a81efd54da761b8ca778e432db926b025a52ab5ceaf5b6928c089dfe2bef5de6",
+    "runtime/nex_files.cpp": "d32ec8955864bd3731c32e2145e2e7811e814ec75379b676b5adbb26bb1789b4",
+    "runtime/nex_host.h": "2e5c68523532112859b0b29f7e24148358b6308616bc30c63e209d95bcf0490e",
+    "runtime/runtime.cpp": "586a845f340282049703932bcc35554369df9c1a4f518c76e02999ff53e0e03e",
+    "runtime/files_runtime.cpp": "9dac8cdc3040bcdcc71d00c1c8b7f4c03249a6df7ace276de643ad8b440337f4",
+    "runtime/nex_json.h": "4c6d683956ffcd7542df521f639f85905fdcd07df6e6d7e62863636e529aa89e",
+    "runtime/nex_json.cpp": "0c9a0daacf4535442c6e65cd9c0759118e64e0f025c0c905b651614da8c82931",
+    "runtime/nex_bytes.h": "f954bc5302b55286ed7fedd5fa864cf0c00cca9772f0d63cfe37ed85eaa22cd0",
+    "runtime/nex_error.h": "39a73327d734b7aa2db230e696589fbd5d5750d68b3809107859c387539db908",
+    "runtime/nex_float.h": "9ba773e3fe2453bb07803e8195528996c2d72ac76665bbbe2f7de6218b9cfdfc",
+    "runtime/nex_profile.h": "4c20ca037538796727edc2d190a9d4cb49d5331177d1dbad1d58866b7e93df92",
+    "runtime/third_party/dragonbox/dragonbox.h": "d3795bba52fb25970d9a1819429f6f225bb0db09fb1db26e55bdec290291e98c",
+    "runtime/third_party/json.hpp": "aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63",
+    "tests/resources_runtime.cpp": "ce43aa03b6ac75ba902b1fbc91e73d458097d22b11ea190ba9097016cf36f4e4",
+    "tests/resource_values.cpp": "cd5273a0de38caf5609529065a312d2826b6d7788a47fe1ec491237a0db717e1"
+  },
+  "compiler_sha256": "c008e45cfe72975992369ae88809c190bde52a9e4e6ed0ae8cbafd7f32fe1df0",
+  "macos_arm64": {
+    "cases": 20,
+    "sanitizer_compiler": "Homebrew clang version 22.1.8",
+    "runs": [
+      {
+        "sanitizers": "ASan/UBSan/LSan",
+        "exit_code": 0,
+        "cases": 20,
+        "binary_sha256": "7158005faee17db375daa0b30a3f3c0988c97279fe14ac21933f608bb6917989",
+        "log": "/Users/sae/projects/NEX/build/resource-values-035-sanitized.log",
+        "log_sha256": "bdf13343b021e81bcee87e6c1ae5cd53e8263f6e2a40ffb6fab3b3a90a9b50ce"
+      },
+      {
+        "sanitizers": "ThreadSanitizer",
+        "exit_code": 0,
+        "cases": 20,
+        "binary_sha256": "470e0fbab7c4832eefdb132262143ae6f4441cd7972a8da5a25c0b17f8d90fc6",
+        "log": "/Users/sae/projects/NEX/build/resource-values-035-tsan.log",
+        "log_sha256": "bdf13343b021e81bcee87e6c1ae5cd53e8263f6e2a40ffb6fab3b3a90a9b50ce"
+      }
+    ]
+  },
+  "linux": {
+    "arm64": {
+      "ok": true,
+      "machine": "aarch64",
+      "execution": "Docker ARM64",
+      "seconds": 39.759,
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "sanitizers": [
+        "ASan",
+        "UBSan",
+        "LSan"
+      ],
+      "managed": {
+        "cases": 20,
+        "binary_sha256": "9b737ae38be0450390d9195e76737195b5ec6c8e986b57dba47bae3390e1d5d9",
+        "log_sha256": "bdf13343b021e81bcee87e6c1ae5cd53e8263f6e2a40ffb6fab3b3a90a9b50ce"
+      },
+      "foundation": {
+        "cases": 29,
+        "binary_sha256": "98b027286d4534cc40df1bb14a49221575c42530313735b76752315f0953bbd0",
+        "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62"
+      },
+      "report": "/Users/sae/projects/NEX/build/resource-values-035-linux-arm64/verification.json",
+      "report_sha256": "9c9d5a7e72c231375650b1aceff16730ea3e65cfb465566009e84dbd63b6c61a"
+    },
+    "amd64": {
+      "ok": true,
+      "machine": "x86_64",
+      "execution": "Docker emulation",
+      "seconds": 57.527,
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "sanitizers": [
+        "ASan",
+        "UBSan",
+        "LSan"
+      ],
+      "managed": {
+        "cases": 20,
+        "binary_sha256": "9b58449b684c6cc5a01bd9d4ef089f7c37c077981a7947b99a648537a4735bc6",
+        "log_sha256": "bdf13343b021e81bcee87e6c1ae5cd53e8263f6e2a40ffb6fab3b3a90a9b50ce"
+      },
+      "foundation": {
+        "cases": 29,
+        "binary_sha256": "56836f91cd3d361affd30a35cc83cdceb7c44e8b1d0dfd2a71f0641c9edf4d0f",
+        "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62"
+      },
+      "report": "/Users/sae/projects/NEX/build/resource-values-035-linux-amd64/verification.json",
+      "report_sha256": "5be3ff99757c759b9a8e64e01d1b835e8b34c5662315bb63dd65b5ce98bb1cc1"
+    }
+  },
+  "installed_macos_sdk": {
+    "status": "passed",
+    "phases": 12,
+    "seconds": 163.077,
+    "live_debugger": true,
+    "browser_build": true,
+    "compiler_matches": true,
+    "runtime_inputs_match": true,
+    "scope": "installed SDK, source/external tools available; not an isolated moved/archive distribution check",
+    "report": "/Users/sae/projects/NEX/build/sdk-035-resource-values-acceptance/report.json",
+    "report_sha256": "af5327b6f491e141b9e08d205958366682534e7ef3f9a6b322c4b63110fc509a"
+  },
+  "source_regression": {
+    "status": "passed",
+    "suites": 40,
+    "python_cases": 309,
+    "cpp_probes": 6,
+    "new_managed_file_cases": 20,
+    "foundation_cases": 29,
+    "seconds": 728.9,
+    "log": "/Users/sae/projects/NEX/build/ctest-035-resource-values.log",
+    "log_sha256": "7eb9877ee0e4a8aaecc4894ab0b061b7820ec49882a2c5cc0b53034210536b7f",
+    "detail_log": "/Users/sae/projects/NEX/build/ctest-035-resource-values-LastTest.log",
+    "detail_log_sha256": "54cd1a0f5676260498b6f277e8972701f8b9b60b2e31fd037bedefd8bd896908",
+    "permissions": "local HTTP sockets and real LLDB/DAP allowed"
+  },
+  "fixtures": {
+    "previous_backup": "backup/nex-20261018-061553",
+    "unchanged_previous_files": 31,
+    "new_genuine_fixture": "tests/fixtures/language-0.13-stream-names.json",
+    "new_revision": "a6542bb80741f264a6cbf393b2112f816be8d9b2cf0723f9a9d078ffc7dde346",
+    "new_sql_sha256": "aba077e4dfc158686543ff9ed6042a513c25048f825fc81b674f775d3b0f7d7d",
+    "capture_compiler": "b3e9cfd25c5c4ccb6ad9a648860eb15c31196edea8e9a54df81ec45afd90798b",
+    "capture_toolchain": "0.34.0",
+    "replayed": [
+      {
+        "fixture": "0.13",
+        "ok": true,
+        "revision": "990f70efc2513e8eba55f280dc24df048221eae8e82106153db4899543339ed2",
+        "logical_ids_preserved": true,
+        "sql_sha256": "c662d1a9e07fdb54f79b739ee9ed467431abd533d95f05c151a00af20fe00c0f",
+        "replay_directory": "/var/folders/hg/b7ggtzxs1pd_5jwc99gprqwh0000gq/T/nex genuine 013 replay, % ns_nwcsv"
+      },
+      {
+        "fixture": "0.13-resource-names",
+        "ok": true,
+        "revision": "2fac61ae97cce7137c4838f27c00c3f6894687ad27cdbc6a23e81a44c80add14",
+        "logical_ids_preserved": true,
+        "sql_sha256": "8c74c05922b95930e4af93616c8df5a12eaa74ed6a72a180d8ed4ffbe4a30c6a",
+        "replay_directory": "/var/folders/hg/b7ggtzxs1pd_5jwc99gprqwh0000gq/T/nex genuine 013 replay, % 1skbekl_"
+      },
+      {
+        "fixture": "0.13-stream-names",
+        "ok": true,
+        "revision": "a6542bb80741f264a6cbf393b2112f816be8d9b2cf0723f9a9d078ffc7dde346",
+        "logical_ids_preserved": true,
+        "sql_sha256": "aba077e4dfc158686543ff9ed6042a513c25048f825fc81b674f775d3b0f7d7d",
+        "replay_directory": "/var/folders/hg/b7ggtzxs1pd_5jwc99gprqwh0000gq/T/nex genuine 013 replay, % gwnp1w7v"
+      }
+    ],
+    "replay_report_sha256": "db81547e43aad5308c247d91acfdbebd4a46cf511e987d7e8966c64ef66ced7f"
+  },
+  "pending": [
+    "source file type, effects and realms",
+    "native/interpreter/TypeScript source integration and rejected programs",
+    "bounded source debugger resource values",
+    "explicit language migration preserving archived 0.13 names and history",
+    "stable FFI",
+    "async",
+    "broader current compiler/SDK/distribution matrix and additional requested platforms"
+  ],
+  "full_objective_complete": false,
+  "compiler_source_inputs": {
+    "CMakeLists.txt": "1150f45cdf5ddf84467a4e057d82fecd8efdfc1748ece862a26bb31d5128a179",
+    "src/backend.cpp": "a3aaa041215af393d4c236c51bf3bfea87a91d35ee6b91d891c493671c9fd126",
+    "src/language.cpp": "9e6a25d291b4d8a032bb11ed0c329cd740f787d2cabca0e2882ff8a2538f1974",
+    "include/nex/language.h": "f40922b755d74165a755af91e63889c56e91da567f374bc3529556fa02447528"
+  }
+}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { RequestRunner } from './net.ts';
+import { RequestRunner, apiOrigin, configuredAPIOrigin } from './net.ts';
 import type { Command } from './program.ts';
 import { makeResponseEvent } from './program.ts';
 import { record } from './nex-runtime.ts';
@@ -105,3 +105,36 @@ runner.run(Array.from({ length: 32 }, (_, i) => command(String(i))));
 assert.throws(() => runner.run([command('overflow')]), error => error.code === 'E_REQUEST');
 runner.close();
 console.log('Request transport boundaries, codecs, limits, cancellation and timeout passed');
+
+// Trusted deployment selects the destination once; commands cannot override it.
+for (const value of ['https://api.example.test', 'https://127.0.0.1:9443', 'https://localhost:9443'])
+  assert.equal(apiOrigin(value), value);
+for (const value of ['', 'http://api.test', 'https://user:pass@api.test', 'https://api.test/',
+  'https://api.test/api', 'https://api.test?x', 'https://api.test#x', 'https://API.test',
+  'https://api.test:0', 'https://api.test:443', 'https://api.test:65536', 'https://api.test:0443',
+  'https://127.1', 'https://0x7f000001', 'https://api..test', 'https://-api.test', 'https://api.test\n',
+  'capacitor://localhost', '//api.test', 'https://[::1]:9443']) {
+  assert.throws(() => apiOrigin(value), error => error.code === 'E_REQUEST', value);
+}
+const meta = (values: string[]) => ({querySelectorAll: () => values.map(value => ({getAttribute: () => value}))}) as unknown as Pick<Document, 'querySelectorAll'>;
+assert.equal(configuredAPIOrigin(meta([])), undefined);
+assert.equal(configuredAPIOrigin(meta(['https://api.test'])), 'https://api.test');
+assert.throws(() => configuredAPIOrigin(meta(['https://a.test','https://b.test'])), error => error.code === 'E_REQUEST');
+assert.throws(() => configuredAPIOrigin(meta(['http://a.test'])), error => error.code === 'E_REQUEST');
+for (const origin of ['capacitor://localhost/', 'https://localhost/']) {
+  received = []; let destinations: string[] = []; calls = [];
+  const remote = new RequestRunner(deliver, origin, async (url, options) => {
+    destinations.push(String(url)); calls.push(options!); return new Response('Я🧠', {status:201});
+  }, 'https://api.test:9443');
+  remote.run([command('remote', {path:'/api/tasks?limit=3',method:'POST',body:'Я🧠'})]);
+  await until(() => received.length === 1);
+  assert.equal(destinations[0], 'https://api.test:9443/api/tasks?limit=3');
+  assert.equal(received[0].body.ok, 'Я🧠');
+  assert.equal(calls[0].mode, 'cors'); assert.equal(calls[0].credentials, 'omit'); assert.equal(calls[0].redirect, 'error');
+  for (const path of ['https://other.test/api/x','//other.test/api/x','/api/../private','/api/x#fragment','/api/\\evil']) {
+    assert.throws(() => remote.run([command('valid'),command('bad',{path})]), error => error.code === 'E_REQUEST');
+    assert.equal(destinations.length,1);
+  }
+  remote.close();
+}
+console.log('Explicit HTTPS host configuration and mobile cross-origin request boundaries passed');

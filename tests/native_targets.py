@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import unittest
@@ -33,6 +34,27 @@ test fn semantics() -> unit {
         self.config.write_text(json.dumps(fields))
         return fields
 
+    @unittest.skipUnless(platform.system() == 'Darwin', 'Mach-O run-path selection')
+    def test_selected_sqlite_rpath_runs_with_literal_dependency_directory(self):
+        directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
+        library=directory/'libsqlite.bundle.dylib'
+        shutil.copy2(self.doctor['native_sqlite_library'],library)
+        subprocess.run(['/usr/bin/install_name_tool','-id','@rpath/'+library.name,str(library)],check=True,capture_output=True)
+        subprocess.run(['/usr/bin/codesign','--force','--sign','-',str(library)],check=True,capture_output=True)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(library)})
+        self.source('''module selected_store;
+server fn main() -> unit !{db,io} {
+  assert(unwrap(store_put("item","persistent 🧠")));
+  print(unwrap(store_get("item")));
+}
+''')
+        built=self.cli('build','--toolchain',self.config)
+        run=subprocess.run([built['executable']],env={'PATH':'/usr/bin:/bin','NEX_DATABASE':str(self.root/'data.sqlite'),'NEX_STORAGE_OWNER':'alice'},capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,'persistent 🧠\n'),run.stderr)
+        commands=subprocess.check_output(['/usr/bin/otool','-l',built['executable']],text=True)
+        self.assertIn('path '+str(directory.resolve())+' (offset ',commands)
+        self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
+
     def test_host_manifest_runs_tests_and_archives(self):
         self.configure(compiler=self.doctor['native_compiler'])
         args = ('--toolchain', self.config)
@@ -48,6 +70,73 @@ test fn semantics() -> unit {
         archive = self.cli('build', '--library', '--entry', 'main', *args)
         self.assertEqual(archive['kind'], 'static_library')
         self.assertGreater(Path(archive['executable']).stat().st_size, 100)
+
+    @unittest.skipUnless(platform.system() == 'Linux', 'ELF runtime library selection')
+    def test_selected_sqlite_is_actually_loaded_from_literal_elf_directory(self):
+        original=self.doctor['native_sqlite_library']
+        dynamic=subprocess.check_output(['readelf','-d',original],text=True)
+        soname=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic).group(1)
+        directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
+        library=directory/soname;shutil.copy2(original,library)
+        # This fixture is a complete selected SDK, including private ICU/C++
+        # dependencies whose original ELF RUNPATH is relative to their owner.
+        pending=[Path(original).resolve()];seen=set()
+        while pending:
+            image=pending.pop()
+            if image in seen:continue
+            seen.add(image)
+            listing=subprocess.check_output(['ldd',image],text=True)
+            for name,filename in re.findall(r'^\s*(\S+)\s*=>\s*(.*?)\s+\(0x',listing,re.M):
+                dependency=Path(filename).resolve()
+                if any(Path(root).resolve() in dependency.parents for root in ('/lib','/lib64','/usr/lib','/usr/lib64')):continue
+                destination=directory/Path(name).name
+                if not destination.exists():shutil.copy2(dependency,destination)
+                pending.append(dependency)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(library)})
+        self.source('''module selected_elf_store;
+server fn main() -> unit !{db,io} {
+  assert(unwrap(store_put("item","persistent 🧠")));
+  print(unwrap(store_get("item")));
+}
+''')
+        built=self.cli('build','--toolchain',self.config)
+        environment={'PATH':'/usr/bin:/bin','NEX_DATABASE':str(self.root/'data.sqlite'),'NEX_STORAGE_OWNER':'alice'}
+        run=subprocess.run([built['executable']],env=environment,capture_output=True,text=True,timeout=15)
+        self.assertEqual((run.returncode,run.stdout),(0,'persistent 🧠\n'),run.stderr)
+        dependencies=subprocess.check_output(['ldd',built['executable']],env=environment,text=True)
+        actual=re.search(r'^\s*'+re.escape(soname)+r'\s*=>\s*(.*?)\s+\(0x',dependencies,re.M)
+        self.assertIsNotNone(actual,dependencies)
+        self.assertEqual(Path(actual.group(1)).resolve(),library.resolve())
+        self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
+        invalid=self.root/'invalid:elf';invalid.mkdir();shutil.copy2(original,invalid/soname)
+        self.configure(sqlite={'include':self.doctor['native_sqlite_include'],'library':str(invalid/soname)})
+        self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
+
+    def test_readonly_manifest_roundtrip_preserves_selected_tool_aliases(self):
+        tools=self.root/'physical tools';tools.mkdir()
+        alias=self.root/'linked tools';alias.symlink_to(tools,target_is_directory=True)
+        fields={}
+        for key,doctor_key,name in [('compiler','native_compiler','clang++'),
+                                    ('archiver','native_archiver','llvm-ar'),
+                                    ('linker','native_linker','ld.lld'),
+                                    ('debug_packager','native_debug_packager','dsymutil')]:
+            if self.doctor[doctor_key]:
+                (tools/name).symlink_to(self.doctor[doctor_key]);fields[key]=str(alias/name)
+        self.configure(**fields)
+        inspected=self.cli('toolchain',self.config)
+        for key,value in fields.items():
+            self.assertEqual(inspected['manifest'][key],str(tools.resolve()/Path(value).name))
+        captured=self.root/'captured.json';captured.write_text(json.dumps(inspected['manifest']))
+        again=self.cli('toolchain',captured)
+        self.assertEqual(again['hash'],inspected['hash']);self.assertEqual(again['inputs'],inspected['inputs'])
+        self.assertFalse((self.root/'.nex').exists())
+
+    def test_readonly_default_manifest_roundtrip_has_the_same_fingerprint(self):
+        self.configure()
+        inspected=self.cli('toolchain',self.config)
+        self.config.write_text(json.dumps(inspected['manifest']))
+        self.assertEqual(self.cli('toolchain',self.config)['hash'],inspected['hash'])
+        self.assertFalse((self.root/'.nex').exists())
 
     def test_invalid_manifests_and_non_native_commands_reject(self):
         for value in ([], {}, {'schema':'bad','target':self.doctor['host']},

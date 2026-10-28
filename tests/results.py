@@ -19,13 +19,21 @@ class Results(harness.ToolchainCase):
         built = self.cli('build', '--profile', 'release', '-o', target)
         self.assertEqual(built['kind'], 'executable')
         notices = Path(built['notices'])
-        expected = 'nlohmann/json 3.12.0\n\n' + (vendor / 'JSON-LICENSE.MIT').read_text() + '\n\n'
+        expected = ('Dragonbox 1.1.3\n\n' + (vendor / 'dragonbox/LICENSE-Boost').read_text() + '\n\n'
+                    + 'nlohmann/json 3.12.0\n\n' + (vendor / 'JSON-LICENSE.MIT').read_text() + '\n\n')
         self.assertEqual(notices.read_text(), expected)
         self.assertEqual(str(notices), str(target) + '.THIRD_PARTY_NOTICES.txt')
         metadata = json.loads(Path(built['metadata']).read_text())
         self.assertEqual(metadata['kind'], 'executable')
         self.assertEqual(metadata['runtime_components'], ['runtime.cpp', 'nex_json.cpp', 'wire_runtime.cpp'])
         self.assertTrue((Path(metadata['runtime_source_projection']) / 'third_party/JSON-LICENSE.MIT').is_file())
+        dragonbox=json.loads((vendor/'dragonbox/manifest.json').read_text())
+        self.assertEqual(dragonbox['commit'],'3053a74ac81099591a12a55341a203d9688fbb92')
+        self.assertFalse(dragonbox['local_modifications'])
+        for name,record in dragonbox['files'].items():
+            original=(vendor/'dragonbox'/name).read_bytes()
+            self.assertEqual(hashlib.sha256(original).hexdigest(),record['sha256'])
+            self.assertEqual((Path(metadata['runtime_source_projection'])/'third_party/dragonbox'/name).read_bytes(),original)
         self.assertTrue(self.cli('build', '--profile', 'release')['cached'])
         Path(metadata['notices']).write_text('corrupted notice')
         rebuilt = self.cli('build', '--profile', 'release')

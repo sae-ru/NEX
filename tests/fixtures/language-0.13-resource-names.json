@@ -1,0 +1,40 @@
+{
+  "language": "0.13",
+  "toolchain": "0.33.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_resource_names;\npub struct file{data:bytes;}\nfn identity<resource:wire>(value:resource)->resource{return unwrap(decode_json<resource>(encode_json(value)));}\nfn file_open_read(value:file)->file{return value;}\nfn file_open_write(value:file)->file{return value;}\nfn file_read(value:file)->file{return value;}\nfn file_write(value:file)->file{return value;}\nfn file_seek(value:file)->file{return value;}\nfn file_close(value:file)->file{return value;}\nfn transform(callback:fn(file)->file,value:file)->file{return callback(value);}\nfn main()->unit!{io}{\n let original:file=file(unwrap(bytes([0,255,128,65])));\n let callback:fn(file)->file=fn(value:file)->file{return file(original.data+value.data);};\n print(identity(transform(callback,file(unwrap(bytes([1]))))));\n let opened:file=file_open_write(file_open_read(original));\n let copied:file=file_seek(file_write(file_read(opened)));\n print(encode_json(file_close(copied)));\n}\ntest fn preserved_names()->unit{\n let value:file=file(utf8_bytes(\"text\"));\n assert(identity(value)==value);\n let opened:file=file_open_write(file_open_read(value));\n let copied:file=file_seek(file_write(file_read(opened)));\n assert(file_close(copied)==value);\n}\n",
+  "source_sha256": "3dae3107af748ff1d29f568bcda7f118d36f951a645a68266122f0274ebe3581",
+  "sql_sha256": "8c74c05922b95930e4af93616c8df5a12eaa74ed6a72a180d8ed4ffbe4a30c6a",
+  "compiler_sha256": "719f7326b462fba8cf46326ded9d1f3259f9011334b1c586664691f4b483e781",
+  "revision": "2fac61ae97cce7137c4838f27c00c3f6894687ad27cdbc6a23e81a44c80add14",
+  "function_ids": {
+    "legacy_resource_names::identity": "9db211dfb2dfc52c0a0c100c861c8fd4",
+    "legacy_resource_names::file_open_read": "d8c4c93be12a0ea8a44bd3b14447b1da",
+    "legacy_resource_names::file_open_write": "3f42de004e621a2d41fd01ae6648b5b3",
+    "legacy_resource_names::file_read": "c6a42ce5337f3cbe65e7bdb44a110831",
+    "legacy_resource_names::file_write": "ec1fe218026480fb4732c729a771208b",
+    "legacy_resource_names::file_seek": "b66a58461f0dcb715aec85ae29fbd111",
+    "legacy_resource_names::file_close": "a82579b593a3e64010a54a983d680342",
+    "legacy_resource_names::transform": "1506facc0d39ffa385e33be0743ac3be",
+    "legacy_resource_names::main": "f591ad38dc53cb83f3f551a9db7fec1d",
+    "legacy_resource_names::preserved_names": "638deb02eeafc0bf4f7aa2c051ebd67f",
+    "legacy_resource_names::main::$lambda_0": "65569afec94b1bf678039d287a794be7",
+    "legacy_resource_names::identity<legacy_resource_names::file>": "f13e889db306f2f0a4b41fa26013f55a"
+  },
+  "native_and_interpreter_test_passed": true,
+  "typescript_test_passed": true,
+  "stdout": "{\"data\":\"AP+AQQE=\"}\n{\"data\":\"AP+AQQ==\"}\n",
+  "future_builtin_name_conflict": true,
+  "future_conflicts": [
+    "file (nominal type)",
+    "resource (generic parameter)",
+    "file_open_read",
+    "file_open_write",
+    "file_read",
+    "file_write",
+    "file_seek",
+    "file_close"
+  ],
+  "capture": "Genuine restored SDK 0.33 / language 0.13 store before a future resource extension. Candidate resource names are ordinary user code here; no resource feature or future reservation is claimed and no database language/version was rewritten."
+}

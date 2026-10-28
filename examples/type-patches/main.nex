@@ -1,0 +1,6 @@
+module type_patch::app;
+import "./model.nex" as model;
+
+fn main()->unit!{io} { print(model::make().value); }
+
+test fn value_test()->unit { assert(model::make().value==42); }

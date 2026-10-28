@@ -4,11 +4,70 @@
 
 **Главная идея:** минимальное количество токенов для передачи максимального количества точного смысла при максимальной производительности и безопасности исполняемой системы.
 
-People and LLMs work with a checked semantic graph. The model helps create and change programs; compiled applications run without an LLM.
+**Начать работу:** [Quickstart на русском](docs/quickstart.md) — установка,
+первый проект, запуск и веб-сборка, что хранить в Git, резервная копия графа,
+работа через Hermes/Codex и общий AGENTS.md для LLM.
 
-NEX is a language and development toolchain built around a checked semantic graph. The current implementation is an early C++20 compiler, not the full system in `PLAN.md`.
+NEX is a language and development toolchain built around a checked semantic
+graph. People and different LLMs use the same versioned specification, prompt
+and compiler tools. Compiled applications run independently of an LLM.
 
-Implemented code includes a parser, type/effect/realm checker, modules with private/public definitions, Unicode strings, immutable lists, structures and algebraic enums with nested patterns, guards and exhaustive statement/value matches, parametric generic types/functions, typed callbacks and immutable snapshot closures, a reference interpreter, SQLite/BLAKE3 revision store, transactional patches across modules, model-independent JSON tools, an MLIR → LLVM → native pipeline, and a TypeScript → React/Vite browser pipeline. Verification status and remaining scope are recorded in `STATUS.md`.
+The primary checkout is **toolchain0.81.0 / language0.16**, integrated after
+explicit approval and verification. Its full87 CTest groups, installed SDK
+24phases/375commands/225resources, real installed extension0.6 in three fresh
+editor hosts and strict0.77/0.81 analysis/store compatibility pass. The exact
+frozen implementation also passes Linux ARM64 full87,20 live suites and
+source-free/network-disabled installed SDK24. See [the recorded evidence](docs/evidence/toolchain-0.81.0.json).
+All47 original graph revisions/all16tables/schema/IDs and normal Git HEAD/index
+are preserved; the old0.77 source/compiler remains recoverable. This is a checked
+checkpoint of the language/toolchain; remaining PLAN work is still open.
+The language includes checked numbers, Unicode strings, immutable data,
+matching, generics, traits, constructor parameters, function values and
+snapshot closures. Types, effects and realms are checked. Native output uses
+MLIR/LLVM; browser applications use TypeScript/React/Vite.
+
+[Project builds](docs/project-build.md) describe components, direct dependencies,
+exports and configurations in `nex.build.json`. Readonly plans check the selected
+architecture. A `static` dependency consumes its actual separately built archive,
+with checked contracts and one final application runtime. Consumers can add
+explicitly reported generic instantiations. Source remains available to the
+checker. A static edge does not request a fully static executable; general
+Windows DLL output and resolved binary dependency reports remain pending.
+Toolchain0.74 accepts `shared_library`/`dynamic` for macOS/Linux builds,
+captures the linked images and supplies one shared runtime. Toolchain0.75 adds
+manual LLDB/core/capsule workflows for these images;0.76 adds `project --kind
+package` for binary edges and browser distributions. The verified0.77 also
+preserves these edges in project run/test/debug/profile. Toolchain0.78 adds
+[acceptance tasks and captured replay](docs/project-tasks.md) for the architecture.
+
+The historical integrated0.72 checkpoint passes **80 CTest groups** and installed SDK acceptance of
+**24 phases/348 commands/213 indexed resources**. Its0.72 implementation also
+passes Linux ARM64 full80,17 live suites and source-free/network-disabled SDK24.
+See [the exact evidence](docs/evidence/toolchain-0.72.0.json) for compiler hashes,
+source cohorts and retained failures. The source language remains0.16; no implicit
+graph migration occurs, and all47 root revisions/all16 tables/schema/IDs remain.
+
+Six verified0.77 root-SDK configurations produce15 Intel/Windows/iOS artifacts and3 final iOS
+linked images. The x64 Windows archive application executes under isolated Wine.
+Cross-builds and Wine do not establish actual Windows/mobile device execution.
+A verified0.77 native-server/dynamic-model/browser-source project passes12 UI/API/restart
+cases in Chromium, Firefox and WebKit. The actual installed VSIX0.5 passes LSP,
+native debugger, watch and indexed-page checks in fresh private profiles.
+Genuine installed0.71/0.72 comparisons preserve strict analysis1/2/3 payloads
+apart from compiler identity and complete isolated store rows/schema/IDs.
+
+The development chain includes the SQLite/BLAKE3 graph, locks, transactional
+patches, snapshots, task contracts, scalar Z3 checks, LLDB/DAP and CPU profiling.
+Different LLMs use the same [language pack](llm/README.md) and bounded compiler
+context. Cross-provider coding/token measurements remain pending.
+
+Separate [CIX P1](docs/cix-p1.md) and Astra receipts retain their original compiler
+scopes. CIX0.70 fixed trusted FFI tests do not provide general GPU/NPU language
+APIs. A [source-checkout shared-runtime experiment](experiments/shared-runtime/README.md)
+tests real NEX code in two DSOs, but is not a supported compiler build mode.
+Windows DLL integration, server workloads, dedicated task/editor debugging, source concurrency,
+general accelerators, broader platform delivery and other [PLAN.md](PLAN.md) work
+remain open. This checkpoint does not complete the full objective.
 
 ## Build
 
@@ -29,6 +88,9 @@ cmake -S . -B build \
 ```
 
 ## Linux development environment
+
+Linux application-package integration tests also require `patchelf` and the
+usual `readelf`/`ldd` tools. The maintained development image installs these.
 
 ```sh
 python3 tools/linux/check.py --arch arm64
@@ -55,9 +117,23 @@ Create a standalone project with `nex init PATH`, then run `nex check`, `nex tes
 
 Imports use `import "./model.nex" as model;` and exported definitions use `pub fn` or `pub struct`. Call an exported function with `model::create(...)`. Standard libraries currently include `std/math.nex` and `std/text.nex`; other local library roots are registered in `nex.json` under `libraries`. `nex lock` pins dependency source content. `nex export --directory NEW_DIRECTORY` materializes the current revision with all sources and vendored libraries. Stored-revision builds remain usable even when the original files or library directories change.
 
-Generated native output runs without the compiler, LLVM or a model. Pure programs do not link SQLite; storage programs link SQLite, and HTTP/TLS programs additionally link OpenSSL. The development compiler links against LLVM/MLIR, SQLite and Z3. Generated programs do not depend on Z3. `cmake --install build --prefix /chosen/sdk` installs the compiler and language/runtime resources. The compiler first looks for resources in its installed `share/nex`, then in the source checkout. `NEX_RESOURCE_DIR` explicitly overrides the resource location; `NEX_CLANG` overrides the native compiler driver. Redistributable toolchain bundles for other machines are pending.
+Generated native output runs without the compiler, LLVM or a model. Pure programs do not link SQLite; storage programs link SQLite, and HTTP/TLS programs additionally link OpenSSL. The development compiler links against LLVM/MLIR, SQLite and Z3. Generated programs do not depend on Z3. `cmake --install build --prefix /chosen/sdk` installs the compiler and language/runtime resources. The compiler first looks for resources in its installed `share/nex`, then in the source checkout. `NEX_RESOURCE_DIR` explicitly overrides the resource location; `NEX_CLANG` overrides the native compiler driver. Toolchain 0.27 adds relative host-SDK selection and a verified macOS ARM64 development bundle. Toolchain 0.29 verifies ELF bundling, installed-package notices, moved/archive SDKs and application packages on the stated macOS/Linux matrix. Other platform/OS coverage and redistributable delivery remain pending. See [SDK bundling](docs/sdk.md).
 
-Verify a complete installed development workflow with `python3 /chosen/sdk/share/nex/tools/sdk_acceptance.py /chosen/sdk --output /new/evidence --browser --live`. It exercises a failed reviewed task, graph repair/import, native/reference/TypeScript agreement, profile attribution/cleanup, real archived DAP watches, source-deleted replay/export, scalar proof and a locked Vite build. See [the SDK handoff guide](docs/sdk.md) for dependencies, retained evidence and optional checks. Linux verification also runs this workflow in a separate container with no source checkout mounted.
+Verify a complete installed development workflow with `python3 /chosen/sdk/share/nex/tools/sdk_acceptance.py /chosen/sdk --output /new/evidence --browser --live`. It exercises a failed reviewed task, graph repair/import, native/reference/TypeScript agreement (including finite numbers), profile attribution/cleanup, real archived DAP watches, source-deleted replay/export, explicit text-file capabilities and independent file applications, scalar proof and locked Vite builds for callable and numeric browser state. See [the SDK handoff guide](docs/sdk.md) for dependencies, retained evidence and optional checks. Linux verification also runs this workflow in a separate container with no source checkout mounted.
+
+## Application packages
+
+The maintained [SDK distribution workflow](docs/sdk.md) packages development
+tools, validates normalized archives and repeats acceptance after restoration.
+macOS checks source/dependency read denial and SDK write denial with kernel
+controls; Linux checks run in source-free runtime containers.
+
+`nex package FILE --directory NEW_DIRECTORY --json` builds a release application
+and copies only its required non-platform libraries and notices. Native servers
+use `--target server`. The directory can run without NEX SDK; platform runtime
+compatibility and actual deployment execution must be verified separately.
+See [application packaging](docs/packaging.md) for provenance, SDK inventory
+reuse, Linux tools and runtime configuration. Current compiler, SDK and deployment evidence have separate scopes recorded in STATUS.md.
 
 ## Native target selection
 
@@ -67,6 +143,12 @@ Verify a complete installed development workflow with `python3 /chosen/sdk/share
 ```
 
 On macOS, native builds can select arm64 or x86_64. `--toolchain FILE` records the target, compiler, optional linker/SDK and target SQLite/OpenSSL paths. Build metadata and caches distinguish architectures. Local run/test/debug/profile commands require the compiler host architecture; NEX does not launch an emulator itself. macOS Intel artifacts have been cross-built on ARM64; macOS Intel execution/debugging remains unverified. The Linux workflow runs matching ARM64/x86-64 compiler containers. See [the native build guide](docs/incremental.md) and [toolchain schema](llm/toolchain.schema.json).
+
+## Experimental Wasm compute modules
+
+Toolchain 0.60.2 supports `build --target wasm --entry NAME` for bounded pure
+scalar functions. [The Wasm guide](docs/wasm.md) describes its BigInt ABI, limits
+and validation scope. This is separate from the TypeScript application adapter.
 
 ## Web applications
 
@@ -91,7 +173,7 @@ Run the reported executable with `--auth FILE --database FILE` and optional `--c
 
 ## Typed API generation
 
-Language 0.5 adds explicit endpoints referencing checked server handlers. The compiler generates a frozen native dispatcher, a client SDK with extracted models and typed request/response helpers, exact wire schemas and OpenAPI 3.1.1 documentation. Successful response data is validated before reaching browser update events.
+Explicit endpoint declarations reference checked server handlers. The compiler generates a frozen native dispatcher, a client SDK with extracted models and typed request/response helpers, exact wire schemas and OpenAPI 3.1.1 documentation. Successful response data is validated before reaching browser update events.
 
 ```sh
 ./build/nex api examples/api/service.nex --json
@@ -104,7 +186,7 @@ Generate into a new/empty directory before using this client example. Build the 
 
 ## Generic libraries
 
-`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances; custom traits and higher-kinded types remain pending.
+`struct Box<T>`, `enum Maybe<T>` and `fn identity<T>(value:T) -> T` are checked even when unused. Concrete calls infer type arguments or supply them explicitly. Builtin bounds such as `T: add`, `T: ordered` and `T: integer` state required operations and are checked before specialization, including abstract forwarding. `examples/generics` and `examples/constraints.nex` exercise reusable models/functions and backend agreement. Source-template edits rebuild derived instances. User traits, associated types and fixed constructor parameters are implemented in language 0.16; see [traits](docs/traits.md). General type lambdas and broader higher-kinded inference remain pending.
 
 ## Function values
 
@@ -132,7 +214,7 @@ Parameters, blocks, statements and expressions have local persistent identities 
 
 ## Incremental native builds
 
-Native builds compile reachable functions into separate source-module objects. Body edits reuse unaffected modules; call contracts and transitive record layouts invalidate affected consumers. `nex build FILE --json` reports `compiled_modules`, `reused_modules` and the `compilation` report path. The [build guide](docs/incremental.md) covers keys, dependency indexes, validated shared objects, source projections and remaining frontend/LTO/test-cache work. Programs are checked before cached code is selected.
+The native backend emits a separate object for each reachable concrete function, closure and generic specialization, avoids redundant entry-only IR generation and shares checked operation-site indexing. Body edits can reuse siblings in the same file; call contracts, source coordinates and transitive record layouts invalidate affected consumers. `nex build FILE --json` reports compiled/reused function and module counts and the `compilation` report path. Stable DWARF paths map to each session's complete frozen sources. The [build guide](docs/incremental.md) covers keys, dependencies, artifact integrity and remaining frontend/LTO/test-cache work. Programs are checked before cached code is selected; exact platform/SDK validation is recorded in STATUS.md.
 
 ## Debugging and editor integration
 
@@ -141,7 +223,7 @@ Native builds compile reachable functions into separate source-module objects. B
 ./build/nex debug examples/debugging/main.nex --kind nex-dap --json
 ```
 
-Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies a stdio adapter command and launch configuration for a compatible client using an installed `lldb-dap`. Pure NEX watch expressions use exact captured values and a separate interpreter. Demand-driven reads select list lengths, record fields, result tags and dynamic indices without serializing unrelated payloads; computed aggregates support paged children. [The expression guide](docs/expressions.md) covers LLDB commands, offline snapshots, adapter registration and operational limits. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work.
+Native debug builds include typed parameter/local records and lexical scopes. LLDB loads matching previews for strings, lists, records and results; `nex-values` returns a bounded read-only JSON frame report. The DAP session descriptor supplies a stdio adapter command and launch configuration for a compatible client using an installed `lldb-dap`. Pure NEX watch expressions use exact captured values and a separate interpreter. Demand-driven reads select list lengths, record fields, result tags and dynamic indices without serializing unrelated payloads; computed aggregates support paged children. Native list/byte roots also support bounded pages through the matching NEX DAP bridge; textual previews retain their separate limits. [The expression guide](docs/expressions.md) covers LLDB commands, offline snapshots, adapter registration and operational limits. [The debugging guide](docs/debugging.md) covers breakpoints, immutable source projections, value limits, validation and remaining expression/platform work.
 
 ## Profiling
 
@@ -187,4 +269,22 @@ For a concrete handoff to another model, use [the walkthrough](llm/WORKFLOW.md) 
 
 ## Current boundaries
 
-The compiler/toolchain is **0.23.0**, source language **0.10**. The current macOS ARM64 and Linux ARM64/x86-64 checkpoint is verified; Linux x86-64 uses emulation. Consult `STATUS.md` for exact coverage and remaining work. Language 0.5/0.6/0.7/0.8/0.9 archives require explicit history-preserving migration; old debug sessions and receipts require their matching compiler binary/resources. Code targets are host native, native HTTP/HTTPS and browser TypeScript with explicit request/cancel commands. macOS ARM64 and Linux ARM64/x86-64 execution are exercised; Linux x86-64 uses emulation. macOS Intel execution and Linux x86-64 live debugging remain unverified. OR/rest/range patterns, custom generic traits, general source-level async/resource FFI, richer data/resource proofs, source-level contract enforcement, broader task/agent operations, mobile/native UI/GPU targets, remote package retrieval and portable SDK distribution remain pending. The requested project is the language and complete development chain. Application products will be built afterwards using NEX.
+The complete language and development chain remain under development.
+macOS ARM64 and Linux ARM64 are the primary exercised root hosts. Earlier0.72
+development candidates also ran on a separate Astra Linux1.7.4 x86-64 guest;
+those SDK/toolchain checks retain their exact compiler scopes. macOS Intel binaries can be cross-built, but their execution is
+unverified. Native Windows-hosted SDKs, mobile device execution and native UI/GPU remain
+pending. Experimental scalar Wasm and mobile project generation retain their
+specific guide limits.
+
+Source-level async, general external-resource kinds and callbacks, full
+pre/post-contract execution, optimized-PC/core attribution, browser profiling,
+remote package retrieval and cross-model quality/token benchmarks remain open.
+The native debugger's indexed previews are separate from exact captured NEX
+values; named roots and native string-root paging retain their stated limits.
+See the relevant guides and PLAN.md for precise scope.
+
+Older language archives require explicit history-preserving migration with
+`nex migrate`. Keep their matching SDKs for old debug sessions and receipts.
+The project is the language and its development tools; application products
+will be built afterwards using NEX.

@@ -1,0 +1,15 @@
+// Materialize @MANIFEST_SHA256@ with the built module's exact manifest hash.
+module ffi_example;
+pub struct Packet<T> { data:T; text:str; }
+pub enum Reply<T> { Ready(packet:Packet<T>); Error(code:str); }
+pub server extern fn contract(data:bytes) -> result<Reply<bytes>> !{ffi} =
+  foreign("example", "contract", "@MANIFEST_SHA256@");
+server fn main() -> unit !{ffi,io} {
+  print(encode_json(contract(unwrap(bytes([0,255,128,1])))));
+}
+server test fn external_wire() -> unit !{ffi} {
+  assert(encode_json(contract(unwrap(bytes([0,255,128,1]))))=="{\"ok\":{\"case\":\"Ready\",\"fields\":{\"packet\":{\"data\":\"AP+AAQ==\",\"text\":\"Я\\u0000🧠\"}}}}");
+}
+test fn portable() -> unit {
+  assert(encode_base64(utf8_bytes("NEX"))=="TkVY");
+}

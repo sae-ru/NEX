@@ -86,6 +86,45 @@ test fn behavior() -> unit { assert(item(0) == "zero"); assert(recurse(3) == 4);
                 self.assertEqual(f['completed'], 0)
             self.assertTrue(all(e['args']['aborted'] for e in report['traceEvents']))
 
+    def test_checked_application_exits_release_caller_and_callee_owned_values(self):
+        data=self.root/'files';data.mkdir()
+        environment={'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
+        failures=[('return 10/n;','E_DIV_ZERO'),
+                  ('return 9223372036854775807+(n+1);','E_OVERFLOW'),
+                  ('assert(n!=0);return n;','E_ASSERT'),
+                  ('return len(items[n+10]);','E_BOUNDS'),
+                  ('return unwrap(err<i64>("TEST","failed"));','E_RESULT'),
+                  ('return len(str(1.0/as_f64(n)));','E_DIV_ZERO')]
+        for body,code in failures:
+            with self.subTest(code=code,body=body):
+                self.source('''module owned_failure;
+fn leaf(n:i64)->i64{
+ let items:list<str>=["held","🧠"];
+ let data:bytes=utf8_bytes("held bytes");
+ let values:list<f64>=[1.5,2.25];
+ let offset:i64=40;let callback:fn(i64)->i64=fn(x:i64)->i64{return x+offset;};
+ assert(len(items)==2);assert(len(data)>0);assert(values[1]==2.25);assert(callback(2)==42);
+ BODY
+}
+server fn main()->unit!{fs,io}{
+ let outer:list<str>=["caller","still owned"];
+ let f:file=unwrap(file_open_write("owned.bin"));
+ assert(len(outer)==2);assert(file_is_open(f));print(leaf(0));
+}
+'''.replace('BODY',body))
+                failed=self.cli('profile',ok=False,env=environment,timeout=180)
+                self.assertEqual(failed['exit_code'],70);self.assertIn(code,failed['stderr'])
+                measured=json.loads(Path(failed['output']).read_text())
+                self.assertEqual(measured['build']['build_key'],failed['build_key'])
+                for pool in measured['memory']:
+                    self.assertGreater(pool['allocations'],0)
+                    self.assertEqual(pool['live'],0,pool)
+                    self.assertEqual(pool['allocations'],pool['frees'],pool)
+                functions={f['name']:f for f in measured['functions']}
+                self.assertEqual(functions['owned_failure::leaf']['aborted'],1)
+                self.assertEqual(functions['owned_failure::main']['aborted'],1)
+                self.assertEqual(measured['untracked_frees'],0)
+
     def test_bounds_archived_reuse_and_literal_paths(self):
         project = self.root / 'процент % путь'
         project.mkdir()
@@ -149,6 +188,7 @@ int main(){
         process = subprocess.run([str(executable)], env={**os.environ, 'NEX_TRACY': '0', 'NEX_PROFILE_OUTPUT': str(output)}, capture_output=True, text=True, timeout=30)
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
         measured = json.loads(output.read_text())
+        self.assertEqual(measured['build']['build_key'],built['build_key'])
         functions = {f['name']: f for f in measured['functions']}
         self.assertEqual(functions['hosted::work']['calls'], 40)
         self.assertEqual(functions['hosted::work']['aborted'], 24)
@@ -175,13 +215,16 @@ int main(){
         self.assertTrue(Path(str(target) + '.THIRD_PARTY_NOTICES.txt').is_file())
         self.assertEqual(subprocess.check_output([str(target)], text=True), self.cli('eval')['stdout'])
         normal = self.cli('build', '--profile', 'release')
-        self.assertEqual(normal['notices'], '')
+        normal_notice=Path(normal['notices']).read_text()
+        expected='Dragonbox 1.1.3\n\n'+(harness.REPO/'runtime/third_party/dragonbox/LICENSE-Boost').read_text()+'\n\n'
+        self.assertEqual(normal_notice,expected)
+        self.assertNotIn('Tracy',normal_notice)
         self.assertNotIn('nex_profile_enter', Path(normal['llvm']).read_text())
         self.assertIn('nex_profile_enter', Path(built['llvm']).read_text())
 
     def test_machine_response_is_bounded_and_saved_report_is_complete(self):
-        declarations = ['fn f' + str(i) + '() -> i64 { return ' + str(i) + '; }' for i in range(120)]
-        calls = ['print(f' + str(i) + '());' for i in range(120)]
+        declarations = ['fn measured_' + str(i) + '() -> i64 { return ' + str(i) + '; }' for i in range(120)]
+        calls = ['print(measured_' + str(i) + '());' for i in range(120)]
         self.source('module many;\n' + '\n'.join(declarations) + '\nfn main() -> unit !{io} {\n' + '\n'.join(calls) + '\n}')
         report = self.cli('profile', '--events', '0', timeout=180)
         saved = json.loads(Path(report['output']).read_text())

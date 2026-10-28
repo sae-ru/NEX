@@ -1,0 +1,21 @@
+{
+  "language": "0.12",
+  "toolchain": "0.30.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_buffers;\nfn file_read_bytes(value:i64) -> i64 { return value+1; }\nfn file_write_bytes(value:str) -> str { return value; }\nfn bytes(value:i64) -> i64 { return value; }\nfn identity<T:wire>(value:T) -> T { return unwrap(decode_json<T>(encode_json(value))); }\nserver fn preserved_file_effect(path:str) -> result<str> !{fs} { return file_read_text(path); }\nserver fn reader() -> (server fn(str)->result<str> !{fs}) { return preserved_file_effect; }\nfn main() -> unit !{io} { print(identity(file_read_bytes(41)+bytes(0))); print(file_write_bytes(\"Я🧠\")); }\ntest fn preserved_test() -> unit { assert(file_read_bytes(41)==42); assert(file_write_bytes(\"text\")==\"text\"); assert(bytes(7)==7); }\n",
+  "source_sha256": "1623d1f4bb0f4f0494c3f03cef0f4e89425c35270078c01aeaf39c9d3f823c62",
+  "sql_sha256": "4707a12e672953f96f186fb5ac46d07a20a28742770747a1f305c9926e12bba9",
+  "compiler_sha256": "de1d1d3c22b8d3082a31007bef7c2f267384067b4d687eae4e399dfedd8ce1bb",
+  "revision": "cebd983a15c57924b829326438e9eca9a67b41d8b1ac8e2e057d0b8bd046bede",
+  "native_and_interpreter_test_passed": true,
+  "typescript_test_passed": true,
+  "stdout": "42\nЯ🧠\n",
+  "future_builtin_name_conflict": true,
+  "future_conflicts": [
+    "bytes",
+    "file_read_bytes",
+    "file_write_bytes"
+  ],
+  "capture": "Genuine SDK 0.30 compiler/store before binary buffers; no database version fabrication"
+}

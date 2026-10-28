@@ -1,0 +1,23 @@
+{
+  "expected_revision": "015ec91a226059ca70e554b65a426620b756431085e433ded95594775069e2a6",
+  "replacements": [
+    {
+      "name": "type_patch::model::Parcel",
+      "kind": "type",
+      "source": "pub struct Parcel<T>{value:T;label:str;}"
+    },
+    {
+      "name": "type_patch::model::make",
+      "kind": "function",
+      "source": "pub fn make()->Parcel<i64>{return Parcel(43,\"готово\");}"
+    },
+    {
+      "name": "type_patch::app::main",
+      "source": "fn main()->unit!{io}{let row:model::Parcel<i64>=model::make();print(row.value);print(row.label);}"
+    },
+    {
+      "name": "type_patch::app::value_test",
+      "source": "test fn value_test()->unit{let row:model::Parcel<i64>=model::make();assert(row.value==43 && row.label==\"готово\");}"
+    }
+  ]
+}

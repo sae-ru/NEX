@@ -3,6 +3,7 @@ import concurrent.futures
 import hashlib
 import http.client
 import json
+import os
 from pathlib import Path
 import queue
 import re
@@ -19,12 +20,17 @@ import support as harness
 
 
 class HTTP(harness.ToolchainCase):
-    def launch(self, executable, auth, *, tls=False, budget=10000, timeout=5000):
+    def launch(self, executable, auth, *, tls=False, budget=10000, timeout=5000, foreign=None, env=None, cors=()):
         args = [executable, '--auth', str(auth), '--database', str(self.root / 'app.sqlite'), '--port', '0',
                 '--static', str(self.root / 'assets'), '--budget', str(budget), '--timeout-ms', str(timeout)]
         if tls:
             args += ['--cert', str(self.root / 'cert.pem'), '--key', str(self.root / 'key.pem')]
-        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if foreign is not None:
+            args += ['--foreign', str(foreign)]
+        for origin in cors:
+            args += ['--cors-origin', origin]
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                   env=None if env is None else {**os.environ, **env})
         lines = queue.Queue()
         threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
         try:
@@ -60,6 +66,58 @@ class HTTP(harness.ToolchainCase):
         with response:
             payload = response.read()
             return response.status, json.loads(payload), response.headers
+
+    def test_explicit_cors_preflight_authentication_and_denied_mutations(self):
+        self.source((harness.REPO/'examples/server/main.nex').read_text())
+        auth=self.root/'private-auth.json';alice=self.cli('token','--user','alice','--auth',auth)['token']
+        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('<h1>CORS</h1>')
+        executable=self.cli('build','--target','server','--profile','release',timeout=180)['executable']
+        process=self.launch(executable,auth,cors=('capacitor://localhost','https://localhost','https://client.test'))
+        def raw(method='GET',headers=(),body=None):
+            connection=http.client.HTTPConnection('127.0.0.1',self.port,timeout=3)
+            connection.putrequest(method,'/api/tasks')
+            for name,value in headers:connection.putheader(name,value)
+            connection.endheaders(body)
+            response=connection.getresponse();result=response.status,response.read(),response.headers
+            connection.close();return result
+        try:
+            for origin in ('capacitor://localhost','https://localhost','https://client.test'):
+                headers=[('Origin',origin),('Access-Control-Request-Method','POST'),('Access-Control-Request-Headers','authorization, Content-Type')]
+                status,body,reply=raw('OPTIONS',headers)
+                self.assertEqual((status,body),(204,b''));self.assertEqual(reply['Access-Control-Allow-Origin'],origin)
+                self.assertIsNone(reply['Access-Control-Allow-Credentials']);self.assertIsNone(reply['X-Request-Id'])
+                self.assertIn('Access-Control-Request-Headers',reply['Vary'])
+                status,_,reply=raw(headers=[('Origin',origin)])
+                self.assertEqual(status,401);self.assertEqual(reply['Access-Control-Allow-Origin'],origin)
+                self.assertEqual(reply['WWW-Authenticate'],'Bearer')
+                status,_,reply=raw(headers=[('Origin',origin),('Authorization','Bearer '+alice)])
+                self.assertEqual(status,200);self.assertEqual(reply['Access-Control-Allow-Origin'],origin)
+            for origin in ('https://evil.test','null','capacitor://evil','capacitor://localhost.evil','https://client.test/path','https://client.test:443'):
+                payload=b'{"text":"must not commit"}'
+                status,_,reply=raw('POST',[('Origin',origin),('Authorization','Bearer '+alice),('Content-Length',str(len(payload))),('Content-Type','application/json')],payload)
+                self.assertEqual(status,403);self.assertIsNone(reply['Access-Control-Allow-Origin'])
+            bad=[ [('Access-Control-Request-Method','POST')],
+                  [('Origin','capacitor://localhost'),('Access-Control-Request-Method','TRACE')],
+                  [('Origin','capacitor://localhost'),('Access-Control-Request-Method','POST'),('Access-Control-Request-Headers','X-Other')],
+                  [('Origin','capacitor://localhost'),('Access-Control-Request-Method','POST'),('Content-Length','999999999')],
+                  [('Origin','capacitor://localhost'),('Access-Control-Request-Method','POST'),('Access-Control-Request-Method','GET')],
+                  [('Origin','capacitor://localhost'),('Origin','https://client.test'),('Access-Control-Request-Method','POST')] ]
+            for headers in bad:
+                self.assertIn(raw('OPTIONS',headers)[0],(400,403))
+            self.assertEqual(raw('OPTIONS',[('Origin','capacitor://localhost')])[0],401)
+            self.assertEqual(self.request('/api/tasks',token=alice)[1],[])
+            # Same-origin browser POST remains usable when a remote allowlist is enabled.
+            payload=b'{"text":"same origin"}'
+            status,_,_=raw('POST',[('Origin',self.base),('Authorization','Bearer '+alice),('Content-Length',str(len(payload)))],payload)
+            self.assertEqual(status,201)
+            self.assertEqual(len(self.request('/api/tasks',token=alice)[1]),1)
+        finally:self.stop(process)
+        for origins in [('*',),('null',),('https://client.test/path',),('https://user@client.test',),
+                        ('https://client.test','https://client.test'),tuple('https://client%d.test'%i for i in range(17))]:
+            args=[executable,'--auth',str(auth),'--database',str(self.root/'app.sqlite'),'--port','0']
+            for origin in origins:args+=['--cors-origin',origin]
+            failed=subprocess.run(args,capture_output=True,text=True,timeout=5)
+            self.assertNotEqual(failed.returncode,0);self.assertIn('CORS requires',failed.stderr)
 
     def test_native_http_api_authentication_persistence_and_fault_containment(self):
         original = (harness.REPO / 'examples/server/main.nex').read_text()

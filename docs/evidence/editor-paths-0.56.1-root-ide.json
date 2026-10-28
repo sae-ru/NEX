@@ -1,0 +1,115 @@
+{
+  "ok": true,
+  "compiler_sha256": "bda387933be8afe38463f461b4df4567ead1420f357823af7ac2165548192cb7",
+  "vsix_sha256": "bbf25e58d167412b5285c193599e8a39be55c948fdb3c8c36351ea41fc1b2935",
+  "all_five_packaged_sources_equal_installed_sdk": true,
+  "host": {
+    "ok": true,
+    "editor_version": "1.142.0",
+    "editor_architecture": "arm64",
+    "installed_extension_path": "/Users/sae/projects/NEX/build/editor-0561-root-final/extensions/sae-ru.nex-language-tools-0.1.0",
+    "installed_extension_version": "0.1.0",
+    "physical_source_breakpoint": true,
+    "native_stack_scopes": true,
+    "pure_watch": {
+      "build_key": "3e0d834b0b72704854263a7325095681c559a8b086b35fbedfa7f933a89f101f",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "total + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [
+        "total"
+      ],
+      "read_paths": [
+        {
+          "binding": "total",
+          "kind": "value",
+          "path": []
+        }
+      ],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 3,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "22432",
+        "stop_id": "13",
+        "thread_id": "88475178"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "trait_watch": {
+      "build_key": "3e0d834b0b72704854263a7325095681c559a8b086b35fbedfa7f933a89f101f",
+      "display": "42",
+      "display_truncated": false,
+      "expression": "Readable<Box<i64>>::get(Box<i64>(40)) + 2",
+      "frame_truncated": false,
+      "function": "editor_acceptance::main",
+      "language": "0.16",
+      "limits": {
+        "capture_path_depth": 56,
+        "cumulative_text_bytes": 8388608,
+        "frame_captures": 256,
+        "lazy_references": 10000,
+        "steps": 100000,
+        "text_range_scalars": 4096,
+        "text_scalar_observations": 100000,
+        "value_depth": 64,
+        "value_visits": 100000,
+        "wire_result_bytes": 1048576
+      },
+      "ok": true,
+      "read_bindings": [],
+      "read_paths": [],
+      "revision": "40096d768d9a280c4497c40a46e69a9dae2e45bbc5012b57902b43ddba85900c",
+      "schema": "nex.expression/1",
+      "steps": 8,
+      "stop": {
+        "frame_id": 0,
+        "process_id": "22432",
+        "stop_id": "13",
+        "thread_id": "88475178"
+      },
+      "type": "i64",
+      "value": "42",
+      "wire_schema": {
+        "enums": {},
+        "records": {},
+        "root": "i64",
+        "schema": "nex.wire/2"
+      }
+    },
+    "native_output": "42\r\n",
+    "native_exit_code": 0,
+    "unchanged_watch_stop": true,
+    "native_resume_and_termination": true,
+    "controlled_test_profile": true,
+    "user_profile_modified": false
+  },
+  "special_project_path": "/Users/sae/projects/NEX/build/editor-0561-root-final/project \"quoted\" \\ % \ud83e\udde0",
+  "user_profile_modified": false,
+  "accepted_release": false,
+  "full_objective_complete": false
+}

@@ -1,0 +1,11 @@
+module native_pages;
+fn observe(items:list<i64>,data:bytes)->unit!{io}{
+ print(items[len(items)-1]+data[len(data)-1]); // NATIVE_PAGE_STOP
+}
+fn main()->unit!{io}{
+ var items:list<i64>=[40];var i:i64=0;
+ while i<15{items=items+items;i=i+1;}
+ var data:bytes=utf8_bytes("x");i=0;
+ while i<22{data=data+data;i=i+1;}
+ observe(set(items,len(items)-1,42),set(data,len(data)-1,255));
+}

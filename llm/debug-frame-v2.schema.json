@@ -8,7 +8,7 @@
       "const": "nex.debug-frame/2"
     },
     "language": {
-      "const": "0.10"
+      "const": "0.16"
     },
     "revision": {
       "type": "string",
@@ -68,7 +68,9 @@
             "minLength": 1,
             "maxLength": 4096
           },
-          "value": {"description": "Exact typed value; types containing callables use nex.debug-wire/1 rather than application JSON."},
+          "value": {
+            "description": "Exact typed value; types containing callables use nex.debug-wire/1 rather than application JSON."
+          },
           "unavailable": {
             "type": "string",
             "maxLength": 4096,
@@ -138,14 +140,23 @@
           "kind": {
             "enum": [
               "value",
-              "shape"
+              "shape",
+              "text_range"
             ]
           },
-          "value": {"description": "A full typed value or a checked shape. Callable shape is exactly function plus nonzero decimal identity. Subsequent capture-name paths are checked against that target's environment."},
+          "value": {
+            "description": "Exact typed value, shape (including Unicode scalar string length), or text_range UTF-8 text of exactly count scalars. Range start/count are canonical nonnegative scalar indices. Callable aliases must agree across overlapping ranges and whole values."
+          },
           "unavailable": {
             "type": "string",
             "maxLength": 4096,
             "pattern": "^[^\\u0000]*(?![\\s\\S])"
+          },
+          "start": {
+            "$ref": "#/$defs/textStart"
+          },
+          "count": {
+            "$ref": "#/$defs/textCount"
           }
         },
         "required": [
@@ -175,6 +186,48 @@
               ]
             }
           }
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "text_range"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "start",
+                "count"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "maxLength": 4096
+                }
+              }
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "start"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "count"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
         ]
       }
     }
@@ -190,5 +243,17 @@
     "truncated",
     "captures"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "textStart": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)(?![\\s\\S])",
+      "maxLength": 19
+    },
+    "textCount": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-6])(?![\\s\\S])",
+      "maxLength": 4
+    }
+  }
 }

@@ -48,7 +48,7 @@ JSON debugValueSchema(const Program &program,const Type &type,const std::set<std
       auto fields=[&](const auto &values){Array result;for(const auto &field:values)result.push_back(Object{{"name",field.name},{"type",describe(field.type)}});return result;};
       if(nominal.enumeration){Array cases;for(const auto &variant:nominal.variants)cases.push_back(Object{{"name",variant.name},{"fields",fields(variant.fields)}});enums[value.name]=std::move(cases);}else records[value.name]=fields(nominal.fields);
     }return Object{{nominal.enumeration?"enum":"record",value.name}};}
-    if(value==Type::I64||value==Type::Bool||value==Type::Str)return typeName(value);
+    if(value==Type::I64||value==Type::F64||value==Type::Bool||value==Type::Str||value==Type::Bytes||value==Type::File)return typeName(value);
     invalid("unsupported debug value type: "+typeName(value));
   };
   auto root=describe(type);
@@ -68,6 +68,39 @@ void DebugValues::observe(const std::string &id,const Array &path,const std::str
   auto bytes=key.size()+data.size();if(observationBytes+bytes>8*1048576)throw Error("E_DEBUG_LIMIT","callable alias observations exceed byte budget");
   observationBytes+=bytes;observations.emplace(std::move(key),std::move(data));
 }
+void DebugValues::observeBytes(const std::string &id,const Array &path,const nexrt::ByteBuffer &value){
+  if(id.empty())return;auto key=id+":"+json(Array(path),false);
+  if(auto old=binaryValues.find(key);old!=binaryValues.end()&&old->second!=value)invalid("conflicting binary captures for one stopped callable identity");
+  if(auto selected=binaryOctets.find(key);selected!=binaryOctets.end())for(auto [index,octet]:selected->second)
+    if(index<0||index>=value.length()||value.at(index)!=octet)invalid("binary value conflicts with a captured octet");
+  binaryValues.emplace(std::move(key),value);
+}
+void DebugValues::observeByte(const std::string &id,const Array &path,int64_t index,int64_t value){
+  if(value<0||value>255)invalid("stopped binary octet is outside 0..255");
+  if(id.empty())return;auto key=id+":"+json(Array(path),false);
+  if(auto whole=binaryValues.find(key);whole!=binaryValues.end())
+    if(index<0||index>=whole->second.length()||whole->second.at(index)!=value)invalid("captured octet conflicts with its binary value");
+  auto [at,inserted]=binaryOctets[key].emplace(index,value);if(!inserted&&at->second!=value)invalid("conflicting captured binary octets");
+}
+void DebugValues::observeString(const std::string &id,const Array &path,const std::string &value){
+  if(id.empty())return;auto key=id+":"+json(Array(path),false);auto offsets=nexrt::unicodeOffsets(value);
+  observe(id,path,"shape",Object{{"length",std::to_string(offsets.size()-1)}});
+  if(auto old=stringValues.find(key);old!=stringValues.end()&&old->second.text!=value)invalid("conflicting string captures for one stopped callable identity");
+  if(auto selected=stringScalars.find(key);selected!=stringScalars.end())for(const auto &[index,scalar]:selected->second)
+    if(index<0||uint64_t(index)>=offsets.size()-1||value.substr(offsets[index],offsets[index+1]-offsets[index])!=scalar)invalid("string value conflicts with a captured scalar range");
+  stringValues.emplace(std::move(key),TextValue{value,std::move(offsets)});
+}
+void DebugValues::observeTextRange(const std::string &id,const Array &path,int64_t start,const std::string &value){
+  if(id.empty())return;auto key=id+":"+json(Array(path),false);auto offsets=nexrt::unicodeOffsets(value);
+  for(size_t i=0;i+1<offsets.size();++i){auto index=start+int64_t(i);auto scalar=value.substr(offsets[i],offsets[i+1]-offsets[i]);
+    if(auto whole=stringValues.find(key);whole!=stringValues.end()){
+      const auto &full=whole->second;if(index<0||uint64_t(index)>=full.offsets.size()-1||full.text.substr(full.offsets[index],full.offsets[index+1]-full.offsets[index])!=scalar)invalid("captured string range conflicts with its whole value");
+    }
+    auto &selected=stringScalars[key];auto at=selected.find(index);
+    if(at!=selected.end()){if(at->second!=scalar)invalid("conflicting overlapping string scalar ranges");}
+    else{if(++textScalarObservations>100000)throw Error("E_DEBUG_LIMIT","stopped-string scalar observations exceed 100000 values");selected.emplace(index,std::move(scalar));}
+  }
+}
 std::pair<std::string,std::string> DebugValues::callableShape(const Type &type,const JSON &wire){
   const auto &value=object(wire);if(value.size()!=2)invalid("callable shape requires function and identity");auto name=field(value,"function"),id=nex::identity(value);
   checkedDebugCallable(program,name,type,compiled);auto descriptor=name+"\n"+typeName(type);auto [at,inserted]=targets.emplace(id,descriptor);if(!inserted&&at->second!=descriptor)invalid("one callable identity has conflicting checked targets");return {name,id};
@@ -76,8 +109,21 @@ std::string DebugValues::identity(const V &value)const{auto found=identities.fin
 DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned depth,const std::string &id,const Array &prefix){
   budget(depth);
   if(type==Type::I64){auto value=integer(wire);observe(id,prefix,"value",wire);return V(value);}
+  if(type==Type::F64){nexrt::FloatEnvironment environment;auto value=wire.getAsNumber();if(!value||!std::isfinite(*value))invalid("expected finite debug f64 number");auto result=V::floating(*value);observe(id,prefix,"value",JSON(result.floating()));return result;}
   if(type==Type::Bool){auto value=wire.getAsBoolean();if(!value)invalid("expected debug boolean");observe(id,prefix,"value",wire);return V(*value,true);}
-  if(type==Type::Str){auto value=string(wire);text+=value.size();budget(depth);observe(id,prefix,"value",wire);return V(nexrt::string(std::move(value)));}
+  if(type==Type::Str){auto value=string(wire);text+=value.size();budget(depth);observe(id,prefix,"value",wire);observeString(id,prefix,value);return V(nexrt::string(std::move(value)));}
+  if(type==Type::Bytes){
+    auto encoded=string(wire);text+=encoded.size();budget(depth);nexrt::ByteBuffer buffer;
+    try{buffer=nexrt::ByteBuffer::fromBase64(encoded);}catch(const nexrt::DataError&){invalid("debug bytes require canonical padded base64");}
+    text+=buffer.length();budget(depth);observe(id,prefix,"shape",Object{{"length",std::to_string(buffer.length())}});observe(id,prefix,"value",wire);observeBytes(id,prefix,buffer);
+    return V(nexrt::bytes(std::move(buffer)));
+  }
+  if(type==Type::File){
+    const auto &value=object(wire);if(value.size()!=1)invalid("debug file requires only its opaque identity");
+    auto text=field(value,"file");auto canonical=nex::identity(Object{{"identity",text}});uint64_t number=0;
+    std::from_chars(canonical.data(),canonical.data()+canonical.size(),number);observe(id,prefix,"value",wire);
+    return V(nexrt::diagnosticFile(number));
+  }
   if(type.kind==Type::Function){
     const auto &value=object(wire);if(value.size()!=3||!value.get("captures"))invalid("debug callable requires function, identity and captures");
     JSON shape=Object{{"function",field(value,"function")},{"identity",field(value,"identity")}};auto [name,identity]=callableShape(type,shape);observe(id,prefix,"shape",shape);
@@ -102,7 +148,9 @@ DebugValues::V DebugValues::decode(const Type &type,const JSON &wire,unsigned de
 }
 DebugValues::JSON DebugValues::encode(const Type &type,const V &original,unsigned depth,const std::function<V(const V&)> &materialize,const std::function<V(const V&,size_t)> &capture){
   budget(depth);auto value=materialize?materialize(original):original;
-  if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
+  if(type==Type::I64)return std::to_string(value.scalar);if(type==Type::F64){if(value.tag!=V::Floating)invalid("computed f64 lost its scalar tag");return value.floating();}if(type==Type::Bool)return bool(value.scalar);if(type==Type::Str){text+=value.object->text.size();budget(depth);return value.object->text;}
+  if(type==Type::Bytes){const auto &buffer=nexrt::byteBuffer(value.object);text+=uint64_t(buffer.length());budget(depth);auto encoded=buffer.base64();text+=encoded.size();budget(depth);return encoded;}
+  if(type==Type::File)return Object{{"file",std::to_string(nexrt::fileIdentity(value.object))}};
   if(type.kind==Type::Function){
     const auto &fn=checkedDebugCallable(program,value.object->text,type);if(value.object->values.size()!=fn.captures.size()||value.object->names.size()!=fn.captures.size())invalid("computed callable capture layout differs");
     auto identity=this->identity(value);if(identity.empty()){identity="computed:"+std::to_string(++computed);identify(value,identity);}Object captures;

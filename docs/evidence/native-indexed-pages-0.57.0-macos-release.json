@@ -1,0 +1,82 @@
+{
+  "ok": true,
+  "toolchain": "0.57.0",
+  "language": "0.16",
+  "source": "/Users/sae/projects/NEX/build/source-checkpoint-20261019-144342-6d04719c",
+  "source_tree": "6d04719cb45740d6bc398e1ce03055fddce2eccb",
+  "source_files": 615,
+  "build_type": "Release",
+  "phases": [
+    {
+      "name": "build",
+      "arguments": [
+        "cmake",
+        "--build",
+        "/Users/sae/projects/NEX/build/native-pages-057-release-build",
+        "-j",
+        "4"
+      ],
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 39.857
+    },
+    {
+      "name": "ctest",
+      "arguments": [
+        "ctest",
+        "--test-dir",
+        "/Users/sae/projects/NEX/build/native-pages-057-release-build",
+        "--output-on-failure",
+        "-j",
+        "2"
+      ],
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 1475.343
+    },
+    {
+      "name": "install",
+      "arguments": [
+        "cmake",
+        "--install",
+        "/Users/sae/projects/NEX/build/native-pages-057-release-build",
+        "--prefix",
+        "/Users/sae/projects/NEX/build/sdk-057-native-pages-release-install"
+      ],
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 0.241
+    },
+    {
+      "name": "sdk",
+      "arguments": [
+        "python3",
+        "/Users/sae/projects/NEX/build/sdk-057-native-pages-release-install/share/nex/tools/sdk_acceptance.py",
+        "/Users/sae/projects/NEX/build/sdk-057-native-pages-release-install",
+        "--output",
+        "/Users/sae/projects/NEX/build/sdk-057-native-pages-release-acceptance",
+        "--browser",
+        "--live"
+      ],
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 353.749
+    }
+  ],
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "updated": "2026-10-19T16:53:12.947435+00:00",
+  "compiler_sha256": "97f9bac7269a51fa1ded2bd7afa40166cf1e9655dc15841a3610218ca967b9de",
+  "groups": 68,
+  "python_cases": 566,
+  "reported_unittest_skips": 4,
+  "last_test_sha256": "19e171e80f58173178d035f9b5e82beaa1773b8ff94fd41bed4c41503c96505d",
+  "sdk_phases": 21,
+  "sdk_commands": 312,
+  "indexed_resources": 141,
+  "source_checkout_hidden": false,
+  "live_debugger": true,
+  "browser_build": true,
+  "source_all_inputs_unchanged": true,
+  "seconds": 2459.722
+}

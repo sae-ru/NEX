@@ -28,9 +28,16 @@ std::string encode(const Value &value,size_t depth,size_t &nodes){
   if(depth>maxDepth||++nodes>maxNodes)reject("JSON value exceeds depth/node limit");
   if(value.tag==Value::Integer)return nexrt::quoted(std::to_string(value.scalar));
   if(value.tag==Value::Boolean)return value.scalar?"true":"false";
+  if(value.tag==Value::Floating)return formatFloat(value.floating());
   const auto &d=*value.object;
   if(d.kind==Data::Closure)reject("function values cannot cross the JSON boundary");
+  if(d.kind==Data::File)reject("file resources cannot cross the JSON boundary");
   if(d.kind==Data::String)return nexrt::quoted(d.text);
+  if(d.kind==Data::Bytes){
+    const auto &buffer=byteBuffer(value.object);
+    if(uint64_t(buffer.length())>((maxBytes-2)/4)*3)reject("JSON value exceeds byte limit");
+    return nexrt::quoted(buffer.base64());
+  }
   if(d.kind==Data::Success)return "{\"ok\":"+encode(d.values[0],depth+1,nodes)+"}";
   if(d.kind==Data::Failure)return "{\"error\":{\"code\":"+nexrt::quoted(d.text)+",\"message\":"+nexrt::quoted(d.values[0].object->text)+"}}";
   if(d.kind==Data::Enum){
@@ -55,7 +62,17 @@ Value decode(const JSON &value,const JSON &type,const JSON &records,const JSON &
     if(parsed.ec!=std::errc()||parsed.ptr!=text.data()+text.size())reject("JSON integer is outside i64 range");return Value(integer);
   }
   if(type=="bool"){if(!value.is_boolean())reject("expected JSON boolean");return Value(value.get<bool>(),true);}
+  if(type=="f64"){
+    if(!value.is_number())reject("f64 requires a finite JSON number");
+    auto floating=value.get<double>();if(!std::isfinite(floating))reject("f64 requires a finite JSON number");
+    return Value::floating(floating);
+  }
   if(type=="str"){if(!value.is_string())reject("expected JSON string");return Value(string(value.get<std::string>()));}
+  if(type=="bytes"){
+    if(!value.is_string())reject("bytes require a canonical base64 JSON string");
+    try{return Value(bytes(ByteBuffer::fromBase64(value.get_ref<const std::string&>())));}
+    catch(const DataError &){reject("bytes require a canonical base64 JSON string");}
+  }
   if(type.contains("list")){
     if(!value.is_array()||value.size()>maxItems)reject("expected JSON array within item limit");
     auto data=std::make_shared<Data>(Data::List);for(const auto &item:value)data->values.push_back(decode(item,type.at("list"),records,enums,depth+1,nodes));return Value(data);
@@ -91,6 +108,7 @@ void validateJSONText(const std::string &text){(void)parse(text,true);}
 std::string encodeJSON(const Value &value){size_t nodes=0;auto text=encode(value,0,nodes);if(text.size()>maxBytes)reject("JSON value exceeds byte limit");return text;}
 Value decodeJSON(const std::string &text,const std::string &schema){
   try{
+    FloatEnvironment environment;
     auto contract=JSON::parse(schema);auto value=parse(text);size_t nodes=0;
     if(contract.at("schema")!="nex.wire/1"&&contract.at("schema")!="nex.wire/2")reject("unsupported wire schema");
     auto enums=contract.at("schema")=="nex.wire/2"?contract.at("enums"):JSON::object();return success(decode(value,contract.at("root"),contract.at("records"),enums,0,nodes));

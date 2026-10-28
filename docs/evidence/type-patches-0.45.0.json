@@ -1,0 +1,150 @@
+{
+  "schema": "nex.type-patch-evidence/1",
+  "toolchain": "0.45.0",
+  "language": "0.15",
+  "recorded_at": "2026-10-18T18:35:12.671443+00:00",
+  "status": "macos_linux_arm64_full_and_sdk_passed",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "source_sha256": {
+    "CMakeLists.txt": "e090d04753df3bd590a44636aff298f76246d3827732267e8aa61899d9898186",
+    "src/main.cpp": "a61086d0a8a43a987b185e618beaa6409c7fa6c43b535fff074da1bf01a4deaa",
+    "src/graph_store.cpp": "83e988d3bba16030f88bff749f48d63546a8b60ee7bd1892b767d1caaae70702",
+    "src/language.cpp": "e93872b0be080ec8dd1e7ecf7597fac89422d4ef5ef9252ab2591e5772612d66",
+    "tests/type_patches.py": "62ea9a58d9db435e1297ca07c3c5fd4622e0ba4c4357c845daabfab0a2bcdc5a",
+    "tests/graph_identities.py": "7359514c64e261628c7436e7d9c3f212b0aec51c823a3ac42b0d25d5e20725f9",
+    "tools/sdk_acceptance.py": "2ccf025ab4c4e07cadfa72e752e5198f6d72cb49d3d2c4e5e640332564cd08fc",
+    "docs/graph.md": "8d1a1e0b133a8e7d628f49ea3a2bb3995ace67ab36ed1619b22ec7be66faaca1",
+    "docs/protocol.md": "11a69478f074e42c2b7e3d6a64c0b832a52d64281b227430e3d9b67c355fb08c",
+    "docs/language.md": "168f86985cde9c7b8af3623fc9d77ce63289582fc94bce43f691228460fab978",
+    "docs/grammar.ebnf": "80e823c76e1d012f2bba8ec50c44b2e1ba9b888d9d2d42534b2499c2c8df90af",
+    "llm/patch.schema.json": "c41947ffee9349504255ea254e4274aa711a5d0de9a80ac70110fb6b79afee17",
+    "llm/graph-identity.schema.json": "059d38e80f7116f12ca880cb8507d62204100a8d13b9ba9bf816ba09f89b6007",
+    "llm/SYSTEM_PROMPT.md": "d633e4370aed8f5c3fbfefdbaaff4eab19cabf58a410ac667db266eda80cf132",
+    "llm/language-pack.json": "7c6c02306dc1e68f193d4f3557a2df3c4145c3e79646d1c84ce9db0ba213fe6e",
+    "examples/type-patches/main.nex": "3bd6b82dd62873627c2c4a96540327890180d2c6a668d674b96a8f184179cf7a",
+    "examples/type-patches/model.nex": "bbb3beec6c779d82ccdd4b0663fa996ee81bc5e99bae79bce84e8ee7e50a6106",
+    "examples/type-patches/patch.json": "d274ac40d4d487f6133397033dd112cf0ca82a35dfa92286d369672dc409ab75"
+  },
+  "source_snapshot_files": 480,
+  "checks": {
+    "macos_full": {
+      "ok": true,
+      "groups": 52,
+      "python_cases": 400,
+      "cpp_probes": 10,
+      "seconds": 1196.45,
+      "ctest_parallel_level": 2,
+      "compiler_sha256": "0a3ce63cccf78e3ba00a9b2879895276bddd27c0b85f9498e2166a20146f21aa",
+      "last_test_sha256": "0e927acca362b54c5dff2c30b2e315a579c96bc0081176368c0436a680ecfe4d",
+      "all_snapshot_source_hashes_match": true
+    },
+    "macos_installed_sdk": {
+      "ok": true,
+      "at": "2026-10-18T18:09:12.778472+00:00",
+      "scope": "final current macOS installed SDK, matching root resources",
+      "compiler_sha256": "0a3ce63cccf78e3ba00a9b2879895276bddd27c0b85f9498e2166a20146f21aa",
+      "report_sha256": "e8d847f5225121863a4d32691609bbdbfd1279fb2fdb4c171347145a873c1b40",
+      "phases": 13,
+      "seconds": 301.94,
+      "all_resource_hashes_match_root": true,
+      "atomic_type_patches": {
+        "before_revision": "c71c53869f361e0f3b08b0130b649db7acf1ce1a9e6e8426d665ba36ad94ca66",
+        "after_revision": "2bceeb5c3c8fd6b20f1a7891967cd12f720e81cd7440c3666a6411942e7468b4",
+        "persistent_type_ids": 2,
+        "invalid_partial_edit_rejected": true,
+        "source_deleted": true,
+        "native_reference_typescript": true
+      },
+      "graph_mappings": 166
+    },
+    "linux_full_chain": {
+      "ok": true,
+      "at": "2026-10-18T18:35:12.671443+00:00",
+      "groups": 52,
+      "python_cases": 400,
+      "cpp_probes": 10,
+      "compiler_sha256": "afde623f4b22c3c49f2dadb67dad136bdb26325ba80ad344b5e4ac0ef7d456cb",
+      "sdk_compiler_sha256": "908d9f40814caf66e22d4d1656b95464647dc1421eb4e8e2d74d633eb4b2a562",
+      "last_test_sha256": "16849aff237f56dc7195ae852cd9cbdcf70259d61ac24e68e88a2ccf6428bf9b",
+      "verification_sha256": "fbe7e59a7fd038bcd7ae36fdf480e1c1363cbdf3b52b3938b94b51ea109dcde2",
+      "sdk_report_sha256": "fa4a6c822d9cf003f3db2fef5790bc2e27dee799dcd72000f34dd03c3d304d8e",
+      "ctest_seconds": 1007.88,
+      "sdk_phases": 13,
+      "sdk_seconds": 210.147,
+      "live_suites": [
+        "live-debugging",
+        "live-expressions",
+        "live-generics",
+        "live-constraints",
+        "live-matching",
+        "live-function_debug",
+        "live-bytes_debug",
+        "live-resource_debug",
+        "live-numbers",
+        "live-incremental",
+        "live-source-ffi"
+      ],
+      "source_checkout_mounted": false,
+      "network": "none",
+      "environment": {
+        "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "image_id": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "target_arch": "arm64",
+        "docker_server_arch": "arm64",
+        "emulated": false
+      },
+      "atomic_type_patches": {
+        "before_revision": "c71c53869f361e0f3b08b0130b649db7acf1ce1a9e6e8426d665ba36ad94ca66",
+        "after_revision": "2bceeb5c3c8fd6b20f1a7891967cd12f720e81cd7440c3666a6411942e7468b4",
+        "persistent_type_ids": 2,
+        "invalid_partial_edit_rejected": true,
+        "source_deleted": true,
+        "native_reference_typescript": true
+      },
+      "all_sdk_resource_hashes_match_root": true
+    },
+    "offline_schemas": {
+      "ok": true,
+      "validator": "jsonschema 4.25.1",
+      "compiler_sha256": "0a3ce63cccf78e3ba00a9b2879895276bddd27c0b85f9498e2166a20146f21aa",
+      "schema_sha256": {
+        "patch.schema.json": "c41947ffee9349504255ea254e4274aa711a5d0de9a80ac70110fb6b79afee17",
+        "graph-identity.schema.json": "059d38e80f7116f12ca880cb8507d62204100a8d13b9ba9bf816ba09f89b6007"
+      },
+      "previous_044_artifacts_accepted": 5,
+      "legacy_function_patch_accepted": true,
+      "current_artifact_sha256": {
+        "source_type": "3d9e1a422dc5047354a5f7ecf40a22c982b5309a5e9ada6ebb64e5b84a6c2e49",
+        "derived_type": "c0f02e7e850361398f4a4e174f8af7575214b74f59878ca84182b1431d593e83",
+        "module": "84e4e9a6c0e3cf9d8f73e1af1687391d5b9dabeaa86824023f9d0b2d44fa25ec",
+        "declarations": "782cd28b9958183dd5db7a2a847abed5ae2d08949f46b98bd31fdb9c585c79a9",
+        "identities": "bd4acd146503754371622fc9f3fe126e475809df04ee70dc8c34eca7181cc952"
+      },
+      "rejected_malformed": [
+        "kind:enum",
+        "kind:None",
+        "extra:True",
+        "name:app::f\n",
+        "derived_type:editable",
+        "module:editable"
+      ],
+      "remote_schema_access": false
+    }
+  },
+  "implemented": [
+    "atomic_existing_source_struct_and_enum_replacement",
+    "generic_source_type_templates",
+    "multi_module_candidate_recheck_before_save",
+    "explicit_optional_definition_kind",
+    "strict_patch_fields",
+    "persistent_type_ids_and_archived_layouts",
+    "expected_head_final_transaction_guard"
+  ],
+  "remaining": [
+    "module_import_new_declaration_structural_edits",
+    "current_release_sanitizer_x86_64_sdk_distribution_matrix",
+    "native_text_trap_attribution_and_parser_checker_identity",
+    "remaining_language_and_development_chain_plan"
+  ]
+}

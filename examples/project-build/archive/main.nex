@@ -1,0 +1,3 @@
+module project::archive;
+import "../core/value.nex" as core;
+pub fn answer()->i64 {return core::calculate(5);}

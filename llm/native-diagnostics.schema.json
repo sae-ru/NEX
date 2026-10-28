@@ -1,0 +1,357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/native-diagnostics-1.json",
+  "title": "Bounded manifest-checked native failure diagnostics",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "nex.native-diagnostics/1"
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/mapped"
+          },
+          {
+            "$ref": "#/$defs/unmapped"
+          },
+          {
+            "$ref": "#/$defs/capturedMapped"
+          }
+        ]
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "omitted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ignored": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "limit": {
+      "const": 32
+    }
+  },
+  "required": [
+    "schema",
+    "diagnostics",
+    "total",
+    "omitted",
+    "ignored",
+    "limit"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "site": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.native-site/1"
+        },
+        "operation_site": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "function_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "function_source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "compiler_build": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "byte_begin": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "schema",
+        "operation_site",
+        "function_hash",
+        "function_source_hash",
+        "compiler_build",
+        "byte_begin",
+        "byte_end",
+        "kind"
+      ],
+      "additionalProperties": true
+    },
+    "application": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.native-application/1"
+        },
+        "toolchain": {
+          "type": "string"
+        },
+        "language": {
+          "const": "0.16"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "build_key": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "compiler_build": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "toolchain",
+        "language",
+        "revision",
+        "source_hash",
+        "build_key",
+        "compiler_build"
+      ],
+      "additionalProperties": true
+    },
+    "report": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.native-trap/1"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "reported_line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "code_truncated": {
+          "type": "boolean"
+        },
+        "message_truncated": {
+          "type": "boolean"
+        },
+        "source": {
+          "$ref": "#/$defs/site"
+        },
+        "application": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/application"
+            }
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "maxLength": 768
+        }
+      },
+      "required": [
+        "schema",
+        "code",
+        "message",
+        "reported_line",
+        "code_truncated",
+        "message_truncated",
+        "source",
+        "application"
+      ],
+      "additionalProperties": true
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_begin": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "column",
+        "byte_begin",
+        "byte_end"
+      ],
+      "additionalProperties": false
+    },
+    "mapped": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "mapped"
+        },
+        "report": {
+          "$ref": "#/$defs/report"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "build_key": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "operation_site": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}(?![\\s\\S])"
+        },
+        "function_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}(?![\\s\\S])"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        }
+      },
+      "required": [
+        "status",
+        "report",
+        "revision",
+        "source_hash",
+        "build_key",
+        "symbol",
+        "operation_site",
+        "operation_id",
+        "function_id",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "unmapped": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "unmapped"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "report": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "report"
+      ],
+      "additionalProperties": false
+    },
+    "capturedMapped": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "mapped"
+        },
+        "report": {
+          "$ref": "#/$defs/report"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "build_key": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "operation_site": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "operation_id": {
+          "type": "null"
+        },
+        "function_id": {
+          "type": "null"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "identity_scope": {
+          "const": "captured_project"
+        }
+      },
+      "required": [
+        "status",
+        "report",
+        "revision",
+        "source_hash",
+        "build_key",
+        "symbol",
+        "operation_site",
+        "operation_id",
+        "function_id",
+        "location",
+        "identity_scope"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

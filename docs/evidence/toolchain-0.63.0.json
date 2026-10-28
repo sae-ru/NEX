@@ -1,0 +1,203 @@
+{
+  "schema": "nex.development-evidence/1",
+  "toolchain": "0.63.0",
+  "language": "0.16",
+  "created": "2026-10-20T01:14:18.490847+00:00",
+  "implementation": {
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "source_files": 687,
+    "commit": "ee207153aaa64aa8ad37fc2970b4e25632854eb9",
+    "branch": "codex/backup-nex-20261020-003739",
+    "macos_compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d"
+  },
+  "macos": {
+    "ok": true,
+    "created": "2026-10-20T01:04:17.542688+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+    "full_ctest": 74,
+    "sdk_phases": 23,
+    "sdk_commands": 329,
+    "frozen_resource_files_verified": 176,
+    "actual_mobile_api": "build/mobile-063-actual-api-ui-verification.json",
+    "browsers": "build/mobile-063-corrected-cross-origin-browsers/verification.json",
+    "sdk_report": "build/sdk-063-mobile-api-acceptance/report.json",
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "mobile": {
+    "ok": true,
+    "created": "2026-10-20T01:02:01.592231+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "source_files": 687,
+    "commit": "ee207153aaa64aa8ad37fc2970b4e25632854eb9",
+    "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+    "server": {
+      "ok": true,
+      "phase": "stopped cleanly after mobile probes",
+      "pid": 22964,
+      "api": "https://localhost:50841",
+      "ca": "/Users/sae/projects/NEX/build/mobile-063-native-api/ca.pem",
+      "compiler_sha256": "dc4a68a2affb259e16bf58f11d7a5425b2399a7744e94e4480f48ac1b6e5d88d",
+      "server_sha256": "a3bfb3737fda5361658536e28a60a1a19444f084018c7b30d99ccd5178b5b02f",
+      "accepted_release": false,
+      "terminal_exit_code": 0
+    },
+    "ui_backend": "TypeScript/React in Capacitor8.5.3 native WebView, separate from iOS MLIR archives",
+    "native_web_assets": {
+      "NEX_MOBILE_NOTICES.txt": "f33cae078e2c88c46b1f11f38f8cd9e1006b2175ae069184b734d27d07854516",
+      "index.html": "584f27e5c09cae56ef3b0d859b4cbb6f6f7f5f673024ebf8d6885cfc18e3fd83",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-C8g5jqY5.js": "d11c7aab5cf25876a23512fa63a030f8813a0320818b15c7e84741138e80ae2e",
+      "assets/index-C8g5jqY5.js.map": "7e762c4474884ec8a540a26d3b74529f77da4e4b286306152b41654006e92e18"
+    },
+    "api_host_derivation": {
+      "file": "index.html",
+      "original_sha256": "4212b4b62fe45993ef06fa41c0751b10530a1ab4dfd29781067e16eac521dbde",
+      "configured_sha256": "584f27e5c09cae56ef3b0d859b4cbb6f6f7f5f673024ebf8d6885cfc18e3fd83"
+    },
+    "ios": {
+      "runtime": "iOS27.1 ARM64 Simulator",
+      "owned_udid": "BDCA7FCA-FCE9-4716-B46B-A68AE7BE98DF",
+      "native_input": "runtime credential via OS keyboard Command-A/Command-V; task text via OS typeText",
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "case_seconds": 36.207,
+      "result": "build/mobile-063-ios-uitest-attempt6.xcresult",
+      "summary": "build/mobile-063-ios-xctest-summary.json",
+      "checks": [
+        "readable HTTPS401",
+        "runtime Bearer sign in",
+        "persistent POST/PUT/DELETE",
+        "local route navigation",
+        "separate principals and reentry"
+      ],
+      "earlier_native_input_automation_failures_retained": true
+    },
+    "android": {
+      "ok": true,
+      "scope": "actual owned ARM64 Android WebView -> native NEX HTTPS API; debug host trusts only owned test CA for localhost",
+      "checks": [
+        "HTTPS/CORS401 is readable",
+        "runtime token sign in",
+        "Unicode persistent POST",
+        "persistent PUT",
+        "local routes with remote state",
+        "principal isolation and reentry",
+        "persistent DELETE"
+      ],
+      "url": "https://localhost/",
+      "user_agent": "Mozilla/5.0 (Linux; Android 16; Android SDK built for arm64 Build/BE2A.250530.026.D1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/133.0.6943.137 Mobile Safari/537.36"
+    },
+    "apk_sha256": "b591da3a2f7721717bd7749e66f3bc801aa7ff8dcd317876680b303327e45b4f",
+    "physical_devices_tested": false,
+    "release_signing_tested": false,
+    "complete_platform_sdk_acceptance_pending": true,
+    "accepted_release": false,
+    "full_objective_complete": false,
+    "owned_simulator_shutdown": true,
+    "owned_android_emulator_shutdown": true,
+    "dedicated_adb_server_stopped": true
+  },
+  "linux": {
+    "ok": true,
+    "created": "2026-10-20T01:26:31.332461+00:00",
+    "source_tree": "4c1edca2a4fe3e3497942cd9bcb7142a74a7843b",
+    "full_ctest": 74,
+    "live_suites": 16,
+    "source_free_sdk_phases": 23,
+    "source_free_sdk_commands": 329,
+    "frozen_resource_files_verified": 176,
+    "network": "none",
+    "execution": "native Linux ARM64 on ARM64 host",
+    "compiler_sha256": "71026159a07948830311117163a9f720ca93c03fe9e301166f9552fae96a5519",
+    "report": "build/linux-063-mobile-api-arm64/verification.json",
+    "sdk_report": "build/linux-063-mobile-api-arm64/source-free-sdk.json",
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "root_integration": {
+    "verified": true,
+    "macos": {
+      "ok": true,
+      "toolchain": "0.63.0",
+      "language": "0.16",
+      "root_full_source_tree": "9d346edfe233748a6f0d4692f94dbab9a9b0602f",
+      "current_document_source_tree": "b6324fa8bea4ec9130ddfa1a550ea84740707e29",
+      "document_only_delta_after_full": [
+        "llm/SYSTEM_PROMPT.md"
+      ],
+      "compiler_runtime_sources_unchanged": true,
+      "compiler_sha256": "2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1",
+      "full_ctest": 74,
+      "full_seconds": 745.362,
+      "sdk_phases": 23,
+      "sdk_commands": 329,
+      "indexed_resource_files": 176,
+      "sdk_report": "build/sdk-063-root-acceptance/report.json",
+      "graph": "build/root-063-graph-preservation.json",
+      "linux_implementation": "build/mobile-063-linux-verification.json",
+      "mobile_implementation": "build/mobile-063-actual-api-ui-verification.json",
+      "accepted_release": false,
+      "full_objective_complete": false
+    },
+    "mobile_generation": {
+      "ok": true,
+      "compiler_sha256": "2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "api_origin": "https://api.example.test",
+      "original_index_matches_tested_mobile_example": true,
+      "all_non_index_assets_match_actual_mobile_test_cohort": true,
+      "non_index_assets": 5,
+      "both_native_projects_match_final_asset_hashes": true,
+      "native_application_built": false,
+      "target_executed": false,
+      "scope": "fresh installed root SDK generation; separate actual iOS/Android execution belongs to implementation4c1edca2"
+    },
+    "graph_preservation": {
+      "ok": true,
+      "all_tables_identical": true,
+      "revisions": 47,
+      "before": "build/root063-pre-integration-graph-snapshot/graph.db",
+      "after": "build/root063-post-sdk-graph-snapshot/graph.db",
+      "tables": [
+        "change_journal",
+        "declaration_ids",
+        "declaration_versions",
+        "edges",
+        "graph_edges",
+        "head",
+        "identity_links",
+        "identity_revisions",
+        "metadata",
+        "node_ids",
+        "nodes",
+        "operation_functions",
+        "operation_ids",
+        "operation_versions",
+        "revisions",
+        "task_runs"
+      ],
+      "after_generator": "/Users/sae/projects/NEX/build/root063-post-mobile-generator-graph-snapshot/graph.db",
+      "database_bytes_identical_after_generator": true
+    },
+    "current_document_source_tree": "b6324fa8bea4ec9130ddfa1a550ea84740707e29",
+    "final_overview_delta": [
+      "README.md",
+      "STATUS.md",
+      "PLAN.md",
+      "docs/evidence/toolchain-0.63.0.json"
+    ],
+    "final_overview_files_are_not_indexed_sdk_resources": true,
+    "root_graph_revisions": 47
+  },
+  "source_note": "Root full74 covers9d346edf; SDK23 covers the identical compiler/runtime plus corrected prompt inb6324fa8. This final overview/evidence update changes no compiler/runtime or indexed resource. Mobile native execution belongs to implementation4c1edca2; the root generator separately produces byte-identical non-index assets.",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "updated": "2026-10-20T01:49:08.412422+00:00"
+}

@@ -1,0 +1,910 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T18:42:25.982251+00:00",
+  "status": "verified_frozen_0582_scoped_root_acceptance_pending",
+  "toolchain": "0.58.2",
+  "language": "0.16",
+  "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+  "source_files": 638,
+  "source_commit": "fbf4ad70ce9ac83104add965327810ea5a8eb040",
+  "checks": {
+    "macos_focused": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T17:52:28.625058+00:00",
+      "ok": true,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "compiler_sha256": "205a0ac49167eb942844705ef6738d773b0676c12f4fd433f3b5c5c50328ada1",
+      "groups": 8,
+      "python_cases": 66,
+      "unittest_skips": 4,
+      "seconds": 83.78,
+      "all_source_inputs_match_frozen_snapshot": true,
+      "artifacts": {
+        "build/elf-core-0582-focused.log": "85ac1648cbaddc6d3390acaf4933c18eb46f093a23ec1bf23f3cc36dce8ffdb2",
+        "build/elf-core-0582-focused-LastTest.log": "8b20b54516e8040ac482d2d46153d9840a980fde70be539b874ec876bcca3609"
+      },
+      "scope": "Frozen current macOS focus, including pure ELF metadata provider and native core directory guards; full regression/SDK are separate gates."
+    },
+    "macos_live": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T17:52:28.625058+00:00",
+      "ok": true,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "compiler_sha256": "205a0ac49167eb942844705ef6738d773b0676c12f4fd433f3b5c5c50328ada1",
+      "matching_installed_sdk": true,
+      "cases_declared": 7,
+      "reported_skips": 1,
+      "commands": [
+        {
+          "suite": "debug_image",
+          "exit_code": 0,
+          "seconds": 32.699
+        },
+        {
+          "suite": "core_dump",
+          "exit_code": 0,
+          "seconds": 47.428
+        }
+      ],
+      "wrong_image_values_operations_watch_rejected": true,
+      "same_path_executable_replacement_rejected": true,
+      "source_deleted_exact_watch": "Я🧠2",
+      "artifacts": {
+        "build/elf-core-0582-macos-live-debug_image.log": "91a9c2f24776ff9746c709d6c2a82fbe3e6fc7bf7df66320b4d7faac1f837035",
+        "build/elf-core-0582-macos-live-core_dump.log": "0f8a1fc0cd2be373e4413b07410071416292c9c0875d72a7db1ef34728b11134"
+      },
+      "scope": "Actual installed macOS SDK and Mach-O core; Linux kernel-only case is explicitly skipped here."
+    },
+    "linux_core_preflight": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T17:52:28.625058+00:00",
+      "ok": true,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "compiler_sha256": "3202c4f8ddb56ea43ae1bff0cb8f7224aaaedc823370611be4e505532b1adf74",
+      "matching_installed_sdk": true,
+      "cases": 7,
+      "kernel_ELF_SIGABRT_and_LLDB_minidump": true,
+      "source_deleted_exact_watch": "Я🧠2",
+      "same_path_and_different_path_wrong_images_rejected": true,
+      "network": "none",
+      "artifacts": {
+        "build/linux-0582-elf-core-arm64/core-preflight.json": "9ef12ba03e0a6ec497dc01b9e65dd350e6a1bbb811dc6f17012de299ec2684c9",
+        "build/linux-0582-elf-core-arm64/core-preflight-debug_image.log": "0c4d2cbffcac9e26be0fb1fb6a8459d0f6ebb5a0219c9e4a1174e264a6e5549f",
+        "build/linux-0582-elf-core-arm64/core-preflight-core_dump.log": "0a1a80509db2ce98ba17dc525c26d507a339c934973b16d08f1b1e52cbc23eee"
+      },
+      "scope": "Native Linux ARM64 installed SDK preflight: actual kernel ELF SIGABRT with caller watch and LLDB minidump, normal guards and wrong images. Full70/live15/source-free SDK22 are separate running gates."
+    },
+    "macos_sdk": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T18:04:09.421498+00:00",
+      "ok": true,
+      "terminal_exit_code": 0,
+      "toolchain": "0.58.2",
+      "source_language": "0.16",
+      "compiler_sha256": "205a0ac49167eb942844705ef6738d773b0676c12f4fd433f3b5c5c50328ada1",
+      "phases": 22,
+      "commands": 317,
+      "seconds": 430.126,
+      "indexed_resources": 144,
+      "all_indexed_resources_match_frozen_source": true,
+      "editor_assets": {
+        "extension_version": "0.1.0",
+        "installed_sources": {
+          "package.json": "235c4e25b2ddc25b2578d4d3dbb534b3ee15c39caa2d862382c528da7a1b3ebc",
+          "package-lock.json": "b6ff6eb172aeb711dae99debad2f3c86bb31c94ca3dab8b78f66ce7d78960f31",
+          "extension.js": "fbcda94b2be244dbdd11e166fb704546bc79b0f757127f6e0acbe892b5e4de40",
+          "session.js": "421272431ec6a8543320da159e53900a4816c29f9815d8b6ff2f87378c72070d",
+          "language-configuration.json": "0620c4464523da727427550991f2eeefe4cdf704d865081ee78bdf000352b5d9",
+          "README.md": "d6caf34cbafd03e5c225b4e50f199db1baec596f5126d40d3f21bccdc2af79a5",
+          "test.js": "e33b51d25418079cb6e1e440c19f27d92565086ec57155be927f0c727a8445ab"
+        },
+        "focused_node_contracts": true,
+        "actual_ide_run": false,
+        "native_session_preparation": true,
+        "revision": "d40cfb83e9771e5cb30bbd23a3be0775b7140eb484e6e8b02b10b3a6d3745fea",
+        "build_key": "1bd1bf947fcda13d93f7aae5b563a36cd723007be2fd179c2b3f42994a572eaa"
+      },
+      "all_editor_assets_match_frozen_source": true,
+      "live_debugger": true,
+      "browser_build": true,
+      "source_checkout_hidden": false,
+      "report": "build/sdk-0582-elf-core-acceptance/report.json",
+      "report_sha256": "6c5586def29991774cd7cea06acf9cd53af9423d2b11e340466a6b9c422bd14d",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "source_commit": "fbf4ad70ce9ac83104add965327810ea5a8eb040",
+      "scope": "Complete installed SDK on macOS ARM64, npm offline using populated NEX_NPM_CACHE. Actual installed IDE is a separate scoped report; editor phase does not claim a GUI run.",
+      "native_indexed_pages": {
+        "native_descriptor": true,
+        "live_dap_pages": true,
+        "page_limit": 1000,
+        "pages": {
+          "items": {
+            "indexed_children": 32768,
+            "tail": [
+              [
+                "[32766]",
+                "40"
+              ],
+              [
+                "[32767]",
+                "42"
+              ]
+            ],
+            "default_count": 1000,
+            "large_request_count": 1000
+          },
+          "data": {
+            "indexed_children": 4194304,
+            "tail": [
+              [
+                "[4194302]",
+                "120"
+              ],
+              [
+                "[4194303]",
+                "255"
+              ]
+            ],
+            "default_count": 1000,
+            "large_request_count": 1000
+          }
+        },
+        "unchanged_watch_stop": {
+          "frame_id": 0,
+          "process_id": "78265",
+          "stop_id": "13",
+          "thread_id": "89702879"
+        },
+        "native_exit_code": 0,
+        "stale_handles_rejected": true
+      },
+      "core_reports": {
+        "retained_build": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19/debug.json",
+        "truncated_core_rejected": true,
+        "actual_core_read": true,
+        "source_deleted": true,
+        "graph_unchanged": true,
+        "exact_watch": "Я🧠2",
+        "report": {
+          "build_completion_checked": true,
+          "build_key": "85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19",
+          "compiler_build": "7234782fc4eac81243be8e78652f5033a231afc340e414d24f035bb4a34f2611",
+          "core": {
+            "bytes": 1253376,
+            "path": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/process.core",
+            "sha256": "9b4fa1a2151ae279332d319bd6be427d4f4d903a64a6eb96e3fb5ff7d2201acb",
+            "unchanged": true
+          },
+          "executable": {
+            "blake3": "6754510310bb1fc2a818a1128589d6bed27d3a9baf967078525300ed7e93cae6",
+            "bytes": 1006816,
+            "path": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19/app",
+            "uuid": "CA00CFB3-828D-3778-9A78-652ABB0C1C2F"
+          },
+          "frame_count": 4,
+          "frames": [
+            {
+              "column": 8,
+              "file_address": "0x100000918",
+              "function": "sdk_core::observe",
+              "index": 0,
+              "line": 4,
+              "module": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19/app",
+              "module_uuid": "CA00CFB3-828D-3778-9A78-652ABB0C1C2F",
+              "native_symbol": "nex_8_sdk_core_7_observe",
+              "pc": "0x1005c0918",
+              "source": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/source-anchors/4a4ea01d7c8e06fec8c3bf55a902057bcbfc07c370e01b83a9d106b82552e84b/source.nex"
+            },
+            {
+              "column": 23,
+              "file_address": "0x100000810",
+              "function": "sdk_core::main",
+              "index": 1,
+              "line": 6,
+              "module": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19/app",
+              "module_uuid": "CA00CFB3-828D-3778-9A78-652ABB0C1C2F",
+              "native_symbol": "nex_8_sdk_core_4_main",
+              "pc": "0x1005c0810",
+              "source": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/source-cache/2f6856ee477dff14058e52515e17f6ac65c7513a018f3c1c11a944fb7651db16/source.nex"
+            },
+            {
+              "column": 1,
+              "file_address": "0x100000844",
+              "function": null,
+              "index": 2,
+              "line": 6,
+              "module": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19/app",
+              "module_uuid": "CA00CFB3-828D-3778-9A78-652ABB0C1C2F",
+              "native_symbol": "main",
+              "pc": "0x1005c0844",
+              "source": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/source-cache/2f6856ee477dff14058e52515e17f6ac65c7513a018f3c1c11a944fb7651db16/source.nex"
+            },
+            {
+              "column": null,
+              "file_address": "0x31e80",
+              "function": null,
+              "index": 3,
+              "line": null,
+              "module": "/usr/lib/dyld",
+              "module_uuid": "D341DDCB-7969-3A9C-8E03-0CF4751398A9",
+              "native_symbol": "start",
+              "pc": "0x19a90be80",
+              "source": null
+            }
+          ],
+          "frames_truncated": false,
+          "inferior_execution": false,
+          "language": "0.16",
+          "ok": true,
+          "operation": {
+            "build_key": "85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19",
+            "candidates": [
+              {
+                "byte_begin": 99,
+                "byte_end": 105,
+                "column": 8,
+                "file": "main.nex",
+                "kind": "expression.name",
+                "line": 4,
+                "parent": "body/statement/1/expression/0",
+                "path": "body/statement/1/expression/0/argument/0",
+                "site": "e14c1dd343223a0e0ff79b02a664bdf75ff27dcf9b3b4c3aceefd525dd5b435e"
+              }
+            ],
+            "column": 8,
+            "function": "sdk_core::observe",
+            "language": "0.16",
+            "line": 4,
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.debug-operation/1",
+            "selection": "source_column",
+            "source_hash": "24734a22888d89c645ef9d802d75dfc5d0b567e1aaf0090972725b48e1bbbe41",
+            "stop": {
+              "frame_id": 0,
+              "process_id": "0",
+              "stop_id": "1",
+              "thread_id": "89703229"
+            },
+            "truncated": false
+          },
+          "operation_precision": "explicit_source_candidates",
+          "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+          "schema": "nex.core-report/1",
+          "selected_frame": 0,
+          "selected_thread": 0,
+          "source_hash": "24734a22888d89c645ef9d802d75dfc5d0b567e1aaf0090972725b48e1bbbe41",
+          "stop": {
+            "process_id": "0",
+            "state": 5,
+            "stop_id": "1"
+          },
+          "stop_unchanged": true,
+          "thread_count": 1,
+          "threads": [
+            {
+              "index": 0,
+              "stop_description": "ESR_EC_BRK_AARCH64 (fault address: 0x0)",
+              "stop_reason": 6,
+              "thread_id": "89703229"
+            }
+          ],
+          "threads_truncated": false,
+          "toolchain": "0.58.2",
+          "values": {
+            "file": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-acceptance/core-reports/.nex/build/source-anchors/4a4ea01d7c8e06fec8c3bf55a902057bcbfc07c370e01b83a9d106b82552e84b/source.nex",
+            "function": "sdk_core::observe",
+            "line": 4,
+            "native_symbol": "nex_8_sdk_core_7_observe",
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.debug-values/1",
+            "truncated": false,
+            "variables": [
+              {
+                "name": "value",
+                "type": "i64",
+                "value": "40"
+              },
+              {
+                "name": "text",
+                "type": "str",
+                "value": "0x0000000100f415f0"
+              },
+              {
+                "name": "items",
+                "type": "list<i64>",
+                "value": "0x0000000100f414f0"
+              },
+              {
+                "name": "answer",
+                "type": "i64",
+                "value": "42"
+              }
+            ]
+          },
+          "watch": {
+            "build_key": "85774b45b622d6be68065c441638e2c05e6a9c6e3b54c15348b8446f29dade19",
+            "display": "\"Я🧠2\"",
+            "display_truncated": false,
+            "expression": "text + str(items[1])",
+            "frame_truncated": false,
+            "function": "sdk_core::observe",
+            "language": "0.16",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "items",
+              "text"
+            ],
+            "read_paths": [
+              {
+                "binding": "items",
+                "kind": "value",
+                "path": [
+                  1
+                ]
+              },
+              {
+                "binding": "items",
+                "kind": "shape",
+                "path": []
+              },
+              {
+                "binding": "text",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.expression/1",
+            "steps": 6,
+            "stop": {
+              "frame_id": 0,
+              "process_id": "0",
+              "stop_id": "1",
+              "thread_id": "89703229"
+            },
+            "type": "str",
+            "value": "Я🧠2",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "str",
+              "schema": "nex.wire/2"
+            }
+          }
+        }
+      },
+      "core_report_schema_validated": true,
+      "accepted_release": false,
+      "full_objective_complete": false
+    },
+    "linux_full_live_sdk": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T18:23:39.570844+00:00",
+      "ok": true,
+      "status": "verified_scoped",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "all_source_inputs_match_frozen_snapshot": true,
+      "environment": {
+        "image": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "image_id": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "target_arch": "arm64",
+        "docker_server_arch": "arm64",
+        "emulated": false
+      },
+      "source_network": "none",
+      "groups": 70,
+      "python_groups_reporting_unittest": 57,
+      "python_cases_reporting_unittest": 577,
+      "reported_skips": [
+        "use --live for actual native editor breakpoints",
+        "use --live for actual native indexed pages",
+        "use --live for actual LLDB core image identity",
+        "use --live on Linux for kernel ELF SIGABRT core",
+        "use --live for actual read-only LLDB core reports",
+        "Darwin LLDB image-path workaround",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "Mach-O run-path selection",
+        "macOS SDK cross-build",
+        "macOS SDK cross-build",
+        "macOS cross SDK",
+        "macOS cross SDK"
+      ],
+      "ctest_seconds": 1150.4,
+      "compiler_sha256": "229212e3b31f043fe06167487b57a071a9b2519fc59d1e15e9beb00500fb0f0e",
+      "installed_compiler_sha256": "3202c4f8ddb56ea43ae1bff0cb8f7224aaaedc823370611be4e505532b1adf74",
+      "live_suites": [
+        "live-debugging",
+        "live-expressions",
+        "live-generics",
+        "live-constraints",
+        "live-matching",
+        "live-function_debug",
+        "live-bytes_debug",
+        "live-resource_debug",
+        "live-numbers",
+        "live-incremental",
+        "live-native_pages",
+        "live-debug_image",
+        "live-core_dump",
+        "live-string-debug",
+        "live-source-ffi"
+      ],
+      "source_free_sdk": {
+        "ok": true,
+        "report": "/Users/sae/projects/NEX/build/linux-0582-elf-core-arm64/sdk-acceptance/48f0f1e3483448eba7484d17b26f088c/workflow/report.json",
+        "compiler_sha256": "3202c4f8ddb56ea43ae1bff0cb8f7224aaaedc823370611be4e505532b1adf74",
+        "source_checkout_mounted": false,
+        "network": "none",
+        "live_debugger": true,
+        "browser_build": true,
+        "seconds": 263.173,
+        "phases": 22,
+        "commands": 317,
+        "expected_rejection_or_trap_commands": 17,
+        "indexed_resources": 144,
+        "all_indexed_resources_match_frozen_source": true,
+        "report_sha256": "575a5c3851b6063205221a351244cba02caf4b59e1ec18d2bb86901a030f238f"
+      },
+      "artifacts": {
+        "build/linux-0582-elf-core-arm64/verification.json": "26abba8058e0ef5e851f59e735e8f349978517f25565cab37e0b3e825ee7418c",
+        "build/linux-0582-elf-core-arm64/environment.json": "d2b8887538a8ed2c1cd016cd94a8fccc09f2b076e96cfcfdd471929b97490317",
+        "build/linux-0582-elf-core-arm64/ctest.log": "c724bb65a958af5a07442b1fe8fd92817d9fabeded9bb834841a752ff4145001",
+        "build/linux-0582-elf-core-arm64/Testing/Temporary/LastTest.log": "94849d497577a9281bc9706182d61770ad3f409acb197ca623d8f1b5433f0fc5",
+        "build/linux-0582-elf-core-arm64/source-free-sdk.json": "575a5c3851b6063205221a351244cba02caf4b59e1ec18d2bb86901a030f238f",
+        "build/linux-0582-elf-core-arm64/source-free-sdk.log": "523e487acc7560031c53c4effe59cc738c829d7b04ad8b6c8291c2fdb26311f8"
+      },
+      "core_reports": {
+        "retained_build": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/debug.json",
+        "truncated_core_rejected": true,
+        "actual_core_read": true,
+        "source_deleted": true,
+        "graph_unchanged": true,
+        "exact_watch": "Я🧠2",
+        "report": {
+          "build_completion_checked": true,
+          "build_key": "dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41",
+          "compiler_build": "5a73a2910a62077e3f1230ccd22880a0eff02cb555bd4273d2fb62e5b7227571",
+          "core": {
+            "bytes": 301949,
+            "path": "/evidence/workflow/core-reports/process.core",
+            "sha256": "7ba496048262c9ab2dea476cd30af48005cd488d1368a33e3fda0d416d252764",
+            "unchanged": true
+          },
+          "executable": {
+            "blake3": "1de3e5a54ddfa95f976260e069279f8a7587eed2a86d13407c773b8539ad7d5d",
+            "bytes": 1691272,
+            "path": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/app",
+            "uuid": "10D93DD2-92E2-3A92-C484-426787753468-032336F2"
+          },
+          "frame_count": 6,
+          "frames": [
+            {
+              "column": 8,
+              "file_address": "0x33d4c",
+              "function": "sdk_core::observe",
+              "index": 0,
+              "line": 4,
+              "module": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/app",
+              "module_uuid": "10D93DD2-92E2-3A92-C484-426787753468-032336F2",
+              "native_symbol": "nex_8_sdk_core_7_observe",
+              "pc": "0xaaaab3823d4c",
+              "source": "/evidence/workflow/core-reports/.nex/build/source-anchors/4a4ea01d7c8e06fec8c3bf55a902057bcbfc07c370e01b83a9d106b82552e84b/source.nex"
+            },
+            {
+              "column": 23,
+              "file_address": "0x33c48",
+              "function": "sdk_core::main",
+              "index": 1,
+              "line": 6,
+              "module": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/app",
+              "module_uuid": "10D93DD2-92E2-3A92-C484-426787753468-032336F2",
+              "native_symbol": "nex_8_sdk_core_4_main",
+              "pc": "0xaaaab3823c48",
+              "source": "/evidence/workflow/core-reports/.nex/build/source-cache/2f6856ee477dff14058e52515e17f6ac65c7513a018f3c1c11a944fb7651db16/source.nex"
+            },
+            {
+              "column": 1,
+              "file_address": "0x33c7c",
+              "function": null,
+              "index": 2,
+              "line": 6,
+              "module": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/app",
+              "module_uuid": "10D93DD2-92E2-3A92-C484-426787753468-032336F2",
+              "native_symbol": "main",
+              "pc": "0xaaaab3823c7c",
+              "source": "/evidence/workflow/core-reports/.nex/build/source-cache/2f6856ee477dff14058e52515e17f6ac65c7513a018f3c1c11a944fb7651db16/source.nex"
+            },
+            {
+              "column": null,
+              "file_address": "0x284c4",
+              "function": null,
+              "index": 3,
+              "line": null,
+              "module": "/lib/aarch64-linux-gnu/libc.so.6",
+              "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+              "native_symbol": "___lldb_unnamed_symbol_28450",
+              "pc": "0xffff8b7284c4",
+              "source": null
+            },
+            {
+              "column": null,
+              "file_address": "0x28598",
+              "function": null,
+              "index": 4,
+              "line": null,
+              "module": "/lib/aarch64-linux-gnu/libc.so.6",
+              "module_uuid": "27027B96-E5B8-C475-FC32-7AA445BEA1C7-1D37B4E2",
+              "native_symbol": "__libc_start_main",
+              "pc": "0xffff8b728598",
+              "source": null
+            },
+            {
+              "column": null,
+              "file_address": "0x33ab0",
+              "function": null,
+              "index": 5,
+              "line": null,
+              "module": "/evidence/workflow/core-reports/.nex/build/dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41/app",
+              "module_uuid": "10D93DD2-92E2-3A92-C484-426787753468-032336F2",
+              "native_symbol": "_start",
+              "pc": "0xaaaab3823ab0",
+              "source": null
+            }
+          ],
+          "frames_truncated": false,
+          "inferior_execution": false,
+          "language": "0.16",
+          "ok": true,
+          "operation": {
+            "build_key": "dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41",
+            "candidates": [
+              {
+                "byte_begin": 99,
+                "byte_end": 105,
+                "column": 8,
+                "file": "main.nex",
+                "kind": "expression.name",
+                "line": 4,
+                "parent": "body/statement/1/expression/0",
+                "path": "body/statement/1/expression/0/argument/0",
+                "site": "e14c1dd343223a0e0ff79b02a664bdf75ff27dcf9b3b4c3aceefd525dd5b435e"
+              }
+            ],
+            "column": 8,
+            "function": "sdk_core::observe",
+            "language": "0.16",
+            "line": 4,
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.debug-operation/1",
+            "selection": "source_column",
+            "source_hash": "24734a22888d89c645ef9d802d75dfc5d0b567e1aaf0090972725b48e1bbbe41",
+            "stop": {
+              "frame_id": 0,
+              "process_id": "3353",
+              "stop_id": "1",
+              "thread_id": "3353"
+            },
+            "truncated": false
+          },
+          "operation_precision": "explicit_source_candidates",
+          "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+          "schema": "nex.core-report/1",
+          "selected_frame": 0,
+          "selected_thread": 0,
+          "source_hash": "24734a22888d89c645ef9d802d75dfc5d0b567e1aaf0090972725b48e1bbbe41",
+          "stop": {
+            "process_id": "3353",
+            "state": 5,
+            "stop_id": "1"
+          },
+          "stop_unchanged": true,
+          "thread_count": 1,
+          "threads": [
+            {
+              "index": 0,
+              "stop_description": "breakpoint 1.1",
+              "stop_reason": 5,
+              "thread_id": "3353"
+            }
+          ],
+          "threads_truncated": false,
+          "toolchain": "0.58.2",
+          "values": {
+            "file": "/evidence/workflow/core-reports/.nex/build/source-anchors/4a4ea01d7c8e06fec8c3bf55a902057bcbfc07c370e01b83a9d106b82552e84b/source.nex",
+            "function": "sdk_core::observe",
+            "line": 4,
+            "native_symbol": "nex_8_sdk_core_7_observe",
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.debug-values/1",
+            "truncated": false,
+            "variables": [
+              {
+                "name": "value",
+                "type": "i64",
+                "value": "40"
+              },
+              {
+                "name": "text",
+                "type": "str",
+                "value": "0x0000aaaac1c0b330"
+              },
+              {
+                "name": "items",
+                "type": "list<i64>",
+                "value": "0x0000aaaac1c0b3d0"
+              },
+              {
+                "name": "answer",
+                "type": "i64",
+                "value": "42"
+              }
+            ]
+          },
+          "watch": {
+            "build_key": "dd2e9b3f8e937dd5daa96b1ad69717c0c071fbadfd237dea6e76bc92f8118b41",
+            "display": "\"Я🧠2\"",
+            "display_truncated": false,
+            "expression": "text + str(items[1])",
+            "frame_truncated": false,
+            "function": "sdk_core::observe",
+            "language": "0.16",
+            "limits": {
+              "capture_path_depth": 56,
+              "cumulative_text_bytes": 8388608,
+              "frame_captures": 256,
+              "lazy_references": 10000,
+              "steps": 100000,
+              "text_range_scalars": 4096,
+              "text_scalar_observations": 100000,
+              "value_depth": 64,
+              "value_visits": 100000,
+              "wire_result_bytes": 1048576
+            },
+            "ok": true,
+            "read_bindings": [
+              "items",
+              "text"
+            ],
+            "read_paths": [
+              {
+                "binding": "items",
+                "kind": "value",
+                "path": [
+                  1
+                ]
+              },
+              {
+                "binding": "items",
+                "kind": "shape",
+                "path": []
+              },
+              {
+                "binding": "text",
+                "kind": "value",
+                "path": []
+              }
+            ],
+            "revision": "e4a322eff230ada8bca93a4d6a5175c2d7198d9bfcde560e5c81707fdfbb1a6d",
+            "schema": "nex.expression/1",
+            "steps": 6,
+            "stop": {
+              "frame_id": 0,
+              "process_id": "3353",
+              "stop_id": "1",
+              "thread_id": "3353"
+            },
+            "type": "str",
+            "value": "Я🧠2",
+            "wire_schema": {
+              "enums": {},
+              "records": {},
+              "root": "str",
+              "schema": "nex.wire/2"
+            }
+          }
+        }
+      },
+      "core_report_schema_validated": true,
+      "remaining": [
+        "macOS full regression and portable SDK have separate recorded gates",
+        "Root promotion needs its own clean build/full/SDK acceptance",
+        "Wider platform and complete PLAN acceptance"
+      ]
+    },
+    "macos_portable": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T18:10:58.792802+00:00",
+      "ok": true,
+      "status": "verified_scoped",
+      "terminal_exit_code": 0,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "input_compiler_sha256": "205a0ac49167eb942844705ef6738d773b0676c12f4fd433f3b5c5c50328ada1",
+      "bundled_compiler_sha256": "c28cdcc5856514967504cf307fc42c94be5d888b6b698da815a184f64e5daf9c",
+      "acceptance_tool_sha256": "8902c4d9472f5862fa7b51f84acbc5314f513f04afefd665b9d493a9a981d97d",
+      "moved_phases": 22,
+      "restored_phases": 22,
+      "workflows": {
+        "moved": {
+          "phases": 22,
+          "commands": 317,
+          "seconds": 402.579,
+          "expected_rejections_or_traps": 17,
+          "resource_count": 144,
+          "all_indexed_resources_match_frozen_source": true,
+          "actual_core_read": true,
+          "core_report_schema_validated": true,
+          "report": "build/sdk-0582-elf-core-macos-distribution/moved-acceptance.json",
+          "report_sha256": "ede10fb9f5499f6438c6562038c4245ce3abcb2757870b789d2eb22dd631b734"
+        },
+        "restored": {
+          "phases": 22,
+          "commands": 317,
+          "seconds": 396.413,
+          "expected_rejections_or_traps": 17,
+          "resource_count": 144,
+          "all_indexed_resources_match_frozen_source": true,
+          "actual_core_read": true,
+          "core_report_schema_validated": true,
+          "report": "build/sdk-0582-elf-core-macos-distribution/restored-acceptance.json",
+          "report_sha256": "053db66242f668f4bc779381279aa37071fcb67a76cf484e1990a59da088ec79"
+        }
+      },
+      "seconds": 830.553,
+      "live_debugger": true,
+      "browser_build": true,
+      "npm_offline": true,
+      "external_network_blocked": false,
+      "configured_source_and_dependency_roots_kernel_read_denied": [
+        "/Users/sae/projects/NEX",
+        "/opt/homebrew/Cellar/llvm@22/22.1.8",
+        "/opt/homebrew/Cellar/openssl@3/3.6.3",
+        "/opt/homebrew/Cellar/zstd/1.5.7_1",
+        "/opt/local"
+      ],
+      "negative_read_controls_per_workflow": 5,
+      "sdk_kernel_write_denied": true,
+      "host": "arm64-apple-darwin27.0.0",
+      "minimum_macos": "27.0",
+      "external_prerequisites": [
+        "Apple command line tools/SDK and system C++ runtime/linker",
+        "Python 3.9+",
+        "Node.js/npm for browser builds",
+        "host LLDB/lldb-dap for live debugging"
+      ],
+      "archive": {
+        "path": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-macos-distribution/nex-sdk-0.58.2-macos-arm64-development.tar.gz",
+        "sha256": "73f072999dc8edf50d3478dbac324323c7957ec8674ec902ed14c4448bff94f1",
+        "bytes": 117875091,
+        "files_in_inventory": 2594,
+        "excluded_python_cache_files": []
+      },
+      "outer_report_sha256": "9b2b15cb03a7106d91796d38f1a160bd317b5e7ab9feee59cb472e80f74a0f8f",
+      "preceding_toolchain_evidence": "docs/evidence/sdk-distribution-0.56.1.json",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "remaining": [
+        "Root promotion needs current root build/full70 and installed SDK22",
+        "Broader platform/device/release validation and complete PLAN"
+      ]
+    },
+    "linux_portable": {
+      "schema": "nex.development-evidence/1",
+      "created": "2026-10-19T18:36:25.508006+00:00",
+      "ok": true,
+      "status": "verified_scoped",
+      "terminal_exit_code": 0,
+      "toolchain": "0.58.2",
+      "language": "0.16",
+      "source_files": 638,
+      "source_tree": "f21acd4c48b0d86e149b046eb2b3861ae4680267",
+      "source_manifest": "build/elf-core-0582-validation-snapshot.json",
+      "input_compiler_sha256": "3202c4f8ddb56ea43ae1bff0cb8f7224aaaedc823370611be4e505532b1adf74",
+      "bundled_compiler_sha256": "15f77cdce5932b44d5ce585939698b981947db428690fdf72057cd72a278d935",
+      "acceptance_tool_sha256": "8902c4d9472f5862fa7b51f84acbc5314f513f04afefd665b9d493a9a981d97d",
+      "moved_phases": 22,
+      "restored_phases": 22,
+      "workflows": {
+        "moved": {
+          "phases": 22,
+          "commands": 310,
+          "seconds": 325.776,
+          "indexed_resources": 144,
+          "all_indexed_resources_match_frozen_source": true,
+          "report": "build/sdk-0582-elf-core-linux-distribution-arm64/clean-acceptance/report/workflow/report.json",
+          "report_sha256": "283d6900214b3fd7b9c465f9e7aca7679f1a91212619089ce3411c0f0625423f"
+        },
+        "restored": {
+          "phases": 22,
+          "commands": 310,
+          "seconds": 400.882,
+          "indexed_resources": 144,
+          "all_indexed_resources_match_frozen_source": true,
+          "report": "build/sdk-0582-elf-core-linux-distribution-arm64/archive-acceptance/report/workflow/report.json",
+          "report_sha256": "18b1a1adc1985668250d65c1f0d64792b79f7635e5028a64cc6b61587de0284e"
+        }
+      },
+      "images": {
+        "nex-linux-toolchain:arm64": "sha256:d8cc8012fd6b07d7bba21eabe87cfc0b0d28b11ea8efba8d0130d0aecfefabb8",
+        "nex-sdk-packager:arm64": "sha256:cb2472138413c04ed55c161a19679b6b7e3e2d252999677052f443a588644013",
+        "nex-sdk-runtime:arm64": "sha256:b8567b9108fd7236e1c09d7fb1686ca33ba3841e2c51ae94009b6401cf3aa3f0"
+      },
+      "metadata_boundaries": {
+        "ok": true,
+        "unsafe_absolute_soname_rejected": true,
+        "no_outside_write": true,
+        "parent_component_names_rejected": true
+      },
+      "seconds": 764.899,
+      "external_network": "none",
+      "source_checkout_mounted": false,
+      "host_llvm_mlir_z3_present": false,
+      "browser_build": true,
+      "live_debugger": false,
+      "scope": "Separate Linux ARM64 runtime containers; moved SDK mounted read-only, restored SDK inventory verified. Current full/live suites have a separate source/compiler report.",
+      "archive": {
+        "path": "/Users/sae/projects/NEX/build/sdk-0582-elf-core-linux-distribution-arm64/nex-sdk-0.58.2-linux-arm64-development.tar.gz",
+        "sha256": "661724a0840486bf43c2d7dba1c69d95ccea5cfa49a9bb28a83867272d7fa574",
+        "bytes": 145937001,
+        "files_in_inventory": 926,
+        "excluded_python_cache_files": []
+      },
+      "outer_report_sha256": "cc154b8d7c661c331fff8f1e5cde95db3772b2d4832764e6ee95b2d35ade6701",
+      "accepted_release": false,
+      "full_objective_complete": false,
+      "remaining": [
+        "Current root promotion/build/full70/SDK22",
+        "Wider platform/device/release validation and complete PLAN"
+      ]
+    }
+  },
+  "root_status": "Exact638 source promoted; clean build passed; own full70/installed SDK22/graph preservation running",
+  "remaining": [
+    "Root own full70/installed SDK22/graph preservation",
+    "0.59 capsule implementation has separate pending matching compiler/live/full gates",
+    "Optimized-PC attribution and complete PLAN"
+  ],
+  "accepted_release": false,
+  "full_objective_complete": false
+}

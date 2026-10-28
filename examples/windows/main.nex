@@ -1,0 +1,12 @@
+module windows_example;
+
+pub fn answer()->i64 {
+ let original:list<str>=["NEX","Я🧠"];
+ let extended:list<str>=push(original,"Windows");
+ assert(len(original)==2 && len(extended)==3);
+ assert(len(original[1])==2);
+ return 42;
+}
+
+fn main()->unit!{io} {print(answer());print("NEX — Windows");}
+test fn semantics()->unit {assert(answer()==42);}

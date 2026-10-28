@@ -41,7 +41,7 @@ Without `--directory`, `api` returns `nex.api/1`: endpoint identities, methods/r
 Generation requires a new or empty output directory. Both candidate projects are checked before final output, and a temporary sibling directory is renamed into place only when generation succeeds. The output contains:
 
 - `server/`: complete frozen original sources, generated typed routers/entry, vendored dependencies, project manifest and lock. Build its reported entry with `--target server`.
-- `client/api.nex`: pure `request_OPERATION` and `response_OPERATION` helpers. Client models keep their original nominal module names in `client/models/MODULE/PATH.nex`. Only required model declarations are extracted from application modules. Captured standard/package dependencies retain their public client/shared surface and reachable private helpers/types; server/test declarations and unused private code are removed, including from overridden libraries. Unneeded imports/files and text outside retained declarations are excluded.
+- `client/api.nex`: pure `request_OPERATION` and `response_OPERATION` helpers. Client models keep their original nominal module names in `client/models/MODULE/PATH.nex`. Required model declarations and their client/shared trait method closures are extracted from application modules. Captured standard/package dependencies retain their public client/shared functions/traits and required private helpers/types. Server functions, server trait members/bindings, endpoints, tests and unused private code are removed, including from overridden libraries. Unneeded imports/files and text outside retained declarations are excluded.
 - `api.json`: exact NEX endpoint/wire descriptors.
 - `openapi.json`: OpenAPI 3.1.1 paths, operation names, bearer authentication and schemas. Wire i64 uses an exact canonical signed-64-bit decimal-string pattern. NEX's additional UTF-8, duplicate-key and aggregate resource checks remain authoritative.
 
@@ -94,3 +94,33 @@ Public enum input/output models generate `nex.wire/2` descriptors, extracted NEX
 Language 0.7 concrete generic models retain full nominal argument identities in wire/2. Extraction writes each original public struct/enum template once, imports required type arguments (including phantom arguments), and prints checked type applications in generated helper signatures. Server and browser projects are rechecked after projection; derived instance declarations never appear as duplicate source definitions. Generic endpoint handlers themselves must be wrapped by a concrete server handler.
 
 Language 0.8 model extraction retains builtin parameter bounds in each original public struct/enum declaration; generated projects recheck those bounds. A generated bounded model cannot be instantiated with a disallowed type. Wire encoding of concrete values is unchanged.
+
+Language 0.11 numeric models use f64 as a finite JSON number with OpenAPI type number / format double and x-nex-type f64. The checked wire codec enforces binary64 rounding/finite-value rules at the native/browser boundary; OpenAPI format annotations do not replace runtime validation. i64 retains its exact canonical string encoding.
+
+Language 0.13 bytes models use canonical padded base64 JSON strings. OpenAPI
+marks them with `contentEncoding: base64`, `contentMediaType:
+application/octet-stream` and `x-nex-type: bytes`; the runtime enforces alphabet,
+padding and unused-bit rules. Encoding and result wrappers count against the
+JSON/body limits. Generated models retain the primitive type; they do not expose
+mutable typed arrays. Nominal wire descriptor objects keep their existing meaning.
+
+Language 0.16 model extraction retains constructor parameter arities, custom
+bounds and associated type projections, with their checked witness closure.
+Required client/shared trait methods retain their real ordinary targets, generic
+prefix arguments, signatures, realms/effects and private dependencies. Server
+members and their bindings/targets are excluded. No method is replaced by a stub
+or an implementation with different behavior. Retained public trait contracts
+remain callable from their permitted client/shared realm.
+
+The generator checks the complete captured input before projection, then checks
+both final server/client projects before writing output. Static source references
+remain available even when a concrete associated type normalizes to a primitive;
+their required imports/witnesses cannot be inferred from the normalized type
+alone. Generation executes no server or foreign function. Nominal module/type
+argument identities and concrete wire layouts remain those of the original
+checked program. Imports and witness modules retain ordinary visibility,
+acyclic-source and coherent-implementation checks.
+
+The earlier API/trait regression passes on the isolated library-projection
+prototype; full current regression, SDK/platform and release checks remain
+pending. The descriptor and STATUS.md record exact validation scopes.

@@ -1,0 +1,9 @@
+module windows_storage;
+
+// Compile with an explicit matching Windows SQLite include/library pair.
+// The process receives NEX_DATABASE and NEX_STORAGE_OWNER at execution time.
+server fn main() -> unit !{db, io} {
+  let value: str = unwrap(read_env("NEX_MESSAGE"));
+  assert(is_ok(store_put("message", value)));
+  print(unwrap(store_get("message")));
+}

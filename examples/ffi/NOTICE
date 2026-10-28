@@ -1,0 +1,4 @@
+NEX independent C module example, maintained with the NEX project.
+This notice identifies the example sources; it does not grant a distribution
+license. The example has no bundled third-party native library dependency.
+The host's OpenSSL and platform runtime retain their own licensing requirements.

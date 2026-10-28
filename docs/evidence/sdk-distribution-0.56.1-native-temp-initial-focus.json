@@ -1,0 +1,12 @@
+{
+  "status": "retained_dsymutil_tmpdir_percent_failure",
+  "compiler_sha256": "59934b00c6596b58c261ad27699d087497a1e05b0a44d553e7f3606375fa9664",
+  "groups": 5,
+  "passed": 4,
+  "failed_case": "web native-temp-case with inherited percent TMPDIR",
+  "diagnostic": "E_DEBUG: debug-symbol packaging failed; dsymutil stderr: No such file or directory",
+  "log": "build/sdk-distribution-0561-web-temp-focused.log",
+  "log_sha256": "30a3eae0043e38b5d30653d04e2915445b0965369a1162e1134ade41dfeccaf2",
+  "real_web_build_passed": true,
+  "full_objective_complete": false
+}

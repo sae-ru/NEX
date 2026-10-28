@@ -1,4 +1,4 @@
-# Function values — language 0.10
+# Function values — language 0.12 (introduced in 0.10)
 
 NEX function values carry an exact checked parameter/result signature, realm
 and effect set. They run in the interpreter, native MLIR/LLVM output and
@@ -90,13 +90,13 @@ fn roundtrip<T:wire>(value:T)->T {
 }
 ```
 
-`wire` accepts i64, bool, str, recursive lists/results and nominal stored fields
+`wire` accepts i64, f64, bool, str, recursive lists/results and nominal stored fields
 or enum payloads that satisfy the same rule. Phantom type arguments that are not
 stored payloads do not prevent serialization. It rejects a function or an
 aggregate containing one. A generic parameter must declare a sufficient bound;
 unconstrained T still permits equality/formatting but cannot promise JSON for all
-values. `integer` implies `add`, `ordered` and `wire`; `ordered` implies `wire`
-with its current i64 domain. `add` alone does not imply wire because a list may
+values. `integer` implies `number`, `add`, `ordered` and `wire`; `number` implies
+`add`, `ordered`, `wire`; `ordered` implies `wire` over i64/f64. `add` alone does not imply wire because a list may
 contain callbacks. Forwarding checks these implications before specialization.
 
 Generated API clients preserve nominal types/imports mentioned only in callback
@@ -124,10 +124,10 @@ identities, budgets, pages and stop expiry. Scalar proofs explicitly report
 callable operations unsupported; a passing scalar proof does not prove a
 higher-order program or compiler correctness.
 
-Language 0.10 uses `nex.function/8` and `nex.program/9`; nominal formats remain
+Language 0.12 uses `nex.function/9` and `nex.program/10`; nominal formats remain
 `nex.structure/4` and `nex.enum/3`. Program identities include source owners and
 exclude derived instances/lifted bodies, while owner canonical expressions
-include lambda signatures/bodies. Use `nex migrate` to recheck a genuine 0.9
+include lambda signatures/bodies. Use `nex migrate` to recheck an older
 archive, preserving its original source/history and local IDs. Export the new
 revision to obtain current manifests/locks. Existing generic serializers may
 need an explicit `wire` bound: migration reports an error and leaves HEAD intact

@@ -1,0 +1,14 @@
+module traits::api::service;
+import "std/api.nex" as api;
+import "./model.nex" as model;
+
+server fn echo(context: api::Context, input: model::Envelope<model::Box<i64>>)
+  -> result<model::Envelope<model::Box<i64>>> {
+  return ok(input);
+}
+endpoint echo_value("POST", "/api/trait-echo") = echo;
+
+server test fn values() -> unit {
+  let value: model::Envelope<model::Box<i64>> = model::Envelope<model::Box<i64>>(42);
+  assert(unwrap(echo(api::Context("test-user", "test-request"), value)) == value);
+}

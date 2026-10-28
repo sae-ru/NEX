@@ -18,19 +18,23 @@ std::set<std::string> nativeFunctionBridges(const Program &p,const std::set<std:
   std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto statement:body){expression(statement->expr);childBlocks(statement,block);}};
   for(const auto &name:reachable)block(p.function(name).body);return result;
 }
-NativePlan planNative(const Program &p,const std::string &entry){
+NativePlan planNative(const Program &p,const std::string &entry,const std::vector<std::string> &additionalEntries,bool allCallableBridges){
   std::set<std::string> reachable;
   std::function<void(const Function&)> visit=[&](const Function &f){if(reachable.insert(f.name).second)for(const auto &name:f.dependencies)visit(p.function(name));};
   visit(p.function(entry));
+  for(const auto &name:additionalEntries)visit(p.function(name));
   auto bridges=nativeFunctionBridges(p,reachable);
+  if(allCallableBridges)for(const auto &name:reachable)if(!p.function(name).closure)bridges.insert(name);
   std::map<std::string,std::set<std::string>> members,callers,unitDependencies,unitConsumers;
   for(const auto &name:reachable){
     const auto &f=p.function(name);members[f.unit].insert(name);
     for(const auto &callee:f.dependencies)callers[callee].insert(name);
   }
   NativePlan plan;
-  for(const auto &[key,names]:members){
-    NativeUnit unit;unit.unit=key;unit.module=p.function(*names.begin()).owner;unit.functions=names;
+  for(const auto &name:reachable){
+    const auto &f=p.function(name);const auto &key=f.unit;
+    NativeUnit unit;unit.identity=name;unit.unit=key;unit.module=f.owner;unit.functions={name};
+    unit.foreign=f.foreign.has_value();if(unit.foreign){unit.wire=true;unit.files=true;}
     if(unit.module.empty())unit.module=p.module;
     std::set<std::string> types,externalCalls;llvm::json::Array definitions,interfaces,layouts;
     std::function<void(Type)> type=[&](Type t){
@@ -46,17 +50,18 @@ NativePlan planNative(const Program &p,const std::string &entry){
       if(e->kind==Expr::Call){
         if(e->text=="encode_json"||e->text=="decode_json")unit.wire=true;
         if(e->text.starts_with("store_"))unit.storage=true;
+        if(e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes")unit.files=true;
       }
       for(auto child:e->args)expr(child);
     };
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){
       for(auto s:body){type(s->type);expr(s->expr);childBlocks(s,block);}
     };
-    for(const auto &name:names){
-      const auto &f=p.function(name);definitions.push_back(canonical(f));
-      type(f.result);for(const auto &param:f.params)type(param.type);block(f.body);
-      for(const auto &callee:f.dependencies)if(!names.contains(callee)){
-        externalCalls.insert(callee);unitDependencies[key].insert(p.function(callee).unit);
+    {
+      definitions.push_back(canonical(f));
+      type(f.result);for(const auto &param:f.params)type(param.type);for(const auto &capture:f.captures)type(capture.type);block(f.body);
+      for(const auto &callee:f.dependencies)if(callee!=name){
+        externalCalls.insert(callee);if(p.function(callee).unit!=key)unitDependencies[key].insert(p.function(callee).unit);
       }
     }
     for(const auto &name:externalCalls){
@@ -64,10 +69,18 @@ NativePlan planNative(const Program &p,const std::string &entry){
       type(callee.result);for(const auto &param:callee.params)type(param.type);
     }
     for(const auto &name:types)layouts.push_back(canonical(p.structure(name)));
-    llvm::json::Array unitBridges;for(const auto &name:names)if(bridges.contains(name))unitBridges.push_back(name);
-    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/1"},{"language",languageVersion},
-      {"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
+    llvm::json::Array unitBridges;if(bridges.contains(name))unitBridges.push_back(name);
+    unit.contract=json(llvm::json::Object{{"schema","nex.native-unit-input/2"},{"language",languageVersion},
+      {"function",name},{"unit",key},{"module",unit.module},{"definitions",std::move(definitions)},
       {"external_interfaces",std::move(interfaces)},{"type_layouts",std::move(layouts)},{"closure_bridges",std::move(unitBridges)}},false);
+    // Absolute byte offsets may change after an unrelated earlier edit. Machine
+    // diagnostics and DWARF consume line/column positions, not those offsets.
+    auto point=[](const Span &span){return llvm::json::Object{{"file",span.file},{"line",span.line},{"column",span.column}};};
+    llvm::json::Array parameters,captures;
+    for(const auto &param:f.params)parameters.push_back(point(param.span));
+    for(const auto &capture:f.captures)captures.push_back(point(capture.span));
+    unit.source=json(llvm::json::Object{{"schema","nex.function-source/1"},{"definition",p.definition(f)},
+      {"start",point(f.span)},{"parameters",std::move(parameters)},{"captures",std::move(captures)}},false);
     plan.units.push_back(std::move(unit));
   }
   std::set<std::string> allUnits;for(const auto &unit:plan.units)allUnits.insert(unit.unit);

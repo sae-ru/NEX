@@ -5,6 +5,8 @@
 #include "nex_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
+#include "nex_files.h"
+#include "nex_foreign.h"
 #include "llvm/Support/Error.h"
 #include <limits>
 #include <functional>
@@ -14,6 +16,7 @@ namespace {
 using V=nexrt::Value;
 struct Returned { V value; };
 class Interpreter {
+  nexrt::FileScope files;
   const Program &p; uint64_t limit; Evaluation result;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
@@ -63,6 +66,7 @@ class Interpreter {
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
     if(e->kind==Expr::Match)return matching(e);
     if(e->kind==Expr::Integer||e->kind==Expr::Boolean)return V(e->number,e->kind==Expr::Boolean);
+    if(e->kind==Expr::Floating)return V::floating(nexrt::floatValue(e->number));
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
     if(e->kind==Expr::Name)return local(e->text,e->span);
     if(e->kind==Expr::List){auto d=std::make_shared<nexrt::Data>(nexrt::Data::List);for(auto a:e->args)d->values.push_back(expression(a));return V(d);}
@@ -76,6 +80,13 @@ class Interpreter {
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
       }
       if(e->text=="ok")return nexrt::success(args[0]);
+      if(e->text=="bytes")return nexrt::bytesFromIntegers(full(args[0]));
+      if(e->text=="utf8_bytes")return V(nexrt::utf8Bytes(full(args[0]).object->text));
+      if(e->text=="decode_utf8")return nexrt::decodeUTF8(nexrt::byteBuffer(full(args[0]).object));
+      if(e->text=="encode_base64")return V(nexrt::string(nexrt::byteBuffer(full(args[0]).object).base64()));
+      if(e->text=="decode_base64")return nexrt::decodeBase64(full(args[0]).object->text);
+      if(e->text=="as_f64")return V::floating(nexrt::integerToFloat(full(args[0]).scalar));
+      if(e->text=="as_i64"){int64_t value=0;return nexrt::floatToInteger(full(args[0]).floating(),value)?nexrt::success(V(value)):nexrt::failure("E_RANGE","f64 value is outside i64 range");}
       if(e->text=="err"){auto code=full(args[0]);auto message=full(args[1]);return nexrt::failure(code.object->text,message.object->text);}
       if(e->text=="is_ok")return V(watch?watch->isSuccess(args[0]):nexrt::isSuccess(args[0]),true);
       if(e->text=="unwrap")return watch?watch->unwrap(args[0]):nexrt::unwrap(args[0]);
@@ -84,6 +95,29 @@ class Interpreter {
       if(e->text=="encode_json")return V(nexrt::string(nexrt::encodeJSON(full(args[0]))));
       if(e->text=="decode_json")return nexrt::decodeJSON(full(args[0]).object->text,json(wireSchema(p,e->annotation),false));
       if(e->text=="read_env")return nexrt::readEnvironment(args[0].object->text);
+      if(streamFileBuiltins().contains(e->text)){
+        auto poll=[&]{step(e->span);};
+        if(e->text=="file_close"||e->text=="file_is_open"){
+          auto file=nexrt::fileResource(full(args[0]).object);poll();
+          return V(e->text=="file_close"?file.close():file.isOpen(),true);
+        }
+        try{
+          if(e->text.starts_with("file_open_")){
+            auto mode=e->text=="file_open_read"?nexrt::FileMode::Read:e->text=="file_open_write"?nexrt::FileMode::WriteTruncate:nexrt::FileMode::Append;
+            return nexrt::success(V(nexrt::fileValue(nexrt::fileOpen(full(args[0]).object->text,mode,true,poll))));
+          }
+          auto file=nexrt::fileResource(full(args[0]).object);
+          if(e->text=="file_read")return nexrt::success(V(nexrt::bytes(file.read(full(args[1]).scalar,poll))));
+          if(e->text=="file_write")return nexrt::success(V(file.write(nexrt::byteBuffer(full(args[1]).object),poll)));
+          if(e->text=="file_seek")return nexrt::success(V(file.seek(full(args[1]).scalar,poll)));
+          if(e->text=="file_size")return nexrt::success(V(file.size(poll)));
+          file.flush(poll);return nexrt::success(V(1,true));
+        }catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.what());}
+      }
+      if(e->text=="file_read_text")return nexrt::fileReadText(args[0].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_write_text")return nexrt::fileWriteText(args[0].object->text,args[1].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_read_bytes")return nexrt::fileReadBytes(args[0].object->text,true,[&]{step(e->span);});
+      if(e->text=="file_write_bytes")return nexrt::fileWriteBytes(args[0].object->text,nexrt::byteBuffer(args[1].object),true,[&]{step(e->span);});
       if(e->text=="store_get")return nexrt::storageGet(args[0].object->text);
       if(e->text=="store_put")return nexrt::storagePut(args[0].object->text,args[1].object->text);
       if(e->text=="store_remove")return nexrt::storageRemove(args[0].object->text);
@@ -92,10 +126,12 @@ class Interpreter {
       if(e->text=="assert"){if(!args[0].scalar)throw Error("E_ASSERT","assertion failed",e->span);return {};}
       if(e->text=="len")return V(watch?watch->length(args[0]):nexrt::length(args[0].object));
       if(e->text=="str")return V(nexrt::string(nexrt::printable(full(args[0]))));
-      if(e->text=="slice")return V(nexrt::slice(full(args[0]).object,args[1].scalar,args[2].scalar));
+      if(e->text=="slice")return watch?watch->slice(args[0],args[1].scalar,args[2].scalar):V(nexrt::slice(args[0].object,args[1].scalar,args[2].scalar));
       if(e->text=="contains"){auto haystack=full(args[0]);auto needle=full(args[1]);return V(haystack.object->text.find(needle.object->text)!=std::string::npos,true);}
       if(e->text=="push"||e->text=="set"){
-        auto base=full(args[0]);auto d=std::make_shared<nexrt::Data>(*base.object);
+        auto base=full(args[0]);
+        if(base.object->kind==nexrt::Data::Bytes){const auto &buffer=nexrt::byteBuffer(base.object);return V(nexrt::bytes(e->text=="push"?buffer.append(full(args[1]).scalar):buffer.set(full(args[1]).scalar,full(args[2]).scalar)));}
+        auto d=std::make_shared<nexrt::Data>(*base.object);
         if(e->text=="push")d->values.push_back(args[1]);
         else{nexrt::bounds(args[1].scalar,d->values.size());d->values[args[1].scalar]=args[2];}return V(d);
       }
@@ -105,15 +141,22 @@ class Interpreter {
     auto overflow=[&](){throw Error("E_OVERFLOW","i64 arithmetic overflow",e->span);};
     if(e->kind==Expr::Unary) {
       if(e->text=="!")return V(!a,true);
+      if(e->type==Type::F64)return V::floating(nexrt::negateFloat(full(left).floating()));
       if(__builtin_sub_overflow(int64_t(0),a,&out))overflow();return V(out);
     }
     if(e->text=="&&")return V(a&&expression(e->args[1]).scalar,true);
     if(e->text=="||")return V(a||expression(e->args[1]).scalar,true);
     V right=expression(e->args[1]);int64_t b=right.scalar;const auto &op=e->text;
     if(op=="=="||op=="!="){auto same=watch?watch->equal(left,right):nexrt::equal(left,right);return V(op=="=="?same:!same,true);}
+    if(e->args[0]->type==Type::F64){
+      double a=full(left).floating(),b=full(right).floating();
+      if(op=="<"||op=="<="||op==">"||op==">=")return V(nexrt::compareFloat(a,b,op=="<"?2:op=="<="?3:op==">"?4:5),true);
+      return V::floating(nexrt::floatArithmetic(a,b,op.front()));
+    }
     if(op=="+"&&left.object){
       left=full(left);right=full(right);
       if(left.object->kind==nexrt::Data::String)return V(nexrt::string(left.object->text+right.object->text));
+      if(left.object->kind==nexrt::Data::Bytes)return V(nexrt::bytes(nexrt::byteBuffer(left.object).concat(nexrt::byteBuffer(right.object))));
       auto d=std::make_shared<nexrt::Data>(*left.object);d->values.insert(d->values.end(),right.object->values.begin(),right.object->values.end());return V(d);
     }
     if(op=="+"){if(__builtin_add_overflow(a,b,&out))overflow();return V(out);}
@@ -146,6 +189,7 @@ class Interpreter {
   }
   V call(const Function &f,const std::vector<V> &args,const V *environment=nullptr) {
     if(frames.size()>=256)throw Error("E_LIMIT","interpreter call depth limit exceeded",f.span);
+    if(f.foreign)return nexrt::invokeScopedForeign(json(foreignBinding(p,f),false),args,[&]{step(f.span);});
     frames.emplace_back(1);for(size_t i=0;i<args.size();++i)frames.back().back().values[f.params[i].name]=args[i];
     if(f.closure){if(!environment||environment->object->values.size()!=f.captures.size())throw Error("E_FUNCTION","closure environment does not match checked target",f.span);for(size_t i=0;i<f.captures.size();++i){if(watch)frames.back().back().lazy[f.captures[i].name]=[this,value=*environment,i]{return watch->capture(value,i);};else frames.back().back().values[f.captures[i].name]=environment->object->values[i];}}
     V value;try{block(f.body,false);}catch(const Returned &r){value=r.value;}

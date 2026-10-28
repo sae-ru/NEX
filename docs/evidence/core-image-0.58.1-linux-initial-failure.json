@@ -1,0 +1,24 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": false,
+  "toolchain": "0.57.1",
+  "language": "0.16",
+  "terminal_exit_code": 1,
+  "full_groups": 69,
+  "full_ctest_passed": true,
+  "failed_live_phase": {
+    "name": "live-debug_image",
+    "command": [
+      "python3",
+      "/src/tests/debug_image.py",
+      "/build/sdk/bin/nex",
+      "--live"
+    ],
+    "status": "failed",
+    "exit_code": 1
+  },
+  "failure_log": "build/linux-0571-image-binding-arm64/live-debug_image.log",
+  "finding": "Linux ELF core with another executable bearing the same NEX function names was incorrectly accepted by SBModule-only image guard. macOS passes do not establish Linux image binding.",
+  "accepted_release": false,
+  "full_objective_complete": false
+}

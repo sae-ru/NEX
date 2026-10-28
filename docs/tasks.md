@@ -1,10 +1,29 @@
 # Tasks and acceptance evidence
 
+Toolchain0.80 advertises `isolated_replay_graph` and `readonly_receipt_replay`.
+Replay preflights saved inputs in an owned temporary graph, then preserves its
+complete rows and local IDs in the new run's `state/.nex/graph.db`. Build caches
+and replay history belong to that state. The source project, input receipt and
+any enclosing project's graph are not selected for writes. Input files remain
+hash-indexed and require the matching compiler/resources and current operator
+catalogues as before. No language0.16 migration is involved.
+
+`--directory NEW_RUN` permits a readonly input receipt. Without it, the default
+output is inside `RECEIPT_DIRECTORY/.nex/tasks/runs`; that parent must be writable.
+The input receipt's graph is never opened by replay. Query the new run's history
+with `nex task NEW_RUN/state/task.json --kind history --json`. The snapshot
+preserves binding IDs used by its receipt; it does not merge them into a source
+or ancestor project. Invalid preflight creates no published output run.
+
 A `nex.task/1` file records the requested goal, named programs, requirements,
 qualified graph bindings and explicit acceptance checks. It is independent of
-LLM vendor. Current source language is 0.10; this is a development-tool protocol.
+LLM vendor. Current source language is 0.16; this is a development-tool protocol.
 The compiler checks the declared criteria. Natural-language completeness and
 the quality of those criteria still require review.
+
+Toolchain0.78 adds [project-backed tasks](project-tasks.md) with reviewed
+architecture/configurations, actual binary dependencies and captured project
+replay. Programs without the optional `project` object retain the behavior below.
 
 ```sh
 nex task main.nex --kind init -o task.json
@@ -84,6 +103,7 @@ contracts do not inject runtime pre/postconditions or remove runtime guards.
 | --- | --- | --- |
 | `test` | `native`, `web` | Named, hash-pinned tests pass in interpreter and native/TypeScript execution; excluded realms cannot pass. |
 | `build` | `native`, configured triple, `server`, `web` | Requested application, native library or web module is generated successfully. Foreign artifacts do not certify execution. |
+| `package` | Project-backed `native`, `server`, `web` | The declared architecture produces a deployment package with libraries/notices, without executing the application; requires `project_task_packages`. |
 | `run` | `native` | Native and reference stdout match the exact expected text; exit status and an optional runtime error code agree. |
 | `verify` | `source` | All functions in a property-pinned scalar contract are proven. |
 | `effects` | `source` | Every function in the selected transitive call closure stays within allowed declared effects and realms. |
@@ -233,3 +253,65 @@ operations and measured cross-model trials remain pending.
 Language 0.7 links a reached generic instance back to its original function/type template, including phantom type arguments, so requirements can bind source declarations while tests exercise concrete instances. This is static lineage, not dynamic coverage of every instantiation. Profile max_calls budgets use exact concrete instance names from the measured report; a source-template name without a measured row remains unobserved and cannot pass.
 
 Policy 2 adds selected linker identity. Toolchain 0.19 SDKs retain policy 1 for their saved receipts; inspect/review replacement fingerprints rather than silently changing task intent. Policy 2 originally retained language 0.7; language 0.8 adds explicit generic bounds and requires a reviewed migration.
+
+## Reviewed foreign libraries (toolchain 0.42)
+
+Language 0.15 external calls remain server-only and declare the opaque `ffi`
+effect. A native `test`, `run` or `profile` check that reaches an external
+function must contain a reviewed `foreign_hash`. Obtain it without running
+native module initializers:
+
+```sh
+nex foreign /trusted/host.json --json
+# Review the catalogue and copy its hash into the execution check.
+nex task task.json --kind check --foreign /trusted/host.json --json
+nex task task.json --kind run --task-hash REVIEWED_TASK_HASH --foreign /trusted/host.json --json
+nex task /saved/run/receipt.json --kind replay --foreign /current/trusted/host.json --json
+```
+
+`foreign_hash` is the BLAKE3 fingerprint of `nex.foreign-catalogue/1`: platform,
+module limit and the complete normalized operator catalogue, including all
+library/export permissions and SHA-256 manifest pins. Each manifest and every
+inventory member are read and checked before the fingerprint is returned. The
+fingerprint is independent of directory location and JSON field/export ordering;
+relocation to an identical verified bundle preserves identity. Inspection does
+not load a module, inspect a running descriptor or prove that native execution
+will succeed. `check` validates every reachable external binding's grant, manifest
+pin and compiler-derived signature without initializing native code.
+
+One explicit operator catalogue applies to the checks that pin it. A supplied
+catalogue with no matching execution check is rejected. Browser/source/build
+checks cannot request this execution authority. Build checks can compile external
+wrappers without loading modules. All current bindings must fit the reviewed
+policy; new candidate code cannot silently broaden the check's authority.
+
+`run` saves normalized `inputs/foreign/host.json`, `identity.json` and exact
+binary/notice/manifest bytes under `inputs/foreign/bundles/PIN/`. The input index
+covers them like source and compiler resources. Each selected eval/native/test/
+profile command receives the captured catalogue explicitly; other commands do
+not. Captured bytes/policy are checked before and after commands. Foreign input
+capture is bounded by the existing task limits: 128 MiB of total inputs, at most
+8192 indexed files, 64 MiB per input file and a 4 MiB input index. Oversized
+captures fail explicitly.
+These bounds include sources and compiler resources; they do not guarantee that
+every combination of standalone loader limits fits one task.
+
+Each selected foreign execution command receives a fresh mode-0700 `TMPDIR`
+in the host's temporary root. The parent owns it and removes its contents after the
+supervised process group is reaped, including a timeout of uncooperative native
+code. Private loader snapshots therefore do not depend on a killed child running
+C++ destructors. Cleanup checks directory identity and does not follow a replaced
+root or nested symlinks. Temporary files do not persist between check commands.
+
+Replay requires a current explicitly supplied trusted catalogue whose normalized
+fingerprint, permissions and verified bytes agree with reviewed/captured inputs.
+A saved receipt grants no native authority. Changing copied files and recomputing
+receipt hashes cannot replace current operator trust. Current grants may point
+to relocated identical bundles after original source/catalogue files are removed.
+The CLI summary/receipt records `foreign_catalogue` with hash/platform, and each
+executing check records `foreign_hash`.
+
+Native modules remain trusted code with ordinary OS actions and dependency
+lookup. Capturing inventoried members does not freeze the OS, all transitive
+libraries or external state, and does not provide a sandbox. Automatic dependency
+closure packaging and callbacks into NEX remain pending.

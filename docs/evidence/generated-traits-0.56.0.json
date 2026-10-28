@@ -1,0 +1,225 @@
+{
+  "ok": true,
+  "seed": 560016,
+  "compiler_sha256": "1362a9676e842ec96cd403336fcff4a05df4b06800865700f0e1ee30cd87bd3a",
+  "source_sha256": "219c19513ad1e03f2e1c39448066cc57ccee2727f901f44e3fdb94da757560b3",
+  "generated_cases": [
+    {
+      "index": 0,
+      "type": "i64",
+      "before": "[895,-179,780,-619,-640,31,-327]",
+      "expected": "[922,-152,807,-592,-613,58,-300]",
+      "captured_offset": "27"
+    },
+    {
+      "index": 1,
+      "type": "f64",
+      "before": "[-182.0,490.0]",
+      "expected": "[-188.0,484.0]",
+      "captured_offset": "-6.0"
+    },
+    {
+      "index": 2,
+      "type": "str",
+      "before": "[\"\",\"🧠\",\"A\\u0000λ\"]",
+      "expected": "[\"λ\",\"🧠λ\",\"A\\u0000λλ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 3,
+      "type": "i64",
+      "before": "[97,682]",
+      "expected": "[11,596]",
+      "captured_offset": "-86"
+    },
+    {
+      "index": 4,
+      "type": "f64",
+      "before": "[359.0,-39.0,92.5,-256.5,41.0,251.5,236.5]",
+      "expected": "[324.0,-74.0,57.5,-291.5,6.0,216.5,201.5]",
+      "captured_offset": "-35.0"
+    },
+    {
+      "index": 5,
+      "type": "str",
+      "before": "[\"\",\"é\",\"λ\",\"é\",\"\",\"A\"]",
+      "expected": "[\"🧠\",\"é🧠\",\"λ🧠\",\"é🧠\",\"🧠\",\"A🧠\"]",
+      "captured_offset": "\"🧠\""
+    },
+    {
+      "index": 6,
+      "type": "i64",
+      "before": "[]",
+      "expected": "[]",
+      "captured_offset": "99"
+    },
+    {
+      "index": 7,
+      "type": "f64",
+      "before": "[369.0,-285.0,-81.0,209.5,-99.5,-457.5,153.0,-397.5]",
+      "expected": "[327.0,-327.0,-123.0,167.5,-141.5,-499.5,111.0,-439.5]",
+      "captured_offset": "-42.0"
+    },
+    {
+      "index": 8,
+      "type": "str",
+      "before": "[\"🌍\"]",
+      "expected": "[\"🌍λ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 9,
+      "type": "i64",
+      "before": "[681,67,2,496,104,-920,-12]",
+      "expected": "[714,100,35,529,137,-887,21]",
+      "captured_offset": "33"
+    },
+    {
+      "index": 10,
+      "type": "f64",
+      "before": "[-458.0]",
+      "expected": "[-416.0]",
+      "captured_offset": "42.0"
+    },
+    {
+      "index": 11,
+      "type": "str",
+      "before": "[\"🌍\"]",
+      "expected": "[\"🌍λ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 12,
+      "type": "i64",
+      "before": "[-906,-379,-359]",
+      "expected": "[-811,-284,-264]",
+      "captured_offset": "95"
+    },
+    {
+      "index": 13,
+      "type": "f64",
+      "before": "[]",
+      "expected": "[]",
+      "captured_offset": "-49.0"
+    },
+    {
+      "index": 14,
+      "type": "str",
+      "before": "[\"\",\"\",\"🌍\",\"A\\u0000λ\",\"A\\u0000λ\"]",
+      "expected": "[\"λ\",\"λ\",\"🌍λ\",\"A\\u0000λλ\",\"A\\u0000λλ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 15,
+      "type": "i64",
+      "before": "[-438,181,683,798,-359,406,-178]",
+      "expected": "[-428,191,693,808,-349,416,-168]",
+      "captured_offset": "10"
+    },
+    {
+      "index": 16,
+      "type": "f64",
+      "before": "[132.5,260.5,-154.0,-366.0,-99.5]",
+      "expected": "[175.5,303.5,-111.0,-323.0,-56.5]",
+      "captured_offset": "43.0"
+    },
+    {
+      "index": 17,
+      "type": "str",
+      "before": "[\"🌍\",\"A\",\"🌍\"]",
+      "expected": "[\"🌍λ\",\"Aλ\",\"🌍λ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 18,
+      "type": "i64",
+      "before": "[-316,19,-923]",
+      "expected": "[-284,51,-891]",
+      "captured_offset": "32"
+    },
+    {
+      "index": 19,
+      "type": "f64",
+      "before": "[75.5,179.0,-166.5,226.0]",
+      "expected": "[119.0,222.5,-123.0,269.5]",
+      "captured_offset": "43.5"
+    },
+    {
+      "index": 20,
+      "type": "str",
+      "before": "[\"é\",\"\",\"A\",\"\",\"é\",\"🧠\"]",
+      "expected": "[\"éλ\",\"λ\",\"Aλ\",\"λ\",\"éλ\",\"🧠λ\"]",
+      "captured_offset": "\"λ\""
+    },
+    {
+      "index": 21,
+      "type": "i64",
+      "before": "[-911,-804,795,51,-621,948,59,-404]",
+      "expected": "[-883,-776,823,79,-593,976,87,-376]",
+      "captured_offset": "28"
+    },
+    {
+      "index": 22,
+      "type": "f64",
+      "before": "[274.0,-281.5,383.5,-370.5,395.0,-14.0,-146.5,19.0]",
+      "expected": "[237.5,-318.0,347.0,-407.0,358.5,-50.5,-183.0,-17.5]",
+      "captured_offset": "-36.5"
+    },
+    {
+      "index": 23,
+      "type": "str",
+      "before": "[\"A\"]",
+      "expected": "[\"Aλ\"]",
+      "captured_offset": "\"λ\""
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "/Users/sae/projects/NEX/build/sdk-056-editor/bin/nex",
+        "eval",
+        "--json"
+      ],
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "command": [
+        "/Users/sae/projects/NEX/build/sdk-056-editor/bin/nex",
+        "run",
+        "--json"
+      ],
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "command": [
+        "/Users/sae/projects/NEX/build/sdk-056-editor/bin/nex",
+        "test",
+        "--json"
+      ],
+      "exit_code": 0,
+      "status": "passed"
+    },
+    {
+      "command": [
+        "/Users/sae/projects/NEX/build/sdk-056-editor/bin/nex",
+        "test",
+        "--target",
+        "web",
+        "--json"
+      ],
+      "exit_code": 0,
+      "status": "passed"
+    }
+  ],
+  "full_objective_complete": false,
+  "scope": "Deterministic generated trait/constructor/closure immutable-value checks, with independent Python expected lists. Not exhaustive fuzzing or a new language feature.",
+  "seconds": 42.878,
+  "created": "2026-10-19T10:26:16.166246+00:00",
+  "source_fixture": "tests/fixtures/generated-traits-0.56.nex",
+  "initial_harness_failure": {
+    "report": "build/editor-056-generated-traits-agreement/report.json",
+    "reason": "The initial external harness expected a nonexistent passed count. The native report already contained24 passing test rows; the corrected harness validates exact names, backend flags and every outcome, then repeats all four commands."
+  }
+}

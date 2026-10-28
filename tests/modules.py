@@ -11,17 +11,24 @@ import support as harness
 
 class Modules(harness.ToolchainCase):
     def test_language_04_result_bundle_migrates_explicitly_with_history(self):
-        self.source('module old_results; fn endpoint(x: i64) -> i64 { return x; } fn main() -> unit { let endpoint: i64 = endpoint(42); assert(unwrap(ok(endpoint)) == 42); }')
-        current=self.cli('check')['revision']
-        database=self.root / '.nex/graph.db';old='e'*64
+        source='module old_results; fn endpoint(x: i64) -> i64 { return x; } fn main() -> unit { let endpoint: i64 = endpoint(42); assert(unwrap(ok(endpoint)) == 42); }'
+        bundle={'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source}}
+        directory=self.root / '.nex';directory.mkdir();database=directory / 'graph.db';old='e'*64
+        # Model the old, unjournaled schema directly. Rewriting HEAD after a
+        # current check would instead create a corrupt schema4 database.
         with sqlite3.connect(database) as db:
-            db.execute("INSERT INTO revisions(hash,module,source,path,created,language) SELECT ?,module,source,path,'old-0.4','0.4' FROM revisions WHERE hash=?",(old,current))
-            db.execute('UPDATE head SET revision=? WHERE id=1',(old,))
-        self.file.unlink()
+            db.executescript('''CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+              INSERT INTO metadata VALUES('schema','2');
+              CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,created TEXT DEFAULT 'legacy',language TEXT NOT NULL);
+              CREATE TABLE head(id INTEGER PRIMARY KEY,revision TEXT NOT NULL);''')
+            db.execute('INSERT INTO revisions(hash,module,source,path,language) VALUES(?,?,?,?,?)',(old,'old_results',json.dumps(bundle),str(self.file),'0.4'))
+            db.execute('INSERT INTO head VALUES(1,?)',(old,))
         self.assertEqual(self.cli('run','--revision',old,ok=False)['code'],'E_LANGUAGE_VERSION')
-        self.assertEqual(self.cli('migrate')['language'],'0.10')
+        self.assertEqual(self.cli('migrate')['language'],'0.16')
         self.assertEqual(self.cli('run','--revision','HEAD')['exit_code'],0)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.4','0.10'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.4','0.16'})
+        change,=self.cli('changes')['changes']
+        self.assertEqual((change['action'],change['previous_revision']),('migrate',old))
         recovered=self.root / 'recovered'
         self.cli('export','--revision',old,'--directory',recovered)
         self.assertEqual(json.loads((recovered/'nex.json').read_text())['language'],'0.4')
@@ -40,9 +47,9 @@ class Modules(harness.ToolchainCase):
             db.execute('INSERT INTO head VALUES(1,?)', (old,))
         self.assertEqual(self.cli('build', '--revision', old, ok=False)['code'], 'E_LANGUAGE_VERSION')
         migrated=self.cli('migrate')
-        self.assertEqual(migrated['language'], '0.10')
+        self.assertEqual(migrated['language'], '0.16')
         self.assertNotEqual(migrated['revision'], old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.3', '0.10'})
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.3', '0.16'})
         self.assertEqual(self.cli('run', '--revision', 'HEAD')['stdout'], 'retained\n')
         destination=self.root / 'recovered old project'
         self.cli('export', '--revision', old, '--directory', destination)
@@ -72,9 +79,15 @@ class Modules(harness.ToolchainCase):
         self.assertEqual(context["callees"][0]["name"], "example::model::normalize")
         self.assertEqual(context["structures"][0]["name"], "example::model::Item")
         if shutil.which("lldb"):
+            session = self.cli("debug")
+            manifest = json.loads(Path(session["manifest"]).read_text())
+            imported = next(s for s in manifest["sources"]
+                            if s["original"] == str((self.root / "model.nex").resolve()))
             debug = self.cli("debug", "--", "-b", "-o",
                              "image lookup --verbose --name " + context["native_symbol"], machine=False)
-            self.assertIn("model.nex", debug.stdout)
+            self.assertIn(imported["debug_path"], debug.stdout)
+            self.assertEqual(Path(imported["projection"]).read_text(),
+                             (self.root / "model.nex").read_text())
 
     def test_saved_revision_does_not_reload_modified_or_missing_files(self):
         self.example()

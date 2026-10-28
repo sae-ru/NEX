@@ -34,8 +34,20 @@ def main():
         run('sdk',['python3','/src/tools/linux/sdk_smoke.py','/build/sdk'])
         report['sdk']=json.loads((root/'sdk-smoke.json').read_text())
         if args.live:
-            for suite in ('debugging','expressions','generics','constraints','matching','function_debug'):
+            for suite in ('debugging','expressions','generics','constraints','matching','function_debug','bytes_debug','resource_debug','numbers','incremental','native_pages','debug_image','core_dump','core_capsules'):
                 run('live-'+suite,['python3','/src/tests/'+suite+'.py','/build/sdk/bin/nex','--live'])
+            run('live-string-debug',['python3','/src/tests/string_debug.py','/build/sdk/bin/nex','--live',
+                'LiveStringDebug.test_lldb_dap_large_utf8_ranges_snapshots_and_unchanged_stop'])
+            run('live-source-ffi',['python3','/src/tests/source_ffi.py','/build/sdk/bin/nex','--live',
+                'SourceFFI.test_live_lldb_external_wrapper_watch_and_explicit_execution_arguments'])
+            run('live-project-archives',['python3','/src/tests/project_build.py','/build/sdk/bin/nex','--live',
+                'Projects.test_live_archive_alias_breakpoint_watch_and_moved_core_without_original_sources'])
+            run('live-project-images',['python3','/src/tests/native_images.py','/build/sdk/bin/nex','/build/nex_native_staging_probe','--live',
+                'NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images'])
+            run('live-project-actions',['python3','/src/tests/project_actions.py','/build/sdk/bin/nex','--live',
+                'Actions.test_live_project_debugger_and_built_web_preview'])
+            run('live-project-editor',['python3','/src/tests/editor.py','/build/sdk/bin/nex','--live',
+                'Editor.test_project_original_provider_breakpoint_and_watch'])
         report['doctor']=json.loads(subprocess.check_output(['/build/sdk/bin/nex','doctor']))
         report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()

@@ -1,26 +1,46 @@
-(* NEX 0.10. ASCII identifiers, decimal integers, UTF-8 source, // line comments. *)
-program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint } ;
+(* Toolchain0.81 editor project launches add no source syntax or migration. *)
+(* Toolchain0.80 replay isolation adds no source syntax or migration. *)
+(* Toolchain0.79 project package task checks add no source syntax or migration. *)
+(* Toolchain0.77 project actions add no source syntax, semantics or migration. *)
+(* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
+(* Project source/static linkage and concrete export roots are external
+   nex.build.json metadata, not language syntax or a version migration. *)
+(* NEX 0.16. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
+(* Toolchain0.73 native application lifetime adds no syntax or migration. *)
+(* Toolchain0.74 shared native project images are external build metadata;
+   language0.16 source grammar and canonical identities are unchanged. *)
+(* Toolchain 0.60 scalar Wasm uses this same syntax; target restrictions are semantic. *)
+(* Toolchain 0.61 iOS archives use this syntax unchanged; SDK/ABI selection is external. *)
+(* Toolchain0.62 mobile projects reuse the web contract without syntax changes. *)
+(* Toolchain0.63 HTTPS host/CORS configuration is external; syntax is unchanged. *)
+(* Toolchain0.64 Windows GNU/UCRT target selection is external; syntax is unchanged. *)
+(* Toolchain0.65 Windows environment/SQLite adapters add no source syntax. *)
+(* Toolchain0.69 editor name origins add no source syntax or semantic identity. *)
+(* Toolchain0.70 identifier descriptions add no source syntax or semantic identity. *)
+program       = "module", qualified_name, ";", { import | function | structure | enumeration | endpoint | trait | implementation } ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
                 "=", qualified_name, ";" ;
 import        = "import", string, "as", identifier, ";" ;
 structure     = [ "pub" ], "struct", identifier, [ type_parameters ], "{", { parameter, ";" }, "}" ;
 enumeration   = [ "pub" ], "enum", identifier, [ type_parameters ], "{", variant, { variant }, "}" ;
 variant       = identifier, [ "(", [ parameters ], ")" ], ";" ;
-function      = [ "pub" ], [ realm ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
-                "->", type, [ effects ], block ;
+function      = [ "pub" ], [ realm ], [ "extern" ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
+                "->", type, [ effects ], ( block | foreign_body ) ;
+foreign_body  = "=", "foreign", "(", string, ",", string, ",", string, ")", ";" ;
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
 parameter     = identifier, ":", type ;
-type          = "i64" | "bool" | "unit" | "str" | ( "list" | "result" ), "<", type, ">" |
-                qualified_name, [ type_arguments ] | function_type | "(", type, ")" ;
+type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | "file" | ( "list" | "result" ), "<", type, ">" |
+                qualified_name, [ type_arguments ] | "list" | function_type | "(", type, ")" ;
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
 type_parameters = "<", type_parameter, { ",", type_parameter }, ">" ;
-type_parameter = identifier, [ ":", constraint, { "+", constraint } ] ;
-constraint    = "add" | "ordered" | "integer" | "wire" ;
+type_parameter = identifier, [ constructor_parameters ], [ ":", constraint, { "+", constraint } ] ;
+constructor_parameters = "<", "_", { ",", "_" }, ">" ;
+constraint    = "add" | "ordered" | "integer" | "number" | "wire" | qualified_name ;
 type_arguments = "<", type, { ",", type }, ">" ;
 effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
-effect        = "io" | "db" ;
+effect        = "io" | "db" | "fs" | "ffi" ;
 block         = "{", { statement }, "}" ;
 statement     = declaration | assignment | return | if | while | match | expression, ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
@@ -44,8 +64,8 @@ addition      = product, { ( "+" | "-" ), product } ;
 product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" | "(", [ arguments ], ")" } ;
-primary       = match_expression | lambda | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
-                [ type_arguments, [ "::", identifier ] ] | "str", "(", [ arguments ], ")" |
+primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+                [ type_arguments, [ "::", identifier, [ type_arguments ] ] ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
 lambda        = [ realm ], "fn", "(", [ parameters ], ")", "->", type, [ effects ], block ;
 list_literal  = "[", [ arguments ], "]" ;
@@ -59,6 +79,8 @@ arguments     = expression, { ",", expression } ;
 identifier    = ( letter | "_" ), { letter | digit | "_" } ;
 qualified_name = identifier, { "::", identifier } ;
 integer       = digit, { digit } ;
+floating      = integer, ( ".", integer, [ exponent ] | exponent ) ;
+exponent      = ( "e" | "E" ), [ "+" | "-" ], integer ;
 letter        = "A" .. "Z" | "a" .. "z" ;
 digit         = "0" .. "9" ;
 (* Keywords cannot be identifiers. Unit parameters, locals and elements are rejected
@@ -79,15 +101,19 @@ digit         = "0" .. "9" ;
    from value arguments/expected types when omitted. A variant pattern keeps its
    uninstantiated name (Maybe::Some), inferred from the checked scrutinee.
    Generic parameters denote non-unit types; template bodies are checked even
-   when unused. Bounds add/ordered/integer/wire are contextual builtin capabilities;
-   integer implies add, ordered and wire; ordered implies wire. Function types
+   when unused. Bounds add/ordered/integer/number/wire are contextual builtin capabilities;
+   integer implies number, add, ordered and wire; number implies add, ordered
+   and wire; ordered implies wire. f64 literals round to nearest/ties-to-even,
+   are bounded to 4096 bytes and finite binary64; zeros normalize to positive zero.
+   Plain integer literals never implicitly become f64. Floating literal patterns
+   are not supported; use a binding and guard. Function types
    and lambdas have explicit parameter/result types, realm and effects. A returned
    function type can be parenthesized to disambiguate its effects from the outer
    function. Free lexical values are immutable snapshots captured on creation.
    Generic named references infer from an expected function type or use explicit
    type arguments. Builtin/nominal constructors and tests are not function values.
-   Custom traits, defaults and higher-kinded
-   parameters are pending. Bounds are checked also for unused declarations.
+   User traits, associated projections and fixed constructor kinds follow
+   traits.md; type defaults and type lambdas remain pending. Bounds are checked also for unused declarations.
    Generic test declarations and unspecialized executable entries are rejected. *)
 
 (* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
@@ -99,3 +125,72 @@ digit         = "0" .. "9" ;
    Demand-driven aggregate reads add no source syntax or runtime ABI changes. *)
 
 (* Toolchain 0.15 operation identities are derived metadata, without source syntax. *)
+
+(* Language 0.12 adds server-only fs text-file intrinsics and explicit migration
+   from 0.11. No resource descriptor is a source value. See files.md. *)
+
+(* Language 0.13 adds contextual primitive bytes and checked codecs/binary file
+   intrinsics. bytes remains an identifier in ordinary local/field/module names
+   and qualified import aliases, but cannot name a nominal declaration or generic
+   parameter. Intrinsic definitions are reserved. Binary values have no literals
+   or pattern syntax; see language.md for exact signatures, bounds and migration. *)
+
+(* Language 0.14 adds contextual primitive file and server/fs streaming intrinsics.
+   Local variables and qualified import aliases may still be named file. Nominal
+   declarations, generic parameters and the ten intrinsic declaration names are
+   reserved. File-bearing values, including phantom type arguments and captures,
+   require server realm and cannot enter JSON/API or browser code. Identity
+   equality and immutable owner aliases add no pointer or constructor syntax.
+   Explicit migration from 0.13 preserves history; see resources.md. *)
+
+(* Language 0.15 adds contextual extern/foreign declarations, not reserved names.
+   An external declaration requires server realm, declared ffi effect, a concrete
+   non-test signature and foreign_body instead of a block. Binding literals are
+   logical library/export identifiers and exact lowercase SHA-256 manifest pin.
+   A host grants access separately; declarations execute no native code at check
+   time. Language 0.14 snapshots require explicit history-preserving migration. *)
+
+(* Toolchain 0.48 syntax intervals and graph operation patches add no syntax.
+   Statement/expression parser recursion, resulting expression trees and each postfix/binary chain are bounded
+   to 256; type, pattern and lambda bounds remain as documented. *)
+
+(* Toolchain0.51 project/language/schema preflight changes no source grammar.
+   Explicit nex.json root/reachable-library versions must match the compiler;
+   archived source and explicit migration remain independent of live metadata. *)
+
+(* Toolchain0.52 captured frontend diagnostics add no source syntax. Reported
+   diagnostic spans are separate from editable source ranges and committed IDs. *)
+
+(* Toolchain0.53 adds archived graph-query commands; source grammar is unchanged. *)
+
+(* Toolchain0.54 adds stopped-string capture ranges; source grammar is unchanged. *)
+
+(* Language0.16 declarations. Self is contextual inside trait signatures.
+   Bare list/result/eligible nominal constructors are permitted as kinded
+   generic arguments; value positions require full application. *)
+trait = [ "pub" ], "trait", identifier, [ "<", "Self", [ constructor_parameters ], ">" ],
+        "{", { associated_type | trait_method }, "}" ;
+associated_type = "type", identifier, [ ":", constraint, { "+", constraint } ], ";" ;
+trait_method = [ realm ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")", "->", type, [ effects ], ";" ;
+implementation = [ "pub" ], "impl", identifier, [ type_parameters ], ":", qualified_name, "for", type,
+                 "{", { associated_binding | method_binding }, "}" ;
+associated_binding = "type", identifier, "=", type, ";" ;
+method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
+
+(* Toolchain0.59 core capsule commands add no source syntax or language migration. *)
+
+(* Toolchain0.66 editor analysis/LSP reuses the current source grammar; no migration. *)
+
+(* Toolchain0.67 VS Code LSP client reuses this grammar; no language migration. *)
+
+(* Toolchain0.68 checked editor references are external metadata; syntax and language0.16 remain unchanged. *)
+
+(* Toolchain0.71 project build descriptions are external JSON metadata in
+   nex.build.json, not source grammar. They do not add concurrency, GPU/NPU
+   syntax or change language0.16 canonical identities. *)
+
+(* Toolchain0.75 owned-image frame/core/capsule metadata adds no source grammar
+   or canonical-format change and requires no language0.16 migration. *)
+
+(* Toolchain0.76 project packages are external deployment metadata; source
+   grammar/canonical language0.16 and graph history are unchanged. *)

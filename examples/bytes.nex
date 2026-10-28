@@ -1,0 +1,42 @@
+module binary_data;
+
+struct Packet<T:wire> { name:str; data:T; }
+enum Payload<T:wire> { Empty; Data(value:T); }
+
+fn combine<T:add>(left:T,right:T) -> T { return left+right; }
+fn roundtrip<T:wire>(value:T) -> T { return unwrap(decode_json<T>(encode_json(value))); }
+fn capture(value:bytes) -> (fn()->bytes) { return fn()->bytes { return value; }; }
+fn apply(f:fn(bytes)->bytes,value:bytes) -> bytes { return f(value); }
+
+fn main() -> unit !{io} {
+  let data:bytes = unwrap(bytes([0,255,128,65]));
+  print(encode_base64(data));
+  print(error_code(decode_utf8(data)));
+  print(roundtrip(Packet("raw",data)));
+}
+
+test fn binary_examples() -> unit {
+  let empty:bytes = unwrap(bytes([]));
+  let data:bytes = unwrap(bytes([0,255,128,65]));
+  assert(len(empty)==0 && len(data)==4 && data[1]==255);
+  assert(error_code(bytes([-1]))=="E_RANGE");
+  assert(error_code(bytes([256]))=="E_RANGE");
+  assert(error_code(decode_base64("Zh=="))=="E_BASE64");
+  assert(error_code(decode_utf8(data))=="E_UTF8");
+  assert(unwrap(decode_base64("AP+AQQ=="))==data);
+  assert(unwrap(decode_utf8(utf8_bytes("\ufeffЯ\u0000🧠")))=="\ufeffЯ\u0000🧠");
+  let part:bytes = slice(data,1,2);
+  assert(encode_base64(part)=="/4A=");
+  assert(combine(part,empty)==part && part+part==unwrap(bytes([255,128,255,128])));
+  assert(set(data,1,7)==unwrap(bytes([0,7,128,65])) && data[1]==255);
+  assert(push(data,42)==unwrap(bytes([0,255,128,65,42])) && len(data)==4);
+  assert(roundtrip(data)==data && roundtrip([data,empty])==[data,empty]);
+  assert(roundtrip(Packet("raw",data)).data==data);
+  let payload:Payload<bytes> = roundtrip(Payload::Data(data));
+  match payload { Payload::Data(value) => { assert(value==data); }, Payload::Empty() => { assert(false); } }
+  var current:bytes = data;
+  let frozen:fn()->bytes = fn()->bytes { return current; };
+  current = set(current,0,7);
+  assert(frozen()==data && capture(part)()==part);
+  assert(apply(fn(value:bytes)->bytes { return value+part; },part)==part+part);
+}

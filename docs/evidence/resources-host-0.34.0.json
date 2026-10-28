@@ -1,0 +1,173 @@
+{
+  "schema": "nex.resource-host-evidence/1",
+  "toolchain": "0.34.0",
+  "language": "0.13",
+  "scope": "typed C++ ownership and regular-file streaming; source resource syntax remains unsupported",
+  "source_sha256": {
+    "runtime/nex_resource.h": "f8861d3d1bb746973e4202f038b57906b74b574600cc59b8542d19512cd53c81",
+    "runtime/nex_files.h": "89dc9ab014b743a2f6be25c64e976f12044c1c13e82c3b8bc26a71623f0c8d0d",
+    "runtime/nex_files.cpp": "92e588e6d592e703777d8c0bf76512b3feb4ce3591010c02867dd83e982dc412",
+    "runtime/nex_value.h": "b6eeaa6a0c127488ff2e33a0fa5d19e3a31e1b7fb120e89eec603142fc5a6847",
+    "runtime/nex_bytes.h": "f954bc5302b55286ed7fedd5fa864cf0c00cca9772f0d63cfe37ed85eaa22cd0",
+    "runtime/nex_error.h": "39a73327d734b7aa2db230e696589fbd5d5750d68b3809107859c387539db908",
+    "runtime/nex_float.h": "9ba773e3fe2453bb07803e8195528996c2d72ac76665bbbe2f7de6218b9cfdfc",
+    "runtime/nex_profile.h": "4c20ca037538796727edc2d190a9d4cb49d5331177d1dbad1d58866b7e93df92",
+    "runtime/third_party/dragonbox/dragonbox.h": "d3795bba52fb25970d9a1819429f6f225bb0db09fb1db26e55bdec290291e98c",
+    "tests/resources_runtime.cpp": "ce43aa03b6ac75ba902b1fbc91e73d458097d22b11ea190ba9097016cf36f4e4"
+  },
+  "macos_arm64": {
+    "ok": true,
+    "cases": 29,
+    "compiler": "Homebrew clang version 22.1.8",
+    "runs": [
+      {
+        "name": "address_undefined_leak",
+        "sanitizers": [
+          "address",
+          "undefined",
+          "leak"
+        ],
+        "binary_sha256": "84282e83938fc024db8f7e31f707446ae369aebdac59e841fd889041a51525be",
+        "log": "/Users/sae/projects/NEX/build/resources-034-sanitized.log",
+        "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62",
+        "exit_code": 0
+      },
+      {
+        "name": "thread",
+        "sanitizers": [
+          "thread"
+        ],
+        "binary_sha256": "eb08a36b4fa6eda854a7b63f9a09ae7cca3ac6ac4772fee8bd9344ae3cb9a60b",
+        "log": "/Users/sae/projects/NEX/build/resources-034-tsan.log",
+        "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62",
+        "exit_code": 0
+      }
+    ]
+  },
+  "linux": {
+    "arm64": {
+      "ok": true,
+      "architecture": "aarch64",
+      "execution": "Docker ARM64",
+      "cases": 29,
+      "seconds": 9.479,
+      "sanitizers": [
+        "ASan",
+        "UBSan",
+        "LSan"
+      ],
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "report": "/Users/sae/projects/NEX/build/resources-034-linux-arm64/verification.json",
+      "report_sha256": "92995723b64f4ac9e8b8ff6479a7e22fda3c8667caf93e8938f1e1a81fc0cb27",
+      "binary_sha256": "ffb4a4c92cd1a77d2eade8e10e881842d6c6eef11c0e91ea7cb63f416db0ab6b",
+      "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62"
+    },
+    "amd64": {
+      "ok": true,
+      "architecture": "x86_64",
+      "execution": "Docker emulation",
+      "cases": 29,
+      "seconds": 13.655,
+      "sanitizers": [
+        "ASan",
+        "UBSan",
+        "LSan"
+      ],
+      "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "report": "/Users/sae/projects/NEX/build/resources-034-linux-amd64/verification.json",
+      "report_sha256": "0e4b7d51245940d90e6482aaee57a1bb18ef5b0096fdf3837f15a150cf5834cf",
+      "binary_sha256": "4e3778d8e6816f1e94a4a22a2b402a2b3bbfb2b06e9a53ba6b238f94e7425e68",
+      "log_sha256": "855cc911c252a650e2ff6c8496d243f233a096253456d1acd1818ea6428cbc62"
+    }
+  },
+  "full_source_regression": {
+    "status": "passed",
+    "suites": 39,
+    "python_cases": 309,
+    "cpp_probes": 5,
+    "new_resource_cases": 29,
+    "seconds": 657.99,
+    "compiler_sha256": "b3e9cfd25c5c4ccb6ad9a648860eb15c31196edea8e9a54df81ec45afd90798b",
+    "log": "/Users/sae/projects/NEX/build/ctest-034-resources-permitted.log",
+    "log_sha256": "e748cfd951de59f708741168f1e3966acd48776c6bb27ba4543898c158412eaa",
+    "retained_detail_log": "/Users/sae/projects/NEX/build/ctest-034-resources-LastTest.log",
+    "retained_detail_sha256": "420b3a586f58d9161a1092f1ea9503b1f534dc6d82eb966cd9fa228936eea401",
+    "initial_restricted_run": {
+      "status": "intentionally_interrupted_after_confirmed_local_socket_denial",
+      "exit_code": 130,
+      "log": "/Users/sae/projects/NEX/build/ctest-034-resources.log",
+      "log_sha256": "51dabea7261007f9ed01c5b6d6c3dd096a81de0c768715bd7bfd0a064d877de0"
+    },
+    "accepted_run_permissions": "local HTTP sockets and LLDB/DAP permitted"
+  },
+  "installed_sdk_workflow": {
+    "status": "passed",
+    "phases": 12,
+    "seconds": 141.876,
+    "live_debugger": true,
+    "browser_build": true,
+    "compiler_sha256": "b3e9cfd25c5c4ccb6ad9a648860eb15c31196edea8e9a54df81ec45afd90798b",
+    "scope": "installed macOS ARM64 SDK; source and external toolchain available; not a moved/archive/source-denial bundle check",
+    "report": "/Users/sae/projects/NEX/build/sdk-034-resource-acceptance/report.json",
+    "report_sha256": "dede7a6ecf1c6313769d9e1a7fb95c49dd7ed8cad5526c199d330e71acc400e1",
+    "resource_inputs_match": [
+      "runtime/nex_resource.h",
+      "runtime/nex_files.cpp",
+      "runtime/nex_files.h",
+      "runtime/nex_bytes.h",
+      "runtime/nex_value.h"
+    ],
+    "same_compiler_as_source_regression": true
+  },
+  "pending": [
+    "source resource types and intrinsics across all executable backends",
+    "stable FFI ABI",
+    "async task ownership",
+    "complete current compiler/SDK/distribution platform matrix",
+    "additional requested platforms"
+  ],
+  "full_objective_complete": false,
+  "preserved_fixtures": {
+    "count": 31,
+    "previous_backup": "59edf1c8a6caeb1ee6df73d456df41d79391cabe",
+    "sha256": {
+      "tests/fixtures/README.md": "a7be261bd6a45c1e0d3cfe13c1aed301bb4ca7344a5ed2e1ca123efb8ca67966",
+      "tests/fixtures/language-0.10-intrinsic.json": "e9a4d2401d31e9f5ddc50965f7e00992ee0df3c96d7479dbf703d6001edf22e8",
+      "tests/fixtures/language-0.10-intrinsic.sql": "f7343162417d4630d1abd37e66c1fdce88c1f26d8302bafa3cbb527f9145c04a",
+      "tests/fixtures/language-0.10.json": "765fd791f98674e228f1b705d9629d040da245804c3ccbafdb18dd7425485619",
+      "tests/fixtures/language-0.10.sql": "4b85acf6e3cd4f35d9a42bd6335d7e1a3033dbec36528273b973a47c40426054",
+      "tests/fixtures/language-0.11-intrinsic.json": "fd74f2d42109e2f7aa0decbf8036a8421138d47e78010aa7fdd5224c181be9ec",
+      "tests/fixtures/language-0.11-intrinsic.sql": "5dbc492b0bde6004b6b80b569743d6adf4186c8b048b867c21fa1038daadae24",
+      "tests/fixtures/language-0.11.json": "2303e9d4c362a4239af003da2ecf7405a2c0430db15190691ab088bca2823294",
+      "tests/fixtures/language-0.11.sql": "0cb2803c9df4127c08bf4933edbb3121ee2bd8b8b40adb6d76027781b2b7c2f9",
+      "tests/fixtures/language-0.12-byte-names.json": "aff2c395ac1cdc85b655cbb90f7427673511668eddec752b137034088c52a7ea",
+      "tests/fixtures/language-0.12-byte-names.sql": "526b888be976afcf2baa6b2a5cadb38f84541cb409bcf00fd872af6d5d469d4e",
+      "tests/fixtures/language-0.12-intrinsic.json": "efd0a7afb2ddbb58c38fb71ed718ba27c2de50a8d6f3db715cf2468dacfb7db1",
+      "tests/fixtures/language-0.12-intrinsic.sql": "4707a12e672953f96f186fb5ac46d07a20a28742770747a1f305c9926e12bba9",
+      "tests/fixtures/language-0.12.json": "4478981687870503ec3707ea038ef87aa3b8d67aea6a418d5adf62ed501ada14",
+      "tests/fixtures/language-0.12.sql": "3aaad52a3763c4b01a1d4f4ed16d5f71b2460bde45bdd348d4f6d03833901f8d",
+      "tests/fixtures/language-0.13-resource-names.json": "d1eb56d696f210ee4372d527233ddda659c99e2ef9e32b757713636379029e52",
+      "tests/fixtures/language-0.13-resource-names.sql": "8c74c05922b95930e4af93616c8df5a12eaa74ed6a72a180d8ed4ffbe4a30c6a",
+      "tests/fixtures/language-0.13.json": "1117cdbc6e7147560c1495e1b9da1b65b0b2b8fffe27d4b588f1aec3f228c153",
+      "tests/fixtures/language-0.13.sql": "c662d1a9e07fdb54f79b739ee9ed467431abd533d95f05c151a00af20fe00c0f",
+      "tests/fixtures/language-0.5.json": "ec392292789394962816c07e0adca0bff945fe14d173d2db2036ff7adc210aa3",
+      "tests/fixtures/language-0.5.sql": "9a3a0a2f9fe17044cd14c9076868db428da40cf3b72f37330253f873f6e00532",
+      "tests/fixtures/language-0.6.json": "2fe7bf402c43069c5015ef118099526518c2b2dc552b258b969d8fc8b019442a",
+      "tests/fixtures/language-0.6.sql": "cd56ce4fb93d860e8b593853209e76e10cc309d72a08f5041aae31b79263e084",
+      "tests/fixtures/language-0.7.json": "bff20c03d1d9ecac691da97e2ec859290e478e75d261c936eeac3d321da65849",
+      "tests/fixtures/language-0.7.sql": "8be94c2bdc1ee4117f131c2060517b8f2ab3541bc565637f0f17853adaa462ca",
+      "tests/fixtures/language-0.8.json": "bbb7062e7550ed46b4a42f3f933f4e31a8662d9adfff264a83e5aba549d82c67",
+      "tests/fixtures/language-0.8.sql": "4204b05ab4d79d2583d54d77de779e121755ee22d8458982a3f066f9b1418343",
+      "tests/fixtures/language-0.9-wire.json": "bbcd9d847feb20816aa2d37d53f6ab5dfacaf0f3555d758b837174413d81fbf5",
+      "tests/fixtures/language-0.9-wire.sql": "e586ff6f1883de55ec05e22cc92e692210ddd57fb876b61f036dc176a1bb2d68",
+      "tests/fixtures/language-0.9.json": "c6f28996f755593c5d169999ae77a67b21403e662b824a36286647e8d501ff64",
+      "tests/fixtures/language-0.9.sql": "4e1a0c9c0c529971d512e4e623d8c3a4a191a33641c95a73d731a5f742504f95"
+    }
+  },
+  "source_checkpoint_inputs": {
+    "CMakeLists.txt": "f01638b3ec1a0c222814a818aa21b029b726662d40af4402404aff3a0fd2f2ed",
+    "src/backend.cpp": "6fda40166c45798a7536e25b5b455ccf0625684cf0516919b6254e3f254702e7",
+    "src/language.cpp": "d7672769ab696ee002cf452cfc8dfd20718ee5dc1c79dbe73443cc96056ec8e1",
+    "include/nex/language.h": "f40922b755d74165a755af91e63889c56e91da567f374bc3529556fa02447528"
+  }
+}

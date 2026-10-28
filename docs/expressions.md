@@ -1,6 +1,6 @@
-# NEX expressions in stopped frames — toolchain 0.14
+# NEX expressions in stopped frames — language 0.16
 
-NEX expressions use the language 0.10 parser, module resolver, type/effect/realm
+NEX expressions use the language 0.16 parser, module resolver, type/effect/realm
 checker and reference interpreter. They execute in a separate compiler process
 using exact captured values. They do not call functions, resume threads, write
 memory or retain handles in the application being debugged. A source function
@@ -68,8 +68,9 @@ nex debug examples/debugging/main.nex --kind nex-dap --json
 The descriptor's `adapter_command` is a stdio DAP adapter command; `launch` is its
 launch request. Configure a DAP client that supports an external adapter command
 with these fields. A launch `type` of `nex` requires that client-side adapter
-registration; copying it into an editor without registering the command is not
-an installed NEX editor extension. NEX Studio/editor packaging remains pending.
+registration. The installed extension sources and VSIX workflow in [editor.md](editor.md)
+provide that registration for VS Code. NEX Studio and broader IDE/platform
+acceptance remain pending.
 
 The bridge delegates launch, breakpoints, native scopes, stepping and lifecycle
 to the configured `lldb-dap`. It routes watch/hover/ordinary REPL evaluations
@@ -176,8 +177,9 @@ missing path; it cannot fetch more data after the process has exited. Offline
 shapes and payloads remain supplied data, not authenticated evidence.
 
 Whole-value operations such as list concatenation, push/set, JSON encoding and
-aggregate equality currently require complete bounded operands. Strings also
-require complete UTF-8 bytes; chunked scalar indexing/length is pending. Direct
+aggregate equality currently require complete bounded operands. Toolchain0.54 adds
+[scalar shapes and bounded string windows](string-debug.md) for length/index/slice;
+other whole-string operations still need a complete bounded operand. Direct
 expansion of a large uncaptured root through DAP is pending; use a selected
 expression to compute a bounded value, then expand its children.
 
@@ -212,9 +214,13 @@ The DAP bridge bounds packets to 8 MiB, outstanding requests to 256 and live
 references to 100,000 per stop. These are operational limits, not successful
 partial evaluations or proofs about arbitrary source execution.
 
-Operation IDs, source-level crash/core analysis, string chunk reads, large-root paging,
-browser NEX source-map watches, additional platforms and an installed editor
-extension remain open development work.
+Toolchain 0.57 adds bounded native indexed pages for list/byte roots through
+the matching NEX DAP bridge; see `debugging.md`. They remain native previews,
+separate from the exact expression results and partial frames described here.
+Direct expansion of large named/string roots, exact optimized-PC/core analysis,
+browser NEX source-map watches and additional host/layout combinations remain
+open development work. String scalar windows and the installed editor workflow
+retain their separately recorded checks.
 
 ```sh
 python3 tests/expressions.py build/nex
@@ -289,3 +295,23 @@ python3 tests/function_debug.py build/nex --live LiveFunctionDebug
 Language 0.8 watches enforce builtin generic bounds before pure helper specialization, including helpers absent from the stopped binary. Inside a concrete generic frame, source T resolves to its captured concrete type argument; constraint failures remain E_GENERIC_BOUND. Retain the matching source language/compiler/resources for historical snapshots.
 
 Language 0.9 watches support value matches and pure helpers with nested/guarded patterns. Pattern bindings are local; expression planning reports free frame bindings only. Enum/result/list selectors read required shapes and selected fields, while discarded payloads remain unread.
+
+Language 0.13 binary watches use canonical base64 whole values, length shapes
+and selected i64 octets in 0..255. `len(data)` and `data[index]` can read bounded
+headers/one octet without siblings. A partial byte slice selects at most 255
+octets and shares the frame capture budget; a bounded whole capture supports
+larger slices. Full equality/formatting/codecs need complete values. Byte ranges
+retain immutable owners, and aliased callable capture observations must agree.
+Keep SDK 0.30/0.32 for their original language-0.12 frames; migrate source
+explicitly and regenerate a matching debug build.
+
+`tests/bytes_debug.py` checks canonical wire values, bounds, selected-octet
+budgets, aliased captures and source-deleted replay. Its optional `--live
+LiveBinaryDebug` check uses real LLDB/DAP: a four-MiB buffer remains stopped while
+only its length/selected octets are read; whole capture explicitly exceeds its
+budget. Byte children are read-only paged NEX integers.
+
+Frame reports and watches reject a selected frame from a different loaded
+executable module before capturing values. This includes a core loaded beside
+another image with the same function names. Preserve the matching manifest,
+executable, symbols and SDK; do not relabel a frame to bypass this check.

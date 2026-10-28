@@ -1,0 +1,42 @@
+{
+  "schema": "nex.quickstart-evidence/1",
+  "ok": true,
+  "verified_utc": "2026-10-20T20:34:41.945203+00:00",
+  "toolchain": "0.70.0",
+  "language": "0.16",
+  "compiler_sha256": "88273ccf08e1f73b8ecd08130514c6d00cb487eeaad5a49960cbf36148506701",
+  "installed_sdk_compiler_identical_to_root": true,
+  "quickstart_sha256": "0894faa1026d15cc66a9978dc8fed2366792630ee10ab070fddf63038e33119b",
+  "successful_commands": 39,
+  "native_debug_release_interpreter_agreement": true,
+  "copied_release_executable_runs": true,
+  "web_typescript_tests": true,
+  "web_locked_production_build": true,
+  "editable_web_generation_and_npm_ci": true,
+  "local_preview_http200": true,
+  "agent_prompt_and_gitignore_copied_from_guide": true,
+  "git_clone_rebuild_without_graph": true,
+  "graph_apply_does_not_write_source_verified": true,
+  "source_export_materialization_and_recheck": true,
+  "complete_graph_snapshot_recovery_and_archived_test": true,
+  "initial_failure": {
+    "command": "direct npm ci --ignore-scripts",
+    "diagnostic": "ENOTCACHED with offline mode and default npm cache",
+    "correction": "pass --cache \"${NEX_NPM_CACHE:-$HOME/.npm}\" explicitly; NEX_NPM_CACHE is not an npm CLI setting",
+    "corrected_command_passed": true
+  },
+  "existing_root_graph_preserved": {
+    "revisions": 47,
+    "ordinary_tables": 16,
+    "all_rows_and_schema": true
+  },
+  "normal_git_head_and_index_preserved": true,
+  "compiler_implementation_changed": false,
+  "fresh_machine_installation_tested": false,
+  "actual_hermes_codex_llm_sessions_tested": false,
+  "raw_local_reports": [
+    "build/quickstart-070-verification/report.json",
+    "build/quickstart-070-verification-v2/report.json"
+  ],
+  "scope_note": "Documentation commands were tested with a new installed root0.70 SDK. Backup parent retains0.71 compiler cohort and optional independently tested CIX fixture; their original evidence scopes remain separate. No full compiler rerun for prose-only changes."
+}

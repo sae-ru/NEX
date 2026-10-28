@@ -1,4 +1,13 @@
-# Linux compiler and development chain — toolchain 0.23
+# Linux compiler and development chain
+
+Native application packaging uses `readelf`, `ldd` and patchelf 0.18.0; the
+development recipe now installs the pinned patchelf package. Older retained
+images need that packaging dependency before running the new `packaging` suite.
+`tools/linux/check.py --image IMAGE --skip-image-build` can select an existing
+prepared image, retaining its actual immutable image ID and architecture in
+the report. The dedicated `nex-sdk-packager:arm64`/`:amd64` images supplement
+the previously verified compiler images with patchelf without replacing them.
+See [application packages](packaging.md) for the smaller runtime requirements.
 
 The Linux environment builds NEX itself and native NEX programs with C++20,
 LLVM/MLIR/LLD 22.1.8, SQLite, OpenSSL 3, Z3 5.3.1 and Node.js 22.22.3.
@@ -46,6 +55,27 @@ image already exists. The default of two workers accommodates an 8 GiB Docker
 VM. `--source PATH` selects a source checkout when invoking the script from an
 installed resource pack. Build files and caches remain separate from the
 read-only source. No image is published by these commands.
+
+The 0.60.1 correction encodes bind-mount fields as Docker CSV for source,
+build, installed-SDK and evidence paths. Quoting an entire shell argument does
+not escape Docker's comma/quote parser. The same helper is used by the bundle
+workflow and preserves read-only source/SDK mounts and writable evidence.
+Current actual-path regression and full source/SDK checks are recorded separately
+in STATUS.md; this correction introduces no source-language change.
+
+The source checkout also contains an explicit real-container regression:
+
+```sh
+python3 tests/linux_mounts.py --image nex-sdk-packager:arm64 --output /new/mount-evidence
+```
+
+It pins the selected local image ID, exercises quote/comma/Unicode and newline
+paths, compares exact binary payloads, requires kernel readonly rejection and
+writable evidence, and tests the absent outbound route. The prior raw mount
+strings must still fail. This focused regression does not replace compiler,
+live-debugger or complete installed-SDK acceptance.
+
+
 
 For actual LLDB/DAP checks on a Linux CPU with native ptrace support:
 
@@ -116,3 +146,12 @@ separate work. Check `STATUS.md` and actual saved reports for verified results.
 Upstream inputs: [LLVM packages](https://apt.llvm.org/),
 [Node 22.22.3](https://nodejs.org/en/download/archive/v22.22.3),
 [Z3 5.3.1](https://github.com/Z3Prover/z3/releases/tag/z3-5.3.1).
+
+## Relocatable SDK bundle
+
+Toolchain 0.28 adds ELF SDK assembly through `python3 tools/linux/bundle.py
+--sdk PREFIX --arch arm64 --output NEW_DIRECTORY` (or `--arch amd64`). The separate
+packaging image adds patchelf; clean runtime and archive verification run without
+LLVM/MLIR/Z3/Clang packages, source mounts or external network. The system GCC C/C++
+SDK and GNU runtime remain prerequisites. [The SDK guide](sdk.md) defines the
+copied closure, notice inventory, relocation/archive gates and scope limits.

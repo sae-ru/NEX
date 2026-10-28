@@ -1,0 +1,11 @@
+module ios_example;
+
+pub fn answer() -> i64 {
+  let values:list<str> = ["Я🧠2", "NEX"];
+  assert(len(values[0]) == 3);
+  return 40 + len(values);
+}
+
+test fn semantics() -> unit {
+  assert(answer() == 42);
+}

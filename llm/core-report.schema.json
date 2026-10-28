@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex-lang.local/schema/core-report/1",
+  "title": "NEX successful read-only retained-build native core report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "ok",
+    "toolchain",
+    "language",
+    "compiler_build",
+    "revision",
+    "source_hash",
+    "build_key",
+    "core",
+    "executable",
+    "selected_thread",
+    "selected_frame",
+    "thread_count",
+    "threads",
+    "threads_truncated",
+    "frame_count",
+    "frames",
+    "frames_truncated",
+    "stop",
+    "stop_unchanged",
+    "values",
+    "operation",
+    "watch",
+    "operation_precision",
+    "inferior_execution",
+    "build_completion_checked"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nex.core-report/1"
+    },
+    "ok": {
+      "const": true
+    },
+    "toolchain": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "language": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "compiler_build": {
+      "$ref": "#/$defs/digest"
+    },
+    "revision": {
+      "$ref": "#/$defs/digest"
+    },
+    "source_hash": {
+      "$ref": "#/$defs/digest"
+    },
+    "build_key": {
+      "$ref": "#/$defs/digest"
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "unchanged"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 34359738368
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "unchanged": {
+          "const": true
+        }
+      }
+    },
+    "executable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "uuid",
+        "blake3",
+        "bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 16384
+        },
+        "uuid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "blake3": {
+          "$ref": "#/$defs/digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        }
+      }
+    },
+    "selected_thread": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 63
+    },
+    "selected_frame": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 63
+    },
+    "thread_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "frame_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "threads_truncated": {
+      "type": "boolean"
+    },
+    "frames_truncated": {
+      "type": "boolean"
+    },
+    "threads": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "thread_id",
+          "stop_reason",
+          "stop_description"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          },
+          "thread_id": {
+            "$ref": "#/$defs/decimal"
+          },
+          "stop_reason": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stop_description": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        }
+      }
+    },
+    "frames": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "native_symbol",
+          "function",
+          "module",
+          "module_uuid",
+          "pc",
+          "file_address",
+          "source",
+          "line",
+          "column"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          },
+          "native_symbol": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "function": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 16384
+          },
+          "module": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "module_uuid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "pc": {
+            "$ref": "#/$defs/address"
+          },
+          "file_address": {
+            "$ref": "#/$defs/address"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "column": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "process_id",
+        "stop_id",
+        "state"
+      ],
+      "properties": {
+        "process_id": {
+          "$ref": "#/$defs/decimal"
+        },
+        "stop_id": {
+          "$ref": "#/$defs/decimal"
+        },
+        "state": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "stop_unchanged": {
+      "const": true
+    },
+    "values": {
+      "type": "object"
+    },
+    "operation": {
+      "type": "object"
+    },
+    "watch": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "operation_precision": {
+      "const": "explicit_source_candidates"
+    },
+    "inferior_execution": {
+      "const": false
+    },
+    "build_completion_checked": {
+      "const": true
+    },
+    "capsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "directory",
+        "manifest_sha256",
+        "recorded_program",
+        "files_verified",
+        "inventory_checked",
+        "inspection_workspace_ephemeral",
+        "dependency_scope"
+      ],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "recorded_program": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "files_verified": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "inventory_checked": {
+          "const": true
+        },
+        "inspection_workspace_ephemeral": {
+          "const": true
+        },
+        "dependency_scope": {
+          "enum": [
+            "matching_host_system_only",
+            "captured_first_party_and_matching_host_system"
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^[0-9]{1,20}$"
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^0x[0-9a-f]+$"
+    }
+  }
+}

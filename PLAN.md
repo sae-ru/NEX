@@ -1,6 +1,150 @@
+# Current verified checkpoint and next work
+
+- [x] Integrate explicitly approved0.81 and verify primary full87, SDK24/375,
+  actual installed extension0.6 and strict0.77/0.81 compatibility.
+- [x] Preserve original47 graph revisions/all16tables/schema/IDs, Git HEAD/index,
+  frozen source backup and recoverable0.77 source/compiler.
+- [ ] Complete isolated bounded native server workload profile command, schemas,
+  SDK acceptance and cancellation/temporary-file cleanup; validate before integration.
+- [ ] Continue source concurrency, general CPU/GPU/NPU interfaces, source-foreign
+  project packaging, remaining task/editor commands and broader platform delivery.
+
+[Recorded0.81 evidence](docs/evidence/toolchain-0.81.0.json) supersedes the earlier
+pending integration steps below. This plan is not an implemented-feature list.
+
+# Current0.81 project editor debugging
+
+- Validate explicit project launch configuration and component/configuration UI.
+- Preserve actual binary edges, selected entry identity, original source aliases,
+  dirty-buffer/trust gates and fresh adapter commands.
+- Verify actual installed VSIX source/provider breakpoints, watches and completion.
+- Verify owned reference error strings and corrected notice fixture on Linux/SDK.
+- Run full87/installed SDK/Linux checks for the exact final frozen source.
+- Keep primary source/compiler promotion separate until explicitly approved.
+- Continue server workloads, task/editor commands, concurrency, accelerators and
+  remaining language/development-chain delivery.
+
+# Current0.80 replay isolation
+
+- Validate private preflight/output graph state and preserved local IDs.
+- Keep enclosing/source/input graphs untouched and support readonly receipts.
+- Verify source/project/package replay, exact8192-file inventory and SDK boundary.
+- Run full87/installed SDK/Linux on one frozen source cohort.
+- Primary integration requires the explicit approval requested by automatic
+  approval review; do not retry that rejected automatic promotion indirectly.
+- Continue server workloads, task/editor tooling, concurrency, accelerators and
+  remaining language/development delivery after the corrected gates.
+
+# Current0.79 project package tasks
+
+- Complete and verify native/server/web package acceptance checks with captured
+  resources, source-free replay, current provenance and confined package aliases.
+- Preserve build-only semantics: package success does not establish app execution.
+- Complete frozen0.78 full/SDK/Linux checks before root integration.
+- Continue server workloads, task/editor tooling, source concurrency, general
+  accelerators and the remaining language/development chain.
+
+# Current0.78 development chain
+
+- Complete and validate architecture-preserving task check/run/replay with
+  reviewed test/context hashes and current operator catalogues.
+- Verify direct native run/test/profile supervision, forced termination and
+  descendant/private-snapshot cleanup; preserve original failing evidence.
+- Integrate only after full regression, installed SDK and platform checks.
+- Continue package task checks, server workloads, editor/Studio integration,
+  source concurrency, general accelerators and remaining platform delivery.
+- Preserve language history, semantic invariants and prior SDKs/source recoveries.
+
+# Current0.73 implementation work
+
+- Integrate verified PIC object staging into final dynamic project linking.
+- Complete0.73 application failure cleanup and shared-profiler identity gates,
+  preserving normal outputs, process codes, diagnostics, grants and no added
+  request budget. Keep old SDKs/source/history and original failed reports.
+- Then finish shared-image provenance, debugger/core/packaging and selected
+  project execution flows; concurrency/accelerator/platform work remains open.
+
+# Checkpoint0.72: consumed native archives and reproducible tools
+
+- [x] Consume checked static archives, explicit export closures and transitive binary dependencies with one final runtime.
+- [x] Preserve module origins across entry/import/package aliases, source-deleted watches and moved core capsules.
+- [x] Handle old-glibc child cwd, SQLite timestamp defaults, private GNU runtime provenance and executable-tool aliases.
+- [x] Pass actual root full80/SDK24/348/213, current Linux80/17live/source-free SDK, installed IDE,6cross configurations/15artifacts/3iOS links/x64 Wine,3browser static-model API and genuine071/072 compatibility.
+- [x] Preserve all47 revisions/all16 tables/schema/IDs and normal Git HEAD/index; keep old SDKs and original failures.
+- [ ] Integrate general shared-library output/consumption, one shared runtime, dynamic debug/core/profile/package bindings and explicit binary dependency reports.
+- [ ] Complete project task/replay/editor and server workloads above0.76 package and0.77 application run/debug/test/profile candidates; validate exact installed SDKs.
+- [ ] Implement source concurrency and general CPU/GPU/NPU interfaces; keep research and fixed hardware FFI tests separate.
+- [ ] Continue native platform delivery, IDE completion/rename, Studio and all remaining full-language/development-chain work.
+
+# Checkpoint0.71: checked project architecture
+
+- [x] Add optional nex.build.json components/configurations and readonly planning with direct import ownership.
+- [x] Build executable/archive/server/web outputs using explicit source dependencies; keep binary linkage limits visible.
+- [x] Pass actual root full79 and installed SDK24/344/209; retain original macOS/Linux735 scopes and16 Linux live suites.
+- [x] Verify9 project cross artifacts,3 iOS final links, project x64 Wine and12 real-browser full-stack/restart cases.
+- [x] Preserve genuine0.70/0.71 wire/canonical/store compatibility, actual installed IDE,9 fresh root PE builds/17 Wine cases and47 revisions/all16 root tables/schema/Git.
+- [x] Implement actual archive consumption (delivered in0.72; absent in0.71).
+- [ ] Implement shared dependency consumption/output and explicit resolved dependency reports.
+- [ ] Implement source task scheduling and general CPU/GPU/NPU APIs; retain fixed CIX0.70 FFI evidence separately.
+- [ ] Continue broader platform delivery, IDE completion/rename and the remaining full development-chain requirements.
+
+# Verified0.70 identifier-description checkpoint
+
+- [x] Add explicit analysis/3 with exact word descriptions and null builtin targets.
+- [x] Keep source language0.16, canonical formats and strict analysis/1-/2 shapes.
+- [x] Finish scoped full regression, installed SDK and actual private IDE/platform gates.
+- [x] Integrate after checks while preserving Git and all47 graph revisions/all16 tables.
+- [ ] Continue completion/rename, recovery/indexing and the remaining development chain.
+
+# Current0.69 editor checkpoint
+
+- [x] Validate precise parser/binder type, trait, member and import reference projection.
+- [x] Run full regression, installed SDK and actual private IDE acceptance for this source.
+- [x] Promote only after gates, preserving normal Git and all47 graph revisions/all16 tables.
+- [ ] Keep untested platforms and the remaining full development-chain objective pending.
+
+# Текущее состояние: toolchain0.68 / язык0.16
+
+- [x] Добавить точные семантические ссылки для функций, значений/присваиваний,
+  полей структур и конструкторов/образцов; сохранить строгий analysis/1, а новый
+  индекс выдавать явно как analysis/2. Wildcard `_` не объявляет переменную.
+- [x] Подключить VS Code0.3: поиск ссылок, версии всех подключённых буферов,
+  немедленный запрос после правки импорта и защита от смены манифеста.
+- [x] Проверить собственный root full78/SDK23/332/197, настоящий установленный
+  VSIX и свежие9PE/17Wine. Отдельно сохранить candidate Mac/Linux и16live Linux
+  с явной границей между14 первоначальными и2 возобновлёнными проверками.
+- [x] Сохранить все47 ревизий, все16 таблиц/схему и обычный Git HEAD/index.
+- [ ] Дополнить ссылки в аннотациях типов, trait/impl и import-alias синтаксисе,
+  межпроектные буферы и закрытые недостижимые файлы с точными границами контекста.
+- [ ] Добавить completion/rename, восстановление после синтаксических ошибок
+  и инкрементальный индекс; продолжить оставшуюся работу над языком/runtime/
+  платформами ниже. Фактические области проверок — STATUS.md и
+  docs/evidence/toolchain-0.68.0.json.
+
+# Language contract status: 20 October 2026
+
+- The language 0.16 pack describes implemented graph patches/aliases, stopped
+  pure expressions, streaming files, source FFI and target restrictions.
+- Matching macOS/Linux installed SDKs pass 23 phases/329 commands/180 resources;
+  41 focused documented commands cover transactional rejection and genuine
+  history-preserving migration. Exact evidence is in
+  docs/evidence/language-contract-0.65.0.json.
+- Cross-provider coding evaluation, identity-preserving source rename and the
+  platform/development integrations below remain future work.
+
+# Toolchain0.65 Windows runtime progress
+
+- Unicode environment and explicit target SQLite are verified by real PE/archive
+  cross-builds, cache/source replay, root76/SDK23 and17 fresh x86-64 Wine cases.
+- Windows filesystem/resource calls remain unavailable until actual Windows/NTFS
+  validates reparse boundaries, protected ACLs, pinned roots/parents, opened-reader
+  replacement and cancellation cleanup. Wine failures remain recorded.
+- Windows-hosted development, HTTP/foreign/plugin adapters, packaging/distribution
+  and the broader language/development-chain objective remain pending.
+
 # План разработки NEX
 
-Обновлён: 17 октября 2026 года.
+Обновлён: 20 октября 2026 года.
 
 Статус: выполняется. Фактические возможности и результаты проверок фиксируются в `STATUS.md`; пункты плана не означают автоматически реализованную поддержку. Объём проекта — сам язык и полная цепочка разработки, без разработки крупных прикладных продуктов.
 
@@ -69,7 +213,7 @@
 | TypeScript + React | Генерируемые клиентские модули и интерфейс на основе HTML DOM | Первая веб-версия |
 | Vite | Сервер разработки и сборка браузерных ресурсов | Первая веб-версия |
 | Playwright | Проверки пользовательских сценариев в браузерах | Первая веб-версия |
-| LLVM WebAssembly backend + Emscripten | Вычислительные Wasm-модули и необходимые браузерные адаптеры | После базового веб-примера |
+| LLVM WebAssembly backend + LLD | Чистые скалярные Wasm-модули и адаптер BigInt | Проверены в 0.60.2 в границах `docs/wasm.md` |
 
 Проверенный стек реализации компилятора — C++20, CMake и LLVM/MLIR 22.1.8. На текущей машине используется Unix Makefiles; Ninja не установлен и для сборки не требуется. Версии зависимостей и архитектурные решения записаны в `docs/architecture.md` и `THIRD_PARTY.md`.
 
@@ -139,7 +283,9 @@
 ### Этап 1. Описать формат графа и создать хранилище
 
 - [x] Описать узлы функций, параметров, блоков, инструкций и выражений; хранить структурные связи и ссылки на лексические объявления/вызываемые функции.
-- [ ] Добавить самостоятельные постоянные узлы модулей и типов и согласование идентичности между хранилищами.
+- [x] Добавить самостоятельные постоянные узлы модулей и типов и согласование идентичности между хранилищами.
+- [x] Добавить атомарную замену исходных struct/enum вместе с зависимыми функциями и endpoint; сохранять ID типов и архивные ревизии. В 0.45 пройдены 52 группы и оба установленных SDK на macOS/Linux ARM64; точные границы — `docs/evidence/type-patches-0.45.0.json`.
+- [x] Завершить точные атомарные правки исходных выражений, инструкций и patterns по ID операции с защитой ревизии/исходников. В 0.48 пройдены 56 групп и оба SDK на macOS/Linux ARM64; точные границы — `docs/evidence/operation-patches-0.48.0.json`.
 - [x] Разделить постоянные идентификаторы функций/операций и хеши содержимого; сохранять ревизии и явно выдавать новые ID неоднозначным дубликатам.
 - [x] Определить каноническую сериализацию и версию формата.
 - [x] Описать, как зависимости участвуют в хешировании, включая рекурсию при хешировании всей программы.
@@ -167,7 +313,8 @@
 - [x] Добавить встроенные generic-ограничения операций, проверку неиспользуемых шаблонов и передачи ограниченных параметров между объявлениями.
 - [ ] Добавить пользовательские traits/реализации, связанные типы, higher-kinded типы и значения функций.
 - [x] Добавить к ошибкам проверенного интерпретатора код, ID операции, ревизию и хеш точных исходников; сопоставить ключи ошибок с TypeScript.
-- [ ] Завершить идентификацию для диагностики parser/checker, текстовых нативных traps и остальных путей исполнения.
+- [x] Связать текстовые нативные runtime traps с проверенным графом и точной сборкой; в 0.46 пройдены 54 группы и оба SDK на macOS/Linux ARM64. Границы — `docs/evidence/native-diagnostics-0.46.0.json`.
+- [ ] Завершить идентификацию для диагностики parser/checker и остальных путей исполнения, включая signal/core и точное optimized-PC восстановление.
 - [x] Описать правила доступности операций на клиенте и сервере и отклонять недопустимые прямые зависимости, включая импорты.
 
 Критерий готовности: поведение минимального языка описано и проверяется независимо от машинного backend. Некорректные графы отклоняются до исполнения.
@@ -180,7 +327,7 @@
 - [x] Реализовать команды проверки, сборки и запуска.
 - [x] Добавить режимы `debug`, `profile` и `release` с документированными флагами; `profile` включает зоны функций и shallow-учёт управляемых выделений.
 - [x] Собирать выбранное замыкание функций в нативный статический архив для доверенного C++ host с ABI совпадающей версии; стабильный внешний ABI остаётся открытым.
-- [ ] Заложить интерфейс вызова внешних функций через C ABI.
+- [x] Заложить экспериментальный интерфейс вызова внешних функций через C ABI: типизированный транспорт ABI 1, явные host-разрешения и source `extern` в языке 0.15. Стабильность ABI, упаковка зависимостей и полная текущая матрица ещё проверяются.
 - [x] Сравнивать результаты нативного исполнения с эталонным интерпретатором.
 
 Критерий готовности: арифметический пример и пример с циклами и вызовами функций собираются в самостоятельные нативные программы и дают ожидаемый результат без ИИ.
@@ -209,6 +356,11 @@
 - [x] Добавить stdio DAP-мост для NEX Watch: выбранный кадр, дочерние значения и страницы, read-only результаты и отказ устаревших ссылок. Точный снимок проверяется до нормализации JSON; неоднозначные поля отклоняются.
 - [x] Добавить выборочное чтение заголовков списков/записей/results и нужных полей/элементов без захвата всего корня; проверить динамические индексы внутри чистых функций, LLDB/DAP и сохранённые частичные снимки после удаления исходников.
 - [ ] Добавить чтение строк по частям, прямые страницы больших корней в DAP, установочный пакет расширения редактора и дополнительные host/layout-проверки.
+
+Чтение Unicode-окон строк проверено в 0.54, установленное расширение — в 0.56.
+Изолированная 0.57 добавляет ограниченные прямые страницы нативных list/bytes:
+поздние индексы, фильтры, лимит1000 и истечение ссылок. Полная новая матрица,
+крупные именованные/строковые корни и дополнительные host/layout остаются открыты.
 - [x] Записывать идентификатор сборки, ревизии и параметры, нужные для разбора сбоя.
 - [x] Подключить Tracy 0.14.1 для зон нативных функций и именованных shallow-пулов объектов/дескрипторов; буферы, GPU и системные события остаются открытыми.
 - [x] Сохранять локальный профиль с ревизией/ключом сборки, узлами графа, сценарием и CPU/целевой платформой; Tracy получает точную build identity.
@@ -234,9 +386,9 @@
 - [x] Описать передачу пакета чат-модели и агенту с терминалом; привести воспроизводимый цикл исправления, проверки и экспорта (`llm/WORKFLOW.md`).
 - [ ] Провести сопоставимые испытания на разных LLM и измерить успешность, число исправлений и полный расход токенов.
 - [x] Связать требования с компонентами графа, целями и проверками. Статическая достижимость не считается динамическим покрытием или доказательством полноты человеческого требования.
-- [ ] Предоставить инструменты поиска, чтения подграфа, просмотра зависимостей и применения транзакционных изменений.
+- [x] Предоставить ограниченные инструменты поиска, чтения подграфа, просмотра зависимостей и транзакционных правок с проверкой ревизии. Статическая достижимость не считается динамическим покрытием.
 - [x] Возвращать компактные структурированные результаты проверки, сборки и тестов.
-- [ ] Хранить происхождение изменений и обеспечивать возврат к прежней ревизии.
+- [x] Хранить локальное происхождение изменений и обеспечивать возврат к прежней ревизии. В 0.49 атомарный журнал HEAD, объявленные автор/заметка, ограниченные страницы и восстановление архивов с проверкой ожидаемой HEAD прошли 57 групп, оба SDK и Linux live-проверки на macOS/Linux ARM64. Авторство остаётся объявленным; точная область — `docs/evidence/change-history-0.49.0.json`.
 - [ ] Добавить необязательный ИИ-слой, переводящий задачу в изменения и запускающий инструменты.
 - [x] Проверить цикл ограниченного задания: требование → ошибочный кандидат → правка графа → прежние критерии проверки → сборка → измерение → повторение по снимкам, включая установленный SDK вне репозитория.
 
@@ -244,12 +396,19 @@
 
 ### Этап 8. Развить runtime и поддержку платформ
 
-- [ ] До добавления динамических объектов зафиксировать модель владения, времени жизни, ресурсов и ошибок FFI.
+В 0.43 добавлена упаковка native loader-зависимостей на совпадающем хосте:
+явные разрешения, лицензии, новые pins после relocation, проверенная производная
+ревизия с сохранением исходной истории и каталог относительно исполняемого
+файла. Проверки этого этапа идут. Произвольные динамические загрузки из C,
+cross-target packaging, общие ресурсы и стабильный FFI остаются открытыми.
+
+- [ ] До добавления динамических объектов зафиксировать модель владения, времени жизни, ресурсов и ошибок FFI. В 0.34 добавлена внутренняя основа C++: домены, физические leases/квоты, отмена и потоковые файлы; в 0.35 — управляемые файловые значения, нативные операции и объединение разрешений с областью запроса. Контракт — `docs/resources-design.md`. В 0.36 / языке 0.14 первый исходный тип `file` подключён к checker, интерпретатору, native backend, отладке и явной миграции; браузерные и wire-границы запрещают перенос владельцев. Матрица 0.36 пройдена на macOS ARM64 Debug/Release, Linux ARM64 и эмулируемом Linux x86-64; результаты и границы текущей 0.37 — в `STATUS.md`. В 0.37 добавлена экспериментальная C-граница значений: копирование данных, владельцы на время вызова, ошибки, квоты и отмена; исходные extern-декларации и загрузчик ещё не подключены. В 0.38 добавлены экспорт типовой схемы, проверка входных/возвращённых значений и типизированные nominal-конструкторы с сохранением старого C-префикса. В 0.39 реализован host-загрузчик: отдельный C-дескриптор модуля, явные разрешения на библиотеку/экспорт, pins манифеста и типовой схемы, проверяемая частная копия до инициализации, отмена и физические leases. В 0.40 добавлены явный операторский каталог, метаданные привязки, лексические контексты и общий адаптер со входом через управляемые native-значения; кеш метаданных не обходит область запроса, а нативное завершение отзывает владельцев модулей. В 0.41 / языке 0.15 подключены исходные server extern-вызовы, эффект ffi, интерпретатор/native backend, явная миграция, исключение из браузерного кода и установленный SDK-сценарий. В 0.42 добавлены readonly-отпечаток каталога, foreign_hash в приёмочных проверках и захват бинарных членов с повторной проверкой текущих разрешений при replay. Упаковка полного замыкания зависимостей, общие виды ресурсов и стабильный FFI остаются открытыми; фактическая матрица проверок — в STATUS.md.
 - [x] Добавить UTF-8 строки, неизменяемые списки и именованные структуры с автоматическим управлением памятью и проверками границ.
-- [ ] Добавить специализированные буферы и правила владения внешними ресурсами.
+- [ ] Добавить специализированные буферы и правила владения внешними ресурсами. В 0.33 / языке 0.13 реализован неизменяемый `bytes`: владение срезами, кодеки, generics, JSON/API, бинарные файлы и ограниченные watch-выражения. Общие внешние ресурсы, FFI и потоковые буферы остаются открытыми.
 - [x] Определить ограниченную модель серверного host: пул синхронных обработчиков, бюджеты, кооперативную отмену и транзакцию на запрос. Исходные async/await и общие конкурентные ресурсы остаются открыты.
-- [ ] Добавлять файловую систему, время, сеть и системные вызовы через платформенные адаптеры.
+- [ ] Добавлять файловую систему, время, сеть и системные вызовы через платформенные адаптеры. В 0.30 / языке 0.12 реализованы текстовые операции с отдельным `fs`, явным каталогом и атомарной заменой; полная матрица компилятора и SDK пройдена на macOS ARM64, Linux ARM64 и эмулируемом Linux x86-64. В 0.31 проверены внутренние бинарные примитивы; в 0.32 добавлены управляемые значения и адаптер. В 0.33 / языке 0.13 открыт исходный `bytes`, подключены API, отладчик и явная миграция 0.12. Проверены macOS Debug, двенадцать этапов установленного SDK и браузерный пример в трёх движках; новая Linux/Release/изолированная SDK-матрица выполняется. Ресурсы, потоковый ввод-вывод и остальные адаптеры остаются открыты.
 - [x] Проверить цепочку компилятора/нативных программ и установленного SDK на Linux ARM64 и Linux x86-64 (для x86-64 зафиксирована эмуляция Docker).
+- [x] Добавить `nex package` для нативных программ и HTTP/HTTPS: переносимые каталоги с зависимостями, лицензиями и хешами проверены на macOS ARM64, Linux ARM64 и эмулируемом x86-64 без NEX SDK; системный runtime остаётся внешней зависимостью. Полная регрессия 0.29 пройдена; остальные платформы остаются открыты.
 - [ ] Подключить Windows x86-64/ARM64 и проверить macOS x86-64 в исполнении; дополнить Linux физическим x86-64 и более широкой матрицей окружений.
 - [ ] Для каждой цели зафиксировать SDK, ABI, компоновщик, зависимости и способ доставки.
 - [x] Создать нативный HTTP/HTTPS-сервис с проверкой протокола, хешированными bearer-учётными данными, изоляцией пользователей, конкурентными запросами и откатом при сбоях.
@@ -277,7 +436,7 @@
 - [ ] Запускать сценарии Playwright на Chromium, Firefox и WebKit; отдельно проверять заявленную поддержку на реальных целевых браузерах и устройствах.
 - [x] Проверить базовые браузерные сценарии на трёх headless-движках: Unicode-ввод, создание/переключение/удаление, URL/back/reload, клавиатуру и мобильную ширину. Реальные устройства и вспомогательные технологии остаются отдельной проверкой.
 - [ ] Связать ошибки и профили браузера с узлами графа через source maps и идентификаторы сборки; связать клиентский запрос и серверную трассировку.
-- [ ] После базового примера собрать вычислительную функцию в Wasm, проверить совместимость LLVM/Emscripten, ABI, передачу данных и равенство результатов.
+- [ ] Завершить проверку вычислительной функции в Wasm: LLVM/LLD 22.1, ABI BigInt, передача данных и равенство результатов. Изолированная реализация 0.60 проходит проверки границ и пример в трёх браузерах; текущие full/SDK/platform gates остаются обязательными. Emscripten не нужен первому модулю без host imports; более широкая интеграция требует отдельной проверки.
 - [ ] Сравнить JS и Wasm на одном вычислительном сценарии с учётом загрузки модуля и обмена данными; выбирать вариант по измерениям.
 - [x] Добавить статическое размещение клиента и отдельный запуск сервера с настройками окружения, TLS и проверкой границ каталога ресурсов.
 - [ ] Следующим расширением оценить предварительную генерацию HTML, серверный рендеринг и PWA/offline для конкретных требований.
@@ -348,13 +507,14 @@
 
 ## 7. Ближайшая конкретная задача
 
-Продолжить с работающей основы: исходный язык NEX 0.5 и инструментарий 0.15.0, нативный и браузерный backend, `result<T>`, строгий JSON, HTTP/HTTPS, браузерные команды, транзакционное хранилище, модули, архивы исходников, пакет для LLM, профилирование, скалярная проверка Z3, машинные контракты приёмки задач и чистые NEX-выражения в LLDB/DAP с выборочными чтениями больших агрегатов и постоянные узлы операций со связью диагностик/исходных позиций. Сейчас разрабатываем язык и полную цепочку инструментов; прикладные продукты затем будем создавать на NEX. Фактические результаты проверок — в `STATUS.md`.
+Рабочая основа — разрабатываемый NEX 0.15 и инструментарий 0.42: параметрические типы и ограничения, вложенные patterns/match, callback-функции и неизменяемые замыкания, конечные `f64`, неизменяемые `bytes`, файловые операции, нативный и браузерный backend, API/хранилище, граф операций, отладка, профиль, проверки Z3, контракты задач и установленный SDK. Это рабочий этап; язык и полная цепочка ещё разрабатываются. Фактические результаты — в `STATUS.md`.
 
-1. Продолжить с отдельной компиляции модулей: добавить повторное использование отдельных функций/frontend и опциональную межмодульную LTO и обоснованный кеш детерминированных тестов.
-2. Продолжить атрибуцию отдельных операций, чтение строк по частям, прямые страницы больших корней и расширение профилирования на буферы, браузер и GPU; чистые выражения NEX, выборочные чтения агрегатов, LLDB/DAP и зоны функций Tracy проверены на хосте.
-3. Расширять типизированные API-контракты по конкретным задачам: path/query-параметры, совместимость схем и ресурсные сценарии; текущие фиксированные маршруты и JSON уже работают.
-4. Сохранять совпадение семантики на интерпретаторе, нативном и браузерном backend; расширять проверки изоляции клиента и сетевых границ.
-5. Подключать и проверять остальные целевые платформы, SDK и платформенные адаптеры.
+1. Конечные числа `f64` проведены через разрабатываемую версию 0.11: синтаксис/типы, три пути исполнения, JSON/API, отладку, миграцию и пакет для LLM. Проверены 27 наборов на macOS ARM64 и Linux ARM64/x86-64, установленные SDK и числовое веб-приложение в трёх движках. Linux x86-64 работает под эмуляцией; остальные платформы и переносимая поставка SDK остаются открытыми. Границы проверки — `docs/floats-design.md` и `STATUS.md`.
+2. Проверка кеша отдельных native-функций 0.25 завершена на macOS ARM64 и Linux ARM64/x86-64, включая сохранённые ревизии и живую отладку на ARM64. Инструментарий 0.26 уменьшает повторную работу при сборке; 0.27 проверяет перемещаемый macOS SDK и относительный выбор инструментов. Завершить текущую матрицу, затем добавить повторное использование frontend, опциональную межмодульную LTO и обоснованный кеш детерминированных тестов; эти части пока не реализованы.
+3. Продолжить атрибуцию операций, чтение строк по частям, прямые страницы больших корней и расширение профилирования на буферы, браузер и GPU.
+4. Расширять типизированные API-контракты: path/query-параметры, совместимость схем и ресурсные сценарии; текущие фиксированные маршруты и JSON уже работают.
+5. Сохранять совпадение семантики интерпретатора, нативного и браузерного backend; расширять проверки изоляции клиента и сетевых границ.
+6. Развивать владение ресурсами, внешние интерфейсы, асинхронность и библиотеки; подключать и проверять остальные целевые платформы, SDK и адаптеры.
 
 Отладка отдельных операций и больших значений, расширение профилирования, дальнейшее развитие инкрементальной компиляции, контракты и остальные целевые платформы сохраняются в объёме проекта. Параметры/локальные значения, точные ограниченные снимки, чистые выражения и LLDB/DAP проверены на macOS ARM64. Выполненные части ранних этапов не означают завершённость MVP.
 
@@ -378,3 +538,184 @@
 ### Linux: инструментарий 0.20
 
 Добавлен зафиксированный контейнерный рецепт для ARM64 и x86-64 и проверка установленного SDK без внешней сети. Для Linux выбран LLVM LLD с проверяемыми ELF/DWARF, отпечатки инструментов учитывают явно выбранный компоновщик. Отчёты сохраняют архитектуру исполнения, эмуляцию и пропуски. Это не завершает переносимые дистрибутивы, все Linux-окружения, Windows или мобильные/графические адаптеры; состояние фактических проверок записывается в STATUS.md.
+
+- [ ] Завершить проверку снимков графа (изолированный 0.50) и явных версий проектов/достижимых библиотек (изолированный 0.51); отдельные результаты и точная область сохраняются в `STATUS.md`.
+- [ ] Завершить контекст ошибок frontend: в изолированном 0.52 добавлены хеши захваченных исходников, фаза/область, ограниченный preview и отдельный ID диагностики, включая отвергнутые кандидаты и статические watch-выражения. Полная проверка и остальные пути диагностики ещё не завершены.
+
+- [ ] Проверить разрабатываемые в0.53 ограниченный поиск деклараций и подграф статических зависимостей/входящих ссылок: сохранённая ревизия, отдельные страницы узлов/рёбер, явные границы глубины/байтов, согласованные ID и пакет для разных LLM. Это очередная часть инструментов графа, а не завершение полной цепочки.
+
+- [x] Проверено в отдельном снимке0.54 чтение больших остановленных строк по диапазонам Unicode-символов:64 группы macOS/Linux ARM64, оба SDK18,12 живых отладочных наборов Linux, реальный захват4МиБ и повтор после удаления исходника. Перенесено в корень с отдельными текущими проверками. Причина прежнего сбоя0.53 — устаревший объект после переноса дат; чистая пересборка проходит тот же тест, исходный неудачный полный прогон сохранён. Прямые страницы больших корней, пакет редактора и дополнительные платформы остаются незавершёнными.
+
+- [ ] Завершить интеграцию и полную проверку исходных traits/impls, связанных типов и параметров-конструкторов по `docs/traits-design.md`. В изолированном 0.55 / языке 0.16 реализованы синтаксис, параметрическая проверка, статический выбор методов, проекции, граф и явная миграция с сохранением истории. Ранее прошли 14 целевых Python-проверок и 20 нативных групп инвариантов; отдельно мигрированы пять проектов и два контракта без ослабления приёмки. Последующая библиотечная/API-интеграция0.55 прошла все66 групп macOS/Linux ARM64, оба SDK19 и12 живых отладочных наборов Linux;0.56 добавил проверенные SDK20 и установленное расширение VS Code. Текущая поправка0.56.1 проходит отдельно описанные проверки SDK; перенос в корень и его собственная полная проверка остаются обязательными. Расширенная матрица, Release/sanitizers и остальная цепочка открыты в STATUS.md.
+
+### Расширение редактора: текущий шаг0.56
+
+Отдельный VSIX-прототип регистрирует NEX в VS Code и прошёл настоящий тест
+установленного расширения на macOS ARM64/VS Code1.142.0: breakpoint в исходном
+файле, стек/scopes, чистые обычные и generic-trait watches, продолжение и выход.
+Исходный файл сопоставляется с debug-path только при совпадении с замороженными
+байтами. В0.56 добавлены установка исходников расширения вместе с SDK, guide и
+дополнительные compiler/SDK-проверки; их фактическая матрица — в STATUS.md.
+NEX Studio, LSP, остальные редакторы/платформы и точное optimized-PC/core
+сопоставление остаются открытыми. Это не завершает полную цепочку разработки.
+
+### Текущая поправка проверки переносимого SDK
+
+В разрабатываемой 0.56.1 валидаторы macOS/Linux используют общий контракт всех
+20 этапов установленного SDK. Старый список из12 этапов, пропущенные проверки,
+дубликаты, неправильный порядок и незавершённые команды отвергаются. Одиннадцать
+проверок архива/контракта проходят; текущая сборка, полная регрессия и настоящий
+перенос/восстановление SDK остаются отдельными условиями приёмки.
+
+В замороженном снимке588 файлов пройдены Linux ARM64 full67,12 живых отладочных
+наборов и SDK20 без исходников/сети. macOS66/67 и повтор единственного теста с
+offline npm-кэшем сохранены отдельно. Перенос выявил потерю модулей Darwin LLDB
+при обратной косой черте в пути executable; последующее исправление выбирает
+отдельный закрытый debug-cache и прошло настоящую остановку/watch42/exit0.
+Перенос/восстановление SDK пройдены. Полная проверка актуального корня после
+переноса остаётся обязательной; критерии приёмки и лимиты не ослаблялись.
+
+Уточнение текущей приёмки0.56.1: переносимые SDK macOS/Linux ARM64 прошли все20
+этапов после перемещения и восстановления архива. Точное состояние полного
+компилятора и отличие последней Crypto-поправки от macOS full67 зафиксированы
+в docs/evidence/sdk-distribution-0.56.1.json. Обновление корня требует его
+собственной сборки, full67 и SDK20; полный объём PLAN не объявлен завершённым.
+
+### Текущая привязка отладочного кадра к образу0.57.1
+
+Базовый снимок0.57.0 прошёл все68 групп macOS/Linux ARM64, установленный
+macOS SDK21 и оба переносимых macOS SDK21. Проверка чужого core выявила
+ложную привязку к ревизии при одинаковых именах функций в разных образах.
+Поправка0.57.1 проверяет фактический загруженный модуль до чтения значений
+и выдачи ID графа; её живые проверки и новая полная матрица69 выполняются
+отдельно. Переносимый формат core, точное optimized-PC сопоставление,
+расширенные платформы и остальные незакрытые пункты плана остаются открытыми.
+
+### Разбор native core: изолированный шаг0.58
+
+- [ ] Проверить `nex core` на macOS/Linux: сохранённая сборка и её исходники, реальный core, bounded stack/PC metadata, точные чистые выражения, запрет чужого image, изменённых артефактов и запуска процесса. Новая команда не закрывает переносимый формат core и точное optimized-PC сопоставление.
+
+### Linux core image correction: isolated0.58.1
+
+- [ ] Validate the core-recorded mapping in addition to SBModule identity,
+  including different executables at the same path. Linux LLDB minidump input
+  needs bounded format/64-bit stream checks. The preceding Linux negative
+  control failed; prototype formatter checks pass. Current full/SDK/platform
+  gates remain required before root promotion.
+
+### Kernel ELF mapping: isolated0.58.2
+
+- [ ] Validate bounded NT_FILE PC mapping and content-addressed retained build
+  binding using a matching installed SDK, actual kernel ELF/minidump/Mach-O cores
+  and wrong-image controls. The reader prototype and11 provider cases pass;
+  complete current compiler and platform gates remain pending.
+
+### Текущий шаг0.59: перенос native core
+
+В отдельной копии разрабатываются экспорт и чтение капсулы core с исполняемым
+образом, символами и замороженными исходниками. Копирование/проверка инвентаря
+проверены прототипом, C++-интеграция и фактические moved-core проверки ожидаются.
+Оригинальные пути могут отсутствовать; Linux сохраняет проверку записанной
+PC-карты, а loaded-module/UUID проверки остаются обязательными. Первое сечение
+ограничено совместимым macOS/Linux host и системными зависимостями без source
+foreign declarations. Это не закрывает optimized-PC, GPU, async и весь PLAN.
+
+### Проверенный шаг 0.60.2: скалярный WebAssembly и поставка SDK
+
+Реализован `build --target wasm --entry NAME`: чистые
+shared/client функции с i64, bool и unit, MLIR/LLVM с настоящим wasm32 layout,
+LLD и независимый JS-адаптер с BigInt. Сохраняются checked arithmetic,
+left-to-right и short-circuit; глубина вызовов, память и число проходов ограничены.
+Восемь тестов backend входят в полный прогон 72 групп. Текущий корневой
+компилятор собран начисто; его SDK проходит 23 этапа и 329 команд. Проверены
+перенос и восстановление SDK macOS/Linux ARM64, source-free SDK и core capsule,
+установленное расширение VS Code, React-приложение и Wasm-пример в трёх
+браузерах. Измерения одного графа в JS/Wasm сохраняют загрузку, первый вызов и
+повторные вызовы отдельно. Область Linux-регрессии и двух последующих изменений
+Python-упаковщика явно указана в `docs/evidence/toolchain-0.60.2.json`.
+Язык остаётся0.16; общие Wasm-приложения, WASI, heap values, f64 и GPU не
+объявляются поддержанными. Точное состояние описывает `nex describe --json`.
+
+
+### Проверенные исправления 0.60.1–0.60.2
+
+- [x] Исправить передачу путей исходников, сборки и SDK с кавычками, запятыми
+  и переводами строк в Docker. Исходный сбой штатного запускателя воспроизведён;
+  отдельная реализация общего CSV-helper проходит два реальных mount-сценария
+  и 13 SDK/archive contracts; последующие полные регрессии и SDK проходят.
+- [x] Сохранить readonly-изоляцию исходников/SDK и writable-область доказательств;
+  проверить установку helper в SDK, сборку и текущие регрессии без ослабления
+  критериев или таймаутов. Язык остаётся0.16.
+- [x] Исправить literal-percent путь временного Wasm-файла; проверить debug/release,
+  кеш и экспорт с кавычками, Unicode, обратной косой чертой и переводом строки.
+- [x] Упаковывать ELF multicall-алиасы `ld.lld` и `wasm-ld` с отдельной
+  релокацией зависимостей и сохранением argv0; сохранить отказ коллизий.
+
+### Следующие обязательные платформенные работы
+
+- [ ] Реализовать и проверить нативные цели iOS/device и iOS Simulator,
+  платформенный ABI/runtime, приложение, установку, запуск и отладку. В0.61
+  реализованы и проверены архивы device/simulator; в0.63 проверено WebView-
+  приложение на iOS27.1 Simulator. Связь нативного архива с UI, физическое
+  устройство, signing и мобильный отладчик остаются открытыми.
+- [ ] Реализовать Android toolchain/NDK, пакеты, запуск и отладку; проверить
+  ARM64 и заявленные дополнительные архитектуры.
+- [ ] Реализовать Windows toolchain/runtime/пакеты и проверить фактическое
+  исполнение. Дополнить проверки Intel на физической целевой машине.
+
+Эти пункты остаются открытыми после успешной приёмки 0.60.2. Наличие LLVM
+backend, SDK другой платформы или браузерного теста само по себе их не закрывает.
+
+### Изолированный шаг 0.61: нативные библиотеки iOS
+
+Реализованы явные SDK/target для ARM64 device и ARM64/x86-64 Simulator,
+проверка платформы/диапазона deployment и реального ABI драйвера, отдельные
+кеши/архивы debug/release и запрет локального запуска/host dependencies.
+Фокусная приёмка и полные регрессии требуют отдельного результата.
+Этот шаг не закрывает приложение, signing, установку, запуск и отладку iOS.
+Язык остаётся 0.16; формат графа не мигрируется.
+
+### Изолированный шаг0.62: мобильные проекты
+
+Сгенерированы Xcode/Android-проекты из проверенного NEX web-графа, отдельно
+собраны .app и debug APK. Реальный iOS запуск выявил отказ относительных
+URL в capacitor://localhost; добавлена точная политика локального origin и
+отрицательные проверки. Инструмент tools/mobile_project.py закрепляет Capacitor
+8.5.3, локальные проверенные XCFramework, npm lock и уведомления. Генерация,
+нативная сборка и запуск имеют разные результаты. Исправленный UI на устройствах,
+полная текущая регрессия, SDK, внешние мобильные API и остальные платформы
+остаются открытыми; наличие .app/APK само по себе их не закрывает.
+
+
+### Интеграция0.63: проверенный мобильный HTTPS API
+
+- [x] Явный HTTPS origin оператора, runtime Bearer credentials и точные CORS
+  origins сервера; проверены preflight,401 и отказ запрещённых мутаций.
+- [x] Реальные0.63 .app/APK сохраняют все6 итоговых web-ресурсов с записанной
+  производной конфигурацией index.html. UI использует TypeScript/React/WebView.
+- [x] iOS27.1 ARM64 Simulator XCTest:1 тест,0 ошибок/пропусков; Android16/API36
+  ARM64 WebView:7 API/UI проверок. Ввод токена iOS — нативная клавиатурная
+  вставка; ранние неуспешные input fixtures сохранены.
+- [x] Тот же HTTPS API проверен в Chromium/Firefox/WebKit с перезапуском сервера.
+- [x] Перенести0.63 в основной каталог и проверить его build/full74/SDK23,
+  исправленный промпт LLM и генерацию обоих мобильных проектов установленным
+  SDK. Linux проходит full74/live16/source-free SDK23; все47 ревизий и таблицы
+  корневого графа сохранены. Точные когорты исходников/документации и область
+  результатов записаны в docs/evidence/toolchain-0.63.0.json.
+
+Windows, физические мобильные/Intel-цели, Android NDK/native bindings и стабильный
+мобильный ABI остаются обязательными последующими платформенными работами.
+
+## Toolchain0.64 Windows core candidate
+
+- Explicit GNU/UCRT64-bit PE/archive target, ABI/cache/notices and runtime rejection boundaries: verified cross-builds; root75/SDK23 and x64 Wine6 pass. Actual Windows OS/ARM64 execution remains unverified.
+- Actual Windows OS/ARM64 execution, Windows-hosted compiler, debugger/profiler, platform I/O, GUI/plugin binding and signed distribution remain pending.
+
+### Toolchain0.71 project architecture candidate
+
+- [x] Implement separate versioned component/build metadata, strict field/capability validation, disjoint physical source ownership, checked direct import edges and cycle rejection.
+- [x] Implement a read-only source-checked plan and selected/native/web artifact orchestration without synchronizing graph HEAD.
+- [ ] Complete full regression, installed SDK and platform gates before root integration.
+- [ ] Add actual component archive consumption, shared-library exports/ownership ABI, explicit full-static policy and resolved binary dependency reports.
+- [ ] Add safe structured CPU tasks/channels and separate asynchronous I/O.
+- [ ] Implement GPU/NPU adapters callable from NEX and verify actual device placement/fallback policy. CIX P1 OpenCL and Zhouyi probes have passed separately; probes alone do not complete NEX integration.

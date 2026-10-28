@@ -1,0 +1,5 @@
+module type_patch::model;
+
+pub struct Parcel<T> { value:T; }
+
+pub fn make()->Parcel<i64> { return Parcel(42); }

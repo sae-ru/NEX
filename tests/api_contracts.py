@@ -1,4 +1,5 @@
 """Endpoint semantics, graph transactions, generated SDKs, OpenAPI and live routing."""
+import base64
 import json
 from pathlib import Path
 import queue
@@ -15,6 +16,111 @@ import support as harness
 
 
 class API(harness.ToolchainCase):
+    def test_binary_generic_models_openapi_sdk_and_live_validation(self):
+        self.source('''module binary_api;import "std/api.nex" as api;
+pub struct Blob<T:wire>{data:T;parts:list<bytes>;}
+server fn handle(context:api::Context,input:Blob<bytes>)->result<Blob<bytes>>{
+ if len(input.data)==1 && input.data[0]==255 {assert(false);}
+ return ok(Blob<bytes>(input.data+utf8_bytes("!"),input.parts));
+}
+server fn sentinel()->str{return "BINARY_SERVER_ONLY_SENTINEL";}
+endpoint echo_blob("POST","/api/blob")=handle;
+''')
+        generated = self.cli('api', self.file, '--directory', self.root/'generated')
+        client = self.root/'generated/client'
+        document = json.loads(Path(generated['openapi']).read_text())
+        model = next(value for value in document['components']['schemas'].values()
+                     if value.get('properties', {}).get('data', {}).get('x-nex-type') == 'bytes')
+        binary = model['properties']['data']
+        self.assertEqual(binary['type'], 'string')
+        self.assertEqual(binary['contentEncoding'], 'base64')
+        self.assertEqual(binary['contentMediaType'], 'application/octet-stream')
+        self.assertEqual(model['properties']['parts']['items']['x-nex-type'], 'bytes')
+        self.assertFalse(model['additionalProperties'])
+        for source in client.rglob('*.nex'):
+            self.assertNotIn('BINARY_SERVER_ONLY_SENTINEL', source.read_text())
+            self.assertNotIn('server fn handle', source.read_text())
+        consumer = self.root/'consumer.nex'
+        consumer.write_text(r'''module binary_consumer;
+import "./generated/client/api.nex" as sdk;
+import "./generated/client/models/binary_api.nex" as model;
+import "std/net.nex" as net;import "std/web.nex" as web;
+fn main()->unit{}
+test fn binary_helpers()->unit{
+ let data:bytes=unwrap(bytes([0,255,128,65]));
+ let value:model::Blob<bytes>=model::Blob<bytes>(data,[slice(data,1,2)]);
+ let command:net::Command=sdk::request_echo_blob("1","token",value,"received",1000);
+ let payload:net::TypedPayload=unwrap(decode_json<net::TypedPayload>(command.body));
+ assert(unwrap(decode_json<model::Blob<bytes>>(payload.body))==value);
+ let response:net::Response=net::Response("1",200,ok(encode_json(ok(value))));
+ assert(unwrap(sdk::response_echo_blob(web::Event("received",encode_json(response),"/")))==value);
+ let invalid:net::Response=net::Response("1",200,ok("{\"ok\":{\"data\":\"AB==\",\"parts\":[]}}"));
+ assert(error_code(sdk::response_echo_blob(web::Event("received",encode_json(invalid),"/")))=="E_JSON");
+}
+''')
+        self.cli('test', consumer)
+        self.cli('test', consumer, '--profile', 'release')
+        if shutil.which('node'):
+            self.cli('test', consumer, '--target', 'web')
+        built = self.cli('build', generated['server_entry'], '--target', 'server',
+                         '--profile', 'release', timeout=180)
+        auth = self.root/'auth.json'
+        token = self.cli('token', '--user', 'alice', '--auth', auth)['token']
+        process = subprocess.Popen([built['executable'], '--auth', str(auth), '--database',
+            str(self.root/'data.sqlite'), '--port', '0'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            lines = queue.Queue()
+            threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
+            address = re.match(r'NEX server (http://127\.0\.0\.1:\d+)', lines.get(timeout=15)).group(1)
+            def request(body):
+                raw = body if isinstance(body, bytes) else json.dumps(body).encode()
+                req = urllib.request.Request(address+'/api/blob', data=raw,
+                    headers={'Authorization': 'Bearer '+token, 'Content-Type': 'application/json'})
+                try:
+                    response = urllib.request.urlopen(req, timeout=15)
+                except urllib.error.HTTPError as error:
+                    response = error
+                with response:
+                    return response.status, json.loads(response.read())
+            raw = bytes(range(256))
+            encode = lambda value: base64.b64encode(value).decode('ascii')
+            value = {'data': encode(raw), 'parts': ['', encode(bytes([0, 255]))]}
+            expected = {'ok': dict(value, data=encode(raw+b'!'))}
+            self.assertEqual(request(value), (200, expected))
+            for invalid in ['AA', 'AB==', '_w==', 'AA==\n', [0, 255], {'bytes': 'AA=='}]:
+                with self.subTest(invalid=invalid):
+                    self.assertEqual(request(dict(value, data=invalid))[0], 400)
+            self.assertEqual(request(dict(value, parts=['AB==']))[0], 400)
+            for _ in range(3):
+                self.assertEqual(request({'data': '/w==', 'parts': []})[0], 500)
+            self.assertEqual(request(value), (200, expected))
+        finally:
+            process.send_signal(signal.SIGTERM)
+            output, errors = process.communicate(timeout=15)
+            self.assertEqual(process.returncode, 0, output+errors)
+            self.assertNotIn('E_INTERNAL_LEAK', errors)
+
+    def test_floating_models_schema_and_generated_client_agree(self):
+        self.source('''module numeric_api;import "std/api.nex" as api;
+pub struct Sample{value:f64;}
+server fn handle(context:api::Context,input:Sample)->result<Sample>{return ok(Sample(input.value*2e0));}
+server fn sentinel()->str{return "FLOATING_SERVER_ONLY_SENTINEL";}
+endpoint double_value("POST","/api/double")=handle;
+''')
+        generated=self.cli('api',self.file,'--directory',self.root/'generated')
+        document=json.loads(Path(generated['openapi']).read_text())
+        model=next(value for value in document['components']['schemas'].values() if value.get('properties',{}).get('value',{}).get('x-nex-type')=='f64')
+        self.assertEqual(model['properties']['value']['type'],'number')
+        self.assertEqual(model['properties']['value']['format'],'double')
+        client=self.root/'generated/client'
+        for source in client.rglob('*.nex'):self.assertNotIn('FLOATING_SERVER_ONLY_SENTINEL',source.read_text())
+        app=client/'numeric.nex';app.write_text('''module numeric_sdk;import "./models/numeric_api.nex" as model;
+fn main()->unit!{io}{print(encode_json(model::Sample(1.25)));}
+test fn wire()->unit{assert(unwrap(decode_json<model::Sample>("{\\"value\\":1.25}")).value==1.25);}
+''')
+        self.assertEqual(self.cli('run',app,cwd=client)['stdout'],'{"value":1.25e0}\n')
+        self.cli('test',app,cwd=client);self.cli('test',app,'--target','web',cwd=client)
+
     def example(self):
         for name in ('service.nex', 'model.nex'):
             shutil.copyfile(harness.REPO / 'examples/api' / name, self.root / name)
@@ -219,7 +325,7 @@ test fn codecs() -> unit {
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
             (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.16','libraries':{'std':'standard'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
@@ -241,7 +347,7 @@ pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
             (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.10','libraries':{'std':'standard','helpers':'helpers'}}))
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':'0.16','libraries':{'std':'standard','helpers':'helpers'}}))
         self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'

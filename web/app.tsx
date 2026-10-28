@@ -5,7 +5,7 @@ import { initial, update, view, title, commands, makeEvent, makeResponseEvent } 
 import type { Event } from './program.ts';
 import { NexError } from './nex-runtime.ts';
 import { renderView, currentPath } from './renderer.tsx';
-import { RequestRunner } from './net.ts';
+import { RequestRunner, configuredAPIOrigin } from './net.ts';
 import './app.css';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -42,10 +42,11 @@ function App(): ReactNode {
     } finally { processing.current = false; }
   }, []);
   useEffect(() => {
-    runner.current = new RequestRunner((action, id, status, body, code, message) => {
+    try { runner.current = new RequestRunner((action, id, status, body, code, message) => {
       try { dispatch(makeResponseEvent(action, id, status, body, code, message, currentPath())); }
       catch (error) { runner.current?.close(); setFailure(error instanceof Error ? error : new Error('Invalid response event')); }
-    });
+    }, window.location.href, globalThis.fetch.bind(globalThis), configuredAPIOrigin(document));
+    } catch (error) { setFailure(error instanceof Error ? error : new Error('Invalid host configuration')); return; }
     document.title = title();
     const route = () => dispatch(makeEvent('route', '', currentPath()));
     route(); window.addEventListener('popstate', route); window.addEventListener('hashchange', route);

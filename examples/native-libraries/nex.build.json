@@ -1,0 +1,18 @@
+{
+  "schema": "nex.project-build/1",
+  "default_configuration": "debug",
+  "configurations": {
+    "debug": {"profile": "debug"},
+    "release": {"profile": "release"}
+  },
+  "components": {
+    "core": {
+      "kind": "static_library", "root": "core", "entry": "core/math.nex",
+      "entry_function": "calculate", "exports": ["decorate", "make"]
+    },
+    "app": {
+      "kind": "executable", "root": "app", "entry": "app/main.nex",
+      "dependencies": {"core": "static"}
+    }
+  }
+}

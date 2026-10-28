@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.dev/schemas/foreign-binding-1.json",
+  "title": "NEX checked host invocation binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "library", "export", "manifest_sha256", "signature"],
+  "properties": {
+    "schema": {"const": "nex.foreign-binding/1"},
+    "library": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,127}(?![\\s\\S])"},
+    "export": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z_0-9]{0,127}(?![\\s\\S])"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"},
+    "signature": {"$ref": "foreign-signature.schema.json"}
+  },
+  "description": "At most one MiB of strict JSON, including the complete compiler-derived signature. This identifies intended native code; it grants no authority. Invocation also requires an active explicit ForeignScope whose host catalogue permits the library, export and exact bundle pin. Language 0.15 source extern declarations derive this binding from checked types; no runtime authority is stored in the source graph."
+}

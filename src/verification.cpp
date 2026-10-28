@@ -95,6 +95,8 @@ class Engine {
   Sym expression(E e,State &state,bool spec=false){
     poll();if(!e)return {context.bool_val(true),Type::Unit};
     if(e->kind==Expr::Match)throw Stop{"unsupported","match expressions are outside scalar verification",e->span};
+    if(e->kind==Expr::Floating||e->type==Type::F64)throw Stop{"unsupported","f64 is outside integer/boolean verification",e->span};
+    if(e->type==Type::Bytes)throw Stop{"unsupported","binary values are outside integer/boolean verification",e->span};
     if(e->kind==Expr::Invoke||e->kind==Expr::FunctionRef||e->kind==Expr::Lambda)throw Stop{"unsupported","function values are outside scalar verification",e->span};
     if(e->kind==Expr::Integer)return {integer(e->number),Type::I64};
     if(e->kind==Expr::Boolean)return {context.bool_val(e->number),Type::Bool};
@@ -285,7 +287,7 @@ JSON verifyContracts(const Program &p,const JSON &contract,const JSON &graph,con
     for(const auto &node:*graph.getAsObject()->getArray("nodes")){auto value=node.getAsObject();if(value->getString("name")==symbol){(*object)["node_id"]=value->getString("id")->str();break;}}
     if(object->getString("status")!="proven")ok=false;reports.push_back(std::move(report));
   }
-  Object report{{"schema","nex.verification/1"},{"ok",ok},{"revision",revision(p)},{"source_hash",sourcesHash(p)},{"contract_hash",hash(json(contract,false))},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"language",languageVersion},{"solver","Z3"},{"solver_version",verifierVersion()},
+  Object report{{"schema","nex.verification/1"},{"ok",ok},{"revision",revision(p)},{"source_hash",sourcesHash(p)},{"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"language",languageVersion},{"solver","Z3"},{"solver_version",verifierVersion()},
     {"limits",Object{{"solver_timeout_ms",options.solverTimeoutMs},{"solver_resource_limit",options.resourceLimit},{"total_timeout_seconds",options.totalTimeoutSeconds},{"obligations_per_function",4096},{"paths",256},{"call_depth",32},{"symbolic_steps",50000}}},
     {"coverage","pure i64/bool/unit functions; checked arithmetic/assertions; annotated while loops with inductive invariants and strict nonnegative i64 ranking; fully inlined nonrecursive callees"},
     {"trust_boundary","Z3 and NEX verification translation are trusted; no proof of compiler/native/TypeScript/runtime correctness, allocation/resource limits, external libraries or unsupported values/effects"},

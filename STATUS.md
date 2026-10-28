@@ -1,8 +1,1824 @@
+# Verified primary0.81
+
+The explicitly approved0.77→0.81 transition is complete. Primary full87 passes
+1192.790seconds; installed SDK24/375commands/225resources passes815.194seconds.
+Actual installed VSIX0.6 works in three fresh private editor hosts; strict
+analysis1/2/3 and complete store/schema/local-ID comparisons with0.77 pass.
+The frozen source also passes macOS/Linux ARM64 full87, installed SDK24 and
+Linux20 live suites. [Evidence](docs/evidence/toolchain-0.81.0.json) records
+implementation/source backup identities and preserved graph/Git state.
+
+Language0.16 is unchanged. All47 revisions/all16tables/schema/IDs remain, and
+old0.77 source/compiler are retained separately. This documentation update
+changes prose/evidence only; compiler implementation and executable are unchanged.
+Public server workload profiling is being developed in an isolated0.82 copy.
+Concurrency, general accelerators, source-foreign project packaging and broader
+platform/development delivery remain pending. Full objective is not complete.
+
+The development sections below retain their original historical observations;
+their former pending0.81 gates are resolved by the evidence above.
+
+# Development cohort0.81 (not integrated)
+
+Extension0.6 adds explicit project launches and NEX: Debug Project Component.
+Metadata/configuration choices delegate to fresh plan/debug/plan compiler calls.
+The final executable/build identity and captured sources must agree; source
+entry aliases are pinned, project file mappings preserve workspace spelling and
+dirty compiled buffers prevent launch registration. Runtime npm dependencies
+remain empty. Node launch/command contracts pass22 cases.
+
+Real0.80-backed preparation passes, with actual DSO source breakpoint/watch and
+clean continuation in11.772seconds after correcting /var provider source maps.
+The earlier two cases retain mismatched manifest-path spelling assertions, and
+a later case retains the expected second stop on a closure defined on the same
+source line. The corrected observation removes the breakpoint before continuing.
+Matching0.81 editor/project-action CTest groups pass126.81seconds and all five
+live editor cases pass27.106seconds. An installed prototype VSIX0.6 executes
+NEX: Debug Project Component and the configuration picker in an isolated real
+VS Code profile: an original provider breakpoint, typed watch42, DSO execution,
+exact Unicode output and exit0 pass12.255seconds. Its SDK/compiler bytes match
+the prototype. Linux ARM64 builds this compiler and passes the exact owned
+assertion diagnostic regression in54.007seconds. Complete frozen macOS/Linux
+regressions, installed SDK and final frozen VSIX validation remain pending.
+
+Frozen0.80 Macfull87 passes1282.18seconds. Linuxfull87 passes86/87: a deferred
+reference_error.message borrowed exception.what() after exception destruction.
+This source stores an owned string and checks the exact assertion message.
+MacSDK24 reaches the last phase but fails on an unused notice-fixture root
+inside the deleted source project. The fixture now names the current compiler
+file, which remains available during replay; provenance rules are unchanged.
+These are retained failures, not accepted0.80 platform/SDK results.
+
+Primary0.77 source/compiler/Git and original47 revisions/all16tables/schema/IDs
+remain preserved. All new work is isolated. Primary promotion requires explicit
+approval after automatic approval review rejected that separate action. No
+source concurrency, general accelerator API, broader platform delivery or full
+objective completion is claimed.
+
+# Development cohort0.80 (not integrated)
+
+Replay no longer searches ancestor project manifests. Frozen-input preflight
+uses an owned temporary graph; an exact SQLite snapshot preserves its local
+IDs under NEW_RUN/state/.nex before execution. New task history/build caches
+belong to that state. Explicit output permits readonly receipt inputs. SDK
+acceptance also creates its own project boundary. Language0.16 is unchanged.
+
+The first narrower receipt-directory fix passes2 source/project isolation cases
+(2.079/12.505seconds); old0.79 fails the same source regression as intended.
+The stronger output-owned state implementation passes two source/readonly/ID
+cases in4.377seconds, a source-deleted project case in12.418seconds and exact8192
+files/replay in67.365seconds. Full87/SDK/Linux validation remains pending. The corrected exact8192-file test passes78.855seconds;
+the limit itself is unchanged and includes both package helper resources.
+
+Frozen0.79 source9f09c4b17530f0656a7bbb67ee3b56b305dd02b5 passes86/87 groups
+on both macOS and Linux ARM64. Only the fixture resource count fails; native
+project cancellation now runs successfully on both systems. No0.79 SDK/platform
+acceptance or root integration is claimed.
+
+Frozen0.78 passes Macfull86 and SDK24, but its post-SDK guard detects one added
+test-program revision in the primary graph: replay selected an enclosing root.
+All original rows remained; the complete48-revision graph is retained separately.
+The original47 revisions/all16tables/schema/IDs are restored from the validated
+snapshot, and primary source/compiler/Git are unchanged. Earlier failures and
+receipts remain separate. This source does not complete the full objective.
+
+# Development cohort0.79 (not integrated)
+
+Project-backed tasks can request package checks under declared configurations.
+The task parent captures deployable native/server/web output without executing
+the application. Package helpers are current trusted resources; Python bytecode
+caches cannot mutate saved inputs. Relative file aliases are accepted only
+inside the saved package; ordinary task inputs still reject symlinks. Existing
+8192-file/256MiB artifact limits remain. Reviewed custom notice catalogues and project-confined license text can be
+captured and pinned through a readonly inspector. Source-foreign package
+projection and broader delivery remain pending.
+
+The first3 focused cases pass64.042seconds. A server case retains a
+missing-external-notices failure; the new pinned-notice implementation addresses
+that integration and passes the server/source-deleted-replay plus readonly,
+changed-license and escaping-path cases (2tests,53.095seconds). Frozen0.78 source
+ab95fbeed959a87f3688aa225554dd65c614c5ad (785files) is backed up and running
+macOS full86 in1296.35seconds; installed SDK checks are running and it is not
+integrated. Its first Linux run
+passes85/86groups; the new cancellation fixture fails to compile dprintf under
+strict Linux C headers. This source uses snprintf/write for that fixture; renewed
+Linux cancellation and full87/SDK checks remain pending. Actual0.77 remains
+verified separately. No full-objective completion is claimed.
+
+# Development cohort0.78 (not integrated)
+
+Optional project-backed nex.task/1 programs pin architecture and configuration,
+retain physical source/package/component aliases, and replay captured namespaces.
+Native compilation and execution are separated so the task parent supervises
+run/test/profile processes directly. Current toolchain/FFI catalogues remain
+required; captures grant no authority. Language0.16 and graph history are unchanged.
+
+The first5project-task cases pass270.882seconds, including real archives/DSOs,
+profiles, web output, readonly trust checks, archived graph code and moved replay
+after original sources/packages were deleted. A later six-case direct-supervision
+cohort passes461.544seconds. Initial cancellation cases retained a physical
+/var versus /private/var manifest comparison failure before native execution.
+The canonical-parent fix reaches native code: run/profile timeouts and all three
+SIGINT cases pass. The test-mode timeout expired before native execution, so its
+native-descendant assertion failed; the renewed test allows60seconds for
+compilation and execution and still requires a marker from the actual forked
+native process. Its result is pending.
+Full86/SDK/Linux and final schema/descriptor/example validation remain pending.
+
+Frozen0.77 passes full85 and installed SDK24/369/215 on macOS/Linux ARM64,
+19Linux live suites, actual installed VSIX, strict compatibility,6cross
+configurations/15artifacts/3iOS links/x64Wine and12real browser/API/restart cases.
+Actual root0.77 also passes full85/SDK24/369/215, its own installed VSIX,
+compatibility, cross-build/Wine and12browser cases, plus a live SDK debugger/web
+preview case in27.322seconds. These are separate post-integration observations.
+Root0.76 SDK/source recovery, all47revisions/all16tables and normal
+Git HEAD/index remain preserved.
+
+Project package task checks, server workloads, task/editor debugging, source
+concurrency, general CPU/GPU/NPU APIs and broader platform delivery remain open.
+This source does not complete the full objective.
+
+Historical cohorts below retain their original scope.
+
+# Development cohort0.77 (not integrated)
+
+Project run/test/debug/profile consume the declared binary architecture and
+configuration. Pure tests compare the interpreter with their selected backend; pure shared tests compare native, TypeScript and interpreter;
+effectful tests execute once with explicit runtime grants. Captured project
+traps/profiles carry checked content identities and null persistent graph IDs.
+Native debug sessions reuse the final image and its captured provider manifests.
+Initial six regression groups pass in141.90seconds. The first live action
+cohort passes9cases; a later10-case cohort has one retained DAP test failure
+because an unloaded DSO breakpoint was required to be pre-resolved. Its corrected
+case requires the actual stop and a resolved breakpoint after loading. Corrected DAP and bounded-output cases pass2tests in32.423seconds. The quoted/backslash/percent/Unicode LLDB/DAP/HTTP case also passes in27.840seconds.
+Final frozen full85/SDK/Linux gates remain pending. Explicit FFI actions, one-time effectful execution, relative profile cwd
+and source changes between preflighted tests have passed addressed checks.
+No completion of the full objective is claimed.
+
+Frozen0.76 source f52e7e69a081c58e2d450095363fb3f55aa0f718 (770files)
+passes full84 and installed SDK24 on macOS/Linux ARM64, including18Linux live
+suites. Actual0.75 root source8b5f35b9e91544b93c3ff66f760538d5e12c431a
+passes83groups, SDK24/361/213, installed VSIX, strict072/075 compatibility,
+6cross configurations/15artifacts/3iOS links/x64Wine and12real browser/API/restart
+cases. Candidate0.76 source is now promoted to the primary checkout with preserved0.75 recovery; actual root full84/SDK24 are running as a separate scope.
+
+Project task/replay/editor workflows, server workload debug/profile, packaged
+image provenance, Windows packages, source concurrency, general accelerators
+and broader platform delivery remain open.
+
+The following cohorts retain their original scope and validation history.
+
+# Development cohort0.76 (not integrated)
+
+`project --kind package` consumes the declared configuration and actual built
+artifacts, capturing native applications/shared images/runtime/dependencies and
+browser dist/notices in one exclusively published package. Exact compiler-owned
+image provenance leaves external native licensing requirements intact. A sibling
+mkdtemp stage handles literal percent paths without crossing filesystems.
+
+The initial prototype passes five focused groups in184.62seconds, including four
+new package cases: moved/source-build-deleted native+browser output, shared
+profile identity/cleanup, preflight output/selection rejection and private SQLite
+provenance/relocation. Legacy ordinary/foreign packaging and project/shared-image
+groups also pass. Final descriptor/schema/SDK additions require fresh validation.
+Full84, installed SDK and Linux validation of0.76 remain pending.
+
+Candidate0.75 passed83 groups and SDK24/361/213 on macOS/Linux ARM64,18Linux live
+suites, actual installed VSIX, strict072/075 analysis/store compatibility,
+6cross configurations/15artifacts/3iOS links/x64Wine, and12real browser/API/restart
+cases with a dynamic model in Chromium/Firefox/WebKit. Root0.75 integration has
+started with old0.72 source/SDK recovery and a complete graph snapshot; actual
+root checks remain separate. Goal completion is not claimed.
+
+Project foreign-pin projection, packaged-image debug provenance, combined
+project execution/DAP/editor/task flows, Windows packages, source concurrency,
+general accelerators and broader delivery remain pending.
+
+# Verified root development checkpoint0.72 / language0.16
+
+Implementation source `1f24a09cd71ee7cf203359b7a70d03e243505669` (756 files) builds and passes
+all80 CTest groups in747.94 seconds. Its installed SDK passes24 phases,
+348 commands and213 indexed resources; compiler SHA-256 is
+`ae7db3947b533f0b84d90fbf1bb1904b1210214a87e15174def414674ff7e83d`.
+[Machine-readable evidence](docs/evidence/toolchain-0.72.0.json) separates actual
+root, source candidates, Linux, SSH compatibility and research scopes. Final
+overview/quickstart/research evidence changes no compiler, runtime, grammar or
+indexed resource. Exact test sources and original failures remain retained.
+
+Project `static` edges consume real code-only archives under checked private
+compiler/toolchain/runtime contracts, with concrete exports, consumer generic
+instantiations and one runtime in the final application. Retained completion
+records bind ABI data and captured archives. Module-based frozen source origins
+cover provider entry/import aliases; live source-deleted library watches and
+moved core capsules pass. Historical capsule basenames remain readable.
+
+The current source passes Linux ARM64 full80,17 live groups and source-free,
+network-disabled SDK24/348. Mac candidate full80 initially had one old temporary
+filename assertion; the stronger manifest-origin test passes all13 module cases
+with unchanged production code. Actual root then passes a fresh complete80 run.
+The Mac candidate SDK's omitted optional Wasm-linker selection is retained as a
+configuration failure; explicit LLVM22.1.8 selection and actual root defaults pass.
+
+Actual root-SDK checks produce15 cross artifacts in6 configurations and3 final
+iOS links; an archive-dependent x64 application runs under Wine. A static-model
+HTTP server and source-model browser client pass12 cases across3 browser engines.
+Installed VSIX0.5 passes fresh-profile language/debug checks. Genuine0.71/0.72
+checks preserve strict analysis1/2/3 responses apart from compiler identity and
+all isolated store rows/schema/IDs. All47 primary revisions/all16 tables/schema,
+local identities and normal Git HEAD/index remain unchanged.
+
+Separate Astra Linux1.7.4/old-glibc development checks include a complete SDK24
+and targeted native toolchain groups. Their hashes are distinct from this root.
+Manual Mac/Linux two-DSO probes establish one runtime, managed callbacks/values,
+file aliases, checked failure cleanup and relative relocation. General compiler
+DLL mode, dynamic debug/core/profile/package integration, source concurrency,
+accelerators and the remaining development chain are still pending.
+
+The following historical statements retain their original source/compiler scope.
+
+# Verified root development checkpoint0.71 / language0.16
+
+Implementation source `1a3da612e0f3c10e1f737802ef4c580723e27311` (750 files) builds and passes
+all79 CTest groups in 747.49 seconds. Its installed SDK passes24 phases,
+344 commands and209 indexed resources; compiler SHA-256 is
+`df5a138402e91abd21e3ec83d4d3550f96f50cec591a61377e1958aecadbb843`.
+[Machine-readable evidence](docs/evidence/toolchain-0.71.0.json) separates original
+candidate735, actual root750, installed IDE, cross-target, real-browser and
+historical CIX scopes. The final overview/quickstart/notice delta changes no
+compiler, grammar, manifest, test, example or indexed resource; full-suite
+receipts retain their exact source cohort.
+
+The optional nex.project-build/1 manifest describes source/executable/archive/
+server/web components, disjoint physical roots, direct architecture edges and
+profile/CPU/ABI/toolchain configurations. Readonly planning checks captured
+sources, locks, entry contracts and toolchain fingerprints without graph writes
+or tool execution. Build consumes those Programs and rechecks native tooling.
+Thirteen focused cases include the reproduced package-alias boundary bypass,
+rejection paths, actual archive host linkage and browser server-code exclusion.
+Only source dependency linkage is implemented; emitting a static archive is
+separate from consuming it as a dependency. DLLs, full-static policy, resolved
+binary dependency reports and source concurrency remain pending.
+
+The exact original735 compiler cohort passes full79 and SDK24 on macOS and
+Linux ARM64. Linux completes16 live suites and a source-free/network-disabled
+SDK run. Linux build/install ELF files differ in one trailing DT_RUNPATH byte;
+all other bytes are verified equal after normalizing that declared padding.
+The root750 fixture/documentation follow-up changes two indexed guides, without
+changing compiler/runtime/indexed code from735; its actual SDK verifies all209
+resources. The final unindexed overview delta retains these scopes.
+
+Six checked project configurations produce9 Intel/Windows/iOS artifacts and3
+final iOS linked images. A project PE returns42 under isolated x64 Wine.
+An actual-root project builds one shared model, HTTP server and production
+client, then passes12 cases across Chromium/Firefox/WebKit, including restart
+persistence, clean shutdown and no forbidden redirect. Missing dependency and
+mismatched server ABI requests reject. These are build/runtime observations,
+not universal device or performance guarantees.
+
+Installed VSIX0.5 passes actual private-profile LSP/native debugger checks.
+Nine fresh root SDK PE cases and17 Wine scenarios retain their original fixture
+graph snapshots. Genuine0.70/0.71 comparisons preserve analysis1/2/3 payloads
+apart from compiler identity, revisions, interpreter results and every isolated
+store row/schema/ID through complete normalized API snapshots. Initial direct
+Python-readonly WAL inspection failures and a fixture-path driver correction
+are retained; they are not accepted product failures or migration evidence.
+The primary47-revision graph, all16 tables/schema, IDs and normal Git HEAD/index
+remain unchanged. CIX GPU/NPU evidence remains explicitly toolchain0.70 and
+fixed-fixture FFI, separate from general acceleration support.
+
+The following historical statements retain their original source/compiler scope.
+
+# Verified root development checkpoint0.70 / language0.16
+
+Core source 74a013fc876cfcb725608c9ce490e71720aeb76b (719 files) builds and passes all78 CTest groups
+in 752.95 seconds. Its installed SDK passes23 phases/332 commands/198
+indexed resources; compiler SHA-256 is 88273ccf08e1f73b8ecd08130514c6d00cb487eeaad5a49960cbf36148506701.
+[Machine-readable evidence](docs/evidence/toolchain-0.70.0.json) separates the
+candidate macOS/Linux/installed-IDE and actual root execution scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler, grammar, manifest,
+example or indexed resource and does not relabel earlier executions.
+
+Explicit analysis/3 uses exact lexer-word ranges and actual bound source
+signatures, generic arities/bounds, lexical values, aliases and trait members.
+Builtin types/constraints have null physical targets; syntax words have null
+descriptions and targets. This fixes the genuine0.69 `id<i64>(42)` false-definition
+counterexample. Generic functions show source templates; concrete field reads
+can show their checked instantiated type. The model-independent prompt, schema,
+manifest and guides describe these distinctions and explicit limits.
+33 compiler/stdio cases and two actual Node-client/contract wrappers cover source
+and graph isolation, UTF-16/CRLF, conflicts, cancellation and16KiB/8MiB limits.
+Five genuine old/new compiler cases preserve canonical revisions and both strict
+legacy analysis/1 and analysis/2 payloads apart from compiler identity. Source
+language0.16 and canonical formats require no migration.
+
+The original implementation candidate passes full78 and installed SDK on macOS and Linux
+ARM64. Linux completes16 live suites and source-free/network-disabled SDK
+acceptance. Installed Python LSP sends29 messages and the Node client17 requests;
+both verify exact aliases, generics, members, signatures and builtin no-definition.
+Only tests/editor_lsp_host.js changes from the original66280d5d candidate to
+the corrected74a013fc source: the first actual-IDE test compared raw plaintext
+to VS Code codeblock markup. The corrected driver verifies rendered expected
+text. All compiler/client runtime files, CTest suites and198 indexed resources
+are unchanged; original full-suite receipts keep their66280d5d scope. The initial
+IDE failure and dependent exits before root mutation are retained.
+The Linux installed ELF delta is checked separately from byte-identical compiler
+claims. Actual installed VSIX0.5 in VS Code1.142.0 uses
+private macOS ARM64 profiles and verifies the same descriptions, unsaved imports,
+explicit CRLF/Unicode repair, lifecycle, native watches and indexed value pages.
+All npm dependency records remain unchanged; only extension own version fields
+change. Fresh root-SDK checks retain9 Windows PE build graphs and17 x64 Wine
+successes. Wine is distinct from actual Windows OS/ARM64 execution. All47 root
+graph revisions, all16 tables/schema, local IDs and normal Git HEAD/index remain
+preserved. Process-scoped test sleep assertions change no global power settings.
+
+Completion/rename, parser recovery/incremental indexing, closed-file/cross-workspace
+coverage, Studio, cross-provider coding/token measurements and broader platform/
+application acceptance remain pending. Earlier mobile/browser/distribution
+results retain their original cohorts. The full objective remains open.
+The following historical0.69 statements retain their original source/compiler scope.
+
+# Verified root development checkpoint0.69 / language0.16
+
+Core source 787525a23c5fb313df2298d1532463d7e47b5728 (717 files) builds and passes all78 CTest groups
+in 743.77 seconds. Its installed SDK passes23 phases/332 commands/197
+indexed resources; compiler SHA-256 is ba4878efe8cafaae451e9eb62139d0f0adceb258884eefe9adeff6bb55e30f96.
+[The machine-readable evidence](docs/evidence/toolchain-0.69.0.json) retains
+separate corrected candidate/macOS/Linux/installed/root scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler, grammar, manifest,
+example or indexed resource and does not relabel earlier executions.
+
+Readonly analysis/2 now projects actual parser/module-binder type, generic,
+trait/member, implementation, import-alias and enum-variant identities. Strict
+analysis/1 and analysis/2 wire shapes, source language0.16 and canonical formats
+are unchanged. Five genuine0.68/new-compiler comparisons retain equal canonical
+revisions and legacy payloads apart from compiler identity.25 compiler/stdio
+cases,25 Node contracts and two actual-client/contract cases exercise scope,
+UTF-16, conflicts, cancellation, result limits and no source/Store writes.
+Installed SDK LSP acceptance sends23 messages and the Node client11 requests.
+Reference offsets are grouped once per file; synthetic complete-result equality
+and timings are separate from compiler/application performance claims.
+
+The same corrected source's first Mac full run (v2) overlapped observed clamshell,
+maintenance sleep and a later full wake. It retained75 passed groups and failures
+in Windows targets/tasks/toolchains with timeouts; its CTest elapsed time was
+23597.55 seconds. After wake, the same compiler/source passed all26 cases in
+those three groups, without source changes. Accepted Mac full validation uses v3; the same binary then passes8
+fully enabled Wasm cases and installed SDK v4 with the supported explicit
+NEX_WASM_LD selection. The earlier v3 SDK stopped at command220 with
+E_WASM_TOOLCHAIN because its default linker was not configured. This configuration
+error and all before-mutation prerequisite failures are retained.
+Tests use temporary process-scoped idle/system-sleep assertions; global power
+settings were unchanged. Original power timestamps, failed receipts and initial
+root prerequisite/startup failures are retained. These are separate execution
+scopes and are not relabeled as successful first runs.
+
+Corrected candidate0.69 also passes full78/SDK on macOS and Linux ARM64. Linux
+finishes16 live suites and source-free/network-disabled SDK acceptance. The
+first candidate fd1262fe remains explicitly unaccepted: a broad extension-version
+replacement inadvertently changed three dependency requirements in npm lock.
+Its in-progress Mac/Linux tests were intentionally stopped and the waiting IDE
+job ended before packaging. Only this task's identified CTest process and exact-
+mount Docker container were stopped. The corrected candidate787525a2 changes
+only npm lock; all dependency records match the previous verified lock and only
+the extension's own version fields change. Full corrected checks use new v2
+controllers; original interrupted logs and failures remain retained.
+
+Actual root SDK VSIX0.4 runs in VS Code1.142.0 using
+private macOS ARM64 profiles. Typed parameter/alias references, exact trait
+method contract definitions, imported unsaved-buffer invalidation, explicit
+CRLF/Unicode repair, lifecycle and native debugger/page checks pass. Fresh root
+SDK Windows checks retain9 original graph snapshots and17 x64 Wine successes;
+Wine remains distinct from actual Windows OS/ARM64 execution. All47 root graph
+revisions, all16 tables/schema, local IDs and normal Git HEAD/index are preserved.
+
+Dedicated generic/member/alias hover, closed-file/cross-workspace indexing,
+completion/rename, recovery/incremental parsing, Studio and broader platform/
+application acceptance remain pending. Earlier mobile/browser/distribution
+results retain their old compiler/source cohorts. The full objective is open.
+
+# Verified root development checkpoint0.68 / language0.16
+
+Actual root source 13a9d72d1bd9aa017deb010e84932dd1f6b29817 (716 files) builds and passes all78
+CTest groups in 758.09 seconds. Its installed SDK passes23 phases,
+332 commands and197 indexed resources. Root compiler SHA-256 is
+76eacede4038dd3f7362bd47a103d270c612b795900561a3786ef5204f5fd572.
+[Machine-readable evidence](docs/evidence/toolchain-0.68.0.json) separates
+candidate, installed, resumed Linux and actual root execution scopes. The final
+README/STATUS/PLAN/evidence-only delta changes no compiler/runtime/grammar/
+manifest/example or indexed resource; it does not relabel earlier executions.
+
+The source13a9d72d candidate has its own macOS full78/SDK23/332/197 and Linux
+full78 receipts. Linux completed14 live suites before its Docker container ended
+with137 during live-string-debug. Docker Desktop was later observed stopped.
+The exact source/compiler/SDK bytes were retained; two remaining live suites
+passed in a fresh identical-image container after Desktop startup, followed by
+source-free/network-disabled SDK23/332/197. Original failed controllers/report
+and the interrupted zero-byte live log remain retained. The combined16live
+coverage is not a claim of one uninterrupted run. Dependent first root jobs
+stopped before mutation; successful root verification uses separate v2 jobs.
+
+Opt-in analysis/2 adds exact declaration/read/write/call/pattern intervals with
+checker-resolved targets. Default analysis/1 and its strict schema are retained.
+Functions/values, lexical scopes, nominal constructors/patterns and structure
+fields have checked reference lookup; result limits, declaration inclusion,
+deterministic deduplication, cancellation and captured-context conflicts are
+explicit. Type/trait/import-alias reference syntax and broader workspace
+coverage remain pending. Source language0.16 and graph formats are unchanged.
+
+An actual old/new compiler counterexample proves the editor wildcard correction:
+`match ... {_=>_}` does not declare a new `_` that shadows an outer ordinary
+value. The corrected location points at the outer declaration; both compiler
+versions evaluate42 and produce the same canonical revision. Field/pattern/
+wildcard fixtures additionally agree in native/reference/TypeScript execution.
+Nineteen compiler/stdio cases,25 Node contracts and two actual-client/contract
+cases cover scope, Unicode, result limits, contexts and source/history isolation.
+Installed SDK checks send16 Python/server messages and8 Node/client requests.
+
+Actual root SDK VSIX0.3 runs in VS Code1.142.0 on macOS
+ARM64 using two private profiles. It verifies references, unchanged-entry queries
+immediately after imported-buffer edits, repaired imports, explicit CRLF and
+Unicode, diagnostics/navigation/outline, restart/disable/enable and close.
+Physical source bytes remain unchanged and source analysis creates no graph.
+Native debugging verifies source breakpoints, stack/scopes, scalar/trait pure
+watches, unchanged stop identity,32768-item list/4MiB byte roots with bounded
+1000-child pages, continuation and exit0. The user's profile is not modified.
+
+Fresh root SDK Windows checks retain9 PE outputs, each original build context's
+graph snapshot and source where present, and17 x64 Wine cases. Actual Windows
+OS/ARM64 execution and the failed filesystem prototype remain separate/pending.
+All47 root revisions, all16 tables/schema, local identities and normal Git HEAD/
+index are preserved. Earlier SDKs and source/recovery cohorts remain available.
+
+Completion/rename, parser recovery/incremental indexing, remaining reference
+syntax/workspace coverage, Windows/physical-platform adapters, signing and the
+rest of PLAN.md remain open. This is verified development progress, not a
+release or completion of the full language/development-chain objective.
+
+Earlier milestones retain their original identities and scopes below.
+
+# Verified root development checkpoint 0.67 / language 0.16
+
+Actual root source 4fbd3c6775702a76c16a8d93611ef65a2df0506c (714 files) builds and passes all 78
+CTest groups in 741.94 seconds. Its installed SDK passes 23 phases,
+332 commands and 196 indexed resources. Root compiler SHA-256 is
+aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628.
+[Machine-readable evidence](docs/evidence/toolchain-0.67.0.json) records exact
+source/compiler/report scopes. The final README/STATUS/PLAN/evidence-only delta
+preserves all compiler/runtime/grammar/manifest/example bytes and all 196 indexed
+resources; those overview edits do not imply another full-suite execution.
+
+The separate 9cb7e996 implementation candidate passes all 78 groups on macOS
+and Linux ARM64. Each installed SDK passes 23 phases/332 commands/196 resources;
+Linux also passes 16 live suites and runs acceptance with no source checkout
+or network. Root source differs from that candidate only in the unindexed
+actual-IDE host test, which explicitly sets/asserts CRLF and restores original
+EOL before saving. Its own full78/SDK and actual-IDE results are recorded here.
+
+Readonly compiler analysis and stdio LSP provide unsaved diagnostics, checked
+types, declaration outlines and cross-file function/value definitions. Fourteen
+compiler/stdio cases cover Unicode, cancellation, lifecycle, rejected input and
+source/history isolation. The Node client has 22 contracts and two actual-client/
+contract cases; installed SDK checks exercise both Python/server and Node/client.
+Language 0.16, canonical graph formats and language semantics are unchanged.
+
+The actual root SDK packages and installs VSIX 0.2 into a private extension
+directory. Real VS Code 1.142.0 on macOS ARM64 passes
+unsaved Unicode/explicit-CRLF error/repair, hover, cross-module definitions,
+outline, restart, disable/enable and close. Physical sources remain unchanged
+and language analysis creates no graph. A second private profile verifies native
+breakpoints, stack/scopes, pure scalar/trait watches, unchanged stopped identity,
+32768-item list and 4 MiB byte roots with bounded 1000-child pages, continuation
+and exit 0. The user's editor profile is not modified.
+
+Fresh root SDK Windows checks retain nine x86-64/ARM64 PE outputs with each
+original build context's graph snapshot and source where present. Seventeen
+x86-64 Wine cases pass. This does not verify actual Windows OS/ARM64 execution;
+the failed filesystem prototype remains unavailable and is retained separately.
+
+All 47 root revisions, all 16 graph tables/schema, local identities and normal
+Git HEAD/index are preserved. Earlier SDK/source cohorts and failed attempts
+remain retained: the 0.66 lifecycle/protocol failures were fixed and checked;
+its first SDK runs failed from a missing Python import after full77 passed.
+The initial 0.67 IDE collector omitted its native-pages flag, and one owned
+waiting collector was terminated before IDE execution to correct that flag.
+Successful corrected runs do not relabel those original failures.
+
+Completion/references/rename, parser recovery/incremental indexing, broader
+IDE/Windows development, physical-device validation, signing and the remaining
+PLAN.md language/runtime integrations stay open. This is verified development
+progress; no release or full-objective completion is claimed.
+
+# Completed predecessor 0.66: language server and lifecycle repair
+
+Source 126b0d59 adds the SDK import fix to the lifecycle-corrected 158fb058
+source. Fourteen focused cases and both corrected installed SDKs pass
+23 phases/330 commands/185 resources. Their compiler/runtime bytes remain
+those of the original e8f4bbef implementation, whose macOS/Linux full77 and
+Linux 16 live suites passed before the first SDK failure. These are distinct
+cohorts; exact proof is retained in build/lsp-066-scoped-verification.json.
+
+Earlier milestones retain their original source/compiler scopes below.
+
+# Language contract documentation: toolchain 0.65 / language 0.16
+
+Source 35c1a438 corrects five language-pack documents: four indexed guides and
+the delivered llm/README.md. The specification/protocol now match actual source
+type/trait/implementation patches, snapshot-scoped identity aliases, stopped
+pure expressions, owned streaming files, concrete source FFI and target scopes.
+Historical introduction versions remain distinguished from current capabilities.
+
+The matching macOS and source-free/network-disabled Linux ARM64 SDKs each pass
+23 phases, 329 commands and 180 indexed resources. A separate 41-command
+workflow verifies valid and rejected graph transactions, native/interpreter/
+TypeScript agreement, alias preservation, exact UTF-8/NUL streaming bytes and
+explicit migration of a genuine 0.15 snapshot with old revisions/IDs retained.
+See docs/evidence/language-contract-0.65.0.json for exact source/report digests.
+
+Compiler/runtime/grammar/manifest/examples remain byte-identical to the prior
+0.65 implementation. The full76 and Windows17 execution receipts below retain
+their original implementation scopes. The final README/STATUS/PLAN/evidence
+delta changes no indexed resource. All47 root graph revisions/all16 tables,
+schema and Git HEAD/index remain preserved. Earlier root SDKs remain retained.
+Cross-provider evaluation and the unfinished integrations in PLAN.md remain
+pending; this documentation milestone does not complete the broad objective.
+
+# Toolchain0.65 root verification
+
+Current root toolchain0.65.0/language0.16 uses source618efe51 (698 files before
+the final overview/evidence-only delta). Actual root build/full76 and its
+installed SDK23/329/180 pass. Candidate macOS full76/SDK23/329/180 and native
+Linux ARM64 full76/16live/source-free SDK23/329/180 pass independently. Exact
+compiler/source/report identities are in docs/evidence/toolchain-0.65.0.json.
+
+Windows environment and explicit target SQLite pass x86-64/ARM64 debug/release
+cross-builds, static host/archive linkage, caches and source replay. Fresh
+installed-root SDK output retains9 PE files;17 x86-64 Wine executions verify
+Unicode environment/database paths, separate-process persistence, three binary
+principal partitions and capability failures. ARM64 and actual Windows OS
+execution remain unverified. Standalone owner defaults to local; an explicitly
+empty owner is invalid, and no default database path is granted.
+
+Windows filesystem/resource operations remain unavailable. The direct prototype
+cross-compiles but its Wine run passes16 ordinary/system groups and fails5
+required filesystem checks; fixture removal also fails. These are retained
+failures, not a passing platform adapter. Native Windows/NTFS validation,
+HTTP/foreign/plugin adapters, Windows development tools/packages/distribution,
+physical-device execution and signing remain pending.
+
+All47 root graph revisions, all16 graph tables/schema and local identities are
+preserved. Original Git HEAD/index remain unchanged. The final overview-only
+delta preserves compiler/runtime/grammar/manifest/examples and all180 indexed
+resources. This is verified development progress, not full objective completion.
+
+Earlier milestones retain their distinct source/compiler scopes below.
+
+# Toolchain0.64 root verification
+
+The earlier0.64 root cohort is toolchain0.64.0/language0.16. Its implementation source is
+d39fd643 (691 files); actual root build/full75 and its SDK23/329/178 pass.
+The corrected four-document language pack ec5f050b preserves all compiler/runtime
+bytes and passes separate Mac/Linux SDK23/329/178 checks.
+The native Linux ARM64 implementation passes75 groups,16 live suites and a
+network-disabled, source-free SDK23/329/178 workflow. Source/compiler identities
+and the final overview-only delta are tracked in docs/evidence/toolchain-0.64.0.json.
+
+Windows GNU/UCRT core cross-builds produce debug/release PE/COFF and GNU archives
+for x86-64 and ARM64. Fresh installed root SDK builds pass8 PE checks in literal
+Unicode/percent paths and6 x86-64 Wine compatibility executions. Overflow logs
+map to exact NEX source operations; wrong-build logs stay unmapped. Wine under
+Linux emulation is separate from Windows OS and ARM64 execution. The initial
+ARM64 Wine attempt timed out during initialization and remains unverified.
+
+All47 root graph revisions and every graph table are preserved. Original Git
+HEAD/index are unchanged. Windows-hosted development, platform I/O/plugin/package
+adapters, actual Windows/physical-device execution and release signing remain
+pending. This is verified development progress, not a completed full objective.
+
+Earlier detailed milestones and their distinct evidence cohorts follow.
+
+# Verified root development checkpoint0.63 / language0.16
+
+The actual root compiler is rebuilt and passes all74 CTest groups. Its installed
+SDK passes23 phases/329 commands/176 indexed resources with compiler SHA256
+2d84c38b202cdd617efa4603a8a51e23352e7b928728656ab82a620eadadcae1.
+Root full74 uses tree9d346edf; the one-file corrected LLM prompt is verified in
+SDK source treeb6324fa8. Compiler/runtime source is unchanged by that prose delta.
+This final status update changes only unindexed overview/evidence documents.
+[Exact evidence](docs/evidence/toolchain-0.63.0.json) separates these cohorts.
+
+The matching Linux ARM64 implementation4c1edca2 passes74 groups,16 live suites
+and23 source-free/network-disabled SDK phases/329 commands/176 resources.
+The installed root SDK freshly generates both native mobile projects offline;
+all five non-index assets are byte-identical to the actually tested iOS/Android
+API applications, while the operator's HTTPS index configuration has its own
+recorded derivation. Generation and actual native execution remain separate.
+All47 root graph revisions and every table remain unchanged through integration,
+SDK acceptance and the fresh mobile generation. Earlier SDKs/frames are retained.
+
+Actual Simulator/emulator/API/browser validation is recorded below. Windows
+NEX target/host support, physical-device/Intel validation, native mobile bindings,
+release signing and broader distribution gates remain pending. The separate
+manual Windows PE prototype does not make Windows a supported NEX CLI target.
+This is a development checkpoint, not a release or full objective completion.
+Historical records below keep their original time and validation scope.
+
+# Development integration0.63 / language0.16
+
+The source includes explicit iOS archives, generated native WebView projects and
+explicit HTTPS API hosting. The tested implementation is Git tree4c1edca2,
+commit ee207153aaa64aa8ad37fc2970b4e25632854eb9. This documentation records its
+scoped results; root integration has its own pending build/full74/SDK23 checks.
+[Machine-readable evidence](docs/evidence/toolchain-0.63.0.json) preserves exact
+source/compiler identities and remaining gates.
+
+The implementation passes all74 macOS/Linux ARM64 CTest groups. Its installed
+macOS SDK passes23 phases/329 commands/176 indexed resources. The same-source
+HTTPS client passes three browsers with native API restart. Actual iOS27.1
+Simulator XCTest passes1 case without failures/skips; actual Android16/API36
+ARM64 WebView passes7 API/UI checks. iOS long credentials use runtime native
+keyboard paste; failed earlier input automation attempts remain retained. Final
+Linux live/source-free SDK acceptance and the root's own gates remain pending.
+
+The UI is TypeScript/React inside a native WebView. Native MLIR iOS archive
+embedding, physical devices/Intel, Windows, native plugin bindings, production
+PKI and release signing remain separate work. Language0.16, graph canonical
+formats and stored history do not change. Historical records below retain their
+original time/scope; an old pending statement does not override this record.
+
+# Isolated development0.62: mobile projects and local iOS URL policy
+
+A first prototype builds an actual Simulator .app and Android debug APK from
+NEX-generated React assets using Capacitor8.5.3. Native dependency hashes, exact
+original web assets and build logs are recorded separately. The first iOS run
+survives and paints its document, but shows E_UI on capacitor://localhost
+relative links. Its default screenshot also selected a secondary inactive screen;
+the primary display establishes the actual adapter error. These failures are
+retained rather than reported as successful mobile UI acceptance.
+
+The candidate adds a pinned mobile project generator, local checksum-checked
+iOS frameworks, no inherited Android local.properties, offline generation and
+bounded provenance/logs. It adds a scoped relative-route/asset policy for the exact
+capacitor://localhost origin and rejects opaque-origin network requests. Four
+focused artifact/input/policy cases pass; the full current build, installed SDK,
+actual corrected mobile UI and browser regressions remain required. Language0.16
+and canonical forms are unchanged. See docs/mobile.md.
+
+# Isolated development 0.61: explicit iOS archives
+
+The candidate adds macOS cross-compilation of debug/release static libraries for
+ARM64 iOS devices and ARM64/x86-64 iOS Simulator. Explicit versioned targets and
+matching Xcode SDK settings are required; platform, architecture and deployment
+range are checked, followed by a real compiler ABI probe. An ARM64 target on an
+ARM64 Mac is still foreign. It cannot use local run/test/debug/profile/package,
+host dependencies, Tracy profile builds or source foreign-library loading.
+
+The first focused run builds and links all six target/profile combinations,
+checks every object's platform/minimum OS/architecture, verifies cache/revision
+reuse and rejects wrong SDK/target/deployment inputs. One package refusal fixture
+failed earlier with E_NAME because it omitted its nonstandard entry; the corrected
+fixture explicitly selects answer and expects the backend E_TARGET refusal for
+unsupported application output. Local execution commands retain E_TARGET_RUN.
+Matching final focused and full regressions
+are required before promotion. No simulator/device application or execution is
+claimed. Language0.16 and canonical formats are unchanged. See docs/ios.md.
+
+The verified root remains0.60.2. Its evidence below belongs to the exact source
+identity recorded there and does not automatically validate this candidate.
+
+# Verified development checkpoint 0.60.2 / language 0.16
+
+Updated 20 October 2026. The compiled and tested source is the exact 666-file
+Git tree `1f7c88310352fcd563cb153f418f12d27f776945`, backed up as commit
+`983051eeed369b0a49e158208bd0ba651e10f01d`. The following documentation update
+records those completed checks; it does not change their source identity.
+The machine-readable record is [toolchain-0.60.2.json](docs/evidence/toolchain-0.60.2.json).
+
+- The actual root compiler was rebuilt with `cmake --build build -j 4 --clean-first`.
+  All 72 CTest groups pass: 593 Python cases and 9 explicit skips, 1385.71 seconds.
+- Its installed macOS ARM64 SDK passes 23 phases / 329 commands / 161 indexed
+  resources, including build/run/test, task repair, profiling, real LLDB/DAP,
+  source-deleted replay, API/storage/HTTP, contracts and browser builds.
+- A matching installed VSIX passes in actual VS Code 1.142.0 with this SDK:
+  breakpoints, scopes, watches, large list/byte tail pages, continuation and exit.
+- Fresh generated React production applications pass 18 browser cases and three
+  development renderer-rejection cases across Chromium, Firefox and WebKit.
+  Three production skips are explicitly development-only cases. The scalar Wasm
+  example also passes all three engines.
+- Matching macOS and Linux ARM64 SDK distributions each pass all 23 phases after
+  relocation and archive restoration. Linux runs in a source-free runtime image.
+  An independent Linux core capsule reader restores exact `Я🧠2` with neither
+  original source nor original build mounted, without running the inferior.
+- The Linux compiler/runtime/test baseline is tree `b603e2392ab8f473209944a188bbd0c4a92ba145`:
+  full 72 groups, 593 Python cases, 16 live suites and SDK23/329 pass. The final
+  tree changes only two Python packaging files. Their actual ELF alias/collision
+  probe and fresh installed/relocated/restored SDKs pass separately. The actual
+  macOS root independently reruns all 72 groups from the final tree.
+- Same-graph JS/Wasm measurements record load and first-call costs separately
+  from nine alternating warm samples for each of two scenarios. They establish
+  measurements for the recorded machine and inputs, with no general superiority
+  or token-savings claim.
+- All root graph tables are unchanged across this promotion and its acceptance;
+  all 47 revisions remain present. The earlier 0.58.2 graph-probe incident and
+  its history-preserving repair remain recorded below and in recovery evidence.
+
+The 0.60.1–0.60.2 corrections cover Docker CSV bind paths, literal-percent Wasm
+link output paths and separate relocation of ELF multicall aliases. Original
+failed attempts remain retained alongside the corresponding passing controls.
+Language 0.16 and graph canonical forms are unchanged.
+
+Native iOS/device and simulator targets still return `E_TARGET`, including with
+explicit installed Xcode SDKs. The host query finds no installed simulator
+runtimes. Android NDK/runtime integration and Windows support remain unfinished.
+Cross-built Intel artifacts and emulated historical tests do not establish
+current physical Intel execution. General Wasm applications/WASI/heap values/f64,
+GPU integration and other unfinished PLAN items retain their stated limits.
+This checkpoint is not an all-platform release or completion of the whole goal.
+
+## Historical captures
+
+The entries below describe the state when captured. A pending check in an older
+entry may have a later result in the current checkpoint; its original scope and
+failed attempts are preserved.
+
+# Development0.60: bounded scalar WebAssembly draft
+
+The isolated implementation adds a real wasm32 MLIR/LLVM backend, pinned
+compiler-rt multiplication support, a no-import module and a checked BigInt
+wrapper. Seven draft backend tests pass, including boundary/seeded arithmetic
+agreement, exact failure sites, evaluation order, short-circuiting, bounded
+loops/recursion, 100 repeated trap recoveries, strict inputs, cache repair and
+source-deleted export. The installed workflow has a23rd Wasm phase; thirteen
+archive/workflow contract tests pass. Actual SDK23 acceptance remains pending.
+
+The committed browser example passes real Chromium, Firefox and WebKit checks
+for exact integers, overflow, invalid input, recovery, keyboard control and a
+narrow viewport. These are mutable-draft checks, not frozen-source/full-platform
+acceptance. The full72 regression, matching installed/portable SDKs and JS/Wasm
+measurements remain required. The language stays0.16; no migration is introduced.
+General Wasm applications, WASI, heap values, f64 and GPU remain unsupported by
+this adapter. The existing TypeScript/React application path remains available.
+
+Root0.58.2 passes full70 (577 Python cases) and SDK22/317. Its graph audit
+retains the original strict failure from three owned probes that discovered the
+parent project. A guarded CLI restore returns HEAD to its original revision and
+preserves every original and probe history row. Subsequent probes use explicit
+project manifests; the root graph is not described as unchanged across that
+incident. Separate frozen0.59 focused and actual macOS moved-core checks pass;
+its full71 and platform/SDK gates remain pending at this capture.
+
+# Development0.59: native core capsule draft
+
+The isolated implementation adds explicit export/read directories, bounded
+file inventories, original/physical image identities and trusted SDK readers.
+An earlier Python copying/projection prototype passes against a retained0.58.2
+build. The later historical-alias binding is not part of that prototype proof;
+matching0.59 compiler/live acceptance remains pending. Twelve SDK archive/workflow contract checks
+pass. Matching C++ build, actual moved-core/source-deleted tests and complete
+platform/SDK gates remain pending. No language or graph migration is introduced.
+
+The preceding0.58.2 frozen638 files pass Linux full70 (577 Python cases),
+all15 live suites and source-free SDK22/317; macOS focused/live/SDK22 and both
+moved/restored portable workflows pass. Linux portable moved/restored22/310 also passes. The exact638 source is
+promoted to the root, whose clean build passes and full70/SDK22/graph-preservation
+gates are running separately. These scopes do not validate the new capsule code.
+
+# Development0.58.2: bounded kernel ELF mapping
+
+A real Linux kernel SIGABRT ELF core was correctly refused by0.58.1 because
+LLDB exposes no filename through its memory-region API. The isolated correction
+reads the core's own bounded NT_FILE metadata and binds its PC mapping to the
+retained content-addressed build directory, while keeping loaded-module checks.
+A pure Python reader prototype restores exact caller watch Я🧠2 from the
+source-deleted core and rejects a different executable. It uses the original
+unchanged manifest and an older compiler for the stable watch protocol; this
+is not a matching0.58.2 installed-SDK result. Eleven metadata/string provider
+cases pass, including malformed/ambiguous/nonregular inputs and both byte orders.
+Current C++ directory binding, matching compiler/live/full/SDK checks are pending.
+
+Frozen0.58 macOS full70 passes571 Python cases with six explicit skips in
+1433.61s. Frozen0.58.1 macOS SDK22/317 passes in367.378s. Its five matching
+installed core/image controls pass on each macOS/Linux host, and Linux full70
+is running. These separate scopes are retained; no root promotion or release
+is claimed. Portable core capsules and unique optimized-PC attribution remain
+pending with the wider language/platform/development-chain objective.
+
+# Development0.58.1: Linux core image correction
+
+The frozen0.57.1 Linux ARM64 full69 regression passes, but its additional
+live-debug_image negative control fails: LLDB minidump resolves a PC through
+another supplied executable and SBModule equality alone accepts wrong-source
+attribution. Frozen0.58 is not promoted. Its macOS SDK22/317 commands pass;
+its macOS full70 remains a separate running gate.
+
+The isolated correction checks the core-recorded mapping and rejects ambiguous
+same-path images. The original failing Linux test and an additional executable
+replacement at the same path pass against a formatter overlay. This is a
+prototype, not a matching installed-SDK result. Linux LLDB saves an MDMP
+minidump here; the earlier ELF-only input check is extended with bounded
+minidump header/directory/64-bit system-information validation. Matching build,
+full regression, installed SDK22 and platform gates are pending.
+
+An actual controlled macOS SIGABRT core restores caller-frame Unicode/list
+values after source deletion with unchanged graph/core bytes. Its raw Mach-O
+stop metadata does not retain a signal cause; none is inferred. Portable core
+capsules and unique optimized-PC attribution remain pending. No release or
+full language/development-chain completion is claimed.
+
+# Development0.58: retained-build read-only native core reports
+
+An isolated source extension adds `nex core`, matching compiler/build/source/image
+checks, bounded LLDB stacks and pure exact watches, and a22-phase installed SDK
+workflow. Three normal tests pass. The initial direct SBCommandReturnObject
+status bug was retained and corrected; a live source-deleted Unicode/list watch
+and wrong-image negative control then pass. Subsequent header/image-report
+changes need their current focused/live/full/SDK checks. No release is claimed.
+
+The preceding615-file0.57 baseline now also passes the optimized macOS compiler
+full68 and installedSDK21. That baseline does not include0.57.1's frame-image
+guard. Its CTest wall time includes host sleep and is not a performance result.
+Current622-source0.57.1 initial macOS full/SDK attempts retain original-deadline
+task failures alongside host sleep observations; their rechecks remain pending.
+Full language/platform/development-chain acceptance is still open.
+
 # NEX implementation status
+
+## Toolchain 0.57.1: loaded-frame image binding under development
+
+A negative core control exposed incorrect attribution when LLDB loads the
+core's executable beside another selected NEX image with identical function
+names. The candidate checks actual loaded SBModule identity and physical path
+before frame values, operation candidates or exact watches receive the selected
+manifest's revision. Source language0.16, runtime ABI and canonical forms remain
+unchanged. Current focused/live, full69, SDK21 and platform validation are
+separate required gates; no accepted release is claimed.
+
+The preceding frozen615-file 0.57.0 passes all68 macOS ARM64 groups (566 Python
+cases, four explicit skips;1658.87s) and all68 Linux ARM64 groups (1335.62s).
+Its installed macOS SDK21/312 commands and actual installed VSIX page checks
+pass. Both moved/restored macOS SDK21 workflows pass312 commands each with
+source/dependency reads and SDK writes denied by the kernel (915.134s total).
+Linux live13, source-free SDK21, portable SDK and optimized host checks are
+recorded separately. Emulated Linux x86-64 currently retains three task-FFI
+timeout failures; no passing current x86-64 matrix is claimed.
+
+Core feasibility probes on macOS/Linux ARM64 read small modified-memory dumps,
+including native frames and watches. macOS source-deleted replay retains exact
+Unicode/list values. These probes do not implement a core archive format or
+complete optimized-PC attribution. A full macOS core also replays but grows to
+7.115GB; its size and the failed image-control result remain recorded.
+
+## Toolchain 0.57: native indexed pages under development
+
+An isolated build adds lazy native list/byte children beyond the 32-element
+text preview. The matching NEX bridge bounds every native variables request to
+1000 children, validates signed32 page arguments, preserves source offsets,
+handles named-only indexed-root requests and rejects handles after execution.
+Page metadata has a separate schema; native previews are not exact wire values.
+
+The initial resource prototype passed five transport cases and a real macOS
+ARM64 list32768/bytes4MiB scenario. The unchanged previous adapter failed the
+late-index check. A subsequent filter check caught LLDB returning indexed
+children to a named-only request; the bridge correction passes that check.
+The actual 0.57 compiler is built. Current full68, installed SDK21, Linux and
+actual editor page checks remain pending. The preceding root604 full67 and
+both root604/root606 SDK20 results retain their separate source/compiler scope.
+The current root606 full67 run is still in progress. Source stays language0.16;
+historical stopped values require their matching saved SDKs.
+
+## Toolchain0.56.1: scoped distribution checks passed; root validation pending
+
+The [aggregate evidence](docs/evidence/sdk-distribution-0.56.1.json) links exact
+source/compiler identities and complete terminal reports. Frozen597 passes all67
+Linux ARM64 groups, twelve live debugger suites and source-free SDK20. Its
+portable Linux SDK passes twenty phases after relocation and archive recovery
+in a separate network-free container without source, LLVM, MLIR or Z3.
+
+macOS base594 passes all67 groups. The subsequent selected-Crypto search-path
+repair passes all29 cases in source FFI/SDK groups and an actual @rpath library
+regression: the unchanged scenario fails on the preceding compiler, then prints42
+in debug/release and after source deletion. Both relocated/restored macOS SDK20
+workflows pass310 commands each, live LLDB/DAP and real browser builds with five
+negative read controls and a read-only SDK. npm is offline; the kernel profile
+does not claim complete network isolation. Root build/full67/SDK20 remain pending.
+
+Retained attempts include a frozen588 task timeout followed by an unchanged
+offline-cache rerun, Node/TypeScript path failures, percent-TMPDIR staging,
+Darwin LLDB backslash image paths and missing Crypto runtime search paths in
+the independent C++ acceptance hosts and source extern executables. Corrections
+retain assertions and timeouts. Current native builds select configured library
+directories explicitly; language0.16/runtime ABI/canonical forms are unchanged.
+The current generated web example separately passes18 production UI tests and3
+development renderer rejection tests across Chromium, Firefox and WebKit. The
+initial browser harness selected the wrong directory; its logs are retained,
+and the corrected invocation uses the exact build.directory response without
+changing application code, assertions or timeouts. The full PLAN is still open.
+
+## Isolated0.56 editor installation integration: scoped acceptance passed
+
+Toolchain0.56 keeps source0.16 and its canonical forms unchanged. CMake installs
+editor sources and their separate pinned development lock; the descriptor and
+language pack expose an editor guide. The compiler regression adds an editor
+suite, giving67 groups. The installed SDK workflow adds an editor-tools phase,
+giving20. The Node contract cases run from installed SDK resources; live mode
+also prepares a native session and checks its original-file mapping. Actual IDE
+execution is explicitly a separate check.
+
+The current compiler passes the editor suite (two Python cases and ten Node
+contract cases). Its installed SDK VSIX also passes an actual separate-profile
+VS Code 1.142.0/macOS ARM64 run: original-file breakpoint, stack/scopes, scalar
+and trait watches at the same native stop, exact output42 and exit0. The first
+focused run exposed a /var physical-alias mismatch; the corrected implementation
+preserves the selected path and rejects a symlink retarget during preparation.
+The initial failure is retained in [current evidence](docs/evidence/editor-integration-0.56.0.json).
+The frozen576-file editor integration passes all67 macOS/Linux ARM64 groups,
+both complete SDK20 workflows/310 commands, twelve Linux live debugger suites
+and the separate actual installed IDE check. The Linux SDK runs without source
+or network. See the exact [macOS full](docs/evidence/editor-integration-0.56.0-macos-full.json),
+[Linux](docs/evidence/editor-integration-0.56.0-linux.json) and
+[macOS SDK](docs/evidence/editor-integration-0.56.0-sdk.json) evidence. Subsequent
+0.56.1 portable workflow corrections remain separately pending.
+
+The preceding 0.55 trait/library API source separately passes Linux66, twelve
+live suites and all19 source-free SDK phases/307 commands. Its host controller
+was interrupted; the already running source container completed successfully,
+then the unchanged source-free helper completed. The
+[Linux evidence](docs/evidence/trait-library-api-0.55.0-linux.json) records compiler
+hashes, platform skips and resource equality. macOS full66 also passes (1621.33s).
+
+## Editor extension prototype: actual installed VSIX check passed
+
+The extension registers NEX debugging in VS Code and uses a fresh compiler
+descriptor for the matching frozen executable, formatter, source map and stdio
+adapter. Original-file mappings require equality with frozen bytes; changed
+library files keep their frozen fallback, while a changed entry requires a
+fresh launch. Compiler-provided foreign execution arguments remain intact.
+
+All9 focused Node cases pass. The official VSIX packager creates an archive with
+the exact five extension sources and no runtime npm dependencies. A separate
+VS Code1.142.0/macOS ARM64 profile installs that archive, activates it, stops at
+the physical source breakpoint, reads stack/scopes, evaluates scalar and generic
+trait NEX watches to42, resumes and observes clean native output/termination.
+The initial missing source mapping and its failed real IDE run are retained.
+
+This prototype uses the independently checked0.55/source0.16 compiler. SDK/source
+installation integration, current full regression and wider IDE/platform checks
+remain pending. No NEX Studio/LSP/Marketplace or stable release is claimed.
+See [editor evidence](docs/evidence/editor-extension-prototype.json).
+
+## Isolated trait/library API projection: scoped regression passed
+
+The new source tree retains real client/shared trait contracts, method targets
+and private dependencies for application models and captured libraries. Server
+members/bindings/functions, tests, endpoints and unused private code are omitted.
+The full input is checked; a binding-only source view preserves imports and
+witness references erased by concrete normalization. It is never lowered or
+executed. The final server/client projects are checked before output creation.
+
+The current compiler passes20 trait cases,14 API cases and21 frontend
+diagnostic cases (one macOS filename skip), plus two C++ probes,102.09s.
+The independent-bound/same-name generic method case passes without a language
+version change. The installed SDK's exact traits/API phase passes24 commands
+in22.057s, including a generated client invoking the real method, native and
+TypeScript agreement, exclusion of server bodies and a native server build.
+Live generic constructor/trait watches retain their stop and handle identities;
+the source-deleted replay and genuine0.15 migration also pass.
+
+The initial specialized-method-name failure and the standalone phase adapter's
+missing shutil import remain recorded. The installed acceptance script already
+imports shutil; the corrected adapter requires no product change. See
+[current scoped evidence](docs/evidence/trait-library-api-0.55.0.json).
+
+The preceding553-file source016 baseline separately passes all66 macOS groups
+(551 Python cases, two platform skips,13 C++ probes;1333.30s) and the same
+baseline compiler's19-phase SDK (302 commands;331.279s). Its final documentation
+postdates the frozen validation input. [Baseline evidence](docs/evidence/source-traits-0.55.0-macos-baseline.json)
+does not substitute for current-source acceptance. Full current66, SDK19/Linux,
+Release/sanitizers and the full language/development-chain PLAN remain open.
+
+## Verified internal 0.55 core: language 0.15
+
+The frozen constructor-kind/application/substitution/coherence core passes all65
+macOS ARM64 groups:534 Python cases and13 C++ probes,1347.82s. Twenty native
+invariant groups include symmetry and exact reconstruction. A genuine SDK0.54
+fixture remains readable without source, with its exact old revision/SQL rows.
+This core adds no source trait syntax and proves no language0.16 feature.
+Linux/core SDK acceptance is not claimed. See
+[the scoped evidence](docs/evidence/constructor-core-0.55.0.json).
+
+## Verified root0.54: full64 and installed SDK18
+
+The exact verified isolated0.54 implementation is now in the root checkout.
+The root clean build passes, followed by all64 macOS ARM64 groups (534 Python
+cases and12 C++ probes,1318.30s) and its actual installed SDK18 (322.356s).
+All127 indexed resources match the root; live debugger/browser and native string
+capture/source-deleted replay pass. Exact compiler/source scopes remain in
+the string-range evidence. Isolated Linux/macOS results below remain separate.
+
+The preceding root0.53 frontend diagnostic failure was a stale-build error:
+copying sources with their older timestamps left a pre052 modules.cpp object.
+Its dependency file lacked the new directly included diagnostics header.
+A clean rebuild of unchanged source passes the same21 diagnostic cases (4.85s,
+one macOS filename skip). The failed full62 and focused correction remain in
+the graph-query evidence; no replacement full053 pass is claimed.
+
+## Verified isolated0.54: stopped-string Unicode scalar windows
+
+The frozen534-file source passes all64 groups on macOS ARM64 (1496.29s) and
+Linux ARM64 (780.41s), with534 Python cases and12 C++ probes. Installed SDK18
+passes on macOS (405.32s) and Linux (248.03s); all127 indexed resources match
+frozen source. Twelve Linux live debugger suites pass. Its SDK runs without
+source checkout or network. [Evidence](docs/evidence/string-ranges-0.54.0.json)
+keeps exact compiler/source hashes and platform skips.
+
+String shapes expose scalar length; bounded text_range captures support
+length/index/slice and retained/overlapping replay with alias consistency.
+The read-only LLDB provider streams strict UTF-8 under separate physical-read,
+output and deadline limits with per-expression/stop checkpoints. Actual LLDB/DAP
+and installed SDK checks capture a4MiB string at an unchanged stop and replay
+the retained window after source deletion. Complete strings, language0.15,
+native ABI, canonical forms and graph format remain unchanged.
+
+The frozen source is backed up separately. The new root has independent gates
+as stated above; the prior failed full053 run is retained alongside its
+clean-rebuild diagnosis. Direct large-root DAP paging, editor/core/PC
+mapping, traits/associated/higher-kinded types/async and the remaining full
+platform/release/ABI/LLM plan remain open.
+
+## Isolated 0.53 graph search and dependency-radius queries
+
+The prototype adds literal name/source discovery over module/type/function/
+endpoint declarations, bounded declaration previews and minimum-hop dependency/
+dependent/bidirectional subgraphs. Nodes/edges page independently with explicit
+byte and depth boundaries. Responses preserve revision, exact archived source,
+namespace and selection identity. Queries select archived source, preserve HEAD
+and its journal, and do not execute program/native-extension code. Existing
+identity/edge metadata is checked against source; old stores may lazily backfill
+indexes. Language0.15, canonical forms and graph schema 4 remain unchanged.
+Current implementation/focused/schema/SDK/platform validation remains pending.
+The full0.52 checks below are separate, on a frozen earlier source tree.
+
+## Isolated 0.52 captured-source frontend context
+
+The prototype adds source-buffer hashes, phase/scope, bounded UTF-8 or lossless
+base64 previews and content-derived diagnostic identity for parser/binder/checker
+errors. Rejected assembled candidates remain distinct from physical source and
+committed graph identities. Static watch context is bound to supplied frame/stop
+hashes; runtime operation metadata remains separate. Language0.15 and graph
+schema 4 are unchanged. The 21 Python diagnostic cases (one macOS filesystem
+skip), 15 native API cases and seven related regression groups pass. Offline
+validation accepts 23 actual error forms and rejects 13 malformed variants. The
+exact installed SDK diagnostic phase passes 12 commands including rejected and
+repaired candidates, lossless malformed bytes and supplied-frame watch context.
+The actual macOS installed SDK16 passed all phases in434.171s with live
+LLDB/DAP/browser builds and all122 indexed resources matching frozen source.
+Full current regression/Linux live/source-free SDK workflows remain pending.
+
+## Verified 0.49 / language 0.15: atomic change history and restore
+
+The preceding corrected 0.49 compiler passes all 57 regression groups on macOS ARM64
+(447 Python cases + 11 C++ probes, 1375.92 s) and Linux ARM64 (1166.28 s). Both
+thirteen-phase installed SDK workflows pass: macOS 412.565 s and Linux 263.748 s
+in a network-disabled container without the source checkout. Linux additionally
+passes eleven live debugger suites. Exact hashes, source scope, platform skips
+and retained failed/cancelled baseline attempts are in
+[the evidence](docs/evidence/change-history-0.49.0.json). The optional old 0.43
+SDK now proves original schema 3 readability and schema 4 refusal. A legacy
+migration fixture no longer fabricates unjournaled HEAD writes; an independent
+case verifies tampering is rejected without candidate rows.
+
+The journal records actual atomic HEAD transitions and declared labels, with
+bounded page/link checks. Guarded restore retains sources/IDs/history and does
+not materialize physical files. Schema 4 starts an explicit old HEAD base rather
+than inventing prior transitions. This is scoped development evidence, not
+proof of every platform, full-system safety or stable cross-SDK ABI.
+
+The intermediate 0.50 passed its focused checks, macOS SDK14 and Linux58/live11/SDK14
+matrix; no full macOS regression was run for that intermediate compiler. The
+preceding isolated 0.51 source passes all59 groups on macOS/Linux ARM64, both
+SDK15 workflows and eleven Linux live suites. Its exact implementation is now
+promoted to the root, where the root build/SDK15 pass and full root regression
+remains running. [Evidence](docs/evidence/project-versions-0.51.0.json) preserves
+the pre-promotion scope. Current0.52 adds diagnostics above that implementation;
+its pending checks are not implied by earlier successful versions.
 
 The full requested objective remains open: build the NEX language and complete development chain, including web applications and model-independent authoring. The working core below is a milestone, not completion of that objective. Application products will be built later in NEX; the current deliverable is the language and complete development toolchain.
 
-The current checkpoint is toolchain **0.23 / language 0.10**, with typed
+## In progress: change provenance and archived restore
+
+Toolchain **0.49.0 / language 0.15** adds an atomic local HEAD-transition
+journal, bounded paging and optimistic restoration of retained checked sources.
+Graph schema 4 preserves existing revision/source/identity/task rows and begins
+an empty journal at the prior HEAD. Notes/actors are bounded declared labels;
+record hashes and selected adjacent links are checked without authenticating
+identity or fabricating historical events. Restore retains all revisions and
+IDs, accepts an expected-HEAD guard and does not materialize or execute source.
+
+The initial thirteen history cases pass with five compatibility groups, totaling
+six groups and 90 Python cases in 90.41 s. The initial installed SDK passes all
+thirteen phases in 293.641 s, including four source-deleted HEAD transitions and
+native/reference/TypeScript restoration. Offline JSON Schema 4.25.1 validation
+accepts five actual CLI response forms and rejects ten malformed variants; a
+foreign graph's claimed journal is not imported as local history.
+
+A final implementation adjustment avoids decoding/hashing an archived bundle
+when HEAD is unchanged. All thirteen targeted history cases pass again in 11.11 s.
+Earlier compatibility/SDK evidence retains its pre-adjustment compiler scope.
+Full current root/platform/installed-SDK validation and the complete requested
+NEX language/development chain remain pending.
+
+## Verified development milestone: exact source-operation replacements
+
+Toolchain **0.48.0 / language 0.15** adds complete nonsemantic syntax ranges,
+bounded UTF-8 context previews and revision/source-checked patches by local
+operation ID. Single expression/statement/pattern fragments preserve precedence
+and line-comment boundaries. Non-overlapping edits can span modules and existing
+declarations; the whole candidate is checked before a final expected-HEAD
+transaction. Derived owners and synthetic intervals remain explicit noneditable
+targets. Canonical definitions, database schema 3, operation identity policy 1 and
+the runtime tree are retained.
+
+All **56 regression groups** pass on macOS ARM64 in **1334.39 s** and Linux
+ARM64 in **1152.04 s**, including **433 Python cases and eleven C++ probes**;
+Linux reports its platform-specific skips separately. Eighteen operation-patch
+cases cover exact source guards, precedence/comments, nested and complete enum
+patterns, generic/closure restrictions, cross-module type edits, effect/realm
+rejections, limits and unchanged rejected-candidate rows. Genuine 0.47 archives
+retain original revisions, IDs, sites, hashes and diagnostic locations.
+
+Both installed SDKs pass thirteen phases, including source-deleted operation
+edits, stable local IDs with changed sites and native/reference/TypeScript
+agreement. macOS takes **314.901 s** and source-free Linux **278.590 s** with
+networking disabled and all eleven live debugger suites passing. Resource hashes
+match the frozen 498-file source. Offline schema validation accepts four actual
+current/historical reports and three patch forms and rejects eleven malformed
+variants. The [evidence](docs/evidence/operation-patches-0.48.0.json) records exact
+scope and the initial composed-expression crash corrected by a resulting-tree
+bound. Broader current Release, sanitizer, x86-64, distribution and remaining
+language/development-chain work stay pending; this milestone is not project
+completion.
+
+## Verified development milestone: checked native integer fast paths
+
+Toolchain **0.47.0 / language 0.15** keeps signed overflow checks and guarded
+division/remainder in SSA, with integer runtime calls on failure branches.
+Assertions branch on their evaluated boolean; failure retains checked operation
+metadata. `MIN % -1` is defined without LLVM undefined behavior. Arguments still
+evaluate once, left to right. Error codes/sites, floating rules, canonical
+definitions and C value ABI 1 are retained.
+
+All **55 regression groups** pass on macOS ARM64 in **1303.39 s** and Linux
+ARM64 in **1098.76 s**, including **415 Python cases and eleven C++ probes**.
+Both installed SDK workflows pass thirteen phases: macOS **320.447 s** and
+source-free Linux **226.347 s**, with all eleven Linux live debugger suites.
+Integer acceptance checks boundaries and loops across reference/native Debug
+and Release/TypeScript, then deletes source and replays archived execution.
+Native trap mapping and retained historical fixtures also pass. All SDK resource
+hashes match the frozen 491-file source snapshot. The
+[evidence](docs/evidence/native-arithmetic-0.47.0.json) records exact compiler,
+source and report hashes.
+
+Initial shared-host observations measured 71.9 ms vs 105.9 ms for a 20-million
+iteration loop and 259,040 vs 391,168 bytes for a constant-expression workload
+against 0.46. That initial compiler preceded final descriptor/assertion changes;
+these measurements are limited observations, not a general speed guarantee.
+Current full Release, sanitizer, x86-64 and SDK distribution checks remain
+pending, as does the rest of the requested language and development chain.
+
+## Verified development milestone: native runtime trap attribution
+
+Toolchain **0.46.0 / language 0.15** adds compact constant operation descriptors,
+per-link application identity, bounded `NEX_NATIVE_TRAP` records and checked local
+graph resolution. `nex run --json` returns native diagnostics; `nex diagnose`
+maps retained standalone/HTTP operator logs against current or archived checked
+sources. Error propagation preserves the innermost located trap. Original helper
+signatures, `Trap` definition, C value ABI 1 and language semantics remain intact.
+The [guide](docs/native-diagnostics.md) defines data trust and attribution limits.
+
+The corrected implementation passes all **54 regression groups** on macOS ARM64
+in **1258.90 s** and Linux ARM64 in **1078.17 s**, including **412 Python cases**
+and **eleven C++ probes**. Both installed SDKs pass thirteen workflow phases;
+macOS takes **310.851 s**, source-free Linux takes **306.114 s** with networking
+disabled. Linux also passes eleven live debugger suites. Native diagnostics agree
+with interpreter operation IDs in debug/release, remain available after source
+deletion, and resolve to distinct local IDs after graph import into a new store.
+HTTP operator reports retain request IDs while public responses keep their generic
+messages. Offline JSON Schema validation accepts actual mapped/unmapped records
+and the sanitized C++ producer; six malformed variants are rejected. All 37
+historical fixture hashes, six C/value headers and the original `Trap` definition
+match 0.45. The [evidence](docs/evidence/native-diagnostics-0.46.0.json) binds exact
+compiler/source/report hashes and preserves the initial Linux build failure.
+
+The Linux build initially selected `std::quoted` through ADL; explicit
+`nexrt::quoted` fixes that portability defect. Compact typed descriptors reduce
+a synthetic many-site executable from 687,584 to 391,168 bytes compared with the
+initial JSON-per-site prototype. Arithmetic-call overhead remains visible in a
+limited local experiment; isolated 0.47 moves checked integer success paths into
+SSA. These measurements are observations, not general performance guarantees.
+Broader current Release, sanitizer, x86-64 and SDK distribution checks remain
+pending. Parser/checker identities, signal/core recovery, remaining platform and
+language/toolchain features are open. This milestone does not complete NEX.
+
+## Verified development milestone: atomic source-type replacements
+
+Toolchain **0.45.0 / language 0.15** adds replacement of existing source
+structs/enums with their constructors, signatures, matches and handlers in one
+optimistic patch. Optional replacement `kind` must match its declaration;
+unknown fields and malformed expected digests are rejected. Source type nodes
+are editable, generic instances remain derived, and retained revisions keep
+their original layouts. Module/import/new-top-level-declaration edits still use
+export/edit/check. Runtime semantics and graph identity policy remain unchanged.
+
+All **52 regression groups** pass on macOS ARM64 in **1196.45 s** and Linux
+ARM64 in **1007.88 s**, including 400 Python cases and ten C++ probes.
+Both installed SDKs pass thirteen phases, including a partial-type-edit rejection,
+a complete type/factory/caller patch, preserved type IDs and source-deleted
+native/reference/TypeScript execution. The macOS workflow takes **301.940 s**;
+source-free Linux takes **210.147 s**, with networking disabled and all eleven
+live debugger suites passing. The final SDK resource hashes match the frozen
+source snapshot. Offline schema validation accepts current and five actual 0.44
+artifacts plus a legacy function patch, and rejects six malformed variants.
+The [evidence](docs/evidence/type-patches-0.45.0.json) binds exact source, compiler
+and report hashes. Broader current Release, sanitizer, x86-64 and SDK distribution
+checks remain pending. This milestone does not complete the requested language
+and development chain.
+
+## Verified development milestone: declaration graph and cross-store references
+
+Toolchain **0.44.0 / language 0.15** adds persistent module/type nodes,
+dependency-context fingerprints, bounded declaration queries and explicit
+snapshot-scoped identity reconciliation. Local function/operation IDs, database
+schema 3, language hashing and runtime semantics remain unchanged. Reconciliation
+checks an expected HEAD and commits a complete page atomically without changing
+source or HEAD. A genuine 0.43 database fixture covers additive backfill.
+The [graph guide](docs/graph.md) defines limits, provenance and mapping scope.
+
+The initial implementation passes all 51 macOS/Linux ARM64 groups (387 Python
+cases and ten C++ probes), both thirteen-phase SDK workflows and Linux live
+debugger checks. Additional coverage exposed duplicate visits of nested
+statement-match bodies in dependency collection: depth 25 took 0.067 s on 0.43
+but exceeded a 3-s timeout in the new implementation. Each arm is now visited
+once. The same corrected case passes in 0.0423 s; all 17 focused identity cases,
+including depth-30 native/TypeScript execution and arm-local type dependencies,
+pass in the isolated corrected build. The corrected root passes all 17 focused
+cases in 11.198 s. Its full macOS ARM64 regression passes all 51 groups (389
+Python cases and ten C++ probes) in 1165.35 s with two parallel workers. Linux
+ARM64 passes the same full 51 groups in 999.31 s, then all eleven live debugger
+suites and a source-free installed SDK. Both SDKs pass thirteen workflow phases,
+including 166 reconciled graph records with destination IDs preserved; macOS
+takes 289.973 s and source-free Linux takes 207.806 s with networking disabled.
+The five real current graph response artifacts validate offline against JSON
+Schema 4.25.1; seven malformed variants are rejected. A 56-record comparison
+confirms that the traversal fix preserves identity output.
+
+The [evidence](docs/evidence/graph-identities-0.44.0.json) separates baseline and
+corrected results and preserves exact compiler/source/report hashes. Broader
+current Release, sanitizer, x86-64 and SDK distribution checks remain pending.
+Source type replacement is added in the current 0.45 development; it was not
+advertised by the verified 0.44 compiler. Remaining platform adapters, callbacks, async
+and the rest of the language/toolchain plan remain open. This milestone does
+not complete NEX.
+
+## Verified development milestone: native foreign application packaging
+
+Toolchain **0.43.0 / language 0.15** connects explicit `nex package --foreign`
+to recursive Mach-O/ELF dependency collection and complete notices. Only
+reachable logical libraries/exports enter the deployed catalogue. Relocated
+module bytes get new manifest hashes; the compiler changes only the exact
+reachable source pin tokens, rechecks the derived bundle and retains both graph
+revisions without changing HEAD or materialized sources. The binary resolves its
+packaged catalogue relative to its actual executable location. Captured bytes
+are rehashed before publication. C ABI 1 remains unchanged.
+
+The initial integrated snapshot passes all **50 groups** (368 Python cases and
+ten C++ probes) on macOS ARM64 in **1107.74 s** and Linux ARM64 in **940.65 s**.
+Both installed SDKs pass all thirteen workflow phases, including a moved,
+source-deleted nominal C-module application package. The macOS workflow takes
+285.702 s; the Linux workflow takes 201.888 s in a source-free container with
+networking disabled. The Linux live debugger matrix also passes. These results
+describe the initial snapshot before the corrections below.
+
+Additional checks found three defects. Python initially followed a host symlink
+and omitted the native regular-file/1-MiB limit; the two new root checks pass in
+0.839 s. Relative schema references were unresolved; canonical URIs now resolve
+through an offline registry. JSON Schema 4.25.1 accepts three real SDK metadata
+artifacts and rejects five malformed variants. Finally, component notice paths
+split one shared native image: an observable counter changed from `1,2` to
+`1,1` after packaging. Distribution notices are now captured at catalogue scope,
+and an inventoried source-identity member preserves distinct original pins.
+Both shared-state and independent-state native/reference/package cases pass in
+66.212 s, including deleted original inputs and complete file/notice inventories.
+
+The corrected implementation passes all **50 groups** (372 Python cases and ten
+C++ probes) on macOS ARM64 in **1170.30 s** and Linux ARM64 in **993.26 s**.
+All twelve packaging cases pass on both hosts. The corrected macOS installed SDK
+passes thirteen phases in **286.713 s**; Linux passes the live debugger matrix
+and thirteen-phase SDK workflow in **205.069 s**, without a source mount or
+external networking. Its moved nominal C-module package runs after input/source
+deletion. The current schemas validate all three real SDK metadata artifacts
+offline and reject seven malformed variants. All 37 historical fixture/header
+hashes remain unchanged.
+
+The [evidence](docs/evidence/foreign-packages-0.43.0.json) keeps baseline and
+corrected scope separate. Broader compiler Release, x86-64, sanitizer and SDK
+distribution checks remain pending; this is not a stable release or completion
+of NEX. Cross-target native modules, arbitrary dynamic native loads,
+Windows/mobile installers, callbacks and the remaining language/toolchain work
+stay open.
+
+## Earlier milestone: reviewed foreign inputs for tasks
+
+Toolchain **0.42.0 / language 0.15** adds read-only `nex foreign HOST.json`
+discovery, location-independent operator fingerprints and per-check
+`foreign_hash` in native task tests/runs/profiles. Task execution captures all
+inventoried binary/notice/manifest bytes and passes the normalized catalogue
+only to selected execution commands. Replay requires current operator trust;
+rehashed captured receipts cannot grant authority. Checks validate current grants
+and source binding/signature pins before native module initialization. Input
+integrity is checked around each command. The exact 8192-input boundary now
+counts the integrity index separately, and oversized indexes fail before running.
+
+Before the forced-exit correction, 0.42 passed all 49 groups on macOS ARM64
+(358 Python cases and ten C++ probes) in 1019.58 s and all 49 groups on Linux
+ARM64 in 845.31 s. Both installed SDK workflows passed all thirteen phases,
+including the reviewed nominal C-module task and source-deleted trusted replay.
+The macOS SDK workflow took 247.092 s. Those results describe the initial
+0.42 snapshot, not the correction below.
+
+A real uncooperative C callback exposed a cleanup defect: the supervisor reaped
+the timed-out process, but one private module snapshot remained. The task parent
+now owns a fresh mode-0700 system temporary directory for each selected foreign
+command, removes it after group reaping, and verifies directory identity before
+cleanup. Interrupt state is retained before cleanup so cancellation still skips
+remaining checks. The isolated nine-case system-temp run passes in 261.686 s;
+the final timeout/interruption pair passes in 4.381 s. Existing grant, integrity,
+8192-input-boundary and replay cases are included. The corrected ten-case task-FFI group and fourteen-case source-FFI group pass in
+249.03 s and 312.53 s. The corrected macOS ARM64 full regression passes all
+49 groups in 1058.18 s; the installed SDK passes all thirteen phases in
+260.600 s. The corrected Linux ARM64 full regression passes all 49 groups, its
+live debugger matrix passes, and its thirteen-phase SDK workflow passes in a
+source-free container in 187.131 s with networking disabled. Broader platform,
+sanitizer and distribution validation remains pending.
+
+The [task-FFI evidence](docs/evidence/ffi-tasks-0.42.0.json) records the baseline,
+correction and pending checks. This is an experimental integration, not completion
+of NEX. Dependency-closure packaging, callbacks into NEX, general resources,
+async and remaining platform adapters are still open.
+
+## Verified development milestone: source foreign declarations
+
+Toolchain **0.41.0 / language 0.15** connects experimental server-only `extern`
+declarations and `ffi` to the checker, interpreter/native backend, explicit CLI
+execution, profiling/debugging and browser exclusion. Source bindings identify
+a manifest; a separate operator catalogue grants authority.
+
+The final macOS ARM64 Debug regression passes all **48 groups** (350 Python cases
+and ten C++ probes) in **889.25 s**. The corrected installed macOS SDK passes all
+thirteen phases in **250.044 s**, including independent C module calls from NEX,
+native Debug/Release, source-deleted replay, standalone output, real LLDB/DAP
+and browser builds. Linux ARM64 passes all **48 groups**, the live debugger
+matrix including an external-wrapper watch, and the thirteen-phase SDK workflow
+in a separate source-free container with external networking disabled. That SDK
+workflow takes **193.294 s**. Seven Linux cases explicitly skip unavailable
+macOS cross-SDK/Mach-O checks. Supplemental current imported-callable and stronger
+HTTP/static-root scenarios pass on Linux in **50.728 s**.
+
+All 37 historical fixture/header hashes remain unchanged. Reviewed task/proof
+metadata was regenerated under 0.15 without changing requirements, postconditions,
+loop invariants or test bodies. The [source integration evidence](docs/evidence/source-ffi-0.41.0.json)
+binds inputs, artifacts, initial failures/corrections and the executed scope.
+Broader Release/Linux x86-64, sanitizer and distribution checks for 0.41 remain
+pending. Its task-catalogue and package closures were explicitly unavailable;
+the task integration is added in 0.42 above. The earlier 0.40 evidence below
+applies to that preceding snapshot.
+
+## Earlier milestone: scoped foreign invocation adapter
+
+Toolchain **0.40.0 / language 0.14** adds explicit `nex.foreign-host/1` operator
+catalogues, `nex.foreign-binding/1` metadata, thread-local lexical contexts and a
+common invocation path with a native managed-handle bridge. Metadata caches
+rebind every call to current request authority; there is no environment grant.
+Native cancellation preserves the original diagnostic code/line and standalone
+terminal cleanup revokes module owners. The 24 new C/C++ cases pass on macOS
+ARM64, including all value kinds, real requests, callback destruction, shared
+images across eight independent thread contexts and actual fatal-exit cleanup.
+Full macOS ARM64 Debug regression passes all 47 suites (336 Python cases and ten
+C++ probes) in 790.04 s with two parallel groups. The installed macOS SDK passes
+all thirteen phases in 215.308 s, including the actual scoped native bridge with
+deleted C++ sources, real LLDB/DAP and browser builds. All 125 transport, loader,
+resource and context cases pass ASan/UBSan/LSan on macOS ARM64 and Linux
+ARM64/emulated x86-64; macOS also passes ThreadSanitizer. Independent source-free
+Linux hosts execute the scoped bridge against the same NEX value contract.
+Private snapshot cleanup leaves no temporary files. Broader current Release/
+Linux compiler, isolated Linux SDK and distribution checks remain pending.
+[Evidence](docs/evidence/ffi-contexts-0.40.0.json) binds the checked inputs and
+scope. Source
+declarations, interpreter/MLIR calls, migration, browser exclusion, general
+resources, callbacks and async remain pending. The descriptor keeps
+`foreign_boundary.source_support:false`.
+
+## Verified development milestone: authorized native module loading
+
+Toolchain **0.39.0 / language 0.14** adds a separate C module descriptor and a
+trusted host loader. Explicit library/export grants, manifest/signature pins,
+pre-initialization file hashing, private snapshots, resource-bound authorization,
+physical call leases and a weak content-addressed image cache are implemented.
+The 22 loader cases, 48 legacy/typed transport cases and 31 resource cases pass
+ASan/UBSan/LSan on macOS ARM64 and Linux ARM64/emulated x86-64; macOS also passes
+ThreadSanitizer. The installed macOS SDK passes all thirteen phases in 223.865 s,
+including a real C shared module with nominal values, deleted C/C++ sources,
+real LLDB/DAP and browser builds. Separate source-free Linux ARM64/emulated
+x86-64 containers execute the loaded nominal module and match the NEX model.
+Private snapshot cleanup leaves no temporary files. The initial Linux run's
+Docker `noexec` denial and successful corrected run are retained separately.
+Full macOS ARM64 Debug regression passes all 46 suites (336 Python cases and
+nine C++ probes) in 1596.33 s. Broader current Release/Linux compiler,
+isolated Linux SDK and distribution validation remain pending.
+[Evidence](docs/evidence/ffi-modules-0.39.0.json) binds the source, binaries and
+executed checks. Source foreign
+declarations/invocation, general dependency-closure packaging, callbacks and
+async remain pending; `foreign_boundary.source_support` stays false.
+
+## Verified development milestone: checked C value signatures
+
+Toolchain **0.38.0 / language 0.14** adds compiler-derived
+`nex.foreign-signature/1` metadata, exported with `nex ffi --symbol NAME`, and a
+typed host invocation path. Inputs and results are checked through aggregates,
+nominal/phantom identities, enum variants, callable authority and file owners.
+Appended ABI-1 table slots construct checked records/enums and expose scoped type
+tokens. The original C table prefix is preserved and an unchanged installed-0.37
+header compiles the legacy producer. Language syntax/canonical formats remain
+unchanged. Source declarations, loading/authorization, source backend invocation,
+general resources and async remain pending. The descriptor continues to report
+`source_support:false`.
+
+The 25 legacy-prefix and 23 typed C/C++ cases pass ASan/UBSan/LSan on macOS ARM64
+and Linux ARM64/emulated x86-64; macOS also passes ThreadSanitizer. Full macOS
+Debug regression passes all 45 suites (336 Python cases and eight C++ probes) in
+715.24 s. Eight new source/schema/history cases include C/native/reference/
+TypeScript agreement on the same nested result, enum, generic record, binary and
+NUL-string scenario. The installed macOS SDK passes all thirteen workflow phases
+in 177.178 s with real LLDB/DAP and browser builds; its typed C host works after
+source deletion, using only the retained contract metadata. Compiler, runtime
+inputs and workflow match the checked sources. Broader current compiler and
+isolated SDK/distribution validation remain pending.
+[Evidence](docs/evidence/ffi-types-0.38.0.json) binds the inputs and scope.
+
+A genuine language-0.14 source/SQL fixture was captured using the accepted
+installed SDK 0.37 before future declarations. It keeps ordinary `ffi`, `extern`
+and `foreign` names, actual server file signatures, callbacks and original IDs.
+Its native Debug/Release, interpreter and TypeScript checks pass without retagging
+history. [The C transport guide](docs/ffi-design.md) describes the new host scope.
+
+## Verified development milestone: versioned C value transport
+
+Toolchain **0.37.0 / language 0.14** adds an experimental C11 value table and a
+trusted C++ invocation wrapper. Call-local, non-reused tokens retain immutable
+values without exposing C++ layouts, pointers into NEX storage or raw file
+descriptors. The boundary copies UTF-8/binary payloads, checks thread/reference
+ownership and quotas, and preserves sticky host traps across cooperative polls.
+The independently compiled C producer and 25 lifecycle/value cases pass on
+macOS ARM64 and Linux ARM64/emulated x86-64 with ASan/UBSan/LSan; macOS also passes
+ThreadSanitizer. Full macOS Debug regression passes all 43 suites (328 Python
+cases and seven C++ probes) in 753.03 s. The installed macOS SDK passes thirteen
+phases in 148.878 s, including an independently compiled C11 producer/C++20 host,
+deleted-source execution without NEX resources, real LLDB/DAP and three browser
+builds. Its compiler, runtime inputs and maintained workflow match these sources.
+Current Release/Linux compiler and isolated SDK/distribution checks remain
+pending. [Evidence](docs/evidence/ffi-transport-0.37.0.json) binds the checked inputs.
+Language/canonical formats are unchanged. Source extern declarations, checked
+signatures, library loading/authorization, packaging, general resource kinds,
+callbacks into NEX and async remain pending. The descriptor keeps
+`foreign_boundary.source_support:false`; [the design](docs/ffi-design.md)
+defines the integration gates. This is not a stable published FFI.
+
+## Verified development milestone: source file resources
+
+Toolchain **0.36.0 / language 0.14** adds the `file` source type, ten server/`fs`
+operations, immutable aggregate/capture owners and identity equality. The
+interpreter and native debug/release paths agree on streaming, alias close,
+limits and automatic cleanup. The checker excludes resource-bearing types from
+client/shared functions, JSON/API and scalar proof models, including phantom
+arguments. TypeScript emits no unreachable server resource code.
+
+Source migration uses new function/11 and program/12 formats. Genuine 0.13
+snapshots migrate with preserved history; conflicting old user names require
+reviewed source repair and failed migrations leave HEAD unchanged. Pure watches
+use opaque IDs with no IO authority. Fourteen source tests, five synthetic watch
+tests and eleven live/synthetic macOS LLDB/DAP cases pass. The corrected compiler
+passes all 42 suites on macOS ARM64 Debug and Release (328 Python cases and six
+C++ probes), and Linux ARM64. Linux also passes ten live-debugger suites and all
+twelve installed-SDK workflow phases in a separate container without the source
+checkout mounted. The installed macOS SDK passes all twelve phases, including
+file programs, source-deleted replay, standalone packaging and three browser
+builds. Its compiler and runtime inputs match the verified sources.
+
+All 21 managed-file cases pass ASan/UBSan/LSan on macOS ARM64, Linux ARM64 and
+emulated Linux x86-64; macOS also passes ThreadSanitizer. All 33 genuine historical
+fixture files and 34 previous source examples remain unchanged. Task/proof
+acceptance intent and the new version's revision/content pins are checked.
+The initial regression caught an inaccurate generic-add descriptor; the checker
+correctly rejected file addition. Corrected macOS/Linux ARM64 and emulated Linux
+x86-64 runs pass all 42 suites. Linux x86-64 also passes all twelve installed-SDK
+workflow phases without the source checkout mounted; live x86-64 debugging and
+physical x86-64 execution remain unverified.
+Current moved/restored SDK archives, general FFI, source async and broader
+platform validation remain pending. This is a development checkpoint, not an
+accepted release. [Evidence](docs/evidence/source-resources-0.36.0.json) binds
+the checked inputs, results and remaining scope.
+
+## Verified milestone: managed file resource values
+
+Toolchain **0.35.0 / language 0.13** adds immutable managed file wrappers and an
+internal native streaming boundary. Copies in aggregates/results/captures share
+resource identity and close state; JSON rejects resource values. Profile hooks
+observe complete owned payload sizes. Native request exit, cancellation, budget
+and deadline failures revoke resources across all its explicit host grants,
+including values retained by trusted C++ code. Poll callbacks retain their state
+and may release handles, replace themselves or end their request safely.
+
+The new managed-value probe passes 20 cases on macOS ARM64 and Linux ARM64/
+emulated x86-64 with ASan/UBSan/LSan; macOS also passes ThreadSanitizer. The prior
+29-case foundation probe passes again on both Linux architectures. The installed
+macOS SDK passes all twelve phases, including real LLDB/DAP and three browser
+builds; its runtime inputs and compiler match these sources. Full macOS Debug
+regression passes all 40 suites in 728.90 s: 309 Python cases and six C++ probes.
+Broader current compiler/distribution validation remains pending. Source resource
+types/intrinsics, debugger representation, language migration, FFI and async
+remain open; the capability descriptor explicitly keeps `source_support:false`.
+This extends the verified 0.34 runtime below; it does not publish source syntax.
+[Evidence](docs/evidence/resource-values-0.35.0.json) binds the retained runs.
+An additional genuine 0.13 SQL fixture captures future streaming names and a
+`file` generic parameter using accepted SDK 0.34. All three 0.13 fixtures replay
+through the current compiler with identical revisions and logical IDs; the 31
+previous fixture files remain unchanged.
+
+## Verified milestone: resource ownership foundation
+
+Toolchain **0.34.0 / language 0.13** adds a typed internal C++ resource runtime
+and streaming regular-file adapter. Physical leases retain payloads across
+logical close; ancestor/request domains revoke aliases, reserve physical quotas
+before factories and check revocation again before publication. File operations
+snapshot callbacks/arguments and retain services before polling. Existing
+whole-file replacements retain their commit/cancellation semantics.
+
+The [ownership contract](docs/resources-design.md) records scope, IO errors,
+partial cancellation and source/FFI integration requirements. New lifecycle,
+race and real-file probe passes all 29 cases on macOS ARM64, Linux ARM64 and
+emulated Linux x86-64 with ASan/UBSan/LSan. macOS also passes ThreadSanitizer.
+The installed macOS SDK passes all twelve workflow phases, including real
+LLDB/DAP, file programs and three browser builds. This is an installed SDK check
+with source/external tools available, not a moved/restored isolated bundle check.
+Full current macOS Debug regression passes all 39 suites in 657.99 s, including
+309 Python cases and five C++ probes. The broader current compiler and
+distribution matrix remains pending. Source resource types/streaming intrinsics,
+stable FFI and async remain unimplemented. [Evidence](docs/evidence/resources-host-0.34.0.json)
+binds the probe inputs and retained reports.
+The verified 0.33 distribution below remains a separate historical milestone.
+
+## Development milestone: current SDK distribution
+
+Toolchain 0.33 / language 0.13 now has a maintained macOS distribution helper
+and a shared inventory-preserving archive boundary for macOS/Linux. Eight owned
+archive cases passed on macOS and Linux ARM64. The full current macOS Debug run
+passed all 38 suites in 755.68 s: 309 Python cases and four C++ probes.
+
+The macOS SDK passed all twelve workflow phases after moving and after archive
+restoration, with actual LLDB/DAP, all three browser builds, kernel read denial
+for the source/Homebrew/MacPorts trees, and SDK write denial. Each denial has an
+actual negative control. Linux ARM64 passed both twelve-phase workflows in
+containers without source or host LLVM/MLIR/Z3, followed by another complete
+bundled-SDK live-debugger workflow using its declared external LLDB prerequisite.
+The x86-64 compiler passed all 37 suites and its source-free SDK workflow.
+Its moved/restored archive workflows also passed all twelve phases under
+emulation. All three current development archives are verified.
+Actual archives, hashes and scope are recorded in
+[SDK evidence](docs/evidence/sdk-0.33.0.json). These are development bundles;
+platform C/C++ SDKs, Python/Node and the stated debugger prerequisites remain.
+
+Genuine language-0.13 SQL/source snapshots were captured with the accepted
+restored SDK and replayed through another compiler location, preserving graph
+revisions and logical IDs. Candidate resource-related names are ordinary user
+definitions in these fixtures; source resources/FFI/async are not implemented.
+
+## Development milestone: source binary integration
+
+Development **0.33.0 / language 0.13** connects `bytes` to checked source types,
+explicit UTF-8/base64 codecs, immutable operations, generic add/wire, native and
+TypeScript emission, typed JSON/API models and bounded debugger demand. Binary
+file calls share the server/fs capability policy. The matching specification,
+grammar, model-independent prompt and schemas are validated with genuine
+0.12 migration fixtures; the full requested objective remains open.
+
+Host-poll ownership review reproduced a 0.32 adapter use-after-free under ASan
+when a trusted callback dropped the last input ByteBuffer. The 0.33 writer retains
+its owner until all borrowed views finish. The reproduction now exits cleanly
+under ASan/UBSan, and the extended 19-case managed-value probe passes. The 0.32
+compiler/SDK cohorts below use their preserved sources; they do not validate this
+new source-language version. The 10-case source suite passed,
+followed by the native/reference/TypeScript binary browser-state case. Seven
+offline binary watch cases and the real macOS LLDB/DAP case passed, including
+selected reads of a 4 MiB value, retained-slice previews, paged read-only octets
+and source-deleted replay. The generic binary API/OpenAPI/SDK/live-HTTP case
+passed, including strict malformed-wire rejection and cleanup after traps.
+Apple LLDB's target-wide basic type selected a Swift integer; byte children now
+use the actual runtime DWARF i64 type. All six production UI checks passed in
+Chromium, Firefox and WebKit. The installed macOS ARM64 SDK passed all twelve
+workflow phases in 126.717 s, including actual byte DAP watches, independent
+binary-file packages, archived replay and all three locked browser builds.
+The first SDK attempt revealed missing manifests in two new acceptance projects;
+their corrected explicit projects were exercised by the complete second run.
+The full 37-suite macOS Debug invocation finished in 673.14 s: 36 suites passed;
+the sole failure was its stale exact add-bound inventory. After adding bytes to
+that exact list, all eleven constraints cases passed in a 76.27 s CTest rerun.
+Compiler/runtime code did not change for that test correction. This covers 301
+declared Python cases and four native C++ probes, including the independent
+48-update binary oracle and retained aliases. Both initial and corrective
+reports are preserved; the initial invocation remains recorded as failed.
+macOS Release then passed all 37 suites directly in 563.23 s. Linux ARM64
+passed all 37 in 554.30 s; both frozen cohorts contain 300 Python cases and
+four C++ probes, with the later independent oracle separately passing through
+each matching compiler/SDK. All nine Linux live-debugger suites passed in
+60.145 s. The source-free Linux SDK passed all twelve workflow phases, both
+without live debugging (113.735 s) and with real LLDB/DAP (120.542 s).
+All nineteen managed ownership cases passed under Linux GCC 13.3
+ASan/UBSan/LSan; the preserved Clang image lacked sanitizer libraries, and its
+initial linker failure is recorded separately. Production compiler tests use
+LLVM/MLIR 22.1. The current emulated x86-64 compiler, installed SDK and all
+three moved/restored development bundles have also passed.
+The [source binary evidence](docs/evidence/bytes-source-0.33.0.json) records exact
+source/binary hashes, browser versions, installed SDK phases and remaining scope.
+See [bytes.md](docs/bytes.md).
+
+## Historical 0.32: managed binary values
+
+Development toolchain **0.32.0** retains source language **0.12**. Internal C++
+and TypeScript value runtimes now represent immutable binary data, typed JSON
+base64 and strict UTF-8 conversions. The POSIX host adapter has bounded binary
+reads/writes under the same directory capability, atomic publication and HTTP
+isolation as text files. Native allocation accounting and handle cleanup include
+the binary subtype; ordinary object layouts retain their size and field offsets.
+Generated TypeScript/browser resources include the binary module. This does not
+expose a source type or binary intrinsic yet. Targeted managed-value/oracle checks
+passed. The full macOS Debug run exercised all 35 suites in 1158.95 s: 34
+passed, and web failed only its obsolete exact file inventory. The corrected
+inventory retains the exact-set check, adds byte-for-byte module comparison,
+and passed all seven web cases in a 5.19 s CTest rerun. No compiler/runtime
+code changed for that correction. This covers 281 declared Python cases and
+four C++ probes; the original failed invocation remains recorded. The macOS
+Release invocation likewise passed 34 suites before the corrected web inventory
+passed all seven cases. Both Linux compiler runs subsequently passed all 35
+suites (ARM64 488.52 s; emulated x86-64 1747.18 s), and their source-free
+eleven-phase SDK workflows passed. The installed macOS SDK workflow passed too.
+These preserved 0.32 cohorts do not include the 0.33 host-poll ownership fix.
+
+Source binary syntax, API/debugger support and explicit 0.12 migration were
+added in 0.33 above. The [buffer design](docs/bytes-design.md) defines implemented host
+semantics and the remaining integration. SDK 0.30/0.31 and genuine historical
+stores are preserved. [Managed-value evidence](docs/evidence/bytes-values-0.32.0.json)
+records each tested source, binary and correction separately. Initial Linux runs
+used old toolchain images without `patchelf`; their failed logs are retained.
+The tested packager images have the identical base layers plus that dependency.
+The corrected compiler hashes match the initial cohorts; packaging and exact
+web-inventory checks passed in the completed corrected Linux runs. Source
+toolchain 0.32 retained language 0.12 throughout that internal-runtime milestone.
+
+## Historical 0.31: immutable binary primitives
+
+Development toolchain **0.31.0** retains source language **0.12** while building
+the internal buffer representation and strict base64 codec. Native buffers own
+immutable contiguous octets, copy mutable host imports/exports, retain slice
+owners and allocate new values for updates. The TypeScript primitive uses
+private storage with checked constructors and copied host boundaries. Eight native ownership/bounds cases and three cross-runtime codec-oracle checks
+passed on macOS ARM64, Linux ARM64 and emulated Linux x86-64. Strict ES2020
+TypeScript checking passed; macOS ASan/UBSan and native Linux ARM64
+ASan/UBSan/LSan passed. The final JS boundary also rejects constructor/prototype
+mutation. All 33 current macOS Debug suites passed in 1013.88 s (278 declared
+Python cases and three C++ probes, including one Linux-only skip). The emitted
+ES2020 primitive passed 68 assertions each in actual Chromium 156.0.8078.4,
+Firefox 157.0 and WebKit 27.2, with no page errors. These are primitive checks;
+full source-language binary integration remains pending. [Durable prototype
+evidence](docs/evidence/bytes-runtime-0.31.0.json) binds the tested source/binaries.
+
+This is not yet a source `bytes` type. Frontend/interpreter/MLIR/TypeScript,
+JSON/API, debugger, file-operation and explicit 0.12 migration integration remain
+required before exposing the next language version. [The buffer design](docs/bytes-design.md)
+records scope; the verified 0.30 SDKs and genuine 0.12 fixtures remain preserved.
+
+## Development milestone: scoped text files
+
+Development toolchain **0.30.0 / language 0.12** exposes server-only
+`file_read_text` / `file_write_text` through the distinct `fs` effect. The
+interpreter and native runtime share a POSIX directory-capability adapter with
+strict UTF-8, immutable results, bounded paths/text and atomic file replacement.
+Standalone access requires an explicit absolute root; writes additionally require
+exactly `NEX_FILES_WRITE=1`. Native HTTP scopes deny inherited environment grants;
+a trusted C++ host can explicitly grant `FileScope`. File writes are not part of
+SQLite rollback. Source-level resources, binary buffers, streaming and general
+FFI/async remain open.
+
+The rebuilt compiler passed all 13 source integration cases in 59.358 s:
+native Debug/Release/reference agreement, Unicode/NUL/BOM, limits and denial,
+evaluation order, snapshot closures, TypeScript exclusion, genuine 0.11 migration,
+reserved-name repair, HTTP denial, trusted-host cancellation cleanup, reviewed
+task effects and pure-watch rejection. The installed SDK adds a dedicated file
+phase covering capability denial and independent packaging. All 31 suites passed
+on macOS Debug/Release (1231.14/1073.95 s) and Linux ARM64 (496.79 s), with
+275 declared Python cases plus the two C++ probes. macOS records one Linux-only
+skip; Linux records seven macOS-only skips. Linux ARM64 also passed eight live
+suites and its source-free 11-phase SDK in 83.069 s. Emulated Linux x86-64 also passed all 31 suites in 1812.18 s and its
+source-free 11-phase SDK in 271.612 s, without claiming live debugger
+coverage. This completes the stated 0.30 compiler/installed-SDK matrix.
+
+The moved macOS Release SDK passed all 11 phases with actual LLDB/DAP and both
+locked browser builds in 106.313 s. Its restored archive verified 2411 files and
+compiled/ran new projects and file applications with kernel-denied access to the
+checkout, Homebrew and MacPorts. A forbidden-read control failed as required.
+The Linux ARM64 bundle passed all 11 phases in a source-free image without host
+LLVM/MLIR/Z3/Clang, then repeated all 11 after extraction (105.935/108.354 s),
+checking all 743 files. The first clean-image attempt exposed a missing packaging
+prerequisite, patchelf; the maintained image/guide now declare it. Compiler,
+runtime and language-test inputs remain the frozen `c93c4786` set; Linux SDK
+resources carry the two documented recipe/guide corrections.
+
+File packages separately passed native Unicode/NUL output, denied writes and
+unchanged content in runtime-only Linux ARM64/emulated x86-64 images without SDK
+or development tools. Direct runs hid `/usr/bin` and used an unavailable PATH;
+the Python negative controls failed and native file execution succeeded.
+[Durable 0.30 evidence](docs/evidence/sdk-0.30.0.json) records hashes, exact scopes
+and explicit platform limits. The x86-64 bundle verified all 743 files and
+passed 11 clean phases in 292.810 s, then repeated 11 after extraction in
+271.620 s. This does not complete the broader requested project.
+
+The earlier internal adapter passed 13 direct C++ cases on macOS ARM64, Linux
+ARM64 and emulated Linux x86-64; its source-0.11 prototype passed all 30 macOS
+suites in 921.16 s. Genuine SDK 0.29 / language 0.11 store/export fixtures retain
+old sources/history before migration. These historical results do not substitute
+for the new language-version matrix. See [the file guide](docs/files.md) and
+[the design](docs/files-design.md).
+
+Genuine SDK 0.30 / language 0.12 SQL fixtures also preserve current generic wire,
+server `fs` and callable-reference code before the next language change. The
+conflict fixture retains currently valid user names proposed for binary buffers.
+[The next buffer design](docs/bytes-design.md) is a plan; buffers are not yet
+advertised or accepted by the compiler.
+
+## Development milestone: native application packages
+
+Development toolchain **0.29.0** retains source language **0.11**. `nex package`
+builds an application/server (release by default) and assembles its required
+non-platform library closure, full notices and hash inventory into a new directory.
+It reuses bundled-SDK provenance with byte-integrity checks, supports explicit
+notices and Debian package metadata, rewrites copies and never executes the app.
+The SDK collector shares its relocation/notice/inventory code with this path.
+
+The compiler built successfully. Five macOS tests passed in 24.762 s: archived
+source deletion, output preservation/rejected modes, actual selected SQLite after
+deleting its original library/source/build, SDK-inventory reuse plus changed-library
+rejection, and a moved HTTPS server with authentication, per-user storage,
+persistence across restart and clean exit. An initial `/var` versus `/private/var`
+prefix mismatch was fixed by canonicalizing the staging directory; the server
+test requires permission to open loopback sockets. Full 0.29 validation passed
+on the stated macOS/Linux development matrix. These tests do not establish broader deployment
+compatibility, Windows/mobile packaging or completion of the requested toolchain.
+See [application packaging](docs/packaging.md) for prerequisites and limits.
+
+Actual numeric, SQLite and HTTPS fixture packages from a moved SDK passed on
+macOS ARM64 with kernel-denied access to the checkout/SDK, Homebrew and MacPorts;
+the forbidden-read negative control also failed as required. Both Linux ARM64
+and emulated x86-64 passed the same native probes in network-disabled runtime
+images with no NEX/Clang/GCC/CMake/Node/npm. Every packaged file and actual ELF
+library resolution was checked, including authentication, principal isolation,
+restart persistence and clean exits. Python is the probe driver rather than an
+application dependency. Additional direct container runs hid `/usr/bin` and used
+an unavailable PATH: the Python negative control failed, both architectures ran
+numeric/SQLite applications, and their HTTPS servers started and exited cleanly.
+The corrected installed macOS SDK separately passed all ten phases with actual
+LLDB/DAP and both browser builds in 108.719 s.
+
+The new deployment fixture initially used reserved `server` as its module name;
+its one-line correction is independently exercised by those native probes.
+The verified 0.29 compiler/runtime/tests are the frozen `8cf7621c` inputs.
+All 29 suites passed in macOS Debug/Release (1190.77/1007.13 s), Linux ARM64
+(490.65 s) and emulated Linux x86-64 (1795.98 s). Linux ARM64 passed all eight
+live suites and its ten-phase source-free SDK in 68.174 s; x86-64 passed its
+source-free SDK without claiming live debugger coverage. Corrected installed
+Linux application drivers directly produced packages that passed the minimal
+runtime probe. Both Linux SDK archives repeated all ten phases after extraction.
+The macOS Release SDK passed ten phases in 83.333 s, then archive extraction,
+all 2402 inventoried file checks and fresh project/build/run/test/package under
+kernel-denied source/Homebrew/MacPorts access. Each Linux archive verified 734
+files. [Durable SDK evidence](docs/evidence/sdk-0.29.0.json) records hashes,
+tested prerequisites and exact validation scope.
+[Durable package evidence](docs/evidence/application-packages-0.29.0.json)
+records tested images, application manifest hashes and the fixture correction.
+
+The most recent fully verified development checkpoint is toolchain
+**0.30 / language 0.12** (function/9, program/10), using compiler/runtime/test tree
+`c93c4786` with the recorded Linux recipe/guide resource corrections. Current
+0.31 binary-primitive work is separate and retains source language 0.12. Windows/mobile/UI/GPU/Wasm, broader filesystem/resources/FFI/async and the other open plan items remain required work.
+
+The historical accepted checkpoint is toolchain **0.23 / language 0.10**, commit
+`e55ee8233b005671f50e193b55256417f1a3d5d1`, with typed
 function values, immutable snapshot closures, the generic wire bound and
 validated lazy callable watches. Canonical formats are function/8 and program/9.
 It passed the macOS ARM64 and Linux ARM64/x86-64 matrix recorded below. Linux
@@ -17,6 +1833,303 @@ prompt describe the same source semantics. `docs/function-values-design.md`
 retains design and prototype evidence. Unsupported platforms and remaining
 full-toolchain work stay in scope as listed later in this file.
 
+## In progress: Linux development bundles
+
+Development toolchain **0.28.0** retains source language **0.11**. Linux native
+storage/server builds now select configured library directories at execution time,
+with an observable SQLite/loader regression for comma/Unicode/percent paths and
+explicit rejection of ELF search-list colons. The three macOS native-target,
+host-SDK and task-toolchain suites passed in 115.07 s; their Linux/complete 0.28
+validation is pending.
+
+ELF assembly copies Clang/llvm-ar/LLD, Clang resources, SQLite/OpenSSL headers
+(including multiarch configuration) and non-platform libraries. Copied images get
+origin-relative RUNPATH and matching SONAME aliases. GNU loader/glibc/libstdc++/
+libgcc and C/C++ development headers/CRT remain external platform prerequisites.
+Debian/Ubuntu ownership metadata supplies exact package/source versions and full
+copyright/common-license texts; unmanaged files need explicit component notices.
+An assembly-only prototype on the preserved 0.27 SDK inventoried 723 files and
+23 components. It is not accepted application evidence: ELF application paths
+require the current 0.28 compiler.
+
+`tools/linux/bundle.py` freezes an installed SDK/assembler, uses a separate
+patchelf image, moves the assembled SDK, runs all ten maintained phases in a
+source-free/network-disabled image with no LLVM/MLIR/Z3/Clang, creates an archive
+and repeats validation after extracting it elsewhere. The first ARM64 bundle passed all ten phases in 103.287 s in the minimal
+runtime and repeated them after archive extraction in 110.364 s. All 726
+inventoried files and 23 components were checked; actual compiler/server library
+resolutions stayed inside the relocated SDK except the declared GNU platform
+runtime. Its 140,555,121-byte archive SHA256 is
+`41f3f838ec2438c35ba674b17963ced8a70373e23e9198a17e5a4aa3edf01d8b`
+(`build/linux-arm64-028-bundle/verification.json`). It used glibc 2.39/GCC SDK;
+observed symbol requirements include GLIBC_2.38 and GLIBCXX_3.4.32, without
+claiming untested host compatibility. Linux ARM64 also passed the full 28-suite
+regression in 496.89 s, including the selected-SQLite test; live suites continue.
+
+A later metadata review found unchecked SONAME/component path components.
+The packager now rejects absolute/escaping SONAME aliases and `.`/`..` component
+names. A real ELF fixture with an outside-output SONAME was rejected without
+writing that link (`build/boundary-test/report.json`). That check is now a
+maintained packaging phase in `tools/linux/bundle_boundaries.py`. A fresh bundle
+with the corrected helper resources is being verified. The compiler/runtime/
+existing language-test inputs remain the frozen `a979829a` set; these later
+changes affect packaging resources/documentation only. The original compiler
+images are unchanged.
+The final guarded ARM64 and emulated x86-64 bundles each passed ten source-free
+phases and repeated ten after archive extraction. ARM64 observed 95.469/88.360 s;
+x86-64 observed 263.207/253.742 s. Both verified 727 files and 23 components.
+The shared macOS assembler also passed ten phases with actual LLDB/DAP, native
+kernel-exclusion checks, and archive extraction with all 2395 file hashes plus
+new-project native execution/tests. macOS Debug/Release passed all 28 suites
+(257 declared Python cases, including one Linux-only skip) in 1190.63/1003.25 s.
+The full emulated x86-64 compiler regression subsequently passed all 28 suites in
+1700.52 s, followed by all ten source-free SDK phases in 201.515 s. Live x86-64
+debugging remains unverified. [Durable SDK evidence](docs/evidence/sdk-0.28.0.json)
+records immutable archive/compiler hashes, tested prerequisites and scope.
+
+All broader language, resource/async/FFI, compiler-cache/LTO and platform work
+remains in scope; this step does not complete the requested toolchain.
+
+## In progress: relocatable development SDK
+
+Development toolchain **0.27.0** retains language **0.11**. Relative installed-SDK
+tool/dependency selection and explicit archive/debug-tool overrides are implemented.
+The compiler reports effective paths, fingerprints selected archive/debug tools,
+and rejects invalid/escaping SDK descriptors. Native storage/server executables
+record configured macOS library directories as runtime search paths. The dedicated
+SQLite regression passed in 3.984 s with a comma/Unicode/percent dependency path;
+all three moved-SDK/tool-selection cases passed with real native subprocesses.
+
+The macOS assembler copies Clang/llvm-ar/dsymutil, builtin/runtime/libc++ resources,
+available libLTO, SQLite/OpenSSL headers/libraries and the transitive non-system
+Mach-O closure. It requires declared component roots and full local license texts,
+records original/packaged hashes, rewrites copies and refreshes ad hoc signatures.
+Original source installations remain unchanged. Select the external Apple SDK
+with `SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"` or an explicit `sysroot`.
+
+The relocated Release bundle passed **all ten maintained phases in 72.493 s**,
+including real archived LLDB/DAP, source-deleted replay, both locked Vite builds,
+native HTTP/HTTPS authentication, per-principal Unicode storage and persistence
+after restart (`build/sdk-027-release-bundle-v3-acceptance/report.json`). The
+server probe uses the host's documented `/api/` dispatch prefix. A separate
+kernel-sandbox test denied Homebrew, MacPorts, original dependency/SDK and source
+resource paths: native numeric tests, an archive, SQLite execution and a newly
+compiled HTTPS server passed. A negative control confirmed forbidden reads fail.
+It explicitly selected Apple SDK 27.0; Python/Apple tools remain available.
+`build/sdk-027-native-isolation-v4/report.json` records that scope. The protected
+sandbox launcher strips DYLD tracing, so its empty loader log is not runtime
+image evidence. The first bundle's compiler image audit separately loaded all
+seven non-system images from its own prefix.
+
+A development archive was created, extracted into another directory and checked
+against every one of its **2391 inventoried files**; the restored compiler built,
+ran and tested a new native project. Artifact:
+`build/releases/nex-sdk-0.27.0-macos-arm64-development.tar.gz` (116,131,561 bytes),
+SHA256 `779c2edd2ea1b26b2c100e6c749404d038fec6a6f336999f80cb3ed6af9d16df`.
+The companion manifest records compiler tree
+`333666ed7c1ad70f9e44f6e6685ea5f292379c46` and the three tested SDK-resource overlays.
+Archive verification is `build/sdk-027-archive-verification.json`.
+
+The 0.27 macOS Debug and Release compilers passed all 28 suites in 986.25 s
+and 847.04 s respectively (256 declared Python cases plus the C++ probe). The
+installed verified Debug SDK passed ten phases in 87.948 s. Linux ARM64 passed
+all 28 suites in 429.66 s, all eight live suites and ten source-free SDK phases
+in 66.587 s. Its compiler/runtime/test inputs match `333666ed`, with five recorded
+SDK validation/document overlays from `7b0f8ca4`; all 64 indexed resources match.
+The emulated Linux x86-64 0.27 run passed all 28 suites in 1774.58 s and its
+ten-phase source-free SDK in 246.708 s, completing that compiler/SDK matrix
+(`build/sdk-host-milestone-027.json`). It does not claim live x86-64 debugging. A first mixed
+source-test/old-binary run was explicitly invalidated; it is not accepted evidence.
+Current compiler/runtime/test inputs match the frozen `333666ed` source snapshot;
+SDK validation later corrected only its `/api/` fixture and packaging resources.
+Linux's installed SDK validation must receive that recorded resource correction.
+This is a macOS ARM64 development bundle, requiring macOS **27.0**, Apple SDK/tools,
+Python, Node/npm for web builds and host LLDB for debugging. Broader machine/OS
+coverage, Linux/Windows packaging, mobile SDKs and notarization remain pending.
+The complete language/development-chain objective remains open.
+
+## Development milestone: native build overhead
+
+Toolchain **0.26.0** retains language **0.11**. A stack sample
+of a warm 0.25 build found complete MLIR generation used only to validate its
+entry, plus repeated operation-tree construction. Entry checks are now shared
+between the builder/emitter and run before code selection without emitting IR.
+One checked operation tree per reachable function provides both debug-site
+metadata and the immutable AST-site index used by the native emitters.
+
+The first three cases passed, including already-cached libraries/tests rejected
+as invalid application entries, same-file body edits and generic/closure reuse.
+Full checking, source/ABI keys, artifact integrity and MLIR/LLVM verification
+remain required. Actual reused-function LLDB/DAP passed in 7.872 s. The installed
+macOS SDK passed all nine phases in 66.831 s, including archived watches,
+source-deleted replay and both locked Vite builds. Reports:
+`build/native-build-026-{targeted,live}.log` and
+`build/sdk-026-native-build/report.json`. All 27 macOS Debug-compiler suites passed
+in 1028.66 s. Linux ARM64 passed 252 declared Python cases (six macOS SDK skips),
+all eight live suites and source-free SDK acceptance. The frozen 0.26 Release compiler passed all 27 suites in 910.45 s; its installed
+SDK passed nine phases in 58.588 s. Linux emulated x86-64 passed all 27 suites
+in 1792.24 s and its source-free nine-phase SDK in 201.835 s. This completes the
+0.26 matrix (252 declared Python cases plus the C++ probe per platform; Linux
+records six macOS-SDK skips). `build/native-build-milestone-026.json` and
+`build/preserved-sdk-026.json` retain reports and four untouched SDK prefixes.
+
+In five interleaved paired observations of the same 13-function workload on a
+loaded development host, median warm builds improved from 1.4051 s (0.25) to
+1.1736 s (0.26), and single-function edit builds from 2.2056 s to 1.6424 s.
+Both versions compiled one/reused twelve functions after each edit and produced
+the same checked outputs. The single cold observations were 5.6991 s and
+3.7203 s. This is evidence for that workload/configuration, not a general speed
+guarantee. All observations and compiler hashes are retained in
+`build/native-build-026-comparison/report.json`; before/after stack samples are
+`build/function-cache-025-sample` and `build/native-build-026-sample`.
+
+## Development milestone: function object reuse
+
+Toolchain **0.25.0** retains source language **0.11** and its
+canonical formats. Native planning gives each concrete function, lifted closure
+and generic specialization its own verified object. Call interfaces and
+transitive type layouts invalidate consumers, including within one source file.
+Owned source text, emitted line/column positions and captured-binding coordinates
+participate in keys; unrelated absolute byte-offset changes do not.
+
+Stable virtual DWARF paths map to each build's complete immutable sources.
+LLDB uses the direct setting API, DAP receives matching sourceMap pairs, and
+profile reports resolve virtual paths back to selected source projections.
+Build responses add compiled/reused function counts while preserving module
+counts as grouped source units. The complete frontend is still checked.
+
+Initial same-file native/compiler-spy cases and actual LLDB/DAP reuse across
+two source-deleted revisions passed. The archived library check also passed
+after basing anchors on logical unit/module identity rather than a live physical
+library path. The installed macOS SDK passed all nine maintained phases in
+61.625 s, including one-function invalidation, both archived outputs, actual
+archived DAP, numeric semantics and both locked Vite builds
+(`build/sdk-025-function-cache/report.json`). LLDB's value report was checked to
+resolve a real frozen file through its source map. The complete regression/platform matrix below passed. Preserve the
+verified 0.24 SDKs recorded in `build/preserved-sdk-024.json`; this development
+work does not replace that checkpoint or complete the broader objective.
+
+The complete macOS regression passed all 27 suites and 251 Python cases plus
+the C++ probe in 1035.82 s (`build/ctest-025-function-cache-full.log`). Linux
+ARM64 passed all 27 suites in 422.57 s, with 251 declared Python cases including
+six explicit macOS-SDK skips. All eight live suites passed, including actual
+reused-function LLDB/DAP after source deletion. Its source-free, network-disabled
+SDK passed all nine phases in 53.389 s and required one compiled/two reused
+functions after a same-file edit (`build/linux-arm64-025`). The emulated x86-64 run passed all 27 suites in 1587.36 s and its source-free
+nine-phase SDK acceptance in 205.889 s; that host does not claim live debugging.
+`build/function-cache-milestone-025.json` records the completed matrix.
+
+The new SDK preserves the earlier semantic revision and reviewed task hash.
+SDK 0.24 still inspects/replays its own original frame/receipt; 0.25 rejects
+them with E_DEBUG_BUILD/E_TASK_COMPILER. The 0.25 numeric browser assets are
+byte-identical to those already exercised in Chromium, Firefox and WebKit;
+all 62 indexed installed resources match. Evidence:
+`build/version-025-old-sdk-compatibility.json` and
+`build/sdk-resource-browser-verification-025.json`.
+
+Local single-observation build comparisons do not yet show an end-to-end
+latency win. A 13-function workload with 150 checked additions per helper
+reemitted 13 functions in 0.24 and one in 0.25, but edit builds took 1.6311 s
+and 1.6668 s respectively; cold builds took 2.8119 s and 4.646 s. The small
+workload also showed slightly higher latency. These used development compilers
+on a host running concurrent validation. Complete source checks took about
+0.15 s versus about 1.06 s for warm builds in the larger case; build-pipeline
+overhead needs further investigation. Frontend reuse, LTO and portable release
+SDKs remain open. Reports: `build/function-cache-025-benchmark{,-large}/report.json`.
+
+## Development milestone: finite binary64
+
+Toolchain **0.24.0 / language 0.11** introduced finite `f64`,
+decimal/exponent literals and `number` bounds. Native debug/release, interpreter
+and TypeScript examples agree, including generic functions, results, aggregates,
+snapshot closures and explicit conversions. Genuine SDK-0.23 SQL migrations
+preserve source/history/IDs; an intrinsic-name conflict leaves HEAD unchanged
+until an explicit archived-source repair. Task/proof pins were refreshed with
+unchanged source hashes and acceptance intent.
+
+Actual macOS LLDB/DAP checks read f64 roots, subnormals, closure captures and
+pages and replay after source deletion; offline full/partial watches agree.
+Generated API client models preserve f64 with numeric JSON schemas. A native
+C++ host exercises real double parameters/results, invalid input rejection,
+request trap cleanup and preservation of caller floating flags. The development
+matrix below has passed. Broader platform coverage and redistributable SDK
+delivery remain pending; the descriptor conservatively retains
+`numeric_integration_pending` for full platform/SDK validation. Design and
+acceptance scope: `docs/floats-design.md`.
+
+The current source integration has passed all 27 Linux ARM64 CTest suites
+(247 declared Python cases, including six explicit macOS-SDK skips, plus the
+C++ runtime probe; 389.40 s). All seven opt-in live debugger suites passed,
+including the new floating roots, negative aggregate values, subnormals,
+captures and DAP pages. Its source-free SDK passed all nine phases with
+external networking disabled (`build/linux-arm64-024`). The final macOS ARM64
+run passed all 27 suites and 248 Python cases plus the C++ runtime probe in
+959.92 s. Emulated Linux x86-64 passed the same 27-suite frozen-input regression
+in 1428.14 s, with 247 declared Python cases including six macOS-SDK skips.
+The later numeric-browser case passed separately on both Linux SDKs in native
+debug/release and TypeScript; all 177 compiler/runtime/adapter/library inputs
+remain identical to the frozen tree. Reports:
+`build/ctest-024-browser-final.log`, `build/linux-{arm64,amd64}-024` and
+`build/linux-numeric-web-supplement-{arm64,amd64}/report.json`.
+
+The production `examples/numbers-web.nex` application passed six Playwright
+cases across Chromium, Firefox and WebKit in 3.204 s. It exercises immutable
+f64 state/history, generic arithmetic, a captured callback, JSON rounding,
+subnormal/maximum values, positive-zero normalization and recoverable rejected
+edits. The maintained SDK workflow now requires this example as well as the
+earlier callable browser app. The updated macOS SDK passed all nine phases in
+64.914 s, including both locked Vite builds and actual archived DAP watches;
+all 62 indexed resources are installed. Its numeric browser assets are
+byte-identical to the assets used for the browser interactions. Evidence:
+`build/numeric-web-024`, `build/sdk-024-browser-final/report.json` and
+`build/sdk-024-numeric-browser-artifact-agreement.json`.
+
+The updated source-free Linux SDK workflows, including both browser examples,
+passed all nine phases in 49.104 s on ARM64 and 169.091 s on emulated x86-64
+(`build/linux-sdk-024-browser-{arm64,amd64}/workflow/report.json`). ARM64
+includes actual archived DAP; x86-64 records live debugging false. Their earlier
+complete frozen-source workflows are retained separately. These SDKs still
+require the documented host development dependencies; they are not portable
+redistributable toolchain bundles.
+
+Independent jsonschema 4.23 checks passed current task/proof documents,
+operation output, actual archived partial frames and callable wire descriptors,
+including f64 captures and full frames with subnormal values. The preserved
+0.23 SDK still inspects its old frame and replays its old receipt; 0.24 rejects
+them with `E_DEBUG_BUILD` and `E_TASK_COMPILER`, retaining the original bytes.
+See `build/version-011-schema-evidence.json` and
+`build/version-011-old-sdk-compatibility.json`. These results do not complete
+the full language/development-chain/platform objective.
+
+The following foundation evidence predates enabling the 0.11 source type.
+
+The runtime foundation now has finite checked arithmetic, rounding/environment
+isolation, normalized zero, explicit integer conversions, distinct aggregate
+scalar storage and strict numeric JSON. C++ and JavaScript agree on **4,546
+deterministic vectors**, including Python bit-result oracles, gradual underflow,
+rounding ties, integer bounds and rejected non-finite inputs. Native checks also
+exercise caller rounding/status flags, flush-to-zero modes, threads, trap source
+lines and owned cleanup. Optimized checks passed on macOS ARM64 with UBSan
+(`build/float-runtime-O3-ubsan.json`), Linux ARM64 and emulated Linux x86-64
+(`build/float-runtime-linux-{arm64,amd64}/report.json`). The pinned Linux images
+lack compiler-rt sanitizer archives; those two runs used ordinary O3 builds.
+
+The full macOS regression exercised 26 CTest suites: 25 passed, and profiling
+passed on rerun after its old empty-notice expectation was updated to preserve
+Tracy exclusion while accepting Dragonbox's license. Runtime/compiler bytes did
+not change between those runs. Logs: `build/float-runtime-full-ctest.log` and
+`build/float-runtime-profiling-rerun.log`. A separate installed SDK passed all nine
+acceptance phases, including actual LLDB/DAP, source-deleted archive replay,
+scalar proof and a locked TypeScript/Vite build in 76.573 s
+(`build/sdk-float-runtime-acceptance/report.json`). These are foundation checks,
+not evidence that the new source type or its whole platform matrix is complete.
+
+Dragonbox 1.1.3 is pinned unmodified, with license/hash inventory and native
+distribution notices, so formatting preserves the macOS 13.0 build target.
+The accepted 0.23 SDKs are preserved and a genuine language 0.10 SQL/source/graph
+fixture was captured using that SDK for the upcoming migration. No old source,
+task/proof acceptance intent or archived fixture was rewritten.
+
 ## Implemented and exercised
 
 - Toolchain 0.23 / language 0.10 adds exact typed function signatures, named/generic references, higher-order calls, immutable transitive snapshot captures, identity equality, owned cleanup, real native indirect calls and TypeScript snapshot closures. Generic wire constraints exclude actual function payloads from JSON/API while allowing serializable phantom contracts. Native/TypeScript/reference agreement, graph/cache invalidation, callable LLDB/DAP, portable SQL migration and source-free SDK checks passed as recorded below. Custom traits, effect/realm subtyping, mutable captured cells, general async and resource FFI remain pending.
@@ -29,7 +2142,7 @@ full-toolchain work stay in scope as listed later in this file.
 - Toolchain 0.19 adds read-only native toolchain fingerprint discovery, pinned native task selections, foreign artifact acceptance and trusted-catalog replay. Captured configurations, compiler/dependency fingerprints and explicit SDK settings are checked around child execution. Full external SDK/support-tool/environment capture and foreign execution remain pending.
 - C++20 compiler with LLVM/MLIR 22.1.8 and SQLite on macOS ARM64 and Linux ARM64/x86-64.
 - Toolchain 0.18 adds explicit native target/SDK/dependency configurations, target ABI probes and architecture-isolated module/runtime caches. macOS arm64/x86_64 cross-compilation is configured; foreign runtime/debugger verification remains pending.
-- NEX 0.10 lexer/parser, explicit i64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
+- NEX 0.12 lexer/parser, explicit i64/f64/bool/unit types, functions/recursion, let/var, assignments, branches, loops and returns.
 - Multi-file modules, logical qualified identities, import aliases, private/public functions and structures, public API visibility checks and cross-module type/effect/realm checks.
 - Local library roots, ordinary NEX `std/math` and `std/text` libraries, dependency source-content locks and explicit lock updates. Cyclic imports and remote retrieval are not supported.
 - Validated UTF-8 strings with strict escapes, Unicode scalar indexing/slicing, immutable nested lists and nominal structures with typed fields/constructors.
@@ -185,3 +2298,64 @@ full-toolchain work stay in scope as listed later in this file.
 7. Package portable SDKs, extend the verified Linux chain to broader distributions and physical x86-64 hardware, and implement/verify Windows, mobile SDK targets and native UI/GPU adapters. Finish external dependency capture and compatibility/migration procedures. macOS x86_64 cross-build artifacts are checked on ARM64; macOS Intel execution and Linux x86-64 live debugging remain unverified.
 
 Next implementation steps include finer incremental compilation, broader profiling, optimized operation attribution/string chunks and large-root paging and the remaining target platforms, while maintaining the typed API/browser chain. Keep `describe`, specification, interpreter, both backends and tests synchronized as features are added. The full original objective remains open.
+
+## Additional scoped 0.56 acceptance
+
+The unchanged frozen 0.56.0/source0.16 compiler passes all20 installed macOS SDK
+phases/310 commands (456.164s), with139 indexed resources and seven editor assets
+matching its frozen source. Actual installed IDE acceptance is separately scoped.
+See `docs/evidence/editor-integration-0.56.0-sdk.json`.
+
+Twenty-four deterministic generated trait/constructor/closure cases pass the
+reference main, native main and all24 native/TypeScript tests. Independent Python
+expectations cover i64, exact finite f64, Unicode/NUL strings, empty lists,
+immutable aliases, nested associated types and named method references. The
+source fixture and exact seed/results are retained in
+`docs/evidence/generated-traits-0.56.0.json`. An initial external harness result-key
+error is recorded; no compiler change or weakened assertion was needed.
+These generated cases complement the separately recorded frozen0.56 full67 and
+platform matrix; they do not verify changed0.56.1 distribution helpers.
+
+## Retained first portable-SDK failure and correction
+
+The first0.56.1 macOS relocated workflow passes its first ten phases, then the
+live string-range step fails to import its recording script. The external
+acceptance command used JSON ASCII escaping for a Unicode path; LLDB interprets
+that escape literally. Native debug initialization already loads the actual
+UTF-8 formatter and manifest. Both acceptance-script imports now preserve raw
+UTF-8 and escaped argument boundaries, matching compiler debug initialization.
+The archive suite adds a Unicode/quotes/backslash path contract case. The failed
+full workflow and exact stderr are retained in
+`docs/evidence/sdk-distribution-0.56.1-initial-failure.json`. Full relocated and
+archive-restored acceptance must be repeated; no gate or timeout is weakened.
+
+The corrected editor/archive/host focus passes all3 groups (16 Python cases and
+10 Node cases). A real LLDB import from a directory containing Unicode, quotes
+and a backslash also passes without launching an inferior. The full moved SDK
+workflow is being repeated; these focused checks do not replace it.
+
+A second owned relocation run deliberately includes quotes and a literal
+backslash in its parent path. Its editor phase exposes Node22 --test treating
+an absolute filename as a glob; test.js exists but its path does not match.
+The acceptance helper and source editor test now supply the physical directory
+as cwd and the relative test.js pattern. Both actual direct and relative-test
+Node probes run all ten contracts successfully from that exact path. The early
+0.56.1 full regression was stopped before this correction; it is not a complete
+result. The failed relocation, actual probes and interruption are retained in
+`docs/evidence/sdk-distribution-0.56.1-node-path-failure.json`. Complete workflow
+and full regression must be repeated with the final corrected source.
+
+Toolchain0.60.2 corrects literal-percent Wasm output paths by linking in an owned physical staging directory and publishing the output bytes. The existing moved-SDK workflow found the failure; matching source, SDK and platform acceptance remain pending. Language0.16 is unchanged.
+
+
+Toolchain0.63 is an isolated candidate extending0.62 with explicit HTTPS API
+host metadata and optional exact server CORS origins. Language0.16 is unchanged.
+Its native server and browser/network tests, actual mobile API checks and
+complete platform/installed SDK acceptance are pending. This entry makes no
+root promotion, release or full objective completion claim.
+
+## Toolchain0.71 candidate: checked project builds and CIX hardware evidence
+
+Isolated implementation adds `nex.project-build/1`, component ownership/import DAG checks, named build configurations, read-only plans and actual native/static-archive/server/web orchestration. Dependencies currently compile source; separately built archives are not consumed by those source edges. Full79/installed SDK/platform/root-integration gates remain pending. Earlier0.70 evidence retains its exact source and binary scopes.
+
+On a physical CIX P1 ARM64 board, a private patched0.70 Linux development SDK launches and builds/runs ten language examples in debug/release; all20 native outputs match the interpreter and copied binaries run without NEX/LLVM/MLIR/Z3 dependencies. Checked overflow traps in both profiles. Separately, Mali OpenCL checked196608 integer outputs and a fixed-shape3x2 ONNX fixture passed three Zhouyi NPU runs with CPU EP fallback disabled, actual Zhouyi profile placement and `/dev/aipu` open. Direct accelerator calls from NEX and broad hardware support remain pending.

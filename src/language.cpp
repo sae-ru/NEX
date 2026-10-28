@@ -1,5 +1,8 @@
 #include "nex/language.h"
+#include "nex/frontend_diagnostics.h"
+#include "nex/traits.h"
 #include "llvm/Support/BLAKE3.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -16,18 +19,29 @@
 #include "llvm/Support/Error.h"
 
 namespace nex {
+std::string floatLiteral(int64_t bits){return nexrt::formatFloat(nexrt::floatValue(bits));}
 std::string typeName(Type t) {
   switch (t.kind) { case Type::I64: return "i64"; case Type::Bool: return "bool";
+    case Type::F64:return "f64";case Type::Bytes:return "bytes";case Type::File:return "file";
     case Type::Unit: return "unit";case Type::Str:return "str";
     case Type::List:return "list<"+typeName(*t.element)+">";
     case Type::Result:return "result<"+typeName(*t.element)+">";
     case Type::Function:{std::string result=t.realm=="shared"?"fn(":t.realm+" fn(";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=",";result+=typeName(t.arguments[i]);}result+=")->"+(t.element->kind==Type::Function?"("+typeName(*t.element)+")":typeName(*t.element));if(!t.effects.empty()){result+="!{";for(const auto &effect:t.effects){if(result.back()!='{')result+=",";result+=effect;}result+="}";}return result;}
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
-    case Type::Parameter:return "$"+t.name;default: return "unknown"; }
+    case Type::Parameter:return t.arguments.empty()?"$"+t.name:genericName("$"+t.name,t.arguments);
+    case Type::Projection:return genericName(t.name,t.arguments);
+    case Type::Constructor:return t.name;
+    default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(){
-  static const std::set<std::string> names={"print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys"};
+  static const std::set<std::string> names=[] {
+    std::set<std::string> result={"as_f64","as_i64","print","assert","len","str","push","set","slice","contains","ok","err","is_ok","unwrap","error_code","error_message","encode_json","decode_json","read_env","store_get","store_put","store_remove","store_keys","file_read_text","file_write_text","bytes","utf8_bytes","decode_utf8","encode_base64","decode_base64","file_read_bytes","file_write_bytes","file"};
+    result.insert(streamFileBuiltins().begin(),streamFileBuiltins().end());return result;
+  }();
   return names;
+}
+const std::set<std::string> &streamFileBuiltins(){
+  static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
 std::string readFile(const std::string &path) {
   std::ifstream in(path, std::ios::binary);
@@ -99,6 +113,8 @@ std::string Program::definition(const Structure &s)const {
 std::string Program::definition(const Endpoint &e)const {
   const auto &text=units.contains(e.unit)?units.at(e.unit).source:source;return text.substr(e.span.begin,e.span.end-e.span.begin);
 }
+std::string Program::definition(const Trait &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
+std::string Program::definition(const Implementation &value)const {const auto &text=units.contains(value.unit)?units.at(value.unit).source:source;return text.substr(value.span.begin,value.span.end-value.span.begin);}
 std::string Program::location(const Span &span)const {
   if(units.contains(span.file))return units.at(span.file).path;return span.file.empty()?path:span.file;
 }
@@ -110,7 +126,7 @@ std::string nativeSymbol(const std::string &name){
   return result;
 }
 namespace {
-struct Token { std::string text; Span span; enum Kind { Id, Num, Symbol, End, String } kind; };
+struct Token { std::string text; Span span; enum Kind { Id, Num, Symbol, End, String, Float } kind; };
 class Lexer {
   const std::string &source; std::string file;size_t i = 0; unsigned line = 1, column = 1;
   char peek(size_t n = 0) const { return i+n < source.size() ? source[i+n] : '\0'; }
@@ -135,6 +151,15 @@ public:
       while (std::isalnum(static_cast<unsigned char>(peek())) || peek() == '_') advance();
     } else if (std::isdigit(static_cast<unsigned char>(c))) {
       kind = Token::Num; while (std::isdigit(static_cast<unsigned char>(peek()))) advance();
+      if(peek()=='.'&&std::isdigit(static_cast<unsigned char>(peek(1)))){
+        kind=Token::Float;advance();while(std::isdigit(static_cast<unsigned char>(peek())))advance();
+      }
+      if(peek()=='e'||peek()=='E'){
+        kind=Token::Float;advance();if(peek()=='+'||peek()=='-')advance();
+        if(!std::isdigit(static_cast<unsigned char>(peek())))throw Error("E_FLOAT_LITERAL","floating exponent requires decimal digits",s);
+        while(std::isdigit(static_cast<unsigned char>(peek())))advance();
+      }
+      if(kind==Token::Float&&i-s.begin>4096)throw Error("E_FLOAT_LITERAL","floating literal exceeds 4096 bytes",s);
     } else {
       std::string pair = source.substr(i, 2);
       if (pair == "=>" || pair == "->" || pair == "==" || pair == "!=" || pair == "<=" || pair == ">=" || pair == "&&" || pair == "||" || pair=="::") { advance(); advance(); }
@@ -145,26 +170,59 @@ public:
   }
 };
 class Parser {
-  Program p; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0;std::set<std::string> parameters;
+  Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
+  bool captureNames=false,captureDetails=false;std::map<std::string,Span> parameterOrigins;
+  void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
+    if(!captureNames)return;
+    if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
+    p.editorNames.push_back({std::move(kind),name,"",std::move(span),std::move(target)});
+  }
+  Span head(Span start)const{start.end=tokens.at(i-1).span.end;return start;}
+  void clearParameters(){parameters.clear();parameterOrigins.clear();}
+  struct SyntaxDepth {
+    unsigned &depth;
+    SyntaxDepth(unsigned &value,const Span &span):depth(value){if(depth>=256)throw Error("E_PARSE_LIMIT","syntax recursion exceeds 256 levels",span);++depth;}
+    ~SyntaxDepth(){--depth;}
+  };
+  void annotate(Error &error)const{attachFrontendDiagnostic(error,{{p.path,p.source}},p.path,inputKind,"parse",true);}
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
+  SourceRange syntaxRange(size_t begin)const{return {begin,tokens.at(i-1).span.end,true};}
+  void boundExpression(const E &value){
+    value->syntaxHeight=1;
+    for(const auto &child:value->args){
+      if(child->syntaxHeight>=256)throw Error("E_PARSE_LIMIT","expression tree exceeds 256 levels",value->span);
+      value->syntaxHeight=std::max(value->syntaxHeight,child->syntaxHeight+1);
+    }
+  }
   bool accept(const std::string &s) { if (peek().text == s) { take(); return true; } return false; }
   Token expect(const std::string &s) {
     if (peek().text != s) throw Error("E_PARSE", "expected '"+s+"', found '"+peek().text+"'", peek().span);
     return take();
   }
   Token name() {
-    static const std::set<std::string> reserved = {"module","fn","test","let","var","return","if","else","while","true","false","client","server","shared","i64","bool","unit","str","list","struct","pub","import","as"};
+    static const std::set<std::string> reserved = {"module","fn","test","let","var","return","if","else","while","true","false","client","server","shared","i64","f64","bool","unit","str","list","struct","pub","import","as"};
     if (peek().kind != Token::Id || reserved.contains(peek().text))
       throw Error("E_PARSE", "expected identifier", peek().span);
     return take();
   }
   std::string qualified(){auto result=name().text;while(accept("::"))result+="::"+name().text;return result;}
   void typeEnd(){if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");}
-  std::vector<std::string> templateParameters(TypeBounds &bounds){
-    parameters.clear();bounds.clear();std::vector<std::string> result;if(!accept("<"))return result;
-    do{auto parameter=name();if(!parameters.insert(parameter.text).second)throw Error("E_DUPLICATE","duplicate generic parameter",parameter.span);if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most 64 parameters",parameter.span);result.push_back(parameter.text);bounds.emplace_back();
-      if(accept(":"))do{auto bound=name();if(bound.text!="add"&&bound.text!="ordered"&&bound.text!="integer"&&bound.text!="wire")throw Error("E_GENERIC_BOUND","unknown generic constraint '"+bound.text+"'",bound.span);if(!bounds.back().insert(bound.text).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+bound.text+"'",bound.span);}while(accept("+"));
+  unsigned constructorArity(){
+    if(!accept("<"))return 0;unsigned count=0;
+    do{expect("_");if(++count>64)throw Error("E_GENERIC_LIMIT","constructor arity exceeds64",peek().span);}while(accept(","));typeEnd();return count;
+  }
+  std::set<std::string> constraintNames(){
+    std::set<std::string> result;
+    do{auto span=peek().span;auto value=qualified();if(!std::set<std::string>{"add","ordered","integer","number","wire"}.contains(value))editorName("trait",value,head(span));else if(captureDetails)editorName("builtin_bound",value,head(span));if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
+  }
+  std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false){
+    if(!keep)clearParameters();bounds.clear();arities.clear();std::vector<std::string> result;if(!accept("<"))return result;
+    do{auto parameter=name();auto arity=constructorArity();
+      if(parameter.text=="bytes"||parameter.text=="file"||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
+      if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most64 parameters",parameter.span);
+      if(captureNames){parameterOrigins[parameter.text]=parameter.span;editorName("parameter_declaration",parameter.text,parameter.span,parameter.span);}
+      result.push_back(parameter.text);arities.push_back(arity);bounds.emplace_back();if(accept(":"))bounds.back()=constraintNames();
     }while(accept(","));typeEnd();return result;
   }
   std::vector<Type> typeArguments(){std::vector<Type> result;expect("<");do{if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic calls support at most 64 arguments",peek().span);result.push_back(type());}while(accept(","));typeEnd();return result;}
@@ -173,17 +231,23 @@ class Parser {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
     auto t = take();
+    if(captureDetails&&(std::set<std::string>{"i64","f64","bool","unit","str","list"}.contains(t.text)||
+        ((t.text=="bytes"||t.text=="file")&&peek().text!="::")||(t.text=="result"&&peek().text=="<")))editorName("builtin_type",t.text,t.span);
     if(t.text=="("){auto result=type();expect(")");return result;}
     if(t.text=="fn"||t.text=="shared"||t.text=="client"||t.text=="server"){
       auto realm=t.text=="fn"?"shared":t.text;if(t.text!="fn")expect("fn");std::vector<Type> args;expect("(");if(!accept(")")){do{if(args.size()>=1024)throw Error("E_FUNCTION_LIMIT","function type exceeds 1024 parameters",peek().span);args.push_back(type());}while(accept(","));expect(")");}expect("->");auto result=type();return Type::function(std::move(args),std::move(result),realm,effects());
     }
     if (t.text=="i64") return Type::I64; if (t.text=="bool") return Type::Bool; if(t.text=="unit")return Type::Unit;if(t.text=="str")return Type::Str;
+    if(t.text=="f64")return Type::F64;
+    if(t.text=="bytes"&&peek().text!="::")return Type::Bytes;
+    if(t.text=="file"&&peek().text!="::")return Type::File;
     if(t.text=="list"||(t.text=="result"&&peek().text=="<")) {
+      if(t.text=="list"&&peek().text!="<")return Type::constructor("list",1);
       expect("<");auto item=type();
       typeEnd();
       return t.text=="list"?Type::list(std::move(item)):Type::result(std::move(item));
     }
-    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text)){value.kind=Type::Parameter;return value;}if(peek().text=="<")value.arguments=typeArguments();return value;}
+    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text))value.kind=Type::Parameter;editorName(value.kind==Type::Parameter?"parameter":"type",text,head(t.span),parameterOrigins.contains(text)?std::optional<Span>(parameterOrigins.at(text)):std::nullopt);if(peek().text=="<")value.arguments=typeArguments();return value;}
     throw Error("E_TYPE", "unknown type '"+t.text+"'",t.span);
   }
   static int precedence(const std::string &op) {
@@ -204,15 +268,16 @@ class Parser {
     if(depth>64||++nodes>10000)throw Error("E_MATCH_LIMIT","pattern exceeds its node/depth budget",peek().span);
     auto token=take();auto value=std::make_shared<Pattern>();value->span=token.span;
     if(token.text=="["||token.kind==Token::Id){
-      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";return value;}
+      if(token.text=="true"||token.text=="false"){value->kind=Pattern::Boolean;value->number=token.text=="true";value->sourceRange=syntaxRange(token.span.begin);return value;}
       bool list=token.text=="[";if(!list){--i;token=name();value->text=token.text;while(accept("::"))value->text+="::"+name().text;}
+      if(!list&&value->text.find("::")!=std::string::npos)editorName("value",value->text,head(token.span));
       if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
       else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
     }else if(token.kind==Token::String){value->kind=Pattern::String;try{value->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}}
     else if(token.kind==Token::Num||token.text=="-"){
       auto text=token.text;if(token.text=="-"){auto number=take();if(number.kind!=Token::Num)throw Error("E_PARSE","negative pattern requires an integer literal",number.span);text+=number.text;}
       value->kind=Pattern::Integer;auto result=std::from_chars(text.data(),text.data()+text.size(),value->number);if(result.ec!=std::errc())throw Error("E_RANGE","integer pattern is outside i64",token.span);
-    }else throw Error("E_PARSE","expected a pattern",token.span);return value;
+    }else throw Error("E_PARSE","expected a pattern",token.span);value->sourceRange=syntaxRange(token.span.begin);return value;
   }
   E matchValue(Span span){
     auto value=std::make_shared<Expr>();value->kind=Expr::Match;value->span=span;value->args.push_back(expression(1,true));expect("{");unsigned nodes=0;bool first=true;
@@ -228,6 +293,7 @@ class Parser {
     value->span.end=tokens.at(i-1).span.end;return value;
   }
   E expression(int minimum=1,bool subject=false) {
+    SyntaxDepth depth(syntaxDepth,peek().span);unsigned chain=0;
     bool matching=matchAhead()&&peek(1).text!="::"&&!(subject&&peek(1).kind==Token::Symbol&&peek(1).text!="!");E e; auto token=take();
     if(matching)e=matchValue(token.span);
     else if(token.text=="fn"||((token.text=="shared"||token.text=="client"||token.text=="server")&&peek().text=="fn")){
@@ -246,6 +312,14 @@ class Parser {
         take(); e=std::make_shared<Expr>(); e->kind=Expr::Integer; e->number=std::numeric_limits<int64_t>::min(); e->span=token.span;
       } else { e=std::make_shared<Expr>(); e->kind=Expr::Unary; e->text=token.text; e->span=token.span; e->args={expression(7)}; }
     } else if(token.text=="(") { e=expression(); expect(")"); }
+    else if(token.kind==Token::Float){
+      llvm::APFloat value(llvm::APFloat::IEEEdouble());
+      auto converted=value.convertFromString(token.text,llvm::APFloat::rmNearestTiesToEven);
+      if(!converted){llvm::consumeError(converted.takeError());throw Error("E_FLOAT_LITERAL","invalid f64 literal",token.span);}
+      if(!value.isFinite())throw Error("E_RANGE","floating literal is outside finite f64",token.span);
+      e=std::make_shared<Expr>();e->kind=Expr::Floating;e->span=token.span;
+      e->number=value.isZero()?0:std::bit_cast<int64_t>(value.bitcastToAPInt().getZExtValue());
+    }
     else if(token.kind==Token::Num) {
       e=std::make_shared<Expr>(); e->kind=Expr::Integer; e->span=token.span;
       auto result=std::from_chars(token.text.data(), token.text.data()+token.text.size(), e->number);
@@ -259,22 +333,27 @@ class Parser {
         e->typeArguments=typeArguments();
         if(e->text=="decode_json"||e->text=="err"){if(e->typeArguments.size()!=1)throw Error("E_GENERIC_ARITY","builtin requires one type argument",e->span);e->annotation=e->typeArguments[0];e->typeArguments.clear();}
         while(accept("::"))e->text+="::"+name().text;
+        if(genericAhead())e->methodArguments=typeArguments();
       }
+      if(e->text.find("::")!=std::string::npos)editorName(peek().text=="("?"value_call":"value",e->text,head(token.span));
       if(accept("(")) {
         e->kind=Expr::Call;
         if(!accept(")")) { do {e->args.push_back(expression());}while(accept(",")); expect(")"); }
       }
     } else throw Error("E_PARSE","expected expression, found '"+token.text+"'",token.span);
+    e->sourceRange=syntaxRange(token.span.begin);boundExpression(e);
     while(peek().text=="."||peek().text=="["||peek().text=="(") {
+      if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take();auto b=std::make_shared<Expr>();b->span=op.span;b->args={e};
       if(op.text=="."){b->kind=Expr::Field;b->text=name().text;}
       else if(op.text=="("){b->kind=Expr::Invoke;if(!accept(")")){do{b->args.push_back(expression());}while(accept(","));expect(")");}}
       else {b->kind=Expr::Index;b->args.push_back(expression());expect("]");}
-      e=b;
+      b->sourceRange=syntaxRange(e->sourceRange.begin);boundExpression(b);e=b;
     }
     while(precedence(peek().text)>=minimum) {
+      if(++chain>256)throw Error("E_PARSE_LIMIT","expression chain exceeds 256 operations",peek().span);
       auto op=take(); auto rhs=expression(precedence(op.text)+1);
-      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs}; e=b;
+      auto b=std::make_shared<Expr>(); b->kind=Expr::Binary; b->span=op.span; b->text=op.text; b->args={e,rhs};b->sourceRange={e->sourceRange.begin,rhs->sourceRange.end,true};boundExpression(b);e=b;
     }
     return e;
   }
@@ -291,6 +370,7 @@ class Parser {
     for(size_t n=1;i+n<tokens.size();++n){const auto &text=peek(n).text;if(!depth&&!braces&&(text==";"||text=="="||text=="}"))return false;if(!depth&&text=="{")++braces;else if(!depth&&text=="}"&&braces){if(!--braces)return false;}if(braces==1&&text=="=>")return true;if(text=="("||text=="[")++depth;if(text==")"||text=="]")--depth;if(depth<0)return false;}return false;
   }
   S statement() {
+    SyntaxDepth depth(syntaxDepth,peek().span);
     auto s=std::make_shared<Stmt>(); s->span=peek().span;
     if(peek().text=="let" || peek().text=="var") {
       s->kind=take().text=="let" ? Stmt::Let : Stmt::Var; s->name=name().text;
@@ -305,16 +385,20 @@ class Parser {
     } else if(peek().kind==Token::Id && peek(1).text=="=") {
       s->kind=Stmt::Assign; s->name=take().text; take(); s->expr=expression();expect(";");
     } else {s->kind=Stmt::Expression;s->expr=expression();if(s->expr->kind==Expr::Match&&s->expr->statementMatch){s->kind=Stmt::Match;s->arms=s->expr->arms;}else expect(";");}
-    return s;
+    s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0) {
-    p.source=std::move(source);p.path=std::move(path);Lexer lex(p.source,p.path);
-    do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details) {
+    p.source=std::move(source);p.path=std::move(path);
+    try{Lexer lex(p.source,p.path);
+      do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
+    }catch(Error &error){annotate(error);throw;}
   }
-  E expressionOnly(){auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}
-  Type typeOnly(){auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}
-  Program run() {
+  E expressionOnly()try{auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}catch(Error &error){annotate(error);throw;}
+  S statementOnly()try{auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}catch(Error &error){annotate(error);throw;}
+  P patternOnly()try{unsigned nodes=0;auto value=pattern(0,nodes);if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after pattern",peek().span);return value;}catch(Error &error){annotate(error);throw;}
+  Type typeOnly()try{auto value=type();if(peek().kind!=Token::End)throw Error("E_TYPE","unexpected token after type",peek().span);return value;}catch(Error &error){annotate(error);throw;}
+  Program run() try {
     expect("module");p.module=qualified();expect(";");
     while(peek().kind!=Token::End) {
       if(accept("endpoint")){
@@ -322,41 +406,70 @@ public:
         auto literal=[&](){auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","endpoint requires quoted method/path",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}};
         expect("(");endpoint.method=literal();expect(",");endpoint.path=literal();
         if(accept(",")){auto token=take();auto [end,error]=std::from_chars(token.text.data(),token.text.data()+token.text.size(),endpoint.successStatus);if(token.kind!=Token::Num||error!=std::errc()||end!=token.text.data()+token.text.size())throw Error("E_PARSE","endpoint status must be an integer literal",token.span);}
-        expect(")");expect("=");endpoint.target=qualified();endpoint.span.end=expect(";").span.end;p.endpoints.push_back(std::move(endpoint));continue;
+        expect(")");expect("=");auto targetSpan=peek().span;endpoint.target=qualified();editorName("function",endpoint.target,head(targetSpan));endpoint.span.end=expect(";").span.end;p.endpoints.push_back(std::move(endpoint));continue;
       }
       if(accept("import")){
         Import dependency;dependency.span=tokens.at(i-1).span;auto token=take();
         if(token.kind!=Token::String)throw Error("E_PARSE","import path must be a quoted string",token.span);
         try{dependency.path=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
-        expect("as");dependency.alias=name().text;dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
+        expect("as");auto alias=name();dependency.alias=alias.text;editorName("alias",alias.text,alias.span);dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
+      if(accept("trait")){
+        Trait value;value.span=start;value.exported=exported;auto traitName=name();value.name=traitName.text;auto selfOrigin=traitName.span;
+        if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity();typeEnd();}
+        clearParameters();parameters["Self"]=value.selfArity;if(captureNames)parameterOrigins["Self"]=selfOrigin;expect("{");
+        while(!accept("}")){
+          if(accept("type")){auto item=name();editorName("member_declaration",value.name+"::"+item.text,item.span);std::set<std::string> bounds;if(accept(":"))bounds=constraintNames();expect(";");if(!value.associated.emplace(item.text,std::move(bounds)).second)throw Error("E_DUPLICATE","duplicate associated type",item.span);continue;}
+          Function method;method.span=peek().span;
+          if(peek().text=="shared"||peek().text=="server"||peek().text=="client")method.realm=take().text;
+          expect("fn");auto methodName=name();method.name=methodName.text;editorName("member_declaration",value.name+"::"+method.name,methodName.span);method.typeParameters=templateParameters(method.typeBounds,method.typeArities,true);expect("(");
+          if(!accept(")")){do{auto item=name();expect(":");method.params.push_back({item.text,type(),item.span});}while(accept(","));expect(")");}
+          expect("->");method.result=type();method.effects=effects();method.span.end=expect(";").span.end;value.methods.push_back(std::move(method));clearParameters();parameters["Self"]=value.selfArity;if(captureNames)parameterOrigins["Self"]=selfOrigin;
+        }
+        value.span.end=tokens.at(i-1).span.end;p.traits.push_back(std::move(value));clearParameters();continue;
+      }
+      if(accept("impl")){
+        Implementation value;value.span=start;value.exported=exported;value.name=name().text;
+        value.typeParameters=templateParameters(value.typeBounds,value.typeArities);expect(":");auto traitSpan=peek().span;value.trait=qualified();editorName("trait",value.trait,head(traitSpan));expect("for");value.self=type();expect("{");
+        while(!accept("}")){
+          if(peek().text=="type"&&peek(1).kind==Token::Id&&accept("type")){auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");auto typeValue=type();expect(";");if(!value.associated.emplace(item.text,std::move(typeValue)).second)throw Error("E_DUPLICATE","duplicate associated type binding",item.span);continue;}
+          auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");ImplementationMethod method;method.span=item.span;auto targetSpan=peek().span;method.target=qualified();editorName("function",method.target,head(targetSpan));if(peek().text=="<")method.typeArguments=typeArguments();expect(";");
+          if(!value.methods.emplace(item.text,std::move(method)).second)throw Error("E_DUPLICATE","duplicate implementation method",item.span);
+        }
+        value.span.end=tokens.at(i-1).span.end;p.implementations.push_back(std::move(value));clearParameters();continue;
+      }
       if(peek().text=="enum") {
-        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds);expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);expect("{");
         if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){
           auto tag=name();Variant v;v.name=tag.text;v.span=tag.span;v.ordinal=s.variants.size();
           if(accept("(")){if(!accept(")")){do{auto field=name();expect(":");v.fields.push_back({field.text,type(),field.span});}while(accept(","));expect(")");}}
           expect(";");s.variants.push_back(std::move(v));
         }
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       if(peek().text=="struct") {
-        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds);expect("{");
+        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities);expect("{");
         if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
-        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));parameters.clear();continue;
+        s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
-      f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds);expect("(");
+      bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities);expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->"); f.result=type();
       if(accept("!")) {expect("{");if(!accept("}")){do {auto n=name();if(!f.effects.insert(n.text).second)throw Error("E_EFFECT","duplicate effect",n.span);}while(accept(","));expect("}");}}
-      lambdaCounter=0;f.body=block();f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));parameters.clear();
+      if(external){
+        expect("=");expect("foreign");expect("(");
+        auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
+        ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifestSpan=peek().span;binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
+      }else{lambdaCounter=0;f.body=block();}
+      f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));clearParameters();
     }
     return std::move(p);
-  }
+  }catch(Error &error){annotate(error);throw;}
 };
 struct Binding {Type type;bool mutableValue;};
 class Checker {
@@ -366,7 +479,7 @@ class Checker {
   bool hasLocal(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return true;return false;}
   bool localFunction(const std::string &name)const{for(auto it=scopes.rbegin();it!=scopes.rend();++it)if(it->contains(name))return it->at(name).type.kind==Type::Function;return false;}
   Binding lookup(const std::string &name,Span span) {
-    for(size_t index=scopes.size();index>0;--index)if(scopes[index-1].contains(name)){auto value=scopes[index-1].at(name);for(auto capture:captures)if(index-1<capture->boundary){value.mutableValue=false;capture->bindings[name]=value;}return value;}
+    for(size_t index=scopes.size();index>0;--index)if(scopes[index-1].contains(name)){auto value=scopes[index-1].at(name);resourceRealm(value.type,f->realm,span);for(auto capture:captures)if(index-1<capture->boundary){value.mutableValue=false;capture->bindings[name]=value;}return value;}
     throw Error("E_NAME","unknown local '"+name+"'",span);
   }
   void same(Type actual,Type expected,Span span) {
@@ -379,9 +492,25 @@ class Checker {
   void validType(Type &t,Span span,bool result=false) {
     t=resolveType(p,t,span);
     if(t==Type::Unit&&!result)throw Error("E_TYPE","unit is only valid as a function result",span);
+    if(t.kind==Type::Constructor)throw Error("E_GENERIC_ARITY","type constructor must be fully applied before use as a value",span);
+    if(t!=Type::Unit&&argumentKind(p,t,span)!=0)throw Error("E_GENERIC_KIND","value signature requires a fully applied type",span);
+    if(f)resourceRealm(t,f->realm,span);
+  }
+  void resourceRealm(const Type &type,const std::string &realm,Span span){
+    if(realm!="server"&&containsFile(p,type))throw Error("E_REALM","file values require a server function, including aggregate and capture types",span);
   }
   void unify(Type formal,Type actual,std::map<std::string,Type> &bound,Span span){
-    if(formal.kind==Type::Parameter){auto found=bound.find(formal.name);if(found==bound.end()){if(actual==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);bound[formal.name]=actual;}else same(actual,found->second,span);return;}
+    if(formal.kind==Type::Projection){auto resolved=resolveType(p,substituteType(formal,bound),span);if(resolved==actual)return;if(resolved.kind==Type::Projection)throw Error("E_GENERIC_INFER","associated projections do not infer their Self type",span);unify(resolved,actual,bound,span);return;}
+    if(formal.kind==Type::Parameter&&!formal.arguments.empty()){
+      auto shape=constructorPattern(p,actual);Type head;std::vector<Type> args;
+      if(shape.kind==Type::List||shape.kind==Type::Result){head=Type::constructor(shape.kind==Type::List?"list":"result",1);args={*shape.element};}
+      else if(shape.kind==Type::Record&&!shape.arguments.empty()){head=Type::constructor(shape.name,shape.arguments.size());args=shape.arguments;}
+      else if(shape.kind==Type::Parameter&&!shape.arguments.empty()){head=shape;head.arguments.clear();args=shape.arguments;}
+      else throw Error("E_GENERIC_INFER","cannot infer an applied constructor from this type",span);
+      if(args.size()!=formal.arguments.size())throw Error("E_GENERIC_KIND","constructor application arities differ",span);
+      auto base=formal;base.arguments.clear();unify(base,head,bound,span);for(size_t i=0;i<args.size();++i)unify(formal.arguments[i],args[i],bound,span);return;
+    }
+    if(formal.kind==Type::Parameter){auto found=bound.find(formal.name);if(found==bound.end()){if(actual==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);if(argumentKind(p,actual,span)!=p.parameterKinds.at(formal.name))throw Error("E_GENERIC_KIND","inferred generic argument has the wrong kind",span);bound[formal.name]=actual;}else same(actual,found->second,span);return;}
     if(formal.kind==Type::Record&&!formal.arguments.empty()){
       if(actual.kind!=Type::Record)throw Error("E_TYPE","expected nominal generic type "+typeName(formal),span);
       const auto &instance=p.structure(actual.name);if(instance.templateName!=formal.name||instance.typeArguments.size()!=formal.arguments.size())throw Error("E_TYPE","generic nominal types differ",span);
@@ -391,15 +520,18 @@ class Checker {
     if(formal.kind==Type::Function){if(formal.arguments.size()!=actual.arguments.size()||formal.realm!=actual.realm||formal.effects!=actual.effects)throw Error("E_TYPE","callable signatures differ",span);for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],actual.arguments[i],bound,span);unify(*formal.element,*actual.element,bound,span);return;}
     if(formal.element){unify(*formal.element,*actual.element,bound,span);return;}same(actual,formal,span);
   }
-  std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected){
+  std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected,bool partial=false){
     if(formals.size()!=call->args.size())throw Error("E_ARITY","incorrect number of value arguments",call->span);
     std::map<std::string,Type> bound;
     if(!call->typeArguments.empty()){
-      if(parameters.size()!=call->typeArguments.size())throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
-      for(size_t i=0;i<parameters.size();++i){auto argument=call->typeArguments[i];validType(argument,call->span);bound[parameters[i]]=argument;}
+      if(parameters.size()!=call->typeArguments.size()&&!(partial&&call->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
+      for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);bound[parameters[i]]=argument;}
     }
-    if(expected!=Type::Unknown)unify(result,expected,bound,call->span);
-    std::function<bool(const Type&)> missing=[&](const Type &type){if(type.kind==Type::Parameter)return std::find(parameters.begin(),parameters.end(),type.name)!=parameters.end()&&!bound.contains(type.name);if(type.element&&missing(*type.element))return true;for(const auto &a:type.arguments)if(missing(a))return true;return false;};
+    if(expected!=Type::Unknown){
+      std::function<bool(const Type&)> projected=[&](const Type &type){if(type.kind==Type::Projection)return true;if(type.element&&projected(*type.element))return true;for(const auto &a:type.arguments)if(projected(a))return true;return false;};
+      auto saved=bound;try{unify(result,expected,bound,call->span);}catch(const Error &error){if(!projected(result)||(error.code!="E_TYPE"&&error.code!="E_GENERIC_INFER"))throw;bound=std::move(saved);}
+    }
+    std::function<bool(const Type&)> missing=[&](const Type &type){if(type.kind==Type::Parameter&&std::find(parameters.begin(),parameters.end(),type.name)!=parameters.end()&&!bound.contains(type.name))return true;if(type.element&&missing(*type.element))return true;for(const auto &a:type.arguments)if(missing(a))return true;return false;};
     std::vector<bool> done(formals.size());size_t remaining=formals.size();
     while(remaining){bool progress=false;for(size_t i=0;i<formals.size();++i)if(!done[i]){
       auto hint=missing(formals[i].type)?Type():resolveType(p,substituteType(formals[i].type,bound),call->span);
@@ -430,10 +562,10 @@ class Checker {
     const Function *target=&p.function(e->text,e->span);
     if(!target->typeParameters.empty()){
       const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,Type> bound;
-      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size())throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<raw.typeParameters.size();++i){auto type=e->typeArguments[i];validType(type,e->span);bound[raw.typeParameters[i]]=type;}}
+      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size()&&!(raw.traitSignature&&e->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<e->typeArguments.size();++i){auto type=resolveType(p,e->typeArguments[i],e->span);if(type==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",e->span);if(argumentKind(p,type,e->span)!=p.parameterKinds.at(raw.typeParameters[i]))throw Error("E_GENERIC_KIND","reference argument has the wrong constructor kind",e->span);bound[raw.typeParameters[i]]=type;}}
       if(expected.kind==Type::Function)unify(signature(raw),expected,bound,e->span);
       std::vector<Type> arguments;for(const auto &parameter:raw.typeParameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","generic function value requires explicit types or a function-type context",e->span);arguments.push_back(bound.at(parameter));}
-      target=&instantiateFunction(p,*target,arguments,e->span);e->typeArguments=arguments;
+      target=&instantiateFunction(p,*target,arguments,e->span);if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
     }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
     if(target->test)throw Error("E_TEST","test functions cannot be function values",e->span);
     auto type=signature(*target);validType(type,e->span);callableRealm(type,e->span);f->dependencies.insert(target->name);e->text=target->name;e->kind=Expr::FunctionRef;return e->type=type;
@@ -441,7 +573,7 @@ class Checker {
   Type lambda(E e){
     if(e->lambda->checked){f->dependencies.insert(e->text);return e->type;}
     if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
-    auto &fn=*e->lambda;auto outer=f;auto signatureType=signature(fn);validType(signatureType,e->span);callableRealm(signatureType,e->span);
+    auto &fn=*e->lambda;auto outer=f;auto signatureType=signature(fn);validType(signatureType,e->span);resourceRealm(signatureType,fn.realm,e->span);callableRealm(signatureType,e->span);
     fn.result=*signatureType.element;for(size_t i=0;i<fn.params.size();++i)fn.params[i].type=signatureType.arguments[i];
     fn.owner=outer->owner;fn.unit=outer->unit;fn.localName=outer->localName+"::$lambda_"+std::to_string(e->number);fn.name=outer->name+"::"+(watching?"$watch_lambda_":"$lambda_")+std::to_string(e->number);fn.closureOwner=outer->name;fn.closure=true;
     if(fn.name.size()>4096)throw Error("E_FUNCTION_LIMIT","closure target name exceeds 4096 bytes",e->span);
@@ -467,7 +599,8 @@ class Checker {
       callableRealm(type,e->span);for(const auto &effect:type.effects)if(!f->effects.contains(effect))throw Error("E_EFFECT","indirect call requires declared effect "+effect,e->span);e->type=*type.element;break;
     }
     case Expr::Match:matching(e,expected,false);break;
-    case Expr::Integer:e->type=expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
+    case Expr::Integer:e->type=(expected.kind==Type::Parameter||expected.kind==Type::Projection)&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64);break;
+    case Expr::Floating:e->type=Type::F64;break;
     case Expr::Boolean:e->type=Type::Bool;break;
     case Expr::String:e->type=Type::Str;break;
     case Expr::List: {
@@ -484,29 +617,29 @@ class Checker {
     }
     case Expr::Index: {
       auto base=expr(e->args[0]);same(expr(e->args[1],Type::I64),Type::I64,e->span);
-      if(base.kind!=Type::List&&base!=Type::Str)throw Error("E_TYPE","indexing requires a list or string",e->span);
-      e->type=base==Type::Str?Type(Type::Str):*base.element;break;
+      if(base.kind!=Type::List&&base!=Type::Str&&base!=Type::Bytes)throw Error("E_TYPE","indexing requires a list, string or bytes",e->span);
+      e->type=base==Type::Str?Type(Type::Str):base==Type::Bytes?Type(Type::I64):*base.element;break;
     }
     case Expr::Name:{auto local=e->localName.empty()?e->text:e->localName;if(hasLocal(local)){e->text=local;e->type=lookup(local,e->span).type;}else reference(e,expected);break;}
     case Expr::Unary: {
-      auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")?expected:Type(Type::I64));
-      if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"integer"))throw Error("E_TYPE","unary - requires integer constraint or i64",e->span);
+      auto operand=expr(e->args[0],e->text=="!"?Type(Type::Bool):satisfiesConstraint(p,expected,"number")?expected:Type());
+      if(e->text=="!")same(operand,Type::Bool,e->span);else if(!satisfiesConstraint(p,operand,"number"))throw Error("E_TYPE","unary - requires number constraint, i64 or f64",e->span);
       e->type=operand;break;
     }
     case Expr::Binary: {
       const auto &op=e->text;
-      bool equality=op=="=="||op=="!=";Type hint=Type::I64;
+      bool equality=op=="=="||op=="!=";Type hint;
       if(equality)hint=Type::Unknown;else if(op=="&&"||op=="||")hint=Type::Bool;
       else if(op=="+")hint=satisfiesConstraint(p,expected,"add")?expected:Type();
-      else if(expected.kind==Type::Parameter&&satisfiesConstraint(p,expected,"integer")&&op!="<"&&op!="<="&&op!=">"&&op!=">=")hint=expected;
+      else if(satisfiesConstraint(p,expected,"number")&&op!="<"&&op!="<="&&op!=">"&&op!=">=")hint=expected;
       Type a,b;bool rightTyped=false;
-      try{a=expr(e->args[0],hint);}catch(const Error &error){if(!equality||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
+      try{a=expr(e->args[0],hint);}catch(const Error &error){if(op=="&&"||op=="||"||(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER"))throw;b=expr(e->args[1]);rightTyped=true;a=expr(e->args[0],b);}
       if(!rightTyped)b=expr(e->args[1],a);
-      if(a==Type::I64&&b.kind==Type::Parameter&&satisfiesConstraint(p,b,"integer"))a=expr(e->args[0],b);
+      if(a==Type::I64&&(b.kind==Type::Parameter||b.kind==Type::Projection)&&satisfiesConstraint(p,b,"integer"))a=expr(e->args[0],b);
       same(b,a,e->span);
       if(op=="&&"||op=="||"){same(a,Type::Bool,e->span);e->type=Type::Bool;}
       else if(op=="=="||op=="!="){if(a==Type::Unit)throw Error("E_TYPE","cannot compare unit",e->span);e->type=Type::Bool;}
-      else {bool ordering=op=="<"||op=="<="||op==">"||op==">=";auto bound=ordering?"ordered":op=="+"?"add":"integer";
+      else {bool ordering=op=="<"||op=="<="||op==">"||op==">=";auto bound=ordering?"ordered":op=="+"?"add":"number";
         if(!satisfiesConstraint(p,a,bound))throw Error("E_TYPE","operator '"+op+"' requires '"+bound+"' for "+typeName(a),e->span);e->type=ordering?Type(Type::Bool):a;}
       break;
     }
@@ -518,11 +651,31 @@ class Checker {
       }
       if(!e->typeArguments.empty()&&builtinNames().contains(e->text))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
-      if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"){
-        arity(e->text=="store_put"?2:1);for(auto a:e->args)same(expr(a,Type::Str),Type::Str,a->span);
+      if(e->text=="as_f64"||e->text=="as_i64"){
+        arity(1);auto input=e->text=="as_f64"?Type(Type::I64):Type(Type::F64);
+        same(expr(e->args[0],input),input,e->span);e->type=e->text=="as_f64"?Type(Type::F64):Type::result(Type::I64);break;
+      }
+      if(e->text=="bytes"||e->text=="utf8_bytes"||e->text=="decode_utf8"||e->text=="encode_base64"||e->text=="decode_base64"){
+        arity(1);auto input=e->text=="bytes"?Type::list(Type::I64):e->text=="decode_utf8"||e->text=="encode_base64"?Type(Type::Bytes):Type(Type::Str);
+        same(expr(e->args[0],input),input,e->span);
+        e->type=e->text=="bytes"||e->text=="decode_base64"?Type::result(Type::Bytes):e->text=="decode_utf8"?Type::result(Type::Str):e->text=="utf8_bytes"?Type(Type::Bytes):Type(Type::Str);break;
+      }
+      if(streamFileBuiltins().contains(e->text)){
+        bool open=e->text.starts_with("file_open_");
+        bool pair=e->text=="file_read"||e->text=="file_write"||e->text=="file_seek";
+        arity(pair?2:1);
+        auto first=open?Type(Type::Str):Type(Type::File);same(expr(e->args[0],first),first,e->args[0]->span);
+        if(pair){auto second=e->text=="file_write"?Type(Type::Bytes):Type(Type::I64);same(expr(e->args[1],second),second,e->args[1]->span);}
         if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
-        std::string effect=e->text=="read_env"?"io":"db";if(!f->effects.contains(effect))throw Error("E_EFFECT",e->text+" requires declared effect "+effect,e->span);
-        e->type=Type::result(e->text=="store_keys"?Type::list(Type::Str):e->text=="store_put"||e->text=="store_remove"?Type(Type::Bool):Type(Type::Str));break;
+        if(!f->effects.contains("fs"))throw Error("E_EFFECT",e->text+" requires declared effect fs",e->span);
+        e->type=open?Type::result(Type::File):e->text=="file_read"?Type::result(Type::Bytes):e->text=="file_close"||e->text=="file_is_open"?Type(Type::Bool):e->text=="file_flush"?Type::result(Type::Bool):Type::result(Type::I64);break;
+      }
+      if(e->text=="read_env"||e->text=="store_get"||e->text=="store_put"||e->text=="store_remove"||e->text=="store_keys"||e->text=="file_read_text"||e->text=="file_write_text"||e->text=="file_read_bytes"||e->text=="file_write_bytes"){
+        arity(e->text=="store_put"||e->text=="file_write_text"||e->text=="file_write_bytes"?2:1);
+        for(size_t i=0;i<e->args.size();++i){auto type=i==1&&e->text=="file_write_bytes"?Type(Type::Bytes):Type(Type::Str);same(expr(e->args[i],type),type,e->args[i]->span);}
+        if(f->realm!="server")throw Error("E_REALM",e->text+" requires a server function",e->span);
+        std::string effect=e->text=="read_env"?"io":e->text.starts_with("file_")?"fs":"db";if(!f->effects.contains(effect))throw Error("E_EFFECT",e->text+" requires declared effect "+effect,e->span);
+        e->type=Type::result(e->text=="store_keys"?Type::list(Type::Str):e->text=="store_put"||e->text=="store_remove"||e->text=="file_write_text"||e->text=="file_write_bytes"?Type(Type::Bool):e->text=="file_read_bytes"?Type(Type::Bytes):Type(Type::Str));break;
       }
       if(e->text=="ok"){
         arity(1);auto item=expr(e->args[0],expected.kind==Type::Result?*expected.element:Type());validType(item,e->span);e->type=Type::result(item);break;
@@ -567,14 +720,15 @@ class Checker {
       }
       if(e->text=="len"||e->text=="str") {
         arity(1);auto t=expr(e->args[0]);
-        if(e->text=="len"&&t!=Type::Str&&t.kind!=Type::List)throw Error("E_TYPE","len requires str or list",e->span);
+        if(e->text=="len"&&t!=Type::Str&&t!=Type::Bytes&&t.kind!=Type::List)throw Error("E_TYPE","len requires str, bytes or list",e->span);
         if(t==Type::Unit)throw Error("E_TYPE","cannot format unit",e->span);
         e->type=e->text=="len"?Type::I64:Type::Str;break;
       }
       if(e->text=="push"||e->text=="set") {
         arity(e->text=="push"?2:3);auto item=e->args.back();
         Type list,itemType;bool listTyped=false;
-        try{list=expr(e->args[0],expected.kind==Type::List?expected:Type());listTyped=true;}catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+        try{list=expr(e->args[0],expected.kind==Type::List||expected==Type::Bytes?expected:Type());listTyped=true;}catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
+        if(listTyped&&list==Type::Bytes){same(expr(item,Type::I64),Type::I64,e->span);if(e->text=="set")same(expr(e->args[1],Type::I64),Type::I64,e->span);e->type=list;break;}
         if(listTyped&&list.kind!=Type::List)throw Error("E_TYPE",e->text+" requires a list",e->span);
         itemType=expr(item,listTyped?*list.element:expected.kind==Type::List?*expected.element:Type());
         if(!listTyped)list=expr(e->args[0],Type::list(itemType));
@@ -582,9 +736,10 @@ class Checker {
         same(itemType,*list.element,e->span);if(e->text=="set")same(expr(e->args[1],Type::I64),Type::I64,e->span);e->type=list;break;
       }
       if(e->text=="slice"||e->text=="contains") {
-        arity(e->text=="slice"?3:2);same(expr(e->args[0],Type::Str),Type::Str,e->span);
+        arity(e->text=="slice"?3:2);auto base=expr(e->args[0],e->text=="slice"&&expected==Type::Bytes?Type(Type::Bytes):Type(Type::Str));
+        if(base!=Type::Str&&(e->text!="slice"||base!=Type::Bytes))throw Error("E_TYPE",e->text+" requires "+(e->text=="slice"?"str or bytes":"str"),e->span);
         for(size_t i=1;i<e->args.size();++i)same(expr(e->args[i],e->text=="slice"?Type::I64:Type::Str),e->text=="slice"?Type::I64:Type::Str,e->span);
-        e->type=e->text=="slice"?Type::Str:Type::Bool;break;
+        e->type=e->text=="slice"?base:Type(Type::Bool);break;
       }
       if(e->text=="print"||e->text=="assert") {
         if(e->args.size()!=1)throw Error("E_ARITY",e->text+" expects one argument",e->span);
@@ -596,7 +751,7 @@ class Checker {
       }
       const Function *target=&p.function(e->text,e->span);
       if(!target->typeParameters.empty()){
-        const auto &raw=p.functionTemplates.at(target->name);auto arguments=infer(raw.typeParameters,raw.params,raw.result,e,expected);target=&instantiateFunction(p,*target,arguments,e->span);e->text=target->name;e->typeArguments=arguments;
+        const auto &raw=p.functionTemplates.at(target->name);auto arguments=infer(raw.typeParameters,raw.params,raw.result,e,expected,raw.traitSignature);target=&instantiateFunction(p,*target,arguments,e->span);e->text=target->name;if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
       }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
       const auto &callee=*target;
       if(callee.test)throw Error("E_TEST","test functions cannot be called",e->span);
@@ -607,7 +762,7 @@ class Checker {
       f->dependencies.insert(callee.name);e->type=callee.result;break;
     }
     }
-    return e->type;
+    resourceRealm(e->type,f->realm,e->span);return e->type;
   }
   bool block(const std::vector<S> &body,bool newScope=true) {
     if(newScope)scopes.emplace_back(); bool returns=false;
@@ -637,7 +792,9 @@ class Checker {
     try{
       for(auto &parameter:fn.params){validType(parameter.type,parameter.span);define(parameter.name,{parameter.type,false},parameter.span);}
       validType(fn.result,fn.span,true);
-      if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
+      if(fn.traitSignature){}
+      else if(fn.foreign)(void)foreignSignature(p,fn);
+      else if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
       fn.checked=true;
     }catch(...){f=previous;scopes=std::move(previousScopes);throw;}
     f=previous;scopes=std::move(previousScopes);
@@ -652,7 +809,7 @@ public:
     auto result=expr(expression);for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);return result;
   }
   void run() {
-    prepareGenerics(p);
+    prepareTraits(p);prepareGenerics(p);
     std::set<std::string> names;
     const auto &builtins=builtinNames();
     for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
@@ -663,18 +820,35 @@ public:
     }
     for(auto &fn:p.functions) {
       if(builtins.contains(fn.localName.empty()?fn.name:fn.localName)||!names.insert(fn.name).second)throw Error("E_DUPLICATE","duplicate or reserved function '"+fn.name+"'",fn.span);
+      if(fn.foreign){
+        if(fn.realm!="server")throw Error("E_REALM","external functions require server realm",fn.span);
+        if(!fn.effects.contains("ffi"))throw Error("E_EFFECT","external functions require declared effect ffi",fn.span);
+        if(fn.test||!fn.typeParameters.empty()||fn.closure)throw Error("E_FFI_DECLARATION","external declarations must be concrete named non-test functions",fn.span);
+        auto identifier=[](const std::string &v){auto letter=[](char c){return(c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_';};return !v.empty()&&v.size()<=128&&letter(v.front())&&std::all_of(v.begin(),v.end(),[&](char c){return letter(c)||(c>='0'&&c<='9');});};
+        const auto &binding=*fn.foreign;if(!identifier(binding.library)||!identifier(binding.symbol)||binding.manifest.size()!=64||binding.manifest.find_first_not_of("0123456789abcdef")!=std::string::npos)throw Error("E_FFI_BINDING","external binding requires logical ASCII library/export names and a lowercase SHA-256 manifest pin",fn.span);
+      }
       validType(fn.result,fn.span,true);
       for(auto &parameter:fn.params)validType(parameter.type,parameter.span);
-      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      for(const auto &effect:fn.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi")throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      if(fn.effects.contains("ffi")&&fn.realm!="server")throw Error("E_REALM","ffi effect requires a server function",fn.span);
       if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
+      if(fn.effects.contains("fs")&&fn.realm!="server")throw Error("E_REALM","fs effect requires a server function",fn.span);
       if(fn.test && (!fn.params.empty()||fn.result!=Type::Unit||!fn.typeParameters.empty()))throw Error("E_TEST","test must take no generic/value parameters and return unit",fn.span);
     }
+    checkImplementations(p);
     for(size_t i=0;i<p.functions.size();++i)functionBody(p.functions[i]);
     std::set<std::string> publicSeen;
     std::function<void(const Type&,Span)> publicType=[&](const Type &t,Span span){
-      if(t.element)publicType(*t.element,span);if(t.kind==Type::Function)for(const auto &argument:t.arguments)publicType(argument,span);
+      if(t.element)publicType(*t.element,span);for(const auto &argument:t.arguments)publicType(argument,span);
+      if(t.kind==Type::Projection&&!traitDefinition(p,t.name.substr(0,t.name.rfind("::")),span).exported)throw Error("E_VISIBILITY","public signature exposes a private trait",span);
+      if(t.kind==Type::Constructor&&p.hasStructure(t.name)&&!p.structure(t.name).exported)throw Error("E_VISIBILITY","public signature exposes a private constructor",span);
       if(t.kind==Type::Record){const auto &s=p.structure(t.name);if(!s.exported)throw Error("E_VISIBILITY","public API exposes private type '"+t.name+"'",span);if(publicSeen.insert(s.name).second){for(const auto &argument:s.typeArguments)publicType(argument,span);for(auto field:s.members())publicType(field->type,field->span);}}
     };
+    auto publicBounds=[&](const TypeBounds &bounds,Span span){for(const auto &values:bounds)for(const auto &bound:values)if(std::any_of(p.traits.begin(),p.traits.end(),[&](const auto &trait){return trait.name==bound&&!trait.exported;}))throw Error("E_VISIBILITY","public declaration exposes private trait bound",span);};
+    for(const auto &s:p.structures)if(s.exported&&s.templateName.empty())publicBounds(s.typeBounds,s.span);
+    for(const auto &fn:p.functions)if(fn.exported&&fn.templateName.empty())publicBounds(fn.typeBounds,fn.span);
+    for(const auto &trait:p.traits)if(trait.exported){for(const auto &[name,bounds]:trait.associated)publicBounds(TypeBounds{bounds},trait.span);for(const auto &method:trait.methods){publicType(method.result,method.span);for(const auto &param:method.params)publicType(param.type,param.span);publicBounds(method.typeBounds,method.span);}}
+    for(const auto &value:p.implementations){const auto &trait=traitDefinition(p,value.trait);bool exposed=trait.exported;if((value.self.kind==Type::Record||value.self.kind==Type::Constructor)&&p.hasStructure(value.self.name))exposed=exposed&&p.structure(value.self.name).exported;if(exposed)for(const auto &[name,type]:value.associated)publicType(resolveType(p,type,value.span),value.span);}
     for(const auto &s:p.structures)if(s.exported&&s.templateName.empty())for(auto field:s.members())publicType(field->type,field->span);
     for(const auto &fn:p.functions)if(fn.exported&&fn.templateName.empty()){publicType(fn.result,fn.span);for(const auto &param:fn.params)publicType(param.type,param.span);}
     std::set<std::string> operations,routes;
@@ -710,6 +884,7 @@ llvm::json::Value exprJSON(E e) {
   if(!e)return nullptr;
   llvm::json::Array args;for(auto a:e->args)args.push_back(exprJSON(a));
   llvm::json::Object result{{"kind",int64_t(e->kind)},{"operator",e->text},{"value",e->number},{"type",typeName(e->type)},{"args",std::move(args)}};
+  if(!e->traitContract.empty()){result["trait_contract"]=e->traitContract;result["implementation"]=e->implementation;llvm::json::Array types;for(const auto &type:e->traitArguments)types.push_back(typeName(type));result["trait_arguments"]=std::move(types);}
   if(e->kind==Expr::Lambda)result["lambda"]=canonical(*e->lambda);
   if(e->kind==Expr::Match){llvm::json::Array arms;for(auto arm:e->arms)arms.push_back(llvm::json::Object{{"pattern",canonicalPattern(arm->pattern)},{"guard",int64_t(arm->guard)},{"value",int64_t(arm->value)},{"body",blockJSON(arm->body)}});result["arms"]=std::move(arms);result["statement"]=e->statementMatch;}return result;
 }
@@ -720,83 +895,217 @@ llvm::json::Array blockJSON(const std::vector<S> &body) {
   return out;
 }
 }
-Program parse(std::string source,std::string path){
-  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){
-    Span span;span.begin=span.end=err.offset;span.file=path;
-    for(size_t i=0;i<err.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
-    throw Error(err.code,err.what(),span);
+namespace {
+void sourceUTF8(const std::string &source,const std::string &path,const std::string &kind){
+  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &error){
+    Span span;span.begin=span.end=error.offset;span.file=path;
+    for(size_t i=0;i<error.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
+    Error diagnostic(error.code,error.what(),span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true);throw diagnostic;
   }
-  return Parser(std::move(source),std::move(path)).run();
 }
-void check(Program &p){Checker(p).run();}
+}
+Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails).run();}
+std::vector<SourceToken> sourceTokens(const std::string &source,const std::string &file){
+  sourceUTF8(source,file,"unit");Lexer lexer(source,file);std::vector<SourceToken> result;
+  for(;;){auto token=lexer.next();if(token.kind==Token::End)break;
+    if(result.size()>=1000000)throw Error("E_ANALYSIS_LIMIT","editor source exceeds one million tokens");
+    result.push_back({std::move(token.text),std::move(token.span),token.kind==Token::Id});}
+  return result;
+}
+void check(Program &p){
+  try{Checker(p).run();}catch(Error &error){
+    std::map<std::string,std::string> sources;
+    for(const auto &[key,unit]:p.units)sources[key]=unit.source;
+    if(sources.empty())sources[p.path]=p.source;
+    attachFrontendDiagnostic(error,sources,p.units.empty()?p.path:p.entryUnit,p.units.empty()?"unit":"project","check",true);throw;
+  }
+}
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
-Type parseType(std::string source){return Parser(std::move(source),"<debug-type>").typeOnly();}
-E parseExpression(std::string source,std::string path,unsigned maxTokens){
-  try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),Span{1,1,err.offset,err.offset,path});}
-  return Parser(std::move(source),std::move(path),maxTokens).expressionOnly();
-}
+Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type").typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression").expressionOnly();}
+S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement").statementOnly();}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern").patternOnly();}
+llvm::json::Array canonicalKinds(const std::vector<std::string> &names,const std::vector<unsigned> &kinds){llvm::json::Array result;for(size_t i=0;i<names.size();++i)result.push_back(int64_t(i<kinds.size()?kinds[i]:0));return result;}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
   for(const auto &p:f.params)params.push_back(llvm::json::Object{{"name",p.name},{"type",typeName(p.type)}});
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format","nex.function/8"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  llvm::json::Object result{{"format","nex.function/13"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  result["type_parameter_kinds"]=canonicalKinds(f.typeParameters,f.typeArities);if(f.traitSignature)result["trait_owner"]=f.traitOwner;
+  if(f.foreign)result["foreign"]=llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}};
   if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
 }
 llvm::json::Value canonical(const Structure &s) {
   llvm::json::Array generic,arguments;for(const auto &parameter:s.typeParameters)generic.push_back(parameter);for(const auto &argument:s.typeArguments)arguments.push_back(typeName(argument));
-  llvm::json::Object result{{"format",s.enumeration?"nex.enum/3":"nex.structure/4"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  llvm::json::Object result{{"format",s.enumeration?"nex.enum/4":"nex.structure/5"},{"name",s.name},{"owner",s.owner},{"public",s.exported},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(s.typeParameters,s.typeBounds)},{"template",s.templateName},{"type_arguments",std::move(arguments)}};
+  result["type_parameter_kinds"]=canonicalKinds(s.typeParameters,s.typeArities);
   if(s.enumeration){llvm::json::Array variants;for(const auto &variant:s.variants){llvm::json::Array fields;for(const auto &field:variant.fields)fields.push_back(llvm::json::Object{{"name",field.name},{"type",typeName(field.type)}});variants.push_back(llvm::json::Object{{"name",variant.name},{"fields",std::move(fields)}});}result["variants"]=std::move(variants);}
   else{llvm::json::Array fields;for(const auto &f:s.fields)fields.push_back(llvm::json::Object{{"name",f.name},{"type",typeName(f.type)}});result["fields"]=std::move(fields);}return result;
 }
 llvm::json::Value canonical(const Endpoint &endpoint){
   return llvm::json::Object{{"format","nex.endpoint/1"},{"name",endpoint.name},{"method",endpoint.method},{"path",endpoint.path},{"success_status",endpoint.successStatus},{"handler",endpoint.target}};
 }
+llvm::json::Value canonical(const Trait &value){
+  llvm::json::Object items,methods;for(const auto &[name,bounds]:value.associated){llvm::json::Array values;for(const auto &bound:bounds)values.push_back(bound);items[name]=std::move(values);}for(const auto &method:value.methods)methods[method.name]=canonical(method);
+  return llvm::json::Object{{"format","nex.trait/1"},{"name",value.name},{"owner",value.owner},{"public",value.exported},{"self_kind",int64_t(value.selfArity)},{"associated_types",std::move(items)},{"methods",std::move(methods)}};
+}
+llvm::json::Value canonical(const Implementation &value){
+  llvm::json::Object aliases,methods;for(const auto &[name,type]:value.associated)aliases[name]=typeName(type);for(const auto &[name,method]:value.methods){llvm::json::Array types;for(const auto &type:method.typeArguments)types.push_back(typeName(type));methods[name]=llvm::json::Object{{"target",method.target},{"type_arguments",std::move(types)}};}
+  llvm::json::Array parameters;for(const auto &name:value.typeParameters)parameters.push_back(name);
+  return llvm::json::Object{{"format","nex.implementation/1"},{"name",value.name},{"owner",value.owner},{"public",value.exported},{"trait",value.trait},{"self",typeName(value.self)},{"type_parameters",std::move(parameters)},{"type_parameter_kinds",canonicalKinds(value.typeParameters,value.typeArities)},{"type_bounds",canonicalBounds(value.typeParameters,value.typeBounds)},{"associated_types",std::move(aliases)},{"methods",std::move(methods)}};
+}
 std::string revision(const Program &p) {
   std::map<std::string,std::string> ordered;
-  for(const auto &f:p.functions)if(f.templateName.empty()&&!f.closure)ordered[f.name]=json(canonical(f),false);
+  for(const auto &f:p.functions)if(f.templateName.empty()&&!f.closure&&!f.traitSignature)ordered[f.name]=json(canonical(f),false);
   llvm::json::Object functions;for(const auto &[name,text]:ordered)functions[name]=text;
   llvm::json::Object structures;for(const auto &s:p.structures)if(s.templateName.empty())structures[s.name]=canonical(s);
   llvm::json::Object modules;
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
-  return hash(json(llvm::json::Object{{"format","nex.program/9"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)}},false));
+  llvm::json::Object traits,implementations;for(const auto &value:p.traits)traits[value.name]=canonical(value);for(const auto &value:p.implementations)implementations[value.name]=canonical(value);
+  return hash(json(llvm::json::Object{{"format","nex.program/14"},{"language",languageVersion},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"types",llvm::json::Array{"i64","bool","unit","str","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
-    {"effects",llvm::json::Array{"io","db"}},
+    {"wasm_features",llvm::json::Object{{"source_support",true},{"status","experimental_scalar_compute_validation_pending"},
+      {"command","nex build FILE --target wasm --entry NAME --profile debug|release --json"},{"guide","docs/wasm.md"},
+      {"target","wasm32-unknown-unknown"},{"abi",1},{"types",llvm::json::Array{"i64","bool","unit"}},
+      {"realms",llvm::json::Array{"shared","client"}},{"effects",llvm::json::Array{}},
+      {"javascript_i64","BigInt"},{"host_imports",false},{"wrapper","(await createNexWasm(bytes)).call(argumentArray, {budget})"},
+      {"limits",llvm::json::Object{{"functions",128},{"operations",8192},{"function_operations",512},{"parameters",32},{"call_depth",64},{"maximum_budget",10000000},{"memory_bytes",16777216},{"module_bytes",8388608}}},
+      {"pending",llvm::json::Array{"full_current_regression","native_reference_typescript_wasm_matrix","actual_browsers","installed_and_portable_sdk","comparable_performance","general_wasm_applications","wasi","f64","heap_values"}}}},
+    {"types",llvm::json::Array{"i64","f64","bool","unit","str","bytes","file","list<T>","result<T>","nominal structures","nominal enums","user generic types","function values"}},
+    {"effects",llvm::json::Array{"io","db","fs","ffi"}},
+    {"file_features",llvm::json::Array{"strict_utf8_text","explicit_directory_capability","read_only_default","atomic_text_replacement","immutable_binary_files","atomic_binary_replacement","bounded_bytes_and_paths","host_owned_descriptors","cooperative_operation_polling","no_implicit_http_capability"}},
+    {"file_limits",llvm::json::Object{{"text_bytes",1048576},{"binary_bytes",1048576},{"path_bytes",4096},{"path_components",128}}},
+    {"file_platforms",llvm::json::Array{"macos","linux"}},
+    {"file_environment",llvm::json::Object{{"root","NEX_FILES_ROOT"},{"write","NEX_FILES_WRITE=1"},{"http_inherits_environment",false}}},
+    {"file_guide","docs/files.md"},
+    {"resource_guide","docs/resources.md"},
+    {"foreign_boundary",llvm::json::Object{
+      {"source_support",true},{"status","experimental_source_ffi"},{"abi_version",1},
+      {"header","runtime/nex_ffi.h"},{"host_header","runtime/nex_ffi_host.h"},{"guide","docs/ffi-design.md"},
+      {"signature_schema","nex.foreign-signature/1"},{"signature_command","nex ffi FILE --symbol NAME --json"},
+      {"invocation_context",llvm::json::Object{{"source_support",true},{"host_schema","nex.foreign-host/1"},{"binding_schema","nex.foreign-binding/1"},{"header","runtime/nex_foreign.h"},{"native_header","runtime/nex_foreign_abi.h"},{"features",llvm::json::Array{"explicit_regular_file_catalogue","relative_operator_paths","no_ambient_grants","lexical_thread_contexts","snapshotted_call_storage","bounded_binding_cache","request_rebinding","native_managed_value_bridge","sticky_native_source_traps","terminal_module_cleanup"}},{"limits",llvm::json::Object{{"configuration_bytes",1048576},{"binding_bytes",1048576},{"cached_bindings",4096},{"cached_binding_utf8_bytes",67108864},{"scope_depth",64},{"arguments",4096}}}}},
+      {"module_loading",llvm::json::Object{{"source_support",true},{"schema","nex.foreign-bundle/1"},{"abi_version",1},{"header","runtime/nex_ffi_module.h"},{"host_header","runtime/nex_ffi_loader.h"},{"platforms",llvm::json::Array{"macos-arm64","macos-x86_64","linux-arm64","linux-x86_64"}},{"features",llvm::json::Array{"explicit_host_export_grants","manifest_and_signature_pins","preload_member_hashes","private_snapshot","typed_calls","resource_scope_revocation","physical_image_leases","cooperative_cancellation","content_addressed_image_cache"}},{"limits",llvm::json::Object{{"manifest_bytes",1048576},{"files",128},{"member_bytes",67108864},{"bundle_bytes",268435456},{"exports",1024},{"host_grants",128}}}}},
+      {"features",llvm::json::Array{"source_external_declarations","server_ffi_effect","pinned_source_bindings","interpreter_native_calls","browser_server_exclusion","call_scoped_tokens","copied_utf8_and_bytes","immutable_aggregate_inspection","owned_value_forwarding","sticky_host_traps","cooperative_polling","thread_checked_contexts","typed_input_validation","typed_return_validation","nominal_builders","borrowed_callable_authority","unit_results","legacy_c_table_prefix"}},
+      {"default_limits",llvm::json::Object{{"references",4096},{"copied_bytes",1048576},{"operations",65536}}},
+      {"pending",llvm::json::Array{"current_platform_validation","callbacks_into_nex","stable_abi_validation"}}}},
+    {"resource_features",llvm::json::Array{"server_file_type","identity_aliases","owned_aggregate_and_capture_values","explicit_close","scope_revocation","bounded_streaming_io","opaque_pure_debug_identity","no_wire_or_browser_authority"}},
+    {"host_resource_runtime",llvm::json::Object{
+      {"source_support",true},{"status","development_source_files"},{"design","docs/resources-design.md"},
+      {"features",llvm::json::Array{"typed_alias_owners","physical_operation_leases","ancestor_revocation","physical_quotas","streaming_regular_files","managed_file_values","profiled_owned_payloads","nested_json_resource_rejection","native_streaming_boundary","joined_request_capabilities"}},
+      {"limits",llvm::json::Object{{"default_domain_resources",64},{"maximum_domain_resources",4096},{"domain_depth",8},{"file_call_bytes",1048576}}},
+      {"pending",llvm::json::Array{"general_resource_types","stable_ffi_abi","async_tasks","full_platform_sdk_validation"}}}},
     {"realms",llvm::json::Array{"shared","client","server"}},
     {"features",llvm::json::Array{"functions","recursion","let","var","assignment","if","while","short_circuit","checked_i64","tests","unicode_strings","immutable_lists","structures","algebraic_enums","exhaustive_match","automatic_reference_counting","modules","imports","public_exports","source_bundles","dependency_locks","typescript_backend","web_ui","web_state_update_view","web_request_commands","web_request_cancellation","client_reachability","recoverable_results","typed_json","native_libraries","request_scopes","sqlite_storage","native_http","native_https","principal_storage","cooperative_request_cancellation"}},
-    {"builtins",llvm::json::Array{"print(T) -> unit !{io}","assert(bool) -> unit","len(str|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","set(list<T>, i64, T) -> list<T>","slice(str, i64, i64) -> str","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]"}},
+    {"builtins",llvm::json::Array{"as_f64(i64) -> f64","as_i64(f64) -> result<i64>","print(T) -> unit !{io}","assert(bool) -> unit","len(str|bytes|list<T>) -> i64","str(T) -> str","push(list<T>, T) -> list<T>","push(bytes, i64) -> bytes","set(list<T>, i64, T) -> list<T>","set(bytes, i64, i64) -> bytes","slice(str, i64, i64) -> str","slice(bytes, i64, i64) -> bytes","contains(str, str) -> bool","ok(T) -> result<T>","err<T>(str, str) -> result<T>","is_ok(result<T>) -> bool","unwrap(result<T>) -> T","error_code(result<T>) -> str","error_message(result<T>) -> str","encode_json(T) -> str","decode_json<T>(str) -> result<T>","read_env(str) -> result<str> !{io} [server]","store_get(str) -> result<str> !{db} [server]","store_put(str, str) -> result<bool> !{db} [server]","store_remove(str) -> result<bool> !{db} [server]","store_keys(str) -> result<list<str>> !{db} [server]","file_read_text(str) -> result<str> !{fs} [server]","file_write_text(str, str) -> result<bool> !{fs} [server]","bytes(list<i64>) -> result<bytes>","utf8_bytes(str) -> bytes","decode_utf8(bytes) -> result<str>","encode_base64(bytes) -> str","decode_base64(str) -> result<bytes>","file_read_bytes(str) -> result<bytes> !{fs} [server]","file_write_bytes(str, bytes) -> result<bool> !{fs} [server]","file_open_read(str) -> result<file> !{fs} [server]","file_open_write(str) -> result<file> !{fs} [server]","file_open_append(str) -> result<file> !{fs} [server]","file_read(file, i64) -> result<bytes> !{fs} [server]","file_write(file, bytes) -> result<i64> !{fs} [server]","file_seek(file, i64) -> result<i64> !{fs} [server]","file_size(file) -> result<i64> !{fs} [server]","file_flush(file) -> result<bool> !{fs} [server]","file_close(file) -> bool !{fs} [server]","file_is_open(file) -> bool !{fs} [server]"}},
+    {"binary_features",llvm::json::Array{"immutable_contiguous_octets","retained_slice_owners","copied_mutable_host_boundaries","checked_byte_updates","strict_utf8_codecs","canonical_padded_base64","typed_json_base64","binary_files","generic_add_and_wire","bounded_binary_watches"}},
+    {"binary_limits",llvm::json::Object{{"octet_min",0},{"octet_max",255},{"standalone_json_raw_bytes",786429},{"partial_watch_slice_octets",255}}},
+    {"binary_guide","docs/bytes.md"},
+    {"binary_integration_pending",llvm::json::Array{"full_source_regression_and_migration_validation","full_platform_and_installed_sdk_validation"}},
+    {"numeric_features",llvm::json::Array{"finite_binary64","decimal_exponent_literals","checked_f64","explicit_numeric_conversions","numeric_wire_numbers","generic_number_bound"}},
+    {"numeric_limits",llvm::json::Object{{"literal_bytes",4096}}},
+    {"numeric_integration_pending",llvm::json::Array{"full_platform_and_installed_sdk_validation"}},
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals"}},
-    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","str","list<T>"}},{"ordered",llvm::json::Array{"i64"}},{"integer",llvm::json::Array{"i64"}},{"wire","recursive scalar/list/result/nominal payloads without function values"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","generic_trait_methods","static_trait_dispatch"}},
+    {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values or file types, including phantom file arguments"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},
     {"function_value_guide","docs/functions.md"},
     {"generic_limits",llvm::json::Object{{"parameters",64},{"instances_per_kind",4096},{"type_expansion_depth",64},{"source_type_depth",128},{"instance_name_bytes",4096}}},
-    {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch"}},
-    {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads"}},
+    {"api_features",llvm::json::Array{"endpoint_declarations","api_generation","openapi_3_1","typed_request_validation","generated_client_helpers","generated_server_dispatch","associated_model_projection","constructor_model_parameters","client_trait_library_projection","filtered_server_trait_members"}},
+    {"editor_features",llvm::json::Array{"installed_vscode_extension_sources","fresh_compiler_debug_session","byte_checked_original_source_mapping","frozen_source_fallback","workspace_trust_gate","vscode_stdio_language_client","unsaved_source_diagnostics","checked_hover_definition_symbols","versioned_document_updates","checked_symbol_references","project_architecture_debug_launch","pinned_project_launch_plans","dirty_project_buffer_gate"}},
+    {"editor_extension_manifest","editor/vscode/package.json"},
+    {"editor_project_debug",llvm::json::Object{{"command","nex.debugProject"},{"extension_version","0.6.0"},{"launch_field","project"},{"fields",llvm::json::Array{"manifest","component","configuration"}},{"native_executable_only",true},{"plan_checks","before and after native debug preparation"},{"declared_binary_dependencies",true},{"unsaved_compiled_sources_rejected",true},{"guide","docs/editor.md"}}},
+    {"editor_analysis",llvm::json::Object{{"command","nex analyze FILE [--overlay FILE] --json"},{"schema","nex.analysis/1"},{"guide","docs/lsp.md"},{"overlay_schema","llm/editor-overlay.schema.json"},{"analysis_schema","llm/editor-analysis.schema.json"},{"references_command","nex analyze FILE --references [--overlay FILE] --json"},{"references_schema","llm/editor-references.schema.json"},{"references_format","nex.analysis/2"},{"identifiers_command","nex analyze FILE --details [--overlay FILE] --json"},{"identifiers_schema","llm/editor-identifiers.schema.json"},{"identifiers_format","nex.analysis/3"},{"identifiers_limits",llvm::json::Object{{"entries",200000},{"identifier_json_bytes",8388608},{"detail_utf8_bytes",16384}}},{"references_coverage",llvm::json::Array{"function_calls_and_values","lexical_declarations_reads_writes","nominal_constructor_calls_patterns","struct_fields","type_annotations_and_arguments","lexical_type_parameters","trait_contracts_and_implementation_bindings","enum_variant_declarations","import_aliases"}},{"references_limits",llvm::json::Object{{"locations",10000},{"result_bytes",8388608}}},{"references_pending",llvm::json::Array{"closed_unreachable_files","cross_workspace_buffers"}},{"graph_writes",false},{"source_writes",false},{"execution",false}}},
+    {"language_server",llvm::json::Object{{"command","nex lsp"},{"protocol","LSP 3.17"},{"transport","stdio"},{"position_encoding","utf-16"},{"sync","full"},{"adapter","editor/lsp/server.py"},{"editor_client","editor/vscode/language.js"},{"vscode_extension_version","0.6.0"},{"methods",llvm::json::Array{"diagnostics","hover","definition","documentSymbol","references"}},{"status","development_validation_pending"}}},
+    {"editor_integration_pending",llvm::json::Array{"current_compiler_sdk_acceptance","wider_ide_platform_matrix","lsp_wider_editor_matrix","lsp_completion_references_rename","studio","marketplace_publication"}},
+    {"debug_features",llvm::json::Array{"dwarf_parameters","dwarf_locals","lexical_scopes","bounded_value_previews","read_only_frame_json","lldb_dap_launch","checked_pure_expressions","exact_typed_frame_capture","isolated_expression_interpreter","nex_dap_watches","paged_computed_values","demand_driven_aggregate_reads","paged_native_indexed_roots","bounded_backend_variables_requests","constant_time_indexed_child_lookup","frame_module_identity_guard","core_recorded_mapping_image_guard"}},
+    {"native_debug_image_binding",llvm::json::Object{{"selected_frame","executable_or_captured_owned_native_image"},{"function_names_are_not_image_identity",true},{"owned_image_hash","sha256"},{"owned_image_uuid",true},{"requires_matching_manifest",true},{"linux_core_requires_recorded_mapping",true},{"ambiguous_same_path_image_rejected",true},{"content_addressed_build_directory",true},{"recorded_mapping_sources",llvm::json::Array{"minidump_memory_region","elf_nt_file"}}}},
+    {"native_core",llvm::json::Object{{"schema","nex.core-report/1"},{"guide","docs/core-debugging.md"},{"reader","debug/core_report.py"},{"formats",llvm::json::Array{"elf64","macho64","minidump64"}},{"readonly",true},{"requires_retained_build",true},{"requires_matching_compiler",true},{"portable_capsule",true},{"owned_images",true},{"capsule",llvm::json::Object{{"schema","nex.core-capsule/1"},{"schema_document","llm/core-capsule.schema.json"},{"helper","tools/core_capsule.py"},{"matching_host_only",true},{"original_paths_required",false},{"source_foreign_declarations",false},{"non_system_dependencies",false},{"captured_first_party_images",true},{"file_limit",int64_t(4096)},{"total_bytes_limit",int64_t(35433480192)},{"copy_timeout_seconds",int64_t(900)}}},{"operation_precision","explicit_source_candidates"},{"limits",llvm::json::Object{{"core_bytes",int64_t(32)*1024*1024*1024},{"threads",64},{"frames",64},{"timeout_seconds_default",60},{"timeout_seconds_maximum",300}}}}},
+    {"native_debug_pages",llvm::json::Object{{"root_types",llvm::json::Array{"list<T>","bytes"}},{"page_items",1000},{"maximum_index",2147483647},{"maximum_indexed_children",2147483647},{"page_schema","llm/dap-native-page.schema.json"},{"metadata_field","body.nex.native_page"},{"requires_matching_nex_dap_bridge",true},{"native_preview_not_exact_wire_value",true}}},
     {"debug_guide","docs/debugging.md"},
-    {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index"}},
-    {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",3},
+    {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index","persistent_module_ids","persistent_type_ids","paged_declaration_context","transitive_dependency_context","snapshot_scoped_identity_reconciliation","atomic_identity_pages","history_preserving_declaration_backfill"}},
+    {"diagnostic_features",llvm::json::Array{"native_operation_sites","native_application_identity","manifest_checked_trap_mapping","archived_native_log_mapping","bounded_native_trap_records","request_operator_diagnostics"}},
+    {"native_diagnostic_guide","docs/native-diagnostics.md"},{"native_diagnostic_schema","llm/native-diagnostics.schema.json"},
+    {"native_application_lifetime",llvm::json::Object{{"normal_and_checked_failure_cleanup",true},{"checked_failure_exit",70},{"request_capabilities_added",false},{"request_budgets_added",false},{"embedding_request_scope","explicit"},{"forced_termination_cleanup",false},{"guide","docs/incremental.md"}}},
+    {"native_diagnostic_limits",llvm::json::Object{{"record_bytes",65536},{"records",32},{"source_descriptor_bytes",16384},{"message_input_bytes",4096},{"code_input_bytes",128},{"log_bytes",4194304},{"manifest_bytes",67108864},{"json_depth",64}}},
+    {"operation_guide","docs/operations.md"},{"operation_schema","llm/operations.schema.json"},{"operation_identity_policy","nex.operation-identity/1"},{"graph_database_schema",4},
+    {"history_features",llvm::json::Array{"atomic_head_transition_journal","exact_archived_source_hashes","declared_change_labels","paged_changes","optimistic_archived_restore","history_preserving_schema4"}},
+    {"history_limits",llvm::json::Object{{"page_records",1000},{"maximum_offset",10000000},{"note_bytes",1024},{"actor_bytes",128},{"record_bytes",16384}}},
+    {"history_guide","docs/history.md"},{"history_schema","llm/history.schema.json"},
+    {"snapshot_features",llvm::json::Array{"consistent_sqlite_backup","committed_wal_capture","preserved_graph_rows_and_ids","no_source_schema_migration","new_directory_recovery","source_deleted_replay","sha256_database_manifest","cooperative_deadline"}},
+    {"snapshot_limits",llvm::json::Object{{"manifest_bytes",65536},{"json_depth",16},{"tables",64},{"timeout_seconds_default",60},{"timeout_seconds_minimum",1},{"timeout_seconds_maximum",3600}}},
+    {"snapshot_external_artifacts_included",false},{"snapshot_guide","docs/snapshots.md"},{"snapshot_schema","llm/graph-snapshot.schema.json"},
+    {"project_features",llvm::json::Array{"declared_source_language_guard","root_version_preflight_before_store","reachable_library_language_guard","declared_project_schema_guard","legacy_omitted_metadata","archived_manifest_independence"}},
+    {"project_manifest_schema","llm/project.schema.json"},{"compatibility_guide","docs/compatibility.md"},
+    {"project_build",llvm::json::Object{{"manifest_schema","nex.project-build/1"},{"manifest_file","nex.build.json"},{"schema_file","llm/project-build.schema.json"},{"guide","docs/project-build.md"},{"plan_command","nex project --kind plan --json"},{"build_command","nex project --kind build --json"},{"package_command","nex project --kind package --directory NEW_DIRECTORY --json"},{"test_build_command","nex project --kind build-test --component NAME --symbol TEST --json"},{"project_task_guide","docs/project-tasks.md"},{"project_capture_schema","llm/project-capture.schema.json"},{"run_command","nex project --kind run --component NAME --json"},{"test_command","nex project --kind test --json"},{"debug_command","nex project --kind debug --component NAME --adapter nex-dap --json"},{"profile_command","nex project --kind profile --component NAME --configuration PROFILE_CONFIG --json"},{"action_schema_file","llm/project-action.schema.json"},{"package_schema","nex.project-package/1"},{"package_schema_file","llm/project-package.schema.json"},{"artifact_kinds",llvm::json::Array{"source","executable","static_library","shared_library","server","web"}},{"dependency_linkage",llvm::json::Array{"source","static","dynamic"}},{"features",llvm::json::Array{"disjoint_component_roots","checked_direct_import_edges","acyclic_component_dependencies","named_build_configurations","readonly_checked_plan","captured_source_closures","native_and_web_artifacts","checked_static_archive_consumption","multiple_concrete_library_exports","single_application_runtime","macos_linux_shared_images","captured_owned_image_closure","shared_image_lldb_frames","shared_image_core_capsules","project_application_packages","project_web_distribution_packages","project_binary_execution","project_owned_tests","project_test_build_only","project_architecture_tasks","project_architecture_replay","project_native_debug_descriptors","project_native_profiles","captured_project_diagnostics","explicit_consumer_template_instantiations","no_graph_head_synchronization"}},{"limits",llvm::json::Object{{"manifest_bytes",262144},{"components",128},{"configurations",32},{"selected_source_bytes",67108864},{"plan_bytes",8388608},{"tests",256},{"test_response_bytes",32768}}},{"pending",llvm::json::Array{"windows_dll_output","project_foreign_pin_projection","packaged_debug_provenance","server_workload_profile_and_debug","project_editor_commands","fully_static_executables","resolved_artifact_dependency_report","source_concurrency","gpu_npu_adapters"}}}},
+    {"string_debug_features",llvm::json::Array{"unicode_scalar_shape","bounded_text_range_captures","whole_string_compatibility","binding_and_callable_alias_range_consistency","readonly_utf8_streaming_provider","per_stop_checkpoint_cache"}},
+    {"string_debug_limits",llvm::json::Object{{"range_scalars",4096},{"range_bytes",16384},{"provider_chunk_bytes",65536},{"provider_scan_bytes",32*1048576},{"observed_text_scalars",100000}}},
+    {"string_debug_capture_kind","text_range"},{"string_debug_guide","docs/string-debug.md"},{"string_debug_schema","llm/text-range.schema.json"},
+    {"graph_query_features",llvm::json::Array{"literal_symbol_search","literal_source_search","bounded_declaration_preview","archived_input_selection","paged_dependency_radius","reverse_static_references","explicit_depth_boundary","independent_node_edge_pages","revision_source_namespace_query_identity"}},
+    {"graph_query_entities",llvm::json::Array{"module","type","function","endpoint"}},
+    {"graph_query_limits",llvm::json::Object{{"query_bytes",1024},{"symbol_bytes",8192},{"label_bytes",8192},{"id_bytes",128},{"preview_bytes",2048},{"page_rows",1000},{"offset",10000000},{"depth",8},{"collection_budget_bytes",65536},{"response_bytes",262144}}},
+    {"graph_query_guide","docs/queries.md"},{"graph_query_schema","llm/graph-query.schema.json"},
+    {"frontend_diagnostic_features",llvm::json::Array{"captured_source_inputs","parser_binder_checker_context","explicit_partial_source_closure","bounded_utf8_or_base64_preview","content_diagnostic_identity","uncommitted_candidate_context","watch_frame_bound_context","preserved_runtime_operation_metadata"}},
+    {"frontend_diagnostic_limits",llvm::json::Object{{"preview_bytes",4096},{"label_bytes",1024}}},
+    {"frontend_diagnostic_guide","docs/frontend-diagnostics.md"},{"frontend_diagnostic_schema","llm/frontend-diagnostics.schema.json"},
+    {"graph_identity_policy","nex.graph-identity/1"},{"graph_identity_schema",1},{"graph_guide","docs/graph.md"},{"graph_schema","llm/graph-identity.schema.json"},
+    {"patch_entities",llvm::json::Array{"function","endpoint","type","operation","trait","impl"}},
+    {"patch_features",llvm::json::Array{"expected_head","whole_bundle_recheck","atomic_multi_module","explicit_definition_kind","source_type_templates","source_trait_implementations","persistent_declaration_ids","local_operation_replacements","exact_source_guard","single_syntax_fragment","overlap_rejection","isolated_comment_boundaries"}},
+    {"operation_source_kinds",llvm::json::Array{"expression","statement","pattern"}},
+    {"patch_limits",llvm::json::Object{{"file_bytes",4194304},{"json_depth",64},{"replacements",1000},{"fragment_tokens",100000},{"source_preview_bytes",4096}}},
+    {"parser_limits",llvm::json::Object{{"syntax_recursion",256},{"expression_chain",256},{"expression_tree_depth",256}}},
+    {"graph_identity_limits",llvm::json::Object{{"declaration_nodes",100000},{"dependency_edges",2000000},{"page_nodes",1000},{"manifest_bytes",4194304},{"context_source_bytes",4096},{"context_definition_bytes",8192},{"context_references",100},{"symbol_bytes",8192},{"operation_path_bytes",8192},{"id_bytes",128}}},
     {"expression_guide","docs/expressions.md"},{"debug_frame_schema","llm/debug-frame.schema.json"},
     {"partial_debug_frame_schema","llm/debug-frame-v2.schema.json"},{"debug_frame_protocols",llvm::json::Array{"nex.debug-frame/1","nex.debug-frame/2"}},
     {"debug_wire_schema","llm/debug-wire.schema.json"},{"debug_value_protocol","nex.debug-wire/1"},{"debug_runtime_view","nex.runtime-view/3"},{"debug_expression_protocol","nex.debug-expression/3"},
-    {"build_features",llvm::json::Array{"native_module_compilation","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy"}},
+    {"build_features",llvm::json::Array{"native_checked_i64_ssa","cold_integer_failure_calls","cold_native_assertions","native_module_compilation","native_function_compilation","function_source_invalidation","frozen_debug_source_maps","interface_type_invalidation","verified_native_object_cache","compilation_dependency_index","explicit_native_toolchains","target_abi_probe","architecture_isolated_caches","macos_cross_compilation","linux_native","explicit_linker_selection","streamed_artifact_copy","relative_host_sdk","explicit_archive_debug_tools","ios_explicit_sdk_archives","windows_explicit_gnu_ucrt_core"}},
+    {"windows_core_target",llvm::json::Object{{"architectures",llvm::json::Array{"x86_64","aarch64"}},{"environment","gnu"},
+      {"runtime","ucrt-static"},{"artifacts",llvm::json::Array{"executable","static_library"}},{"profiles",llvm::json::Array{"debug","release"}},
+      {"explicit_toolchain",true},{"explicit_component_notices",true},{"host_execution",false},{"application_packaging",false},
+      {"database",true},{"explicit_target_sqlite",true},{"files",false},{"environment_access",true},
+      {"environment_encoding","strict_utf8_utf16"},{"source_foreign_loading",false},{"profiling",false},{"guide","docs/windows.md"}}},
+    {"ios_archive_target",llvm::json::Object{{"host","macos"},{"artifact","static_library"},{"device_architectures",llvm::json::Array{"arm64"}},
+      {"simulator_architectures",llvm::json::Array{"arm64","x86_64"}},{"profiles",llvm::json::Array{"debug","release"}},
+      {"explicit_toolchain",true},{"explicit_sysroot",true},{"versioned_target",true},{"host_execution",false},
+      {"application_packaging",false},{"source_foreign_loading",false},{"guide","docs/ios.md"}}},
+    {"mobile_project_generation",llvm::json::Object{{"tool","tools/mobile_project.py"},{"guide","docs/mobile.md"},
+      {"platforms",llvm::json::Array{"ios","android"}},{"ui","webview"},{"source_backend","typescript-react"},
+      {"capacitor_version","8.5.3"},{"artifact","native_project"},{"ios_dependencies","checksum_pinned_local_xcframework"},
+      {"api_origin_option","--api-origin"},{"api_transport","bounded_https_fetch_cors"},{"api_credentials","runtime_bearer"},
+      {"offline_cache",true},{"automatic_signing",false},{"automatic_installation",false},{"native_archive_target",false}}},
+    {"server_cors",llvm::json::Object{{"option","--cors-origin"},{"maximum_origins",16},{"wildcards",false},{"cookies",false},{"preflight_authentication",false},{"api_authentication","bearer"},{"guide","docs/mobile-api.md"}}},
+    {"host_sdk_schema","llm/sdk-host.schema.json"},{"sdk_bundle_tool","tools/sdk_bundle.py"},{"sdk_bundle_platforms",llvm::json::Array{"macos","linux"}},
+    {"application_package_command","nex package [file] --directory NEW [--target server] [--foreign HOST.json] [--notices FILE] [--dpkg-notices] --json"},
+    {"application_package_platforms",llvm::json::Array{"macos","linux"}},
+    {"application_package_schema","llm/application-package.schema.json"},
+    {"application_package_guide","docs/packaging.md"},
+    {"application_package_foreign",llvm::json::Object{{"source_support",true},
+      {"projection_schema","llm/foreign-projection.schema.json"},
+      {"preparation_schema","llm/foreign-package.schema.json"},
+      {"features",llvm::json::Array{"explicit_operator_grant","reachable_library_exports","recursive_native_dependencies","complete_component_notices","relocated_manifest_pins","checked_source_projection","preserved_graph_history","preserved_module_image_identity","executable_relative_catalogue","captured_file_integrity"}},
+      {"catalogue_capture_limits",llvm::json::Object{{"bytes",134217728},{"files",8190},{"notice_member_bytes",67108864}}},
+      {"limits",llvm::json::Array{"matching_host_target","native_loader_dependencies_only","trusted_native_code","current_platform_validation_pending"}}}},
+    {"application_package_limits",llvm::json::Array{"host_platform_assembly","external_platform_runtime","execution_verified_separately","no_web_assets_or_runtime_secrets","no_gui_installer_or_notarization"}},
     {"native_toolchain_schema","llm/toolchain.schema.json"},{"native_target_policy","64-bit host ABI; macOS arm64/x86_64 cross-builds on macOS; run/test/debug/profile require host architecture; target libraries must be supplied for cross-storage/server builds"},
     {"build_guide","docs/incremental.md"},{"linux_guide","docs/linux.md"},{"toolchain_fingerprint","nex.toolchain-snapshot/2"},
     {"profile_features",llvm::json::Array{"native_function_instrumentation","graph_attributed_wall_time","bounded_trace_events","managed_shallow_allocations","tracy_cpu_zones","tracy_named_memory_pools"}},
     {"profile_guide","docs/profiling.md"},
     {"verification_features",llvm::json::Array{"snapshot_bound_contracts","z3_checked_scalar_proofs","inductive_while_invariants","loop_termination_rankings","inlined_pure_calls","counterexample_models","replayable_smt_queries","explicit_unproven_status"}},
     {"verification_guide","docs/verification.md"},
-    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay"}},
+    {"task_features",llvm::json::Array{"task_contracts","pinned_acceptance_intent","requirement_graph_linkage","multi_program_snapshots","acceptance_checks","checkpointed_receipts","task_input_replay","isolated_replay_graph","readonly_receipt_replay","process_group_cleanup","pinned_native_toolchains","foreign_build_acceptance","trusted_toolchain_replay","reviewed_foreign_catalogues","captured_foreign_inventory","trusted_foreign_replay","owned_foreign_temporary_files","project_architecture_tasks","project_architecture_replay","project_configurations","direct_project_native_supervision","project_task_packages","pinned_package_notices"}},
     {"task_guide","docs/tasks.md"},{"task_schema","llm/task.schema.json"},
-    {"not_yet_supported",llvm::json::Array{"custom_traits","higher_kinded_types","async","wasm","gpu","ffi_declarations","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
+    {"task_catalogue_command","nex foreign HOST.json --json"},{"task_foreign_field","foreign_hash"},
+    {"trait_features",llvm::json::Array{"parametric_contracts","named_implementations","associated_value_types","constructor_kinds","generic_methods","ordinary_function_bindings","static_dispatch","method_references","overlap_rejection","orphan_ownership","finite_witnesses","source_declaration_patches","history_preserving_015_migration"}},
+    {"trait_limits",llvm::json::Object{{"declarations",4096},{"implementations",4096},{"members_per_trait",1024},{"self_plus_method_parameters",64},{"constructor_arity",64},{"obligation_depth",64},{"obligation_steps",4096}}},
+    {"trait_integration_pending",llvm::json::Array{"full_current_regression","installed_sdk","linux_matrix","extended_generic_watch_context","trait_projection_full_matrix","release_sanitizers"}},
+    {"not_yet_supported",llvm::json::Array{"async","general_wasm_applications","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 }

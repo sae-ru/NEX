@@ -1,0 +1,34 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T14:00:43.583597+00:00",
+  "status": "scoped_distribution_passed_root_validation_pending",
+  "ok": true,
+  "toolchain": "0.56.1",
+  "language": "0.16",
+  "source_manifest": "build/sdk-distribution-0561-native-linker-validation-snapshot.json",
+  "frozen_implementation_files": 597,
+  "checks": {
+    "macos_base": "sdk-distribution-0.56.1-macos-base.json",
+    "focused": "sdk-distribution-0.56.1-focused.json",
+    "linux": "sdk-distribution-0.56.1-linux.json",
+    "macos_portable": "sdk-distribution-0.56.1-macos-portable.json",
+    "linux_portable": "sdk-distribution-0.56.1-linux-portable.json",
+    "browsers": "sdk-distribution-0.56.1-browsers.json"
+  },
+  "macos_full_scope": "Preceding594 full67. The exact subsequent backend delta and source FFI/SDK changes pass3 focused groups29 cases, actual copied @rpath Crypto regression and both portable SDK20 workflows. Current root full67 remains mandatory.",
+  "linux_full_scope": "Exact597 frozen source; full67,12 live debugger suites and source-free SDK20.",
+  "retained_failures": [
+    "sdk-distribution-0.56.1-588-macos-failed-full.json",
+    "sdk-distribution-0.56.1-ffi-linker-failure.json",
+    "sdk-distribution-0.56.1-native-linker-failure.json",
+    "sdk-distribution-0.56.1-lldb-breakpoint-failure.json"
+  ],
+  "root": "Promotion and current root build/full67/SDK20 pending",
+  "accepted_release": false,
+  "full_objective_complete": false,
+  "remaining": [
+    "Complete source/runtime/async/platform/diagnostic/LLM requirements in PLAN.md",
+    "Root validation",
+    "Wider device/platform/release and sanitizer matrix"
+  ]
+}

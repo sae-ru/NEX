@@ -1,0 +1,170 @@
+{
+  "schema": "nex.development-evidence/1",
+  "created": "2026-10-19T14:43:42.744948+00:00",
+  "ok": true,
+  "toolchain": "0.57.0",
+  "language": "0.16",
+  "scope": "Actual isolated compiler focused/LLDB and installed VSIX checks; complete full68/Linux/SDK21/portable gates remain separate and pending. Root606 remains0.56.1 while its frozen full67 gate runs.",
+  "compiler_sha256": "60843de6ec7a4ce473317feac046bc0f5d77ba2d56d14feb4a5cb9c1b4e3e8b3",
+  "build": "50489 exit0;j4",
+  "focused_groups": 6,
+  "focused_python_cases": 42,
+  "focused_python_groups": 6,
+  "focused_seconds": 77.27,
+  "actual_lldb_dap_cases": 1,
+  "actual_installed_vsix": {
+    "ok": true,
+    "compiler_sha256": "60843de6ec7a4ce473317feac046bc0f5d77ba2d56d14feb4a5cb9c1b4e3e8b3",
+    "vsix_sha256": "e91f166992538ecbe6a618acea81c96d12e0ff6951e1b7ef9923f7e8f282e812",
+    "all_five_packaged_sources_equal_installed_sdk": true,
+    "host": {
+      "ok": true,
+      "editor_version": "1.142.0",
+      "editor_architecture": "arm64",
+      "installed_extension_path": "/Users/sae/projects/NEX/build/ide057pages/extensions/sae-ru.nex-language-tools-0.1.0",
+      "installed_extension_version": "0.1.0",
+      "physical_source_breakpoint": true,
+      "native_stack_scopes": true,
+      "pure_watch": {
+        "build_key": "8e968fce9e1f3464cc7c10a1a5ababca508a76f94de6de06766f6b2f3282d072",
+        "display": "42",
+        "display_truncated": false,
+        "expression": "total + 2",
+        "frame_truncated": false,
+        "function": "editor_acceptance::observe",
+        "language": "0.16",
+        "limits": {
+          "capture_path_depth": 56,
+          "cumulative_text_bytes": 8388608,
+          "frame_captures": 256,
+          "lazy_references": 10000,
+          "steps": 100000,
+          "text_range_scalars": 4096,
+          "text_scalar_observations": 100000,
+          "value_depth": 64,
+          "value_visits": 100000,
+          "wire_result_bytes": 1048576
+        },
+        "ok": true,
+        "read_bindings": [
+          "total"
+        ],
+        "read_paths": [
+          {
+            "binding": "total",
+            "kind": "value",
+            "path": []
+          }
+        ],
+        "revision": "3a269c31a1834f77ec03526f508cae36838e5e6700d3cd09965aa68e3e1e17c5",
+        "schema": "nex.expression/1",
+        "steps": 3,
+        "stop": {
+          "frame_id": 0,
+          "process_id": "33670",
+          "stop_id": "13",
+          "thread_id": "88545049"
+        },
+        "type": "i64",
+        "value": "42",
+        "wire_schema": {
+          "enums": {},
+          "records": {},
+          "root": "i64",
+          "schema": "nex.wire/2"
+        }
+      },
+      "trait_watch": {
+        "build_key": "8e968fce9e1f3464cc7c10a1a5ababca508a76f94de6de06766f6b2f3282d072",
+        "display": "42",
+        "display_truncated": false,
+        "expression": "Readable<Box<i64>>::get(Box<i64>(40)) + 2",
+        "frame_truncated": false,
+        "function": "editor_acceptance::observe",
+        "language": "0.16",
+        "limits": {
+          "capture_path_depth": 56,
+          "cumulative_text_bytes": 8388608,
+          "frame_captures": 256,
+          "lazy_references": 10000,
+          "steps": 100000,
+          "text_range_scalars": 4096,
+          "text_scalar_observations": 100000,
+          "value_depth": 64,
+          "value_visits": 100000,
+          "wire_result_bytes": 1048576
+        },
+        "ok": true,
+        "read_bindings": [],
+        "read_paths": [],
+        "revision": "3a269c31a1834f77ec03526f508cae36838e5e6700d3cd09965aa68e3e1e17c5",
+        "schema": "nex.expression/1",
+        "steps": 8,
+        "stop": {
+          "frame_id": 0,
+          "process_id": "33670",
+          "stop_id": "13",
+          "thread_id": "88545049"
+        },
+        "type": "i64",
+        "value": "42",
+        "wire_schema": {
+          "enums": {},
+          "records": {},
+          "root": "i64",
+          "schema": "nex.wire/2"
+        }
+      },
+      "native_output": "42\r\n",
+      "native_exit_code": 0,
+      "unchanged_watch_stop": true,
+      "native_resume_and_termination": true,
+      "native_indexed_pages": true,
+      "controlled_test_profile": true,
+      "user_profile_modified": false
+    },
+    "special_project_path": "/Users/sae/projects/NEX/build/ide057pages/project \"quoted\" \\ % \ud83e\udde0",
+    "user_profile_modified": false,
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "native_pages": {
+    "list_children": 32768,
+    "byte_children": 4194304,
+    "page_limit": 1000,
+    "late_indices": true,
+    "default_and_large_request_bounds": true,
+    "indexed_named_filters": true,
+    "watch_stop_before_after_equal": true,
+    "stale_handles_rejected": true,
+    "native_exit_code": 0
+  },
+  "implementation_hashes": {
+    "CMakeLists.txt": "da2832b78cf593812793529f2570bd10f29d57c9b325697e4a9ae2d317bd3481",
+    "src/language.cpp": "680ae47cde321710cc01732dd7d6b9c309afd44df54f4d84b71ea51148746330",
+    "debug/lldb_nex.py": "08a1b94187f8322d82ef56c288282c551308fd59a3d18c6e49ec04ad8a509461",
+    "debug/nex_dap.py": "ed36bb007a0e9360f45bdeaa447dcff7b9a89a0b16f28c1d7c19e107b5179e79",
+    "tools/sdk_acceptance.py": "1cf1f260d307c6f89531f363740297a485b1b57df8d5522843032460c769e170",
+    "tests/dap_transport.py": "a83de6f3c74111dd400c779b52f95310038c3f69fd5e63116b6004dd17923876",
+    "tests/native_pages.py": "5843ec4cc859c888c3663b2e151a959f26f79b58a6a5f0d590e2db78e18d9aac",
+    "tests/editor_host.js": "39b5459710d96f517f4be80af81f193c1a7913ef490abc58a85e6085307efdf0",
+    "llm/language-pack.json": "c97a41504d2264782fc17ce77c4830a46c4d2c4b6dc69ef5bec23ae7a285e5ce",
+    "llm/dap-native-page.schema.json": "3f959f44c417720136e9298fff31bf3c2f0eb9557d1e18df979bdf299457ee72",
+    "examples/debugging/pages.nex": "92990ad3587f392a421bf6cab9285f9abe69147cb5fc43fe4e7f238e8586effe"
+  },
+  "artifacts": {
+    "build/native-pages-057-focused.log": "94d023c5078d4329bb7bd4d107e6f426eb7198c58c8ef1878ecf353a7f4f74ee",
+    "build/native-pages-057-focused-LastTest.log": "7de46256c1da8ac0bb4bd169f8ca5a1a5566291b0aa6a68a6d8a182a2cce4321",
+    "build/native-pages-057-actual-compiler-live.log": "b19ab6b0939c4a9c9c38d342c267b53eebf04c12569ecf1481bf3eed89ebf764",
+    "build/native-pages-057-live-filter-prototype.log": "ad8b1a62b804a3c04b2854592a0aa3a0b396aaf610034daa90b6df175656aa70",
+    "build/native-pages-057-live-filter-corrected.log": "e06ae4d78283d39cb2340067868e87df6e2f79bccf201be3ff95cb2bd761c744",
+    "build/native-pages-057-before-fix.log": "06793dd3ce306934d8a40b07d77657b250d8d48a38dd6b8b8ff4e09d7b9a2b09"
+  },
+  "retained_failed_attempts": {
+    "previous32child_adapter": "build/native-pages-057-before-fix.log",
+    "backend_named_filter": "build/native-pages-057-live-filter-prototype.log"
+  },
+  "assertions_or_limits_weakened": false,
+  "accepted_release": false,
+  "full_objective_complete": false
+}

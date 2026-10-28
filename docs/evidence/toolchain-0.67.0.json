@@ -1,0 +1,217 @@
+{
+  "toolchain": "0.67.0",
+  "language": "0.16",
+  "created": "2026-10-20T07:11:27.097471+00:00",
+  "scope": "Readonly source analysis, stdio LSP and installed VS Code language/debug integration; remaining language and platform work is pending",
+  "implementation_source": {
+    "tree": "9cb7e996328fb63a52eb2af06ce31d6946b0088c",
+    "commit": "e109dd051218862e6b0f1917887f9118fc81e04e",
+    "files": 714
+  },
+  "root_source": {
+    "tree": "4fbd3c6775702a76c16a8d93611ef65a2df0506c",
+    "commit": "1c20e0181bca2007c2dca85e2644e349c8d1261e",
+    "files": 714,
+    "delta_from_implementation": [
+      "tests/editor_lsp_host.js"
+    ],
+    "delta_scope": "Unindexed IDE test explicitly sets/asserts CRLF and restores original EOL; all196 indexed resources and compiler/runtime/grammar/manifest/examples match"
+  },
+  "root": {
+    "compiler_sha256": "aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628",
+    "regression_groups": 78,
+    "sdk_phases": 23,
+    "sdk_commands": 332,
+    "resource_files": 196,
+    "sdk_report_sha256": "95035530771d4e0db7be36a601175ea48f05619506b7c16d4e38cd5876ca8ca1",
+    "all47_revisions_all16_tables_schema_preserved": true,
+    "normal_git_head_index_unchanged": true,
+    "regression_seconds": 741.94,
+    "regression_log_sha256": "4489da84a24163ac9ec51fcde07919017ab074e07ec5b028f9a781f25a6f6ec4",
+    "sdk_report": "build/sdk-067-root-acceptance/report.json"
+  },
+  "candidate_macos_linux": {
+    "ok": true,
+    "created": "2026-10-20T06:53:39.785241+00:00",
+    "source_tree": "9cb7e996328fb63a52eb2af06ce31d6946b0088c",
+    "source_files": 714,
+    "toolchain": "0.67.0",
+    "language": "0.16",
+    "macos_compiler_sha256": "18b0f9db1df9e6bf1ebfd6c0ed83b8e3aa6a667d096400fda05f9a01f427cea2",
+    "macos_full_groups": 78,
+    "macos_full_seconds": 876.0,
+    "linux_full_groups": 78,
+    "linux_full_seconds": 733.69,
+    "linux_live_suites": 16,
+    "linux_install_delta": {
+      "ok": true,
+      "build_compiler_sha256": "4a8faa7f0ce5a36396272b3d779d5dc9ecf6e88623249f03081023a507007ee7",
+      "installed_sdk_compiler_sha256": "e35a3bb2cfb320455192d6b46dd7904b619b73754147e87df9328a7633992041",
+      "changed_bytes": 1,
+      "offset": 61420,
+      "old": 58,
+      "new": 0,
+      "section": ".dynstr",
+      "cause": "CMake install RUNPATH trailing colon padding removed",
+      "all_other_bytes_identical": true
+    },
+    "sdk_each": {
+      "phases": 23,
+      "commands": 332,
+      "indexed_resources": 196,
+      "installed_lsp_messages": 13,
+      "installed_node_client_requests": 6
+    },
+    "macos_sdk_report_sha256": "fa2f3dcde4bb18bdaa250208850b661212fd140b2061190c8b41e53ba77af2b6",
+    "linux_sdk_report_sha256": "2b6e768a577f2a3db2215c8767b560aa452222b17e59a733977097b2fc5e7b5f",
+    "linux_source_checkout_mounted": false,
+    "linux_network": "none",
+    "actual_vscode": "1.142.0/macOS ARM64",
+    "extension": "0.2.0",
+    "vsix_sha256": "b66dbd6c74149e5c6510af468b839f77600302838f3c774580f868a43f826e9a",
+    "actual_editor_lsp": true,
+    "actual_native_debugger_pages": true,
+    "explicit_crlf_preview": true,
+    "explicit_crlf_verifier_sha256": "7d024f7d6801331a86ecaef954a93b112aaa8073e95b1527b5f17fb113118c11",
+    "candidate_ide_source": "9cb7e996328fb63a52eb2af06ce31d6946b0088c",
+    "root_ready_unindexed_test_source": "4fbd3c6775702a76c16a8d93611ef65a2df0506c",
+    "accepted_release": false,
+    "full_objective_complete": false
+  },
+  "actual_root_ide": {
+    "editor": "1.142.0",
+    "host": "macOS ARM64",
+    "extension": "0.2.0",
+    "compiler_sha256": "aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628",
+    "vsix_sha256": "277ca4595e42ec974d93ac1785edc29f98493de7c6f127aeb6a824f4758ab305",
+    "lsp_report_sha256": "7d70937a17985acc26375795b4ce4d0d72f222ab4dd0095c971a8c466aeefee5",
+    "debug_report_sha256": "1bc74cb20133cf6be901ff2104f84d7bc81ad0cf0e95df6c09ff680fc04b0a2a",
+    "language_client": {
+      "schema": "nex.editor-ide-acceptance/1",
+      "ok": true,
+      "editor": "1.142.0",
+      "extension_version": "0.2.0",
+      "extension_path": "/Users/sae/projects/NEX/build/ide067-root-installed-editor/extensions/sae-ru.nex-language-tools-0.2.0",
+      "compiler_sha256": "aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628",
+      "actual_installed_vsix": true,
+      "trusted_physical_workspace": true,
+      "controlled_test_profile": true,
+      "user_profile_modified": false,
+      "outline_symbols": [
+        "main"
+      ],
+      "checked_hover": true,
+      "cross_module_definition": true,
+      "unicode_crlf_unsaved_error": true,
+      "explicit_crlf_eol_asserted": true,
+      "repaired_document_version": true,
+      "restart_verified": true,
+      "disable_enable_verified": true,
+      "physical_sources_unchanged": true,
+      "graph_not_created": true,
+      "close_verified": true,
+      "source_sha256": "85cefa967a258bbd878017b7e901b08886ee914bedd0e5497c862d1263b2b2f4",
+      "model_sha256": "0e7c83c5c390afc9c9c49dabe81b4073e351a4afde1a4770e06de76a81a02f7e"
+    },
+    "native_debugger": {
+      "ok": true,
+      "physical_source_breakpoint": true,
+      "native_stack_scopes": true,
+      "unchanged_watch_stop": true,
+      "native_indexed_pages": true,
+      "native_resume_and_termination": true,
+      "native_exit_code": 0,
+      "controlled_test_profile": true,
+      "user_profile_modified": false
+    },
+    "native_pages": {
+      "list_items": 32768,
+      "byte_items": 4194304,
+      "max_page": 1000
+    },
+    "profile_scope": "two fresh owned profiles and an owned extension directory; no user profile modified"
+  },
+  "windows": {
+    "compiler_sha256": "aa76f1768eae9b9f136c156079a70f045cedfad4375f731e9744db39355ff628",
+    "pe_files": 9,
+    "x64_wine_cases": 17,
+    "original_build_context_graph_snapshots": 9,
+    "report_sha256": "e0736db1b7ebc6caef52a7d9bb14e028bd3859d565d52bf9e6a2e3e42ee5c74b",
+    "actual_windows_os_execution": false,
+    "arm64_execution": false,
+    "filesystem_available": false,
+    "earlier_failed_filesystem_evidence": "docs/evidence/toolchain-0.65.0.json"
+  },
+  "predecessor_066": {
+    "verification_sha256": "3348470ce8a619b70c581f2805f49982802f7006e615e3c422b3fb06177f8a1a",
+    "verification": {
+      "ok": true,
+      "created": "2026-10-20T06:16:32.590055+00:00",
+      "implementation_source": "e8f4bbeffafc86ac05ac05c7b22919b56dd1e72b",
+      "corrected_resource_source": "126b0d5934986876c359229c425badc33b5857ad",
+      "files": 708,
+      "macos_full_groups": 77,
+      "macos_full_seconds": 877.08,
+      "linux_full_groups": 77,
+      "linux_full_seconds": 741.94,
+      "linux_live_suites": 16,
+      "macos_compiler_sha256": "c7e04d0122dc553a48733e5f7ef85781e8a6c7cf8d55b6f5f88c6367dc08c88d",
+      "linux_install_delta": {
+        "ok": true,
+        "build_compiler_sha256": "5a4b2c527d543d40270dcfab38ddec528651ed9a03bfd98fbc113ff8b28d13f4",
+        "installed_sdk_compiler_sha256": "76fe9472687f9bb8011f207ea2dbf55e3fb1325f04dc53985d506f105e6adcc5",
+        "changed_bytes": 1,
+        "offset": 61420,
+        "old": 58,
+        "new": 0,
+        "section": ".dynstr",
+        "cause": "CMake install removes trailing RUNPATH colon padding",
+        "all_other_bytes_identical": true
+      },
+      "sdk_each": {
+        "phases": 23,
+        "commands": 330,
+        "resources": 185,
+        "focused_tests": 14,
+        "installed_lsp_messages": 13
+      },
+      "macos_sdk_report_sha256": "c5529bd1c217c9074a0dd9dbd2da46962a15a4835812d6b892d5cef1d8342d36",
+      "linux_sdk_report_sha256": "a25e3abfb5384915416deae5f7a02ca823a83165fe81818f986f6de8665b6a14",
+      "linux_sdk_source_free": true,
+      "linux_sdk_network": "none",
+      "original_sdk_import_failure_retained": true,
+      "initial_lifecycle_race_reproduced_then_corrected": true,
+      "root_promoted": false,
+      "full_objective_complete": false
+    }
+  },
+  "retained_failed_attempts": [
+    "0.66 initial timer/executor shutdown race and malformed protocol/UTF-8 behavior; corrected lifecycle source158fb058 passed14cases",
+    "0.66 first Mac/Linux SDK editor-tools missing sys import after full77 passed; corrected source126b0d59 SDK23/330/185 passed",
+    "0.67 preview collector lacked native-pages env flag; original LSP/basic-debug successes retained and fresh pages run passed",
+    "0.67 owned waiting final IDE collector terminated with SIGTERM before IDE execution to correct missing pages flag; replacement v2 passed"
+  ],
+  "final_overview_delta": {
+    "files": [
+      "README.md",
+      "STATUS.md",
+      "PLAN.md",
+      "docs/evidence/toolchain-0.67.0.json"
+    ],
+    "indexed_resources_unchanged": 196,
+    "compiler_runtime_grammar_manifest_examples_unchanged": true,
+    "scope": "Unindexed overview/evidence only; original test executions retain their exact source identities"
+  },
+  "earlier_mobile_and_distribution_scope": "Actual mobile API UI remains the separately recorded0.63 cohort; earlier browser/distribution results retain their own identities in STATUS.md",
+  "pending": [
+    "completion/references/rename and source identity-preserving edits",
+    "parser recovery/incremental indexing",
+    "cross-provider coding and comparable token/performance measurements",
+    "actual Windows OS/ARM64, filesystem and broader host/runtime integrations",
+    "physical Intel/mobile execution and release signing",
+    "remaining language/runtime/development-chain integrations in PLAN.md"
+  ],
+  "normal_git_head_index_unchanged": true,
+  "accepted_release": false,
+  "full_objective_complete": false
+}

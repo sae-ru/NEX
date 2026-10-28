@@ -1,0 +1,15 @@
+{
+  "language": "0.11",
+  "toolchain": "0.29.0",
+  "database": "graph.db",
+  "user_version": 0,
+  "source": "module legacy_files;\nfn old_read(value:i64) -> i64 { return value+1; }\nfn old_write(value:str) -> str { return value; }\nfn identity<T:wire>(value:T) -> T { return unwrap(decode_json<T>(encode_json(value))); }\nfn main() -> unit !{io} { print(identity(old_read(41))); print(old_write(\"Я🧠\")); }\ntest fn preserved_test() -> unit { assert(old_read(41)==42); assert(old_write(\"text\")==\"text\"); }\n",
+  "source_sha256": "9126cb5b953ec49a5898b83c4d04b69e12d35939e3f5b7f95d44e5d7b48bac67",
+  "sql_sha256": "0cb2803c9df4127c08bf4933edbb3121ee2bd8b8b40adb6d76027781b2b7c2f9",
+  "compiler_sha256": "fd867edda2a905a4ef07eb604df44dc1f42bb10a0ee00380d96479d89b554619",
+  "revision": "9663a0f4c0a5082bc173495b320412891f5c1973d60f8074d62843dccb5832d4",
+  "native_and_interpreter_test_passed": true,
+  "stdout": "42\nЯ🧠\n",
+  "future_builtin_name_conflict": false,
+  "capture": "Genuine SDK 0.29 compiler/store; no database version fabrication"
+}

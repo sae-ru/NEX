@@ -10,6 +10,14 @@ import shlex
 import subprocess
 import base64
 import time
+import math
+import struct
+import bisect
+import codecs
+import os
+import stat
+import hashlib
+import re
 
 import lldb
 
@@ -17,6 +25,59 @@ MAX_ITEMS = 32
 MAX_DEPTH = 6
 MAX_TEXT = 4096
 _contexts = {}
+
+
+def _image_hash(path):
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 512*1024**2:
+            raise ValueError('owned native image must be a bounded regular file')
+        digest = hashlib.sha256()
+        count = 0
+        while True:
+            data = os.read(fd, 65536)
+            if not data:
+                break
+            count += len(data)
+            if count > before.st_size:
+                raise ValueError('owned native image grew during inspection')
+            digest.update(data)
+        after = os.fstat(fd)
+        named = os.lstat(path)
+        if (count != before.st_size or
+                (before.st_size, before.st_mtime_ns, before.st_ctime_ns) !=
+                (after.st_size, after.st_mtime_ns, after.st_ctime_ns) or
+                (named.st_dev, named.st_ino) != (before.st_dev, before.st_ino)):
+            raise ValueError('owned native image changed during inspection')
+        return digest.hexdigest()
+    finally:
+        os.close(fd)
+
+
+def _owned_images(manifest, program):
+    images = manifest.get('owned_images', [])
+    if not isinstance(images, list) or len(images) > 129:
+        raise ValueError('invalid owned native image inventory')
+    result = {}
+    for record in images:
+        if not isinstance(record, dict):
+            raise ValueError('invalid owned native image record')
+        path, digest, uuid = (record.get(k) for k in ('path', 'sha256', 'uuid'))
+        if (not isinstance(path, str) or len(path) > 16384 or '\0' in path or
+                not isinstance(digest, str) or not re.fullmatch('[0-9a-f]{64}', digest) or
+                not isinstance(uuid, str) or not re.fullmatch('[0-9a-f]{16,128}', uuid) or len(uuid) % 2 or
+                record.get('kind') not in ('runtime', 'library') or
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', Path(path).name) or
+                not Path(path).is_absolute() or os.path.normpath(path) != path):
+            raise ValueError('invalid owned native image path/identity')
+        resolved = str(Path(path).resolve())
+        if (resolved in result or Path(path).is_symlink() or
+                Path(resolved).parent != (Path(program).parent/'images').resolve() or
+                _image_hash(path) != digest):
+            raise ValueError('owned native image bytes/path differ from the manifest')
+        result[resolved] = record
+    return result
 
 
 def _member(value, name):
@@ -80,8 +141,12 @@ def _preview(value, depth=0, budget=None):
         return "…"
     budget[0] -= 1
     raw = value.GetNonSyntheticValue()
+    if raw.GetTypeName() in ("f64", "double"):
+        return _format_float(_floating(raw))
     if raw.GetTypeName() == "nexrt::Value":
         tag = _member(raw, "tag").GetValueAsUnsigned()
+        if tag == 3:
+            return _format_float(_floating(raw, nested=True))
         if tag < 2:
             scalar = _member(raw, "scalar").GetValueAsSigned()
             return ("true" if scalar else "false") if tag == 1 else str(scalar)
@@ -91,6 +156,12 @@ def _preview(value, depth=0, budget=None):
         return _string(_member(data, "text"))
     if kind == 6:
         return "<function " + _string(_member(data, "text")) + ">"
+    if kind == 7:
+        binary = _ExactBytes(data)
+        prefix = binary.read(0, min(binary.size, MAX_ITEMS))
+        return "bytes[%d] " % binary.size + json.dumps(base64.b64encode(prefix).decode('ascii')) + ("…" if len(prefix) < binary.size else "")
+    if kind == 8:
+        return "<file " + _file_identity(data) + ">"
     items = _vector(data)
     size = items.GetNumChildren()
     if kind in (1, 2, 5):
@@ -140,10 +211,14 @@ class Children:
             if data is None:
                 return False
             self.kind = _member(data, "kind").GetValueAsUnsigned()
-            if self.kind in (1, 2, 3, 4, 5, 6):
+            if self.kind in (1, 2, 3, 4, 5, 6, 7):
                 self.data = data
-                self.items = _vector(data)
-                self.count = min(self.items.GetNumChildren(), MAX_ITEMS) + (self.kind in (4, 5, 6))
+                self.items = _ExactBytes(data) if self.kind == 7 else _ExactVector(data) if self.kind == 1 else _vector(data)
+                size = self.items.GetNumChildren()
+                # Indexed roots remain lazy: lldb-dap can request a page beyond
+                # the bounded text preview without constructing prior children.
+                # DAP represents counts and indices as signed32 integers.
+                self.count = min(size, 2147483647) if self.kind in (1, 7) else min(size, MAX_ITEMS) + (self.kind in (4, 5, 6))
         except Exception:
             self.count = 0
         return False  # Recompute after every stop; do not retain stale values.
@@ -174,6 +249,14 @@ class Children:
             return None
 
     def get_child_index(self, name):
+        if self.kind in (1, 7):
+            if not isinstance(name, str) or not name.startswith('[') or not name.endswith(']'):
+                return lldb.UINT32_MAX
+            digits = name[1:-1]
+            if not 1 <= len(digits) <= 10 or not digits.isascii() or not digits.isdecimal():
+                return lldb.UINT32_MAX
+            index = int(digits)
+            return index if str(index) == digits and index < self.count else lldb.UINT32_MAX
         for index in range(self.count):
             child = self.get_child_at_index(index)
             if child is not None and child.GetName() == name:
@@ -190,8 +273,28 @@ def load(debugger, command, result, internal_dict):
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
         manifest = json.loads(path.read_text())
+        # Relocation authority comes only from the trusted core reader after
+        # capsule inventory/build validation, never a persisted debug field.
+        manifest.pop('_capsule_recorded_program', None)
+        manifest.pop('_capsule_recorded_images', None)
+        manifest.pop('_owned_images', None)
         if manifest.get("schema") != "nex.debug/1" or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
+        manifest['_owned_images'] = _owned_images(manifest, str(Path(manifest['program']).resolve()))
+        mappings = manifest.get("source_map", [])
+        if not isinstance(mappings, list) or len(mappings) > 4096:
+            raise ValueError("invalid NEX source map")
+        for pair in mappings:
+            if (not isinstance(pair, list) or len(pair) != 2 or
+                    any(not isinstance(path, str) or not path or len(path) > 4096 or '\0' in path for path in pair)):
+                raise ValueError("invalid NEX source mapping")
+        if mappings:
+            # Set the property directly: paths are data, never LLDB commands or
+            # expressions (a filename can contain quotes or backticks).
+            setting = ' '.join(json.dumps(path, ensure_ascii=False) for pair in mappings for path in pair)
+            error = debugger.SetInternalVariable('target.source-map', setting, debugger.GetInstanceName())
+            if error.Fail():
+                raise ValueError('cannot select frozen NEX sources: ' + str(error))
         names = manifest["heap_types"] + ["nexrt::Value"]
         if len(names) > 10000 or any(not isinstance(name, str) or len(name) > 4096 for name in names):
             raise ValueError("invalid NEX debug type table")
@@ -202,6 +305,7 @@ def load(debugger, command, result, internal_dict):
             specifier = lldb.SBTypeNameSpecifier(name, False)
             category.AddTypeSummary(specifier, lldb.SBTypeSummary.CreateWithFunctionName(__name__ + ".summary"))
             category.AddTypeSynthetic(specifier, lldb.SBTypeSynthetic.CreateWithClassName(__name__ + ".Children"))
+        category.AddTypeSummary(lldb.SBTypeNameSpecifier("f64", False), lldb.SBTypeSummary.CreateWithFunctionName(__name__ + ".summary"))
         category.SetEnabled(True)
         # The executable comes only from an explicit debugger command argument,
         # never from paths supplied by a debug manifest or captured frame.
@@ -221,6 +325,40 @@ def _integer(value, signed=False):
     if error.Fail():
         raise ValueError("value has no readable scalar: " + str(error))
     return number
+
+
+def _format_float(value):
+    if not math.isfinite(value):
+        raise ValueError("non-finite stopped f64")
+    if value == 0:
+        return "0e0"
+    mantissa, _, exponent = repr(abs(float(value))).lower().partition('e')
+    whole, _, fraction = mantissa.partition('.')
+    digits = whole + fraction
+    first = len(digits) - len(digits.lstrip('0'))
+    digits = digits[first:].rstrip('0')
+    power = int(exponent or '0') + len(whole) - first - 1
+    return ('-' if value < 0 else '') + digits[0] + ('.' + digits[1:] if len(digits) > 1 else '') + 'e' + str(power)
+
+
+def _floating(value, nested=False):
+    if nested:
+        if _integer(_member(value, "tag")) != 3:
+            raise ValueError("runtime f64 tag differs from checked NEX type")
+        number = struct.unpack('>d', struct.pack('>Q', _integer(_member(value, "scalar"))))[0]
+    else:
+        if not value.IsValid() or value.GetError().Fail():
+            raise ValueError("f64 has no readable location")
+        data = value.GetData()
+        if not data.IsValid() or data.GetByteSize() != 8:
+            raise ValueError("stopped f64 has an incompatible size")
+        error = lldb.SBError()
+        number = data.GetDouble(error, 0)
+        if error.Fail():
+            raise ValueError("f64 has no readable scalar")
+    if not math.isfinite(number):
+        raise ValueError("non-finite stopped f64")
+    return 0.0 if number == 0 else number
 
 
 def _find_member(value, name, depth=0, budget=None):
@@ -279,9 +417,96 @@ def _raw_string(value, budget):
     budget["bytes"] -= size
     return _string_bytes(value, address, size).decode("utf-8", "strict")
 
+
+class _RawText:
+    """A checked result-code std::string, without a synthetic NEX object."""
+    def __init__(self, value):
+        self.value = value
+
+
+class _TextView:
+    """UTF-8 scalar count/checkpoints; never retain a complete large string."""
+    CHUNK = 65536
+
+    def __init__(self, value, budget):
+        self.value, self.budget = value, budget
+        self.size, self.address = _string_layout(value)
+        if not 0 <= self.size <= 9223372036854775807:
+            raise ValueError('stopped string byte size is outside i64')
+        cache = budget.setdefault('text_cache', {})
+        key = (self.address, self.size)
+        cached = cache.get(key)
+        if cached is None:
+            if self.size > budget.get('scan_bytes', 32 * 1024 * 1024):
+                raise ValueError('stopped string exceeds its physical scan byte budget')
+            decoder = codecs.getincrementaldecoder('utf-8')('strict')
+            checkpoints, offset, scalars = [(0, 0)], 0, 0
+            while offset < self.size:
+                raw = self.read(offset, min(self.CHUNK, self.size - offset))
+                scalars += len(decoder.decode(raw, final=False))
+                offset += len(raw)
+                complete = offset - len(decoder.getstate()[0])
+                if complete != checkpoints[-1][1]:
+                    checkpoints.append((scalars, complete))
+            scalars += len(decoder.decode(b'', final=True))
+            cached = (scalars, checkpoints)
+            cache[key] = cached
+        self.length, self.checkpoints = cached
+        self.scalar_positions = [point[0] for point in self.checkpoints]
+
+    def read(self, start, count):
+        if time.monotonic() > self.budget.get('deadline', float('inf')):
+            raise ValueError('stopped string scan exceeded expression deadline')
+        remaining = self.budget.setdefault('scan_bytes', 32 * 1024 * 1024)
+        if count < 0 or count > remaining or start < 0 or start > self.size or count > self.size - start:
+            raise ValueError('stopped string exceeds its physical scan byte budget')
+        self.budget['scan_bytes'] -= count
+        return _string_bytes(self.value, self.address + start, count)
+
+    def range(self, start, count):
+        if start < 0 or count < 0 or start > self.length or count > self.length - start or count > 4096:
+            raise ValueError('stopped string scalar range is outside checked bounds')
+        if not count:
+            return ''
+        index = bisect.bisect_right(self.scalar_positions, start) - 1
+        scalars, offset = self.checkpoints[index]
+        decoder = codecs.getincrementaldecoder('utf-8')('strict')
+        parts, needed = [], count
+        while offset < self.size and needed:
+            raw = self.read(offset, min(self.CHUNK, self.size - offset))
+            text = decoder.decode(raw, final=offset + len(raw) == self.size)
+            offset += len(raw)
+            begin = max(0, start - scalars)
+            selected = text[begin:begin + needed]
+            parts.append(selected)
+            needed -= len(selected)
+            scalars += len(text)
+        if needed:
+            raise ValueError('stopped string bytes differ from their scanned scalar length')
+        result = ''.join(parts)
+        encoded = len(result.encode('utf-8'))
+        if encoded > self.budget['bytes']:
+            raise ValueError('stopped string range exceeds capture byte budget')
+        self.budget['bytes'] -= encoded
+        return result
+
+
+def _text_view(value, budget):
+    if isinstance(value, _RawText):
+        return _TextView(value.value, budget)
+    raw = value.GetNonSyntheticValue()
+    if not raw.IsValid() or raw.GetError().Fail():
+        raise ValueError('runtime string has no readable location')
+    if raw.GetTypeName() == 'nexrt::Value' and _integer(_member(raw, 'tag')) != 2:
+        raise ValueError('runtime string object tag differs from checked NEX type')
+    data = _data(value)
+    if data is None or _integer(_member(data, 'kind')) != 0:
+        raise ValueError('runtime string kind differs from checked NEX type')
+    return _TextView(_member(data, 'text'), budget)
+
 class _ExactVector:
     def __init__(self, data, name="values"):
-        self.value = _member(data, name)
+        self.value = _member(data, name) if name is not None else data.GetNonSyntheticValue()
         begin = _find_member(self.value, "__begin_")
         end = _find_member(self.value, "__end_")
         if begin is None or end is None:
@@ -309,6 +534,48 @@ class _ExactVector:
             raise ValueError("stopped vector index is outside bounds")
         return self.value.CreateValueFromAddress("[%d]" % index,
             self.address + index * self.stride, self.element)
+
+
+class _ExactBytes:
+    def __init__(self, data):
+        if _integer(_member(data, "kind")) != 7:
+            raise ValueError("runtime byte kind differs from checked NEX type")
+        layout = data.GetTarget().FindFirstType("nexrt::ByteData")
+        if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
+            raise ValueError("unavailable owned byte layout for this build")
+        self.value = data.CreateValueFromAddress("binary", data.GetLoadAddress(), layout)
+        # Use this runtime's DWARF scalar type. Apple's LLDB may resolve a
+        # target-wide basic type through Swift, yielding an unreadable value.
+        self.scalar_type = _member(data, "ordinal").GetType()
+        if not self.scalar_type.IsValid() or self.scalar_type.GetByteSize() != 8:
+            raise ValueError("unavailable runtime i64 layout for byte children")
+        buffer = _member(self.value, "buffer")
+        offset, self.size = _integer(_member(buffer, "offset")), _integer(_member(buffer, "count"))
+        if self.size > 9223372036854775807 or offset > 9223372036854775807 - self.size:
+            raise ValueError("invalid stopped byte range")
+        self.address = 0
+        if not self.size:
+            if offset:
+                raise ValueError("invalid empty stopped byte range")
+            return
+        storage = _ExactVector(_shared(_member(buffer, "storage")), None)
+        if storage.stride != 1 or offset + self.size > storage.size:
+            raise ValueError("stopped byte view exceeds owned storage")
+        self.address = storage.address + offset
+
+    def read(self, start, count):
+        if start < 0 or count < 0 or start > self.size or count > self.size - start:
+            raise ValueError("stopped byte read is outside bounds")
+        return _string_bytes(self.value, self.address + start if count else 0, count)
+
+    def GetNumChildren(self):
+        return self.size
+
+    def GetChildAtIndex(self, index):
+        value = self.read(index, 1)[0]
+        target = self.value.GetTarget()
+        data = lldb.SBData.CreateDataFromUInt64Array(target.GetByteOrder(), target.GetAddressByteSize(), [value])
+        return self.value.CreateValueFromData("[%d]" % index, data, self.scalar_type)
 
 
 def _enum_case(data, descriptor, records, budget):
@@ -370,12 +637,32 @@ def _closure_case(data, descriptor, records, budget):
     return result
 
 
+def _file_identity(data):
+    if _integer(_member(data, "kind")) != 8:
+        raise ValueError("runtime file kind differs from checked NEX type")
+    layout = data.GetTarget().FindFirstType("nexrt::FileData")
+    if not layout.IsValid() or layout.GetByteSize() <= data.GetType().GetByteSize():
+        raise ValueError("unavailable owned file layout for this build")
+    value = data.CreateValueFromAddress("file", data.GetLoadAddress(), layout)
+    identity = _integer(_member(value, "diagnosticIdentity"))
+    if not identity:
+        control = _shared(_member(_member(_member(value, "resource"), "owner"), "control"))
+        identity = _integer(_member(control, "identity"))
+    if not 0 < identity <= 18446744073709551615:
+        raise ValueError("invalid stopped file identity")
+    return str(identity)
+
+
 def _wire(value, descriptor, records, budget, depth=0):
+    if descriptor == "str" and isinstance(value, _RawText):
+        return _raw_string(value.value, budget)
     if depth > 60 or budget["nodes"] <= 0:
         raise ValueError("exact capture exceeds its node/depth budget")
     budget["nodes"] -= 1
     raw = value.GetNonSyntheticValue()
     nested = raw.GetTypeName() == "nexrt::Value"
+    if descriptor == "f64":
+        return _floating(raw, nested)
     if descriptor in ("i64", "bool"):
         if nested:
             if _integer(_member(raw, "tag")) != (1 if descriptor == "bool" else 0):
@@ -397,6 +684,19 @@ def _wire(value, descriptor, records, budget, depth=0):
         if kind != 0:
             raise ValueError("runtime string kind differs from checked NEX type")
         return _raw_string(_member(data, "text"), budget)
+    if descriptor == "file":
+        identity = _file_identity(data)
+        if len(identity) > budget["bytes"]:
+            raise ValueError("file identity exceeds byte budget")
+        budget["bytes"] -= len(identity)
+        return {"file": identity}
+    if descriptor == "bytes":
+        binary = _ExactBytes(data)
+        encoded_size = (binary.size + 2) // 3 * 4
+        if encoded_size > budget["bytes"]:
+            raise ValueError("exact bytes exceed encoded byte budget")
+        budget["bytes"] -= encoded_size
+        return base64.b64encode(binary.read(0, binary.size)).decode('ascii')
     if not isinstance(descriptor, dict):
         raise ValueError("invalid wire type descriptor")
     items = _ExactVector(data)
@@ -439,6 +739,9 @@ def _wire(value, descriptor, records, budget, depth=0):
 
 
 def _header(value, descriptor, records, budget):
+    if descriptor == "str":
+        view = _text_view(value, budget)
+        return None, view, view.length
     raw = value.GetNonSyntheticValue()
     if not raw.IsValid() or raw.GetError().Fail():
         raise ValueError("runtime object has no readable location")
@@ -446,6 +749,9 @@ def _header(value, descriptor, records, budget):
         raise ValueError("runtime object tag differs from checked NEX type")
     data = _data(value)
     kind = _integer(_member(data, "kind"))
+    if descriptor == "bytes":
+        binary = _ExactBytes(data)
+        return data, binary, binary.size
     items = _ExactVector(data)
     size = items.GetNumChildren()
     if "function" in descriptor:
@@ -480,7 +786,11 @@ def _read_path(value, schema, request, budget):
             raise ValueError("partial capture exceeds its node budget")
         budget["nodes"] -= 1
         data, items, size = _header(value, descriptor, records, budget)
-        if "list" in descriptor:
+        if descriptor == "bytes":
+            if not isinstance(segment, int) or isinstance(segment, bool) or not 0 <= segment < size:
+                raise ValueError("partial path is outside stopped byte bounds")
+            value, descriptor = items.GetChildAtIndex(segment), "i64"
+        elif "list" in descriptor:
             if not isinstance(segment, int) or isinstance(segment, bool) or not 0 <= segment < size:
                 raise ValueError("partial path is outside stopped list bounds")
             value, descriptor = items.GetChildAtIndex(segment), descriptor["list"]
@@ -509,21 +819,24 @@ def _read_path(value, schema, request, budget):
                 value, descriptor = items.GetChildAtIndex(0), descriptor["result"]
             elif segment in ("code", "message") and not success:
                 if segment == "code":
-                    if request["kind"] != "value" or request["path"][-1] != segment:
-                        raise ValueError("invalid result code path")
-                    return _raw_string(_member(data, "text"), budget)
-                value, descriptor = items.GetChildAtIndex(0), "str"
+                    value, descriptor = _RawText(_member(data, "text")), "str"
+                else:
+                    value, descriptor = items.GetChildAtIndex(0), "str"
             else:
                 raise ValueError("partial result path disagrees with stopped result kind")
     if descriptor != request["wire_schema"]["root"]:
         raise ValueError("partial request type differs from checked root path")
     if request["kind"] == "value":
         return _wire(value, descriptor, records, budget)
+    if request["kind"] == "text_range":
+        if descriptor != "str":
+            raise ValueError('text range requires a checked string path')
+        return _text_view(value, budget).range(int(request['start']), int(request['count']))
     if budget["nodes"] <= 0:
         raise ValueError("partial capture exceeds its node budget")
     budget["nodes"] -= 1
     data, items, size = _header(value, descriptor, records, budget)
-    if "list" in descriptor:
+    if descriptor in ("bytes", "str") or "list" in descriptor:
         return {"length": str(size)}
     if "record" in descriptor:
         return {"record": descriptor["record"]}
@@ -533,6 +846,139 @@ def _read_path(value, schema, request, budget):
         target = _closure_case(data, descriptor, records, budget)
         return {key: target[key] for key in ("function", "identity")}
     return {"ok": _integer(_member(data, "kind")) == 3}
+
+
+def _elf_core_mapping(path, pc):
+    """Read the core's own bounded NT_FILE table, without mapped-file fallback."""
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or not 64 <= info.st_size <= 32 * 1024**3:
+            raise ValueError("core image requires a bounded regular ELF core")
+        deadline, consumed = time.monotonic() + 2, 0
+
+        def read(offset, count):
+            nonlocal consumed
+            consumed += count
+            if (offset < 0 or count < 0 or offset + count > info.st_size or
+                    consumed > 32 * 1024**2 or time.monotonic() > deadline):
+                raise ValueError("core image ELF metadata exceeds bounds")
+            data = os.pread(fd, count, offset)
+            if len(data) != count:
+                raise ValueError("core image ELF metadata is truncated")
+            return data
+
+        header = read(0, 64)
+        if header[:5] != b'\x7fELF\x02' or header[5] not in (1, 2):
+            raise ValueError("core image requires ELF64 metadata")
+        endian = '<' if header[5] == 1 else '>'
+        fields = struct.unpack(endian + '16sHHIQQQIHHHHHH', header)
+        offset, stride, count = fields[5], fields[9], fields[10]
+        if fields[1] != 4 or stride != 56 or not 1 <= count <= 4096:
+            raise ValueError("core image ELF program table is invalid")
+        matches = []
+        for index in range(count):
+            entry = struct.unpack(endian + 'IIQQQQQQ', read(offset + index * stride, 56))
+            if entry[0] != 4:  # PT_NOTE
+                continue
+            if entry[5] > 16 * 1024**2:
+                raise ValueError("core image ELF note exceeds limit")
+            notes, cursor = read(entry[2], entry[5]), 0
+            while cursor + 12 <= len(notes):
+                if time.monotonic() > deadline:
+                    raise ValueError("core image ELF metadata deadline exceeded")
+                names, size, kind = struct.unpack_from(endian + 'III', notes, cursor)
+                cursor += 12
+                name_end = cursor + names
+                data_at = cursor + ((names + 3) & ~3)
+                end = data_at + size
+                if names > 4096 or name_end > len(notes) or end > len(notes):
+                    raise ValueError("core image ELF note is truncated")
+                owner = notes[cursor:name_end]
+                cursor = data_at + ((size + 3) & ~3)
+                if cursor > len(notes):
+                    raise ValueError("core image ELF note padding is truncated")
+                if kind != 0x46494c45 or owner.rstrip(b'\0') != b'CORE':  # NT_FILE
+                    continue
+                data = notes[data_at:end]
+                if len(data) < 16:
+                    raise ValueError("core image NT_FILE header is truncated")
+                files, pages = struct.unpack_from(endian + 'QQ', data)
+                strings = 16 + files * 24
+                if not pages or files > 65536 or strings > len(data):
+                    raise ValueError("core image NT_FILE entries exceed bounds")
+                paths = data[strings:].split(b'\0')
+                if len(paths) <= files:
+                    raise ValueError("core image NT_FILE names are truncated")
+                for number in range(files):
+                    if number % 1024 == 0 and time.monotonic() > deadline:
+                        raise ValueError("core image ELF metadata deadline exceeded")
+                    begin, finish, _ = struct.unpack_from(endian + 'QQQ', data, 16 + number * 24)
+                    if begin >= finish:
+                        raise ValueError("core image NT_FILE range is invalid")
+                    if begin <= pc < finish:
+                        name = os.fsdecode(paths[number])
+                        if not name or len(name) > 16384 or not Path(name).is_absolute():
+                            raise ValueError("core image NT_FILE name is invalid")
+                        matches.append(str(Path(name).resolve()))
+        if len(matches) != 1:
+            raise ValueError("core image has no unique recorded PC mapping")
+        return matches[0]
+    finally:
+        os.close(fd)
+
+
+def _require_frame_image(target, frame, program):
+    actual = frame.GetModule()
+    executable = target.FindModule(target.GetExecutable())
+    if not actual.IsValid() or not executable.IsValid():
+        raise ValueError("selected frame image does not match the loaded NEX manifest")
+    context = _contexts.get(program, {})
+    selected = str(Path(str(actual.GetFileSpec())).resolve())
+    expected = executable
+    if actual == executable:
+        if selected != program:
+            raise ValueError("selected frame image does not match the loaded NEX manifest")
+    else:
+        record = context.get('_owned_images', {}).get(selected)
+        if (not record or actual.GetUUIDString().replace('-', '').lower() != record['uuid'] or
+                _image_hash(selected) != record['sha256']):
+            raise ValueError("selected frame owned image identity/bytes differ from the loaded NEX manifest")
+        expected = actual
+    process = target.GetProcess()
+    core = process.GetPluginName() in ("minidump", "elf-core")
+    if core or actual != executable:
+        if target.GetNumModules() > 10000:
+            raise ValueError("native image module list exceeds limit")
+        candidates = [target.GetModuleAtIndex(i) for i in range(target.GetNumModules())
+                      if str(Path(str(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == selected]
+        if (not candidates or not expected.GetUUIDString() or
+                any(m != expected or m.GetUUIDString() != expected.GetUUIDString() for m in candidates)):
+            raise ValueError("native image identity is ambiguous or differs from the retained image")
+    if core:
+        key = context.get('build_key', '')
+        recorded_program = context.get('_capsule_recorded_program', program)
+        if (len(key) != 64 or any(c not in '0123456789abcdef' for c in key) or
+                Path(program).parent.name != key or not Path(recorded_program).is_absolute() or
+                Path(recorded_program).parent.name != key or Path(recorded_program).name != 'app'):
+            raise ValueError("core image requires its content-addressed retained build directory")
+        recorded = (recorded_program if actual == executable else
+                    context.get('_capsule_recorded_images', {}).get(selected, selected))
+        if not isinstance(recorded, str) or not Path(recorded).is_absolute():
+            raise ValueError("invalid recorded owned image mapping")
+        if process.GetPluginName() == 'elf-core':
+            if not hasattr(process, 'GetCoreFile'):
+                raise ValueError("core image requires LLDB core-file metadata access")
+            name = _elf_core_mapping(str(process.GetCoreFile()), frame.GetPC())
+        else:
+            region = lldb.SBMemoryRegionInfo()
+            error = process.GetMemoryRegionInfo(frame.GetPC(), region)
+            name = region.GetName() if error.Success() else None
+        relocated = '_capsule_recorded_program' in context
+        named = os.path.normpath(name) if name and relocated else str(Path(name).resolve()) if name else None
+        expected_name = os.path.normpath(recorded) if relocated else str(Path(recorded).resolve())
+        if not named or named != expected_name:
+            raise ValueError("core recorded frame image does not match the loaded NEX manifest")
 
 
 def _stopped(debugger, compiler=True):
@@ -548,6 +994,7 @@ def _stopped(debugger, compiler=True):
     context = _contexts.get(program)
     if not context or (compiler and not context.get("_compiler")):
         raise ValueError("load matching debug views with an explicit trusted --compiler path")
+    _require_frame_image(target, frame, program)
     native = frame.GetSymbol().GetName()
     function = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
     if function is None:
@@ -623,7 +1070,7 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
     deadline = time.monotonic() + 10
     plan = _compiler(context, snapshot, expression, "plan")
     schemas = {v["name"]: v["wire_schema"] for v in plan["variables"]}
-    budget = {"nodes": 10000, "bytes": 1024 * 1024}
+    budget = {"nodes": 10000, "bytes": 1024 * 1024, "scan_bytes": 32 * 1024 * 1024, "deadline": deadline}
     bindings = {b["name"]: b for b in snapshot["bindings"]}
     for read_count in range(129):
         _fresh(process, snapshot)
@@ -643,6 +1090,8 @@ def _capture(context, process, snapshot, values, expression, for_frame=False):
         request = response["request"]
         name = request["binding"]
         capture = {k: request[k] for k in ("binding", "path", "kind")}
+        if request['kind'] == 'text_range':
+            capture.update(start=request['start'], count=request['count'])
         try:
             capture["value"] = _read_path(values[name], schemas[name], request, budget)
             if len(json.dumps([snapshot, capture], ensure_ascii=False).encode("utf-8")) > 1024 * 1024 - 1024:
@@ -730,6 +1179,10 @@ def values(debugger, command, result, internal_dict):
         frame = process.GetSelectedThread().GetSelectedFrame()
         if not frame.IsValid():
             raise ValueError("no selected frame")
+        program = str(Path(str(target.GetExecutable())).resolve())
+        context = _contexts.get(program, {})
+        if context:
+            _require_frame_image(target, frame, program)
         variables = frame.GetVariables(True, True, False, True)
         entries = []
         for index in range(min(variables.GetSize(), 256)):
@@ -737,8 +1190,6 @@ def values(debugger, command, result, internal_dict):
             entries.append({"name": value.GetName(), "type": value.GetTypeName(),
                             "value": (value.GetSummary() or value.GetValue() or "<unavailable>")[:MAX_TEXT]})
         location = frame.GetLineEntry()
-        program = str(Path(str(target.GetExecutable())).resolve())
-        context = _contexts.get(program, {})
         native = frame.GetSymbol().GetName()
         logical = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
         result.PutCString(json.dumps({"schema": "nex.debug-values/1", "revision": context.get("revision"),

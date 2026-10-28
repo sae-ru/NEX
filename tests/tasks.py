@@ -14,6 +14,44 @@ import support as harness
 
 
 class Tasks(harness.ToolchainCase):
+    def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
+        ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
+        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'ancestor.nex'}));self.cli('check',outer)
+        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        self.root=child;self.file=child/'main.nex';task=self.scaffold();task['checks']=[];task['requirements']=[]
+        self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
+        run=self.task('run','--directory',ancestor/'captures/run');receipt=Path(run['output'])
+        before=harness.database_rows(ancestor/'.nex/graph.db');source_before=harness.database_rows(child/'.nex/graph.db')
+        replay=self.cli('task',receipt,'--kind','replay',timeout=180)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],run['programs'])
+        self.assertEqual(harness.database_rows(ancestor/'.nex/graph.db'),before)
+        self.assertEqual(harness.database_rows(child/'.nex/graph.db'),source_before)
+        state=Path(replay['output']).parent/'state';self.assertTrue((state/'.nex/graph.db').is_file())
+        self.assertFalse((receipt.parent/'.nex/graph.db').exists())
+        self.assertEqual(self.cli('task',state/'task.json','--kind','history')['runs'][0]['status'],'passed')
+        saved=json.loads(Path(replay['output']).read_text());ids={row[2] for row in harness.database_rows(state/'.nex/graph.db')[1]['node_ids']}
+        self.assertTrue(all(binding['node_id'] in ids for group in saved['bindings'].values() for binding in group if 'node_id' in binding))
+        self.assertIn(receipt.parent/'.nex/tasks/runs',Path(replay['output']).parents)
+
+    def test_replay_reads_a_readonly_receipt_and_keeps_its_tree_unchanged(self):
+        task=self.scaffold();task['checks']=[];task['requirements']=[]
+        self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
+        run=self.task('run','--directory',self.root/'saved-run');folder=Path(run['output']).parent
+        import hashlib
+        before={p.relative_to(folder).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.rglob('*') if p.is_file()}
+        paths=sorted(folder.rglob('*'),key=lambda p:len(p.parts),reverse=True)
+        for p in paths:
+            if not p.is_symlink():p.chmod(0o500 if p.is_dir() else 0o400)
+        folder.chmod(0o500)
+        try:
+            replay=self.cli('task',folder/'receipt.json','--kind','replay','--directory',self.root/'new-run',timeout=180)
+            self.assertTrue(replay['ok']);self.assertEqual(before,{p.relative_to(folder).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.rglob('*') if p.is_file()})
+            self.assertFalse((folder/'.nex').exists())
+        finally:
+            folder.chmod(0o700)
+            for p in reversed(paths):
+                if not p.is_symlink():p.chmod(0o700 if p.is_dir() else 0o600)
+
     def scaffold(self, source=None):
         self.source(source or '''module taskdemo;
 pub fn increment(x: i64) -> i64 { return x + 1; }

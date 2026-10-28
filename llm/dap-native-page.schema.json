@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.dap-native-page/1",
+  "title": "NEX native DAP variables response body.nex",
+  "type": "object",
+  "required": ["native_page"],
+  "additionalProperties": false,
+  "properties": {
+    "native_page": {
+      "type": "object",
+      "required": ["start", "requested_count", "returned_count", "limit"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "requested_count": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "returned_count": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "limit": {"const": 1000}
+      }
+    }
+  }
+}
