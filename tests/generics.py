@@ -131,8 +131,8 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
         else:
             fixture=self.historical_store('0.6');old=fixture['revision'];old_graph=fixture['graph'];old_nodes=fixture['operations']
         self.file.unlink();self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
-        current=self.cli('migrate');self.assertEqual(current['language'],'0.24');self.assertNotEqual(current['revision'],old)
-        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6','0.24'})
+        current=self.cli('migrate');self.assertEqual(current['language'],harness.CURRENT_LANGUAGE);self.assertNotEqual(current['revision'],old)
+        self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.6',harness.CURRENT_LANGUAGE})
         graph=self.cli('graph');nodes=self.cli('operations','--symbol','value')['nodes']
         self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in old_graph['nodes']})
         self.assertEqual({n['path']:n['id'] for n in nodes},{n['path']:n['id'] for n in old_nodes})
@@ -206,7 +206,7 @@ fn observe<T>(box:Box<T>) -> unit !{io} {print(box.value);}
 fn main() -> unit !{io} {observe(Box(41));}
 ''')
         session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text());revision=session['revision']
-        frame={'schema':'nex.debug-frame/1','language':'0.24','revision':revision,'build_key':manifest['build_key'],
+        frame={'schema':'nex.debug-frame/1','language':manifest['language'],'revision':revision,'build_key':manifest['build_key'],
                'function':'watches::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'box','type':'watches::Box<i64>','value':{'value':'41'}}],'truncated':False}
         path=self.root/'frame.json';path.write_text(json.dumps(frame))
@@ -243,6 +243,7 @@ fn main() -> unit !{io} {observe(Box(41));}
         self.assertEqual(subprocess.check_output([changed['executable']],text=True),'42\n100\n')
         self.assertEqual(self.cli('eval')['stdout'],'42\n100\n')
         clean=self.root/'clean';clean.mkdir()
+        shutil.copyfile(self.root/'nex.json',clean/'nex.json')
         for name in ['main.nex','model.nex','left.nex','right.nex']:shutil.copyfile(self.root/name,clean/name)
         fresh=self.cli('build',cwd=clean);self.assertEqual(fresh['compiled_modules'],4)
         self.assertEqual(subprocess.check_output([fresh['executable']],text=True),'42\n100\n')

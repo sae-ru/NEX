@@ -9,6 +9,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+import re
 import sqlite3
 
 
@@ -56,6 +57,56 @@ def _retained(before, after, head):
     _require(after['tables']['head'] == [(1, head)], 'migration selected wrong HEAD')
 
 
+def migrate_reviewed_task_fixture(cli, project, revision, expected_revision, *, reviewed_sources=None):
+    """Explicit 025 target projection for these pinned historical fixtures.
+
+    The original bundle is verified by the compiler, never edited or relabelled.
+    Adding throw to task callable declarations/types keeps their signatures
+    coherent. The checked candidate is retained beside the test evidence.
+    """
+    project = Path(project)
+    before = _state(project/'.nex/graph.db')
+    arguments = ['migrate', '--revision', revision]
+    plan = cli(*arguments, '--kind', 'plan', cwd=project)
+    _require(plan['origin_verified'] and plan['graph_read_only'] and
+             _state(project/'.nex/graph.db') == before, 'migration plan modified its retained origin')
+    candidate = copy.deepcopy(plan['candidate'])
+    _require(candidate['target_language'] == '0.25', 'reviewed fixture target is not025')
+    original = copy.deepcopy(candidate['sources'])
+    if not plan['target_valid']:
+        _require(plan['target_diagnostic']['code'] == 'E_EFFECT', 'unexpected historical fixture diagnostic')
+        rejected = cli(*arguments, cwd=project, expected_success=False)
+        _require(rejected['code'] == 'E_EFFECT' and _state(project/'.nex/graph.db') == before,
+                 'unreviewed task effect migration changed history')
+        if reviewed_sources is None:
+            for name, text in candidate['sources']['files'].items():
+                masked = re.sub(r'//[^\n]*|"(?:\\.|[^"\\])*"', lambda m: ' '*len(m[0]), text)
+                edits = [m.end(1) for m in re.finditer(r'!\{([^{}]*)\}', masked)
+                         if 'task' in {v.strip() for v in m[1].split(',')} and
+                         'throw' not in {v.strip() for v in m[1].split(',')}]
+                for end in reversed(edits):
+                    text = text[:end] + ',throw' + text[end:]
+                candidate['sources']['files'][name] = text
+    if reviewed_sources is not None:
+        candidate['sources'] = copy.deepcopy(reviewed_sources)
+    changed = candidate['sources'] != original
+    if changed:
+        path = project/('reviewed-target-' + revision + '.json')
+        _write(path, candidate)
+        arguments += ['--candidate', path]
+        checked = cli(*arguments, '--kind', 'plan', cwd=project)
+        _require(checked['origin_verified'] and checked['target_valid'] and checked['candidate_used'] and
+                 _state(project/'.nex/graph.db') == before, 'reviewed candidate was not checked read-only')
+    else:
+        _require(plan['target_valid'], 'invalid fixture needs an explicit reviewed target')
+    result = cli(*arguments, '--expected-revision', expected_revision, cwd=project)
+    _require(result['origin_verified'] and result['candidate_used'] == changed and
+             result['declared_original_revision'] == revision and result['language'] == '0.25',
+             'migration lost its checked origin or reviewed candidate')
+    _retained(before, _state(project/'.nex/graph.db'), result['revision'])
+    return result, candidate['sources']
+
+
 def check_installed_task_migration(cli, root, resources):
     """Exercise actual CLI archive migration; return bounded evidence.
 
@@ -67,7 +118,7 @@ def check_installed_task_migration(cli, root, resources):
     out = root/'language-migration019-020'
     out.mkdir(exist_ok=False)
     fixtures = resources/'examples/task-migration'
-    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24'), 'migration gate requires a matching language023/024 SDK')
+    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24','0.25'), 'migration gate requires a matching language023/024/025 SDK')
     evidence = {'language':current_language, 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
 
     def restore(name, label=None):
@@ -120,7 +171,11 @@ def check_installed_task_migration(cli, root, resources):
         finally:
             manifest.write_bytes(original_manifest)
         physical_unchanged(project, physical)
-        migrated = cli('migrate', '--expected-revision', metadata['head'], cwd=project)
+        expected_bundle = selected['bundle']
+        if current_language == '0.25':
+            migrated, expected_bundle = migrate_reviewed_task_fixture(cli, project, metadata['head'], metadata['head'])
+        else:
+            migrated = cli('migrate', '--expected-revision', metadata['head'], cwd=project)
         current_revision = migrated['revision']
         _require(migrated['language'] == current_language and migrated['origin_language'] == '0.19' and
                  migrated['origin_verified'] and not migrated['materialized'] and current_revision != metadata['head'], 'migration did not verify genuine019 identity')
@@ -130,7 +185,7 @@ def check_installed_task_migration(cli, root, resources):
         graph = cli('graph', '--revision', current_revision, cwd=project)
         for envelope in (graph, graph['operation_graph'], graph['declaration_graph']):
             _require(envelope['language'] == current_language and envelope['revision'] == current_revision, 'new graph envelope language/revision differs')
-        _require(graph['bundle'] == selected['bundle'], '019-to020 migration changed source without review')
+        _require(graph['bundle'] == expected_bundle, 'migration source differs from its checked target')
         _require(cli('eval', '--revision', current_revision, cwd=project)['stdout'] == '42\n', 'migrated selected source changed observation')
         if name == 'tasks':
             _require(cli('run', '--revision', current_revision, cwd=project, timeout=300)['stdout'] == '42\n', 'installed native task archive differs')
@@ -155,6 +210,7 @@ def check_installed_task_migration(cli, root, resources):
             'tables':16, 'old_rows_ids_ddl_retained':True, 'physical_projection_unchanged':True,
             'canonical_origin_verified':True, 'idempotent':True, 'conflict_rollback':True,
             'implicit_HEAD_language_change_rejected':True,
+            'reviewed_task_delivery_effects':expected_bundle != selected['bundle'],
             'native_task_archive':name == 'tasks'}
 
     for language in ('0.1', '0.18', '0.17', '0.20', '0.21', '0.22', '0.23', '0.24', 'unknown'):
@@ -185,7 +241,11 @@ def check_installed_task_migration(cli, root, resources):
     _require(text != graph['source'], 'reviewed helper repair did not change its declared effect')
     repaired['source'] = text; repaired['bundle']['files']['main.nex'] = text
     path = out/'reviewed-helper.graph.json'; _write(path, repaired)
-    migrated = cli('migrate', path, cwd=project)
+    if current_language == '0.25':
+        migrated, _ = migrate_reviewed_task_fixture(cli, project, metadata['head'], metadata['head'],
+                                                    reviewed_sources=repaired['bundle'])
+    else:
+        migrated = cli('migrate', path, cwd=project)
     _require(migrated['origin_verified'] and migrated['origin_language'] == '0.19' and migrated['language'] == current_language, 'reviewed repair lost verified retained origin')
     _retained(before, _state(database), migrated['revision']); physical_unchanged(project, physical)
     evidence.update(ok=True, genuine019=True, history_preserved=True,

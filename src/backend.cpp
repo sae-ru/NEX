@@ -1063,12 +1063,21 @@ public:
       if(f.effects.contains("throw")){exceptionOutput={fresh(),Type::Str};if(f.closure||!f.params.empty())out<<", ";out<<exceptionOutput.name<<": !llvm.ptr";}
       out<<")";if(f.result!=Type::Unit)out<<" -> "<<ty(f.result);out<<" {\n";
       ownedToken={};prologue=true;
-      if(propagatesResult(f)||exceptionPrototype)ownedToken=call("nex_owned_enter",{},Type::I64,f.span);if(exceptionPrototype){exceptionOwners.push_back(ownedToken);exceptionScratch=allocateSlot(Type::Str,f.span);}
+      // Function breakpoints can stop at the first runtime call. Publish the
+      // borrowed argument locations before that call can clobber registers;
+      // these stack stores acquire no ownership and invoke no source effects.
+      std::vector<std::string> parameterDebugSlots;
       for(size_t i=0;i<f.params.size();++i){
         const auto &param=f.params[i];SiteScope parameterSite(activeSite,pathSites.at("parameter/"+std::to_string(i)));auto slot=allocateSlot(param.type,param.span);
-        if(param.type==Type::F64)scopes.back()[param.name]=call("nex_f64_validate",{scopes.back().at(param.name),constant(param.span.line,Type::I64,param.span)},Type::F64,param.span);
         // Debug storage borrows the parameter and never participates in cleanup.
         writeSlot(scopes.back().at(param.name),slot,param.span);describeStorage(param.name,param.type,param.span,slot,i+1+(f.closure?1:0));
+        parameterDebugSlots.push_back(slot);
+      }
+      if(propagatesResult(f)||exceptionPrototype)ownedToken=call("nex_owned_enter",{},Type::I64,f.span);if(exceptionPrototype){exceptionOwners.push_back(ownedToken);exceptionScratch=allocateSlot(Type::Str,f.span);}
+      for(size_t i=0;i<f.params.size();++i)if(f.params[i].type==Type::F64){
+        const auto &param=f.params[i];SiteScope parameterSite(activeSite,pathSites.at("parameter/"+std::to_string(i)));
+        scopes.back()[param.name]=call("nex_f64_validate",{scopes.back().at(param.name),constant(param.span.line,Type::I64,param.span)},Type::F64,param.span);
+        writeSlot(scopes.back().at(param.name),parameterDebugSlots[i],param.span);
       }
       for(size_t i=0;i<f.captures.size();++i){const auto &capture=f.captures[i];SiteScope captureSite(activeSite,pathSites.at("capture/"+std::to_string(i)));auto slot=allocateSlot(capture.type,capture.span);auto value=call(capture.type.heap()?"nex_collection_get_heap":"nex_collection_get_i64",{{environment,Type::Str},constant(i,Type::I64,capture.span),constant(capture.span.line,Type::I64,capture.span)},capture.type.heap()?capture.type:Type(Type::I64),capture.span);value=fromScalar(value,capture.type,capture.span);setSlotOwner(slot);writeSlot(value,slot,capture.span);describeStorage(capture.name,capture.type,capture.span,slot);scopes.back()[capture.name]={slot,capture.type,true};}
       allocate(f.body);prologue=false;

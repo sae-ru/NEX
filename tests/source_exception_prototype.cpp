@@ -33,9 +33,9 @@ void trap(const std::string &source,const std::string &code,uint64_t budget=1000
 }
 int main(){
   try{
-    static_assert(int(SourceLanguage::TaskStreams024)==6&&int(SourceLanguage::SourceExceptions025Prototype)==7);
+    static_assert(int(SourceLanguage::TaskStreams024)==6&&int(SourceLanguage::SourceExceptions025Prototype)==7&&int(SourceLanguage::SourceExceptions025)==8);
     static_assert(int(Stmt::Match)==7&&int(Stmt::Try)==8&&int(Stmt::Throw)==9&&int(Expr::Propagate)==15);
-    require(std::string(languageVersion)=="0.24"&&currentSourceLanguage==SourceLanguage::TaskStreams024,"public version changed");
+    require(std::string(languageVersion)=="0.25"&&currentSourceLanguage==SourceLanguage::SourceExceptions025,"public025 default absent");
     value(R"(fn main()->i64{try{throw("USER","message");}catch(code,message){assert(code=="USER"&&message=="message");return 42;}})");
     value(R"(fn main()->i64{try{throw("U\u0000SER","start\u0000end");}catch(code,message){assert(len(code)==5&&len(message)==9);assert(code=="U\u0000SER"&&message=="start\u0000end");return 42;}})");
     value(R"(fn leaf()->i64 !{throw}{throw("USER","leaf");}fn main()->i64{try{return leaf();}catch(code,message){return len(code)+len(message)+34;}})");
@@ -79,7 +79,7 @@ int main(){
       ++cases;
     }
     {
-      auto p=parse(R"(module retained;fn throw(value:i64)->i64{return value;}fn try()->i64{return throw(42);}fn main()->i64{let catch:i64=try();return catch;})","retained.nex");check(p);
+      auto p=parseVersioned(R"(module retained;fn throw(value:i64)->i64{return value;}fn try()->i64{return throw(42);}fn main()->i64{let catch:i64=try();return catch;})","retained.nex",SourceLanguage::TaskStreams024);check(p);
       require(evaluate(p,"main",100000).value.getAsInteger()==42,"retained024 contextual names changed");
       bool privateRejected=false;try{emitSourceExceptionsPrototypeTypeScript(p,{{"main","main"}});}catch(const Error &e){privateRejected=e.code=="E_LANGUAGE_VERSION";}require(privateRejected,"public program entered private TypeScript emitter");
       require(!emitTypeScript(p,{{"main","main"}}).privateSourceExceptions,"public TypeScript module requested private exception helper");
@@ -87,7 +87,7 @@ int main(){
       bool rejected=false;try{parseVersioned("module x;fn main()->i64{return 42;}","no-public025.nex",SourceLanguage::SourceExceptions025Prototype);}catch(const Error &e){rejected=e.code=="E_LANGUAGE_VERSION";}
       require(rejected,"prototype enabled public version selection");++cases;
     }
-    std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_language\":\"0.24\",\"private_language\":\"0.25-prototype\",\"native_supported\":false,\"typescript_supported\":false,\"task_supported\":false}\n";
+    std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_language\":\"0.25\",\"retained_language\":\"0.24\",\"private_language\":\"0.25-prototype\",\"native_supported\":false,\"typescript_supported\":false,\"task_supported\":false}\n";
     return 0;
   }catch(const SourceException &error){std::cerr<<"unexpected source exception "<<error.code<<": "<<error.what()<<"\n";}
   catch(const Error &error){std::cerr<<"after "<<cases<<" cases: "<<error.code<<": "<<error.what()<<" at "<<error.span.line<<":"<<error.span.column<<"\n";}

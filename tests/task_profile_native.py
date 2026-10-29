@@ -21,12 +21,12 @@ fn main()->unit !{task,io}{let indirect:fn(i64)->i64 !{task}=keep(child);print(c
 fn increment(n:i64)->i64{return n+1;}
 fn producer(queue:channel<i64>)->unit !{task}{var n:i64=0;while n<3{task_yield();assert(task_send(queue,n));n=n+1;}assert(task_close(queue));}
 fn consumer(queue:channel<i64>)->i64 !{task}{var n:i64=0;var total:i64=0;while n<3{total=total+increment(unwrap(task_recv(queue)));n=n+1;}return total;}
-fn main()->unit !{task,io}{let result:i64=with_tasks(2,fn(scope:task_scope)->i64 !{task}{let queue:channel<i64>=channel_new<i64>(scope,0);let first:task<unit>=task_spawn(scope,fn()->unit !{task}{producer(queue);});let second:task<i64>=task_spawn(scope,fn()->i64 !{task}{return consumer(queue);});task_wait(first);return task_wait(second);});print(result);}
+fn main()->unit !{task,io,throw}{let result:i64=with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{let queue:channel<i64>=channel_new<i64>(scope,0);let first:task<unit>=task_spawn(scope,fn()->unit !{task}{producer(queue);});let second:task<i64>=task_spawn(scope,fn()->i64 !{task}{return consumer(queue);});task_wait(first);return task_wait(second);});print(result);}
 ''', {"main": 1, "producer": 1, "consumer": 1, "increment": 3}, "6\n"),
     ("pure_descriptor", r'''
 fn pure(n:i64)->i64{return n+1;}
 fn callback(scope:task_scope)->i64{return pure(41);}
-fn main()->unit !{task,io}{print(with_tasks(1,callback));}
+fn main()->unit !{task,io,throw}{print(with_tasks(1,callback));}
 ''', {"main": 1, "callback": 1, "pure": 1}, "42\n"),
     ("parallel_helper", r'''
 fn pure(n:i64)->i64{return n+1;}
@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--output", type=Path)
     options = parser.parse_args()
     compiler = str(options.nex.resolve())
+    language = json.loads(subprocess.check_output([compiler,"describe","--kind","index","--json"]))["language"]
     requested = options.output or (Path(os.environ["NEX_TASK_PROFILE_OUTPUT"]) if os.environ.get("NEX_TASK_PROFILE_OUTPUT") else None)
     temporary = tempfile.TemporaryDirectory(prefix="nex task profile native ") if requested is None else None
     output = Path(temporary.name) if temporary else requested.resolve()
@@ -66,7 +67,7 @@ def main():
         output.mkdir(parents=True, exist_ok=False)
     workspace = output / "work"
     workspace.mkdir()
-    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.24", "entry": "calls.nex"}))
+    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": language, "entry": "calls.nex"}))
     grant = workspace / "grant"
     grant.mkdir()
     (grant / "text").write_bytes("A🧠\0B".encode())
@@ -117,7 +118,7 @@ def main():
         saved = json.loads(Path(session["output"]).read_text())
         assert saved["build"]["revision"] == session["revision"], saved
         assert saved["build"]["build_key"] == session["build_key"], saved
-        assert saved["build"]["language"] == "0.24", saved
+        assert saved["build"]["language"] == language, saved
         assert saved["build"]["compiler_build"] and saved["build"]["source_hash"], saved
         for complete in ("aggregates", "memory", "cpu", "elapsed", "lifetime"):
             assert saved["completeness"][complete], (complete, saved)

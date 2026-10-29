@@ -6,7 +6,7 @@ import platform
 import re
 import sqlite3
 import sys
-from sdk_task_file_migration import _require,_sha,_state,_retained,_write
+from sdk_task_file_migration import _require,_sha,_state,_retained,_write,migrate_reviewed_task_fixture
 
 SQL_PINS={
  'nominal':'c25073ea5b05ac8763d7a28fb2e17c09acb97fd50e18fb95260d8bfdbc1b347c',
@@ -26,9 +26,10 @@ def c_string_literal(value):
 
 def check_installed_source_resources(cli,run,last_command,root,resources,driver,*,compiler=None,live=False):
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
+ language=cli('describe','--kind','index')['language']
  feature=cli('describe','--field','source_resources')['value']
  pack=json.loads((resources/'llm/language-pack.json').read_text())
- _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']=='0.24','resource descriptor/pack differ')
+ _require(feature==pack['source_resources'] and feature['public_enabled'] and feature['language']==language and language in ('0.24','0.25'),'resource descriptor/pack differ')
  _require(cli('guide','--kind','source-resources')['text']==(resources/'docs/source-resources.md').read_text(),'resource guide differs')
  base='''module sdk_resource;
 server resource Session;
@@ -52,7 +53,7 @@ server fn main()->unit!{ffi,io}{BODY}
    evidence['request_resources']=check_installed_request_resources(run,root,resources,driver)
  for kind in ('C11','CPP20'):
   project=out/kind;project.mkdir();marker=project/'events'
-  _write(project/'nex.json',{'schema':'nex.project/1','language':feature['language'],'entry':'main.nex'})
+  _write(project/'nex.json',{'schema':'nex.project/1','language':language,'entry':'main.nex'})
   source=project/'main.nex';source.write_text(base.replace('PIN','0'*64).replace('BODY',body))
   signatures={name:cli('ffi','main.nex','--symbol',name,cwd=project) for name in ('create','read')}
   pins={name:_sha(json.dumps(value,sort_keys=True,separators=(',',':')).encode()) for name,value in signatures.items()}
@@ -86,7 +87,8 @@ server fn main()->unit!{ffi,io}{BODY}
    let producer:task<unit>=task_spawn(scope,server fn()->unit!{task,ffi}{let owner:Session=create(42);assert(task_send(queue,owner));});
    let received:Session=unwrap(task_recv(queue));task_wait(producer);return received;
   });let alias:Session=result;assert(read(alias)==42);assert(resource_close(result));assert(!resource_is_open(alias));print(42);'''
-  task_source=base.replace('!{ffi,io}','!{task,ffi,io}').replace('PIN',pin).replace('BODY',task_body)
+  if language=='0.25':task_body=task_body.replace('fn(scope:task_scope)->Session!{task,ffi}', 'fn(scope:task_scope)->Session!{task,ffi,throw}')
+  task_source=base.replace('!{ffi,io}','!{task,ffi,io,throw}' if language=='0.25' else '!{task,ffi,io}').replace('PIN',pin).replace('BODY',task_body)
   source.write_text(task_source);marker.unlink()
   evaluated=cli('eval','--foreign',host,cwd=project)
   _require(evaluated['stdout']=='42\n' and evaluated['foreign_resource_bytes_after_scope']==0 and marker.read_text()=='IFXD','task reference transfer or physical quota settlement differs')
@@ -143,7 +145,9 @@ server fn main()->unit!{ffi,io}{BODY}
   _write(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':selected['bundle']['entry']});manifest=(project/'nex.json').read_bytes();initial=_state(database);head=data['head']
   _require(len(initial['tables'])==16 and len(initial['tables']['revisions'])==3,'genuine021 installed history incomplete')
   for row in data['revisions']:
-   before=_state(database);changed=cli('migrate','--revision',row['revision'],'--expected-revision',head,cwd=project)
+   before=_state(database)
+   if language=='0.25':changed,_=migrate_reviewed_task_fixture(cli,project,row['revision'],head)
+   else:changed=cli('migrate','--revision',row['revision'],'--expected-revision',head,cwd=project)
    _require(changed['origin_verified'] and changed['origin_language']=='0.21' and changed['language']==feature['language'],'installed021 migration did not verify its retained origin')
    head=changed['revision'];_retained(before,_state(database),head)
    reference=cli('eval','--revision',head,cwd=project);native=cli('run','--revision',head,'--profile','release',cwd=project)

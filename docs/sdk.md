@@ -1,3 +1,24 @@
+# Development0.136.0 / language0.25 SDK candidate
+
+The current workflow requires **39 phases**, including `source-exceptions`.
+It checks source-error delivery from joined children, uncaught errors, preserved
+rethrow locations, checked-trap separation, effect rejection and native profile
+cleanup alongside the existing native/browser/graph/provider workflows.
+ABI6 provider records use schemas11/12/13. New acceptance projects use the actual
+compiler language; historical stores retain their original rows and manifests.
+A migration that needs task delivery effects uses an explicit checked candidate.
+
+Run the complete installed workflow in a fresh output directory:
+
+```sh
+python3 /chosen/sdk/share/nex/tools/sdk_acceptance.py /chosen/sdk --output /new/evidence --browser --live
+```
+
+This is a development candidate. Independent phase checks do not establish full
+SDK, relocation, archive or platform acceptance. The older sections below retain
+their stated version scopes. Query `nex describe --kind index --json` and
+`nex doctor --json` for the compiler actually installed.
+
 Toolchain0.135.1 adds a mandatory38th installed acceptance phase,
 `structured-task-tcp`. It runs the installed pinned-provider source and delivery
 helpers:36 actual AST/debug/release socket cases,22 target-policy rejections,
@@ -588,3 +609,19 @@ filesystem path containing emoji, quotes, a backslash, newline, tab and a digit
 after non-ASCII bytes. Paths are separate argv values, never shell fragments.
 SDK read/write isolation and all existing resource lifetime checks remain in
 force; this fixes producer preparation rather than changing NEX semantics.
+# Public025 integration gates
+
+The025 candidate adds an installed source-error check:
+
+```sh
+python3 /sdk/share/nex/tools/sdk_source_exceptions.py /sdk --output /new/exception-evidence
+```
+
+It executes caught child errors, native debug/release, TypeScript, original
+rethrow payload/site, uncatchable runtime traps, missing-effect rejection and
+managed cleanup after caught/uncaught native profiles. Success covers this gate;
+the report explicitly keeps full_SDK_accepted=false. The complete025 acceptance
+workflow additionally requires its versioned provider, file/network, debugger,
+browser and platform gates. Retained024 provider families keep ABI5 and their
+original record schemas;025 uses ABI6 and record families11/12/13.
+

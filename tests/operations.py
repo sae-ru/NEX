@@ -106,6 +106,7 @@ class Operations(harness.ToolchainCase):
         before=self.cli('graph');foreign=copy.deepcopy(before)
         for n in foreign['operation_graph']['nodes']:n['id']='0'*32
         graph=self.root/'foreign.json';graph.write_text(json.dumps(foreign));directory=self.root/'other';directory.mkdir()
+        shutil.copyfile(self.root/'nex.json',directory/'nex.json')
         self.cli('import',graph,cwd=directory);after=self.cli('graph',cwd=directory)
         first={n['site']:n['id'] for n in before['operation_graph']['nodes']};second={n['site']:n['id'] for n in after['operation_graph']['nodes']}
         self.assertEqual(first.keys(),second.keys());self.assertTrue(all(first[k]!=second[k] and second[k]!='0'*32 for k in first))

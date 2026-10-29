@@ -6,6 +6,11 @@ contract and may catch source errors internally. Public025 installed/browser
 acceptance is still pending; see exceptions.md. Browser dependencies, npm lock
 and runtime notices have not changed.
 
+The025 dedicated worker_compute contract accepts a subset of task/throw. Caught
+source errors stay inside the worker; uncaught/rethrown errors produce a generic
+E_SOURCE_EXCEPTION transport result. Existing trap codes remain distinct. The
+title/initial/update/view/commands entries retain their pure contracts.
+
 Language0.20 task file reads are server-only native/reference operations.
 TypeScript/Node and the browser have no source filesystem bridge. Reachable
 server functions remain rejected, and unreachable server readers remain absent

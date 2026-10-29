@@ -81,7 +81,7 @@ NEX_FFI_MODULE_EXPORT const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi
 '''
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('emitter');p.add_argument('reference');p.add_argument('compiler');p.add_argument('--output',default=os.environ.get('NEX_EXCEPTION_HOST_OUTPUT'));p.add_argument('--case',action='append');p.add_argument('--runtime-cache');p.add_argument('--crypto-library');p.add_argument('--watch-compiler');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('emitter');p.add_argument('reference');p.add_argument('compiler');p.add_argument('--output',default=os.environ.get('NEX_EXCEPTION_HOST_OUTPUT'));p.add_argument('--case',action='append');p.add_argument('--runtime-cache');p.add_argument('--crypto-library');p.add_argument('--crypto-include');p.add_argument('--watch-compiler');a=p.parse_args()
     source=Path(__file__).resolve().parents[1];runtime=source/'runtime';out=Path(a.output or os.environ.get('NEX_EXCEPTION_HOST_OUTPUT') or tempfile.mkdtemp(prefix='nex-source-host-')).resolve();out.mkdir(parents=True,exist_ok=True)
     emitter=str(Path(a.emitter).resolve());reference=str(Path(a.reference).resolve());compiler=str(Path(a.compiler).absolute());crypto=[a.crypto_library] if a.crypto_library else ([str(Path('/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib'))] if platform.system()=='Darwin' else ['-lcrypto'])
     report={'ok':False,'cases':[],'commands':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_source_support':False,'public_language':'0.24','private_identity':'0.25-prototype','private_host_abi':'0x4e45585400002502'}
@@ -90,6 +90,7 @@ def main():
         r=subprocess.run(list(map(str,cmd)),cwd=out,text=True,capture_output=True,env=env,timeout=240);(out/(label+'.stdout')).write_text(r.stdout);(out/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'label':label,'argv':list(map(str,cmd)),'exit':r.returncode});save();assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-3500:]);return r
     save();run('target',[compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',out/'target.ll']);target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-fPIC','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_TASK_DEBUG_ENABLED','-DNEX_FOREIGN_ENABLED','-I'+str(runtime)]
+    if a.crypto_include:flags.append('-I'+str(Path(a.crypto_include).resolve()))
     names=['runtime.cpp','nex_files.cpp','files_runtime.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_task_application.cpp','nex_task_debug.cpp','foreign_runtime.cpp','nex_foreign.cpp','nex_ffi_loader.cpp','nex_ffi.cpp','nex_ffi_types.cpp','nex_ffi_resources.cpp','nex_external_resource.cpp','nex_resource_region.cpp','nex_resource_executor.cpp','nex_json.cpp']
     cache=Path(a.runtime_cache).resolve() if a.runtime_cache else out;cache.mkdir(parents=True,exist_ok=True)
     compiler_digest=hashlib.sha256(Path(compiler).read_bytes()).hexdigest();headers={str(v.relative_to(runtime)):hashlib.sha256(v.read_bytes()).hexdigest() for v in sorted(runtime.glob('*.h'))}

@@ -8,7 +8,10 @@
       "const": "nex.debug-frame/1"
     },
     "language": {
-      "const": "0.24"
+      "enum": [
+        "0.24",
+        "0.25"
+      ]
     },
     "revision": {
       "type": "string",

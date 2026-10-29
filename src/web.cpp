@@ -3,6 +3,7 @@
 #include "nex/task_process.h"
 #include "nex_task_limits.h"
 #include "llvm/Support/Error.h"
+#include <algorithm>
 #include <filesystem>
 #include <cstdlib>
 
@@ -34,9 +35,10 @@ public:
     if(error){fs::copy(temporary/name,original/name,fs::copy_options::recursive|fs::copy_options::copy_symlinks);}
   }
 };
-void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result,bool taskWorker=false){
+void requireFunction(const Function &f,const std::vector<Type> &params,const Type &result,bool taskWorker=false,bool sourceErrors=false){
   if(f.effects.contains("task")&&!taskWorker)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot invoke task functions",f.span);
-  bool valid=!f.test&&f.realm!="server"&&(f.effects.empty()||(taskWorker&&f.effects.size()==1&&f.effects.contains("task")))&&f.result==result&&f.params.size()==params.size();
+  bool effects=f.effects.empty()||(taskWorker&&std::all_of(f.effects.begin(),f.effects.end(),[&](const auto &effect){return effect=="task"||(sourceErrors&&effect=="throw");}));
+  bool valid=!f.test&&f.realm!="server"&&effects&&f.result==result&&f.params.size()==params.size();
   if(valid)for(size_t i=0;i<params.size();++i)if(f.params[i].type!=params[i])valid=false;
   if(!valid)throw Error("E_WEB_SIGNATURE","invalid web application contract for "+f.name+"; see docs/web.md",f.span);
 }
@@ -73,7 +75,7 @@ Project prepare(const Program &p){
   if(workerCompute){
     if(workerCompute->params.size()!=1)throw Error("E_WEB_SIGNATURE","worker_compute requires one wire input",workerCompute->span);
     const auto &input=workerCompute->params[0].type;
-    requireFunction(*workerCompute,{input},workerCompute->result,true);
+    requireFunction(*workerCompute,{input},workerCompute->result,true,p.sourceLanguage==SourceLanguage::SourceExceptions025);
     try{workerInput=wireSchema(p,input);workerOutput=wireSchema(p,workerCompute->result);}
     catch(const Error &e){throw Error("E_WEB_SIGNATURE",std::string("worker_compute requires wire input/output: ")+e.what(),workerCompute->span);}
     if(workerCommands->result.kind!=Type::List||workerCommands->result.element->kind!=Type::Record)throw Error("E_WEB_SIGNATURE","worker_commands must return list<worker::Command<Input>>",workerCommands->span);
@@ -104,8 +106,10 @@ Project prepare(const Program &p){
     // Each dedicated worker owns one root scheduler. Only wire values cross
     // the host boundary; scopes/futures/channels remain inside that scheduler.
     auto compute=nativeSymbol(workerCompute->name);
-    worker.source+="\nexport function execute(input: Parameters<typeof "+compute+">[0]) { return "+
-      (worker.asynchronous?(worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)")+"; }\n";
+    auto execution=worker.asynchronous?(worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)";
+    if(worker.privateSourceExceptions)
+      worker.source+="\nexport async function execute(input: Parameters<typeof "+compute+">[0]) { try { return await "+execution+"; } catch (error) { if (sourceException.details(error) !== undefined) throw new nex.NexError('E_SOURCE_EXCEPTION', 'Uncaught NEX source exception'); throw error; } }\n";
+    else worker.source+="\nexport function execute(input: Parameters<typeof "+compute+">[0]) { return "+execution+"; }\n";
     if(worker.asynchronous)files["src/nex-task-runtime.ts"]=readFile(resourceFile("web/nex-task-runtime.ts"));
     if(worker.privateSourceExceptions)files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
     files["src/worker-program.ts"]=worker.source;

@@ -205,7 +205,7 @@ struct BoundaryHost:TaskReferenceExternalHost {
 const std::string simple="fn main()->i64 !{task}{let owned:list<str>=[\"held\",\"🧠\"];task_yield();return 40+len(owned);}";
 const std::string spinning=R"(
 fn spin()->i64{let owned:list<str>=["held","🧠"];var n:i64=0;while true{assert(len(owned)==2);n=n+1;}return n;}
-fn main()->i64 !{io,task}{print("before");return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{io,task,throw}{print("before");return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
  let external:task<unit>=task_spawn(scope,fn()->unit !{task}{let held:list<str>=["lease","value"];task_yield();assert(len(held)==2);});
  return spin();
 });}
@@ -228,7 +228,7 @@ void schedulerTests(){
       "immediate completions lost a wake, reused a ticket or leaked a slot");++cases;
   }
   auto progress=source(R"(
-fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
  let pending:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 40;});
  let other:task<i64>=task_spawn(scope,fn()->i64{return 2;});
  return task_wait(pending)+task_wait(other);
@@ -244,7 +244,7 @@ fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
     require(result.value.scalar==42&&progressed,"parked external task blocked independent AST work");++cases;
   }
   auto cancelled=source(R"(
-fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
  let pending:task<i64>=task_spawn(scope,fn()->i64 !{task}{let held:list<str>=["held"];task_yield();assert(false);return len(held);});
  assert(task_cancel(pending));return 42;
 });}
@@ -277,7 +277,7 @@ fn main()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
     require(!premature&&host.gate->retired==1&&host.admitted==0,"root cancellation returned before physical drain or admitted stale bytes");
   }
   auto externallyBlocked=source(R"(
-fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
+fn main()->i64 !{task,throw}{return with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{
  let pending:task<i64>=task_spawn(scope,fn()->i64 !{task}{let held:list<str>=["owned"];task_yield();assert(false);return len(held);});
  return task_wait(pending);
 });}
@@ -301,7 +301,7 @@ fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
   // The region owner itself can be externally parked with no member jobs.
   // Root cancellation must retain that empty region's ledger until retirement.
   for(bool deadline:{false,true}){Host host;host.cooperative=false;std::stop_source stop;host.cancellation=stop.get_token();std::atomic<bool> premature=false;
-    auto nestedOwner=source("fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{task_yield();return 42;});}");
+    auto nestedOwner=source("fn main()->i64 !{task,throw}{return with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{task_yield();return 42;});}");
     std::jthread release([&]{eventually([&]{return host.gate->started.load()==1;},"empty-region owner did not start external operation");
       if(!deadline)stop.request_stop();std::this_thread::sleep_for(deadline?200ms:25ms);
       premature=host.scopesRetired.load()!=0||host.gate->retired.load()!=0;host.gate->release();});
@@ -342,7 +342,7 @@ fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
   for(bool preparation:{false,true})for(bool memory:{false,true}){
     BoundaryHost host(preparation,memory);std::atomic<bool> returned=false,premature=false;
     auto boundary=source(std::string(R"(
-fn main()->result<i64> !{task}{return with_tasks(2,fn(scope:task_scope)->result<i64> !{task}{
+fn main()->result<i64> !{task,throw}{return with_tasks(2,fn(scope:task_scope)->result<i64> !{task,throw}{
  let slow:task<unit>=task_spawn(scope,fn()->unit !{task}{let held:list<str>=["physical","owned"];task_yield();assert(false);});
  let broken:task<unit>=task_spawn(scope,fn()->unit !{task}{task_yield();});
 )")+(preparation?"":"task_wait(broken);")+"return err<i64>(\"E_ORIGINAL\",\"original scope result\");});}");
@@ -369,7 +369,7 @@ fn main()->result<i64> !{task}{return with_tasks(2,fn(scope:task_scope)->result<
   {Host host;auto filesystem=parseVersioned("module historical_external;server fn main()->i64 !{fs,task}{task_yield();return 42;}","historical019.nex",SourceLanguage::Tasks019);check(filesystem);
     sourceRejected("E_TASK_UNIMPLEMENTED",[&]{evaluateTaskReference(filesystem,"main",{},1000000,{},nullptr,&host);});
     require(host.prepared==0,"experimental host widened ordinary filesystem constructor support");}
-  auto stalled=source("fn main()->i64 !{task}{return with_tasks(1,fn(scope:task_scope)->i64 !{task}{let queue:channel<i64>=channel_new<i64>(scope,0);return unwrap(task_recv(queue));});}");
+  auto stalled=source("fn main()->i64 !{task,throw}{return with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{let queue:channel<i64>=channel_new<i64>(scope,0);return unwrap(task_recv(queue));});}");
   sourceRejected("E_TASK_DEADLOCK",[&]{evaluateTaskReference(stalled);});
   require(nexrt::liveObjects.load()==before,"scheduler tests retained source frames/values/capabilities");++cases;
 }

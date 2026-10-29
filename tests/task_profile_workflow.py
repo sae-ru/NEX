@@ -7,8 +7,8 @@ import support as harness
 SOURCE = '''module measured;
 fn helper(x:i64)->i64{return x+1;}
 fn leaf()->i64!{task}{task_yield();return helper(41);}
-fn main()->unit!{io,task}{
- print(with_tasks(2,fn(scope:task_scope)->i64!{task}{
+fn main()->unit!{io,task,throw}{
+ print(with_tasks(2,fn(scope:task_scope)->i64!{task,throw}{
   let child:task<i64>=task_spawn(scope,leaf);task_yield();return task_wait(child);
  }));
 }
@@ -32,7 +32,7 @@ class TaskProfileWorkflow(harness.ToolchainCase):
         self.assertEqual(report['function_sort_key'], 'self_cpu_ns')
         saved = json.loads(Path(report['output']).read_text())
         self.assertEqual(saved['schema'], 'nex.profile/2')
-        self.assertEqual(saved['language'], '0.24')
+        self.assertEqual(saved['language'], harness.CURRENT_LANGUAGE)
         self.assertEqual(saved['build']['language'], saved['language'])
         self.assertEqual(saved['build']['revision'], saved['revision'])
         self.assertEqual(saved['build']['build_key'], saved['build_key'])
@@ -92,7 +92,7 @@ class TaskProfileWorkflow(harness.ToolchainCase):
         (self.root/'app').mkdir()
         self.file = self.root/'app/main.nex'
         self.source(SOURCE)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         description = {'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile','task_limits':LIMITS}},
             'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}

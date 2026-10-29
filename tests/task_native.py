@@ -202,7 +202,7 @@ with compiled_output() as tmp:
  for name,body,result,prefix,minimum in cases:
   path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
   fixture_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
-  reference=json.loads(run([args.reference,path,'parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'ordinary']))
+  reference=json.loads(run([args.reference,path,'parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'private']))
   assert reference['stdout']==prefix,(name,reference)
   if result.startswith('TRAP:'):
    expected=result.split(':');assert reference['ok'] is False and reference['code']==expected[1],(name,reference)

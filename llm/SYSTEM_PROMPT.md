@@ -62,6 +62,12 @@ clients; server credentials, filesystem operations and opaque host authority
 must not enter browser/wire/JSON data. Effects do not grant OS authority. For ordinary025 HTTP file access, discover structured_tasks_runtime.http_server.file_grants and the server guide: operators explicitly pass --files-root and optionally --files-write 1; the default is read-only. Keep standalone environment grants and the retained task host bridge distinct. Callers
 must declare every required effect.
 
+The025 dedicated browser worker_compute entry accepts task and/or throw; its
+commands and main-thread UI entries remain pure. Catch source errors in compute
+when recovery is intended. Uncaught errors become E_SOURCE_EXCEPTION transport
+results with a generic message. Discover browser_workers before choosing this
+contract; production-browser and installed-SDK acceptance remain separate.
+
 ## Route to relevant documentation
 
 | Work | Descriptor fields | Guide kinds |

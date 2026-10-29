@@ -1,7 +1,7 @@
-# Typed browser worker jobs and structured tasks — toolchain0.120 development
+# Typed browser worker jobs — public025 integration candidate
 
 The browser adapter accepts these additional ordinary client/shared entries.
-Commands remain pure; compute may be pure or declare exactly `!{task}`:
+Commands remain pure; compute may declare any subset of `task` and `throw`:
 
 ```nex
 client fn worker_compute(input: Input) -> Output { /* pure computation */ }
@@ -17,9 +17,18 @@ must pass the existing strict wire schema rules: checked i64, finite f64,
 Unicode scalar strings, bytes, immutable lists/records/enums/results. Functions,
 file handles and unit cannot cross this boundary. The compiler checks the exact
 generic command input against the compute argument and validates library layout.
-Only empty effects or exactly task are accepted for worker_compute. The existing
+Only `task` and `throw` effects are accepted for worker_compute. The existing
 realm checker and wire checks prevent server/IO/filesystem/FFI capabilities and
 task authority from crossing this boundary. Main-thread UI entries remain pure.
+
+Language0.25 requires `throw` or a lexical handler around task joins that may
+deliver child source exceptions. A worker may catch these errors and return an
+ordinary wire value. An uncaught or rethrown source exception becomes a transport
+failure with code `E_SOURCE_EXCEPTION` and a generic message. Its private payload
+does not cross into the UI event. Runtime traps keep their own error codes and
+cannot be caught by NEX source handlers. Retained024 worker contracts keep their
+original effect rules. Production browser and installed SDK acceptance remain
+separate gates.
 
 `worker::request(id, input, action, timeout_ms)` describes work. The adapter runs
 it in an actual dedicated module Worker and delivers a normal web event to

@@ -188,6 +188,12 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             host_image=bundle/'bin/unbound-host'
             self.link_output(link_driver+[host,libraries['producer'],runtime,*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib')],host_image)
             unbound_environment={**environment,'NEX_PROFILE_OUTPUT':str(data/'unbound-profile.json')}
+            denied=self.run_tool([host_image],env=unbound_environment,ok=False)
+            self.assertEqual(denied.returncode,70);self.assertIn('E_CONTEXT',denied.stderr)
+            # An ownership boundary does not bind a profile/application identity.
+            # Keep the host unbound while enclosing owned generated functions.
+            host.write_text('#include <cstdint>\nextern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" int64_t nex_application_run(void*,int64_t,const char*const*);static int64_t entry(int64_t,const char*const*){auto p='+symbol+'();nex_release(p);return 0;}int main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}')
+            self.link_output(link_driver+[host,libraries['producer'],runtime,*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib')],host_image)
             observed=self.run_tool([host_image],env=unbound_environment);self.assertEqual((observed.stdout,observed.stderr),('',''))
             unbound=json.loads((data/'unbound-profile.json').read_text())
             self.assertIsNone(unbound['build'])

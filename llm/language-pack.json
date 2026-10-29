@@ -389,7 +389,9 @@
     "source_exception_provider_records_schema": "llm/native-source-error-task-provider.schema.json",
     "source_exception_provider_project_schema": "llm/project-source-error-task-linkage.schema.json",
     "source_exception_provider_record_checks": "tests/source_exception_provider_records.cpp",
-    "source_exception_provider_project_checks": "tests/source_exceptions_projects.py"
+    "source_exception_provider_project_checks": "tests/source_exceptions_projects.py",
+    "sdk_source_exceptions": "tools/sdk_source_exceptions.py",
+    "sdk_task_limits": "tools/sdk_task_limits.py"
   },
   "document_access": "nex guide --kind exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -1013,7 +1015,7 @@
       "task IO beyond whole-file reads/writes and task host adapters"
     ],
     "structured_tasks": true,
-    "compute_effects": "empty or exactly task",
+    "compute_effects": "subset of task,throw",
     "task_execution": "one independent cooperative scheduler per dedicated Worker",
     "task_limits": {
       "steps": 1000000,

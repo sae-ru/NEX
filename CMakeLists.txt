@@ -251,7 +251,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -1113,7 +1113,7 @@ add_test(NAME source_exception_host COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_host.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe>
   $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --watch-compiler $<TARGET_FILE:nex>)
+  --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR} --watch-compiler $<TARGET_FILE:nex>)
 set_tests_properties(source_exception_host PROPERTIES TIMEOUT 2400)
 add_test(NAME source_exception_task_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_native.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
 set_tests_properties(source_exception_task_native PROPERTIES TIMEOUT 2400)
@@ -1248,3 +1248,41 @@ set_tests_properties(source_exceptions_projects PROPERTIES TIMEOUT 2400)
 add_test(NAME source_exceptions_projects_debug COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_projects.py $<TARGET_FILE:nex> --debug-only)
 set_tests_properties(source_exceptions_projects_debug PROPERTIES TIMEOUT 1800)
+
+# Install every indexed public025 source-error conformance resource.
+install(FILES
+  tests/source_exception_debug_host.h
+  tests/source_exception_frontiers.py
+  tests/source_exception_host.py
+  tests/source_exception_http.py
+  tests/source_exception_http_request.cpp
+  tests/source_exception_instances.py
+  tests/source_exception_lifetime_compatibility.py
+  tests/source_exception_lifetimes.cpp
+  tests/source_exception_modules.cpp
+  tests/source_exception_modules.py
+  tests/source_exception_native.cpp
+  tests/source_exception_native.py
+  tests/source_exception_prototype.cpp
+  tests/source_exception_provider_records.cpp
+  tests/source_exception_task_agreement.py
+  tests/source_exception_task_debug.py
+  tests/source_exception_task_ir.cpp
+  tests/source_exception_task_ir_agreement.py
+  tests/source_exception_task_lldb.py
+  tests/source_exception_task_native.cpp
+  tests/source_exception_task_native.py
+  tests/source_exception_task_profile.py
+  tests/source_exception_task_scheduler.cpp
+  tests/source_exception_tasks.cpp
+  tests/source_exception_tasks_typescript.py
+  tests/source_exception_typescript.py
+  tests/source_exceptions_http_public.py
+  tests/source_exceptions_migration.py
+  tests/source_exceptions_projects.py
+  tests/source_exceptions_public.py
+  DESTINATION share/nex/tests)
+install(FILES
+  tests/fixtures/source-exceptions/retained-024-graph.json
+  tests/fixtures/source-exceptions/retained-024.json
+  DESTINATION share/nex/tests/fixtures/source-exceptions)

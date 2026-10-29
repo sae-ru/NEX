@@ -24,6 +24,9 @@ its88-byte layout and ABI offset40. ABI3/4/5 and private2501/2502 retain their
 meanings. Native task calls reject mixed source-error descriptor families.
 TypeScript emits synchronous or resumable functions with ordinary public revision
 maps; its scheduler classifies branded source errors separately from host traps.
+Dedicated browser worker compute functions may declare task/throw and catch
+child errors. Uncaught source errors cross the worker boundary as a generic
+E_SOURCE_EXCEPTION transport failure; source payloads stay inside the worker.
 Pure parallel_map callbacks may catch their own source errors; escaping throw
 remains incompatible with a pure callback signature.
 

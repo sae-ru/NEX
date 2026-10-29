@@ -28,7 +28,7 @@ class WindowsConfiguration(harness.ToolchainCase):
 class WindowsTargets(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
         self.config = self.root/'toolchain.json'
         self.notices = self.root/'runtime-notices.txt'
         files = [TOOLS/'LICENSE.TXT', *sorted((TOOLS/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]
@@ -77,7 +77,10 @@ test fn semantics()->unit {assert(answer()==42);}
         self.cli('test',timeout=120);self.cli('test','--target','web',timeout=120)
         host=self.cli('build','--profile','release');keys={host['build_key']}
         symbol=self.cli('context','--symbol','answer')['native_symbol']
-        bridge=self.root/'bridge.cpp';bridge.write_text('extern "C" long long '+symbol+'();\nint main(){return '+symbol+'()==42?0:1;}\n')
+        bridge=self.root/'bridge.cpp';bridge.write_text('#include <cstdint>\nextern "C" int64_t '+symbol+'();\n'
+            'extern "C" int64_t nex_application_run(void*,int64_t,const char*const*);\n'
+            'int64_t entry(int64_t,const char*const*){return '+symbol+'()==42?0:1;}\n'
+            'int main(int argc,char**argv){return int(nex_application_run(reinterpret_cast<void*>(entry),argc,argv));}\n')
         for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
             self.configure(arch);inspected=self.cli('toolchain',self.config)
             self.assertFalse(inspected['host_compatible']);self.assertEqual(inspected['manifest']['windows']['runtime'],'ucrt-static')
@@ -106,6 +109,8 @@ test fn semantics()->unit {assert(answer()==42);}
             self.command([TOOLS/('bin/'+arch+'-w64-mingw32-clang++'),'--target='+arch+'-w64-windows-gnu',
                           '--sysroot='+str(TOOLS/(arch+'-w64-mingw32')),'-static',bridge,archive['executable'],'-o',image])
             self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',image]))
+            if os.environ.get('NEX_WINDOWS_TEST_OUTPUT'):
+                shutil.copy2(image,Path(os.environ['NEX_WINDOWS_TEST_OUTPUT'])/(arch+'-archive-consumer.exe'))
         self.file.unlink();shutil.rmtree(Path(built['executable']).parent)
         restored=self.cli('build','--revision',built['revision'],'--toolchain',self.config,'--profile','release',timeout=180)
         self.assertEqual(restored['build_key'],built['build_key']);self.assertGreater(restored['reused_functions'],0)
@@ -117,12 +122,12 @@ test fn semantics()->unit {assert(answer()==42);}
         self.assertEqual(self.cli('build','--toolchain',self.config,'--profile','profile',ok=False)['code'],'E_TARGET')
         self.source('module storage;server fn main()->unit!{db} {assert(is_ok(store_keys("")));}')
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
-        for source in (
-            'server fn main()->unit!{fs} {assert(is_ok(file_read_text("input")));}',
-            'server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{ffi} {return opaque();}'
+        for source,code in (
+            ('server fn main()->unit!{task,fs} {assert(is_ok(file_read_text("input")));}', 'E_TASK_TARGET'),
+            ('server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{ffi} {return opaque();}', 'E_TARGET')
         ):
             self.source('module unavailable;'+source)
-            self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET')
+            self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],code)
         self.source('module arithmetic;fn main()->i64{return 0;}')
         self.assertEqual(self.cli('package','--toolchain',self.config,'--directory',self.root/'package',ok=False)['code'],'E_TARGET')
         self.assertFalse((self.root/'package').exists())

@@ -194,7 +194,7 @@ os.execv(REAL,[REAL,*sys.argv[1:]])
         source=project/'main.nex';source.write_text('module embedded; pub fn answer() -> i64 { return 40 + 2; }')
         built=self.cli('build',source,'--library','--entry','answer',cwd=project)
         context=self.cli('context','--symbol','answer',cwd=project)
-        host=project/'host.cpp';host.write_text('#include <iostream>\nextern "C" long long '+context['native_symbol']+'();\nint main(){std::cout << '+context['native_symbol']+'() << "\\n";}\n')
+        host=project/'host.cpp';host.write_text('#include <iostream>\n#include <cstdint>\nextern "C" long long '+context['native_symbol']+'();\nextern "C" int64_t nex_application_run(void*,int64_t,const char*const*);\nstatic int64_t entry(int64_t,const char*const*){std::cout << '+context['native_symbol']+'() << "\\n";return 0;}\nint main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}\n')
         executable=project/'host-app'
         command=[self.doctor['native_compiler'],'-std=c++20',str(host),built['executable'],'-pthread','-o',str(executable)]
         metadata=json.loads(Path(built['metadata']).read_text())

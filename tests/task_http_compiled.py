@@ -24,25 +24,25 @@ def cli(name,*argv,cwd=None,expected=0):return json.loads(run(name,[compiler,*ar
 def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
 HANDLER='''module hosted_http;
 import "std/http.nex" as http;
-pub server fn handle(req:http::Request)->http::Response !{task}{
+pub server fn handle(req:http::Request)->http::Response !{task,throw}{
  if req.path=="/trap" {task_yield();let zero:i64=0;return http::text_response(200,str(1/zero));}
  if req.path=="/limit" {while true {task_yield();}}
- let n:i64=with_tasks(2,fn(s:task_scope)->i64 !{task}{
+ let n:i64=with_tasks(2,fn(s:task_scope)->i64 !{task,throw}{
   let left:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 20;});
   let right:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 22;});
   return task_wait(left)+task_wait(right);
  });
  return http::text_response(200,req.user+":"+req.body+":"+str(n));
 }
-pub server fn reference()->str !{task}{
+pub server fn reference()->str !{task,throw}{
  return handle(http::Request("POST","/ok","","A🌍\\u0000β","alice","request-1")).body;
 }
 '''
 try:
  project=root/'project';(project/'handler').mkdir(parents=True);(project/'app').mkdir()
  (project/'handler/main.nex').write_text(HANDLER)
- (project/'app/main.nex').write_text('module hosted_app;import "../handler/main.nex" as h;server fn main()->unit !{task,io}{print(h::reference());}\n')
- write(project/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'})
+ (project/'app/main.nex').write_text('module hosted_app;import "../handler/main.nex" as h;server fn main()->unit !{task,io,throw}{print(h::reference());}\n')
+ write(project/'nex.json',{'schema':'nex.project/1','language':'0.25','entry':'app/main.nex'})
  write(project/'nex.build.json',{'schema':'nex.project-build/1','default_configuration':'debug',
   'configurations':{'debug':{'profile':'debug','target':'native'}},'components':{
    'handler':{'kind':'static_library','root':'handler','entry':'handler/main.nex','entry_function':'handle','exports':['reference']},
@@ -55,7 +55,7 @@ try:
  artifacts={row['component']:row for row in built['artifacts']};assert set(artifacts)=={'handler','app'}
  app=artifacts['app'];metadata=json.loads(Path(app['metadata']).read_text());folder=Path(app['artifact']).parent
  handler=Path(artifacts['handler']['artifact']);provider_path=handler.parent/'task-provider.json';provider=json.loads(provider_path.read_text())
- assert provider['schema']=='nex.native-task-provider/8' and provider['language']=='0.24' and provider['descriptor_abi']==0x4e45585400000005
+ assert provider['schema']=='nex.native-task-provider/11' and provider['language']=='0.25' and provider['descriptor_abi']==0x4e45585400000006
  accessor=provider['exports']['hosted_http::handle']['accessor'];assert re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',accessor)
  runtime=Path(metadata['runtime_source_projection']);objects=[folder/Path(name).with_suffix('.o') for name in metadata['runtime_components']]
  assert 'nex_task_application.cpp' in metadata['runtime_components'] and all(p.is_file() for p in objects)

@@ -7,11 +7,11 @@ struct Output { value: i64; label: str; data: bytes; }
 struct State { sequence: i64; current: str; status: str; clicks: i64; }
 client fn title() -> str { return "NEX Workers"; }
 client fn initial() -> State { return State(0, "", "Ready", 0); }
-client fn worker_compute(input: Input) -> Output !{task} {
+client fn worker_compute(input: Input) -> Output !{task,throw} {
   task_yield();
   if input.mode == "trap" { return Output(1 / 0, "", utf8_bytes("")); }
   if input.mode == "loop" { while true { task_yield(); } }
-  let value: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{task} {
+  let value: i64 = with_tasks(2, fn(scope: task_scope) -> i64 !{task,throw} {
     let pipe: channel<i64> = channel_new<i64>(scope, 0);
     let sender: task<unit> = task_spawn(scope, fn() -> unit !{task} {
       assert(task_send(pipe, input.seed));
@@ -67,7 +67,7 @@ client fn view(state: State) -> web::View {
     web::button("Cancel", "cancel"), web::button("Cancel all", "stop_all"),
     web::button("Trap", "trap"), web::button("Timeout", "timeout")]);
 }
-client test fn worker_values_test() -> unit !{task} {
+client test fn worker_values_test() -> unit !{task,throw} {
   let input: Input = Input(9007199254740993, 7, "normal");
   let output: Output = worker_compute(input);
   assert(output.value == 9007199254741000);

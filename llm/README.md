@@ -45,3 +45,22 @@ initial document bytes. It does not establish lower total model-token cost,
 higher success rates or parity with C++/Python. Measure complete context, tool
 responses, generations, retries, time and correctness on the same defined tasks;
 see [quality criteria](../docs/quality.md).
+# Validate actual language-pack artifacts
+
+The source-checkout developer gate below checks compiler responses, accepted
+debug frames, actual LLDB captures, project captures/packages, Wasm metadata and
+all six025 provider variants against their JSON Schemas. `--retained-nex` also
+builds/runs an024 application and rejects retagging its ABI5 provider as025.
+Use Python with `jsonschema>=4.23`; this is a developer dependency, not an NEX
+application or installed compiler dependency. Normal CTest uses standard Python.
+
+```sh
+python3 tests/schema_artifacts.py /absolute/path/to/nex \
+  --output /new/schema-evidence \
+  --retained-nex /absolute/path/to/024-sdk/bin/nex
+```
+
+The compiler still enforces byte budgets, graph identity, provenance and semantic
+constraints beyond JSON Schema. A valid JSON document does not authorize an
+effect or make a captured frame match a different build.
+

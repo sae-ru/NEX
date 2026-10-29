@@ -7,12 +7,12 @@ import unittest
 import support as harness
 
 SOURCE='''module capped;
-fn solve()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+fn solve()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
   let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 42;});
   return task_wait(child);
 });}
-fn main()->i64 !{io,task}{print(solve());return 0;}
-test fn checks()->unit !{task}{assert(solve()==42);}
+fn main()->i64 !{io,task,throw}{print(solve());return 0;}
+test fn checks()->unit !{task,throw}{assert(solve()==42);}
 '''
 LIMITS={'steps':100000,'timeout_ms':5000,'workers':1}
 
@@ -59,7 +59,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
 
     def test_project_configuration_limits_capture_run_tests_and_replay(self):
         app=self.root/'app';app.mkdir();self.file=app/'main.nex';self.source(SOURCE)
-        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'})
+        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'})
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{'debug':{'profile':'debug','task_limits':LIMITS}},
           'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}
@@ -89,7 +89,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         self.file=self.root/'app/main.nex'
         self.source(SOURCE.replace('module capped;','module capped;import "../core/value.nex" as c;').replace('return 42;','return c::value();'))
         (self.root/'core/value.nex').write_text('module value;pub fn value()->i64{return 42;}')
-        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'})
+        self.save(self.root/'nex.json',{'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'})
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{'debug':{'profile':'debug','task_limits':LIMITS}},
           'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}},
@@ -101,11 +101,11 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         components={row['name']:row for row in plan['components']}
         self.assertEqual(components['app']['dependencies'],{'core':'static'})
         linkage=components['app']['task_linkage']
-        self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/3')
-        self.assertEqual(linkage['execution_abi'],5)
+        self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/4')
+        self.assertEqual(linkage['execution_abi'],6)
         self.assertTrue(all(row['function'].startswith('capped::') for row in linkage['definitions']))
         imported,=linkage['imports']
-        self.assertEqual((imported['function'],imported['provider'],imported['calling_mode']),('value::value','core','sync/1'))
+        self.assertEqual((imported['function'],imported['provider'],imported['calling_mode']),('value::value','core','task-code/6'))
         self.assertEqual(components['core']['task_linkage']['component'],'core')
         self.assertFalse((self.root/'.nex').exists())
         architecture['components']['app']['dependencies']['core']='source'

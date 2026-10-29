@@ -85,6 +85,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.cli('test', '--target', 'web')
         clean = self.root / 'clean'
         clean.mkdir()
+        shutil.copyfile(self.root/'nex.json',clean/'nex.json')
         for path in (self.file, self.left, self.right): shutil.copyfile(path, clean / path.name)
         fresh, _ = self.build(cwd=clean)
         self.assertEqual((fresh['compiled_modules'], fresh['reused_modules']), (3, 0))
@@ -266,7 +267,7 @@ pub fn value(n: i64) -> str {
         package.mkdir()
         library = package / 'numbers.nex'
         library.write_text('module inc::numbers; pub fn add(n: i64) -> i64 { return n + 1; }')
-        (self.root / 'nex.json').write_text(json.dumps({'language': '0.24', 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}))
+        (self.root / 'nex.json').write_text(json.dumps({'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}))
         self.left.write_text('module inc::left; import "numbers/numbers.nex" as numbers; pub fn value(n: i64) -> i64 { return numbers::add(n); }')
         self.cli('lock')
         first, _ = self.build()

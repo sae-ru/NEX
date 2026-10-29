@@ -9,7 +9,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex task HTTP server 🧠 ');
 compiler=args.compiler.resolve();start=time.monotonic();checks=0;launches=0
 report={'schema':'nex.task-http-server/1','ok':False,'state':'starting','commands':[],'requests':[],
  'compiler':str(compiler),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'language':'0.24',
+ 'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'language':'0.25',
  'images':[],'cancel_observations':[],'public_HTTP_task_target':True,'async_network_DB_claimed':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def require(value,message):
@@ -24,7 +24,7 @@ def cli(name,*argv,expected=0):return json.loads(run(name,[compiler,*argv,'--jso
 SOURCE='''module task_http;
 import "std/http.nex" as http;
 struct Echo {user:str;request_id:str;body:str;answer:i64;}
-server fn handle(req:http::Request)->http::Response !{task,fs}{
+server fn handle(req:http::Request)->http::Response !{task,fs,throw}{
  if req.path=="/api/trap" {task_yield();let zero:i64=0;return http::text_response(200,str(1/zero));}
  if req.path=="/api/limit" || req.path=="/api/deadline" {while true{task_yield();}}
  if req.path=="/api/cancel" {
@@ -49,14 +49,14 @@ server fn handle(req:http::Request)->http::Response !{task,fs}{
   let file:file=unwrap(opened);let value:bytes=unwrap(file_read(file,100));assert(file_close(file));
   return http::json_response(200,encode_json(unwrap(decode_utf8(value))));
  }
- let n:i64=with_tasks(2,fn(scope:task_scope)->i64 !{task}{
+ let n:i64=with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
   let left:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 20;});
   let right:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 22;});
   return task_wait(left)+task_wait(right);
  });
  return http::json_response(200,encode_json(Echo(req.user,req.request_id,req.body,n)));
 }
-server fn reference()->str !{task,fs}{return handle(http::Request("POST","/api/echo","","A🌍\\u0000β","alice","1")).body;}
+server fn reference()->str !{task,fs,throw}{return handle(http::Request("POST","/api/echo","","A🌍\\u0000β","alice","1")).body;}
 '''
 @contextlib.contextmanager
 def server(image,*options,grant='write',workers=4,tls=False):
@@ -66,8 +66,8 @@ def server(image,*options,grant='write',workers=4,tls=False):
  if tls:argv+=['--cert',root/'cert.pem','--key',root/'private-key.pem']
  env={**os.environ,'NEX_RESOURCE_DIR':str(root/'absent-resources')}
  for key in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_FILES_LIMIT','NEX_TASK_STEPS','NEX_TASK_TIMEOUT_MS','NEX_TASK_WORKERS'):env.pop(key,None)
- if grant!='none':env['NEX_FILES_ROOT']=str(files)
- if grant=='write':env['NEX_FILES_WRITE']='1'
+ if grant!='none':argv+=['--files-root',str(files)]
+ if grant=='write':argv+=['--files-write','1']
  # Ambient task limit variables cannot change explicit compiled/runtime limits.
  env.update(NEX_TASK_STEPS='1',NEX_TASK_TIMEOUT_MS='1',NEX_TASK_WORKERS='1')
  process=subprocess.Popen(list(map(str,argv)),cwd=root,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -95,7 +95,7 @@ def request(port,path,token=None,body=None,method='GET',timeout=5,tls=False):
  return status,value,head
 try:
  source=root/'server.nex';source.write_text(SOURCE);auth=root/'private-auth.json'
- (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'server.nex'})+'\n')
+ (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'server.nex'})+'\n')
  alice=cli('alice','token','--user','alice','--auth',auth)['token'];bob=cli('bob','token','--user','bob','--auth',auth)['token']
  files=root/'files';files.mkdir();(files/'input').write_text('input 🌍\0β')
  run('TLS-certificate',['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'private-key.pem','-out',root/'cert.pem','-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'])

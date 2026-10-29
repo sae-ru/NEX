@@ -66,7 +66,7 @@ try:
   assert metadata['ok'] and not metadata['public_source_tasks'] and metadata['schema']=='nex.private-typescript-task-map/1'
   mapping=json.loads((folder/'nex-map.json').read_text());assert mapping['schema']==metadata['schema'] and not mapping['public_source_tasks'] and 'revision' not in mapping
   (folder/'package.json').write_text('{"type":"module"}\n')
-  mode='parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'ordinary'
+  mode='parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'private'
   (folder/'run.mjs').write_text(runner.replace('MODE',json.dumps(mode)).replace('INPUTS','[21n]' if mode=='parameter' else '[]'))
   actual_text=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',folder/'run.mjs'])
   (folder/'result.json').write_text(actual_text);actual=json.loads(actual_text)

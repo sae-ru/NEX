@@ -7,6 +7,69 @@ import support as harness
 
 
 class Workers(harness.ToolchainCase):
+    def test_source_errors_and_checked_traps_keep_distinct_worker_boundaries(self):
+        text = (harness.REPO/'examples/task-workers/main.nex').read_text()
+        inserted = '''
+  if input.mode == "child_caught" || input.mode == "uncaught" || input.mode == "rethrow" {
+    try {
+      let ignored:i64=with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{
+        let child:task<i64>=task_spawn(scope,fn()->i64 !{task,throw}{
+          task_yield();throw("E_DIV_ZERO","PRIVATE_WORKER_ERROR🧠\\u0000");
+        });
+        return task_wait(child);
+      });
+      return Output(ignored,"unreachable",utf8_bytes(""));
+    } catch(code,message) {
+      assert(code=="E_DIV_ZERO" && message=="PRIVATE_WORKER_ERROR🧠\\u0000");
+      if input.mode=="child_caught" {return Output(42,"caught",utf8_bytes(""));}
+      if input.mode=="rethrow" {throw;}
+      throw(code,message);
+    }
+  }
+  if input.mode == "caught_trap" {
+    try {return Output(1/0,"trap",utf8_bytes(""));}
+    catch(code,message) {return Output(0,"must not catch trap",utf8_bytes(""));}
+  }
+'''
+        needle='  task_yield();\n'
+        self.assertIn(needle,text);text=text.replace(needle,needle+inserted,1)
+        text+='''
+client test fn source_error_payload()->unit !{task,throw}{
+ assert(worker_compute(Input(0,0,"child_caught")).value==42);
+ try {let ignored:Output=worker_compute(Input(0,0,"rethrow"));assert(false);}
+ catch(code,message){assert(code=="E_DIV_ZERO" && message=="PRIVATE_WORKER_ERROR🧠\\u0000");}
+}
+'''
+        self.source(text)
+        self.cli('test',self.file,'--target','web')
+        self.file.write_text(text.replace('client fn','shared fn').replace('client test fn','shared test fn'))
+        self.cli('test',self.file)
+        self.cli('test',self.file,'--profile','release')
+        self.file.write_text(text)
+        output=self.root/'source-errors';self.cli('web',self.file,'--directory',output)
+        driver=output/'src/check.ts'
+        driver.write_text('''import assert from 'node:assert/strict';
+const results:any[]=[];let closed=0;
+(globalThis as any).postMessage=(value:unknown)=>results.push(value);
+(globalThis as any).close=()=>{++closed;};
+await import('./worker-entry.ts');
+await (globalThis as any).onmessage({data:{protocol:'nex.worker/1',ticket:1,
+ body:JSON.stringify({seed:'0',rounds:'0',mode:process.argv[2]})}});
+assert.equal(results.length,1);assert.equal(closed,1);
+const result=results[0];assert.equal(result.code,process.argv[3]);
+if(result.code==='')assert.equal(JSON.parse(result.body).value,'42');
+else {assert.equal(result.body,'');assert(!result.message.includes('PRIVATE_WORKER_ERROR'));
+ if(result.code==='E_SOURCE_EXCEPTION')assert.equal(result.message,'Uncaught NEX source exception');}
+''')
+        node=os.environ.get('NEX_NODE','node')
+        for mode,code in [('child_caught',''),('uncaught','E_SOURCE_EXCEPTION'),('rethrow','E_SOURCE_EXCEPTION'),('caught_trap','E_DIV_ZERO')]:
+            result=subprocess.run([node,'--experimental-strip-types','--no-warnings',str(driver),mode,code],capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,(mode,result.stdout,result.stderr))
+        checked=subprocess.run([node,os.environ['NEX_TSC'],'--noEmit','--strict','--target','ES2022',
+            '--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',
+            str(output/'src/worker-program.ts'),str(output/'src/worker-entry.ts')],capture_output=True,text=True,timeout=60)
+        self.assertEqual(checked.returncode,0,checked.stdout+checked.stderr)
+
     def example(self):
         self.source((harness.REPO/'examples/workers/main.nex').read_text())
 
@@ -49,7 +112,7 @@ assert.equal(value.value,'9007199254741000'); assert.equal(value.label,'Worker �
         self.cli('web', self.file, '--directory', out)
         for path in (out/'src').glob('*'):
             self.assertNotIn('SERVER_TASK_WORKER_SECRET', path.read_text())
-        self.file.write_text(text.replace('worker_compute(input: Input) -> Output !{task}', 'worker_compute(input: Input) -> Output !{task,io}'))
+        self.file.write_text(text.replace('worker_compute(input: Input) -> Output !{task,throw}', 'worker_compute(input: Input) -> Output !{task,throw,io}'))
         self.assertEqual(self.cli('web',self.file,'--directory',self.root/'bad-effects',ok=False)['code'],'E_WEB_SIGNATURE')
 
     def test_compute_and_descriptors_agree_native_reference_typescript(self):

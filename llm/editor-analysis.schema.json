@@ -26,7 +26,7 @@
       "const": true
     },
     "language": {
-      "const": "0.24"
+      "const": "0.25"
     },
     "compiler": {
       "type": "object",

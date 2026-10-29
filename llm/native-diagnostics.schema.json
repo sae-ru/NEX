@@ -107,7 +107,7 @@
           "type": "string"
         },
         "language": {
-          "const": "0.24"
+          "const": "0.25"
         },
         "revision": {
           "type": "string",

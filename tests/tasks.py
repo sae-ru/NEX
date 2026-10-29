@@ -14,8 +14,8 @@ import support as harness
 
 
 STRUCTURED_SOURCE = '''module taskdemo;
-pub fn solve()->i64 !{task}{
- return with_tasks(1,fn(scope:task_scope)->i64 !{task}{
+pub fn solve()->i64 !{task,throw}{
+ return with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{
   let queue:channel<i64>=channel_new<i64>(scope,0);
   let captured:i64=40;
   let sender:task<unit>=task_spawn(scope,fn()->unit !{task}{
@@ -25,8 +25,8 @@ pub fn solve()->i64 !{task}{
   assert(!is_ok(task_recv(queue)));return value;
  });
 }
-fn main()->i64 !{io,task}{print(solve());return 0;}
-test fn examples()->unit !{task}{assert(solve()==42);}
+fn main()->i64 !{io,task,throw}{print(solve());return 0;}
+test fn examples()->unit !{task,throw}{assert(solve()==42);}
 '''
 
 
@@ -47,8 +47,8 @@ class Tasks(harness.ToolchainCase):
 
     def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
         ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
-        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'ancestor.nex'}));self.cli('check',outer)
-        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
+        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'ancestor.nex'}));self.cli('check',outer)
+        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
         self.root=child;self.file=child/'main.nex';task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
         run=self.task('run','--directory',ancestor/'captures/run');receipt=Path(run['output'])
@@ -157,9 +157,9 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.requirement(task,{'id':'observe-task','kind':'run','target':'native','entry':'taskdemo::main',
                               'expect':{'stdout':'42\n','exit_code':0}},'taskdemo::solve')
         self.requirement(task,{'id':'task-effects','kind':'effects','target':'source','symbols':['taskdemo::solve'],
-                              'allowed_effects':['task'],'allowed_realms':['shared']},'taskdemo::solve')
+                              'allowed_effects':['task','throw'],'allowed_realms':['shared']},'taskdemo::solve')
         self.requirement(task,{'id':'entry-effects','kind':'effects','target':'source','symbols':['taskdemo::main'],
-                              'allowed_effects':['io','task'],'allowed_realms':['shared']},'taskdemo::main')
+                              'allowed_effects':['io','task','throw'],'allowed_realms':['shared']},'taskdemo::main')
         self.requirement(task,{'id':'task-module','kind':'build','target':'web','mode':'module','entry':'taskdemo::solve'},'taskdemo::solve')
         self.save(task);prepared=harness.database_rows(database)
         self.assertEqual(prepared[0],original[0])
@@ -197,7 +197,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
     def test_structured_task_effect_allowlist_omission_and_unknown_effect_preserve_graph(self):
         task=self.scaffold(STRUCTURED_SOURCE);task['checks']=[];task['requirements']=[]
         self.requirement(task,{'id':'allowed','kind':'effects','target':'source','symbols':['taskdemo::solve'],
-                              'allowed_effects':['task']},'taskdemo::solve')
+                              'allowed_effects':['task','throw']},'taskdemo::solve')
         self.requirement(task,{'id':'omitted','kind':'effects','target':'source','symbols':['taskdemo::solve'],
                               'allowed_effects':[]},'taskdemo::solve')
         self.save(task);database=self.root/'.nex/graph.db';before=harness.database_rows(database)
@@ -209,7 +209,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.assertEqual(rows['allowed']['status'],'passed');self.assertEqual(rows['allowed']['violations'],[])
         self.assertEqual(rows['omitted']['status'],'failed')
         self.assertTrue(rows['omitted']['violations'])
-        self.assertTrue(all(row.get('effect')=='task' for row in rows['omitted']['violations']))
+        self.assertEqual({row.get('effect') for row in rows['omitted']['violations']},{'task','throw'})
         self.assertIn({'symbol':'taskdemo::solve','effect':'task'},rows['omitted']['violations'])
         after=harness.database_rows(database);self.assertEqual(before[0],after[0])
         for name,values in before[1].items():

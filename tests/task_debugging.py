@@ -50,7 +50,7 @@ class TaskDebugging(harness.ToolchainCase):
             self.root=Path(retained).resolve()/self._testMethodName
             self.root.mkdir(parents=True,exist_ok=False)
             self.file=self.root/'main.nex'
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
 
     def test_reader_rejects_invalid_visibility_and_authority_metadata(self):
         reader = reader_module()
@@ -108,7 +108,7 @@ class TaskDebugging(harness.ToolchainCase):
 
     def private(self, text):
         self.source(text)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
         result = subprocess.run([BUILD_PROBE, str(self.file), str(self.root/'artifact')],
                                 capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -185,8 +185,8 @@ fn receiver(queue:channel<i64>)->i64 !{task}{
  return answer;
 }
 fn sender(queue:channel<i64>)->unit !{task}{assert(task_send(queue,42));}
-fn main()->unit !{task,io}{
- let answer:i64=with_tasks(1,fn(scope:task_scope)->i64 !{task}{
+fn main()->unit !{task,io,throw}{
+ let answer:i64=with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{
   let queue:channel<i64>=channel_new<i64>(scope,0);
   let receive_job:task<i64>=task_spawn(scope,fn()->i64 !{task}{return receiver(queue);});
   let send_job:task<unit>=task_spawn(scope,fn()->unit !{task}{sender(queue);});
@@ -228,7 +228,7 @@ fn child(input:i64)->i64 !{task}{
  task_yield();
  return value+1;
 }
-fn main()->unit !{task,io}{print(child(41));}
+fn main()->unit !{task,io,throw}{print(child(41));}
 ''')
         manifest=json.loads(Path(built['debug_manifest']).read_text())
         backend=shutil.which('lldb-dap')
@@ -271,7 +271,7 @@ fn main()->unit !{task,io}{print(child(41));}
     def test_public_launch_limits_rejections_source_deleted_archive_and_source_only_project(self):
         source='''module task_public;
 fn child(input:i64)->i64 !{task}{task_yield();return input+1;}
-fn main()->unit !{task,io}{print(child(41));}
+fn main()->unit !{task,io,throw}{print(child(41));}
 '''
         self.source(source)
         flags=['--task-timeout-ms','60000','--task-workers','2','--kind','nex-dap']
@@ -295,7 +295,7 @@ fn main()->unit !{task,io}{print(child(41));}
         self.assertFalse(self.file.exists());self.assertFalse((self.root/'.nex/graph.db').exists())
         project=self.root/'project';(project/'app').mkdir(parents=True)
         (project/'app/main.nex').write_text(source)
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
         limits={'steps':1000000,'timeout_ms':60000,'workers':2}
         (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debugged',
             'configurations':{'debugged':{'profile':'debug','task_limits':limits}},
@@ -314,7 +314,7 @@ fn main()->unit !{task,io}{print(child(41));}
     def test_actual_deadline_advances_while_debugger_is_stopped(self):
         self.source('''module task_deadline;
 fn child()->unit !{task}{task_yield();}
-fn main()->unit !{task,io}{child();print("AFTER_PAUSE");}
+fn main()->unit !{task,io,throw}{child();print("AFTER_PAUSE");}
 ''')
         session=self.cli('debug','--kind','nex-dap','--task-timeout-ms','5000',timeout=180)
         built={'executable':session['launch']['program'],'debug_manifest':session['manifest']}
@@ -327,11 +327,11 @@ fn main()->unit !{task,io}{child();print("AFTER_PAUSE");}
     def test_owned_unicode_nul_and_late_binary_watch_with_opaque_scope(self):
         built=self.private('''module task_values;
 fn observe(data:bytes,text:str,scope:task_scope)->unit !{task}{task_yield();assert(len(text)==4);}
-fn main()->unit !{task,io}{
+fn main()->unit !{task,io,throw}{
  var data:bytes=utf8_bytes("x");var i:i64=0;
  while i<22{data=data+data;i=i+1;}
  let text:str="A🌍\\u0000λ";
- let result:i64=with_tasks(1,fn(scope:task_scope)->i64 !{task}{observe(set(data,len(data)-1,255),text,scope);return 0;});
+ let result:i64=with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{observe(set(data,len(data)-1,255),text,scope);return 0;});
  print(result);
 }
 ''')

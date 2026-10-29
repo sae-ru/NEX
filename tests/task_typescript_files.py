@@ -27,8 +27,13 @@ def emit(path,name,mode='emit',entry='main',error=None):
         assert 'UNREACHABLE_ASYNC_FILE_SECRET' not in text and 'SERVER_PRIVATE_PATH' not in text and 'server_file_read' not in text
     (folder/'package.json').write_text('{"type":"module"}\n')
     if value['asynchronous']:
-        executor='runSourceErrors' if value['language']=='0.25' else 'run'
-        runner="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';process.stdout.write(String(await task."+executor+"(task.call(()=>entry())))+'\\n');\n"
+        imports="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';"
+        call='task.call(()=>entry())'
+        if value['language']=='0.25':
+            imports+="import * as sourceException from './nex-source-exception-runtime.ts';"
+            execution='task.runSourceErrors('+call+',error=>sourceException.details(error)!==undefined)'
+        else:execution='task.run('+call+')'
+        runner=imports+"process.stdout.write(String(await "+execution+")+'\\n');\n"
     else:runner="import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n"
     (folder/'run.mjs').write_text(runner)
     assert command([node,'--experimental-strip-types','--no-warnings',folder/'run.mjs'])=='42\n'
