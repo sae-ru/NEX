@@ -58,7 +58,7 @@ def _retained(before, after, head):
 
 
 def migrate_reviewed_task_fixture(cli, project, revision, expected_revision, *, reviewed_sources=None):
-    """Explicit 025 target projection for these pinned historical fixtures.
+    """Explicit 025/026 target projection for these pinned historical fixtures.
 
     The original bundle is verified by the compiler, never edited or relabelled.
     Adding throw to task callable declarations/types keeps their signatures
@@ -71,7 +71,9 @@ def migrate_reviewed_task_fixture(cli, project, revision, expected_revision, *, 
     _require(plan['origin_verified'] and plan['graph_read_only'] and
              _state(project/'.nex/graph.db') == before, 'migration plan modified its retained origin')
     candidate = copy.deepcopy(plan['candidate'])
-    _require(candidate['target_language'] == '0.25', 'reviewed fixture target is not025')
+    target_language = cli('describe')['version']
+    _require(target_language in ('0.25', '0.26') and candidate['target_language'] == target_language,
+             'reviewed fixture target differs from the current exception language')
     original = copy.deepcopy(candidate['sources'])
     if not plan['target_valid']:
         _require(plan['target_diagnostic']['code'] == 'E_EFFECT', 'unexpected historical fixture diagnostic')
@@ -101,7 +103,7 @@ def migrate_reviewed_task_fixture(cli, project, revision, expected_revision, *, 
         _require(plan['target_valid'], 'invalid fixture needs an explicit reviewed target')
     result = cli(*arguments, '--expected-revision', expected_revision, cwd=project)
     _require(result['origin_verified'] and result['candidate_used'] == changed and
-             result['declared_original_revision'] == revision and result['language'] == '0.25',
+             result['declared_original_revision'] == revision and result['language'] == target_language,
              'migration lost its checked origin or reviewed candidate')
     _retained(before, _state(project/'.nex/graph.db'), result['revision'])
     return result, candidate['sources']
@@ -118,7 +120,7 @@ def check_installed_task_migration(cli, root, resources):
     out = root/'language-migration019-020'
     out.mkdir(exist_ok=False)
     fixtures = resources/'examples/task-migration'
-    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24','0.25', '0.26'), 'migration gate requires a matching language023/024/025 SDK')
+    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24','0.25', '0.26'), 'migration gate requires a matching language023/024/025/026 SDK')
     evidence = {'language':current_language, 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
 
     def restore(name, label=None):

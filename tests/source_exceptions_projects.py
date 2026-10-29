@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ordinary025 concrete source providers with real static/shared/mixed images."""
+"""Ordinary026 concrete source providers with real static/shared/mixed images."""
 import argparse
 import hashlib
 import json
@@ -42,9 +42,10 @@ import "../leaf/main.nex" as leaf;
 pub fn pure(value:str)->list<str> !{throw}{return leaf::pure(value).values;}
 pub fn forward(value:str)->list<str> !{task,throw}{return leaf::delayed(value).values;}
 pub fn next(value:i64)->i64 !{task}{task_yield();return leaf::next(value);}
+pub fn reject(code:str)->bool !{task}{task_yield();return code=="OTHER";}
 pub fn rethrow()->i64 !{task,throw}{
  try{let ignored:leaf::Packet=leaf::delayed("raise");return 0;}
- catch(code,message){throw;}
+ catch(code,message) if reject(code){assert(false);throw;}
 }
 pub server fn read()->str !{task,fs}{
  let owner:file=leaf::opened();let value:bytes=unwrap(file_read(owner,6));
@@ -67,7 +68,7 @@ server fn main()->unit !{task,fs,io,throw}{
   assert(false);
  }catch(code,message){assert(code=="LEAF"&&message=="λ\u0000🙂");}
  try{let ignored:i64=middle::rethrow();assert(false);}
- catch(code,message){assert(code=="LEAF"&&message=="λ\u0000🙂");}
+ catch(code,message) if code=="LEAF"{assert(message=="λ\u0000🙂");}
  let value:list<str>=["owned",middle::forward("ok")[1]];
  assert(value==["owned","ok"]);assert(middle::next(41)==42);
  assert(middle::read()=="abcdef");
@@ -164,6 +165,7 @@ try:
         assert all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in profile['memory'])
         functions={row['name']:row for row in profile['functions']}
         assert functions['leaf::pure']['calls']==4 and functions['leaf::opened']['calls']==2
+        assert functions['middle::reject']['calls']==1
         assert functions['leaf::fail_file']['calls']==1 and functions['middle::forward']['calls']==2
         expected_owner={'static':'app','shared':'leaf','mixed':'middle'}[mode]
         assert functions['leaf::pure']['provider_component']=='leaf'

@@ -249,6 +249,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
             lambda d:d['task_debug']['registries'][0].update(code_count=999),
             lambda d:d['task_debug']['registries'].reverse(),
             lambda d:d['task_debug']['source_union']['components'][0].update(revision='0'*64),
+            lambda d:d['task_debug']['source_union']['components'][0].update(language='0.27'),
             lambda d:d['task_debug']['source_union']['components'][-1]['definitions'].pop(),
             lambda d:d['task_debug']['images'][0].update(kind='runtime'),
             lambda d:d['task_debug']['runtime_image'].update(component='forged'),
