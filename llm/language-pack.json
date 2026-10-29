@@ -3355,19 +3355,23 @@
     "handler_sdk_helper": "tools/sdk_source_handlers.py",
     "handler_test_source": "tests/exception_handlers.py",
     "finally_development": {
-      "status": "synchronous_native_reference_typescript",
+      "status": "resumable_native_reference_typescript",
       "frontend": true,
       "reference": true,
       "typescript": true,
       "native": true,
-      "tasks": false,
+      "tasks": true,
       "finally_return_override": true,
       "result_propagation_runs_finally": true,
       "fatal_traps_run_finally": false,
       "retained026_identities": true,
       "test_source": "tests/finally.py",
       "maximum_native_finalizer_copies": 4096,
-      "wasm": false
+      "wasm": false,
+      "task_test_source": "tests/task_finally.py",
+      "pending_outcomes_survive_suspension": true,
+      "cancellation_runs_user_finalizers": false,
+      "maximum_task_finalizer_copies": 4096
     }
   }
 }

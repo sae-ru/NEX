@@ -901,6 +901,7 @@ class Emitter {
     declaration("nex_task_closure_bind","!llvm.ptr, !llvm.ptr");
     if(supportsSourceExceptionTasks(p)){
       declaration("nex_task_frame_handler_push","!llvm.ptr, i64, i64");declaration("nex_task_frame_handler_pop","!llvm.ptr");
+      declaration("nex_task_frame_source_save","!llvm.ptr, i64");declaration("nex_task_frame_source_restore","!llvm.ptr, i64");
       declaration("nex_task_frame_source_catch","!llvm.ptr, i64, i64");declaration("nex_task_frame_source_end","!llvm.ptr");
       declaration("nex_task_frame_source_raise","!llvm.ptr, !llvm.ptr, !llvm.ptr, i64");declaration("nex_task_frame_source_rethrow","!llvm.ptr");
     }
@@ -940,6 +941,8 @@ class Emitter {
       case TaskInstruction::PopHandler:call("nex_task_frame_handler_pop",{frame},Type::Unit,op.span);next();break;
       case TaskInstruction::Catch:call("nex_task_frame_source_catch",{frame,c(op.bindings[0],op.span),c(op.bindings[1],op.span)},Type::Unit,op.span);next();break;
       case TaskInstruction::EndCatch:call("nex_task_frame_source_end",{frame},Type::Unit,op.span);next();break;
+      case TaskInstruction::SavePendingSource:call("nex_task_frame_source_save",{frame,c(op.output,op.span)},Type::Unit,op.span);next();break;
+      case TaskInstruction::RethrowPendingSource:call("nex_task_frame_source_restore",{frame,c(op.inputs[0],op.span)},Type::Unit,op.span);finish(4,op.span);break;
       case TaskInstruction::Raise:{auto code=read(op.inputs[0],op.span),message=read(op.inputs[1],op.span);call("nex_task_frame_source_raise",{frame,code,message,c(op.span.line,op.span)},Type::Unit,op.span);release(code,op.span);release(message,op.span);finish(4,op.span);break;}
       case TaskInstruction::Rethrow:call("nex_task_frame_source_rethrow",{frame},Type::Unit,op.span);finish(4,op.span);break;
       case TaskInstruction::Eval:{

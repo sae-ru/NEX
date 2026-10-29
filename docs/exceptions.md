@@ -1,8 +1,8 @@
-# Synchronous finally development (toolchain0.138.2 / language0.26)
+# Resumable finally development (toolchain0.139.0 / language0.26)
 
 `try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }
-finally { ... }` are synchronous native/reference/TypeScript development features.
-Resumable tasks, complete acceptance and typed payloads remain pending. The portable `source_exceptions.finally` capability stays false; query
+finally { ... }` are native/reference/TypeScript development features, including
+resumable tasks. Complete acceptance and typed payloads remain pending. The portable `source_exceptions.finally` capability stays false; query
 `source_exceptions.finally_development` for the exact engine scope.
 
 The finalizer runs once after normal protected/catch completion, return, Result
@@ -19,8 +19,22 @@ user finalizers. Runtime-owned resource cleanup remains independent. Finalizer
 effects and realms are checked normally; this construct never catches a fatal
 error or makes a Result error into a source error. Finally is appended as a new
 statement kind; old026 AST ordinals and canonical identities are unchanged. Native emission
-bounds duplicated finalizer bodies to4096 per function (E_FINALLY_LIMIT).
+and TaskIR bound duplicated finalizer bodies to4096 per function (E_FINALLY_LIMIT).
 The scalar Wasm backend rejects finally before tool invocation.
+
+A task may suspend in the protected body, catch/filter and finalizer. Its pending
+return or original source error remains owned across pauses. The protected
+lexical scope is cleaned before finalization. A saved error is separate from
+lexical catch state, so bare throw still names the enclosing source catch.
+An overriding finalizer outcome discards the prior outcome. Lifetime analysis
+runs the finalizer on normal, return, Result-propagation and explicit-error
+states before admitting authority transfers. Scheduler cancellation, deadlines
+and fatal traps skip user finalizers, including a finalizer which has paused
+while an earlier return is pending; runtime-owned cleanup still completes.
+The TypeScript host follows the same rule when it closes generators. Task
+instruction ordinals and the public88-byte ABI6 descriptor layout are retained;
+matching runtime sources provide the additive save/restore helpers.
+
 
 ---
 
@@ -39,8 +53,8 @@ their ordinary effect/realm checks. Result `?` returns from the current function
 it does not turn a Result error into a source error.
 
 Native debug/release, reference/AST tasks and TypeScript use these rules. This
-is an unaccepted development version; complete026 delivery is pending. Task finally
-is pending; synchronous native support is described above. Typed
+is an unaccepted development version; complete026 delivery is pending. Resumable
+finally support is described above. Typed
 payloads and the remaining original language/toolchain plan remain open.
 
 Explicit025-to026 migration rechecks the genuine025 parser and revision first.

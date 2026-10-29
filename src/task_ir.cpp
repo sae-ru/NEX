@@ -16,6 +16,16 @@ class Lowering {
   std::vector<uint32_t> debugScopeIds;
   uint32_t nextDebugScope=0;
   size_t debugVisibleCount=0;
+  size_t handlerDepth=0,caughtDepth=0;
+  struct Finalizer {
+    S statement;size_t scopes,handlers,caught,floor;TaskSlotId marker;
+  };
+  std::vector<Finalizer> finalizers;
+  unsigned finalizerCopies=0;
+  bool finalizer(const S &statement){
+    if(++finalizerCopies>4096)throw Error("E_FINALLY_LIMIT","task finalizer expansion exceeds4096 copies",statement->span);
+    return block(statement->alternative);
+  }
   bool opaqueType(const Type &type,bool unknownFunctions,std::set<std::string> &seen)const{
     // Private024 File watches expose only a diagnostic identity, never an IO
     // lease. Retained task languages keep their historical opaque metadata.
@@ -111,6 +121,22 @@ class Lowering {
   }
   void leave(Span span){for(const auto &[name,id]:scopes.back())drop(id,span);leaveScope();}
   void finish(TaskSlotId value,Span span,const void *source=nullptr,bool propagated=false){
+    if(!finalizers.empty()){
+      auto frame=finalizers.back();auto savedFinalizers=finalizers;
+      auto savedScopes=scopes;auto savedDebugScopes=debugScopes;auto savedDebugIds=debugScopeIds;
+      auto savedHandlers=handlerDepth,savedCaught=caughtDepth;finalizers.pop_back();
+      while(handlerDepth>frame.handlers){TaskInstruction op;op.kind=TaskInstruction::PopHandler;op.span=span;emit(std::move(op));--handlerDepth;}
+      while(caughtDepth>frame.caught){TaskInstruction op;op.kind=TaskInstruction::EndCatch;op.span=span;emit(std::move(op));--caughtDepth;}
+      // Includes partial operands and hidden outcomes from finalizers which this
+      // return replaces, while keeping the already-evaluated pending value alive.
+      for(size_t id=frame.floor;id<result.slots.size();++id)if(id!=value)drop(TaskSlotId(id),span);
+      drop(frame.marker,span);scopes.resize(frame.scopes);
+      if(result.debug){debugScopes.resize(frame.scopes);debugScopeIds.resize(frame.scopes);}
+      if(!finalizer(frame.statement))finish(value,span,source,propagated);
+      finalizers=std::move(savedFinalizers);scopes=std::move(savedScopes);
+      debugScopes=std::move(savedDebugScopes);debugScopeIds=std::move(savedDebugIds);
+      handlerDepth=savedHandlers;caughtDepth=savedCaught;return;
+    }
     point(TaskDebugPointIR::Return,span,source);
     TaskInstruction op;op.kind=TaskInstruction::Return;op.span=span;op.source=source;op.propagatedError=propagated;if(value!=noTaskSlot)op.inputs={value};emit(std::move(op));
   }
@@ -178,16 +204,35 @@ class Lowering {
     for(const auto &s:body){
       if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
-      case Stmt::Finally:throw Error("E_FINALLY_TASK","TaskIR finalization is pending for this development compiler",s->span);
+      case Stmt::Finally:{
+        auto marker=slot(Type::Bool,s->span);constant(marker,false,s->span);
+        TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();
+        auto floor=install.no;auto start=emit(std::move(install));
+        finalizers.push_back({s,scopes.size(),handlerDepth,caughtDepth,floor,marker});
+        ++handlerDepth;bool bodyEnds=block(s->body);--handlerDepth;finalizers.pop_back();
+        bool normalEnds=true;size_t skip=0;
+        if(!bodyEnds){
+          TaskInstruction pop;pop.kind=TaskInstruction::PopHandler;pop.span=s->span;emit(std::move(pop));
+          normalEnds=finalizer(s);
+          if(!normalEnds){drop(marker,s->span);skip=jump(s->span);}
+        }
+        result.code[start].yes=result.code.size();
+        TaskInstruction save;save.kind=TaskInstruction::SavePendingSource;save.span=s->span;save.source=s.get();save.output=marker;emit(std::move(save));
+        if(!finalizer(s)){
+          TaskInstruction raised;raised.kind=TaskInstruction::RethrowPendingSource;raised.span=s->span;raised.source=s.get();raised.inputs={marker};emit(std::move(raised));
+        }
+        if(!bodyEnds&&!normalEnds)result.code[skip].yes=result.code.size();
+        returned=bodyEnds||normalEnds;break;
+      }
       case Stmt::Try:{
         if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
         TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();auto start=emit(std::move(install));
-        bool bodyEnds=block(s->body);size_t skip=0;
+        ++handlerDepth;bool bodyEnds=block(s->body);--handlerDepth;size_t skip=0;
         if(!bodyEnds){TaskInstruction pop;pop.kind=TaskInstruction::PopHandler;pop.span=s->span;emit(std::move(pop));skip=jump(s->span);}
         result.code[start].yes=result.code.size();enter();
         TaskInstruction caught;caught.kind=TaskInstruction::Catch;caught.span=s->span;caught.source=s.get();
         for(const auto &name:{s->name,s->catchMessage}){auto id=slot(Type::Str,s->span,name,false);caught.bindings.push_back(id);binding(id,name,Type::Str,s->span);scopes.back()[name]=id;}
-        emit(std::move(caught));
+        emit(std::move(caught));++caughtDepth;
         if(s->expr){
           auto condition=expr(s->expr);
           if(!totalSourceHandler(s)){
@@ -197,7 +242,7 @@ class Lowering {
           }
           drop(condition,s->expr->span);
         }
-        bool catchEnds=block(s->alternative,false);
+        bool catchEnds=block(s->alternative,false);--caughtDepth;
         if(!catchEnds){TaskInstruction end;end.kind=TaskInstruction::EndCatch;end.span=s->span;emit(std::move(end));leave(s->span);}else leaveScope();
         if(!bodyEnds)result.code[skip].yes=result.code.size();returned=bodyEnds&&catchEnds;break;
       }
@@ -252,8 +297,10 @@ void validateTaskIR(const TaskFunctionIR &function){
     if(op.output!=noTaskSlot)checkSlot(op.output,op.span);for(auto slot:op.inputs)checkSlot(slot,op.span);for(auto slot:op.bindings)checkSlot(slot,op.span);
     if((op.kind==TaskInstruction::Jump||op.kind==TaskInstruction::Branch)&&op.yes>=function.code.size())throw Error("E_TASK_STATE","invalid continuation successor",op.span);
     if(op.kind==TaskInstruction::Branch&&(op.inputs.size()!=1||op.no>=function.code.size()||function.slots[op.inputs[0]].type!=Type::Bool))throw Error("E_TASK_STATE","invalid continuation branch",op.span);
-    if(op.kind<TaskInstruction::Eval||op.kind>TaskInstruction::Rethrow)throw Error("E_TASK_STATE","unknown continuation instruction",op.span);
-    if(op.kind==TaskInstruction::PushHandler&&(op.yes>=function.code.size()||function.code[op.yes].kind!=TaskInstruction::Catch||op.no>function.slots.size()||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid continuation handler target/slot floor",op.span);
+    if(op.kind<TaskInstruction::Eval||op.kind>TaskInstruction::RethrowPendingSource)throw Error("E_TASK_STATE","unknown continuation instruction",op.span);
+    if(op.kind==TaskInstruction::PushHandler&&(op.yes>=function.code.size()||(function.code[op.yes].kind!=TaskInstruction::Catch&&function.code[op.yes].kind!=TaskInstruction::SavePendingSource)||op.no>function.slots.size()||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid continuation handler target/slot floor",op.span);
+    if(op.kind==TaskInstruction::SavePendingSource&&(op.output==noTaskSlot||function.slots[op.output].type!=Type::Bool||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid pending source save",op.span);
+    if(op.kind==TaskInstruction::RethrowPendingSource&&(op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Bool||op.output!=noTaskSlot||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid pending source rethrow",op.span);
     if(op.kind==TaskInstruction::Catch&&(op.bindings.size()!=2||op.bindings[0]==op.bindings[1]||function.slots[op.bindings[0]].type!=Type::Str||function.slots[op.bindings[1]].type!=Type::Str))throw Error("E_TASK_STATE","invalid continuation catch bindings",op.span);
     if(op.kind==TaskInstruction::Raise&&(op.inputs.size()!=2||function.slots[op.inputs[0]].type!=Type::Str||function.slots[op.inputs[1]].type!=Type::Str))throw Error("E_TASK_STATE","invalid continuation source error operands",op.span);
     if((op.kind==TaskInstruction::Rethrow||op.kind==TaskInstruction::PopHandler||op.kind==TaskInstruction::EndCatch)&&(!op.inputs.empty()||!op.bindings.empty()||op.output!=noTaskSlot))throw Error("E_TASK_STATE","invalid continuation exception control shape",op.span);
@@ -277,7 +324,7 @@ void validateTaskIR(const TaskFunctionIR &function){
         throw Error("E_TASK_STATE","invalid continuation file read operation",op.span);
     }
     if(op.kind==TaskInstruction::Eval){if(!op.atom)throw Error("E_TASK_STATE","missing continuation atom",op.span);for(const auto &argument:op.atom->args)if(argument->kind!=Expr::Name||!argument->text.starts_with("$task_slot_"))throw Error("E_TASK_STATE","continuation atom contains unevaluated operands",op.span);}
-    if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump&&op.kind!=TaskInstruction::Raise&&op.kind!=TaskInstruction::Rethrow)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
+    if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump&&op.kind!=TaskInstruction::Raise&&op.kind!=TaskInstruction::Rethrow&&op.kind!=TaskInstruction::RethrowPendingSource)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
   }
   if(function.debug){const auto &metadata=*function.debug;
     for(size_t i=0;i<metadata.bindings.size();++i){const auto &binding=metadata.bindings[i];

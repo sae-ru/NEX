@@ -42,6 +42,23 @@ int main(){try{
   }
   require(nexrt::liveObjects.load()==baseline,"normal catch retained values");
   {
+    auto p=parseVersioned(R"(module resumable_finally;
+fn main()->i64 !{task}{var value:i64=0;try{try{task_yield();throw("ORIGINAL","kept");}finally{task_yield();value=42;}}catch(c,m){assert(c=="ORIGINAL"&&m=="kept");return value;}})","finally-ir.nex",SourceLanguage::ExceptionHandlers026);check(p);
+    auto ir=lowerTaskFunction(p,p.function("main"),false,true);
+    auto saved=std::find_if(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::SavePendingSource;});
+    require(saved!=ir.code.end(),"finally must save an opaque source error, without a lexical catch");
+    auto at=size_t(saved-ir.code.begin());auto invalid=ir;invalid.code[at].output=noTaskSlot;rejects("E_TASK_STATE",[&]{validateTaskIR(invalid);});
+    invalid=ir;invalid.slots[saved->output].type=Type::Str;rejects("E_TASK_STATE",[&]{validateTaskIR(invalid);});
+    auto restored=std::find_if(ir.code.begin(),ir.code.end(),[](const auto &op){return op.kind==TaskInstruction::RethrowPendingSource;});
+    require(restored!=ir.code.end(),"finally must restore the original source packet");
+    invalid=ir;invalid.code[size_t(restored-ir.code.begin())].inputs.clear();rejects("E_TASK_STATE",[&]{validateTaskIR(invalid);});
+    TaskMachine machine(p,"main");unsigned pauses=0;
+    for(;;){auto next=machine.advance();if(next.kind==TaskTransition::Done){require(next.value.scalar==42,"finally lost its pending source across pause");break;}require(next.operation=="task_yield","unexpected finalizer suspension");++pauses;machine.resume(next.ticket);}
+    require(pauses==2,"protected body/finalizer did not both suspend");++cases;
+  }
+  require(nexrt::liveObjects.load()==baseline,"resumable finally retained managed values");
+
+  {
     auto p=source(R"(fn main()->i64 !{task,throw}{try{return with_tasks(1,fn(s:task_scope)->i64{return 0;});}catch(code,message){assert(code=="E_LIMIT"&&message=="λ\u0000🙂");task_yield();throw;}})");
     TaskMachine machine(p,"main");auto wait=machine.advance();require(wait.operation=="with_tasks","missing group-close boundary");
     Span origin;origin.file="original-child.nex";origin.line=47;origin.column=9;origin.begin=10;origin.end=20;

@@ -42,6 +42,17 @@ void trap(const std::string &name,const std::string &source,const std::string &c
 }
 }
 int main(int argc,char **argv){try{
+ if(argc==4&&(std::string(argv[1])=="public-reference"||std::string(argv[1])=="public-task-ir")){
+  auto path=std::filesystem::absolute(argv[2]);auto p=parseVersioned(readFile(path.string()),path.string(),SourceLanguage::ExceptionHandlers026);check(p);
+  const auto baseline=nexrt::liveObjects.load();llvm::json::Object observed;
+  try{
+   auto result=std::string(argv[1])=="public-task-ir"?evaluateTaskIRReference(p,"main",{},std::stoull(argv[3])):evaluateTaskReference(p,"main",{},std::stoull(argv[3]));
+   llvm::json::Value value=nullptr;if(p.function("main").result!=Type::Unit)value=result.value.scalar;
+   observed=llvm::json::Object{{"kind","return"},{"value",std::move(value)},{"output",result.output}};
+  }catch(const SourceException &e){observed=llvm::json::Object{{"kind","exception"},{"code",e.code},{"message",e.message},{"file",e.span.file},{"line",int64_t(e.span.line)},{"column",int64_t(e.span.column)},{"output",e.output}};}
+  catch(const Error &e){observed=llvm::json::Object{{"kind","trap"},{"code",e.code}};}
+  require(nexrt::liveObjects.load()==baseline,"public task comparison retained managed values");std::cout<<json(std::move(observed))<<'\n';return 0;
+ }
  if(argc==6&&(std::string(argv[1])=="http-reference"||std::string(argv[1])=="http-task-ir")){
   auto path=std::filesystem::absolute(argv[2]);auto saved=llvm::json::parse(readFile(path.string()));if(!saved){llvm::consumeError(saved.takeError());throw std::runtime_error("expected private source JSON");}if(!saved->getAsObject())throw std::runtime_error("expected private source context");auto p=loadSourceExceptionTaskContext(*saved->getAsObject());check(p);
   auto decoded=llvm::json::parse(readFile(argv[3]));if(!decoded){llvm::consumeError(decoded.takeError());throw std::runtime_error("expected request JSON");}if(!decoded->getAsObject())throw std::runtime_error("expected request object");

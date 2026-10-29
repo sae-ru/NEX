@@ -1,3 +1,9 @@
+Language026 task-finally development retains pending returns/source errors across
+suspension. Generator close caused by scheduler cancellation/deadline/fatal trap
+skips user finalizers; runtime cleanup remains independent. The adapter still
+emits only reachable client/shared code. Browser dependencies, lock and notices
+have not changed. Full installed/browser acceptance for this cohort is pending.
+
 Language0.25 integration emits explicit source errors through a branded helper
 and keeps ordinary public revision/source maps. Standalone task tests and task
 workers select a per-scheduler classifier; runtime traps and Result propagation

@@ -16,6 +16,7 @@ struct TaskMachine::Impl {
     std::vector<Handler> handlers;
     std::vector<std::shared_ptr<const SourceException>> caught;
     std::shared_ptr<const SourceException> pendingSource;
+    std::map<TaskSlotId,std::shared_ptr<const SourceException>> finalizerSources;
   };
   std::map<std::string,TaskFunctionIR> functions;std::vector<Frame> frames;
   std::shared_ptr<const SourceException> incomingSource;
@@ -29,7 +30,7 @@ struct TaskMachine::Impl {
       auto &frame=frames.back();
       if(!frame.handlers.empty()){
         auto handler=frame.handlers.back();frame.handlers.pop_back();
-        for(size_t id=handler.floor;id<frame.slots.size();++id)frame.slots[id].reset();
+        for(size_t id=handler.floor;id<frame.slots.size();++id){frame.slots[id].reset();frame.finalizerSources.erase(TaskSlotId(id));}
         frame.caught.resize(handler.caught);frame.pendingSource=payload;frame.pc=handler.target;return;
       }
       frames.pop_back();
@@ -107,6 +108,15 @@ struct TaskMachine::Impl {
         case TaskInstruction::Rethrow:
           if(frame.caught.empty())throw Error("E_TASK_STATE","continuation rethrow lost its lexical catch",op.span);
           raise(*frame.caught.back());break;
+        case TaskInstruction::SavePendingSource:{
+          if(!frame.pendingSource||frame.finalizerSources.contains(op.output))throw Error("E_TASK_STATE","invalid pending finalizer source",op.span);
+          write(frame,op.output,TV(true,true),op.span);frame.finalizerSources.emplace(op.output,std::move(frame.pendingSource));++frame.pc;break;
+        }
+        case TaskInstruction::RethrowPendingSource:{
+          auto found=frame.finalizerSources.find(op.inputs[0]);
+          if(found==frame.finalizerSources.end())throw Error("E_TASK_STATE","finalizer lost its pending source",op.span);
+          auto error=std::move(found->second);frame.finalizerSources.erase(found);raise(*error);break;
+        }
         case TaskInstruction::Poll:++frame.pc;break;
         case TaskInstruction::Eval:{
           std::map<std::string,TV> values;for(auto id:op.inputs)values.emplace(taskSlotName(id),read(frame,id,op.span));
@@ -117,7 +127,7 @@ struct TaskMachine::Impl {
           write(frame,op.output,std::move(result.value),op.span);++frame.pc;break;
         }
         case TaskInstruction::Copy:write(frame,op.output,read(frame,op.inputs[0],op.span),op.span);++frame.pc;break;
-        case TaskInstruction::Drop:frame.slots.at(op.inputs[0]).reset();++frame.pc;break;
+        case TaskInstruction::Drop:frame.slots.at(op.inputs[0]).reset();frame.finalizerSources.erase(op.inputs[0]);++frame.pc;break;
         case TaskInstruction::Jump:frame.pc=op.yes;break;
         case TaskInstruction::Branch:frame.pc=read(frame,op.inputs[0],op.span).scalar?op.yes:op.no;break;
         case TaskInstruction::Pattern:{

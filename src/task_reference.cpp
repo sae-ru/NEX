@@ -1067,6 +1067,11 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
 TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
   return evaluateTaskReferenceImpl(false,p,entry,arguments,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant);
 }
+TaskReferenceResult evaluateTaskIRReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
+  if(!supportsSourceExceptionTasks(p))throw Error("E_LANGUAGE_VERSION","TaskIR source-error comparison requires checked source-exception tasks");
+  (void)analyzeTaskLifetimes(p,entry);
+  return evaluateTaskReferenceImpl(true,p,entry,arguments,limit,std::move(observer),taskLimits,nullptr,nullptr,nullptr);
+}
 TaskReferenceResult evaluateSourceExceptionTaskIRPrototype(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
   if(!sourceExceptionTasksPrototype(p))throw Error("E_LANGUAGE_VERSION","exception TaskIR coordinator requires the separate private task parser");
   (void)analyzeTaskLifetimes(p,entry);

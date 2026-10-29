@@ -178,6 +178,13 @@ test fn semantics()->unit {assert(answer()==42);}
         self.assertFalse((self.root/'package').exists())
 
     def test_synchronous_finally_pe_and_optional_wine(self):
+        self.finally_platforms(False)
+
+    def test_resumable_finally_pe_and_optional_wine(self):
+        self.finally_platforms(True)
+
+    def finally_platforms(self,resumable):
+        tag='task-finally' if resumable else 'finally'
         self.source(r'''module windows_finally;
 fn before()->str{var value:str="old";try{return value;}finally{value="changed";}}
 fn replaced()->str{try{return "discarded";}finally{return "kept";}}
@@ -187,6 +194,16 @@ fn recovered()->i64{
  catch(c,m){assert(c=="FINAL"&&m=="replacement");return 42;}
 }
 fn main()->unit !{io}{assert(before()=="old"&&replaced()=="kept");print(recovered());}
+''')
+        if resumable:
+            self.source(r'''module windows_task_finally;
+fn before()->str !{task}{var value:str="old";try{task_yield();return value;}finally{task_yield();value="changed";}}
+fn replaced()->str !{task}{try{task_yield();return "discarded";}finally{task_yield();return "kept";}}
+fn failed()->i64 !{task,throw}{task_yield();throw("APP","λ\u0000🙂");}
+fn recovered()->i64 !{task}{try{try{return failed();}finally{task_yield();throw("FINAL","replacement");}}catch(c,m){assert(c=="FINAL"&&m=="replacement");return 42;}}
+fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
+ print(with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{let future:task<i64>=task_spawn(scope,recovered);try{return task_wait(future);}finally{task_yield();}}));
+}
 ''')
         self.assertEqual(self.cli('eval')['stdout'],'42\n')
         image=None
@@ -198,11 +215,11 @@ fn main()->unit !{io}{assert(before()=="old"&&replaced()=="kept");print(recovere
             for profile in ('debug','release'):
                 built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
                 self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
-                self.retain(built,'finally-'+arch+'-'+profile)
+                self.retain(built,tag+'-'+arch+'-'+profile)
                 if image and arch=='x86_64':
                     sys.path.insert(0,str(harness.REPO/'tools/linux'))
                     from nex_docker_mount import mount
-                    executable=Path(built['executable']).resolve();name='nex-finally-wine-'+uuid.uuid4().hex
+                    executable=Path(built['executable']).resolve();name='nex-'+tag+'-wine-'+uuid.uuid4().hex
                     command=['docker','run','--rm','--name',name,'--platform','linux/amd64',
                         '--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
                         '--tmpfs','/tmp:rw,exec,mode=1777','--env','WINEPREFIX=/tmp/nex-wine',
@@ -213,7 +230,7 @@ fn main()->unit !{io}{assert(before()=="old"&&replaced()=="kept");print(recovere
                     self.assertEqual((result.returncode,result.stdout),(0,'42\n'),result.stderr)
                     if os.environ.get('NEX_WINDOWS_TEST_OUTPUT'):
                         output=Path(os.environ['NEX_WINDOWS_TEST_OUTPUT']);output.mkdir(parents=True,exist_ok=True)
-                        (output/('finally-wine-'+profile+'.json')).write_text(json.dumps({'command':command,
+                        (output/(tag+'-wine-'+profile+'.json')).write_text(json.dumps({'command':command,
                             'stdout':result.stdout,'stderr':result.stderr,'exit_code':result.returncode,
                             'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
                             'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2))

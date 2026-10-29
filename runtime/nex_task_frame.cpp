@@ -26,7 +26,7 @@ void NativeTaskFrame::write(int64_t id,Value value,int64_t kind){
   if(completed||id<0||size_t(id)>=slots.size()||kinds[id]!=kind||!kindMatches(value,kind))throw DataError("E_TASK_STATE","invalid compiled task slot write");
   slots[id]=std::move(value);
 }
-void NativeTaskFrame::drop(int64_t id){if(completed||id<0||size_t(id)>=slots.size())throw DataError("E_TASK_STATE","invalid compiled task slot drop");slots[id].reset();}
+void NativeTaskFrame::drop(int64_t id){if(completed||id<0||size_t(id)>=slots.size())throw DataError("E_TASK_STATE","invalid compiled task slot drop");slots[id].reset();finalizerSources.erase(id);}
 namespace {
 const TaskCodeDescriptor &checkedCode(const void *pointer){
   if(!pointer)throw DataError("E_TASK_STATE","missing compiled task code descriptor");
@@ -102,7 +102,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
     if(unwinding){
       if(!current.sourceHandlers.empty()&&!current.completed){
         auto handler=current.sourceHandlers.back();current.sourceHandlers.pop_back();
-        for(size_t id=handler.floor;id<current.slots.size();++id)current.slots[id].reset();
+        for(size_t id=handler.floor;id<current.slots.size();++id)current.drop(int64_t(id));
         current.caughtSource.resize(handler.caught);current.pendingSource=std::move(unwinding);current.pc=handler.pc;continue;
       }
       if(current.closingScope){
@@ -337,7 +337,7 @@ extern "C" void nex_task_debug_checkpoint(void *pointer,int64_t pointIndex)noexc
 #endif
 namespace {
 nexrt::NativeTaskFrame &frame(void *p){if(!p)throw nexrt::DataError("E_TASK_STATE","missing compiled task frame");return *static_cast<nexrt::NativeTaskFrame*>(p);}
-void finish(void *p,nexrt::Value value){auto &f=frame(p);if(f.completed)throw nexrt::DataError("E_TASK_STATE","compiled task completed twice");if(f.expectedResult>=0&&f.expectedResult!=4&&!nexrt::kindMatches(value,f.expectedResult))throw nexrt::DataError("E_TASK_STATE","compiled task result kind differs");f.result=std::move(value);f.slots.clear();f.sourceHandlers.clear();f.caughtSource.clear();f.pendingSource.reset();f.completed=true;}
+void finish(void *p,nexrt::Value value){auto &f=frame(p);if(f.completed)throw nexrt::DataError("E_TASK_STATE","compiled task completed twice");if(f.expectedResult>=0&&f.expectedResult!=4&&!nexrt::kindMatches(value,f.expectedResult))throw nexrt::DataError("E_TASK_STATE","compiled task result kind differs");f.result=std::move(value);f.slots.clear();f.sourceHandlers.clear();f.caughtSource.clear();f.pendingSource.reset();f.finalizerSources.clear();f.completed=true;}
 }
 namespace {
 nexrt::NativeTaskFrame &sourceFrame(void *p){auto &f=frame(p);if(f.completed||!nexrt::sourceExceptionTaskABI(f.abi))throw nexrt::DataError("E_TASK_STATE","source operation requires a live private exception task frame");return f;}
@@ -351,6 +351,12 @@ void nex_task_frame_source_catch_at(void *p,int64_t code,int64_t message,const n
   nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);auto error=f.pendingSource;if(!error||code==message||f.sourceHandlers.size()+f.caughtSource.size()>=65536)throw nexrt::DataError("E_TASK_STATE","invalid private task catch");f.write(code,nexrt::Value(nexrt::string(error->code)),3);f.write(message,nexrt::Value(nexrt::string(error->message)),3);f.caughtSource.push_back(std::move(error));f.pendingSource.reset();});
 }
 void nex_task_frame_source_end_at(void *p,const nexrt::NativeSite *site){nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(f.caughtSource.empty())throw nexrt::DataError("E_TASK_STATE","private task catch underflow");f.caughtSource.pop_back();});}
+void nex_task_frame_source_save_at(void *p,int64_t slot,const nexrt::NativeSite *site){
+  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(!f.pendingSource||f.finalizerSources.contains(slot))throw nexrt::DataError("E_TASK_STATE","invalid pending finalizer source");f.write(slot,nexrt::Value(true,true),1);f.finalizerSources.emplace(slot,std::move(f.pendingSource));});
+}
+void nex_task_frame_source_restore_at(void *p,int64_t slot,const nexrt::NativeSite *site){
+  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);auto found=f.finalizerSources.find(slot);if(found==f.finalizerSources.end()||f.pendingSource)throw nexrt::DataError("E_TASK_STATE","finalizer lost its pending source");f.pendingSource=std::move(found->second);f.finalizerSources.erase(found);});
+}
 void nex_task_frame_source_raise_at(void *p,nexrt::Handle *code,nexrt::Handle *message,int64_t line,const nexrt::NativeSite *site){
   nexrt::hostOperation({line,site},[&]{auto &f=sourceFrame(p);auto a=nexrt::readHandle(code),b=nexrt::readHandle(message);if(!a.object||!b.object||a.object->kind!=nexrt::Data::String||b.object->kind!=nexrt::Data::String||f.pendingSource)throw nexrt::DataError("E_TASK_STATE","invalid private task source payload");f.pendingSource=std::make_shared<const nexrt::NativeSourceException>(a.object->text,b.object->text,nexrt::copyNativeSourceRecord(site),line);});
 }

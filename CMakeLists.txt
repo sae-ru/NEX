@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.138.2 LANGUAGES C CXX)
+project(NEX VERSION 0.139.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1297,3 +1297,8 @@ install(FILES
   tests/fixtures/source-exceptions/retained-024-graph.json
   tests/fixtures/source-exceptions/retained-024.json
   DESTINATION share/nex/tests/fixtures/source-exceptions)
+
+add_test(NAME source_task_finally COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_finally.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_source_exception_tasks_probe>)
+set_tests_properties(source_task_finally PROPERTIES TIMEOUT 1800)
+install(FILES tests/task_finally.py DESTINATION share/nex/tests)

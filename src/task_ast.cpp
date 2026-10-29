@@ -17,12 +17,14 @@ struct TaskAstMachine::Impl {
   AV returned;
   std::string output;
   struct MatchState {E expression;AV subject;size_t arm=0;};
+  struct DeferredOutcome {AV value;std::shared_ptr<SourceException> error;};
   struct Action {
     enum Kind {Statement,Expression,Apply,Bind,Assign,Discard,Return,If,Loop,
-               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise,CatchGuard} kind;
+               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise,CatchGuard,EndFinally,ResumeOutcome} kind;
     E expression;
     S statement;
     std::shared_ptr<MatchState> match;
+    std::shared_ptr<DeferredOutcome> deferred;
     Action(Kind kind,E expression={},S statement={},std::shared_ptr<MatchState> match={})
       :kind(kind),expression(std::move(expression)),statement(std::move(statement)),match(std::move(match)){}
   };
@@ -125,6 +127,15 @@ struct TaskAstMachine::Impl {
   }
   void leave(AV value){
     if(!kind(frames.back().function->result,value))throw Error("E_TASK_TYPE","AST return kind differs",activeSpan);
+    auto &frame=frames.back();
+    for(size_t i=frame.handlers.size();i-->0;){
+      auto handler=frame.handlers[i];if(handler.statement->kind!=Stmt::Finally)continue;
+      frame.handlers.resize(i);
+      pending-=frame.actions.size()-handler.actions;frame.actions.erase(frame.actions.begin()+handler.actions,frame.actions.end());
+      frame.values.resize(handler.values);frame.scopes.resize(handler.scopes);frame.caught.resize(handler.caught);
+      Action resume{Action::ResumeOutcome};resume.deferred=std::make_shared<DeferredOutcome>(DeferredOutcome{std::move(value),{}});
+      add(std::move(resume));block(handler.statement->alternative,true);return;
+    }
     pending-=frames.back().actions.size();frames.pop_back();
     if(frames.empty()){returned=std::move(value);done=true;}
     else frames.back().values.push_back(std::move(value));
@@ -136,6 +147,10 @@ struct TaskAstMachine::Impl {
       auto handler=frame.handlers.back();frame.handlers.pop_back();
       pending-=frame.actions.size()-handler.actions;frame.actions.erase(frame.actions.begin()+handler.actions,frame.actions.end());
       frame.values.resize(handler.values);frame.scopes.resize(handler.scopes);frame.caught.resize(handler.caught);
+      if(handler.statement->kind==Stmt::Finally){
+        Action resume{Action::ResumeOutcome};resume.deferred=std::make_shared<DeferredOutcome>(DeferredOutcome{{},std::make_shared<SourceException>(std::move(error))});
+        add(std::move(resume));block(handler.statement->alternative,true);return;
+      }
       frame.scopes.emplace_back();
       frame.scopes.back()[handler.statement->name]=AV(nexrt::string(error.code));
       frame.scopes.back()[handler.statement->catchMessage]=AV(nexrt::string(error.message));
@@ -183,8 +198,9 @@ struct TaskAstMachine::Impl {
         switch(action.kind){
         case Action::Statement:
           switch(s->kind){
-          case Stmt::Finally:throw Error("E_FINALLY_TASK","AST task finalization is pending for this development compiler",s->span);
-      case Stmt::Try:
+          case Stmt::Finally:
+            frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndFinally,{},s});block(s->body,true);break;
+          case Stmt::Try:
             if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","AST exception handlers require the private task parser",s->span);
             frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndTry});block(s->body,true);break;
           case Stmt::Throw:
@@ -300,6 +316,9 @@ struct TaskAstMachine::Impl {
           frame.scopes.pop_back();
           if(action.match->expression->statementMatch)frame.values.emplace_back();
           break;
+        case Action::EndFinally:frame.handlers.pop_back();block(s->alternative,true);break;
+        case Action::ResumeOutcome:
+          if(action.deferred->error)raise(*action.deferred->error);else leave(std::move(action.deferred->value));break;
         case Action::EndTry:frame.handlers.pop_back();break;
         case Action::CatchGuard:{
           if(pop().scalar){add({Action::EndCatch});block(s->alternative,false);}

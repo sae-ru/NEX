@@ -1,3 +1,13 @@
+# Resumable finally implementation (0.139.0 development)
+
+TaskIR/native and independent AST control now preserve pending outcomes across
+suspension; lifetime analysis visits finalizers before outgoing transfers.
+TypeScript distinguishes normal/source-error completion from scheduler close.
+The source tests compare actual engines, traps/cancellation and physical resource
+cleanup. Full compiler, installed SDK and platform acceptance remain gates;
+typed payloads, general effects and the original platform/accelerator/tooling
+requirements below remain open. This is progress, not completion of NEX.
+
 # Finally lexical DWARF scope / toolchain0.138.2
 
 Return-path finalizers use the lexical debug scope recorded outside their

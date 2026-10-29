@@ -13,6 +13,7 @@
 #include "nex_task_debug.h"
 #endif
 #include <span>
+#include <map>
 namespace nexrt {
 // A compiler-private ABI. Owned Values survive parking; Handles are only leases
 // within one resume. The generated step owns a temporary-handle boundary.
@@ -69,6 +70,7 @@ public:
   std::vector<SourceHandler> sourceHandlers;
   std::vector<std::shared_ptr<const NativeSourceException>> caughtSource;
   std::shared_ptr<const NativeSourceException> pendingSource;
+  std::map<int64_t,std::shared_ptr<const NativeSourceException>> finalizerSources;
   std::optional<TaskGroup::Scope> closingScope;
   TaskGroup::Scope parentScope;
   SourceLocation scopeLocation;
@@ -114,6 +116,8 @@ void nex_task_frame_handler_push_at(void *,int64_t,int64_t,const nexrt::NativeSi
 void nex_task_frame_handler_pop_at(void *,const nexrt::NativeSite *);
 void nex_task_frame_source_catch_at(void *,int64_t,int64_t,const nexrt::NativeSite *);
 void nex_task_frame_source_end_at(void *,const nexrt::NativeSite *);
+void nex_task_frame_source_save_at(void *,int64_t,const nexrt::NativeSite *);
+void nex_task_frame_source_restore_at(void *,int64_t,const nexrt::NativeSite *);
 void nex_task_frame_source_raise_at(void *,nexrt::Handle *,nexrt::Handle *,int64_t,const nexrt::NativeSite *);
 void nex_task_frame_source_rethrow_at(void *,const nexrt::NativeSite *);
 }

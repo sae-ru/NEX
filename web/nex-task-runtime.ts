@@ -56,6 +56,11 @@ export function request(operation: string, arguments_: ReadonlyArray<nex.Value>,
   if (!Array.isArray(arguments_) || requestArity.get(operation) !== arguments_.length) fail('E_TASK_STATE', 'unknown task request or incorrect argument count', site);
   const value = Object.freeze({operation, arguments: Object.freeze([...arguments_]), site}); requests.add(value); return value;
 }
+// Scheduler-driven generator close is fatal cancellation/cleanup. User finally
+// runs only while the source activation is executing, even with a pending return.
+export function finalizerEnabled(): boolean {
+  const {driver, job} = context(); return driver.jobs[job].state !== 'finishing';
+}
 export function enter(site?: nex.Site): void {
   const {driver, job} = context(); driver.charge(site);
   if (driver.jobs[job].calls >= 256) fail('E_LIMIT', 'task call depth exceeds256', site);

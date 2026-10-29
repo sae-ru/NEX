@@ -18,12 +18,13 @@ struct Value {
   std::map<std::string,Callable> calls;
   bool opaque=false,file=false,resource=false,shape=false;
   std::optional<int64_t> integer;
-  std::optional<bool> boolean;
+  std::optional<bool> boolean,resultSuccess;
 };
 // Immutable binding identity is separate from its current value and visible
 // spelling. Hidden outer bindings remain present until lexical scope exit.
 struct Env {std::map<std::string,uint64_t> names;std::map<uint64_t,V> values;};
 struct Outcome {V value;bool raises=false;};
+struct ReturnState {V value;Env state;};
 struct HandlerInput {Env baseline;std::optional<Env> exceptional;};
 struct Analysis {
   const Program &p;
@@ -32,7 +33,7 @@ struct Analysis {
   std::map<std::string,const Function*> functions;
   std::vector<int> parents;
   std::set<const Function*> active;
-  std::vector<V> *returns=nullptr;
+  std::vector<ReturnState> *returns=nullptr;
   uint64_t nextBinding=0;
   std::vector<HandlerInput*> handlers;
   bool escaping=false;
@@ -86,6 +87,7 @@ struct Analysis {
     value->opaque=a->opaque||b->opaque;value->file=a->file||b->file;value->resource=a->resource||b->resource;
     if(a->integer==b->integer)value->integer=a->integer;
     if(a->boolean==b->boolean)value->boolean=a->boolean;
+    if(a->resultSuccess==b->resultSuccess)value->resultSuccess=a->resultSuccess;
     if(depth>=32){value->opaque=true;++report.widenings;return value;}
     if(a->shape&&b->shape&&a->fields.size()==b->fields.size()){
       value->shape=true;
@@ -157,12 +159,13 @@ struct Analysis {
     ++report.functions;active.insert(&fn);Env env;
     for(size_t i=0;i<fn.params.size();++i)declare(env,fn.params[i].name,i<args.size()?args[i]:unknown(fn.params[i].type));
     for(size_t i=0;i<fn.captures.size();++i)declare(env,fn.captures[i].name,i<captures.size()?captures[i]:unknown(fn.captures[i].type));
-    std::vector<V> values;auto previous=returns;returns=&values;
+    std::vector<ReturnState> states;auto previous=returns;returns=&states;
     auto previousHandlers=std::move(handlers);handlers.clear();auto previousEscaping=escaping;escaping=false;
     bool ended=false,raised=false;
     try{ended=block(fn.body,env,current,false);raised=escaping;}
     catch(...){returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;active.erase(&fn);throw;}
     returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;active.erase(&fn);
+    std::vector<V> values;for(const auto &state:states)values.push_back(state.value);
     if(!ended)values.push_back(fn.result==Type::Unit?plain():unknown(fn.result));
     return {values.empty()?V{}:joined(values,fn.result),raised};
   }
@@ -251,7 +254,7 @@ struct Analysis {
       for(size_t i=1;i<e->args.size();++i){auto value=expression(e->args[i],env,current);if(!value)return {};args.push_back(value);}
       auto out=invoke(fn,args,current,e->type,e->span,e->args[0]->type.effects.contains("throw"));if(out.raises)sourceEdge(env);return out.value;
     }
-    case Expr::Propagate:{auto value=expression(e->args[0],env,current);return value?field(value,0,e->type):V{};}
+    case Expr::Propagate:{auto value=expression(e->args[0],env,current);if(!value)return {};if(value->resultSuccess!=true)returns->push_back({plain(),env});return value->resultSuccess==false?V{}:field(value,0,e->type);}
     case Expr::Unary:{auto value=expression(e->args[0],env,current);if(!value)return {};
       if(e->text=="!"&&value->boolean){auto result=std::make_shared<Value>();result->boolean=!*value->boolean;return result;}return plain();}
     case Expr::Binary:{
@@ -269,7 +272,7 @@ struct Analysis {
     auto fn=functions.find(e->text);
     if(fn!=functions.end()){auto out=function(*fn->second,args,{},current);if(out.raises)sourceEdge(env);return out.value;}
     if(p.hasStructure(e->text)||p.variant(e->text))return aggregate(std::move(args));
-    if(e->text=="ok")return aggregate(std::move(args));
+    if(e->text=="ok"||e->text=="err"){auto value=std::make_shared<Value>(*aggregate(std::move(args)));value->resultSuccess=e->text=="ok";return value;}
     if(e->text=="unwrap")return field(args[0],0,e->type);
     if(e->text=="push"){
       if(args[0]->shape&&args[0]->fields.size()<64){auto fields=args[0]->fields;fields.push_back(args[1]);return aggregate(std::move(fields));}
@@ -291,7 +294,27 @@ struct Analysis {
     for(const auto &s:body){
       tick();if(ended)break;
       switch(s->kind){
-      case Stmt::Finally:throw Error("E_FINALLY_TASK","task lifetime finalization is pending for this development compiler",s->span);
+      case Stmt::Finally:{
+        auto baseline=env,normal=env;HandlerInput handler{baseline,{}};
+        std::vector<ReturnState> pendingReturns;auto outerReturns=returns;returns=&pendingReturns;handlers.push_back(&handler);
+        bool bodyEnds;
+        try{bodyEnds=block(s->body,normal,current);}catch(...){handlers.pop_back();returns=outerReturns;throw;}
+        handlers.pop_back();returns=outerReturns;std::optional<Env> continuation;
+        if(!bodyEnds){
+          auto state=project(normal,baseline);
+          if(!block(s->alternative,state,current))continuation=std::move(state);
+        }
+        for(const auto &pending:pendingReturns){
+          auto state=project(pending.state,baseline);
+          if(!block(s->alternative,state,current))returns->push_back({pending.value,std::move(state)});
+        }
+        if(handler.exceptional){
+          auto state=project(*handler.exceptional,baseline);
+          if(!block(s->alternative,state,current))sourceEdge(state);
+        }
+        if(continuation)env=std::move(*continuation);else ended=true;
+        break;
+      }
       case Stmt::Try:{
         if(!supportsSourceExceptionTasks(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
         ++report.handlers;HandlerInput handler{env,{}};auto normal=env;handlers.push_back(&handler);bool bodyEnds;
@@ -317,7 +340,7 @@ struct Analysis {
       case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr,env,current);if(!value){ended=true;break;}declare(env,s->name,value);declared.push_back({s->name,env.names.at(s->name)});break;}
       case Stmt::Assign:{auto value=expression(s->expr,env,current);if(value)assign(env,s->name,value);else ended=true;break;}
       case Stmt::Expression:if(!expression(s->expr,env,current))ended=true;break;
-      case Stmt::Return:{auto value=expression(s->expr,env,current);if(value)returns->push_back(value);ended=true;break;}
+      case Stmt::Return:{auto value=expression(s->expr,env,current);if(value)returns->push_back({value,env});ended=true;break;}
       case Stmt::Match:ended=!match(s->expr,env,current,true).normal;break;
       case Stmt::If:{
         auto condition=expression(s->expr,env,current);if(!condition){ended=true;break;}

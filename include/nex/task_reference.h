@@ -28,6 +28,12 @@ TaskReferenceResult evaluateTaskReference(const Program &,const std::string &ent
     // Without it,020 owns an evaluation scope and captures current authority.
     const nexrt::FileReadGrant *fileGrant=nullptr,
     const nexrt::FileWriteGrant *writeGrant=nullptr);
+// Internal semantic comparison for a checked source-exception task program.
+// This uses the serial coordinator and TaskIR machine, with no native workers.
+TaskReferenceResult evaluateTaskIRReference(const Program &,
+    const std::string &entry="main",const std::vector<nexrt::Value> &arguments={},
+    uint64_t limit=1000000,TaskReferenceObserver observer={},
+    const nexrt::TaskExecutionLimits *taskLimits=nullptr);
 // Private TaskIR-machine experiment. It reuses the serial coordinator's owned
 // capability protocol, but executes explicit continuation instructions instead
 // of AST actions. The ordinary reference above remains AST-only. No native code

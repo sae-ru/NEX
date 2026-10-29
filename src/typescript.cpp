@@ -176,8 +176,8 @@ class Generator {
         statement("} catch ("+error+") {");++depth;
         statement(run+" = sourceException.details("+error+") !== undefined || nex.propagatedFailure("+error+") !== undefined;");
         statement(fatal+" = "+error+";");statement("throw "+error+";");--depth;
-        statement("} finally {");++depth;statement("if ("+run+") {");++depth;
-        block(s->alternative);--depth;statement("} else {");++depth;statement("throw "+fatal+";");--depth;statement("}");--depth;statement("}");break;
+        statement("} finally {");++depth;statement("if ("+run+(taskMode?" && task.finalizerEnabled()":"")+") {");++depth;
+        block(s->alternative);--depth;statement("} else if (!"+run+") {");++depth;statement("throw "+fatal+";");--depth;statement("}");--depth;statement("}");break;
       }
       case Stmt::Try:{
         if(!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the experimental TypeScript emitter",s->span);
@@ -257,6 +257,11 @@ public:
       bool propagation=propagatesResult(f);
       if(propagation&&!taskMode){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
       block(f.body,false);
+      // The checker proves non-unit source functions cannot fall through. JS
+      // cancellation guards and branded throw helpers obscure that proof from
+      // TypeScript's flow analysis. Keep an explicit fatal unreachable edge;
+      // never fabricate a value or weaken the generated result type.
+      if(f.result!=Type::Unit)statement("throw new nex.NexError(\"E_INTERNAL\", \"checked function completed without a result\", ["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");
       if(propagation&&!taskMode){--depth;statement("});");}
       if(taskMode){--depth;if(propagation){statement("} catch (error) {");++depth;statement("const failure = nex.propagatedFailure(error);");statement("if (failure !== undefined) return failure;");statement("throw error;");--depth;}statement("} finally { task.leave(); }");}
       else if(parallelEnabled){--depth;statement("} finally { nex.parallelLeave(); }");}

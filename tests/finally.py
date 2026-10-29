@@ -1,4 +1,4 @@
-"""Synchronous finally agreement and ownership; task completion remains pending."""
+"""Synchronous and resumable finally agreement, ownership and retained identities."""
 import hashlib
 import json
 import os
@@ -134,8 +134,6 @@ fn main()->unit{}
             ('fn main()->unit{try{throw("A","B");}catch(c,m){}finally{assert(c=="A");}}','E_NAME'),
             ('fn main()->i64{try{return 1;}finally{return "wrong";}}','E_TYPE'),
             ('fn main()->unit{try{}finally{throw("A","B");}}','E_EFFECT'),
-            ('fn main()->unit !{task}{try{task_yield();}finally{}}','E_FINALLY_TASK'),
-            ('fn helper()->i64{try{return 1;}finally{}}fn main()->unit !{task}{task_yield();let x:i64=helper();}','E_FINALLY_TASK'),
             ('fn main()->unit{try{}}','E_PARSE'),
             ('fn main()->unit{try{}finally{}finally{}}','E_PARSE'),
         ]
@@ -218,6 +216,13 @@ fn main()->unit !{io}{
 
     @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
     def test_pending_return_and_partial_argument_release_physical_resource_before_catch_or_finalizer(self):
+        self.physical_resource_outcomes(False)
+
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    def test_resumable_pending_outcomes_release_physical_resource(self):
+        self.physical_resource_outcomes(True)
+
+    def physical_resource_outcomes(self,resumable):
         source=r'''module owned_finalizers;
 server resource Session;
 server extern fn create(value:i64)->Session !{ffi}=foreign("owned","create","PIN");
@@ -236,6 +241,12 @@ server fn main()->unit !{ffi,io}{
  print(42);
 }
 '''
+        if resumable:
+            source=source.replace('!{ffi,throw}','!{task,ffi,throw}').replace('!{ffi,io}','!{task,ffi,io}')
+            source=source.replace('try{return create(42);}','try{task_yield();return create(42);}')
+            source=source.replace('finally{throw(', 'finally{task_yield();throw(')
+            source=source.replace('try{let ignored:Session=take(', 'try{task_yield();let ignored:Session=take(')
+            source=source.replace('finally{let next:Session=', 'finally{task_yield();let next:Session=')
         self.source(source.replace('PIN','0'*64))
         signatures={name:self.cli('ffi','--symbol',name) for name in ('create','read')}
         pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()

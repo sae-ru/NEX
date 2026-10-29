@@ -51,8 +51,11 @@ class ToolchainCase(unittest.TestCase):
     def tearDown(self):
         destination=os.environ.get('NEX_TEST_FAILURE_ROOT')
         result=getattr(getattr(self,'_outcome',None),'result',None)
-        failed=result and any(test is self or getattr(test,'test_case',None) is self
-                             for test,_ in list(result.errors)+list(result.failures))
+        rows=(list(result.errors)+list(result.failures)) if result else []
+        # Python3.9 records phase errors on _Outcome until after tearDown.
+        rows+=list(getattr(getattr(self,'_outcome',None),'errors',[]))
+        failed=any(error is not None and (test is self or getattr(test,'test_case',None) is self)
+                   for test,error in rows)
         if destination and failed:
             target=Path(destination)/(self.id()+'-'+self.root.name.replace(' ','_'))
             target.parent.mkdir(parents=True,exist_ok=True)
