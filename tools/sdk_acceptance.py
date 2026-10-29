@@ -1594,7 +1594,13 @@ test fn examples() -> unit {
                 'worker/task capability pack mismatch')
         state['descriptor'] = descriptor
         inventory = {}
-        for name in [*pack['documents'].values(), *pack['examples'].values()]:
+        resource_names = [*pack['documents'].values(), *pack['examples'].values()]
+        source_errors = descriptor.get('source_exceptions', {})
+        if source_errors.get('handler_filters'):
+            origin = source_errors['handler_migration_fixture']
+            resource_names += [source_errors['handler_sdk_helper'], source_errors['handler_test_source'],
+                               origin['metadata'], origin['sql']]
+        for name in resource_names:
             path = (resources / name).resolve()
             require(resources.resolve() in path.parents and path.is_file(), 'missing/escaped language resource: ' + name)
             path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
