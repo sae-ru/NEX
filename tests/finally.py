@@ -1,8 +1,9 @@
-"""Synchronous finally foundation; native/task completion remains pending."""
+"""Synchronous finally agreement and ownership; task completion remains pending."""
 import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import sqlite3
 import subprocess
 import unittest
@@ -36,11 +37,23 @@ fn lexical()->i64 !{throw}{
  }
 }
 fn lexical_caught()->i64{try{return lexical();}catch(c,m){assert(c=="OUTER"&&m=="original");return 42;}}
+fn alias_return(value:list<str>)->list<str>{try{return value;}finally{let discarded:list<str>=["temporary"];assert(len(discarded)==1);}}
+fn nested_return()->str{try{try{return "pending";}finally{assert(true);}}finally{return "outer";}}
+fn suppressed()->i64 !{throw}{try{throw("DISCARDED","source error");}finally{return 42;}}
+fn shadow()->i64{var current:i64=40;try{let current:i64=0;return current+1;}finally{current=current+2;assert(current==42);}}
+fn catch_alias()->str !{throw}{
+ try{throw("OUTER","original");}catch(c,m){
+  try{try{throw("INNER","kept");}catch(c,m){return m;}}finally{assert(c=="OUTER"&&m=="original");}
+ }
+}
 fn main()->unit !{io}{
  assert(normal()=="B0F");assert(before()=="original");assert(replace()=="final");assert(final_return()==42);
  assert(nested()=="B12");assert(handled()==42);assert(declined()==42);assert(replaced()==42);
  assert(propagated()==err<i64>("RESULT","body"));assert(override_result()==err<i64>("RESULT","finalizer"));
- assert(lexical_caught()==42);print(42);
+ assert(lexical_caught()==42);assert(alias_return(["λ\u0000🙂"])==["λ\u0000🙂"]);
+ assert(nested_return()=="outer");assert(shadow()==1);
+ try{assert(suppressed()==42);assert(catch_alias()=="kept");}catch(c,m){assert(false);}
+ print(42);
 }
 test fn ordinary()->unit{assert(normal()=="B0F"&&nested()=="B12");}
 test fn returns()->unit{assert(before()=="original"&&replace()=="final"&&final_return()==42);}
@@ -69,6 +82,14 @@ class FinallyFoundation(harness.ToolchainCase):
         self.assertEqual(self.cli('eval')['stdout'],expected)
         observed=self.web('main',"import { entry } from './program.ts';entry();\n")
         self.assertEqual(observed,expected)
+        for profile in ('debug','release'):
+            self.assertEqual(self.cli('run','--profile',profile,timeout=240)['stdout'],expected)
+            tested=self.cli('test','--profile',profile,timeout=300)
+            self.assertTrue(tested['ok']);self.assertEqual(len(tested['tests']),5)
+        profiled=self.cli('profile','--scenario','synchronous finally',timeout=300)
+        self.assertEqual(profiled['stdout'],expected)
+        for pool in json.loads(Path(profiled['output']).read_text())['memory']:
+            self.assertEqual(pool['live'],0);self.assertEqual(pool['allocations'],pool['frees'])
         tests=self.cli('test','--target','web',timeout=240)
         self.assertTrue(tests['ok']);self.assertEqual(len(tests['tests']),5)
         operations=self.cli('operations','--symbol','normal','--limit','1000')
@@ -88,11 +109,21 @@ fn main()->unit{}
             self.assertEqual(value['source_exception'],{'code':'ORIGINAL','message':'λ\0🙂'})
             text=self.web(entry,"import { entry } from './program.ts';import { details } from './nex-source-exception-runtime.ts';\nlet value;try{entry();}catch(error){value=details(error);}if(!value)throw Error('missing source error');process.stdout.write(JSON.stringify(value));\n")
             records.append(json.loads(text))
+            native=self.cli('run','--entry',entry,ok=False,timeout=240)
+            payload=[json.loads(line.split(' ',1)[1]) for line in native['stderr'].splitlines() if line.startswith('NEX_SOURCE_EXCEPTION ')]
+            self.assertEqual(len(payload),1);self.assertEqual(payload[0]['code'],'ORIGINAL')
+            self.assertEqual(payload[0]['message'],'λ\0🙂')
+            if entry=='plain':original_native=payload[0]
+            else:
+                self.assertEqual(payload[0]['source']['operation_site'],original_native['source']['operation_site'])
+                self.assertEqual(payload[0]['line'],original_native['line'])
         self.assertEqual(records[0],records[1])
 
     def test_fatal_traps_skip_user_finalizers(self):
         self.source('module fatal;fn main()->unit{try{let zero:i64=0;let value:i64=1/zero;}finally{assert(false);}}')
         self.assertEqual(self.cli('eval',ok=False)['code'],'E_DIV_ZERO')
+        native=self.cli('run',ok=False,timeout=240)
+        self.assertEqual(native['exit_code'],70);self.assertIn('E_DIV_ZERO',native['stderr']);self.assertNotIn('E_ASSERT',native['stderr'])
         output=self.web('main',"import { entry } from './program.ts';let code;try{entry();}catch(error){code=(error as {code:string}).code;}process.stdout.write(JSON.stringify({code}));\n")
         self.assertEqual(json.loads(output),{'code':'E_DIV_ZERO'})
 
@@ -111,8 +142,15 @@ fn main()->unit{}
             with self.subTest(source=source):
                 self.source('module rejected;'+source)
                 self.assertEqual(self.cli('check',ok=False)['code'],code)
-        self.source('module pending;fn main()->i64{try{return 42;}finally{}}')
-        self.assertEqual(self.cli('build',ok=False)['code'],'E_FINALLY_BACKEND')
+        self.source('module available;fn value()->i64{try{return 42;}finally{}}fn main()->unit !{io}{print(value());}')
+        self.assertEqual(self.cli('run',timeout=240)['stdout'],'42\n')
+        self.assertEqual(self.cli('build','--target','wasm','--entry','value',ok=False)['code'],'E_WASM_TYPE')
+
+    def test_nested_return_expansion_has_a_checked_bound(self):
+        body='return 1;'
+        for _ in range(14):body='try{'+body+'}finally{if flag{return 2;}}'
+        self.source('module bounded;fn compute(flag:bool)->i64{'+body+'}fn main()->unit{assert(compute(false)==1);}')
+        self.assertEqual(self.cli('build',ok=False,timeout=120)['code'],'E_FINALLY_LIMIT')
 
     def test_actual_prefinally026_graph_and_canonical_identities_are_unchanged(self):
         fixture=harness.REPO/'tests/fixtures/language-0.26-finally-origin'
@@ -131,6 +169,59 @@ fn main()->unit{}
         (fresh/'main.nex').write_text(metadata['source'])
         (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
         self.assertEqual(self.cli('check',cwd=fresh)['revision'],metadata['revision'])
+
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    def test_pending_return_and_partial_argument_release_physical_resource_before_catch_or_finalizer(self):
+        source=r'''module owned_finalizers;
+server resource Session;
+server extern fn create(value:i64)->Session !{ffi}=foreign("owned","create","PIN");
+server extern fn read(value:Session)->i64 !{ffi}=foreign("owned","read","PIN");
+fn fail()->i64 !{throw}{throw("SOURCE","argument");}
+server fn take(value:Session,ignored:i64)->Session{return value;}
+server fn abandoned()->Session !{ffi,throw}{try{return create(42);}finally{throw("FINALIZER","replacement");}}
+server fn partial()->unit !{ffi,throw}{
+ try{let ignored:Session=take(create(1),fail());}
+ finally{let next:Session=create(2);assert(read(next)==2);assert(resource_close(next));}
+}
+server fn main()->unit !{ffi,io}{
+ try{let ignored:Session=abandoned();assert(false);}catch(c,m){assert(c=="FINALIZER"&&m=="replacement");}
+ let next:Session=create(7);assert(read(next)==7);assert(resource_close(next));
+ try{partial();assert(false);}catch(c,m){assert(c=="SOURCE"&&m=="argument");}
+ print(42);
+}
+'''
+        self.source(source.replace('PIN','0'*64))
+        signatures={name:self.cli('ffi','--symbol',name) for name in ('create','read')}
+        pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+              for name,value in signatures.items()}
+        (self.root/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin)
+                                                             for name,pin in pins.items())+'\n')
+        bundle=self.root/'bundle';bundle.mkdir();marker=self.root/'events';module=bundle/'module.so'
+        compiler=Path(self.cli('doctor')['native_compiler']).with_name('clang')
+        literal='"'+''.join(chr(b) if 32<=b<127 and b not in (34,92) else '\\%03o'%b
+                            for b in str(marker).encode())+'"'
+        produced=subprocess.run([compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden',
+            '-I'+str(harness.REPO/'runtime'),'-I'+str(self.root),'-DNEX_RESOURCE_MARKER='+literal,
+            harness.REPO/'examples/source-resource-producer.c','-o',module],capture_output=True,text=True,timeout=60)
+        self.assertEqual(produced.returncode,0,produced.stderr)
+        (bundle/'NOTICE').write_text('NEX finally conformance producer\n')
+        host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
+        manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so',
+                  'files':[{'path':n,'sha256':hashlib.sha256((bundle/n).read_bytes()).hexdigest()} for n in ('module.so','NOTICE')],
+                  'exports':pins,'notices':['NOTICE']}
+        (bundle/'manifest.json').write_text(json.dumps(manifest))
+        pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest()
+        host=self.root/'host.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,
+            'resource_limit':1,'resource_bytes':8,'libraries':{'owned':{'directory':str(bundle),
+            'manifest_sha256':pin,'exports':['create','read']}}}))
+        self.source(source.replace('PIN',pin))
+        for engine in ('reference','debug','release'):
+            with self.subTest(engine=engine):
+                if marker.exists():marker.unlink()
+                args=['eval'] if engine=='reference' else ['run','--profile',engine]
+                result=self.cli(*args,'--foreign',host,timeout=300)
+                self.assertEqual(result['stdout'],'42\n')
+                self.assertEqual(marker.read_text(),'I'+'FX'*4+'D')
 
 
 if __name__=='__main__':unittest.main()

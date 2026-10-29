@@ -177,6 +177,47 @@ test fn semantics()->unit {assert(answer()==42);}
         self.assertEqual(self.cli('package','--toolchain',self.config,'--directory',self.root/'package',ok=False)['code'],'E_TARGET')
         self.assertFalse((self.root/'package').exists())
 
+    def test_synchronous_finally_pe_and_optional_wine(self):
+        self.source(r'''module windows_finally;
+fn before()->str{var value:str="old";try{return value;}finally{value="changed";}}
+fn replaced()->str{try{return "discarded";}finally{return "kept";}}
+fn failed()->i64 !{throw}{throw("APP","λ\u0000🙂");}
+fn recovered()->i64{
+ try{try{return failed();}finally{throw("FINAL","replacement");}}
+ catch(c,m){assert(c=="FINAL"&&m=="replacement");return 42;}
+}
+fn main()->unit !{io}{assert(before()=="old"&&replaced()=="kept");print(recovered());}
+''')
+        self.assertEqual(self.cli('eval')['stdout'],'42\n')
+        image=None
+        if WINE_IMAGE:
+            image=json.loads(self.command(['docker','image','inspect',WINE_IMAGE]))[0]
+            self.assertEqual(image['Architecture'],'amd64')
+        for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
+            self.configure(arch)
+            for profile in ('debug','release'):
+                built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
+                self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
+                self.retain(built,'finally-'+arch+'-'+profile)
+                if image and arch=='x86_64':
+                    sys.path.insert(0,str(harness.REPO/'tools/linux'))
+                    from nex_docker_mount import mount
+                    executable=Path(built['executable']).resolve();name='nex-finally-wine-'+uuid.uuid4().hex
+                    command=['docker','run','--rm','--name',name,'--platform','linux/amd64',
+                        '--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
+                        '--tmpfs','/tmp:rw,exec,mode=1777','--env','WINEPREFIX=/tmp/nex-wine',
+                        '--env','WINEDEBUG=-all',*mount(executable.parent,'/work'),image['Id'],
+                        '/usr/lib/wine/wine64','/work/'+executable.name]
+                    try:result=subprocess.run(command,capture_output=True,text=True,timeout=180)
+                    finally:subprocess.run(['docker','rm','-f',name],capture_output=True,timeout=30)
+                    self.assertEqual((result.returncode,result.stdout),(0,'42\n'),result.stderr)
+                    if os.environ.get('NEX_WINDOWS_TEST_OUTPUT'):
+                        output=Path(os.environ['NEX_WINDOWS_TEST_OUTPUT']);output.mkdir(parents=True,exist_ok=True)
+                        (output/('finally-wine-'+profile+'.json')).write_text(json.dumps({'command':command,
+                            'stdout':result.stdout,'stderr':result.stderr,'exit_code':result.returncode,
+                            'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
+                            'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2))
+
     def test_structured_cpu_task_executables_and_archived_replay(self):
         feature=self.cli('describe','--field','structured_tasks_runtime')['value']
         manifest=json.loads((harness.REPO/'llm/language-pack.json').read_text())['structured_tasks_runtime']

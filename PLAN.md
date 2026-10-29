@@ -1,3 +1,10 @@
+# Synchronous native finally / toolchain0.138.1
+
+Native finally now lowers ordinary completion, pending return/Result return and
+source-error propagation/replacement with distinct protected/finalizer ownership
+frames. TaskIR/AST/lifetime and scheduler finalization, typed payloads and all
+matching delivery gates remain pending alongside the full original plan.
+
 # Finally foundation / toolchain0.138.0
 
 Synchronous checker/reference/TypeScript finally is implemented in its isolated

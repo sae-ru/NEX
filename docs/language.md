@@ -1,9 +1,8 @@
-# Finally development foundation (toolchain0.138.0 / language0.26)
+# Synchronous finally development (toolchain0.138.1 / language0.26)
 
 `try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }
-finally { ... }` are synchronous reference/TypeScript development features.
-Native lowering, resumable tasks, complete acceptance and typed payloads remain
-pending. The portable `source_exceptions.finally` capability stays false; query
+finally { ... }` are synchronous native/reference/TypeScript development features.
+Resumable tasks, complete acceptance and typed payloads remain pending. The portable `source_exceptions.finally` capability stays false; query
 `source_exceptions.finally_development` for the exact engine scope.
 
 The finalizer runs once after normal protected/catch completion, return, Result
@@ -19,7 +18,9 @@ Fatal traps, allocation failure, cancellation and execution limits do not run
 user finalizers. Runtime-owned resource cleanup remains independent. Finalizer
 effects and realms are checked normally; this construct never catches a fatal
 error or makes a Result error into a source error. Finally is appended as a new
-statement kind; old026 AST ordinals and canonical identities are unchanged.
+statement kind; old026 AST ordinals and canonical identities are unchanged. Native emission
+bounds duplicated finalizer bodies to4096 per function (E_FINALLY_LIMIT).
+The scalar Wasm backend rejects finally before tool invocation.
 
 ---
 
@@ -38,8 +39,8 @@ their ordinary effect/realm checks. Result `?` returns from the current function
 it does not turn a Result error into a source error.
 
 Native debug/release, reference/AST tasks and TypeScript use these rules. This
-is an unaccepted development version; complete026 delivery is pending. Native/task finally
-is pending; the synchronous development foundation is described above. Typed
+is an unaccepted development version; complete026 delivery is pending. Task finally
+is pending; synchronous native support is described above. Typed
 payloads and the remaining original language/toolchain plan remain open.
 
 Explicit025-to026 migration rechecks the genuine025 parser and revision first.

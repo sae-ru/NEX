@@ -52,6 +52,7 @@ std::set<std::string> validate(const Program &p,const std::string &entry){
    for(const auto &arm:e->arms)block(arm->body);
   };
   block=[&](const std::vector<S> &statements){for(const auto &s:statements){
+   if(s->kind==Stmt::Finally)throw Error("E_WASM_TYPE","finally is not supported by the scalar Wasm backend",s->span);
    if((s->kind==Stmt::Let||s->kind==Stmt::Var)&&!scalar(s->type))
     throw Error("E_WASM_TYPE","scalar Wasm locals must be i64 or bool",s->span);
    expression(s->expr);childBlocks(s,block);

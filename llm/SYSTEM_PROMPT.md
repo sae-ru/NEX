@@ -7,8 +7,8 @@ The current handler development language is0.26; accepted source233 is0.24; disc
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
 Portable finally remains disabled. A compiler may expose a synchronous
-reference/TypeScript foundation in source_exceptions.finally_development; native
-and task finalization are still pending. Do not use finally for a delivery
+native/reference/TypeScript support in source_exceptions.finally_development;
+task finalization is still pending. Do not use finally for a delivery
 target without its actual advertised support.
 
 ## Discover only the context needed
@@ -63,7 +63,7 @@ result and must be handled. Discover source_exceptions before using try/catch/th
 Language026 may advertise handler_filters. A false catch predicate rethrows the
 original source error; a predicate's own effects require ordinary declarations.
 Only literal true is statically total. Result ? still returns from the current
-function. finally is reserved but not yet implemented in this development stage;
+function. Synchronous finally is a development feature; task finalization and
 typed payloads remain pending. Read the exception guide and matching receipts.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 

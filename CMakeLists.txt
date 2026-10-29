@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.138.0 LANGUAGES C CXX)
+project(NEX VERSION 0.138.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1238,7 +1238,7 @@ set_tests_properties(source_exception_handlers PROPERTIES TIMEOUT 1800)
 add_test(NAME source_finally_foundation COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/finally.py $<TARGET_FILE:nex>)
 set_tests_properties(source_finally_foundation PROPERTIES TIMEOUT 600)
-install(FILES tests/finally.py DESTINATION share/nex/tests)
+install(FILES tests/finally.py tests/support.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.26-finally-origin.json tests/fixtures/language-0.26-finally-origin.sql DESTINATION share/nex/tests/fixtures)
 install(FILES tests/fixtures/language-0.25-handler-origin.json tests/fixtures/language-0.25-handler-origin.sql
   DESTINATION share/nex/tests/fixtures)

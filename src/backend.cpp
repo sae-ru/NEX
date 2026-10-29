@@ -257,6 +257,9 @@ class Emitter {
   std::map<const Stmt*,std::vector<std::string>> catchSlots;
   struct Handler {std::string label;size_t scopes,owners;bool used=false;};
   std::vector<Handler> handlers;
+  struct Finalizer {S statement;size_t scopes,handlers,owners,caught;};
+  std::vector<Finalizer> finalizers;
+  unsigned finalizerCopies=0;
   void setSlotOwner(const std::string &slot){if(exceptionPrototype)slotOwners[slot]=exceptionOwners.back();}
   void leaveExceptionOwners(size_t baseline,Value kept,Span span){
     for(size_t i=exceptionOwners.size();i>baseline;--i)
@@ -525,11 +528,35 @@ class Emitter {
     if(!ownedToken.name.empty())call("nex_owned_leave",{ownedToken,kept.type.heap()?kept:null(Type::Str,span)},Type::Unit,span);
   }
   void returnValue(Value value,Span span){
+    if(!finalizers.empty()){
+      auto frame=finalizers.back();
+      auto savedScopes=scopes;auto savedOwners=exceptionOwners;auto savedCaught=caughtErrors;
+      auto savedHandlers=handlers;auto savedFinalizers=finalizers;auto savedSlots=slotOwners;
+      finalizers.pop_back();
+      for(size_t i=scopes.size();i>frame.scopes;--i)cleanup(scopes[i-1],span);
+      // Retain the pending return in the finalization owner, after dropping
+      // all protected-expression temporaries and lexical locals.
+      leaveExceptionOwners(frame.owners,value,span);
+      scopes.resize(frame.scopes);exceptionOwners.resize(frame.owners);
+      handlers.resize(frame.handlers);caughtErrors.resize(frame.caught);
+      if(!emitFinalizer(frame.statement))returnValue(value,span);
+      // A finalizer may have emitted an exceptional edge to an outer handler.
+      // Preserve that liveness while restoring the other branch's lexical view.
+      for(auto &saved:savedHandlers)for(const auto &current:handlers)
+        if(saved.label==current.label)saved.used|=current.used;
+      scopes=std::move(savedScopes);exceptionOwners=std::move(savedOwners);caughtErrors=std::move(savedCaught);
+      handlers=std::move(savedHandlers);finalizers=std::move(savedFinalizers);slotOwners=std::move(savedSlots);
+      return;
+    }
     cleanupAll(span);if(exceptionPrototype)leaveExceptionOwners(0,value,span);else leaveOwned(value,span);
     if(profiling)call("nex_profile_leave",{},Type::Unit,span);
     if(wasm)call("nex_wasm_leave",{},Type::Unit,span);
     if(parallelEnabled)call("nex_parallel_leave",{},Type::Unit,span);
     line(value.type==Type::Unit?"func.return":"func.return "+value.name+" : "+ty(value.type),span);
+  }
+  bool emitFinalizer(const S &statement){
+    if(++finalizerCopies>4096)throw Error("E_FINALLY_LIMIT","native finalization expansion exceeds4096 copies in one function",statement->span);
+    return statements(statement->alternative);
   }
   Value rawBytes(const std::string &text,Span span){
     auto symbol=rawGlobal(text),n=fresh();
@@ -558,6 +585,7 @@ class Emitter {
       }
 
       if(s->kind==Stmt::Try){auto &entries=catchSlots[s.get()];for(int i=0;i<3;++i){auto slot=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),slot,s->span);entries.push_back(slot);}}
+      if(s->kind==Stmt::Finally){auto slot=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),slot,s->span);catchSlots[s.get()]={slot};}
       allocateExpr(s->expr);childBlocks(s,[&](const auto &body){allocate(body);});
     }
   }
@@ -754,7 +782,32 @@ class Emitter {
     for(auto s:body){
       SiteScope site(activeSite,sites.at(s.get()));
       switch(s->kind){
-      case Stmt::Finally:throw Error("E_FINALLY_BACKEND","native finally lowering is pending for this development compiler",s->span);
+      case Stmt::Finally:{
+        auto handler=label(),end=label();
+        auto owner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(owner);
+        finalizers.push_back({s,scopes.size(),handlers.size(),exceptionOwners.size(),caughtErrors.size()});
+        handlers.push_back({handler,scopes.size(),exceptionOwners.size()});
+        auto protectedOwner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(protectedOwner);
+        bool protectedReturns=statements(s->body);
+        if(!protectedReturns)call("nex_owned_leave",{protectedOwner,null(Type::Str,s->span)},Type::Unit,s->span);
+        exceptionOwners.pop_back();bool used=handlers.back().used;handlers.pop_back();finalizers.pop_back();
+        bool normalReturns=protectedReturns;
+        if(!protectedReturns){
+          normalReturns=emitFinalizer(s);
+          if(!normalReturns){call("nex_owned_leave",{owner,null(Type::Str,s->span)},Type::Unit,s->span);line("cf.br ^"+end,s->span);}
+        }
+        if(used){
+          auto error=fresh();out<<"  ^"<<handler<<"("<<error<<": !llvm.ptr):\n";
+          const auto &slot=catchSlots.at(s.get()).front();setSlotOwner(slot);store({error,Type::Str},slot,s->span);
+          // A pending source error is owned, but is not a lexical catch. Bare
+          // throw in the finalizer still selects an enclosing source catch.
+          scopes.emplace_back();scopes.back()["$finally_error"]={slot,Type::Str,true};
+          if(!emitFinalizer(s))raiseSourceError(load({slot,Type::Str,true},s->span),s->span);
+          scopes.pop_back();
+        }
+        exceptionOwners.pop_back();
+        if(!normalReturns)blockLabel(end);returned=normalReturns;break;
+      }
       case Stmt::Throw:{
         if(!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the experimental emitter",s->span);
         Value error;
@@ -1065,7 +1118,7 @@ public:
     }
     for(const auto &f:p.functions)if(names.contains(f.name)){
       selectFunction(f);debug.scope=debug.function(f);
-      exceptionScratch.clear();scopes.clear();scopes.emplace_back();slots.clear();matchSlots.clear();patternSlots.clear();shortSlots.clear();exceptionOwners.clear();caughtErrors.clear();handlers.clear();slotOwners.clear();catchSlots.clear();exceptionOutput={};out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
+      exceptionScratch.clear();scopes.clear();scopes.emplace_back();slots.clear();matchSlots.clear();patternSlots.clear();shortSlots.clear();exceptionOwners.clear();caughtErrors.clear();handlers.clear();finalizers.clear();finalizerCopies=0;slotOwners.clear();catchSlots.clear();exceptionOutput={};out<<"  func.func @"<<nativeSymbol(f.name)<<"(";
       std::string environment;if(f.closure){environment=fresh();out<<environment<<": !llvm.ptr";}
       for(size_t i=0;i<f.params.size();++i){if(i||f.closure)out<<", ";auto n=fresh();out<<n<<": "<<ty(f.params[i].type);scopes.back()[f.params[i].name]={n,f.params[i].type};}
       if(f.effects.contains("throw")){exceptionOutput={fresh(),Type::Str};if(f.closure||!f.params.empty())out<<", ";out<<exceptionOutput.name<<": !llvm.ptr";}

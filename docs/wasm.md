@@ -1,3 +1,7 @@
+Language026 finally is a separate synchronous native/reference/TypeScript
+development feature. This scalar Wasm adapter rejects it with E_WASM_TYPE;
+source-error transport/finalization here remains pending.
+
 # Experimental scalar WebAssembly modules
 
 Toolchain 0.60 introduces an isolated compute-module backend under validation.
