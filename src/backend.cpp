@@ -1901,7 +1901,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   bool windows=configuredABI.isWindowsGNUEnvironment();
   bool tasks=usesNativeTasks(p,options.entry);for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
   tasks|=taskProviders&&supportsSourceExceptionTasks(p);
-  if(tasks&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())throw Error("E_TASK_TARGET","compiled task applications currently require macOS or Linux; other task targets remain pending",p.function(options.entry).span);
+  if(tasks&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)throw Error("E_TASK_TARGET","compiled task applications require macOS, Linux or the configured Windows GNU/UCRT target",p.function(options.entry).span);
+  if(windows&&tasks&&(taskProviders||options.taskDebug))throw Error("E_TASK_TARGET","Windows source task providers and task debugging remain pending",p.function(options.entry).span);
   const bool objectArchive=options.libraryEntry||options.deferredLink;
   if(options.deferredLink&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())
     throw Error("E_TARGET","deferred image staging currently supports macOS and Linux targets");
@@ -1960,6 +1961,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
   const auto taskExecutionABI=p.sourceLanguage==SourceLanguage::SourceExceptions025?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
+  if(windows&&tasks&&(files||foreign))throw Error("E_TASK_TARGET","Windows task filesystem/resource operations and foreign modules remain pending native platform validation");
   if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
@@ -1974,6 +1976,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp","nex_files.cpp"});
+    if(windows)headers.push_back("nex_files_windows.h");
     headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h","nex_task_file_write.h","nex_task_file_stream.h","nex_task_file_source.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
     if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
@@ -2446,7 +2449,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(taskProviders&&(profiling||options.taskDebug)){if(driverABI.isOSDarwin())link.insert(link.end(),{"-Xlinker","-force_load","-Xlinker",archive});else link.insert(link.end(),{"-Xlinker","--whole-archive",archive,"-Xlinker","--no-whole-archive"});}
       else link.push_back(archive);
     }
-    if(windows)link.push_back("-static");
+    if(windows){link.push_back("-static");if(tasks)link.insert(link.end(),{"-lntdll","-lbcrypt"});}
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
     // Profiles and captured application images also require physical identity.
     // A Clang distribution need not request an ELF build ID by default.

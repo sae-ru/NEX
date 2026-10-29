@@ -8,7 +8,30 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 import time
+
+
+def check_scratch_filesystem(directory=None):
+    """Require Linux filename semantics before running expensive conformance checks."""
+    directory=Path(directory if directory is not None else tempfile.gettempdir())
+    try:
+        with tempfile.TemporaryDirectory(prefix='nex-linux-fs-',dir=directory) as temporary:
+            # Source-key diagnostics deliberately exercise malformed UTF-8 names.
+            # Some host-shared mounts reject these before the compiler can see them.
+            path=os.fsencode(temporary)+b'/source-\xff.nex'
+            descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+            with os.fdopen(descriptor,'wb') as stream:stream.write(b'module probe;')
+            if os.listdir(os.fsencode(temporary))!=[b'source-\xff.nex']:
+                raise RuntimeError('filesystem changed the raw filename')
+            with open(path,'rb') as stream:
+                if stream.read()!=b'module probe;':raise RuntimeError('filesystem changed the probe bytes')
+            os.unlink(path)
+    except (OSError,RuntimeError) as error:
+        raise RuntimeError('Linux checks require a writable scratch filesystem with Linux filename semantics; '
+                           'select container-native /tmp instead of a host-shared TMPDIR. '
+                           'Scratch '+str(directory)+': '+str(error)) from error
+    return {'directory':str(directory),'raw_filename_roundtrip':True}
 
 
 def main():
@@ -25,6 +48,7 @@ def main():
         row.update(status='passed' if result.returncode==0 else 'failed',exit_code=result.returncode);save()
         if result.returncode:raise RuntimeError(name+' failed; inspect /build/'+name+'.log')
     try:
+        report['scratch_filesystem']=check_scratch_filesystem();save()
         run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3'])
         run('build',['cmake','--build','/build','-j',str(args.jobs)])
         # Private TypeScript runtime probes require a real strict type checker.
@@ -78,6 +102,8 @@ def main():
         report['sdk_compiler_sha256']=hashlib.sha256((root/'sdk/bin/nex').read_bytes()).hexdigest()
         report['packages']=subprocess.check_output(['dpkg-query','-W','-f=${Package}\t${Version}\n'],text=True).splitlines()
         report['ok']=True
+    except BaseException as error:
+        report['error']=str(error);raise
     finally:
         report['seconds']=round(time.monotonic()-started,3);save()
     # Keep completed evidence when the rolling build directory is reused.

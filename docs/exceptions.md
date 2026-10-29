@@ -1,8 +1,11 @@
 # Source exceptions — public025 integration candidate
 
-The ordinary candidate frontend selects language0.25. The accepted source233
-and stable SDK209 remain separate0.24 tools. This candidate is not yet accepted
-for native/provider/debug/profile/SDK delivery; inspect source_exceptions.
+The ordinary candidate frontend selects language0.25. The frozen Mac cohort
+`c591f2d` passes all263 CTest groups and the installed SDK's39 phases, including
+native/provider/debug/profile and browser workflows. These receipts apply to
+that exact compiler/source cohort, not later changes or other platforms.
+The accepted source233 and stable SDK209 remain separate0.24 tools. Inspect
+source_exceptions and matching platform evidence before selecting a delivery.
 
 `throw(code,message);` evaluates two str expressions once, left to right.
 `try { ... } catch(code,message) { ... }` handles only explicit source exceptions.
@@ -41,11 +44,11 @@ These checks establish this development scope, not full delivery acceptance.
 
 Ordinary ABI6 source providers now support static/shared/mixed project images,
 profile catalogs, pure-helper logical frames and source-absent captured replay.
-See source-exception-providers.md. Complete debugger controls, full regression,
-installed SDK and platform acceptance remain pending. Wasm rejects reachable
-source try/throw until its transport is implemented. The broader regression
-suite also needs its current-language fixtures updated; retained origins must
-keep their original source versions and canonical identities.
+See source-exception-providers.md. Current Mac regression and installed SDK
+receipts include these workflows; Linux and other platform delivery have
+separate gates. Wasm rejects reachable source try/throw until its transport is
+implemented. Retained origins keep their original source versions and canonical
+identities; current fixture updates do not relabel older projects.
 
 See examples/exceptions. From that project run nex check, nex test and
 nex test --target web with the025 candidate. Installed024 SDKs use their own

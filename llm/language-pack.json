@@ -1121,7 +1121,8 @@
     "native_application": "compiled continuations in standalone or checked fixed-load images; one bounded joined TaskGroup",
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows GNU/UCRT 64-bit (cross-target)"
     ],
     "nested_task_depth": 256,
     "ordinary_applications_enabled": true,
@@ -1272,7 +1273,22 @@
       "task_scope",
       "task<T>",
       "channel<T>"
-    ]
+    ],
+    "windows_cpu_tasks": {
+      "source_support": true,
+      "targets": [
+        "x86_64-w64-windows-gnu",
+        "aarch64-w64-windows-gnu"
+      ],
+      "applications": true,
+      "source_errors": true,
+      "file_or_foreign_tasks": false,
+      "source_provider_images": false,
+      "debugging": false,
+      "profiling": false,
+      "actual_Windows_OS_execution_verified": false,
+      "guide": "docs/windows.md"
+    }
   },
   "task_execution_limits": {
     "status": "development_explicit_task_limits",

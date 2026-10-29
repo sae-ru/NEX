@@ -5,11 +5,53 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import unittest
+import uuid
 
 import support as harness
 
 TOOLS = Path(os.environ['NEX_WINDOWS_TOOLCHAIN_ROOT']).resolve() if os.environ.get('NEX_WINDOWS_TOOLCHAIN_ROOT') else None
+WINE_IMAGE = os.environ.get('NEX_WINDOWS_WINE_IMAGE')
+
+STRUCTURED_TASK_SOURCE = r'''module windows_tasks;
+fn fail()->i64 !{throw}{throw("APP\u0000CODE","λ\u0000🙂");}
+pub fn solve()->i64 !{task,throw}{
+ return with_tasks(4,fn(scope:task_scope)->i64 !{task,throw}{
+  let queue:channel<str>=channel_new<str>(scope,0);
+  let snapshot:list<str>=["Я\u0000🧠","tail"];
+  let sender:task<i64>=task_spawn(scope,fn()->i64 !{task}{
+   task_yield();assert(task_send(queue,snapshot[0]));assert(task_close(queue));return 40;
+  });
+  assert(unwrap(task_recv(queue))==snapshot[0]);
+  let value:i64=task_wait(sender);assert(!is_ok(task_recv(queue)));
+  return with_tasks(2,fn(nested:task_scope)->i64 !{task,throw}{
+   let increment:task<i64>=task_spawn(nested,fn()->i64 !{task}{task_yield();return value+2;});
+   return task_wait(increment);
+  });
+ });
+}
+fn uncaught()->i64 !{task,throw}{
+ return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
+  let child:task<i64>=task_spawn(scope,fn()->i64 !{task,throw}{task_yield();return fail();});
+  return task_wait(child);
+ });
+}
+fn rethrown()->i64 !{task,throw}{try{return uncaught();}catch(code,message){throw;}}
+fn recovered()->i64 !{task}{
+ try{return rethrown();}catch(code,message){
+  assert(code=="APP\u0000CODE" && message=="λ\u0000🙂");return 42;
+ }
+}
+fn fatal()->i64 !{task,throw}{
+ try{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
+  let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 1/0;});
+  return task_wait(child);
+ });}catch(code,message){return 0;}
+}
+fn main()->unit !{io,task,throw}{print(solve());print(recovered());}
+test fn tasks()->unit !{task,throw}{assert(solve()==42);assert(recovered()==42);}
+'''
 
 
 class WindowsConfiguration(harness.ToolchainCase):
@@ -131,6 +173,80 @@ test fn semantics()->unit {assert(answer()==42);}
         self.source('module arithmetic;fn main()->i64{return 0;}')
         self.assertEqual(self.cli('package','--toolchain',self.config,'--directory',self.root/'package',ok=False)['code'],'E_TARGET')
         self.assertFalse((self.root/'package').exists())
+
+    def test_structured_cpu_task_executables_and_archived_replay(self):
+        feature=self.cli('describe','--field','structured_tasks_runtime')['value']
+        manifest=json.loads((harness.REPO/'llm/language-pack.json').read_text())['structured_tasks_runtime']
+        self.assertEqual(feature['windows_cpu_tasks'],manifest['windows_cpu_tasks'])
+        self.assertEqual(feature['native_platforms'],manifest['native_platforms'])
+        self.assertTrue(feature['windows_cpu_tasks']['source_support'])
+        self.source(STRUCTURED_TASK_SOURCE)
+        self.assertEqual(self.cli('eval')['stdout'],'42\n42\n')
+        for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
+            self.configure(arch)
+            for profile in ('debug','release'):
+                built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
+                metadata=json.loads(Path(built['metadata']).read_text())
+                self.assertTrue(metadata['runtime_requirements']['tasks'])
+                self.assertEqual(metadata['task_execution_abi'],0x4e45585400000006)
+                self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
+                imports=self.command([TOOLS/'bin/llvm-readobj','--coff-imports',built['executable']]).lower()
+                self.assertIn('ntdll.dll',imports);self.assertIn('bcrypt.dll',imports)
+                self.retain(built,'tasks-'+arch+'-'+profile)
+        self.file.unlink();shutil.rmtree(Path(built['executable']).parent)
+        restored=self.cli('build','--revision',built['revision'],'--toolchain',self.config,'--profile','release',timeout=300)
+        self.assertEqual(restored['build_key'],built['build_key'])
+        self.assertGreater(restored['reused_functions'],0)
+
+    @unittest.skipUnless(WINE_IMAGE,'set NEX_WINDOWS_WINE_IMAGE to opt into isolated x64 Wine compatibility checks')
+    def test_structured_cpu_tasks_with_explicit_wine_compatibility(self):
+        """Wine compatibility is distinct from execution on an actual Windows OS."""
+        sys.path.insert(0,str(harness.REPO/'tools/linux'))
+        from nex_docker_mount import mount
+        image=json.loads(self.command(['docker','image','inspect',WINE_IMAGE]))[0]
+        self.assertEqual(image['Architecture'],'amd64')
+        self.source(STRUCTURED_TASK_SOURCE);self.configure()
+        self.assertEqual(self.cli('eval')['stdout'],'42\n42\n')
+
+        def execute(built,stdout='',exit_code=0,arguments=()):
+            executable=Path(built['executable']).resolve();name='nex-windows-tasks-'+uuid.uuid4().hex
+            command=['docker','run','--rm','--name',name,'--platform','linux/amd64',
+                '--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
+                '--tmpfs','/tmp:rw,exec,mode=1777','--env','WINEPREFIX=/tmp/nex-wine',
+                '--env','WINEDEBUG=-all',*mount(executable.parent,'/work'),image['Id'],
+                '/usr/lib/wine/wine64','/work/'+executable.name,*arguments]
+            try:
+                result=subprocess.run(command,capture_output=True,text=True,timeout=180)
+            finally:
+                subprocess.run(['docker','rm','-f',name],capture_output=True,timeout=30)
+            self.assertEqual(result.returncode,exit_code,result.stdout+result.stderr)
+            self.assertEqual(result.stdout,stdout)
+            if os.environ.get('NEX_WINDOWS_TEST_OUTPUT'):
+                output=Path(os.environ['NEX_WINDOWS_TEST_OUTPUT']);output.mkdir(parents=True,exist_ok=True)
+                label=name.removeprefix('nex-windows-tasks-')
+                (output/(label+'.json')).write_text(json.dumps({'command':command,
+                    'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
+                    'stdout':result.stdout,'stderr':result.stderr,'exit_code':result.returncode,
+                    'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2))
+            return result
+
+        for profile in ('debug','release'):
+            built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
+            execute(built,'42\n42\n');self.retain(built,'wine-tasks-'+profile)
+        limited=execute(built,exit_code=70,arguments=('--nex-task-steps','1'))
+        self.assertIn('E_LIMIT',limited.stderr);self.assertNotIn('NEX_SOURCE_EXCEPTION ',limited.stderr)
+        errors=[]
+        for entry in ('uncaught','rethrown','fatal'):
+            built=self.cli('build','--entry',entry,'--toolchain',self.config,'--profile','release',timeout=300)
+            result=execute(built,exit_code=70)
+            if entry=='fatal':
+                self.assertIn('E_DIV_ZERO',result.stderr);self.assertNotIn('NEX_SOURCE_EXCEPTION ',result.stderr)
+            else:
+                records=[json.loads(line[len('NEX_SOURCE_EXCEPTION '):]) for line in result.stderr.splitlines()
+                         if line.startswith('NEX_SOURCE_EXCEPTION ')]
+                self.assertEqual(len(records),1,result.stderr);errors.extend(records)
+                self.assertEqual(records[0]['code'],'APP\0CODE');self.assertEqual(records[0]['message'],'λ\0🙂')
+        self.assertEqual(errors[0]['source']['operation_site'],errors[1]['source']['operation_site'])
 
     def test_required_inputs_wrong_driver_and_notice_identity(self):
         for field in ('compiler','linker','archiver','sysroot'):

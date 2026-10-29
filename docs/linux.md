@@ -46,6 +46,14 @@ local loopback HTTP/TLS tests remain available. Native Linux tests cannot be
 replaced by interpreter-only checks. The report lists any platform-specific
 skips separately; macOS cross-SDK tests are unavailable in this Linux image.
 
+Keep temporary test projects on the container's native Linux filesystem, normally
+`/tmp`. A macOS host-shared `TMPDIR` can reject raw non-UTF-8 filenames before
+NEX runs and can change SQLite locking or directory-iteration behavior. The
+verifier now checks a raw filename round trip before configuring or building,
+retains the selected directory in `verification.json`, and fails with a concrete
+scratch-directory diagnostic. This preflight checks filename support; the full
+history, packaging and compiler tests still establish their own behavior.
+
 Results are written under `build/linux-ARCH/`: image/configure/build/ctest logs,
 `verification.json`, `environment.json`, installed `sdk`, and `sdk-smoke.json`.
 The environment report identifies the Docker server architecture and whether
@@ -85,7 +93,8 @@ python3 tests/linux_mounts.py --image nex-sdk-packager:arm64 --output /new/mount
 
 It pins the selected local image ID, exercises quote/comma/Unicode and newline
 paths, compares exact binary payloads, requires kernel readonly rejection and
-writable evidence, and tests the absent outbound route. The prior raw mount
+writable evidence, native scratch filename support, explicit rejection of a
+read-only scratch directory, and the absent outbound route. The prior raw mount
 strings must still fail. This focused regression does not replace compiler,
 live-debugger or complete installed-SDK acceptance.
 

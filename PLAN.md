@@ -2,11 +2,17 @@
 
 Ordinary frontend, retained024 migration, native/TypeScript source-error transport
 and standalone task ABI6 are implemented in the mutable234 candidate. Mac
-functional checks pass; this is not an accepted release or installed SDK.
-Next: source/static/shared provider metadata and cross-image exception ownership,
-project capture/replay, full debugger/profile, complete regression, Linux and
-installed-SDK delivery. Typed errors, finally/filter handlers and the remaining
-language/platform/product plan below are still requirements of the full goal.
+cohort `c591f2d` passes all263 CTest groups and the complete installed SDK's39
+phases, including source/static/shared providers, capture/replay, debugger,
+profiling and browser builds. These receipts describe that exact Mac cohort;
+later Linux harness/prompt corrections have their own focused checks.
+The0.136.1 Windows adapter adds ordinary GNU/UCRT64 CPU task executables;
+both target/profile cross-builds and x64 Wine task/error paths pass focused
+checks. Matching full0.136.1 regression and actual Windows OS execution remain
+separate gates. Windows task files/FFI/providers/debug/profile stay pending.
+Next: complete Linux full/live/source-free acceptance and remaining platform
+delivery. Typed errors, finally/filter handlers and the remaining language,
+platform and product plan below are still requirements of the full goal.
 
 # HTTP storage transaction start233
 

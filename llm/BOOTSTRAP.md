@@ -22,7 +22,10 @@ prompt or a smaller JSON response alone proves no overall LLM improvement.
 
 For typed error forwarding, query `nex describe --field result_propagation --json`
 and `nex guide --kind result --json`. Respect the reported language and pending
-integration gates. General source exceptions remain pending.
+integration gates. For source exceptions, query `source_exceptions` and read the exception guide.
+Use only the selected SDK's advertised syntax, payload and effects; checked traps
+remain separate from catchable source errors. Typed payloads and finally/filters
+remain pending in025.
 
 For ordered CPU batches, query source_concurrency and retrieve the concurrency
 guide. Require the actual source operation and matching language; native worker

@@ -2,14 +2,22 @@
 
 This working tree advances the ordinary language default to0.25 and retains
 explicit024 parsing/canonical identities for history-preserving migration.
-Mac development checks now pass retained-origin migration, nine cases across
-native debug/release and TypeScript, and24 live HTTP POSTs across four normal
-sync/task server images. Public task emission uses ABI6; retained ABIs stay distinct.
-ABI6 providers now have versioned static/shared/mixed project records, File
-cleanup, profiling and captured replay. Pure-helper logical frames were exercised
-in actual LLDB sessions. Full regression, complete debug/profile, Linux/provider
-and installed SDK acceptance remain pending before replacing source233 or SDK209.
+The frozen Mac cohort `c591f2d` passes all263 CTest groups and the complete
+installed SDK workflow (39 phases, live debugging and browser builds).
+Its compiler SHA256 is `6545fcbc6a14a57196550e316ce7807509f9a40b061aa7be49ae08333528af68`.
+Public task emission uses ABI6; retained ABIs stay distinct. Static/shared/mixed
+providers, File cleanup, profiling and captured replay are included in this
+scope. Later Linux harness/prompt corrections have their own focused checks.
+Linux full/live/source-free acceptance is still running; Windows OS delivery,
+typed exception payloads, finally/filters and the remaining PLAN work are open.
 Primary081/016 and all original graph/Git history stay unchanged.
+
+Toolchain0.136.1 adds configured Windows GNU/UCRT64 structured CPU tasks.
+Both architectures/profiles cross-build; x64 Wine checks exercise nested scopes,
+channels, source errors/rethrow, Unicode/NUL and fatal trap/limit separation.
+The matching full Mac regression is a separate gate from the frozen0.136.0
+receipts above. Windows task files/FFI/providers/debug/profile and actual Windows
+OS/ARM64 execution remain pending; see [Windows support](docs/windows.md).
 
 # HTTP storage transaction start233
 

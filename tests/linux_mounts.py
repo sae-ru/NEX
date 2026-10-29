@@ -26,7 +26,7 @@ def main():
         commands.append({'name':label,'command':command,'exit_code':p.returncode})
         if (p.returncode==0)!=success:raise RuntimeError(label+': '+p.stdout+p.stderr)
         return p
-    program="""import errno,hashlib,json,pathlib,socket,sys
+    program="""import errno,hashlib,json,pathlib,runpy,socket,sys
 src=pathlib.Path('/source');out=pathlib.Path('/evidence')
 assert hashlib.sha256((src/'input.bin').read_bytes()).hexdigest()==sys.argv[1]
 try:(src/'must-not-write').write_bytes(b'forbidden')
@@ -40,21 +40,31 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as connection:
  try:connection.connect(('192.0.2.1',443))
  except OSError as error:assert error.errno==errno.ENETUNREACH,str(error)
  else:raise RuntimeError('unexpected outbound route')
-(out/'probe.json').write_text(json.dumps({'ok':True,'source_readonly':True,'evidence_writable':True,'outbound_route_absent':True,'network_interfaces':interfaces}))
+probe=runpy.run_path(str(src/'verify.py'))['check_scratch_filesystem']
+scratch=probe()
+assert scratch['raw_filename_roundtrip'] and scratch['directory']=='/tmp'
+try:probe(src)
+except RuntimeError as error:
+ assert 'Linux checks require a writable scratch filesystem' in str(error)
+ assert 'container-native /tmp' in str(error)
+else:raise RuntimeError('readonly scratch passed the preflight')
+(out/'probe.json').write_text(json.dumps({'ok':True,'source_readonly':True,'evidence_writable':True,'outbound_route_absent':True,'network_interfaces':interfaces,'native_scratch':scratch,'readonly_scratch_rejected':True}))
 """
     names=[('source,readonly=false,"quoted" \\ % 🧠','evidence, "quoted" \\ % 🧠'),
            ('source\nnewline 🌍','evidence\nnewline 🌍')]
     for index,(srcname,outname) in enumerate(names):
         src=root/srcname;out=root/outname;src.mkdir();out.mkdir()
+        (src/'verify.py').write_bytes((source/'tools/linux/verify.py').read_bytes())
         payload=b'NEX'+bytes([0,255])+('Я🧠\r\n').encode();(src/'input.bin').write_bytes(payload)
         digest=hashlib.sha256(payload).hexdigest()
         command=['docker','run','--rm','--platform','linux/'+image['Architecture'],'--network','none',
-                 *mount(src,'/source'),*mount(out,'/evidence',readonly=False),pinned,
+                 '--env','TMPDIR=/tmp',*mount(src,'/source'),*mount(out,'/evidence',readonly=False),pinned,
                  'python3','-c',program,digest]
         run('case-'+str(index),command)
         observed=json.loads((out/'probe.json').read_text())
         assert observed['ok'] and observed['source_readonly'] and observed['evidence_writable']
-        assert {p.name for p in src.iterdir()}=={'input.bin'} and (src/'input.bin').read_bytes()==payload
+        assert {p.name for p in src.iterdir()}=={'input.bin','verify.py'} and (src/'input.bin').read_bytes()==payload
+        assert (src/'verify.py').read_bytes()==(source/'tools/linux/verify.py').read_bytes()
         legacy=['docker','run','--rm','--platform','linux/'+image['Architecture'],'--network','none',
                 '--mount','type=bind,src='+str(src)+',dst=/source,readonly',pinned,'true']
         rejected=run('legacy-'+str(index),legacy,success=False)

@@ -1,5 +1,39 @@
 # Windows GNU/UCRT core target
 
+Toolchain0.136.1 adds ordinary compiled structured CPU tasks for both configured
+GNU/UCRT64 targets, using the existing source language0.25 and task descriptor
+ABI6. Scopes, futures, rendezvous/buffered channels, immutable captures, nested
+tasks and source exception transport use the common runtime. Compiled step,
+deadline and worker ceilings still apply; `--nex-task-*` can only lower them.
+This platform adapter adds no syntax or language migration.
+
+Windows task filesystem/foreign operations, source provider images, task
+debugging/profiling and HTTP hosting remain unavailable. Ordinary foreign-ABI
+run/test/debug/profile commands still return `E_TARGET_RUN`; the compiler does
+not launch Wine. Cross-builds, opt-in x64 Wine compatibility and execution on an
+actual Windows OS are distinct evidence. Actual Windows OS and ARM64 execution
+remain unverified.
+
+```nex
+module windows_tasks;
+fn main()->unit !{io,task,throw}{
+ let answer:i64=with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{
+  let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 42;});
+  return task_wait(child);
+ });
+ print(answer);
+}
+```
+
+Query `structured_tasks_runtime.windows_cpu_tasks` for the actual compiler's
+contract. The configured `windows_targets` suite cross-builds debug/release for
+x64 and ARM64, checks ABI6/PE imports and rebuilds from archived source after
+the original is deleted. Set `NEX_WINDOWS_WINE_IMAGE` to a prepared local amd64
+image exposing `/usr/lib/wine/wine64` to opt into actual x64 Wine compatibility
+checks. Those checks execute normal/nested/channel/error paths, original rethrow
+sites, Unicode/NUL payloads and fatal trap/step-limit boundaries in isolated
+containers with external networking disabled.
+
 Toolchain0.64 adds explicit cross-builds for `x86_64-w64-windows-gnu` and
 `aarch64-w64-windows-gnu`. Debug/release executables are PE/COFF `app.exe`;
 `--library --entry NAME` produces a GNU `libnex.a` archive. This adds no source

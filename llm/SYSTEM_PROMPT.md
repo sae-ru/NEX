@@ -54,7 +54,7 @@ instead of inferring C++/Python semantics.
 
 Ordinary failures use `result<T>` and explicit handling. Postfix `?` returns an
 error from its current function; `unwrap` can trap. `bytes(list<i64>)` returns a
-result and must be handled. Discover source_exceptions before using try/catch/throw. The025 candidate supports ordinary frontend/reference, native sequential/tasks/HTTP and TypeScript source errors within the development scope in docs/exceptions.md. Read source_exceptions.source_providers for ABI6 source/static/shared project contracts and pure-helper continuations; complete debug/profile and SDK/platform acceptance remain pending. Use explicit migration with retained024 origins. Merely editing a version field does not migrate a project. The source_exception_prototype descriptor still describes separate private, unarchived experiments.
+result and must be handled. Discover source_exceptions before using try/catch/throw. The025 candidate supports ordinary frontend/reference, native sequential/tasks/HTTP and TypeScript source errors within the development scope in docs/exceptions.md. Read source_exceptions.source_providers for ABI6 source/static/shared project contracts and pure-helper continuations; matching delivery receipts remain platform-specific; do not infer broad delivery from one passing configuration. Use explicit migration with retained024 origins. Merely editing a version field does not migrate a project. The source_exception_prototype descriptor still describes separate private, unarchived experiments.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in
@@ -208,12 +208,13 @@ and preserve memory/task completion evidence. Cross-builds, browser asset builds
 old hardware receipts and package manifests do not establish current target
 execution. Keep unsupported platforms and unfinished integrations visible.
 
-Retained024 SDK0.134.4 acceptance requires37 phases, including actual installed task HTTP/
-HTTPS execution in debug/release. Older34/35/36-phase receipts keep their own
-toolchain scope. Do not relabel an older receipt or treat app-source absence as
-proof that the compiler's source fallback was unavailable. Validate delivery
-with the matching SDK's receipt validator and actual indexed helper hashes.
-The025 integration candidate has not completed matching installed SDK acceptance.
+Validate installed delivery with the matching SDK's receipt validator, required
+phase list and actual indexed helper hashes. The025 workflow requires39 phases,
+including source exceptions and installed task HTTP/HTTPS execution. Older
+receipts keep their original scope. A source-free run must actually lack the
+compiler's source fallback, including source files baked into its container
+image. Native builds, installed acceptance and broad platform delivery have
+separate evidence; inspect the matching receipts before claiming any of them.
 
 Version source, tests, manifests, locks, reviewed contracts and required assets
 in Git; preserve graph snapshots/exports when history matters. Exclude credentials,
@@ -221,122 +222,12 @@ private keys, local caches and generated SDKs. Measure all context/tool/generati
 retry tokens and correctness when comparing LLMs or C++/Python. A smaller prompt
 alone proves no total cost or quality gain.
 
-Private exception213 native experiments require a dedicated compiler C++ entry point.
-They do not enable try/catch/throw in public024 projects or establish025 migration.
+## Historical private experiments
 
-Private exception214 TypeScript modules use a dedicated C++ emitter and a private
-map without a published graph revision. This does not enable public025 projects.
-
-Private source-exception tasks use a separate C++ parser and independent AST
-reference experiment. They are not native/TypeScript task support or public025.
-Use the exception-tasks-prototype guide only for that explicit private scope.
-
-Private216 task exceptions additionally use a dedicated TypeScript generator
-emitter and per-driver runner. This is not native task support or public025;
-retain discovery-based capability checks and the explicit migration requirement.
-
-Private217 task exception lifetime analysis is bounded. A passing report with
-unknown/widened/dynamic obligations is not a fully static proof and cannot remove
-runtime owner/snapshot checks. Consult the exception-lifetimes guide.
-
-The private exception-task-ir guide describes a compiler-only TaskIR semantic machine.
-It shares the serial reference coordinator and does not establish compiled native
-task/worker, public025 or SDK support. Select only advertised public capabilities.
-
-The private exception-native-tasks guide describes compiled native025-prototype
-handlers and physical task source-error delivery. It remains a separate C++
-experiment; ordinary manifests/build/archive/SDK still do not enable025.
-
-The private exception-task-control-profile guide describes native prototype
-control and raw profiling. Ordinary source025/profile CLI and SDK support are
-still unavailable; discover the actual supported public workflow before coding.
-
-The private exception-task-debug guide describes emitted native checkpoints and
-raw owning-continuation watch/resume conformance. It does not enable ordinary
-source025 debug/capture/LLDB/DAP/IDE workflows; inspect their actual public gates.
-
-## Private task LLDB/DAP experiment
-
-The source_exception_prototype descriptor separately reports opt-in private
-all-stop LLDB/DAP support. Read exception-task-lldb. The emitter's debugContext
-has schema nex.private-task-debug/1, archived=false and no graph revision. Use
-nex-load-private-task-debug explicitly; ordinary public debug/inspect/migration
-commands remain gated. Logical task stack, retained locals, caller frames and
-steps are available in that private context. Checked expression watches, IDE,
-archived capture/replay and general025 SDK delivery remain pending. A compiled
-debug timeout ceiling is explicit and bounded; deadlines advance while stopped.
-
-## Private checked watches
-
-Discover source_exception_prototype and read exception-task-watch. The explicit
-inspect-private-task command consumes a nex.private-task-debug-frame/1 and the
-matching compiler-emitted unarchived context. The source snapshot is rechecked,
-including module imports, before shared type/effect/lazy expression evaluation.
-Use nex-load-private-task-debug MANIFEST --compiler TRUSTED_NEX for LLDB/DAP.
-Do not fabricate revision fields or enable025 by changing nex.json. Captured
-frames remain unarchived data; complete IDE/crash-capsule/replay and publication
-need separate acceptance.
-
-Private source exception host experiment224: discover source_exception_prototype
-and read exception-host. Only the dedicated private task parser/emitter accepts
-these combinations. Server task/fs and task/ffi callbacks may declare throw;
-source failures arrive at wait/drain, while runtime failures retain their separate
-control path. Result error codes remain ordinary data. Host native images use
-private ABI2502; pure private images retain2501. Ordinary projects remain024.
-Do not infer HTTP, binary-provider, browser host-effect or installed SDK support.
-
-Private source exception HTTP225: discover source_exception_prototype and read
-exception-http. Only emitSourceExceptionTasksPrototypeNativeHttp and the explicit
-source-error HTTP runtime accept private descriptors. Catch returns a Response;
-uncaught source exceptions end one request with500/E_SOURCE_EXCEPTION and retain
-source diagnostics. Runtime limits/cancellation keep their separate channel.
-Public build/project/SDK selection remains024; binary source providers and HTTP
-profile/logical debugging/asynchronous DB remain pending.
-
-Private source exception modules226: discover source_exception_prototype and read
-exception-modules. The explicit architecture owns each source unit once and
-selects public concrete exports. Only the private module APIs accept025 records;
-all module calls/function values use ABI2502 with one root runtime/executor.
-Source errors, owned values and runtime/control remain separate. Current checked
-source must rederive module records; do not create fake graph revisions/public
-source bundles. Architecture/2 mixed-fixed adds explicit component linkage and
-checked physical image ownership; read exception-frontiers. Static diamonds in
-one image are deduplicated; duplicate loaded static incarnations are rejected.
-Use the compiler's component_images/images/definition_owners ledger for linking.
-Public build/SDK and module profile/debug integration remain pending.
-
-Private consumer instances228: use describeSourceExceptionTaskInstances on the
-actual checked context and read exception-instances.
-Use the exact template filter and catalogue pagination (default64, maximum256);
-do not treat a truncated page as a complete instance list. Architecture/3 selects
-concrete catalogue names in instantiations; do not invent generic symbols or move
-private source declarations. Preserve template origins, concrete trait witnesses,
-derived family/support edges and unique machine/image owners. Revalidate records
-against the full checked project before linking. An unchanged provider can be
-reused after consumer implementation edits; the affected consumer must rebuild.
-Automatic placement, public build/SDK and explicit025 publication remain pending.
-
-Private modular HTTP229: read exception-module-http. Architecture/4 requires
-host=http or application and keeps explicit source/component/image ownership.
-Only an HTTP root accepts server Request-to-Response task entry signatures;
-its entry_descriptor is linked to the private joined HTTP host instead of an
-emitted process main. Preserve one ABI2502 runtime, actual checked records,
-original source error sites and cleanup across every loaded code image.
-Public build/SDK, HTTP profile/logical debugging and025 migration remain pending.
-
-Private module profiles230: discover source_exception_prototype and read
-exception-module-profile. Architecture/5 requires instrumentation=profile for
-all components and selects application or HTTP hosting. Use the exact checked
-module/5 records and source/machine/image catalog; registry keys are not source
-component names or graph IDs. Prepare the full batch before source/HTTP workers,
-use one runtime, and inspect raw3 completeness/drop flags and shallow memory.
-HTTP profiles aggregate a bounded process window; task IDs do not yet map to
-request IDs/routes. Public profile CLI/SDK and025 migration remain pending.
-
-Private module debugging uses architecture/6 only with explicit debug timeout,
-records/6, compiler-derived private debug context/2 and captured frame/2. Preserve
-the exact compiler registry-key map and source/consumer/physical-image ownership.
-Use nex-load-private-task-debug and an explicitly selected matching compiler for
-watch evaluation. Public024 build/debug, profile/debug combination, HTTP logical
-debug hosting and public025 migration are separate gates; consult describe and
-the module debug guide rather than treating a prototype as published support.
+The source_exception_prototype descriptor and exception-*-prototype guides
+describe opt-in C++ experiments with separate, unarchived contexts and private
+ABIs. Use them only for an explicitly selected private workflow. They do not
+override the actual SDK's source_exceptions or source_providers fields. Ordinary
+025 projects use public CLI/provider/debug/profile contracts where advertised.
+Never manufacture graph revisions or relabel private frames as archived public
+frames. Keep their matching compiler, records, context and explicit entry point.
