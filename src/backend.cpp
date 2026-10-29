@@ -257,7 +257,7 @@ class Emitter {
   std::map<const Stmt*,std::vector<std::string>> catchSlots;
   struct Handler {std::string label;size_t scopes,owners;bool used=false;};
   std::vector<Handler> handlers;
-  struct Finalizer {S statement;size_t scopes,handlers,owners,caught;};
+  struct Finalizer {S statement;size_t scopes,handlers,owners,caught;std::string debugScope;};
   std::vector<Finalizer> finalizers;
   unsigned finalizerCopies=0;
   void setSlotOwner(const std::string &slot){if(exceptionPrototype)slotOwners[slot]=exceptionOwners.back();}
@@ -532,6 +532,7 @@ class Emitter {
       auto frame=finalizers.back();
       auto savedScopes=scopes;auto savedOwners=exceptionOwners;auto savedCaught=caughtErrors;
       auto savedHandlers=handlers;auto savedFinalizers=finalizers;auto savedSlots=slotOwners;
+      auto savedDebugScope=debug.scope;
       finalizers.pop_back();
       for(size_t i=scopes.size();i>frame.scopes;--i)cleanup(scopes[i-1],span);
       // Retain the pending return in the finalization owner, after dropping
@@ -539,6 +540,7 @@ class Emitter {
       leaveExceptionOwners(frame.owners,value,span);
       scopes.resize(frame.scopes);exceptionOwners.resize(frame.owners);
       handlers.resize(frame.handlers);caughtErrors.resize(frame.caught);
+      debug.scope=frame.debugScope;
       if(!emitFinalizer(frame.statement))returnValue(value,span);
       // A finalizer may have emitted an exceptional edge to an outer handler.
       // Preserve that liveness while restoring the other branch's lexical view.
@@ -546,6 +548,7 @@ class Emitter {
         if(saved.label==current.label)saved.used|=current.used;
       scopes=std::move(savedScopes);exceptionOwners=std::move(savedOwners);caughtErrors=std::move(savedCaught);
       handlers=std::move(savedHandlers);finalizers=std::move(savedFinalizers);slotOwners=std::move(savedSlots);
+      debug.scope=std::move(savedDebugScope);
       return;
     }
     cleanupAll(span);if(exceptionPrototype)leaveExceptionOwners(0,value,span);else leaveOwned(value,span);
@@ -785,7 +788,7 @@ class Emitter {
       case Stmt::Finally:{
         auto handler=label(),end=label();
         auto owner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(owner);
-        finalizers.push_back({s,scopes.size(),handlers.size(),exceptionOwners.size(),caughtErrors.size()});
+        finalizers.push_back({s,scopes.size(),handlers.size(),exceptionOwners.size(),caughtErrors.size(),debug.scope});
         handlers.push_back({handler,scopes.size(),exceptionOwners.size()});
         auto protectedOwner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(protectedOwner);
         bool protectedReturns=statements(s->body);

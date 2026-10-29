@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import sqlite3
 import subprocess
 import unittest
@@ -151,6 +152,51 @@ fn main()->unit{}
         for _ in range(14):body='try{'+body+'}finally{if flag{return 2;}}'
         self.source('module bounded;fn compute(flag:bool)->i64{'+body+'}fn main()->unit{assert(compute(false)==1);}')
         self.assertEqual(self.cli('build',ok=False,timeout=120)['code'],'E_FINALLY_LIMIT')
+
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual native LLDB scope check')
+    def test_native_finally_return_uses_outer_lexical_debug_scope(self):
+        debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
+        if not debugger:self.skipTest('LLDB is not available')
+        self.source('''module finally_debug;
+fn main()->unit !{io}{
+ var value:i64=40;
+ try{
+  let value:i64=0;
+  return;
+ }finally{
+  value=value+2;
+  print(value);
+ }
+}
+''')
+        built=self.cli('build','--profile','debug',timeout=240)
+        manifest=json.loads(Path(built['debug_manifest']).read_text());paths=[]
+        def collect(value):
+            if isinstance(value,dict):
+                for key,item in value.items():
+                    if key=='debug_path':paths.append(item)
+                    elif isinstance(item,(dict,list)):collect(item)
+            elif isinstance(value,list):
+                for item in value:collect(item)
+        collect(manifest['sources']);self.assertEqual(len(set(paths)),1)
+        argv=[debugger,'--no-lldbinit','--batch',built['executable'],
+              '-o','settings set target.disable-aslr false',
+              '-o','command script import '+json.dumps(manifest['formatter']),
+              '-o','nex-load-debug '+json.dumps(built['debug_manifest'])+' --compiler '+json.dumps(harness.NEX),
+              '-o','breakpoint set --file '+json.dumps(paths[0])+' --line 9',
+              '-o','run','-o','frame variable value','-o','expr value',
+              '-o','nex-frame value','-o','nex-eval value','-o','continue']
+        observed=subprocess.run(argv,cwd=self.root,capture_output=True,text=True,timeout=120)
+        (self.root/'lldb-finally.stdout').write_text(observed.stdout)
+        (self.root/'lldb-finally.stderr').write_text(observed.stderr)
+        self.assertEqual(observed.returncode,0,observed.stdout+observed.stderr)
+        self.assertRegex(observed.stdout,r'(?m)^\([^\n]*\) value = 42\s*$')
+        self.assertIn('$0 = 42',observed.stdout)
+        rows=[json.loads(line) for line in observed.stdout.splitlines() if line.startswith('{')]
+        self.assertTrue(any(row.get('schema','').startswith('nex.debug-frame/') and
+                            any(binding['name']=='value' for binding in row['bindings']) for row in rows),rows)
+        self.assertTrue(any(row.get('schema')=='nex.expression/1' and row.get('ok') is True and row.get('value')=='42' for row in rows),rows)
+        self.assertIn('exited with status = 0',observed.stdout)
 
     def test_actual_prefinally026_graph_and_canonical_identities_are_unchanged(self):
         fixture=harness.REPO/'tests/fixtures/language-0.26-finally-origin'

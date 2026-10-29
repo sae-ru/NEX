@@ -1,4 +1,4 @@
-# Synchronous finally development (toolchain0.138.1 / language0.26)
+# Synchronous finally development (toolchain0.138.2 / language0.26)
 
 `try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }
 finally { ... }` are synchronous native/reference/TypeScript development features.

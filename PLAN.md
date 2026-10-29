@@ -1,3 +1,10 @@
+# Finally lexical DWARF scope / toolchain0.138.2
+
+Return-path finalizers use the lexical debug scope recorded outside their
+protected block. A real LLDB regression checks outer42 rather than expired
+inner0. Synchronous ownership/semantics remain; task finally and full delivery
+are pending, alongside all remaining original plan requirements.
+
 # Synchronous native finally / toolchain0.138.1
 
 Native finally now lowers ordinary completion, pending return/Result return and
