@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.25",
+  "language_version": "0.26",
   "source_concurrency": {
     "browser_workers": false,
     "callback_call_depth": 256,
@@ -12,7 +12,7 @@
     "guide": "docs/concurrency-design.md",
     "hosted_budget": "inherit existing request control",
     "internal_runtime_prototype": true,
-    "language": "0.25",
+    "language": "0.26",
     "maximum_items": 65536,
     "maximum_value_graph_nodes": 262144,
     "maximum_workers": 16,
@@ -1112,7 +1112,7 @@
         "complete_delivery_accepted": false
       }
     },
-    "language": "0.25",
+    "language": "0.26",
     "maximum_channels": 1024,
     "maximum_task_slots": 65536,
     "maximum_total_channel_slots": 65536,
@@ -1417,7 +1417,7 @@
     "guide": "docs/task-file-reads.md",
     "http_task_handlers": true,
     "io_workers": 2,
-    "language": "0.25",
+    "language": "0.26",
     "maximum_file_bytes": 1048576,
     "maximum_path_bytes": 4096,
     "maximum_pending": 64,
@@ -1472,7 +1472,7 @@
     ],
     "async_debugger": false,
     "binary_providers": false,
-    "cli_language": "0.25",
+    "cli_language": "0.26",
     "clocks": [
       "thread CPU in active source segments",
       "active monotonic elapsed",
@@ -1548,7 +1548,7 @@
     "frame_schema": "nex.debug-frame/3",
     "guide": "docs/task-debugging.md",
     "inferior_function_evaluation": false,
-    "language": "0.25",
+    "language": "0.26",
     "limits": {
       "bindings": 65536,
       "codes": 16384,
@@ -1610,7 +1610,7 @@
   "task_providers": {
     "status": "public025_source_provider_integration_candidate",
     "public_enabled": true,
-    "language": "0.25",
+    "language": "0.26",
     "guide": "docs/task-providers.md",
     "record_schema": "nex.native-task-provider/11",
     "record_schema_file": "llm/native-source-error-task-provider.schema.json",
@@ -1665,7 +1665,7 @@
   "task_shared_providers": {
     "status": "public025_source_provider_integration_candidate",
     "public_enabled": true,
-    "language": "0.25",
+    "language": "0.26",
     "guide": "docs/task-shared-providers.md",
     "record_schema": "nex.native-task-provider/11",
     "record_schema_file": "llm/native-source-error-task-provider.schema.json",
@@ -1725,7 +1725,7 @@
     "status": "public025_source_provider_integration_candidate",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.25",
+    "language": "0.26",
     "guide": "docs/task-provider-profiling.md",
     "configuration": "profile",
     "source_required": true,
@@ -1796,7 +1796,7 @@
     "status": "public025_source_provider_integration_candidate",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.25",
+    "language": "0.26",
     "guide": "docs/task-provider-debugging.md",
     "source_required": true,
     "configuration": "debug",
@@ -1874,7 +1874,7 @@
     "guide": "docs/compute.md",
     "immutable_row_major_bytes": true,
     "import": "std/compute.nex",
-    "language": "0.25",
+    "language": "0.26",
     "language_migration_required": false,
     "maximum_bytes": 1048576,
     "maximum_elements": 262144,
@@ -1923,7 +1923,7 @@
     "immutable_row_major_bytes": true,
     "implicit_f64_narrowing": false,
     "import": "std/model.nex",
-    "language": "0.25",
+    "language": "0.26",
     "language_migration_required": false,
     "maximum_combined_io_bytes": 786432,
     "maximum_elements_per_port": 262144,
@@ -1998,7 +1998,7 @@
     "effect": "ffi",
     "generic_resources": true,
     "guide": "docs/source-resources.md",
-    "language": "0.25",
+    "language": "0.26",
     "migration": "explicit origin recheck; retained old rows/schema/IDs; reviewed graph repairs for builtin conflicts",
     "native": true,
     "opaque_declarations": true,
@@ -2095,7 +2095,7 @@
     "reference_scheduler": true,
     "reference_task_regions": true,
     "root_retirement": "group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement",
-    "source_language": "0.25",
+    "source_language": "0.26",
     "source_support": false,
     "source_task_bridge": true,
     "stable_host_abi": false,
@@ -2136,11 +2136,11 @@
     "native": true,
     "owned_completion_channel": true,
     "private_cross_task_resource_transport": true,
-    "private_source_language": "0.25",
+    "private_source_language": "0.26",
     "private_task_local_resources": true,
     "public022_migration_complete": true,
     "public_enabled": true,
-    "public_source_language": "0.25",
+    "public_source_language": "0.26",
     "resource_authority_on_demand": true,
     "source_support": true,
     "status": "public022_source_ffi_owned_transfers"
@@ -2167,7 +2167,7 @@
     "hidden_physical_parent_retention": true,
     "immutable_tensor_metadata": true,
     "import": "std/device.nex",
-    "language": "0.25",
+    "language": "0.26",
     "language_migration_required": false,
     "log_verification": "tools/owned-opencl/logs.py",
     "maximum_elements": 262144,
@@ -2214,7 +2214,7 @@
     "guide": "docs/task-file-writes-host.md",
     "header": "runtime/nex_task_file_write.h",
     "input_snapshot": "exact visible bytes; no source Values or mutable backing storage on worker",
-    "language": "0.25",
+    "language": "0.26",
     "maximum_file_bytes": 1048576,
     "maximum_path_bytes": 4096,
     "native_platforms": [
@@ -2242,7 +2242,7 @@
       "fs"
     ],
     "guide": "docs/task-file-writes-prototype.md",
-    "language": "0.25",
+    "language": "0.26",
     "migration_guide": "docs/task-write-migration.md",
     "native": true,
     "operations": [
@@ -2274,7 +2274,7 @@
       "nex.native-task-provider/13"
     ],
     "public_enabled": true,
-    "public_language": "0.25",
+    "public_language": "0.26",
     "public_migration_complete": false,
     "realm": "server",
     "reference": true,
@@ -2307,7 +2307,7 @@
       "fs"
     ],
     "guide": "docs/task-file-writes-prototype.md",
-    "language": "0.25",
+    "language": "0.26",
     "migration_guide": "docs/task-write-migration.md",
     "native": true,
     "operations": [
@@ -2339,7 +2339,7 @@
       "nex.native-task-provider/13"
     ],
     "public_enabled": true,
-    "public_language": "0.25",
+    "public_language": "0.26",
     "public_migration_complete": false,
     "realm": "server",
     "reference": true,
@@ -2379,7 +2379,7 @@
     "guide": "docs/task-file-stream-host.md",
     "header": "runtime/nex_task_file_stream.h",
     "io_workers": 2,
-    "language": "0.25",
+    "language": "0.26",
     "maximum_chunk_bytes": 1048576,
     "maximum_pending": 64,
     "pending": [
@@ -2452,7 +2452,7 @@
       ]
     },
     "independent_AST_source_lowering": true,
-    "language": "0.25",
+    "language": "0.26",
     "logical_file_owners": true,
     "native_source_lowering": true,
     "operations": [
@@ -2526,7 +2526,7 @@
     },
     "public_enabled": true,
     "public_history_migration_complete": false,
-    "public_language": "0.25",
+    "public_language": "0.26",
     "retained_execution_ABIs": [
       3,
       4,
@@ -2609,7 +2609,7 @@
       ]
     },
     "independent_AST_source_lowering": true,
-    "language": "0.25",
+    "language": "0.26",
     "logical_file_owners": true,
     "native_source_lowering": true,
     "operations": [
@@ -2683,7 +2683,7 @@
     },
     "public_enabled": true,
     "public_history_migration_complete": false,
-    "public_language": "0.25",
+    "public_language": "0.26",
     "retained_execution_ABIs": [
       3,
       4,
@@ -3297,8 +3297,8 @@
     "conformance": "store_transactions_native"
   },
   "source_exceptions": {
-    "status": "public025_integration_candidate",
-    "source_language": "0.25",
+    "status": "public026_handler_development",
+    "source_language": "0.26",
     "frontend": true,
     "reference": true,
     "retained024_parser": true,
@@ -3339,6 +3339,20 @@
       "complete_delivery_accepted": false,
       "guide": "docs/source-exception-providers.md",
       "guide_kind": "exception-provider"
-    }
+    },
+    "handler_filters": true,
+    "typed_payloads": false,
+    "retained025_parser": true,
+    "finally": false,
+    "handler_migration_fixture": {
+      "metadata": "tests/fixtures/language-0.25-handler-origin.json",
+      "sql": "tests/fixtures/language-0.25-handler-origin.sql",
+      "origin_language": "0.25",
+      "origin_recomputed": true,
+      "all16_tables_rows_schema_IDs_preserved": true
+    },
+    "handler_example": "examples/exception-filters/main.nex",
+    "handler_sdk_helper": "tools/sdk_source_handlers.py",
+    "handler_test_source": "tests/exception_handlers.py"
   }
 }

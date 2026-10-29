@@ -1,3 +1,15 @@
+# NEX 0.137.0 / language0.26 — handler development
+
+This worktree develops catch filters and the forthcoming finally semantics.
+Filtered handlers have native/reference/TypeScript and genuine025 migration
+checks; matching full compiler/SDK/platform delivery is still pending. The
+026 finally keyword is reserved but finalization and typed payloads are not
+implemented yet. Original025/01361 delivery runs in its separate frozen tree.
+Read [the current rules](docs/exceptions.md) and query the actual compiler.
+The primary081 source/graph and previous receipts remain unchanged.
+
+---
+
 # Public025 integration candidate — not accepted for delivery
 
 This working tree advances the ordinary language default to0.25 and retains

@@ -9,10 +9,10 @@ class SourceExceptionDiscovery(harness.ToolchainCase):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         actual = self.cli('describe', '--field', 'source_exception_prototype')
         self.assertEqual(actual['value'], pack['source_exception_prototype'])
-        self.assertEqual(actual['language'], '0.25')
+        self.assertEqual(actual['language'], '0.26')
         public=self.cli('describe','--field','source_exceptions')
         self.assertEqual(public['value'],pack['source_exceptions'])
-        self.assertEqual(public['value']['source_language'],'0.25')
+        self.assertEqual(public['value']['source_language'],'0.26')
         self.assertTrue(public['value']['frontend'] and public['value']['reference'])
         grants=self.cli('describe','--field','structured_tasks_runtime.http_server.file_grants')['value']
         self.assertEqual(grants,pack['structured_tasks_runtime']['http_server']['file_grants'])

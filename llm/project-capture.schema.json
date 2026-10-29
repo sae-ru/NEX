@@ -9,7 +9,10 @@
       "const": "nex.project-capture/1"
     },
     "language": {
-      "const": "0.25"
+      "enum": [
+        "0.25",
+        "0.26"
+      ]
     },
     "project_root": {
       "$ref": "#/$defs/path"

@@ -43,7 +43,7 @@ try:
     for tasks in [False,True]:
         mode='task' if tasks else 'sync'
         project=out/mode;project.mkdir()
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
         text='''module public_http;
 import "std/http.nex" as http;
 server fn fail(value:str)->http::Response !{throw}{throw("USER",value);}
@@ -185,7 +185,7 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
     # A server without reachable file operations has no filesystem adapter.
     # Use the same cache as file-enabled images to cover compile-flag identity.
     project=out/'no-files';project.mkdir()
-    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}))
+    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
     (project/'main.nex').write_text('module no_files;import "std/http.nex" as http;server fn handle(req:http::Request)->http::Response{return http::json_response(200,"42");}')
     built=cli(project,'no-files',['build','--target','server','--profile','debug','--build-directory',out/'cache'])
     rejected=subprocess.run([built['executable'],'--auth',str(auth),'--database',str(out/'no-files.sqlite'),

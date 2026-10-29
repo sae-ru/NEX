@@ -298,8 +298,12 @@ struct Analysis {
         std::optional<Env> continuation;if(!bodyEnds)continuation=normal;
         if(handler.exceptional){
           auto caught=*handler.exceptional;declare(caught,s->name,plain());declare(caught,s->catchMessage,plain());
-          bool catchEnds=block(s->alternative,caught,current);
-          if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
+          bool guardReady=!s->expr||bool(expression(s->expr,caught,current));
+          if(guardReady){
+            if(!totalSourceHandler(s))sourceEdge(caught);
+            bool catchEnds=block(s->alternative,caught,current);
+            if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
+          }
         }
         if(continuation)env=std::move(*continuation);else ended=true;
         break;

@@ -34,16 +34,17 @@ def check_installed_source_exceptions(cli, run, root, resources):
 
     root, resources = Path(root), Path(resources)
     doctor = cli('doctor')
-    require(doctor.get('language') == '0.25' and
+    language=doctor.get('language')
+    require(language in {'0.25','0.26'} and
             Path(doctor.get('runtime', '')).resolve() == (resources/'runtime/runtime.cpp').resolve(),
             'source-error gate did not select the requested SDK resources')
     discovery = cli('describe', '--field', 'source_exceptions')
     feature = discovery['value']
-    require(feature.get('source_language') == '0.25' and feature.get('frontend') is True
+    require(feature.get('source_language') == language and feature.get('frontend') is True
             and feature.get('reference') is True, 'SDK does not advertise ordinary025 source errors')
     project = root/'source-exceptions'
     project.mkdir()
-    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'})+'\n')
+    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n')
     source = project/'main.nex'
     source.write_text(SOURCE)
     checked = cli('check', cwd=project)
@@ -120,7 +121,11 @@ process.stdout.write(JSON.stringify({code:payload.code,message:payload.message,s
     invalid.write_text('module missing_effect;fn main()->unit{throw("USER","missing throw effect");}\n')
     require(cli('check', invalid, cwd=project, expected_success=False).get('code') == 'E_EFFECT',
             'source throw escaped effect checking')
-    return {'schema':'nex.installed-source-exceptions/1','ok':True,'language':'0.25',
+    handlers={}
+    if language=='0.26':
+        from sdk_source_handlers import check_installed_source_handlers
+        handlers=check_installed_source_handlers(cli,root,resources)
+    return {'schema':'nex.installed-source-exceptions/1','ok':True,'language':language,'handler_filters':handlers,
             'revision':checked['revision'],'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
             'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             'native_profiles':['debug','release'],'reference':True,'typescript':True,

@@ -3,7 +3,7 @@
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The current integration candidate language is0.25; accepted source233 is0.24; discover the actual SDK before choosing
+The current handler development language is0.26; accepted source233 is0.24; discover the actual SDK before choosing
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
 ## Discover only the context needed
@@ -55,6 +55,11 @@ instead of inferring C++/Python semantics.
 Ordinary failures use `result<T>` and explicit handling. Postfix `?` returns an
 error from its current function; `unwrap` can trap. `bytes(list<i64>)` returns a
 result and must be handled. Discover source_exceptions before using try/catch/throw. The025 candidate supports ordinary frontend/reference, native sequential/tasks/HTTP and TypeScript source errors within the development scope in docs/exceptions.md. Read source_exceptions.source_providers for ABI6 source/static/shared project contracts and pure-helper continuations; matching delivery receipts remain platform-specific; do not infer broad delivery from one passing configuration. Use explicit migration with retained024 origins. Merely editing a version field does not migrate a project. The source_exception_prototype descriptor still describes separate private, unarchived experiments.
+Language026 may advertise handler_filters. A false catch predicate rethrows the
+original source error; a predicate's own effects require ordinary declarations.
+Only literal true is statically total. Result ? still returns from the current
+function. finally is reserved but not yet implemented in this development stage;
+typed payloads remain pending. Read the exception guide and matching receipts.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in

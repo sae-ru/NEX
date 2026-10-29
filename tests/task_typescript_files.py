@@ -29,7 +29,7 @@ def emit(path,name,mode='emit',entry='main',error=None):
     if value['asynchronous']:
         imports="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';"
         call='task.call(()=>entry())'
-        if value['language']=='0.25':
+        if value['language']=='0.26':
             imports+="import * as sourceException from './nex-source-exception-runtime.ts';"
             execution='task.runSourceErrors('+call+',error=>sourceException.details(error)!==undefined)'
         else:execution='task.run('+call+')'
@@ -44,12 +44,12 @@ try:
     secret='server fn server_file_read()->result<str> !{task,fs}{return file_read_text("SERVER_PRIVATE_PATH/UNREACHABLE_ASYNC_FILE_SECRET");}\n'
     path=out/'task.nex';path.write_text('module ts_file_boundary;fn main()->i64 !{task}{task_yield();return 42;}\n'+secret)
     current,_=emit(path,'current025');old,_=emit(path,'retained019','retained019')
-    assert current['language']=='0.25' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
+    assert current['language']=='0.26' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
     assert current['revision']!=old['revision'] and current['source_hash']==old['source_hash']
     emit(path,'server025',entry='server_file_read',error='E_REALM')
     emit(path,'server019','retained019',entry='server_file_read',error='E_REALM')
     path=out/'pure.nex';path.write_text('module ts_file_boundary;fn main()->i64{return 42;}\n'+secret)
-    pure,_=emit(path,'pure025');assert not pure['asynchronous'] and pure['language']=='0.25'
+    pure,_=emit(path,'pure025');assert not pure['asynchronous'] and pure['language']=='0.26'
     for realm in ['shared','client']:
         path=out/(realm+'.nex');path.write_text('module bad_file_realm;'+realm+' fn main()->result<str> !{task,fs}{return file_read_text("bad");}\n')
         emit(path,realm+'-fs',error='E_REALM')

@@ -19,7 +19,7 @@ struct TaskAstMachine::Impl {
   struct MatchState {E expression;AV subject;size_t arm=0;};
   struct Action {
     enum Kind {Statement,Expression,Apply,Bind,Assign,Discard,Return,If,Loop,
-               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise} kind;
+               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise,CatchGuard} kind;
     E expression;
     S statement;
     std::shared_ptr<MatchState> match;
@@ -140,7 +140,8 @@ struct TaskAstMachine::Impl {
       frame.scopes.back()[handler.statement->name]=AV(nexrt::string(error.code));
       frame.scopes.back()[handler.statement->catchMessage]=AV(nexrt::string(error.message));
       frame.caught.push_back(std::make_shared<SourceException>(std::move(error)));
-      add({Action::EndCatch});block(handler.statement->alternative,false);return;
+      if(handler.statement->expr){add({Action::CatchGuard,{},handler.statement});evaluate(handler.statement->expr);}
+      else{add({Action::EndCatch});block(handler.statement->alternative,false);}return;
     }
     throw error;
   }
@@ -299,6 +300,11 @@ struct TaskAstMachine::Impl {
           if(action.match->expression->statementMatch)frame.values.emplace_back();
           break;
         case Action::EndTry:frame.handlers.pop_back();break;
+        case Action::CatchGuard:{
+          if(pop().scalar){add({Action::EndCatch});block(s->alternative,false);}
+          else{auto error=*frame.caught.back();frame.scopes.pop_back();frame.caught.pop_back();raise(std::move(error));}
+          break;
+        }
         case Action::EndCatch:frame.scopes.pop_back();frame.caught.pop_back();break;
         case Action::Raise:{auto message=pop();auto code=pop();
           if(code.tag!=AV::Object||message.tag!=AV::Object||code.object->kind!=nexrt::Data::String||message.object->kind!=nexrt::Data::String)throw Error("E_TASK_TYPE","source error requires two strings",s->span);

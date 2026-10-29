@@ -37,9 +37,12 @@ fn uncaught()->i64 !{task,throw}{
   return task_wait(child);
  });
 }
-fn rethrown()->i64 !{task,throw}{try{return uncaught();}catch(code,message){throw;}}
-fn recovered()->i64 !{task}{
- try{return rethrown();}catch(code,message){
+fn rethrown()->i64 !{task,throw}{
+ try{try{return uncaught();}catch(code,message) if false {return 0;}}
+ catch(code,message) if true {throw;}
+}
+fn recovered()->i64 !{task,throw}{
+ try{return rethrown();}catch(code,message) if code=="APP\u0000CODE" {
   assert(code=="APP\u0000CODE" && message=="λ\u0000🙂");return 42;
  }
 }

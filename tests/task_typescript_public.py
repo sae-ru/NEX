@@ -75,12 +75,12 @@ fixtures += [
 fixtures=[(name,re.sub(r'(fn(?: main\(\)|\([a-z]+:task_scope\))->(?:i64|str|result<i64>) !)\{task\}',
                        r'\1{task,throw}',body),expected,prefix,workers)
           for name,body,expected,prefix,workers in fixtures]
-(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'scope-spawn.nex'}))
+(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'scope-spawn.nex'}))
 
 try:
     for name, body, expected, prefix, _ in fixtures:
         path = out/(name+'.nex'); path.write_text('module public_typescript;\n'+body+'\nserver fn server_secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}\n')
-        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.25'
+        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.26'
         data = mapping(folder, result); assert (folder/'nex-task-runtime.ts').is_file()
         assert 'yield' in (folder/'program.ts').read_text()
         (folder/'package.json').write_text('{"type":"module"}\n'); (folder/'run.mjs').write_text(runner)
@@ -146,7 +146,7 @@ try:
     # Pure019 UI and existing browser-worker contracts keep synchronous exports.
     for example in ['web', 'workers']:
         path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text)
-        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.25'
+        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.26'
         assert 'function*' not in (folder/'src/program.ts').read_text() and not (folder/'src/nex-task-runtime.ts').exists()
         path = out/(example+'-task.nex')
         target = 'client fn initial() -> State {' if example == 'web' else 'client fn worker_compute(input: Input) -> Output {'

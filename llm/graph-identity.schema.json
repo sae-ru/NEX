@@ -320,7 +320,10 @@
           "const": "nex.identities/1"
         },
         "language": {
-          "const": "0.25"
+          "enum": [
+            "0.25",
+            "0.26"
+          ]
         },
         "identity_policy": {
           "const": "nex.graph-identity/1"
@@ -405,7 +408,10 @@
           "const": "nex.declarations/1"
         },
         "language": {
-          "const": "0.25"
+          "enum": [
+            "0.25",
+            "0.26"
+          ]
         },
         "revision": {
           "type": "string",
@@ -453,7 +459,10 @@
           "const": "nex.declaration-context/1"
         },
         "language": {
-          "const": "0.25"
+          "enum": [
+            "0.25",
+            "0.26"
+          ]
         },
         "revision": {
           "type": "string",
@@ -492,7 +501,10 @@
           "const": true
         },
         "language": {
-          "const": "0.25"
+          "enum": [
+            "0.25",
+            "0.26"
+          ]
         },
         "revision": {
           "type": "string",
@@ -545,7 +557,10 @@
           "const": "nex.identity-resolution/1"
         },
         "language": {
-          "const": "0.25"
+          "enum": [
+            "0.25",
+            "0.26"
+          ]
         },
         "source": {
           "$ref": "#/$defs/snapshot"

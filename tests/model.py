@@ -6,7 +6,7 @@ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--compiler',requi
 origin=Path(__file__).resolve().parent;out=a.output.absolute() if a.output else Path(tempfile.mkdtemp(prefix='nex-model-contract-'));
 if a.output:out.mkdir(exist_ok=False)
 compiler=a.compiler.resolve(strict=True);env={**os.environ,'NEX_RESOURCE_DIR':str(a.resources.resolve(strict=True)),'PYTHONDONTWRITEBYTECODE':'1'}
-language=json.loads(subprocess.check_output([str(compiler),'describe','--json'],cwd=out,env=env,text=True))['version'];assert language=='0.25'
+language=json.loads(subprocess.check_output([str(compiler),'describe','--json'],cwd=out,env=env,text=True))['version'];assert language=='0.26'
 report={'schema':'nex.model-contract/1','ok':False,'hardware_executed':False,'commands':[],'cases':[],'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'library_sha256':hashlib.sha256((a.resources/'lib/model.nex').read_bytes()).hexdigest()};start=time.monotonic()
 def save():report['seconds']=round(time.monotonic()-start,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def project(name,body):

@@ -109,7 +109,7 @@ TaskFileRequirements nativeTaskFiles(const Program &p,const std::set<std::string
   return result;
 }
 int64_t privateExceptionTaskABI(const Program &p,const std::vector<TaskFunctionIR> &functions){
-  if(p.sourceLanguage==SourceLanguage::SourceExceptions025)return nexrt::taskCodeSourceExceptionABI;
+  if(isPublicSourceExceptionLanguage(p.sourceLanguage))return nexrt::taskCodeSourceExceptionABI;
   TaskFileRequirements files;for(const auto &ir:functions){files.include(p,ir);const auto &f=p.function(ir.name);if(f.effects.contains("fs")||f.effects.contains("ffi"))return nexrt::taskCodeExceptionHostPrototypeABI;}
   return files.reads||files.writes||files.streams?nexrt::taskCodeExceptionHostPrototypeABI:nexrt::taskCodeExceptionPrototypeABI;
 }
@@ -776,6 +776,13 @@ class Emitter {
         auto caught=call("nex_retain",{{error,Type::Str}},Type::Str,s->span);release({error,Type::Str},s->span);
         setSlotOwner(entries[0]);store(caught,entries[0],s->span);Value binding{entries[0],Type::Str,true};scopes.back()["$caught"]=binding;caughtErrors.push_back(binding);
         for(size_t i=1;i<3;++i){auto value=call(i==1?"nex_source_error_code":"nex_source_error_message",{caught},Type::Str,s->span);setSlotOwner(entries[i]);store(value,entries[i],s->span);auto name=i==1?s->name:s->catchMessage;scopes.back()[name]={entries[i],Type::Str,true};describeStorage(name,Type::Str,s->span,entries[i]);}
+        if(s->expr){
+          auto condition=expression(s->expr);
+          if(!totalSourceHandler(s)){
+            auto accepted=label(),rejected=label();line("cf.cond_br "+condition.name+", ^"+accepted+", ^"+rejected,s->expr->span);
+            blockLabel(rejected);raiseSourceError(load(binding,s->expr->span),s->expr->span);blockLabel(accepted);
+          }
+        }
         bool b=statements(s->alternative,false);if(!b){call("nex_owned_leave",{owner,null(Type::Str,s->span)},Type::Unit,s->span);line("cf.br ^"+end,s->span);}
         caughtErrors.pop_back();scopes.pop_back();exceptionOwners.pop_back();
         if(!(a&&b))blockLabel(end);returned=a&&b;break;
@@ -938,7 +945,7 @@ class Emitter {
     out<<"  }\n";ownedToken={};
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false,bool exceptionPrototype=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context),exceptionPrototype(exceptionPrototype||(p.sourceLanguage==SourceLanguage::SourceExceptions025&&!wasm)){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false,bool exceptionPrototype=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context),exceptionPrototype(exceptionPrototype||(isPublicSourceExceptionLanguage(p.sourceLanguage)&&!wasm)){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={},const std::map<std::string,NativeTaskExport> *taskImports=nullptr,const std::set<std::string> *taskExports=nullptr,bool taskImageFileReads=false,bool taskInternalSteps=false,const std::string &profileRegistryAccessor={},const std::string &profileComponent={},const std::string &debugRegistryAccessor={},const std::string &debugComponent={},bool taskImageFileWrites=false,bool taskImageFileStreams=false,bool taskImageForeign=false,int64_t forcedExceptionABI=0){
     importedTaskCodes=taskImports;internalTaskSteps=taskInternalSteps;privateTaskModule=sourceExceptionTasksPrototype(p)&&forcedExceptionABI;
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm,exceptionPrototype);
@@ -1314,7 +1321,7 @@ struct TaskNativeLinkage {
   int64_t privateExceptionABI=0;
 };
 TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false,const TaskNativeLinkage *linkage=nullptr,bool exceptionTasks=false){
-  exceptionTasks|=p.sourceLanguage==SourceLanguage::SourceExceptions025;
+  exceptionTasks|=isPublicSourceExceptionLanguage(p.sourceLanguage);
   if(sourceExceptionTasksPrototype(p)&&!exceptionTasks)throw Error("E_EXCEPTION_BACKEND","native task exceptions require compiled-frame and physical scheduler integration");
   if(!p.taskPrototype)throw Error("E_TASK_STATE","native task steps require the private checked task frontend");
   const auto &function=p.function(entry);auto ir=lowerTaskFunction(p,function,exceptionTasks);
@@ -1417,7 +1424,7 @@ std::string emitSourceExceptionsPrototypeMLIR(const Program &p,const std::string
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");
-  if(p.sourceLanguage==SourceLanguage::SourceExceptions025)for(const auto &name:reachable(p,entry)){
+  if(isPublicSourceExceptionLanguage(p.sourceLanguage))for(const auto &name:reachable(p,entry)){
     const auto &f=p.function(name);bool exceptions=f.effects.contains("throw");
     std::function<void(const std::vector<S>&)> inspect=[&](const auto &body){for(auto s:body){exceptions|=s->kind==Stmt::Try||s->kind==Stmt::Throw;childBlocks(s,inspect);}};inspect(f.body);
     if(exceptions)throw Error("E_EXCEPTION_BACKEND","Wasm source exception lowering is pending",f.span);
@@ -1511,7 +1518,7 @@ NativeTaskDebugCatalog parseNativeTaskDebugCatalog(const llvm::json::Value &v){a
 }
 llvm::json::Object nativeTaskDebugSourceUnionJSON(const NativeTaskDebugSourceUnion &s){llvm::json::Array rows;for(const auto &c:s.components){llvm::json::Array exports,definitions;for(const auto &name:c.exports)exports.push_back(name);for(const auto &d:c.definitions)definitions.push_back(llvm::json::Object{{"name",d.name},{"function_hash",d.functionHash},{"function_source_hash",d.functionSourceHash},{"source_unit_hash",d.sourceUnitHash},{"debug_path",d.debugPath},{"contract",d.contract},{"line",d.line},{"retained",d.retained}});rows.push_back(llvm::json::Object{{"component",c.component},{"owner_image",debugOwnerJSON(c.ownerImage)},{"entry",c.entry},{"exports",std::move(exports)},{"language",c.language},{"revision",c.revision},{"source_hash",c.sourceHash},{"bundle_file",c.bundleFile},{"bundle_hash",c.bundleHash},{"definitions",std::move(definitions)}});}return llvm::json::Object{{"schema","nex.task-debug-source-union/1"},{"mode",s.mode==NativeTaskLinkageMode::Static?"static":s.mode==NativeTaskLinkageMode::SharedFixed?"shared-fixed":"none"},{"artifact_kind",taskArtifactName(s.artifact)},{"owner_image",debugOwnerJSON(s.ownerImage)},{"components",std::move(rows)}};}
 NativeTaskDebugSourceUnion parseNativeTaskDebugSourceUnion(const llvm::json::Value &v){auto o=v.getAsObject();if(!o||o->size()!=5||o->getString("schema")!="nex.task-debug-source-union/1")invalidDebugCatalog();NativeTaskDebugSourceUnion result;debugHeader(*o,result);auto rows=o->getArray("components");if(!rows||rows->empty()||rows->size()>nexrt::maximumTaskDebugRegistries)invalidDebugCatalog();std::string previous;size_t definitions=0;std::set<std::string> names;
- for(const auto &v:*rows){auto row=v.getAsObject();if(!row||row->size()!=10)invalidDebugCatalog();NativeTaskDebugSourceComponent c;c.component=debugString(*row,"component",64);debugOwner(*row,c.ownerImage);if(!taskComponentName(c.component)||c.component<=previous)invalidDebugCatalog();previous=c.component;debugRowOwner(result,c.ownerImage);c.entry=debugString(*row,"entry");c.language=debugString(*row,"language");if(c.language!="0.19"&&c.language!="0.20"&&c.language!="0.21"&&c.language!="0.22"&&c.language!="0.23"&&c.language!="0.24"&&c.language!="0.25")invalidDebugCatalog();c.revision=debugDigest(*row,"revision");c.sourceHash=debugDigest(*row,"source_hash");c.bundleHash=debugDigest(*row,"bundle_hash");c.bundleFile=debugString(*row,"bundle_file");if(c.bundleFile!="debugger/components/"+c.component+"/source-bundle.json")invalidDebugCatalog();auto exports=row->getArray("exports"),defs=row->getArray("definitions");if(!exports||exports->size()>65536||!defs||defs->empty()||defs->size()>65536-definitions)invalidDebugCatalog();definitions+=defs->size();std::string prior;for(const auto &v:*exports){auto name=v.getAsString();if(!name||name->empty()||name->size()>4096||name->contains('\0')||name->str()<=prior)invalidDebugCatalog();prior=name->str();c.exports.push_back(prior);}prior.clear();for(const auto &v:*defs){auto d=v.getAsObject();if(!d||d->size()!=8)invalidDebugCatalog();NativeTaskDebugDefinition definition;definition.name=debugString(*d,"name");definition.functionHash=debugDigest(*d,"function_hash");definition.functionSourceHash=debugDigest(*d,"function_source_hash");definition.sourceUnitHash=debugDigest(*d,"source_unit_hash");definition.debugPath=debugString(*d,"debug_path",32768);definition.contract=debugDigest(*d,"contract");auto line=d->getInteger("line");auto retained=d->getBoolean("retained");if(definition.name<=prior||!names.insert(definition.name).second||!line||*line<1||!retained)invalidDebugCatalog();prior=definition.name;definition.line=*line;definition.retained=*retained;c.definitions.push_back(std::move(definition));}result.components.push_back(std::move(c));}
+ for(const auto &v:*rows){auto row=v.getAsObject();if(!row||row->size()!=10)invalidDebugCatalog();NativeTaskDebugSourceComponent c;c.component=debugString(*row,"component",64);debugOwner(*row,c.ownerImage);if(!taskComponentName(c.component)||c.component<=previous)invalidDebugCatalog();previous=c.component;debugRowOwner(result,c.ownerImage);c.entry=debugString(*row,"entry");c.language=debugString(*row,"language");if(c.language!="0.19"&&c.language!="0.20"&&c.language!="0.21"&&c.language!="0.22"&&c.language!="0.23"&&c.language!="0.24"&&(c.language!="0.25"&&c.language!="0.26"))invalidDebugCatalog();c.revision=debugDigest(*row,"revision");c.sourceHash=debugDigest(*row,"source_hash");c.bundleHash=debugDigest(*row,"bundle_hash");c.bundleFile=debugString(*row,"bundle_file");if(c.bundleFile!="debugger/components/"+c.component+"/source-bundle.json")invalidDebugCatalog();auto exports=row->getArray("exports"),defs=row->getArray("definitions");if(!exports||exports->size()>65536||!defs||defs->empty()||defs->size()>65536-definitions)invalidDebugCatalog();definitions+=defs->size();std::string prior;for(const auto &v:*exports){auto name=v.getAsString();if(!name||name->empty()||name->size()>4096||name->contains('\0')||name->str()<=prior)invalidDebugCatalog();prior=name->str();c.exports.push_back(prior);}prior.clear();for(const auto &v:*defs){auto d=v.getAsObject();if(!d||d->size()!=8)invalidDebugCatalog();NativeTaskDebugDefinition definition;definition.name=debugString(*d,"name");definition.functionHash=debugDigest(*d,"function_hash");definition.functionSourceHash=debugDigest(*d,"function_source_hash");definition.sourceUnitHash=debugDigest(*d,"source_unit_hash");definition.debugPath=debugString(*d,"debug_path",32768);definition.contract=debugDigest(*d,"contract");auto line=d->getInteger("line");auto retained=d->getBoolean("retained");if(definition.name<=prior||!names.insert(definition.name).second||!line||*line<1||!retained)invalidDebugCatalog();prior=definition.name;definition.line=*line;definition.retained=*retained;c.definitions.push_back(std::move(definition));}result.components.push_back(std::move(c));}
  if(json(nativeTaskDebugSourceUnionJSON(result),false).size()>nexrt::maximumTaskDebugMetadataBytes)invalidDebugCatalog();return result;
 }
 llvm::json::Object nativeTaskDebugInfoJSON(const NativeTaskDebugInfo &p){llvm::json::Array rows;for(const auto &r:p.registries)rows.push_back(llvm::json::Object{{"component",r.component},{"accessor",r.accessor},{"code_count",r.codeCount},{"catalog_hash",r.catalogHash}});return llvm::json::Object{{"schema","nex.native-task-debug/1"},{"registry_abi",1},{"catalog_file",p.catalogFile},{"catalog_hash",p.catalogHash},{"source_union_file",p.sourceUnionFile},{"source_union_hash",p.sourceUnionHash},{"registries",std::move(rows)}};}
@@ -1541,7 +1548,7 @@ NativeTaskApplicationStage parseNativeTaskApplicationStage(const llvm::json::Val
   result.enabled=true;result.entry=entry->str();result.descriptorAccessor=accessor->str();result.fileReads=*reads;return result;
 }
 llvm::json::Object nativeTaskProviderJSON(const NativeTaskProviderInfo &info){
-  const bool shared=info.mode==NativeTaskLinkageMode::SharedFixed,exceptions=info.language=="0.25",streams=exceptions||info.language=="0.24",writes=streams||info.language=="0.23";
+  const bool shared=info.mode==NativeTaskLinkageMode::SharedFixed,exceptions=(info.language=="0.25"||info.language=="0.26"),streams=exceptions||info.language=="0.24",writes=streams||info.language=="0.23";
   if(!writes&&(info.taskFileWrites||!info.componentFileWrites.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire write requirements");
   if(!streams&&(info.taskFileStreams||!info.componentFileStreams.empty()))throw Error("E_TASK_PROVIDER","retained provider records cannot acquire stream requirements");
   llvm::json::Array definitions;for(const auto &name:info.definitions)definitions.push_back(name);
@@ -1593,7 +1600,7 @@ NativeTaskProviderInfo parseNativeTaskProvider(const llvm::json::Value &value){
   auto component=o->getString("component"),cohort=o->getString("cohort"),language=o->getString("language");auto codeOnly=o->getBoolean("code_only"),reads=o->getBoolean("task_file_reads");
   auto definitions=o->getArray("definitions");auto exports=o->getObject("exports");
   if(!component||component->empty()||component->size()>256||component->contains('\0')||!cohort||!digestText(*cohort)||!language||
-    (exceptions?*language!="0.25":streams?*language!="0.24":writes?*language!="0.23":(*language!="0.19"&&*language!="0.20"&&*language!="0.21"&&*language!="0.22"))||!codeOnly||!reads||!definitions||definitions->empty()||definitions->size()>65536||!exports||exports->size()>65536)invalid();
+    (exceptions?(*language!="0.25"&&*language!="0.26"):streams?*language!="0.24":writes?*language!="0.23":(*language!="0.19"&&*language!="0.20"&&*language!="0.21"&&*language!="0.22"))||!codeOnly||!reads||!definitions||definitions->empty()||definitions->size()>65536||!exports||exports->size()>65536)invalid();
   NativeTaskProviderInfo result;result.enabled=true;result.codeOnly=*codeOnly;result.taskFileReads=*reads;result.component=component->str();result.cohort=cohort->str();result.language=language->str();
   if(exceptions&&!taskComponentName(result.component))invalid();
   if(writes){auto flag=o->getBoolean("task_file_writes");if(!flag)invalid();result.taskFileWrites=*flag;}
@@ -1960,7 +1967,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // ABI5 uses the same checked operation classification as emitted descriptors.
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
-  const auto taskExecutionABI=p.sourceLanguage==SourceLanguage::SourceExceptions025?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
+  const auto taskExecutionABI=isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(windows&&tasks&&(files||foreign))throw Error("E_TASK_TARGET","Windows task filesystem/resource operations and foreign modules remain pending native platform validation");
   if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)

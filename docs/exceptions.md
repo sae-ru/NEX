@@ -1,3 +1,31 @@
+# Language0.26 handler development
+
+`catch(code,message) if predicate` evaluates a checked bool exactly once after
+a source error enters that catch. Its immutable bindings are in scope in the
+predicate and body. False rethrows the original error, preserving payload and
+source site; a source error raised by the predicate replaces it. Runtime traps,
+cancellation and limits remain separate fatal control. Guards keep left-to-right
+and lazy expression semantics and may suspend only in an actual task function.
+
+A filtered catch requires an outward `throw` effect or an enclosing handler.
+Literal `true` is total and needs no outward throw effect. Predicate calls keep
+their ordinary effect/realm checks. Result `?` returns from the current function;
+it does not turn a Result error into a source error.
+
+Native debug/release, reference/AST tasks and TypeScript use these rules. This
+is an unaccepted development version; complete026 delivery is pending. finally
+is reserved for the next part of this version and is not implemented yet. Typed
+payloads and the remaining original language/toolchain plan remain open.
+
+Explicit025-to026 migration rechecks the genuine025 parser and revision first.
+A025 declaration named finally needs a reviewed rename in the candidate. Old
+revisions, rows, schema and local IDs remain unchanged; physical source/manifest
+export is separate. The actual025 fixture is stored under
+`tests/fixtures/language-0.25-handler-origin.*` and installed at the same paths in the SDK. Prior compiler/resource receipts retain
+their original scope. See `examples/exception-filters`.
+
+---
+
 # Source exceptions — public025 integration candidate
 
 The ordinary candidate frontend selects language0.25. The frozen Mac cohort

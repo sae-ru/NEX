@@ -14,7 +14,7 @@ def check_installed_task_limits(cli,run,last_command,root,resources,environment)
     (task_project / 'nex.json').write_text(json.dumps({'schema':'nex.project/1',
         'language':language,'entry':'main.nex'}))
     program='module installed_task_limits;\nfn solve()->i64 !{task}{return with_tasks(2,fn(scope:task_scope)->i64 !{task}{\n let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 42;});\n return task_wait(child);\n});}\nfn main()->i64 !{io,task}{print(solve());return 0;}\ntest fn checks()->unit !{task}{assert(solve()==42);}\n'
-    if language=='0.25':
+    if language in ('0.25','0.26'):
         program='module installed_task_limits;\nfn solve()->i64 !{task,throw}{return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw}{\n let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 42;});\n return task_wait(child);\n});}\nfn main()->i64 !{io,task,throw}{print(solve());return 0;}\ntest fn checks()->unit !{task,throw}{assert(solve()==42);}\n'
     (task_project/'main.nex').write_text(program)
     caps={'steps':2000000,'timeout_ms':10000,'workers':2}

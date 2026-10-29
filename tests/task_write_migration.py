@@ -53,7 +53,7 @@ def candidate(name,source):
  p=root/(name+'.sources.json');p.write_text(json.dumps({'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source}}));return str(p)
 try:
  current_language=json.loads(run('describe',[compiler,'describe','--json'],os.environ,root).stdout)['version']
- assert current_language=='0.25'
+ assert current_language=='0.26'
  for index,row in enumerate(metadata['revisions']):
   name='positive-'+str(index);project,database,before,physical=restore(name);files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
   manifest=project/'nex.json';raw_manifest=manifest.read_bytes()

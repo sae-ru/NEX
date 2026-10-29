@@ -186,7 +186,17 @@ class Lowering {
         result.code[start].yes=result.code.size();enter();
         TaskInstruction caught;caught.kind=TaskInstruction::Catch;caught.span=s->span;caught.source=s.get();
         for(const auto &name:{s->name,s->catchMessage}){auto id=slot(Type::Str,s->span,name,false);caught.bindings.push_back(id);binding(id,name,Type::Str,s->span);scopes.back()[name]=id;}
-        emit(std::move(caught));bool catchEnds=block(s->alternative,false);
+        emit(std::move(caught));
+        if(s->expr){
+          auto condition=expr(s->expr);
+          if(!totalSourceHandler(s)){
+            auto accepted=branch(condition,s->expr->span);result.code[accepted].no=result.code.size();drop(condition,s->expr->span);
+            TaskInstruction raised;raised.kind=TaskInstruction::Rethrow;raised.span=s->expr->span;raised.source=s.get();emit(std::move(raised));
+            result.code[accepted].yes=result.code.size();
+          }
+          drop(condition,s->expr->span);
+        }
+        bool catchEnds=block(s->alternative,false);
         if(!catchEnds){TaskInstruction end;end.kind=TaskInstruction::EndCatch;end.span=s->span;emit(std::move(end));leave(s->span);}else leaveScope();
         if(!bodyEnds)result.code[skip].yes=result.code.size();returned=bodyEnds&&catchEnds;break;
       }

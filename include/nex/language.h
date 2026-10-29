@@ -12,12 +12,15 @@
 namespace nexrt { struct TaskExecutionLimits; }
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.25";
-inline constexpr const char *taskCandidateLanguageVersion = "0.25";
+inline constexpr const char *languageVersion = "0.26";
+inline constexpr const char *taskCandidateLanguageVersion = "0.26";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025 };
-inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::SourceExceptions025;
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026 };
+inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::ExceptionHandlers026;
+inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
+  return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026;
+}
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
 // Exact lexical interval, separate from the diagnostic token in Span.
@@ -96,6 +99,11 @@ struct Stmt {
   std::string catchMessage;
 };
 using S = std::shared_ptr<Stmt>;
+// A filtered handler may let the original source error escape. Literal true is
+// total; every other predicate keeps an explicit outward throw effect.
+inline bool totalSourceHandler(const S &statement){
+  return !statement->expr||(statement->expr->kind==Expr::Boolean&&statement->expr->number!=0);
+}
 struct Param { std::string name; Type type; Span span; };
 struct MatchArm { std::string variant; std::vector<Param> bindings; std::vector<S> body; Span span; int64_t ordinal=0;
   P pattern;unsigned guard=0,value=0;

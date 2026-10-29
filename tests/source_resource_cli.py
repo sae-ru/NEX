@@ -16,7 +16,7 @@ import sys
 def current_fixture_sources(document, language):
  """Author current test copies; never alter archived/private input bundles."""
  result=copy.deepcopy(document)
- if language!='0.25':return result
+ if language!='0.26':return result
  signature=r'(?:[^{}!\n]|!\{[^{}]*\})*?'
  patterns=[r'\bfn\s+[A-Za-z_][A-Za-z_0-9]*\([^)]*\)->'+signature+r'!\{(?P<effects>[^{}]*)\}(?=\s*\{\s*(?:return\s+)?with_tasks\b)',
            r'\bfn\s+main\([^)]*\)->'+signature+r'!\{(?P<effects>[^{}]*)\}(?=\s*\{)',
@@ -53,7 +53,7 @@ def main():
  parser.add_argument('--compiler',required=True,type=Path)
  parser.add_argument('action',choices=['check','reference','reference-timeout','native','web'])
  parser.add_argument('bundle',type=Path);parser.add_argument('root',type=Path);parser.add_argument('output');parser.add_argument('language',nargs='?',default='0.24')
- args=parser.parse_args();assert args.language in ('0.24','0.25');language=args.language
+ args=parser.parse_args();assert args.language in ('0.24','0.26');language=args.language
  compiler=args.compiler.resolve();bundle=args.bundle.resolve()
  source=json.loads(bundle.read_text());assert source['schema']=='nex.sources/1'
  project=args.root.resolve()/'public-cli-projects'/bundle.stem;project.mkdir(parents=True,exist_ok=True)

@@ -231,6 +231,7 @@ class Interpreter {
           frames.back().back().values[s->name]=V(nexrt::string(error.code));
           frames.back().back().values[s->catchMessage]=V(nexrt::string(error.message));
           caughtExceptions.push_back(error);PopCaught caught{caughtExceptions};
+          if(s->expr&&!expression(s->expr).scalar)throw;
           block(s->alternative,false);
         }
         break;

@@ -178,7 +178,9 @@ class Generator {
         scopes.emplace_back();
         auto code=declare(s->name);statement("const "+code+": string = "+payload+".code;");
         auto message=declare(s->catchMessage);statement("const "+message+": string = "+payload+".message;");
-        caughtSourceErrors.push_back(error);block(s->alternative,false);caughtSourceErrors.pop_back();scopes.pop_back();
+        caughtSourceErrors.push_back(error);
+        if(s->expr)statement("if (!("+expr(s->expr)+")) throw "+error+";");
+        block(s->alternative,false);caughtSourceErrors.pop_back();scopes.pop_back();
         --depth;statement("}");break;
       }
       case Stmt::Throw:{
@@ -207,7 +209,7 @@ class Generator {
     if(scoped)scopes.pop_back();
   }
 public:
-  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||p.sourceLanguage==SourceLanguage::SourceExceptions025){
+  explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)){
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;

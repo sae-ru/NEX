@@ -118,7 +118,7 @@ def check_installed_task_migration(cli, root, resources):
     out = root/'language-migration019-020'
     out.mkdir(exist_ok=False)
     fixtures = resources/'examples/task-migration'
-    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24','0.25'), 'migration gate requires a matching language023/024/025 SDK')
+    current_language=cli('describe')['version'];_require(current_language in ('0.23','0.24','0.25', '0.26'), 'migration gate requires a matching language023/024/025 SDK')
     evidence = {'language':current_language, 'origin_language':'0.19', 'fixtures':{}, 'stores':{}}
 
     def restore(name, label=None):
@@ -172,7 +172,7 @@ def check_installed_task_migration(cli, root, resources):
             manifest.write_bytes(original_manifest)
         physical_unchanged(project, physical)
         expected_bundle = selected['bundle']
-        if current_language == '0.25':
+        if current_language in ('0.25','0.26'):
             migrated, expected_bundle = migrate_reviewed_task_fixture(cli, project, metadata['head'], metadata['head'])
         else:
             migrated = cli('migrate', '--expected-revision', metadata['head'], cwd=project)
@@ -241,7 +241,7 @@ def check_installed_task_migration(cli, root, resources):
     _require(text != graph['source'], 'reviewed helper repair did not change its declared effect')
     repaired['source'] = text; repaired['bundle']['files']['main.nex'] = text
     path = out/'reviewed-helper.graph.json'; _write(path, repaired)
-    if current_language == '0.25':
+    if current_language in ('0.25','0.26'):
         migrated, _ = migrate_reviewed_task_fixture(cli, project, metadata['head'], metadata['head'],
                                                     reviewed_sources=repaired['bundle'])
     else:

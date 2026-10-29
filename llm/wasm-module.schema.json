@@ -31,7 +31,10 @@
       "type": "string"
     },
     "language": {
-      "const": "0.25"
+      "enum": [
+        "0.25",
+        "0.26"
+      ]
     },
     "compiler_build": {
       "$ref": "#/$defs/hash"

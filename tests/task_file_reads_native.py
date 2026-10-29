@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
     configured.pop('NEX_RESOURCE_DIR', None)
     configured.pop('NEX_FILES_WRITE', None)
     absent = {key: value for key, value in configured.items() if key != 'NEX_FILES_ROOT'}
-    language=cli(root,configured,'describe')['version'];assert language=='0.25'
+    language=cli(root,configured,'describe')['version'];assert language=='0.26'
     for name, body, stdout, grant in cases:
         if name in ('scope-indirect','generic-record-callable','propagate-abort'):
             body=body.replace('server fn main()->i64 !{task,fs}', 'server fn main()->i64 !{task,fs,throw}')

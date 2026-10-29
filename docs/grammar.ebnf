@@ -1,3 +1,4 @@
+(* Language0.26 development: catch filters. finally is reserved; its lowering is pending. Retained025 parsing and identities remain unchanged. *)
 (* Public025 candidate: try/catch, explicit throw and lexical rethrow; retained024 parsing is separate and unchanged. *)
 (* Toolchain233 HTTP lazy transaction start changes no source syntax or language024 identity. *)
 (* Private232 HTTP completion/debug metadata adds no source syntax or public024 ABI change. *)
@@ -140,7 +141,7 @@ effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" | "fs" | "ffi" | "task" | "throw" ;
 block         = "{", { statement }, "}" ;
 statement     = declaration | assignment | return | if | while | match | try | throw | expression, ";" ;
-try           = "try", block, "catch", "(", identifier, ",", identifier, ")", block ;
+try           = "try", block, "catch", "(", identifier, ",", identifier, ")", [ "if", expression ], block ;
 throw         = "throw", [ "(", expression, ",", expression, ")" ], ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
 assignment    = identifier, "=", expression, ";" ;

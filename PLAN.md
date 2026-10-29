@@ -1,3 +1,11 @@
+# Active language0.26 handler work
+
+Catch-filter lowering and checked025 migration are implemented in the new
+worktree; first focused execution checks pass. Finish finally, complete all
+matching regression/SDK/platform gates, then continue typed payloads and every
+remaining language/platform/product requirement below. Nothing here marks the
+full objective complete or reinterprets older receipts.
+
 # Active public025 integration
 
 Ordinary frontend, retained024 migration, native/TypeScript source-error transport

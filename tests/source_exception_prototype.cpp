@@ -35,7 +35,7 @@ int main(){
   try{
     static_assert(int(SourceLanguage::TaskStreams024)==6&&int(SourceLanguage::SourceExceptions025Prototype)==7&&int(SourceLanguage::SourceExceptions025)==8);
     static_assert(int(Stmt::Match)==7&&int(Stmt::Try)==8&&int(Stmt::Throw)==9&&int(Expr::Propagate)==15);
-    require(std::string(languageVersion)=="0.25"&&currentSourceLanguage==SourceLanguage::SourceExceptions025,"public025 default absent");
+    require(std::string(languageVersion)=="0.26"&&currentSourceLanguage==SourceLanguage::ExceptionHandlers026,"public025 default absent");
     value(R"(fn main()->i64{try{throw("USER","message");}catch(code,message){assert(code=="USER"&&message=="message");return 42;}})");
     value(R"(fn main()->i64{try{throw("U\u0000SER","start\u0000end");}catch(code,message){assert(len(code)==5&&len(message)==9);assert(code=="U\u0000SER"&&message=="start\u0000end");return 42;}})");
     value(R"(fn leaf()->i64 !{throw}{throw("USER","leaf");}fn main()->i64{try{return leaf();}catch(code,message){return len(code)+len(message)+34;}})");

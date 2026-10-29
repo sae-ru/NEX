@@ -24,8 +24,8 @@ For typed error forwarding, query `nex describe --field result_propagation --jso
 and `nex guide --kind result --json`. Respect the reported language and pending
 integration gates. For source exceptions, query `source_exceptions` and read the exception guide.
 Use only the selected SDK's advertised syntax, payload and effects; checked traps
-remain separate from catchable source errors. Typed payloads and finally/filters
-remain pending in025.
+remain separate from catchable source errors. Discover handler_filters before using a conditional catch. Typed payloads and
+finally remain pending in this026 development stage.
 
 For ordered CPU batches, query source_concurrency and retrieve the concurrency
 guide. Require the actual source operation and matching language; native worker

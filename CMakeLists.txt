@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.136.1 LANGUAGES C CXX)
+project(NEX VERSION 0.137.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -251,7 +251,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -1232,6 +1232,12 @@ set_tests_properties(store_transactions_native PROPERTIES TIMEOUT 30)
 add_test(NAME source_exceptions_public COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_public.py $<TARGET_FILE:nex>)
 set_tests_properties(source_exceptions_public PROPERTIES TIMEOUT 1800)
+add_test(NAME source_exception_handlers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/exception_handlers.py $<TARGET_FILE:nex>)
+set_tests_properties(source_exception_handlers PROPERTIES TIMEOUT 1800)
+install(FILES tests/fixtures/language-0.25-handler-origin.json tests/fixtures/language-0.25-handler-origin.sql
+  DESTINATION share/nex/tests/fixtures)
+install(FILES tests/exception_handlers.py DESTINATION share/nex/tests)
 add_test(NAME source_exceptions_migration COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exceptions_migration.py $<TARGET_FILE:nex>)
 set_tests_properties(source_exceptions_migration PROPERTIES TIMEOUT 120)

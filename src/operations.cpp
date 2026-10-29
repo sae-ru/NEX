@@ -50,13 +50,14 @@ class Tree {
         add(key,path,"parameter",i,"exception.binding",names[i],span,Object{{"kind","exception.binding"},{"name",names[i]},{"type","str"}});
         scopes.back()[names[i]]=key;
       }
+      expression(handler->expr,path,"guard",0);
     }
     for(unsigned i=0;i<body.size();++i){
       auto s=body[i];auto key=path+"/statement/"+std::to_string(i),kind=std::string("statement.")+stmtKinds[s->kind];
       auto anchor=kind+":"+s->name;if(s->kind==Stmt::Expression&&s->expr&&s->expr->kind==Expr::Call)anchor+=":"+s->expr->text;
       auto index=add(key,path,"statement",i,kind,anchor,s->span,Object{{"kind",kind},{"name",s->name},{"type",typeName(s->type)}},s.get(),s->sourceRange,"statement");
       if(s->kind==Stmt::Assign)nodes[index].binding=binding(s->name);
-      expression(s->kind==Stmt::Match?s->expr->args[0]:s->expr,key,"expression",0);
+      if(s->kind!=Stmt::Try)expression(s->kind==Stmt::Match?s->expr->args[0]:s->expr,key,"expression",0);
       if(s->kind==Stmt::Let||s->kind==Stmt::Var)scopes.back()[s->name]=key;
       if(s->kind==Stmt::Match)arms(s->expr,key);
       if(s->kind==Stmt::If||s->kind==Stmt::While)block(s->body,key,"body",s->span,true);

@@ -75,7 +75,7 @@ Project prepare(const Program &p){
   if(workerCompute){
     if(workerCompute->params.size()!=1)throw Error("E_WEB_SIGNATURE","worker_compute requires one wire input",workerCompute->span);
     const auto &input=workerCompute->params[0].type;
-    requireFunction(*workerCompute,{input},workerCompute->result,true,p.sourceLanguage==SourceLanguage::SourceExceptions025);
+    requireFunction(*workerCompute,{input},workerCompute->result,true,isPublicSourceExceptionLanguage(p.sourceLanguage));
     try{workerInput=wireSchema(p,input);workerOutput=wireSchema(p,workerCompute->result);}
     catch(const Error &e){throw Error("E_WEB_SIGNATURE",std::string("worker_compute requires wire input/output: ")+e.what(),workerCompute->span);}
     if(workerCommands->result.kind!=Type::List||workerCommands->result.element->kind!=Type::Record)throw Error("E_WEB_SIGNATURE","worker_commands must return list<worker::Command<Input>>",workerCommands->span);

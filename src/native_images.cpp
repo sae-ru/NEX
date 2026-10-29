@@ -80,12 +80,12 @@ Captured capture(const NativeImageInput &input){
     auto parsed=llvm::json::parse(bytes);if(!parsed)fail("invalid captured task provider JSON");provider=parseNativeTaskProvider(*parsed);
     if(provider.mode!=NativeTaskLinkageMode::SharedFixed||provider.artifact!=NativeTaskArtifactKind::PicStage||provider.component!=input.name||provider.image||!provider.ownerImage.empty()||
        json(nativeTaskProviderJSON(provider),false)!=json(nativeTaskProviderJSON(input.stage.taskProvider),false))fail("captured task PIC provider differs from checked stage");
-    if(provider.language=="0.23"||provider.language=="0.24"||provider.language=="0.25"){
+    if(provider.language=="0.23"||provider.language=="0.24"||(provider.language=="0.25"||provider.language=="0.26")){
       auto requirements=meta.getObject("runtime_requirements");auto writes=meta.getBoolean("task_file_writes");
       if(!requirements||!writes||*writes!=provider.taskFileWrites||requirements->getBoolean("task_file_writes")!=*writes)fail("captured023 stage write requirements differ");
       auto selected=meta.get("task_application");if(!selected)fail("captured023 stage omitted task application selection");auto stage=parseNativeTaskApplicationStage(*selected);
-      if(stage.enabled&&(stage.executionABI!=(provider.language=="0.25"?nexrt::taskCodeSourceExceptionABI:provider.language=="0.24"?nexrt::taskCodeStreamABI:nexrt::taskCodeWriteABI)||stage.fileWrites!=provider.taskFileWrites))fail("captured root application ABI/write requirements differ");
-      if(provider.language=="0.24"||provider.language=="0.25"){
+      if(stage.enabled&&(stage.executionABI!=((provider.language=="0.25"||provider.language=="0.26")?nexrt::taskCodeSourceExceptionABI:provider.language=="0.24"?nexrt::taskCodeStreamABI:nexrt::taskCodeWriteABI)||stage.fileWrites!=provider.taskFileWrites))fail("captured root application ABI/write requirements differ");
+      if(provider.language=="0.24"||(provider.language=="0.25"||provider.language=="0.26")){
         auto streams=meta.getBoolean("task_file_streams");
         if(!streams||*streams!=provider.taskFileStreams||requirements->getBoolean("task_file_streams")!=*streams||
            (stage.enabled&&stage.fileStreams!=provider.taskFileStreams))fail("captured024 stream requirements differ");

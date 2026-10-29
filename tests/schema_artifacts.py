@@ -260,7 +260,7 @@ fn main()->unit !{io,task}{print(leaf(41));}
             self.assertEqual((record['schema'],record['language']),('nex.native-task-provider/8','0.24'))
             validate(record,'actual retained SDK024 record',only='native-stream-task-provider')
             self.assertFalse(validators['native-source-error-task-provider'].is_valid(record))
-            renamed=copy.deepcopy(record);renamed['language']='0.25'
+            renamed=copy.deepcopy(record);renamed['language']='0.26'
             self.assertFalse(validators['native-stream-task-provider'].is_valid(renamed))
         app=next(row['artifact'] for row in built['artifacts'] if row['component']=='app')
         result=original_run([app],capture_output=True,text=True,timeout=30)
