@@ -291,6 +291,7 @@ struct Analysis {
     for(const auto &s:body){
       tick();if(ended)break;
       switch(s->kind){
+      case Stmt::Finally:throw Error("E_FINALLY_TASK","task lifetime finalization is pending for this development compiler",s->span);
       case Stmt::Try:{
         if(!supportsSourceExceptionTasks(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
         ++report.handlers;HandlerInput handler{env,{}};auto normal=env;handlers.push_back(&handler);bool bodyEnds;

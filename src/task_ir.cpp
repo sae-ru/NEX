@@ -178,6 +178,7 @@ class Lowering {
     for(const auto &s:body){
       if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
+      case Stmt::Finally:throw Error("E_FINALLY_TASK","TaskIR finalization is pending for this development compiler",s->span);
       case Stmt::Try:{
         if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","exception TaskIR requires the separate private task parser",s->span);
         TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();auto start=emit(std::move(install));

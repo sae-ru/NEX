@@ -7,7 +7,7 @@ namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
 const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating","propagate_result"};
-const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match","try","throw"};
+const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match","try","throw","finally"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
   std::vector<std::map<std::string,std::string>> scopes;
@@ -63,6 +63,7 @@ class Tree {
       if(s->kind==Stmt::If||s->kind==Stmt::While)block(s->body,key,"body",s->span,true);
       if(s->kind==Stmt::If)block(s->alternative,key,"else",s->span,true);
       if(s->kind==Stmt::Try){block(s->body,key,"body",s->span,true);block(s->alternative,key,"catch",s->span,true,s);}
+      if(s->kind==Stmt::Finally){block(s->body,key,"body",s->span,true);block(s->alternative,key,"finally",s->span,true);}
     }
     if(scoped)scopes.pop_back();
   }

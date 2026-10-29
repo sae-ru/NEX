@@ -183,6 +183,7 @@ struct TaskAstMachine::Impl {
         switch(action.kind){
         case Action::Statement:
           switch(s->kind){
+          case Stmt::Finally:throw Error("E_FINALLY_TASK","AST task finalization is pending for this development compiler",s->span);
       case Stmt::Try:
             if(!supportsSourceExceptionTasks(program))throw Error("E_EXCEPTION_BACKEND","AST exception handlers require the private task parser",s->span);
             frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndTry});block(s->body,true);break;

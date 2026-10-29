@@ -1,0 +1,19 @@
+module finally_example;
+
+fn read_answer()->result<i64> !{io}{
+  try {
+    let answer:i64=err<i64>("INPUT","missing value")?;
+    return ok(answer);
+  } finally {
+    print("finalizer");
+  }
+}
+
+fn main()->unit !{io}{
+  assert(read_answer()==err<i64>("INPUT","missing value"));
+  print(42);
+}
+
+test fn preserves_result()->unit !{io}{
+  assert(read_answer()==err<i64>("INPUT","missing value"));
+}

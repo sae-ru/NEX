@@ -169,6 +169,16 @@ class Generator {
       auto start=line;
       if(taskMode)statement("yield* task.checkpoint("+site(s)+");");
       switch(s->kind){
+      case Stmt::Finally:{
+        auto run="finally_run_"+std::to_string(++unique),error="finally_error_"+std::to_string(++unique),fatal="finally_fatal_"+std::to_string(++unique);
+        statement("let "+run+" = true;");statement("let "+fatal+": unknown = undefined;");
+        statement("try {");++depth;block(s->body);--depth;
+        statement("} catch ("+error+") {");++depth;
+        statement(run+" = sourceException.details("+error+") !== undefined || nex.propagatedFailure("+error+") !== undefined;");
+        statement(fatal+" = "+error+";");statement("throw "+error+";");--depth;
+        statement("} finally {");++depth;statement("if ("+run+") {");++depth;
+        block(s->alternative);--depth;statement("} else {");++depth;statement("throw "+fatal+";");--depth;statement("}");--depth;statement("}");break;
+      }
       case Stmt::Try:{
         if(!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the experimental TypeScript emitter",s->span);
         auto error="source_error_"+std::to_string(++unique),payload="source_payload_"+std::to_string(++unique);

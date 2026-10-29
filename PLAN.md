@@ -1,3 +1,10 @@
+# Finally foundation / toolchain0.138.0
+
+Synchronous checker/reference/TypeScript finally is implemented in its isolated
+worktree. Native/task finalization, engine agreement, complete acceptance and
+the full remaining plan stay open. Compiler/SDK39 checks for0.137.1 keep their
+separate frozen tree and original compiler.
+
 # Active language0.26 handler work
 
 Catch-filter lowering and checked025 migration are implemented in the new

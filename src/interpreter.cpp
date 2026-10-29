@@ -14,6 +14,7 @@
 #include "llvm/Support/Error.h"
 #include <limits>
 #include <functional>
+#include <exception>
 
 namespace nex {
 namespace {
@@ -224,6 +225,15 @@ class Interpreter {
       case Stmt::If:block(expression(s->expr).scalar?s->body:s->alternative);break;
       case Stmt::While:while(expression(s->expr).scalar){step(s->span);block(s->body);}break;
       case Stmt::Match:matching(s->expr);break;
+      case Stmt::Finally:{
+        std::exception_ptr pending;
+        try{block(s->body);}
+        catch(const Returned &){pending=std::current_exception();}
+        catch(const SourceException &){pending=std::current_exception();}
+        block(s->alternative);
+        if(pending)std::rethrow_exception(pending);
+        break;
+      }
       case Stmt::Try:{
         try{block(s->body);}
         catch(const SourceException &error){

@@ -91,7 +91,7 @@ struct Expr {
 };
 using E = std::shared_ptr<Expr>;
 struct Stmt {
-  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw } kind;
+  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw, Finally } kind;
   Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
   std::vector<std::shared_ptr<Stmt>> body, alternative;
   std::vector<std::shared_ptr<MatchArm>> arms;

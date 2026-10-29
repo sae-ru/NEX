@@ -3353,6 +3353,19 @@
     },
     "handler_example": "examples/exception-filters/main.nex",
     "handler_sdk_helper": "tools/sdk_source_handlers.py",
-    "handler_test_source": "tests/exception_handlers.py"
+    "handler_test_source": "tests/exception_handlers.py",
+    "finally_development": {
+      "status": "synchronous_reference_typescript_foundation",
+      "frontend": true,
+      "reference": true,
+      "typescript": true,
+      "native": false,
+      "tasks": false,
+      "finally_return_override": true,
+      "result_propagation_runs_finally": true,
+      "fatal_traps_run_finally": false,
+      "retained026_identities": true,
+      "test_source": "tests/finally.py"
+    }
   }
 }

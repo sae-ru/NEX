@@ -754,6 +754,7 @@ class Emitter {
     for(auto s:body){
       SiteScope site(activeSite,sites.at(s.get()));
       switch(s->kind){
+      case Stmt::Finally:throw Error("E_FINALLY_BACKEND","native finally lowering is pending for this development compiler",s->span);
       case Stmt::Throw:{
         if(!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the experimental emitter",s->span);
         Value error;

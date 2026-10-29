@@ -6,6 +6,11 @@ establish current support. Toolchain and source-language versions are different.
 The current handler development language is0.26; accepted source233 is0.24; discover the actual SDK before choosing
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
+Portable finally remains disabled. A compiler may expose a synchronous
+reference/TypeScript foundation in source_exceptions.finally_development; native
+and task finalization are still pending. Do not use finally for a delivery
+target without its actual advertised support.
+
 ## Discover only the context needed
 
 Start with `nex describe --kind index --json`. If an older SDK rejects scoped

@@ -1,3 +1,28 @@
+# Finally development foundation (toolchain0.138.0 / language0.26)
+
+`try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }
+finally { ... }` are synchronous reference/TypeScript development features.
+Native lowering, resumable tasks, complete acceptance and typed payloads remain
+pending. The portable `source_exceptions.finally` capability stays false; query
+`source_exceptions.finally_development` for the exact engine scope.
+
+The finalizer runs once after normal protected/catch completion, return, Result
+`?` return, or an escaping explicit source error. The protected/catch lexical
+scope ends before the finalizer; its locals and catch bindings are unavailable.
+Outer mutable bindings remain visible. The return expression is evaluated before
+the finalizer. A return, Result propagation or explicit source error from the
+finalizer replaces the pending outcome. Nested finalizers run from inside out.
+Bare throw keeps the enclosing lexical catch; a finalizer introduces no implicit
+catch binding. An unchanged escaping source error retains its payload and site.
+
+Fatal traps, allocation failure, cancellation and execution limits do not run
+user finalizers. Runtime-owned resource cleanup remains independent. Finalizer
+effects and realms are checked normally; this construct never catches a fatal
+error or makes a Result error into a source error. Finally is appended as a new
+statement kind; old026 AST ordinals and canonical identities are unchanged.
+
+---
+
 # Language0.26 handler development
 
 `catch(code,message) if predicate` evaluates a checked bool exactly once after
@@ -13,8 +38,8 @@ their ordinary effect/realm checks. Result `?` returns from the current function
 it does not turn a Result error into a source error.
 
 Native debug/release, reference/AST tasks and TypeScript use these rules. This
-is an unaccepted development version; complete026 delivery is pending. finally
-is reserved for the next part of this version and is not implemented yet. Typed
+is an unaccepted development version; complete026 delivery is pending. Native/task finally
+is pending; the synchronous development foundation is described above. Typed
 payloads and the remaining original language/toolchain plan remain open.
 
 Explicit025-to026 migration rechecks the genuine025 parser and revision first.
