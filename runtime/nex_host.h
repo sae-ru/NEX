@@ -54,6 +54,9 @@ public:
 };
 Handle *makeHandle(const Value &value);
 Value readHandle(const Handle *handle);
+// Matching-runtime internal source-error transport; no authority is promoted.
+Handle *makeSourceErrorHandle(const NativeSourceException &error);
+NativeSourceException readSourceErrorHandle(const Handle *handle);
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
 [[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location);
 bool inRequestScope();

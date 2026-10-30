@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "internal_owned_packet_foundation",
+      "status": "internal_owned_packet_native_roundtrip",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3389,7 +3389,11 @@
       "scheduler_test_source": "tests/source_exception_task_scheduler.cpp",
       "guide": "docs/typed-exceptions-design.md",
       "guide_kind": "typed-exception",
-      "genuine026_origin": "tests/fixtures/language-0.26-typed-origin.json"
+      "genuine026_origin": "tests/fixtures/language-0.26-typed-origin.json",
+      "native_managed_roundtrip": true,
+      "native_kind_checked_accessors": true,
+      "native_legacy_representation_retained": true,
+      "native_roundtrip_test_source": "tests/source_error_native_packet.cpp"
     }
   }
 }

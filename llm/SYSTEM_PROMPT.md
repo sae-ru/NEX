@@ -7,7 +7,8 @@ The current handler development language is0.26; accepted source233 is0.24; disc
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
 Typed source throw/catch is unavailable while source_exceptions.typed_payloads
-is false. An internal typed_payload_development packet/type-key foundation does
+is false. An internal typed_payload_development packet/type-key foundation or managed
+native roundtrip does
 not enable source syntax. Use advertised026 constructs; do not retag a project
 as027 before its explicit migration and engine capabilities are implemented.
 

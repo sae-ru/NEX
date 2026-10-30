@@ -1,3 +1,5 @@
+(* Toolchain0.141 internal native typed-packet roundtrips add no syntax,
+   AST/canonical identity or language-version change. Typed source027 remains disabled. *)
 (* Language0.26 development: catch filters and synchronous/resumable native/reference/TypeScript finally. Complete delivery remains pending. Retained025/026 identities are unchanged. *)
 (* Public025 candidate: try/catch, explicit throw and lexical rethrow; retained024 parsing is separate and unchanged. *)
 (* Toolchain233 HTTP lazy transaction start changes no source syntax or language024 identity. *)

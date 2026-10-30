@@ -1,7 +1,10 @@
-# Typed-payload transport foundation0.140.0
+# Typed-payload transport native roundtrip0.141.0
 
 The compiler retains an internal owned value with its complete concrete type key.
-Typed source throw/catch and027 remain disabled. This is a foundation for the
+Native managed packets now preserve that value on conversion to/from a native
+exception, including the unhandled boundary. Checked accessors require the
+expected scalar tag or object kind as well as the key. Typed source throw/catch
+and027 remain disabled. This is a foundation for the
 remaining language work, not completed typed exception support. See
 [the transport and language design](typed-exceptions-design.md).
 

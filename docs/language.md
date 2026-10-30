@@ -1,7 +1,9 @@
-# Internal typed-payload foundation0.140.0
+# Internal typed-payload transport0.141.0
 
 Public source syntax remains0.26. `typed_payloads` stays false. Internal owned
-packets/type identities do not enable typed throw/catch or authority transfer.
+packets/type identities and managed native roundtrips do not enable typed
+throw/catch or authority transfer. Matching-key accessors also check the scalar
+tag or top-level object kind before binding a value.
 Read [the implemented foundation and proposed027 contract](typed-exceptions-design.md).
 The resumable-finally rules below remain current; full139/140 receipts have
 separate compiler/source scope.

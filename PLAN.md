@@ -1,3 +1,11 @@
+# Native typed-error packet roundtrip0.141.0
+
+Managed native packets now retain typed values across exception/handle conversion
+and the real unhandled boundary. Kind-checked accessors accompany exact type keys;
+legacy packet layout stays unchanged. No typed source syntax or authority transfer
+is enabled. Ordered handlers, source-edge provenance, all engine integration,
+explicit027 migration and the full language/toolchain/platform plan remain open.
+
 # Owned typed-error foundation0.140.0
 
 Implemented internal retained payloads and complete concrete type identities;

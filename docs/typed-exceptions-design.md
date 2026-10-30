@@ -1,6 +1,6 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.140.0 keeps public language0.26 and `typed_payloads: false`.
+Toolchain0.141.0 keeps public language0.26 and `typed_payloads: false`.
 There is no typed throw/catch source syntax in this compiler. The development
 field `source_exceptions.typed_payload_development` describes internal C++
 transport only. This document distinguishes that implementation from the
@@ -27,7 +27,18 @@ The digest identifies a type contract; it is not proof that arbitrary host data
 conforms to that type. A checked producer or a validating foreign boundary must
 establish that separately. The packet constructor checks key format and basic
 Value validity without walking/stringifying the entire aggregate on each throw.
-The future generated handler must validate its expected kind as well as the key.
+Internal getScalar/getObject accessors validate the expected scalar tag or
+top-level object kind as well as the key. Full nested conformance still belongs
+to the checked producer or foreign validator.
+
+Managed native transport keeps the legacy V1 record (two strings plus copied
+site/line) unchanged. A distinct internal V2 record additionally owns the concrete
+key and original Value. makeSourceErrorHandle/readSourceErrorHandle and the
+actual nex_source_error_unhandled boundary roundtrip that payload without
+formatting it. Scalar tags, binary64 bits and aggregate identity are retained.
+Malformed records remain runtime failures; they cannot become source errors.
+These records are compiler-private and do not define a wire or foreign ABI.
+They grant no authority and are not yet emitted for typed source syntax.
 
 The published88-byte ABI6 task descriptor, C foreign-module ABI and ordinary026
 source semantics remain unchanged. The internal C++ exception layout is covered
@@ -39,7 +50,10 @@ Retrieve the bounded contract with `nex guide --kind typed-exception --json`.
 Tests exercise nested and phantom layouts, higher-kinded arguments, exact type
 mismatch, failed construction cleanup, reference/native copies, exception_ptr
 handoff across a real thread, and repeated observation through the actual task
-scheduler. They require final destruction and zero retained managed objects.
+scheduler. The native-packet probe also crosses real lexical owner/request and
+thread boundaries, checks legacy code/message projection without payload
+formatting, rejects malformed records, and injects handle-allocation failure.
+They require final destruction and zero retained managed objects/handles.
 
 ## Proposed027 source contract: not enabled
 

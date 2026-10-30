@@ -386,6 +386,11 @@ Value parallelCompiledValues(const Value &items,const Value &environment,int64_t
 #endif
 Handle *makeHandle(const Value &value){if(value.tag!=Value::Object)throw DataError("E_RUNTIME","host handle requires an object");return new Handle(value.object);}
 Value readHandle(const Handle *handle){return Value(handle->data);}
+Handle *makeSourceErrorHandle(const NativeSourceException &error){return makeHandle(nativeSourceErrorRecord(error));}
+NativeSourceException readSourceErrorHandle(const Handle *handle){
+  if(!handle)throw DataError("E_RUNTIME","invalid private source error");
+  return nativeSourceErrorException(readHandle(handle));
+}
 namespace {
 std::string sourceRecord(const char *text)noexcept{
   try{if(!text)return {};auto size=::strnlen(text,16385);return size<=16384?std::string(text,size):std::string();}
@@ -536,14 +541,14 @@ static void impl_nex_owned_leave(int64_t token,Handle *kept,nexrt::SourceLocatio
 void nex_owned_leave(int64_t token,Handle *kept){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{});}
 void nex_owned_leave_at(int64_t token,Handle *kept,const nexrt::NativeSite *site){return impl_nex_owned_leave(token,kept,nexrt::SourceLocation{0,site});}
 // Private source errors are immutable managed records, never host traps. Their
-// two source strings retain length and the copied native site survives rethrow.
+// source strings retain length and the copied native site survives rethrow.
+// Typed records additionally retain the complete owned value and concrete key.
 extern "C++" { namespace {
-constexpr const char *sourceErrorMarker="NEX_PRIVATE_SOURCE_ERROR_V1:";
+constexpr const char *sourceErrorMarker=nexrt::sourceErrorRecordV1;
 using NativeSourceException=nexrt::NativeSourceException;
 const nexrt::Data &sourceError(Handle *handle){
-  if(!handle||handle->data->kind!=nexrt::Data::Record||!handle->data->text.starts_with(sourceErrorMarker)||handle->data->values.size()!=2)
-    throw nexrt::DataError("E_RUNTIME","invalid private source error");
-  return *handle->data;
+  if(!handle)throw nexrt::DataError("E_RUNTIME","invalid private source error");
+  return nexrt::checkedSourceErrorRecord(nexrt::Value(handle->data));
 }
 } }
 static void impl_nex_owned_promote(Handle *handle,int64_t token,SourceLocation location){
@@ -579,7 +584,7 @@ Handle *nex_source_error_code_at(Handle *error,const nexrt::NativeSite *site){re
 Handle *nex_source_error_message(Handle *error){return impl_nex_source_error_field(error,1,{});}
 Handle *nex_source_error_message_at(Handle *error,const nexrt::NativeSite *site){return impl_nex_source_error_field(error,1,{0,site});}
 static void impl_nex_source_error_unhandled(Handle *error,SourceLocation location){
-  auto exception=nexrt::hostOperation(location,[&]{const auto &data=sourceError(error);NativeSourceException result;result.code=data.values[0].object->text;result.message=data.values[1].object->text;result.source=data.text.substr(std::strlen(sourceErrorMarker));result.line=data.ordinal;return result;});
+  auto exception=nexrt::hostOperation(location,[&]{return nexrt::readSourceErrorHandle(error);});
   throw exception;
 }
 void nex_source_error_unhandled(Handle *error){impl_nex_source_error_unhandled(error,{});}
