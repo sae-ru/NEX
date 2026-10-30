@@ -1,3 +1,11 @@
+# Internal typed-payload foundation0.140.0
+
+Public source syntax remains0.26. `typed_payloads` stays false. Internal owned
+packets/type identities do not enable typed throw/catch or authority transfer.
+Read [the implemented foundation and proposed027 contract](typed-exceptions-design.md).
+The resumable-finally rules below remain current; full139/140 receipts have
+separate compiler/source scope.
+
 # Resumable finally development (toolchain0.139.0 / language0.26)
 
 `try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }

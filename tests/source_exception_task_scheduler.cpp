@@ -13,13 +13,25 @@ extern "C" void nex_profile_allocation(const void *p,size_t,int pool){std::lock_
 extern "C" void nex_profile_free(const void *p){std::lock_guard lock(allocationsMutex);if(allocations.erase(p)!=1)std::abort();}
 namespace {
 unsigned cases=0;
-struct Context {std::barrier<> together{2};std::atomic<unsigned> ended{0};RequestScope *request=nullptr;};
+struct Context {std::barrier<> together{2};std::atomic<unsigned> ended{0};RequestScope *request=nullptr;std::weak_ptr<const SourceErrorPayload> typed;};
 struct Guard {Context &context;Value retained{string("owned")};~Guard(){++context.ended;}};
 void require(bool yes,const char *message){if(!yes)throw std::runtime_error(message);}
 NativeSourceException error(const char *code){return {code,std::string("λ\0message",10),"{\"site\":\"original\"}",47};}
 TaskBody source(TaskGroup &group,Value,Value,const void *opaque){auto &ctx=*const_cast<Context*>(static_cast<const Context*>(opaque));Guard guard{ctx};co_await group.yield();throw error("SOURCE");co_return Value();}
 TaskBody parked(TaskGroup &group,Value,Value,const void *opaque){auto &ctx=*const_cast<Context*>(static_cast<const Context*>(opaque));Guard guard{ctx};for(;;)co_await group.yield();}
 TaskBody synchronizedFailure(TaskGroup &,Value kind,Value,const void *opaque){auto &ctx=*const_cast<Context*>(static_cast<const Context*>(opaque));Guard guard{ctx};ctx.together.arrive_and_wait();if(kind.scalar)throw Trap("E_ASSERT","produced before cleanup",12);throw error("SOURCE");co_return Value();}
+TaskBody typedSource(TaskGroup &group,Value,Value,const void *opaque){
+  auto &ctx=*const_cast<Context*>(static_cast<const Context*>(opaque));Guard guard{ctx};
+  auto payload=std::make_shared<const SourceErrorPayload>(std::string(64,'a'),Value(string(std::string("λ\0🙂",7))));ctx.typed=payload;
+  co_await group.yield();throw NativeSourceException("TYPED","generic","{\"site\":\"typed\"}",53,std::move(payload));co_return Value();
+}
+TaskBody waitsTyped(TaskGroup &group,Value,Value,const void *opaque){
+  auto scope=group.openScope(2);auto child=group.spawnWithContext(scope,typedSource,opaque,{},{});unsigned caught=0;
+  for(unsigned i=0;i<2;++i)try{co_await group.await(child);}catch(const NativeSourceException &e){
+    require(e.payload&&e.payload->get(std::string(64,'a')).object->text==std::string("λ\0🙂",7)&&e.line==53&&e.source=="{\"site\":\"typed\"}","typed future lost its owned value or original site");++caught;
+  }
+  co_await group.leaveScope(scope);require(caught==2,"typed future did not support repeated observation");co_return Value(42);
+}
 TaskBody waits(TaskGroup &group,Value,Value,const void *opaque){
   auto scope=group.openScope(2);auto child=group.spawnWithContext(scope,source,opaque,{},{});unsigned caught=0;
   try{co_await group.await(child);}catch(const NativeSourceException &e){require(e.code=="SOURCE"&&e.line==47&&e.message.size()==10,"wait payload changed");++caught;}
@@ -80,6 +92,10 @@ int main(int argc,char **argv){try{
     Context ctx;{RequestScope request(1000000,10000);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(fn,&ctx,Value(body),{});auto result=group.join(root);group.finish();require(result.scalar==42,"source recovery result changed");}
     require(liveObjects.load()==baseline&&(ctx.ended>0||body),"source recovery did not physically retire values");++cases;
   }
+  {Context ctx;
+    {RequestScope request(1000000,10000);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(waitsTyped,&ctx,{},{});require(group.join(root).scalar==42,"typed future result changed");group.finish();}
+    require(ctx.typed.expired()&&ctx.ended==1&&liveObjects.load()==baseline,"typed future retained payload/coroutine after physical teardown");++cases;
+  }
   for(unsigned repetition=0;repetition<32;++repetition){Context ctx;bool trapped=false;
     {RequestScope request(1000000,10000);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(runtimePriority,&ctx,{},{});try{group.join(root);}catch(const Trap &e){require(e.code=="E_ASSERT","runtime failure lost to source/cleanup cancellation");trapped=true;}}
     require(trapped&&ctx.ended==2&&liveObjects.load()==baseline,"produced-failure drain/retirement was incomplete");
@@ -92,6 +108,10 @@ int main(int argc,char **argv){try{
     {RequestScope request(1000000,500);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(blockedOwner,&ctx,Value(kind),{});
       try{group.join(root);}catch(const Trap &e){require(e.code==(kind==0?"E_MEMORY":kind==1?"E_LIMIT":"E_TIMEOUT")&&e.line==47&&std::string(e.what())=="canonical child resource failure","unobserved fatal child did not interrupt blocked owner with its original error");trapped=true;}}
     require(trapped&&ctx.ended==2&&liveObjects.load()==baseline,"fatal child/blocked owner were not physically retired");++cases;
+  }
+  {Context ctx;
+    {RequestScope request(1000000,10000);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(waitsTyped,&ctx,{},{});require(group.join(root).scalar==42,"typed future result changed");group.finish();}
+    require(ctx.typed.expired()&&ctx.ended==1&&liveObjects.load()==baseline,"typed future retained payload/coroutine after physical teardown");++cases;
   }
   for(unsigned repetition=0;repetition<32;++repetition){Context ctx;bool trapped=false;
     {RequestScope request(1000000,10000);TaskGroup group(4,4096,{},false,true);auto root=group.spawnWithContext(implicitBody,&ctx,{},{});

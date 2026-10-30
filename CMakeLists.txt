@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.139.0 LANGUAGES C CXX)
+project(NEX VERSION 0.140.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -39,7 +39,7 @@ endforeach()
 string(SHA256 NEX_BUILD_ID "${NEX_BUILD_INPUTS}")
 
 add_library(nex_frontend src/frontend_diagnostics.cpp src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/debug_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp src/foreign_schema.cpp runtime/nex_foreign.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_json.cpp runtime/nex_store.cpp runtime/nex_files.cpp)
-target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp)
+target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp src/source_errors.cpp)
 target_sources(nex_frontend PRIVATE src/migration.cpp)
 target_sources(nex_frontend PRIVATE src/editor.cpp src/task_frontend.cpp src/task_lifetime.cpp src/task_ir.cpp src/task_machine.cpp src/task_ast.cpp src/task_reference.cpp)
 target_sources(nex_frontend PRIVATE runtime/runtime.cpp)
@@ -1302,3 +1302,16 @@ add_test(NAME source_task_finally COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_finally.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_source_exception_tasks_probe>)
 set_tests_properties(source_task_finally PROPERTIES TIMEOUT 1800)
 install(FILES tests/task_finally.py DESTINATION share/nex/tests)
+
+add_executable(nex_source_error_payload_probe tests/source_error_payload.cpp)
+target_link_libraries(nex_source_error_payload_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_source_error_payload_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME source_error_owned_payload COMMAND nex_source_error_payload_probe)
+set_tests_properties(source_error_owned_payload PROPERTIES TIMEOUT 60)
+
+add_test(NAME typed_error_genuine026_origin COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_origin.py $<TARGET_FILE:nex>)
+set_tests_properties(typed_error_genuine026_origin PROPERTIES TIMEOUT 120)
+install(FILES tests/typed_error_origin.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.26-typed-origin.json tests/fixtures/language-0.26-typed-origin.sql
+  DESTINATION share/nex/tests/fixtures)

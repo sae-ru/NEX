@@ -1,3 +1,12 @@
+# Owned typed-error foundation0.140.0
+
+Implemented internal retained payloads and complete concrete type identities;
+real source typed throw/catch, handler provenance/authority transfers, ordered
+clauses, matching engine/protocol integration and explicit027 migration remain
+open. The026 source language is unchanged. The concrete contract and gates are
+in docs/typed-exceptions-design.md. This remains progress toward the original
+full language/toolchain goal, not a reduced definition of completion.
+
 # Resumable finally implementation (0.139.0 development)
 
 TaskIR/native and independent AST control now preserve pending outcomes across

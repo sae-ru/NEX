@@ -3372,6 +3372,24 @@
       "pending_outcomes_survive_suspension": true,
       "cancellation_runs_user_finalizers": false,
       "maximum_task_finalizer_copies": 4096
+    },
+    "typed_payload_development": {
+      "status": "internal_owned_packet_foundation",
+      "source_syntax": false,
+      "source_language_027_enabled": false,
+      "reference_packet": true,
+      "native_packet": true,
+      "complete_concrete_type_context": true,
+      "type_identity_format": "nex.source-error-type/1",
+      "authority_granted_by_payload": false,
+      "source_handler_delivery_enabled": false,
+      "header": "runtime/nex_source_error.h",
+      "type_identity_implementation": "src/source_errors.cpp",
+      "test_source": "tests/source_error_payload.cpp",
+      "scheduler_test_source": "tests/source_exception_task_scheduler.cpp",
+      "guide": "docs/typed-exceptions-design.md",
+      "guide_kind": "typed-exception",
+      "genuine026_origin": "tests/fixtures/language-0.26-typed-origin.json"
     }
   }
 }

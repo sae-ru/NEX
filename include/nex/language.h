@@ -9,7 +9,7 @@
 #include <vector>
 #include "llvm/Support/JSON.h"
 
-namespace nexrt { struct TaskExecutionLimits; }
+namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload; }
 
 namespace nex {
 inline constexpr const char *languageVersion = "0.26";
@@ -37,8 +37,10 @@ struct Error : std::runtime_error {
 // control. Private025 handlers must never catch Error, DataError or cancellation.
 struct SourceException : std::exception {
   std::string code,message,output;Span span;
-  SourceException(std::string code,std::string message,Span span)
-      :code(std::move(code)),message(std::move(message)),span(std::move(span)){}
+  std::shared_ptr<const nexrt::SourceErrorPayload> payload;
+  SourceException(std::string code,std::string message,Span span,
+      std::shared_ptr<const nexrt::SourceErrorPayload> payload={})
+      :code(std::move(code)),message(std::move(message)),span(std::move(span)),payload(std::move(payload)){}
   const char *what()const noexcept override{return message.c_str();}
 };
 struct Type {
@@ -201,6 +203,9 @@ struct Program {
 // The checked program's semantic version, separate from the installed public
 // compiler default. Historical programs retain their explicit identity.
 const char *programLanguage(SourceLanguage language);
+// Internal typed-error identity; requires a checked concrete type. No source
+// syntax or language-version promotion is implied by this helper.
+std::string sourceErrorTypeKey(const Program &,const Type &);
 bool supportsSourceExceptions(const Program &);
 const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);

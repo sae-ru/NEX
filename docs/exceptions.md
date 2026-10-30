@@ -1,3 +1,10 @@
+# Typed-payload transport foundation0.140.0
+
+The compiler retains an internal owned value with its complete concrete type key.
+Typed source throw/catch and027 remain disabled. This is a foundation for the
+remaining language work, not completed typed exception support. See
+[the transport and language design](typed-exceptions-design.md).
+
 # Resumable finally development (toolchain0.139.0 / language0.26)
 
 `try { ... } finally { ... }` and `try { ... } catch(c,m) if guard { ... }
