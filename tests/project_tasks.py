@@ -44,6 +44,26 @@ client test fn correct()->unit{assert(initial()==42);}''')
         check['program']='app';task['checks'].append(check)
         task['requirements'].append({'id':check['id'],'text':'Reviewed architecture acceptance','targets':[check['target']],
             'checks':[check['id']],'bindings':[{'program':'app','kind':'function','symbol':symbol}]})
+    def test_shipped_project_task_contract_is_current_and_compiler_checked(self):
+        example=self.root.parent/'shipped project task % 🧠'
+        shutil.copytree(harness.REPO/'examples/project-tasks',example,ignore=shutil.ignore_patterns('.nex'))
+        contract=json.loads((example/'task.json').read_text())
+        metadata=json.loads((example/'nex.json').read_text())
+        self.assertEqual(contract['language'],metadata['language'])
+        self.assertEqual(contract['language'],harness.CURRENT_LANGUAGE)
+        scaffold=self.cli('task','nex.build.json','--kind','init','--component','app',
+            '--configuration','debug',cwd=example,timeout=120)
+        self.assertEqual(contract['programs'],scaffold['programs'])
+        self.assertEqual([c['tests'] for c in contract['checks'] if c['kind']=='test'],
+            [c['tests'] for c in scaffold['checks'] if c['kind']=='test'])
+        self.assertFalse((example/'.nex').exists())
+        sources={str(p.relative_to(example)):p.read_bytes() for p in example.rglob('*') if p.is_file()}
+        checked=self.cli('task','task.json','--kind','check',cwd=example,timeout=120)
+        self.assertTrue(checked['ok'])
+        self.assertEqual(len(checked['checks']),5)
+        self.assertTrue(all(c['status']=='ready' for c in checked['checks']))
+        self.assertEqual(sources,{str(p.relative_to(example)):p.read_bytes() for p in example.rglob('*')
+            if p.is_file() and '.nex' not in p.relative_to(example).parts})
     def test_scaffold_check_are_readonly_architecture_and_pin_exact_configurations_and_tests(self):
         task=self.scaffold();self.assertFalse((self.root/'.nex').exists())
         plan=self.cli('project','--component','app');self.assertEqual(task['programs'][0]['project']['architecture_hash'],plan['architecture_hash'])
