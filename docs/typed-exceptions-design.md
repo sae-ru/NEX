@@ -1,9 +1,9 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.142.0 keeps public language0.26 and `typed_payloads: false`.
+Toolchain0.143.0 keeps public language0.26 and `typed_payloads: false`.
 Typed syntax is only available through an explicit C++ version selection;
 public CLI/projects remain026 and cannot archive027. The development field `source_exceptions.typed_payload_development` describes internal C++
-transport and version-selected frontend/reference scope. This document distinguishes that implementation from the
+transport and version-selected frontend/reference/TypeScript scope. This document distinguishes that implementation from the
 proposed language0.27 design below.
 
 ## Implemented foundation
@@ -88,7 +88,7 @@ for a call with the existing coarse `throw` effect. Precise typed effect rows
 belong to the wider effects work; do not infer them from payload support.
 
 The version-selected frontend/reference implementation exercises these ordered
-semantics with ordinary owned data. Native/TypeScript, task/authority payloads,
+semantics with ordinary owned data. Native, task/authority payloads,
 public selection and graph migration are still gated. Tests/typed_source.cpp
 checks the candidate while the genuine026 fixture verifies retained identities.
 
@@ -117,3 +117,9 @@ checks the candidate while the genuine026 fixture verifies retained identities.
 Task-finally0.139 acceptance has its own frozen compiler/source receipts. It does
 not certify this foundation or future027 behavior. The original full NEX language,
 platform, tooling and accelerator plan remains active.
+
+Synchronous candidate TypeScript uses a private typed-payload WeakMap and real
+source-error branding. Its ordered clauses share one protected catch boundary;
+false predicates keep the original packet, and newly raised handler errors escape
+siblings. Metadata JSON excludes payload data. Actual Node/strict-TypeScript
+agreement and retained025 compatibility are in tests/typed_source_typescript.py.

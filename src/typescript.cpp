@@ -45,6 +45,15 @@ class Generator {
   llvm::json::Array mappings;
   std::map<const void*,std::string> sites;
   std::string type(const Type &t){return typescriptType(t,taskMode);}
+  std::pair<std::string,std::string> payloadShape(const Type &t){
+    switch(t.kind){
+    case Type::I64:return {"i64",""};case Type::Bool:return {"bool",""};case Type::F64:return {"f64",""};
+    case Type::Str:return {"str",""};case Type::Bytes:return {"bytes",""};case Type::List:return {"list",""};
+    case Type::Result:return {"result",""};
+    case Type::Record:return {p.structure(t.name).enumeration?"enum":"record",t.name};
+    default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed TypeScript payload authority integration is pending");
+    }
+  }
   void write(const std::string &text){out<<text;line+=std::count(text.begin(),text.end(),'\n');}
   void statement(const std::string &text){write(std::string(depth*2,' ')+text+"\n");}
   std::string site(E e){const auto &s=e->span;return "["+quote(s.file)+", "+std::to_string(s.line)+", "+std::to_string(s.column)+", "+quote(sites.at(e.get()))+"]";}
@@ -169,8 +178,33 @@ class Generator {
       auto start=line;
       if(taskMode)statement("yield* task.checkpoint("+site(s)+");");
       switch(s->kind){
-      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
-        throw Error("E_TYPED_EXCEPTION_BACKEND","typed source TypeScript integration is pending",s->span);
+      case Stmt::TypedThrow:{
+        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed raise requires language0.27",s->span);
+        auto shape=payloadShape(s->type);
+        statement("sourceException.raiseTyped("+quote(s->errorTypeKey)+", "+quote(typeName(s->type))+", "+expr(s->expr)+", "+quote(shape.first)+", "+quote(shape.second)+", "+site(s)+");");
+        break;
+      }
+      case Stmt::TypedTry:{
+        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
+        auto done="handler_done_"+std::to_string(++unique),error="source_error_"+std::to_string(++unique),payload="source_payload_"+std::to_string(++unique);
+        statement(done+": {");++depth;statement("try {");++depth;block(s->body);--depth;statement("} catch ("+error+") {");++depth;
+        statement("const "+payload+" = sourceException.details("+error+");");
+        statement("if ("+payload+" === undefined) throw "+error+";");
+        for(auto clause:s->alternative){
+          bool typed=clause->type!=Type::Unknown;
+          statement("if ("+(typed?"sourceException.matches("+payload+", "+quote(clause->errorTypeKey)+")":std::string("true"))+") {");++depth;scopes.emplace_back();
+          auto name=declare(clause->name);
+          if(typed){auto shape=payloadShape(clause->type);statement("const "+name+": "+type(clause->type)+" = sourceException.readTyped<"+type(clause->type)+">("+payload+", "+quote(clause->errorTypeKey)+", "+quote(shape.first)+", "+quote(shape.second)+", "+site(clause)+");");}
+          else{statement("const "+name+": string = "+payload+".code;");auto message=declare(clause->catchMessage);statement("const "+message+": string = "+payload+".message;");}
+          caughtSourceErrors.push_back(error);
+          if(clause->expr){statement("if ("+expr(clause->expr)+") {");++depth;}
+          block(clause->body,false);statement("break "+done+";");
+          if(clause->expr){--depth;statement("}");}
+          caughtSourceErrors.pop_back();scopes.pop_back();--depth;statement("}");
+        }
+        statement("throw "+error+";");--depth;statement("}");--depth;statement("}");break;
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","handler clause outside protected statement",s->span);
       case Stmt::Finally:{
         auto run="finally_run_"+std::to_string(++unique),error="finally_error_"+std::to_string(++unique),fatal="finally_fatal_"+std::to_string(++unique);
         statement("let "+run+" = true;");statement("let "+fatal+": unknown = undefined;");
@@ -222,7 +256,7 @@ class Generator {
   }
 public:
   explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)){
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 TypeScript lowering is pending");
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027&&taskMode)throw Error("E_TYPED_EXCEPTION_TASK","language0.27 TypeScript task lowering is pending");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
@@ -275,6 +309,7 @@ public:
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-1"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","synchronous"},{"source_exceptions","nex.source-errors/2"}},false,true};
     auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
     if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
     return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
@@ -282,7 +317,7 @@ public:
 };
 }
 WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 TypeScript lowering is pending");
+
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require TypeScript lowering before publication");
   rejectUnloweredTasks(p,"TypeScript emission");
   bool tasks=false;

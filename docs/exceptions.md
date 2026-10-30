@@ -1,3 +1,19 @@
+# Candidate027 synchronous TypeScript development0.143.0
+
+The explicitly version-selected027 program can now emit synchronous TypeScript
+with typed raises and one ordered catch chain. The same concrete keys and
+base-kind checks bind immutable values; predicate/handler errors escape siblings.
+Source identity, original site, Result propagation and finally agree with the
+reference engine. Only reachable client/shared code is emitted.
+
+Typed data lives in private WeakMaps; public error details retain only copied
+code/message/site. JSON serialization of those details or the error cannot
+implicitly include the typed value. Matching plus a checked base kind is not a
+full foreign aggregate validator; typed host/authority integration remains pending.
+The generated development map has no public revision and makes no graph migration,
+browser UI/worker delivery or installed SDK acceptance claim. Ordinary projects
+remain026. Native, task/lifetime/protocol integration and027 publication remain open.
+
 # Candidate027 frontend/reference development0.142.0
 
 Typed raise, ordered typed/legacy handlers and matching effect checks are

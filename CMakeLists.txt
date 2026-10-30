@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.142.0 LANGUAGES C CXX)
+project(NEX VERSION 0.143.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1322,6 +1322,15 @@ target_compile_options(nex_typed_source_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME typed_source_frontend_reference COMMAND nex_typed_source_probe)
 set_tests_properties(typed_source_frontend_reference PROPERTIES TIMEOUT 120)
 install(FILES tests/typed_source.cpp DESTINATION share/nex/tests)
+
+add_executable(nex_typed_source_typescript_probe tests/typed_source_typescript.cpp src/typescript.cpp)
+target_link_libraries(nex_typed_source_typescript_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_typed_source_typescript_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME typed_source_typescript COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_typescript.py $<TARGET_FILE:nex_typed_source_typescript_probe>)
+set_tests_properties(typed_source_typescript PROPERTIES TIMEOUT 600)
+install(FILES tests/typed_source_typescript.cpp tests/typed_source_typescript.py DESTINATION share/nex/tests)
+
 
 install(FILES tests/source_error_native_packet.cpp DESTINATION share/nex/tests)
 

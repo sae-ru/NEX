@@ -1,3 +1,5 @@
+(* Candidate0.27 synchronous TypeScript uses these same version-selected
+   productions. Public026 syntax/defaults and027 graph migration remain unchanged. *)
 (* Candidate0.27 C++ version-selected frontend adds the separate productions
    below. Public statement/try/catch/throw remain026; CLI selection, graph
    migration and full backend delivery are not enabled. *)

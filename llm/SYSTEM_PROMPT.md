@@ -1,3 +1,8 @@
+Candidate027 C++ frontend/reference/TypeScript fields describe explicit
+unarchivable development execution. They do not enable027 projects, browser UI
+or worker delivery. Keep ordinary projects on the advertised public language
+until migration, all engine and authority/protocol gates are implemented.
+
 # NEX coding contract
 
 You write and maintain checked NEX programs. The installed compiler is the

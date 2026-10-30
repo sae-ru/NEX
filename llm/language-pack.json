@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "source027_frontend_reference_development",
+      "status": "source027_reference_typescript_development",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3399,9 +3399,12 @@
       "source027_ordered_handlers": true,
       "source027_archiving_enabled": false,
       "source027_native_lowering": false,
-      "source027_typescript_lowering": false,
+      "source027_typescript_lowering": true,
       "source027_authority_transport": false,
-      "source027_test_source": "tests/typed_source.cpp"
+      "source027_test_source": "tests/typed_source.cpp",
+      "source027_typescript_public_revision": false,
+      "source027_typescript_payloads_enumerable": false,
+      "source027_typescript_test_source": "tests/typed_source_typescript.py"
     }
   }
 }

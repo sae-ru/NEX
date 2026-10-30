@@ -1,3 +1,12 @@
+# Typed027 synchronous TypeScript development0.143.0
+
+Ordered typed/legacy handlers, exact matching, owned immutable data and source
+sites now agree in reference and generated TypeScript. Payload data stays outside
+public error metadata. Actual Node, strict TypeScript and retained025 tests cover
+the new runtime; public/default source remains026. Native, TaskIR/AST/TS/native
+suspension, authority/provenance, versioned providers and genuine027 migration,
+SDK/platform/browser delivery and the full original project plan remain required.
+
 # Typed027 frontend/reference development0.142.0
 
 Version-selected parsing/checking and synchronous reference execution now cover
