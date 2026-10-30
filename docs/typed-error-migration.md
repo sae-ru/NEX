@@ -1,9 +1,9 @@
 # Explicit typed-error graph migration development
 
-Toolchain0.147 keeps ordinary CLI projects on language0.26. The checked C++ API
-can archive0.27 source and migrate an existing graph explicitly. Public027
-project/library/provider, UI/Worker, graph-snapshot and SDK delivery remain
-separate gates. This API is available to compiler/tooling development; it adds
+Toolchain0.148 keeps ordinary CLI projects on language0.26. The checked C++ API
+can archive0.27 source and migrate an existing graph explicitly. The explicit C++ native builder now develops027 source/static/shared/mixed
+provider delivery under [matching ABI7 contracts](typed-error-providers.md).
+Public CLI selection, UI/Worker, graph-snapshot and SDK delivery remain separate gates. This API is available to compiler/tooling development; it adds
 no ordinary CLI flag or implicit source-language upgrade.
 
 Language027 revisions use `nex.program/15`; retained026 uses its original

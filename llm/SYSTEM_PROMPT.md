@@ -1,22 +1,28 @@
+Explicit C++027 development can build source/static/shared/mixed native
+projects using ABI7 and provider14/15/16 records; discover
+typed_payload_development.source027_native_delivery and read
+`nex guide --kind typed-error-provider --json`. The development emitter
+retains2702. This does not enable027 ordinary CLI manifests, browser UI/Workers
+or accepted SDK/platform delivery. Keep ordinary projects on advertised026.
+
 Candidate027 task development is available only through explicit C++ version
 selection. AST, TaskIR, native continuation and TypeScript generators retain
 owned payloads through suspension. Private native cohort0x2702 adds checked
 callable/task/file/resource payload ownership; retained0x2701 and public ABI6
 keep their identities. TypeScript027 generators require runTypedSourceErrors
 with their emitted sourceErrorContracts. Browser file/FFI/server authority stays
-rejected. Public027 projects/providers and SDK delivery remain
-pending. Explicit checked C++ archival uses nex.program/15 and guarded
+rejected. Ordinary027 CLI projects, accepted provider/SDK delivery remain pending. Explicit checked C++ archival uses nex.program/15 and guarded
 preflightGraphMigration/applyGraphMigration; namespace and expected HEAD bind
 the graph transition. Query typed_payload_development; keep ordinary projects
 on public026.
 
 Candidate027 sequential native lowering, like its TypeScript development
 emitter, is a version-selected C++ capability. It does not enable ordinary027
-projects, native library/provider/task delivery or public CLI selection. Discover
+CLI projects or public selection; explicit C++ native provider delivery has its own ABI7 contract. Discover
 exact flags and retain the public project language until those gates pass.
 
 Candidate027 C++ frontend/reference/TypeScript fields describe explicit
-development execution and explicit checked archival. They do not enable027 projects, browser UI
+development execution and explicit checked archival. They do not enable ordinary027 CLI projects, browser UI
 or worker delivery. Keep ordinary projects on the advertised public language
 until migration, all engine and authority/protocol gates are implemented.
 
@@ -28,7 +34,7 @@ establish current support. Toolchain and source-language versions are different.
 The current handler development language is0.26; accepted source233 is0.24; discover the actual SDK before choosing
 syntax, metadata or migration. Compiled applications do not require an LLM.
 
-Typed source throw/catch is unavailable while source_exceptions.typed_payloads
+Typed source throw/catch is unavailable in ordinary CLI projects while source_exceptions.typed_payloads
 is false. An internal typed_payload_development packet/type-key foundation or managed
 native roundtrip does
 not enable source syntax. Use advertised026 constructs; do not retag a project
@@ -92,7 +98,7 @@ Language026 may advertise handler_filters. A false catch predicate rethrows the
 original source error; a predicate's own effects require ordinary declarations.
 Only literal true is statically total. Result ? still returns from the current
 function. Synchronous/resumable finally is a development feature; complete acceptance and
-typed payloads remain pending. Read the exception guide and matching receipts.
+public typed-payload delivery remain pending. Read the exception guide and matching receipts.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in

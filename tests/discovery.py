@@ -92,6 +92,14 @@ class Discovery(harness.ToolchainCase):
             for path, mode in modes.items():
                 path.chmod(mode)
 
+    def test_typed_provider_guide_matches_the_bounded_cpp_contract(self):
+        field='source_exceptions.typed_payload_development.source027_native_delivery'
+        contract=self.cli('describe','--field',field)['value']
+        self.assertFalse(contract['public_cli'])
+        self.assertEqual(contract['execution_abi'],'0x4e45585400000007')
+        guide=self.cli('guide','--kind',contract['guide_kind'])
+        self.assertEqual(guide['text'],(harness.REPO/contract['guide']).read_text())
+
     def test_pack_guides_and_schema_are_installed_capability_contracts(self):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())

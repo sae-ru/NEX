@@ -36,11 +36,16 @@ int main(int argc,char **argv){try{
   auto value=llvm::json::parse(readFile(argv[1]));if(!value){llvm::consumeError(value.takeError());throw Error("E_OPTION","invalid migration request JSON");}
   const auto o=value->getAsObject();if(!o||o->getString("schema")!="nex.typed-error-migration-request/1")throw Error("E_OPTION","invalid migration request schema");
   const auto mode=field(*o,"mode");const fs::path project=field(*o,"project"),directory=project/".nex";
-  if(mode=="evaluate"||mode=="emit"||mode=="build-guard"){
+  if(mode=="evaluate"||mode=="emit"||mode=="build-native"){
     Program p;std::string selected;
     {Store store(directory,StoreOpenMode::ReadOnly);selected=field(*o,"revision");const auto language=store.revisionLanguage(selected);p=loadVersionedBundle(store.bundle(selected),project.string(),language);}
     if(revision(p)!=selected)throw Error("E_REVISION","stored migration revision failed recheck");
-    if(mode=="build-guard"){BuildOptions options;auto r=build(p,field(*o,"output"),options);(void)r;throw Error("E_TEST","ordinary027 build escaped its delivery guard");}
+    if(mode=="build-native"){
+      BuildOptions options;options.entry=entry(p);auto r=build(p,field(*o,"output"),options);
+      auto metadata=llvm::json::parse(readFile((fs::path(r.executable).parent_path()/"build.json").string()));
+      if(!metadata||!metadata->getAsObject())throw Error("E_TEST","missing stored-code native build record");
+      std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",selected},{"artifact",r.executable},{"execution_abi",metadata->getAsObject()->getInteger("task_execution_abi").value_or(0)}})<<'\n';return 0;
+    }
     llvm::json::Object result{{"ok",true},{"language",programLanguage(p)},{"revision",selected},{"source_hash",hash(json(sourceBundle(p),false))},{"lock",dependencyLock(p)},{"ast",evaluate(p,false)},{"ir",evaluate(p,true)}};
     if(mode=="emit"){
       const fs::path output=field(*o,"output");auto native=emitTypedErrorTasksDevelopmentNative(p,entry(p),o->getBoolean("optimized").value_or(false));

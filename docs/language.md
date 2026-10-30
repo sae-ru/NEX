@@ -1,3 +1,16 @@
+# Candidate027 native provider development0.148.0
+
+Explicit C++027 selection now develops source/static/shared/mixed native builds
+with taskABI7 and versioned provider/application/linkage records. Owned typed
+errors preserve their value/key/site across images, suspension and finalizers.
+The normal process entry accepts7; the development emitter remains2702 and
+retained public/private task families keep their separate identities.
+Read [the provider contract](typed-error-providers.md).
+
+The ordinary CLI/default remains026. Public027 selection, graph-snapshot
+delivery, bounded typed debugger views, full current regression and matching
+SDK/platform acceptance remain required. This does not complete the full PLAN.
+
 # Candidate027 archive/migration development0.147.0
 
 Explicit checked027 source can now round-trip through `nex.program/15` and a

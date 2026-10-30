@@ -69,7 +69,11 @@ for rev,text in zip(meta['revisions'],meta['actual_origin_eval_stdout']):
 v=call('same-evaluate',simple,mode='evaluate',revision=applied['revision']);assert v['ast']==v['ir'] and v['ast']['stdout']=='42\n'
 assert v['lock']['language']=='0.27'
 second=call('same-idempotent',simple,mode='apply',expected=applied['revision']);assert not second['changed'];assert snapshot(simple/'.nex/graph.db')==after
-call('delivery-guard',simple,mode='build-guard',revision=applied['revision'],output=str(out/'forbidden-native'),code='E_TYPED_EXCEPTION_DELIVERY');assert not (out/'forbidden-native').exists()
+native=call('stored-native-build',simple,mode='build-native',revision=applied['revision'],output=str(out/'stored-native'))
+assert native['language']=='0.27' and native['revision']==applied['revision'] and native['execution_abi']==0x4e45585400000007
+actual=run('stored-native-execution',[native['artifact']],allowed=((v['ast']['value'] or 0)%256,))
+assert actual.stdout==v['ast']['stdout'] and not actual.stderr
+unchanged(simple,after)
 disguised=project('modern-retagged')
 with sqlite3.connect(simple/'.nex/graph.db') as source_db, sqlite3.connect(disguised/'.nex/graph.db') as target_db:source_db.backup(target_db)
 with sqlite3.connect(disguised/'.nex/graph.db') as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',('0.26',applied['revision']))

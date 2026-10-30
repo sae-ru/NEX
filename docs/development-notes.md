@@ -1,3 +1,26 @@
+# Explicit027 native provider development0.148.0
+
+Implemented separate taskABI7, provider14/15/16, application5 and matching source/
+static/shared/mixed project/capture contracts. The integrated j4 build passed.
+The focused25 run passed24 groups; its remaining stream-protocol test still
+treated the newly assigned ABI7 as unknown. The test now checks unallocated8;
+both retained protocol groups, discovery and integration passed the follow-up.
+The bounded typed-error-provider guide and capability pack agree with the binary.
+Eight additional synchronous source/static/shared/mixed Debug/Release runs
+passed with typed data/callable errors and cross-image finalizers.
+
+Explicit027 execution covers actual Debug/Release images, typed generic/file/
+callable payloads, capture/replay, profile physical cleanup and relocated native
+packages. Isolated pre-integration probes additionally checked115 runtime
+assertions,102 record assertions and actual JSON-schema artifacts. They retain
+their own evidence scope. Full current280 regression and remaining public027/
+debug/snapshot/SDK/platform gates are pending. All original PLAN requirements
+remain active.
+
+The preceding147 compiler completed277 groups with two task-check timeouts during
+confirmed laptop sleep. Both complete groups passed unchanged on recovery;
+the initial failures, sleep log and composed result remain distinct receipts.
+
 # Archived development notes
 
 This document preserves the former README chronology. Versioned claims and

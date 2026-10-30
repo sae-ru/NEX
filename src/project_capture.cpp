@@ -25,17 +25,18 @@ std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)|
 void taskLinkage(const JSON &value,const std::string &component,SourceLanguage language){
   const auto &o=object(value);
   const auto schema=o.getString("schema");
-  const bool exceptions=schema=="nex.project-static-task-linkage/4"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/13";
+  const bool typed=schema=="nex.project-static-task-linkage/5"||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/16";
+  const bool exceptions=typed||schema=="nex.project-static-task-linkage/4"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/13";
   const bool streams=exceptions||schema=="nex.project-static-task-linkage/3"||schema=="nex.project-task-linkage/8"||schema=="nex.project-task-linkage/9"||schema=="nex.project-task-linkage/10";
   const bool writes=streams||schema=="nex.project-static-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/7";
-  const bool debug=schema=="nex.project-task-linkage/13"||schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7"||schema=="nex.project-task-linkage/10";
-  const bool profiled=schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/9";
-  const bool shared=debug||profiled||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/8";
-  if(exceptions!=(isPublicSourceExceptionLanguage(language))||streams!=(language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language))||writes!=(language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language)))fail("captured task linkage language/ABI differs");
+  const bool debug=schema=="nex.project-task-linkage/16"||schema=="nex.project-task-linkage/13"||schema=="nex.project-task-linkage/4"||schema=="nex.project-task-linkage/7"||schema=="nex.project-task-linkage/10";
+  const bool profiled=schema=="nex.project-task-linkage/15"||schema=="nex.project-task-linkage/12"||schema=="nex.project-task-linkage/3"||schema=="nex.project-task-linkage/6"||schema=="nex.project-task-linkage/9";
+  const bool shared=debug||profiled||schema=="nex.project-task-linkage/14"||schema=="nex.project-task-linkage/11"||schema=="nex.project-task-linkage/2"||schema=="nex.project-task-linkage/5"||schema=="nex.project-task-linkage/8";
+  if(typed!=(language==SourceLanguage::TypedErrors027)||exceptions!=(isPublicSourceExceptionLanguage(language))||streams!=(language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language))||writes!=(language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language)))fail("captured task linkage language/ABI differs");
   for(const auto &[key,_]:o)if(key!="schema"&&key!="component"&&key!="execution_abi"&&(!writes||key!="task_file_writes")&&(!streams||(key!="task_file_reads"&&key!="task_file_streams"))&&key!="definitions"&&key!="imports"&&key!="exports"&&(!profiled||key!="profiling")&&(!debug||key!="debugging")&&(!shared||(key!="mode"&&key!="load_closure")))fail("unknown captured task linkage field");
   auto definitions=o.getArray("definitions"),imports=o.getArray("imports");auto exports=o.getObject("exports");
   const size_t extra=streams?3:writes?1:0;
-  if((shared?(o.size()!=((profiled||debug)?9:8)+extra||(o.getString("mode")!="shared-fixed"&&(!(profiled||debug)||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6+extra||schema!=(exceptions?"nex.project-static-task-linkage/4":streams?"nex.project-static-task-linkage/3":writes?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1")))||o.getString("component")!=component||o.getInteger("execution_abi")!=(exceptions?6:streams?5:writes?4:3)||(writes&&!o.getBoolean("task_file_writes"))||(streams&&(!o.getBoolean("task_file_reads")||!o.getBoolean("task_file_streams")))||
+  if((shared?(o.size()!=((profiled||debug)?9:8)+extra||(o.getString("mode")!="shared-fixed"&&(!(profiled||debug)||o.getString("mode")!="static"))||!o.get("load_closure")):(o.size()!=6+extra||schema!=(typed?"nex.project-static-task-linkage/5":exceptions?"nex.project-static-task-linkage/4":streams?"nex.project-static-task-linkage/3":writes?"nex.project-static-task-linkage/2":"nex.project-static-task-linkage/1")))||o.getString("component")!=component||o.getInteger("execution_abi")!=(typed?7:exceptions?6:streams?5:writes?4:3)||(writes&&!o.getBoolean("task_file_writes"))||(streams&&(!o.getBoolean("task_file_reads")||!o.getBoolean("task_file_streams")))||
      !definitions||definitions->empty()||definitions->size()>65536||!imports||imports->size()>65536||!exports||exports->size()>129)fail("invalid captured static task linkage");
   auto digest=[](const Object &row,const char *key){auto value=row.getString(key);if(!value||value->size()!=64||!std::all_of(value->begin(),value->end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))fail("invalid captured task contract digest");};
   std::set<std::string> defined,imported;
@@ -43,7 +44,7 @@ void taskLinkage(const JSON &value,const std::string &component,SourceLanguage l
   for(const auto &value:*imports){const auto &row=object(value);auto function=text(row,"function"),provider=text(row,"provider");
     auto mode=row.getString("calling_mode");
     if(row.size()!=4||!imported.insert(function).second||defined.contains(function)||provider==component||
-       (mode!=(exceptions?"task-code/6":streams?"task-code/5":writes?"task-code/4":"task-code/3")&&(exceptions||mode!="sync/1")))fail("invalid captured task import");
+       (mode!=(typed?"task-code/7":exceptions?"task-code/6":streams?"task-code/5":writes?"task-code/4":"task-code/3")&&(exceptions||mode!="sync/1")))fail("invalid captured task import");
     digest(row,"contract");
   }
   for(const auto &[name,value]:*exports){const auto &row=object(value);auto requirements=row.getInteger("requirements");

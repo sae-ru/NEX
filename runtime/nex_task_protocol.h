@@ -12,6 +12,9 @@ inline constexpr int64_t taskCodeWriteABI=INT64_C(0x4e45585400000004);
 inline constexpr int64_t taskCodeStreamABI=INT64_C(0x4e45585400000005);
 // Public025 source errors retain the descriptor layout with an explicit ABI.
 inline constexpr int64_t taskCodeSourceExceptionABI=INT64_C(0x4e45585400000006);
+// Public027 retains owned typed packets under a distinct task cohort.
+inline constexpr int64_t taskCodeTypedSourceExceptionABI=INT64_C(0x4e45585400000007);
+inline bool publicSourceExceptionTaskABI(int64_t abi)noexcept{return abi==taskCodeSourceExceptionABI||abi==taskCodeTypedSourceExceptionABI;}
 // Nonpublic025 experiment, deliberately distinct from published ABI3/4/5.
 inline constexpr int64_t taskCodeExceptionPrototypeABI=INT64_C(0x4e45585400002501);
 inline constexpr int64_t taskCodeExceptionHostPrototypeABI=INT64_C(0x4e45585400002502);
@@ -19,7 +22,7 @@ inline constexpr int64_t taskCodeExceptionHostPrototypeABI=INT64_C(0x4e455854000
 inline constexpr int64_t taskCodeTypedErrorDevelopmentABI=INT64_C(0x4e45585400002701);
 // Transfer-capable027 code has its own cohort;2701 and public ABI6 keep their identity.
 inline constexpr int64_t taskCodeTypedAuthorityDevelopmentABI=INT64_C(0x4e45585400002702);
-inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI;}
+inline bool typedSourceTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedSourceExceptionABI||abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeTypedAuthorityDevelopmentABI;}
 inline bool sourceExceptionTaskABI(int64_t abi)noexcept{return typedSourceTaskABI(abi)||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionPrototypeABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline constexpr int64_t taskCodeDeclaredThrow=4096;
 inline constexpr int64_t taskCodeFileStream=1024,taskCodeImageFileStream=2048,taskCodeStreamRequirementsMask=4095;
