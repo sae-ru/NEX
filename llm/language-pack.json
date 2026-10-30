@@ -714,7 +714,10 @@
       "wasi",
       "f64",
       "heap_values"
-    ]
+    ],
+    "explicit027_scalar_cpp_development": true,
+    "source027_test_source": "tests/typed_scalar_wasm.py",
+    "source_exception_lowering": false
   },
   "ios_archive_commands": [
     "nex toolchain IOS_TOOLCHAIN.json --json",
@@ -3433,7 +3436,7 @@
       "source027_migration_guide": "docs/typed-error-migration.md",
       "source027_migration_test_source": "tests/typed_error_migration.py",
       "source027_migration_namespace_guard": true,
-      "source027_graph_snapshot_delivery": false,
+      "source027_graph_snapshot_delivery": true,
       "source027_archive_scope": "explicit checked C++ API; public CLI/default remain026",
       "source027_native_delivery": {
         "status": "explicit_cpp_native_project_delivery_development",
@@ -3518,6 +3521,21 @@
         "installed_SDK_accepted": false,
         "platform_acceptance_complete": false,
         "complete_delivery_accepted": false
+      },
+      "source027_graph_snapshot_development": {
+        "status": "explicit027_graph_snapshot_development",
+        "graph_schema_unchanged": true,
+        "retained026_revisions": true,
+        "all16_tables_and_local_ids": true,
+        "WAL_snapshot": true,
+        "original_sources_required": false,
+        "external_artifacts_included": false,
+        "ordinary027_CLI": false,
+        "source_replay": "explicit loadVersionedBundle and checked native ABI7",
+        "test_source": "tests/typed_graph_snapshots.py",
+        "guide": "docs/snapshots.md",
+        "guide_kind": "snapshot",
+        "complete_SDK_platform_acceptance": false
       }
     }
   }

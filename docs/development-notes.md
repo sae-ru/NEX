@@ -1,3 +1,18 @@
+# Candidate027 graph recovery and scalar Wasm development0.151.0
+
+Explicit C++027 programs can use identity-preserving graph snapshot/recovery.
+Mixed026/027 histories keep their schema, all16 tables, namespaces and local IDs;
+reloaded source bundles execute through checked AST/TaskIR/native paths without
+original files. Snapshot operations copy data; they do not grant a CLI language
+upgrade or include external artifacts. See tests/typed_graph_snapshots.py.
+
+Pure scalar027 Wasm uses the existing i64/bool/unit backend and checked BigInt
+wrapper. Only reachable pure scalar code is emitted; source throw/catch/finally,
+heap values and effects remain unsupported. The earlier026 output is unchanged.
+See tests/typed_scalar_wasm.py. Ordinary/default CLI remains026. Matching full
+regression, installed SDK/platform acceptance, public027 selection and the
+remaining original PLAN are still required.
+
 # Candidate027 checked browser delivery development0.150.0
 
 Explicit C++027 UI/Worker builds now use checked revision/source maps with a

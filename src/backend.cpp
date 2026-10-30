@@ -1591,11 +1591,10 @@ std::string emitSourceExceptionsPrototypeMLIR(const Program &p,const std::string
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).run(entry,false,false);
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_WASM_UNSUPPORTED","candidate027 typed exceptions have no scalar Wasm lowering");
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))for(const auto &name:reachable(p,entry)){
     const auto &f=p.function(name);bool exceptions=f.effects.contains("throw");
-    std::function<void(const std::vector<S>&)> inspect=[&](const auto &body){for(auto s:body){exceptions|=s->kind==Stmt::Try||s->kind==Stmt::Throw;childBlocks(s,inspect);}};inspect(f.body);
+    std::function<void(const std::vector<S>&)> inspect=[&](const auto &body){for(auto s:body){exceptions|=s->kind==Stmt::Try||s->kind==Stmt::Throw||s->kind==Stmt::TypedThrow;childBlocks(s,inspect);}};inspect(f.body);
     if(exceptions)throw Error("E_EXCEPTION_BACKEND","Wasm source exception lowering is pending",f.span);
   }
   rejectUnloweredTasks(p,"Wasm emission");

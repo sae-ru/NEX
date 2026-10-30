@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.150.0 LANGUAGES C CXX)
+project(NEX VERSION 0.151.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1412,3 +1412,13 @@ install(FILES tests/fixtures/language-0.26-modular-typed-origin.json tests/fixtu
 
 install(FILES tests/typed_task_protocol.cpp tests/typed_provider_records.cpp tests/typed_error_projects.py tests/typed_error_debugging.py tests/typed_web_delivery.py tests/typed_web_browser.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/web-026-sdk149-origin.json DESTINATION share/nex/tests/fixtures)
+
+# Explicit027 graph recovery and pure scalar Wasm gates, before public selection.
+add_executable(nex_typed_scalar_wasm_probe tests/typed_scalar_wasm.cpp src/wasm.cpp)
+target_link_libraries(nex_typed_scalar_wasm_probe PRIVATE nex_native_backend nex_frontend)
+target_compile_definitions(nex_typed_scalar_wasm_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
+add_test(NAME typed_scalar_wasm COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_scalar_wasm.py $<TARGET_FILE:nex_typed_scalar_wasm_probe>)
+set_tests_properties(typed_scalar_wasm PROPERTIES TIMEOUT 600)
+add_test(NAME typed_graph_snapshots COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_graph_snapshots.py $<TARGET_FILE:nex_typed_error_migration_probe> $<TARGET_FILE:nex>)
+set_tests_properties(typed_graph_snapshots PROPERTIES TIMEOUT 900)
+install(FILES tests/typed_graph_snapshots.py tests/typed_scalar_wasm.py tests/typed_scalar_wasm.cpp DESTINATION share/nex/tests)

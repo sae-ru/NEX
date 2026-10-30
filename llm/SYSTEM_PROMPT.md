@@ -20,6 +20,12 @@ UI stays pure/synchronous; worker payloads stay inside computation and the wire
 boundary remains authority-free. Ordinary027 CLI/snapshot selection and matching
 full/SDK/platform acceptance remain gates. A development capability does not establish accepted delivery.
 
+Explicit C++027 graph snapshots can retain mixed026/027 histories and replay
+checked bundles without original files. Pure scalar027 Wasm uses i64/bool/unit;
+reachable source errors/finally, heap values and effects remain unsupported.
+Discover source027_graph_snapshot_development and wasm_features for the scope.
+Ordinary/default CLI remains026; SDK/platform acceptance is separate.
+
 # NEX coding contract
 
 You write and maintain checked NEX programs. The installed compiler is the

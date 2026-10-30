@@ -1,3 +1,5 @@
+(* Toolchain0.151 explicit027 snapshots and pure scalar Wasm add no grammar
+   productions. Public/default026 and retained canonical identities remain. *)
 (* Toolchain0.150 checked027 browser maps/adapters add no source productions;
    ordinary026 syntax/defaults and retained AST identities are unchanged. *)
 (* Toolchain0.149 bounded027 debugger views add no grammar productions;
