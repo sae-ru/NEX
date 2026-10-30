@@ -1,0 +1,213 @@
+{
+  "schema": "nex.macos-opencl-evidence/1",
+  "ok": true,
+  "date_utc": "2026-10-30T19:21:36.883491+00:00",
+  "scope": "specific experimental owned OpenCL U8 Add/Affine adapter on one Apple M5 Max; reference/native release plus owned typed tensor debug/release/profile",
+  "toolchain": "0.151.1",
+  "language": "0.27",
+  "compiler_sha256": "602808c6aee60f8838059b72624f530220037f16f13d697c819bc311b69d86eb",
+  "compiler_build": "75b3445955fe42902e1ca45f6df9c7c5e7af43c0ad9ad876a3b3364835def756",
+  "core_source_commit": "eed582409bcdc58504d23ef6ce2d32d2c9b4824c",
+  "host": "macOS-27.0.1-arm64-arm-64bit",
+  "macos_build": "26A434",
+  "device": {
+    "platform": 0,
+    "GPU_name": "Apple M5 Max",
+    "vendor": "Apple",
+    "driver": "1.2 1.0",
+    "OpenCL_version": "OpenCL 1.2 "
+  },
+  "actual_program_executions": 64,
+  "physical_GPU_kernel_events": 48,
+  "normal_native_reference_pairs": 15,
+  "reply_recovery_native_reference_pairs": 12,
+  "log_native_reference_pairs": 3,
+  "typed_owned_tensor_executions": [
+    "reference",
+    "debug",
+    "release",
+    "profile"
+  ],
+  "typed_guard_suspension_tested": false,
+  "managed_profile_pools": [
+    {
+      "allocations": 2505,
+      "frees": 2505,
+      "live": 0,
+      "live_shallow_bytes": 0,
+      "peak_live": 13,
+      "peak_shallow_bytes": 624,
+      "pool": "NEX handles"
+    },
+    {
+      "allocations": 273,
+      "frees": 273,
+      "live": 0,
+      "live_shallow_bytes": 0,
+      "peak_live": 42,
+      "peak_shallow_bytes": 5016,
+      "pool": "NEX objects (shallow)"
+    }
+  ],
+  "all_profile_tasks_settled": true,
+  "profile_memory_scope": "NEX managed shallow handle/object pools, not total RAM or vendor memory",
+  "maximum_elements": 262144,
+  "GPU_CPU_substitution_rejected": true,
+  "explicit_CPU_oracle_and_allowed_fallback_cases_separate": true,
+  "Metal_acceptance": false,
+  "NPU_acceptance": false,
+  "arbitrary_GPU_kernels_or_F32_or_Matmul": false,
+  "SDK40_or_portable_acceptance_claimed": false,
+  "other_Macs_or_OS_versions_accepted": false,
+  "performance_claimed": false,
+  "full_objective_complete": false,
+  "source_fixture_fix_used": true,
+  "fixture_scripts": {
+    "verify.py": "d7c30e3d9587efe25a7e47fca1ca9a7b52ab59082343cb84f3ad80a28eb8fcba",
+    "faults.py": "17446f3fe46c4d4b436fea976c916829963aca9be2483dfae9cc56b37cf25f3e"
+  },
+  "source_checks": {
+    "count": 27,
+    "original_missing_throw_rejected": true,
+    "pre025_source_generation_byte_identical": true,
+    "older_compiler_execution_claimed": false
+  },
+  "validated_files": 348,
+  "local_validation_report_sha256": "7db82ce453e1e71acaccbc23586bff52ae3dc8a336ea54db907f06a7a40493c9",
+  "raw_report_pins": {
+    "hardware-all-v2/report.json": "27b885791bdad4babf7b3a41725abfbadbd3d920e74db233c296046289eb9588",
+    "reply-faults-v2/report.json": "a6112ee66902d02986a8d06618650be22c5bdc42def3fbaedf8bdfdfbe62b5a7",
+    "log-isolation/report.json": "370ea23f6bee3e71fbc69c90a3cdd4b0e3b3741d97ab183af3806310582627be",
+    "typed-owned-error/report.json": "f88004122fdbe931ada985d55a8ee3e571a45fc10e0d375a3f0772fc32f1dcb9",
+    "typed-owned-error/profile.json": "ae6dbd60f21ba96d768138a37a3f3b6213b60dd0011207cb6114b60504bce33a"
+  },
+  "scenario_names": [
+    {
+      "suite": "hardware-all-v2",
+      "name": "small_cpu_oracle"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "all_octets"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "persistent_session_scales"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "overflow_is_not_fallback_and_session_recovers"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "maximum_262144_elements"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "overflow_only_last_of_262144"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "hidden_session_after_scope_return"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "closed_context_existing_buffer_still_reads"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "sibling_channel_hidden_session"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "cross_session_buffers_rejected"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "malformed_request_never_uploads"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "explicit_placement_and_cpu_fallback"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "unsupported_matmul_fallback"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "cancel_enqueued_GPU"
+    },
+    {
+      "suite": "hardware-all-v2",
+      "name": "deadline_enqueued_GPU"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "upload_truncated"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "upload_wrong_size"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "upload_reused_id"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "affine_truncated"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "affine_trailing"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "affine_reused_id"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "download_truncated"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "download_wrong_size"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "free_trailing"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "close_truncated"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "open_trailing"
+    },
+    {
+      "suite": "reply-faults-v2",
+      "name": "execute_fallback_never_masks_protocol"
+    },
+    {
+      "suite": "log-isolation",
+      "name": "cache9MiB"
+    },
+    {
+      "suite": "log-isolation",
+      "name": "stdout9MiB"
+    },
+    {
+      "suite": "log-isolation",
+      "name": "cache_and_stdout9MiB"
+    }
+  ],
+  "limitations": [
+    "one Mac and OS build; experimental trusted OpenCL U8 Add/Affine provider",
+    "explicit CPU oracle and allowed-fallback tests remain separate from physical GPU dispatch",
+    "system OpenCL shared-cache binary is not independently SHA-pinned",
+    "typed guard is pure; only catch/finally suspend",
+    "SDK, full compiler regression and other platform gates are separate"
+  ]
+}

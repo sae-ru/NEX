@@ -1,6 +1,7 @@
 """Check ordinary owned-device source, realms and actual provider preparation."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -48,6 +49,22 @@ class DeviceContract(unittest.TestCase):
   self.assertEqual(report['source_language'],self.descriptor['version'])
   self.assertTrue(report['source_input_sha256'])
   for name,value in report['source_input_sha256'].items():self.assertEqual(hashlib.sha256((output/'preparation/inputs'/name).read_bytes()).hexdigest(),value)
+ def test_all_generated_hardware_fixtures_typecheck_before_device_execution(self):
+  def load(name,path):
+   spec=importlib.util.spec_from_file_location(name,path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+  verify=load('nex_owned_gpu_fixtures',ROOT/'experiments/owned-opencl/verify.py')
+  faults=load('nex_owned_gpu_fault_fixtures',ROOT/'experiments/owned-opencl/faults.py')
+  template=(ROOT/'experiments/owned-opencl/main.nex.in').read_text().replace('@INDEX@','0').replace('@PIN@','0'*64)
+  prefix=template[:template.index('server fn main()->unit')]+verify.HELPERS
+  language=self.descriptor['version']
+  for group,cases in [('normal',verify.CASES),('error',verify.ERROR_CASES),('fault',faults.CASES)]:
+   for name,case in cases.items():
+    with self.subTest(group=group,name=name):
+     (self.root/'main.nex').write_text(verify.source_program(prefix,case[0],language));self.cli('check')
+  # Keep the missing-effect program rejected: scope completion can deliver a
+  # child source error even when this particular callback returns normally.
+  (self.root/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+verify.CASES['hidden_session_after_scope_return'][0]+'print(42); }\n')
+  self.assertEqual(self.cli('check',expected=1)['code'],'E_EFFECT')
  def test_effect_realm_and_wire_boundaries(self):
   prefix='import "std/device.nex" as d;import "std/compute.nex" as c;'
   for body,codes in [

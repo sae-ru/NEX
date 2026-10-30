@@ -68,8 +68,8 @@ instead of inferring C++/Python semantics.
 Ordinary failures use `result<T>` and explicit handling. Postfix `?` returns an
 error from its current function; `unwrap` can trap. `bytes(list<i64>)` returns a
 result and must be handled. Discover source_exceptions before using try/catch/throw. Source errors support checked native/reference/TypeScript execution within the
-advertised source_exceptions scope. Discover source_providers for current ABI7
-and retained ABI6 contracts; matching SDK/platform receipts remain separate.
+advertised source_exceptions scope. Query `source_exceptions.source_providers` for current ABI7
+and `source_exceptions.retained_source_providers` for retained ABI6 contracts; matching SDK/platform receipts remain separate.
 Migrate an older graph explicitly and preserve its history/IDs. Editing a version
 field alone does not migrate it. A false catch predicate retains the original
 source error; only literal true is statically total. Result ? still returns from
@@ -92,6 +92,7 @@ contract; production-browser and installed-SDK acceptance remain separate.
 | Work | Descriptor fields | Guide kinds |
 |---|---|---|
 | Values and error propagation | types, generic_features, trait_features, function_value_features, result_propagation | language, grammar, trait, function, result, match |
+| Source errors and provider transport | source_exceptions, source_exceptions.source_providers | exception, typed-error-provider |
 | Graph and recovery | graph_features, scoped_discovery, patch_features, history_features, snapshot_features | graph, history, snapshot |
 | Components and targets | project_build, native_target_policy, application_package_platforms, sdk_bundle_platforms | project, build |
 | Web/API/server | browser_workers, api_features, wasm_features | web, api, server, wasm, browser-worker |
@@ -176,9 +177,10 @@ retain borrowed source frames or C call/type/value tokens on IO workers.
 No opaque authority crosses wire/browser/file/unstructured-parallel boundaries.
 
 Source task/ffi resource transport differs from binary task-provider exports.
-Current025 static/fixed-shared images use ABI6 records11/12/13, requirement
+Current027 static/fixed-shared images use ABI7 records14/15/16, requirement
 mask7967 and explicit component/image/root read/write/stream requirements.
-Retained024 images keep ABI5 records8/9/10 and mask3871; retained ABI3/4
+Retained025/026 images keep ABI6 records11/12/13 and mask7967. Retained024
+images keep ABI5 records8/9/10 and mask3871; retained ABI3/4
 masks31/799 keep their meaning. Checked File values retain genuine owners and original grants;
 C FFI/wire/browser exports cannot transport File authority; one application owns the executor,
 request and grants. Source is required for checking even when calls consume
@@ -228,8 +230,9 @@ old hardware receipts and package manifests do not establish current target
 execution. Keep unsupported platforms and unfinished integrations visible.
 
 Validate installed delivery with the matching SDK's receipt validator, required
-phase list and actual indexed helper hashes. The025 workflow requires39 phases,
-including source exceptions and installed task HTTP/HTTPS execution. Older
+phase list and actual indexed helper hashes. The027 workflow requires40 phases,
+including typed source errors, source handlers and installed task HTTP/HTTPS
+execution. The retained025 workflow requires39 phases. Older
 receipts keep their original scope. A source-free run must actually lack the
 compiler's source fallback, including source files baked into its container
 image. Native builds, installed acceptance and broad platform delivery have
@@ -246,6 +249,6 @@ alone proves no total cost or quality gain.
 The source_exception_prototype descriptor and exception-*-prototype guides
 describe opt-in C++ experiments with separate, unarchived contexts and private
 ABIs. Use them only for an explicitly selected private workflow. They do not
-override the actual SDK's source_exceptions or source_providers fields. Ordinary projects use their advertised public CLI/provider/debug/profile contracts.
+override the actual SDK's source_exceptions or nested source_providers contracts. Ordinary projects use their advertised public CLI/provider/debug/profile contracts.
 Never manufacture graph revisions or relabel private frames as archived public
 frames. Keep their matching compiler, records, context and explicit entry point.

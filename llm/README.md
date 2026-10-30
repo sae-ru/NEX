@@ -3,7 +3,7 @@
 NEX uses one versioned specification, grammar and compiler interface for Codex,
 Hermes and other LLMs. Start with [BOOTSTRAP.md](BOOTSTRAP.md), then use the
 compact [coding contract](SYSTEM_PROMPT.md). Detailed guides are retrieved for
-the feature being changed. Current development language is0.24; installed
+the feature being changed. Current development language is0.27; installed
 compiler capabilities and matching acceptance evidence govern actual support.
 
 ## First use

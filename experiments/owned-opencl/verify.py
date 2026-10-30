@@ -35,6 +35,18 @@ ERROR_CASES={
  'deadline_enqueued_GPU':('''let ctx:d::Context=unwrap(make_context());let answer:c::Response=unwrap(d::execute(ctx,request(ctx,unwrap(bytes([20])),unwrap(bytes([22])),c::Operation::Add(),c::Fallback::Deny())));''','E_TIMEOUT',3000,2000),
 }
 
+def source_program(prefix,body,language):
+ # Source-error delivery at scope completion and task_wait is explicit from025.
+ # Keep pre025 fixture effects unchanged for their actual selected SDKs.
+ effects='task,ffi,io'
+ if tuple(map(int,language.split('.')))>=(0,25):
+  effects+=',throw'
+  for result in ('unit','d::Tensor'):
+   signature='server fn(s:task_scope)->'+result+' !{task,ffi}'
+   body=body.replace(signature,'server fn(s:task_scope)->'+result+' !{task,ffi,throw}')
+ return prefix+'\nserver fn main()->unit !{'+effects+'}{'+body+'print(42);}\n'
+
+
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 def main():
@@ -94,7 +106,7 @@ def main():
   return {'devices':sorted({x['device'] for x in sessions}),'sessions':len(sessions),'buffers':len(created),'actual_kernel_events':physical,'all_buffers_released':True,'session_after_children':True,'private_stdout_isolation':True,'enqueued_to_completion_seconds':delay}
  def case_project(name,body):
   directory=out/name;directory.mkdir();write(directory/'nex.json',{'schema':'nex.project/1','language':language,'entry':'main.nex','libraries':{'std':str(project/'stdlib')}})
-  (directory/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+body+'print(42);}\n')
+  (directory/'main.nex').write_text(source_program(prefix,body,language))
   return directory
  try:
   for name,(body,kernels,overflow) in CASES.items():

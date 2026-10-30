@@ -1,7 +1,7 @@
 # Owned device resources
 
 Development toolchain0.132 adds `import "std/device.nex" as device;` as an
-ordinary library, available in the current language0.23. Query `nex describe --field device --json`.
+ordinary library, introduced with language0.23. Query `nex describe --field device --json`.
 No syntax, canonical identity, retained-history or migration rule changes.
 Matching regression, installed SDK and actual platform acceptance have separate
 receipts. The OpenCL adapter is experimental and selected explicitly.
@@ -105,6 +105,12 @@ of publishing a false completion fence. Recovery/reset and reliable fault
 handling remain open; this experimental adapter is not a fault-tolerant device
 service. NPU/model ownership, other operations/dtypes, arbitrary kernels,
 concurrent queues and explicit source fence values remain pending.
+
+Generated scope/join fixtures declare their source-error effects for language0.25+;
+pre025 fixtures retain their original effects. The device-contract regression
+checks every generated normal/error/fault source with the selected compiler
+before device execution. Such source checks do not initialize an OpenCL driver
+or establish physical GPU acceptance.
 
 `verify.py` requires real GPU execution and native/independent AST agreement.
 Its controlled cancellation/deadline cases enqueue a kernel behind a genuine

@@ -24,8 +24,11 @@ For typed error forwarding, query `nex describe --field result_propagation --jso
 and `nex guide --kind result --json`. Respect the reported language and pending
 integration gates. For source exceptions, query `source_exceptions` and read the exception guide.
 Use only the selected SDK's advertised syntax, payload and effects; checked traps
-remain separate from catchable source errors. Discover handler_filters before using a conditional catch. Typed payloads and
-finally remain pending in this026 development stage.
+remain separate from catchable source errors. For a conditional catch, query `source_exceptions.handler_filters`. Language0.27
+supports typed payloads, ordered handlers, filters and finally, including task
+suspension in reference/native/TypeScript. Checked traps, cancellation and limits
+remain separate outcomes; fatal traps and cancellation do not run user finalizers.
+Keep installed-SDK and actual platform acceptance separate from source support.
 
 For ordered CPU batches, query source_concurrency and retrieve the concurrency
 guide. Require the actual source operation and matching language; native worker

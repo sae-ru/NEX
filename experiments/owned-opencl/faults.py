@@ -68,7 +68,7 @@ def main():
    if args.only and name not in args.only:continue
    if args.expect_regression:assert name=='upload_truncated','red mode only preserves the original lost-upload-ID case'
    directory=out/name;directory.mkdir();write(directory/'nex.json',{'schema':'nex.project/1','language':language,'entry':'main.nex','libraries':{'std':str(project/'stdlib')}})
-   (directory/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+body+'print(42);}\n')
+   (directory/'main.nex').write_text(verify.source_program(prefix,body,language))
    host=json.loads((project/'foreign.json').read_text());host['resource_limit']=quota
    for value in host['libraries'].values():value['directory']=str(project/'bundle')
    write(directory/'foreign.json',host);controlled={'NEX_OWNED_OPENCL_TEST_BAD_REPLY':fault}
