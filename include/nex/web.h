@@ -22,6 +22,8 @@ WebModule emitTypeScript(const Program &program,const std::map<std::string,std::
 WebModule emitSourceExceptionsPrototypeTypeScript(const Program &,const std::map<std::string,std::string> &entries);
 WebModule emitSourceExceptionTasksPrototypeTypeScript(const Program &,const std::map<std::string,std::string> &entries);
 void writeWebModule(const WebModule &module,const std::string &directory);
+// All transitive adapter sources participate in a generated module's cache key.
+std::string webRuntimeInputs(const WebModule &module);
 ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout=30,
   const nexrt::TaskExecutionLimits *limits=nullptr);
 llvm::json::Value inspectWebApp(const Program &program);

@@ -1,3 +1,19 @@
+# Typed027 authority transfer development0.146.0
+
+Exceptional provenance and runtime guards now carry callables, task capabilities
+and native/reference file/resource owners through typed errors. Native implicit
+scope close prepares the selected payload before retirement, outside scheduler
+locks. TypeScript uses bounded compiler-keyed contracts and private capability
+brands; browser file/FFI/server authority remains rejected. New native code uses
+private2702 while retaining2701 and public ABI6 identities.
+
+Development conformance includes known rejected escapes, dynamic escapes through
+legitimate channel receives, AST/TaskIR/Node/native agreement and physical cleanup.
+Full current regression,027 source library/provider contracts and delivery,
+genuine026-to027 graph migration/public selection, bounded debugger/profiler
+integration, SDK/platform acceptance and every original plan item below remain
+required. This is progress toward that complete scope.
+
 # Typed027 resumable task development0.145.0
 
 Ordered typed/legacy clauses and owned data now traverse AST/TaskIR continuations,

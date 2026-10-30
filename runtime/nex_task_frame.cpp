@@ -351,13 +351,13 @@ void nex_task_frame_source_catch_at(void *p,int64_t code,int64_t message,const n
   nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);auto error=f.pendingSource;if(!error||code==message||f.sourceHandlers.size()+f.caughtSource.size()>=65536)throw nexrt::DataError("E_TASK_STATE","invalid private task catch");f.write(code,nexrt::Value(nexrt::string(error->code)),3);f.write(message,nexrt::Value(nexrt::string(error->message)),3);f.caughtSource.push_back(std::move(error));f.pendingSource.reset();});
 }
 void nex_task_frame_source_enter_at(void *p,const nexrt::NativeSite *site){
-  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(f.abi!=nexrt::taskCodeTypedErrorDevelopmentABI||!f.pendingSource||f.sourceHandlers.size()+f.caughtSource.size()>=65536)throw nexrt::DataError("E_TASK_STATE","invalid typed source catch entry");f.caughtSource.push_back(f.pendingSource);f.pendingSource.reset();});
+  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(!nexrt::typedSourceTaskABI(f.abi)||!f.pendingSource||f.sourceHandlers.size()+f.caughtSource.size()>=65536)throw nexrt::DataError("E_TASK_STATE","invalid typed source catch entry");f.caughtSource.push_back(f.pendingSource);f.pendingSource.reset();});
 }
 nexrt::Handle *nex_task_frame_source_packet_at(void *p,const nexrt::NativeSite *site){
-  return nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(f.abi!=nexrt::taskCodeTypedErrorDevelopmentABI||f.caughtSource.empty())throw nexrt::DataError("E_TASK_STATE","typed catch lost its packet/cohort");return nexrt::makeSourceErrorHandle(*f.caughtSource.back());});
+  return nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(!nexrt::typedSourceTaskABI(f.abi)||f.caughtSource.empty())throw nexrt::DataError("E_TASK_STATE","typed catch lost its packet/cohort");return nexrt::makeSourceErrorHandle(*f.caughtSource.back());});
 }
 void nex_task_frame_source_packet_raise_at(void *p,nexrt::Handle *packet,const nexrt::NativeSite *site){
-  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(f.abi!=nexrt::taskCodeTypedErrorDevelopmentABI||f.pendingSource)throw nexrt::DataError("E_TASK_STATE","invalid typed source raise cohort/state");f.pendingSource=std::make_shared<const nexrt::NativeSourceException>(nexrt::readSourceErrorHandle(packet));});
+  nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(!nexrt::typedSourceTaskABI(f.abi)||f.pendingSource)throw nexrt::DataError("E_TASK_STATE","invalid typed source raise cohort/state");f.pendingSource=std::make_shared<const nexrt::NativeSourceException>(nexrt::readSourceErrorHandle(packet));});
 }
 void nex_task_frame_source_end_at(void *p,const nexrt::NativeSite *site){nexrt::hostOperation({0,site},[&]{auto &f=sourceFrame(p);if(f.caughtSource.empty())throw nexrt::DataError("E_TASK_STATE","private task catch underflow");f.caughtSource.pop_back();});}
 void nex_task_frame_source_save_at(void *p,int64_t slot,const nexrt::NativeSite *site){

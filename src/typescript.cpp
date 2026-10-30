@@ -38,6 +38,7 @@ class Generator {
   bool exceptionPrototype=false;
   std::vector<std::string> caughtSourceErrors;
   std::set<std::string> functions,structures;
+  std::map<std::string,std::pair<std::string,std::string>> sourceContracts;
   std::vector<std::map<std::string,std::string>> scopes;
   unsigned unique=0,depth=0,line=1;
   bool parallelEnabled=false;
@@ -50,6 +51,8 @@ class Generator {
     case Type::I64:return {"i64",""};case Type::Bool:return {"bool",""};case Type::F64:return {"f64",""};
     case Type::Str:return {"str",""};case Type::Bytes:return {"bytes",""};case Type::List:return {"list",""};
     case Type::Result:return {"result",""};
+    case Type::Function:return {"function",""};case Type::TaskScope:return {"task_scope",""};
+    case Type::Task:return {"task",""};case Type::Channel:return {"channel",""};
     case Type::Record:return {p.structure(t.name).enumeration?"enum":"record",t.name};
     default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed TypeScript payload authority integration is pending");
     }
@@ -71,7 +74,12 @@ class Generator {
     if(!functions.insert(f.name).second)return;
     needed(f.result);for(const auto &param:f.params)needed(param.type);for(const auto &capture:f.captures)needed(capture.type);
     std::function<void(E)> expression=[&](E e){if(e){needed(e->type);for(auto a:e->args)expression(a);}};
-    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);childBlocks(s,block);}};
+    std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);
+      if(p.sourceLanguage==SourceLanguage::TypedErrors027&&(s->kind==Stmt::TypedThrow||(s->kind==Stmt::CatchClause&&s->type!=Type::Unknown))){
+        sourceContracts.emplace(s->errorTypeKey,payloadShape(s->type));
+        if(sourceContracts.size()>4096)throw Error("E_LIMIT","TypeScript source-error contract count exceeds4096",s->span);
+      }
+      childBlocks(s,block);}};
     block(f.body);for(const auto &name:f.dependencies)visit(p.function(name));
   }
   std::string local(const std::string &name){
@@ -288,7 +296,7 @@ public:
       for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
       for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
       write(signature+"): "+(taskMode?"task.Step<"+type(f.result)+">":type(f.result))+" {\n");depth=1;
-      if(taskMode){statement("task.enter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
+      if(taskMode){statement(std::string(p.sourceLanguage==SourceLanguage::TypedErrors027?"task.enterTyped([":"task.enter([")+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       else if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       bool propagation=propagatesResult(f);
       if(propagation&&!taskMode){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
@@ -305,10 +313,16 @@ public:
       if(privateSource)included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"private_location_hash",hash(name+":"+f.span.file+":"+std::to_string(f.span.begin)+":"+std::to_string(f.span.end))}});
       else included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027){
+      if(entries.contains("sourceErrorContracts"))throw Error("E_ENTRY","sourceErrorContracts is reserved for the compiler's checked type contracts");
+      write("export const sourceErrorContracts: ReadonlyArray<sourceException.TransferContract> = sourceException.checkedTransferContracts([\n");
+      for(const auto &[key,shape]:sourceContracts)write("  {key: "+quote(key)+", kind: "+quote(shape.first)+", nominal: "+quote(shape.second)+"},\n");
+      write("]);\n");
+    }
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-2"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"}},taskMode,true};
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};
     auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
     if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
     return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
@@ -346,11 +360,18 @@ void writeWebModule(const WebModule &module,const std::string &directory){
   writeFile((output/"program.ts").string(),module.source);
   writeFile((output/"nex-runtime.ts").string(),readFile(resourceFile("web/nex-runtime.ts")));
   writeFile((output/"nex-bytes.ts").string(),readFile(resourceFile("web/nex-bytes.ts")));
-  if(module.privateSourceExceptions)writeFile((output/"nex-source-exception-runtime.ts").string(),readFile(resourceFile("web/nex-source-exception-runtime.ts")));
-  if(module.asynchronous)writeFile((output/"nex-task-runtime.ts").string(),readFile(resourceFile("web/nex-task-runtime.ts")));
+  if(module.privateSourceExceptions||module.asynchronous){
+    writeFile((output/"nex-source-exception-runtime.ts").string(),readFile(resourceFile("web/nex-source-exception-runtime.ts")));
+    writeFile((output/"nex-task-runtime.ts").string(),readFile(resourceFile("web/nex-task-runtime.ts")));
+  }
   writeFile((output/"nex-map.json").string(),json(module.mapping)+"\n");
 }
 void writeTaskTypeScriptModule(const WebModule &module,const std::string &directory){
   writeWebModule(module,directory);
+}
+std::string webRuntimeInputs(const WebModule &module){
+  auto source=readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"));
+  if(module.asynchronous||module.privateSourceExceptions)source+=readFile(resourceFile("web/nex-task-runtime.ts"))+readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+  return source;
 }
 }

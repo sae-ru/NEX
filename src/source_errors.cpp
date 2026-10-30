@@ -15,7 +15,12 @@ nexrt::Value checkedSourceErrorValue(const Program &program,const SourceExceptio
     case Type::Str:return payload.getObject(key,nexrt::Data::String);
     case Type::Bytes:return payload.getObject(key,nexrt::Data::Bytes);
     case Type::List:return payload.getObject(key,nexrt::Data::List);
-    case Type::Record:return payload.getObject(key,program.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
+    case Type::Function:return payload.getObject(key,nexrt::Data::Closure);
+    case Type::File:return payload.getObject(key,nexrt::Data::File);
+    case Type::TaskScope:return payload.getObject(key,nexrt::Data::TaskScope);
+    case Type::Task:return payload.getObject(key,nexrt::Data::Task);
+    case Type::Channel:return payload.getObject(key,nexrt::Data::Channel);
+    case Type::Record:return payload.getObject(key,isExternalResource(program,type)?nexrt::Data::External:program.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
     case Type::Result:{
       const auto &v=payload.get(key);
       if(v.tag!=V::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");

@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "source027_resumable_task_development",
+      "status": "source027_authority_transfer_development",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3400,7 +3400,7 @@
       "source027_archiving_enabled": false,
       "source027_native_lowering": true,
       "source027_typescript_lowering": true,
-      "source027_authority_transport": false,
+      "source027_authority_transport": true,
       "source027_test_source": "tests/typed_source.cpp",
       "source027_typescript_public_revision": false,
       "source027_typescript_payloads_enumerable": false,
@@ -3411,9 +3411,17 @@
       "source027_task_AST": true,
       "source027_task_TaskIR": true,
       "source027_task_typescript": true,
-      "source027_task_descriptor_abi": "0x4e45585400002701",
-      "source027_task_authority_payloads": false,
-      "source027_task_test_source": "tests/typed_source_tasks.py"
+      "source027_task_descriptor_abi": "0x4e45585400002702",
+      "source027_task_authority_payloads": true,
+      "source027_task_test_source": "tests/typed_source_tasks.py",
+      "source027_retained_task_descriptor_abi": "0x4e45585400002701",
+      "source027_typescript_transfer_contracts": true,
+      "source027_typescript_map": "nex.development-typescript/027-3",
+      "source027_maximum_concrete_error_alternatives": 64,
+      "source027_native_authority_test_source": "tests/source_error_authority_kernel.cpp",
+      "source027_typescript_authority_test_source": "tests/source_error_authority_typescript.mjs",
+      "source027_provenance_test_source": "tests/typed_source_authority.py",
+      "source027_authority_scope": "explicit C++027 selection; native/reference resource and file owners, callable captures and task capabilities; browser excludes file/FFI/server authority"
     }
   }
 }

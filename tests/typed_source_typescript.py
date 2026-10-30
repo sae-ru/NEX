@@ -14,7 +14,7 @@ def run(cmd,timeout=120):
     if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
     return r.stdout
 fixtures=re.findall(r'value\(R"\((.*?)\)"(?:,"(.*?)")?\);',(root/'tests/typed_source.cpp').read_text(),re.S)
-assert len(fixtures)==28
+assert len(fixtures)==31
 fixtures=[(f'reference-{i:02d}',text,False) for i,(text,_) in enumerate(fixtures)]
 fixtures += [
  ('uncaught-int','fn main()->unit !{throw}{throw(42);}',False),
@@ -46,7 +46,7 @@ for name,text,project in fixtures:
     if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}')
     prefix='project-' if project else ''
     expected=json.loads(run([probe,prefix+'reference',f]));(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n')
-    run([probe,prefix+'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-2' and mapping['public_revision'] is False and 'revision' not in mapping and mapping['language']=='0.27'
+    run([probe,prefix+'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-3' and mapping['public_revision'] is False and 'revision' not in mapping and mapping['language']=='0.27'
     (d/'run.mjs').write_text(runner.replace('EXPECTED_KEY',json.dumps(expected.get('payload_type_key'))))
     actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',d/'run.mjs']));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
     assert actual['kind']==expected['kind'],(name,expected,actual)
@@ -61,7 +61,7 @@ for name,text,project in fixtures:
     programs.append(d/'program.ts');records.append({'name':name,'source_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'kind':actual['kind'],'passed':True});save()
 
 boundary=out/'boundary';boundary.mkdir()
-for name in ['nex-runtime.ts','nex-bytes.ts','nex-source-exception-runtime.ts']:shutil.copy2(programs[0].parent/name,boundary/name)
+for name in ['nex-runtime.ts','nex-bytes.ts','nex-source-exception-runtime.ts','nex-task-runtime.ts']:shutil.copy2(programs[0].parent/name,boundary/name)
 (boundary/'run.mjs').write_text(r'''import * as nex from './nex-runtime.ts';import * as src from './nex-source-exception-runtime.ts';
 let cases=0;const key='a'.repeat(64),wrong='b'.repeat(64),site=['source.nex',9,7,'origin'];
 const require=(yes,msg)=>{if(!yes)throw new Error(msg);++cases;};

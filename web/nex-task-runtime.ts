@@ -1,5 +1,6 @@
 // Checked resumable TypeScript backend. No serialized AST/IR or native scheduler.
 import * as nex from './nex-runtime.ts';
+import * as sourceException from './nex-source-exception-runtime.ts';
 type Item = nex.Value | void;
 declare const outcome: unique symbol;
 export interface Call<T extends Item> extends nex.RecordValue { readonly [outcome]?: T }
@@ -27,6 +28,9 @@ const requests = new WeakSet<object>();
 const requestArity = new Map([['$poll',0],['task_yield',0],['with_tasks',2],['task_spawn',2],['task_wait',1],['channel_new',2],['task_send',2],['task_recv',1],['task_close',1],['task_cancel',1],['current_task_scope',0]]);
 type Cap = { owner: WeakRef<Driver>; scope: number; index: number; kind: 'task_scope' | 'task' | 'channel' };
 const capabilities = new WeakMap<object, Cap>();
+export function isCapability(value: unknown, kind: Cap['kind']): boolean {
+  return typeof value === 'object' && value !== null && capabilities.get(value)?.kind === kind;
+}
 let active: { driver: Driver; job: number } | undefined;
 const none = -1;
 function fail(code: string, message: string, site?: nex.Site): never { throw new nex.NexError(code, message, site); }
@@ -65,6 +69,10 @@ export function enter(site?: nex.Site): void {
   const {driver, job} = context(); driver.charge(site);
   if (driver.jobs[job].calls >= 256) fail('E_LIMIT', 'task call depth exceeds256', site);
   ++driver.jobs[job].calls;
+}
+export function enterTyped(site?: nex.Site): void {
+  if (!context().driver.typedContracts) fail('E_TASK_STATE', 'typed source tasks require checked transfer contracts', site);
+  enter(site);
 }
 export function leave(): void {
   const {driver, job} = context(); if (driver.jobs[job].calls < 1) fail('E_TASK_STATE', 'unbalanced generator call depth'); --driver.jobs[job].calls;
@@ -129,7 +137,7 @@ type Job = {
 };
 type Region = {
   parent: number; owner: number; depth: number; closing: boolean; closed: boolean; abort: boolean;
-  members: number[]; children: number[]; pipes: number[]; external: Set<number>; failure?: Error; sourceFailure?: object; capability?: WeakRef<Scope>;
+  members: number[]; children: number[]; pipes: number[]; external: Set<number>; failure?: Error; sourceFailure?: object; sourcePayloadTransferred?: boolean; capability?: WeakRef<Scope>;
 };
 type External = {
   stamp: HostStamp; scope: number; bytes: number; site?: nex.Site;
@@ -184,8 +192,10 @@ class Driver {
   used = 0; slots = 0; closed = false;
   private rootDone(): boolean { return this.jobs[0].state === 'done'; }
   private readonly sourceClassifier?: (error: unknown) => boolean;
-  constructor(options: Options, sourceClassifier?: (error: unknown) => boolean) {
+  readonly typedContracts?: ReadonlyArray<sourceException.TransferContract>;
+  constructor(options: Options, sourceClassifier?: (error: unknown) => boolean, typedContracts?: ReadonlyArray<sourceException.TransferContract>) {
     this.sourceClassifier = sourceClassifier;
+    this.typedContracts = typedContracts;
     this.options = validatedOptions(options); this.limit = this.options.steps;
     this.deadline = performance.now() + this.options.timeoutMs;
   }
@@ -195,6 +205,13 @@ class Driver {
   private checkSourceControl(site?: nex.Site): void {
     this.checkDeadline(site);
     if (this.options.signal?.aborted) fail('E_CANCELLED', 'task execution was cancelled', site);
+  }
+  private sourceSnapshot(error: object, target: number, current: number): void {
+    if (!this.typedContracts) return;
+    const detail = sourceException.details(error);
+    if (!detail) fail('E_SOURCE_TYPE', 'typed task outcome is not a branded source error');
+    const contract = sourceException.transferContract(detail, this.typedContracts);
+    if (contract) this.snapshot(sourceException.readTyped(detail, contract.key, contract.kind, contract.nominal, detail.site), target, current, detail.site);
   }
   checkDeadline(site?: nex.Site): void {
     if (!this.expired && performance.now() >= this.deadline) this.expired = new nex.NexError('E_TIMEOUT', 'shared generator task deadline exceeded', site);
@@ -482,7 +499,15 @@ class Driver {
           }
         }
         if (region.members.some(i => this.jobs[i].state !== 'done') || region.children.some(i => !this.regions[i].closed)) continue;
-        for (const i of region.members) { const job = this.jobs[i]; if ((!region.abort && !job.observed && !job.cancelled) || (region.sourceFailure && job.failure && (!(job.failure instanceof nex.NexError) || job.failure.code !== 'E_CANCELLED'))) region.failure = prefer(region.failure, job.failure); job.observed = true; job.result = job.sourceFailure = undefined; job.capability = undefined; }
+        for (const i of region.members) { const job = this.jobs[i]; if ((!region.abort && !job.observed && !job.cancelled) || (region.sourceFailure && job.failure && (!(job.failure instanceof nex.NexError) || job.failure.code !== 'E_CANCELLED'))) region.failure = prefer(region.failure, job.failure); }
+        // Prepare an unobserved child's source outcome before retiring the
+        // region's capabilities. Real fatal outcomes win over source transfer.
+        if (region.sourceFailure && !region.failure && !region.sourcePayloadTransferred) {
+          try { this.checkSourceControl(); this.sourceSnapshot(region.sourceFailure, region.parent, s); }
+          catch (error) { region.failure = prefer(region.failure, asError(error)); }
+          region.sourcePayloadTransferred = true;
+        }
+        for (const i of region.members) { const job = this.jobs[i]; job.observed = true; job.result = job.sourceFailure = undefined; job.capability = undefined; }
         for (const p of region.pipes) { this.closePipe(p); this.slots -= this.pipes[p].capacity; this.pipes[p].capacity = 0; this.pipes[p].buffer.clear(); this.pipes[p].capability = undefined; }
         region.closed = true; region.capability = undefined; const owner = this.jobs[region.owner]; if (owner.state === 'finishing') { owner.failure = prefer(owner.failure, region.failure); owner.sourceFailure ??= region.sourceFailure; } changed = true;
       }
@@ -571,12 +596,13 @@ class Driver {
       const source = this.sourceError(error);
       if (!source) this.finish(index, asError(error));
       else {
-        try { this.checkSourceControl(); }
-        catch (control) { this.finish(index, asError(control)); return; }
         const activation = job.stack[job.stack.length - 1];
+        try { this.checkSourceControl(); this.sourceSnapshot(source, activation.scope === none ? job.member : activation.parent, job.current); }
+        catch (control) { this.finish(index, asError(control)); return; }
         if (activation.scope === none) this.finish(index, undefined, undefined, source);
         else {
           const region = this.regions[activation.scope]; activation.sourceFailure = source;
+          region.sourcePayloadTransferred = true;
           region.sourceFailure = source; region.closing = region.abort = true;
           this.cancelRegion(activation.scope); job.target = activation.scope; job.state = 'drain';
         }
@@ -661,6 +687,12 @@ export async function run<T extends Item>(root: Call<T>, options: Options = {}):
 export async function runSourceErrors<T extends Item>(root: Call<T>, sourceClassifier: (error: unknown) => boolean, options: Options = {}): Promise<T> {
   if (typeof sourceClassifier !== 'function') fail('E_TASK_STATE', 'source-error classifier is required');
   return await new Driver(options, sourceClassifier).drive(root);
+}
+// New027 generators require this driver; retained025/026 entrypoints and their
+// classifier contract are unchanged. No caller-provided payload callback exists.
+export async function runTypedSourceErrors<T extends Item>(root: Call<T>, contracts: ReadonlyArray<sourceException.TransferContract>, options: Options = {}): Promise<T> {
+  const checked = sourceException.checkedTransferContracts(contracts);
+  return await new Driver(options, error => sourceException.details(error) !== undefined, checked).drive(root);
 }
 // Retained entry for explicitly private025 experiments.
 export async function runSourceExceptionPrototype<T extends Item>(root: Call<T>, sourceClassifier: (error: unknown) => boolean, options: Options = {}): Promise<T> {

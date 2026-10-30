@@ -9,7 +9,7 @@ def run(cmd,timeout=120):
  if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
  return r
 host=out/'host.ll';run([a.compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',host]);t=host.read_text();triple=re.search(r'target triple = "(.*?)"',t)[1];layout=re.search(r'target datalayout = "(.*?)"',t)[1]
-fixtures=re.findall(r'value\(R"\((.*?)\)"(?:,"(.*?)")?\);',(root/'tests/typed_source.cpp').read_text(),re.S);assert len(fixtures)==28
+fixtures=re.findall(r'value\(R"\((.*?)\)"(?:,"(.*?)")?\);',(root/'tests/typed_source.cpp').read_text(),re.S);assert len(fixtures)==31
 fixtures=[(f'reference-{i:02d}',text,False) for i,(text,_) in enumerate(fixtures)]
 fixtures += [
  ('uncaught-int','fn main()->unit !{throw}{throw(42);}',False),

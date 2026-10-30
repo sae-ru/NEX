@@ -106,12 +106,14 @@ Project prepare(const Program &p){
     // Each dedicated worker owns one root scheduler. Only wire values cross
     // the host boundary; scopes/futures/channels remain inside that scheduler.
     auto compute=nativeSymbol(workerCompute->name);
-    auto execution=worker.asynchronous?(worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)";
+    auto execution=worker.asynchronous?(p.sourceLanguage==SourceLanguage::TypedErrors027?"task.runTypedSourceErrors(task.call(() => "+compute+"(input)), sourceErrorContracts)":worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)";
     if(worker.privateSourceExceptions)
       worker.source+="\nexport async function execute(input: Parameters<typeof "+compute+">[0]) { try { return await "+execution+"; } catch (error) { if (sourceException.details(error) !== undefined) throw new nex.NexError('E_SOURCE_EXCEPTION', 'Uncaught NEX source exception'); throw error; } }\n";
     else worker.source+="\nexport function execute(input: Parameters<typeof "+compute+">[0]) { return "+execution+"; }\n";
-    if(worker.asynchronous)files["src/nex-task-runtime.ts"]=readFile(resourceFile("web/nex-task-runtime.ts"));
-    if(worker.privateSourceExceptions)files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+    if(worker.asynchronous||worker.privateSourceExceptions){
+      files["src/nex-task-runtime.ts"]=readFile(resourceFile("web/nex-task-runtime.ts"));
+      files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+    }
     files["src/worker-program.ts"]=worker.source;
     files["nex-worker-map.json"]=json(worker.mapping)+"\n";
     files["src/worker-contract.ts"]="import type { Schema } from './nex-runtime.ts';\nexport const inputSchema: Schema = "+json(workerInput,false)+";\nexport const outputSchema: Schema = "+json(workerOutput,false)+";\n";
@@ -129,7 +131,10 @@ Project prepare(const Program &p){
   files["src/program.ts"]=module.source;
   files["src/nex-runtime.ts"]=readFile(resourceFile("web/nex-runtime.ts"));
   files["src/nex-bytes.ts"]=readFile(resourceFile("web/nex-bytes.ts"));
-  if(module.privateSourceExceptions)files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+  if(module.privateSourceExceptions||module.asynchronous){
+    files["src/nex-task-runtime.ts"]=readFile(resourceFile("web/nex-task-runtime.ts"));
+    files["src/nex-source-exception-runtime.ts"]=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+  }
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));
@@ -160,14 +165,16 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   if(limits)taskOptions=", {steps: "+std::to_string(limits->steps)+", timeoutMs: "+std::to_string(limits->timeoutMs)+", workers: "+std::to_string(limits->workers)+"}";
   auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
   writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
+  const bool typed=module.mapping.getAsObject()&&module.mapping.getAsObject()->getString("language")=="0.27";
+  const std::string sourceRunner=typed?"import { sourceErrorContracts } from './program.ts';\nawait task.runTypedSourceErrors(task.call(() => entry()), sourceErrorContracts":
+    "import * as sourceException from './nex-source-exception-runtime.ts';\nawait task.runSourceErrors(task.call(() => entry()), error => sourceException.details(error) !== undefined";
   writeFile((folder/"test.ts").string(),module.asynchronous?
-    "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\n"+std::string(module.privateSourceExceptions?"import * as sourceException from './nex-source-exception-runtime.ts';\nawait task.runSourceErrors(task.call(() => entry()), error => sourceException.details(error) !== undefined":"await task.run(task.call(() => entry())")+taskOptions+");\n":
+    "import { entry } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\n"+std::string(module.privateSourceExceptions?sourceRunner:"await task.run(task.call(() => entry())")+taskOptions+");\n":
     "import { entry } from './program.ts';\nentry();\n");
   ToolDirectory runner(folder);
   if(runner.relocated())for(const auto *name:{"program.ts","nex-runtime.ts","nex-bytes.ts","nex-map.json","package.json","test.ts"})
     fs::copy_file(folder/name,runner.path()/name);
-  if(runner.relocated()&&module.asynchronous)fs::copy_file(folder/"nex-task-runtime.ts",runner.path()/"nex-task-runtime.ts");
-  if(runner.relocated()&&module.privateSourceExceptions)fs::copy_file(folder/"nex-source-exception-runtime.ts",runner.path()/"nex-source-exception-runtime.ts");
+  if(runner.relocated()&&(module.asynchronous||module.privateSourceExceptions))for(const auto *name:{"nex-task-runtime.ts","nex-source-exception-runtime.ts"})fs::copy_file(folder/name,runner.path()/name);
   const char *node=std::getenv("NEX_NODE");
   return capture({node?node:"node","--experimental-strip-types","--no-warnings",(runner.path()/"test.ts").string()},timeout);
 }

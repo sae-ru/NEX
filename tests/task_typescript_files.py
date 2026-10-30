@@ -21,7 +21,7 @@ def emit(path,name,mode='emit',entry='main',error=None):
     assert mapping['schema']=='nex.typescript-map/1' and mapping['language']==value['language'] and mapping['revision']==value['revision']
     if value['asynchronous']:
         assert (folder/'nex-task-runtime.ts').read_bytes()==(source/'web/nex-task-runtime.ts').read_bytes()
-    else:assert not (folder/'nex-task-runtime.ts').exists()
+    else:assert 'function*' not in (folder/'program.ts').read_text()
     for filename in ['program.ts','nex-map.json']:
         text=(folder/filename).read_text()
         assert 'UNREACHABLE_ASYNC_FILE_SECRET' not in text and 'SERVER_PRIVATE_PATH' not in text and 'server_file_read' not in text

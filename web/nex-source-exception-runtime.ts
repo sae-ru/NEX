@@ -1,7 +1,9 @@
 // Compiler-private source errors; payload data never enters the public details.
 import * as nex from './nex-runtime.ts';
+import * as task from './nex-task-runtime.ts';
 export type Details = Readonly<{code: string; message: string; site: nex.Site}>;
-export type PayloadKind = 'i64' | 'bool' | 'f64' | 'str' | 'bytes' | 'list' | 'record' | 'enum' | 'result';
+export type PayloadKind = 'i64' | 'bool' | 'f64' | 'str' | 'bytes' | 'list' | 'record' | 'enum' | 'result' | 'function' | 'task_scope' | 'task' | 'channel';
+export type TransferContract = Readonly<{key: string; kind: PayloadKind; nominal: string}>;
 type TypedPayload = Readonly<{key: string; value: unknown}>;
 const sources = new WeakMap<object, Details>();
 const payloads = new WeakMap<Details, TypedPayload>();
@@ -19,6 +21,8 @@ function checkedValue(value: unknown, kind: PayloadKind, nominal: string, site: 
     case 'str': if (typeof value === 'string') return nex.string(value, site); break;
     case 'bytes': if (value instanceof nex.ByteBuffer) return value; break;
     case 'list': if (Array.isArray(value) && Object.isFrozen(value)) return value; break;
+    case 'function': if (typeof value === 'function' && nex.captureValues(value as nex.Callable) !== undefined) return value; break;
+    case 'task_scope': case 'task': case 'channel': if (task.isCapability(value, kind)) return value; break;
     case 'record': case 'enum': case 'result': {
       if (typeof value !== 'object' || value === null || !Object.isFrozen(value)) break;
       // Read data properties, never a source/host getter or string conversion.
@@ -60,4 +64,32 @@ export function readTyped<T extends nex.Value>(detail: Details, expected: string
   const payload = payloads.get(detail);
   if (!validKey(expected) || payload === undefined || payload.key !== expected) return typeFailure(site);
   return checkedValue(payload.value, kind, nominal, site) as T;
+}
+// Compiler-known keys select the existing keyed accessor. There is deliberately
+// no operation which returns an unknown packet's key/value or calls host code
+// with its payload. Copy data properties once; never retain host contract objects.
+export function checkedTransferContracts(input: ReadonlyArray<TransferContract>): ReadonlyArray<TransferContract> {
+  const site: nex.Site = ['<source-error-contract>', 1, 1];
+  if (!Array.isArray(input) || input.length > 4096) return typeFailure(site);
+  const result = new Map<string, TransferContract>();
+  const kinds: ReadonlyArray<string> = ['i64','bool','f64','str','bytes','list','record','enum','result','function','task_scope','task','channel'];
+  for (let i = 0; i < input.length; ++i) {
+    const element = Object.getOwnPropertyDescriptor(input, String(i));
+    if (!element || !('value' in element) || typeof element.value !== 'object' || element.value === null) return typeFailure(site);
+    const fields = ['key','kind','nominal'].map(name => Object.getOwnPropertyDescriptor(element.value, name));
+    if (fields.some(field => !field || !('value' in field) || typeof field.value !== 'string')) return typeFailure(site);
+    const [key, kind, nominal] = fields.map(field => field!.value as string);
+    if (!validKey(key) || !kinds.includes(kind) || nominal.length > 65536 || (kind !== 'record' && kind !== 'enum' && nominal !== '')) return typeFailure(site);
+    const previous = result.get(key);
+    if (previous && (previous.kind !== kind || previous.nominal !== nominal)) return typeFailure(site);
+    result.set(key, Object.freeze({key, kind: kind as PayloadKind, nominal}));
+  }
+  return Object.freeze([...result.values()]);
+}
+export function transferContract(detail: Details, known: ReadonlyArray<TransferContract>): TransferContract | undefined {
+  const payload = payloads.get(detail);
+  if (!payload) return undefined; // Retained legacy source errors have no value.
+  const contract = known.find(candidate => candidate.key === payload.key);
+  if (!contract) return typeFailure(detail.site);
+  return contract;
 }

@@ -50,7 +50,13 @@ struct TaskAccess {
     hostOperation(location,[&]{
       scope.checkExecution(0,true,true);handle.resume();
       if(handle.done()){
-        if(handle.promise().failure)std::rethrow_exception(handle.promise().failure);
+        if(handle.promise().failure){
+          try{std::rethrow_exception(handle.promise().failure);}
+          catch(const NativeSourceException &error){
+            if(group.sourceExceptionPrototype()&&error.payload)taskValue(group,error.payload->value,resultScope);
+            throw;
+          }
+        }
         taskValue(group,handle.promise().value,resultScope);
       }
       scope.checkExecution(0,true,false);
@@ -119,6 +125,7 @@ struct TaskGroup::Impl {
   struct Region {
     size_t parent=none,owner=none,limit=1,active=0,pending=0,nested=0,externalPending=0,depth=1,head=none,tail=none;
     bool closing=false,closed=false,abort=false;
+    bool sourceTransferPrepared=false,sourceTransferQueued=false,sourceTransferInFlight=false;
     bool valuesRetirementStarted=false;
     size_t valueRetirementsPending=0;
     std::vector<size_t> members,pipes,children;
@@ -130,6 +137,8 @@ struct TaskGroup::Impl {
   std::unique_ptr<ResourceRegion> resourceRoot;
   bool sourceResourceValues=false,sourceFileValues=false;
   size_t resourceJobHead=none,resourceJobTail=none;
+  // Each of the at most1024 scopes enters this allocation-free queue once.
+  std::array<size_t,1024> sourceTransfers{};size_t sourceTransferHead=0,sourceTransferCount=0;
   std::vector<std::unique_ptr<Region>> regions;
   std::vector<uint64_t> graphSeen;std::vector<size_t> graphWork;uint64_t graphEpoch=0;
   std::shared_ptr<TaskAccess::Control> control;
@@ -522,6 +531,83 @@ struct TaskGroup::Impl {
     if(entry.next==none)resourceJobTail=entry.previous;else jobs[entry.next]->resources->previous=entry.previous;
     entry.previous=entry.next=none;entry.queued=false;
   }
+  static std::shared_ptr<const SourceErrorPayload> sourcePayload(const std::exception_ptr &error){
+    if(!error)return {};
+    try{std::rethrow_exception(error);}catch(const NativeSourceException &e){return e.payload;}catch(...){return {};}
+  }
+  void queueSourceTransfer(size_t index){
+    auto &scope=*regions[index];if(scope.sourceTransferQueued||scope.sourceTransferInFlight)return;
+    if(sourceTransferCount==sourceTransfers.size())throw Trap("E_TASK_STATE","source-transfer queue exceeds scope bound",0);
+    sourceTransfers[(sourceTransferHead+sourceTransferCount)%sourceTransfers.size()]=index;++sourceTransferCount;scope.sourceTransferQueued=true;changed.notify_all();
+  }
+  struct SourceTransfer {
+    size_t scope=none,target=none;
+    std::shared_ptr<const SourceErrorPayload> payload;
+    ResourceRegionAuthority actor,receiver;
+    bool resources=false,files=false;SourceLocation location;
+  };
+  void validateSourceTransfer(const SourceTransfer &transfer){
+    std::vector<Value> pending{transfer.payload->value};std::unordered_set<const Data*> seen;size_t members=1;
+    std::vector<ExternalResource> owners;std::vector<FileResource> files;std::unordered_set<uint64_t> ownerIds;
+    while(!pending.empty()){
+      auto next=std::move(pending.back());pending.pop_back();
+      if(next.tag==Value::Floating){(void)next.floating();continue;}
+      if(next.tag==Value::Integer)continue;
+      if(next.tag==Value::Boolean){if(next.scalar<0||next.scalar>1)throw DataError("E_TASK_VALUE","invalid source snapshot boolean");continue;}
+      if(next.tag!=Value::Object||!next.object)throw DataError("E_TASK_VALUE","invalid source snapshot value");
+      if(!seen.insert(next.object.get()).second)continue;
+      if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","source snapshot exceeds its object limit");
+      const auto kind=next.object->kind;
+      if(kind==Data::External){
+        if(!transfer.resources)throw DataError("E_TASK_VALUE","source snapshot cannot carry external resource authority");
+        const auto &owner=externalResource(next.object);
+        if(ownerIds.insert(owner.identity()).second){if(owners.size()+files.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","source snapshot exceeds4096 resource owners");owners.push_back(owner);}
+      }
+      if(kind==Data::File){
+        if(!transfer.files)throw DataError("E_TASK_VALUE","source snapshot cannot carry file authority");
+        const auto &file=fileResource(next.object);
+        if(ownerIds.insert(file.identity()).second){if(owners.size()+files.size()==4096)throw DataError("E_RESOURCE_REGION_LIMIT","source snapshot exceeds4096 resource owners");files.push_back(file);}
+      }
+      if(kind==Data::TaskScope||kind==Data::Task||kind==Data::Channel){
+        const auto &cap=taskData(next,kind);std::lock_guard lock(mutex);
+        if(cap.scope.owner.lock().get()!=this||cap.scope.index>=regions.size()||regions[cap.scope.index]->closed||
+           !within(cap.scope.index,transfer.scope)||transfer.target==none||!within(cap.scope.index,transfer.target))
+          throw DataError("E_TASK_SCOPE","source payload escapes its logical owner scope");
+      }
+      if(next.object->values.size()>parallelMaximumNodes-members)throw DataError("E_LIMIT","source snapshot exceeds its member limit");
+      members+=next.object->values.size();pending.insert(pending.end(),next.object->values.begin(),next.object->values.end());
+    }
+    // Source and receiver regions remain open while prepare is in flight. No
+    // source callbacks/destructors or resource transactions run under mutex.
+    if(!owners.empty()||!files.empty()){
+      if(!transfer.actor||!transfer.receiver)throw DataError("E_RESOURCE_SCOPE","source transfer has no live resource authority");
+      ExternalResource::transferRegions(owners,transfer.actor,transfer.receiver,true,files);
+    }
+  }
+  void flushSourceTransfers(){
+    for(;;){SourceTransfer transfer;std::exception_ptr failure;
+      {
+        std::lock_guard lock(mutex);if(!sourceTransferCount)return;
+        transfer.scope=sourceTransfers[sourceTransferHead];sourceTransferHead=(sourceTransferHead+1)%sourceTransfers.size();--sourceTransferCount;
+        auto &scope=*regions[transfer.scope];scope.sourceTransferQueued=false;
+        if(scope.closed||scope.sourceTransferPrepared||scope.sourceTransferInFlight)throw Trap("E_TASK_STATE","invalid queued source prepare state",0);
+        scope.sourceTransferInFlight=true;transfer.target=scope.parent;transfer.payload=sourcePayload(scope.sourceFailure);
+        auto &owner=*jobs[scope.owner];transfer.location=owner.location;transfer.resources=sourceResourceValues;transfer.files=sourceFileValues;
+        try{if(resourceRoot){
+          transfer.actor=scope.resources?scope.resources->authority():resourceRoot->authority();
+          transfer.receiver=scope.parent==owner.memberScope?owner.resources->region->authority():
+              scope.parent==none?resourceRoot->authority():regions[scope.parent]->resources->authority();
+        }}catch(...){failure=std::current_exception();}
+      }
+      try{if(failure)std::rethrow_exception(failure);if(transfer.payload)validateSourceTransfer(transfer);}
+      catch(const DataError &e){try{throw LocatedTrap(Trap(e.code,e.what(),transfer.location.line),copyNativeSourceRecord(transfer.location.site));}catch(...){failure=std::current_exception();}}
+      catch(...){failure=std::current_exception();}
+      {
+        std::lock_guard lock(mutex);auto &scope=*regions[transfer.scope];scope.sourceTransferInFlight=false;scope.sourceTransferPrepared=true;
+        preferFailure(scope.failure,failure);closeRegion(transfer.scope);changed.notify_all();
+      }
+    }
+  }
   void closeRegionStep(size_t index){
     auto &scope=*regions[index];if(scope.closed||!scope.closing)return;
     if(sourceExceptions&&!scope.abort&&!scope.sourceFailure){
@@ -532,6 +618,17 @@ struct TaskGroup::Impl {
       }
     }
     if(scope.pending||scope.nested||scope.externalPending)return;
+    if(sourcePayload(scope.sourceFailure)&&!scope.sourceTransferPrepared){
+      if(scope.sourceTransferQueued||scope.sourceTransferInFlight)return;
+      // A real child fatal wins before source-payload preparation, just as it
+      // wins before source observation. Cancellation caused by this source
+      // outcome is not a replacement error.
+      preferFailure(scope.failure,scope.externalFatal);
+      for(auto member:scope.members){const auto &job=*jobs[member];if(job.failure&&!cancellationFailure(job.failure))preferFailure(scope.failure,job.failure);}
+      if(scope.failure)scope.sourceTransferPrepared=true;
+      else{queueSourceTransfer(index);return;}
+    }
+    if(scope.sourceTransferQueued||scope.sourceTransferInFlight)return;
     if(scope.resources){
       if(!scope.resourceRetirementStarted){scope.resourceRetirement.emplace(scope.resources->beginClose());scope.resourceRetirementStarted=true;}
       if(scope.resourceRetirementInFlight||!scope.resourceRetirement->ready()){changed.notify_all();return;}
@@ -703,7 +800,7 @@ struct TaskGroup::Impl {
         std::unique_lock lock(mutex);changed.wait(lock,[&]{return started||stop;});
         while(!stop){
           const bool resourceRegionsEnabled=bool(resourceRoot);
-          lock.unlock();flushValueRetirements();if(resourceRegionsEnabled)flushResourceRetirements();
+          lock.unlock();flushValueRetirements();flushSourceTransfers();if(resourceRegionsEnabled)flushResourceRetirements();
 #ifdef NEX_TASK_DEBUG_COMPLETION_ENABLED
           flushDebugCompletions();
 #endif

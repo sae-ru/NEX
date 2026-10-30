@@ -5,7 +5,7 @@ parser=argparse.ArgumentParser();parser.add_argument('module',type=Path);parser.
 args=parser.parse_args();source=Path(__file__).resolve().parents[1];out=args.output.resolve();out.mkdir(exist_ok=False)
 module=args.module.resolve();tools=args.tools.resolve();node=os.environ.get('NEX_NODE','node');env={**os.environ,'PLAYWRIGHT_BROWSERS_PATH':str(args.browsers_path.resolve()),'PYTHONDONTWRITEBYTECODE':'1'}
 started=time.monotonic();files={}
-for name in ['program.ts','nex-runtime.ts','nex-bytes.ts','nex-task-runtime.ts']:
+for name in ['program.ts','nex-runtime.ts','nex-bytes.ts','nex-task-runtime.ts','nex-source-exception-runtime.ts']:
  data=(module/name).read_bytes();(out/name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()
 (out/'package.json').write_text('{"type":"module"}\n')
 (out/'index.html').write_text('''<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>NEX private task probe</title></head><body><button id="start">Start</button><button id="stop">Stop</button><output role="status" id="status">Ready</output><script type="module" src="/browser.ts"></script></body></html>''')

@@ -798,9 +798,7 @@ int run(const Options &o) {
       if(native){
         ProcessResult actual;
         if(web){
-          auto module=emitTypeScript(p,{{"entry",f.name}});auto runtimeInputs=readFile(resourceFile("web/nex-runtime.ts"))+readFile(resourceFile("web/nex-bytes.ts"));
-          if(module.asynchronous)runtimeInputs+=readFile(resourceFile("web/nex-task-runtime.ts"));
-          if(module.privateSourceExceptions)runtimeInputs+=readFile(resourceFile("web/nex-source-exception-runtime.ts"));
+          auto module=emitTypeScript(p,{{"entry",f.name}});auto runtimeInputs=webRuntimeInputs(module);
           auto key=hash(module.source+runtimeInputs+NEX_BUILD_ID);
           actual=runTypeScriptTest(module,(fs::path(directory)/key/"typescript").string(),supervisorTimeout(taskLimits),taskTest?&taskLimits:nullptr);
         }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable),taskTest?supervisorTimeout(taskLimits):30);}

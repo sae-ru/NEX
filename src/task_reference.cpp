@@ -290,6 +290,7 @@ struct Reference {
     std::vector<size_t> members,children,pipes;
     std::shared_ptr<Error> failure;
     std::shared_ptr<SourceException> sourceFailure;
+    bool sourcePayloadTransferred=false;
     std::weak_ptr<RD> capability;
     std::unique_ptr<nexrt::ResourceRegion> resources;
     std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
@@ -441,7 +442,7 @@ struct Reference {
     if(auto cached=weak.lock())return RV(std::move(cached));
     auto result=TaskReferenceAccess::create(kind,identity,scope,i);weak=result.object;return result;
   }
-  void snapshot(const RV &root,size_t target,size_t current,const Job *actorJob=nullptr,bool receiverIsJobRoot=false,bool transfer=true){
+  void snapshot(const RV &root,size_t target,size_t current,const Job *actorJob=nullptr,bool receiverIsJobRoot=false,bool transfer=true,const nexrt::ResourceRegionAuthority *sourceAuthority=nullptr){
     std::vector<RV> work{root};std::unordered_set<const RD*> seen;size_t members=1;
     std::vector<nexrt::ExternalResource> owners;std::vector<nexrt::FileResource> files;std::unordered_set<uint64_t> ownerIds;
     while(!work.empty()){
@@ -480,11 +481,21 @@ struct Reference {
       if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource transfer requires enabled ownership regions");
       // Logical resource revocation is independent of pure task execution.
       // Resolve authority only after the complete graph requires owner transfer.
-      auto actor=actorJob?resourceAuthority(*actorJob):resourceRoot->authority();
+      auto actor=sourceAuthority?*sourceAuthority:actorJob?resourceAuthority(*actorJob):resourceRoot->authority();
       auto receiver=receiverIsJobRoot?actorJob->resources->authority():
           target==none?resourceRoot->authority():regions.at(target).resources->authority();
       nexrt::ExternalResource::transferRegions(owners,actor,receiver,transfer,files);
     }
+  }
+  void sourceSnapshot(const SourceException &error,size_t target,size_t current,const Job &job,bool receiverIsJobRoot=false){
+    if(!error.payload)return;
+    nexrt::ResourceRegionAuthority actor;
+    if(resourceRoot){
+      if(current==job.member&&job.resources)actor=job.resources->authority();
+      else if(current!=none&&regions[current].resources)actor=regions[current].resources->authority();
+      else actor=resourceRoot->authority();
+    }
+    snapshot(error.payload->value,target,current,&job,receiverIsJobRoot,true,actor?&actor:nullptr);
   }
   void enqueue(size_t i){auto &j=*jobs[i];if(j.state==Ready&&!j.queued){ready.push_back(i);j.queued=true;}}
   void answer(size_t i,RV result={}){
@@ -565,6 +576,13 @@ struct Reference {
         }
         if(std::any_of(r.members.begin(),r.members.end(),[&](size_t i){return jobs[i]->state!=Done;})||
            std::any_of(r.children.begin(),r.children.end(),[&](size_t i){return !regions[i].closed;}))continue;
+        if(r.sourceFailure&&!r.sourcePayloadTransferred){
+          auto &owner=*jobs[r.owner];
+          try{sourceSnapshot(*r.sourceFailure,r.parent,s,owner,r.parent==owner.member);}
+          catch(const Error &e){prefer(r.failure,std::make_shared<Error>(e));r.sourceFailure.reset();}
+          catch(const nexrt::DataError &e){prefer(r.failure,std::make_shared<Error>(e.code,e.what()));r.sourceFailure.reset();}
+          r.sourcePayloadTransferred=true;
+        }
         if(r.resources){
           if(!r.resourceRetirement){
             r.resourceRetirement.emplace(r.resources->beginClose());
@@ -816,7 +834,11 @@ struct Reference {
       // Root control takes precedence over a concurrently produced user error.
       try{checkControl(error.span);}catch(const Error &control){beginFinish(i,std::make_shared<Error>(control));return;}
       auto source=std::make_shared<SourceException>(error);auto &a=j.stack.back();
+      try{sourceSnapshot(error,a.region==none?j.member:a.parent,j.current,j,a.region!=none&&a.parent==j.member);}
+      catch(const Error &e){beginFinish(i,std::make_shared<Error>(e));return;}
+      catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.what(),error.span));return;}
       if(a.region==none){beginFinish(i,{},{},std::move(source));return;}
+      regions[a.region].sourcePayloadTransferred=true;
       auto scope=a.region;a.sourceFailure=std::move(source);a.completed=true;
       regions[scope].closing=true;regions[scope].abort=true;regions[scope].sourceFailure=a.sourceFailure;cancelRegion(scope);j.target=scope;j.state=Drain;
     }catch(const Error &e){

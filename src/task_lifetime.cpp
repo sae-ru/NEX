@@ -11,11 +11,13 @@ namespace {
 constexpr int unknownRegion=-1,outside=-2;
 struct Value;
 using V=std::shared_ptr<const Value>;
+using ErrorValues=std::map<std::string,V>; // SHA256 typed key; empty=legacy; *=unknown
 struct Callable {const Function *function;std::vector<V> captures;};
 struct Value {
   std::set<int> origins;
   std::vector<V> fields;
   std::map<std::string,Callable> calls;
+  ErrorValues sourceErrors; // Future outcomes retain their original payload provenance.
   bool opaque=false,file=false,resource=false,shape=false;
   std::optional<int64_t> integer;
   std::optional<bool> boolean,resultSuccess;
@@ -23,9 +25,15 @@ struct Value {
 // Immutable binding identity is separate from its current value and visible
 // spelling. Hidden outer bindings remain present until lexical scope exit.
 struct Env {std::map<std::string,uint64_t> names;std::map<uint64_t,V> values;};
-struct Outcome {V value;bool raises=false;};
+struct Outcome {V value;bool raises=false;ErrorValues errors;};
 struct ReturnState {V value;Env state;};
-struct HandlerInput {Env baseline;std::optional<Env> exceptional;};
+struct SourceState {Env state;V payload;};
+struct HandlerInput {Env baseline;std::optional<Env> exceptional;std::map<std::string,SourceState> sources;};
+struct CatchSources {
+  std::vector<ErrorValues> &stack;
+  CatchSources(std::vector<ErrorValues> &stack,ErrorValues errors):stack(stack){stack.push_back(std::move(errors));}
+  ~CatchSources(){stack.pop_back();}
+};
 struct Analysis {
   const Program &p;
   TaskLifetimeReport report;
@@ -36,7 +44,7 @@ struct Analysis {
   std::vector<ReturnState> *returns=nullptr;
   uint64_t nextBinding=0;
   std::vector<HandlerInput*> handlers;
-  bool escaping=false;
+  bool escaping=false;ErrorValues escapingSources;std::vector<ErrorValues> caughtSources;
   struct Exhausted {};
   void declare(Env &env,const std::string &name,V value){auto id=++nextBinding;env.names[name]=id;env.values[id]=std::move(value);}
   void assign(Env &env,const std::string &name,V value){auto it=env.names.find(name);if(it==env.names.end())throw Error("E_INTERNAL","lifetime assignment lost its checked binding");env.values[it->second]=std::move(value);}
@@ -44,14 +52,31 @@ struct Analysis {
   Env project(const Env &state,const Env &baseline){
     Env result=baseline;for(auto &[id,value]:result.values){auto found=state.values.find(id);if(found!=state.values.end())value=found->second;}return result;
   }
-  void sourceEdge(const Env &env){
-    if(!supportsSourceExceptionTasks(p))return;
-    ++report.exceptionalEdges;
-    if(handlers.empty()){escaping=true;return;}
-    auto &handler=*handlers.back();auto state=project(env,handler.baseline);
-    if(!handler.exceptional)handler.exceptional=std::move(state);
-    else{mergeEnv(*handler.exceptional,state);++report.exceptionalJoins;}
+  void mergeSources(ErrorValues &target,const ErrorValues &source){
+    for(const auto &[key,value]:source){tick();auto selected=target.size()>=64&&!target.contains(key)?std::string("*"):key;
+      if(selected!=key)++report.widenings;auto found=target.find(selected);if(found==target.end())target[selected]=value;else found->second=join(found->second,value);
+    }
   }
+  V unknownSource(){auto v=std::make_shared<Value>();v->opaque=true;return v;}
+  void sourceEdge(const Env &env,const std::string &key="*",V payload={}){
+    if(!supportsSourceExceptionTasks(p))return;
+    if(!payload)payload=key.empty()?plain():unknownSource();
+    ++report.exceptionalEdges;
+    if(handlers.empty()){escaping=true;mergeSources(escapingSources,{{key,payload}});return;}
+    auto &handler=*handlers.back();auto state=project(env,handler.baseline);
+    if(!handler.exceptional)handler.exceptional=state;
+    else{mergeEnv(*handler.exceptional,state);++report.exceptionalJoins;}
+    auto selected=handler.sources.size()>=64&&!handler.sources.contains(key)?std::string("*"):key;
+    if(selected!=key)++report.widenings;auto found=handler.sources.find(selected);
+    if(found==handler.sources.end())handler.sources.emplace(selected,SourceState{std::move(state),std::move(payload)});
+    else{mergeEnv(found->second.state,state);found->second.payload=join(found->second.payload,payload);}
+  }
+  void propagate(const Outcome &out,const Env &env){
+    if(!out.raises)return;
+    if(out.errors.empty())sourceEdge(env);
+    else for(const auto &[key,value]:out.errors)sourceEdge(env,key,value);
+  }
+  ErrorValues packets(const HandlerInput &handler){ErrorValues result;for(const auto &[key,state]:handler.sources)result[key]=state.payload;return result;}
   void tick(){if(report.steps>=limit)throw Exhausted{};++report.steps;}
   V plain()const{static V v=std::make_shared<Value>();return v;}
   V unknown(const Type &type){
@@ -93,6 +118,7 @@ struct Analysis {
       value->shape=true;
       for(size_t i=0;i<a->fields.size();++i)value->fields.push_back(join(a->fields[i],b->fields[i],depth+1));
     }
+    mergeSources(value->sourceErrors,a->sourceErrors);mergeSources(value->sourceErrors,b->sourceErrors);
     value->calls=a->calls;
     for(const auto &[name,call]:b->calls){
       auto found=value->calls.find(name);
@@ -142,14 +168,14 @@ struct Analysis {
   }
   void usable(V value,int current,Span span){transfer(value,{current},span,"task operation");}
   Outcome invoke(V callable,const std::vector<V> &arguments,int current,const Type &result,Span span,bool unknownThrows=false){
-    tick();std::vector<V> values;bool raises=false;
+    tick();std::vector<V> values;bool raises=false;ErrorValues errors;
     for(const auto &[name,call]:callable->calls){
-      (void)name;auto out=function(*call.function,arguments,call.captures,current);if(out.value)values.push_back(out.value);raises|=out.raises;
+      (void)name;auto out=function(*call.function,arguments,call.captures,current);if(out.value)values.push_back(out.value);raises|=out.raises;mergeSources(errors,out.errors);if(out.raises&&out.errors.empty())mergeSources(errors,{{"*",unknownSource()}});
     }
     if(callable->opaque||callable->calls.empty()){
-      ++report.opaqueCalls;values.push_back(unknown(result));raises|=unknownThrows;++report.dynamic;
+      ++report.opaqueCalls;values.push_back(unknown(result));raises|=unknownThrows;if(unknownThrows)mergeSources(errors,{{"*",unknownSource()}});++report.dynamic;
     }
-    (void)span;return {values.empty()?V{}:joined(values,result),raises};
+    (void)span;return {values.empty()?V{}:joined(values,result),raises,std::move(errors)};
   }
   Outcome function(const Function &fn,const std::vector<V> &args,const std::vector<V> &captures,int current){
     tick();
@@ -160,14 +186,14 @@ struct Analysis {
     for(size_t i=0;i<fn.params.size();++i)declare(env,fn.params[i].name,i<args.size()?args[i]:unknown(fn.params[i].type));
     for(size_t i=0;i<fn.captures.size();++i)declare(env,fn.captures[i].name,i<captures.size()?captures[i]:unknown(fn.captures[i].type));
     std::vector<ReturnState> states;auto previous=returns;returns=&states;
-    auto previousHandlers=std::move(handlers);handlers.clear();auto previousEscaping=escaping;escaping=false;
+    auto previousHandlers=std::move(handlers);handlers.clear();auto previousEscaping=escaping;escaping=false;auto previousSources=std::move(escapingSources);escapingSources.clear();auto previousCaught=std::move(caughtSources);caughtSources.clear();ErrorValues errors;
     bool ended=false,raised=false;
-    try{ended=block(fn.body,env,current,false);raised=escaping;}
-    catch(...){returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;active.erase(&fn);throw;}
-    returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;active.erase(&fn);
+    try{ended=block(fn.body,env,current,false);raised=escaping;errors=std::move(escapingSources);}
+    catch(...){returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;escapingSources=std::move(previousSources);caughtSources=std::move(previousCaught);active.erase(&fn);throw;}
+    returns=previous;handlers=std::move(previousHandlers);escaping=previousEscaping;escapingSources=std::move(previousSources);caughtSources=std::move(previousCaught);active.erase(&fn);
     std::vector<V> values;for(const auto &state:states)values.push_back(state.value);
     if(!ended)values.push_back(fn.result==Type::Unit?plain():unknown(fn.result));
-    return {values.empty()?V{}:joined(values,fn.result),raised};
+    return {values.empty()?V{}:joined(values,fn.result),raised,std::move(errors)};
   }
   V callable(const Function &fn,std::vector<V> captures){
     auto value=std::make_shared<Value>();
@@ -186,7 +212,9 @@ struct Analysis {
       transfer(args[1],{region},e->span,"scope callback");
       sourceEdge(envForRequest); // Wait/close has a latent source error by contract.
       auto out=invoke(args[1],{capability(region)},region,e->type,e->span);
-      if(out.value)transfer(out.value,{current},e->span,"scope return");return out.value;
+      if(out.value)transfer(out.value,{current},e->span,"scope return");
+      for(const auto &[key,payload]:out.errors){transfer(payload,{current},e->span,"scope source error");sourceEdge(envForRequest,key,payload);}
+      return out.value;
     }
     usable(args[0],current,e->span);
     if(name=="task_spawn"){
@@ -194,7 +222,9 @@ struct Analysis {
       auto target=destination.size()==1?*destination.begin():unknownRegion;
       auto out=invoke(args[1],{},target,*e->type.element,e->span,true);
       if(out.value)transfer(out.value,destination,e->span,"task return");
-      auto value=std::make_shared<Value>(*capability(target));
+      for(const auto &[key,payload]:out.errors)transfer(payload,destination,e->span,"task source error");
+      auto value=std::make_shared<Value>(*capability(target));value->sourceErrors=out.errors;
+      if(out.raises&&out.errors.empty())value->sourceErrors["*"]=unknownSource();
       value->shape=true;value->fields.push_back(out.value);
       value->origins=std::move(destination);return value;
     }
@@ -204,7 +234,11 @@ struct Analysis {
     if(name=="task_send"){
       transfer(args[1],owners(args[0]),e->span,"channel send");return plain();
     }
-    if(name=="task_wait"){sourceEdge(envForRequest);return field(args[0],0,e->type);}
+    if(name=="task_wait"){
+      if(args[0]->sourceErrors.empty())sourceEdge(envForRequest);
+      else for(const auto &[key,payload]:args[0]->sourceErrors)sourceEdge(envForRequest,key,payload);
+      return field(args[0],0,e->type);
+    }
     if(name=="task_recv")return unknown(e->type);
     return plain();
   }
@@ -252,7 +286,7 @@ struct Analysis {
     case Expr::Invoke:{
       auto fn=expression(e->args[0],env,current);if(!fn)return {};std::vector<V> args;
       for(size_t i=1;i<e->args.size();++i){auto value=expression(e->args[i],env,current);if(!value)return {};args.push_back(value);}
-      auto out=invoke(fn,args,current,e->type,e->span,e->args[0]->type.effects.contains("throw"));if(out.raises)sourceEdge(env);return out.value;
+      auto out=invoke(fn,args,current,e->type,e->span,e->args[0]->type.effects.contains("throw"));propagate(out,env);return out.value;
     }
     case Expr::Propagate:{auto value=expression(e->args[0],env,current);if(!value)return {};if(value->resultSuccess!=true)returns->push_back({plain(),env});return value->resultSuccess==false?V{}:field(value,0,e->type);}
     case Expr::Unary:{auto value=expression(e->args[0],env,current);if(!value)return {};
@@ -270,7 +304,7 @@ struct Analysis {
     std::vector<V> args;for(auto arg:e->args){auto value=expression(arg,env,current);if(!value)return {};args.push_back(value);}
     if(taskBuiltins().contains(e->text))return request(e,args,current,env);
     auto fn=functions.find(e->text);
-    if(fn!=functions.end()){auto out=function(*fn->second,args,{},current);if(out.raises)sourceEdge(env);return out.value;}
+    if(fn!=functions.end()){auto out=function(*fn->second,args,{},current);propagate(out,env);return out.value;}
     if(p.hasStructure(e->text)||p.variant(e->text))return aggregate(std::move(args));
     if(e->text=="ok"||e->text=="err"){auto value=std::make_shared<Value>(*aggregate(std::move(args)));value->resultSuccess=e->text=="ok";return value;}
     if(e->text=="unwrap")return field(args[0],0,e->type);
@@ -295,26 +329,32 @@ struct Analysis {
       tick();if(ended)break;
       switch(s->kind){
       case Stmt::TypedThrow:{
-        auto value=expression(s->expr,env,current);if(value)sourceEdge(env);ended=true;break;
+        auto value=expression(s->expr,env,current);if(value)sourceEdge(env,s->errorTypeKey,value);ended=true;break;
       }
       case Stmt::TypedTry:{
         ++report.handlers;HandlerInput handler{env,{}};auto normal=env;handlers.push_back(&handler);bool bodyEnds;
         try{bodyEnds=block(s->body,normal,current);}catch(...){handlers.pop_back();throw;}handlers.pop_back();
-        std::optional<Env> continuation;if(!bodyEnds)continuation=normal;bool universal=false;
-        if(handler.exceptional)for(auto clause:s->alternative){
-          auto caught=*handler.exceptional;
-          declare(caught,clause->name,clause->type==Type::Unknown?plain():unknown(clause->type));
-          if(clause->type==Type::Unknown)declare(caught,clause->catchMessage,plain());
-          auto guard=clause->expr?expression(clause->expr,caught,current):plain();
-          if(!guard)continue;
-          if(guard->boolean&&!*guard->boolean)continue;
-          bool catchEnds=block(clause->body,caught,current);
-          if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
-          if(clause->type==Type::Unknown&&totalSourceHandler(clause)){universal=true;break;}
+        std::optional<Env> continuation;if(!bodyEnds)continuation=normal;
+        auto pending=handler.sources;
+        for(auto clause:s->alternative){
+          std::map<std::string,SourceState> declined;
+          auto keep=[&](const std::string &key,SourceState state){auto found=declined.find(key);if(found==declined.end())declined.emplace(key,std::move(state));else{mergeEnv(found->second.state,state.state);found->second.payload=join(found->second.payload,state.payload);}};
+          for(const auto &[key,edge]:pending){tick();bool typed=clause->type!=Type::Unknown;
+            if(typed&&key!="*"&&key!=clause->errorTypeKey){keep(key,edge);continue;}
+            if(typed&&key=="*")keep(key,edge); // It may have a different concrete type.
+            auto caught=edge.state;auto bound=typed?(key=="*"?unknown(clause->type):edge.payload):plain();
+            declare(caught,clause->name,bound);if(!typed)declare(caught,clause->catchMessage,plain());
+            CatchSources lexical(caughtSources,{{typed?clause->errorTypeKey:key,typed?bound:edge.payload}});
+            auto guard=clause->expr?expression(clause->expr,caught,current):plain();
+            if(!guard)continue;
+            if(clause->expr&&guard->boolean!=true)keep(key,{project(caught,env),edge.payload});
+            if(guard->boolean==false)continue;
+            bool catchEnds=block(clause->body,caught,current);
+            if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
+          }
+          pending=std::move(declined);if(pending.empty())break;
         }
-        // Payload authority remains rejected by the checker. Until typed effect
-        // rows exist, conservatively retain every possible unmatched source edge.
-        if(handler.exceptional&&!universal)sourceEdge(*handler.exceptional);
+        for(const auto &[key,edge]:pending)sourceEdge(edge.state,key,edge.payload);
         if(continuation)env=std::move(*continuation);else ended=true;break;
       }
       case Stmt::CatchClause:throw Error("E_INTERNAL","lifetime handler clause outside protected statement",s->span);
@@ -332,9 +372,9 @@ struct Analysis {
           auto state=project(pending.state,baseline);
           if(!block(s->alternative,state,current))returns->push_back({pending.value,std::move(state)});
         }
-        if(handler.exceptional){
-          auto state=project(*handler.exceptional,baseline);
-          if(!block(s->alternative,state,current))sourceEdge(state);
+        for(const auto &[key,edge]:handler.sources){
+          auto state=project(edge.state,baseline);
+          if(!block(s->alternative,state,current))sourceEdge(state,key,edge.payload);
         }
         if(continuation)env=std::move(*continuation);else ended=true;
         break;
@@ -346,9 +386,10 @@ struct Analysis {
         std::optional<Env> continuation;if(!bodyEnds)continuation=normal;
         if(handler.exceptional){
           auto caught=*handler.exceptional;declare(caught,s->name,plain());declare(caught,s->catchMessage,plain());
+          CatchSources lexical(caughtSources,packets(handler));
           bool guardReady=!s->expr||bool(expression(s->expr,caught,current));
           if(guardReady){
-            if(!totalSourceHandler(s))sourceEdge(caught);
+            if(!totalSourceHandler(s))for(const auto &[key,payload]:caughtSources.back())sourceEdge(caught,key,payload);
             bool catchEnds=block(s->alternative,caught,current);
             if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
           }
@@ -359,7 +400,7 @@ struct Analysis {
       case Stmt::Throw:{
         if(!supportsSourceExceptionTasks(p))throw Error("E_EXCEPTION_BACKEND","task exception lifetimes require the dedicated private task parser",s->span);
         bool ready=true;if(s->expr)for(auto arg:s->expr->args)if(!expression(arg,env,current)){ready=false;break;}
-        if(ready)sourceEdge(env);ended=true;break;
+        if(ready){if(s->expr)sourceEdge(env,"",plain());else if(caughtSources.empty())sourceEdge(env);else for(const auto &[key,payload]:caughtSources.back())sourceEdge(env,key,payload);}ended=true;break;
       }
       case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr,env,current);if(!value){ended=true;break;}declare(env,s->name,value);declared.push_back({s->name,env.names.at(s->name)});break;}
       case Stmt::Assign:{auto value=expression(s->expr,env,current);if(value)assign(env,s->name,value);else ended=true;break;}
@@ -400,7 +441,7 @@ struct Analysis {
     try{
       if(!entry.empty()){
         const auto &fn=p.function(entry);std::vector<V> args;for(const auto &param:fn.params)args.push_back(unknown(param.type));
-        auto out=function(fn,args,{},0);if(out.value)transfer(out.value,{outside},fn.span,"entry return");
+        auto out=function(fn,args,{},0);if(out.value)transfer(out.value,{outside},fn.span,"entry return");for(const auto &[key,payload]:out.errors)transfer(payload,{outside},fn.span,"entry source error");
       }else{
         for(const auto &fn:p.functions)if(!fn.closure&&fn.typeParameters.empty()&&!fn.traitSignature&&!fn.foreign){
           std::vector<V> args;for(const auto &param:fn.params)args.push_back(unknown(param.type));function(fn,args,{},0);

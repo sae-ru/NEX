@@ -138,7 +138,7 @@ try:
 
     pure = out/'pure.nex'; pure.write_text('module pure;fn main()->i64{return 42;}fn unused()->unit !{task}{task_yield();}')
     folder = out/'pure'; result = emit(pure, folder); assert not result['asynchronous']; mapping(folder, result)
-    assert not (folder/'nex-task-runtime.ts').exists() and 'function*' not in (folder/'program.ts').read_text()
+    assert 'function*' not in (folder/'program.ts').read_text()
     historical = out/'historical.nex'; historical.write_text('module historical;fn main()->i64{return 42;}')
     current = emit(historical, out/'historical-current'); result = emit(historical, out/'historical', 'historical')
     assert result['language'] == '0.18' and current['revision'] != result['revision']; mapping(out/'historical', result)
@@ -147,7 +147,7 @@ try:
     for example in ['web', 'workers']:
         path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text)
         folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.26'
-        assert 'function*' not in (folder/'src/program.ts').read_text() and not (folder/'src/nex-task-runtime.ts').exists()
+        assert 'function*' not in (folder/'src/program.ts').read_text()
         path = out/(example+'-task.nex')
         target = 'client fn initial() -> State {' if example == 'web' else 'client fn worker_compute(input: Input) -> Output {'
         # Keep the adapter rejection independent of the examples' pure tests

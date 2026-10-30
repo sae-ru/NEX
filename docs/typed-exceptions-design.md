@@ -1,10 +1,22 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.145.0 keeps public language0.26 and `typed_payloads: false`.
+Toolchain0.146.0 keeps public language0.26 and `typed_payloads: false`.
 Typed syntax is only available through an explicit C++ version selection;
 public CLI/projects remain026 and cannot archive027. The development field `source_exceptions.typed_payload_development` describes internal C++
 transport and version-selected frontend/reference/synchronous native/TypeScript scope. This document distinguishes that implementation from the
 proposed language0.27 design below.
+
+The current explicit027 development selection also carries authority in source
+errors: exceptional provenance plus mandatory runtime checks cover callable
+captures, scopes/futures/channels and native/reference file/resource owners.
+Native scope close prepares the selected outcome outside scheduler locks before
+resource retirement. Its new private cohort is2702;2701 and public ABI6 retain
+their identities. TypeScript uses compiler-emitted keyed transfer contracts,
+keeps data out of public metadata and continues to reject browser file/FFI/server
+authority. See the current rules in [the language specification](language.md).
+Public027 projects, source library/provider protocols, graph migration and full
+SDK/platform delivery remain pending. The proposed public contract below is not
+a claim that those remaining delivery gates have passed.
 
 ## Implemented foundation
 

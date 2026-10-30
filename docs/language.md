@@ -1,3 +1,39 @@
+# Candidate027 authority transfer development0.146.0
+
+Explicit027 C++ selection admits typed errors containing checked callables,
+task scopes/futures/channels and native/reference file/external resource owners,
+including nested aggregates and captures. Known owner escapes are rejected by
+the exceptional lifetime pass. Unknown channel/call provenance retains mandatory
+runtime guards; it does not acquire a longer lifetime from a catch clause.
+
+A task validates its outgoing source outcome before its resource region ends.
+Implicit scope close prepares an unobserved child's selected source payload
+before retiring scope capabilities or resources. Native prepare runs outside
+the scheduler mutex while actor/receiver regions remain live. Mixed file/resource
+promotion is atomic after the complete bounded capability graph validates.
+Real fatal errors win over a source transfer; cancellation and fatal traps still
+skip user finalizers. Resource cleanup and physical settlement still complete.
+
+New native code uses private cohort0x4e45585400002702. Retained2701 and public
+88-byte ABI6 keep their identity; cross-cohort calls reject before mutation.
+TypeScript027 generators require runTypedSourceErrors with the generated,
+immutable sourceErrorContracts. Only included client/shared functions contribute
+concrete keys; unknown keys fail E_SOURCE_TYPE. The scheduler uses keyed reads,
+never an unkeyed payload getter or host payload callback. Public error details
+remain copied code/message/site. Browser file/FFI/server authority remains rejected.
+
+Exceptional analysis retains up to64 concrete error alternatives, then widens
+to unknown with a runtime obligation. Rethrow, handler/filter replacement,
+finalizer overrides, outer assignments, aggregate projections and future errors
+preserve their actual provenance. No static-analysis bypass is shipped.
+
+Tests cover real AST/TaskIR/Node/native results, known rejected escapes, runtime
+escapes hidden behind legitimate channel receives, resource retirement and
+bounded joins. Full development regression, source027 library/provider delivery,
+public CLI/project selection, archive/migration, installed SDK and platform
+acceptance remain separate gates. This development capability does not satisfy
+those gates or the remaining project plan.
+
 # Candidate027 resumable typed errors development0.145.0
 
 Explicit027 C++ selection lowers ordered typed/legacy handlers through the

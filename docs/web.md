@@ -332,3 +332,19 @@ Chromium/Firefox/WebKit transitions are exercised. The existing DOM event
 contract still uses web::Event/action strings. Callback values do not become
 JSON payloads or direct client/server calls. See the function guide for exact
 signatures, snapshot captures, identity, effects/realms and wire bounds.
+# Candidate027 source-error ownership development
+
+Version-selected027 task exports use `task.enterTyped` and must be run through
+`task.runTypedSourceErrors(task.call(() => program.entry()), program.sourceErrorContracts)`.
+The compiler emits only the concrete error contracts needed by included
+client/shared code. The driver copies and bounds the contracts, rejects unknown
+keys, and validates outgoing payload graphs before retiring a scope. A local
+scope, future, channel or captured local capability cannot escape in an error.
+Public error metadata contains only code/message/site. File and external
+resources, server code and browser UI/Worker027 delivery remain excluded.
+
+The source-error and task helper modules share private capability brand checks.
+Generated adapters include both transitive helpers when either is needed;
+synchronous source exports retain ordinary synchronous signatures. Cache keys
+include both helper sources. No npm dependency or runtime notice changes are
+required for this implementation.

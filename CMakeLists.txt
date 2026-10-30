@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.145.0 LANGUAGES C CXX)
+project(NEX VERSION 0.146.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1357,6 +1357,26 @@ target_link_libraries(nex_typed_source_tasks_probe PRIVATE nex_native_backend ne
 target_compile_options(nex_typed_source_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME typed_source_tasks COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_tasks.py $<TARGET_FILE:nex_typed_source_tasks_probe>
-  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++)
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR})
 set_tests_properties(typed_source_tasks PROPERTIES TIMEOUT 1800)
 install(FILES tests/typed_source_tasks.cpp tests/typed_source_tasks.py DESTINATION share/nex/tests)
+
+add_executable(nex_source_error_authority_kernel_probe tests/source_error_authority_kernel.cpp
+  runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp
+  runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+target_include_directories(nex_source_error_authority_kernel_probe PRIVATE runtime)
+target_compile_definitions(nex_source_error_authority_kernel_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS NEX_PROFILE_ENABLED)
+target_compile_options(nex_source_error_authority_kernel_probe PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(nex_source_error_authority_kernel_probe PRIVATE Threads::Threads)
+add_test(NAME source_error_authority_kernel COMMAND nex_source_error_authority_kernel_probe)
+set_tests_properties(source_error_authority_kernel PROPERTIES TIMEOUT 180)
+install(FILES tests/source_error_authority_kernel.cpp DESTINATION share/nex/tests)
+add_test(NAME source_error_authority_typescript COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_error_authority_typescript.py)
+set_tests_properties(source_error_authority_typescript PROPERTIES TIMEOUT 180)
+install(FILES tests/source_error_authority_typescript.py tests/source_error_authority_typescript.mjs DESTINATION share/nex/tests)
+add_test(NAME typed_source_authority_provenance COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_authority.py $<TARGET_FILE:nex_typed_source_tasks_probe>)
+set_tests_properties(typed_source_authority_provenance PROPERTIES TIMEOUT 180)
+install(FILES tests/typed_source_authority.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/typed-error-authority-static.json tests/fixtures/typed-error-authority-bounded.nex DESTINATION share/nex/tests/fixtures)

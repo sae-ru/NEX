@@ -68,8 +68,10 @@ int main(){try{
   rejects(R"(fn main()->unit{try{throw(42);}catch(error:i64){throw("new");}catch(error:str){}})","E_EFFECT");
   rejects(R"(fn main()->unit{try{}catch(error:unit){}})","E_TYPE");
   rejects(R"(fn nothing()->unit{}fn main()->unit !{throw}{throw(nothing());})","E_TYPE");
-  rejects(R"(fn main()->unit !{throw}{throw(fn()->i64{return 42;});})","E_TYPED_EXCEPTION_AUTHORITY");
-  rejects(R"(server fn main()->unit{try{}catch(error:file){}})","E_TYPED_EXCEPTION_AUTHORITY");
+  value(R"(fn main()->i64{try{throw(fn()->i64{return 42;});}catch(error:fn()->i64){return error();}})");
+  value(R"(fn main()->i64{let original:i64=42;try{throw(fn()->i64{return original;});}catch(error:fn()->i64) if false{return 0;}catch(error:fn()->i64){return error();}})");
+  value(R"(struct Problem{callback:fn()->i64;}fn main()->i64{try{throw(Problem(fn()->i64{return 42;}));}catch(error:Problem){return error.callback();}})");
+  {auto p=source(R"(server fn main()->unit{try{}catch(error:file){}})");(void)p;++cases;}
   {auto p=source(R"(fn main()->unit !{task}{})");require(p.function("main").effects.contains("task"),"candidate027 task function rejected");++cases;}
   {
     auto p=source(R"(fn main()->i64{try{let x:i64=9223372036854775807+1;return x;}catch(error:i64){return 0;}catch(code,message){return 1;}})");

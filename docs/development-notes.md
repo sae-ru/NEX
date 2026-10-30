@@ -10,6 +10,28 @@ Former README SHA256 before rebasing: `0cb559270390a7ce2b2799f286e7f1379676cef14
 
 ---
 
+# NEX0.146 / public026 — typed authority development
+
+The explicit027 development API now checks authority-bearing errors across
+reference, native and TypeScript. The candidate passes18 targeted CTest groups,
+including actual LLDB finally watches outside the desktop sandbox,43 independent
+AST/TaskIR programs,35 Node comparisons and172 O0/O2 native worker executions.
+Real C FFI factories/finalizers and mixed file/resource outcomes are checked.
+The52-case native kernel also passes ASan/UBSan with physical allocation counts;
+LeakSanitizer is disabled on this host. Static provenance rejects10 known escapes
+and bounds a70-type join;40 Node boundary cases cover keyed contracts and brands.
+
+Native cohort2702 and TypeScript map027-3 distinguish the new transfer protocol
+from retained2701 and public ABI6. The full276-group run, installed SDK, platforms,
+source027 library/provider delivery and genuine graph migration remain pending.
+Targeted receipts do not certify those gates. The prior145 full273-group run
+passed for compiler SHA256
+`a47dc7a8125d9703a54e8bddb3c4cf24861ae819b7088bde79c1d458ed4c0118`;
+that separate receipt does not certify146. The primary081 source and47-revision
+graph, all16 tables/schema/IDs, remain unchanged.
+
+---
+
 # NEX 0.137.1 / language0.26 — handler development
 
 This worktree develops catch filters and the forthcoming finally semantics.

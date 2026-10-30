@@ -1,7 +1,10 @@
 Candidate027 task development is available only through explicit C++ version
 selection. AST, TaskIR, native continuation and TypeScript generators retain
-owned payloads through suspension; native cohort0x2701 is private. Authority
-payloads, public027 projects/providers, graph migration and SDK delivery remain
+owned payloads through suspension. Private native cohort0x2702 adds checked
+callable/task/file/resource payload ownership; retained0x2701 and public ABI6
+keep their identities. TypeScript027 generators require runTypedSourceErrors
+with their emitted sourceErrorContracts. Browser file/FFI/server authority stays
+rejected. Public027 projects/providers, graph migration and SDK delivery remain
 pending. Query typed_payload_development; keep ordinary projects on public026.
 
 Candidate027 sequential native lowering, like its TypeScript development

@@ -111,10 +111,20 @@ TaskFileRequirements nativeTaskFiles(const Program &p,const std::set<std::string
   return result;
 }
 int64_t privateExceptionTaskABI(const Program &p,const std::vector<TaskFunctionIR> &functions){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)return nexrt::taskCodeTypedErrorDevelopmentABI;
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)return nexrt::taskCodeTypedAuthorityDevelopmentABI;
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))return nexrt::taskCodeSourceExceptionABI;
   TaskFileRequirements files;for(const auto &ir:functions){files.include(p,ir);const auto &f=p.function(ir.name);if(f.effects.contains("fs")||f.effects.contains("ffi"))return nexrt::taskCodeExceptionHostPrototypeABI;}
   return files.reads||files.writes||files.streams?nexrt::taskCodeExceptionHostPrototypeABI:nexrt::taskCodeExceptionPrototypeABI;
+}
+int64_t sourceErrorHeapKind(const Program &p,const Type &t,Span span){
+  switch(t.kind){
+    case Type::Str:return nexrt::Data::String;case Type::Bytes:return nexrt::Data::Bytes;
+    case Type::List:return nexrt::Data::List;case Type::Result:return -1;
+    case Type::Function:return nexrt::Data::Closure;case Type::File:return nexrt::Data::File;
+    case Type::TaskScope:return nexrt::Data::TaskScope;case Type::Task:return nexrt::Data::Task;case Type::Channel:return nexrt::Data::Channel;
+    case Type::Record:{const auto &record=p.structure(t.name);return record.opaqueResource?nexrt::Data::External:record.enumeration?nexrt::Data::Enum:nexrt::Data::Record;}
+    default:throw Error("E_INTERNAL","typed handler has no native heap kind",span);
+  }
 }
 void validateNativeTaskFunction(const Program &p,const Function &function){
   const bool reads=supportsTaskFileReads(p)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("fs");
@@ -818,7 +828,7 @@ class Emitter {
           if(typed){
             auto key=text(clause->errorTypeKey,clause->span);int64_t kind=0;
             if(t.heap()){
-              if(t==Type::Str)kind=nexrt::Data::String;else if(t==Type::Bytes)kind=nexrt::Data::Bytes;else if(t.kind==Type::List)kind=nexrt::Data::List;else if(t.kind==Type::Result)kind=-1;else if(t.kind==Type::Record)kind=p.structure(t.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record;else throw Error("E_TYPED_EXCEPTION_AUTHORITY","native typed authority transport is pending",clause->span);
+              kind=sourceErrorHeapKind(p,t,clause->span);
               value=call("nex_source_error_heap",{packet,key,constant(kind,Type::I64,clause->span),constant(clause->span.line,Type::I64,clause->span)},t,clause->span);
             }else value=fromScalar(call("nex_source_error_scalar",{packet,key,constant(scalarTag(t),Type::I64,clause->span),constant(clause->span.line,Type::I64,clause->span)},Type::I64,clause->span),t,clause->span);
             release(key,clause->span);
@@ -1007,7 +1017,7 @@ class Emitter {
           auto code=call("nex_source_error_code",{packet},Type::Str,op.span),message=call("nex_source_error_message",{packet},Type::Str,op.span);put(op.bindings[0],code,op.span);put(op.bindings[1],message,op.span);release(code,op.span);release(message,op.span);
         }else{
           const auto &type=ir.slots.at(op.bindings[0]).type;auto key=text(op.operation,op.span);Value value;
-          if(type.heap()){int64_t kind=type==Type::Str?nexrt::Data::String:type==Type::Bytes?nexrt::Data::Bytes:type.kind==Type::List?nexrt::Data::List:type.kind==Type::Result?-1:p.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record;value=call("nex_source_error_heap",{packet,key,c(kind,op.span),c(op.span.line,op.span)},type,op.span);}
+          if(type.heap()){auto kind=sourceErrorHeapKind(p,type,op.span);value=call("nex_source_error_heap",{packet,key,c(kind,op.span),c(op.span.line,op.span)},type,op.span);}
           else value=fromScalar(call("nex_source_error_scalar",{packet,key,c(scalarTag(type),op.span),c(op.span.line,op.span)},Type::I64,op.span),type,op.span);
           put(op.bindings[0],value,op.span);release(value,op.span);release(key,op.span);
         }

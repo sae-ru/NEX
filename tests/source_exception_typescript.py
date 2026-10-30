@@ -37,7 +37,7 @@ for name,text in cases:
  reference=json.loads(run([probe,'reference',f]));(d/'reference.json').write_text(json.dumps(reference,indent=2)+'\n')
  run([probe,'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text())
  assert mapping['schema']=='nex.private-typescript-exception-map/1' and mapping['language']=='0.25-prototype' and mapping['source_support'] is False and mapping['public_revision'] is False and 'revision' not in mapping
- assert not (d/'nex-task-runtime.ts').exists(),name
+ assert mapping['execution']=='synchronous' and 'function*' not in (d/'program.ts').read_text(),name
  assert all(isinstance(v['operations'],list) and v['operations'] for v in mapping['functions']),name
  script=d/'run.mjs';script.write_text(runner);raw=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]);actual=json.loads(raw);(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
  assert actual['kind']==reference['kind'],(name,actual,reference)
@@ -54,7 +54,7 @@ for name,text in cases:
  programs.append(d/'program.ts');records.append({'name':name,'source_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'reference':reference['kind'],'passed':True,'source_map_private':True});save()
 # Actual runtime identity handling; structural similarity alone is not a source exception.
 boundary=out/'runtime-boundary';boundary.mkdir(exist_ok=True)
-for filename in ['nex-runtime.ts','nex-bytes.ts','nex-source-exception-runtime.ts']:shutil.copy2(out/cases[0][0]/filename,boundary/filename)
+for filename in ['nex-runtime.ts','nex-bytes.ts','nex-source-exception-runtime.ts','nex-task-runtime.ts']:shutil.copy2(out/cases[0][0]/filename,boundary/filename)
 (boundary/'run.mjs').write_text(r'''import * as nex from './nex-runtime.ts';import * as sourceException from './nex-source-exception-runtime.ts';
 let cases=0;
 for(const error of [new Error('host'),new nex.NexError('E_ASSERT','assertion'),{code:'USER',message:'plain'},'text',null,undefined]){
