@@ -50,6 +50,7 @@ void requireStructure(const Program &p,const std::string &name,const std::vector
 }
 struct Project {std::map<std::string,std::string> files;llvm::json::Value metadata;};
 Project prepare(const Program &p){
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_DELIVERY","027 browser UI/Worker delivery requires matching adapter acceptance; use the explicit TypeScript emitter");
   auto attribute=Type::record("std::web::Attribute"),binding=Type::record("std::web::Binding"),event=Type::record("std::web::Event"),view=Type::record("std::web::View");
   requireStructure(p,attribute.name,{{"name",Type::Str},{"value",Type::Str}});
   requireStructure(p,binding.name,{{"event",Type::Str},{"action",Type::Str}});

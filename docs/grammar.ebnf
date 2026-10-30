@@ -1,3 +1,6 @@
+(* Toolchain147 explicit C++ archival/migration assigns027 nex.program/15;
+   retained026 nex.program/14 and ordinary CLI selection are unchanged.
+   Migration changes graph state only through guarded explicit publication. *)
 (* Candidate027 authority transfer uses existing syntax. Cohort0x2702 and
    checked source-error contracts are runtime/codegen rules; public026 and
    retained0x2701 identities are unchanged. *)

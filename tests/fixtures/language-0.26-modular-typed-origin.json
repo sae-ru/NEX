@@ -1,0 +1,18 @@
+{
+  "schema": "nex.retained-source-fixture/1",
+  "language": "0.26",
+  "entry": "main.nex",
+  "head": "281ef093afc407850b0058b1121baddb781f99d6e3fe5f1ce7cc1f3bceaf7f9d",
+  "files": {
+    "main.nex": "module application;\nimport \"./errors.nex\" as errors;\nfn main()->unit !{task,throw,io}{\n let p:errors::Problem<i64>=errors::Problem<i64>(42);assert(p.value==42);\n try{errors::fail(42);}catch(c,m){assert(c==\"LIB\");print(42);}finally{task_yield();}\n}\n",
+    "errors.nex": "module failures;\npub struct Problem<T>{value:T;}\npub fn fail<T>(value:T)->unit !{throw}{throw(\"LIB\",\"old\");}\n"
+  },
+  "producer": {
+    "toolchain": "0.146.0",
+    "compiler_sha256": "df2c976acce689184f72aa02c73dbefc94dbaaa81d2c05ec71b0657e06b57bbd",
+    "source_commit": "74ff7aab3f4afbd7128c0410c9a933658f396619"
+  },
+  "sql_sha256": "f7bc77c42b0dbfe4b5d4a4aeb50fd91c1030d278ee56e5679d88f85902b00cbe",
+  "actual_origin_eval_stdout": "42\n",
+  "retagged_source": false
+}

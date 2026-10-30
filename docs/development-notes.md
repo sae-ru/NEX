@@ -10,6 +10,24 @@ Former README SHA256 before rebasing: `0cb559270390a7ce2b2799f286e7f1379676cef14
 
 ---
 
+# NEX0.147 / public026 — explicit027 graph migration
+
+Checked027 code now has program/15 archival and an explicit same-store C++
+migration path. Target and origin rechecks precede writable state; publication
+checks expected HEAD and graph namespace inside the transaction. Ordinary027
+build/provider/UI/snapshot delivery and the public CLI default remain gated.
+
+The candidate passes22 targeted groups covering retained migrations, graphs,
+snapshots, typed execution, web and actual LLDB finalizers. The migration test
+also executes committed/reloaded same-source, typed and modular graphs with
+12 native O0/O2 worker runs and6 Node runs. Genuine026 fixtures from139 and146
+retain schema, old rows/IDs and namespace; corrupt/retagged inputs, modified
+plans and competing writers fail without the planned graph transition. Source
+materialization is separate explicit export. These receipts do not certify
+the pending full277-group run,027 delivery, SDK or platform acceptance.
+
+---
+
 # NEX0.146 / public026 — typed authority development
 
 The explicit027 development API now checks authority-bearing errors across

@@ -115,6 +115,7 @@ void boundTestResult(Object &row,const fs::path &cache){
 
 llvm::json::Value buildProject(const std::string &directory,const std::string &manifest,
                               const std::string &source,const ProjectBuildOptions &options) {
+  if(options.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_DELIVERY","027 project delivery requires matching versioned library/provider contracts");
   const bool withWorkload=!options.workload.empty();
   if(withWorkload&&options.kind!="plan"&&options.kind!="profile")fail("--workload requires project plan or profile","E_OPTION");
   const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",buildTest=options.kind=="build-test",testing=options.kind=="test"||buildTest;

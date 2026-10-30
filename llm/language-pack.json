@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "source027_authority_transfer_development",
+      "status": "source027_graph_migration_development",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3397,7 +3397,7 @@
       "source027_version_selected_frontend": true,
       "source027_reference_handlers": true,
       "source027_ordered_handlers": true,
-      "source027_archiving_enabled": false,
+      "source027_archiving_enabled": true,
       "source027_native_lowering": true,
       "source027_typescript_lowering": true,
       "source027_authority_transport": true,
@@ -3421,7 +3421,18 @@
       "source027_native_authority_test_source": "tests/source_error_authority_kernel.cpp",
       "source027_typescript_authority_test_source": "tests/source_error_authority_typescript.mjs",
       "source027_provenance_test_source": "tests/typed_source_authority.py",
-      "source027_authority_scope": "explicit C++027 selection; native/reference resource and file owners, callable captures and task capabilities; browser excludes file/FFI/server authority"
+      "source027_authority_scope": "explicit C++027 selection; native/reference resource and file owners, callable captures and task capabilities; browser excludes file/FFI/server authority",
+      "source027_revision_format": "nex.program/15",
+      "source027_graph_migration": true,
+      "source027_migration_entry_points": [
+        "preflightGraphMigration",
+        "applyGraphMigration"
+      ],
+      "source027_migration_guide": "docs/typed-error-migration.md",
+      "source027_migration_test_source": "tests/typed_error_migration.py",
+      "source027_migration_namespace_guard": true,
+      "source027_graph_snapshot_delivery": false,
+      "source027_archive_scope": "explicit checked C++ API; public CLI/default remain026"
     }
   }
 }

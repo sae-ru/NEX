@@ -71,20 +71,22 @@ Store::Store(const std::filesystem::path &directory,StoreOpenMode mode):impl(std
   initializeGraphIdentities(impl->db);
 }
 Store::~Store()=default;
-std::string Store::save(const Program &p,const std::string &expected,bool makeHead,const ChangeInfo &change) {
+std::string Store::save(const Program &p,const std::string &expected,bool makeHead,const ChangeInfo &change,const std::string &expectedNamespace) {
   validateChangeInfo(change);
   if(p.units.empty())throw Error("E_STORE","cannot save a program without its source snapshot");
   auto db=impl->db;auto rev=revision(p);bool outer=sqlite3_get_autocommit(db)!=0;
   sql(db,outer?"BEGIN IMMEDIATE":"SAVEPOINT nex_save_program");
   try{
     auto previous=head(db);
+    if(!expectedNamespace.empty()&&graphIdentityNamespace(db)!=expectedNamespace)throw Error("E_CONFLICT","graph identity namespace changed before save");
     if(!expected.empty()&&previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
     // Live synchronization is not a language migration. Repeat this check
     // inside the write transaction: an explicit migration can race parsing or
     // the coordinator's earlier readonly HEAD check.
-    if(makeHead&&change.action=="synchronize"&&!previous.empty()){
+    if(makeHead&&!previous.empty()){
       Statement current(db,"SELECT language FROM revisions WHERE hash=?");current.bind(1,previous);
-      if(!current.row()||current.text(0)!=programLanguage(p))
+      if(!current.row())throw Error("E_REVISION","graph HEAD revision is missing");
+      if(current.text(0)!=programLanguage(p)&&(change.action=="synchronize"||((p.sourceLanguage==SourceLanguage::TypedErrors027||current.text(0)=="0.27")&&change.action!="migrate")))
         throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
     }
     {Statement existing(db,"SELECT language FROM revisions WHERE hash=?");existing.bind(1,rev);
@@ -188,6 +190,7 @@ llvm::json::Value Store::bundle(const std::string &rev){
   auto parsed=llvm::json::parse(text);if(!parsed)throw Error("E_REVISION",llvm::toString(parsed.takeError()));return std::move(*parsed);
 }
 std::string Store::headRevision(){return head(impl->db);}
+std::string Store::identityNamespace(){return graphIdentityNamespace(impl->db);}
 void Store::recordTask(const std::string &id,const std::string &task,const std::string &taskHash,const std::string &status,const std::string &report,const std::string &reportHash){
   Statement q(impl->db,"INSERT INTO task_runs(id,task,task_hash,status,report,report_hash) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,report_hash=excluded.report_hash");
   q.bind(1,id);q.bind(2,task);q.bind(3,taskHash);q.bind(4,status);q.bind(5,report);q.bind(6,reportHash);q.row();

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.146.0 LANGUAGES C CXX)
+project(NEX VERSION 0.147.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -58,6 +58,7 @@ target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
 target_sources(nex PRIVATE src/task_profile_report.cpp)
 target_sources(nex PRIVATE src/task_package.cpp src/server_workload.cpp src/task_workload.cpp)
 target_sources(nex PRIVATE src/wasm.cpp src/project_build.cpp src/native_images.cpp src/debug_session.cpp src/project_capture.cpp)
+target_sources(nex PRIVATE src/graph_migration.cpp)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_include_directories(nex SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
 target_link_libraries(nex PRIVATE nex_native_backend nex_frontend MLIR SQLite::SQLite3 ${NEX_Z3_LIBRARY})
@@ -1380,3 +1381,15 @@ add_test(NAME typed_source_authority_provenance COMMAND ${Python3_EXECUTABLE} -B
 set_tests_properties(typed_source_authority_provenance PROPERTIES TIMEOUT 180)
 install(FILES tests/typed_source_authority.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/typed-error-authority-static.json tests/fixtures/typed-error-authority-bounded.nex DESTINATION share/nex/tests/fixtures)
+
+add_executable(nex_typed_error_migration_probe tests/typed_error_migration.cpp src/graph_migration.cpp
+  src/project.cpp src/operation_store.cpp src/graph_store.cpp src/change_store.cpp src/typescript.cpp)
+target_link_libraries(nex_typed_error_migration_probe PRIVATE nex_native_backend nex_frontend MLIR Threads::Threads)
+target_compile_definitions(nex_typed_error_migration_probe PRIVATE NEX_VERSION="${PROJECT_VERSION}" NEX_BUILD_ID="${NEX_BUILD_ID}")
+target_compile_options(nex_typed_error_migration_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME typed_error_history_migration COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_migration.py $<TARGET_FILE:nex_typed_error_migration_probe>
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --ordinary-compiler $<TARGET_FILE:nex>)
+set_tests_properties(typed_error_history_migration PROPERTIES TIMEOUT 900)
+install(FILES tests/typed_error_migration.cpp tests/typed_error_migration.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.26-modular-typed-origin.json tests/fixtures/language-0.26-modular-typed-origin.sql DESTINATION share/nex/tests/fixtures)

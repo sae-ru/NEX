@@ -88,7 +88,7 @@ int main(){try{
   }
   {
     auto p=source("fn main()->i64{try{throw(42);}catch(error:i64){return error;}}");
-    rejected("E_TYPED_EXCEPTION_MIGRATION",[&]{rejectUnarchivedTasks(p,"archive");});
+    rejectUnarchivedTasks(p,"archive");require(revision(p).size()==64,"typed program has no versioned revision");++cases;
     auto native=emitMLIR(p,"main");require(native.find("nex_source_error_typed_scalar")!=std::string::npos&&native.find("nex_source_error_scalar")!=std::string::npos,"typed native raise/binding missing");++cases;
     rejected("E_WASM_UNSUPPORTED",[&]{(void)emitWasmMLIR(p,"main",false);});
     auto module=emitTypeScript(p,{{"entry","main"}});require(module.privateSourceExceptions&&module.mapping.getAsObject()->getBoolean("public_revision")==false,"typed TypeScript candidate claimed a public revision");++cases;

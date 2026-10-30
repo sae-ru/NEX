@@ -12,7 +12,8 @@ public:
   // identity/journal state. Use it for migration origin preflight.
   explicit Store(const std::filesystem::path &directory,StoreOpenMode mode=StoreOpenMode::ReadWrite);
   ~Store();
-  std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={});
+  std::string save(const Program &program, const std::string &expected = "",bool makeHead=true,const ChangeInfo &change={},const std::string &expectedNamespace="");
+  std::string identityNamespace();
   llvm::json::Value graph(const Program &program);
   llvm::json::Value declarations(const Program &program,const std::string &kind="",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
   llvm::json::Value search(const Program &program,const GraphQueryOptions &options);

@@ -4,16 +4,19 @@ owned payloads through suspension. Private native cohort0x2702 adds checked
 callable/task/file/resource payload ownership; retained0x2701 and public ABI6
 keep their identities. TypeScript027 generators require runTypedSourceErrors
 with their emitted sourceErrorContracts. Browser file/FFI/server authority stays
-rejected. Public027 projects/providers, graph migration and SDK delivery remain
-pending. Query typed_payload_development; keep ordinary projects on public026.
+rejected. Public027 projects/providers and SDK delivery remain
+pending. Explicit checked C++ archival uses nex.program/15 and guarded
+preflightGraphMigration/applyGraphMigration; namespace and expected HEAD bind
+the graph transition. Query typed_payload_development; keep ordinary projects
+on public026.
 
 Candidate027 sequential native lowering, like its TypeScript development
 emitter, is a version-selected C++ capability. It does not enable ordinary027
-projects, native library/provider/task delivery or graph migration. Discover
+projects, native library/provider/task delivery or public CLI selection. Discover
 exact flags and retain the public project language until those gates pass.
 
 Candidate027 C++ frontend/reference/TypeScript fields describe explicit
-unarchivable development execution. They do not enable027 projects, browser UI
+development execution and explicit checked archival. They do not enable027 projects, browser UI
 or worker delivery. Keep ordinary projects on the advertised public language
 until migration, all engine and authority/protocol gates are implemented.
 

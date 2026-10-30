@@ -1,3 +1,19 @@
+# Candidate027 archive/migration development0.147.0
+
+Explicit checked027 source can now round-trip through `nex.program/15` and a
+source bundle. Retained026 canonical identities stay on program/14. A guarded
+same-store C++ migration rechecks the genuine old parser/revision, validates the
+target, and appends a new graph HEAD without removing old rows, IDs or schema.
+Expected HEAD and graph namespace are repeated inside the write transaction.
+Plans and failed candidates do not open writable state; source materialization
+is a separate explicit export. Unversioned save/synchronization cannot switch
+into or out of027. See [the migration API](typed-error-migration.md).
+
+Ordinary CLI/default projects remain026. Native027 build/project, provider,
+UI/Worker, graph-snapshot and SDK delivery remain pending. The existing explicit
+development emitters execute checked027; archival does not turn them into a
+published cross-module delivery contract.
+
 # Candidate027 authority transfer development0.146.0
 
 Explicit027 C++ selection admits typed errors containing checked callables,

@@ -2003,6 +2003,7 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
   return result;
 }
 BuildResult build(const Program &p,const std::string &directory,const BuildOptions &options) {
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_DELIVERY","ordinary027 native builds require matching versioned library/provider delivery; use the explicit development emitter");
   rejectUnloweredTasks(p,"native build");
   const auto taskMode=effectiveNativeTaskLinkage(options);const bool taskProviders=taskMode!=NativeTaskLinkageMode::None;
   if(options.profile!="debug"&&options.profile!="profile"&&options.profile!="release")throw Error("E_OPTION","profile must be debug, profile or release");

@@ -307,7 +307,8 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.24")return bundleProgram(bundle,root,true,true,SourceLanguage::TaskStreams024);
   if(language=="0.25")return bundleProgram(bundle,root,true,true,SourceLanguage::SourceExceptions025);
   if(language=="0.26")return bundleProgram(bundle,root,true,true,SourceLanguage::ExceptionHandlers026);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25 and0.26");
+  if(language=="0.27")return bundleProgram(bundle,root,true,true,SourceLanguage::TypedErrors027);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26 and0.27");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){

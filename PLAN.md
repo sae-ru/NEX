@@ -1,3 +1,17 @@
+# Typed027 archive/migration development0.147.0
+
+The checked C++ API now archives027 with program/15 and performs an explicit
+same-store026-to027 migration while retaining old canonical revisions, schema,
+IDs and namespace. Candidate, source and expected-HEAD guards are rechecked
+before publication, with HEAD/namespace checked again inside the transaction.
+Physical source/manifest export is separate; no ordinary CLI upgrade is enabled.
+
+Full147 regression and matching native project/library/provider contracts,
+public027 selection, bounded debugger/profile integration, graph snapshots,
+SDK/platform/accelerator acceptance and all original plan requirements below
+remain required. The previous146 compiler passed its276-group full regression;
+that receipt does not certify this new compiler or an installed SDK.
+
 # Typed027 authority transfer development0.146.0
 
 Exceptional provenance and runtime guards now carry callables, task capabilities
