@@ -87,7 +87,8 @@ int main(){try{
   {
     auto p=source("fn main()->i64{try{throw(42);}catch(error:i64){return error;}}");
     rejected("E_TYPED_EXCEPTION_MIGRATION",[&]{rejectUnarchivedTasks(p,"archive");});
-    rejected("E_TYPED_EXCEPTION_BACKEND",[&]{(void)emitMLIR(p,"main");});
+    auto native=emitMLIR(p,"main");require(native.find("nex_source_error_typed_scalar")!=std::string::npos&&native.find("nex_source_error_scalar")!=std::string::npos,"typed native raise/binding missing");++cases;
+    rejected("E_WASM_UNSUPPORTED",[&]{(void)emitWasmMLIR(p,"main",false);});
     auto module=emitTypeScript(p,{{"entry","main"}});require(module.privateSourceExceptions&&module.mapping.getAsObject()->getBoolean("public_revision")==false,"typed TypeScript candidate claimed a public revision");++cases;
     auto nodes=operationTree(p,p.function("main"));std::set<std::string> paths;for(const auto &node:nodes)paths.insert(node.path);
     for(const auto &node:nodes)if(node.path.find("/clause/")!=std::string::npos)require(paths.contains(node.parent),"orphan typed handler operation");

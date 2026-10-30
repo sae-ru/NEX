@@ -1,3 +1,5 @@
+(* Candidate0.27 sequential native lowering uses these same productions;
+   public026/default and027 graph publication/migration remain unchanged. *)
 (* Candidate0.27 synchronous TypeScript uses these same version-selected
    productions. Public026 syntax/defaults and027 graph migration remain unchanged. *)
 (* Candidate0.27 C++ version-selected frontend adds the separate productions

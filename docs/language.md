@@ -1,3 +1,21 @@
+# Candidate027 synchronous native development0.144.0
+
+Explicitly version-selected027 source now emits sequential pure/io/throw native
+MLIR. Typed raises retain the original owned Value and complete concrete key.
+One protected handler selects ordered typed/legacy clauses; declined filters
+clean only their clause locals and retain the original packet. New predicate/
+handler errors escape siblings. Bare rethrow and finally preserve source sites.
+Bindings, captured snapshots and pending outcomes follow native owner cleanup.
+
+The private runtime validates keys and scalar/heap kinds before binding. Result
+accepts success or failure without erasing its concrete key. An impossible packet
+mismatch after statically total coverage is a checked E_SOURCE_TYPE trap rather
+than an undeclared source exit. Real O0/O2 LLVM/native execution and heap retirement
+are exercised by tests/typed_source_native.py; packet helpers also have ASan/UBSan
+coverage. Scalar Wasm, native projects/libraries, tasks and authority transport
+remain explicitly pending. Ordinary CLI/projects stay026;027 graph publication
+and genuine history-preserving migration are not enabled by this raw emitter.
+
 # Candidate027 synchronous TypeScript development0.143.0
 
 The explicitly version-selected027 program can now emit synchronous TypeScript
@@ -37,7 +55,8 @@ and bodies use the enclosing coverage, excluding their siblings. New AST kinds
 and conditional key fields are appended; retained026 canonical fields/ordinals
 are unchanged.
 
-Native/TypeScript generation and graph archiving reject this development version
+Synchronous native and TypeScript generation implement these clauses in the
+development API; graph archiving and public project selection still reject027
 explicitly. Task functions and payloads carrying callable/file/task/resource
 authority remain rejected until their continuation/provenance integration is
 implemented. These are pending development gates, not the final027 contract.
