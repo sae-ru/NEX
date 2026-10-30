@@ -2,6 +2,7 @@
 #include "nex/task_ir.h"
 #include "nex/task_frontend.h"
 #include <algorithm>
+#include "nex_source_error.h"
 
 namespace nex {
 using TV=nexrt::Value;
@@ -95,8 +96,22 @@ struct TaskMachine::Impl {
         case TaskInstruction::Catch:{
           auto error=std::move(frame.pendingSource);if(!error)throw Error("E_TASK_STATE","continuation catch has no source error",op.span);
           if(retained()>=maximumState)throw Error("E_LIMIT","continuation catch state limit exceeded",op.span);
-          write(frame,op.bindings[0],TV(nexrt::string(error->code)),op.span);write(frame,op.bindings[1],TV(nexrt::string(error->message)),op.span);
+          if(!op.bindings.empty()){write(frame,op.bindings[0],TV(nexrt::string(error->code)),op.span);write(frame,op.bindings[1],TV(nexrt::string(error->message)),op.span);}
           frame.caught.push_back(std::move(error));++frame.pc;break;
+        }
+        case TaskInstruction::SourceMatch:
+          if(frame.caught.empty())throw Error("E_TASK_STATE","typed match lost its lexical packet",op.span);
+          write(frame,op.output,TV(frame.caught.back()->payload&&frame.caught.back()->payload->matches(op.operation),true),op.span);++frame.pc;break;
+        case TaskInstruction::SourceBind:{
+          if(frame.caught.empty())throw Error("E_TASK_STATE","typed binding lost its lexical packet",op.span);
+          const auto &error=*frame.caught.back();
+          if(op.operation.empty()){write(frame,op.bindings[0],TV(nexrt::string(error.code)),op.span);write(frame,op.bindings[1],TV(nexrt::string(error.message)),op.span);}
+          else write(frame,op.bindings[0],checkedSourceErrorValue(program,error,frame.function->slots[op.bindings[0]].type,op.operation,op.span),op.span);
+          ++frame.pc;break;
+        }
+        case TaskInstruction::RaiseTyped:{
+          auto value=read(frame,op.inputs[0],op.span);auto payload=std::make_shared<const nexrt::SourceErrorPayload>(op.operation,std::move(value));
+          raise(SourceException(typeName(frame.function->slots[op.inputs[0]].type),"typed source error",op.span,std::move(payload)));break;
         }
         case TaskInstruction::EndCatch:
           if(frame.caught.empty())throw Error("E_TASK_STATE","continuation catch stack underflow",op.span);

@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "source027_synchronous_three_engine_development",
+      "status": "source027_resumable_task_development",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3406,8 +3406,14 @@
       "source027_typescript_payloads_enumerable": false,
       "source027_typescript_test_source": "tests/typed_source_typescript.py",
       "source027_native_project_delivery": false,
-      "source027_native_task_lowering": false,
-      "source027_native_test_source": "tests/typed_source_native.py"
+      "source027_native_task_lowering": true,
+      "source027_native_test_source": "tests/typed_source_native.py",
+      "source027_task_AST": true,
+      "source027_task_TaskIR": true,
+      "source027_task_typescript": true,
+      "source027_task_descriptor_abi": "0x4e45585400002701",
+      "source027_task_authority_payloads": false,
+      "source027_task_test_source": "tests/typed_source_tasks.py"
     }
   }
 }

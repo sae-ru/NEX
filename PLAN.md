@@ -1,3 +1,15 @@
+# Typed027 resumable task development0.145.0
+
+Ordered typed/legacy clauses and owned data now traverse AST/TaskIR continuations,
+native frames and TypeScript generators. Native candidate cohort0x2701 stays
+separate from public ABI6; public entry and mixed calls reject mismatched cohorts.
+Source-edge lifetime traversal retains outer assignments and finally paths.
+Actual multi-engine/worker agreement is tested by tests/typed_source_tasks.py.
+Authority-bearing payload provenance/transfer, project/library/provider delivery,
+explicit026-to027 graph migration, SDK/platform gates and the full original
+language/toolchain/accelerator plan below remain required. This is development,
+not public027 publication or overall completion.
+
 # Typed027 synchronous native development0.144.0
 
 Reference, TypeScript and sequential native emitters now implement ordered typed

@@ -115,6 +115,9 @@ void nex_task_frame_pause_at(void *,int64_t,nexrt::Handle *,int64_t,int64_t,int6
 void nex_task_frame_handler_push_at(void *,int64_t,int64_t,const nexrt::NativeSite *);
 void nex_task_frame_handler_pop_at(void *,const nexrt::NativeSite *);
 void nex_task_frame_source_catch_at(void *,int64_t,int64_t,const nexrt::NativeSite *);
+void nex_task_frame_source_enter_at(void *,const nexrt::NativeSite *);
+nexrt::Handle *nex_task_frame_source_packet_at(void *,const nexrt::NativeSite *);
+void nex_task_frame_source_packet_raise_at(void *,nexrt::Handle *,const nexrt::NativeSite *);
 void nex_task_frame_source_end_at(void *,const nexrt::NativeSite *);
 void nex_task_frame_source_save_at(void *,int64_t,const nexrt::NativeSite *);
 void nex_task_frame_source_restore_at(void *,int64_t,const nexrt::NativeSite *);

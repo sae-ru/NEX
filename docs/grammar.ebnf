@@ -1,3 +1,5 @@
+(* Candidate027 task continuations reuse the same throw/catch productions;
+   development cohort0x2701 grants no public027 project/provider selection. *)
 (* Candidate0.27 sequential native lowering uses these same productions;
    public026/default and027 graph publication/migration remain unchanged. *)
 (* Candidate0.27 synchronous TypeScript uses these same version-selected

@@ -1,6 +1,6 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.144.0 keeps public language0.26 and `typed_payloads: false`.
+Toolchain0.145.0 keeps public language0.26 and `typed_payloads: false`.
 Typed syntax is only available through an explicit C++ version selection;
 public CLI/projects remain026 and cannot archive027. The development field `source_exceptions.typed_payload_development` describes internal C++
 transport and version-selected frontend/reference/synchronous native/TypeScript scope. This document distinguishes that implementation from the
@@ -132,3 +132,11 @@ through ordinary source-call out-parameters and finalizer paths. Private scalar
 wire tags0/1/2 and heap-kind checks are covered by the runtime-cohort hash, not a
 published foreign/task ABI. Task/provider protocol publication and migration
 remain pending. See tests/typed_source_native.py and source_error_native_packet.cpp.
+
+Candidate0.145 task engines lower ordinary owned typed values through AST,
+TaskIR, native frames and TypeScript generators. Native helpers require the
+separate0x2701 development cohort and retain one lexical packet across ordered
+clauses. Public ABI6/025 provider and archive contracts are unchanged. Payloads
+containing authority remain rejected; payload provenance/transfer, provider
+publication, bounded debugger/profile views and genuine027 migration are still
+mandatory before public delivery. See tests/typed_source_tasks.py.

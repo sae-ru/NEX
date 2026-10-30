@@ -10,7 +10,7 @@ struct TaskSlot {Type type;std::string name;Span span;bool temporary=true;};
 struct TaskInstruction {
   // Append private exception instructions; retained instruction ordinals stay fixed.
   enum Kind { Eval,Copy,Drop,Jump,Branch,Pattern,Pause,Call,Return,Fail,Poll,
-              PushHandler,PopHandler,Catch,EndCatch,Raise,Rethrow,SavePendingSource,RethrowPendingSource } kind=Fail;
+              PushHandler,PopHandler,Catch,EndCatch,Raise,Rethrow,SavePendingSource,RethrowPendingSource,RaiseTyped,SourceMatch,SourceBind } kind=Fail;
   Span span;const void *source=nullptr;
   TaskSlotId output=noTaskSlot;
   std::vector<TaskSlotId> inputs,bindings;

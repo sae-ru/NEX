@@ -1,6 +1,7 @@
 #include "nex/task_ir.h"
 #include "nex/task_frontend.h"
 #include "nex/operations.h"
+#include "nex_source_error.h"
 #include <algorithm>
 #include <functional>
 
@@ -204,8 +205,36 @@ class Lowering {
     for(const auto &s:body){
       if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
-      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
-        throw Error("E_TYPED_EXCEPTION_TASK","typed source TaskIR integration is pending",s->span);
+      case Stmt::TypedThrow:{
+        TaskInstruction raised;raised.kind=TaskInstruction::RaiseTyped;raised.span=s->span;raised.source=s.get();raised.operation=s->errorTypeKey;raised.inputs={expr(s->expr)};emit(std::move(raised));returned=true;break;
+      }
+      case Stmt::TypedTry:{
+        TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();auto start=emit(std::move(install));
+        ++handlerDepth;bool bodyEnds=block(s->body);--handlerDepth;std::vector<size_t> ends;
+        if(!bodyEnds){TaskInstruction pop;pop.kind=TaskInstruction::PopHandler;pop.span=s->span;emit(std::move(pop));ends.push_back(jump(s->span));}
+        result.code[start].yes=result.code.size();TaskInstruction caught;caught.kind=TaskInstruction::Catch;caught.span=s->span;caught.source=s.get();emit(std::move(caught));++caughtDepth;
+        bool allReturn=true,closed=false;
+        for(auto clause:s->alternative){
+          enter();bool typed=clause->type!=Type::Unknown;size_t matched=0;TaskSlotId match=noTaskSlot;
+          if(typed){TaskInstruction test;test.kind=TaskInstruction::SourceMatch;test.span=clause->span;test.source=clause.get();test.operation=clause->errorTypeKey;test.output=match=slot(Type::Bool,clause->span);emit(std::move(test));matched=branch(match,clause->span);result.code[matched].yes=result.code.size();drop(match,clause->span);}
+          TaskInstruction bind;bind.kind=TaskInstruction::SourceBind;bind.span=clause->span;bind.source=clause.get();bind.operation=clause->errorTypeKey;
+          auto addBinding=[&](const std::string &name,Type type){auto id=slot(type,clause->span,name,false);scopes.back()[name]=id;binding(id,name,type,clause->span);bind.bindings.push_back(id);};
+          addBinding(clause->name,typed?clause->type:Type(Type::Str));if(!typed)addBinding(clause->catchMessage,Type::Str);emit(std::move(bind));
+          size_t guarded=0;TaskSlotId condition=noTaskSlot;
+          bool conditional=clause->expr&&!totalSourceHandler(clause);
+          if(clause->expr){condition=expr(clause->expr);if(conditional){guarded=branch(condition,clause->expr->span);result.code[guarded].yes=result.code.size();}drop(condition,clause->span);}
+          bool catchEnds=block(clause->body,false);allReturn&=catchEnds;
+          if(!catchEnds){for(const auto &[name,id]:scopes.back())drop(id,clause->span);TaskInstruction end;end.kind=TaskInstruction::EndCatch;end.span=clause->span;emit(std::move(end));ends.push_back(jump(clause->span));}
+          if(conditional){result.code[guarded].no=result.code.size();drop(condition,clause->span);for(const auto &[name,id]:scopes.back())drop(id,clause->span);}
+          leaveScope();
+          if(typed){auto next=jump(clause->span);result.code[matched].no=result.code.size();drop(match,clause->span);result.code[next].yes=result.code.size();}
+          if(!typed&&totalSourceHandler(clause)){closed=true;break;}
+        }
+        --caughtDepth;
+        if(!closed){TaskInstruction raised;raised.kind=TaskInstruction::Rethrow;raised.span=s->span;raised.source=s.get();emit(std::move(raised));}
+        for(auto end:ends)result.code[end].yes=result.code.size();returned=bodyEnds&&allReturn;break;
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","task handler clause outside protected statement",s->span);
       case Stmt::Finally:{
         auto marker=slot(Type::Bool,s->span);constant(marker,false,s->span);
         TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();
@@ -299,11 +328,16 @@ void validateTaskIR(const TaskFunctionIR &function){
     if(op.output!=noTaskSlot)checkSlot(op.output,op.span);for(auto slot:op.inputs)checkSlot(slot,op.span);for(auto slot:op.bindings)checkSlot(slot,op.span);
     if((op.kind==TaskInstruction::Jump||op.kind==TaskInstruction::Branch)&&op.yes>=function.code.size())throw Error("E_TASK_STATE","invalid continuation successor",op.span);
     if(op.kind==TaskInstruction::Branch&&(op.inputs.size()!=1||op.no>=function.code.size()||function.slots[op.inputs[0]].type!=Type::Bool))throw Error("E_TASK_STATE","invalid continuation branch",op.span);
-    if(op.kind<TaskInstruction::Eval||op.kind>TaskInstruction::RethrowPendingSource)throw Error("E_TASK_STATE","unknown continuation instruction",op.span);
+    if(op.kind<TaskInstruction::Eval||op.kind>TaskInstruction::SourceBind)throw Error("E_TASK_STATE","unknown continuation instruction",op.span);
     if(op.kind==TaskInstruction::PushHandler&&(op.yes>=function.code.size()||(function.code[op.yes].kind!=TaskInstruction::Catch&&function.code[op.yes].kind!=TaskInstruction::SavePendingSource)||op.no>function.slots.size()||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid continuation handler target/slot floor",op.span);
     if(op.kind==TaskInstruction::SavePendingSource&&(op.output==noTaskSlot||function.slots[op.output].type!=Type::Bool||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid pending source save",op.span);
     if(op.kind==TaskInstruction::RethrowPendingSource&&(op.inputs.size()!=1||function.slots[op.inputs[0]].type!=Type::Bool||op.output!=noTaskSlot||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid pending source rethrow",op.span);
-    if(op.kind==TaskInstruction::Catch&&(op.bindings.size()!=2||op.bindings[0]==op.bindings[1]||function.slots[op.bindings[0]].type!=Type::Str||function.slots[op.bindings[1]].type!=Type::Str))throw Error("E_TASK_STATE","invalid continuation catch bindings",op.span);
+    if(op.kind==TaskInstruction::Catch&&(!op.bindings.empty()&&(op.bindings.size()!=2||op.bindings[0]==op.bindings[1]||function.slots[op.bindings[0]].type!=Type::Str||function.slots[op.bindings[1]].type!=Type::Str)))throw Error("E_TASK_STATE","invalid continuation catch bindings",op.span);
+    if(op.kind==TaskInstruction::RaiseTyped&&(op.inputs.size()!=1||!nexrt::SourceErrorPayload::validKey(op.operation)||op.output!=noTaskSlot||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid typed raise operands",op.span);
+    if(op.kind==TaskInstruction::SourceMatch&&(op.output==noTaskSlot||function.slots[op.output].type!=Type::Bool||!nexrt::SourceErrorPayload::validKey(op.operation)||!op.inputs.empty()||!op.bindings.empty()))throw Error("E_TASK_STATE","invalid typed source match",op.span);
+    if(op.kind==TaskInstruction::SourceBind&&(op.output!=noTaskSlot||!op.inputs.empty()||
+       (op.operation.empty()?(op.bindings.size()!=2||op.bindings[0]==op.bindings[1]||function.slots[op.bindings[0]].type!=Type::Str||function.slots[op.bindings[1]].type!=Type::Str):
+       (op.bindings.size()!=1||!nexrt::SourceErrorPayload::validKey(op.operation)))))throw Error("E_TASK_STATE","invalid typed source binding",op.span);
     if(op.kind==TaskInstruction::Raise&&(op.inputs.size()!=2||function.slots[op.inputs[0]].type!=Type::Str||function.slots[op.inputs[1]].type!=Type::Str))throw Error("E_TASK_STATE","invalid continuation source error operands",op.span);
     if((op.kind==TaskInstruction::Rethrow||op.kind==TaskInstruction::PopHandler||op.kind==TaskInstruction::EndCatch)&&(!op.inputs.empty()||!op.bindings.empty()||op.output!=noTaskSlot))throw Error("E_TASK_STATE","invalid continuation exception control shape",op.span);
     if(op.kind==TaskInstruction::Pause&&!taskBuiltins().contains(op.operation)){
@@ -326,7 +360,7 @@ void validateTaskIR(const TaskFunctionIR &function){
         throw Error("E_TASK_STATE","invalid continuation file read operation",op.span);
     }
     if(op.kind==TaskInstruction::Eval){if(!op.atom)throw Error("E_TASK_STATE","missing continuation atom",op.span);for(const auto &argument:op.atom->args)if(argument->kind!=Expr::Name||!argument->text.starts_with("$task_slot_"))throw Error("E_TASK_STATE","continuation atom contains unevaluated operands",op.span);}
-    if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump&&op.kind!=TaskInstruction::Raise&&op.kind!=TaskInstruction::Rethrow&&op.kind!=TaskInstruction::RethrowPendingSource)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
+    if(i+1==function.code.size()&&op.kind!=TaskInstruction::Return&&op.kind!=TaskInstruction::Fail&&op.kind!=TaskInstruction::Jump&&op.kind!=TaskInstruction::Raise&&op.kind!=TaskInstruction::Rethrow&&op.kind!=TaskInstruction::RethrowPendingSource&&op.kind!=TaskInstruction::RaiseTyped)throw Error("E_TASK_STATE","continuation falls off its code",op.span);
   }
   if(function.debug){const auto &metadata=*function.debug;
     for(size_t i=0;i<metadata.bindings.size();++i){const auto &binding=metadata.bindings[i];

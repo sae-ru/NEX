@@ -294,8 +294,30 @@ struct Analysis {
     for(const auto &s:body){
       tick();if(ended)break;
       switch(s->kind){
-      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
-        throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed source task lifetime integration is pending",s->span);
+      case Stmt::TypedThrow:{
+        auto value=expression(s->expr,env,current);if(value)sourceEdge(env);ended=true;break;
+      }
+      case Stmt::TypedTry:{
+        ++report.handlers;HandlerInput handler{env,{}};auto normal=env;handlers.push_back(&handler);bool bodyEnds;
+        try{bodyEnds=block(s->body,normal,current);}catch(...){handlers.pop_back();throw;}handlers.pop_back();
+        std::optional<Env> continuation;if(!bodyEnds)continuation=normal;bool universal=false;
+        if(handler.exceptional)for(auto clause:s->alternative){
+          auto caught=*handler.exceptional;
+          declare(caught,clause->name,clause->type==Type::Unknown?plain():unknown(clause->type));
+          if(clause->type==Type::Unknown)declare(caught,clause->catchMessage,plain());
+          auto guard=clause->expr?expression(clause->expr,caught,current):plain();
+          if(!guard)continue;
+          if(guard->boolean&&!*guard->boolean)continue;
+          bool catchEnds=block(clause->body,caught,current);
+          if(!catchEnds){auto state=project(caught,env);if(!continuation)continuation=std::move(state);else mergeEnv(*continuation,state);}
+          if(clause->type==Type::Unknown&&totalSourceHandler(clause)){universal=true;break;}
+        }
+        // Payload authority remains rejected by the checker. Until typed effect
+        // rows exist, conservatively retain every possible unmatched source edge.
+        if(handler.exceptional&&!universal)sourceEdge(*handler.exceptional);
+        if(continuation)env=std::move(*continuation);else ended=true;break;
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","lifetime handler clause outside protected statement",s->span);
       case Stmt::Finally:{
         auto baseline=env,normal=env;HandlerInput handler{baseline,{}};
         std::vector<ReturnState> pendingReturns;auto outerReturns=returns;returns=&pendingReturns;handlers.push_back(&handler);

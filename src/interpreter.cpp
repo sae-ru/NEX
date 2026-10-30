@@ -214,25 +214,7 @@ class Interpreter {
     throw Error("E_INTERNAL","unknown checked operator");
   }
   V typedBinding(const SourceException &error,const S &clause){
-    try{
-      const auto &payload=*error.payload;const auto &key=clause->errorTypeKey;
-      switch(clause->type.kind){
-      case Type::I64:return payload.getScalar(key,V::Integer);
-      case Type::Bool:return payload.getScalar(key,V::Boolean);
-      case Type::F64:return payload.getScalar(key,V::Floating);
-      case Type::Str:return payload.getObject(key,nexrt::Data::String);
-      case Type::Bytes:return payload.getObject(key,nexrt::Data::Bytes);
-      case Type::List:return payload.getObject(key,nexrt::Data::List);
-      case Type::Record:return payload.getObject(key,p.structure(clause->type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
-      case Type::Result:{
-        const auto &v=payload.get(key);
-        if(v.tag!=V::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))
-          throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");
-        return payload.getObject(key,v.object->kind);
-      }
-      default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed exception binding requires payload lifetime integration",clause->span);
-      }
-    }catch(const nexrt::DataError &e){throw Error(e.code,e.what(),clause->span);}
+    return checkedSourceErrorValue(p,error,clause->type,clause->errorTypeKey,clause->span);
   }
   void block(const std::vector<S> &body,bool scoped=true) {
     if(scoped)frames.back().emplace_back();

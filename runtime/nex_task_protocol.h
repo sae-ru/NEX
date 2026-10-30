@@ -15,7 +15,9 @@ inline constexpr int64_t taskCodeSourceExceptionABI=INT64_C(0x4e45585400000006);
 // Nonpublic025 experiment, deliberately distinct from published ABI3/4/5.
 inline constexpr int64_t taskCodeExceptionPrototypeABI=INT64_C(0x4e45585400002501);
 inline constexpr int64_t taskCodeExceptionHostPrototypeABI=INT64_C(0x4e45585400002502);
-inline bool sourceExceptionTaskABI(int64_t abi)noexcept{return abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionPrototypeABI||abi==taskCodeExceptionHostPrototypeABI;}
+// Unpublished027 owned-payload continuation cohort; never aliases public ABI6.
+inline constexpr int64_t taskCodeTypedErrorDevelopmentABI=INT64_C(0x4e45585400002701);
+inline bool sourceExceptionTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionPrototypeABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline constexpr int64_t taskCodeDeclaredThrow=4096;
 inline constexpr int64_t taskCodeFileStream=1024,taskCodeImageFileStream=2048,taskCodeStreamRequirementsMask=4095;
 // Actual checked declaration/image requirements, never filesystem authority.
@@ -24,9 +26,9 @@ inline constexpr int64_t taskCodeDeclaredTask=1,taskCodeServer=2,taskCodeDeclare
   taskCodeForeign=64,taskCodeImageForeign=128,taskCodeRequirementsMask=255;
 inline constexpr int64_t taskCodeFileWrite=256,taskCodeImageFileWrite=512,
   taskCodeWriteRequirementsMask=1023;
-inline bool fileStreamTaskABI(int64_t abi)noexcept{return abi==taskCodeStreamABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI;}
+inline bool fileStreamTaskABI(int64_t abi)noexcept{return abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeStreamABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI;}
 inline bool validTaskCodeRequirements(int64_t abi,int64_t requirements)noexcept{
-  return (abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow))==0:
+  return (abi==taskCodeTypedErrorDevelopmentABI||abi==taskCodeSourceExceptionABI||abi==taskCodeExceptionHostPrototypeABI)?(requirements&~(taskCodeStreamRequirementsMask|taskCodeDeclaredThrow))==0:
     abi==taskCodeExceptionPrototypeABI?(requirements&~(taskCodeDeclaredTask|taskCodeServer|taskCodeDeclaredThrow))==0:
     abi==taskCodeABI?(requirements&~taskCodeRequirementsMask)==0:
     abi==taskCodeWriteABI?(requirements&~taskCodeWriteRequirementsMask)==0:

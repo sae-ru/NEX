@@ -111,6 +111,7 @@ TaskFileRequirements nativeTaskFiles(const Program &p,const std::set<std::string
   return result;
 }
 int64_t privateExceptionTaskABI(const Program &p,const std::vector<TaskFunctionIR> &functions){
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)return nexrt::taskCodeTypedErrorDevelopmentABI;
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))return nexrt::taskCodeSourceExceptionABI;
   TaskFileRequirements files;for(const auto &ir:functions){files.include(p,ir);const auto &f=p.function(ir.name);if(f.effects.contains("fs")||f.effects.contains("ffi"))return nexrt::taskCodeExceptionHostPrototypeABI;}
   return files.reads||files.writes||files.streams?nexrt::taskCodeExceptionHostPrototypeABI:nexrt::taskCodeExceptionPrototypeABI;
@@ -952,6 +953,9 @@ class Emitter {
     if(supportsSourceExceptionTasks(p)){
       declaration("nex_task_frame_handler_push","!llvm.ptr, i64, i64");declaration("nex_task_frame_handler_pop","!llvm.ptr");
       declaration("nex_task_frame_source_save","!llvm.ptr, i64");declaration("nex_task_frame_source_restore","!llvm.ptr, i64");
+      declaration("nex_task_frame_source_enter","!llvm.ptr");
+      declaration("nex_task_frame_source_packet","!llvm.ptr","!llvm.ptr");
+      declaration("nex_task_frame_source_packet_raise","!llvm.ptr, !llvm.ptr");
       declaration("nex_task_frame_source_catch","!llvm.ptr, i64, i64");declaration("nex_task_frame_source_end","!llvm.ptr");
       declaration("nex_task_frame_source_raise","!llvm.ptr, !llvm.ptr, !llvm.ptr, i64");declaration("nex_task_frame_source_rethrow","!llvm.ptr");
     }
@@ -989,7 +993,32 @@ class Emitter {
       switch(op.kind){
       case TaskInstruction::PushHandler:call("nex_task_frame_handler_push",{frame,c(op.yes,op.span),c(op.no,op.span)},Type::Unit,op.span);next();break;
       case TaskInstruction::PopHandler:call("nex_task_frame_handler_pop",{frame},Type::Unit,op.span);next();break;
-      case TaskInstruction::Catch:call("nex_task_frame_source_catch",{frame,c(op.bindings[0],op.span),c(op.bindings[1],op.span)},Type::Unit,op.span);next();break;
+      case TaskInstruction::Catch:
+        if(op.bindings.empty())call("nex_task_frame_source_enter",{frame},Type::Unit,op.span);
+        else call("nex_task_frame_source_catch",{frame,c(op.bindings[0],op.span),c(op.bindings[1],op.span)},Type::Unit,op.span);
+        next();break;
+      case TaskInstruction::SourceMatch:{
+        auto packet=call("nex_task_frame_source_packet",{frame},Type::Str,op.span),key=text(op.operation,op.span);
+        auto matched=call("nex_source_error_matches",{packet,key,c(op.span.line,op.span)},Type::I64,op.span);put(op.output,fromScalar(matched,Type::Bool,op.span),op.span);release(key,op.span);release(packet,op.span);next();break;
+      }
+      case TaskInstruction::SourceBind:{
+        auto packet=call("nex_task_frame_source_packet",{frame},Type::Str,op.span);
+        if(op.operation.empty()){
+          auto code=call("nex_source_error_code",{packet},Type::Str,op.span),message=call("nex_source_error_message",{packet},Type::Str,op.span);put(op.bindings[0],code,op.span);put(op.bindings[1],message,op.span);release(code,op.span);release(message,op.span);
+        }else{
+          const auto &type=ir.slots.at(op.bindings[0]).type;auto key=text(op.operation,op.span);Value value;
+          if(type.heap()){int64_t kind=type==Type::Str?nexrt::Data::String:type==Type::Bytes?nexrt::Data::Bytes:type.kind==Type::List?nexrt::Data::List:type.kind==Type::Result?-1:p.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record;value=call("nex_source_error_heap",{packet,key,c(kind,op.span),c(op.span.line,op.span)},type,op.span);}
+          else value=fromScalar(call("nex_source_error_scalar",{packet,key,c(scalarTag(type),op.span),c(op.span.line,op.span)},Type::I64,op.span),type,op.span);
+          put(op.bindings[0],value,op.span);release(value,op.span);release(key,op.span);
+        }
+        release(packet,op.span);next();break;
+      }
+      case TaskInstruction::RaiseTyped:{
+        auto value=read(op.inputs[0],op.span),key=text(op.operation,op.span),name=text(typeName(value.type),op.span);Value packet;
+        if(value.type.heap())packet=call("nex_source_error_typed_heap",{key,name,value,c(op.span.line,op.span)},Type::Str,op.span);
+        else packet=call("nex_source_error_typed_scalar",{key,name,asI64(value,op.span),c(scalarTag(value.type),op.span),c(op.span.line,op.span)},Type::Str,op.span);
+        call("nex_task_frame_source_packet_raise",{frame,packet},Type::Unit,op.span);release(packet,op.span);release(name,op.span);release(key,op.span);release(value,op.span);finish(4,op.span);break;
+      }
       case TaskInstruction::EndCatch:call("nex_task_frame_source_end",{frame},Type::Unit,op.span);next();break;
       case TaskInstruction::SavePendingSource:call("nex_task_frame_source_save",{frame,c(op.output,op.span)},Type::Unit,op.span);next();break;
       case TaskInstruction::RethrowPendingSource:call("nex_task_frame_source_restore",{frame,c(op.inputs[0],op.span)},Type::Unit,op.span);finish(4,op.span);break;
@@ -1091,7 +1120,7 @@ public:
     }
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(tasks){
-      declaration(sourceExceptionTasksPrototype(p)?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
+      declaration((sourceExceptionTasksPrototype(p)||p.sourceLanguage==SourceLanguage::TypedErrors027)?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
       if(profiling){declaration("nex_task_profile_prepare","!llvm.ptr, i64");if(!profileRegistryAccessor.empty())declaration("nex_task_profile_prepare_application_v1","");}
     }
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
@@ -1258,7 +1287,7 @@ public:
     if(tasks){
       auto descriptor=fresh();line(descriptor+" = llvm.mlir.addressof @"+taskCodes.at(main.name)+" : !llvm.ptr",main.span);
       auto steps=constant(taskLimits.steps,Type::I64,main.span),timeout=constant(taskLimits.timeoutMs,Type::I64,main.span),workers=constant(taskLimits.workers,Type::I64,main.span);
-      value=call(sourceExceptionTasksPrototype(p)?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
+      value=call((sourceExceptionTasksPrototype(p)||p.sourceLanguage==SourceLanguage::TypedErrors027)?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
     }else{
       std::vector<Value> args;Value error;
       if(main.effects.contains("throw")){error=exceptionSlot(main.span);args.push_back(error);}
@@ -1477,6 +1506,11 @@ TaskNativeStep detail::emitPrivateTaskModule(const Program &p,const PrivateTaskM
   nexrt::TaskExecutionLimits limits;limits.timeoutMs=module.timeoutMs;
   return emitTaskNative(p,module.entry,module.application&&!module.http,optimized,limits,module.profiling,module.debugging,&linkage,true);
 }
+TaskNativeStep emitTypedErrorTasksDevelopmentNative(const Program &p,const std::string &entry,bool optimized){
+  if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed task development requires explicit027 selection");
+  (void)nativeEntry(p,entry,false,false,false,true);(void)analyzeTaskLifetimes(p,entry);
+  return emitTaskNative(p,entry,true,optimized,{},false,false,nullptr,true);
+}
 TaskNativeStep emitTaskNativeStep(const Program &p,const std::string &entry){return emitTaskNative(p,entry,false);}
 TaskNativeStep emitSourceExceptionTasksPrototypeNative(const Program &p,const std::string &entry,bool optimized){
   if(!sourceExceptionTasksPrototype(p))throw Error("E_LANGUAGE_VERSION","native task exception experiment requires the separate private task parser");
@@ -1525,6 +1559,7 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
   if(p.sourceLanguage==SourceLanguage::TypedErrors027){
+    if(!testEntry&&!libraryEntry&&usesTaskEffects(p,entry))return emitTypedErrorTasksDevelopmentNative(p,entry).mlir;
     for(const auto &f:p.functions)if(f.foreign||usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[](const auto &effect){return effect!="io"&&effect!="throw";}))throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native host/task integration is pending",f.span);
     if(testEntry||libraryEntry)throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native project/library publication is pending");
     return Emitter(p,false,false,nullptr,false,nullptr,false,true).run(entry,false,false);

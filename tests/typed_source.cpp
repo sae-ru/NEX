@@ -70,7 +70,7 @@ int main(){try{
   rejects(R"(fn nothing()->unit{}fn main()->unit !{throw}{throw(nothing());})","E_TYPE");
   rejects(R"(fn main()->unit !{throw}{throw(fn()->i64{return 42;});})","E_TYPED_EXCEPTION_AUTHORITY");
   rejects(R"(server fn main()->unit{try{}catch(error:file){}})","E_TYPED_EXCEPTION_AUTHORITY");
-  rejects(R"(fn main()->unit !{task}{})","E_TYPED_EXCEPTION_TASK");
+  {auto p=source(R"(fn main()->unit !{task}{})");require(p.function("main").effects.contains("task"),"candidate027 task function rejected");++cases;}
   {
     auto p=source(R"(fn main()->i64{try{let x:i64=9223372036854775807+1;return x;}catch(error:i64){return 0;}catch(code,message){return 1;}})");
     rejected("E_OVERFLOW",[&]{(void)evaluate(p,"main");});
