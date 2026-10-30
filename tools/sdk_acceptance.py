@@ -124,6 +124,29 @@ def validate_source_exception_evidence(report):
                     'SDK026 handler helper or genuine origin identity differs')
 
 
+TYPED_SOURCE_RESOURCE_PINS = (
+    ('helper_sha256', 'tools/sdk_typed_source.py'),
+    ('test_source_sha256', 'tests/source_exceptions_public.py'),
+    ('origin_metadata_sha256', 'tests/fixtures/language-0.26-typed-origin.json'),
+    ('origin_sql_sha256', 'tests/fixtures/language-0.26-typed-origin.sql'),
+)
+
+
+def language_resource_inventory(resources, resource_names, language):
+    """Capture real text bytes required by both discovery and final validation."""
+    resources = Path(resources).resolve()
+    names = list(resource_names)
+    if language == '0.27':
+        names.extend(path for _, path in TYPED_SOURCE_RESOURCE_PINS if path not in names)
+    inventory = {}
+    for name in names:
+        path = (resources / name).resolve()
+        require(resources in path.parents and path.is_file(), 'missing/escaped language resource: ' + name)
+        path.read_text(encoding='utf-8')
+        inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return inventory
+
+
 def validate_typed_source_evidence(report):
     proof=report.get('evidence',{}).get('typed_source_errors',{})
     compiler=report.get('compiler_sha256')
@@ -138,10 +161,7 @@ def validate_typed_source_evidence(report):
             proof.get('language')=='0.27' and proof.get('compiler_sha256')==report.get('compiler_sha256') and
             all(proof.get(key) is True for key in flags),
             'SDK lacks actual027 typed source execution, migration and graph recovery evidence')
-    for key,path in [('helper_sha256','tools/sdk_typed_source.py'),
-                     ('test_source_sha256','tests/source_exceptions_public.py'),
-                     ('origin_metadata_sha256','tests/fixtures/language-0.26-typed-origin.json'),
-                     ('origin_sql_sha256','tests/fixtures/language-0.26-typed-origin.sql')]:
+    for key,path in TYPED_SOURCE_RESOURCE_PINS:
         pin=report.get('resource_hashes',{}).get(path)
         require(isinstance(pin,str) and re.fullmatch('[0-9a-f]{64}',pin) and proof.get(key)==pin,
                 'SDK typed source helper or genuine026 identity differs')
@@ -1650,11 +1670,7 @@ test fn examples() -> unit {
             origin = source_errors['handler_migration_fixture']
             resource_names += [source_errors['handler_sdk_helper'], source_errors['handler_test_source'],
                                origin['metadata'], origin['sql']]
-        for name in resource_names:
-            path = (resources / name).resolve()
-            require(resources.resolve() in path.parents and path.is_file(), 'missing/escaped language resource: ' + name)
-            path.read_text()  # A pack offered to another model must contain actual UTF-8 text.
-            inventory[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        inventory = language_resource_inventory(resources, resource_names, doctor['language'])
         for kind in ('tasks-runtime', 'browser-worker', 'prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
                      'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload', 'task-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)
@@ -5199,6 +5215,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
     def typed_source_errors():
         from sdk_typed_source import check_installed_typed_source
         report['evidence']['typed_source_errors']=check_installed_typed_source(cli,run,root,resources,compiler)
+        validate_typed_source_evidence(report)
 
     def structured_task_tcp():
         descriptor=cli('describe','--field','tcp_provider')['value']

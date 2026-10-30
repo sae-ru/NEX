@@ -71,6 +71,40 @@ class DistributionWorkflow(unittest.TestCase):
             with self.subTest(field=key),self.assertRaises(RuntimeError):
                 acceptance.validate_typed_source_evidence(changed)
 
+    def test_discovered027_inventory_includes_real_typed_helper_and_origin_bytes(self):
+        names=['docs/language.md','tools/sdk_typed_source.py','tests/source_exceptions_public.py',
+               'tests/fixtures/language-0.26-typed-origin.json','tests/fixtures/language-0.26-typed-origin.sql']
+        with tempfile.TemporaryDirectory(prefix='nex typed inventory % 🧠 ') as temporary:
+            root=Path(temporary)
+            for index,name in enumerate(names):
+                path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
+                path.write_text('owned SDK text '+str(index)+' Я🧠',encoding='utf-8')
+            recorded=acceptance.language_resource_inventory(root,[names[0]],'0.27')
+            self.assertEqual(set(recorded),set(names))
+            for name in names:
+                self.assertEqual(recorded[name],hashlib.sha256((root/name).read_bytes()).hexdigest())
+            retained=acceptance.language_resource_inventory(root,[names[0]],'0.26')
+            self.assertEqual(retained,{names[0]:recorded[names[0]]})
+            changed=root/names[-1];changed.write_text('changed origin bytes',encoding='utf-8')
+            current=acceptance.language_resource_inventory(root,[names[0]],'0.27')
+            self.assertEqual([name for name in names if current[name]!=recorded[name]],[names[-1]])
+            changed.unlink()
+            with self.assertRaisesRegex(RuntimeError,'missing/escaped language resource'):
+                acceptance.language_resource_inventory(root,[names[0]],'0.27')
+
+    def test_language_resource_inventory_keeps_path_and_UTF8_guards(self):
+        with tempfile.TemporaryDirectory(prefix='nex inventory guards ') as temporary:
+            root=Path(temporary)/'sdk';root.mkdir()
+            outside=Path(temporary)/'outside.txt';outside.write_text('outside')
+            with self.assertRaisesRegex(RuntimeError,'missing/escaped language resource'):
+                acceptance.language_resource_inventory(root,['../outside.txt'],'0.26')
+            (root/'alias.txt').symlink_to(outside)
+            with self.assertRaisesRegex(RuntimeError,'missing/escaped language resource'):
+                acceptance.language_resource_inventory(root,['alias.txt'],'0.26')
+            (root/'invalid.txt').write_bytes(b'\xff')
+            with self.assertRaises(UnicodeDecodeError):
+                acceptance.language_resource_inventory(root,['invalid.txt'],'0.26')
+
     @unittest.skipUnless(sys.platform.startswith('linux'), 'actual ELF loader context')
     def test_ELF_inherited_RPATH_context_relocates_and_rejects_inconsistent_roots(self):
         compiler = shutil.which('cc')
