@@ -1,3 +1,13 @@
+# Typed027 synchronous native development0.144.0
+
+Reference, TypeScript and sequential native emitters now implement ordered typed
+handlers and ordinary owned payloads. Native O0/O2 agreement, source-site fidelity,
+cleanup across declines/rethrow/finally and packet sanitizer probes cover this
+scope. Public/default source stays026. Full native project/library/provider,
+task and authority/provenance integration, versioned protocols, genuine027 graph
+migration, SDK/platform delivery and every original NEX plan requirement remain
+open; this is not completed publication of027 or the whole toolchain.
+
 # Typed027 synchronous TypeScript development0.143.0
 
 Ordered typed/legacy handlers, exact matching, owned immutable data and source

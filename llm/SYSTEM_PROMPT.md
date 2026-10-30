@@ -1,3 +1,8 @@
+Candidate027 sequential native lowering, like its TypeScript development
+emitter, is a version-selected C++ capability. It does not enable ordinary027
+projects, native library/provider/task delivery or graph migration. Discover
+exact flags and retain the public project language until those gates pass.
+
 Candidate027 C++ frontend/reference/TypeScript fields describe explicit
 unarchivable development execution. They do not enable027 projects, browser UI
 or worker delivery. Keep ordinary projects on the advertised public language

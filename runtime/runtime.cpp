@@ -578,6 +578,52 @@ static Handle *impl_nex_source_error_new(Handle *code,Handle *message,SourceLoca
 }
 Handle *nex_source_error_new(Handle *code,Handle *message,int64_t line){return impl_nex_source_error_new(code,message,{line});}
 Handle *nex_source_error_new_at(Handle *code,Handle *message,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_new(code,message,{line,site});}
+// Checked compiler-private typed packet ABI. Wire scalar tags remain0/1/2;
+// heap kinds are Data::Kind, with -1 reserved for success-or-failure Result.
+static const std::string &sourceTypeString(Handle *value){
+  if(!value||!value->data||value->data->kind!=nexrt::Data::String)throw nexrt::DataError("E_SOURCE_TYPE","typed source metadata must be strings");
+  return value->data->text;
+}
+static Handle *typedSourcePacket(Handle *key,Handle *name,nexrt::Value value,SourceLocation location){
+  auto payload=std::make_shared<const nexrt::SourceErrorPayload>(sourceTypeString(key),std::move(value));
+  return nexrt::makeSourceErrorHandle(nexrt::NativeSourceException(sourceTypeString(name),"typed source error",nexrt::sourceRecord(location.site),location.line,std::move(payload)));
+}
+static Handle *impl_nex_source_error_typed_scalar(Handle *key,Handle *name,int64_t value,int64_t tag,SourceLocation location){
+  return nexrt::hostOperation(location,[&]{return typedSourcePacket(key,name,nexrt::Value::taggedScalar(value,tag),location);});
+}
+Handle *nex_source_error_typed_scalar(Handle *key,Handle *name,int64_t value,int64_t tag,int64_t line){return impl_nex_source_error_typed_scalar(key,name,value,tag,{line});}
+Handle *nex_source_error_typed_scalar_at(Handle *key,Handle *name,int64_t value,int64_t tag,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_typed_scalar(key,name,value,tag,{line,site});}
+static Handle *impl_nex_source_error_typed_heap(Handle *key,Handle *name,Handle *value,SourceLocation location){
+  return nexrt::hostOperation(location,[&]{if(!value||!value->data)throw nexrt::DataError("E_SOURCE_TYPE","typed source payload requires a nonnull owned value");return typedSourcePacket(key,name,nexrt::readHandle(value),location);});
+}
+Handle *nex_source_error_typed_heap(Handle *key,Handle *name,Handle *value,int64_t line){return impl_nex_source_error_typed_heap(key,name,value,{line});}
+Handle *nex_source_error_typed_heap_at(Handle *key,Handle *name,Handle *value,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_typed_heap(key,name,value,{line,site});}
+static int64_t impl_nex_source_error_matches(Handle *error,Handle *key,SourceLocation location){
+  return nexrt::hostOperation(location,[&]() -> int64_t {sourceError(error);return nexrt::sourceErrorRecordMatches(nexrt::readHandle(error),sourceTypeString(key));});
+}
+int64_t nex_source_error_matches(Handle *error,Handle *key,int64_t line){return impl_nex_source_error_matches(error,key,{line});}
+int64_t nex_source_error_matches_at(Handle *error,Handle *key,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_matches(error,key,{line,site});}
+static int64_t impl_nex_source_error_scalar(Handle *error,Handle *key,int64_t tag,SourceLocation location){
+  return nexrt::hostOperation(location,[&]() -> int64_t {
+    if(tag<0||tag>2)throw nexrt::DataError("E_SOURCE_TYPE","invalid checked source scalar kind");
+    sourceError(error);auto payload=nexrt::sourceErrorRecordPayload(nexrt::readHandle(error),sourceTypeString(key));
+    return payload.getScalar(payload.typeKey,tag==0?nexrt::Value::Integer:tag==1?nexrt::Value::Boolean:nexrt::Value::Floating).scalar;
+  });
+}
+int64_t nex_source_error_scalar(Handle *error,Handle *key,int64_t tag,int64_t line){return impl_nex_source_error_scalar(error,key,tag,{line});}
+int64_t nex_source_error_scalar_at(Handle *error,Handle *key,int64_t tag,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_scalar(error,key,tag,{line,site});}
+static Handle *impl_nex_source_error_heap(Handle *error,Handle *key,int64_t kind,SourceLocation location){
+  return nexrt::hostOperation(location,[&]{
+    sourceError(error);auto payload=nexrt::sourceErrorRecordPayload(nexrt::readHandle(error),sourceTypeString(key));
+    if(kind==-1){const auto &v=payload.get(payload.typeKey);if(v.tag!=nexrt::Value::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");kind=v.object->kind;}
+    if(kind<0||kind>nexrt::Data::External)throw nexrt::DataError("E_SOURCE_TYPE","invalid checked source heap kind");
+    return nexrt::makeHandle(payload.getObject(payload.typeKey,static_cast<nexrt::Data::Kind>(kind)));
+  });
+}
+Handle *nex_source_error_heap(Handle *error,Handle *key,int64_t kind,int64_t line){return impl_nex_source_error_heap(error,key,kind,{line});}
+Handle *nex_source_error_heap_at(Handle *error,Handle *key,int64_t kind,int64_t line,const nexrt::NativeSite *site){return impl_nex_source_error_heap(error,key,kind,{line,site});}
+void nex_source_error_unmatched(int64_t line){nexrt::runtimeFail("E_SOURCE_TYPE","typed packet escaped statically total source handlers",line);}
+void nex_source_error_unmatched_at(int64_t line,const nexrt::NativeSite *site){nexrt::runtimeFail("E_SOURCE_TYPE","typed packet escaped statically total source handlers",nexrt::SourceLocation{line,site});}
 static Handle *impl_nex_source_error_field(Handle *error,size_t index,SourceLocation location){return nexrt::hostOperation(location,[&]{return owned(sourceError(error).values.at(index).object);});}
 Handle *nex_source_error_code(Handle *error){return impl_nex_source_error_field(error,0,{});}
 Handle *nex_source_error_code_at(Handle *error,const nexrt::NativeSite *site){return impl_nex_source_error_field(error,0,{0,site});}

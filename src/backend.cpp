@@ -6,6 +6,7 @@
 #include "nex_task_profile_site.h"
 #include "nex_task_debug_site.h"
 #include "nex/backend.h"
+#include "nex_source_error.h"
 #include "nex/task_provider_debug.h"
 #include "nex/native_images.h"
 #include "nex/native_toolchain.h"
@@ -60,7 +61,7 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
 }
 const Function &nativeEntry(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry,bool wasm=false,bool exceptionPrototype=false){
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental emitter");
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 native lowering is pending");
+
     const auto &main=p.function(entry);
   if(!main.typeParameters.empty()||std::any_of(main.typeArguments.begin(),main.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be a concrete generic specialization or a non-generic function",main.span);
   if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
@@ -589,6 +590,9 @@ class Emitter {
       }
 
       if(s->kind==Stmt::Try){auto &entries=catchSlots[s.get()];for(int i=0;i<3;++i){auto slot=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),slot,s->span);entries.push_back(slot);}}
+      if(s->kind==Stmt::TypedTry){auto slot=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),slot,s->span);catchSlots[s.get()]={slot};}
+      if(s->kind==Stmt::CatchClause){auto &entries=catchSlots[s.get()];auto t=s->type==Type::Unknown?Type(Type::Str):s->type;auto slot=allocateSlot(t,s->span);if(t.heap())writeSlot(null(t,s->span),slot,s->span);entries.push_back(slot);if(s->type==Type::Unknown){auto message=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),message,s->span);entries.push_back(message);}}
+
       if(s->kind==Stmt::Finally){auto slot=allocateSlot(Type::Str,s->span);writeSlot(null(Type::Str,s->span),slot,s->span);catchSlots[s.get()]={slot};}
       allocateExpr(s->expr);childBlocks(s,[&](const auto &body){allocate(body);});
     }
@@ -786,8 +790,51 @@ class Emitter {
     for(auto s:body){
       SiteScope site(activeSite,sites.at(s.get()));
       switch(s->kind){
-      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
-        throw Error("E_TYPED_EXCEPTION_BACKEND","typed source native integration is pending",s->span);
+      case Stmt::TypedThrow:{
+        auto key=text(s->errorTypeKey,s->span),name=text(typeName(s->type),s->span);auto value=expression(s->expr);Value error;
+        if(value.type.heap())error=call("nex_source_error_typed_heap",{key,name,value,constant(s->span.line,Type::I64,s->span)},Type::Str,s->span);
+        else error=call("nex_source_error_typed_scalar",{key,name,asI64(value,s->span),constant(scalarTag(value.type),Type::I64,s->span),constant(s->span.line,Type::I64,s->span)},Type::Str,s->span);
+        release(value,s->span);release(key,s->span);release(name,s->span);raiseSourceError(error,s->span);returned=true;break;
+      }
+      case Stmt::TypedTry:{
+        auto handler=label(),end=label();handlers.push_back({handler,scopes.size(),exceptionOwners.size()});
+        auto protectedOwner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(protectedOwner);
+        bool a=statements(s->body);if(!a){call("nex_owned_leave",{protectedOwner,null(Type::Str,s->span)},Type::Unit,s->span);line("cf.br ^"+end,s->span);}
+        exceptionOwners.pop_back();bool used=handlers.back().used;handlers.pop_back();
+        if(!used){if(!a)blockLabel(end);returned=a;break;}
+        auto incoming=fresh();out<<"  ^"<<handler<<"("<<incoming<<": !llvm.ptr):\n";
+        auto owner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(owner);scopes.emplace_back();
+        const auto &packetSlot=catchSlots.at(s.get()).front();auto packet=call("nex_retain",{{incoming,Type::Str}},Type::Str,s->span);release({incoming,Type::Str},s->span);
+        setSlotOwner(packetSlot);store(packet,packetSlot,s->span);Value caught{packetSlot,Type::Str,true};scopes.back()["$caught"]=caught;caughtErrors.push_back(caught);
+        bool normal=!a,closed=false;
+        for(auto clause:s->alternative){
+          bool typed=clause->type!=Type::Unknown;auto selected=label(),next=label();
+          if(typed){auto key=text(clause->errorTypeKey,clause->span);auto matches=asBool(call("nex_source_error_matches",{packet,key,constant(clause->span.line,Type::I64,clause->span)},Type::I64,clause->span),clause->span);release(key,clause->span);line("cf.cond_br "+matches.name+", ^"+selected+", ^"+next,clause->span);}
+          else line("cf.br ^"+selected,clause->span);
+          blockLabel(selected);auto previousDebug=debug.scope;debug.scope=debug.block(clause->span);
+          auto clauseOwner=call("nex_owned_enter",{},Type::I64,clause->span);exceptionOwners.push_back(clauseOwner);scopes.emplace_back();
+          const auto &entries=catchSlots.at(clause.get());auto t=typed?clause->type:Type(Type::Str);Value value;
+          if(typed){
+            auto key=text(clause->errorTypeKey,clause->span);int64_t kind=0;
+            if(t.heap()){
+              if(t==Type::Str)kind=nexrt::Data::String;else if(t==Type::Bytes)kind=nexrt::Data::Bytes;else if(t.kind==Type::List)kind=nexrt::Data::List;else if(t.kind==Type::Result)kind=-1;else if(t.kind==Type::Record)kind=p.structure(t.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record;else throw Error("E_TYPED_EXCEPTION_AUTHORITY","native typed authority transport is pending",clause->span);
+              value=call("nex_source_error_heap",{packet,key,constant(kind,Type::I64,clause->span),constant(clause->span.line,Type::I64,clause->span)},t,clause->span);
+            }else value=fromScalar(call("nex_source_error_scalar",{packet,key,constant(scalarTag(t),Type::I64,clause->span),constant(clause->span.line,Type::I64,clause->span)},Type::I64,clause->span),t,clause->span);
+            release(key,clause->span);
+          }else value=call("nex_source_error_code",{packet},Type::Str,clause->span);
+          setSlotOwner(entries[0]);store(value,entries[0],clause->span);scopes.back()[clause->name]={entries[0],t,true};describeStorage(clause->name,t,clause->span,entries[0]);
+          if(!typed){auto message=call("nex_source_error_message",{packet},Type::Str,clause->span);setSlotOwner(entries[1]);store(message,entries[1],clause->span);scopes.back()[clause->catchMessage]={entries[1],Type::Str,true};describeStorage(clause->catchMessage,Type::Str,clause->span,entries[1]);}
+          if(clause->expr){auto condition=expression(clause->expr);if(!totalSourceHandler(clause)){auto accepted=label(),rejected=label();line("cf.cond_br "+condition.name+", ^"+accepted+", ^"+rejected,clause->expr->span);blockLabel(rejected);cleanup(scopes.back(),clause->span);call("nex_owned_leave",{clauseOwner,null(Type::Str,clause->span)},Type::Unit,clause->span);line("cf.br ^"+next,clause->span);blockLabel(accepted);}}
+          bool ends=statements(clause->body,false);
+          if(!ends){normal=true;cleanup(scopes.at(scopes.size()-2),clause->span);call("nex_owned_leave",{clauseOwner,null(Type::Str,clause->span)},Type::Unit,clause->span);call("nex_owned_leave",{owner,null(Type::Str,clause->span)},Type::Unit,clause->span);line("cf.br ^"+end,clause->span);}
+          scopes.pop_back();exceptionOwners.pop_back();debug.scope=previousDebug;
+          if(!typed&&totalSourceHandler(clause)){closed=true;break;}
+          blockLabel(next);
+        }
+        if(!closed){if(handlers.empty()&&exceptionOutput.name.empty()){call("nex_source_error_unmatched",{constant(s->span.line,Type::I64,s->span)},Type::Unit,s->span);line("llvm.unreachable",s->span);}else raiseSourceError(load(caught,s->span),s->span);}
+        caughtErrors.pop_back();scopes.pop_back();exceptionOwners.pop_back();if(normal)blockLabel(end);returned=!normal;break;
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","native handler clause outside its protected statement",s->span);
       case Stmt::Finally:{
         auto handler=label(),end=label();
         auto owner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(owner);
@@ -1035,6 +1082,12 @@ public:
       declaration("nex_source_error_new","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
       declaration("nex_source_error_code","!llvm.ptr","!llvm.ptr");declaration("nex_source_error_message","!llvm.ptr","!llvm.ptr");
       declaration("nex_source_error_unhandled","!llvm.ptr");
+      declaration("nex_source_error_typed_scalar","!llvm.ptr, !llvm.ptr, i64, i64, i64","!llvm.ptr");
+      declaration("nex_source_error_typed_heap","!llvm.ptr, !llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+      declaration("nex_source_error_matches","!llvm.ptr, !llvm.ptr, i64","i64");
+      declaration("nex_source_error_scalar","!llvm.ptr, !llvm.ptr, i64, i64","i64");
+      declaration("nex_source_error_heap","!llvm.ptr, !llvm.ptr, i64, i64","!llvm.ptr");
+      declaration("nex_source_error_unmatched","i64");
     }
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(tasks){
@@ -1471,7 +1524,11 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
   return result;
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 native lowering is pending");
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027){
+    for(const auto &f:p.functions)if(f.foreign||usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[](const auto &effect){return effect!="io"&&effect!="throw";}))throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native host/task integration is pending",f.span);
+    if(testEntry||libraryEntry)throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native project/library publication is pending");
+    return Emitter(p,false,false,nullptr,false,nullptr,false,true).run(entry,false,false);
+  }
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require native lowering before publication");
   rejectUnloweredTasks(p,"MLIR emission");
   BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;validateNativeBuildEntry(p,options);
@@ -1487,6 +1544,7 @@ std::string emitSourceExceptionsPrototypeMLIR(const Program &p,const std::string
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).run(entry,false,false);
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_WASM_UNSUPPORTED","candidate027 typed exceptions have no scalar Wasm lowering");
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))for(const auto &name:reachable(p,entry)){
     const auto &f=p.function(name);bool exceptions=f.effects.contains("throw");

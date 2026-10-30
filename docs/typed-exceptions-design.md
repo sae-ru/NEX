@@ -1,9 +1,9 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.143.0 keeps public language0.26 and `typed_payloads: false`.
+Toolchain0.144.0 keeps public language0.26 and `typed_payloads: false`.
 Typed syntax is only available through an explicit C++ version selection;
 public CLI/projects remain026 and cannot archive027. The development field `source_exceptions.typed_payload_development` describes internal C++
-transport and version-selected frontend/reference/TypeScript scope. This document distinguishes that implementation from the
+transport and version-selected frontend/reference/synchronous native/TypeScript scope. This document distinguishes that implementation from the
 proposed language0.27 design below.
 
 ## Implemented foundation
@@ -38,7 +38,8 @@ actual nex_source_error_unhandled boundary roundtrip that payload without
 formatting it. Scalar tags, binary64 bits and aggregate identity are retained.
 Malformed records remain runtime failures; they cannot become source errors.
 These records are compiler-private and do not define a wire or foreign ABI.
-They grant no authority and are not yet emitted for typed source syntax.
+They grant no authority. The explicitly selected027 synchronous native emitter
+uses V2 records for typed raises; ordinary026 raises retain V1 records.
 
 The published88-byte ABI6 task descriptor, C foreign-module ABI and ordinary026
 source semantics remain unchanged. The internal C++ exception layout is covered
@@ -88,7 +89,7 @@ for a call with the existing coarse `throw` effect. Precise typed effect rows
 belong to the wider effects work; do not infer them from payload support.
 
 The version-selected frontend/reference implementation exercises these ordered
-semantics with ordinary owned data. Native, task/authority payloads,
+semantics with ordinary owned data. Native project/library delivery, task/authority payloads,
 public selection and graph migration are still gated. Tests/typed_source.cpp
 checks the candidate while the genuine026 fixture verifies retained identities.
 
@@ -123,3 +124,11 @@ source-error branding. Its ordered clauses share one protected catch boundary;
 false predicates keep the original packet, and newly raised handler errors escape
 siblings. Metadata JSON excludes payload data. Actual Node/strict-TypeScript
 agreement and retained025 compatibility are in tests/typed_source_typescript.py.
+
+Sequential candidate native lowering follows the same single ordered catch
+boundary, with distinct protected/common-packet/clause owners. A declined clause
+cleans its bindings before the next match. The complete owned packet is retained
+through ordinary source-call out-parameters and finalizer paths. Private scalar
+wire tags0/1/2 and heap-kind checks are covered by the runtime-cohort hash, not a
+published foreign/task ABI. Task/provider protocol publication and migration
+remain pending. See tests/typed_source_native.py and source_error_native_packet.cpp.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.143.0 LANGUAGES C CXX)
+project(NEX VERSION 0.144.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1329,6 +1329,17 @@ target_compile_options(nex_typed_source_typescript_probe PRIVATE -Wall -Wextra -
 add_test(NAME typed_source_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_typescript.py $<TARGET_FILE:nex_typed_source_typescript_probe>)
 set_tests_properties(typed_source_typescript PROPERTIES TIMEOUT 600)
+
+add_executable(nex_typed_source_native_probe tests/typed_source_native.cpp)
+target_link_libraries(nex_typed_source_native_probe PRIVATE nex_native_backend nex_frontend MLIR Threads::Threads)
+target_compile_options(nex_typed_source_native_probe PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(nex_typed_source_native_probe PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME typed_source_native COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_native.py $<TARGET_FILE:nex_typed_source_native_probe>
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(typed_source_native PROPERTIES TIMEOUT 1200)
+install(FILES tests/typed_source_native.cpp tests/typed_source_native.py DESTINATION share/nex/tests)
+
 install(FILES tests/typed_source_typescript.cpp tests/typed_source_typescript.py DESTINATION share/nex/tests)
 
 

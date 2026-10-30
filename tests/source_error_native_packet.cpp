@@ -11,6 +11,12 @@ Handle *nex_source_error_new_at(Handle*,Handle*,int64_t,const NativeSite*);
 Handle *nex_source_error_code(Handle*);
 Handle *nex_source_error_message(Handle*);
 void nex_source_error_unhandled_at(Handle*,const NativeSite*);
+Handle *nex_source_error_typed_scalar(Handle*,Handle*,int64_t,int64_t,int64_t);
+Handle *nex_source_error_typed_heap(Handle*,Handle*,Handle*,int64_t);
+int64_t nex_source_error_matches(Handle*,Handle*,int64_t);
+int64_t nex_source_error_scalar(Handle*,Handle*,int64_t,int64_t);
+Handle *nex_source_error_heap(Handle*,Handle*,int64_t,int64_t);
+
 }
 namespace {
 std::map<const void*,int> allocations;
@@ -155,6 +161,36 @@ int main(){try{
     try{(void)makeSourceErrorHandle(original);throw std::runtime_error("handle allocation fault not consumed");}
     catch(const std::bad_alloc&){}
     require(!failHandle&&allocations.size()==1,"failed packet creation retained an allocation");
+  }empty();++cases;
+  {
+    RequestScope request;auto k=makeHandle(Value(string(key))),bad=makeHandle(Value(string(other))),name=makeHandle(Value(string("data")));
+    auto trapped=[&](const char *code,auto action){bool caught=false;try{action();}catch(const Trap &e){require(e.code==code,"typed ABI wrong trap code");caught=true;}require(caught,"typed ABI accepted invalid access");++cases;};
+    for(auto pair:{std::pair<int64_t,int64_t>{42,0},{1,1},{floatBits(1.25),2}}){
+      auto packet=nex_source_error_typed_scalar(k,name,pair.first,pair.second,31);
+      require(nex_source_error_matches(packet,k,33)==1&&nex_source_error_matches(packet,bad,33)==0,"typed ABI lost exact key");
+      require(nex_source_error_scalar(packet,k,pair.second,33)==pair.first,"typed ABI changed scalar bits/tag");
+      auto e=readSourceErrorHandle(packet);require(e.payload&&e.line==31&&e.code=="data"&&e.message=="typed source error","typed ABI metadata changed");
+      trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_scalar(packet,bad,pair.second,33);});
+      trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_scalar(packet,k,pair.second==0?1:0,33);});
+      trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_heap(packet,k,Data::String,33);});
+      nex_release(packet);++cases;
+    }
+    trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_typed_scalar(k,name,2,1,31);});
+    trapped("E_FLOAT",[&]{(void)nex_source_error_typed_scalar(k,name,std::bit_cast<int64_t>(std::numeric_limits<double>::infinity()),2,31);});
+    trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_typed_heap(k,name,nullptr,31);});
+    for(auto kind:{Data::List,Data::Record,Data::Enum,Data::Success,Data::Failure}){
+      auto object=std::make_shared<Data>(kind);object->values={Value(int64_t(42))};auto value=makeHandle(Value(object));
+      auto packet=nex_source_error_typed_heap(k,name,value,47);nex_release(value);
+      auto result=nex_source_error_heap(packet,k,kind==Data::Success||kind==Data::Failure?-1:kind,48);
+      require(readHandle(result).object==object,"typed ABI cloned/lost aggregate ownership");
+      trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_heap(packet,k,Data::String,48);});
+      if(kind!=Data::Success&&kind!=Data::Failure)trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_heap(packet,k,-1,48);});
+      nex_release(result);nex_release(packet);++cases;
+    }
+    auto invalid=makeHandle(Value(string("invalid")));
+    trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_typed_scalar(invalid,name,42,0,31);});
+    auto packet=nex_source_error_typed_scalar(k,name,42,0,31);require(nex_source_error_matches(packet,invalid,32)==0,"invalid expected key matched");
+    trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_scalar(packet,k,3,32);});nex_release(packet);
   }empty();++cases;
   std::printf("{\"ok\":true,\"cases\":%u,\"native_boundary\":true,\"physical_retirement\":true}\n",cases);return 0;
 }catch(const std::exception &e){std::fprintf(stderr,"native source packet: %s\n",e.what());return 1;}}
