@@ -217,7 +217,7 @@ public:
 };
 class Parser {
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
-  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false;std::map<std::string,Span> parameterOrigins;
+  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false;std::map<std::string,Span> parameterOrigins;
   void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
     if(!captureNames)return;
     if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
@@ -429,8 +429,18 @@ class Parser {
       s->kind=take().text=="let" ? Stmt::Let : Stmt::Var; s->name=name().text;
       expect(":"); s->type=type(); expect("="); s->expr=expression(); expect(";");
     } else if(sourceExceptions&&accept("try")) {
-      s->kind=Stmt::Try;s->body=block();bool caught=accept("catch");
-      if(caught){
+      s->kind=typedErrors?Stmt::TypedTry:Stmt::Try;s->body=block();bool caught=false;
+      if(typedErrors){
+        while(peek().text=="catch"){
+          if(s->alternative.size()>=256)throw Error("E_PARSE_LIMIT","handler chain exceeds256 clauses",peek().span);
+          auto clause=std::make_shared<Stmt>();clause->kind=Stmt::CatchClause;clause->span=take().span;
+          expect("(");clause->name=name().text;
+          if(accept(":"))clause->type=type();else{expect(",");clause->catchMessage=name().text;}
+          expect(")");if(accept("if"))clause->expr=expression();clause->body=block();
+          clause->sourceRange=syntaxRange(clause->span.begin);s->alternative.push_back(std::move(clause));caught=true;
+        }
+        if(!caught&&peek().text!="finally")expect("catch");
+      }else if((caught=accept("catch"))){
         expect("(");s->name=name().text;expect(",");s->catchMessage=name().text;expect(")");
         if(handlerFilters&&accept("if"))s->expr=expression();
         s->alternative=block();s->sourceRange=syntaxRange(s->span.begin);
@@ -442,9 +452,13 @@ class Parser {
     } else if(sourceExceptions&&accept("throw")) {
       s->kind=Stmt::Throw;
       if(!accept(";")){
-        expect("(");s->expr=std::make_shared<Expr>();s->expr->kind=Expr::List;s->expr->span=s->span;
-        s->expr->args.push_back(expression());expect(",");s->expr->args.push_back(expression());
-        expect(")");expect(";");s->expr->sourceRange=syntaxRange(s->span.begin);boundExpression(s->expr);
+        expect("(");auto value=expression();
+        if(typedErrors&&accept(")")){s->kind=Stmt::TypedThrow;s->expr=std::move(value);expect(";");}
+        else{
+          s->expr=std::make_shared<Expr>();s->expr->kind=Expr::List;s->expr->span=s->span;
+          s->expr->args.push_back(std::move(value));expect(",");s->expr->args.push_back(expression());
+          expect(")");expect(";");s->expr->sourceRange=syntaxRange(s->span.begin);boundExpression(s->expr);
+        }
       }
     } else if(accept("return")) {
       s->kind=Stmt::Return; if(!accept(";")){s->expr=expression();expect(";");}
@@ -459,7 +473,7 @@ class Parser {
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed) {
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
     if(exceptions)p.sourceLanguage=SourceLanguage::SourceExceptions025Prototype;
@@ -554,6 +568,24 @@ struct Binding {Type type;bool mutableValue;};
 class Checker {
   Program &p; Function *f=nullptr; std::vector<std::map<std::string,Binding>> scopes;
   unsigned exceptionHandlers=0,exceptionCatches=0;
+  std::vector<Type> typedHandlers;
+  void typedPayload(Type &type,Span span,std::string &key){
+    validType(type,span);
+    // Pending resource provenance must be rejected, including inside nominal
+    // aggregates and callable captures, rather than silently losing authority.
+    std::set<std::string> seen;bool generic=false;
+    std::function<void(const Type&)> visit=[&](const Type &t){
+      generic|=t.kind==Type::Parameter||t.kind==Type::Projection;
+      if(t.kind==Type::Function||t.kind==Type::File||t.kind==Type::Task||t.kind==Type::Channel||t.kind==Type::TaskScope||isExternalResource(p,t))
+        throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed exception authority transport requires payload lifetime integration",span);
+      if(t.element)visit(*t.element);for(const auto &a:t.arguments)visit(a);
+      if(t.kind==Type::Record&&p.hasStructure(t.name)&&seen.insert(t.name).second){
+        for(const auto &a:p.structure(t.name).typeArguments)visit(a);
+        for(auto field:p.structure(t.name).members())visit(field->type);
+      }
+    };visit(type);
+    key=generic?"":sourceErrorTypeKey(p,type);
+  }
   bool exceptionPrototype()const{return supportsSourceExceptions(p);}
   bool allowsEffect(const std::string &effect)const{return f->effects.contains(effect)||(exceptionPrototype()&&effect=="throw"&&exceptionHandlers);}
   void prototypeEffects(const Function &fn)const{
@@ -671,13 +703,13 @@ class Checker {
     fn.result=*signatureType.element;for(size_t i=0;i<fn.params.size();++i)fn.params[i].type=signatureType.arguments[i];
     fn.owner=outer->owner;fn.unit=outer->unit;fn.localName=outer->localName+"::$lambda_"+std::to_string(e->number);fn.name=outer->name+"::"+(watching?"$watch_lambda_":"$lambda_")+std::to_string(e->number);fn.closureOwner=outer->name;fn.closure=true;
     if(fn.name.size()>4096)throw Error("E_FUNCTION_LIMIT","closure target name exceeds 4096 bytes",e->span);
-    prototypeEffects(fn);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;exceptionHandlers=exceptionCatches=0;
+    prototypeEffects(fn);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;auto previousTyped=std::move(typedHandlers);typedHandlers.clear();exceptionHandlers=exceptionCatches=0;
     auto boundary=scopes.size();CaptureScope capture{boundary,{}};scopes.emplace_back();captures.push_back(&capture);f=&fn;fn.dependencies.clear();
     try{
       for(const auto &param:fn.params)define(param.name,{param.type,false},param.span);
       if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all closure paths return a value",fn.span);
-    }catch(...){captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;throw;}
-    captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;fn.captures.clear();e->args.clear();
+    }catch(...){captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;typedHandlers=std::move(previousTyped);throw;}
+    captures.pop_back();scopes.resize(boundary);f=outer;exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;typedHandlers=std::move(previousTyped);fn.captures.clear();e->args.clear();
     for(const auto &[name,value]:capture.bindings){fn.captures.push_back({name,value.type,e->span});auto argument=std::make_shared<Expr>();argument->kind=Expr::Name;argument->span=e->span;argument->text=name;argument->type=value.type;e->args.push_back(std::move(argument));}
     if(fn.captures.size()>1024)throw Error("E_FUNCTION_LIMIT","closure exceeds 1024 captures",e->span);
     if(std::count_if(p.functions.begin(),p.functions.end(),[](const auto &fn){return fn.closure;})>=4096)throw Error("E_FUNCTION_LIMIT","closure instance limit exceeded",e->span);
@@ -1018,7 +1050,7 @@ class Checker {
       case Stmt::Match:returns=matching(s->expr,{},true);s->type=s->expr->args[0]->type;break;
       case Stmt::While:same(expr(s->expr,Type::Bool),Type::Bool,s->span);block(s->body);break;
       case Stmt::Finally:{
-        if(p.sourceLanguage!=SourceLanguage::ExceptionHandlers026)throw Error("E_LANGUAGE_VERSION","finally requires language0.26",s->span);
+        if(p.sourceLanguage!=SourceLanguage::ExceptionHandlers026&&p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","finally requires language0.26",s->span);
         bool protectedReturns=block(s->body),finalizerReturns=block(s->alternative);
         s->type=Type::Unit;returns=protectedReturns||finalizerReturns;break;
       }
@@ -1032,6 +1064,37 @@ class Checker {
         bool b=block(s->alternative,false);--exceptionCatches;scopes.pop_back();
         s->type=Type::Str;returns=a&&b;break;
       }
+      case Stmt::TypedTry:{
+        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
+        if(f->effects.contains("task"))throw Error("E_TYPED_EXCEPTION_TASK","ordered task handlers require continuation and lifetime integration",s->span);
+        if(s->alternative.empty())throw Error("E_INTERNAL","typed try has no clauses",s->span);
+        auto previous=typedHandlers.size();auto previousUniversal=exceptionHandlers;
+        for(auto clause:s->alternative){
+          if(clause->kind!=Stmt::CatchClause)throw Error("E_INTERNAL","invalid typed handler clause",clause->span);
+          if(clause->type!=Type::Unknown){typedPayload(clause->type,clause->span,clause->errorTypeKey);if(totalSourceHandler(clause))typedHandlers.push_back(clause->type);}
+          else if(totalSourceHandler(clause))++exceptionHandlers;
+        }
+        bool a;
+        try{a=block(s->body);}catch(...){typedHandlers.resize(previous);exceptionHandlers=previousUniversal;throw;}
+        typedHandlers.resize(previous);exceptionHandlers=previousUniversal;
+        bool handlersReturn=true;
+        for(auto clause:s->alternative){
+          scopes.emplace_back();define(clause->name,{clause->type==Type::Unknown?Type(Type::Str):clause->type,false},clause->span);
+          if(clause->type==Type::Unknown)define(clause->catchMessage,{Type::Str,false},clause->span);
+          ++exceptionCatches;if(clause->expr)same(expr(clause->expr,Type::Bool),Type::Bool,clause->expr->span);
+          bool b=block(clause->body,false);--exceptionCatches;scopes.pop_back();handlersReturn&=b;
+        }
+        s->type=Type::Unit;returns=a&&handlersReturn;break;
+      }
+      case Stmt::TypedThrow:{
+        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed throw requires language0.27",s->span);
+        if(f->effects.contains("task"))throw Error("E_TYPED_EXCEPTION_TASK","typed task throws require continuation and lifetime integration",s->span);
+        s->type=expr(s->expr);typedPayload(s->type,s->span,s->errorTypeKey);
+        if(!allowsEffect("throw")&&std::find(typedHandlers.begin(),typedHandlers.end(),s->type)==typedHandlers.end())
+          throw Error("E_EFFECT","uncaught typed throw requires effect throw or a total matching handler",s->span);
+        returns=true;break;
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","handler clause outside its protected statement",s->span);
       case Stmt::Throw:{
         if(!exceptionPrototype())throw Error("E_LANGUAGE_VERSION","source exception syntax requires its explicit prototype parser",s->span);
         if(!s->expr&&!exceptionCatches)throw Error("E_RETHROW","bare throw requires a lexical catch in the current function",s->span);
@@ -1044,7 +1107,8 @@ class Checker {
     if(newScope)scopes.pop_back();return returns;
   }
   void functionBody(Function &fn){
-    if(fn.checked)return;prototypeEffects(fn);auto previous=f;auto previousScopes=std::move(scopes);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;exceptionHandlers=exceptionCatches=0;f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027&&fn.effects.contains("task"))throw Error("E_TYPED_EXCEPTION_TASK","language0.27 task lifetime/continuation integration is pending",fn.span);
+    if(fn.checked)return;prototypeEffects(fn);auto previous=f;auto previousScopes=std::move(scopes);auto previousHandlers=exceptionHandlers,previousCatches=exceptionCatches;auto previousTyped=std::move(typedHandlers);typedHandlers.clear();exceptionHandlers=exceptionCatches=0;f=&fn;f->dependencies.clear();scopes.clear();scopes.emplace_back();
     try{
       for(auto &parameter:fn.params){validType(parameter.type,parameter.span);define(parameter.name,{parameter.type,false},parameter.span);}
       validType(fn.result,fn.span,true);
@@ -1052,8 +1116,8 @@ class Checker {
       else if(fn.foreign)(void)foreignSignature(p,fn);
       else if(!block(fn.body,false)&&fn.result!=Type::Unit)throw Error("E_RETURN","not all paths return a value in '"+fn.name+"'",fn.span);
       fn.checked=true;
-    }catch(...){f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;throw;}
-    f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;
+    }catch(...){f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;typedHandlers=std::move(previousTyped);throw;}
+    f=previous;scopes=std::move(previousScopes);exceptionHandlers=previousHandlers;exceptionCatches=previousCatches;typedHandlers=std::move(previousTyped);
   }
 public:
   explicit Checker(Program &p):p(p){}
@@ -1149,7 +1213,8 @@ llvm::json::Value exprJSON(E e) {
 llvm::json::Array blockJSON(const std::vector<S> &body) {
   llvm::json::Array out;
   for(auto s:body){llvm::json::Object item{{"kind",int64_t(s->kind)},{"name",s->name},{"type",typeName(s->type)},{"expression",exprJSON(s->expr)},{"body",blockJSON(s->body)},{"else",blockJSON(s->alternative)}};
-    if(s->kind==Stmt::Try)item["catch_message"]=s->catchMessage;
+    if(s->kind==Stmt::Try||s->kind==Stmt::CatchClause)item["catch_message"]=s->catchMessage;
+    if(s->kind==Stmt::TypedThrow||s->kind==Stmt::CatchClause)item["payload_type_key"]=s->errorTypeKey;
     out.push_back(std::move(item));}
   return out;
 }
@@ -1166,11 +1231,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||language==SourceLanguage::TypedErrors027,language==SourceLanguage::TypedErrors027).run();
   p.sourceLanguage=language;return p;
 }
 Program parseSourceExceptionsPrototype(std::string source,std::string path){
@@ -1248,7 +1313,7 @@ std::string revision(const Program &p) {
 llvm::json::Value describe() {
   return llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
-    {"source_exceptions",llvm::json::Object{{"status","public026_handler_development"},{"source_language",languageVersion},{"frontend",true},{"reference",true},{"retained024_parser",true},{"explicit_history_preserving_migration",true},{"native_delivery_accepted",false},{"typescript_delivery_accepted",false},{"task_ABI6_delivery_accepted",false},{"providers_delivery_accepted",false},{"SDK_delivery_accepted",false},{"guide","docs/exceptions.md"},{"guide_kind","exception"},{"payload",llvm::json::Array{"str code","str message"}},{"checked_traps_caught",false},{"filters_finally_typed_payloads",false},{"handler_filters",true},{"finally",false},{"finally_development",llvm::json::Object{{"status","resumable_native_reference_typescript"},{"frontend",true},{"reference",true},{"typescript",true},{"native",true},{"tasks",true},{"finally_return_override",true},{"result_propagation_runs_finally",true},{"fatal_traps_run_finally",false},{"retained026_identities",true},{"test_source","tests/finally.py"},{"task_test_source","tests/task_finally.py"},{"pending_outcomes_survive_suspension",true},{"cancellation_runs_user_finalizers",false},{"maximum_native_finalizer_copies",4096},{"maximum_task_finalizer_copies",4096},{"wasm",false}}},{"typed_payloads",false},{"typed_payload_development",llvm::json::Object{{"status","internal_owned_packet_native_roundtrip"},{"source_syntax",false},{"source_language_027_enabled",false},{"reference_packet",true},{"native_packet",true},{"native_managed_roundtrip",true},{"native_kind_checked_accessors",true},{"native_legacy_representation_retained",true},{"native_roundtrip_test_source","tests/source_error_native_packet.cpp"},{"complete_concrete_type_context",true},{"type_identity_format","nex.source-error-type/1"},{"authority_granted_by_payload",false},{"source_handler_delivery_enabled",false},{"header","runtime/nex_source_error.h"},{"type_identity_implementation","src/source_errors.cpp"},{"test_source","tests/source_error_payload.cpp"},{"scheduler_test_source","tests/source_exception_task_scheduler.cpp"},{"guide","docs/typed-exceptions-design.md"},{ "guide_kind","typed-exception"},{"genuine026_origin","tests/fixtures/language-0.26-typed-origin.json"}}},{"retained025_parser",true},{"handler_migration_fixture",llvm::json::Object{{"metadata","tests/fixtures/language-0.25-handler-origin.json"},{"sql","tests/fixtures/language-0.25-handler-origin.sql"},{"origin_language","0.25"},{"origin_recomputed",true},{"all16_tables_rows_schema_IDs_preserved",true}}},{"handler_example","examples/exception-filters/main.nex"},{"handler_sdk_helper","tools/sdk_source_handlers.py"},{"handler_test_source","tests/exception_handlers.py"},{"migration_plan_cli","nex migrate --kind plan --json"},{"reviewed_candidate_cli","nex migrate --candidate FILE --expected-revision HASH --json"},{"candidate_schema","llm/migration-candidate.schema.json"},{"source_providers",llvm::json::Object{{"record_schema","nex.native-task-provider/11"},{"profile_record_schema","nex.native-task-provider/12"},{"debug_record_schema","nex.native-task-provider/13"},{"static_plan_schema","nex.project-static-task-linkage/4"},{"shared_plan_schema","nex.project-task-linkage/11"},{"profile_plan_schema","nex.project-task-linkage/12"},{"debug_plan_schema","nex.project-task-linkage/13"},{"descriptor_abi","0x4e45585400000006"},{"requirements_mask",7967},{"descriptor_bytes",88},{"abi_offset",40},{"source_required",true},{"pure_helper_continuations",true},{"ordinary_CLI",true},{"capture_replay",true},{"file_owner_cleanup",true},{"complete_delivery_accepted",false},{"guide","docs/source-exception-providers.md"},{"guide_kind","exception-provider"}}}}},
+    {"source_exceptions",llvm::json::Object{{"status","public026_handler_development"},{"source_language",languageVersion},{"frontend",true},{"reference",true},{"retained024_parser",true},{"explicit_history_preserving_migration",true},{"native_delivery_accepted",false},{"typescript_delivery_accepted",false},{"task_ABI6_delivery_accepted",false},{"providers_delivery_accepted",false},{"SDK_delivery_accepted",false},{"guide","docs/exceptions.md"},{"guide_kind","exception"},{"payload",llvm::json::Array{"str code","str message"}},{"checked_traps_caught",false},{"filters_finally_typed_payloads",false},{"handler_filters",true},{"finally",false},{"finally_development",llvm::json::Object{{"status","resumable_native_reference_typescript"},{"frontend",true},{"reference",true},{"typescript",true},{"native",true},{"tasks",true},{"finally_return_override",true},{"result_propagation_runs_finally",true},{"fatal_traps_run_finally",false},{"retained026_identities",true},{"test_source","tests/finally.py"},{"task_test_source","tests/task_finally.py"},{"pending_outcomes_survive_suspension",true},{"cancellation_runs_user_finalizers",false},{"maximum_native_finalizer_copies",4096},{"maximum_task_finalizer_copies",4096},{"wasm",false}}},{"typed_payloads",false},{"typed_payload_development",llvm::json::Object{{"status","source027_frontend_reference_development"},{"source_syntax",false},{"source_language_027_enabled",false},{"reference_packet",true},{"native_packet",true},{"source027_version_selected_frontend",true},{"source027_reference_handlers",true},{"source027_ordered_handlers",true},{"source027_archiving_enabled",false},{"source027_native_lowering",false},{"source027_typescript_lowering",false},{"source027_authority_transport",false},{"source027_test_source","tests/typed_source.cpp"},{"native_managed_roundtrip",true},{"native_kind_checked_accessors",true},{"native_legacy_representation_retained",true},{"native_roundtrip_test_source","tests/source_error_native_packet.cpp"},{"complete_concrete_type_context",true},{"type_identity_format","nex.source-error-type/1"},{"authority_granted_by_payload",false},{"source_handler_delivery_enabled",false},{"header","runtime/nex_source_error.h"},{"type_identity_implementation","src/source_errors.cpp"},{"test_source","tests/source_error_payload.cpp"},{"scheduler_test_source","tests/source_exception_task_scheduler.cpp"},{"guide","docs/typed-exceptions-design.md"},{ "guide_kind","typed-exception"},{"genuine026_origin","tests/fixtures/language-0.26-typed-origin.json"}}},{"retained025_parser",true},{"handler_migration_fixture",llvm::json::Object{{"metadata","tests/fixtures/language-0.25-handler-origin.json"},{"sql","tests/fixtures/language-0.25-handler-origin.sql"},{"origin_language","0.25"},{"origin_recomputed",true},{"all16_tables_rows_schema_IDs_preserved",true}}},{"handler_example","examples/exception-filters/main.nex"},{"handler_sdk_helper","tools/sdk_source_handlers.py"},{"handler_test_source","tests/exception_handlers.py"},{"migration_plan_cli","nex migrate --kind plan --json"},{"reviewed_candidate_cli","nex migrate --candidate FILE --expected-revision HASH --json"},{"candidate_schema","llm/migration-candidate.schema.json"},{"source_providers",llvm::json::Object{{"record_schema","nex.native-task-provider/11"},{"profile_record_schema","nex.native-task-provider/12"},{"debug_record_schema","nex.native-task-provider/13"},{"static_plan_schema","nex.project-static-task-linkage/4"},{"shared_plan_schema","nex.project-task-linkage/11"},{"profile_plan_schema","nex.project-task-linkage/12"},{"debug_plan_schema","nex.project-task-linkage/13"},{"descriptor_abi","0x4e45585400000006"},{"requirements_mask",7967},{"descriptor_bytes",88},{"abi_offset",40},{"source_required",true},{"pure_helper_continuations",true},{"ordinary_CLI",true},{"capture_replay",true},{"file_owner_cleanup",true},{"complete_delivery_accepted",false},{"guide","docs/source-exception-providers.md"},{"guide_kind","exception-provider"}}}}},
     {"source_exception_prototype",llvm::json::Object{
       {"status","private_task_consumer_instances_experiment"},
       {"source_support",false},

@@ -1,3 +1,11 @@
+# Candidate027 frontend/reference development0.142.0
+
+Typed raise, ordered typed/legacy handlers and matching effect checks are
+implemented behind the explicit C++ SourceLanguage::TypedErrors027 selection.
+Public projects/CLI stay026. Native/TypeScript, authority payloads, task handlers
+and graph migration remain pending and explicitly rejected. Read the candidate
+semantics in language.md and typed-exceptions-design.md; this is not027 delivery.
+
 # Typed-payload transport native roundtrip0.141.0
 
 The compiler retains an internal owned value with its complete concrete type key.

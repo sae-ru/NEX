@@ -169,6 +169,8 @@ class Generator {
       auto start=line;
       if(taskMode)statement("yield* task.checkpoint("+site(s)+");");
       switch(s->kind){
+      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
+        throw Error("E_TYPED_EXCEPTION_BACKEND","typed source TypeScript integration is pending",s->span);
       case Stmt::Finally:{
         auto run="finally_run_"+std::to_string(++unique),error="finally_error_"+std::to_string(++unique),fatal="finally_fatal_"+std::to_string(++unique);
         statement("let "+run+" = true;");statement("let "+fatal+": unknown = undefined;");
@@ -220,6 +222,7 @@ class Generator {
   }
 public:
   explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)){
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 TypeScript lowering is pending");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
@@ -279,6 +282,7 @@ public:
 };
 }
 WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string> &entries){
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 TypeScript lowering is pending");
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require TypeScript lowering before publication");
   rejectUnloweredTasks(p,"TypeScript emission");
   bool tasks=false;

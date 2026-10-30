@@ -3374,7 +3374,7 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "internal_owned_packet_native_roundtrip",
+      "status": "source027_frontend_reference_development",
       "source_syntax": false,
       "source_language_027_enabled": false,
       "reference_packet": true,
@@ -3393,7 +3393,15 @@
       "native_managed_roundtrip": true,
       "native_kind_checked_accessors": true,
       "native_legacy_representation_retained": true,
-      "native_roundtrip_test_source": "tests/source_error_native_packet.cpp"
+      "native_roundtrip_test_source": "tests/source_error_native_packet.cpp",
+      "source027_version_selected_frontend": true,
+      "source027_reference_handlers": true,
+      "source027_ordered_handlers": true,
+      "source027_archiving_enabled": false,
+      "source027_native_lowering": false,
+      "source027_typescript_lowering": false,
+      "source027_authority_transport": false,
+      "source027_test_source": "tests/typed_source.cpp"
     }
   }
 }

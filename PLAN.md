@@ -1,3 +1,13 @@
+# Typed027 frontend/reference development0.142.0
+
+Version-selected parsing/checking and synchronous reference execution now cover
+typed raises and ordered handlers, exact keys, filters/replacement/rethrow,
+known versus coarse throw effects, immutable bindings and retained026 identities.
+Public/default source stays026. Complete native/TypeScript/task lowering, typed
+payload authority/provenance, explicit027 graph migration and delivery gates
+remain required before publication. All original language/toolchain/platform/
+accelerator requirements below remain active.
+
 # Native typed-error packet roundtrip0.141.0
 
 Managed native packets now retain typed values across exception/handle conversion

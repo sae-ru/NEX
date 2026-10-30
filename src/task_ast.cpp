@@ -198,6 +198,8 @@ struct TaskAstMachine::Impl {
         switch(action.kind){
         case Action::Statement:
           switch(s->kind){
+      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
+        throw Error("E_TYPED_EXCEPTION_TASK","typed source AST task integration is pending",s->span);
           case Stmt::Finally:
             frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndFinally,{},s});block(s->body,true);break;
           case Stmt::Try:

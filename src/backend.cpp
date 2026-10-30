@@ -60,7 +60,8 @@ std::set<std::string> reachable(const Program &p,const std::string &entry){
 }
 const Function &nativeEntry(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry,bool wasm=false,bool exceptionPrototype=false){
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental emitter");
-  const auto &main=p.function(entry);
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 native lowering is pending");
+    const auto &main=p.function(entry);
   if(!main.typeParameters.empty()||std::any_of(main.typeArguments.begin(),main.typeArguments.end(),containsParameter))throw Error("E_GENERIC_ENTRY","entry must be a concrete generic specialization or a non-generic function",main.span);
   if(!libraryEntry&&(!main.params.empty()||(main.result!=Type::I64&&main.result!=Type::Unit)))throw Error("E_ENTRY","entry must take no arguments and return i64 or unit",main.span);
   if(!wasm&&main.realm=="client")throw Error("E_REALM","client entry cannot be built for a native server target",main.span);
@@ -785,6 +786,8 @@ class Emitter {
     for(auto s:body){
       SiteScope site(activeSite,sites.at(s.get()));
       switch(s->kind){
+      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
+        throw Error("E_TYPED_EXCEPTION_BACKEND","typed source native integration is pending",s->span);
       case Stmt::Finally:{
         auto handler=label(),end=label();
         auto owner=call("nex_owned_enter",{},Type::I64,s->span);exceptionOwners.push_back(owner);
@@ -1468,6 +1471,7 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
   return result;
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
+  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_BACKEND","language0.27 native lowering is pending");
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require native lowering before publication");
   rejectUnloweredTasks(p,"MLIR emission");
   BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;validateNativeBuildEntry(p,options);

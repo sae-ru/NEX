@@ -7,7 +7,7 @@ namespace nex {
 namespace {
 using JSON=llvm::json::Value;using Object=llvm::json::Object;using Array=llvm::json::Array;
 const char *exprKinds[]={"integer","boolean","name","unary","binary","call","string","list","field","index","match","invoke","function_reference","lambda","floating","propagate_result"};
-const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match","try","throw","finally"};
+const char *stmtKinds[]={"let","var","assign","expression","return","if","while","match","try","throw","finally","typed_throw","typed_try","catch_clause"};
 class Tree {
   const Program &p;const Function &f;std::vector<Operation> nodes;
   std::vector<std::map<std::string,std::string>> scopes;
@@ -45,9 +45,10 @@ class Tree {
     add(path,parent,role,0,"block","block",span,Object{{"kind","block"}});
     if(scoped)scopes.emplace_back();
     if(handler){
-      std::array<std::string,2> names{handler->name,handler->catchMessage};
+      bool typed=handler->kind==Stmt::CatchClause&&handler->type!=Type::Unknown;
+      std::vector<std::string> names=typed?std::vector<std::string>{handler->name}:std::vector<std::string>{handler->name,handler->catchMessage};
       for(unsigned i=0;i<names.size();++i){auto key=path+"/parameter/"+std::to_string(i);
-        add(key,path,"parameter",i,"exception.binding",names[i],span,Object{{"kind","exception.binding"},{"name",names[i]},{"type","str"}});
+        add(key,path,"parameter",i,"exception.binding",names[i],span,Object{{"kind","exception.binding"},{"name",names[i]},{"type",typed?typeName(handler->type):"str"}});
         scopes.back()[names[i]]=key;
       }
       expression(handler->expr,path,"guard",0);
@@ -64,6 +65,14 @@ class Tree {
       if(s->kind==Stmt::If)block(s->alternative,key,"else",s->span,true);
       if(s->kind==Stmt::Try){block(s->body,key,"body",s->span,true);block(s->alternative,key,"catch",s->span,true,s);}
       if(s->kind==Stmt::Finally){block(s->body,key,"body",s->span,true);block(s->alternative,key,"finally",s->span,true);}
+      if(s->kind==Stmt::TypedTry){
+        block(s->body,key,"body",s->span,true);
+        for(size_t clause=0;clause<s->alternative.size();++clause){
+          auto handler=s->alternative[clause];auto path=key+"/clause/"+std::to_string(clause);
+          add(path,key,"catch",clause,"exception.clause",handler->name,handler->span,Object{{"kind","exception.clause"},{"type",typeName(handler->type)},{"payload_type_key",handler->errorTypeKey}},handler.get());
+          block(handler->body,path,"body",handler->span,true,handler);
+        }
+      }
     }
     if(scoped)scopes.pop_back();
   }

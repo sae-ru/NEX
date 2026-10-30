@@ -1,3 +1,32 @@
+# Version-selected027 frontend/reference development0.142.0
+
+Public CLI/projects remain0.26; typed_payloads stays false. The explicit C++
+parseVersioned(..., SourceLanguage::TypedErrors027) selection adds throw(value)
+and ordered catch(value:Type)/legacy catch(code,message) clauses. This is
+unarchivable development syntax, not an enabled027 project or delivery claim.
+
+The operand is evaluated once. Exact concrete keys select typed clauses;
+nonmatching clauses skip their predicate. A false predicate tries the next
+clause with the original owned packet. Errors from predicates/handlers escape
+all sibling clauses. Bare rethrow preserves the packet/site; legacy replacement
+creates a new packet. Legacy projection uses the stable type name and generic
+message, without formatting the payload. Finally and Result ? keep026 semantics.
+Handler values are immutable scoped bindings and may be captured as snapshots.
+
+Only an unguarded/literal-true matching typed clause handles a directly known
+raise for effect checking. Calls with coarse throw require an outward effect or
+universal legacy handler; typed clauses never erase unknown throw effects.
+Handler coverage resets across functions and closures. All handler predicates
+and bodies use the enclosing coverage, excluding their siblings. New AST kinds
+and conditional key fields are appended; retained026 canonical fields/ordinals
+are unchanged.
+
+Native/TypeScript generation and graph archiving reject this development version
+explicitly. Task functions and payloads carrying callable/file/task/resource
+authority remain rejected until their continuation/provenance integration is
+implemented. These are pending development gates, not the final027 contract.
+See [typed error design](typed-exceptions-design.md) and tests/typed_source.cpp.
+
 # Internal typed-payload transport0.141.0
 
 Public source syntax remains0.26. `typed_payloads` stays false. Internal owned

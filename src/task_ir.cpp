@@ -204,6 +204,8 @@ class Lowering {
     for(const auto &s:body){
       if(s->kind!=Stmt::While)point(TaskDebugPointIR::Statement,s->span,s.get());
       switch(s->kind){
+      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
+        throw Error("E_TYPED_EXCEPTION_TASK","typed source TaskIR integration is pending",s->span);
       case Stmt::Finally:{
         auto marker=slot(Type::Bool,s->span);constant(marker,false,s->span);
         TaskInstruction install;install.kind=TaskInstruction::PushHandler;install.span=s->span;install.source=s.get();install.no=result.slots.size();

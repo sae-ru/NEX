@@ -1,9 +1,9 @@
 # Typed source errors: transport foundation and remaining language work
 
-Toolchain0.141.0 keeps public language0.26 and `typed_payloads: false`.
-There is no typed throw/catch source syntax in this compiler. The development
-field `source_exceptions.typed_payload_development` describes internal C++
-transport only. This document distinguishes that implementation from the
+Toolchain0.142.0 keeps public language0.26 and `typed_payloads: false`.
+Typed syntax is only available through an explicit C++ version selection;
+public CLI/projects remain026 and cannot archive027. The development field `source_exceptions.typed_payload_development` describes internal C++
+transport and version-selected frontend/reference scope. This document distinguishes that implementation from the
 proposed language0.27 design below.
 
 ## Implemented foundation
@@ -55,7 +55,7 @@ thread boundaries, checks legacy code/message projection without payload
 formatting, rejects malformed records, and injects handle-allocation failure.
 They require final destruction and zero retained managed objects/handles.
 
-## Proposed027 source contract: not enabled
+## Candidate027 source contract: public delivery not enabled
 
 A typed raise should evaluate its one operand exactly once:
 
@@ -86,6 +86,11 @@ transport. Only an explicit typed binding exposes the value. Typed filters do
 not handle fatal control, and a typed-only handler is not automatically total
 for a call with the existing coarse `throw` effect. Precise typed effect rows
 belong to the wider effects work; do not infer them from payload support.
+
+The version-selected frontend/reference implementation exercises these ordered
+semantics with ordinary owned data. Native/TypeScript, task/authority payloads,
+public selection and graph migration are still gated. Tests/typed_source.cpp
+checks the candidate while the genuine026 fixture verifies retained identities.
 
 ## Required before enabling027
 

@@ -1,3 +1,10 @@
+(* Candidate0.27 C++ version-selected frontend adds the separate productions
+   below. Public statement/try/catch/throw remain026; CLI selection, graph
+   migration and full backend delivery are not enabled. *)
+development027_try = "try", block, ( development027_catch, { development027_catch }, [ "finally", block ] | "finally", block ) ;
+development027_catch = "catch", "(", identifier, ( ":", type | ",", identifier ), ")", [ "if", expression ], block ;
+development027_throw = "throw", [ "(", expression, [ ",", expression ], ")" ], ";" ;
+
 (* Toolchain0.141 internal native typed-packet roundtrips add no syntax,
    AST/canonical identity or language-version change. Typed source027 remains disabled. *)
 (* Language0.26 development: catch filters and synchronous/resumable native/reference/TypeScript finally. Complete delivery remains pending. Retained025/026 identities are unchanged. *)

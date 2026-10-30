@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "nex/operations.h"
 #include "nex_value.h"
+#include "nex_source_error.h"
 #include "nex_parallel_value.h"
 #include "nex_json.h"
 #include "nex_io.h"
@@ -212,6 +213,27 @@ class Interpreter {
     if(op=="<")return V(a<b,true);if(op=="<=")return V(a<=b,true);if(op==">")return V(a>b,true);if(op==">=")return V(a>=b,true);
     throw Error("E_INTERNAL","unknown checked operator");
   }
+  V typedBinding(const SourceException &error,const S &clause){
+    try{
+      const auto &payload=*error.payload;const auto &key=clause->errorTypeKey;
+      switch(clause->type.kind){
+      case Type::I64:return payload.getScalar(key,V::Integer);
+      case Type::Bool:return payload.getScalar(key,V::Boolean);
+      case Type::F64:return payload.getScalar(key,V::Floating);
+      case Type::Str:return payload.getObject(key,nexrt::Data::String);
+      case Type::Bytes:return payload.getObject(key,nexrt::Data::Bytes);
+      case Type::List:return payload.getObject(key,nexrt::Data::List);
+      case Type::Record:return payload.getObject(key,p.structure(clause->type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
+      case Type::Result:{
+        const auto &v=payload.get(key);
+        if(v.tag!=V::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))
+          throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");
+        return payload.getObject(key,v.object->kind);
+      }
+      default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed exception binding requires payload lifetime integration",clause->span);
+      }
+    }catch(const nexrt::DataError &e){throw Error(e.code,e.what(),clause->span);}
+  }
   void block(const std::vector<S> &body,bool scoped=true) {
     if(scoped)frames.back().emplace_back();
     PopScope scope{frames,scoped};
@@ -246,6 +268,33 @@ class Interpreter {
         }
         break;
       }
+      case Stmt::TypedTry:{
+        try{block(s->body);}
+        catch(const SourceException &error){
+          bool handled=false;
+          for(auto clause:s->alternative){
+            bool typed=clause->type!=Type::Unknown;
+            if(typed&&(!error.payload||!error.payload->matches(clause->errorTypeKey)))continue;
+            frames.back().emplace_back();PopScope handler{frames};
+            if(typed)frames.back().back().values[clause->name]=typedBinding(error,clause);
+            else{
+              frames.back().back().values[clause->name]=V(nexrt::string(error.code));
+              frames.back().back().values[clause->catchMessage]=V(nexrt::string(error.message));
+            }
+            caughtExceptions.push_back(error);PopCaught caught{caughtExceptions};
+            if(clause->expr&&!expression(clause->expr).scalar)continue;
+            block(clause->body,false);handled=true;break;
+          }
+          if(!handled)throw;
+        }
+        break;
+      }
+      case Stmt::TypedThrow:{
+        auto value=expression(s->expr);
+        auto payload=std::make_shared<const nexrt::SourceErrorPayload>(s->errorTypeKey,std::move(value));
+        throw SourceException(typeName(s->type),"typed source error",s->span,std::move(payload));
+      }
+      case Stmt::CatchClause:throw Error("E_INTERNAL","handler clause outside protected statement",s->span);
       case Stmt::Throw:{
         if(!s->expr){
           if(caughtExceptions.empty())throw Error("E_RETHROW","bare throw has no current lexical exception",s->span);
@@ -270,7 +319,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&p.sourceLanguage!=SourceLanguage::TypedErrors027&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}

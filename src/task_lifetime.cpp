@@ -294,6 +294,8 @@ struct Analysis {
     for(const auto &s:body){
       tick();if(ended)break;
       switch(s->kind){
+      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
+        throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed source task lifetime integration is pending",s->span);
       case Stmt::Finally:{
         auto baseline=env,normal=env;HandlerInput handler{baseline,{}};
         std::vector<ReturnState> pendingReturns;auto outerReturns=returns;returns=&pendingReturns;handlers.push_back(&handler);

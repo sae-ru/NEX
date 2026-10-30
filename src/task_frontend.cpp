@@ -14,6 +14,7 @@ const char *programLanguage(SourceLanguage language){
   case SourceLanguage::SourceExceptions025Prototype:return "0.25-prototype";
   case SourceLanguage::SourceExceptions025:return "0.25";
   case SourceLanguage::ExceptionHandlers026:return "0.26";
+  case SourceLanguage::TypedErrors027:return "0.27";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }
@@ -65,6 +66,8 @@ void rejectUnloweredTasks(const Program &program,const char *operation){
     std::string(operation)+" requires continuation lowering and an explicit language migration; private task typing is not an executable language0.18 program");
 }
 void rejectUnarchivedTasks(const Program &program,const char *operation){
+  if(program.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_MIGRATION",
+    std::string(operation)+" cannot archive language0.27 before its engine integration and explicit migration");
   if(program.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_MIGRATION",
     std::string(operation)+" cannot archive private source exceptions before explicit025 publication and migration");
   if(isPublicTaskLanguage(program)){

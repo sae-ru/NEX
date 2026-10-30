@@ -16,10 +16,10 @@ inline constexpr const char *languageVersion = "0.26";
 inline constexpr const char *taskCandidateLanguageVersion = "0.26";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026 };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027 };
 inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::ExceptionHandlers026;
 inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
-  return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026;
+  return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026||language==SourceLanguage::TypedErrors027;
 }
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
@@ -93,12 +93,14 @@ struct Expr {
 };
 using E = std::shared_ptr<Expr>;
 struct Stmt {
-  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw, Finally } kind;
+  enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw, Finally, TypedThrow, TypedTry, CatchClause } kind;
   Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
   std::vector<std::shared_ptr<Stmt>> body, alternative;
   std::vector<std::shared_ptr<MatchArm>> arms;
   // Only Try uses this second immutable string binding. Empty on retained ASTs.
   std::string catchMessage;
+  // Concrete checked027 payload identity; absent from all retained026 forms.
+  std::string errorTypeKey;
 };
 using S = std::shared_ptr<Stmt>;
 // A filtered handler may let the original source error escape. Literal true is
