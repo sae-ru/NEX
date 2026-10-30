@@ -1,3 +1,12 @@
+# Development0.150: checked027 browser delivery
+
+Explicit C++027 browser UI/Worker builds now carry checked revision/maps, keep
+private development maps separate, and retain realm/wire/error boundaries.
+Production builds, actual module Workers in three engines, reference/native/Node
+agreement, source-absent relocated static packages and genuine026 asset identity
+are separate checks. Full integrated/SDK/platform/public027/snapshot gates and
+every remaining original plan item still require completion.
+
 # Development0.149: typed native debugger views
 
 Explicit C++027 LLDB/NEX-DAP views now cover typed/legacy handler bindings,

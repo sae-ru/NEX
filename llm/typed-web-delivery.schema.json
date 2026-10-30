@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/typed-web-delivery-1.json",
+  "title": "Explicit027 checked TypeScript source map and web generation metadata",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.typescript-map/2"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "$ref": "#/$defs/text"
+              },
+              "source_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "generated_start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "generated_end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "operations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "site": {
+                      "$ref": "#/$defs/digest"
+                    },
+                    "file": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "column": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "byte_begin": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "path": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "parent": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "site",
+                    "file",
+                    "line",
+                    "column",
+                    "byte_begin",
+                    "byte_end",
+                    "path",
+                    "parent",
+                    "kind"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "name",
+              "file",
+              "source_line",
+              "generated_start",
+              "generated_end",
+              "hash",
+              "operations"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "statements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "site": {
+                "$ref": "#/$defs/digest"
+              },
+              "file": {
+                "$ref": "#/$defs/text"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "generated_line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "site",
+              "file",
+              "line",
+              "column",
+              "generated_line"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "execution": {
+          "enum": [
+            "synchronous",
+            "task-generator"
+          ]
+        },
+        "source_exceptions": {
+          "const": "nex.source-errors/2"
+        },
+        "task_source_exceptions": {
+          "type": "boolean"
+        },
+        "source_transfer_contracts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        }
+      },
+      "required": [
+        "schema",
+        "language",
+        "revision",
+        "source_hash",
+        "functions",
+        "statements",
+        "execution",
+        "source_exceptions",
+        "task_source_exceptions",
+        "source_transfer_contracts"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "execution": {
+                "const": "task-generator"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "task_source_exceptions": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "task_source_exceptions": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "nex.web/2"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "key": {
+          "$ref": "#/$defs/digest"
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\\\\u0000]+(?![\\s\\S])"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "directory": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "required": [
+        "schema",
+        "language",
+        "revision",
+        "key",
+        "files"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+    },
+    "text": {
+      "type": "string",
+      "pattern": "^[^\u0000]*(?![\\s\\S])"
+    }
+  }
+}

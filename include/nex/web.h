@@ -18,6 +18,10 @@ struct WebModule {
 };
 // Only the reachable client/shared closure is emitted. Export names are caller supplied.
 WebModule emitTypeScript(const Program &program,const std::map<std::string,std::string> &entries);
+// Checked source maps for browser/project delivery. The027 development emitter
+// above retains its separate unarchived map contract. This API does not select
+// a public CLI language or certify installed/platform delivery.
+WebModule emitTypeScriptDelivery(const Program &,const std::map<std::string,std::string> &entries);
 // No public version selection, graph publication or browser UI enablement.
 WebModule emitSourceExceptionsPrototypeTypeScript(const Program &,const std::map<std::string,std::string> &entries);
 WebModule emitSourceExceptionTasksPrototypeTypeScript(const Program &,const std::map<std::string,std::string> &entries);

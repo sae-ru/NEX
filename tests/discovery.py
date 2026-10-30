@@ -103,6 +103,12 @@ class Discovery(harness.ToolchainCase):
     def test_pack_guides_and_schema_are_installed_capability_contracts(self):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
+        browser = self.cli('describe', '--field', 'source_exceptions.typed_payload_development.source027_browser_delivery')['value']
+        self.assertEqual(browser, pack['source_exceptions']['typed_payload_development']['source027_browser_delivery'])
+        self.assertFalse(browser['public_CLI'])
+        self.assertEqual(browser['typescript_map_schema'], 'nex.typescript-map/2')
+        self.assertEqual(self.cli('guide', '--kind', browser['guide_kind'])['text'], (harness.REPO / browser['guide']).read_text())
+        self.assertTrue((harness.REPO / browser['schema_file']).is_file())
         self.assertEqual(full['scoped_discovery'], pack['scoped_discovery'])
         self.assertEqual(full['dns_provider'], pack['dns_provider'])
         self.assertTrue(full['dns_provider']['source_support'])

@@ -50,7 +50,6 @@ void requireStructure(const Program &p,const std::string &name,const std::vector
 }
 struct Project {std::map<std::string,std::string> files;llvm::json::Value metadata;};
 Project prepare(const Program &p){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)throw Error("E_TYPED_EXCEPTION_DELIVERY","027 browser UI/Worker delivery requires matching adapter acceptance; use the explicit TypeScript emitter");
   auto attribute=Type::record("std::web::Attribute"),binding=Type::record("std::web::Binding"),event=Type::record("std::web::Event"),view=Type::record("std::web::View");
   requireStructure(p,attribute.name,{{"name",Type::Str},{"value",Type::Str}});
   requireStructure(p,binding.name,{{"event",Type::Str},{"action",Type::Str}});
@@ -91,7 +90,7 @@ Project prepare(const Program &p){
     requireStructure(p,"std::net::Response",{{"id",Type::Str},{"status",Type::I64},{"body",Type::result(Type::Str)}});
     requireFunction(*commands,{state,state,event},Type::list(command));entries["commands"]=commands->name;
   }
-  auto module=emitTypeScript(p,entries);
+  auto module=emitTypeScriptDelivery(p,entries);
   if(module.asynchronous)throw Error("E_TASK_UNIMPLEMENTED","the synchronous web application adapter cannot retain reachable task callables");
   // Names used by the renderer are explicit aliases; the source retains qualified nominal identities.
   module.source+="\nexport type State = ReturnType<typeof "+nativeSymbol(initial.name)+">;\nexport type View = ReturnType<typeof "+nativeSymbol(render.name)+">;\nexport type Event = Parameters<typeof "+nativeSymbol(update.name)+">[1];\n";
@@ -103,7 +102,7 @@ Project prepare(const Program &p){
   module.source+="\nexport const workerEnabled = "+std::string(workerCompute?"true":"false")+";\n";
   if(workerCompute){
     module.source+="export type WorkerCommand = ReturnType<typeof "+nativeSymbol(workerCommands->name)+">[number];\n";
-    auto worker=emitTypeScript(p,{{"compute",workerCompute->name}});
+    auto worker=emitTypeScriptDelivery(p,{{"compute",workerCompute->name}});
     // Each dedicated worker owns one root scheduler. Only wire values cross
     // the host boundary; scopes/futures/channels remain inside that scheduler.
     auto compute=nativeSymbol(workerCompute->name);
@@ -145,7 +144,7 @@ Project prepare(const Program &p){
   files["README.md"]="# Generated NEX web application\n\nEdit NEX sources and regenerate this directory.\n\nRun `npm ci --ignore-scripts`, `npm run build`, then `npm run preview`.\nThe `dist` directory contains the client application; configure SPA route fallback to index.html.\nNo NEX compiler or model is needed to serve/run the result.\n\nOptional pure commands(before, after, event) describes bounded same-origin /api/ requests and cancellation using std/net.nex. Responses return as typed JSON in ordinary web events. Configure credentials at runtime; no token is bundled by NEX. Serve this dist with the native HTTP server's --static option for a same-origin API. See the installed web/server guides for contracts and limits.\n";
   llvm::json::Object hashes;for(const auto &[name,text]:files)hashes[name]=hash(text);
   llvm::json::Value fileHashes=std::move(hashes);auto key=hash(json(fileHashes,false));
-  llvm::json::Value metadata=llvm::json::Object{{"schema","nex.web/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
+  llvm::json::Value metadata=llvm::json::Object{{"schema",p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.web/2":"nex.web/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
   return {std::move(files),std::move(metadata)};
 }
 void materialize(const Project &project,const std::filesystem::path &directory){

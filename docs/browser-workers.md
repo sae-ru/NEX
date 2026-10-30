@@ -1,3 +1,16 @@
+# Candidate027 checked browser delivery development0.150.0
+
+Explicit C++027 UI/Worker builds now use checked revision/source maps with a
+distinct version2 contract. Existing development027 maps and earlier-language
+assets preserve their identities. Synchronous pure UI and synchronous/task Workers
+retain their realm/wire/error boundaries. Source errors stay generic at worker
+transport; callable/data payloads remain inside the checked computation.
+Capture/replay and relocated static packaging are tested. Read
+[the bounded browser contract](typed-web-delivery.md).
+
+Ordinary/default source remains026. Full integrated/SDK/platform/public027
+selection/snapshot gates and the original PLAN remain required.
+
 # Typed browser worker jobs — public025 integration candidate
 
 The browser adapter accepts these additional ordinary client/shared entries.

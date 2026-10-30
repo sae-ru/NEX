@@ -345,6 +345,23 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
   }
   return Generator(p,tasks).run(entries);
 }
+WebModule emitTypeScriptDelivery(const Program &p,const std::map<std::string,std::string> &entries){
+  auto module=emitTypeScript(p,entries);
+  if(p.sourceLanguage!=SourceLanguage::TypedErrors027)return module;
+  const auto *old=module.mapping.getAsObject();
+  if(!old||old->getString("schema")!="nex.development-typescript/027-3"||
+     old->getString("language")!="0.27"||!old->getArray("functions")||
+     !old->getArray("statements")||!old->getInteger("source_transfer_contracts"))
+    throw Error("E_INTERNAL","checked027 delivery requires its matching generated source map");
+  module.mapping=llvm::json::Object{{"schema","nex.typescript-map/2"},{"language",programLanguage(p)},
+    {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},
+    {"functions",llvm::json::Array(*old->getArray("functions"))},
+    {"statements",llvm::json::Array(*old->getArray("statements"))},
+    {"execution",module.asynchronous?"task-generator":"synchronous"},
+    {"source_exceptions","nex.source-errors/2"},{"task_source_exceptions",module.asynchronous},
+    {"source_transfer_contracts",*old->getInteger("source_transfer_contracts")}};
+  return module;
+}
 WebModule emitSourceExceptionsPrototypeTypeScript(const Program &p,const std::map<std::string,std::string> &entries){
   if(sourceExceptionTasksPrototype(p))throw Error("E_EXCEPTION_BACKEND","source task exceptions require generator/scheduler integration before TypeScript execution");
   if(p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype)throw Error("E_LANGUAGE_VERSION","experimental TypeScript exception emitter requires the private identity");

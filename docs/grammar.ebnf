@@ -1,3 +1,5 @@
+(* Toolchain0.150 checked027 browser maps/adapters add no source productions;
+   ordinary026 syntax/defaults and retained AST identities are unchanged. *)
 (* Toolchain0.149 bounded027 debugger views add no grammar productions;
    public/default source026 and retained AST identities remain unchanged. *)
 (* Toolchain0.148 explicit C++027 native provider delivery adds ABI/record

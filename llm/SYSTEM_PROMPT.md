@@ -13,8 +13,12 @@ describes bounded synchronous/task LLDB/NEX-DAP catch/guard views. Original sour
 files may be absent; captured checked bundles, images, scripts and compiler must
 match. Watch diagnostics identify the captured language. File identities grant
 no IO; opaque authority/effectful callables cannot run through source callbacks.
-Public027 CLI/UI/Worker/snapshot delivery and matching full/SDK/platform acceptance
-remain gates. A development capability does not establish accepted delivery.
+Explicit C++027 browser/project delivery uses emitTypeScriptDelivery and checked
+map2; the existing emitTypeScript development map027-3 stays unarchived. Query
+source027_browser_delivery and read `nex guide --kind typed-web-delivery --json`.
+UI stays pure/synchronous; worker payloads stay inside computation and the wire
+boundary remains authority-free. Ordinary027 CLI/snapshot selection and matching
+full/SDK/platform acceptance remain gates. A development capability does not establish accepted delivery.
 
 # NEX coding contract
 

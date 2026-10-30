@@ -20,7 +20,16 @@ std::string name(const std::string &value){
   for(const auto &part:p)if(part==".."||part=="."||part.empty())fail("escaping captured path");
   if(*p.begin()!="fs")fail("captured paths must stay in fs/");return value;
 }
-std::string mapped(const fs::path &physical){auto p=physical.lexically_normal();if(!p.is_absolute())fail("capture input is not absolute");return name((fs::path("fs")/p.relative_path()).generic_string());}
+std::string mapped(const fs::path &physical){
+  auto p=physical.lexically_normal();if(!p.is_absolute())fail("capture input is not absolute");
+  // lexically_normal preserves a directory separator for component roots
+  // such as root/".". The serialized namespace uses component names, never
+  // an empty terminal component. This normalizes trusted physical inputs;
+  // name() still rejects dot/parent/empty components in untrusted captures.
+  auto relative=p.relative_path();
+  if(!relative.empty()&&relative.filename().empty())relative=relative.parent_path();
+  return name(relative.empty()?std::string("fs"):(fs::path("fs")/relative).generic_string());
+}
 std::string read(const fs::path &p,uint64_t maximum){if(!fs::is_regular_file(p)||fs::file_size(p)>maximum)fail("missing/oversized capture input: "+p.string());return readFile(p.string());}
 void taskLinkage(const JSON &value,const std::string &component,SourceLanguage language){
   const auto &o=object(value);
