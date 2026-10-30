@@ -51,13 +51,13 @@ test fn child_delivery()->unit !{task}{assert(delegated()==42);}
 class ExceptionHandlers(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
 
     def test_sync_task_reference_native_typescript_and_owned_cleanup(self):
         self.source(SOURCE)
         feature=self.cli('describe','--field','source_exceptions')['value']
-        self.assertEqual(feature['source_language'],'0.26');self.assertTrue(feature['handler_filters'])
-        self.assertFalse(feature['finally']);self.assertFalse(feature['typed_payloads'])
+        self.assertEqual(feature['source_language'],'0.27');self.assertTrue(feature['handler_filters'])
+        self.assertTrue(feature['finally']);self.assertTrue(feature['typed_payloads'])
         self.assertEqual(self.cli('eval')['stdout'],'42\n')
         for profile in ('debug','release'):
             native=self.cli('test','--profile',profile,timeout=300)
@@ -205,7 +205,7 @@ test fn values()->unit !{throw}{assert(main()==142);}
         graph=self.root/'.nex/graph.db';before=harness.database_rows(graph)
         plan=self.cli('migrate','--kind','plan')
         self.assertTrue(plan['origin_verified']);self.assertFalse(plan['target_valid'])
-        self.assertEqual(plan['origin_language'],'0.25');self.assertEqual(plan['target_language'],'0.26')
+        self.assertEqual(plan['origin_language'],'0.25');self.assertEqual(plan['target_language'],'0.27')
         self.assertEqual(harness.database_rows(graph),before)
         candidate=plan['candidate'];candidate['sources']['files']['main.nex']=text.replace('41','42').replace('finally','finished')
         path=self.root/'reviewed.json';path.write_text(json.dumps(candidate))

@@ -1,22 +1,9 @@
-# Candidate027 graph recovery and scalar Wasm development0.151.0
-
-Explicit C++027 programs can use identity-preserving graph snapshot/recovery.
-Mixed026/027 histories keep their schema, all16 tables, namespaces and local IDs;
-reloaded source bundles execute through checked AST/TaskIR/native paths without
-original files. Snapshot operations copy data; they do not grant a CLI language
-upgrade or include external artifacts. See tests/typed_graph_snapshots.py.
-
-Pure scalar027 Wasm uses the existing i64/bool/unit backend and checked BigInt
-wrapper. Only reachable pure scalar code is emitted; source throw/catch/finally,
-heap values and effects remain unsupported. The earlier026 output is unchanged.
-See tests/typed_scalar_wasm.py. Ordinary/default CLI remains026. Matching full
-regression, installed SDK/platform acceptance, public027 selection and the
-remaining original PLAN are still required.
-
 # Graph snapshots and recovery
 
-Toolchain 0.50 keeps language 0.15, graph schema 4 and the existing identity
-policies. Discover `snapshot_features`, `snapshot_limits` and
+The snapshot commands were introduced in toolchain 0.50. Current development
+0.151 supports mixed language0.26/0.27 histories and preserves the captured
+graph schema, all16 tables, namespace and local IDs. Recovery copies a graph;
+a language upgrade requires a separate explicit migration. Discover `snapshot_features`, `snapshot_limits` and
 `llm/graph-snapshot.schema.json` from the installed compiler. Retrieve this guide
 with `nex guide --kind snapshot --json`.
 

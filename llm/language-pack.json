@@ -1,6 +1,6 @@
 {
   "schema": "nex.language-pack/1",
-  "language_version": "0.26",
+  "language_version": "0.27",
   "source_concurrency": {
     "browser_workers": false,
     "callback_call_depth": 256,
@@ -12,7 +12,7 @@
     "guide": "docs/concurrency-design.md",
     "hosted_budget": "inherit existing request control",
     "internal_runtime_prototype": true,
-    "language": "0.26",
+    "language": "0.27",
     "maximum_items": 65536,
     "maximum_value_graph_nodes": 262144,
     "maximum_workers": 16,
@@ -393,7 +393,10 @@
     "sdk_source_exceptions": "tools/sdk_source_exceptions.py",
     "sdk_task_limits": "tools/sdk_task_limits.py",
     "typed_web_delivery": "docs/typed-web-delivery.md",
-    "typed_web_delivery_schema": "llm/typed-web-delivery.schema.json"
+    "typed_web_delivery_schema": "llm/typed-web-delivery.schema.json",
+    "language_history": "docs/language-history.md",
+    "grammar_history": "docs/grammar-history.ebnf",
+    "exception_history": "docs/exceptions-history.md"
   },
   "document_access": "nex guide --kind typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -717,7 +720,8 @@
     ],
     "explicit027_scalar_cpp_development": true,
     "source027_test_source": "tests/typed_scalar_wasm.py",
-    "source_exception_lowering": false
+    "source_exception_lowering": false,
+    "source027_scalar_public": true
   },
   "ios_archive_commands": [
     "nex toolchain IOS_TOOLCHAIN.json --json",
@@ -1054,7 +1058,7 @@
       "compiled_NEX_probe": "task_http_request_compiled",
       "configured_entry_point": "executeConfiguredTaskHttpRequest",
       "entry_point": "executeTaskHttpRequest",
-      "execution_task_abi": 6,
+      "execution_task_abi": 7,
       "explicit_IO_host_context": true,
       "header": "runtime/nex_task_application.h",
       "implicit_file_or_foreign_grants": false,
@@ -1066,7 +1070,8 @@
       "retained_execution_task_abis": [
         3,
         4,
-        5
+        5,
+        6
       ],
       "source_errors": true,
       "status": "trusted_CXX_runtime_with_public_native_HTTP_adapter",
@@ -1117,7 +1122,7 @@
         "complete_delivery_accepted": false
       }
     },
-    "language": "0.26",
+    "language": "0.27",
     "maximum_channels": 1024,
     "maximum_task_slots": 65536,
     "maximum_total_channel_slots": 65536,
@@ -1422,7 +1427,7 @@
     "guide": "docs/task-file-reads.md",
     "http_task_handlers": true,
     "io_workers": 2,
-    "language": "0.26",
+    "language": "0.27",
     "maximum_file_bytes": 1048576,
     "maximum_path_bytes": 4096,
     "maximum_pending": 64,
@@ -1477,7 +1482,7 @@
     ],
     "async_debugger": false,
     "binary_providers": false,
-    "cli_language": "0.26",
+    "cli_language": "0.27",
     "clocks": [
       "thread CPU in active source segments",
       "active monotonic elapsed",
@@ -1492,7 +1497,7 @@
       "lifetime"
     ],
     "event_only_truncation_preserves_aggregates": true,
-    "execution_task_abi": 6,
+    "execution_task_abi": 7,
     "guide": "docs/profiling.md",
     "http_task_handlers": false,
     "limits": {
@@ -1549,11 +1554,11 @@
       "continue"
     ],
     "deadline_advances_while_stopped": true,
-    "execution_task_abi": 6,
+    "execution_task_abi": 7,
     "frame_schema": "nex.debug-frame/3",
     "guide": "docs/task-debugging.md",
     "inferior_function_evaluation": false,
-    "language": "0.26",
+    "language": "0.27",
     "limits": {
       "bindings": 65536,
       "codes": 16384,
@@ -1613,15 +1618,15 @@
     "view_schema": "nex.task-debug-view/1"
   },
   "task_providers": {
-    "status": "public025_source_provider_integration_candidate",
+    "status": "public027_source_provider_integration_candidate",
     "public_enabled": true,
-    "language": "0.26",
+    "language": "0.27",
     "guide": "docs/task-providers.md",
-    "record_schema": "nex.native-task-provider/11",
-    "record_schema_file": "llm/native-source-error-task-provider.schema.json",
-    "plan_schema": "nex.project-static-task-linkage/4",
-    "plan_schema_file": "llm/project-source-error-task-linkage.schema.json",
-    "execution_task_abi": 6,
+    "record_schema": "nex.native-task-provider/14",
+    "record_schema_file": "llm/native-typed-error-task-provider.schema.json",
+    "plan_schema": "nex.project-static-task-linkage/5",
+    "plan_schema_file": "llm/project-typed-error-task-linkage.schema.json",
+    "execution_task_abi": 7,
     "descriptor_bytes": 88,
     "abi_offset": 40,
     "source_required": true,
@@ -1663,22 +1668,23 @@
     "retained_execution_task_abis": [
       3,
       4,
-      5
+      5,
+      6
     ],
     "requirements_mask": 7967
   },
   "task_shared_providers": {
-    "status": "public025_source_provider_integration_candidate",
+    "status": "public027_source_provider_integration_candidate",
     "public_enabled": true,
-    "language": "0.26",
+    "language": "0.27",
     "guide": "docs/task-shared-providers.md",
-    "record_schema": "nex.native-task-provider/11",
-    "record_schema_file": "llm/native-source-error-task-provider.schema.json",
-    "plan_schema": "nex.project-task-linkage/11",
-    "plan_schema_file": "llm/project-source-error-task-linkage.schema.json",
+    "record_schema": "nex.native-task-provider/14",
+    "record_schema_file": "llm/native-typed-error-task-provider.schema.json",
+    "plan_schema": "nex.project-task-linkage/14",
+    "plan_schema_file": "llm/project-typed-error-task-linkage.schema.json",
     "completion_schema": "nex.native-completion/5",
     "retained_build_schema": "nex.retained-native-task-build/2",
-    "execution_task_abi": 6,
+    "execution_task_abi": 7,
     "descriptor_bytes": 88,
     "abi_offset": 40,
     "source_required": true,
@@ -1722,15 +1728,16 @@
     "retained_execution_task_abis": [
       3,
       4,
-      5
+      5,
+      6
     ],
     "requirements_mask": 7967
   },
   "task_provider_profiling": {
-    "status": "public025_source_provider_integration_candidate",
+    "status": "public027_source_provider_integration_candidate",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.26",
+    "language": "0.27",
     "guide": "docs/task-provider-profiling.md",
     "configuration": "profile",
     "source_required": true,
@@ -1740,14 +1747,14 @@
     ],
     "static_linkage": true,
     "fixed_shared_linkage": true,
-    "execution_task_abi": 6,
+    "execution_task_abi": 7,
     "descriptor_bytes": 88,
     "registry_abi": 1,
     "registry_bytes": 32,
-    "record_schema": "nex.native-task-provider/12",
+    "record_schema": "nex.native-task-provider/15",
     "catalog_schema": "nex.task-profile-catalog/1",
     "completion_schema": "nex.native-completion/6",
-    "plan_schema": "nex.project-task-linkage/12",
+    "plan_schema": "nex.project-task-linkage/15",
     "retained_build_schema": "nex.retained-native-task-build/3",
     "runtime_schema": "nex.profile-runtime/3",
     "report_schema": "nex.profile/3",
@@ -1783,8 +1790,8 @@
     ],
     "profile_configuration_test_builds": true,
     "measured_test_sessions": false,
-    "record_schema_file": "llm/native-source-error-task-provider.schema.json",
-    "plan_schema_file": "llm/project-source-error-task-linkage.schema.json",
+    "record_schema_file": "llm/native-typed-error-task-provider.schema.json",
+    "plan_schema_file": "llm/project-typed-error-task-linkage.schema.json",
     "provider_file_writes": true,
     "provider_file_streams": true,
     "file_owner_transport": true,
@@ -1793,26 +1800,27 @@
     "retained_execution_task_abis": [
       3,
       4,
-      5
+      5,
+      6
     ],
     "requirements_mask": 7967
   },
   "task_provider_debugging": {
-    "status": "public025_source_provider_integration_candidate",
+    "status": "public027_source_provider_integration_candidate",
     "public_enabled": true,
     "source_support": true,
-    "language": "0.26",
+    "language": "0.27",
     "guide": "docs/task-provider-debugging.md",
     "source_required": true,
     "configuration": "debug",
-    "execution_task_abi": 6,
+    "execution_task_abi": 7,
     "descriptor_bytes": 88,
     "registry_abi": 1,
     "registry_bytes": 32,
     "catalog_abi": 2,
     "catalog_bytes": 200,
     "maximum_total_registries_including_root": 128,
-    "record_schema": "nex.native-task-provider/13",
+    "record_schema": "nex.native-task-provider/16",
     "catalog_schema": "nex.task-debug-catalog/1",
     "source_union_schema": "nex.task-debug-source-union/1",
     "completion_schema": "nex.native-completion/7",
@@ -1850,9 +1858,9 @@
       "static",
       "shared-fixed"
     ],
-    "record_schema_file": "llm/native-source-error-task-provider.schema.json",
-    "plan_schema": "nex.project-task-linkage/13",
-    "plan_schema_file": "llm/project-source-error-task-linkage.schema.json",
+    "record_schema_file": "llm/native-typed-error-task-provider.schema.json",
+    "plan_schema": "nex.project-task-linkage/16",
+    "plan_schema_file": "llm/project-typed-error-task-linkage.schema.json",
     "provider_file_writes": true,
     "provider_file_streams": true,
     "file_owner_transport": true,
@@ -1861,7 +1869,8 @@
     "retained_execution_task_abis": [
       3,
       4,
-      5
+      5,
+      6
     ],
     "requirements_mask": 7967
   },
@@ -1879,7 +1888,7 @@
     "guide": "docs/compute.md",
     "immutable_row_major_bytes": true,
     "import": "std/compute.nex",
-    "language": "0.26",
+    "language": "0.27",
     "language_migration_required": false,
     "maximum_bytes": 1048576,
     "maximum_elements": 262144,
@@ -1928,7 +1937,7 @@
     "immutable_row_major_bytes": true,
     "implicit_f64_narrowing": false,
     "import": "std/model.nex",
-    "language": "0.26",
+    "language": "0.27",
     "language_migration_required": false,
     "maximum_combined_io_bytes": 786432,
     "maximum_elements_per_port": 262144,
@@ -2003,7 +2012,7 @@
     "effect": "ffi",
     "generic_resources": true,
     "guide": "docs/source-resources.md",
-    "language": "0.26",
+    "language": "0.27",
     "migration": "explicit origin recheck; retained old rows/schema/IDs; reviewed graph repairs for builtin conflicts",
     "native": true,
     "opaque_declarations": true,
@@ -2100,7 +2109,7 @@
     "reference_scheduler": true,
     "reference_task_regions": true,
     "root_retirement": "group finish closes remaining group-owned resources; explicitly returned request owners survive until request retirement",
-    "source_language": "0.26",
+    "source_language": "0.27",
     "source_support": false,
     "source_task_bridge": true,
     "stable_host_abi": false,
@@ -2141,11 +2150,11 @@
     "native": true,
     "owned_completion_channel": true,
     "private_cross_task_resource_transport": true,
-    "private_source_language": "0.26",
+    "private_source_language": "0.27",
     "private_task_local_resources": true,
     "public022_migration_complete": true,
     "public_enabled": true,
-    "public_source_language": "0.26",
+    "public_source_language": "0.27",
     "resource_authority_on_demand": true,
     "source_support": true,
     "status": "public022_source_ffi_owned_transfers"
@@ -2172,7 +2181,7 @@
     "hidden_physical_parent_retention": true,
     "immutable_tensor_metadata": true,
     "import": "std/device.nex",
-    "language": "0.26",
+    "language": "0.27",
     "language_migration_required": false,
     "log_verification": "tools/owned-opencl/logs.py",
     "maximum_elements": 262144,
@@ -2219,7 +2228,7 @@
     "guide": "docs/task-file-writes-host.md",
     "header": "runtime/nex_task_file_write.h",
     "input_snapshot": "exact visible bytes; no source Values or mutable backing storage on worker",
-    "language": "0.26",
+    "language": "0.27",
     "maximum_file_bytes": 1048576,
     "maximum_path_bytes": 4096,
     "native_platforms": [
@@ -2247,7 +2256,7 @@
       "fs"
     ],
     "guide": "docs/task-file-writes-prototype.md",
-    "language": "0.26",
+    "language": "0.27",
     "migration_guide": "docs/task-write-migration.md",
     "native": true,
     "operations": [
@@ -2279,7 +2288,7 @@
       "nex.native-task-provider/13"
     ],
     "public_enabled": true,
-    "public_language": "0.26",
+    "public_language": "0.27",
     "public_migration_complete": false,
     "realm": "server",
     "reference": true,
@@ -2312,7 +2321,7 @@
       "fs"
     ],
     "guide": "docs/task-file-writes-prototype.md",
-    "language": "0.26",
+    "language": "0.27",
     "migration_guide": "docs/task-write-migration.md",
     "native": true,
     "operations": [
@@ -2344,7 +2353,7 @@
       "nex.native-task-provider/13"
     ],
     "public_enabled": true,
-    "public_language": "0.26",
+    "public_language": "0.27",
     "public_migration_complete": false,
     "realm": "server",
     "reference": true,
@@ -2384,7 +2393,7 @@
     "guide": "docs/task-file-stream-host.md",
     "header": "runtime/nex_task_file_stream.h",
     "io_workers": 2,
-    "language": "0.26",
+    "language": "0.27",
     "maximum_chunk_bytes": 1048576,
     "maximum_pending": 64,
     "pending": [
@@ -2413,7 +2422,7 @@
   },
   "task_file_streams_prototype": {
     "atomic_mixed_resource_transfer": true,
-    "execution_ABI": 6,
+    "execution_ABI": 7,
     "explicit_physical_grants": true,
     "file_cleanup": {
       "legacy_host_default_inline_unchanged": true,
@@ -2457,7 +2466,7 @@
       ]
     },
     "independent_AST_source_lowering": true,
-    "language": "0.26",
+    "language": "0.27",
     "logical_file_owners": true,
     "native_source_lowering": true,
     "operations": [
@@ -2531,7 +2540,7 @@
     },
     "public_enabled": true,
     "public_history_migration_complete": false,
-    "public_language": "0.26",
+    "public_language": "0.27",
     "retained_execution_ABIs": [
       3,
       4,
@@ -2570,7 +2579,7 @@
   },
   "task_file_streams": {
     "atomic_mixed_resource_transfer": true,
-    "execution_ABI": 6,
+    "execution_ABI": 7,
     "explicit_physical_grants": true,
     "file_cleanup": {
       "legacy_host_default_inline_unchanged": true,
@@ -2614,7 +2623,7 @@
       ]
     },
     "independent_AST_source_lowering": true,
-    "language": "0.26",
+    "language": "0.27",
     "logical_file_owners": true,
     "native_source_lowering": true,
     "operations": [
@@ -2688,7 +2697,7 @@
     },
     "public_enabled": true,
     "public_history_migration_complete": false,
-    "public_language": "0.26",
+    "public_language": "0.27",
     "retained_execution_ABIs": [
       3,
       4,
@@ -3302,8 +3311,8 @@
     "conformance": "store_transactions_native"
   },
   "source_exceptions": {
-    "status": "public026_handler_development",
-    "source_language": "0.26",
+    "status": "public027_typed_source_development",
+    "source_language": "0.27",
     "frontend": true,
     "reference": true,
     "retained024_parser": true,
@@ -3316,23 +3325,23 @@
     "guide": "docs/exceptions.md",
     "guide_kind": "exception",
     "payload": [
-      "str code",
-      "str message"
+      "str code and str message",
+      "checked typed T with a concrete key and base kind"
     ],
     "checked_traps_caught": false,
-    "filters_finally_typed_payloads": false,
+    "filters_finally_typed_payloads": true,
     "migration_plan_cli": "nex migrate --kind plan --json",
     "reviewed_candidate_cli": "nex migrate --candidate FILE --expected-revision HASH --json",
     "candidate_schema": "llm/migration-candidate.schema.json",
     "source_providers": {
-      "record_schema": "nex.native-task-provider/11",
-      "profile_record_schema": "nex.native-task-provider/12",
-      "debug_record_schema": "nex.native-task-provider/13",
-      "static_plan_schema": "nex.project-static-task-linkage/4",
-      "shared_plan_schema": "nex.project-task-linkage/11",
-      "profile_plan_schema": "nex.project-task-linkage/12",
-      "debug_plan_schema": "nex.project-task-linkage/13",
-      "descriptor_abi": "0x4e45585400000006",
+      "record_schema": "nex.native-task-provider/14",
+      "profile_record_schema": "nex.native-task-provider/15",
+      "debug_record_schema": "nex.native-task-provider/16",
+      "static_plan_schema": "nex.project-static-task-linkage/5",
+      "shared_plan_schema": "nex.project-task-linkage/14",
+      "profile_plan_schema": "nex.project-task-linkage/15",
+      "debug_plan_schema": "nex.project-task-linkage/16",
+      "descriptor_abi": "0x4e45585400000007",
       "requirements_mask": 7967,
       "descriptor_bytes": 88,
       "abi_offset": 40,
@@ -3342,13 +3351,13 @@
       "capture_replay": true,
       "file_owner_cleanup": true,
       "complete_delivery_accepted": false,
-      "guide": "docs/source-exception-providers.md",
-      "guide_kind": "exception-provider"
+      "guide": "docs/typed-error-providers.md",
+      "guide_kind": "typed-error-provider"
     },
     "handler_filters": true,
-    "typed_payloads": false,
+    "typed_payloads": true,
     "retained025_parser": true,
-    "finally": false,
+    "finally": true,
     "handler_migration_fixture": {
       "metadata": "tests/fixtures/language-0.25-handler-origin.json",
       "sql": "tests/fixtures/language-0.25-handler-origin.sql",
@@ -3379,15 +3388,15 @@
       "maximum_task_finalizer_copies": 4096
     },
     "typed_payload_development": {
-      "status": "source027_native_provider_development",
-      "source_syntax": false,
-      "source_language_027_enabled": false,
+      "status": "public027_typed_source_development",
+      "source_syntax": true,
+      "source_language_027_enabled": true,
       "reference_packet": true,
       "native_packet": true,
       "complete_concrete_type_context": true,
       "type_identity_format": "nex.source-error-type/1",
       "authority_granted_by_payload": false,
-      "source_handler_delivery_enabled": false,
+      "source_handler_delivery_enabled": true,
       "header": "runtime/nex_source_error.h",
       "type_identity_implementation": "src/source_errors.cpp",
       "test_source": "tests/source_error_payload.cpp",
@@ -3407,7 +3416,7 @@
       "source027_typescript_lowering": true,
       "source027_authority_transport": true,
       "source027_test_source": "tests/typed_source.cpp",
-      "source027_typescript_public_revision": false,
+      "source027_typescript_public_revision": true,
       "source027_typescript_payloads_enumerable": false,
       "source027_typescript_test_source": "tests/typed_source_typescript.py",
       "source027_native_project_delivery": true,
@@ -3416,17 +3425,17 @@
       "source027_task_AST": true,
       "source027_task_TaskIR": true,
       "source027_task_typescript": true,
-      "source027_task_descriptor_abi": "0x4e45585400002702",
+      "source027_task_descriptor_abi": "0x4e45585400000007",
       "source027_task_authority_payloads": true,
       "source027_task_test_source": "tests/typed_source_tasks.py",
       "source027_retained_task_descriptor_abi": "0x4e45585400002701",
       "source027_typescript_transfer_contracts": true,
-      "source027_typescript_map": "nex.development-typescript/027-3",
+      "source027_typescript_map": "nex.typescript-map/2",
       "source027_maximum_concrete_error_alternatives": 64,
       "source027_native_authority_test_source": "tests/source_error_authority_kernel.cpp",
       "source027_typescript_authority_test_source": "tests/source_error_authority_typescript.mjs",
       "source027_provenance_test_source": "tests/typed_source_authority.py",
-      "source027_authority_scope": "explicit C++027 selection; native/reference resource and file owners, callable captures and task capabilities; browser excludes file/FFI/server authority",
+      "source027_authority_scope": "native/reference owned file/resource and callable/task payloads follow checked lifetimes; browser excludes file/FFI/server authority",
       "source027_revision_format": "nex.program/15",
       "source027_graph_migration": true,
       "source027_migration_entry_points": [
@@ -3437,10 +3446,10 @@
       "source027_migration_test_source": "tests/typed_error_migration.py",
       "source027_migration_namespace_guard": true,
       "source027_graph_snapshot_delivery": true,
-      "source027_archive_scope": "explicit checked C++ API; public CLI/default remain026",
+      "source027_archive_scope": "ordinary checked027 CLI and explicit retained-version APIs; migration is required for older graphs",
       "source027_native_delivery": {
-        "status": "explicit_cpp_native_project_delivery_development",
-        "public_cli": false,
+        "status": "public027_native_project_delivery_development",
+        "public_cli": true,
         "execution_abi": "0x4e45585400000007",
         "descriptor_bytes": 88,
         "abi_offset": 40,
@@ -3489,8 +3498,8 @@
         }
       },
       "source027_browser_delivery": {
-        "status": "explicit_cpp_checked_browser_delivery_development",
-        "public_CLI": false,
+        "status": "public027_checked_browser_delivery_development",
+        "public_CLI": true,
         "checked_maps": true,
         "typescript_map_schema": "nex.typescript-map/2",
         "web_metadata_schema": "nex.web/2",
@@ -3530,13 +3539,42 @@
         "WAL_snapshot": true,
         "original_sources_required": false,
         "external_artifacts_included": false,
-        "ordinary027_CLI": false,
+        "ordinary027_CLI": true,
         "source_replay": "explicit loadVersionedBundle and checked native ABI7",
         "test_source": "tests/typed_graph_snapshots.py",
         "guide": "docs/snapshots.md",
         "guide_kind": "snapshot",
         "complete_SDK_platform_acceptance": false
-      }
-    }
+      },
+      "source027_development_task_descriptor_abi": "0x4e45585400002702",
+      "source027_development_typescript_map": "nex.development-typescript/027-3"
+    },
+    "public027_CLI_enabled": true,
+    "retained_source_providers": {
+      "abi_offset": 40,
+      "capture_replay": true,
+      "complete_delivery_accepted": false,
+      "debug_plan_schema": "nex.project-task-linkage/13",
+      "debug_record_schema": "nex.native-task-provider/13",
+      "descriptor_abi": "0x4e45585400000006",
+      "descriptor_bytes": 88,
+      "file_owner_cleanup": true,
+      "guide": "docs/source-exception-providers.md",
+      "guide_kind": "exception-provider",
+      "ordinary_CLI": true,
+      "profile_plan_schema": "nex.project-task-linkage/12",
+      "profile_record_schema": "nex.native-task-provider/12",
+      "pure_helper_continuations": true,
+      "record_schema": "nex.native-task-provider/11",
+      "requirements_mask": 7967,
+      "shared_plan_schema": "nex.project-task-linkage/11",
+      "source_languages": [
+        "0.25",
+        "0.26"
+      ],
+      "source_required": true,
+      "static_plan_schema": "nex.project-static-task-linkage/4"
+    },
+    "task_ABI7_delivery_accepted": false
   }
 }

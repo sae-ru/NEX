@@ -1571,10 +1571,10 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
   if(p.sourceLanguage==SourceLanguage::TypedErrors027){
-    if(!testEntry&&!libraryEntry&&usesTaskEffects(p,entry))return emitTypedErrorTasksDevelopmentNative(p,entry).mlir;
-    for(const auto &f:p.functions)if(f.foreign||usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[](const auto &effect){return effect!="io"&&effect!="throw";}))throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native host/task integration is pending",f.span);
-    if(testEntry||libraryEntry)throw Error("E_TYPED_EXCEPTION_BACKEND","candidate027 native project/library publication is pending");
-    return Emitter(p,false,false,nullptr,false,nullptr,false,true).run(entry,false,false);
+    BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;
+    validateNativeBuildEntry(p,options);
+    if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,nexrt::taskCodeTypedSourceExceptionABI).mlir;
+    return Emitter(p).run(entry,testEntry,libraryEntry);
   }
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require native lowering before publication");
   rejectUnloweredTasks(p,"MLIR emission");

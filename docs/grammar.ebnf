@@ -1,148 +1,7 @@
-(* Toolchain0.151 explicit027 snapshots and pure scalar Wasm add no grammar
-   productions. Public/default026 and retained canonical identities remain. *)
-(* Toolchain0.150 checked027 browser maps/adapters add no source productions;
-   ordinary026 syntax/defaults and retained AST identities are unchanged. *)
-(* Toolchain0.149 bounded027 debugger views add no grammar productions;
-   public/default source026 and retained AST identities remain unchanged. *)
-(* Toolchain0.148 explicit C++027 native provider delivery adds ABI/record
-   versions, not source productions; public/default source remains026. *)
-(* Toolchain147 explicit C++ archival/migration assigns027 nex.program/15;
-   retained026 nex.program/14 and ordinary CLI selection are unchanged.
-   Migration changes graph state only through guarded explicit publication. *)
-(* Candidate027 authority transfer uses existing syntax. Cohort0x2702 and
-   checked source-error contracts are runtime/codegen rules; public026 and
-   retained0x2701 identities are unchanged. *)
-(* Candidate027 task continuations reuse the same throw/catch productions;
-   development cohort0x2701 grants no public027 project/provider selection. *)
-(* Candidate0.27 sequential native lowering uses these same productions;
-   public026/default and027 graph publication/migration remain unchanged. *)
-(* Candidate0.27 synchronous TypeScript uses these same version-selected
-   productions. Public026 syntax/defaults and027 graph migration remain unchanged. *)
-(* Candidate0.27 C++ version-selected frontend adds the separate productions
-   below. Public statement/try/catch/throw remain026; CLI selection, graph
-   migration and full backend delivery are not enabled. *)
-development027_try = "try", block, ( development027_catch, { development027_catch }, [ "finally", block ] | "finally", block ) ;
-development027_catch = "catch", "(", identifier, ( ":", type | ",", identifier ), ")", [ "if", expression ], block ;
-development027_throw = "throw", [ "(", expression, [ ",", expression ], ")" ], ";" ;
-
-(* Toolchain0.141 internal native typed-packet roundtrips add no syntax,
-   AST/canonical identity or language-version change. Typed source027 remains disabled. *)
-(* Language0.26 development: catch filters and synchronous/resumable native/reference/TypeScript finally. Complete delivery remains pending. Retained025/026 identities are unchanged. *)
-(* Public025 candidate: try/catch, explicit throw and lexical rethrow; retained024 parsing is separate and unchanged. *)
-(* Toolchain233 HTTP lazy transaction start changes no source syntax or language024 identity. *)
-(* Private232 HTTP completion/debug metadata adds no source syntax or public024 ABI change. *)
-(* Private231 debug registries/context add build metadata; public024 syntax and ABI3/4/5 remain unchanged. *)
-(* Private230 module profile registries/catalogs are build metadata; public024 syntax and ABI3/4/5 remain unchanged. *)
-(* Private229 HTTP root host selection is build metadata; public024 syntax and ABI3/4/5 remain unchanged. *)
-(* Private228 template placement/trait witness records are build metadata; source syntax/public024 and ABIs remain unchanged. *)
-(* Private227 mixed image ownership is build metadata; public024 source syntax and ABIs remain unchanged. *)
-(* Private modules226 add build/source ownership metadata, without new source syntax or public024 ABI/provider changes. *)
-(* Private HTTP225 uses existing task/throw source syntax; public024 syntax and published task ABIs remain unchanged. *)
-(* Private host224 composes existing task/fs/ffi with private exceptions; public024 syntax and ABI3/4/5 remain unchanged. *)
-(* Private checked watch223 uses separate private expression parsing; public024 grammar and ABI2501 stay unchanged. *)
-(* Private LLDB/DAP222 changes no source syntax; public024 and private ABI2501 remain distinct. *)
-(* Private native debug221 changes no source syntax or execution ABI; public024 stays unchanged. *)
-(* Private task control/profile220 changes no syntax or descriptor ABI; public024 is unchanged. *)
-(* Private native task219 lowering/ABI adds no source syntax; public024 stays unchanged. *)
-(* Private TaskIR218 adds no syntax; public024 and separate prototype grammar remain unchanged. *)
-(* Private exception experiment has a separate nonpublic grammar; this normative public024 syntax is unchanged. *)
-(* Toolchain0.135.8 HTTP response streams use existing resources, callbacks and task/ffi/fs; no new syntax or source ABI. *)
-(* Toolchain0.135.7 HTTP client library/provider uses existing language0.24; no new syntax or source ABI. *)
-(* Toolchain0.135.6 DNS library/provider uses existing language0.24; no syntax or ABI change. *)
-(* Public language0.24 retains this syntax; server task/fs streams and genuine File task ownership use explicit history-preserving migration. Retained023 parsing stays unchanged. *)
-(* Toolchain0.133.12 private alias-close/mixed-history conformance adds no source syntax, public023 or identity change. *)
-(* Toolchain0.133.11 private physical IO/diagnostic completion and verified marker reading add no source syntax, public023 or identity changes. *)
-(* Toolchain0.133.10 corrects private024 pure-helper requirements; syntax, public023 and retained identities are unchanged. *)
-(* Toolchain0.133.9 private024 project/capture/package/debug contracts add no syntax, canonical identity or public023/history change. *)
-(* Private024 ABI5 source-provider/file export records add no syntax or public023/history change. *)
-(* Toolchain0.133.5 private024 owning file finalizers add no syntax, canonical identity, public language or retained-history change. *)
-(* Toolchain0.133.4 private024 image/build read/write requirements add no syntax, canonical identity, public language or history change. *)
-(* Private024 uses this same syntax for source file stream suspension and
-   owned file task transport; public023/default and retained parsing stay intact.
-   Explicit migration/publication and complete delivery remain pending. *)
-(* Public language0.23 keeps this grammar and enables whole-file write
-   suspension in server task/fs functions. Retained022 parsing is unchanged;
-   explicit migration and versioned ABI4 providers/plans are required. *)
-(* Toolchain0.132.7 private023 provider/build write metadata adds no syntax;
-   public022 and retained ABI3/mask31 remain unchanged. *)
-(* Toolchain0.132.6 shares explicit migration preflight and guards live graph
-   HEAD language. No new grammar/public022 enablement; private023 remains separate. *)
-(* Private023 keeps this syntax and adds checked whole-file write suspension
-   in server task/fs functions, with ABI4 requests and explicit write grants.
-   Public022/default/history interpretation remains unchanged. Publication
-   requires an explicit history-preserving migration; see task-file-writes-prototype.md. *)
-(* Toolchain0.132 std/device.nex is an ordinary owned-resource library;
-   it adds no grammar, AST/canonical identity or language-version change. *)
-(* Development dependent-resource C factories add no NEX syntax or canonical
-   identity change. Pinned server/ffi externs return ordinary opaque resources;
-   task transfers preserve hidden physical parent dependencies. *)
-(* Current language022 retains this syntax and adds checked server task/ffi
-   callbacks and genuine resource captures/results/futures/channels/closures.
-   Mandatory runtime ancestry/physical cleanup checks still apply; file/wire/
-   browser/unstructured parallel boundaries and fixed provider ABI remain.
-   Explicit migration preserves retained018/019/020/021 source and identities.
-   Historical development comments below retain their original version scope. *)
-(* Private150 acquires logical resource authority only for actual resource-bearing
-   task graphs/FFI signatures; pure snapshots remain independent of revocation.
-   No syntax, public021 identity or public022 migration changes. *)
-(* Toolchain0.128 native Value retirement adds no syntax, canonical identity or language0.21 migration change. Source task resource transport stays rejected. *)
-(* Toolchain0.127 private reference resource regions add no source syntax, canonical or language0.21 migration change. Source authority transport stays rejected. *)
-(* Toolchain0.126 private native resource regions add no source syntax, language0.21 migration or canonical change; source task-resource transport remains rejected. *)
-(* Toolchain0.125 private host cleanup executor adds no source syntax, canonical identity or language0.21 migration. Source task/device transport remains rejected. *)
-(* Language0.21 adds opaque server resources. resource is contextual at this
-   declaration position; ordinary resource identifiers remain valid. Explicit
-   historical018/019/020 parsing remains unchanged for migration. *)
-(* Toolchain0.122 model contracts are an ordinary checked-source library; no syntax/canonical/language0.20 migration change. *)
-(* Toolchain0.121 compute is an ordinary checked-source library. No syntax, canonical format or language0.20 migration change. *)
-(* Toolchain0.120 task worker hosting accepts existing task-only functions; no syntax, canonical identity or migration change. *)
-(* Toolchain0.119 source-backed provider logical debugging adds only external
-   catalog/source-union/debug tooling metadata; execution ABI3, source grammar,
-   canonical fields/ordinals and language020/migration remain unchanged. *)
-(* Toolchain0.118 checked task-provider profiling adds only external registry,
-   provenance and measurement metadata. No source syntax/canonical/ordinal or
-   language020/migration change; see task-provider-profiling.md. *)
-(* Toolchain0.117 fixed startup-linked task images are external checked build
-   ownership/load-closure metadata; source syntax, ordinals/canonical fields,
-   language020 and history-preserving migration remain unchanged. *)
-(* Toolchain0.116 concrete static task providers are external checked project
-   linkage/ownership metadata, with no new syntax, canonical fields or migration. *)
-(* Toolchain0.115 logical task debugger metadata adds no source syntax,
-   execution instructions, operation ordinals or canonical fields. *)
-(* Language0.20 retains019 syntax and adds semantic whole-file read suspension
-   only in server functions declaring task and fs. Scope/spawn callbacks may be
-   pure, task-only, or exactly server task/fs with caller task/fs authorization.
-   Task callers reject fs-only helper signatures. Callable realm/effect equality
-   stays exact. Explicit018/019 parsing and identities retain their old rules;
-   no new keywords, Expr/Stmt ordinals or canonical fields. See task-file-reads.md. *)
-
-(* Language0.19 adds task_scope, task<T>, channel<T> and effect task.
-   Structured operations use ordinary calls; lifetime, callback effect and realm
-   checks are semantic. Explicit018 migration preserves old history and IDs.
-   Working099–108 were private018 integration stages, not the public grammar. *)
-(* Toolchain0.98 internal coroutine scheduler adds no source syntax. *)
-(* Toolchain0.97 browser worker entries are ordinary functions; no syntax change. *)
-(* Toolchain0.87 scoped discovery is external metadata, with no grammar or migration. *)
-(* Toolchain0.86 internal worker probes add no source builtin or grammar;
-   source concurrency and its explicit language migration remain pending. *)
-(* Toolchain0.81 editor project launches add no source syntax or migration. *)
-(* Toolchain0.80 replay isolation adds no source syntax or migration. *)
-(* Toolchain0.79 project package task checks add no source syntax or migration. *)
-(* Toolchain0.77 project actions add no source syntax, semantics or migration. *)
-(* Toolchain0.78 project task captures/replay and test builds add no source syntax. *)
-(* Project source/static linkage and concrete export roots are external
-   nex.build.json metadata, not language syntax or a version migration. *)
-(* NEX 0.21. ASCII identifiers, decimal integers/floats, UTF-8 source, // line comments. *)
-(* Toolchain0.73 native application lifetime adds no syntax or migration. *)
-(* Toolchain0.74 shared native project images are external build metadata;
-   language0.16 source grammar and canonical identities are unchanged. *)
-(* Toolchain 0.60 scalar Wasm uses this same syntax; target restrictions are semantic. *)
-(* Toolchain 0.61 iOS archives use this syntax unchanged; SDK/ABI selection is external. *)
-(* Toolchain0.62 mobile projects reuse the web contract without syntax changes. *)
-(* Toolchain0.63 HTTPS host/CORS configuration is external; syntax is unchanged. *)
-(* Toolchain0.64 Windows GNU/UCRT target selection is external; syntax is unchanged. *)
-(* Toolchain0.65 Windows environment/SQLite adapters add no source syntax. *)
-(* Toolchain0.69 editor name origins add no source syntax or semantic identity. *)
-(* Toolchain0.70 identifier descriptions add no source syntax or semantic identity. *)
+(* NEX language0.27. ASCII identifiers, decimal numbers, strict UTF-8 source.
+   This is the current source grammar. Retained026 parsing/AST identities stay
+   separate and allow only the legacy single catch and two-string throw.
+   Historical notes are preserved in grammar-history.ebnf. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | resource | endpoint | trait | implementation } ;
 resource      = [ "pub" ], "server", "resource", identifier, [ type_parameters ], ";" ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",
@@ -170,9 +29,9 @@ effects       = "!", "{", [ effect, { ",", effect } ], "}" ;
 effect        = "io" | "db" | "fs" | "ffi" | "task" | "throw" ;
 block         = "{", { statement }, "}" ;
 statement     = declaration | assignment | return | if | while | match | try | throw | expression, ";" ;
-try           = "try", block, ( catch, [ "finally", block ] | "finally", block ) ;
-catch         = "catch", "(", identifier, ",", identifier, ")", [ "if", expression ], block ;
-throw         = "throw", [ "(", expression, ",", expression, ")" ], ";" ;
+try           = "try", block, ( catch, { catch }, [ "finally", block ] | "finally", block ) ;
+catch         = "catch", "(", identifier, ( ":", type | ",", identifier ), ")", [ "if", expression ], block ;
+throw         = "throw", [ "(", expression, [ ",", expression ], ")" ], ";" ;
 declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
 assignment    = identifier, "=", expression, ";" ;
 return        = "return", [ expression ], ";" ;

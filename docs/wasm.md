@@ -1,27 +1,11 @@
-# Candidate027 graph recovery and scalar Wasm development0.151.0
-
-Explicit C++027 programs can use identity-preserving graph snapshot/recovery.
-Mixed026/027 histories keep their schema, all16 tables, namespaces and local IDs;
-reloaded source bundles execute through checked AST/TaskIR/native paths without
-original files. Snapshot operations copy data; they do not grant a CLI language
-upgrade or include external artifacts. See tests/typed_graph_snapshots.py.
-
-Pure scalar027 Wasm uses the existing i64/bool/unit backend and checked BigInt
-wrapper. Only reachable pure scalar code is emitted; source throw/catch/finally,
-heap values and effects remain unsupported. The earlier026 output is unchanged.
-See tests/typed_scalar_wasm.py. Ordinary/default CLI remains026. Matching full
-regression, installed SDK/platform acceptance, public027 selection and the
-remaining original PLAN are still required.
-
-Language026 finally is a separate synchronous native/reference/TypeScript
-development feature. This scalar Wasm adapter rejects it with E_WASM_TYPE;
-source-error transport/finalization here remains pending.
-
 # Experimental scalar WebAssembly modules
 
-Toolchain 0.60 introduces an isolated compute-module backend under validation.
-The source language stays at 0.16. This is a bounded scalar adapter; the platform,
-browser, installed SDK and full regression results must be checked in STATUS.md.
+The scalar adapter was introduced in toolchain 0.60. Current development0.151
+allows language0.27 scalar programs through the ordinary CLI, using the same
+i64/bool/unit contract. Reachable source throw/catch/finally, heap values and
+effects remain unsupported. Earlier language identities stay separate.
+Full current regression, installed SDK and platform acceptance remain pending;
+this adapter does not cover arbitrary NEX applications.
 
 ```sh
 nex build examples/wasm/main.nex --target wasm --entry compute --profile release -o /new/module --json

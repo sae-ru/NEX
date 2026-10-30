@@ -301,7 +301,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&p.sourceLanguage!=SourceLanguage::TypedErrors027&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr):controlPoll(control),p(p),limit(limit){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}

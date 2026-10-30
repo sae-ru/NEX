@@ -745,7 +745,7 @@ int run(const Options &o) {
     }else std::cout<<result.output;return 0;
   }
   if(o.command=="emit"&&o.get("--kind")=="typescript"){
-    auto module=emitTypeScript(p,{{"entry",o.get("--entry","main")}});auto directory=o.get("--directory"),output=o.get("--output");
+    auto module=emitTypeScriptDelivery(p,{{"entry",o.get("--entry","main")}});auto directory=o.get("--directory"),output=o.get("--output");
     if(!directory.empty()){writeWebModule(module,directory);print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",revision(p)}});}
     else if(output.empty())std::cout<<module.source;else writeFile(output,module.source);return 0;
   }
@@ -798,7 +798,7 @@ int run(const Options &o) {
       if(native){
         ProcessResult actual;
         if(web){
-          auto module=emitTypeScript(p,{{"entry",f.name}});auto runtimeInputs=webRuntimeInputs(module);
+          auto module=emitTypeScriptDelivery(p,{{"entry",f.name}});auto runtimeInputs=webRuntimeInputs(module);
           auto key=hash(module.source+runtimeInputs+NEX_BUILD_ID);
           actual=runTypeScriptTest(module,(fs::path(directory)/key/"typescript").string(),supervisorTimeout(taskLimits),taskTest?&taskLimits:nullptr);
         }else{auto opts=buildOptions;opts.entry=f.name;opts.testEntry=true;auto result=build(p,directory,opts);requireNativeHost(result);actual=capture(executionArguments(result.executable),taskTest?supervisorTimeout(taskLimits):30);}

@@ -177,7 +177,7 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.source(self.app_source() + '\nserver fn secret() -> str { return "API_SECRET_NOT_IN_CLIENT"; }\n')
         output = self.root / "web output"
         generated = self.cli("web", "--directory", output)
-        self.assertEqual(generated["schema"], "nex.web/1")
+        self.assertEqual(generated["schema"], "nex.web/2")
         self.assertEqual(generated["language"], harness.CURRENT_LANGUAGE)
         self.assertEqual(set(generated["files"]), {
             "README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", "vite.config.js", "playwright.config.js",

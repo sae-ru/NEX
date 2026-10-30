@@ -1258,11 +1258,11 @@ void check(Program &p){
   }
 }
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
-Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026).typeOnly();}
-E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026).expressionOnly();}
+Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).expressionOnly();}
 E parseSourceExceptionWatchPrototype(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,true).expressionOnly();}
-S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026).statementOnly();}
-P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026).patternOnly();}
+S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).statementOnly();}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).patternOnly();}
 llvm::json::Array canonicalKinds(const std::vector<std::string> &names,const std::vector<unsigned> &kinds){llvm::json::Array result;for(size_t i=0;i<names.size();++i)result.push_back(int64_t(i<kinds.size()?kinds[i]:0));return result;}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
@@ -1306,7 +1306,7 @@ std::string revision(const Program &p) {
   return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
-  return llvm::json::Object{
+  auto result=llvm::json::Object{
     {"schema","nex.language/1"},{"version",languageVersion},
     {"source_exceptions",llvm::json::Object{{"status","public026_handler_development"},{"source_language",languageVersion},{"frontend",true},{"reference",true},{"retained024_parser",true},{"explicit_history_preserving_migration",true},{"native_delivery_accepted",false},{"typescript_delivery_accepted",false},{"task_ABI6_delivery_accepted",false},{"providers_delivery_accepted",false},{"SDK_delivery_accepted",false},{"guide","docs/exceptions.md"},{"guide_kind","exception"},{"payload",llvm::json::Array{"str code","str message"}},{"checked_traps_caught",false},{"filters_finally_typed_payloads",false},{"handler_filters",true},{"finally",false},{"finally_development",llvm::json::Object{{"status","resumable_native_reference_typescript"},{"frontend",true},{"reference",true},{"typescript",true},{"native",true},{"tasks",true},{"finally_return_override",true},{"result_propagation_runs_finally",true},{"fatal_traps_run_finally",false},{"retained026_identities",true},{"test_source","tests/finally.py"},{"task_test_source","tests/task_finally.py"},{"pending_outcomes_survive_suspension",true},{"cancellation_runs_user_finalizers",false},{"maximum_native_finalizer_copies",4096},{"maximum_task_finalizer_copies",4096},{"wasm",false}}},{"typed_payloads",false},{"typed_payload_development",llvm::json::Object{{"status","source027_native_provider_development"},{"source_syntax",false},{"source_language_027_enabled",false},{"reference_packet",true},{"native_packet",true},{"source027_version_selected_frontend",true},{"source027_reference_handlers",true},{"source027_ordered_handlers",true},{"source027_archiving_enabled",true},{"source027_revision_format","nex.program/15"},{"source027_graph_migration",true},{"source027_migration_entry_points",llvm::json::Array{"preflightGraphMigration","applyGraphMigration"}},{"source027_migration_guide","docs/typed-error-migration.md"},{"source027_migration_test_source","tests/typed_error_migration.py"},{"source027_migration_namespace_guard",true},{"source027_graph_snapshot_delivery",true},{"source027_graph_snapshot_development",llvm::json::Object{{"status","explicit027_graph_snapshot_development"},{"graph_schema_unchanged",true},{"retained026_revisions",true},{"all16_tables_and_local_ids",true},{"WAL_snapshot",true},{"original_sources_required",false},{"external_artifacts_included",false},{"ordinary027_CLI",false},{"source_replay","explicit loadVersionedBundle and checked native ABI7"},{"test_source","tests/typed_graph_snapshots.py"},{"guide","docs/snapshots.md"},{"guide_kind","snapshot"},{"complete_SDK_platform_acceptance",false}}},{"source027_archive_scope","explicit checked C++ API; public CLI/default remain026"},{"source027_native_lowering",true},{"source027_native_project_delivery",true},{"source027_browser_delivery",llvm::json::Object{{"status","explicit_cpp_checked_browser_delivery_development"},{"public_CLI",false},{"checked_maps",true},{"typescript_map_schema","nex.typescript-map/2"},{"web_metadata_schema","nex.web/2"},{"schema_file","llm/typed-web-delivery.schema.json"},{"retained_development_map","nex.development-typescript/027-3"},{"synchronous_pure_UI",true},{"worker_modes",llvm::json::Array{"synchronous","structured-task"}},{"worker_payloads","checked data and closures stay inside worker; wire input/output remains authority-free"},{"uncaught_worker_errors","generic E_SOURCE_EXCEPTION without payload"},{"reachable_client_shared_only",true},{"capture_replay",true},{"relocated_static_web_package",true},{"capture_directory_roots","trusted producer normalizes terminal separators; untrusted capture paths remain strict"},{"Node_reference_native_agreement",true},{"browser_engines",llvm::json::Array{"chromium","firefox","webkit"}},{"test","tests/typed_web_delivery.py"},{"browser_test","tests/typed_web_browser.py"},{"retained026_fixture","tests/fixtures/web-026-sdk149-origin.json"},{"guide","docs/typed-web-delivery.md"},{"guide_kind","typed-web-delivery"},{"installed_SDK_accepted",false},{"platform_acceptance_complete",false},{"complete_delivery_accepted",false}}},
 {"source027_native_delivery",llvm::json::Object{{"status","explicit_cpp_native_project_delivery_development"},
@@ -1769,5 +1769,47 @@ llvm::json::Value describe() {
     {"not_yet_supported",llvm::json::Array{"async","general_wasm_applications","gpu","effect_handlers","mutable_collections","cyclic_module_imports","remote_package_registry"}},
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
+
+  if(currentSourceLanguage==SourceLanguage::TypedErrors027){
+    auto &errors=*result.getObject("source_exceptions");
+    errors["status"]="public027_typed_source_development";
+    errors["typed_payloads"]=true;errors["handler_filters"]=true;errors["finally"]=true;
+    errors["filters_finally_typed_payloads"]=true;errors["public027_CLI_enabled"]=true;
+    errors["payload"]=llvm::json::Array{"str code and str message","checked typed T with a concrete key and base kind"};
+    errors["task_ABI7_delivery_accepted"]=false;
+    auto &typed=*errors.getObject("typed_payload_development");
+    typed["status"]="public027_typed_source_development";
+    typed["source_syntax"]=true;typed["source_language_027_enabled"]=true;typed["source_handler_delivery_enabled"]=true;
+    typed["source027_archive_scope"]="ordinary checked027 CLI and explicit retained-version APIs; migration is required for older graphs";
+    typed["source027_authority_scope"]="native/reference owned file/resource and callable/task payloads follow checked lifetimes; browser excludes file/FFI/server authority";
+    typed["source027_development_typescript_map"]="nex.development-typescript/027-3";
+    typed["source027_typescript_map"]="nex.typescript-map/2";typed["source027_typescript_public_revision"]=true;
+    typed["source027_development_task_descriptor_abi"]="0x4e45585400002702";
+    typed["source027_task_descriptor_abi"]="0x4e45585400000007";
+    auto &delivery=*typed.getObject("source027_native_delivery");delivery["public_cli"]=true;
+    delivery["status"]="public027_native_project_delivery_development";
+    (*typed.getObject("source027_browser_delivery"))["public_CLI"]=true;
+    (*typed.getObject("source027_browser_delivery"))["status"]="public027_checked_browser_delivery_development";
+    (*typed.getObject("source027_graph_snapshot_development"))["ordinary027_CLI"]=true;
+    errors["retained_source_providers"]=llvm::json::Object(*errors.getObject("source_providers"));
+    (*errors.getObject("retained_source_providers"))["source_languages"]=llvm::json::Array{"0.25","0.26"};
+    auto &providers=*errors.getObject("source_providers");
+    providers["record_schema"]="nex.native-task-provider/14";providers["profile_record_schema"]="nex.native-task-provider/15";providers["debug_record_schema"]="nex.native-task-provider/16";
+    providers["static_plan_schema"]="nex.project-static-task-linkage/5";providers["shared_plan_schema"]="nex.project-task-linkage/14";providers["profile_plan_schema"]="nex.project-task-linkage/15";providers["debug_plan_schema"]="nex.project-task-linkage/16";
+    providers["descriptor_abi"]="0x4e45585400000007";providers["guide"]="docs/typed-error-providers.md";providers["guide_kind"]="typed-error-provider";
+    for(const auto *name:{"task_providers","task_shared_providers","task_provider_profiling","task_provider_debugging"}){
+      auto &contract=*result.getObject(name);contract["status"]="public027_source_provider_integration_candidate";contract["execution_task_abi"]=7;
+      contract["record_schema_file"]="llm/native-typed-error-task-provider.schema.json";contract["plan_schema_file"]="llm/project-typed-error-task-linkage.schema.json";
+      auto schema=std::string(name)=="task_provider_profiling"?15:std::string(name)=="task_provider_debugging"?16:14;
+      contract["record_schema"]="nex.native-task-provider/"+std::to_string(schema);
+      contract["plan_schema"]=std::string(name)=="task_providers"?"nex.project-static-task-linkage/5":"nex.project-task-linkage/"+std::to_string(schema);
+      contract["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};
+    }
+    for(const auto *name:{"task_file_streams","task_file_streams_prototype"})(*result.getObject(name))["execution_ABI"]=7;
+    for(const auto *name:{"task_profiling","task_debugging"})(*result.getObject(name))["execution_task_abi"]=7;
+    auto &http=*result.getObject("structured_tasks_runtime")->getObject("http_request_host_prototype");http["execution_task_abi"]=7;http["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};
+    auto &wasm=*result.getObject("wasm_features");wasm["source027_scalar_public"]=true;
+  }
+  return result;
 }
 }

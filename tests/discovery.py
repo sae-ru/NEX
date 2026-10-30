@@ -95,7 +95,7 @@ class Discovery(harness.ToolchainCase):
     def test_typed_provider_guide_matches_the_bounded_cpp_contract(self):
         field='source_exceptions.typed_payload_development.source027_native_delivery'
         contract=self.cli('describe','--field',field)['value']
-        self.assertFalse(contract['public_cli'])
+        self.assertTrue(contract['public_cli'])
         self.assertEqual(contract['execution_abi'],'0x4e45585400000007')
         guide=self.cli('guide','--kind',contract['guide_kind'])
         self.assertEqual(guide['text'],(harness.REPO/contract['guide']).read_text())
@@ -105,7 +105,7 @@ class Discovery(harness.ToolchainCase):
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
         browser = self.cli('describe', '--field', 'source_exceptions.typed_payload_development.source027_browser_delivery')['value']
         self.assertEqual(browser, pack['source_exceptions']['typed_payload_development']['source027_browser_delivery'])
-        self.assertFalse(browser['public_CLI'])
+        self.assertTrue(browser['public_CLI'])
         self.assertEqual(browser['typescript_map_schema'], 'nex.typescript-map/2')
         self.assertEqual(self.cli('guide', '--kind', browser['guide_kind'])['text'], (harness.REPO / browser['guide']).read_text())
         self.assertTrue((harness.REPO / browser['schema_file']).is_file())
@@ -146,7 +146,7 @@ class Discovery(harness.ToolchainCase):
         self.assertFalse(full['model']['source_task_bridge'])
         self.assertEqual(full['structured_tasks_runtime'], pack['structured_tasks_runtime'])
         http = full['structured_tasks_runtime']['http_request_host_prototype']
-        self.assertEqual(http['execution_task_abi'], 6)
+        self.assertEqual(http['execution_task_abi'], 7)
         self.assertTrue(http['caller_request_required'])
         self.assertTrue(http['inherits_step_budget_deadline_cancellation'])
         self.assertTrue(http['joined_completion'])
@@ -166,8 +166,8 @@ class Discovery(harness.ToolchainCase):
         self.assertEqual(full['task_profiling'], pack['task_profiling'])
         self.assertTrue(full['task_profiling']['source_support'])
         self.assertEqual(full['task_profiling']['cli_language'], harness.CURRENT_LANGUAGE)
-        self.assertEqual(full['task_profiling']['execution_task_abi'], 6)
-        self.assertEqual(full['task_debugging']['execution_task_abi'], 6)
+        self.assertEqual(full['task_profiling']['execution_task_abi'], 7)
+        self.assertEqual(full['task_debugging']['execution_task_abi'], 7)
         self.assertEqual(full['task_debugging'], pack['task_debugging'])
         self.assertEqual(full['task_profiling']['report_schema'], 'nex.profile/2')
         self.assertFalse(full['task_profiling']['tracy'])

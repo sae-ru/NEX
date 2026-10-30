@@ -92,7 +92,8 @@ assert typed_result['export_roundtrip']
 assert json.loads((export/'nex.json').read_text())['language']=='0.27' and (export/'main.nex').read_text()==text
 if a.ordinary_compiler:
     r=subprocess.run([str(Path(a.ordinary_compiler).resolve()),'check','--json'],cwd=export,text=True,capture_output=True,timeout=30)
-    assert r.returncode==1 and 'E_LANGUAGE_VERSION' in r.stdout+r.stderr and not (export/'.nex').exists(),(r.returncode,r.stdout,r.stderr)
+    assert r.returncode==0 and json.loads(r.stdout)['revision']==typed_result['revision'],(r.returncode,r.stdout,r.stderr)
+    observed=run('ordinary-exported-native',[str(Path(a.ordinary_compiler).resolve()),'run',str(export/'main.nex'),'--json']);assert json.loads(observed.stdout)['stdout']=='42\n'
 typed_after=snapshot(typed/'.nex/graph.db');assert typed_after[0]==typed_before[0]
 for table,rows in typed_before[1].items():
     if table!='head':assert not (rows-typed_after[1][table]),table
@@ -140,6 +141,6 @@ for name,d,revision in [('same',simple,applied['revision']),('typed',typed,typed
             r=run(name+'-native'+optimization+'-'+str(workers),[binary,library,'workers',workers]);assert r.stdout=='42\n' and not r.stderr,(r.stdout,r.stderr);native+=1
         runner=emitted/'run.mjs';runner.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);\n")
         r=run(name+'-node'+optimization,[os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',runner]);assert r.stdout=='42\n';node+=1
-report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_language='0.26',target_language='0.27',native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
+report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_language='0.27',target_language='0.27',native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
 print(json.dumps({k:report[k] for k in ['ok','history_tables','old_revisions','native_executions','Node_executions','graph_namespace_preserved']}))
 if not a.output:shutil.rmtree(out)

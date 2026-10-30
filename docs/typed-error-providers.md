@@ -1,11 +1,9 @@
-# Explicit027 native source-error providers
+# Native source-error providers (language0.27)
 
-Toolchain0.149 develops native delivery under explicit C++ source selection.
-The ordinary CLI/default source language remains0.26 and `typed_payloads` stays
-false. A0.27 project is checked with `ProjectBuildOptions::sourceLanguage` set
-to `TypedErrors027`; this is not a manifest switch or implicit CLI upgrade.
-Retrieve only this contract with `nex describe --field source_exceptions.typed_payload_development.source027_native_delivery --json`
-and `nex guide --kind typed-error-provider --json`.
+Toolchain0.151 develops checked native delivery through the ordinary027 CLI.
+The ordinary CLI/default source language is0.27 with typed_payloads enabled.
+Explicit migration preserves older graphs; a manifest edit alone cannot upgrade
+them. C++ callers may still select retained languages explicitly.
 
 The graph migration and archival rules remain in [typed-error-migration.md](typed-error-migration.md).
 
@@ -59,9 +57,8 @@ and NEX-DAP, a large generic list, legacy catch, file owner and synchronous DWAR
 Source-language diagnostics and their IDs use the captured program language;
 the ordinary diagnostic API retains its existing default identity.
 
-Current full compiler regression, installed SDK/platform acceptance, public027
-CLI selection, graph-snapshot delivery and the remaining original PLAN are still
-required. Parsed debug records alone do not establish debugger acceptance. The
+Current full compiler regression, installed SDK/platform acceptance and the
+remaining original PLAN are still required. Parsed debug records alone do not establish debugger acceptance. The
 `logical_debugging_development` descriptor records this checked development scope;
 `logical_debugging_accepted` remains false until the wider delivery gates pass.
 The prior receipts retain their own compiler/source/version scopes.

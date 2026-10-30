@@ -222,9 +222,6 @@ void annotateReferenceError(const Program &program,Error &error){
     if(operation.ast&&operation.span.file==error.span.file&&operation.span.begin==error.span.begin&&
        operation.span.end==error.span.end){
       error.operationSite=operation.site;
-      // Development027 has real operation sites but no published graph revision.
-      // Diagnostic enrichment must not replace the original fatal/control error.
-      if(program.sourceLanguage==SourceLanguage::TypedErrors027)return;
       error.operationRevision=revision(program);
       error.operationSource=hash(json(sourceBundle(program),false));return;
     }

@@ -93,7 +93,7 @@ def cli(project,label,arguments,expected=0):
 def debug(project,mode):
     description=cli(project,mode+'-debug',['project','--kind','debug','--component','app','--adapter','nex-dap'])
     session=description['observation'];manifest=json.loads(Path(session['manifest']).read_text())
-    assert manifest['schema']=='nex.debug/3' and manifest['language']=='0.26'
+    assert manifest['schema']=='nex.debug/3' and manifest['language']=='0.27'
     debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
     assert debugger,'actual LLDB is required for source-provider debugger tests'
     commands=['settings set target.disable-aslr false',
@@ -128,7 +128,7 @@ try:
         case_environment={'NEX_FILES_ROOT':str(files)}
         for name,text in [('leaf',LEAF),('middle',MIDDLE),('app',APP)]:
             folder=project/name;folder.mkdir();(folder/'main.nex').write_text(text.replace(chr(92)*2+'u0000',chr(92)+'u0000'))
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'app/main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}))
         leaf_shared=mode=='shared';middle_shared=mode!='static'
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
                       'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'},'measured':{'profile':'profile'}},
@@ -147,8 +147,8 @@ try:
         for profile in ['debug','release']:
             label=mode+'-'+profile
             plan=cli(project,label+'-plan',['project','--kind','plan','--component','app','--configuration',profile])
-            assert plan['ok'] and plan['language']=='0.26' and not plan['graph_store_opened']
-            expected='nex.project-static-task-linkage/4' if mode=='static' else 'nex.project-task-linkage/11'
+            assert plan['ok'] and plan['language']=='0.27' and not plan['graph_store_opened']
+            expected='nex.project-static-task-linkage/5' if mode=='static' else 'nex.project-task-linkage/14'
             for row in plan['components']:
                 linkage=row['task_linkage'];assert linkage['schema']==expected and linkage['execution_abi']==6
                 assert all(i['calling_mode']=='task-code/6' for i in linkage['imports'])
@@ -199,7 +199,7 @@ try:
         leaf=project/'leaf';leaf.mkdir();app=project/'app';app.mkdir()
         (leaf/'main.nex').write_text('module leaf;pub fn answer(fail:bool)->i64 !{throw}{if fail{throw("PURE","leaf");}return 42;}')
         (app/'main.nex').write_text('module app;import "../leaf/main.nex" as leaf;fn main()->unit !{task,io}{task_yield();try{let ignored:i64=leaf::answer(true);assert(false);}catch(c,m){assert(c=="PURE"&&m=="leaf");}try{print(leaf::answer(false));}catch(c,m){assert(false);}}')
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'app/main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}))
         (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
             'leaf':{'kind':'static_library' if mode=='static' else 'shared_library','root':'leaf','entry':'leaf/main.nex','entry_function':'answer'},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'leaf':'static' if mode=='static' else 'dynamic'}}}}))

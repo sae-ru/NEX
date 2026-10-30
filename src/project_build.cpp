@@ -701,9 +701,9 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     // Preflight every selected test and its binary dependency contracts before
     // invoking any compiler, test process or extension initialization.
     for(auto &test:tests){
-      if(test.web){emitTypeScript(test.item->program,{{"entry",test.function}});continue;}
+      if(test.web){emitTypeScriptDelivery(test.item->program,{{"entry",test.function}});continue;}
       const auto &function=test.item->program.function(test.function);
-      if(function.realm=="shared"&&function.effects.empty())emitTypeScript(test.item->program,{{"entry",test.function}});
+      if(function.realm=="shared"&&function.effects.empty())emitTypeScriptDelivery(test.item->program,{{"entry",test.function}});
       auto check=options;check.kind="plan";check.component=test.item->name;check.testFunction=test.function;
       auto planned=buildProject(directory,manifest,source,check);
       test.planHash=planned.getAsObject()->getString("plan_hash")->str();
@@ -734,7 +734,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       }else row["reference_skip_reason"]="effectful test executes once in its selected backend";
       verifyGrant();llvm::json::Value observation=nullptr;
       if(test.web){
-        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+webRuntimeInputs(module)+NEX_BUILD_ID);
+        auto module=emitTypeScriptDelivery(program,{{"entry",test.function}});auto key=hash(module.source+webRuntimeInputs(module)+NEX_BUILD_ID);
         auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout,module.asynchronous?&configuration.taskLimits:nullptr);
         observation=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
       }else{
@@ -752,7 +752,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       verifyGrant();auto &observed=*observation.getAsObject();
       bool ok=observed.getInteger("exit_code")==0&&referenceOK&&(!function.effects.empty()||observed.getString("stdout")==expected);
       if(typescriptReference){
-        auto module=emitTypeScript(program,{{"entry",test.function}});auto key=hash(module.source+webRuntimeInputs(module)+NEX_BUILD_ID);
+        auto module=emitTypeScriptDelivery(program,{{"entry",test.function}});auto key=hash(module.source+webRuntimeInputs(module)+NEX_BUILD_ID);
         auto child=runTypeScriptTest(module,(cache/key/"typescript").string(),options.timeout);
         row["typescript_observation"]=Object{{"exit_code",child.code},{"stdout",child.output},{"stderr",child.errors}};
         ok&=child.code==0&&child.output==expected;

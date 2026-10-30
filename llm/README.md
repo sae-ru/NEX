@@ -28,10 +28,12 @@ prove that a test suite completely captures the user's intent.
 
 ## Current boundaries
 
-Language0.24 enables checked server task/fs whole-file and stream IO, including
-ABI5 static/fixed-shared task providers and genuine File owner transport. Source task/ffi resource transport, physical
-grants, owner transfer and cleanup retain their checked rules. General exceptions,
-network/DB tasks, owned NPU/models, native UI/mobile completion and broader
+Language0.27 enables typed source errors, ordered handlers, filters and finally,
+including task suspension in reference/native/TypeScript. Native task providers
+use ABI7; the explicit development emitter retains its separate cohort2702.
+Server task/fs/ffi resource transport, physical grants, owner transfer and cleanup
+retain their checked rules. General algebraic effects, remaining network/DB task
+integration, universal GPU/NPU APIs, native UI/mobile completion and broader
 platform delivery remain pending. Query each relevant descriptor and guide.
 
 Source enablement, full compiler tests, installed SDK acceptance and actual

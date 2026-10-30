@@ -1,16 +1,27 @@
 # Explicit typed-error graph migration development
 
-Toolchain0.148 keeps ordinary CLI projects on language0.26. The checked C++ API
-can archive0.27 source and migrate an existing graph explicitly. The explicit C++ native builder now develops027 source/static/shared/mixed
-provider delivery under [matching ABI7 contracts](typed-error-providers.md).
-Public CLI selection, UI/Worker, graph-snapshot and SDK delivery remain separate gates. This API is available to compiler/tooling development; it adds
-no ordinary CLI flag or implicit source-language upgrade.
+Toolchain0.151 develops ordinary language0.27 CLI execution and explicit migration
+of archived026 graphs. Native source/static/shared/mixed delivery uses the
+[ABI7 contracts](typed-error-providers.md); [web delivery](typed-web-delivery.md)
+uses checked maps. Matching full/SDK/platform acceptance remains pending.
+
+Before migration, preserve the original graph with `nex snapshot`. Review
+`nex migrate --kind plan --revision HEAD --expected-revision OLD --json`;
+then apply the same expected revision, optionally with a reviewed `--candidate`.
+Migration publishes a new checked graph revision and retains old rows/IDs.
+Physical source, manifest and lock materialization is a separate export into a
+new directory: `nex export --revision HEAD --directory NEW --json`.
+Do not replace a version field or overwrite unsaved physical edits.
+
+This CLI path needs an archived origin or exported graph. A source-only old Git
+checkout needs its matching SDK to check/export or an origin graph snapshot;
+source-only migration bootstrap is still pending. No origin is fabricated.
 
 Language027 revisions use `nex.program/15`; retained026 uses its original
 `nex.program/14`. Function/statement canonical extensions and concrete error
 keys round-trip through a checked source bundle. A revision language cannot be
 changed by relabelling stored metadata. `loadVersionedBundle` rechecks0.27 only
-when explicitly selected. Ordinary loading retains its026 default.
+when selected. Ordinary current loading selects027; retained026 rechecks stay separate.
 
 `preflightGraphMigration` in `include/nex/migration.h` takes an existing store
 directory (normally `PROJECT/.nex`), an origin revision or `HEAD`, a nonempty
@@ -37,8 +48,8 @@ appends the new revision while preserving old revisions, schema and local IDs.
 Migration does not rewrite physical source files, `nex.json`, or dependency
 locks. The result has `materialized: false`. An explicit, separate
 `exportProject(..., "0.27")` can materialize the checked source in a new/empty
-directory. Such a project still requires a future matching027 CLI delivery;
-the current ordinary compiler rejects its manifest instead of retagging it.
+directory. The ordinary027 CLI checks and runs that exported source, while
+retained026 physical projects still require their explicit migration.
 
 `tests/typed_error_migration.py` starts from the immutable genuine026 fixture
 created by toolchain0.139 and a modular026 fixture produced by the verified146

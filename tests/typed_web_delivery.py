@@ -175,8 +175,9 @@ def contract_cases():
   root=O/label;root.mkdir();(root/'main.nex').write_text(source);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n');(root/'nex.build.json').write_text(json.dumps(manifest)+'\n')
   actual=request(root,label,'plan',expected=1);assert actual['code'] in codes,(label,actual);assert not (root/'.nex').exists()
   report['cases'].append({'rejection':label,'code':actual['code'],'no_generated_state':True,'passed':True});save()
- root=output/'async/project';r=subprocess.run([str(args.nex),'project','--kind','plan','--json'],cwd=root,env=env,text=True,capture_output=True);actual=json.loads(r.stdout);assert r.returncode==1 and actual['code']=='E_LANGUAGE_VERSION',actual
- report['cases'].append({'ordinary027_CLI_still_rejected':True,'code':actual['code'],'passed':True});save()
+ root=output/'async/project';r=subprocess.run([str(args.nex),'project','--kind','plan','--component','app','--configuration','release','--json'],cwd=root,env=env,text=True,capture_output=True);actual=json.loads(r.stdout);assert r.returncode==0 and actual['language']=='0.27' and not actual['graph_store_opened'],actual
+ control=request(root,'ordinary-CLI-control','plan');assert actual['components']==control['components'] and actual['plan_hash']==control['plan_hash']
+ report['cases'].append({'ordinary027_CLI_plan_agrees':True,'passed':True});save()
  capture=request(root,'capture','capture');file=O/'capture.json';file.write_text(json.dumps(capture,ensure_ascii=False,indent=2)+'\n');assert request(root,'validate','validate',capture=str(file))['ok']
  restored=request(root,'restore','restore',capture=str(file),directory=str(O/'restored'));assert restored['language']=='0.27';plan=request(Path(restored['root']),'restored-plan','plan');assert plan['language']=='0.27' and not plan['graph_store_opened']
  report['cases'].append({'checked027_web_capture_replay':True,'passed':True});save()
@@ -199,7 +200,7 @@ def contract_cases():
 
  return report
 
-report={'ok':False,'public027_CLI_enabled':False,'cases':[]}
+report={'ok':False,'public027_CLI_enabled':True,'cases':[]}
 for variant in ['async','pure']:
  value=build_case(variant);assert value['ok'];report['cases'].append({'variant':variant,'Node_cases':len(value['cases']),'production_build':True,'passed':True})
 value=agreement_cases();assert value['ok'];report['engine_agreement_and_retained026_cases']=len(value['cases'])

@@ -1,17 +1,27 @@
-# Candidate027 graph recovery and scalar Wasm development0.151.0
+# Typed source errors: current development status
 
-Explicit C++027 programs can use identity-preserving graph snapshot/recovery.
-Mixed026/027 histories keep their schema, all16 tables, namespaces and local IDs;
-reloaded source bundles execute through checked AST/TaskIR/native paths without
-original files. Snapshot operations copy data; they do not grant a CLI language
-upgrade or include external artifacts. See tests/typed_graph_snapshots.py.
+Toolchain 0.151.0 selects language 0.27 in the ordinary CLI. Typed errors,
+ordered handlers, filters and finally are implemented in the reference,
+native and TypeScript paths, including task suspension and owned payloads.
+Native public delivery uses task ABI7; the explicit development emitter
+retains cohort2702. Checked TypeScript delivery uses map2, while the private
+C++ emitter retains its separate development map contract.
 
-Pure scalar027 Wasm uses the existing i64/bool/unit backend and checked BigInt
-wrapper. Only reachable pure scalar code is emitted; source throw/catch/finally,
-heap values and effects remain unsupported. The earlier026 output is unchanged.
-See tests/typed_scalar_wasm.py. Ordinary/default CLI remains026. Matching full
-regression, installed SDK/platform acceptance, public027 selection and the
-remaining original PLAN are still required.
+Graph snapshots preserve mixed026/027 histories, schemas, all16 tables,
+namespaces and local IDs. Recovery does not migrate a graph. Pure scalar027
+Wasm supports i64/bool/unit and rejects reachable source exceptions, finally,
+heap values and effects. Earlier language identities remain separate.
+
+Read the current [language specification](language.md),
+[error guide](exceptions.md), [migration contract](typed-error-migration.md),
+[native providers](typed-error-providers.md) and
+[browser delivery](typed-web-delivery.md). Full current regression, installed
+SDK and platform acceptance remain required, alongside the remaining PLAN.
+
+## Historical implementation stages and original design
+
+The dated notes below describe their own development snapshots. Statements
+about a default026 CLI or C++-only027 selection apply to those snapshots.
 
 # Candidate027 checked browser delivery development0.150.0
 

@@ -28,7 +28,9 @@ void rejects(const std::string &text,const char *code){rejected(code,[&]{(void)s
 }
 int main(){try{
   static_assert(int(Stmt::Try)==8&&int(Stmt::Throw)==9&&int(Stmt::Finally)==10&&int(Stmt::TypedThrow)==11&&int(SourceLanguage::ExceptionHandlers026)==9);
-  require(currentSourceLanguage==SourceLanguage::ExceptionHandlers026&&std::string(languageVersion)=="0.26","public default advanced before migration");
+  require(currentSourceLanguage==SourceLanguage::TypedErrors027&&std::string(languageVersion)=="0.27","public027 selection differs from the advertised language");
+  {auto p=parse("module ordinary;fn main()->i64{try{throw(42);}catch(error:i64){return error;}}","ordinary.nex");check(p);require(p.sourceLanguage==SourceLanguage::TypedErrors027&&evaluate(p,"main").value.getAsInteger()==42,"ordinary027 parser did not enable checked typed handlers");++cases;}
+  rejected("E_PARSE",[&]{(void)source("fn main()->unit !{throw}{throw(42);}",SourceLanguage::ExceptionHandlers026);});
   value(R"(fn main()->i64{try{throw(42);}catch(error:i64){return error;}})");
   value(R"(fn make()->i64 !{io}{print("once");return 42;}fn main()->i64 !{io}{try{throw(make());}catch(error:i64){return error;}})","once\n");
   value(R"(struct Pair{a:i64;b:i64;}fn left()->i64 !{io}{print("left");return 20;}fn right()->i64 !{io}{print("right");return 22;}fn main()->i64 !{io}{try{throw(Pair(left(),right()));}catch(error:Pair){return error.a+error.b;}})","left\nright\n");
@@ -90,7 +92,7 @@ int main(){try{
     auto p=source("fn main()->i64{try{throw(42);}catch(error:i64){return error;}}");
     rejectUnarchivedTasks(p,"archive");require(revision(p).size()==64,"typed program has no versioned revision");++cases;
     auto native=emitMLIR(p,"main");require(native.find("nex_source_error_typed_scalar")!=std::string::npos&&native.find("nex_source_error_scalar")!=std::string::npos,"typed native raise/binding missing");++cases;
-    rejected("E_WASM_UNSUPPORTED",[&]{(void)emitWasmMLIR(p,"main",false);});
+    rejected("E_EXCEPTION_BACKEND",[&]{(void)emitWasmMLIR(p,"main",false);});
     auto module=emitTypeScript(p,{{"entry","main"}});require(module.privateSourceExceptions&&module.mapping.getAsObject()->getBoolean("public_revision")==false,"typed TypeScript candidate claimed a public revision");++cases;
     auto nodes=operationTree(p,p.function("main"));std::set<std::string> paths;for(const auto &node:nodes)paths.insert(node.path);
     for(const auto &node:nodes)if(node.path.find("/clause/")!=std::string::npos)require(paths.contains(node.parent),"orphan typed handler operation");
@@ -109,5 +111,5 @@ int main(){try{
     std::filesystem::remove_all(directory);++cases;
   }
   require(nexrt::liveObjects.load()==0,"typed-source cases retained owned objects");
-  std::printf("{\"ok\":true,\"cases\":%u,\"public_language\":\"0.26\",\"source027_archivable\":false}\n",cases);return 0;
+  std::printf("{\"ok\":true,\"cases\":%u,\"public_language\":\"0.27\",\"source027_archivable\":true}\n",cases);return 0;
 }catch(const std::exception &e){std::fprintf(stderr,"typed-source case%u: %s\n",cases,e.what());return 1;}}

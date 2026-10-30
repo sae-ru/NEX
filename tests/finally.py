@@ -77,7 +77,7 @@ class FinallyFoundation(harness.ToolchainCase):
     def test_normal_returns_result_propagation_and_error_replacement(self):
         self.source(SOURCE)
         feature=self.cli('describe','--field','source_exceptions')['value']
-        self.assertFalse(feature['finally'])
+        self.assertTrue(feature['finally'])
         self.assertEqual(feature['finally_development'],json.loads((harness.REPO/'llm/language-pack.json').read_text())['source_exceptions']['finally_development'])
         expected='handled-finally\ndeclined-finally\nresult-finally\n42\n'
         self.assertEqual(self.cli('eval')['stdout'],expected)
@@ -207,12 +207,23 @@ fn main()->unit !{io}{
         with sqlite3.connect(str(graph)) as db:db.executescript(sql.decode())
         before=harness.database_rows(graph)
         self.assertEqual({k:len(v) for k,v in before[1].items()},metadata['table_counts'])
-        self.assertEqual(self.cli('eval','--revision',metadata['revision'])['value'],42)
+        self.assertEqual(self.cli('eval','--revision',metadata['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(harness.database_rows(graph),before)
+        plan=self.cli('migrate','--kind','plan')
+        self.assertTrue(plan['origin_verified'] and plan['target_valid'])
+        self.assertEqual(plan['origin_language'],'0.26');self.assertEqual(plan['target_language'],'0.27')
+        self.assertEqual(harness.database_rows(graph),before)
+        migrated=self.cli('migrate','--expected-revision',metadata['revision'])
+        self.assertNotEqual(migrated['revision'],metadata['revision'])
+        after=harness.database_rows(graph);self.assertEqual(before[0],after[0])
+        self.assertEqual(set(before[1]),set(after[1]))
+        for table,rows in before[1].items():
+            if table!='head':self.assertLessEqual(set(rows),set(after[1][table]),table)
+        self.assertEqual(self.cli('eval','--revision',migrated['revision'])['value'],42)
         fresh=self.root/'fresh';fresh.mkdir()
         (fresh/'main.nex').write_text(metadata['source'])
-        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
-        self.assertEqual(self.cli('check',cwd=fresh)['revision'],metadata['revision'])
+        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
+        self.assertEqual(self.cli('check',cwd=fresh)['revision'],migrated['revision'])
 
     @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
     def test_pending_return_and_partial_argument_release_physical_resource_before_catch_or_finalizer(self):

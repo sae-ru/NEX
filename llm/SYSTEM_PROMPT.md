@@ -1,48 +1,23 @@
-# Explicit027 development scope
-
-Ordinary CLI projects stay on the compiler's advertised public language026.
-Explicit C++027 selection supports checked archival/guarded graph migration,
-typed reference/native/TypeScript execution and source/static/shared/mixed
-native provider builds with ABI7. The separate development emitter keeps2702;
-retained cohorts preserve their identities. TypeScript027 uses generated keyed
-sourceErrorContracts. Browser file/FFI/server authority remains rejected.
-
-Discover source_exceptions.typed_payload_development and read
-`nex guide --kind typed-error-provider --json`. Its logical_debugging_development
-describes bounded synchronous/task LLDB/NEX-DAP catch/guard views. Original source
-files may be absent; captured checked bundles, images, scripts and compiler must
-match. Watch diagnostics identify the captured language. File identities grant
-no IO; opaque authority/effectful callables cannot run through source callbacks.
-Explicit C++027 browser/project delivery uses emitTypeScriptDelivery and checked
-map2; the existing emitTypeScript development map027-3 stays unarchived. Query
-source027_browser_delivery and read `nex guide --kind typed-web-delivery --json`.
-UI stays pure/synchronous; worker payloads stay inside computation and the wire
-boundary remains authority-free. Ordinary027 CLI/snapshot selection and matching
-full/SDK/platform acceptance remain gates. A development capability does not establish accepted delivery.
-
-Explicit C++027 graph snapshots can retain mixed026/027 histories and replay
-checked bundles without original files. Pure scalar027 Wasm uses i64/bool/unit;
-reachable source errors/finally, heap values and effects remain unsupported.
-Discover source027_graph_snapshot_development and wasm_features for the scope.
-Ordinary/default CLI remains026; SDK/platform acceptance is separate.
-
 # NEX coding contract
 
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The ordinary development default is0.26; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
+The ordinary development default is0.27; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
 
-Typed source throw/catch is unavailable in ordinary CLI projects while source_exceptions.typed_payloads
-is false. An internal typed_payload_development packet/type-key foundation or managed
-native roundtrip does
-not enable source syntax. Use advertised026 constructs; do not retag a project
-as027 before its explicit migration and engine capabilities are implemented.
+Use typed source errors only when source_exceptions.typed_payloads is true.
+Language027 has throw(value), ordered catch(error:T) with optional guards,
+legacy throw(code,message)/catch(code,message), lexical rethrow and finally.
+Matching uses the complete concrete type; a false guard retains the original
+packet and a guard/body error escapes sibling handlers. Payloads retain ownership
+and ordinary authority/lifetime restrictions. Discover the target before use.
 
-Portable finally remains disabled. A compiler may expose synchronous and resumable
-native/reference/TypeScript support in source_exceptions.finally_development;
-complete delivery acceptance is still pending. Do not use finally for a delivery
-target without its actual advertised support.
+Finally runs on normal/source-error/return/Result ? outcomes, including task
+suspension. Fatal traps, cancellation and deadlines skip user finalizers;
+runtime-owned cleanup still runs. Result errors are ordinary values.
+Installed SDK/platform acceptance and narrower Wasm/browser boundaries remain
+separate from source syntax. Historical private experiments do not override the
+selected public compiler.
 
 ## Discover only the context needed
 
@@ -92,20 +67,21 @@ instead of inferring C++/Python semantics.
 
 Ordinary failures use `result<T>` and explicit handling. Postfix `?` returns an
 error from its current function; `unwrap` can trap. `bytes(list<i64>)` returns a
-result and must be handled. Discover source_exceptions before using try/catch/throw. The025 candidate supports ordinary frontend/reference, native sequential/tasks/HTTP and TypeScript source errors within the development scope in docs/exceptions.md. Read source_exceptions.source_providers for ABI6 source/static/shared project contracts and pure-helper continuations; matching delivery receipts remain platform-specific; do not infer broad delivery from one passing configuration. Use explicit migration with retained024 origins. Merely editing a version field does not migrate a project. The source_exception_prototype descriptor still describes separate private, unarchived experiments.
-Language026 may advertise handler_filters. A false catch predicate rethrows the
-original source error; a predicate's own effects require ordinary declarations.
-Only literal true is statically total. Result ? still returns from the current
-function. Synchronous/resumable finally is a development feature; complete acceptance and
-public typed-payload delivery remain pending. Read the exception guide and matching receipts.
+result and must be handled. Discover source_exceptions before using try/catch/throw. Source errors support checked native/reference/TypeScript execution within the
+advertised source_exceptions scope. Discover source_providers for current ABI7
+and retained ABI6 contracts; matching SDK/platform receipts remain separate.
+Migrate an older graph explicitly and preserve its history/IDs. Editing a version
+field alone does not migrate it. A false catch predicate retains the original
+source error; only literal true is statically total. Result ? still returns from
+the current function. Use the exception guide for the exact engine boundaries.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in
 clients; server credentials, filesystem operations and opaque host authority
-must not enter browser/wire/JSON data. Effects do not grant OS authority. For ordinary025 HTTP file access, discover structured_tasks_runtime.http_server.file_grants and the server guide: operators explicitly pass --files-root and optionally --files-write 1; the default is read-only. Keep standalone environment grants and the retained task host bridge distinct. Callers
+must not enter browser/wire/JSON data. Effects do not grant OS authority. For advertised HTTP file access, discover structured_tasks_runtime.http_server.file_grants and the server guide: operators explicitly pass --files-root and optionally --files-write 1; the default is read-only. Keep standalone environment grants and the retained task host bridge distinct. Callers
 must declare every required effect.
 
-The025 dedicated browser worker_compute entry accepts task and/or throw; its
+The dedicated browser worker_compute entry accepts task and/or throw; its
 commands and main-thread UI entries remain pure. Catch source errors in compute
 when recovery is intended. Uncaught errors become E_SOURCE_EXCEPTION transport
 results with a generic message. Discover browser_workers before choosing this
@@ -270,7 +246,6 @@ alone proves no total cost or quality gain.
 The source_exception_prototype descriptor and exception-*-prototype guides
 describe opt-in C++ experiments with separate, unarchived contexts and private
 ABIs. Use them only for an explicitly selected private workflow. They do not
-override the actual SDK's source_exceptions or source_providers fields. Ordinary
-025 projects use public CLI/provider/debug/profile contracts where advertised.
+override the actual SDK's source_exceptions or source_providers fields. Ordinary projects use their advertised public CLI/provider/debug/profile contracts.
 Never manufacture graph revisions or relabel private frames as archived public
 frames. Keep their matching compiler, records, context and explicit entry point.

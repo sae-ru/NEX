@@ -1422,3 +1422,6 @@ set_tests_properties(typed_scalar_wasm PROPERTIES TIMEOUT 600)
 add_test(NAME typed_graph_snapshots COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_graph_snapshots.py $<TARGET_FILE:nex_typed_error_migration_probe> $<TARGET_FILE:nex>)
 set_tests_properties(typed_graph_snapshots PROPERTIES TIMEOUT 900)
 install(FILES tests/typed_graph_snapshots.py tests/typed_scalar_wasm.py tests/typed_scalar_wasm.cpp DESTINATION share/nex/tests)
+
+# Keep the one-second admitted-FFI deadline test free of competing CTest builds.
+set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)

@@ -1,10 +1,10 @@
 # Explicit027 checked browser delivery
 
-Toolchain0.150 develops browser delivery through explicit C++ source selection.
-Ordinary CLI projects still use advertised026; changing a manifest to027 does
-not enable them. Query
+Toolchain0.151 develops ordinary027 CLI browser/project delivery. Query
 `nex describe --field source_exceptions.typed_payload_development.source027_browser_delivery --json`
 and retrieve this guide with `nex guide --kind typed-web-delivery --json`.
+Older projects require explicit migration; changing their manifest alone does
+not migrate graph state. SDK/platform acceptance remains separate.
 
 `emitTypeScriptDelivery` produces `nex.typescript-map/2` for checked027 programs:
 the concrete language, checked revision/source-bundle hash, reachable function
@@ -37,6 +37,6 @@ and the genuine0.149 language026 source/library/asset fixture.
 tests actual module Workers in Chromium/Firefox/WebKit. Headless engine evidence
 does not establish every released browser/device. npm lock and notices are unchanged.
 
-Full integrated regression, installed SDK/platform acceptance, ordinary027 CLI
-selection, graph-snapshot delivery and the remaining original PLAN still require
-completion. This development API is not complete public027 delivery.
+Full integrated regression, installed SDK/platform acceptance and the remaining
+original PLAN still require completion. Public CLI selection does not certify
+those delivery gates.
