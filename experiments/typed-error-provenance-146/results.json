@@ -1,0 +1,85 @@
+{
+  "schema": "nex.provenance-draft/1",
+  "base_commit": "d0b9c23050256eff99593d0aaf83cdf6166fd32b",
+  "public027_enabled": false,
+  "released": false,
+  "static": {
+    "ok": true,
+    "count": 42,
+    "accepted": 32,
+    "rejected": 10
+  },
+  "AST_TaskIR_runtime": {
+    "ok": true,
+    "programs": 49,
+    "executions": 98
+  },
+  "bounded_70_types": {
+    "authority_execution_enabled": false,
+    "dynamic": 0,
+    "exceptional_edges": 135,
+    "ok": true,
+    "proved": 1,
+    "public027_enabled": false,
+    "regions": 0,
+    "scope": "isolated146 static provenance only",
+    "steps": 831,
+    "transfers": 1,
+    "widenings": 7
+  },
+  "build": {
+    "ok": true,
+    "scope": "static-provenance experiment only",
+    "seconds": 6.757,
+    "base_commit": "d0b9c23050256eff99593d0aaf83cdf6166fd32b",
+    "frozen_145_inputs_unchanged": true,
+    "commands": [
+      {
+        "label": "compile-language",
+        "exit_code": 0
+      },
+      {
+        "label": "compile-task_lifetime",
+        "exit_code": 0
+      },
+      {
+        "label": "compile-source_errors",
+        "exit_code": 0
+      },
+      {
+        "label": "compile-task_reference",
+        "exit_code": 0
+      },
+      {
+        "label": "compile-probe",
+        "exit_code": 0
+      },
+      {
+        "label": "link",
+        "exit_code": 0
+      }
+    ],
+    "source_sha256": {
+      "src/language.cpp": "3bf9741fa8259d8a0c37274acf0180fdbc4dd39e417a173b042ce76c8b5d6e43",
+      "src/source_errors.cpp": "8531202dc3bc6541be61b681cdd1fdb95fdd5ee0626ce38ebc01ce3f950d79fd",
+      "src/task_lifetime.cpp": "a017ecbf24a790fc83804832c4d30ea8fc14c7c27a61a8b1e2b525e8b46a554f",
+      "src/task_reference.cpp": "2573dd3e236cd529f87d4a167ed48f5437b57b0c554a858725c6b532b7917850",
+      "tests/probe.cpp": "c558514216c057c7f2fe1c1b262eaba30a8ca238881ac8a2acf4462332ff9c23"
+    }
+  },
+  "file_fixture_initial_failure": "Missing explicit NEX_FILES_ROOT; corrected fixture grants only its own directory. Original runtime-evidence-v1 retained locally.",
+  "pending": [
+    "native asynchronous source-outcome prepare before owner revocation",
+    "TypeScript typed keyed policy and scoped validation",
+    "remove draft-only static-bypass hook before integration",
+    "all ordinary CMake/full SDK/platform gates and genuine027 migration"
+  ],
+  "fresh_patch_reconstruction_and_replay": {
+    "ok": true,
+    "static_cases": 42,
+    "programs": 49,
+    "AST_TaskIR_executions": 98,
+    "binaries_in_backup": false,
+    "new_SDK_or_full_source_copies": 0
+  }
+}

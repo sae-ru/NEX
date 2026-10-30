@@ -1,0 +1,13 @@
+{
+  "base_commit": "d0b9c23050256eff99593d0aaf83cdf6166fd32b",
+  "scope": "isolated146 provenance and AST/TaskIR authority prototype",
+  "immutable_145_inputs": {
+    "/Users/sae/projects/NEX/build/native-026-errors/nex": "a47dc7a8125d9703a54e8bddb3c4cf24861ae819b7088bde79c1d458ed4c0118",
+    "/Users/sae/projects/NEX/build/native-026-errors/libnex_frontend.a": "31e8b00ea90698e3caeb167020aacbea09358b65bd70ad4ce26153a0a10f0a69"
+  },
+  "public027_enabled": false,
+  "published_authority_execution_enabled": false,
+  "isolated_reference_execution": true,
+  "native_authority_execution": false,
+  "typescript_authority_execution": false
+}
