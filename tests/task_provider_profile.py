@@ -392,7 +392,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.file.write_text('module profile_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::work(41));}');self.save()
         first=self.artifacts(self.project());folder=Path(first['leaf']['artifact']).parent
         before=json.loads((folder/'task-provider.json').read_text())
-        self.assertEqual(before['schema'],'nex.native-task-provider/12')
+        self.assertEqual(before['schema'],'nex.native-task-provider/15')
         self.assertNotIn('profile_leaf::helper',before['exports'])
         self.assertTrue(all(row['cached'] for row in self.project()['artifacts']))
         self.description['components']['leaf']['exports']=['helper'];self.save()
@@ -432,14 +432,14 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         self.assertEqual(measured['build_key'],captured['app']['build_key'])
         self.assertEqual(saved['build_key'],captured['app']['build_key'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/12',json.dumps(source_capture))
+        self.assertIn('nex.project-task-linkage/15',json.dumps(source_capture))
         profiled_components=[]
         for component in source_capture['expectations']['measured']:
             linkage=component.get('task_linkage')
             if not linkage:
                 continue
-            self.assertEqual(linkage['schema'],'nex.project-task-linkage/12')
-            self.assertEqual(linkage['execution_abi'],6)
+            self.assertEqual(linkage['schema'],'nex.project-task-linkage/15')
+            self.assertEqual(linkage['execution_abi'],7)
             profiled_components.append(component['name'])
         self.assertTrue({'leaf','mid','app'}<=set(profiled_components))
         spec=importlib.util.spec_from_file_location('profile_completion_capsule',harness.REPO/'tools/core_capsule.py')
@@ -471,7 +471,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
                     key=copied.relative_to(receipt.parent/'artifacts/measure-provider').as_posix()
                     self.assertEqual(check['artifacts'][key],{'hash':row['hash'],'bytes':row['bytes']})
                 provider=json.loads((receipt.parent/files['task-provider.json']['retained']).read_text())
-                self.assertEqual(provider['schema'],'nex.native-task-provider/12')
+                self.assertEqual(provider['schema'],'nex.native-task-provider/15')
                 self.assertEqual(metadata['task_provider_hash'],files['task-provider.json']['hash'])
                 self.assertRegex((receipt.parent/files['complete']['retained']).read_bytes(),b'^[0-9a-f]{64}\n$')
         # Packaging is a separate checked build action in the original CWD. Its

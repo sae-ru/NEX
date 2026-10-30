@@ -53,8 +53,8 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(shared,pack['task_shared_providers'])
         self.assertIs(shared['public_enabled'],True)
         self.assertEqual((shared['record_schema'],shared['plan_schema'],shared['completion_schema']),
-            ('nex.native-task-provider/11','nex.project-task-linkage/11','nex.native-completion/5'))
-        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(6,88,40))
+            ('nex.native-task-provider/14','nex.project-task-linkage/14','nex.native-completion/5'))
+        self.assertEqual((shared['execution_task_abi'],shared['descriptor_bytes'],shared['abi_offset']),(7,88,40))
         for field in ('authority_transport','callable_transport','imported_function_values','profiling',
                       'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
             self.assertIs(shared[field],False)
@@ -65,9 +65,9 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(profiled,pack['task_provider_profiling'])
         self.assertEqual((profiled['language'],profiled['configuration']),(harness.CURRENT_LANGUAGE,'profile'))
         self.assertEqual((profiled['execution_task_abi'],profiled['descriptor_bytes'],profiled['registry_abi'],profiled['registry_bytes']),
-            (6,88,1,32))
-        for field,value in {'record_schema':'nex.native-task-provider/12','catalog_schema':'nex.task-profile-catalog/1',
-                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/12',
+            (7,88,1,32))
+        for field,value in {'record_schema':'nex.native-task-provider/15','catalog_schema':'nex.task-profile-catalog/1',
+                'completion_schema':'nex.native-completion/6','plan_schema':'nex.project-task-linkage/15',
                 'retained_build_schema':'nex.retained-native-task-build/3','runtime_schema':'nex.profile-runtime/3',
                 'report_schema':'nex.profile/3','session_schema':'nex.profile-session/3','build_schema':'nex.profile-build/2'}.items():
             self.assertEqual(profiled[field],value)
@@ -86,11 +86,11 @@ class Toolchain(harness.ToolchainCase):
         self.assertEqual(debugging,pack['task_provider_debugging'])
         self.assertEqual((debugging['language'],debugging['configuration']),(harness.CURRENT_LANGUAGE,'debug'))
         self.assertEqual((debugging['execution_task_abi'],debugging['descriptor_bytes'],debugging['registry_abi'],
-            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(6,88,1,32,2,200))
+            debugging['registry_bytes'],debugging['catalog_abi'],debugging['catalog_bytes']),(7,88,1,32,2,200))
         self.assertEqual(debugging['maximum_total_registries_including_root'],128)
         self.assertEqual((debugging['record_schema'],debugging['catalog_schema'],debugging['source_union_schema'],
             debugging['completion_schema'],debugging['manifest_schema'],debugging['view_schema'],debugging['frame_schema']),
-            ('nex.native-task-provider/13','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
+            ('nex.native-task-provider/16','nex.task-debug-catalog/1','nex.task-debug-source-union/1',
              'nex.native-completion/7','nex.debug/3','nex.task-debug-view/2','nex.debug-frame/4'))
         self.assertEqual(debugging['source_support'],debugging['public_enabled'])
         self.assertEqual(debugging['guide'],pack['documents']['task_provider_debugging'])

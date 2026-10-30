@@ -12,6 +12,23 @@ and16 NPU calls/96 values. All16 NPU profiles identify only
 `ZhouyiExecutionProvider`; CPU EP fallback was explicitly disabled. See
 [the evidence](../../docs/evidence/cix-p1-ffi-0.70.0.json).
 
+## Current preparer
+
+The current preparer selects the actual SDK's advertised source dialect
+(language0.20+, including0.27); its original language0.16 native branch is
+retained. `--check-sdk` validates the real template and both FFI signatures on
+the selected SDK without compiling native code or initializing either device:
+
+```sh
+python3 experiments/cix-p1/prepare.py --sdk /path/to/nex-sdk --check-sdk
+```
+
+Current-language source preparation is checked separately from the historical
+hardware receipts below. The0.151.0/language0.27 CIX/RK device checks are recorded
+in [the scoped receipt](../../docs/evidence/accelerators-0.151.0.json); they do not
+certify a later compiler or a portable SDK. For0.151.0 the CIX preparation used
+an external helper selecting027; the integrated preparer update is in0.151.1.
+
 ## Prepare and execute
 
 The existing0.70 fixture has also been retested on the same physical board with

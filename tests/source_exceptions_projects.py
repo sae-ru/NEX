@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ordinary026 concrete source providers with real static/shared/mixed images."""
+"""Ordinary027 concrete source providers with real static/shared/mixed images."""
 import argparse
 import hashlib
 import json
@@ -150,8 +150,8 @@ try:
             assert plan['ok'] and plan['language']=='0.27' and not plan['graph_store_opened']
             expected='nex.project-static-task-linkage/5' if mode=='static' else 'nex.project-task-linkage/14'
             for row in plan['components']:
-                linkage=row['task_linkage'];assert linkage['schema']==expected and linkage['execution_abi']==6
-                assert all(i['calling_mode']=='task-code/6' for i in linkage['imports'])
+                linkage=row['task_linkage'];assert linkage['schema']==expected and linkage['execution_abi']==7
+                assert all(i['calling_mode']=='task-code/7' for i in linkage['imports'])
                 assert all(v['requirements']&~7967==0 for v in linkage['exports'].values())
             observation=cli(project,label+'-run',['project','--kind','run','--component','app','--configuration',profile])
             actual=observation['observation'];assert actual['exit_code']==0 and actual['stdout']=='42\n',actual

@@ -65,7 +65,7 @@ def main():
         args+=['-Xlinker','-export_dynamic' if platform.system()=='Darwin' else '--export-dynamic','-o',binary];command(args)
         result=json.loads(command([binary,mid.name,leaf.name,runtime],cwd=Path('/')))
         if result.get('catalog_abi')!=2 or result.get('registry_abi')!=1:raise RuntimeError('private debugger catalog identity differs')
-        if not result.get('ok') or result.get('execution_abi')!=6 or result.get('cases')!=4 or result.get('runtime_mappings')!=1 or result.get('live_objects')!=0:raise RuntimeError('private mapped driver invariants failed')
+        if not result.get('ok') or result.get('execution_abi')!=7 or result.get('cases')!=4 or result.get('runtime_mappings')!=1 or result.get('live_objects')!=0:raise RuntimeError('private mapped driver invariants failed')
         if Path(result['runtime_image_path']).resolve()!=runtime.resolve():raise RuntimeError('driver mapped the wrong runtime instrumentation image')
         if runtime_hashes!={name:sha(projection/name) for name in meta['runtime_inputs']} or sha(captured_driver)!=report['driver_source_sha256']:raise RuntimeError('probe inputs changed')
         report.update(state='passed',result=result,artifacts={k:{'path':v['artifact'],'sha256':sha(v['artifact']),'metadata_sha256':sha(Path(v['artifact']).parent/'build.json'),'provider_record_sha256':sha(Path(v['artifact']).parent/'task-provider.json')} for k,v in artifacts.items()},runtime={'path':str(runtime),'sha256':sha(runtime)},runtime_inputs=meta['runtime_inputs'],driver_sha256=sha(binary),compiler_unchanged=sha(compiler)==report['compiler_sha256'])

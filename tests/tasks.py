@@ -131,7 +131,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.assertEqual(rows['entry-effects']['violations'],[])
         module=folder/'artifacts/task-module/module'
         mapping=json.loads((module/'nex-map.json').read_text())
-        self.assertEqual(mapping['schema'],'nex.typescript-map/1');self.assertEqual(mapping['language'],saved['language'])
+        self.assertEqual(mapping['schema'],'nex.typescript-map/2');self.assertEqual(mapping['language'],saved['language'])
         self.assertEqual(mapping['revision'],revision);self.assertEqual(mapping['execution'],'task-generator')
         self.assertTrue((module/'nex-task-runtime.ts').is_file())
         for path in ['runtime/nex_task_application.cpp','web/nex-task-runtime.ts']:

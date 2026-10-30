@@ -91,8 +91,8 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.assertEqual(set(value),{'schema','mode','descriptor_abi','descriptor_size','abi_offset','compiler_build',
             'language','component','cohort','code_only','task_file_reads','task_file_writes','definitions','exports','artifact_kind',
             'owner_image','definition_owners','component_file_reads','component_file_writes','task_file_streams','component_file_streams','image'})
-        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/11','shared-fixed'))
-        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000006,88,40))
+        self.assertEqual((value['schema'],value['mode']),('nex.native-task-provider/14','shared-fixed'))
+        self.assertEqual((value['descriptor_abi'],value['descriptor_size'],value['abi_offset']),(0x4e45585400000007,88,40))
         self.assertEqual((value['language'],value['component']),(harness.CURRENT_LANGUAGE,component))
         self.assertEqual(set(value['definitions']),set(value['definition_owners']))
         self.assertEqual(value['task_file_reads'],any(value['component_file_reads'].values()))
@@ -141,7 +141,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         by_name={row['name']:row['task_linkage'] for row in plan['components']}
         self.assertEqual([row['component'] for row in by_name['app']['load_closure']['images']],['leaf','mid','app'])
         for name,linkage in by_name.items():
-            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/11','shared-fixed',6))
+            self.assertEqual((linkage['schema'],linkage['mode'],linkage['execution_abi']),('nex.project-task-linkage/14','shared-fixed',7))
             self.assertTrue(all(row['function'].startswith('provider_'+name+'::') for row in linkage['definitions']))
         self.assertEqual(self.cli('eval')['stdout'],fixture.OUTPUT)
         for mode in ('debug','release'):
@@ -366,7 +366,7 @@ server fn main()->unit!{task,fs,io}{
             profile_plan=self.project('plan',configuration='profile')
             self.assertFalse(profile_plan['external_tools_invoked'])
             for row in profile_plan['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/12')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/15')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
@@ -374,7 +374,7 @@ server fn main()->unit!{task,fs,io}{
         if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
             planned=self.project('plan','app','debug','--task-debug')
             for row in planned['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/13')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/16')
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
@@ -408,7 +408,7 @@ server fn main()->unit!{task,fs,io}{
         self.assertTrue(accepted['ok']);receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
         native=next(row for row in saved['checks'] if row['id']=='build-native')
         captured=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/11',json.dumps(captured))
+        self.assertIn('nex.project-task-linkage/14',json.dumps(captured))
         spec=importlib.util.spec_from_file_location('shared_core_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in native['components']:

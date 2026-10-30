@@ -101,11 +101,11 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         components={row['name']:row for row in plan['components']}
         self.assertEqual(components['app']['dependencies'],{'core':'static'})
         linkage=components['app']['task_linkage']
-        self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/4')
-        self.assertEqual(linkage['execution_abi'],6)
+        self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/5')
+        self.assertEqual(linkage['execution_abi'],7)
         self.assertTrue(all(row['function'].startswith('capped::') for row in linkage['definitions']))
         imported,=linkage['imports']
-        self.assertEqual((imported['function'],imported['provider'],imported['calling_mode']),('value::value','core','task-code/6'))
+        self.assertEqual((imported['function'],imported['provider'],imported['calling_mode']),('value::value','core','task-code/7'))
         self.assertEqual(components['core']['task_linkage']['component'],'core')
         self.assertFalse((self.root/'.nex').exists())
         architecture['components']['app']['dependencies']['core']='source'

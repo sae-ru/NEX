@@ -37,7 +37,7 @@ class ProviderPreparation(unittest.TestCase):
         return result
 
     def test_current_compiler_checks_real_model_GPU_and_NPU_templates(self):
-        cases=[('models',[]),('rk3588',['--backend','gpu']),('rk3588',['--backend','gpu','--api','compute']),('rk3588',['--backend','npu'])]
+        cases=[('cix-p1',[]),('models',[]),('rk3588',['--backend','gpu']),('rk3588',['--backend','gpu','--api','compute']),('rk3588',['--backend','npu'])]
         for provider,arguments in cases:
             with self.subTest(provider=provider,arguments=arguments):
                 result=self.execute(ROOT/'experiments'/provider/'prepare.py',*arguments,'--check-sdk')
@@ -48,12 +48,13 @@ class ProviderPreparation(unittest.TestCase):
                 self.assertEqual(report['compiler_sha256'],hashlib.sha256(COMPILER.read_bytes()).hexdigest())
                 self.assertIs(report['native_worker_built'],False);self.assertIs(report['hardware_executed'],False)
                 self.assertIs(report['temporary_project_removed'],True)
-                self.assertEqual(len(report['signature_sha256']),1)
+                self.assertEqual(len(report['signature_sha256']),2 if provider=='cix-p1' else 1)
+                if provider=='cix-p1':self.assertEqual(set(report['signatures']),{'gpu_affine','npu_mul'})
                 for symbol,signature in report['signatures'].items():
                     self.assertEqual(signature['schema'],'nex.foreign-signature/1')
                     self.assertEqual(report['signature_sha256'][symbol],hashlib.sha256(json.dumps(signature,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest())
                 self.assertEqual(report['source_sha256'],hashlib.sha256(report['probe_source'].encode()).hexdigest())
-                self.assertEqual([row['exit_code'] for row in report['commands']],[0,0,0])
+                self.assertEqual([row['exit_code'] for row in report['commands']],[0]*(2+len(report['signatures'])))
                 self.assertEqual(len(report['checked_revision']),64)
                 if EVIDENCE:(EVIDENCE/(provider+'-'+('-'.join(arguments) if arguments else 'default')+'.json')).write_text(json.dumps(report,indent=2)+'\n')
 
@@ -69,7 +70,7 @@ class ProviderPreparation(unittest.TestCase):
         specification.write_text(json.dumps({'schema':'nex.model-artifact/1','id':'source-check',
             'sha256':hashlib.sha256(model.read_bytes()).hexdigest(),
             'inputs':[{'name':'X','dtype':'u8','shape':[1]}],'outputs':[{'name':'Y','dtype':'u8','shape':[1]}]}))
-        for provider,arguments in [('models',['--model',model,'--spec',specification,'--ort-library',library,'--include',headers]),
+        for provider,arguments in [('cix-p1',[]),('models',['--model',model,'--spec',specification,'--ort-library',library,'--include',headers]),
                                    ('rk3588',['--backend','gpu','--api','compute','--opencl-library',library])]:
             with self.subTest(provider=provider):
                 if capture.exists():capture.unlink()
@@ -83,10 +84,12 @@ class ProviderPreparation(unittest.TestCase):
                 self.assertTrue(capture.is_file(),'provider rejected current source before reaching native preparation')
                 self.assertEqual(json.loads((output/'nex.json').read_text())['language'],self.descriptor['version'])
                 self.assertTrue((output/'main.nex').is_file())
-                signature=json.loads((output/'prepare-1.stdout').read_text())
-                self.assertEqual(signature['schema'],'nex.foreign-signature/1')
-                self.assertTrue(signature['types'])
-                self.assertTrue(any(str(argument).endswith('-worker.cpp') for argument in json.loads(capture.read_text())))
+                if provider!='cix-p1':
+                    signature=json.loads((output/'prepare-1.stdout').read_text())
+                    self.assertEqual(signature['schema'],'nex.foreign-signature/1')
+                    self.assertTrue(signature['types'])
+                suffix='module.cpp' if provider=='cix-p1' else '-worker.cpp'
+                self.assertTrue(any(str(argument).endswith(suffix) for argument in json.loads(capture.read_text())))
                 if EVIDENCE:
                     directory=EVIDENCE/('native-boundary-'+provider);directory.mkdir()
                     for path in [*output.glob('prepare-*.stdout'),*output.glob('prepare-*.stderr'),output/'main.nex',output/'nex.json',capture]:
@@ -109,6 +112,7 @@ class ProviderPreparation(unittest.TestCase):
             with self.subTest(field=field,value=value),self.assertRaises(RuntimeError):helper.source_language(descriptor,'model')
 
     def test_source_check_refuses_ambiguous_native_inputs(self):
+        self.execute(ROOT/'experiments/cix-p1/prepare.py','--check-sdk','--output',self.root/'ignored',success=False)
         self.execute(ROOT/'experiments/models/prepare.py','--check-sdk','--output',self.root/'ignored',success=False)
         self.execute(ROOT/'experiments/rk3588/prepare.py','--check-sdk','--backend','gpu','--opencl-library',self.root/'ignored',success=False)
         self.execute(ROOT/'experiments/rk3588/prepare.py','--check-sdk','--backend','npu','--api','compute',success=False)

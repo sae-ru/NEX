@@ -241,7 +241,7 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
     auto toolchain=inspectNativeToolchain(native);
     if(toolchain.hash!=text(record,"hash")||toolchain.manifest!=*record.get("manifest")||toolchain.inputs!=*record.get("identity"))throw Error("E_TASK_TOOLCHAIN","captured/current project toolchain data differs");
     ProjectBuildOptions options;options.kind="plan";options.component=text(object(capture),"component");options.configuration=configuration.str();options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;options.sourceLanguage=language;
-    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/4"||linkage->getString("schema")=="nex.project-task-linkage/7"||linkage->getString("schema")=="nex.project-task-linkage/10"||linkage->getString("schema")=="nex.project-task-linkage/13";
+    for(const auto &entry:*expected.getAsArray())if(auto linkage=entry.getAsObject()->getObject("task_linkage"))options.taskDebug|=linkage->getString("schema")=="nex.project-task-linkage/16"||linkage->getString("schema")=="nex.project-task-linkage/4"||linkage->getString("schema")=="nex.project-task-linkage/7"||linkage->getString("schema")=="nex.project-task-linkage/10"||linkage->getString("schema")=="nex.project-task-linkage/13";
     auto plan=buildProject(root.string(),(root/s.manifest).string(),readFile((root/s.manifest).string()),options);
     auto actual=object(plan).getArray("components"),entries=expected.getAsArray();if(!actual||!entries||actual->size()!=entries->size())fail("captured component selection changed");
     for(size_t i=0;i<entries->size();++i){

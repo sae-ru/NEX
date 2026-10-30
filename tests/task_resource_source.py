@@ -200,8 +200,8 @@ def main():
    host=directory/'host.json';policy={'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':8,'resource_bytes':64,'libraries':{'test':{'directory':str(directory),'manifest_sha256':pin,'exports':list(signatures)}}};write(host,policy)
    if args.context_probe:
     bindings=directory/'bindings.json';write(bindings,{name:{'schema':'nex.foreign-binding/1','library':'test','export':name,'manifest_sha256':pin,'signature':signatures[name]} for name in ('create','read')})
-    context=run(dialect+'-owned-context',[args.context_probe.resolve(),host,bindings]);assert context.stdout=='OWNED SOURCE FFI CONTEXT 21 CASES PASSED\n',context.stdout
-    report['checks'].append(dialect+'_owned_context_21_cases')
+    context=run(dialect+'-owned-context',[args.context_probe.resolve(),host,bindings]);assert context.stdout=='OWNED SOURCE FFI CONTEXT 23 CASES PASSED\n',context.stdout
+    report['checks'].append(dialect+'_owned_context_23_cases')
    def execute(name,body,expected=None,timeout=False,configuration=host):
     path=bundle(dialect+'-'+name,body,pin);label=dialect+'-'+name
     ref=run(label+'-reference',command('reference-timeout' if timeout else 'reference',path,configuration),1 if expected else 0)

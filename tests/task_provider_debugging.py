@@ -249,7 +249,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
             lambda d:d['task_debug']['registries'][0].update(code_count=999),
             lambda d:d['task_debug']['registries'].reverse(),
             lambda d:d['task_debug']['source_union']['components'][0].update(revision='0'*64),
-            lambda d:d['task_debug']['source_union']['components'][0].update(language='0.27'),
+            lambda d:d['task_debug']['source_union']['components'][0].update(language='0.26'),
             lambda d:d['task_debug']['source_union']['components'][-1]['definitions'].pop(),
             lambda d:d['task_debug']['images'][0].update(kind='runtime'),
             lambda d:d['task_debug']['runtime_image'].update(component='forged'),
@@ -332,7 +332,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertIs(command['output_limit'],False)
         captured=self.artifacts(command['response'])
         source_capture=json.loads((receipt.parent/'inputs/projects/app.json').read_text())
-        self.assertIn('nex.project-task-linkage/13',json.dumps(source_capture))
+        self.assertIn('nex.project-task-linkage/16',json.dumps(source_capture))
         spec=importlib.util.spec_from_file_location('debug_completion_capsule',harness.REPO/'tools/core_capsule.py')
         capsule=importlib.util.module_from_spec(spec);spec.loader.exec_module(capsule)
         for component in check['components']:
@@ -357,7 +357,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
                 key=copied.relative_to(receipt.parent/'artifacts/prepare-provider').as_posix()
                 self.assertEqual(check['artifacts'][key],{'hash':row['hash'],'bytes':row['bytes']})
             own=json.loads((receipt.parent/files['task-provider.json']['retained']).read_text())
-            self.assertEqual(own['schema'],'nex.native-task-provider/13')
+            self.assertEqual(own['schema'],'nex.native-task-provider/16')
             self.assertEqual(metadata['task_provider_hash'],files['task-provider.json']['hash'])
         app=next(c for c in check['components'] if c['component']=='app')
         retained_session=json.loads((receipt.parent/app['debug_session']).read_text())
@@ -425,7 +425,7 @@ fn main()->unit!{task,io,throw}{print(child(41));}
 ''')
         self.description['components']={'app':{'kind':'executable','root':'app','entry':'app/main.nex'}};self.save()
         planned=self.cli('project','--kind','plan','--component','app','--task-debug')
-        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/13')
+        self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/16')
         self.assertFalse((self.root/'.nex/build').exists())
         built=self.cli('project','--kind','build','--component','app','--task-debug')
         explicit=built['debug_sessions']['app'];manifest=json.loads(Path(explicit['manifest']).read_text())

@@ -3,6 +3,7 @@
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,12 +12,31 @@ import shutil
 import subprocess
 
 
+_helper=Path(__file__).resolve().parents[2]/'tools/provider_sdk.py'
+_spec=importlib.util.spec_from_file_location('cix_provider_sdk',_helper)
+provider_sdk=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(provider_sdk)
+
+
+def check_source_sdk(sdk):
+    origin=Path(__file__).resolve().parent
+    source=(origin/'main.nex.in').read_text().replace('@PIN@','0'*64)
+    return provider_sdk.check_sdk(sdk,source,{},['gpu_affine','npu_mul'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk', required=True, type=Path)
-    parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--check-sdk', action='store_true', help='check current source and FFI signatures without native compilation or device execution')
     parser.add_argument('--cxx', default='g++')
     args = parser.parse_args()
+    if args.check_sdk:
+        if args.output:
+            parser.error('--check-sdk cannot be combined with --output')
+        print(json.dumps(check_source_sdk(args.sdk)))
+        return
+    if args.output is None:
+        parser.error('native preparation requires --output')
     if platform.system() != 'Linux' or platform.machine() not in ('aarch64', 'arm64'):
         parser.error('this experimental adapter requires Linux ARM64')
     sdk = args.sdk.resolve(strict=True)
@@ -42,13 +62,18 @@ def main():
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
     descriptor = cli('describe')
-    if descriptor['version'] != '0.16' or not descriptor['foreign_boundary']['source_support']:
-        raise RuntimeError('requires language0.16 and advertised source FFI support')
+    language=descriptor.get('version')
+    if language=='0.16':
+        # Preserve preparation with the original SDK's actual source dialect.
+        if descriptor.get('schema')!='nex.language/1' or descriptor.get('foreign_boundary',{}).get('source_support') is not True:
+            raise RuntimeError('requires checked language0.16 source FFI support')
+    else:
+        language=provider_sdk.source_language(descriptor)
     for name in ('module.cpp', 'main.nex.in', 'model.json'):
         shutil.copy2(origin / name, root / name)
     shutil.copytree(origin / 'include', root / 'include')
     (root / 'nex.json').write_text(json.dumps({
-        'schema': 'nex.project/1', 'language': '0.16', 'entry': 'main.nex'}))
+        'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}))
     template = (root / 'main.nex.in').read_text()
     (root / 'main.nex').write_text(template.replace('@PIN@', '0' * 64))
     signatures = {name: cli('ffi', '--symbol', name)

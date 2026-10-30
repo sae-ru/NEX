@@ -80,6 +80,13 @@ publication. Existing task/inner-scope resource regions wait actual physical
 cleanup, object/capacity tickets and code pins before publishing completion.
 Logical close is immediate; it does not return physical capacity early.
 
+A subsequent factory can report quota exhaustion while a preceding release is
+still queued or its destructor is running. It does not implicitly wait for that
+cleanup: another task may need to release the admitted host operation. Use a
+structured task/inner-scope completion boundary when subsequent work requires
+its physical capacity. Source catches and finalizers introduce no implicit
+physical fence; pending values retain the ordinary ownership rules above.
+
 Language022 supports resource callback captures/results,
 futures, channels and returned closures. A fresh resource belongs to the current
 task root or its current owned inner scope. Passing an immutable value graph

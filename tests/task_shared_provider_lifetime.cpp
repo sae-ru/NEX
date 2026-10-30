@@ -97,10 +97,10 @@ void scenario(unsigned which){
 }
 int main(int argc,char **argv){try{
  require(argc==4,"expected middle/leaf/runtime image basenames");middle=nex_13_shared_middle_4_work__task_code_address();leaf=nex_11_shared_leaf_4_work__task_code_address();
- require(middle&&leaf&&middle->abi==taskCodeSourceExceptionABI&&leaf->abi==taskCodeSourceExceptionABI,"actual generated public ABI6 accessors unavailable");
+ require(middle&&leaf&&middle->abi==taskCodeTypedSourceExceptionABI&&leaf->abi==taskCodeTypedSourceExceptionABI,"actual generated public ABI7 accessors unavailable");
  require(module(reinterpret_cast<const void*>(middle->step))==argv[1]&&module(reinterpret_cast<const void*>(leaf->step))==argv[2],"descriptor points outside the pinned provider image");
  auto *runtime=dlsym(RTLD_DEFAULT,"nex_release");require(runtime&&modulePath(runtime)==std::filesystem::weakly_canonical(argv[3]).string(),"runtime bridge maps to the wrong image");require(runtime==reinterpret_cast<void*>(&nex_release),"driver/runtime bridge identity differs");require(runtimeMappings()==1,"process loaded more than one NEX runtime mapping");
  for(unsigned i=0;i<4;++i)scenario(i);
  require(leafSite&&middleSite,"generated suspended source sites were not mapped to both providers");
- std::cout<<"{\"ok\":true,\"cases\":4,\"checks\":"<<checks.load()<<",\"execution_abi\":6,\"runtime_mappings\":"<<runtimeMappings()<<",\"physical_barrier_cases\":4,\"single_task_worker_progress\":true,\"first_fatal_retained\":true,\"provider_site_lifetime\":true,\"live_objects\":"<<liveObjects.load()<<",\"runtime_bridge_address\":\""<<address(runtime)<<"\",\"runtime_image_path\":"<<std::quoted(modulePath(runtime))<<",\"registry_address\":\""<<address(&liveObjects)<<"\",\"source_regular_file_retirement_claim\":false,\"arbitrary_host_source_bridge\":false}\n";return 0;
+ std::cout<<"{\"ok\":true,\"cases\":4,\"checks\":"<<checks.load()<<",\"execution_abi\":7,\"runtime_mappings\":"<<runtimeMappings()<<",\"physical_barrier_cases\":4,\"single_task_worker_progress\":true,\"first_fatal_retained\":true,\"provider_site_lifetime\":true,\"live_objects\":"<<liveObjects.load()<<",\"runtime_bridge_address\":\""<<address(runtime)<<"\",\"runtime_image_path\":"<<std::quoted(modulePath(runtime))<<",\"registry_address\":\""<<address(&liveObjects)<<"\",\"source_regular_file_retirement_claim\":false,\"arbitrary_host_source_bridge\":false}\n";return 0;
  }catch(const std::exception &e){std::cerr<<"shared provider lifetime: "<<e.what()<<'\n';return 1;}}

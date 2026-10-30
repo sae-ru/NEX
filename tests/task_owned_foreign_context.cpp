@@ -1,6 +1,9 @@
 #include "nex_task_foreign.h"
 #include "nex_host.h"
 #include "third_party/json.hpp"
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <fstream>
 #include <iostream>
 #include <thread>
@@ -20,6 +23,24 @@ static TaskExternalResult run(PreparedTaskForeignCall &call){
   }catch(...){failure=std::current_exception();}});
   worker.join();if(failure)std::rethrow_exception(failure);return result;
 }
+
+struct CleanupGate {
+  std::mutex mutex;std::condition_variable changed;bool entered=false,released=false;
+  void open(){std::lock_guard lock(mutex);released=true;changed.notify_all();}
+};
+struct BlockCleanup final:ResourceExecutionOperation {
+  std::shared_ptr<CleanupGate> gate;
+  explicit BlockCleanup(std::shared_ptr<CleanupGate> gate):gate(std::move(gate)){}
+  void run(const ResourceExecutionControl&)override{
+    std::unique_lock lock(gate->mutex);gate->entered=true;gate->changed.notify_all();
+    gate->changed.wait(lock,[&]{return gate->released;});
+  }
+};
+struct ReleaseCleanupGate {
+  std::shared_ptr<CleanupGate> gate;
+  ~ReleaseCleanupGate(){gate->open();}
+};
+
 struct HostObject {~HostObject()noexcept=default;};
 int main(int argc,char **argv)try{
   if(argc!=3)throw DataError("E_OPTION","expected catalogue and source-checked bindings");
@@ -91,6 +112,51 @@ int main(int argc,char **argv)try{
     PreparedTaskForeignCall second(captured,create,std::vector<Value>{Value(2)},{},region.authority(),cleanup);
     expect("E_RESOURCE_LIMIT",[&]{PreparedTaskForeignCall third(captured,create,std::vector<Value>{Value(3)},{},region.authority(),cleanup);});++checks;
     first.reset();PreparedTaskForeignCall third(captured,create,std::vector<Value>{Value(3)},{},region.authority(),cleanup);++checks;
+  }
+
+  {
+    auto libraries=loadForeignLibraries(argv[1]);ForeignScope scope(libraries);auto captured=captureForeignScope();
+    auto cleanup=std::make_shared<ResourceExecutor>();ResourceRegion region;
+    const auto limit=libraries->resourceLimit();
+    if(limit!=8)throw DataError("E_TEST","queued cleanup fixture requires the original eight-owner quota");
+    std::vector<Value> owners;
+    for(size_t i=0;i<limit;++i){
+      PreparedTaskForeignCall call(captured,create,std::vector<Value>{Value(42)},{},region.authority(),cleanup);
+      owners.push_back(call.admit(run(call)));
+    }
+    if(libraries->resourceBytesUsed()!=8*limit)throw DataError("E_TEST","live owners did not retain exact physical capacity");
+    // A barrier cannot make genuinely live owners available for reuse.
+    expect("E_FFI",[&]{
+      PreparedTaskForeignCall denied(captured,create,std::vector<Value>{Value(42)},{},region.authority(),cleanup);
+      (void)run(denied);
+    });++checks;
+    auto gate=std::make_shared<CleanupGate>();
+    auto blocked=cleanup->submit(std::make_unique<BlockCleanup>(gate));
+    ReleaseCleanupGate releaseOnError{gate};
+    {std::unique_lock lock(gate->mutex);gate->changed.wait(lock,[&]{return gate->entered;});}
+    for(auto &owner:owners)if(!externalResource(owner.object).close())throw DataError("E_TEST","queued owner was already closed");
+    PreparedTaskForeignCall next(captured,create,std::vector<Value>{Value(42)},{},region.authority(),cleanup);
+    std::atomic<bool> finished=false;TaskExternalResult raw;std::exception_ptr failure;
+    std::jthread worker([&]{try{
+      RequestScope unrelatedWorkerRequest;raw=next.operation()->run(TaskExternalControl{});
+    }catch(...){failure=std::current_exception();}finished.store(true);});
+    ReleaseCleanupGate releaseBeforeJoin{gate};
+    bool barrier=false;const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(15);
+    while(!finished.load()&&!(barrier=cleanup->stats().operations==2)&&std::chrono::steady_clock::now()<deadline)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    const bool held=libraries->resourceBytesUsed()==8*limit;
+    gate->open();blocked.wait();worker.join();
+    // No implicit fence is allowed here: source code may need this quota
+    // result before it can release the operation blocking physical cleanup.
+    expect("E_FFI",[&]{if(failure)std::rethrow_exception(failure);});
+    cleanup->drain();
+    if(barrier||!held||libraries->resourceBytesUsed()!=0)throw DataError("E_TEST","pending cleanup did not retain its nonblocking physical quota");
+    PreparedTaskForeignCall settled(captured,create,std::vector<Value>{Value(42)},{},region.authority(),cleanup);
+    auto owner=settled.admit(run(settled));
+    if(!externalResource(owner.object).isOpen())throw DataError("E_TEST","settled quota was not reusable");
+    externalResource(owner.object).close();cleanup->drain();
+    if(libraries->resourceBytesUsed()!=0)throw DataError("E_TEST","settled owner retained physical capacity");
+    ++checks;
   }
   std::cout<<"OWNED SOURCE FFI CONTEXT "<<checks<<" CASES PASSED\n";return 0;
 }catch(const DataError &error){std::cerr<<error.code<<": "<<error.what()<<'\n';return 1;}

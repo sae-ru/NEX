@@ -146,9 +146,9 @@ class StaticTaskProviders(harness.ToolchainCase):
     def provider(self, artifact, component):
         folder = Path(artifact['artifact']).parent
         value = json.loads((folder/'task-provider.json').read_text())
-        self.assertEqual(value['schema'],'nex.native-task-provider/11')
+        self.assertEqual(value['schema'],'nex.native-task-provider/14')
         self.assertEqual(value['mode'],'static')
-        self.assertEqual(value['descriptor_abi'],0x4e45585400000006)
+        self.assertEqual(value['descriptor_abi'],0x4e45585400000007)
         self.assertEqual((value['descriptor_size'],value['abi_offset']),(88,40))
         self.assertEqual(value['language'],harness.CURRENT_LANGUAGE)
         self.assertEqual(value['component'],component)
@@ -169,8 +169,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertFalse((self.root/'.nex').exists())
         for row in plan['components']:
             linkage = row['task_linkage']
-            self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/4')
-            self.assertEqual(linkage['execution_abi'],6)
+            self.assertEqual(linkage['schema'],'nex.project-static-task-linkage/5')
+            self.assertEqual(linkage['execution_abi'],7)
             self.assertEqual(linkage['component'],row['name'])
             self.assertTrue(all(entry['function'].startswith('provider_'+row['name']+'::') for entry in linkage['definitions']))
         reference = self.cli('eval')
@@ -220,7 +220,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertTrue(actual['public_enabled'])
         self.assertTrue(actual['static_linkage'])
         self.assertEqual(actual['language'],harness.CURRENT_LANGUAGE)
-        self.assertEqual((actual['execution_task_abi'],actual['descriptor_bytes'],actual['abi_offset']),(6,88,40))
+        self.assertEqual((actual['execution_task_abi'],actual['descriptor_bytes'],actual['abi_offset']),(7,88,40))
         self.assertTrue(actual['source_required'])
         for key in ('dynamic_linkage','profiling','logical_debugging','http_task_handlers','foreign','binary_only',
                     'unload','authority_transport','callable_transport','imported_function_values'):
@@ -436,7 +436,7 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
         shared=self.project('plan')
         self.assertFalse(shared['external_tools_invoked'])
         components={row['name']:row['task_linkage'] for row in shared['components']}
-        self.assertEqual(components['app']['schema'],'nex.project-task-linkage/11')
+        self.assertEqual(components['app']['schema'],'nex.project-task-linkage/14')
         self.assertEqual(components['app']['mode'],'shared-fixed')
         closure=components['app']['load_closure']
         self.assertEqual(closure['root'],'app')
@@ -451,14 +451,14 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
             profile_plan=self.project('plan',configuration='profile')
             self.assertFalse(profile_plan['external_tools_invoked'])
             for row in profile_plan['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/12')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/15')
                 self.assertEqual(row['task_linkage']['profiling']['schema'],'nex.project-task-profile/1')
                 self.assertEqual(row['task_linkage']['profiling']['registry_abi'],1)
         else:self.assertEqual(self.project('build',configuration='profile',ok=False)['code'],'E_TASK_PROVIDER')
         if self.cli('describe').get('task_provider_debugging',{}).get('public_enabled') is True:
             planned=self.project('plan','app','debug','--task-debug')
             for row in planned['components']:
-                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/13')
+                self.assertEqual(row['task_linkage']['schema'],'nex.project-task-linkage/16')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
         self.assertFalse((self.root/'.nex').exists())

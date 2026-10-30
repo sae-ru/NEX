@@ -1,0 +1,563 @@
+{
+  "schema": "nex.accelerator-device-evidence/1",
+  "date": "2026-10-30",
+  "toolchain": "0.151.0",
+  "language": "0.27",
+  "source_commit": "60952492ba9f7c18bfac24c4b67e5b5f77a0cecd",
+  "Linux_ARM64_compiler_sha256": "64aef2c1ce1f45168f1bbc96fd0230b34b4fc515fe9d09164fcb4e0759b9e4e1",
+  "scope": "specific CIX and RK3588 trusted FFI adapters; reused earlier SDK loader/compiler/target dependencies; no portable SDK or universal accelerator acceptance",
+  "full_SDK_or_platform_acceptance": false,
+  "hosts": [
+    {
+      "host": "cix",
+      "ok": true,
+      "commands": [
+        {
+          "label": "doctor",
+          "exit": 0,
+          "seconds": 0.045
+        },
+        {
+          "label": "cix-check",
+          "exit": 0,
+          "seconds": 0.094
+        },
+        {
+          "label": "cix-eval",
+          "exit": 0,
+          "seconds": 0.556
+        },
+        {
+          "label": "cix-run-debug",
+          "exit": 0,
+          "seconds": 55.645
+        },
+        {
+          "label": "cix-test-debug",
+          "exit": 0,
+          "seconds": 1.862
+        },
+        {
+          "label": "cix-run-release",
+          "exit": 0,
+          "seconds": 89.403
+        },
+        {
+          "label": "cix-test-release",
+          "exit": 0,
+          "seconds": 1.718
+        },
+        {
+          "label": "cix-profile",
+          "exit": 0,
+          "seconds": 96.131
+        },
+        {
+          "label": "cix-build",
+          "exit": 0,
+          "seconds": 0.246
+        },
+        {
+          "label": "cix-archived",
+          "exit": 0,
+          "seconds": 0.666
+        },
+        {
+          "label": "cix-standalone",
+          "exit": 0,
+          "seconds": 0.52
+        },
+        {
+          "label": "cix-typed-check",
+          "exit": 0,
+          "seconds": 0.096
+        },
+        {
+          "label": "cix-typed-eval",
+          "exit": 0,
+          "seconds": 0.572
+        },
+        {
+          "label": "cix-typed-run-debug",
+          "exit": 0,
+          "seconds": 66.748
+        },
+        {
+          "label": "cix-typed-run-release",
+          "exit": 0,
+          "seconds": 109.032
+        },
+        {
+          "label": "cix-typed-profile",
+          "exit": 0,
+          "seconds": 124.279
+        },
+        {
+          "label": "cix-typed-build",
+          "exit": 0,
+          "seconds": 0.303
+        },
+        {
+          "label": "cix-typed-archived",
+          "exit": 0,
+          "seconds": 0.713
+        },
+        {
+          "label": "cix-typed-standalone",
+          "exit": 0,
+          "seconds": 0.548
+        }
+      ],
+      "cases": [
+        {
+          "label": "cix",
+          "ok": true,
+          "GPU_calls": 30,
+          "NPU_calls": 20,
+          "GPU_exact_values": 30720,
+          "NPU_exact_values": 120,
+          "NPU_exclusive_profiles": 20,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": false,
+          "catch_and_finally_suspension": false,
+          "guard_suspension_tested": false
+        },
+        {
+          "label": "cix-typed",
+          "ok": true,
+          "GPU_calls": 6,
+          "NPU_calls": 6,
+          "GPU_exact_values": 12,
+          "NPU_exact_values": 36,
+          "NPU_exclusive_profiles": 6,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": true,
+          "catch_and_finally_suspension": true,
+          "guard_suspension_tested": false
+        }
+      ],
+      "returned_files": 78,
+      "returned_bytes": 205528,
+      "original322_and_added3_resources_match_authorized_hashes": true,
+      "typed_source_programs": [
+        {
+          "case": "cix-typed",
+          "sha256": "cebc6a32c05ff7beaec95c6d90d62d91b34e15ec642d56aac773ef7ba76b4336",
+          "revision": "a83ef08304ca583ad8ffcfefca6acb4662b04af1f64e5eb96fc744cfcf1acfcb",
+          "source": "module cix_compute;\nserver extern fn gpu_affine(a:bytes,b:bytes)->result<bytes>!{ffi}=foreign(\"cix\",\"gpu_affine\",\"a6926d4cdb2530e7fb57164fd481506e5aa2bc407b3d6fb6e31e92bb9408ef23\");\nserver extern fn npu_mul(values:list<f64>)->result<list<f64>>!{ffi}=foreign(\"cix\",\"npu_mul\",\"a6926d4cdb2530e7fb57164fd481506e5aa2bc407b3d6fb6e31e92bb9408ef23\");\n\nfn input(n:i64,seed:i64,range:i64)->bytes {\n  var values:list<i64>=[];var i:i64=0;\n  while i<n {values=push(values,(i+seed)%range);i=i+1;}\n  return unwrap(bytes(values));\n}\nserver fn check_gpu(seed:i64)->unit!{ffi} {\n  let a:bytes=input(1024,seed,51);let b:bytes=input(1024,seed+7,21);\n  let output:bytes=unwrap(gpu_affine(a,b));assert(len(output)==1024);\n  var i:i64=0;while i<1024 {assert(output[i]==a[i]*3+b[i]);i=i+1;}\n}\nserver fn check_npu(values:list<f64>)->unit!{ffi} {\n  let weights:list<f64>=[1.0,2.0,3.0,4.0,5.0,6.0];\n  let output:list<f64>=unwrap(npu_mul(values));assert(len(output)==6);\n  var i:i64=0;while i<6 {assert(output[i]==values[i]*weights[i]);i=i+1;}\n}\nserver fn checks()->unit!{ffi} {\n  check_gpu(0);check_gpu(17);check_gpu(997);\n  check_npu([0.0,0.25,0.5,1.0,2.0,4.0]);\n  check_npu([-1.0,-0.5,0.0,0.5,1.0,1.5]);\n  let small:bytes=unwrap(bytes([1,2]));let other:bytes=unwrap(bytes([1]));\n  assert(error_code(gpu_affine(small,other))==\"E_INPUT_SIZE\");\n  assert(error_code(gpu_affine(unwrap(bytes([61])),other))==\"E_INPUT_RANGE\");\n  assert(error_code(npu_mul([1.0]))==\"E_INPUT_SIZE\");\n  assert(error_code(npu_mul([0.1,0.0,0.0,0.0,0.0,0.0]))==\"E_MODEL_PRECISION\");\n}\n\nstruct DevicePayload{gpu:bytes;npu:list<f64>;}\nserver fn main()->unit !{task,ffi,io}{var cleaned:i64=0;try{task_yield();throw(DevicePayload(unwrap(gpu_affine(unwrap(bytes([1,2])),unwrap(bytes([1,2])))),unwrap(npu_mul([1.0,2.0,3.0,4.0,5.0,6.0]))));}catch(error:str){assert(false);}catch(error:DevicePayload) if len(error.gpu)==2 && len(error.npu)==6{task_yield();assert(error.gpu==unwrap(bytes([4,8])));assert(error.npu==[1.0,4.0,9.0,16.0,25.0,36.0]);print(42);}catch(code,message){assert(false);}finally{task_yield();cleaned=42;}assert(cleaned==42);}\n"
+        }
+      ],
+      "NPU_profile_placement": [
+        {
+          "sha256": "91d30fee51d0c6a9721ca5fed81345226f69a0e60fca050392cb72da71028a3b",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "bb9b626a366dcf8eb4b001fccb1a331e4549b29f901e5e244d461f7c702be0c6",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "60357311489fc33290fdf1ebf2a0d8dc7c0b31c1ca2abd7bf8e69011164fa33e",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "bc3024fbd3d094fe96f9a3f3203590cfce895565200840a42e5ecbbc893642ea",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "3f6e59a3c8adafdf08d917e0c503332b9e840438facdadbb1170d32f125d41cc",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "381134d5aae22b4a8487271381955e6cff2ba326d4848d2159aec2ef98de2aa4",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "86023369a275844ff6c248536d6eb4d4dddfef90a954415d24bb1c5ed22aa519",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "6028b0675e958713f303887b600bcda9e754b5bb17a9984056df07cb52c7929d",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "e3429bb3fb6104e533d97cfcb49feec021f78f10225877eda24c6f16c3b29028",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "c15b200d8f28cb328488e9b61565799f58a6c1739b1167e125cbd4d72104055e",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "6742587300666e11cf10cd72f99201499f7b5b26b1c0b62f60dc3200465600de",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "b3966465b2ada868bbe127a2e4e9db8728f0566e09fb4f349c1cdfd1849d50cc",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "5265281394d6798b64bfee9e0c946d5eef51f46d32a6abc2958da860e170029c",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "9ff05c1ee4e3b9b9a1f66f553eb8f6772597f94cb26ef1bd4be3908004857bcb",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "dd849d236e298d2c6e5ce312c20bab0f41cd142bee0bbfd84aeac5a9bcf3aaa8",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "9bed1e091cf3d7a381173632c04d7383f060ffef239d541d4f2f780680bff1d6",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "cdd4e5441e812acb444cd20255584f4b882673c8098a2862e7da46987efe8dde",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "2c6f9b2c0f3327433cbf3ab8ac1b592862a8b71bc27ba6fe5b634eec378a33cd",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "9b58c263deaa8558371d73608b0b0ab8c2008d01044018bf5b8962223ef527e0",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "bfd319d900e486b8696fe1cfde17f22ffbbec6c6dd48a4728105921ca9906be7",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "ac2ce51945be636960fca944992fc09a82d89c06935bc660ab3788152faebe28",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "537a412da35247a8ed4b70f96c1469479572c958677e321fbf60fc847e51565d",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "c852a14ed1bad10f2a7e4ab4b9f772d420fbf868064c9638881dea41cb1b7cbf",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "76ff74e4202fb6e62abfdd143e85d0a703393505fac42d664a730e4b789a9d42",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "79410fbfa45f9d6deb0af3f35101cf2f51c459a5ec3552d17fc2813537c7afcf",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        },
+        {
+          "sha256": "dc40bb07ac273520fd97e51e2fe5dfd3fe648bb7c029bf5db67ff7c5e050f8b8",
+          "device_events": 1,
+          "provider": "ZhouyiExecutionProvider"
+        }
+      ],
+      "returned_inventory_sha256": "6c358b1f7021a4d78c88fd7a62d5c39a930a5343e327bc1c89f7992304956a21"
+    },
+    {
+      "host": "rk",
+      "ok": true,
+      "commands": [
+        {
+          "label": "doctor",
+          "exit": 0,
+          "seconds": 0.101
+        },
+        {
+          "label": "gpu-check",
+          "exit": 0,
+          "seconds": 0.095
+        },
+        {
+          "label": "gpu-eval",
+          "exit": 0,
+          "seconds": 0.848
+        },
+        {
+          "label": "gpu-run-debug",
+          "exit": 0,
+          "seconds": 84.81
+        },
+        {
+          "label": "gpu-test-debug",
+          "exit": 0,
+          "seconds": 2.811
+        },
+        {
+          "label": "gpu-run-release",
+          "exit": 0,
+          "seconds": 145.202
+        },
+        {
+          "label": "gpu-test-release",
+          "exit": 0,
+          "seconds": 2.538
+        },
+        {
+          "label": "gpu-profile",
+          "exit": 0,
+          "seconds": 160.332
+        },
+        {
+          "label": "gpu-build",
+          "exit": 0,
+          "seconds": 0.327
+        },
+        {
+          "label": "gpu-archived",
+          "exit": 0,
+          "seconds": 0.995
+        },
+        {
+          "label": "gpu-standalone",
+          "exit": 0,
+          "seconds": 0.875
+        },
+        {
+          "label": "gpu-typed-check",
+          "exit": 0,
+          "seconds": 0.095
+        },
+        {
+          "label": "gpu-typed-eval",
+          "exit": 0,
+          "seconds": 0.16
+        },
+        {
+          "label": "gpu-typed-run-debug",
+          "exit": 0,
+          "seconds": 100.588
+        },
+        {
+          "label": "gpu-typed-run-release",
+          "exit": 0,
+          "seconds": 183.314
+        },
+        {
+          "label": "gpu-typed-profile",
+          "exit": 0,
+          "seconds": 208.516
+        },
+        {
+          "label": "gpu-typed-build",
+          "exit": 0,
+          "seconds": 0.345
+        },
+        {
+          "label": "gpu-typed-archived",
+          "exit": 0,
+          "seconds": 0.446
+        },
+        {
+          "label": "gpu-typed-standalone",
+          "exit": 0,
+          "seconds": 0.102
+        },
+        {
+          "label": "npu-check",
+          "exit": 0,
+          "seconds": 0.104
+        },
+        {
+          "label": "npu-eval",
+          "exit": 0,
+          "seconds": 0.718
+        },
+        {
+          "label": "npu-run-debug",
+          "exit": 0,
+          "seconds": 2.981
+        },
+        {
+          "label": "npu-test-debug",
+          "exit": 0,
+          "seconds": 2.955
+        },
+        {
+          "label": "npu-run-release",
+          "exit": 0,
+          "seconds": 2.247
+        },
+        {
+          "label": "npu-test-release",
+          "exit": 0,
+          "seconds": 2.127
+        },
+        {
+          "label": "npu-profile",
+          "exit": 0,
+          "seconds": 2.412
+        },
+        {
+          "label": "npu-build",
+          "exit": 0,
+          "seconds": 0.346
+        },
+        {
+          "label": "npu-archived",
+          "exit": 0,
+          "seconds": 0.844
+        },
+        {
+          "label": "npu-standalone",
+          "exit": 0,
+          "seconds": 0.508
+        },
+        {
+          "label": "npu-typed-check",
+          "exit": 0,
+          "seconds": 0.162
+        },
+        {
+          "label": "npu-typed-eval",
+          "exit": 0,
+          "seconds": 0.329
+        },
+        {
+          "label": "npu-typed-run-debug",
+          "exit": 0,
+          "seconds": 1.801
+        },
+        {
+          "label": "npu-typed-run-release",
+          "exit": 0,
+          "seconds": 1.752
+        },
+        {
+          "label": "npu-typed-profile",
+          "exit": 0,
+          "seconds": 2.126
+        },
+        {
+          "label": "npu-typed-build",
+          "exit": 0,
+          "seconds": 0.38
+        },
+        {
+          "label": "npu-typed-archived",
+          "exit": 0,
+          "seconds": 0.537
+        },
+        {
+          "label": "npu-typed-standalone",
+          "exit": 0,
+          "seconds": 0.183
+        }
+      ],
+      "cases": [
+        {
+          "label": "gpu",
+          "ok": true,
+          "GPU_calls": 90,
+          "NPU_calls": 0,
+          "GPU_exact_values": 30780,
+          "NPU_exact_values": 0,
+          "NPU_exclusive_profiles": 0,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": false,
+          "catch_and_finally_suspension": false,
+          "guard_suspension_tested": false
+        },
+        {
+          "label": "gpu-typed",
+          "ok": true,
+          "GPU_calls": 6,
+          "NPU_calls": 0,
+          "GPU_exact_values": 12,
+          "NPU_exact_values": 0,
+          "NPU_exclusive_profiles": 0,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": true,
+          "catch_and_finally_suspension": true,
+          "guard_suspension_tested": false
+        },
+        {
+          "label": "npu",
+          "ok": true,
+          "GPU_calls": 0,
+          "NPU_calls": 30,
+          "GPU_exact_values": 0,
+          "NPU_exact_values": 6400,
+          "NPU_exclusive_profiles": 0,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": false,
+          "catch_and_finally_suspension": false,
+          "guard_suspension_tested": false
+        },
+        {
+          "label": "npu-typed",
+          "ok": true,
+          "GPU_calls": 0,
+          "NPU_calls": 6,
+          "GPU_exact_values": 0,
+          "NPU_exact_values": 192,
+          "NPU_exclusive_profiles": 0,
+          "CPU_fallback": false,
+          "managed_memory_balanced": true,
+          "typed_device_payload": true,
+          "catch_and_finally_suspension": true,
+          "guard_suspension_tested": false
+        }
+      ],
+      "returned_files": 97,
+      "returned_bytes": 273237,
+      "original322_and_added3_resources_match_authorized_hashes": true,
+      "typed_source_programs": [
+        {
+          "case": "gpu-typed",
+          "sha256": "16eda05337a832df420ad5abf02b28edb531bdadedce6fa584c3a3596456fd04",
+          "revision": "c07eb839c78f659d6660090007430121fbede3406ce67e556b8272f899e18f9f",
+          "source": "module rk_gpu;\nserver extern fn gpu_compute(a:bytes,b:bytes,scale:i64)->result<bytes> !{ffi}=foreign(\"rk_gpu\",\"gpu_compute\",\"d210f8abb0beb278010bc0d88e3aef811320b2cbd7ac141177db34592c8d2704\");\nfn input(n:i64,seed:i64,range:i64)->bytes{var v:list<i64>=[];var i:i64=0;while i<n{v=push(v,(i+seed)%range);i=i+1;}return unwrap(bytes(v));}\nserver fn one(seed:i64)->unit !{ffi}{let a:bytes=input(1024,seed,51);let b:bytes=input(1024,seed+7,21);let c:bytes=unwrap(gpu_compute(a,b,3));assert(len(c)==1024);var i:i64=0;while i<1024{assert(c[i]==a[i]*3+b[i]);i=i+1;}}\nserver fn checks()->unit !{ffi}{one(0);one(17);one(997);assert(error_code(gpu_compute(unwrap(bytes([1,2])),unwrap(bytes([1])),3))==\"E_INPUT_SIZE\");assert(unwrap(gpu_compute(unwrap(bytes([255,200])),unwrap(bytes([0,20])),1))==unwrap(bytes([255,220])));\nassert(unwrap(gpu_compute(unwrap(bytes([255])),unwrap(bytes([255])),0))==unwrap(bytes([255])));\nassert(unwrap(gpu_compute(unwrap(bytes([1])),unwrap(bytes([0])),255))==unwrap(bytes([255])));\nassert(unwrap(gpu_compute(unwrap(bytes([2])),unwrap(bytes([1])),127))==unwrap(bytes([255])));\nassert(unwrap(gpu_compute(unwrap(bytes([1])),unwrap(bytes([127])),128))==unwrap(bytes([255])));\nassert(error_code(gpu_compute(unwrap(bytes([1])),unwrap(bytes([1])),255))==\"E_COMPUTE_OVERFLOW\");\nassert(error_code(gpu_compute(unwrap(bytes([1])),unwrap(bytes([1])),-1))==\"E_COMPUTE_RANGE\");\nassert(error_code(gpu_compute(unwrap(bytes([1])),unwrap(bytes([1])),256))==\"E_COMPUTE_RANGE\");}\n\nstruct DevicePayload{value:bytes;}\nserver fn main()->unit !{task,ffi,io}{var cleaned:i64=0;try{task_yield();throw(DevicePayload(unwrap(gpu_compute(unwrap(bytes([1,2])),unwrap(bytes([1,2])),3))));}catch(error:str){assert(false);}catch(error:DevicePayload) if len(error.value)==2{task_yield();assert(error.value==unwrap(bytes([4,8])));print(42);}catch(code,message){assert(false);}finally{task_yield();cleaned=42;}assert(cleaned==42);}\n"
+        },
+        {
+          "case": "npu-typed",
+          "sha256": "dbac135dbee999db725b8073524f5edb0fc5e8b1a071bd84b8f5e89ba8e26929",
+          "revision": "ca11c9059dae3fc01a948be048dbe58080b8115e93fb401cf7a0246c70ed4316",
+          "source": "module rk_npu;\nserver extern fn npu_matmul_bytes(a:bytes,b:bytes,m:i64,k:i64,n:i64)->result<bytes> !{ffi}=foreign(\"rk_npu\",\"npu_matmul_bytes\",\"8b904defd7a3030cf900b2194e6ca3e2297a5a7a8c3d4c43f9cb21c6c5fd298e\");\nfn pack_int8(values:list<i64>)->result<bytes>{\n let count:i64=len(values);var octets:list<i64>=[];var i:i64=0;while i<count{let v:i64=values[i];if v< -128 || v>127{return err(\"E_INPUT_RANGE\",\"int8 input outside -128..127\");}octets=push(octets,(v+256)%256);i=i+1;}return bytes(octets);\n}\nserver fn npu_matmul(a:list<i64>,b:list<i64>,m:i64,k:i64,n:i64)->result<list<i64>> !{ffi}{\n if m<1 || m>32 || k<32 || k>128 || k%32!=0 || n<32 || n>128 || n%32!=0{return err(\"E_SHAPE\",\"matmul requires bounded M/K/N\");}\n if len(a)!=m*k || len(b)!=k*n{return err(\"E_INPUT_SIZE\",\"row-major input length disagrees with shape\");}\n let data:bytes=npu_matmul_bytes(pack_int8(a)?,pack_int8(b)?,m,k,n)?;\n if len(data)!=m*n*4{return err(\"E_PROTOCOL\",\"wrong int32 output byte size\");}\n let elements:i64=m*n;var result:list<i64>=[];var i:i64=0;while i<elements{\n  let offset:i64=4*i;var value:i64=data[offset]+data[offset+1]*256+data[offset+2]*65536+data[offset+3]*16777216;\n  if value>=2147483648{value=value-4294967296;}\n  result=push(result,value);i=i+1;\n }return ok(result);\n}\n\nfn input(count:i64,stride:i64,offset:i64)->list<i64>{var v:list<i64>=[];var i:i64=0;while i<count{v=push(v,(i*stride+offset)%7-3);i=i+1;}return v;}\nserver fn one(m:i64,k:i64,n:i64)->unit !{ffi}{\n let a:list<i64>=input(m*k,3,0);let b:list<i64>=input(k*n,5,2);\n let c:list<i64>=unwrap(npu_matmul(a,b,m,k,n));assert(len(c)==m*n);\n var row:i64=0;while row<m{var col:i64=0;while col<n{var expected:i64=0;var j:i64=0;while j<k{expected=expected+a[row*k+j]*b[j*n+col];j=j+1;}assert(c[row*n+col]==expected);col=col+1;}row=row+1;}\n}\nserver fn checks()->unit !{ffi}{\n one(4,64,32);one(8,32,32);one(4,32,64);\n assert(error_code(npu_matmul_bytes(unwrap(bytes([])),unwrap(bytes([])),0,32,32))==\"E_SHAPE\");\n assert(error_code(npu_matmul_bytes(unwrap(bytes([1])),unwrap(bytes([1])),4,64,32))==\"E_INPUT_SIZE\");\n assert(error_code(npu_matmul([],[],0,32,32))==\"E_SHAPE\");\n assert(error_code(npu_matmul([],[],1,16,32))==\"E_SHAPE\");\n assert(error_code(npu_matmul([1],[1],4,64,32))==\"E_INPUT_SIZE\");\n var a:list<i64>=input(32,3,0);let b:list<i64>=input(1024,5,2);\n a=set(a,0,128);assert(error_code(npu_matmul(a,b,1,32,32))==\"E_INPUT_RANGE\");\n a=set(a,0,-129);assert(error_code(npu_matmul(a,b,1,32,32))==\"E_INPUT_RANGE\");\n}\n\nserver fn npu_matmul_task(a:list<i64>,b:list<i64>,m:i64,k:i64,n:i64)->result<list<i64>> !{task,ffi}{\n if m<1 || m>32 || k<32 || k>128 || k%32!=0 || n<32 || n>128 || n%32!=0{return err(\"E_SHAPE\",\"matmul requires bounded M/K/N\");}\n if len(a)!=m*k || len(b)!=k*n{return err(\"E_INPUT_SIZE\",\"row-major input length disagrees with shape\");}\n let data:bytes=npu_matmul_bytes(pack_int8(a)?,pack_int8(b)?,m,k,n)?;\n if len(data)!=m*n*4{return err(\"E_PROTOCOL\",\"wrong int32 output byte size\");}\n let elements:i64=m*n;var result:list<i64>=[];var i:i64=0;while i<elements{\n  let offset:i64=4*i;var value:i64=data[offset]+data[offset+1]*256+data[offset+2]*65536+data[offset+3]*16777216;\n  if value>=2147483648{value=value-4294967296;}\n  result=push(result,value);i=i+1;\n }return ok(result);\n}\n\n\nstruct DevicePayload{value:list<i64>;}\nserver fn main()->unit !{task,ffi,io}{var cleaned:i64=0;try{task_yield();throw(DevicePayload(unwrap(npu_matmul_task(input(32,0,4),input(1024,0,4),1,32,32))));}catch(error:str){assert(false);}catch(error:DevicePayload) if len(error.value)==32{task_yield();var i:i64=0;while i<32{assert(error.value[i]==32);i=i+1;}print(42);}catch(code,message){assert(false);}finally{task_yield();cleaned=42;}assert(cleaned==42);}\n"
+        }
+      ],
+      "NPU_profile_placement": [],
+      "returned_inventory_sha256": "0c6772d63cdf50e2d53f52e5a06a8a1ab41ae4f35fcdb02b8a555356c02948f6"
+    }
+  ],
+  "separate_macOS_regression": {
+    "source_commit": "fb2e0a0501e3e1651fc9d772c7c84232faf51bf3",
+    "toolchain": "0.151.0",
+    "passed": 269,
+    "groups": 284,
+    "skipped": 0,
+    "scope": "separate Mac test/source cohort; no full compiler acceptance"
+  }
+}

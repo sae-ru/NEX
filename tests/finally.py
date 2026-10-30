@@ -258,6 +258,16 @@ server fn main()->unit !{ffi,io}{
             source=source.replace('finally{throw(', 'finally{task_yield();throw(')
             source=source.replace('try{let ignored:Session=take(', 'try{task_yield();let ignored:Session=take(')
             source=source.replace('finally{let next:Session=', 'finally{task_yield();let next:Session=')
+            # Logical release dispatches destruction asynchronously. Keep the
+            # one-object/eight-byte quota and exact four factory/destructor
+            # pairs, using the specified physical scope-completion boundary
+            # before the next factory. Catch/finally alone is no such fence.
+            source=source.replace('let ignored:Session=abandoned();',
+                'let ignored:Session=with_tasks(1,server fn(scope:task_scope)->Session !{task,ffi,throw}{return abandoned();});')
+            source=source.replace('let next:Session=create(7);assert(read(next)==7);assert(resource_close(next));',
+                'try{with_tasks(1,server fn(scope:task_scope)->unit !{task,ffi}{let next:Session=create(7);assert(read(next)==7);assert(resource_close(next));});}catch(code,message){assert(false);}')
+            source=source.replace('let ignored:Session=take(create(1),fail());',
+                'with_tasks(1,server fn(scope:task_scope)->unit !{task,ffi,throw}{let ignored:Session=take(create(1),fail());});')
         self.source(source.replace('PIN','0'*64))
         signatures={name:self.cli('ffi','--symbol',name) for name in ('create','read')}
         pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
