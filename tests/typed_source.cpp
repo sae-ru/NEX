@@ -88,7 +88,7 @@ int main(){try{
     auto p=source("fn main()->i64{try{throw(42);}catch(error:i64){return error;}}");
     rejected("E_TYPED_EXCEPTION_MIGRATION",[&]{rejectUnarchivedTasks(p,"archive");});
     rejected("E_TYPED_EXCEPTION_BACKEND",[&]{(void)emitMLIR(p,"main");});
-    auto module=emitTypeScript(p,{{"entry","main"}});require(module.privateSourceExceptions&&module.mapping.getAsObject()->getBool("public_revision")==false,"typed TypeScript candidate claimed a public revision");++cases;
+    auto module=emitTypeScript(p,{{"entry","main"}});require(module.privateSourceExceptions&&module.mapping.getAsObject()->getBoolean("public_revision")==false,"typed TypeScript candidate claimed a public revision");++cases;
     auto nodes=operationTree(p,p.function("main"));std::set<std::string> paths;for(const auto &node:nodes)paths.insert(node.path);
     for(const auto &node:nodes)if(node.path.find("/clause/")!=std::string::npos)require(paths.contains(node.parent),"orphan typed handler operation");
     bool binding=false;for(const auto &node:nodes)if(node.kind=="exception.binding"){require(node.definition.getAsObject()->getString("type")=="i64","typed operation binding was a string");binding=true;}

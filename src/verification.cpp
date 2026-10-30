@@ -172,7 +172,7 @@ class Engine {
         poll();if(path.returned){next.push_back(std::move(path));continue;}
         auto &state=path.state;
         switch(s->kind){
-        case Stmt::Try:case Stmt::Throw:case Stmt::Finally:throw Stop{"unsupported","source exception contracts require explicit verification semantics",s->span};
+        case Stmt::Try:case Stmt::Throw:case Stmt::Finally:case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:throw Stop{"unsupported","source exception contracts require explicit verification semantics",s->span};
         case Stmt::Let:case Stmt::Var:{auto value=expression(s->expr,state);if(value.type!=Type::I64&&value.type!=Type::Bool)throw Stop{"unsupported","only scalar locals are verified",s->span};state.scopes.back().insert_or_assign(s->name,value);next.push_back(std::move(path));break;}
         case Stmt::Assign:{auto value=expression(s->expr,state);state.lookup(s->name,s->span)=value;next.push_back(std::move(path));break;}
         case Stmt::Expression:expression(s->expr,state);next.push_back(std::move(path));break;
