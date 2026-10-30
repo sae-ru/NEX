@@ -1466,7 +1466,7 @@ def _provider_task_manifest(context, codes=None):
                 not isinstance(owner, str) or owner not in by_owner or
                 registry['accessor'] != 'nex_task_debug_registry_' + name + '_v1' or
                 component['component'] != name or component['owner_image'] != owner or
-                component['language'] not in ('0.19', '0.20', '0.21', '0.22', '0.23', '0.24', '0.25', '0.26') or
+                component['language'] not in ('0.19', '0.20', '0.21', '0.22', '0.23', '0.24', '0.25', '0.26', '0.27') or
                 any(not _task_digest(component[key]) for key in ('revision', 'source_hash', 'bundle_hash')) or
                 not isinstance(component['entry'], str) or not 1 <= len(component['entry']) <= 4096 or '\0' in component['entry'] or
                 not isinstance(component['exports'], list) or len(component['exports']) > 16384 or
@@ -1932,7 +1932,8 @@ class _TaskCatalog:
         expected_abi = {'0.19': 0x4e45585400000003, '0.20': 0x4e45585400000003,
                         '0.21': 0x4e45585400000003, '0.22': 0x4e45585400000003,
                         '0.23': 0x4e45585400000004, '0.24': 0x4e45585400000005,
-                        '0.25': 0x4e45585400000006, '0.26': 0x4e45585400000006}.get(language)
+                        '0.25': 0x4e45585400000006, '0.26': 0x4e45585400000006,
+                        '0.27': 0x4e45585400000007}.get(language)
         if self.context.get('schema') in ('nex.private-task-debug/1','nex.private-task-debug/2') and language == '0.25-prototype':
             expected_abi = int(self.context['descriptor_abi'],16)
         if expected_abi is None:

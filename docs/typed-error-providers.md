@@ -1,6 +1,6 @@
 # Explicit027 native source-error providers
 
-Toolchain0.148 develops native delivery under explicit C++ source selection.
+Toolchain0.149 develops native delivery under explicit C++ source selection.
 The ordinary CLI/default source language remains0.26 and `typed_payloads` stays
 false. A0.27 project is checked with `ProjectBuildOptions::sourceLanguage` set
 to `TypedErrors027`; this is not a manifest switch or implicit CLI upgrade.
@@ -47,8 +47,21 @@ entry and physical cleanup; `typed_provider_records.cpp` checks strict new and
 retained families; `typed_error_projects.py` executes actual source/static/
 shared/mixed Debug/Release images, capture/replay and profiling.
 
-Current full compiler regression, installed SDK/platform acceptance, bounded
-typed debugger views, public027 CLI selection, graph-snapshot delivery and the
-remaining original PLAN are still required. A parsed debug-record format alone
-does not establish accepted debugger behavior. The prior0.147 full receipt and
-the isolated pre-integration prototypes are separately scoped evidence.
+Explicit C++027 debug builds additionally capture the matching formatter and
+checked source bundles. Synchronous DWARF and task LLDB/NEX-DAP views expose typed
+catch values and legacy bindings in ordered handler chains. Guard caller frames
+and catches after yield preserve their checked scope and source/image ownership.
+Bounded list/string reads retain ordinary wire representations, including Unicode
+and NUL. Original source files may be absent during inspection. File watches
+expose only diagnostic identities; IO/effectful watches and stale views reject.
+`tests/typed_error_debugging.py` exercises actual source/static/shared/mixed LLDB
+and NEX-DAP, a large generic list, legacy catch, file owner and synchronous DWARF.
+Source-language diagnostics and their IDs use the captured program language;
+the ordinary diagnostic API retains its existing default identity.
+
+Current full compiler regression, installed SDK/platform acceptance, public027
+CLI selection, graph-snapshot delivery and the remaining original PLAN are still
+required. Parsed debug records alone do not establish debugger acceptance. The
+`logical_debugging_development` descriptor records this checked development scope;
+`logical_debugging_accepted` remains false until the wider delivery gates pass.
+The prior receipts retain their own compiler/source/version scopes.

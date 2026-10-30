@@ -91,7 +91,12 @@ JSON inspectCheckedExpression(const std::string &path,const Object &m,const JSON
   std::map<std::string,std::set<std::string>> declared;for(const auto &param:fn.params)declared[param.name].insert(typeName(param.type));
   for(const auto &capture:fn.captures)declared[capture.name].insert(typeName(capture.type));
   std::function<void(E)> locals=[&](E e){if(e){for(auto arm:e->arms)for(const auto &binding:arm->bindings)if(binding.name!="_")declared[binding.name].insert(typeName(binding.type));for(auto child:e->args)locals(child);}};
-  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));if(s->kind==Stmt::Try){declared[s->name].insert("str");declared[s->catchMessage].insert("str");}locals(s->expr);childBlocks(s,visit);}};visit(fn.body);
+  std::function<void(const std::vector<S>&)> visit=[&](const auto &body){for(const auto &s:body){if(s->kind==Stmt::Let||s->kind==Stmt::Var)declared[s->name].insert(typeName(s->type));if(s->kind==Stmt::Try){declared[s->name].insert("str");declared[s->catchMessage].insert("str");}
+      if(s->kind==Stmt::CatchClause){
+        declared[s->name].insert(s->type==Type::Unknown?"str":typeName(s->type));
+        if(s->type==Type::Unknown)declared[s->catchMessage].insert("str");
+      }
+      locals(s->expr);childBlocks(s,visit);}};visit(fn.body);
   std::map<std::string,Type> types;Object values;
   for(const auto &value:*bindings){const auto &b=object(value);fields(b,task?std::set<std::string>{"name","type","binding_id","value","unavailable"}:std::set<std::string>{"name","type","value","unavailable"});auto local=required(b,"name"),type=required(b,"type");
     if(task){auto selected=logicalBindings.find(local);if(selected==logicalBindings.end()||b.getInteger("binding_id")!=selected->second->getInteger("id")||type!=required(*selected->second,"type"))throw Error("E_DEBUG_FRAME","binding is not visible at the selected logical point");if(selected->second->getBoolean("opaque").value_or(true)&&b.get("value"))throw Error("E_DEBUG_VALUE","logical authority values are opaque");}
@@ -148,7 +153,7 @@ JSON inspectCheckedExpression(const std::string &path,const Object &m,const JSON
   frontendPhase="bind";if(!privateSource||!p.units.empty())bindExpression(p,name,expression);frontendPhase="check";type=checkExpression(p,name,expression,types);
   }catch(Error &error){
     std::map<std::string,std::string> sources;for(const auto &[key,unit]:p.units)sources[key]=unit.source;sources[watchLabel]=source;
-    attachFrontendDiagnostic(error,sources,watchLabel,"expression",frontendPhase,true);
+    attachFrontendDiagnostic(error,sources,watchLabel,"expression",frontendPhase,true,rootLanguage);
     (*error.frontend.getAsObject())["watch"]=Object{{privateSource?"source_hash":"revision",privateSource?required(m,"source_hash"):revision(p)},{"build_key",required(m,"build_key")},
       {"frame_hash",hash(json(frame,false))},{"stop_hash",hash(json(JSON(Object(*stop)),false))},{"function_hash",hash(name)}};
     if(privateSource){auto watch=error.frontend.getAsObject()->getObject("watch");(*watch)["language"]=rootLanguage;(*watch)["archived"]=false;}

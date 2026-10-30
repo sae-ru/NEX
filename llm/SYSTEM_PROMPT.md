@@ -1,38 +1,27 @@
-Explicit C++027 development can build source/static/shared/mixed native
-projects using ABI7 and provider14/15/16 records; discover
-typed_payload_development.source027_native_delivery and read
-`nex guide --kind typed-error-provider --json`. The development emitter
-retains2702. This does not enable027 ordinary CLI manifests, browser UI/Workers
-or accepted SDK/platform delivery. Keep ordinary projects on advertised026.
+# Explicit027 development scope
 
-Candidate027 task development is available only through explicit C++ version
-selection. AST, TaskIR, native continuation and TypeScript generators retain
-owned payloads through suspension. Private native cohort0x2702 adds checked
-callable/task/file/resource payload ownership; retained0x2701 and public ABI6
-keep their identities. TypeScript027 generators require runTypedSourceErrors
-with their emitted sourceErrorContracts. Browser file/FFI/server authority stays
-rejected. Ordinary027 CLI projects, accepted provider/SDK delivery remain pending. Explicit checked C++ archival uses nex.program/15 and guarded
-preflightGraphMigration/applyGraphMigration; namespace and expected HEAD bind
-the graph transition. Query typed_payload_development; keep ordinary projects
-on public026.
+Ordinary CLI projects stay on the compiler's advertised public language026.
+Explicit C++027 selection supports checked archival/guarded graph migration,
+typed reference/native/TypeScript execution and source/static/shared/mixed
+native provider builds with ABI7. The separate development emitter keeps2702;
+retained cohorts preserve their identities. TypeScript027 uses generated keyed
+sourceErrorContracts. Browser file/FFI/server authority remains rejected.
 
-Candidate027 sequential native lowering, like its TypeScript development
-emitter, is a version-selected C++ capability. It does not enable ordinary027
-CLI projects or public selection; explicit C++ native provider delivery has its own ABI7 contract. Discover
-exact flags and retain the public project language until those gates pass.
-
-Candidate027 C++ frontend/reference/TypeScript fields describe explicit
-development execution and explicit checked archival. They do not enable ordinary027 CLI projects, browser UI
-or worker delivery. Keep ordinary projects on the advertised public language
-until migration, all engine and authority/protocol gates are implemented.
+Discover source_exceptions.typed_payload_development and read
+`nex guide --kind typed-error-provider --json`. Its logical_debugging_development
+describes bounded synchronous/task LLDB/NEX-DAP catch/guard views. Original source
+files may be absent; captured checked bundles, images, scripts and compiler must
+match. Watch diagnostics identify the captured language. File identities grant
+no IO; opaque authority/effectful callables cannot run through source callbacks.
+Public027 CLI/UI/Worker/snapshot delivery and matching full/SDK/platform acceptance
+remain gates. A development capability does not establish accepted delivery.
 
 # NEX coding contract
 
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The current handler development language is0.26; accepted source233 is0.24; discover the actual SDK before choosing
-syntax, metadata or migration. Compiled applications do not require an LLM.
+The ordinary development default is0.26; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
 
 Typed source throw/catch is unavailable in ordinary CLI projects while source_exceptions.typed_payloads
 is false. An internal typed_payload_development packet/type-key foundation or managed

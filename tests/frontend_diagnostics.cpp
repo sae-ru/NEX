@@ -57,6 +57,24 @@ int main(int argc,char **argv){
     attachFrontendDiagnostic(bounded,{{longKey,longText}},longKey,"unit","parse",true);auto boundedJSON=diagnosticJSON(bounded);frontend=boundedJSON.getAsObject()->getObject("frontend");
     require(frontend->getObject("entry")->getBoolean("truncated")==true,"long input label not bounded");
     require(frontend->getObject("preview")->getString("data")->size()==4096&&json(*boundedJSON.getAsObject()->get("frontend"),false).size()<65536,"bounded preview record grew beyond its scope");++cases;
+    std::set<std::string> versionedIds;
+    Error defaultWatch("E_EFFECT","watch effect",Span{1,1,0,1,"<watch>"});
+    attachFrontendDiagnostic(defaultWatch,{{"<watch>","1"}},"<watch>","expression","check",true);
+    auto defaultValue=diagnosticJSON(defaultWatch);
+    for(const auto &language:std::vector<std::string>{"0.18","0.19","0.20","0.21","0.22","0.23","0.24","0.25","0.26","0.27","0.25-prototype"}){
+      Error selected("E_EFFECT","watch effect",Span{1,1,0,1,"<watch>"});
+      attachFrontendDiagnostic(selected,{{"<watch>","1"}},"<watch>","expression","check",true,language);
+      auto value=diagnosticJSON(selected);auto front=value.getAsObject()->getObject("frontend");
+      require(front->getString("language")==language,"watch source language was retagged");
+      require(versionedIds.insert(front->getString("id")->str()).second,"different source languages share a diagnostic identity");
+      llvm::json::Object identity{{"schema","nex.frontend-diagnostic-id/1"},{"language",language},
+        {"phase",*front->get("phase")},{"input_kind",*front->get("input_kind")},
+        {"source_inputs_hash",*front->get("source_inputs_hash")},{"reported_key_hash",hash(selected.span.file)},
+        {"location",*front->get("location")},{"code_hash",hash(selected.code)},{"message_hash",hash(selected.what())}};
+      require(front->getString("id")==hash(json(std::move(identity),false)),"diagnostic ID does not bind its actual source language");
+      if(language==languageVersion)require(json(value,false)==json(defaultValue,false),"ordinary diagnostic identity changed");
+      captured.push_back(value);++cases;
+    }
     llvm::json::Object report{{"ok",true},{"cases",int64_t(cases)}};
     if(argc==2&&std::string(argv[1])=="--json-records"){
       for(const auto *value:{&rendered,&safe,&legacy,&ignored,&unavailable,&other,&first,&second,&boundedJSON})captured.push_back(*value);

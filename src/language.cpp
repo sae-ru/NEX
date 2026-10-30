@@ -1329,6 +1329,7 @@ llvm::json::Value describe() {
 {"capture_replay",true},
 {"profiling",true},
 {"logical_debugging_accepted",false},
+{"logical_debugging_development",llvm::json::Object{{"status","explicit_cpp_checked_native_views_development"},{"LLDB",true},{"NEX_DAP",true},{"source_static_shared_mixed",true},{"synchronous_DWARF",true},{"typed_and_legacy_catch_bindings",true},{"guard_and_suspended_catch_views",true},{"original_source_files_required",false},{"captured_checked_source_required",true},{"authority_watch","bounded_diagnostic_identity_or_opaque; no IO or inferior callbacks"},{"source_language_diagnostics",true},{"stale_view_rejection",true},{"test","tests/typed_error_debugging.py"},{"accepted_installed_SDK",false},{"complete_platform_acceptance",false}}},
 {"file_callable_payload_ownership",true},
 {"capability_parameters_or_returns",false},
 {"runtime_protocol_test","tests/typed_task_protocol.cpp"},

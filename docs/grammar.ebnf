@@ -1,3 +1,5 @@
+(* Toolchain0.149 bounded027 debugger views add no grammar productions;
+   public/default source026 and retained AST identities remain unchanged. *)
 (* Toolchain0.148 explicit C++027 native provider delivery adds ABI/record
    versions, not source productions; public/default source remains026. *)
 (* Toolchain147 explicit C++ archival/migration assigns027 nex.program/15;

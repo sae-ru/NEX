@@ -1,3 +1,12 @@
+# Development0.149: typed native debugger views
+
+Explicit C++027 LLDB/NEX-DAP views now cover typed/legacy handler bindings,
+guard/catch suspension, source/image identity and source-absent inspection.
+Synchronous DWARF remains separately tested. Diagnostic IDs bind the actual
+watch language; default callers retain their old metadata. Full integrated
+regression, installed SDK/platform delivery, public027 CLI/Web/Worker/snapshot
+gates and every remaining original plan item still require completion.
+
 # Candidate027 native provider development0.148.0
 
 Explicit C++027 selection now develops source/static/shared/mixed native builds

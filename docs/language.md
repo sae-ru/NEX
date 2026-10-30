@@ -1,3 +1,22 @@
+# Candidate027 native debugger development0.149.0
+
+Explicit C++027 native debugging exposes checked typed and legacy catch bindings
+in synchronous DWARF and source/static/shared/mixed task images. LLDB/NEX-DAP
+watches retain guard/catch scope, original concrete types and physical source
+owners across suspension. Original source files may be absent; the captured
+checked bundles and exact image/script/compiler identities remain mandatory.
+Large aggregates use the existing bounded/lazy reads. File owners expose only
+diagnostic identities; task authority/effectful callables remain opaque under
+the existing metadata rules. Watches never grant IO or run inferior callbacks.
+
+Expression diagnostics bind the actual captured source language in their ID.
+The existing default diagnostic API retains its prior identity. Stale debugger
+frames/variables and sibling-handler bindings remain rejected. See
+`tests/typed_error_debugging.py` and `tests/frontend_diagnostics.cpp`.
+
+Public/default source remains026. Integrated full regression, installed SDK,
+platform acceptance, public027 selection and the remaining PLAN are still gates.
+
 # Candidate027 native provider development0.148.0
 
 Explicit C++027 selection now develops source/static/shared/mixed native builds

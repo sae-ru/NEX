@@ -30,6 +30,11 @@ std::string display(const std::string &text){
 }
 void attachFrontendDiagnostic(Error &error,const std::map<std::string,std::string> &sources,
     const std::string &entry,const std::string &kind,const std::string &phase,bool complete){
+  attachFrontendDiagnostic(error,sources,entry,kind,phase,complete,languageVersion);
+}
+void attachFrontendDiagnostic(Error &error,const std::map<std::string,std::string> &sources,
+    const std::string &entry,const std::string &kind,const std::string &phase,bool complete,
+    const std::string &sourceLanguage){
   Array files;int64_t bytes=0;
   for(const auto &[key,text]:sources){
     files.push_back(Object{{"key_base64",llvm::encodeBase64(key)},{"hash",hash(text)}});
@@ -62,7 +67,7 @@ void attachFrontendDiagnostic(Error &error,const std::map<std::string,std::strin
       {"truncated_before",begin!=0},{"truncated_after",end!=text.size()},
       {"focus_fully_visible",located&&error.span.begin>=begin&&error.span.end<=end}};
   }
-  error.frontend=Object{{"schema","nex.frontend-diagnostic/1"},{"language",languageVersion},
+  error.frontend=Object{{"schema","nex.frontend-diagnostic/1"},{"language",sourceLanguage},
     {"phase",phase},{"input_kind",kind},{"entry",label(entry)},
     {"source_inputs_hash",hash(json(std::move(ledger),false))},
     {"input_files",int64_t(sources.size())},{"input_bytes",bytes},{"source_inputs_complete",complete},
@@ -82,7 +87,7 @@ JSON diagnosticJSON(const Error &error,const std::string &toolchain,const std::s
   if(!error.operationId.empty())result["operation_id"]=error.operationId;
   if(auto captured=error.frontend.getAsObject();captured&&captured->getString("phase")&&captured->getString("input_kind")&&captured->getString("source_inputs_hash")&&captured->get("location")){
     auto frontend=*captured;frontend["code_hash"]=hash(error.code);frontend["message_hash"]=hash(error.what());
-    Object identity{{"schema","nex.frontend-diagnostic-id/1"},{"language",languageVersion},
+    Object identity{{"schema","nex.frontend-diagnostic-id/1"},{"language",frontend.getString("language").value_or(languageVersion)},
       {"phase",*frontend.get("phase")},{"input_kind",*frontend.get("input_kind")},
       {"source_inputs_hash",*frontend.get("source_inputs_hash")},
       {"reported_key_hash",hash(error.span.file)},{"location",*frontend.get("location")},
