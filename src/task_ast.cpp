@@ -1,6 +1,7 @@
 #include "nex/task_ast.h"
 #include "nex/task_frontend.h"
 #include <algorithm>
+#include "nex_source_error.h"
 
 namespace nex {
 using AV=nexrt::Value;
@@ -20,7 +21,8 @@ struct TaskAstMachine::Impl {
   struct DeferredOutcome {AV value;std::shared_ptr<SourceException> error;};
   struct Action {
     enum Kind {Statement,Expression,Apply,Bind,Assign,Discard,Return,If,Loop,
-               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise,CatchGuard,EndFinally,ResumeOutcome} kind;
+               ShortCircuit,StartMatch,TryMatch,MatchGuard,EndMatch,PopScope,Finish,EndTry,EndCatch,Raise,CatchGuard,EndFinally,ResumeOutcome,RaiseTyped,TypedCatchGuard} kind;
+    size_t nextClause=0;
     E expression;
     S statement;
     std::shared_ptr<MatchState> match;
@@ -140,6 +142,18 @@ struct TaskAstMachine::Impl {
     if(frames.empty()){returned=std::move(value);done=true;}
     else frames.back().values.push_back(std::move(value));
   }
+  void typedClause(const S &chain,size_t index){
+    auto &frame=frames.back();const auto &error=*frame.caught.back();
+    for(;index<chain->alternative.size();++index){auto clause=chain->alternative[index];bool typed=clause->type!=Type::Unknown;
+      if(typed&&(!error.payload||!error.payload->matches(clause->errorTypeKey)))continue;
+      frame.scopes.emplace_back();
+      if(typed)frame.scopes.back()[clause->name]=checkedSourceErrorValue(program,error,clause->type,clause->errorTypeKey,clause->span);
+      else{frame.scopes.back()[clause->name]=AV(nexrt::string(error.code));frame.scopes.back()[clause->catchMessage]=AV(nexrt::string(error.message));}
+      if(clause->expr){Action guard{Action::TypedCatchGuard,{},chain};guard.nextClause=index+1;add(std::move(guard));evaluate(clause->expr);}
+      else{add({Action::EndCatch});block(clause->body,false);}return;
+    }
+    auto unmatched=error;frame.caught.pop_back();raise(std::move(unmatched));
+  }
   void raise(SourceException error){
     while(!frames.empty()){
       auto &frame=frames.back();
@@ -151,6 +165,7 @@ struct TaskAstMachine::Impl {
         Action resume{Action::ResumeOutcome};resume.deferred=std::make_shared<DeferredOutcome>(DeferredOutcome{{},std::make_shared<SourceException>(std::move(error))});
         add(std::move(resume));block(handler.statement->alternative,true);return;
       }
+      if(handler.statement->kind==Stmt::TypedTry){frame.caught.push_back(std::make_shared<SourceException>(std::move(error)));typedClause(handler.statement,0);return;}
       frame.scopes.emplace_back();
       frame.scopes.back()[handler.statement->name]=AV(nexrt::string(error.code));
       frame.scopes.back()[handler.statement->catchMessage]=AV(nexrt::string(error.message));
@@ -198,8 +213,10 @@ struct TaskAstMachine::Impl {
         switch(action.kind){
         case Action::Statement:
           switch(s->kind){
-      case Stmt::TypedThrow:case Stmt::TypedTry:case Stmt::CatchClause:
-        throw Error("E_TYPED_EXCEPTION_TASK","typed source AST task integration is pending",s->span);
+          case Stmt::TypedThrow:add({Action::RaiseTyped,{},s});evaluate(s->expr);break;
+          case Stmt::TypedTry:
+            frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndTry});block(s->body,true);break;
+          case Stmt::CatchClause:throw Error("E_INTERNAL","AST handler clause outside protected statement",s->span);
           case Stmt::Finally:
             frame.handlers.push_back({s,frame.actions.size(),frame.values.size(),frame.scopes.size(),frame.caught.size()});add({Action::EndFinally,{},s});block(s->body,true);break;
           case Stmt::Try:
@@ -327,6 +344,10 @@ struct TaskAstMachine::Impl {
           else{auto error=*frame.caught.back();frame.scopes.pop_back();frame.caught.pop_back();raise(std::move(error));}
           break;
         }
+        case Action::TypedCatchGuard:
+          if(pop().scalar){add({Action::EndCatch});block(s->alternative[action.nextClause-1]->body,false);}
+          else{frame.scopes.pop_back();typedClause(s,action.nextClause);}break;
+        case Action::RaiseTyped:{auto value=pop();auto payload=std::make_shared<const nexrt::SourceErrorPayload>(s->errorTypeKey,std::move(value));raise(SourceException(typeName(s->type),"typed source error",s->span,std::move(payload)));break;}
         case Action::EndCatch:frame.scopes.pop_back();frame.caught.pop_back();break;
         case Action::Raise:{auto message=pop();auto code=pop();
           if(code.tag!=AV::Object||message.tag!=AV::Object||code.object->kind!=nexrt::Data::String||message.object->kind!=nexrt::Data::String)throw Error("E_TASK_TYPE","source error requires two strings",s->span);

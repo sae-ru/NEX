@@ -1,3 +1,29 @@
+# Candidate027 resumable typed errors development0.145.0
+
+Explicit027 C++ selection lowers ordered typed/legacy handlers through the
+independent AST scheduler, TaskIR machine, native continuation frames and
+TypeScript generators. Matching and binding share checked concrete type keys.
+A declined filter releases its clause bindings and continues with the original
+packet; an error from its predicate/body escapes every sibling handler. Typed
+values and original source sites remain owned across yields, nested calls,
+future observation, finalization and pending outcome replacement.
+
+Catch dispatch has one protected boundary and one retained lexical packet.
+Native descriptors use unpublished cohort0x4e45585400002701, distinct from the
+unchanged88-byte public ABI6 and previous private025 cohorts. Cross-cohort native
+calls and public application entry reject this development descriptor. New frame
+helpers require that exact cohort; no existing provider contract is widened.
+Existing runtime source hashes pin the matching implementation.
+
+Payloads containing callable/file/task/resource authority remain rejected until
+payload provenance and owner-transfer checks are complete. Lifetime traversal
+preserves exceptional outer assignments and finalizer paths for ordinary typed
+data; unknown throw effects conservatively retain unmatched edges. Public CLI,
+projects/libraries/providers,027 graph migration, SDK and platform delivery
+remain pending. tests/typed_source_tasks.py compares actual AST/TaskIR/Node and
+native O0/O2 at1/4 workers, including real worker overlap and physical Data/Handle
+retirement. These development tests do not certify the remaining delivery gates.
+
 # Candidate027 synchronous native development0.144.0
 
 Explicitly version-selected027 source now emits sequential pure/io/throw native

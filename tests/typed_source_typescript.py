@@ -46,7 +46,7 @@ for name,text,project in fixtures:
     if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}')
     prefix='project-' if project else ''
     expected=json.loads(run([probe,prefix+'reference',f]));(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n')
-    run([probe,prefix+'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-1' and mapping['public_revision'] is False and 'revision' not in mapping and mapping['language']=='0.27'
+    run([probe,prefix+'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-2' and mapping['public_revision'] is False and 'revision' not in mapping and mapping['language']=='0.27'
     (d/'run.mjs').write_text(runner.replace('EXPECTED_KEY',json.dumps(expected.get('payload_type_key'))))
     actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',d/'run.mjs']));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
     assert actual['kind']==expected['kind'],(name,expected,actual)

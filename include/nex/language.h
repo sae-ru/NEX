@@ -9,7 +9,7 @@
 #include <vector>
 #include "llvm/Support/JSON.h"
 
-namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload; }
+namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload;struct Value; }
 
 namespace nex {
 inline constexpr const char *languageVersion = "0.26";
@@ -208,6 +208,8 @@ const char *programLanguage(SourceLanguage language);
 // Internal typed-error identity; requires a checked concrete type. No source
 // syntax or language-version promotion is implied by this helper.
 std::string sourceErrorTypeKey(const Program &,const Type &);
+// Owned, key- and kind-checked binding shared by the source execution engines.
+nexrt::Value checkedSourceErrorValue(const Program &,const SourceException &,const Type &,const std::string &,Span);
 bool supportsSourceExceptions(const Program &);
 const char *programLanguage(const Program &program);
 Program parse(std::string source, std::string path,bool editorNames=false,bool editorDetails=false);

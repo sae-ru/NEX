@@ -1,6 +1,31 @@
 #include "nex/language.h"
+#include "nex_source_error.h"
 #include <functional>
 namespace nex {
+
+nexrt::Value checkedSourceErrorValue(const Program &program,const SourceException &error,const Type &type,const std::string &key,Span span){
+  using V=nexrt::Value;
+  try{
+    if(!error.payload)throw nexrt::DataError("E_SOURCE_TYPE","typed handler requires an owned source payload");
+    const auto &payload=*error.payload;
+    switch(type.kind){
+    case Type::I64:return payload.getScalar(key,V::Integer);
+    case Type::Bool:return payload.getScalar(key,V::Boolean);
+    case Type::F64:return payload.getScalar(key,V::Floating);
+    case Type::Str:return payload.getObject(key,nexrt::Data::String);
+    case Type::Bytes:return payload.getObject(key,nexrt::Data::Bytes);
+    case Type::List:return payload.getObject(key,nexrt::Data::List);
+    case Type::Record:return payload.getObject(key,program.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
+    case Type::Result:{
+      const auto &v=payload.get(key);
+      if(v.tag!=V::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");
+      return payload.getObject(key,v.object->kind);
+    }
+    default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed exception binding requires payload lifetime integration",span);
+    }
+  }catch(const nexrt::DataError &e){throw Error(e.code,e.what(),span);}
+}
+
 std::string sourceErrorTypeKey(const Program &program,const Type &root){
   if(root.kind==Type::Constructor)throw Error("E_SOURCE_TYPE","an unapplied constructor is not a source error value type");
   llvm::json::Object context;std::set<std::string> seen;size_t nodes=0;

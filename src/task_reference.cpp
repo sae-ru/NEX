@@ -221,7 +221,11 @@ void annotateReferenceError(const Program &program,Error &error){
   for(const auto &function:program.functions)for(const auto &operation:operationTree(program,function))
     if(operation.ast&&operation.span.file==error.span.file&&operation.span.begin==error.span.begin&&
        operation.span.end==error.span.end){
-      error.operationSite=operation.site;error.operationRevision=revision(program);
+      error.operationSite=operation.site;
+      // Development027 has real operation sites but no published graph revision.
+      // Diagnostic enrichment must not replace the original fatal/control error.
+      if(program.sourceLanguage==SourceLanguage::TypedErrors027)return;
+      error.operationRevision=revision(program);
       error.operationSource=hash(json(sourceBundle(program),false));return;
     }
 }

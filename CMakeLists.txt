@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.144.0 LANGUAGES C CXX)
+project(NEX VERSION 0.145.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1351,3 +1351,12 @@ set_tests_properties(typed_error_genuine026_origin PROPERTIES TIMEOUT 120)
 install(FILES tests/typed_error_origin.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.26-typed-origin.json tests/fixtures/language-0.26-typed-origin.sql
   DESTINATION share/nex/tests/fixtures)
+
+add_executable(nex_typed_source_tasks_probe tests/typed_source_tasks.cpp src/typescript.cpp)
+target_link_libraries(nex_typed_source_tasks_probe PRIVATE nex_native_backend nex_frontend MLIR Threads::Threads)
+target_compile_options(nex_typed_source_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME typed_source_tasks COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_tasks.py $<TARGET_FILE:nex_typed_source_tasks_probe>
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++)
+set_tests_properties(typed_source_tasks PROPERTIES TIMEOUT 1800)
+install(FILES tests/typed_source_tasks.cpp tests/typed_source_tasks.py DESTINATION share/nex/tests)

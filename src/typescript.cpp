@@ -256,7 +256,6 @@ class Generator {
   }
 public:
   explicit Generator(const Program &p,bool tasks=false,bool staging=false,bool exceptions=false):p(p),taskMode(tasks),privateSource(staging),exceptionPrototype(exceptions||isPublicSourceExceptionLanguage(p.sourceLanguage)){
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027&&taskMode)throw Error("E_TYPED_EXCEPTION_TASK","language0.27 TypeScript task lowering is pending");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype&&!exceptionPrototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions require the dedicated experimental TypeScript emitter");
     if(!privateSource){for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;return;}
     size_t sequence=0;std::function<void(E)> expression;std::function<void(const std::vector<S>&)> body;
@@ -309,7 +308,7 @@ public:
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-1"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution","synchronous"},{"source_exceptions","nex.source-errors/2"}},false,true};
+    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-2"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"}},taskMode,true};
     auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
     if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
     return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
