@@ -13,7 +13,7 @@ compiler=a.compiler.resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex public025 stream delivery ');root=Path(temporary.name).resolve()
 started=time.monotonic();report={'schema':'nex.public025-stream-delivery/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],
- 'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'language':'0.26','installed_SDK_accepted':False,'full_objective_complete':False}
+ 'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'language':'0.27','installed_SDK_accepted':False,'full_objective_complete':False}
 def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd,env=None,expected=0):
@@ -45,20 +45,20 @@ assert(task_send(ready,true));while true{task_yield();}});
 assert(unwrap(task_recv(ready)));assert(task_cancel(child));task_wait(child);});}''',None,'E_CANCELLED',b'prefix'),
 ]
 try:
- descriptor=cli('describe',root,['describe']);assert descriptor['version']=='0.26'
- assert descriptor['task_file_streams']['public_enabled'] and descriptor['task_file_streams']['source_support'] and descriptor['task_providers']['execution_task_abi']==6
+ descriptor=cli('describe',root,['describe']);assert descriptor['version']=='0.27'
+ assert descriptor['task_file_streams']['public_enabled'] and descriptor['task_file_streams']['source_support'] and descriptor['task_providers']['execution_task_abi']==7
  for name,body,_,error,expected_output in CASES:
-  project=root/name;project.mkdir();write(project/'nex.json',{'schema':'nex.project/1','language':'0.26','entry':'main.nex'});source=project/'main.nex';source.write_text('module public_stream_'+name+';\n'+body+'\n')
+  project=root/name;project.mkdir();write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'main.nex'});source=project/'main.nex';source.write_text('module public_stream_'+name+';\n'+body+'\n')
   roots=[]
   for backend in ['reference','native']:
    files=project/backend;files.mkdir();(files/'input').write_bytes(b'abcdef');(files/'output').write_bytes(b'original');roots.append(files)
-  checked=cli(name+'-check',project,['check']);assert cli(name+'-graph',project,['graph','--revision',checked['revision']])['language']=='0.26'
+  checked=cli(name+'-check',project,['check']);assert cli(name+'-graph',project,['graph','--revision',checked['revision']])['language']=='0.27'
   env={**os.environ,'NEX_FILES_ROOT':str(roots[0]),'NEX_FILES_WRITE':'1'}
   reference=cli(name+'-reference',project,['eval','--revision',checked['revision']],env,1 if error else 0)
   if error:assert reference['code']==error
   else:assert reference['stdout']=='42\n'
   built=cli(name+'-build',project,['build','--revision',checked['revision'],'--profile','release']);binary=Path(built['executable'])
-  metadata=json.loads((binary.parent/'build.json').read_text());assert metadata['runtime_requirements']['task_file_streams'] and metadata['runtime_requirements']['task_execution_abi']==0x4e45585400000006
+  metadata=json.loads((binary.parent/'build.json').read_text());assert metadata['runtime_requirements']['task_file_streams'] and metadata['runtime_requirements']['task_execution_abi']==0x4e45585400000007
   hidden=source.with_name('main.nex.hidden');source.rename(hidden)
   try:native=run(name+'-source-absent-native',[binary],project,{'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(roots[1]),'NEX_FILES_WRITE':'1'},70 if error else 0)
   finally:hidden.rename(source)
@@ -70,7 +70,7 @@ try:
   ('fs_only_helper','server fn read(f:file)->bytes !{fs}{return unwrap(file_read(f,1));}server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("input"));read(f);}','E_EFFECT'),
   ('wire_authority','server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("input"));encode_json(f);}','E_GENERIC_BOUND'),
   ('client_authority','client fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("input"));}','E_REALM')]:
-  project=root/('rejected-'+name);project.mkdir();write(project/'nex.json',{'schema':'nex.project/1','language':'0.26','entry':'main.nex'});(project/'main.nex').write_text('module rejected;'+body)
+  project=root/('rejected-'+name);project.mkdir();write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'main.nex'});(project/'main.nex').write_text('module rejected;'+body)
   rejected=cli(name+'-rejected',project,['check'],expected=1);assert rejected['code']==code,(name,rejected)
   report['rejections'].append({'name':name,'code':code});save()
  old=root/'old-metadata';old.mkdir();write(old/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'main.nex'});(old/'main.nex').write_text('module old;fn main()->unit{}')

@@ -23,6 +23,54 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_typed027_requires_its_own_phase_and_keeps_retained_ABIs(self):
+        self.assertEqual(len(acceptance.acceptance_phases('0.136.1')),39)
+        self.assertEqual(len(acceptance.acceptance_phases('0.150.0')),39)
+        self.assertEqual(len(acceptance.acceptance_phases('0.151.0')),40)
+        self.assertIn('typed-source-errors',acceptance.acceptance_phases('0.151.0'))
+        for language,abi,families in [('0.24',5,(8,9,10)),('0.25',6,(11,12,13)),
+                                      ('0.26',6,(11,12,13)),('0.27',7,(14,15,16))]:
+            self.assertEqual(acceptance.source_task_abi(language),abi)
+            self.assertEqual([acceptance.task_provider_schema({'language':language},kind)
+                              for kind in ('normal','profile','debug')],
+                             ['nex.native-task-provider/'+str(n) for n in families])
+        for language in ('0.28','0.027',None):
+            with self.assertRaises(RuntimeError):acceptance.source_task_abi(language)
+            with self.assertRaises(RuntimeError):acceptance.task_provider_schema({'language':language},'normal')
+        with self.assertRaisesRegex(RuntimeError,'actual027 typed source'):
+            acceptance.validate_typed_source_evidence({'language':'0.27','compiler_sha256':'a'*64})
+
+    def test_typed027_receipt_rejects_missing_execution_migration_and_identity(self):
+        flags=('reference_native_typescript','checked_map','scalar_Wasm',
+               'wrong_type_guard_finally_suspension','effect_and_immutable_binding_rejections',
+               'genuine026_origin_verified','stale_HEAD_rejected',
+               'all16_tables_schema_rows_namespace_IDs_preserved','physical_source_manifest_unchanged',
+               'source_absent_snapshot_recovery','recovered_reference_native_execution','explicit_physical_export')
+        proof=dict.fromkeys(flags,True)
+        proof.update(schema='nex.installed-typed-source/1',ok=True,language='0.27',compiler_sha256='a'*64,
+                     revision='b'*64,migration_revision='c'*64,execution_report_sha256='d'*64,
+                     execution={'ok':True,'language':'0.27','compiler_sha256':'a'*64,'passed':[dict.fromkeys(
+                         ('ordinary_typed_CLI','native_debug_release','typescript','checked_map','actual_scalar_Wasm',
+                          'effect_and_binding_rejections'),True)]})
+        resources={}
+        for key,path in [('helper_sha256','tools/sdk_typed_source.py'),
+                         ('test_source_sha256','tests/source_exceptions_public.py'),
+                         ('origin_metadata_sha256','tests/fixtures/language-0.26-typed-origin.json'),
+                         ('origin_sql_sha256','tests/fixtures/language-0.26-typed-origin.sql')]:
+            resources[path]='e'*64;proof[key]='e'*64
+        report={'language':'0.27','compiler_sha256':'a'*64,'resource_hashes':resources,
+                'evidence':{'typed_source_errors':proof}}
+        acceptance.validate_typed_source_evidence(report)
+        for field in flags:
+            changed=copy.deepcopy(report);changed['evidence']['typed_source_errors'][field]=False
+            with self.subTest(field=field),self.assertRaises(RuntimeError):
+                acceptance.validate_typed_source_evidence(changed)
+        for key,value in [('language','0.26'),('compiler_sha256','f'*64),('origin_sql_sha256','f'*64),
+                          ('execution',{}),('migration_revision','not-a-revision')]:
+            changed=copy.deepcopy(report);changed['evidence']['typed_source_errors'][key]=value
+            with self.subTest(field=key),self.assertRaises(RuntimeError):
+                acceptance.validate_typed_source_evidence(changed)
+
     @unittest.skipUnless(sys.platform.startswith('linux'), 'actual ELF loader context')
     def test_ELF_inherited_RPATH_context_relocates_and_rejects_inconsistent_roots(self):
         compiler = shutil.which('cc')

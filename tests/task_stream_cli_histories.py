@@ -12,7 +12,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex public025 histories ');ro
 if a.retained_sdk:a.retained_sdk=a.retained_sdk.resolve(strict=True)
 fixtures=resources/'tests/fixtures'
 if not (fixtures/'language-0.23-sdk1335-stream-generic-modules.json').is_file():fixtures=resources/'examples/task-stream-migration'
-started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],'providers':{},'compiler_sha256':sha(compiler),'language':'0.26','installed_SDK_accepted':False,'full_objective_complete':False}
+started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],'providers':{},'compiler_sha256':sha(compiler),'language':'0.27','installed_SDK_accepted':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd=None,env=None,expected=0):
  report['state']=label;save();r=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
@@ -49,7 +49,7 @@ def reviewed_delivery_sources(sources):
   target['files'][name]=text
  return target
 try:
- descriptor=cli('describe',root,['describe']);assert descriptor['version']=='0.26' and descriptor['task_file_streams']['public_enabled'] and descriptor['task_file_streams']['native_source_lowering']
+ descriptor=cli('describe',root,['describe']);assert descriptor['version']=='0.27' and descriptor['task_file_streams']['public_enabled'] and descriptor['task_file_streams']['native_source_lowering']
  # Completion of this current migration matrix is evidence produced below;
  # do not require or silently change a compiler-wide delivery acceptance flag.
  report['descriptor_history_migration_complete']=descriptor['task_file_streams']['public_history_migration_complete']
@@ -86,12 +86,12 @@ try:
     path=root/(label+'-reviewed-target.json');write(path,candidate);arguments.extend(['--candidate',path])
     valid=cli(label+'-reviewed-plan',project,[*arguments,'--kind','plan']);assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used'] and state(project)==before
    else:assert plan['target_valid']
-   migrated=cli(label+'-migrate',project,[*arguments,'--expected-revision',meta['head']]);assert migrated['origin_verified'] and migrated['origin_language']=='0.23' and migrated['language']=='0.26' and not migrated['materialized'] and migrated['revision']!=row['revision']
+   migrated=cli(label+'-migrate',project,[*arguments,'--expected-revision',meta['head']]);assert migrated['origin_verified'] and migrated['origin_language']=='0.23' and migrated['language']=='0.27' and not migrated['materialized'] and migrated['revision']!=row['revision']
    assert migrated['candidate_used']==reviewed_candidate and migrated['declared_original_revision']==row['revision']
    after=state(project);preserved(before,after);assert len(after['tables']['revisions'])==4 and after['tables']['head']==[(1,migrated['revision'])]
    with closing(sqlite3.connect(project/'.nex/graph.db')) as db:
     original=db.execute('SELECT source,language FROM revisions WHERE hash=?',(row['revision'],)).fetchone();assert json.loads(original[0])==row['bundle'] and original[1]=='0.23'
-    target=db.execute('SELECT source,language FROM revisions WHERE hash=?',(migrated['revision'],)).fetchone();assert json.loads(target[0])==candidate['sources'] and target[1]=='0.26'
+    target=db.execute('SELECT source,language FROM revisions WHERE hash=?',(migrated['revision'],)).fetchone();assert json.loads(target[0])==candidate['sources'] and target[1]=='0.27'
    assert all((project/n).read_bytes()==data for n,data in physical.items())
    repeated=cli(label+'-idempotent',project,['migrate','--revision',migrated['revision'],'--expected-revision',migrated['revision']]);assert repeated['revision']==migrated['revision'] and not repeated['changed'] and state(project)==after
    current_env={**os.environ,'NEX_FILES_ROOT':str(project/'reference'),'NEX_FILES_WRITE':'1'}
@@ -122,7 +122,7 @@ try:
     else:assert old['value']==row['old_value'] and old['stdout']==''
     assert state(project)==after;old_sdk_rechecked=True
    old_refused=cli(label+'-old-execution-guard',project,['eval','--revision',row['revision']],expected=1);assert old_refused['code']=='E_LANGUAGE_VERSION' and state(project)==after
-   destination=root/(label+'-export');cli(label+'-export',project,['export','--revision',migrated['revision'],'--directory',destination]);assert json.loads((destination/'nex.json').read_text())['language']=='0.26'
+   destination=root/(label+'-export');cli(label+'-export',project,['export','--revision',migrated['revision'],'--directory',destination]);assert json.loads((destination/'nex.json').read_text())['language']=='0.27'
    materialized=cli(label+'-materialized-check',destination,['check']);assert materialized['revision']==migrated['revision']
    report['cases'].append({'name':label,'origin_revision':row['revision'],'revision':migrated['revision'],'expected_value':row['expected_value'],'native_reference':True,'all16_tables_schema_rows_ids_preserved':True,'physical_sources_manifest_lock_preserved':True,'idempotent':True,'materialized_current_project_checked':True,'source_absent_native':True,'old_SDK_rechecked':old_sdk_rechecked,'original_pinned_provider_available':original_available,'reviewed_foreign_pin_projection':projected,'reviewed_delivery_effects':reviewed_effects,'candidate_used':reviewed_candidate,'executable':str(binary),'executable_sha256':sha(binary),'fixture_sha256':sha(fixture),'SQL_sha256':meta['SQL_sha256']});save()
   project=restore(name+'-stale',meta,sql.read_text());before=state(project);refused=cli(name+'-stale',project,['migrate','--expected-revision','0'*64],expected=1);assert refused['code']=='E_CONFLICT' and state(project)==before

@@ -36,6 +36,12 @@ int main(int argc,char **argv){try{
   auto value=llvm::json::parse(readFile(argv[1]));if(!value){llvm::consumeError(value.takeError());throw Error("E_OPTION","invalid migration request JSON");}
   const auto o=value->getAsObject();if(!o||o->getString("schema")!="nex.typed-error-migration-request/1")throw Error("E_OPTION","invalid migration request schema");
   const auto mode=field(*o,"mode");const fs::path project=field(*o,"project"),directory=project/".nex";
+  if(mode=="inspect-versioned-source"){
+    const auto sources=o->get("sources");if(!sources)throw Error("E_OPTION","missing versioned source bundle");
+    auto p=loadVersionedBundle(*sources,project.string(),field(*o,"source_language"));
+    std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},
+      {"ast",evaluate(p,false)},{"ir",evaluate(p,true)}})<<'\n';return 0;
+  }
   if(mode=="evaluate"||mode=="emit"||mode=="build-native"){
     Program p;std::string selected;
     {Store store(directory,StoreOpenMode::ReadOnly);selected=field(*o,"revision");const auto language=store.revisionLanguage(selected);p=loadVersionedBundle(store.bundle(selected),project.string(),language);}

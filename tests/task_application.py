@@ -35,7 +35,7 @@ def cli(root, *args, success=True):
 
 with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as temporary:
     root = Path(temporary)
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'yield.nex'}))
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'yield.nex'}))
     executable_root = root / 'standalone'
     executable_root.mkdir()
     results = []
@@ -105,7 +105,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     # A clean primary entry does not make an additional public ABI export safe.
     exports = root / 'export-project'
     (exports / 'library').mkdir(parents=True)
-    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.26', 'entry': 'library/main.nex'}))
+    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'library/main.nex'}))
     (exports / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -117,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     project = root / 'source-project'
     (project / 'app').mkdir(parents=True)
     (project / 'core').mkdir()
-    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.26', 'entry': 'app/main.nex'}))
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'app/main.nex'}))
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},

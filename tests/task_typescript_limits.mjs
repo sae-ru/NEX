@@ -2,7 +2,8 @@
 // trusted-host probes below also test boundaries the NEX checker cannot emit.
 import * as task from './nex-task-runtime.ts';
 import * as nex from './nex-runtime.ts';
-import {entry} from './program.ts';
+import {entry,sourceErrorContracts} from './program.ts';
+const runGenerated=(root,options)=>task.runTypedSourceErrors(root,sourceErrorContracts,options);
 let cases=0,completions=0;
 const reports=[];
 function require(value,message){if(!value)throw new Error(message);}
@@ -45,7 +46,7 @@ require(immutableStats.limits.steps===1000&&immutableStats.limits.timeoutMs===50
 // One root budget is consumed across generator resumptions, including pure
 // helper checkpoints emitted by the compiler.
 let stepStats;
-await rejects('E_LIMIT',()=>task.run(task.call(()=>entry()),{steps:100,timeoutMs:5000,complete:s=>{stepStats=s;clean(s);}}));
+await rejects('E_LIMIT',()=>runGenerated(task.call(()=>entry()),{steps:100,timeoutMs:5000,complete:s=>{stepStats=s;clean(s);}}));
 require(stepStats.steps===100,'step ceiling was exceeded or reset');
 reports.push({name:'generated-pure-helper-budget',steps:stepStats.steps});
 // Date.now is deliberately unusable: only the monotonic clock may determine
@@ -53,7 +54,7 @@ reports.push({name:'generated-pure-helper-budget',steps:stepStats.steps});
 const wallClock=Date.now;Date.now=()=>0;let timeoutStats,ticks=0,polls=0;
 const heartbeat=setInterval(()=>++ticks,1),started=performance.now();
 try{
- await rejects('E_TIMEOUT',()=>task.run(task.call(()=>entry()),{steps:Number.MAX_SAFE_INTEGER,timeoutMs:25,workers:3,observe:(_job,r)=>{if(r.operation==='$poll')++polls;},complete:s=>{timeoutStats=s;clean(s);}}));
+ await rejects('E_TIMEOUT',()=>runGenerated(task.call(()=>entry()),{steps:Number.MAX_SAFE_INTEGER,timeoutMs:25,workers:3,observe:(_job,r)=>{if(r.operation==='$poll')++polls;},complete:s=>{timeoutStats=s;clean(s);}}));
 }finally{Date.now=wallClock;clearInterval(heartbeat);}
 require(timeoutStats.limits.timeoutMs===25,'pure helper lost its actual deadline');
 reports.push({name:'generated-pure-helper-deadline',elapsedMs:performance.now()-started,ticks,polls});
@@ -119,7 +120,7 @@ reports.push({name:'deterministic-shared-root-deadline',scopeRequests,scopeRetur
 // helper generator frames through the existing MessageChannel host boundary.
 const controller=new AbortController();let cancelledStats;
 const abort=setTimeout(()=>controller.abort(),10);
-try{await rejects('E_CANCELLED',()=>task.run(task.call(()=>entry()),{steps:Number.MAX_SAFE_INTEGER,timeoutMs:5000,signal:controller.signal,complete:s=>{cancelledStats=s;clean(s);}}));}
+try{await rejects('E_CANCELLED',()=>runGenerated(task.call(()=>entry()),{steps:Number.MAX_SAFE_INTEGER,timeoutMs:5000,signal:controller.signal,complete:s=>{cancelledStats=s;clean(s);}}));}
 finally{clearTimeout(abort);}
 require(cancelledStats.completed,'cancellation did not complete');
 process.stdout.write(JSON.stringify({ok:true,cases,cleanupCompletions:completions,actualWorkers:1,generatedPureHelper:true,reports})+'\n');

@@ -44,8 +44,12 @@ ACCEPTANCE_PHASES_024_TCP = ACCEPTANCE_PHASES_024_HTTP[:ACCEPTANCE_PHASES_024_HT
 ACCEPTANCE_PHASES_025 = ACCEPTANCE_PHASES_024_TCP[:ACCEPTANCE_PHASES_024_TCP.index('backend-agreement')+1] + ('source-exceptions',) + ACCEPTANCE_PHASES_024_TCP[ACCEPTANCE_PHASES_024_TCP.index('backend-agreement')+1:]
 
 
+ACCEPTANCE_PHASES_027 = ACCEPTANCE_PHASES_025[:ACCEPTANCE_PHASES_025.index('source-exceptions')+1] + ('typed-source-errors',) + ACCEPTANCE_PHASES_025[ACCEPTANCE_PHASES_025.index('source-exceptions')+1:]
+
 def acceptance_phases(version):
     parts=version.split('.')
+    if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,151,0):
+        return ACCEPTANCE_PHASES_027
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,136,0):
         return ACCEPTANCE_PHASES_025
     if len(parts)==3 and all(part.isascii() and part.isdigit() for part in parts) and tuple(map(int,parts))>=(0,135,1):
@@ -71,15 +75,21 @@ def task_provider_schema(record, kind):
     language=record.get('language')
     require('language' not in record or isinstance(language,str),'invalid task provider language member')
     families={None:(2,3,4),'0.19':(2,3,4),'0.20':(2,3,4),'0.21':(2,3,4),'0.22':(2,3,4),
-              '0.23':(5,6,7),'0.24':(8,9,10),'0.25':(11,12,13),'0.26':(11,12,13)}
+              '0.23':(5,6,7),'0.24':(8,9,10),'0.25':(11,12,13),'0.26':(11,12,13),'0.27':(14,15,16)}
     require(language in families and kind in ('normal','profile','debug'),
             'unsupported task provider language/kind')
     return 'nex.native-task-provider/'+str(families[language][('normal','profile','debug').index(kind)])
 
 
+def source_task_abi(language):
+    families={'0.24':5,'0.25':6,'0.26':6,'0.27':7}
+    require(language in families,'unsupported source task ABI language')
+    return families[language]
+
+
 def validate_source_exception_evidence(report):
     evidence=report.get('evidence',{}).get('source_exceptions',{})
-    require(report.get('language') in ('0.25','0.26') and isinstance(evidence,dict) and
+    require(report.get('language') in ('0.25','0.26','0.27') and isinstance(evidence,dict) and
             evidence.get('schema')=='nex.installed-source-exceptions/1' and
             evidence.get('ok') is True and evidence.get('language')==report.get('language') and
             evidence.get('native_profiles')==['debug','release'] and
@@ -96,9 +106,9 @@ def validate_source_exception_evidence(report):
     for key in ('revision','source_sha256'):
         require(isinstance(evidence.get(key),str) and re.fullmatch('[0-9a-f]{64}',evidence[key]),
                 'SDK source-error source identity missing')
-    if report.get('language')=='0.26':
+    if report.get('language') in ('0.26','0.27'):
         handlers=evidence.get('handler_filters',{})
-        require(isinstance(handlers,dict) and handlers.get('language')=='0.26' and
+        require(isinstance(handlers,dict) and handlers.get('language')==report.get('language') and
                 handlers.get('cases_per_engine')==[7,7,7] and
                 all(handlers.get(key) is True for key in ('ok','reference','native_debug_release',
                     'typescript','owned_cleanup','genuine025_origin_verified',
@@ -112,6 +122,44 @@ def validate_source_exception_evidence(report):
             require(handlers.get(key)==report.get('resource_hashes',{}).get(path) and
                     isinstance(handlers.get(key),str) and re.fullmatch('[0-9a-f]{64}',handlers[key]),
                     'SDK026 handler helper or genuine origin identity differs')
+
+
+def validate_typed_source_evidence(report):
+    proof=report.get('evidence',{}).get('typed_source_errors',{})
+    compiler=report.get('compiler_sha256')
+    flags=('reference_native_typescript','checked_map','scalar_Wasm',
+           'wrong_type_guard_finally_suspension','effect_and_immutable_binding_rejections',
+           'genuine026_origin_verified','stale_HEAD_rejected',
+           'all16_tables_schema_rows_namespace_IDs_preserved','physical_source_manifest_unchanged',
+           'source_absent_snapshot_recovery','recovered_reference_native_execution','explicit_physical_export')
+    require(report.get('language')=='0.27' and isinstance(compiler,str) and
+            re.fullmatch('[0-9a-f]{64}',compiler) and isinstance(proof,dict) and
+            proof.get('schema')=='nex.installed-typed-source/1' and proof.get('ok') is True and
+            proof.get('language')=='0.27' and proof.get('compiler_sha256')==report.get('compiler_sha256') and
+            all(proof.get(key) is True for key in flags),
+            'SDK lacks actual027 typed source execution, migration and graph recovery evidence')
+    for key,path in [('helper_sha256','tools/sdk_typed_source.py'),
+                     ('test_source_sha256','tests/source_exceptions_public.py'),
+                     ('origin_metadata_sha256','tests/fixtures/language-0.26-typed-origin.json'),
+                     ('origin_sql_sha256','tests/fixtures/language-0.26-typed-origin.sql')]:
+        pin=report.get('resource_hashes',{}).get(path)
+        require(isinstance(pin,str) and re.fullmatch('[0-9a-f]{64}',pin) and proof.get(key)==pin,
+                'SDK typed source helper or genuine026 identity differs')
+    for key in ('revision','migration_revision','execution_report_sha256'):
+        require(isinstance(proof.get(key),str) and re.fullmatch('[0-9a-f]{64}',proof[key]),
+                'SDK typed source execution identity is missing')
+    execution=proof.get('execution',{})
+    require(isinstance(execution,dict) and execution.get('ok') is True and execution.get('language')=='0.27' and
+            execution.get('compiler_sha256')==report.get('compiler_sha256'),
+            'SDK typed CLI report belongs to another compiler')
+    passed=execution.get('passed')
+    require(isinstance(passed,list) and all(isinstance(row,dict) for row in passed),
+            'SDK typed CLI report lacks actual execution records')
+    typed=[row for row in passed if row.get('ordinary_typed_CLI')]
+    require(len(typed)==1 and all(typed[0].get(key) is True for key in
+            ('ordinary_typed_CLI','native_debug_release','typescript','checked_map',
+             'actual_scalar_Wasm','effect_and_binding_rejections')),
+            'SDK typed CLI did not execute all checked backends and rejections')
 
 
 def captured_task_build_artifacts(command, expected_linkages):
@@ -699,7 +747,7 @@ def validate_task_http_evidence(report):
     helper='tests/task_http_server.py'
     resources=report.get('resource_hashes',{})
     digest=resources.get(helper) if isinstance(resources,dict) else None
-    require(report.get('language') in ('0.24','0.25', '0.26') and isinstance(http,dict) and isinstance(delivery,dict) and
+    require(report.get('language') in ('0.24','0.25', '0.26','0.27') and isinstance(http,dict) and isinstance(delivery,dict) and
             http.get('installed_helper') is True and isinstance(digest,str) and
             re.fullmatch('[0-9a-f]{64}',digest) and http.get('helper_sha256')==digest and
             delivery.get('helper_sha256')==digest and
@@ -759,7 +807,7 @@ def validate_task_tcp_evidence(report):
     for key,script,schema in [('source','verify.py','nex.task-tcp-source-conformance/1'),('delivery','verify_delivery.py','nex.tcp-provider-delivery/1')]:
         observed=tcp.get(key,{})
         require(isinstance(observed,dict) and observed.get('schema')==schema and observed.get('ok') is True and
-                observed.get('state')=='passed' and observed.get('language')==report.get('language') and report.get('language') in ('0.24','0.25', '0.26') and
+                observed.get('state')=='passed' and observed.get('language')==report.get('language') and report.get('language') in ('0.24','0.25', '0.26','0.27') and
                 observed.get('toolchain')==report.get('version') and observed.get('compiler_sha256')==report.get('compiler_sha256') and
                 observed.get('source_projection') is False,
                 'SDK TCP evidence lacks installed matching compiler execution')
@@ -809,6 +857,8 @@ def validate_completed_report(report):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,151,0):
+        validate_typed_source_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,136,0):
         validate_source_exception_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,4):
@@ -820,7 +870,7 @@ def validate_completed_report(report):
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,0):
         streams=report.get('evidence',{}).get('structured_task_file_streams',{})
         delivery=streams.get('delivery',{});history=streams.get('histories',{})
-        require(report.get('language') in ('0.24','0.25', '0.26') and streams.get('original_SDK_execution_claimed') is False and
+        require(report.get('language') in ('0.24','0.25', '0.26','0.27') and streams.get('original_SDK_execution_claimed') is False and
                 delivery.get('ok') is True and delivery.get('language')==report.get('language') and
                 delivery.get('compiler_sha256')==report.get('compiler_sha256') and
                 type(delivery.get('native_reference_pairs')) is int and delivery['native_reference_pairs']==5 and
@@ -864,7 +914,7 @@ def validate_completed_report(report):
         history=writes.get('extended_histories',{}) if isinstance(writes,dict) else {}
         names={'resources','nominal','callable','imports','tasks','model-compute-device-imports'}
         require(isinstance(history,dict) and history.get('schema')=='nex.public-task-write-histories/1' and
-                history.get('compiler_sha256')==report.get('compiler_sha256') and history.get('language')==report.get('language') and report.get('language') in ('0.23','0.24','0.25', '0.26') and
+                history.get('compiler_sha256')==report.get('compiler_sha256') and history.get('language')==report.get('language') and report.get('language') in ('0.23','0.24','0.25', '0.26','0.27') and
                 history.get('origin_SDK_sha256')=='a75421b899a7e47d617a8ef6257123f75db4ee4f9869fe2aa11c3be6b87bb1a8' and
                 all(history.get(key) is True for key in ('ok','all16_tables_schema_rows_ids_preserved','native_reference','retained_web_tests')) and
                 type(history.get('genuine022_histories')) is int and history['genuine022_histories']==6 and
@@ -883,7 +933,7 @@ def validate_completed_report(report):
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,0):
         writes=report.get('evidence',{}).get('structured_task_file_writes',{})
         require(isinstance(writes,dict) and writes.get('schema')=='nex.public-task-write-delivery/1' and
-                writes.get('language')==report.get('language') and report.get('language') in ('0.23','0.24','0.25', '0.26') and writes.get('compiler_sha256')==report.get('compiler_sha256') and
+                writes.get('language')==report.get('language') and report.get('language') in ('0.23','0.24','0.25', '0.26','0.27') and writes.get('compiler_sha256')==report.get('compiler_sha256') and
                 all(writes.get(key) is True for key in ('ok','all16_tables_schema_rows_ids_preserved','native_reference',
                     'static_shared_binary_edges','mixed_static_shared','explicit_write_grant_denied','source_deleted_package','source_deleted_replay','browser_exclusion')) and
                 type(writes.get('genuine022_migrations')) is int and writes['genuine022_migrations']==3 and
@@ -944,7 +994,7 @@ def validate_completed_report(report):
                 proof.get('actual_producers')==['C11','CPP20'] and proof.get('actual_GPU_NPU_resources') is False,
                 'SDK acceptance lacks actual dependent resource source report')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,130,0):
-        require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')==('0.26' if tuple(map(int,version))>=(0,137,0) else '0.25' if tuple(map(int,version))>=(0,136,0) else '0.24' if tuple(map(int,version))>=(0,134,0) else '0.23' if tuple(map(int,version))>=(0,133,0) else '0.22'),
+        require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')==('0.27' if tuple(map(int,version))>=(0,151,0) else '0.26' if tuple(map(int,version))>=(0,137,0) else '0.25' if tuple(map(int,version))>=(0,136,0) else '0.24' if tuple(map(int,version))>=(0,134,0) else '0.23' if tuple(map(int,version))>=(0,133,0) else '0.22'),
                 'SDK acceptance source task/FFI version identities differ')
         resources=report.get('evidence',{}).get('source_resources',{})
         require(isinstance(resources,dict),'SDK acceptance lacks installed public source task/FFI resource transport evidence')
@@ -1229,7 +1279,7 @@ def main():
     environment = dict(os.environ, NEX_RESOURCE_DIR=str(resources))
     bootstrap = json.loads(subprocess.check_output([str(compiler),'describe','--kind','index','--json'],
                                                   cwd=root,env=environment,text=True))
-    require(bootstrap.get('language') in ('0.22','0.23','0.24','0.25', '0.26') and
+    require(bootstrap.get('language') in ('0.22','0.23','0.24','0.25', '0.26','0.27') and
             bootstrap.get('kind')=='index','unsupported SDK bootstrap descriptor')
     (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':bootstrap['language'],'entry':'acceptance-scope.nex'})+'\n')
     (root/'acceptance-scope.nex').write_text('module acceptance_scope;fn main()->unit{}\n')
@@ -2145,7 +2195,7 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         from sdk_task_streams import check_installed_task_streams
         feature=cli('describe','--field','task_file_streams_host')['value']
         pack=json.loads((resources/'llm/language-pack.json').read_text())
-        require(feature==pack['task_file_streams_host'] and feature['source_support'] is (report['language'] in ('0.24','0.25', '0.26')) and
+        require(feature==pack['task_file_streams_host'] and feature['source_support'] is (report['language'] in ('0.24','0.25', '0.26','0.27')) and
                 feature['typed_one_shot_open'] is True and feature['worker_ambient_authority'] is False,
                 'installed private stream descriptor differs')
         proof['private_stream_host']=check_installed_task_streams(run,root,resources,report['doctor']['native_compiler'])
@@ -2169,8 +2219,8 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
 
     def structured_task_file_streams():
         feature=state['descriptor']['task_file_streams']
-        require(feature['language']==report['language'] and report['language'] in ('0.24','0.25', '0.26') and feature['public_enabled'] and feature['source_support'] and
-                feature['execution_ABI']==(6 if report['language'] in ('0.25','0.26') else 5) and not feature['source_values_on_IO_workers'],
+        require(feature['language']==report['language'] and report['language'] in ('0.24','0.25', '0.26','0.27') and feature['public_enabled'] and feature['source_support'] and
+                feature['execution_ABI']==(source_task_abi(report['language'])) and not feature['source_values_on_IO_workers'],
                 'installed source stream descriptor differs')
         destination=root/'public-task-stream-delivery'
         run([sys.executable,'-B',resources/'tests/task_stream_delivery.py',compiler,'--output',destination],timeout=2400)
@@ -2204,7 +2254,7 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
         descriptor = state['descriptor']['task_file_reads']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_file_reads'] and descriptor['source_support'] and
-                descriptor['language'] == report['language'] and report['language'] in ('0.24','0.25', '0.26') and not descriptor['typescript'],
+                descriptor['language'] == report['language'] and report['language'] in ('0.24','0.25', '0.26','0.27') and not descriptor['typescript'],
                 'installed task file-read descriptor/pack differs')
         report['evidence']['task_file_migration'] = check_installed_task_migration(cli, root, resources)
         directory = root/'structured-task-file-project'
@@ -2238,7 +2288,7 @@ server fn solve()->result<i64> !{task,fs}{
 server fn main()->unit !{task,fs,io}{print(unwrap(solve()));}
 server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_code(core::count("missing"))=="NOT_FOUND");}
 '''
-        if report['language'] in ('0.25','0.26'):
+        if report['language'] in ('0.25','0.26','0.27'):
             application_source=application_source.replace('!{task,fs}', '!{task,fs,throw}').replace('!{task,fs,io}', '!{task,fs,io,throw}')
         (directory/'app/main.nex').write_text(application_source)
         previous = {key:environment.get(key) for key in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_RESOURCE_DIR')}
@@ -2304,7 +2354,7 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
         descriptor = state['descriptor']['task_profiling']
         pack = json.loads((resources/'llm/language-pack.json').read_text())
         require(descriptor == pack['task_profiling'] and descriptor['source_support'] and
-                descriptor['cli_language'] == report['language'] and report['language'] in ('0.24','0.25', '0.26'),
+                descriptor['cli_language'] == report['language'] and report['language'] in ('0.24','0.25', '0.26','0.27'),
                 'installed task profiler descriptor/pack differs')
         limits = {'steps':2000000,'timeout_ms':10000,'workers':2}
         controls = ['--task-steps','2000000','--task-timeout-ms','10000','--task-workers','2']
@@ -2319,7 +2369,7 @@ fn main()->unit!{io,task}{
  }));
 }
 '''
-        if report['language'] in ('0.25','0.26'):
+        if report['language'] in ('0.25','0.26','0.27'):
             source=source.replace('fn main()->unit!{io,task}', 'fn main()->unit!{io,task,throw}').replace('fn(scope:task_scope)->i64!{task}', 'fn(scope:task_scope)->i64!{task,throw}')
         (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1',
             'language':report['language'],'entry':'main.nex'}))
@@ -2426,8 +2476,8 @@ fn main()->unit!{io,task}{
             'lowered_workers':1,'memory_scope':'managed shallow handles/objects; not total heap/RAM'}
 
     def static_task_providers():
-        require(report['language'] in ('0.24','0.25', '0.26'),'unsupported task provider language')
-        task_abi=6 if report['language'] in ('0.25','0.26') else 5
+        require(report['language'] in ('0.24','0.25', '0.26','0.27'),'unsupported task provider language')
+        task_abi=source_task_abi(report['language'])
         normal_schema=task_provider_schema({'language':report['language']},'normal')
         profile_schema=task_provider_schema({'language':report['language']},'profile')
         debug_schema=task_provider_schema({'language':report['language']},'debug')
@@ -2663,8 +2713,8 @@ server fn main()->unit!{task,fs,io}{
             retained_hash_verification='compiler-checked receipt BLAKE3 index plus exact original/retained bytes and independent SHA256; no Python BLAKE3 recomputation')
 
     def shared_task_providers():
-        require(report['language'] in ('0.24','0.25', '0.26'),'unsupported task provider language')
-        task_abi=6 if report['language'] in ('0.25','0.26') else 5
+        require(report['language'] in ('0.24','0.25', '0.26','0.27'),'unsupported task provider language')
+        task_abi=source_task_abi(report['language'])
         normal_schema=task_provider_schema({'language':report['language']},'normal')
         profile_schema=task_provider_schema({'language':report['language']},'profile')
         debug_schema=task_provider_schema({'language':report['language']},'debug')
@@ -2933,8 +2983,8 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             physical_file_retirement_claim=False)
 
     def task_provider_debuggers():
-        require(report['language'] in ('0.24','0.25', '0.26'),'unsupported task provider language')
-        task_abi=6 if report['language'] in ('0.25','0.26') else 5
+        require(report['language'] in ('0.24','0.25', '0.26','0.27'),'unsupported task provider language')
+        task_abi=source_task_abi(report['language'])
         normal_schema=task_provider_schema({'language':report['language']},'normal')
         profile_schema=task_provider_schema({'language':report['language']},'profile')
         debug_schema=task_provider_schema({'language':report['language']},'debug')
@@ -2986,9 +3036,9 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         require(session['task_debug']['schema']=='nex.task-debug-session/2' and view['schema']=='nex.task-debug-view/2' and
                 view['catalog']['mode']=='shared-fixed' and view['runtime_image']['kind']=='runtime' and
                 view['runtime_image']['component'] is None and {r['component'] for r in view['registries']}=={'leaf','mid','unused','app'} and
-                next(r['code_count'] for r in view['registries'] if r['component']=='unused')==(1 if report['language'] in ('0.25','0.26') else 0),
+                next(r['code_count'] for r in view['registries'] if r['component']=='unused')==(1 if report['language'] in ('0.25','0.26','0.27') else 0),
                 'fixed shared debugger lost original/pure-provider registries or runtime owner')
-        if report['language'] in ('0.25','0.26'):
+        if report['language'] in ('0.25','0.26','0.27'):
             # Public025 retains all source calls in ABI6 frames, including pure
             # library functions. Legacy024 keeps its zero-code pure registry.
             unused=next(row for row in view['catalog']['registries'] if row['component']=='unused')
@@ -3122,8 +3172,8 @@ pub fn work(input:i64)->i64!{task}{let answer:i64=leaf::work(input);task_yield()
         report['evidence']['task_provider_debugging']=evidence
 
     def task_provider_profiles():
-        require(report['language'] in ('0.24','0.25', '0.26'),'unsupported task provider language')
-        task_abi=6 if report['language'] in ('0.25','0.26') else 5
+        require(report['language'] in ('0.24','0.25', '0.26','0.27'),'unsupported task provider language')
+        task_abi=source_task_abi(report['language'])
         normal_schema=task_provider_schema({'language':report['language']},'normal')
         profile_schema=task_provider_schema({'language':report['language']},'profile')
         debug_schema=task_provider_schema({'language':report['language']},'debug')
@@ -4747,7 +4797,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
             require(not any('SDK_WORKER_SERVER_SENTINEL' in path.read_text()
                             for path in worker_generated.rglob('*.ts')),'server code entered worker/client source')
             if example=='task-workers':
-                task_host='task.runSourceErrors(task.call(' if report['language'] in ('0.25','0.26') else 'task.run(task.call('
+                task_host='task.runTypedSourceErrors(task.call(' if report['language']=='0.27' else 'task.runSourceErrors(task.call(' if report['language'] in ('0.25','0.26') else 'task.run(task.call('
                 require((worker_generated/'src/nex-task-runtime.ts').is_file() and
                         task_host in (worker_generated/'src/worker-program.ts').read_text(),
                         'task worker lacks its independent scheduler host')
@@ -5146,6 +5196,10 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         from sdk_source_exceptions import check_installed_source_exceptions
         report['evidence']['source_exceptions']=check_installed_source_exceptions(cli,run,root,resources)
 
+    def typed_source_errors():
+        from sdk_typed_source import check_installed_typed_source
+        report['evidence']['typed_source_errors']=check_installed_typed_source(cli,run,root,resources,compiler)
+
     def structured_task_tcp():
         descriptor=cli('describe','--field','tcp_provider')['value']
         pack=json.loads((resources/'llm/language-pack.json').read_text())
@@ -5185,9 +5239,12 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 ('task-provider-debugging', task_provider_debuggers),
                 ('archive-debug-replay-export', sources_and_debug), ('scalar-proof', proof),
                 ('traits', traits), ('authenticated-storage', authenticated_storage), ('browser', browser), ('project-build', project_build)]
-        if report['language'] in ('0.25','0.26'):
+        if report['language'] in ('0.25','0.26','0.27'):
             actions.insert(next(i for i,(name,_) in enumerate(actions) if name=='backend-agreement')+1,
                            ('source-exceptions',source_exceptions))
+        if report['language']=='0.27':
+            actions.insert(next(i for i,(name,_) in enumerate(actions) if name=='source-exceptions')+1,
+                           ('typed-source-errors',typed_source_errors))
         require(tuple(name for name, _ in actions) == tuple(report['required_phases']),
                 'SDK action registration differs from its workflow phase contract')
         for name, action in actions:

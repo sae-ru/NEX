@@ -26,7 +26,7 @@ void clean(){require(!inRequestScope()&&liveObjects==0,"compiled handler retaine
 std::string hex(const std::string &s){static const char digits[]="0123456789abcdef";std::string out;for(unsigned char c:s){out+=digits[c>>4];out+=digits[c&15];}return out;}
 }
 int main(){try{
- const auto *code=NEX_HTTP_TASK_ACCESSOR();require(code&&code->abi==taskCodeSourceExceptionABI,"compiled descriptor ABI differs");
+ const auto *code=NEX_HTTP_TASK_ACCESSOR();require(code&&code->abi==taskCodeTypedSourceExceptionABI,"compiled descriptor ABI differs");
  require(code->parameterCount==1&&code->captureCount==0&&code->resultKind==3,"compiled HTTP signature differs");
  std::string observed;
  for(unsigned workers:{1U,2U,4U}){

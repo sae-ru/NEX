@@ -35,7 +35,7 @@ def check_installed_source_exceptions(cli, run, root, resources):
     root, resources = Path(root), Path(resources)
     doctor = cli('doctor')
     language=doctor.get('language')
-    require(language in {'0.25','0.26'} and
+    require(language in {'0.25','0.26','0.27'} and
             Path(doctor.get('runtime', '')).resolve() == (resources/'runtime/runtime.cpp').resolve(),
             'source-error gate did not select the requested SDK resources')
     discovery = cli('describe', '--field', 'source_exceptions')
@@ -122,7 +122,7 @@ process.stdout.write(JSON.stringify({code:payload.code,message:payload.message,s
     require(cli('check', invalid, cwd=project, expected_success=False).get('code') == 'E_EFFECT',
             'source throw escaped effect checking')
     handlers={}
-    if language=='0.26':
+    if language in ('0.26','0.27'):
         from sdk_source_handlers import check_installed_source_handlers
         handlers=check_installed_source_handlers(cli,root,resources)
     return {'schema':'nex.installed-source-exceptions/1','ok':True,'language':language,'handler_filters':handlers,

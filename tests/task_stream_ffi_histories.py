@@ -35,7 +35,7 @@ started = time.monotonic()
 report = {'schema': 'nex.private024-mixed-stream-histories/1', 'ok': False, 'state': 'starting',
           'commands': [], 'cases': [], 'rejections': [], 'providers': {},
           'probe_sha256': sha(probe), 'compiler_sha256': sha(compiler), 'source_probe_sha256': sha(source_probe),
-          'public_language': '0.26', 'private_language': '0.24',
+          'public_language': '0.27', 'private_language': '0.24',
           'public025_delivery_accepted': False, 'full_objective_complete': False}
 
 
@@ -171,7 +171,7 @@ try:
             preserved(before, after)
             assert value['origin_verified'] and value['old_identity_rechecked']
             assert value['origin_revision'] == row['revision'] and value['origin_language'] == '0.23'
-            assert value['language'] == '0.24' and value['public_default'] == '0.26'
+            assert value['language'] == '0.24' and value['public_default'] == '0.27'
             assert value['target_value'] == row['expected_value'] and value['target_stdout'] == ''
             assert value['target_external_capacity_after_scope'] == 0
             if original_available:

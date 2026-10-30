@@ -1,7 +1,7 @@
 // Private trusted-host completion kernel; not a source I/O or browser adapter.
 import * as task from './nex-task-runtime.ts';
 import * as nex from './nex-runtime.ts';
-import {entry as spin} from './program.ts';
+import {entry as spin,sourceErrorContracts} from './program.ts';
 let cases=0,completions=0;
 const reports=[];
 function require(value,message){if(!value)throw new Error(message);}
@@ -15,7 +15,7 @@ function clean(s){
 }
 function launch(body,options={}){
  const state={done:false,statistics:undefined};
- state.promise=task.run(task.call(function*(){task.enter();try{return yield*body();}finally{task.leave();}}),{...options,complete:s=>{state.statistics=s;clean(s);options.complete?.(s);}});
+ state.promise=task.runTypedSourceErrors(task.call(function*(){task.enter();try{return yield*body();}finally{task.leave();}}),sourceErrorContracts,{...options,complete:s=>{state.statistics=s;clean(s);options.complete?.(s);}});
  state.promise.then(()=>{state.done=true;},()=>{state.done=true;});return state;
 }
 function pending(value,admit=raw=>raw,bytes=256){return task.hostPending(()=>({settled:value.promise,cancel:()=>{}}),admit,bytes);}

@@ -252,7 +252,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -1363,7 +1363,7 @@ install(FILES tests/typed_source_typescript.cpp tests/typed_source_typescript.py
 install(FILES tests/source_error_native_packet.cpp DESTINATION share/nex/tests)
 
 add_test(NAME typed_error_genuine026_origin COMMAND ${Python3_EXECUTABLE} -B
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_origin.py $<TARGET_FILE:nex>)
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_origin.py $<TARGET_FILE:nex> $<TARGET_FILE:nex_typed_error_migration_probe>)
 set_tests_properties(typed_error_genuine026_origin PROPERTIES TIMEOUT 120)
 install(FILES tests/typed_error_origin.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.26-typed-origin.json tests/fixtures/language-0.26-typed-origin.sql
@@ -1425,3 +1425,5 @@ install(FILES tests/typed_graph_snapshots.py tests/typed_scalar_wasm.py tests/ty
 
 # Keep the one-second admitted-FFI deadline test free of competing CTest builds.
 set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)
+
+install(FILES tests/source_exceptions_public.py DESTINATION share/nex/tests)

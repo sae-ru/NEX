@@ -1,5 +1,13 @@
 # Development0.136.0 / language0.25 SDK candidate
 
+Current development0.151 selects language0.27. Its installed acceptance adds a
+mandatory `typed-source-errors` phase: ordinary typed CLI/native/TypeScript and
+scalar Wasm execution, rejected programs, genuine026 migration, all16-table
+history preservation, source-absent snapshot recovery and explicit export.
+There are40 required phases for this version. Earlier SDKs keep their original
+phase and ABI families. These are acceptance requirements; the current installed
+SDK and full platform workflow have not yet passed them.
+
 The current workflow requires **39 phases**, including `source-exceptions`.
 It checks source-error delivery from joined children, uncaught errors, preserved
 rethrow locations, checked-trap separation, effect rejection and native profile

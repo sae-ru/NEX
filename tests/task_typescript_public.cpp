@@ -27,7 +27,7 @@ int main(int argc,char **argv)try{
     auto result=generateWebApp(p,directory.string());std::cout<<json(std::move(result))<<'\n';return 0;
   }
   if(mode!="emit"&&mode!="test"&&mode!="historical"&&mode!="retained019"&&mode!="private")throw Error("E_OPTION","unknown probe mode");
-  auto module=emitTypeScript(p,{{"entry",entry}});
+  auto module=emitTypeScriptDelivery(p,{{"entry",entry}});
   if(std::filesystem::exists(directory))throw Error("E_EXISTS","public output directory must be new");
   llvm::json::Array sites;
   for(const auto &function:p.functions)for(const auto &operation:operationTree(p,function))sites.push_back(operation.site);
