@@ -1413,7 +1413,7 @@ set_tests_properties(typed_error_history_migration PROPERTIES TIMEOUT 900)
 install(FILES tests/typed_error_migration.cpp tests/typed_error_migration.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.26-modular-typed-origin.json tests/fixtures/language-0.26-modular-typed-origin.sql DESTINATION share/nex/tests/fixtures)
 
-install(FILES tests/typed_task_protocol.cpp tests/typed_provider_records.cpp tests/typed_error_projects.py tests/typed_error_debugging.py tests/typed_web_delivery.py tests/typed_web_browser.py DESTINATION share/nex/tests)
+install(FILES tests/typed_task_protocol.cpp tests/typed_provider_records.cpp tests/typed_error_projects.py tests/typed_error_debugging.py tests/typed_web_delivery.py tests/typed_web_browser.py tests/workers-browser.spec.js DESTINATION share/nex/tests)
 install(FILES tests/fixtures/web-026-sdk149-origin.json DESTINATION share/nex/tests/fixtures)
 
 # Explicit027 graph recovery and pure scalar Wasm gates, before public selection.

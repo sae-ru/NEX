@@ -84,7 +84,7 @@ steps per invocation and five repetitions. Median wall seconds were:
 
 The host was not isolated. The C++ comparison does not implement NEX task
 cancellation/limit machinery. These observations are scoped to one algorithm
-and older versions; they are not current 0.152.0 benchmarks or universal language
+and older versions; they are not current 0.152.1 benchmarks or universal language
 comparisons. The Linux observation missed that experiment's 90% C++ throughput goal.
 
 A separate [0.96 build-cache experiment](evidence/native-scale-0.96.0.json) used
@@ -106,7 +106,7 @@ owned buffers transported in typed errors. [Linux accelerator evidence](evidence
 covers specific CIX/RK providers with its own version. Neither is automatic GPU
 compilation for arbitrary NEX functions.
 
-Current SDK acceptance is recorded separately in the [delivery record](releases/0.152.0.json).
+Current SDK acceptance is recorded separately in the [delivery record](releases/0.152.1.json).
 Native Windows/CUDA, Metal, Apple NPU, broader device operations, mobile/native UI,
 general algebraic effects, remaining network/DB integrations, project conversion
 and NEX Studio remain active work in [PLAN](../PLAN.md).

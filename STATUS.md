@@ -1,11 +1,14 @@
-# Logical debugger resume development — 0.152.1 / language 0.27
+# Logical debugger resume delivery — 0.152.1 / language 0.27
 
-A saved modular HTTP LLDB timeout was reproduced in one of 12 traced replays.
-An event-driven resume prototype passed 48/48 replays on the same native binary.
-The implementation now has explicit stale/restarted/foreign event, missing exit,
-async-mode, backend error and interruption regressions. Full current regression
-and a matching portable SDK remain pending. Historical 0.152 evidence below keeps
-its original scope and failed run.
+The [matching Mac SDK receipt](docs/releases/0.152.1.json) records 285/285 groups
+in the first full run, 40 maintained phases plus 15 runtime and four resume-protocol
+cases in each moved/restored SDK. The [debugger evidence](docs/evidence/lldb-resume-0.152.1.json)
+keeps the original timeout, prototype replays and actual implementation scopes.
+An additional [126 browser tests](docs/evidence/sdk-browsers-0.152.1.json) passed
+for both SDKs, using isolated compiler/driver/preview processes and a separate
+same-machine browser runtime. The browser test fixture is included in installation.
+Broader platform, UI/accessibility, device, language and other PLAN work remains
+pending. The sections below preserve their historical versions and failed runs.
 
 # Runtime contract development — 0.152.0 / language 0.27
 

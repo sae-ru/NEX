@@ -101,6 +101,6 @@ does not copy original Git/SQLite history; the original project retains it.
 Use normal [graph snapshots](snapshots.md) when transferring that history.
 
 The historical 0.151.1 SDK predates this command. The
-[0.152 delivery record](releases/0.152.0.json) records core regression with an explicit isolated debugger retry,
-moved/restored Mac SDK acceptance and 15 runtime scenarios in each SDK. These
-are separate from native Windows/CUDA or other-platform acceptance.
+[0.152.1 delivery record](releases/0.152.1.json) covers matching full Mac regression,
+moved/restored SDK delivery and 15 runtime-contract scenarios in each SDK.
+Native Windows/CUDA and other-platform acceptance remain separate.

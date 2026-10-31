@@ -225,7 +225,7 @@ projections and matching compiler as ordinary frames.
 
 ## Logical task resume
 
-Development toolchain 0.152.1 changes synchronous `nex-task` continue/step
+Toolchain 0.152.1 changes synchronous `nex-task` continue/step
 commands to subscribe to process state events before resuming asynchronously.
 The command still waits for a fresh stop or process exit and restores the
 caller's debugger mode. Restarted internal stops and events for other processes
@@ -236,6 +236,8 @@ An already asynchronous caller retains its asynchronous behavior; DAP's explicit
 
 This avoids the unbounded LLDB synchronous-resume wait observed during rapid
 modular HTTP server shutdown on macOS. The original timeout and experimental
-replays are retained separately; full regression and matching SDK delivery for
-0.152.1 remain pending. The listener uses the standard
+replays are retained in the [matching evidence](evidence/lldb-resume-0.152.1.json).
+The [0.152.1 receipt](releases/0.152.1.json) records full Mac regression and matching
+moved/restored SDK delivery; other hosts retain separate acceptance gates.
+The listener uses the standard
 [LLDB process event API](https://lldb.llvm.org/python_api/lldb.SBProcess.html).

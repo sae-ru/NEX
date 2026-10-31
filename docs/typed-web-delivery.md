@@ -37,6 +37,15 @@ and the genuine0.149 language026 source/library/asset fixture.
 tests actual module Workers in Chromium/Firefox/WebKit. Headless engine evidence
 does not establish every released browser/device. npm lock and notices are unchanged.
 
-Full integrated regression, installed SDK/platform acceptance and the remaining
-original PLAN still require completion. Public CLI selection does not certify
-those delivery gates.
+Mac regression and installed SDK evidence are recorded below. Other platforms
+and remaining original PLAN work require separate acceptance. Public CLI
+selection does not certify those delivery gates.
+
+The [0.152.1 Mac SDK receipt](releases/0.152.1.json) and
+[real browser evidence](evidence/sdk-browsers-0.152.1.json) record 126 passed
+production UI/Worker tests for both installed SDKs. Compiler, test driver and
+preview servers run under the SDK isolation policy. The actual browser processes
+use a separate same-machine Playwright server: Firefox also crashed on an empty
+page under the outer SDK policy. No additional browser sandbox-disable flags were
+added. Released browsers, other OSes, devices and accessibility remain separate.
+The installed browser test includes its `workers-browser.spec.js` fixture.
