@@ -52,8 +52,9 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.152.1 / language 0.27**.
-The macOS ARM64 source build passed all 285 CTest groups. The development SDK
+Current source: **toolchain 0.153.0 / language 0.27**.
+Runtime loop contracts are under validation; accepted SDK evidence below remains0.152.1.
+The accepted 0.152.1 macOS ARM64 source build passed all 285 CTest groups. The development SDK
 passed 40 maintained phases in each moved/restored installation. An additional 126 production UI/Worker
 tests passed across Chromium, Firefox and WebKit. This is a development preview.
 Read the [logical debugger evidence](docs/evidence/lldb-resume-0.152.1.json) and

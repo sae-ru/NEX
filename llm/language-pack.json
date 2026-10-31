@@ -493,7 +493,9 @@
     "task_file_streams": "examples/task-streams/main.nex",
     "source_exceptions": "examples/exceptions/main.nex",
     "runtime_contracts": "examples/runtime-contracts/main.nex",
-    "runtime_contract": "examples/runtime-contracts/contracts.json"
+    "runtime_contract": "examples/runtime-contracts/contracts.json",
+    "runtime_loop_contracts": "examples/runtime-loop-contracts/main.nex",
+    "runtime_loop_contract": "examples/runtime-loop-contracts/contracts.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -3591,22 +3593,26 @@
     "ordinary_source_revision": true,
     "original_preserved": true,
     "roots": "ordinary concrete pure i64/bool/unit source functions",
-    "predicates": "scalar literals, parameter/result names and checked operators",
+    "predicates": "scalar literals, visible i64/bool bindings and checked operators",
     "failure_code": "E_ASSERT",
     "normal_returns_after_finally": true,
     "recursive_calls": true,
-    "loop_checks": false,
+    "loop_checks": true,
     "proof_performed": false,
     "language_migration_required": false,
     "installed_sdk_accepted": false,
     "pending": [
       "matching full regression and installed SDK acceptance",
       "effectful and aggregate root contracts",
-      "runtime loop contracts",
       "source contract syntax"
     ],
     "session_schema": "nex.runtime-contract-session/1",
     "body_lowering": "ordinary_private_function",
-    "projection_introduces_closures": false
+    "projection_introduces_closures": false,
+    "loop_receipt_schema": "nex.runtime-contract-candidate/2",
+    "loop_session_schema": "nex.runtime-contract-session/2",
+    "loop_annotations": "selected source while coordinates; nonempty invariants and i64 decreases",
+    "loop_lowering": "ordinary_private_pure_head_function",
+    "unannotated_loops_instrumented": false
   }
 }

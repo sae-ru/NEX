@@ -1,3 +1,15 @@
+# Runtime loop contract development — 0.153.0 / language 0.27
+
+Selected while rules now project invariant entry/back-edge checks, nonnegative
+iteration rankings and strict descent into ordinary checked source. Early
+returns, source errors, finally and lexical bindings retain their boundaries;
+no closure or language/ABI change is introduced. Pre/post-only receipts retain1;
+loop coverage uses2. A preexisting native pure typed-catch/finally CFG emission
+gap was reproduced in0.152.1 and is corrected with the existing unmatched type
+guard. Build and nine targeted groups have passed (separate retained attempts).
+Full regression, matching SDK and platform acceptance remain pending.
+Effectful/aggregate roots, source syntax and all other original PLAN work remain.
+
 # Logical debugger resume delivery — 0.152.1 / language 0.27
 
 The [matching Mac SDK receipt](docs/releases/0.152.1.json) records 285/285 groups

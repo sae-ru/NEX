@@ -31,14 +31,21 @@ class RuntimeContracts(harness.ToolchainCase):
     def web(self,directory,entry='main'):
         folder=directory/('typescript-'+entry)
         self.cli('emit','--kind','typescript','--entry',entry,'--directory',folder,cwd=directory)
+        mapping=json.loads((folder/'nex-map.json').read_text())
+        self.assertEqual(mapping['language'],'0.27')
+        self.assertIn(mapping['execution'],('synchronous','task-generator'))
+        asynchronous=mapping['execution']=='task-generator'
+        imports="import { entry } from './program.ts';\nimport { str, NexError } from './nex-runtime.ts';\n"
+        execution='await entry()';completion=''
+        if asynchronous:
+            imports+="import { sourceErrorContracts } from './program.ts';\nimport * as task from './nex-task-runtime.ts';\n"
+            execution='await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts,{complete:s=>{statistics=s;}})'
+            completion="if(!statistics?.completed || statistics.activeCalls || statistics.retainedFrames)throw new Error('task frames were not settled');\n"
         (folder/'package.json').write_text('{"type":"module"}')
-        (folder/'driver.ts').write_text("""import { entry } from './program.ts';
-import { str, NexError } from './nex-runtime.ts';
-let stdout = ''; console.log = value => { stdout += String(value) + '\\n'; };
-let result; try { const value=entry(); result={ok:true,value:value===undefined?null:str(value),stdout}; }
+        (folder/'driver.ts').write_text(imports+"""let stdout = ''; console.log = value => { stdout += String(value) + '\\n'; };
+let result, statistics; try { const value="""+execution+"""; result={ok:true,value:value===undefined?null:str(value),stdout}; }
 catch(e) { if (!(e instanceof NexError)) throw e; result={ok:false,code:e.code,stdout}; }
-process.stdout.write(JSON.stringify(result));
-""")
+"""+completion+"process.stdout.write(JSON.stringify(result));\n")
         process=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',folder/'driver.ts'],capture_output=True,text=True,timeout=30)
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
         return json.loads(process.stdout)

@@ -240,3 +240,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.152 executable scalar contracts explicitly project ordinary
    assert/function source into a distinct checked revision. No new syntax, hidden
    execution flag, runtime ABI or language migration; see runtime-contracts.md. *)
+
+(* Toolchain0.153 projects selected while invariants and rankings through ordinary
+   scalar locals, pure private functions and assert; source grammar is unchanged. *)

@@ -262,36 +262,124 @@ public:
 namespace {
 // Serialize only the deliberately small scalar predicate grammar. Reusing the
 // user's text here would let a trailing line comment swallow generated tokens.
-std::string runtimePredicateText(const E &e,const std::map<std::string,Type> &locals){
+std::string runtimePredicateText(const E &e,const std::map<std::string,Type> &locals,std::set<std::string> *used=nullptr){
   switch(e->kind){
   case Expr::Integer:return "("+std::to_string(e->number)+")";
   case Expr::Boolean:return e->number?"true":"false";
   case Expr::Name:
-    if(!identifier(e->text)||!locals.contains(e->text))break;
+    if(!identifier(e->text)||!locals.contains(e->text)||
+       (locals.at(e->text)!=Type::I64&&locals.at(e->text)!=Type::Bool))break;
+    if(used)used->insert(e->text);
     return e->text;
   case Expr::Unary:
     if((e->text=="-"||e->text=="!")&&e->args.size()==1)
-      return "("+e->text+runtimePredicateText(e->args[0],locals)+")";
+      return "("+e->text+runtimePredicateText(e->args[0],locals,used)+")";
     break;
   case Expr::Binary:
     if(e->args.size()==2&&std::set<std::string>{"+","-","*","/","%","<","<=",">",">=","==","!=","&&","||"}.contains(e->text))
-      return "("+runtimePredicateText(e->args[0],locals)+" "+e->text+" "+runtimePredicateText(e->args[1],locals)+")";
+      return "("+runtimePredicateText(e->args[0],locals,used)+" "+e->text+" "+runtimePredicateText(e->args[1],locals,used)+")";
     break;
   default:break;
   }
-  throw Error("E_CONTRACT_EXPRESSION","runtime predicates support only scalar literals, parameter/result names and checked operators",e->span);
+  throw Error("E_CONTRACT_EXPRESSION","runtime predicates support only scalar literals, visible i64/bool bindings and checked operators",e->span);
 }
-std::string runtimePredicate(Program &p,const Function &f,const std::string &text,
-                             const std::map<std::string,Type> &locals,const std::string &phase){
+std::string runtimeScalarExpression(Program &p,const Function &f,const std::string &text,
+                             const std::map<std::string,Type> &locals,const std::string &phase,
+                             Type expected=Type::Bool,std::set<std::string> *used=nullptr){
   auto expression=parseExpression(text,"<contract:"+f.name+":"+phase+">",4096);
-  auto source=runtimePredicateText(expression,locals);
-  if(checkExpression(p,f.name,expression,locals)!=Type::Bool)
-    throw Error("E_CONTRACT_EXPRESSION","runtime contract predicates must return bool",expression->span);
+  auto source=runtimePredicateText(expression,locals,used);
+  if(checkExpression(p,f.name,expression,locals)!=expected)
+    throw Error("E_CONTRACT_EXPRESSION","runtime "+phase+" must return "+typeName(expected),expression->span);
   return source;
+}
+struct RuntimeLoops {std::string body,helpers;Array coverage;};
+RuntimeLoops runtimeLoops(Program &checked,const Function &f,const Contract &spec,
+                         llvm::StringRef source,size_t begin,size_t end,
+                         std::set<std::string> &names,std::set<std::string> &globalNames){
+  RuntimeLoops result;result.body=source.substr(begin,end-begin).str();
+  if(spec.loops.empty())return result;
+  // Insertions retain the exact body and return/finally boundaries. A private
+  // head helper checks each back edge before reevaluating the original condition;
+  // there is no unreachable tail after an unconditional return and no closure.
+  std::map<size_t,std::string> insertions;
+  auto insert=[&](size_t at,const std::string &text){
+    if(at<begin||at>end)throw Error("E_CONTRACT_RUNTIME","loop source interval lies outside its function",f.span);
+    insertions[at]+=text;
+  };
+  auto fresh=[&](const std::string &stem){
+    auto name=stem;for(unsigned suffix=1;names.contains(name)||globalNames.contains(name);++suffix)name=stem+"_"+std::to_string(suffix);
+    names.insert(name);globalNames.insert(name);return name;
+  };
+  auto owner=f.name.substr(0,f.name.rfind("::"));
+  using Locals=std::map<std::string,Type>;
+  std::function<void(const std::vector<S>&,Locals)> visit;
+  visit=[&](const std::vector<S> &body,Locals locals){
+    for(const auto &statement:body){
+      if(statement->kind==Stmt::Let||statement->kind==Stmt::Var){locals[statement->name]=statement->type;continue;}
+      if(statement->kind==Stmt::While){
+        auto annotation=spec.loops.find({statement->span.line,statement->span.column});
+        if(annotation!=spec.loops.end()){
+          const auto &rule=annotation->second;
+          if(rule.invariants.empty()||rule.decreases.empty())
+            throw Error("E_CONTRACT_RUNTIME","runtime loops require nonempty invariants and a decreases expression",statement->span);
+          std::set<std::string> used;std::vector<std::string> predicates;
+          for(const auto &text:rule.invariants)predicates.push_back(runtimeScalarExpression(checked,f,text,locals,"invariant",Type::Bool,&used));
+          auto rank=runtimeScalarExpression(checked,f,rule.decreases,locals,"decreases",Type::I64,&used);
+          const auto &range=statement->sourceRange;const auto &condition=statement->expr->sourceRange;
+          if(!range.valid||!condition.valid||range.begin>=range.end||range.end>source.size()||
+             condition.begin<=range.begin||condition.begin>=condition.end||condition.end>=range.end)
+            throw Error("E_CONTRACT_RUNTIME","loop has no exact editable source interval",statement->span);
+          auto tokens=sourceTokens(source.substr(range.begin,range.end-range.begin).str(),f.span.file);
+          size_t open=std::string::npos;unsigned balance=0;
+          for(auto i=tokens.rbegin();i!=tokens.rend();++i){
+            auto raw=source.substr(range.begin+i->span.begin,i->span.end-i->span.begin);
+            if(raw=="}")++balance;else if(raw=="{"&&balance&&!--balance){open=range.begin+i->span.begin;break;}
+          }
+          if(open==std::string::npos||condition.end>open)
+            throw Error("E_CONTRACT_RUNTIME","cannot identify the exact loop body",statement->span);
+          auto stem="nex_contract_loop_"+hash(f.name+contentHash(f)+":"+std::to_string(statement->span.line)+":"+std::to_string(statement->span.column)).substr(0,16);
+          auto helper=fresh(stem),seen=fresh(stem+"_seen"),previous=fresh(stem+"_previous");
+          std::string parameters,arguments;
+          for(const auto &name:used){
+            if(!parameters.empty()){parameters+=", ";arguments+=", ";}
+            parameters+=name+": "+typeName(locals.at(name));arguments+=name;
+          }
+          if(!parameters.empty()){parameters+=", ";arguments+=", ";}
+          parameters+=seen+": bool, "+previous+": i64";arguments+=seen+", "+previous;
+          result.helpers+="\n\n"+f.realm+" fn "+helper+"("+parameters+") -> bool {\n";
+          for(const auto &predicate:predicates)result.helpers+="  assert("+predicate+");\n";
+          result.helpers+="  if "+seen+" { assert(("+rank+") < "+previous+"); }\n  return true;\n}\n";
+          insert(range.begin,"\nvar "+seen+": bool = false;\nvar "+previous+": i64 = 0;\n");
+          insert(condition.begin,helper+"("+arguments+") && (");insert(condition.end,")");
+          insert(open+1,"\n"+previous+" = "+rank+";\nassert("+previous+" >= 0);\n"+seen+" = true;\n");
+          result.coverage.push_back(Object{{"line",statement->span.line},{"column",statement->span.column},
+            {"invariants",rule.invariants.size()},{"decreases",true},{"head_helper_symbol",owner+"::"+helper}});
+        }
+      }
+      if(statement->kind==Stmt::Match){
+        for(const auto &arm:statement->arms){auto armLocals=locals;for(const auto &binding:arm->bindings)armLocals[binding.name]=binding.type;visit(arm->body,std::move(armLocals));}
+      }else if(statement->kind==Stmt::Try){
+        visit(statement->body,locals);auto handler=locals;handler[statement->name]=Type::Str;handler[statement->catchMessage]=Type::Str;visit(statement->alternative,std::move(handler));
+      }else if(statement->kind==Stmt::TypedTry){
+        visit(statement->body,locals);
+        for(const auto &clause:statement->alternative){
+          auto handler=locals;handler[clause->name]=clause->type==Type::Unknown?Type(Type::Str):clause->type;
+          if(clause->type==Type::Unknown)handler[clause->catchMessage]=Type::Str;
+          visit(clause->body,std::move(handler));
+        }
+      }else{visit(statement->body,locals);visit(statement->alternative,locals);}
+    }
+  };
+  Locals locals;for(const auto &parameter:f.params)locals[parameter.name]=parameter.type;
+  visit(f.body,std::move(locals));
+  if(result.coverage.size()!=spec.loops.size())throw Error("E_CONTRACT_RUNTIME","not every annotated loop has a lexical source projection",f.span);
+  for(auto i=insertions.rbegin();i!=insertions.rend();++i)result.body.insert(i->first-begin,i->second);
+  return result;
 }
 }
 JSON runtimeContractCandidate(const Program &original,const JSON &contract,const std::string &root){
   auto parsed=contracts(original,contract);
+  bool loopChecks=std::any_of(parsed.begin(),parsed.end(),[](const auto &item){return !item.second.loops.empty();});
   auto bundle=sourceBundle(original);auto files=bundle.getAsObject()->getObject("files");
   // The evidence and dependency lock must never overwrite a source member.
   for(const auto &name:{"runtime-contracts.receipt.json","nex.lock.json","nex.json"})
@@ -317,7 +405,6 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
        !f.effects.empty()||(f.result!=Type::Unit&&!scalar(f.result))||
        std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return !scalar(param.type);}))
       throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary concrete pure i64/bool/unit source functions",f.span);
-    if(!spec.loops.empty())throw Error("E_CONTRACT_RUNTIME","runtime pre/post projection does not execute loop invariants or rankings; use a separately reviewed contract with loops: []",f.span);
     auto source=files->getString(f.unit);
     if(!source||f.span.begin>=f.span.end||f.span.end>source->size())
       throw Error("E_CONTRACT_RUNTIME","contract root has no exact editable source definition",f.span);
@@ -336,7 +423,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     auto checks=[&](const std::vector<std::string> &clauses,const std::string &phase){
       std::string out;size_t index=0;
       for(const auto &clause:clauses){
-        auto predicate=runtimePredicate(checked,f,clause,locals,phase);
+        auto predicate=runtimeScalarExpression(checked,f,clause,locals,phase);
         out+="  // NEX runtime "+phase+" "+f.name+" #"+std::to_string(++index)+"\n  assert("+predicate+");\n";
       }
       return out;
@@ -358,7 +445,8 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       if(!parameters.empty()){parameters+=", ";arguments+=", ";}
       parameters+=param.name+": "+typeName(param.type);arguments+=param.name;
     }
-    implementations[f.unit]+="\n\n"+f.realm+" fn "+implementation+"("+parameters+") -> "+typeName(f.result)+" {"+definition.substr(open+1,close-open-1)+"}\n";
+    auto projected=runtimeLoops(checked,f,spec,*source,f.span.begin+open+1,f.span.begin+close,names,globalNames);
+    implementations[f.unit]+="\n\n"+f.realm+" fn "+implementation+"("+parameters+") -> "+typeName(f.result)+" {"+projected.body+"}\n"+projected.helpers;
     replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+typeName(f.result)+" = ";
     replacement+=implementation+"("+arguments+");\n";
     auto owner=f.name.substr(0,f.name.rfind("::"));
@@ -367,9 +455,11 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     replacement+=checks(spec.post,"ensures");
     replacement+=f.result==Type::Unit?"  return;\n":"  return "+spec.result+";\n";
     edits[f.unit].push_back({f.span.begin+open+1,f.span.begin+close,"\n"+replacement});
-    coverage.push_back(Object{{"symbol",f.name},{"origin_content_hash",contentHash(f)},
+    Object covered{{"symbol",f.name},{"origin_content_hash",contentHash(f)},
       {"requires",spec.pre.size()},{"ensures",spec.post.size()},{"normal_returns_only",true},
-      {"implementation_symbol",implementationSymbol}});
+      {"implementation_symbol",implementationSymbol}};
+    if(loopChecks)covered["loops"]=std::move(projected.coverage);
+    coverage.push_back(std::move(covered));
   }
   for(auto &[unit,changes]:edits){
     auto source=files->getString(unit)->str();
@@ -388,12 +478,17 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     const auto &implementation=candidate.function(required(*object,"implementation_symbol"));
     if(implementation.exported||implementation.closure)throw Error("E_INTERNAL","runtime contract implementation must remain private and static");
     (*object)["implementation_content_hash"]=contentHash(implementation);
+    if(auto annotations=object->getArray("loops"))for(auto &annotation:*annotations){
+      auto loop=annotation.getAsObject();const auto &helper=candidate.function(required(*loop,"head_helper_symbol"));
+      if(helper.exported||helper.closure||!helper.effects.empty())throw Error("E_INTERNAL","runtime loop helper must remain private static and pure");
+      (*loop)["head_helper_content_hash"]=contentHash(helper);
+    }
   }
-  return Object{{"schema","nex.runtime-contract-candidate/1"},{"language",languageVersion},
+  return Object{{"schema",loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
     {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
     {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},
     {"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},
-    {"failure_code","E_ASSERT"},{"loop_checks",false},{"proof_performed",false},
+    {"failure_code","E_ASSERT"},{"loop_checks",loopChecks},{"proof_performed",false},
     {"functions",std::move(coverage)},{"bundle",sourceBundle(candidate)},
     {"origin_bundle",sourceBundle(original)},{"contracts",contract}};
 }

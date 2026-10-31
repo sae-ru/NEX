@@ -67,24 +67,57 @@ so comments in input cannot swallow generated assertions. The existing bounds
 remain: at most 64 functions, 64 clauses per list and 4096 UTF-8 bytes per clause;
 CLI input is bounded to 1 MiB. Ordinary parser/source limits apply too.
 
-Loop invariants/rankings are **not executed**. A nonempty `loops` list is rejected
-with E_CONTRACT_RUNTIME. For pre/post instrumentation of a body containing loops,
-review a separate contract document with `loops: []`; retain the original proof
-annotations separately. Stale pins, unsupported roots and invalid predicates fail
-before the output is created. Source-level contract syntax, effectful/aggregate
-root contracts and runtime loop instrumentation remain pending.
+[The checked loop example](../examples/runtime-loop-contracts/README.md) includes
+portable sources, pinned contracts and proof/runtime commands.
+
+Selected while annotations now execute their complete invariant/ranking rule.
+Use the exact line/column emitted by `nex contract`. Each selected loop requires
+one or more bool invariants and a nonempty i64 `decreases` expression. These
+expressions may use visible scalar parameters/locals, including enclosing match
+and typed-catch bindings; a loop body's own locals are out of scope. Other
+loops remain unchanged. Missing/incomplete rules are rejected before output.
+
+Invariants run at entry, even if the condition is initially false, and after each
+normally completed iteration, before the next condition evaluation. A ranking is
+evaluated once after a true condition, must be nonnegative, and is saved before
+the body. On the next head visit the new ranking must be strictly smaller; this
+includes the final back edge whose next condition is false. A negative final
+ranking is allowed if the loop then exits. Initial false conditions do not
+execute the ranking. Predicate arithmetic and boolean short circuit remain
+checked; undefined expressions retain E_OVERFLOW/E_DIV_ZERO rather than becoming
+E_ASSERT. Checks run in annotation order, before the strict-decrease check.
+
+Early return or an escaping source error leaves the loop without a back edge;
+there is no trailing check in an unreachable body. Ordinary finally behavior
+still applies. An error handled inside the iteration permits its normal back
+edge; a finalizer's mutations are observed there. Fatal contract traps skip user
+handlers/finalizers while runtime-owned cleanup remains mandatory.
+
+The projection adds two fresh scalar loop locals and a private pure head helper
+with only the scalar bindings used by the rule. It introduces no closure. The
+original condition executes once per head visit, after the invariant/back-edge
+checks, and the original body/return boundaries remain in the private body
+function. This adds ordinary checked source steps and calls; step/call budgets,
+source locations and profiles include them. There is no zero-overhead promise.
+Effectful/aggregate root contracts and source-level contract syntax remain pending;
+the separate Z3 verifier and its proof limits are unchanged.
 
 ## Evidence and version control
 
-The CLI returns `nex.runtime-contract-session/1` with the generated revision and
-an absolute receipt path. The complete receipt uses `nex.runtime-contract-candidate/1`.
-Both shapes are defined by the linked schema.
+Pre/post-only output retains `nex.runtime-contract-session/1` and
+`nex.runtime-contract-candidate/1` with `loop_checks: false`. When any loop is
+selected, output uses session/candidate `/2`, `loop_checks: true` and per-function
+loop coverage (original coordinates, counts and private helper content hashes).
+The CLI includes the generated revision and an absolute receipt path.
+All four shapes are defined by the linked schema.
 
 The destination contains `nex.json`, a matching `nex.lock.json`, exported sources
-and `runtime-contracts.receipt.json` ([receipt schema](../llm/runtime-contracts.schema.json)). The receipt records origin and generated
+and `runtime-contracts.receipt.json` ([receipt schema](../llm/runtime-contracts.schema.json)). `intent_hash` retains the normalized pre/post acceptance intent; `contract_hash`
+pins the complete document, including loop coordinates, invariants and rankings.
+The receipt records origin and generated
 revisions/source hashes, exact contract and intent hashes, per-function content
 hashes/check counts, compiler identity and both complete source bundles. Its
-`proof_performed: false` and `loop_checks: false` are explicit. It is reproducibility
+`proof_performed: false` is explicit. Loop checks are reported separately. It is reproducibility
 evidence, not an authenticated certificate and not a substitute for a separate
 `nex verify` run. Original contract pins do not automatically certify the generated
 revision; regenerate/review proof metadata when proving generated code. Ordinary
@@ -104,3 +137,6 @@ The historical 0.151.1 SDK predates this command. The
 [0.152.1 delivery record](releases/0.152.1.json) covers matching full Mac regression,
 moved/restored SDK delivery and 15 runtime-contract scenarios in each SDK.
 Native Windows/CUDA and other-platform acceptance remain separate.
+
+Toolchain0.153 develops loop projection. Matching full regression, SDK and platform
+acceptance for that extension remain separate from the accepted0.152.1 SDK.

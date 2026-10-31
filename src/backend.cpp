@@ -866,7 +866,17 @@ class Emitter {
           // A pending source error is owned, but is not a lexical catch. Bare
           // throw in the finalizer still selects an enclosing source catch.
           scopes.emplace_back();scopes.back()["$finally_error"]={slot,Type::Str,true};
-          if(!emitFinalizer(s))raiseSourceError(load({slot,Type::Str,true},s->span),s->span);
+          if(!emitFinalizer(s)){
+            // Typed dispatch still has a nonmatching CFG edge after a statically
+            // total typed catch. A surrounding finally must lower that edge in a
+            // pure function too; an actual packet there violates the checked
+            // effect contract. Keep the existing fatal type guard, rather than
+            // inventing an outward error ABI or rejecting this valid function.
+            if(handlers.empty()&&exceptionOutput.name.empty()){
+              call("nex_source_error_unmatched",{constant(s->span.line,Type::I64,s->span)},Type::Unit,s->span);
+              line("llvm.unreachable",s->span);
+            }else raiseSourceError(load({slot,Type::Str,true},s->span),s->span);
+          }
           scopes.pop_back();
         }
         exceptionOwners.pop_back();
