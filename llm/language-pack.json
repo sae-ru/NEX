@@ -396,7 +396,9 @@
     "typed_web_delivery_schema": "llm/typed-web-delivery.schema.json",
     "language_history": "docs/language-history.md",
     "grammar_history": "docs/grammar-history.ebnf",
-    "exception_history": "docs/exceptions-history.md"
+    "exception_history": "docs/exceptions-history.md",
+    "runtime_contracts": "docs/runtime-contracts.md",
+    "runtime_contract_receipt_schema": "llm/runtime-contracts.schema.json"
   },
   "document_access": "nex guide --kind typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -489,7 +491,9 @@
     "device_contract": "examples/device/main.nex",
     "task_write_providers": "examples/task-write-providers/nex.build.json",
     "task_file_streams": "examples/task-streams/main.nex",
-    "source_exceptions": "examples/exceptions/main.nex"
+    "source_exceptions": "examples/exceptions/main.nex",
+    "runtime_contracts": "examples/runtime-contracts/main.nex",
+    "runtime_contract": "examples/runtime-contracts/contracts.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -522,7 +526,8 @@
   ],
   "verification_commands": [
     "nex contract FILE --symbol NAME -o CONTRACT.json",
-    "nex verify FILE --contracts CONTRACT.json --json"
+    "nex verify FILE --contracts CONTRACT.json --json",
+    "nex contract FILE --kind runtime --contracts FILE.json --directory NEW --json"
   ],
   "task_commands": [
     "nex task FILE.nex --kind init -o task.json",
@@ -3576,5 +3581,30 @@
       "static_plan_schema": "nex.project-static-task-linkage/4"
     },
     "task_ABI7_delivery_accepted": false
+  },
+  "runtime_contracts": {
+    "status": "development_checked_source_projection",
+    "command": "nex contract FILE --kind runtime --contracts FILE.json --directory NEW --json",
+    "guide": "docs/runtime-contracts.md",
+    "contract_schema": "nex.verification-contracts/1",
+    "receipt_schema": "nex.runtime-contract-candidate/1",
+    "ordinary_source_revision": true,
+    "original_preserved": true,
+    "roots": "ordinary concrete pure i64/bool/unit source functions",
+    "predicates": "scalar literals, parameter/result names and checked operators",
+    "failure_code": "E_ASSERT",
+    "normal_returns_after_finally": true,
+    "recursive_calls": true,
+    "loop_checks": false,
+    "proof_performed": false,
+    "language_migration_required": false,
+    "installed_sdk_accepted": false,
+    "pending": [
+      "matching full regression and installed SDK acceptance",
+      "effectful and aggregate root contracts",
+      "runtime loop contracts",
+      "source contract syntax"
+    ],
+    "session_schema": "nex.runtime-contract-session/1"
   }
 }

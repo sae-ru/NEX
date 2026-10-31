@@ -687,6 +687,17 @@ Toolchains 0.13 and 0.14 evaluate pure NEX expressions over exact typed stopped-
 
 Toolchain 0.10 instruments reachable native function calls and managed shallow allocation pools in profile builds, without changing language 0.5 effects or observable execution rules. Reports attribute measured function content to the selected graph revision and node IDs; optional Tracy CPU zones use the same names and frozen source locations. Debug/release output and the reference interpreter/TypeScript semantics are unchanged. See [profiling.md](profiling.md) for wall-time definitions, overhead, bounds and remaining browser/GPU coverage.
 
+## Executable contract projection (toolchain 0.152)
+
+`nex contract --kind runtime` explicitly produces a separately checked source
+revision with scalar pre/post assertions. It uses existing lambda/assert syntax,
+ordinary checked traps and all three existing execution backends; it adds no
+keywords, semantic format or language migration. Source bodies retain their return
+boundary, so postconditions run after normal `finally` return replacement.
+Original source/history remain intact. This feature does not insert checks merely
+because a verification JSON exists. Scope, diagnostics, receipt and overhead are
+specified in [runtime-contracts.md](runtime-contracts.md).
+
 ## Verification metadata
 
 Toolchain 0.11 adds snapshot-bound scalar contracts as separate `nex.verification-contracts/1` JSON documents. `nex verify` checks the selected pure i64/bool/unit functions with Z3, including checked arithmetic, assertions and explicitly annotated inductive loops/rankings. Source grammar, language 0.5 revisions and execution semantics are unchanged. Proof results do not remove runtime checks or automatically enforce JSON pre/postconditions; see [verification.md](verification.md) for assumptions, statuses and the compiler/runtime trust boundary.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.151.1 LANGUAGES C CXX)
+project(NEX VERSION 0.152.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -671,6 +671,9 @@ add_test(NAME task_workloads COMMAND ${Python3_EXECUTABLE}
 set_tests_properties(task_workloads PROPERTIES COST 180 TIMEOUT 1200)
 add_test(NAME verification COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/verification.py $<TARGET_FILE:nex>)
+add_test(NAME runtime_contracts COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_contracts.py $<TARGET_FILE:nex>)
+set_tests_properties(runtime_contracts PROPERTIES TIMEOUT 900)
 add_test(NAME tasks COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tasks.py $<TARGET_FILE:nex>)
 add_test(NAME task_toolchains COMMAND ${Python3_EXECUTABLE}

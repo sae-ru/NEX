@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nex.local/schemas/runtime-contracts-1.json",
+  "title": "Checked NEX runtime contract projection receipt and CLI session",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/receipt"
+    },
+    {
+      "$ref": "#/$defs/session"
+    }
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "entry",
+        "files"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.sources/1"
+        },
+        "entry": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "origin_revision",
+        "origin_source_hash",
+        "revision",
+        "source_hash",
+        "contract_hash",
+        "intent_hash",
+        "compiler_build",
+        "toolchain",
+        "failure_code",
+        "loop_checks",
+        "proof_performed",
+        "bundle",
+        "origin_bundle",
+        "contracts",
+        "functions"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.runtime-contract-candidate/1"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "origin_revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "origin_source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "contract_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "intent_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "compiler_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "toolchain": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "failure_code": {
+          "const": "E_ASSERT"
+        },
+        "loop_checks": {
+          "const": false
+        },
+        "proof_performed": {
+          "const": false
+        },
+        "bundle": {
+          "$ref": "#/$defs/bundle"
+        },
+        "origin_bundle": {
+          "$ref": "#/$defs/bundle"
+        },
+        "contracts": {
+          "$ref": "verification.schema.json"
+        },
+        "functions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "symbol",
+              "origin_content_hash",
+              "content_hash",
+              "requires",
+              "ensures",
+              "normal_returns_only"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "origin_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "requires": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "ensures": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "normal_returns_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "origin_revision",
+        "origin_source_hash",
+        "revision",
+        "source_hash",
+        "contract_hash",
+        "intent_hash",
+        "compiler_build",
+        "toolchain",
+        "failure_code",
+        "loop_checks",
+        "proof_performed",
+        "functions",
+        "ok",
+        "directory",
+        "receipt"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.runtime-contract-session/1"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "origin_revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "origin_source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "contract_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "intent_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "compiler_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "toolchain": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "failure_code": {
+          "const": "E_ASSERT"
+        },
+        "loop_checks": {
+          "const": false
+        },
+        "proof_performed": {
+          "const": false
+        },
+        "functions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "symbol",
+              "origin_content_hash",
+              "content_hash",
+              "requires",
+              "ensures",
+              "normal_returns_only"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "origin_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "requires": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "ensures": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "normal_returns_only": {
+                "const": true
+              }
+            }
+          }
+        },
+        "ok": {
+          "const": true
+        },
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -236,3 +236,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.134.4 connects existing language0.24 task/server/fs constructs
    to native HTTP dispatch. No source syntax, canonical identity or migration
    is added. Task network/DB and HTTP task provider/debug/profile remain pending. *)
+
+(* Toolchain0.152 executable scalar contracts explicitly project ordinary
+   assert/lambda source into a distinct checked revision. No new syntax, hidden
+   execution flag, runtime ABI or language migration; see runtime-contracts.md. *)

@@ -258,6 +258,117 @@ public:
   }
 };
 }
+
+namespace {
+// Serialize only the deliberately small scalar predicate grammar. Reusing the
+// user's text here would let a trailing line comment swallow generated tokens.
+std::string runtimePredicateText(const E &e){
+  switch(e->kind){
+  case Expr::Integer:return "("+std::to_string(e->number)+")";
+  case Expr::Boolean:return e->number?"true":"false";
+  case Expr::Name:
+    if(!identifier(e->text))break;
+    return e->text;
+  case Expr::Unary:
+    if((e->text=="-"||e->text=="!")&&e->args.size()==1)
+      return "("+e->text+runtimePredicateText(e->args[0])+")";
+    break;
+  case Expr::Binary:
+    if(e->args.size()==2&&std::set<std::string>{"+","-","*","/","%","<","<=",">",">=","==","!=","&&","||"}.contains(e->text))
+      return "("+runtimePredicateText(e->args[0])+" "+e->text+" "+runtimePredicateText(e->args[1])+")";
+    break;
+  default:break;
+  }
+  throw Error("E_CONTRACT_EXPRESSION","runtime predicates support only scalar literals, parameter/result names and checked operators",e->span);
+}
+std::string runtimePredicate(Program &p,const Function &f,const std::string &text,
+                             const std::map<std::string,Type> &locals,const std::string &phase){
+  auto expression=parseExpression(text,"<contract:"+f.name+":"+phase+">",4096);
+  auto source=runtimePredicateText(expression);
+  if(checkExpression(p,f.name,expression,locals)!=Type::Bool)
+    throw Error("E_CONTRACT_EXPRESSION","runtime contract predicates must return bool",expression->span);
+  return source;
+}
+}
+JSON runtimeContractCandidate(const Program &original,const JSON &contract,const std::string &root){
+  auto parsed=contracts(original,contract);
+  auto bundle=sourceBundle(original);auto files=bundle.getAsObject()->getObject("files");
+  // The evidence and dependency lock must never overwrite a source member.
+  for(const auto &name:{"runtime-contracts.receipt.json","nex.lock.json","nex.json"})
+    for(const auto &[key,value]:*files)if(key==name||key.str().starts_with(std::string(name)+"/"))
+      throw Error("E_CONTRACT_RUNTIME","source member conflicts with runtime contract export metadata");
+  struct Edit {size_t begin,end;std::string text;};
+  std::map<std::string,std::vector<Edit>> edits;Array coverage;
+  // Predicate checking may prepare derived frontend metadata. Keep it separate
+  // from the immutable source snapshot and avoid holding vector references.
+  auto checked=original;
+  for(const auto &[symbol,spec]:parsed){
+    const auto f=original.function(symbol);
+    auto scalar=[](Type type){return type==Type::I64||type==Type::Bool;};
+    if(f.foreign||f.test||f.closure||f.traitSignature||!f.traitOwner.empty()||
+       !f.templateName.empty()||!f.typeParameters.empty()||!f.typeArguments.empty()||
+       !f.effects.empty()||(f.result!=Type::Unit&&!scalar(f.result))||
+       std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return !scalar(param.type);}))
+      throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary concrete pure i64/bool/unit source functions",f.span);
+    if(!spec.loops.empty())throw Error("E_CONTRACT_RUNTIME","runtime pre/post projection does not execute loop invariants or rankings; use a separately reviewed contract with loops: []",f.span);
+    auto source=files->getString(f.unit);
+    if(!source||f.span.begin>=f.span.end||f.span.end>source->size())
+      throw Error("E_CONTRACT_RUNTIME","contract root has no exact editable source definition",f.span);
+    auto definition=source->substr(f.span.begin,f.span.end-f.span.begin).str();
+    auto tokens=sourceTokens(definition,f.span.file);size_t open=std::string::npos,close=0;unsigned balance=0;
+    // Walk backwards from the declaration's final brace, distinguishing actual
+    // punctuation from brace characters inside string literals and comments.
+    for(auto i=tokens.rbegin();i!=tokens.rend();++i){
+      auto raw=definition.substr(i->span.begin,i->span.end-i->span.begin);
+      if(raw=="}"){if(!balance)close=i->span.begin;++balance;}
+      else if(raw=="{"&&balance&&!--balance){open=i->span.begin;break;}
+    }
+    if(open==std::string::npos||definition.substr(close+1).find_first_not_of(" \r\n\t")!=std::string::npos)
+      throw Error("E_CONTRACT_RUNTIME","cannot identify the exact source function body",f.span);
+    std::map<std::string,Type> locals;for(const auto &param:f.params)locals[param.name]=param.type;
+    auto checks=[&](const std::vector<std::string> &clauses,const std::string &phase){
+      std::string out;size_t index=0;
+      for(const auto &clause:clauses){
+        auto predicate=runtimePredicate(checked,f,clause,locals,phase);
+        out+="  // NEX runtime "+phase+" "+f.name+" #"+std::to_string(++index)+"\n  assert("+predicate+");\n";
+      }
+      return out;
+    };
+    auto replacement=checks(spec.pre,"requires");
+    // A source lambda provides the original return boundary. All of its normal
+    // exits, including return replacement in finally, converge at the caller.
+    // Original parameter snapshots stay outside local shadows in the body.
+    replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+typeName(f.result)+" = ";
+    replacement+="("+f.realm+" fn() -> "+typeName(f.result)+" {\n"+definition.substr(open+1,close-open-1)+"\n  })();\n";
+    if(f.result!=Type::Unit)locals[spec.result]=f.result;
+    replacement+=checks(spec.post,"ensures");
+    replacement+=f.result==Type::Unit?"  return;\n":"  return "+spec.result+";\n";
+    edits[f.unit].push_back({f.span.begin+open+1,f.span.begin+close,"\n"+replacement});
+    coverage.push_back(Object{{"symbol",f.name},{"origin_content_hash",contentHash(f)},
+      {"requires",spec.pre.size()},{"ensures",spec.post.size()},{"normal_returns_only",true}});
+  }
+  for(auto &[unit,changes]:edits){
+    auto source=files->getString(unit)->str();
+    std::sort(changes.begin(),changes.end(),[](const auto &a,const auto &b){return a.begin>b.begin;});
+    size_t previous=source.size();for(const auto &edit:changes){
+      if(edit.begin>edit.end||edit.end>previous)throw Error("E_CONTRACT_RUNTIME","overlapping source contract roots");
+      source.replace(edit.begin,edit.end-edit.begin,edit.text);previous=edit.begin;
+    }
+    (*files)[unit]=std::move(source);
+  }
+  // Every generated expression/closure is checked using the ordinary language,
+  // realm, effect and lifetime rules before an output directory is created.
+  auto candidate=loadBundle(bundle,root);
+  for(auto &item:coverage){auto object=item.getAsObject();(*object)["content_hash"]=contentHash(candidate.function(required(*object,"symbol")));}
+  return Object{{"schema","nex.runtime-contract-candidate/1"},{"language",languageVersion},
+    {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
+    {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},
+    {"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},
+    {"failure_code","E_ASSERT"},{"loop_checks",false},{"proof_performed",false},
+    {"functions",std::move(coverage)},{"bundle",sourceBundle(candidate)},
+    {"origin_bundle",sourceBundle(original)},{"contracts",contract}};
+}
+
 std::string verifierVersion(){return Z3_get_full_version();}
 std::string verificationIntentHash(const JSON &value){
   auto object=value.getAsObject();if(!object||object->getString("schema")!="nex.verification-contracts/1"||object->getString("language")!=languageVersion)throw Error("E_CONTRACT","unsupported verification intent format/language");

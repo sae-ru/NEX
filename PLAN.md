@@ -1,3 +1,12 @@
+# Runtime contract development — 0.152.0 / language 0.27
+
+The accepted 0.151.1 Mac SDK/publication is recorded in
+[the release receipt](docs/releases/0.151.1.json). The new explicit
+[scalar runtime pre/post projection](docs/runtime-contracts.md) is being checked
+separately. It preserves original source/history and generates a distinct ordinary
+source revision. Full 0.152 regression/SDK/platform delivery remains pending.
+The original PLAN includes additional unfinished capabilities.
+
 Текущая разработка0.151 открывает обычный CLI языка0.27: типизированные ошибки,
 упорядоченные catch/finally, ABI7, проверенные карты2, снимки и явная миграция026.
 Полный прогон, установленный SDK, платформенная приёмка и незавершённые пункты

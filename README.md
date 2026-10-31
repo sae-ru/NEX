@@ -52,7 +52,9 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.151.1 / language 0.27**. This is a development preview.
+Current source: **toolchain 0.152.0 / language 0.27**.
+The new [runtime pre/post projection](docs/runtime-contracts.md) is under development;
+the accepted SDK below remains 0.151.1. This is a development preview.
 The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
 source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.151.1.json).
 

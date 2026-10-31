@@ -1,5 +1,9 @@
 # Snapshot-bound scalar verification
 
+Toolchain 0.152 additionally offers explicit [runtime pre/post generation](runtime-contracts.md).
+`nex verify` itself retains the proof-only behavior described below. A contract
+file alone does not activate runtime checks. Historical notes retain their scope.
+
 Toolchain 0.11 links Z3 to check an explicit subset of existing NEX 0.5 semantics. The first contract format is a separate versioned JSON document. It is tied to the semantic revision, exact complete source bundle and function content hashes. It does not change source syntax, execution behavior or graph identity. No language migration is needed for this tooling addition.
 
 ```sh

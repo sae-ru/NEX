@@ -252,3 +252,9 @@ ABIs. Use them only for an explicitly selected private workflow. They do not
 override the actual SDK's source_exceptions or nested source_providers contracts. Ordinary projects use their advertised public CLI/provider/debug/profile contracts.
 Never manufacture graph revisions or relabel private frames as archived public
 frames. Keep their matching compiler, records, context and explicit entry point.
+
+When runtime pre/post checking is requested, first discover `runtime_contracts`.
+Use the explicit `contract --kind runtime` projection with reviewed snapshot pins,
+inspect its generated revision/receipt, then validate the generated project.
+A verification JSON or successful Z3 result alone does not enable runtime checks.
+Keep origin and generated revisions distinct; see `docs/runtime-contracts.md`.
