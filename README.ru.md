@@ -62,9 +62,10 @@ production UI/Workers в Chromium, Firefox и WebKit. Области прове�
 
 Для Apple M5 Max есть [испытания OpenCL U8 Add/Affine на физическом GPU](docs/evidence/macos-opencl-0.151.1.json).
 Результаты ускорителей Linux CIX/RK сохраняют [версию 0.151.0](docs/evidence/accelerators-0.151.0.json).
-Для GNU/UCRT x64 CPU/tasks/files и SQLite есть
-[ограниченная приёмка на Windows-машине](docs/windows-native-acceptance.md):
-WSL producer, native Windows execution и CUDA driver prerequisite разделены.
+[Локальный компилятор Windows](docs/windows-host.md) собирает и запускает x64
+`.exe` непосредственно в Windows, включая CPU/tasks/files и SQLite.
+Предыдущая [приёмка target-кода](docs/windows-native-acceptance.md) сохраняет
+раздельные результаты WSL producer, Windows execution и CUDA driver prerequisite.
 Полная приёмка Windows-hosted SDK, CUDA из NEX, Metal, Apple NPU, общая GPU-компиляция,
 полная мобильная/UI-поставка и остальные пункты [PLAN](PLAN.md) ещё открыты.
 

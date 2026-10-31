@@ -7,8 +7,10 @@ private ACLs, pinned parents, cross-worker grants and retained physical quotas.
 NEX debug/release PE executions separately exercise whole-file/owned streams,
 task transport, typed file payloads and cancellation. See the
 [machine acceptance](windows-native-acceptance.md) for exact scopes and pending
-Windows-hosted SDK/ARM64/FFI work. The0.65 prototype and Wine results below are
-historical evidence. Existing macOS/Linux filesystem semantics are unchanged.
+Windows-hosted SDK/ARM64/FFI work. The [local Windows compiler](windows-host.md)
+has a separate current native-host workflow and receipt. The0.65 prototype
+and Wine results below remain historical evidence. Existing macOS/Linux
+filesystem semantics are unchanged.
 
 The adapter opens the host-selected absolute root once and walks each child
 component with `NtCreateFile` relative to the pinned directory handle. Child

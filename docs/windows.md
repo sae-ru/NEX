@@ -1,5 +1,9 @@
 # Windows GNU/UCRT core target
 
+The current [Windows-hosted compiler guide](windows-host.md) describes the local
+x64 `nex.exe`, its native dependency chain and direct Windows `.exe` workflow.
+No WSL process is used by that path. Portable SDK delivery remains pending.
+
 The Windows development adapter now enables synchronous whole-file/stream IO
 and ordinary task/fs operations through the handle-relative Windows runtime.
 The current language remains0.27 and current task ABI7; retained0.25/ABI6 keeps
@@ -102,8 +106,10 @@ external inputs; this fingerprint is not a complete hermetic SDK inventory.
 
 The initial target accepts the checked core language, immutable aggregates,
 traits/generics, function values, finite numbers, Unicode and binary values,
-strict JSON and `print`. Standard-output text contains UTF-8 bytes; the platform
-CRT uses Windows line endings. Console rendering depends on the receiving host.
+strict JSON and `print`. Current application stdout preserves UTF-8 bytes and
+explicit CR/LF/NUL values, with LF appended by `print`, matching the interpreter.
+The historical adapter used CRT Windows line endings. Console rendering depends
+on the receiving host.
 In the0.64 baseline, reachable database, filesystem/resource operations,
 environment reads, external modules, HTTP servers and profile builds fail
 explicitly. The0.65 candidate adds only the environment/SQLite facilities

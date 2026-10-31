@@ -53,6 +53,10 @@
 #include <regex>
 #include <variant>
 
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
+
 namespace nex {
 namespace {
 std::set<std::string> reachable(const Program &p,const std::string &entry){
@@ -1329,7 +1333,11 @@ std::string lower(const std::string &source,const std::string &sourcePath,const 
   if(!module)throw Error("E_MLIR","generated MLIR could not be parsed");
   module->getOperation()->setLoc(mlir::FileLineColLoc::get(&context,sourcePath,1,1));
   if(mlir::failed(mlir::verify(*module)))throw Error("E_MLIR","generated MLIR failed verification");
-  mlir::registerConversionPasses();
+  mlir::registerArithToLLVMConversionPass();
+  mlir::registerConvertFuncToLLVMPass();
+  mlir::registerFinalizeMemRefToLLVMConversionPass();
+  mlir::registerConvertControlFlowToLLVMPass();
+  mlir::registerReconcileUnrealizedCastsPass();
   mlir::PassManager pm(&context);
   if(mlir::failed(mlir::parsePassPipeline("convert-arith-to-llvm,convert-func-to-llvm,finalize-memref-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts",pm)))throw Error("E_MLIR","cannot construct conversion pipeline");
   pm.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass({mlir::LLVM::DIEmissionKind::Full}));
@@ -1443,12 +1451,18 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments){
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &directory){
   namespace fs=std::filesystem;
   auto base=fs::canonical(directory.empty()?fs::temp_directory_path():fs::path(directory));
+#ifdef _WIN32
+  auto pattern=(base/(prefix+"-XXXXXX")).string();
+  if(!::mkdtemp(pattern.data()))throw Error("E_FILE","cannot create a private Windows temporary directory");
+  return pattern;
+#else
   // LLVM expands '%' throughout temporary filename models, including parents.
   // Its object/archive writers also need a physical staging path without '%'.
   if(base.string().find('%')!=std::string::npos)base=fs::canonical("/tmp");
   llvm::SmallString<128> temporary;
   if(auto error=llvm::sys::fs::createUniqueDirectory((base/prefix).string(),temporary))throw Error("E_FILE",error.message());
   return temporary.str().str();
+#endif
 }
 ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSeconds) {
   if(args.empty())throw Error("E_PROCESS","empty command");

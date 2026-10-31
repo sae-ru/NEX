@@ -16,6 +16,9 @@
 #include <filesystem>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #ifdef __linux__
 #include <sys/syscall.h>
 #include <linux/fs.h>
@@ -27,12 +30,26 @@ namespace fs=std::filesystem;
 using JSON=llvm::json::Value;using Object=llvm::json::Object;
 constexpr uint64_t coreLimit=uint64_t(32)*1024*1024*1024;
 struct Input {
-  int fd=-1;struct stat initial{};
+  int fd=-1;uint64_t initialSize=0;
+#ifdef _WIN32
+  std::optional<nexrt::host_windows::Identity> initial;
+#else
+  struct stat initial{};
+#endif
   Input(const fs::path &path,uint64_t limit){
+#ifdef _WIN32
+    fd=nexrt::host_windows::openRegularDescriptor(path,O_RDONLY);
+    auto size=fd<0?-1:nexrt::host_windows::fileSize(fd);
+    if(fd>=0)initial=nexrt::host_windows::identity(reinterpret_cast<HANDLE>(::_get_osfhandle(fd)));
+    if(size<0||uint64_t(size)>limit||!initial||initial->directory){if(fd>=0)::close(fd);fd=-1;throw Error("E_CORE_INPUT","expected a bounded regular non-reparse Windows file");}
+    initialSize=uint64_t(size);
+#else
     fd=::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC);
     if(fd<0||::fstat(fd,&initial)||!S_ISREG(initial.st_mode)||initial.st_size<0||uint64_t(initial.st_size)>limit){
       if(fd>=0)::close(fd);fd=-1;throw Error("E_CORE_INPUT","expected a bounded regular non-symlink core/build file: "+path.string());
     }
+    initialSize=uint64_t(initial.st_size);
+#endif
   }
   ~Input(){if(fd>=0)::close(fd);}
   Input(const Input&)=delete;Input &operator=(const Input&)=delete;
@@ -40,14 +57,31 @@ struct Input {
     if(::lseek(fd,0,SEEK_SET)<0)throw Error("E_CORE_INPUT","cannot seek core/build file");
     std::array<char,65536> buffer{};uint64_t total=0;
     for(;;){auto count=::read(fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_CORE_INPUT","cannot read core/build file");}if(!count)break;
-      total+=uint64_t(count);if(total>uint64_t(initial.st_size))throw Error("E_CORE_CHANGED","core/build file grew during inspection");consume(llvm::StringRef(buffer.data(),size_t(count)));
+      total+=uint64_t(count);if(total>initialSize)throw Error("E_CORE_CHANGED","core/build file grew during inspection");consume(llvm::StringRef(buffer.data(),size_t(count)));
     }
-    struct stat current{};if(::fstat(fd,&current)||current.st_size!=initial.st_size||total!=uint64_t(initial.st_size))throw Error("E_CORE_CHANGED","core/build file changed during inspection");
+#ifdef _WIN32
+    if(nexrt::host_windows::fileSize(fd)<0||uint64_t(nexrt::host_windows::fileSize(fd))!=initialSize||total!=initialSize)throw Error("E_CORE_CHANGED","core/build file changed during inspection");
+#else
+    struct stat current{};if(::fstat(fd,&current)||current.st_size!=initial.st_size||total!=initialSize)throw Error("E_CORE_CHANGED","core/build file changed during inspection");
+#endif
   }
-  std::string text(){std::string value;value.reserve(size_t(initial.st_size));chunks([&](llvm::StringRef part){value.append(part.data(),part.size());});return value;}
+  std::string text(){std::string value;value.reserve(size_t(initialSize));chunks([&](llvm::StringRef part){value.append(part.data(),part.size());});return value;}
   std::string sha(){llvm::SHA256 h;chunks([&](llvm::StringRef part){h.update(part);});return llvm::toHex(h.final(),true);}
-  void samePath(const fs::path &path){struct stat current{};if(::lstat(path.c_str(),&current)||current.st_dev!=initial.st_dev||current.st_ino!=initial.st_ino||!S_ISREG(current.st_mode))throw Error("E_CORE_CHANGED","core/build pathname changed during inspection");}
+  void samePath(const fs::path &path){
+#ifdef _WIN32
+    if(nexrt::host_windows::identity(path)!=initial)throw Error("E_CORE_CHANGED","core/build pathname changed during inspection");
+#else
+    struct stat current{};if(::lstat(path.c_str(),&current)||current.st_dev!=initial.st_dev||current.st_ino!=initial.st_ino||!S_ISREG(current.st_mode))throw Error("E_CORE_CHANGED","core/build pathname changed during inspection");
+#endif
+  }
 };
+int64_t readAt(int fd,void *buffer,size_t size,int64_t offset){
+#ifdef _WIN32
+  return nexrt::host_windows::readAt(fd,buffer,size,offset);
+#else
+  return ::pread(fd,buffer,size,offset);
+#endif
+}
 std::string text(const fs::path &path,uint64_t limit){return Input(path,limit).text();}
 JSON read(const fs::path &path,uint64_t limit){return parseNativeManifest(text(path,limit));}
 const Object &object(const JSON &value){auto result=value.getAsObject();if(!result)throw Error("E_CORE_BUILD","expected a debug build object");return *result;}
@@ -161,7 +195,7 @@ JSON inspectCore(const CoreOptions &options){
     if(required(f,"native_symbol")!=nativeSymbol(name)||required(f,"function_hash")!=hash(json(canonical(checked),false))||required(f,"function_source_hash")!=hash(program.definition(checked))||!f.getArray("operation_sites")||json(*f.get("operation_sites"),false)!=json(operationSites(checked,operationTree(program,checked)),false))throw Error("E_CORE_BUILD","core function/operation table differs from checked source");
   }
   auto core=fs::absolute(options.core).lexically_normal();Input input(core,coreLimit);
-  std::array<unsigned char,64> header{};auto headerSize=::pread(input.fd,header.data(),header.size(),0);
+  std::array<unsigned char,64> header{};auto headerSize=readAt(input.fd,header.data(),header.size(),0);
   auto word=[&](unsigned offset,bool little){uint32_t value=0;for(unsigned i=0;i<4;++i)value|=uint32_t(header[offset+i])<<(8*(little?i:3-i));return value;};
   bool elf=headerSize>=64&&std::memcmp(header.data(),"\x7f" "ELF",4)==0&&header[4]==2&&(header[5]==1||header[5]==2)&&
     (header[5]==1?(header[16]==4&&header[17]==0):(header[16]==0&&header[17]==4));
@@ -169,16 +203,16 @@ JSON inspectCore(const CoreOptions &options){
   bool minidump=headerSize>=32&&word(0,true)==0x504d444d&&(word(4,true)&0xffff)==0xa793;
   if(minidump){
     uint64_t count=word(8,true),directory=word(12,true);bool system64=false;
-    if(!count||count>4096||directory<32||directory+count*12>uint64_t(input.initial.st_size))minidump=false;
+    if(!count||count>4096||directory<32||directory+count*12>input.initialSize)minidump=false;
     else for(uint64_t i=0;i<count;++i){
       std::array<unsigned char,12> entry{};
-      if(::pread(input.fd,entry.data(),entry.size(),off_t(directory+i*12))!=ssize_t(entry.size())){minidump=false;break;}
+      if(readAt(input.fd,entry.data(),entry.size(),int64_t(directory+i*12))!=ssize_t(entry.size())){minidump=false;break;}
       auto number=[&](unsigned offset){uint32_t n=0;for(unsigned j=0;j<4;++j)n|=uint32_t(entry[offset+j])<<(8*j);return n;};
       uint64_t size=number(4),offset=number(8);
-      if(offset+size>uint64_t(input.initial.st_size)){minidump=false;break;}
+      if(offset+size>input.initialSize){minidump=false;break;}
       if(number(0)==7){
         std::array<unsigned char,2> arch{};
-        if(size<56||::pread(input.fd,arch.data(),arch.size(),off_t(offset))!=ssize_t(arch.size())){minidump=false;break;}
+        if(size<56||readAt(input.fd,arch.data(),arch.size(),int64_t(offset))!=ssize_t(arch.size())){minidump=false;break;}
         auto architecture=uint16_t(arch[0])|(uint16_t(arch[1])<<8);
         if(system64||(architecture!=9&&architecture!=12)){minidump=false;break;}
         system64=true;
@@ -201,7 +235,7 @@ JSON inspectCore(const CoreOptions &options){
   if(found!=1||!report.getAsObject())throw Error("E_CORE_READ","native core reader returned no checked report: "+child.process.errors.substr(0,4096));
   auto &result=*report.getAsObject();if(!result.getBoolean("ok").value_or(false))throw Error("E_CORE_READ",result.getString("error").value_or("native core inspection failed").str());
   result["toolchain"]=NEX_VERSION;result["language"]=languageVersion;result["compiler_build"]=NEX_BUILD_ID;result["revision"]=required(m,"revision");result["source_hash"]=required(m,"source_hash");result["build_key"]=required(m,"build_key");
-  result["core"]=Object{{"path",core.string()},{"bytes",int64_t(input.initial.st_size)},{"sha256",before},{"unchanged",true}};result["build_completion_checked"]=true;
+  result["core"]=Object{{"path",core.string()},{"bytes",int64_t(input.initialSize)},{"sha256",before},{"unchanged",true}};result["build_completion_checked"]=true;
   auto executable=result.getObject("executable");if(!executable)throw Error("E_CORE_READ","native core report lacks executable identity");(*executable)["blake3"]=imageHash;(*executable)["bytes"]=int64_t(imageBytes);
   return report;
 }

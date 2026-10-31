@@ -15,6 +15,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace nex { namespace {
 namespace fs=std::filesystem;
@@ -22,11 +25,17 @@ using Object=llvm::json::Object;using Value=llvm::json::Value;
 [[noreturn]] void fail(const std::string &message,const char *code="E_SERVER_WORKLOAD"){throw Error(code,message);}
 std::string sha(const std::string &text){return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(text)),true);}
 std::string bounded(const std::string &path,size_t limit=1048576){
+#ifdef _WIN32
+  std::string text;
+  try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
+  catch(const nexrt::DataError &error){fail(error.what());}
+#else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
   if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)fail("workload inputs require bounded regular non-symlink files");
   std::string text;std::array<char,65536> bytes{};
   for(;;){auto count=::read(file.fd,bytes.data(),bytes.size());if(count<0){if(errno==EINTR)continue;fail("cannot read workload input");}if(!count)break;if(size_t(count)>limit-text.size())fail("workload input exceeds its byte limit");text.append(bytes.data(),size_t(count));}
+#endif
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){fail("workload input must be strict UTF-8");}return text;
 }
 void keys(const Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))fail("unknown workload field: "+key.str());}}

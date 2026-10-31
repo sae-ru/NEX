@@ -274,11 +274,9 @@ struct Reference {
     std::optional<TaskReferenceExternalTicket> external;
     std::optional<nexrt::PreparedTaskForeignCall> foreignCall;
     size_t externalScope=none;
-#ifndef _WIN32
     std::unique_ptr<nexrt::PreparedTaskFileRead> fileRead;
     std::unique_ptr<nexrt::PreparedTaskFileWrite> fileWrite;
     std::unique_ptr<nexrt::PreparedSourceTaskFile> fileStream;
-#endif
   };
   struct Region {
     size_t parent=none,owner=none,depth=1;
@@ -322,10 +320,8 @@ struct Reference {
   std::shared_ptr<nexrt::ResourceExecutor> foreignCleanup;
   std::unique_ptr<TaskReferenceExternalMailbox> external;
   nexrt::CapturedForeignScope foreignScope;
-#ifndef _WIN32
   nexrt::FileReadGrant fileGrant;
   nexrt::FileWriteGrant writeGrant;
-#endif
 
   static nexrt::TaskExecutionLimits selectedLimits(uint64_t legacy,const nexrt::TaskExecutionLimits *requested){
     if(requested){
@@ -343,13 +339,8 @@ struct Reference {
     if(supportsTaskFileReads(program)||supportsSourceExceptionTasks(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
     controlPoll=[this](Span span){checkControl(span);};
     if(supportsTaskForeignCalls(program))foreignScope=nexrt::captureForeignScope(true);
-#ifndef _WIN32
     if(grant)fileGrant=*grant;
     if(writes)writeGrant=*writes;
-#else
-    (void)grant;
-    (void)writes;
-#endif
     if(host)external=std::make_unique<TaskReferenceExternalMailbox>(deadline,host->cancellation,host->limits);
     if((host&&host->resourceRegions)||supportsTaskForeignCalls(program)){
       nexrt::ResourceRegionLimits bounds;bounds.tasks=maximumTasks;
@@ -674,9 +665,6 @@ struct Reference {
       return;
     }
     if(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(r.operation)){
-#ifdef _WIN32
-      throw Error("E_TASK_TARGET","source file streams require macOS or Linux",r.span);
-#else
       try{
         auto prepared=std::make_unique<nexrt::PreparedSourceTaskFile>(r.operation,r.arguments,fileGrant,writeGrant,resourceAuthority(j),foreignCleanup);
         checkControl(r.span);
@@ -690,7 +678,6 @@ struct Reference {
         if(!nexrt::task_file_stream_detail::ordinary(error.code))throw Error(error.code,error.what(),r.span);
         checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
       }
-#endif
     }
     if(taskFileWriteOperation(r.operation)){
       if(!supportsTaskFileWrites(program))throw Error("E_TASK_UNIMPLEMENTED","source task file writes require language023",r.span);
@@ -698,9 +685,6 @@ struct Reference {
       if(r.arguments.size()!=2||r.result!=Type::result(Type::Bool)||r.arguments[0].tag!=RV::Object||!r.arguments[0].object||r.arguments[0].object->kind!=RD::String||
          r.arguments[1].tag!=RV::Object||!r.arguments[1].object||r.arguments[1].object->kind!=(text?RD::String:RD::Bytes))
         throw Error("E_TASK_TYPE","reference file write has an invalid checked request shape",r.span);
-#ifdef _WIN32
-      throw Error("E_TASK_TARGET","task file writes require the macOS/Linux native host",r.span);
-#else
       try{
         const auto &content=r.arguments[1].object;
         auto bytes=text?std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(content->text.data()),content->text.size()):nexrt::byteBuffer(content).view();
@@ -716,7 +700,6 @@ struct Reference {
         try{writeGrant.check();}catch(const nexrt::DataError &grantError){if(grantError.code!="CAPABILITY")throw Error(grantError.code,grantError.what(),r.span);}
         checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
       }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file write preparation allocation failed",r.span);}
-#endif
     }
     if(taskFileReadOperation(r.operation)){
       if(!supportsTaskFileReads(program))throw Error("E_TASK_UNIMPLEMENTED","source task file reads require language020",r.span);
@@ -724,9 +707,6 @@ struct Reference {
       if(r.arguments.size()!=1||r.arguments[0].tag!=RV::Object||!r.arguments[0].object||
          r.arguments[0].object->kind!=RD::String||r.result!=expected)
         throw Error("E_TASK_TYPE","reference file read has an invalid checked request shape",r.span);
-#ifdef _WIN32
-      throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",r.span);
-#else
       try{
         auto prepared=std::make_unique<nexrt::PreparedTaskFileRead>(fileGrant,r.arguments[0].object->text,r.operation=="file_read_text");
         auto operation=prepared->operation();checkControl(r.span);
@@ -742,7 +722,6 @@ struct Reference {
           throw Error(error.code,error.what(),r.span);
         checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
       }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file read preparation allocation failed",r.span);}
-#endif
     }
     if(r.operation=="task_yield"){
       if(externalHost){
@@ -877,11 +856,9 @@ struct Reference {
       auto raw=external->take(*ticket);job.external.reset();
       auto foreignPrepared=std::move(job.foreignCall);job.foreignCall.reset();
       const bool sourceHostCompletion=fileCompletion||foreignPrepared.has_value();
-#ifndef _WIN32
       auto prepared=std::move(job.fileRead);
       auto preparedWrite=std::move(job.fileWrite);
       auto preparedStream=std::move(job.fileStream);
-#endif
       if(job.externalScope!=none){
         auto &scope=regions.at(job.externalScope);
         if(!scope.external||scope.closed)throw Error("E_TASK_STATE","reference external scope retirement ledger is invalid");
@@ -903,7 +880,6 @@ struct Reference {
           auto value=foreignPrepared->admit(std::move(raw),[&]{checkControl(span);});
           checkControl(span);answer(i,std::move(value));continue;
         }
-#ifndef _WIN32
         if(preparedStream){
           if(physicalFailure)throw *physicalFailure;
           auto value=preparedStream->admit(std::move(raw),[&]{checkControl(span);});
@@ -932,7 +908,6 @@ struct Reference {
             throw Error("E_TASK_TYPE","reference file admission has an invalid concrete result",span);
           answer(i,std::move(value));continue;
         }
-#endif
         if(!raw.errorCode.empty())throw Error(raw.errorCode,raw.errorMessage,span);
         // The synthetic bridge has only a unit response. Real filesystem
         // values require a separately reviewed, lease-checked source adapter.
@@ -1002,9 +977,6 @@ struct Reference {
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){
           if(!reads||!(taskFileReadOperation(e->text)||(supportsTaskFileWrites(program)&&taskFileWriteOperation(e->text))||(supportsTaskFileStreams(program)&&streamFileBuiltins().contains(e->text))))throw Error("E_TASK_UNIMPLEMENTED","reference tasks support only020 whole-file text/bytes reads",e->span);
-#ifdef _WIN32
-          throw Error("E_TASK_TARGET","task file reads require the macOS/Linux native host",e->span);
-#endif
         }
         for(auto argument:e->args)expression(argument);
       };
@@ -1062,7 +1034,6 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
   try{
     std::unique_ptr<nexrt::RequestScope> request;
     std::unique_ptr<nexrt::FileScope> files;
-#ifndef _WIN32
     nexrt::FileReadGrant captured;
     nexrt::FileWriteGrant capturedWrite;
     const bool explicitReadGrant=fileGrant!=nullptr;
@@ -1080,7 +1051,6 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
         writeGrant=&capturedWrite;
       }
     }
-#endif
     Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,taskIR);
     try{return scheduler.run(entry,arguments);}catch(SourceException &e){e.output=scheduler.output;throw;}catch(Error &e){e.output=scheduler.output;annotateReferenceError(p,e);throw;}
   }catch(const nexrt::DataError &error){throw Error(error.code,error.what(),p.function(entry).span);}

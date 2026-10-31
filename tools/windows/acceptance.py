@@ -1,6 +1,7 @@
-"""Build with an explicit WSL producer; execute PE files in native Windows.
+"""Build with a selected Windows or WSL producer; run PE in native Windows.
 
-This is target acceptance, not a Windows-hosted compiler or SDK certification.
+Native producer runs accept a local Windows compiler within this corpus;
+they do not certify a portable SDK. WSL runs accept only the PE target.
 All commands, source projects, IR, failures and outputs remain under --output.
 """
 import argparse
@@ -27,6 +28,7 @@ def linux_path(path):
 
 
 def windows_path(path):
+    if re.match(r'^[A-Za-z]:[\\/]',path):return Path(path)
     match = re.match(r'^/mnt/([a-z])/(.*)$', path)
     if not match:
         raise ValueError('producer artifact is not on a mounted Windows drive: ' + path)
@@ -43,14 +45,20 @@ def constant(path, name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--producer', required=True, help='absolute WSL nex path')
-    parser.add_argument('--toolchain-root', required=True, help='absolute WSL LLVM-MinGW root')
+    parser.add_argument('--producer', required=True, help='nex path in the selected producer environment')
+    parser.add_argument('--producer-environment',choices=('windows','wsl'),default='wsl')
+    parser.add_argument('--toolchain-root', required=True, help='LLVM-MinGW root in the selected producer environment')
     parser.add_argument('--sqlite-root', required=True, help='Windows root of target SQLite installation')
     parser.add_argument('--distro', default='Ubuntu-22.04')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--section', choices=('cpu-files', 'storage'), default='cpu-files')
     parser.add_argument('--resume', action='store_true', help='retain prior evidence and reuse passed cases only with identical sources, compiler and artifact hashes')
     args = parser.parse_args()
+    native_producer=args.producer_environment=='windows'
+    if native_producer:
+        args.producer=str(Path(args.producer).resolve())
+        args.toolchain_root=Path(args.toolchain_root).resolve().as_posix()
+    def producer_path(path):return str(Path(path).resolve()) if native_producer else linux_path(path)
     if args.resume and args.section == 'storage':
         parser.error('storage acceptance requires a fresh database/output directory')
     if platform.system() != 'Windows':
@@ -59,7 +67,8 @@ def main():
     out.mkdir(parents=True, exist_ok=args.resume)
     report = {'schema': 'nex.windows-native-acceptance/1', 'ok': False,
               'section': args.section,
-              'producer_environment': 'WSL ' + args.distro, 'execution_environment': 'native Windows',
+              'producer_environment': 'native Windows' if native_producer else 'WSL '+args.distro, 'execution_environment': 'native Windows',
+              'requires_WSL':not native_producer,
               'Windows_hosted_compiler_accepted': False, 'CUDA_NEX_accepted': False,
               'commands': [], 'cases': [], 'source_commit': None}
     previous_index = None
@@ -89,12 +98,13 @@ def main():
         report['seconds'] = round(previous_seconds + time.monotonic() - started, 3)
         (out / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-    def command(name, argv, expected=0, env=None, timeout=360):
+    def command(name, argv, expected=0, env=None, timeout=360, cwd=None):
         name = log_prefix + name
         row = {'name': name, 'argv': list(map(str, argv))}
+        if cwd is not None:row['cwd']=str(cwd)
         report['commands'].append(row)
         save()
-        result = subprocess.run(row['argv'], capture_output=True, timeout=timeout, env=env)
+        result = subprocess.run(row['argv'], capture_output=True, timeout=timeout, env=env,cwd=cwd)
         row.update(exit_code=result.returncode,
                    stdout_sha256=hashlib.sha256(result.stdout).hexdigest(),
                    stderr_sha256=hashlib.sha256(result.stderr).hexdigest())
@@ -110,6 +120,10 @@ def main():
     def cli(project, *argv, expected=0, environment=None):
         nonlocal sequence
         sequence += 1
+        if native_producer:
+            result=command(f'producer-{sequence:04d}',[args.producer,*argv,'--json'],expected,
+              env={**os.environ,**(environment or {})},cwd=project)
+            return json.loads(result.stdout)
         prefix = ['env', *(key + '=' + value for key, value in environment.items())] if environment else []
         result = command(f'producer-{sequence:04d}', ['wsl.exe', '-d', args.distro, '--cd', linux_path(project), '--', *prefix, args.producer, *argv, '--json'], expected)
         return json.loads(result.stdout)
@@ -132,7 +146,7 @@ def main():
         if reference:
             reference_env = dict(env or {})
             if 'NEX_FILES_ROOT' in reference_env:
-                reference_env['NEX_FILES_ROOT'] = linux_path(reference_env['NEX_FILES_ROOT'])
+                reference_env['NEX_FILES_ROOT'] = producer_path(reference_env['NEX_FILES_ROOT'])
             value = cli(folder, 'eval', '--entry', entry, expected=1 if failure else 0, environment=reference_env)
             if failure:
                 assert value['code'] == failure, value
@@ -141,13 +155,14 @@ def main():
         for profile in ('debug', 'release'):
             if profile in completed:
                 continue
-            built = cli(folder, 'build', '--entry', entry, '--toolchain', linux_path(toolchain), '--profile', profile)
+            built = cli(folder, 'build', '--entry', entry, '--toolchain', producer_path(toolchain), '--profile', profile)
             exe = windows_path(built['executable'])
-            inspected = command(label + '-' + profile + '-pe', ['wsl.exe', '-d', args.distro, '--', args.toolchain_root + '/bin/llvm-readobj', '--file-headers', built['executable']])
+            inspect_args=[args.toolchain_root+'/bin/llvm-readobj.exe','--file-headers',built['executable']] if native_producer else ['wsl.exe','-d',args.distro,'--',args.toolchain_root+'/bin/llvm-readobj','--file-headers',built['executable']]
+            inspected=command(label+'-'+profile+'-pe',inspect_args)
             assert b'IMAGE_FILE_MACHINE_AMD64' in inspected.stdout
             process = command(label + '-' + profile, [exe, *flags], 70 if failure else 0,
                               {**os.environ, **(env or {})}, timeout=60)
-            observed = process.stdout.decode('utf-8').replace('\r\n', '\n')
+            observed = process.stdout.decode('utf-8')
             assert observed == stdout, (label, observed, stdout)
             if failure:
                 assert failure.encode() in process.stderr, process.stderr
@@ -161,7 +176,7 @@ def main():
 
     try:
         report['source_commit'] = command('source-head', ['git', '-C', ROOT, 'rev-parse', 'HEAD']).stdout.decode().strip()
-        report['producer_sha256'] = command('producer-sha256', ['wsl.exe', '-d', args.distro, '--', 'sha256sum', args.producer]).stdout.decode('ascii').split()[0]
+        report['producer_sha256'] = hashlib.sha256(Path(args.producer).read_bytes()).hexdigest() if native_producer else command('producer-sha256', ['wsl.exe', '-d', args.distro, '--', 'sha256sum', args.producer]).stdout.decode('ascii').split()[0]
         if previous_producer_sha256:
             assert report['producer_sha256'] == previous_producer_sha256, 'producer binary changed; use a new output directory'
         report['dirty_diff_sha256'] = hashlib.sha256(command('source-diff', ['git', '-C', ROOT, 'diff', '--binary']).stdout).hexdigest()
@@ -177,18 +192,20 @@ def main():
             'runtime_contracts', 'windows_core_target')}
         notice = out / 'notices.txt'
         # Read the complete original notices with the producer, preserving bytes.
-        command('notices', ['wsl.exe', '-d', args.distro, '--', 'python3', '-c',
+        if native_producer:
+            sdk=Path(args.toolchain_root);notice.write_bytes(b'\n\n'.join(p.read_bytes() for p in [sdk/'LICENSE.TXT',*sorted((sdk/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]))
+        else:command('notices', ['wsl.exe', '-d', args.distro, '--', 'python3', '-c',
             'from pathlib import Path;import sys;r=Path(sys.argv[1]);p=[r/"LICENSE.TXT",*sorted((r/"x86_64-w64-mingw32/share/mingw32").glob("COPYING*"))];Path(sys.argv[2]).write_bytes(b"\\n\\n".join(x.read_bytes() for x in p))',
-            args.toolchain_root, linux_path(notice)])
+            args.toolchain_root, producer_path(notice)])
         toolchain = out / 'toolchain.json'
         sqlite = Path(args.sqlite_root).resolve()
         toolchain.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': 'x86_64-w64-windows-gnu',
-            'compiler': args.toolchain_root + '/bin/clang++', 'linker': args.toolchain_root + '/bin/ld.lld',
-            'archiver': args.toolchain_root + '/bin/llvm-ar', 'sysroot': args.toolchain_root + '/x86_64-w64-mingw32',
-            'windows': {'runtime': 'ucrt-static', 'notices': linux_path(notice)},
-            'sqlite': {'include': linux_path(sqlite / 'sqlite-amalgamation-3540100'),
-                       'library': linux_path(sqlite / 'x86_64/libsqlite3.a')}}), encoding='utf-8')
-        report['toolchain'] = cli(out, 'toolchain', linux_path(toolchain))
+            'compiler': args.toolchain_root + '/bin/clang++'+('.exe' if native_producer else ''), 'linker': args.toolchain_root + '/bin/ld.lld'+('.exe' if native_producer else ''),
+            'archiver': args.toolchain_root + '/bin/llvm-ar'+('.exe' if native_producer else ''), 'sysroot': args.toolchain_root + '/x86_64-w64-mingw32',
+            'windows': {'runtime': 'ucrt-static', 'notices': producer_path(notice)},
+            'sqlite': {'include': producer_path(sqlite / 'sqlite-amalgamation-3540100'),
+                       'library': producer_path(sqlite / 'x86_64/libsqlite3.a')}}), encoding='utf-8')
+        report['toolchain'] = cli(out, 'toolchain', producer_path(toolchain))
         if previous_toolchain:
             assert report['toolchain'] == previous_toolchain, 'target toolchain changed; use a new output directory'
         fixtures = runpy.run_path(str(ROOT / 'tests/windows_native_cases.py'))
@@ -196,7 +213,7 @@ def main():
             storage = project('storage', constant(ROOT / 'tests/windows_runtime.py', 'STORAGE'))
             no_grant = project('no-grant', constant(ROOT / 'tests/windows_runtime.py', 'NO_GRANT'))
             for profile in ('debug', 'release'):
-                built = cli(storage, 'build', '--toolchain', linux_path(toolchain), '--profile', profile)
+                built = cli(storage, 'build', '--toolchain', producer_path(toolchain), '--profile', profile)
                 exe = windows_path(built['executable'])
                 database = storage / ('данные 🧠-' + profile + '.sqlite')
                 for index, (owner, mode) in enumerate((('alice Я🧠', 'seed'), ('alice Я🧠', 'read'),
@@ -210,7 +227,7 @@ def main():
                         'owner': owner, 'mode': mode, 'artifact': str(exe),
                         'sha256': hashlib.sha256(exe.read_bytes()).hexdigest()})
                     save()
-                missing = cli(no_grant, 'build', '--toolchain', linux_path(toolchain), '--profile', profile)
+                missing = cli(no_grant, 'build', '--toolchain', producer_path(toolchain), '--profile', profile)
                 environment = dict(os.environ)
                 environment.pop('NEX_DATABASE', None)
                 environment.pop('NEX_STORAGE_OWNER', None)
@@ -219,10 +236,15 @@ def main():
                 assert not denied.stderr, denied.stderr
                 report['cases'].append({'name': 'storage-no-grant', 'status': 'passed', 'profile': profile})
             report['ok'] = True
+            report['Windows_hosted_compiler_accepted']=native_producer
             print(json.dumps({'ok': True, 'cases': len(report['cases']), 'report': str(out / 'report.json')}))
             return
         core = project('core', fixtures['CORE'])
         run_case(core, 'core', stdout='Я\0🧠\n42\n')
+        print_bytes=project('print-bytes',r'''module print_bytes;
+fn main()->unit!{io}{print("A\r\nB\rC\n\u0000Я🧠");}
+''')
+        run_case(print_bytes,'print-bytes',stdout='A\r\nB\rC\n\0Я🧠\n')
         for entry, error in [('overflow_add', 'E_OVERFLOW'), ('overflow_sub', 'E_OVERFLOW'),
                              ('overflow_mul', 'E_OVERFLOW'), ('overflow_div', 'E_OVERFLOW'),
                              ('divide_zero', 'E_DIV_ZERO'), ('bad_index', 'E_BOUNDS')]:
@@ -257,6 +279,7 @@ def main():
             assert result['code'] == error, result
             report['cases'].append({'name': name, 'status': 'passed', 'rejected': True, 'diagnostic': error})
         report['ok'] = True
+        report['Windows_hosted_compiler_accepted']=native_producer
     except Exception as error:
         report['failure'] = str(error)
         raise

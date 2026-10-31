@@ -1303,7 +1303,8 @@
       "source_provider_images": false,
       "debugging": false,
       "profiling": false,
-      "actual_Windows_OS_execution_verified": false,
+      "actual_Windows_OS_execution_verified": true,
+      "verified_windows_architectures": ["x86_64"],
       "guide": "docs/windows.md"
     }
   },
@@ -1396,7 +1397,7 @@
       "adapter": "PreparedTaskFileRead",
       "grant": "coordinator-captured revocation-aware lexical/request lease; no worker TLS discovery",
       "source_lowering": true,
-      "windows": false,
+      "windows": true,
       "grant_type": "FileReadGrant",
       "capture_grant": "captureFileReadGrant",
       "grant_per_path_ambient_lookup": false,

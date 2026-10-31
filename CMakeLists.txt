@@ -3,6 +3,12 @@ project(NEX VERSION 0.152.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Native Windows Ninja response files contain Windows path separators.
+  string(APPEND CMAKE_C_FLAGS " --rsp-quoting=windows")
+  string(APPEND CMAKE_CXX_FLAGS " --rsp-quoting=windows")
+endif()
+set(NEX_DEFAULT_TOOLCHAIN "" CACHE FILEPATH "Explicit default target toolchain for this local compiler installation")
 
 if(NOT LLVM_DIR AND EXISTS "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
   set(LLVM_DIR "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
@@ -32,6 +38,10 @@ message(STATUS "NEX uses LLVM ${LLVM_PACKAGE_VERSION} and MLIR at ${MLIR_DIR}")
 file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${NEX_COMPILER_FILES})
 set(NEX_BUILD_INPUTS "${PROJECT_VERSION};${LLVM_PACKAGE_VERSION};${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${CMAKE_BUILD_TYPE}")
+if(NEX_DEFAULT_TOOLCHAIN)
+  file(SHA256 "${NEX_DEFAULT_TOOLCHAIN}" NEX_DEFAULT_TOOLCHAIN_HASH)
+  string(APPEND NEX_BUILD_INPUTS ";${NEX_DEFAULT_TOOLCHAIN};${NEX_DEFAULT_TOOLCHAIN_HASH}")
+endif()
 foreach(NEX_INPUT IN LISTS NEX_COMPILER_FILES)
   file(SHA256 "${NEX_INPUT}" NEX_INPUT_HASH)
   string(APPEND NEX_BUILD_INPUTS ";${NEX_INPUT_HASH}")
@@ -47,12 +57,32 @@ target_include_directories(nex_frontend PUBLIC include runtime)
 target_include_directories(nex_frontend PRIVATE runtime)
 target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3 OpenSSL::Crypto ${CMAKE_DL_LIBS})
+if(WIN32)
+  target_link_libraries(nex_frontend PUBLIC ntdll bcrypt advapi32)
+endif()
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
 add_library(nex_native_backend STATIC src/backend.cpp src/private_task_modules.cpp src/native_toolchain.cpp
   src/native_image_identity.cpp src/incremental.cpp src/task_debug_manifest.cpp)
 target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
+if(WIN32)
+  # The CLANG64 MLIR DLL exports the C facade, not the C++ backend API.
+  # Keep the exact checked conversion pipeline and link its native components.
+  target_link_libraries(nex_native_backend PUBLIC
+    MLIRIR MLIRParser MLIRPass MLIRArithDialect MLIRControlFlowDialect
+    MLIRFuncDialect MLIRMemRefDialect MLIRLLVMDialect MLIRLLVMIRTransforms
+    MLIRArithToLLVM MLIRFuncToLLVM MLIRMemRefToLLVM MLIRControlFlowToLLVM
+    MLIRReconcileUnrealizedCasts MLIRBuiltinToLLVMIRTranslation MLIRLLVMToLLVMIRTranslation)
+endif()
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
+if(WIN32)
+  if(NOT CMAKE_RC_COMPILER)
+    set(CMAKE_RC_COMPILER "${LLVM_TOOLS_BINARY_DIR}/llvm-windres.exe" CACHE FILEPATH "Native Windows resource compiler")
+  endif()
+  enable_language(RC)
+  configure_file(tools/windows/nex.rc.in "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc" @ONLY)
+  target_sources(nex PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+endif()
 target_include_directories(nex PRIVATE runtime)
 target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
 target_sources(nex PRIVATE src/task_profile_report.cpp)
@@ -66,15 +96,23 @@ target_compile_options(nex PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(nex PRIVATE
   NEX_VERSION="${PROJECT_VERSION}"
   NEX_BUILD_ID="${NEX_BUILD_ID}"
+  NEX_DEFAULT_TOOLCHAIN="${NEX_DEFAULT_TOOLCHAIN}"
   NEX_RUNTIME_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime.cpp"
   NEX_LLVM_TOOLS="${LLVM_TOOLS_BINARY_DIR}"
   NEX_WASM_LD="${NEX_WASM_LD}"
-  NEX_CLANG="${LLVM_TOOLS_BINARY_DIR}/clang++")
+  NEX_CLANG="${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}")
 target_compile_definitions(nex PRIVATE NEX_SQLITE_INCLUDE="${SQLite3_INCLUDE_DIRS}" NEX_SQLITE_LIBRARY="${SQLite3_LIBRARIES}")
 target_compile_definitions(nex PRIVATE NEX_OPENSSL_INCLUDE="${OPENSSL_INCLUDE_DIR}" NEX_OPENSSL_SSL="${OPENSSL_SSL_LIBRARY}" NEX_OPENSSL_CRYPTO="${OPENSSL_CRYPTO_LIBRARY}")
 # The production executable and the private native-stage probe use the same
 # backend objects, compiler identity and selected toolchain defaults.
 get_target_property(NEX_NATIVE_DEFINITIONS nex COMPILE_DEFINITIONS)
+if(WIN32)
+  add_executable(nex_windows_host_runtime_probe tests/windows_host_runtime.cpp "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+  target_include_directories(nex_windows_host_runtime_probe PRIVATE runtime)
+  target_link_libraries(nex_windows_host_runtime_probe PRIVATE nex_frontend)
+  add_test(NAME windows_host_runtime COMMAND nex_windows_host_runtime_probe "${CMAKE_CURRENT_BINARY_DIR}/host-runtime-artifacts")
+  set_tests_properties(windows_host_runtime PROPERTIES TIMEOUT 120)
+endif()
 target_compile_definitions(nex_native_backend PRIVATE ${NEX_NATIVE_DEFINITIONS})
 target_include_directories(nex_native_backend PRIVATE runtime)
 target_include_directories(nex_native_backend SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
@@ -1430,3 +1468,15 @@ install(FILES tests/typed_graph_snapshots.py tests/typed_scalar_wasm.py tests/ty
 set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)
 
 install(FILES tests/source_exceptions_public.py DESTINATION share/nex/tests)
+
+# Standalone probes compile the same Windows file/ACL implementation as the
+# frontend and must resolve its NT, crypto and security imports as well.
+if(WIN32)
+  get_directory_property(NEX_WINDOWS_TARGETS BUILDSYSTEM_TARGETS)
+  foreach(NEX_WINDOWS_TARGET IN LISTS NEX_WINDOWS_TARGETS)
+    get_target_property(NEX_WINDOWS_SOURCES ${NEX_WINDOWS_TARGET} SOURCES)
+    if("runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES)
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ntdll bcrypt advapi32)
+    endif()
+  endforeach()
+endif()

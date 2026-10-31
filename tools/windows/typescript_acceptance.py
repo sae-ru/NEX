@@ -1,5 +1,6 @@
 """Compare the maintained CPU/task fixtures with emitted TypeScript on Windows."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -23,28 +24,35 @@ process.stdout.write(JSON.stringify({...result,stdout,statistics}));
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--producer',required=True)
+    parser.add_argument('--producer-environment',choices=('windows','wsl'),default='wsl')
     parser.add_argument('--distro',default='Ubuntu-22.04')
     parser.add_argument('--projects',required=True,type=Path)
     parser.add_argument('--output',required=True,type=Path)
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    native=args.producer_environment=='windows'
+    if native:args.producer=str(Path(args.producer).resolve())
     cases=[('core','main',None,'Я\0🧠\n42\n'),
            *[('core',name,code,'') for name,code in [('overflow_add','E_OVERFLOW'),('overflow_sub','E_OVERFLOW'),('overflow_mul','E_OVERFLOW'),('overflow_div','E_OVERFLOW'),('divide_zero','E_DIV_ZERO'),('bad_index','E_BOUNDS')]],
            ('tasks','main',None,'42\n42\n'),('typed','main',None,'Я\0🧠\nfinished\n'),('typed','cancel','E_CANCELLED','')]
     report={'schema':'nex.windows-typescript-acceptance/1','ok':False,
-            'producer_environment':'WSL','TypeScript_execution_environment':'native Windows Node',
+            'producer_environment':'native Windows' if native else 'WSL','requires_WSL':not native,'TypeScript_execution_environment':'native Windows Node',
             'cases':[],'commands':[]}
+    if native:report['producer_sha256']=hashlib.sha256(Path(args.producer).read_bytes()).hexdigest()
     def save(): (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    def run(label,argv):
-        result=subprocess.run(list(map(str,argv)),capture_output=True,timeout=120)
+    def run(label,argv,cwd=None):
+        result=subprocess.run(list(map(str,argv)),capture_output=True,timeout=120,cwd=cwd)
         (out/(label+'.stdout')).write_bytes(result.stdout);(out/(label+'.stderr')).write_bytes(result.stderr)
-        report['commands'].append({'argv':list(map(str,argv)),'exit_code':result.returncode});save()
+        report['commands'].append({'argv':list(map(str,argv)),'exit_code':result.returncode,'cwd':str(cwd) if cwd else None});save()
         assert result.returncode==0,(label,result.stdout,result.stderr)
         return result.stdout
     report['node_version']=run('node-version',['node','--version']).decode().strip()
     try:
         for module,entry,error,stdout in cases:
             label=module+'-'+entry;folder=out/label
-            metadata=json.loads(run(label+'-emit',['wsl.exe','-d',args.distro,'--cd',linux_path(args.projects/module),'--',args.producer,'emit','--kind','typescript','--entry',entry,'--directory',linux_path(folder),'--json']))
+            if native:
+                metadata=json.loads(run(label+'-emit',[args.producer,'emit','--kind','typescript','--entry',entry,'--directory',folder,'--json'],cwd=(args.projects/module).resolve()))
+            else:
+                metadata=json.loads(run(label+'-emit',['wsl.exe','-d',args.distro,'--cd',linux_path(args.projects/module),'--',args.producer,'emit','--kind','typescript','--entry',entry,'--directory',linux_path(folder),'--json']))
             (folder/'package.json').write_text('{"type":"module"}\n',encoding='utf-8')
             mapping=json.loads((folder/'nex-map.json').read_text(encoding='utf-8'))
             assert mapping['execution'] in ('synchronous','task-generator'),mapping['execution']

@@ -23,6 +23,9 @@
 #include <cstdlib>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace nex {
 namespace {
@@ -401,14 +404,24 @@ Object workloadValues(const Prepared &p){Object result;for(const auto &[id,w]:p.
 JSON summary(const Prepared &p){Array programs,checks;for(const auto &[id,c]:p.programs)programs.push_back(Object{{"id",id},{"revision",c.revision},{"source_hash",c.sourceHash}});bool ready=true;for(const auto &v:array(object(p.task),"checks")){const auto &c=object(v);bool available=supported(p,c);if(text(c,"kind")=="test")for(const auto &test:array(c,"tests")){auto realm=p.programs.at(text(c,"program")).program.function(text(object(test),"symbol")).realm;if((text(c,"target")=="web"&&realm=="server")||(text(c,"target")=="native"&&realm=="client"))available=false;}ready&=available;checks.push_back(Object{{"id",text(c,"id")},{"status",available?"ready":"unsupported"}});}return Object{{"schema","nex.task-check/1"},{"ok",ready},{"task",p.id},{"task_hash",p.taskHash},{"programs",std::move(programs)},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"checks",std::move(checks)},{"bindings",Object(p.linkage)},{"workloads",workloadValues(p)},{"linkage","static reachability, not measured coverage or proof of natural-language requirements"}};}
 std::string nonce(){return std::to_string(std::random_device{}())+"-"+std::to_string(std::random_device{}());}
 class ForeignTemporary {
-  fs::path path;dev_t device=0;ino_t inode=0;
+  fs::path path;
+#ifdef _WIN32
+  std::optional<nexrt::host_windows::Identity> identity;
+#else
+  dev_t device=0;ino_t inode=0;
+#endif
   bool cleanup()noexcept{
     try{
       if(path.empty())return true;
+#ifdef _WIN32
+      auto current=nexrt::host_windows::identity(path);
+      if(!current||current!=identity||!current->directory)return false;
+#else
       struct stat current{};
       if(::lstat(path.c_str(),&current)){if(errno==ENOENT){path.clear();return true;}return false;}
       // A native callback must not redirect parent cleanup to another object.
       if(current.st_dev!=device||current.st_ino!=inode||!S_ISDIR(current.st_mode))return false;
+#endif
       std::error_code ec;fs::permissions(path,fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);if(ec)return false;
       for(fs::recursive_directory_iterator it(path,ec),end;!ec&&it!=end;it.increment(ec)){
         auto status=it->symlink_status(ec);if(ec)return false;
@@ -425,9 +438,14 @@ public:
     auto pattern=(root/"nex-task-XXXXXX").string();
     if(!::mkdtemp(pattern.data()))throw Error("E_TASK_TEMP","cannot create a fresh native temporary directory");
     path=pattern;
+#ifdef _WIN32
+    identity=nexrt::host_windows::identity(path);
+    if(!identity||!identity->directory||!nexrt::host_windows::isPrivateDirectory(path))throw Error("E_TASK_TEMP","cannot protect native Windows temporary directory");
+#else
     struct stat created{};
     if(::lstat(path.c_str(),&created)||!S_ISDIR(created.st_mode)||::chmod(path.c_str(),0700)){fs::remove(path,ec);throw Error("E_TASK_TEMP","cannot protect native temporary directory");}
     device=created.st_dev;inode=created.st_ino;
+#endif
   }
   ~ForeignTemporary(){cleanup();}
   const fs::path &directory()const{return path;}

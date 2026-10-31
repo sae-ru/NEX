@@ -80,8 +80,12 @@ NativeToolchain configureNative(const BuildOptions &options) {
   bool triple=!options.target.empty()&&options.target!="server"&&options.target!="native";
   result.target=triple?llvm::Triple::normalize(options.target):host;
   std::string manifest;
-  if(!options.toolchain.empty()) {
-    auto file=std::filesystem::absolute(options.toolchain);
+  auto configuration=options.toolchain;
+#ifdef NEX_DEFAULT_TOOLCHAIN
+  if(configuration.empty())configuration=NEX_DEFAULT_TOOLCHAIN;
+#endif
+  if(!configuration.empty()) {
+    auto file=std::filesystem::absolute(configuration);
     if(!std::filesystem::is_regular_file(file)||std::filesystem::file_size(file)>65536)throw Error("E_TOOLCHAIN","toolchain requires a JSON file of at most 64 KiB");
     manifest=readFile(file.string());auto parsed=llvm::json::parse(manifest);
     if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_TOOLCHAIN","invalid toolchain JSON");}
@@ -133,7 +137,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(!abi.isArch64Bit()||(!ios&&!windows&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
     throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64, explicit iOS archive and Windows GNU/UCRT core toolchains");
   if(windows){
-    if(options.toolchain.empty()||result.windowsRuntime!="ucrt-static"||result.windowsNotices.empty())
+    if(configuration.empty()||result.windowsRuntime!="ucrt-static"||result.windowsNotices.empty())
       throw Error("E_TARGET","Windows core builds require --toolchain FILE with explicit compiler/linker/archiver/sysroot and windows runtime ucrt-static/notices");
     auto bytes=std::filesystem::file_size(result.windowsNotices);
     if(!bytes||bytes>1048576)throw Error("E_TOOLCHAIN","Windows component notices must contain 1..1048576 bytes");
@@ -142,7 +146,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(ios){
     // A device and an arm64 simulator share a CPU with this Mac but are not
     // host executables. Never inherit its SDK or dynamic dependencies.
-    if(options.toolchain.empty()||result.sysroot.empty()||!abi.getOSMajorVersion())
+    if(configuration.empty()||result.sysroot.empty()||!abi.getOSMajorVersion())
       throw Error("E_TARGET","iOS archives require --toolchain FILE with an explicit sysroot and versioned device/simulator target");
     auto settings=std::filesystem::path(result.sysroot)/"SDKSettings.json";
     if(!std::filesystem::is_regular_file(settings)||std::filesystem::file_size(settings)>65536)

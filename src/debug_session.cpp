@@ -16,16 +16,25 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 namespace nex {
 namespace fs=std::filesystem;
 namespace {
 llvm::json::Value parseJSON(const std::string &text){auto v=llvm::json::parse(text);if(!v)throw Error("E_JSON",llvm::toString(v.takeError()));return std::move(*v);}
 std::string readBoundedText(const std::string &path,size_t limit,const std::string &label,const std::string &code){
+#ifdef _WIN32
+  std::string text;
+  try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
+  catch(const nexrt::DataError &error){throw Error(code,label+": "+error.what());}
+#else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
   if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error(code,label+" requires a regular non-symlink file of at most "+std::to_string(limit)+" bytes");
   std::string text;std::array<char,65536> buffer{};
   for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read "+label);}if(!count)break;if(size_t(count)>limit-text.size())throw Error(code,label+" exceeds "+std::to_string(limit)+" bytes");text.append(buffer.data(),size_t(count));}
+#endif
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
   return text;
 }
@@ -70,10 +79,15 @@ std::string nativeDebugBuildDirectory(const std::string &directory){
       auto record=parseJSON(readBoundedText(pointer.string(),8192,"debug cache pointer","E_DEBUG_CACHE"));
       auto path=record.getAsString();
       if(path){
-        fs::path cached(path->str());struct stat info{};
+        fs::path cached(path->str());
+#ifdef _WIN32
+        bool ownedPrivate=nexrt::host_windows::isPrivateDirectory(cached);
+#else
+        struct stat info{};
+        bool ownedPrivate=::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&(info.st_mode&0777)==0700;
+#endif
         if(cached.parent_path()==base&&cached.filename().string().starts_with("nex-debug-")&&
-           ::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&
-           (info.st_mode&0777)==0700&&fs::canonical(cached)==cached&&
+           ownedPrivate&&fs::canonical(cached)==cached&&
            readBoundedText((cached/"owner.json").string(),8192,"debug cache owner","E_DEBUG_CACHE")==json(original.string(),false)+"\n")return cached.string();
       }
     }catch(const std::exception&){/* Missing/stale cache pointers are cache misses. */}
