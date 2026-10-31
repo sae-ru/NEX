@@ -49,7 +49,8 @@ class WindowsRuntimeDescriptor(harness.ToolchainCase):
         value=self.cli('describe')['windows_core_target']
         self.assertTrue(value['environment_access'] and value['database'] and value['explicit_target_sqlite'])
         self.assertEqual(value['environment_encoding'],'strict_utf8_utf16')
-        self.assertFalse(value['files'] or value['source_foreign_loading'] or value['host_execution'])
+        self.assertTrue(value['files'])
+        self.assertFalse(value['source_foreign_loading'] or value['host_execution'])
         (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
         self.source('module boundary;client fn main()->result<str>!{io}{return read_env("x");}')
         self.assertEqual(self.cli('check',ok=False)['code'],'E_REALM')

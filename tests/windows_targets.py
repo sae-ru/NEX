@@ -10,6 +10,7 @@ import unittest
 import uuid
 
 import support as harness
+import windows_native_cases as native_cases
 
 TOOLS = Path(os.environ['NEX_WINDOWS_TOOLCHAIN_ROOT']).resolve() if os.environ.get('NEX_WINDOWS_TOOLCHAIN_ROOT') else None
 WINE_IMAGE = os.environ.get('NEX_WINDOWS_WINE_IMAGE')
@@ -168,7 +169,7 @@ test fn semantics()->unit {assert(answer()==42);}
         self.source('module storage;server fn main()->unit!{db} {assert(is_ok(store_keys("")));}')
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
         for source,code in (
-            ('server fn main()->unit!{task,fs} {assert(is_ok(file_read_text("input")));}', 'E_TASK_TARGET'),
+            ('server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{task,ffi} {task_yield();return opaque();}', 'E_TASK_TARGET'),
             ('server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{ffi} {return opaque();}', 'E_TARGET')
         ):
             self.source('module unavailable;'+source)
@@ -249,7 +250,7 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
                 built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
                 metadata=json.loads(Path(built['metadata']).read_text())
                 self.assertTrue(metadata['runtime_requirements']['tasks'])
-                self.assertEqual(metadata['task_execution_abi'],0x4e45585400000006)
+                self.assertEqual(metadata['task_execution_abi'],0x4e45585400000007)
                 self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
                 imports=self.command([TOOLS/'bin/llvm-readobj','--coff-imports',built['executable']]).lower()
                 self.assertIn('ntdll.dll',imports);self.assertIn('bcrypt.dll',imports)
@@ -258,6 +259,23 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
         restored=self.cli('build','--revision',built['revision'],'--toolchain',self.config,'--profile','release',timeout=300)
         self.assertEqual(restored['build_key'],built['build_key'])
         self.assertGreater(restored['reused_functions'],0)
+
+    def test_files_and_owned_task_streams_pe_for_both_architectures(self):
+        """Cross-build contract; actual OS execution belongs to acceptance.py."""
+        for label,source,tasks in (('files',native_cases.FILES,False),
+                                   ('task-files',native_cases.TASK_FILES,True)):
+            self.source(source)
+            for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
+                self.configure(arch)
+                for profile in ('debug','release'):
+                    built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
+                    metadata=json.loads(Path(built['metadata']).read_text())
+                    self.assertIn('nex_files.cpp',metadata['runtime_components'])
+                    projection=Path(metadata['runtime_source_projection'])
+                    self.assertEqual((projection/'nex_files_windows.h').read_bytes(),(harness.REPO/'runtime/nex_files_windows.h').read_bytes())
+                    self.assertEqual(metadata['runtime_requirements']['tasks'],tasks)
+                    self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
+                    self.retain(built,label+'-'+arch+'-'+profile)
 
     @unittest.skipUnless(WINE_IMAGE,'set NEX_WINDOWS_WINE_IMAGE to opt into isolated x64 Wine compatibility checks')
     def test_structured_cpu_tasks_with_explicit_wine_compatibility(self):

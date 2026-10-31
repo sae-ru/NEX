@@ -57,7 +57,6 @@ public:
   FileResource open(const std::string &relative,FileMode mode,const Poll &poll={}) const;
   FileResource openIn(const ResourceDomain &scope,const std::string &relative,FileMode mode,const Poll &poll={}) const;
 };
-#ifndef _WIN32
 // Private host-only read bridge. Capturing resolves a lexical grant on its
 // coordinator; a worker sees only this revocation-aware physical lease/path.
 // No source file, Value, descriptor or TLS context is transported.
@@ -133,7 +132,6 @@ public:
   FileResource open(const TextFiles::Poll &poll={})const;
   FileResource openInRegion(const ResourceRegionAuthority &,const TextFiles::Poll &poll={},const std::shared_ptr<ResourceExecutor> &cleanup={})const;
 };
-#endif
 // An explicit host scope overrides the process environment. Native HTTP calls
 // do not inherit an environment capability unless the trusted host grants one.
 // Host-only lexical authority inspection; this neither grants nor captures it.
@@ -144,11 +142,9 @@ class FileScope {
 public:
   explicit FileScope(bool environmentAllowed = true);
   explicit FileScope(TextFiles &capability);
-#ifndef _WIN32
   // The host retains the ancestor domain and can revoke it independently of
   // this coordinator's lexical TLS. It must belong to this exact capability.
   FileScope(TextFiles &capability,const ResourceDomain &resources);
-#endif
   ~FileScope();
   FileScope(const FileScope&) = delete;
   FileScope &operator=(const FileScope&) = delete;

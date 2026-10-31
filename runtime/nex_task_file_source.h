@@ -1,7 +1,6 @@
 #pragma once
 #include "nex_task_file_stream.h"
 
-#ifndef _WIN32
 namespace nexrt {
 // Coordinator-only bridge for explicit private024 source continuations.
 // The physical operation retains only the prepared raw/typed host payload.
@@ -59,4 +58,3 @@ public:
   }
 };
 }
-#endif

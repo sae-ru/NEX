@@ -388,8 +388,12 @@ class TaskProviderDebugging(harness.ToolchainCase):
             if sys.platform=='darwin':
                 symbols=['script nex_symbol_target=lldb.debugger.GetSelectedTarget()',
                     'script print(__import__("json").dumps({"schema":"nex.test-loaded-symbols/1","images":[{"path":str(nex_symbol_target.GetModuleAtIndex(i).GetFileSpec()),"symbols":str(nex_symbol_target.GetModuleAtIndex(i).GetSymbolFileSpec())} for i in range(nex_symbol_target.GetNumModules())]}))']
+            # A logical out may complete at process exit (the0.152.1 resume
+            # contract). Never issue a native continue to an exited inferior;
+            # if still stopped, use the same bounded event-aware resume helper.
+            finish='script nex_test_process=lldb.debugger.GetSelectedTarget().GetProcess(); nex_test_error=__import__("lldb_nex")._task_resume(lldb.debugger,nex_test_process) if nex_test_process.GetState() in (lldb.eStateStopped,lldb.eStateSuspended) else None; assert (nex_test_error is None or nex_test_error.Success()) and nex_test_process.GetState()==lldb.eStateExited and nex_test_process.GetExitStatus()==0'
             run,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',*symbols,
-                'nex-task-stack','nex-frame input+1','nex-eval pure::offset(input)','nex-task-next','nex-task-in','nex-task-out','continue'],label=label+'-lldb')
+                'nex-task-stack','nex-frame input+1','nex-eval pure::offset(input)','nex-task-next','nex-task-in','nex-task-out',finish],label=label+'-lldb')
             value=next(row for row in rows if row.get('schema')=='nex.task-expression/2')
             self.assertEqual(value['value'],'42');self.assertEqual(value['source_identity']['component'],'leaf')
             self.assertIn('exited with status = 0',run.stdout)

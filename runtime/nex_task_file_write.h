@@ -2,7 +2,6 @@
 #include "nex_files.h"
 #include "nex_task_external.h"
 
-#ifndef _WIN32
 namespace nexrt {
 // Captured host bridge used by public023 whole-file task writes. Source
 // version/backend admission and authority remain explicit separate contracts.
@@ -66,4 +65,3 @@ public:
   }
 };
 }
-#endif

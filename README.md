@@ -63,7 +63,10 @@ source commits and hardware scopes are recorded in the [delivery record](docs/re
 
 Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
 Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
-Actual native Windows acceptance, CUDA, Metal, Apple NPU, general GPU compilation,
+Windows GNU/UCRT x64 CPU/tasks/files and SQLite have a
+[scoped native-machine receipt](docs/windows-native-acceptance.md), with separate
+WSL producer, Windows execution and CUDA driver prerequisite results.
+Full Windows-hosted SDK acceptance, CUDA from NEX, Metal, Apple NPU, general GPU compilation,
 complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
 
 ## Build and use

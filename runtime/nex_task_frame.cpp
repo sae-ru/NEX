@@ -223,9 +223,6 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
       case TaskRequestKind::FileRead:case TaskRequestKind::FileWrite:case TaskRequestKind::FileSeek:
       case TaskRequestKind::FileSize:case TaskRequestKind::FileFlush:case TaskRequestKind::FileClose:case TaskRequestKind::FileIsOpen:{
         try{
-#ifdef _WIN32
-        checked([&]{throw DataError("E_TASK_TARGET","task file streams require macOS or Linux");});
-#else
         std::optional<PreparedSourceTaskFile> prepared;
         checked([&]{
           if(!current.host||!fileStreamTaskABI(current.abi)||!(current.requirements&taskCodeFileStream))throw DataError("E_TASK_STATE","file stream has no checked source descriptor/host");
@@ -242,15 +239,11 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           }else result=checked([&]{return prepared->admit({},[&]{pollHostOperation(request.location);});});
         }
         checked([&]{pollHostOperation(request.location);});
-#endif
         }catch(...){group.failHostOperation(std::current_exception());throw;}
         break;
       }
       case TaskRequestKind::FileWriteText:case TaskRequestKind::FileWriteBytes:{
         try{
-#ifdef _WIN32
-        checked([&]{throw DataError("E_TASK_TARGET","task file writes require macOS or Linux");});
-#else
         std::optional<PreparedTaskFileWrite> prepared;
         checked([&]{
           if(!current.host||!(current.requirements&taskCodeFileWrite)||request.kind!=3||request.arguments.size()!=2)
@@ -271,15 +264,11 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           result=checked([&]{pollHostOperation(request.location);auto admitted=prepared->admit(std::move(raw));pollHostOperation(request.location);return admitted;});
         }
         checked([&]{pollHostOperation(request.location);});
-#endif
         }catch(...){group.failHostOperation(std::current_exception());throw;}
         break;
       }
       case TaskRequestKind::FileReadText:case TaskRequestKind::FileReadBytes:{
         try{
-#ifdef _WIN32
-        checked([&]{throw DataError("E_TASK_TARGET","task file reads require macOS or Linux");});
-#else
         std::optional<PreparedTaskFileRead> prepared;
         checked([&]{
           if(!current.host||!(current.requirements&taskCodeFileRead)||request.kind!=3||request.arguments.size()!=1)
@@ -298,7 +287,6 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           result=checked([&]{pollHostOperation(request.location);auto admitted=prepared->admit(std::move(raw));pollHostOperation(request.location);return admitted;});
         }
         checked([&]{pollHostOperation(request.location);});
-#endif
         }catch(...){group.failFileRead(std::current_exception());throw;}
         break;
       }

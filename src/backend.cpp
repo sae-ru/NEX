@@ -2137,8 +2137,8 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
   const auto taskExecutionABI=p.sourceLanguage==SourceLanguage::TypedErrors027?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
-  if(windows&&tasks&&(files||foreign))throw Error("E_TASK_TARGET","Windows task filesystem/resource operations and foreign modules remain pending native platform validation");
-  if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
+  if(windows&&tasks&&foreign)throw Error("E_TASK_TARGET","Windows task foreign modules remain pending native platform validation");
+  if(windows&&foreign)throw Error("E_TARGET","Windows source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
   if(parallel&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())
@@ -2159,7 +2159,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
-  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
+  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});if(windows&&!tasks)headers.push_back("nex_files_windows.h");}
   if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"});}
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
@@ -2625,7 +2625,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(taskProviders&&(profiling||options.taskDebug)){if(driverABI.isOSDarwin())link.insert(link.end(),{"-Xlinker","-force_load","-Xlinker",archive});else link.insert(link.end(),{"-Xlinker","--whole-archive",archive,"-Xlinker","--no-whole-archive"});}
       else link.push_back(archive);
     }
-    if(windows){link.push_back("-static");if(tasks)link.insert(link.end(),{"-lntdll","-lbcrypt"});}
+    if(windows){link.push_back("-static");if(tasks||files)link.insert(link.end(),{"-lntdll","-lbcrypt","-ladvapi32"});}
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
     // Profiles and captured application images also require physical identity.
     // A Clang distribution need not request an ELF build ID by default.

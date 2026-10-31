@@ -1,12 +1,16 @@
-# Windows filesystem prototype — validation pending
+# Windows filesystem adapter
 
-The0.65 source includes a Windows runtime prototype and a direct C++ regression
-probe in `tests/windows_io.cpp`. The NEX CLI continues to reject reachable
-filesystem/resource calls for Windows, and `windows_core_target.files` is false.
-Do not infer availability from the prototype's presence or from a successful
-cross-compilation. Existing macOS/Linux filesystem behavior is unchanged.
+The current Windows GNU/UCRT adapter enables synchronous and task filesystem
+calls, and `windows_core_target.files` is true. A direct native Windows/NTFS
+probe in `tests/windows_io.cpp` passed24 cases, including actual reparse points,
+private ACLs, pinned parents, cross-worker grants and retained physical quotas.
+NEX debug/release PE executions separately exercise whole-file/owned streams,
+task transport, typed file payloads and cancellation. See the
+[machine acceptance](windows-native-acceptance.md) for exact scopes and pending
+Windows-hosted SDK/ARM64/FFI work. The0.65 prototype and Wine results below are
+historical evidence. Existing macOS/Linux filesystem semantics are unchanged.
 
-The prototype opens the host-selected absolute root once and walks each child
+The adapter opens the host-selected absolute root once and walks each child
 component with `NtCreateFile` relative to the pinned directory handle. Child
 opens request `FILE_OPEN_REPARSE_POINT`; handle metadata rejects reparse points
 and inappropriate file kinds. It never reconstructs a pathname from a handle.
@@ -23,8 +27,8 @@ can retain the old file. This needs Windows10 version1709 or newer and a
 filesystem that implements these operations and persistent ACLs. Unsupported
 operations fail; no path-based/non-atomic fallback is supplied. Streaming uses
 owned handles, physical quotas, revocation, cursor locks, append-only access and
-the existing cancellation/lease rules. This is the intended contract, awaiting
-native execution evidence.
+the existing cancellation/lease rules. Native Windows11 x64/NTFS evidence is
+linked above; other Windows versions and filesystems retain separate acceptance.
 
 The direct probe covers Unicode environment/database paths, private ACLs,
 no-follow leaf/directory links, parent replacement, pinned roots, atomic writes,
@@ -40,11 +44,16 @@ retains an orphan temporary. These results do not certify the filesystem
 contract. Wine9's upstream rename implementation explicitly lacks the required
 POSIX flag behavior. ARM64 binaries cross-compile; execution has not been tested.
 
-Before enabling this adapter, run the unchanged probe on actual Windows/NTFS,
-inspect any failures and repeat actual NEX debug/release programs after enabling
-the guarded backend. Record compiler, target libraries, OS/filesystem, artifacts
-and source hashes. Keep HTTP request file grants explicit; process environment
-must not implicitly grant request access.
+The native probe needed a cancellation checkpoint after pinning a write parent
+and before creating a temporary: Windows denies renaming a parent while its
+temporary child is open. The original replacement assertion now runs at the
+admission boundary and still verifies publication through the pinned handle.
+Probe cleanup releases its pinned roots before deleting their container. No
+failed reparse/ACL check was skipped or replaced with an emulated link.
+Task reads/writes/streams use captured revocable grants and physical leases;
+scoped opens reserve logical settlement and owning-executor cleanup before
+construction. Keep HTTP request grants explicit; this does not enable Windows
+HTTP hosting or grant request access through process environment.
 
 Primary API references: [NtCreateFile](https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile),
 [rename flags](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information),

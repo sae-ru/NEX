@@ -1298,6 +1298,8 @@
       "applications": true,
       "source_errors": true,
       "file_or_foreign_tasks": false,
+      "file_tasks": true,
+      "foreign_tasks": false,
       "source_provider_images": false,
       "debugging": false,
       "profiling": false,

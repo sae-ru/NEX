@@ -12,22 +12,18 @@ TaskBody applicationTask(TaskGroup &group,Value,Value closure,const void *contex
   return executeTaskFrame(group,NativeTaskFrame(code,{},closure,std::move(host)));
 }
 struct ConfiguredTaskHost {
-#ifndef _WIN32
   std::unique_ptr<FileScope> files;
-#endif
   std::shared_ptr<TaskFrameHostContext> context;
 };
 ConfiguredTaskHost configuredTaskHost(const TaskCodeDescriptor &code){
   ConfiguredTaskHost result;
   auto context=std::make_shared<TaskFrameHostContext>();
-#ifndef _WIN32
 
   if(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite)){
     if(!inFileScope())result.files=std::make_unique<FileScope>(true);
     if(code.requirements&taskCodeImageFileRead)context->fileReads=captureFileReadGrant(true);
     if(code.requirements&taskCodeImageFileWrite)context->fileWrites=captureFileWriteGrant(true);
   }
-#endif
   if(code.requirements&taskCodeImageForeign){
 #ifdef NEX_FOREIGN_ENABLED
     context->foreign=captureForeignScope(true);
@@ -36,14 +32,12 @@ ConfiguredTaskHost configuredTaskHost(const TaskCodeDescriptor &code){
     throw DataError("E_TASK_STATE","task foreign image has no linked foreign adapter");
 #endif
   }
-#ifndef _WIN32
   if(code.requirements&taskCodeImageFileStream){
 #ifdef NEX_FOREIGN_ENABLED
     context->fileCleanup=context->foreignCleanup;
 #endif
     if(!context->fileCleanup)context->fileCleanup=std::make_shared<ResourceExecutor>(ResourceExecutorLimits{64,64,8*1048576});
   }
-#endif
   result.context=std::move(context);return result;
 }
 struct HttpTaskInvocation {
