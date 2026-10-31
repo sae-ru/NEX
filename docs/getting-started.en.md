@@ -1,9 +1,9 @@
-# Start with NEX 0.152.0
+# Start with NEX 0.152.1
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree
-uses toolchain 0.152.0 / language 0.27. Check [delivery evidence](releases/0.152.0.json)
+uses toolchain 0.152.1 / language 0.27. Check [delivery evidence](releases/0.152.0.json)
 for the exact accepted SDK, source commit, platform, archive hash and prerequisites.
 
 ## Install a matching SDK or build the compiler

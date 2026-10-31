@@ -222,3 +222,20 @@ adapter requests one fresh list before replying to the editor. A second omission
 or a changed stop fails inspection. It never invents threads or resumes the
 process. CPU callback breakpoints and pure watches use the same archived source
 projections and matching compiler as ordinary frames.
+
+## Logical task resume
+
+Development toolchain 0.152.1 changes synchronous `nex-task` continue/step
+commands to subscribe to process state events before resuming asynchronously.
+The command still waits for a fresh stop or process exit and restores the
+caller's debugger mode. Restarted internal stops and events for other processes
+do not complete the request. A confirmed terminal process state completes the
+wait even if its exit event is absent. Interrupting the wait requests a process stop.
+An already asynchronous caller retains its asynchronous behavior; DAP's explicit
+`defer_continue` path keeps its existing event ownership.
+
+This avoids the unbounded LLDB synchronous-resume wait observed during rapid
+modular HTTP server shutdown on macOS. The original timeout and experimental
+replays are retained separately; full regression and matching SDK delivery for
+0.152.1 remain pending. The listener uses the standard
+[LLDB process event API](https://lldb.llvm.org/python_api/lldb.SBProcess.html).

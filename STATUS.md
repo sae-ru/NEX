@@ -1,3 +1,12 @@
+# Logical debugger resume development — 0.152.1 / language 0.27
+
+A saved modular HTTP LLDB timeout was reproduced in one of 12 traced replays.
+An event-driven resume prototype passed 48/48 replays on the same native binary.
+The implementation now has explicit stale/restarted/foreign event, missing exit,
+async-mode, backend error and interruption regressions. Full current regression
+and a matching portable SDK remain pending. Historical 0.152 evidence below keeps
+its original scope and failed run.
+
 # Runtime contract development — 0.152.0 / language 0.27
 
 The [0.152 Mac SDK receipt](docs/releases/0.152.0.json) records 284 first-run core passes

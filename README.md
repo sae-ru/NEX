@@ -52,7 +52,9 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.152.0 / language 0.27**.
+Current source: **toolchain 0.152.1 / language 0.27**.
+The logical-debugger resume fix is under validation; the accepted SDK below
+remains 0.152.0.
 The [scalar runtime pre/post projection](docs/runtime-contracts.md) passed the
 macOS ARM64 development SDK acceptance recorded below. The full run passed
 284/285 groups; one modular HTTP LLDB group timed out and passed its unchanged

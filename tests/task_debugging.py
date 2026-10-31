@@ -42,6 +42,57 @@ def reader_module():
         else: sys.modules['lldb'] = previous
 
 
+def resume_fixture(reader, steps, asynchronous=False, resume_failed=False):
+    """A state-event backend with a bounded scripted schedule, not an inferior."""
+    class Error:
+        def __init__(self, failed=False): self.failed=failed
+        def Fail(self): return self.failed
+        def SetErrorString(self, text): self.failed=True;self.message=text
+    debugger=SimpleNamespace(async_mode=asynchronous)
+    debugger.GetAsync=lambda:debugger.async_mode
+    debugger.SetAsync=lambda value:setattr(debugger,'async_mode',value)
+    error=Error(resume_failed)
+    class Process:
+        state=1;stop_id=1;resumes=0;interrupted=False
+        def GetUniqueID(self): return 17
+        def GetStopID(self): return self.stop_id
+        def GetBroadcaster(self): return self
+        def GetState(self): return self.state
+        def Continue(self):
+            assert debugger.async_mode, 'resume must not enter an unbounded synchronous LLDB wait'
+            self.resumes+=1
+            return error
+        def Stop(self): self.interrupted=True;return Error()
+    process=Process()
+    class Listener:
+        waits=0;subscriptions=0;unsubscribed=False
+        def StartListeningForEvents(self, broadcaster, mask):
+            assert broadcaster is process
+            self.subscriptions+=1
+            return mask
+        def StopListeningForEvents(self, broadcaster, mask):
+            assert broadcaster is process
+            self.unsubscribed=True
+        def WaitForEvent(self, seconds, event):
+            assert 0 < seconds <= 1
+            self.waits+=1
+            assert steps, 'resume did not complete at the expected observable stop/exit'
+            row=steps.pop(0)
+            if isinstance(row,BaseException): raise row
+            process.state=row['state'];process.stop_id=row.get('stop',process.stop_id)
+            event.row=row
+            return row.get('event',True)
+    listener=Listener()
+    reader.lldb=SimpleNamespace(SBListener=lambda name:listener,SBEvent=lambda:SimpleNamespace(),SBError=Error,
+        SBProcess=SimpleNamespace(eBroadcastBitStateChanged=1,
+            GetProcessFromEvent=lambda event:SimpleNamespace(GetUniqueID=lambda:event.row.get('owner',17)),
+            GetRestartedFromEvent=lambda event:event.row.get('restarted',False),
+            GetStateFromEvent=lambda event:event.row.get('event_state',event.row['state'])),
+        eStateStopped=1,eStateRunning=2,eStateExited=3,eStateCrashed=4,eStateDetached=5,
+        eStateSuspended=6,eStateInvalid=7,eStateUnloaded=8)
+    return debugger,process,listener,error
+
+
 class TaskDebugging(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -51,6 +102,43 @@ class TaskDebugging(harness.ToolchainCase):
             self.root.mkdir(parents=True,exist_ok=False)
             self.file=self.root/'main.nex'
         (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+
+    def test_resume_ignores_stale_restarted_and_other_process_stops(self):
+        reader=reader_module()
+        debugger,process,listener,error=resume_fixture(reader,[
+            {'state':1,'stop':1},
+            {'state':2,'event_state':1,'stop':2,'restarted':True},
+            {'state':1,'stop':3,'owner':18},
+            {'state':1,'stop':4}])
+        self.assertIs(reader._task_resume(debugger,process),error)
+        self.assertEqual((process.stop_id,listener.waits),(4,4))
+        self.assertFalse(debugger.GetAsync());self.assertTrue(listener.unsubscribed)
+
+    def test_resume_observes_exit_when_the_exit_event_is_missing(self):
+        reader=reader_module()
+        debugger,process,listener,error=resume_fixture(reader,[{'state':3,'event':False}])
+        self.assertIs(reader._task_resume(debugger,process),error)
+        self.assertEqual(listener.waits,1)
+        self.assertFalse(debugger.GetAsync());self.assertTrue(listener.unsubscribed)
+
+    def test_resume_preserves_async_and_reports_backend_or_detach_failure(self):
+        reader=reader_module()
+        debugger,process,listener,error=resume_fixture(reader,[],asynchronous=True)
+        self.assertIs(reader._task_resume(debugger,process),error)
+        self.assertTrue(debugger.GetAsync());self.assertEqual(listener.subscriptions,0)
+        debugger,process,listener,error=resume_fixture(reader,[],resume_failed=True)
+        self.assertIs(reader._task_resume(debugger,process),error)
+        self.assertTrue(error.Fail());self.assertFalse(debugger.GetAsync());self.assertTrue(listener.unsubscribed)
+        debugger,process,listener,error=resume_fixture(reader,[{'state':5}])
+        self.assertTrue(reader._task_resume(debugger,process).Fail())
+        self.assertFalse(debugger.GetAsync());self.assertTrue(listener.unsubscribed)
+
+    def test_resume_interrupt_stops_the_process_and_restores_debugger_mode(self):
+        reader=reader_module()
+        debugger,process,listener,error=resume_fixture(reader,[KeyboardInterrupt()])
+        with self.assertRaises(KeyboardInterrupt):reader._task_resume(debugger,process)
+        self.assertTrue(process.interrupted);self.assertFalse(debugger.GetAsync())
+        self.assertTrue(listener.unsubscribed)
 
     def test_reader_rejects_invalid_visibility_and_authority_metadata(self):
         reader = reader_module()

@@ -2268,6 +2268,47 @@ def _task_function_source_identity(function):
             'contract': function['contract']}
 
 
+def _task_resume(debugger, process):
+    if debugger.GetAsync():
+        return process.Continue()
+    # Keep the normal synchronous command result without LLDB's unbounded
+    # ResumeSynchronous event wait observed during rapid process exit.
+    stop_id = process.GetStopID()
+    listener = lldb.SBListener('nex-task-resume-' + str(process.GetUniqueID()))
+    broadcaster = process.GetBroadcaster()
+    mask = lldb.SBProcess.eBroadcastBitStateChanged
+    if listener.StartListeningForEvents(broadcaster, mask) != mask:
+        error = lldb.SBError()
+        error.SetErrorString('cannot subscribe to process state changes')
+        return error
+    debugger.SetAsync(True)
+    try:
+        error = process.Continue()
+        if error.Fail():
+            return error
+        while True:
+            event = lldb.SBEvent()
+            received = listener.WaitForEvent(1, event)
+            state = process.GetState()
+            if state in (lldb.eStateExited, lldb.eStateCrashed):
+                return error
+            if state in (lldb.eStateInvalid, lldb.eStateUnloaded, lldb.eStateDetached):
+                error.SetErrorString('process became unavailable while resuming (state ' + str(state) + ')')
+                return error
+            if (received and lldb.SBProcess.GetProcessFromEvent(event).GetUniqueID() == process.GetUniqueID()
+                    and not lldb.SBProcess.GetRestartedFromEvent(event)
+                    and lldb.SBProcess.GetStateFromEvent(event) in (lldb.eStateStopped, lldb.eStateSuspended)
+                    and state in (lldb.eStateStopped, lldb.eStateSuspended)
+                    and process.GetStopID() != stop_id):
+                return error
+    except KeyboardInterrupt:
+        process.Stop()
+        raise
+    finally:
+        listener.StopListeningForEvents(broadcaster, mask)
+        debugger.SetAsync(False)
+
+
 def _task_request(debugger, request):
     if not isinstance(request, dict) or not isinstance(request.get('command'), str):
         raise ValueError('invalid logical debugger request')
@@ -2326,7 +2367,7 @@ def _task_request(debugger, request):
         context['_task_plan'] = None
         if args.get('defer_continue') is True:
             return {'armed': True, 'stop_id': str(process.GetStopID())}
-        error = process.Continue()
+        error = _task_resume(debugger, process)
         if error.Fail(): raise ValueError(str(error))
         return {'continued': True}
     view = _TaskCatalog(debugger)
@@ -2388,7 +2429,11 @@ def _task_request(debugger, request):
             # command can consume state events; the bridge sends a native
             # all-thread continue only after this read-only arming response.
             return {'armed': True, 'task_id': identity, 'stop_id': str(view.stop_id)}
-        error = view.process.Continue()
+        try:
+            error = _task_resume(debugger, view.process)
+        except BaseException:
+            context['_task_plan'] = None
+            raise
         if error.Fail():
             context['_task_plan'] = None
             raise ValueError(str(error))
