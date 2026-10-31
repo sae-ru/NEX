@@ -1,4 +1,6 @@
 """Actual CLI/DAP launch arguments and archived views of genuine owned resources."""
+from host_fixture import run_native, host_cpp
+from host_fixture import run_native
 from pathlib import Path
 import argparse,hashlib,json,os,platform,shutil,subprocess,sys,tempfile,time,traceback
 
@@ -9,15 +11,15 @@ def main():
  if explicit:OUT.mkdir(parents=True,exist_ok=False)
  require_live=args.require_live or os.environ.get('NEX_REQUIRE_RESOURCE_DAP')=='1'
  language=json.loads(subprocess.check_output([str(COMPILER),'describe','--kind','index','--json'],text=True))['language']
- PROJECT=OUT/'project';PROJECT.mkdir();(PROJECT/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n')
+ PROJECT=OUT/'project';PROJECT.mkdir();(PROJECT/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n', newline="\n")
  ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_RESOURCE_DIR':str(RESOURCE)}
  report={'schema':'nex.resource-debug-tests/1','ok':False,'commands':[]};started=time.monotonic()
  def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
- def save():(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+ def save():(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
  def run(label,args,parse=False):
   row={'label':label,'command':list(map(str,args))};report['commands'].append(row);save()
-  p=subprocess.run(row['command'],cwd=PROJECT,env=ENV,capture_output=True,text=True,timeout=180)
-  (OUT/(label+'.stdout')).write_text(p.stdout);(OUT/(label+'.stderr')).write_text(p.stderr);row['exit']=p.returncode;save()
+  p=run_native(row['command'],cwd=PROJECT,env=ENV,capture_output=True,text=True,timeout=180)
+  (OUT/(label+'.stdout')).write_text(p.stdout, newline="\n");(OUT/(label+'.stderr')).write_text(p.stderr, newline="\n");row['exit']=p.returncode;save()
   assert p.returncode==0,(label,p.stdout[-4000:],p.stderr[-4000:])
   return json.loads(p.stdout) if parse else p.stdout
  def cli(label,*args):return run(label,[COMPILER,*args,'--json'],True)
@@ -34,19 +36,19 @@ def main():
  }
  server fn main()->unit!{ffi,io}{let held:Session=create(42);print(observe(held));assert(resource_close(held));}
  '''
-  source=PROJECT/'main.nex';source.write_text(text.replace('PIN','0'*64))
+  source=PROJECT/'main.nex';source.write_text(text.replace('PIN','0'*64), newline="\n")
   signatures={name:cli('signature-'+name,'ffi','main.nex','--symbol',name) for name in ('create','read')}
   pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()}
-  (PROJECT/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n')
+  (PROJECT/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n', newline="\n")
   bundle=PROJECT/'bundle';bundle.mkdir();module=bundle/'module.so';marker=OUT/'events'
   sys.path.insert(0,str(RESOURCE/'tools'))
   from sdk_source_resources import c_string_literal
   run('compile-producer',[doctor['native_compiler'],'-x','c++','-std=c++20','-shared','-fPIC','-fvisibility=hidden','-I'+str(RESOURCE/'runtime'),'-I'+str(PROJECT),'-DNEX_RESOURCE_MARKER='+c_string_literal(marker),RESOURCE/'examples/source-resource-producer.c','-o',module])
-  (bundle/'NOTICE').write_text('NEX actual resource debugger fixture\n')
-  manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle/name)} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
-  (bundle/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');pin=sha(bundle/'manifest.json')
-  host=PROJECT/'operator \"quoted\" 🧠.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}},indent=2)+'\n')
-  source.write_text(text.replace('PIN',pin))
+  (bundle/'NOTICE').write_text('NEX actual resource debugger fixture\n', newline="\n")
+  manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle/name)} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
+  (bundle/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n");pin=sha(bundle/'manifest.json')
+  host=PROJECT/'operator \"quoted\" 🧠.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}},indent=2)+'\n', newline="\n")
+  source.write_text(text.replace('PIN',pin), newline="\n")
   import re
   sys.path.insert(0,str(RESOURCE/'tools'))
   from sdk_acceptance import DAP
@@ -100,7 +102,7 @@ def main():
    report['resource_watch_refusal']=refusal
    raw=client.request('evaluate',{'expression':'`nex-frame value','context':'repl','frameId':frame})
    snapshot=json.loads(raw['result']);assert snapshot['captures']==[] and all('value' not in b for b in snapshot['bindings'])
-   (OUT/'frame.json').write_text(json.dumps(snapshot,indent=2)+'\n')
+   (OUT/'frame.json').write_text(json.dumps(snapshot,indent=2)+'\n', newline="\n")
    client.request('continue',{'threadId':stopped['threadId']});assert client.event('exited')['exitCode']==0
    stale=client.send('variables',{'variablesReference':references[0]})
    stale_response=client.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==stale)

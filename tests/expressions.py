@@ -25,7 +25,7 @@ pub fn first_two(items: list<i64>) -> i64 { var index: i64 = 0; var total: i64 =
 pub enum Selection { Empty; Chosen(id:i64, ignored:i64, samples:list<str>); }
 pub fn selected(value:Selection) -> i64 { match value { Selection::Empty() => {return 0;} Selection::Chosen(id,ignored,samples) => {return id + len(samples);} } }
 ''')
-        self.file.write_text(self.file.read_text().replace('  let empty:', '  let selection: model::Selection = model::Selection::Chosen(40,999,["selected"]);\n  let empty:'))
+        self.file.write_text(self.file.read_text().replace('  let empty:', '  let selection: model::Selection = model::Selection::Chosen(40,999,["selected"]);\n  let empty:'), newline="\n")
         with self.file.open('a') as output:
             output.write('''\nfn spin() -> i64 { var n: i64 = 0; while true { n = n + 1; } return n; }
 server fn server_value() -> i64 { return 3; }
@@ -50,7 +50,7 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         self.framefile=self.root/'frame.json'
 
     def inspect(self, expression, frame=None, **kwargs):
-        self.framefile.write_text(json.dumps(frame or self.frame))
+        self.framefile.write_text(json.dumps(frame or self.frame), newline="\n")
         kind=kwargs.pop('extra_kind',None)
         extra=['--kind',kind] if kind else []
         return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression',expression,*extra,**kwargs)
@@ -120,11 +120,11 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         self.assertEqual(result['code'],'E_TYPE')
 
     def cli_plan(self,frame):
-        self.framefile.write_text(json.dumps(frame))
+        self.framefile.write_text(json.dumps(frame), newline="\n")
         return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression','model::increment(total) + person.id','--kind','plan')
 
     def test_pure_call_step_allocation_and_expression_limits(self):
-        self.framefile.write_text(json.dumps(self.frame))
+        self.framefile.write_text(json.dumps(self.frame), newline="\n")
         result=self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression','spin()','--steps','50',ok=False)
         self.assertEqual(result['code'],'E_LIMIT')
         self.assertEqual(self.inspect('expand()',ok=False)['code'],'E_DEBUG_LIMIT')
@@ -138,7 +138,7 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         self.assertEqual(self.inspect('model::increment(total)')['value'],'43')
         self.assertEqual(self.cli('graph')['revision'],revision)
         bundle=self.manifest.parent/'source-bundle.json';original=bundle.read_bytes();value=json.loads(original)
-        value['files']['main.nex']+='\n// changed exact source\n';bundle.write_text(json.dumps(value))
+        value['files']['main.nex']+='\n// changed exact source\n';bundle.write_text(json.dumps(value), newline="\n")
         self.assertEqual(self.inspect('total',ok=False)['code'],'E_DEBUG_SNAPSHOT')
         bundle.write_bytes(original)
 
@@ -146,7 +146,7 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         raw=json.dumps(self.frame,ensure_ascii=False)
         self.assertIn('"id": "7"',raw)
         for replacement in ['"id": "9", "id": "7"','"i\\u0064": "9", "id": "7"']:
-            self.framefile.write_text(raw.replace('"id": "7"',replacement,1))
+            self.framefile.write_text(raw.replace('"id": "7"',replacement,1), newline="\n")
             result=self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression','person.id',ok=False)
             self.assertEqual(result['code'],'E_DEBUG_FRAME')
         self.framefile.write_bytes(b'\xef\xbb\xbf'+raw.encode('utf-8'))
@@ -274,8 +274,8 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         self.assertEqual(native['stdout'],interpreted)
         folder=self.root/'ts'
         self.cli('emit','--kind','typescript','--entry','projection','--directory',folder)
-        (folder/'package.json').write_text('{"type":"module"}')
-        (folder/'watch.ts').write_text("import {entry} from './program.ts';entry();")
+        (folder/'package.json').write_text('{"type":"module"}', newline="\n")
+        (folder/'watch.ts').write_text("import {entry} from './program.ts';entry();", newline="\n")
         actual=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(folder/'watch.ts')],capture_output=True,text=True,timeout=30)
         self.assertEqual(actual.returncode,0,actual.stderr);self.assertEqual(actual.stdout,interpreted)
 
@@ -283,13 +283,13 @@ fn expand() -> list<str> { var items: list<str> = ["x"]; var n: i64 = 0; while n
         source=(harness.REPO/'examples/debugging/large.nex').read_text()
         source=source.replace('print(report.id); // break: large',
             'print(report.id); print(len(samples)); print(last(report.samples)); print(error_code(failure)); print(len(unwrap(reply).samples));')
-        self.file.write_text(source)
+        self.file.write_text(source, newline="\n")
         interpreted=self.cli('eval')['stdout']
         self.assertEqual(interpreted,'7\n32768\nleaf\x00\U0001f30d\nBULK\n32768\n')
         self.assertEqual(self.cli('run')['stdout'],interpreted)
         folder=self.root/'large-ts';self.cli('emit','--kind','typescript','--directory',folder)
-        (folder/'package.json').write_text('{"type":"module"}')
-        (folder/'watch.ts').write_text("import {entry} from './program.ts';entry();")
+        (folder/'package.json').write_text('{"type":"module"}', newline="\n")
+        (folder/'watch.ts').write_text("import {entry} from './program.ts';entry();", newline="\n")
         actual=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(folder/'watch.ts')],capture_output=True,text=True,timeout=30)
         self.assertEqual(actual.returncode,0,actual.stderr);self.assertEqual(actual.stdout,interpreted)
 
@@ -331,12 +331,12 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
             self.assertEqual(result['value']['value'],'32808');self.assertEqual(result['pattern']['value'],'40')
             self.assertEqual([c['path'] for c in result['snapshot']['captures']],[[],['Chosen::id'],['Chosen::samples']])
-            framefile=self.root/'snapshot.json';framefile.write_text(json.dumps(result['snapshot']))
+            framefile=self.root/'snapshot.json';framefile.write_text(json.dumps(result['snapshot']), newline="\n")
             self.assertEqual(self.cli('inspect',framefile,'--manifest',session['manifest'],'--expression','selected(selection)')['value'],'32808')
             from debugging import DAP
             client=DAP(session['adapter_command'],self.root)
@@ -394,7 +394,7 @@ def __lldb_init_module(debugger, _):
         process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
     finally:
         if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
             self.assertEqual([result[e]['value'] for e in ['len(samples)','report.id','last(report.samples)','is_ok(reply)','len(unwrap(reply).samples)','error_code(failure)']],
@@ -405,7 +405,7 @@ def __lldb_init_module(debugger, _):
             self.assertEqual([(c['binding'],c['path'],c['kind']) for c in snapshot['captures']],
                 [('report',[],'shape'),('report',['samples'],'shape'),('report',['samples',32767],'value')])
             self.assertLess(len(json.dumps(snapshot)),8192)
-            self.file.unlink();framefile=self.root/'partial.json';framefile.write_text(json.dumps(snapshot))
+            self.file.unlink();framefile=self.root/'partial.json';framefile.write_text(json.dumps(snapshot), newline="\n")
             offline=self.cli('inspect',framefile,'--manifest',session['manifest'],'--expression','last(report.samples)')
             self.assertEqual(offline['value'],'leaf\x00\U0001f30d')
             self.assertEqual(offline['stop'],result['last(report.samples)']['stop'])
@@ -460,7 +460,7 @@ def __lldb_init_module(debugger, _):
         with open(REPORT,'w') as output:json.dump(out,output)
     finally:
         if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('REPORT',repr(str(report))), newline="\n")
             self.file.unlink();(self.root/'model.nex').unlink()
             self.cli('debug','--revision','HEAD','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file())
@@ -534,7 +534,7 @@ def __lldb_init_module(debugger, _):
                 kind='list<'+kind+'>'
                 expression='["x"]' if index==0 else '[huge'+str(index-1)+', huge'+str(index-1)+']'
                 declarations+='  let huge'+str(index)+': '+kind+' = '+expression+';\n'
-            source=source.replace('  if enabled {',declarations+'  if enabled {');self.file.write_text(source)
+            source=source.replace('  if enabled {',declarations+'  if enabled {');self.file.write_text(source, newline="\n")
             session=self.cli('debug');manifest=json.loads(Path(session['manifest']).read_text())
             projected=next(s['projection'] for s in manifest['sources'] if Path(s['original']).name=='main.nex')
             line=next(i+1 for i,s in enumerate(source.splitlines()) if '// break: inner' in s)
@@ -557,7 +557,7 @@ def __lldb_init_module(debugger, _):
         process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
     finally:
         if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
             self.assertEqual(result['length']['value'],'302');self.assertEqual(result['zero']['value'],'\x00')

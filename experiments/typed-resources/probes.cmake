@@ -6,6 +6,11 @@ foreach(target typed_resource_module_a typed_resource_module_b)
   add_library(${target} MODULE "${TYPED_NEX_SOURCE}/tests/typed_resource_module.c")
   target_include_directories(${target} PRIVATE "${TYPED_NEX_RUNTIME}" "${TYPED_NEX_GENERATED}")
   target_link_libraries(${target} PRIVATE Threads::Threads)
+  if(WIN32)
+    # The manifest captures one self-contained C fixture image. A dynamic
+    # winpthreads import would otherwise escape that declared load closure.
+    target_link_options(${target} PRIVATE -static)
+  endif()
   set_target_properties(${target} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_VISIBILITY_PRESET hidden)
 endforeach()
 target_compile_definitions(typed_resource_module_b PRIVATE DIFFERENT_IMAGE=1)

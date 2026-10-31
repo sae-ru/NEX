@@ -10,7 +10,6 @@ class FileReadGrant;
 class FileWriteLease;
 class FileWriteGrant;
 class FileOpenLease;
-#ifndef _WIN32
 // Opt-in trusted-host observation. No descriptor, path, payload, source Value
 // or authority crosses this boundary. Calls occur outside resource/cursor locks.
 enum class FileIOOperation {OpenRead,OpenWrite,OpenAppend,Read,Write,Seek,Size,Flush};
@@ -22,7 +21,6 @@ struct FileIOEvent {
   int error=0;
 };
 using FileIOObserver=std::function<void(const FileIOEvent &)>;
-#endif
 // Host-owned capability. No descriptor or mutable resource becomes a NEX value.
 class TextFiles {
   struct Impl;
@@ -43,9 +41,7 @@ public:
   static constexpr size_t pathLimit = 4096;
   using Poll = std::function<void()>;
   TextFiles(const std::string &root, bool writable);
-#ifndef _WIN32
   TextFiles(const std::string &root,bool writable,FileIOObserver observer);
-#endif
   ~TextFiles();
   TextFiles(const TextFiles&) = delete;
   TextFiles &operator=(const TextFiles&) = delete;

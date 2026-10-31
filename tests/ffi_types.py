@@ -1,4 +1,5 @@
 """Compiler-derived C value contracts and explicit language-0.14 migration."""
+from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
 from pathlib import Path
@@ -29,7 +30,7 @@ class ForeignTypes(harness.ToolchainCase):
         self.assertEqual(contract['schema'],'nex.foreign-signature/1')
         names={x['name'] for x in contract['types'] if 'name' in x}
         self.assertEqual(names,{'interop::Packet<bytes>','interop::Reply<bytes>'})
-        path=self.root/'signature.json';path.write_text(json.dumps(contract))
+        path=self.root/'signature.json';path.write_text(json.dumps(contract), newline="\n")
         result=subprocess.run([PROBE,'--signature',str(path)],capture_output=True,text=True,timeout=30)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertEqual(result.stdout,expected)
@@ -89,7 +90,7 @@ test fn check_model()->unit{}
     def test_genuine_014_snapshot_migrates_without_retagging_history(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.14.json').read_text())
         self.source(fixture['source']);old=self.historical_store('0.14')['revision'];self.file.unlink()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('ffi','--revision','HEAD','--symbol','legacy_foreign_names::resource_callback',ok=False)['code'],'E_LANGUAGE_VERSION')
@@ -99,7 +100,7 @@ test fn check_model()->unit{}
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout'])
         self.cli('test','--revision','HEAD','--target','web')
         self.assertEqual(self.cli('history')['head'],current['revision'])
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],source)
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids)
         sql=(harness.REPO/'tests/fixtures/language-0.14.sql').read_bytes()

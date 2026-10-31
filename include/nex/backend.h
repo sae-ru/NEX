@@ -195,4 +195,5 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments);
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &base="");
 struct ProcessResult { int code; std::string output, errors; };
 ProcessResult capture(const std::vector<std::string> &arguments,unsigned timeoutSeconds=30);
+ProcessResult captureNativeBuildTool(const std::vector<std::string> &arguments,unsigned timeoutSeconds=30);
 }

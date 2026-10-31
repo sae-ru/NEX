@@ -53,7 +53,7 @@ def main():
  negative=out/'profile-contracts';negative.mkdir();report['profile_rejections']=[]
  sample=next(iter(report['cases']));directory=out/sample['name'];ctx=directory/'context.json';arch=directory/sample['topology']/'architecture.json';original=json.loads(arch.read_text())
  for name,modify in [('missing-instrumentation',lambda value:value.pop('instrumentation')),('unsupported-debug',lambda value:value.update(instrumentation='debug')),('old-schema-extra-field',lambda value:value.update(schema='nex.private-task-architecture/4'))]:
-  model=copy.deepcopy(original);modify(model);file=negative/(name+'.json');file.write_text(json.dumps(model));result=state['run']('profile-reject-'+name,[state['probe'],'plan',ctx,file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['profile_rejections'].append({'name':name,'passed':True})
+  model=copy.deepcopy(original);modify(model);file=negative/(name+'.json');file.write_text(json.dumps(model), newline="\n");result=state['run']('profile-reject-'+name,[state['probe'],'plan',ctx,file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['profile_rejections'].append({'name':name,'passed':True})
  record=json.loads((directory/sample['topology']/('O'+sample['optimization'])/'app/module-record.json').read_text())
  for name in ['missing-profile','wrong-registry','wrong-source-origin','wrong-catalog-hash']:
   value=copy.deepcopy(record)
@@ -61,7 +61,7 @@ def main():
   elif name=='wrong-registry':value['profiling']['registry_component']='made_up'
   elif name=='wrong-source-origin':value['profiling']['sites'][0]['source_component']='another'
   else:value['profiling']['catalog_hash']='0'*64
-  file=negative/(name+'.json');file.write_text(json.dumps(value));result=state['run']('profile-reject-'+name,[state['probe'],'validate',ctx,arch,'app',file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['profile_rejections'].append({'name':name,'passed':True})
+  file=negative/(name+'.json');file.write_text(json.dumps(value), newline="\n");result=state['run']('profile-reject-'+name,[state['probe'],'validate',ctx,arch,'app',file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['profile_rejections'].append({'name':name,'passed':True})
  report.update(ok=True,private_module_profiling=True,profiled_source_programs=report['source_programs'],profiled_native_runs=len(report['profiles']),public_profile_CLI=False);state['save']()
  print(json.dumps({'ok':True,'programs':report['source_programs'],'profiled_runs':len(report['profiles'])}))
 

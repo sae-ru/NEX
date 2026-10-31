@@ -1,4 +1,5 @@
 """Real native cross-build artifacts, ABI isolation and explicit toolchain inputs."""
+from host_fixture import python_executable
 import json
 import os
 from pathlib import Path
@@ -30,8 +31,8 @@ test fn semantics() -> unit {
 ''')
 
     def configure(self, **fields):
-        fields = {'schema': 'nex.toolchain/1', 'target': self.doctor['host'], **fields}
-        self.config.write_text(json.dumps(fields))
+        fields = {**harness.host_toolchain_defaults(self.doctor), **fields}
+        self.config.write_text(json.dumps(fields), newline="\n")
         return fields
 
     @unittest.skipUnless(platform.system() == 'Darwin', 'Mach-O run-path selection')
@@ -126,7 +127,7 @@ server fn main() -> unit !{db,io} {
         inspected=self.cli('toolchain',self.config)
         for key,value in fields.items():
             self.assertEqual(inspected['manifest'][key],str(tools.resolve()/Path(value).name))
-        captured=self.root/'captured.json';captured.write_text(json.dumps(inspected['manifest']))
+        captured=self.root/'captured.json';captured.write_text(json.dumps(inspected['manifest']), newline="\n")
         again=self.cli('toolchain',captured)
         self.assertEqual(again['hash'],inspected['hash']);self.assertEqual(again['inputs'],inspected['inputs'])
         self.assertFalse((self.root/'.nex').exists())
@@ -134,7 +135,7 @@ server fn main() -> unit !{db,io} {
     def test_readonly_default_manifest_roundtrip_has_the_same_fingerprint(self):
         self.configure()
         inspected=self.cli('toolchain',self.config)
-        self.config.write_text(json.dumps(inspected['manifest']))
+        self.config.write_text(json.dumps(inspected['manifest']), newline="\n")
         self.assertEqual(self.cli('toolchain',self.config)['hash'],inspected['hash'])
         self.assertFalse((self.root/'.nex').exists())
 
@@ -146,7 +147,7 @@ server fn main() -> unit !{db,io} {
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'sqlite':{}},
                       {'schema':'nex.toolchain/1','target':self.doctor['host'],'openssl':False}):
             with self.subTest(value=value):
-                self.config.write_text(json.dumps(value))
+                self.config.write_text(json.dumps(value), newline="\n")
                 self.assertEqual(self.cli('build', '--toolchain', self.config, ok=False)['code'], 'E_TOOLCHAIN')
         self.configure()
         for command in (('check',), ('eval',), ('build','--target','web'), ('emit','--kind','typescript'), ('test','--interpreter-only')):
@@ -160,11 +161,11 @@ server fn main() -> unit !{db,io} {
         real=baseline['manifest'].get('linker') or '/usr/bin/ld'
         if not Path(real).is_file():self.skipTest('no configured host linker')
         log=self.root/'linker calls.jsonl';driver=self.root/'linker spy'
-        driver.write_text('''#!/usr/bin/env python3
+        driver=python_executable(driver,'''#!/usr/bin/env python3
 import json, os, sys
 with open(LOG,'a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
 os.execv(REAL,[REAL,*sys.argv[1:]])
-'''.replace('LOG',repr(str(log))).replace('REAL',repr(real)))
+'''.replace('LOG',repr(str(log))).replace('REAL',repr(real)),harness.native_fixture_compiler())
         driver.chmod(0o755)
         self.configure(linker=str(driver))
         inspected=self.cli('toolchain',self.config)
@@ -180,7 +181,7 @@ os.execv(REAL,[REAL,*sys.argv[1:]])
         self.assertEqual((run.returncode,run.stdout),(0,self.cli('eval')['stdout']),run.stderr)
         self.assertTrue(self.cli('build','--toolchain',self.config)['cached'])
         self.assertEqual(len(log.read_text().splitlines()),1)
-        driver.write_text(driver.read_text()+'\n# reviewed linker revision\n')
+        driver.write_bytes(driver.read_bytes()+'\n# reviewed linker revision\n'.encode()) if os.name=="nt" else driver.write_text(driver.read_text()+'\n# reviewed linker revision\n', newline="\n")
         self.assertNotEqual(self.cli('toolchain',self.config)['hash'],inspected['hash'])
         changed=self.cli('build','--toolchain',self.config)
         self.assertNotEqual(changed['build_key'],built['build_key'])
@@ -191,10 +192,10 @@ os.execv(REAL,[REAL,*sys.argv[1:]])
 
     def test_archive_in_literal_unicode_percent_path_links_into_a_native_host(self):
         project=self.root/'архив % 🧠';project.mkdir()
-        source=project/'main.nex';source.write_text('module embedded; pub fn answer() -> i64 { return 40 + 2; }')
+        source=project/'main.nex';source.write_text('module embedded; pub fn answer() -> i64 { return 40 + 2; }', newline="\n")
         built=self.cli('build',source,'--library','--entry','answer',cwd=project)
         context=self.cli('context','--symbol','answer',cwd=project)
-        host=project/'host.cpp';host.write_text('#include <iostream>\n#include <cstdint>\nextern "C" long long '+context['native_symbol']+'();\nextern "C" int64_t nex_application_run(void*,int64_t,const char*const*);\nstatic int64_t entry(int64_t,const char*const*){std::cout << '+context['native_symbol']+'() << "\\n";return 0;}\nint main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}\n')
+        host=project/'host.cpp';host.write_text('#include <iostream>\n#include <cstdint>\nextern "C" long long '+context['native_symbol']+'();\nextern "C" int64_t nex_application_run(void*,int64_t,const char*const*);\nstatic int64_t entry(int64_t,const char*const*){std::cout << '+context['native_symbol']+'() << "\\n";return 0;}\nint main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}\n', newline="\n")
         executable=project/'host-app'
         command=[self.doctor['native_compiler'],'-std=c++20',str(host),built['executable'],'-pthread','-o',str(executable)]
         metadata=json.loads(Path(built['metadata']).read_text())
@@ -289,7 +290,7 @@ server fn handle(request:http::Request) -> http::Response { return http::Respons
         compiler = self.doctor['native_compiler']
         script = self.root / 'driver spy'
         log = self.root / 'driver calls.jsonl'
-        script.write_text('''#!/usr/bin/env python3
+        script=python_executable(script,'''#!/usr/bin/env python3
 import json, os, subprocess, sys
 with open(LOG,'a') as f: f.write(json.dumps(sys.argv[1:])+'\\n')
 if '-emit-llvm' in sys.argv:
@@ -298,7 +299,7 @@ if '-emit-llvm' in sys.argv:
     sys.stdout.buffer.write(result.stdout); sys.stderr.buffer.write(result.stderr)
     sys.exit(result.returncode)
 os.execv(REAL,[REAL,*sys.argv[1:]])
-'''.replace('LOG',repr(str(log))).replace('REAL',repr(compiler)))
+'''.replace('LOG',repr(str(log))).replace('REAL',repr(compiler)),harness.native_fixture_compiler())
         script.chmod(0o755)
         self.configure(target=target, compiler='driver spy')
         result = self.cli('build', '--toolchain',self.config, ok=False)

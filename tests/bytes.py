@@ -1,4 +1,5 @@
 """Checked source bytes across interpreters, code generators, files and history."""
+from sqlite_fixture import connection as sqlite_connection
 import base64
 import json
 from pathlib import Path
@@ -162,7 +163,7 @@ test fn malformed()->unit {
                 self.assertEqual(native['stdout'], '')
 
     def test_contextual_names_and_qualified_import_alias(self):
-        (self.root / 'model.nex').write_text('module model; pub struct Item { value:bytes; }\n')
+        (self.root / 'model.nex').write_text('module model; pub struct Item { value:bytes; }\n', newline="\n")
         self.source('''module aliases;
 import "./model.nex" as bytes;
 fn main()->unit!{io}{
@@ -243,7 +244,7 @@ fn main()->unit!{io}{
         metadata = self.historical_store('0.12')
         self.file.unlink()
         old = metadata['revision']
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             source = db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0]
             identities = db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('graph', ok=False)['code'], 'E_LANGUAGE_VERSION')
@@ -252,7 +253,7 @@ fn main()->unit!{io}{
         self.assertNotEqual(migrated['revision'], old)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
         self.cli('test', '--revision', migrated['revision'], '--target', 'web')
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(), identities)
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], source)
         self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.12', harness.CURRENT_LANGUAGE})
@@ -263,7 +264,7 @@ fn main()->unit!{io}{
         metadata = self.historical_store('0.12-byte-names')
         self.file.unlink()
         old = metadata['revision']
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             original = db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0]
         self.assertEqual(self.cli('migrate', ok=False)['code'], 'E_DUPLICATE')
         self.assertEqual(self.cli('history')['head'], old)
@@ -273,17 +274,17 @@ fn main()->unit!{io}{
                 source = source.replace(intrinsic, 'legacy_' + intrinsic)
             bundle['files'][name] = source
         candidate = self.root / 'reviewed-repair.json'
-        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.12', 'revision': old, 'bundle': bundle}))
+        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.12', 'revision': old, 'bundle': bundle}), newline="\n")
         # Repairing function names must not silently change the old nominal bytes.
         self.assertEqual(self.cli('migrate', candidate, ok=False)['code'], 'E_DUPLICATE')
         self.assertEqual(self.cli('history')['head'], old)
         for name, source in bundle['files'].items():
             bundle['files'][name] = re.sub(r'\bbytes\b', 'LegacyBytes', source)
-        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.12', 'revision': old, 'bundle': bundle}))
+        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.12', 'revision': old, 'bundle': bundle}), newline="\n")
         migrated = self.cli('migrate', candidate)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
         self.cli('test', '--revision', migrated['revision'], '--target', 'web')
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], original)
 
 

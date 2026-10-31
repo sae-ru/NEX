@@ -1,4 +1,5 @@
 """Strict workload data and real supervised native server observations."""
+from host_fixture import python_executable
 import copy,hashlib,importlib.util,json,os,signal,subprocess,sys,time,unittest
 from pathlib import Path
 import support as harness
@@ -25,7 +26,7 @@ def assert_json_text_excludes(test,value,marker):
 
 def project_fixture(self):
     for name in ['core','server']:(self.root/name).mkdir()
-    (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'server/main.nex'}))
+    (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'server/main.nex'}), newline="\n")
     (self.root/'core/value.nex').write_text('''module workload::core;
 pub fn calculate(seed:i64)->str{
  let offset:fn(i64)->i64=fn(x:i64)->i64{return seed+x;};
@@ -33,7 +34,7 @@ pub fn calculate(seed:i64)->str{
  while i<64{total=total+offset(i);i=i+1;}
  return str(total)+" 🧠";
 }
-''')
+''', newline="\n")
     (self.root/'server/main.nex').write_text('''module workload::service;
 import "std/http.nex" as http;import "../core/value.nex" as core;
 server fn handle(request:http::Request)->http::Response{
@@ -41,11 +42,11 @@ server fn handle(request:http::Request)->http::Response{
  if request.path=="/api/fail"{assert(false);}
  return http::text_response(200,answer);
 }
-''')
+''', newline="\n")
     (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'measured',
         'configurations':{'measured':{'profile':'profile'}},'components':{
         'core':{'kind':'shared_library','root':'core','entry':'core/value.nex','entry_function':'calculate'},
-        'server':{'kind':'server','root':'server','entry':'server/main.nex','dependencies':{'core':'dynamic'}}}}))
+        'server':{'kind':'server','root':'server','entry':'server/main.nex','dependencies':{'core':'dynamic'}}}}), newline="\n")
 
 class Protocol(unittest.TestCase):
     def test_payload_exclusion_checks_text_without_numeric_latency_collisions(self):
@@ -89,7 +90,7 @@ class Protocol(unittest.TestCase):
 
 class Launcher(harness.ToolchainCase):
     def test_readonly_check_does_not_read_credentials_execute_or_write(self):
-        data=self.root/'workload.json';data.write_text(json.dumps(definition()))
+        data=self.root/'workload.json';data.write_text(json.dumps(definition()), newline="\n")
         environment={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};environment.pop('NEX_TEST_WORKLOAD_TOKEN',None)
         p=subprocess.run([sys.executable,str(HELPER),'--workload',str(data),'--check'],capture_output=True,text=True,env=environment,timeout=5)
         self.assertEqual(p.returncode,0,p.stderr);self.assertEqual(json.loads(p.stdout)['total_requests'],16)
@@ -112,7 +113,7 @@ class Launcher(harness.ToolchainCase):
         cases[2][1]['requests']=[{'path':'/api/fail','expect':{'status':500}}];cases[2][1]['phases']=[{'concurrency':4,'iterations':2}];cases[2][1]['warmup']=0
         for name,workload,ok in cases:
             with self.subTest(name=name):
-                path=self.root/(name+'-workload.json');path.write_text(json.dumps(workload));output=self.root/(name+'-result.json');profile=self.root/(name+'-profile.json')
+                path=self.root/(name+'-workload.json');path.write_text(json.dumps(workload), newline="\n");output=self.root/(name+'-result.json');profile=self.root/(name+'-profile.json')
                 p=subprocess.run([sys.executable,str(HELPER),'--workload',str(path),'--expected-hash',hashlib.sha256(path.read_bytes()).hexdigest(),
                     '--result',str(output),'--',artifact['artifact'],'--auth',str(self.root/'auth.json'),'--database',str(self.root/'state.sqlite'),'--workers','4'],
                     capture_output=True,text=True,timeout=30,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_TEST_WORKLOAD_TOKEN':token,
@@ -133,7 +134,7 @@ class Launcher(harness.ToolchainCase):
 class PublicProject(harness.ToolchainCase):
     def setUp(self):
         super().setUp();project_fixture(self)
-        self.workload=self.root/'workload.json';self.workload.write_text(json.dumps(definition()))
+        self.workload=self.root/'workload.json';self.workload.write_text(json.dumps(definition()), newline="\n")
 
     def action(self,kind,*args,**kwargs):
         result=self.cli('project','--kind',kind,'--component','server','--workload',self.workload,'--json',*args,machine=False,timeout=240,**kwargs)
@@ -147,9 +148,9 @@ class PublicProject(harness.ToolchainCase):
         self.assertEqual(plan['runner_sha256'],hashlib.sha256(HELPER.read_bytes()).hexdigest())
         self.assertEqual(Path(plan['definition_file']),self.workload)
         self.assertFalse((self.root/'.nex').exists())
-        (self.root/'server/main.nex').write_text('This source must never be parsed.')
+        (self.root/'server/main.nex').write_text('This source must never be parsed.', newline="\n")
         marker=self.root/'driver-called';driver=self.root/'unreachable-driver'
-        driver.write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nPath('+repr(str(marker))+').touch()\n');driver.chmod(0o755)
+        driver=python_executable(driver,'#!/usr/bin/env python3\nfrom pathlib import Path\nPath('+repr(str(marker))+').touch()\n',harness.native_fixture_compiler());driver.chmod(0o755)
         environment['NEX_CLANG']=str(driver)
         invalid=[b'{}',b'\xff',b'{"a":1,"a":2}',b' '*1048577]
         for change in [lambda x:x.update(authorization_env=None),lambda x:x['requests'][0]['expect'].update(sha256=None),
@@ -159,7 +160,7 @@ class PublicProject(harness.ToolchainCase):
         for data in invalid:
             self.workload.write_bytes(data)
             self.assertEqual(self.action('plan',env=environment,ok=False)['code'],'E_SERVER_WORKLOAD')
-        self.workload.write_text(json.dumps(definition()))
+        self.workload.write_text(json.dumps(definition()), newline="\n")
         self.assertEqual(self.action('profile',env={**environment,'NEX_TEST_WORKLOAD_TOKEN':''},ok=False)['code'],'E_SERVER_WORKLOAD_AUTH')
         self.assertEqual(self.action('profile','--','--port','9999',env=environment,ok=False)['code'],'E_SERVER_WORKLOAD')
         self.assertEqual(self.cli('project','--workload','',ok=False)['code'],'E_OPTION')
@@ -186,14 +187,14 @@ class PublicProject(harness.ToolchainCase):
         self.assertTrue(all(pool['live']==0 and pool['allocations']==pool['frees'] for pool in saved['memory']))
         self.assertNotIn(token,output.read_text());self.assertNotIn(token,json.dumps(result));assert_json_text_excludes(self,metrics,'4704')
         value=definition();value['requests'][0]['expect']['text']='different';value['phases']=[{'concurrency':1,'iterations':1}];value['warmup']=0
-        self.workload.write_text(json.dumps(value))
+        self.workload.write_text(json.dumps(value), newline="\n")
         failed=self.action('profile','--','--auth',self.root/'auth.json','--database',self.root/'state.sqlite',env=env,ok=False)
         self.assertEqual(failed['exit_code'],1);metrics=failed['observation']['workload'];self.assertFalse(metrics['ok']);self.assertEqual(metrics['error']['code'],'E_SERVER_WORKLOAD_RESPONSE')
         self.assertEqual(metrics['server_exit_code'],0);self.assertFalse((self.root/'.nex/graph.db').exists())
 
     def test_operator_change_during_measurement_rejects_the_reviewed_workload(self):
         value=definition();value['phases']=[{'concurrency':1,'iterations':512}];value['warmup']=0
-        self.workload.write_text(json.dumps(value))
+        self.workload.write_text(json.dumps(value), newline="\n")
         token=self.cli('token','--auth',self.root/'auth.json','--user','bench')['token']
         output=self.root/'must-not-accept.json';ambient=self.root/'ambient';ambient.mkdir()
         process=subprocess.Popen([harness.NEX,'project','--kind','profile','--component','server','--workload',str(self.workload),
@@ -208,7 +209,7 @@ class PublicProject(harness.ToolchainCase):
                 time.sleep(.01)
             if not started:
                 out,err=process.communicate(timeout=10);self.fail('did not observe real listener: '+out+err)
-            self.workload.write_text('{}')
+            self.workload.write_text('{}', newline="\n")
             out,err=process.communicate(timeout=90);self.assertNotEqual(process.returncode,0,out+err)
             self.assertEqual(json.loads(out)['code'],'E_PROJECT_INPUT_CHANGED',out+err)
             self.assertFalse(output.exists());self.assertEqual(list(ambient.iterdir()),[])
@@ -235,12 +236,12 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
             self.program(source,{'echo':'echo'})
         finally:ffi_fixture.C=original
         (self.root/'app').mkdir();self.file.rename(self.root/'app/main.nex')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'measured',
-            'configurations':{'measured':{'profile':'profile'}},'components':{'app':{'kind':'server','root':'app','entry':'app/main.nex'}}}))
+            'configurations':{'measured':{'profile':'profile'}},'components':{'app':{'kind':'server','root':'app','entry':'app/main.nex'}}}), newline="\n")
         workload=self.root/'workload.json';workload.write_text(json.dumps({'schema':'nex.server-workload/1',
             'requests':[{'path':'/api/wait','expect':{'status':200}}],'phases':[{'concurrency':1,'iterations':1}],
-            'request_timeout_ms':5000,'authorization_env':'NEX_TEST_WORKLOAD_TOKEN'}))
+            'request_timeout_ms':5000,'authorization_env':'NEX_TEST_WORKLOAD_TOKEN'}), newline="\n")
         token=self.cli('token','--auth',self.root/'auth.json','--user','bench')['token'];self.env['NEX_TEST_WORKLOAD_TOKEN']=token
         original_graph=harness.database_rows(self.root/'.nex/graph.db')
         self.cli('project','--kind','build',timeout=240)
@@ -273,7 +274,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
         self.assertEqual(harness.database_rows(self.root/'.nex/graph.db'),original_graph)
         # The ordinary source profiler uses the same supervisor and owned native
         # temporary root, without the workload launcher or HTTP adapter.
-        (self.root/'app/main.nex').write_text('module supervised;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo",'+json.dumps(self.pin)+');server fn main()->unit!{ffi}{let value:i64=echo(42);}')
+        (self.root/'app/main.nex').write_text('module supervised;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo",'+json.dumps(self.pin)+');server fn main()->unit!{ffi}{let value:i64=echo(42);}', newline="\n")
         children.unlink();self.marker.unlink()
         process=subprocess.Popen([harness.NEX,'profile','--timeout','3','--foreign',str(self.host),'--json'],cwd=self.root,
             env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)

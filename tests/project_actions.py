@@ -12,32 +12,32 @@ class Actions(harness.ToolchainCase):
         super().setUp()
         self.root=self.root/'project % 🧠';self.root.mkdir()
         for name in ('core','mixer','app','browser'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'core/value.nex').write_text('''module core;
 pub struct Payload{text:str;data:bytes;callback:fn(i64)->i64;}
 pub fn create()->Payload{let offset:i64=40;return Payload("Я",utf8_bytes("🧠"),fn(x:i64)->i64{return offset+x;});}
 pub fn divide(x:i64)->i64{let held:list<str>=["held","🧠"];assert(len(held)==2);return 10/x;}
 pub server fn secret()->str{return "PROJECT_ACTION_SERVER_POISON";}
 test fn core_values()->unit{assert(create().callback(2)==42);}
-''')
+''', newline="\n")
         (self.root/'mixer/value.nex').write_text('''module mixer;import "../core/value.nex" as c;
 pub fn transform(p:c::Payload)->c::Payload{return c::Payload(p.text+"🧠",p.data,p.callback);}
 pub fn divide(x:i64)->i64{return c::divide(x);}
 test fn mixer_values()->unit{assert(transform(c::create()).text=="Я🧠");}
-''')
+''', newline="\n")
         self.app='''module app;import "../core/value.nex" as c;import "../mixer/value.nex" as m;
 fn value()->str{let held:c::Payload=m::transform(c::create());assert(held.callback(2)==42);return held.text;}
 fn main()->unit!{io}{print(value());}
 test fn app_values()->unit{assert(value()=="Я🧠");}
 '''
-        (self.root/'app/main.nex').write_text(self.app)
+        (self.root/'app/main.nex').write_text(self.app, newline="\n")
         (self.root/'browser/main.nex').write_text('''module browser;import "std/web.nex" as w;import "../core/value.nex" as c;
 client fn initial()->i64{return c::create().callback(2);}
 client fn title()->str{return "Project actions";}
 client fn update(s:i64,e:w::Event)->i64{return s+1;}
 client fn view(s:i64)->w::View{return w::element("main",[],[],[w::text(str(s))]);}
 client test fn browser_values()->unit{assert(initial()==42);}
-''')
+''', newline="\n")
         self.manifest={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{p:{'profile':p} for p in ('debug','release','profile')},
           'components':{
@@ -46,7 +46,7 @@ client test fn browser_values()->unit{assert(initial()==42);}
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static','mixer':'dynamic'}},
             'browser':{'kind':'web','root':'browser','entry':'browser/main.nex','dependencies':{'core':'source'}}}}
         self.save()
-    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.manifest))
+    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.manifest), newline="\n")
     def action(self,kind,*args,**kwargs):return self.cli('project','--kind',kind,*args,timeout=300,**kwargs)
     def test_run_uses_real_binary_dependencies_and_preserves_process_status_and_cwd(self):
         result=self.action('run','--component','app');self.assertEqual(result['schema'],'nex.project-session/1')
@@ -56,10 +56,10 @@ client test fn browser_values()->unit{assert(initial()==42);}
         self.assertEqual(len(compilation['owned_images']),2);self.assertEqual(sum(i['kind']=='runtime' for i in compilation['owned_images']),1)
         warm=self.action('run','--component','app');self.assertTrue(all(a['cached'] for a in warm['artifacts']))
         self.assertFalse((self.root/'.nex/graph.db').exists())
-        (self.root/'app/main.nex').write_text(self.app.replace('fn main()->unit!{io}{print(value());}','fn main()->i64{return c::create().callback(2);}'))
+        (self.root/'app/main.nex').write_text(self.app.replace('fn main()->unit!{io}{print(value());}','fn main()->i64{return c::create().callback(2);}'), newline="\n")
         ended=self.action('run','--component','app',ok=False);self.assertEqual(ended['exit_code'],42)
-        (self.root/'app/main.nex').write_text('''module app;server fn main()->unit!{fs}{assert(unwrap(file_read_text("input"))=="cwd");}''')
-        (self.root/'input').write_text('cwd')
+        (self.root/'app/main.nex').write_text('''module app;server fn main()->unit!{fs}{assert(unwrap(file_read_text("input"))=="cwd");}''', newline="\n")
+        (self.root/'input').write_text('cwd', newline="\n")
         self.action('run','--component','app',env={'NEX_FILES_ROOT':str(self.root)})
     def test_project_tests_run_each_owned_test_once_and_use_actual_shared_providers(self):
         result=self.action('test');self.assertEqual(result['schema'],'nex.project-test/1')
@@ -71,11 +71,11 @@ client test fn browser_values()->unit{assert(initial()==42);}
         self.assertTrue(all(u['identity'].startswith('app::') for u in metadata['units']));self.assertEqual(len(metadata['owned_images']),2)
         self.assertFalse((self.root/'.nex/graph.db').exists())
     def test_effectful_test_has_single_execution_and_no_reference_side_effects(self):
-        p=self.root/'app/main.nex';p.write_text(self.app+'''\nserver test fn write_once()->unit!{fs}{let f:file=unwrap(file_open_append("counter"));assert(unwrap(file_write(f,utf8_bytes("x")))==1);assert(file_close(f));}\n''')
+        p=self.root/'app/main.nex';p.write_text(self.app+'''\nserver test fn write_once()->unit!{fs}{let f:file=unwrap(file_open_append("counter"));assert(unwrap(file_write(f,utf8_bytes("x")))==1);assert(file_close(f));}\n''', newline="\n")
         result=self.action('test','--component','app','--symbol','app::write_once',env={'NEX_FILES_ROOT':str(self.root),'NEX_FILES_WRITE':'1'})
         self.assertEqual((self.root/'counter').read_text(),'x');test,=result['tests'];self.assertFalse(test['reference']);self.assertIn('once',test['reference_skip_reason'])
     def test_checked_failures_and_failed_tests_map_to_captured_source_without_ids(self):
-        (self.root/'app/main.nex').write_text(self.app.replace('print(value());','print(m::divide(0));')+'\ntest fn failed()->unit{assert(false);}\n')
+        (self.root/'app/main.nex').write_text(self.app.replace('print(value());','print(m::divide(0));')+'\ntest fn failed()->unit{assert(false);}\n', newline="\n")
         result=self.action('run','--component','app',ok=False);self.assertEqual(result['exit_code'],70)
         mapped=result['observation']['native_diagnostics']['diagnostics'];self.assertTrue(mapped)
         self.assertTrue(all(d['status']=='mapped' and d['operation_id'] is None and d['function_id'] is None and d['identity_scope']=='captured_project' for d in mapped))
@@ -99,21 +99,21 @@ client test fn browser_values()->unit{assert(initial()==42);}
         self.manifest['components']['app']['dependencies']={};self.save()
         self.assertEqual(self.action('test','--component','app',ok=False)['code'],'E_PROJECT_BOUNDARY');self.assertFalse((self.root/'.nex').exists())
     def test_timeout_cancels_actual_project_process(self):
-        (self.root/'app/main.nex').write_text('module app;fn main()->unit{while(true){}}')
+        (self.root/'app/main.nex').write_text('module app;fn main()->unit{while(true){}}', newline="\n")
         result=self.action('run','--component','app','--timeout','1',ok=False)
         self.assertEqual(result['exit_code'],124);self.assertTrue(result['observation']['timed_out'])
     def test_test_execution_cannot_replace_a_later_preflighted_test_source(self):
         after='server test fn second()->unit!{fs}{unwrap(file_write_text("executed","bad"));}'
         replacement='module app;fn main()->unit{}server test fn first()->unit!{fs}{}'+after
         original='module app;fn main()->unit{}server test fn first()->unit!{fs}{unwrap(file_write_text("app/main.nex",'+json.dumps(replacement)+'));}'+after
-        (self.root/'app/main.nex').write_text(original)
+        (self.root/'app/main.nex').write_text(original, newline="\n")
         self.manifest['components']['app']['dependencies']={};self.save()
         result=self.action('test','--component','app',env={'NEX_FILES_ROOT':str(self.root),'NEX_FILES_WRITE':'1'},ok=False)
         self.assertEqual(result['code'],'E_PROJECT_INPUT_CHANGED');self.assertFalse((self.root/'executed').exists())
         self.assertEqual((self.root/'app/main.nex').read_text(),replacement);self.assertFalse((self.root/'.nex/graph.db').exists())
     def test_large_test_output_has_bounded_summary_and_retained_full_observation(self):
         text='🧠'*20000
-        (self.root/'app/main.nex').write_text('module app;fn main()->unit{}test fn output()->unit!{io}{print('+json.dumps(text,ensure_ascii=False)+');}')
+        (self.root/'app/main.nex').write_text('module app;fn main()->unit{}test fn output()->unit!{io}{print('+json.dumps(text,ensure_ascii=False)+');}', newline="\n")
         self.manifest['components']['app']['dependencies']={};self.save()
         result=self.action('test','--component','app');row,=result['tests']
         self.assertTrue(row['ok']);self.assertTrue(row['response_truncated']);self.assertLessEqual(len(json.dumps(row,ensure_ascii=False).encode()),32768)

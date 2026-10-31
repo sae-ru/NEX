@@ -1,5 +1,26 @@
 #include "nex_ffi_module.h"
 #include "typed-resource-signatures.h"
+/* Self-contained marker for copied C ABI fixtures. */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+static void nex_test_marker(const char *variable,char event){
+  wchar_t name[256],path[32768];
+  if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,variable,-1,name,256))return;
+  DWORD size=GetEnvironmentVariableW(name,path,32768);if(!size||size>=32768)return;
+  HANDLE file=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+  if(file==INVALID_HANDLE_VALUE)return;DWORD written=0;(void)WriteFile(file,&event,1,&written,NULL);CloseHandle(file);
+}
+#else
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+static void nex_test_marker(const char *variable,char event){
+  const char *path=getenv(variable);if(!path)return;
+  int fd=open(path,O_WRONLY|O_CREAT|O_APPEND,0600);if(fd<0)return;(void)write(fd,&event,1);close(fd);
+}
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,7 +29,7 @@
 #include <unistd.h>
 
 typedef struct {int64_t value;} Object;
-static void event(char value){const char *p=getenv("NEX_TYPED_RESOURCE_MARKER");if(p){int fd=open(p,O_WRONLY|O_APPEND|O_CREAT,0600);if(fd>=0){(void)write(fd,&value,1);close(fd);}}}
+static void event(char value){nex_test_marker("NEX_TYPED_RESOURCE_MARKER",value);}
 __attribute__((constructor)) static void loaded(void){
 #ifdef DIFFERENT_IMAGE
   event('J');
@@ -42,7 +63,20 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
     int64_t value=0;TRY(api->get_i64(call,args[0],&value));TRY(api->result_type(call,&type));
     if(op==9)TRY(api->type_child(call,type,0,0,&type));
     nex_ffi_ref resource=0;
-    nex_ffi_resource_destroy_v1 deleter=op==7?free:destroy;
+    nex_ffi_resource_destroy_v1 deleter=destroy;
+    if(op==7){
+#ifdef _WIN32
+      // An ordinary MinGW import address can be a JMP thunk owned by this
+      // DLL. Use the actual foreign CRT procedure for this negative control.
+      HMODULE crt=GetModuleHandleW(L"ucrtbase.dll"),owner=NULL;
+      deleter=crt?(nex_ffi_resource_destroy_v1)(uintptr_t)GetProcAddress(crt,"free"):NULL;
+      if(!deleter||!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+          (LPCWSTR)(uintptr_t)deleter,&owner)||owner!=crt)return NEX_FFI_INTERNAL;
+#else
+      deleter=free;
+#endif
+      event('R');
+    }
     TRY(api->resource_create(call,type,sizeof(Object),value==-2?null_factory:factory,deleter,&value,&resource));
     if(op==9)return api->make_success(call,resource,out);
     *out=resource;return NEX_FFI_OK;

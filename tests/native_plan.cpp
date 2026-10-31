@@ -3,6 +3,10 @@
 #include "llvm/Support/Error.h"
 #include <filesystem>
 #include <iostream>
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 int main(int argc,char **argv){
   using namespace nex;
@@ -12,6 +16,9 @@ int main(int argc,char **argv){
     if(!options)throw Error("E_JSON",llvm::toString(options.takeError()));
     auto object=options->getAsObject();if(!object)throw Error("E_OPTION","expected options object");
     if(object->getBoolean("read_file").value_or(false)){
+#ifdef _WIN32
+      if(_setmode(_fileno(stdout),_O_BINARY)==-1)throw Error("E_FILE","cannot select binary probe output");
+#endif
       auto bytes=readFile(argv[1]);std::cout.write(bytes.data(),static_cast<std::streamsize>(bytes.size()));return 0;
     }
     std::vector<std::string> exports;

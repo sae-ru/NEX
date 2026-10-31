@@ -59,11 +59,11 @@ pub server fn run(req:http::Request)->http::Response !{task,throw}{
     for unit, value in sorted(units.items()):
         file = directory / ('http.nex' if unit.startswith('@std/') else unit)
         file.parent.mkdir(parents=True, exist_ok=True)
-        file.write_text(value)
+        file.write_text(value, newline="\n")
         rows.append({'unit': unit, 'file': str(file), 'source': value})
-    (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'server.nex'}))
+    (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'server.nex'}), newline="\n")
     result = directory / 'source-context.json'
-    result.write_text(json.dumps({'schema': 'nex.private-task-source/2', 'entry_unit': 'server.nex', 'file': str(directory / 'server.nex'), 'source': app, 'units': rows}, ensure_ascii=False) + '\n')
+    result.write_text(json.dumps({'schema': 'nex.private-task-source/2', 'entry_unit': 'server.nex', 'file': str(directory / 'server.nex'), 'source': app, 'units': rows}, ensure_ascii=False) + '\n', newline="\n")
     return result
 
 
@@ -129,9 +129,9 @@ def build(state, name, directory, ctx, out, optimization):
     if profiled:architecture['instrumentation']='profile'
     if debugged:architecture.update(instrumentation='debug',debug_timeout_ms=60000)
     arch = directory / 'architecture.json'
-    arch.write_text(json.dumps(architecture) + '\n')
+    arch.write_text(json.dumps(architecture) + '\n', newline="\n")
     plan = json.loads(run(name + '-plan', [probe, 'plan', ctx, arch]).stdout)
-    (out / 'plan.json').write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n')
+    (out / 'plan.json').write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n', newline="\n")
     assert plan['schema'] == 'nex.private-task-modules/'+str(version) and plan['host'] == 'http'
     assert plan['components']['app']['entry_kind'] == 'http'
     mac = platform.system() == 'Darwin'
@@ -178,7 +178,7 @@ def build(state, name, directory, ctx, out, optimization):
         host=host_identity(plan)+host.replace('int main(int argc,char **argv){bool addresses=true;', 'int main(int argc,char **argv){nex_task_profile_prepare_application_v1();bool addresses=true;')
     if debugged:
         host=debug_support.host_identity(plan)+host.replace('100000000,5000,4','100000000,60000,4').replace('int main(int argc,char **argv){bool addresses=true;', 'int main(int argc,char **argv){nex_task_debug_prepare_application_v1();nex_private_module_debug_start();bool addresses=true;').replace('bool clean=addresses&&','bool clean=nex_private_module_debug_finish()&&addresses&&')
-    (out / 'host.cpp').write_text(host)
+    (out / 'host.cpp').write_text(host, newline="\n")
     run(label + '-host', [compiler, *state['flags'], '-c', out / 'host.cpp', '-o', out / 'host.o'])
     images, physical = {}, {}
     for image in plan['image_load_order']:
@@ -239,7 +239,7 @@ def contracts(state):
         bad[name] = (changed, 'E_ENTRY' if name == 'HTTP-not-process-entry' else 'E_EXCEPTION_MODULE')
     changed = copy.deepcopy(original);changed.pop('host');bad['missing-host'] = (changed, 'E_EXCEPTION_MODULE')
     for name, (value, code) in bad.items():
-        file = negative / (name + '.json');file.write_text(json.dumps(value))
+        file = negative / (name + '.json');file.write_text(json.dumps(value), newline="\n")
         rejected = run('reject-module-' + name, [probe, 'plan', ctx, file], allowed=(1,))
         assert code in rejected.stderr
         report['module_contract_rejections'].append({'name': name, 'code': code, 'passed': True})
@@ -252,14 +252,14 @@ def contracts(state):
         entry = next(row for row in changed['units'] if row['unit'] == changed['entry_unit'])
         entry['source'] = 'module app;import "std/http.nex" as http;import "./mid/main.nex" as mid;\n' + body
         changed['source'] = entry['source']
-        file = negative / (name + '.json');file.write_text(json.dumps(changed, ensure_ascii=False))
+        file = negative / (name + '.json');file.write_text(json.dumps(changed, ensure_ascii=False), newline="\n")
         rejected = run('reject-module-' + name, [probe, 'plan', file, arch], allowed=(1,))
         assert 'E_HTTP_SIGNATURE' in rejected.stderr
         report['module_contract_rejections'].append({'name': name, 'code': 'E_HTTP_SIGNATURE', 'passed': True})
     record = json.loads((base / 'O0/app/module-record.json').read_text())
     for field, value in [('entry_kind', 'application'), ('entry_descriptor', 'missing'), ('descriptor_abi', 0x4e45585400000005)]:
         changed = copy.deepcopy(record);changed[field] = value
-        file = negative / ('record-' + field + '.json');file.write_text(json.dumps(changed))
+        file = negative / ('record-' + field + '.json');file.write_text(json.dumps(changed), newline="\n")
         rejected = run('reject-module-record-' + field, [probe, 'validate', ctx, arch, 'app', file], allowed=(1,))
         assert 'E_EXCEPTION_MODULE' in rejected.stderr
         report['module_contract_rejections'].append({'name': 'record-' + field, 'code': 'E_EXCEPTION_MODULE', 'passed': True})
@@ -268,9 +268,9 @@ def contracts(state):
     entry = next(row for row in changed['units'] if row['unit'] == changed['entry_unit'])
     entry['source'] = 'module app;import "std/http.nex" as http;import "./mid/main.nex" as mid;fn main()->i64 !{task}{return 42;}'
     changed['source'] = entry['source']
-    file = negative / 'application-context.json';file.write_text(json.dumps(changed))
+    file = negative / 'application-context.json';file.write_text(json.dumps(changed), newline="\n")
     architecture = copy.deepcopy(original);architecture['host'] = 'application';architecture['components']['app']['entry'] = 'app::main'
-    model = negative / 'application-architecture.json';model.write_text(json.dumps(architecture))
+    model = negative / 'application-architecture.json';model.write_text(json.dumps(architecture), newline="\n")
     plan = json.loads(run('module-application-host', [probe, 'plan', file, model]).stdout)
     assert plan['host'] == plan['components']['app']['entry_kind'] == 'application'
     assert 'entry_descriptor' not in plan['components']['app']
@@ -292,7 +292,7 @@ def reuse_and_relocate(state):
         entry = next(v for v in source['units'] if v['unit'] == 'server.nex')
         entry['source'] = entry['source'].replace('return mid::run(req);', 'let r:http::Response=mid::run(req);return http::text_response(r.status,r.body+"!");')
         source['source'] = entry['source']
-        changed = directory / 'changed-context.json';changed.write_text(json.dumps(source, ensure_ascii=False))
+        changed = directory / 'changed-context.json';changed.write_text(json.dumps(source, ensure_ascii=False), newline="\n")
         plan = json.loads(run(name + '-reuse-plan', [probe, 'plan', changed, arch]).stdout)
         original = json.loads((e / 'plan.json').read_text())
         assert all(plan['components'][key] == original['components'][key] for key in ['std', 'leaf', 'mid'])
@@ -306,18 +306,18 @@ def reuse_and_relocate(state):
         argv = [str(module / 'module.o') if value == str(e / 'app/module.o') else value for value in argv]
         if state.get('debugging'):
             old=(e/'host.cpp').read_text();assert debug_support.host_identity(original) in old
-            (module/'host.cpp').write_text(old.replace(debug_support.host_identity(original),debug_support.host_identity(plan),1))
+            (module/'host.cpp').write_text(old.replace(debug_support.host_identity(original),debug_support.host_identity(plan),1), newline="\n")
             run(name+'-reuse-debug-host',[compiler,*state['flags'],'-c',module/'host.cpp','-o',module/'host.o'])
             argv=[str(module/'host.o') if value==str(e/'host.o') else value for value in argv]
         if state.get('profiling'):
             old=(e/'host.cpp').read_text();assert host_identity(original) in old
-            (module/'host.cpp').write_text(old.replace(host_identity(original),host_identity(plan),1))
+            (module/'host.cpp').write_text(old.replace(host_identity(original),host_identity(plan),1), newline="\n")
             run(name+'-reuse-profile-host',[compiler,*state['flags'],'-c',module/'host.cpp','-o',module/'host.o'])
             argv=[str(module/'host.o') if value==str(e/'host.o') else value for value in argv]
         server = e / 'server';saved = e / 'original-server';server.rename(saved)
         plan_raw = (e / 'plan.json').read_bytes()
         try:
-            root.write_text(entry['source']);(e / 'plan.json').write_text(json.dumps(plan))
+            root.write_text(entry['source'], newline="\n");(e / 'plan.json').write_text(json.dumps(plan), newline="\n")
             run(name + '-reuse-link', argv)
             rebuilt_hash = digest(server)
             with state['server'](server, name.startswith('host-')) as (port, files, events):

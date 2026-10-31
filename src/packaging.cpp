@@ -41,7 +41,8 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     throw Error("E_PACKAGE","packaging requires its matching checked native application artifact");
   if(!foreignDirectory.empty()&&info->getString("foreign_catalogue")!="../foreign/host.json")
     throw Error("E_FFI_PACKAGE","foreign package artifact lacks its executable-relative catalogue default");
-  auto buildFolder=fs::path(built.executable).parent_path();std::string complete=built.key;
+  auto buildFolder=fs::path(built.executable).parent_path();
+  const bool windows=llvm::Triple(built.target).isOSWindows();auto imagesFolder=windows?buildFolder:buildFolder/"images";std::string complete=built.key;
   for(const auto &file:{fs::path(built.executable),buildFolder/"program.mlir",buildFolder/"program.ll",buildFolder/"compilation.json",buildFolder/"build.json",buildFolder/"source-bundle.json"})complete+=hash(readFile(file.string()));
   for(const auto &name:nativeCompletionInputs(*info))complete+=hash(readFile((buildFolder/name).string()));
   if(readFile((buildFolder/"complete").string())!=hash(complete)+"\n")throw Error("E_PACKAGE","native artifact completion differs before packaging");
@@ -61,7 +62,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     if(provider){const bool application=kind=="application_provider"||kind=="application_profile_catalog";
       if(!application&&!provider->image)throw Error("E_PACKAGE","task provider has no physical image");
       auto suffix=kind=="owned_profile_catalog"?std::string(".task-profile-catalog.json"):std::string(".task-provider.json");
-      auto image=application?fs::path(built.executable):buildFolder/"images"/path.filename().string().substr(0,path.filename().string().size()-suffix.size());
+      auto image=application?fs::path(built.executable):imagesFolder/path.filename().string().substr(0,path.filename().string().size()-suffix.size());
       record["component"]=provider->component;record["image"]=image.string();
       record["image_key"]=application?built.key:provider->image->key;record["image_sha256"]=sha256(readFile(image.string()));record["image_uuid"]=nativeImageUUID(image.string());}
     taskFiles.push_back(std::move(record));
@@ -76,7 +77,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
       auto record=entry.getAsObject();if(!record)throw Error("E_PACKAGE","invalid compiler-owned image record");
       auto path=record->getString("path"),digest=record->getString("sha256"),key=record->getString("key"),abi=record->getString("abi"),kind=record->getString("kind"),uuid=record->getString("uuid");
       if(!path||!digest||!key||!abi||!kind||!uuid)throw Error("E_PACKAGE","missing compiler-owned image identity");
-      auto relative=(fs::path("images")/fs::path(path->str()).filename()).generic_string();if(sharedTasks)physical(path->str());
+      auto relative=(windows?fs::path(path->str()).filename():fs::path("images")/fs::path(path->str()).filename()).generic_string();if(sharedTasks)physical(path->str());
       if(fs::path(path->str())!=buildFolder/relative||!expected.contains(relative)||!seen.insert(relative).second||
          (sharedTasks&&record->getString("hash")!=hash(readFile(path->str())))||sha256(readFile(path->str()))!=*digest||nativeImageUUID(path->str())!=*uuid||*abi!=built.libraryABI)
         throw Error("E_PACKAGE","compiler-owned native image bytes/UUID/path differ");
@@ -308,7 +309,7 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     const std::string &buildDirectory,const std::string &root,Store &store,
     const PackageOptions &options) {
   namespace fs=std::filesystem;
-  if(llvm::Triple(configureNative(buildOptions).target).isOSWindows())throw Error("E_TARGET","Windows application packages are not configured; build the explicit GNU/UCRT core artifact");
+
   auto output=fs::absolute(options.directory).lexically_normal();
   if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";

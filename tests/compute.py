@@ -58,8 +58,8 @@ fn main()->unit!{io}{
         emitted=(folder/'program.ts').read_text()
         self.assertNotIn('provider changed correlation',emitted)
         self.assertNotIn('requested device is unavailable',emitted)
-        (folder/'package.json').write_text('{"type":"module"}')
-        (folder/'driver.ts').write_text("import {entry} from './program.ts';entry();")
+        (folder/'package.json').write_text('{"type":"module"}', newline="\n")
+        (folder/'driver.ts').write_text("import {entry} from './program.ts';entry();", newline="\n")
         actual=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(folder/'driver.ts')],capture_output=True,text=True,timeout=60)
         self.assertEqual(actual.returncode,0,actual.stderr);self.assertEqual(actual.stdout,expected)
 

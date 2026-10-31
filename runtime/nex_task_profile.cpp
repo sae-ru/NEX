@@ -6,6 +6,11 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
 #if defined(__APPLE__) || defined(__linux__)
 #include <time.h>
 #endif
@@ -25,6 +30,14 @@ TaskProfileClockSample realSample(void *)noexcept{
   timespec time{};
   if(clock_gettime(CLOCK_THREAD_CPUTIME_ID,&time)==0&&time.tv_sec>=0&&time.tv_nsec>=0&&time.tv_nsec<1000000000&&uint64_t(time.tv_sec)<=(std::numeric_limits<uint64_t>::max()-uint64_t(time.tv_nsec))/1000000000){
     result.cpuNs=uint64_t(time.tv_sec)*1000000000+uint64_t(time.tv_nsec);
+  }else result.cpuAvailable=false;
+#elif defined(_WIN32)
+  FILETIME created{},exited{},kernel{},user{};
+  if(GetThreadTimes(GetCurrentThread(),&created,&exited,&kernel,&user)){
+    auto ticks=[](const FILETIME &time){return (uint64_t(time.dwHighDateTime)<<32)|time.dwLowDateTime;};
+    const auto k=ticks(kernel),u=ticks(user),maximum=std::numeric_limits<uint64_t>::max()/100;
+    if(k<=maximum&&u<=maximum-k)result.cpuNs=(k+u)*100;
+    else result.cpuAvailable=false;
   }else result.cpuAvailable=false;
 #else
   result.cpuAvailable=false;

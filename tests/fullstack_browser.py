@@ -1,4 +1,5 @@
 """Opt-in real compiled client/native API checks in three installed browsers."""
+from host_fixture import stop_server
 import argparse
 import json
 import http.client
@@ -91,7 +92,7 @@ with tempfile.TemporaryDirectory(prefix='nex-browser-api-') as temporary:
             match = re.match(r'NEX server (http://127\.0\.0\.1:\d+)', lines.get(timeout=15))
             assert match, 'server did not report its address'
             proxy.backend_port = int(match.group(1).rsplit(':', 1)[1])
-            config.write_text("import { defineConfig, devices } from '@playwright/test';\nexport default defineConfig({ testDir: './tests', testMatch: 'fullstack-browser.spec.js', workers: 3, fullyParallel: false, timeout: 30000, use: { baseURL: " + json.dumps('http://127.0.0.1:' + str(proxy.server_port)) + ", trace: 'off' }, projects: [{name:'chromium',use:{...devices['Desktop Chrome']}},{name:'firefox',use:{...devices['Desktop Firefox']}},{name:'webkit',use:{...devices['Desktop Safari']}}] });\n")
+            config.write_text("import { defineConfig, devices } from '@playwright/test';\nexport default defineConfig({ testDir: './tests', testMatch: 'fullstack-browser.spec.js', workers: 3, fullyParallel: false, timeout: 30000, use: { baseURL: " + json.dumps('http://127.0.0.1:' + str(proxy.server_port)) + ", trace: 'off' }, projects: [{name:'chromium',use:{...devices['Desktop Chrome']}},{name:'firefox',use:{...devices['Desktop Firefox']}},{name:'webkit',use:{...devices['Desktop Safari']}}] });\n", newline="\n")
             return process
         except BaseException:
             process.terminate(); process.communicate(timeout=10); raise
@@ -100,7 +101,7 @@ with tempfile.TemporaryDirectory(prefix='nex-browser-api-') as temporary:
         assert process.returncode == 0, output + errors
         assert 'E_INTERNAL_LEAK' not in errors
     def terminate(process):
-        process.send_signal(signal.SIGTERM)
+        stop_server(process)
         return process.communicate(timeout=15)
     try:
         for phase, selection in (('initial', ['--grep-invert', 'survives native server restart']), ('restart', ['--grep', 'survives native server restart'])):

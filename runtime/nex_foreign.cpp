@@ -26,6 +26,9 @@ std::string packagedForeignCatalogue(){
 #elif defined(__linux__)
   std::vector<char> path(1048576);auto size=::readlink("/proc/self/exe",path.data(),path.size());
   if(size<=0||size_t(size)>=path.size())throw DataError("E_FFI_IO","cannot locate packaged executable");executable.assign(path.data(),size_t(size));
+#elif defined(_WIN32)
+  std::vector<wchar_t> path(32768);auto size=GetModuleFileNameW(nullptr,path.data(),DWORD(path.size()));
+  if(!size||size==path.size())throw DataError("E_FFI_IO","cannot locate packaged executable");executable=platform::utf8(std::wstring_view(path.data(),size));
 #else
   throw DataError("E_FFI_PLATFORM","packaged catalogue location is unsupported on this platform");
 #endif
@@ -85,8 +88,16 @@ std::shared_ptr<Binding> resolve(const std::shared_ptr<State> &state,const std::
 std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &configuration){
   if(configuration.empty()||configuration.size()>4096||configuration.find('\0')!=std::string::npos)invalid("E_FFI_GRANT","invalid foreign host configuration path");
   try{unicodeOffsets(configuration,false);}catch(const DataError&){invalid("E_FFI_GRANT","foreign host configuration path must be UTF-8");}
+#ifdef _WIN32
+  auto absolute=std::filesystem::path(platform::wide(configuration));
+  if(!absolute.is_absolute())absolute=std::filesystem::current_path()/absolute;
+  std::filesystem::path parent;
+  try{parent=host_windows::canonical(absolute.parent_path());absolute=parent/absolute.filename();}
+  catch(const std::filesystem::filesystem_error&){invalid("E_FFI_IO","foreign host configuration parent is unavailable");}
+#else
   std::error_code ec;auto absolute=std::filesystem::absolute(configuration,ec);if(ec)invalid("E_FFI_IO","cannot resolve foreign host configuration path");
   auto parent=std::filesystem::canonical(absolute.parent_path(),ec);if(ec)invalid("E_FFI_IO","foreign host configuration parent is unavailable");absolute=parent/absolute.filename();
+#endif
   // Opening a caller-selected configuration does not execute any native code.
 #ifdef _WIN32
   std::string text;

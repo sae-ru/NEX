@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_foreign.h"
 #include "nex_foreign_abi.h"
 #include "nex_host.h"
@@ -10,7 +11,9 @@
 #include <fstream>
 #include <iostream>
 #include <thread>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 using namespace nexrt;namespace fs=std::filesystem;using J=nlohmann::ordered_json;
@@ -23,7 +26,13 @@ void write(const fs::path &path,std::string_view text){std::ofstream out(path,st
 std::string sha(std::string_view text){unsigned char bytes[32];unsigned size=0;auto *ctx=EVP_MD_CTX_new();require(ctx,"digest allocation");require(EVP_DigestInit_ex2(ctx,EVP_sha256(),nullptr)==1&&EVP_DigestUpdate(ctx,text.data(),text.size())==1&&EVP_DigestFinal_ex(ctx,bytes,&size)==1&&size==32,"test digest failed");EVP_MD_CTX_free(ctx);std::string result;for(auto b:bytes){result+="0123456789abcdef"[b>>4];result+="0123456789abcdef"[b&15];}return result;}
 const char *valuesContract=R"({"parameters":[0,1,2,3,4,5,6,10],"result":11,"schema":"nex.foreign-signature/1","types":[{"kind":"i64"},{"kind":"bool"},{"kind":"f64"},{"kind":"str"},{"kind":"bytes"},{"kind":"file"},{"kind":"function","name":"host::callback"},{"fields":[{"name":"value","type":0}],"kind":"record","name":"host::Packet"},{"kind":"enum","name":"host::Maybe","variants":[{"fields":[],"name":"None"},{"fields":[{"name":"value","type":7}],"name":"Some"}]},{"item":8,"kind":"result"},{"item":9,"kind":"list"},{"fields":[{"name":"number","type":0},{"name":"flag","type":1},{"name":"real","type":2},{"name":"text","type":3},{"name":"data","type":4},{"name":"file","type":5},{"name":"callback","type":6},{"name":"nested","type":10}],"kind":"record","name":"host::Bundle"}]})";
 J signature(const std::string &name){if(name=="values")return J::parse(valuesContract);return J{{"schema","nex.foreign-signature/1"},{"parameters",name=="unit"?J::array():J::array({0})},{"result",0},{"types",J::array({J{{"kind",name=="unit"?"unit":"i64"}}})}};}
-int descriptors(){int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;
+#endif
+}
 struct Fixture {
   fs::path root,bundle,marker,config;J grants;std::string pin;
   Fixture(const fs::path &module){auto pattern=(fs::temp_directory_path()/"nex-foreign-scope-XXXXXX").string();require(::mkdtemp(pattern.data()),"mkdtemp failed");root=fs::canonical(pattern);bundle=root/"bundle";marker=root/"marker";config=root/"host.json";fs::create_directory(bundle);fs::copy_file(module,bundle/"module");write(bundle/"NOTICE","NEX test module\n");write(root/"input","file data");J exports=J::object();for(auto name:{"echo","unit","values","wrong"})exports[name]=foreignSignatureDigest(ForeignSignature(signature(name).dump()));
@@ -44,7 +53,10 @@ int main(int argc,char **argv){try{
     auto libraries=loadForeignLibraries(argv[2]);ForeignScope scope(libraries);auto description=read(argv[3]);auto args=pack({Value(42)});require(native(description,args).scalar==42,"fatal setup failed");nex_release(args);runtimeFail("E_TEST_STOP","fatal cleanup",77);
   }
   require(argc==2,"usage: foreign_scope MODULE");auto module=fs::canonical(argv[1]);unsigned cases=0;
-  auto run=[&](const char *name,auto body){int before=descriptors();body();require(descriptors()==before,"descriptor leak");require(liveObjects==0,"managed value leak");++cases;std::cout<<"PASS "<<name<<std::endl;};
+  auto run=[&](const char *name,auto body){
+    auto before=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==before,"file descriptor leak");
+    ++cases;std::cout<<"PASS "<<name<<std::endl;
+  };
   run("host configuration is explicit relative and non-executing",[&]{Fixture f(module);auto libs=f.libraries();require(f.events().empty(),"reading host config executed native code");ForeignScope scope(libs);require(invoke(f.binding()).scalar==42,"configured call differs");});
   run("relative grants follow the actual configuration parent through symlinks",[&]{Fixture f(module);auto actual=f.root/"actual";fs::create_directories(actual/"inner");fs::rename(f.bundle,actual/"bundle");write(actual/"host.json",f.grants.dump());fs::create_directory_symlink(actual/"inner",f.root/"link");f.grants["libraries"]=J::object();f.save();ForeignScope scope(loadForeignLibraries((f.root/"link/../host.json").string()));require(invoke(f.binding()).scalar==42,"configuration path was normalized before symlink resolution");});
   run("absent and shadowing scopes do not gain environment authority",[&]{Fixture f(module);::setenv("NEX_FOREIGN_CONFIG",f.config.c_str(),1);error("E_FFI_GRANT",[&]{invoke(f.binding());});{ForeignScope outer(f.libraries());{ForeignScope deny(std::make_shared<ForeignLibraries>(std::map<std::string,ForeignLibraryGrant>{}));error("E_FFI_GRANT",[&]{invoke(f.binding());});require(f.events().empty(),"denied inner context fell back");}require(invoke(f.binding()).scalar==42,"outer context not restored");}error("E_FFI_GRANT",[&]{invoke(f.binding());});});
@@ -68,6 +80,16 @@ int main(int argc,char **argv){try{
   run("host poll may re-enter a cached scoped call",[&]{Fixture f(module);ForeignScope scope(f.libraries());require(invoke(f.binding()).scalar==42,"warm call failed");bool nested=false;require(invoke(f.binding(),[&]{if(!nested){nested=true;require(invoke(f.binding()).scalar==42,"nested scoped call failed");}}).scalar==42&&nested,"reentrant poll did not finish");});
   run("independent thread contexts share one image and keep their own grants",[&]{Fixture f(module);std::vector<std::shared_ptr<ForeignLibraries>> catalogues;for(int i=0;i<8;++i)catalogues.push_back(f.libraries());std::barrier start(8);std::atomic<bool> failed=false;std::vector<std::thread> threads;for(int i=0;i<8;++i)threads.emplace_back([&,i]{try{ForeignScope scope(catalogues[i]);start.arrive_and_wait();for(int j=0;j<16;++j)require(invoke(f.binding()).scalar==42,"thread result differs");}catch(...){failed=true;}});for(auto &t:threads)t.join();require(!failed,"independent context call failed");auto events=f.events();require(std::count(events.begin(),events.end(),'I')==1&&std::count(events.begin(),events.end(),'G')==1&&std::count(events.begin(),events.end(),'C')==128,"global image sharing differs");error("E_FFI_GRANT",[&]{invoke(f.binding());});});
   run("native finish performs terminal context and module cleanup",[&]{Fixture f(module);auto libs=f.libraries();ForeignScope scope(libs);auto a=pack({Value(42)});require(native(f.binding(),a).scalar==42,"finish setup failed");nex_release(a);nex_runtime_finish();require(f.events()=="IGCD","native finish retained module image");error("E_FFI_GRANT",[&]{invoke(f.binding());});error("E_RESOURCE_SCOPE",[&]{libs->bind("test","echo",ForeignSignature(signature("echo").dump()),f.pin);});});
-  run("native terminal cleanup revokes module owners before process failure",[&]{Fixture f(module);auto bindingPath=(f.root/"binding.json").string();write(bindingPath,f.binding());pid_t child=::fork();require(child>=0,"fork failed");if(!child){::execl(argv[0],argv[0],"--fatal",f.config.c_str(),bindingPath.c_str(),static_cast<char*>(nullptr));::_exit(127);}int status=0;require(::waitpid(child,&status,0)==child&&WIFEXITED(status)&&WEXITSTATUS(status)==70,"fatal host exit differs");require(f.events()=="IGCD","fatal native exit did not finalize module");});
+  run("native terminal cleanup revokes module owners before process failure",[&]{Fixture f(module);auto bindingPath=(f.root/"binding.json").string();write(bindingPath,f.binding());
+#ifdef _WIN32
+    auto own=fs::absolute(argv[0]).wstring();auto command=L"\""+own+L"\" --fatal \""+f.config.wstring()+L"\" \""+nexrt::platform::wide(bindingPath)+L"\"";
+    STARTUPINFOW start{};start.cb=sizeof(start);PROCESS_INFORMATION process{};
+    require(CreateProcessW(own.c_str(),command.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&start,&process),"CreateProcess fatal fixture failed");
+    nexrt::host_windows::Handle child(process.hProcess),thread(process.hThread);DWORD code=0;
+    require(WaitForSingleObject(child.value,30000)==WAIT_OBJECT_0&&GetExitCodeProcess(child.value,&code)&&code==70,"fatal host exit differs");
+#else
+    pid_t child=::fork();require(child>=0,"fork failed");if(!child){::execl(argv[0],argv[0],"--fatal",f.config.c_str(),bindingPath.c_str(),static_cast<char*>(nullptr));::_exit(127);}int status=0;require(::waitpid(child,&status,0)==child&&WIFEXITED(status)&&WEXITSTATUS(status)==70,"fatal host exit differs");
+#endif
+    require(f.events()=="IGCD","fatal native exit did not finalize module");});
   std::cout<<"foreign invocation contexts: "<<cases<<" cases passed\n";return 0;
 }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

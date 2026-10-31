@@ -1,4 +1,5 @@
 """Fixed startup-linked task images: real ownership, runtime and retained delivery."""
+from host_fixture import run_native
 import copy
 import ctypes
 import hashlib
@@ -27,11 +28,11 @@ class SharedTaskProviders(harness.ToolchainCase):
         for name in ('leaf', 'mid', 'app', 'other'):
             (self.root/name).mkdir()
         self.file = self.root/'app/main.nex'
-        (self.root/'leaf/value.nex').write_text(fixture.LEAF)
-        (self.root/'mid/value.nex').write_text(fixture.MID)
-        self.file.write_text(fixture.APP)
-        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'leaf/value.nex').write_text(fixture.LEAF, newline="\n")
+        (self.root/'mid/value.nex').write_text(fixture.MID, newline="\n")
+        self.file.write_text(fixture.APP, newline="\n")
+        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -44,7 +45,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.save()
 
     def save(self):
-        (self.root/'nex.build.json').write_text(json.dumps(self.description))
+        (self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
 
     def environment(self, extra=None):
         value = {**os.environ,'PYTHONDONTWRITEBYTECODE':'1'}
@@ -55,12 +56,12 @@ class SharedTaskProviders(harness.ToolchainCase):
         return value
 
     def process(self, command, cwd=None, env=None, timeout=300):
-        result = subprocess.run(list(map(str,command)),cwd=cwd or self.root,env=self.environment(env),
+        result = run_native(list(map(str,command)),cwd=cwd or self.root,env=self.environment(env),
             capture_output=True,text=True,timeout=timeout)
         self.commands.append({'command':list(map(str,command)),'cwd':str(cwd or self.root),
             'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr})
         if os.environ.get('NEX_SHARED_PROVIDER_OUTPUT'):
-            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n')
+            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n', newline="\n")
         return result
 
     def cli(self,*args,ok=True,env=None,cwd=None,timeout=300):
@@ -78,8 +79,8 @@ class SharedTaskProviders(harness.ToolchainCase):
     symbols = fixture.StaticTaskProviders.symbols
 
     def simple(self,provider,application,exports=()):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider)
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application)
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider, newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application, newline="\n")
         self.description['components']={name:self.description['components'][name] for name in ('leaf','app')}
         self.description['components']['leaf']['exports']=list(exports)
         self.description['components']['app']['dependencies']={'leaf':'dynamic'}
@@ -191,9 +192,9 @@ class SharedTaskProviders(harness.ToolchainCase):
 
 
     def test_mixed_static_frontiers_have_exact_final_image_owners(self):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}')
-        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}')
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}', newline="\n")
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}', newline="\n")
         del self.description['components']['other']
         for name in ('leaf','mid'):self.description['components'][name]['exports']=[]
         self.description['components']['leaf']['exports']=['read']
@@ -219,10 +220,10 @@ class SharedTaskProviders(harness.ToolchainCase):
                 self.loaded(artifacts['app'],'42\n')
 
     def test_independent_roots_may_embed_same_static_provider_once_per_process(self):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(x:i64)->i64!{task}{task_yield();return x+1;}')
-        (self.root/'mid/value.nex').write_text('module provider_mid;pub fn answer(x:i64)->i64!{task}{task_yield();return x;}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(x:i64)->i64!{task}{task_yield();return x+1;}', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;pub fn answer(x:i64)->i64!{task}{task_yield();return x;}', newline="\n")
         for name in ('app','other'):
-            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(leaf::answer(41)));}')
+            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(leaf::answer(41)));}', newline="\n")
             self.description['components'][name]['dependencies']={'leaf':'static','mid':'dynamic'}
         self.description['components']['leaf'].update(kind='static_library',exports=[])
         self.description['components']['mid'].pop('dependencies');self.description['components']['mid']['exports']=[]
@@ -239,8 +240,8 @@ class SharedTaskProviders(harness.ToolchainCase):
         # An unrelated ordinary shared project retains its own mode/runtime.
         # Selecting all roots must not combine its source ABI with task images.
         for name in ('sync','plain'):(self.root/name).mkdir()
-        (self.root/'sync/value.nex').write_text('module ordinary_shared;pub fn answer()->i64{return 7;}')
-        (self.root/'plain/main.nex').write_text('module ordinary_app;import "../sync/value.nex" as sync;fn main()->unit!{io}{print(sync::answer());}')
+        (self.root/'sync/value.nex').write_text('module ordinary_shared;pub fn answer()->i64{return 7;}', newline="\n")
+        (self.root/'plain/main.nex').write_text('module ordinary_app;import "../sync/value.nex" as sync;fn main()->unit!{io}{print(sync::answer());}', newline="\n")
         self.description['components']['sync']={'kind':'shared_library','root':'sync','entry':'sync/value.nex','entry_function':'answer'}
         self.description['components']['plain']={'kind':'executable','root':'plain','entry':'plain/main.nex','dependencies':{'sync':'dynamic'}}
         self.save();mixed=self.project(component=None);mixed_artifacts=self.artifacts(mixed)
@@ -283,7 +284,7 @@ server fn main()->unit!{task,fs,io}{
  assert(error_code(leaf::read("data"))=="E_UTF8");
  assert(error_code(leaf::read("missing"))=="NOT_FOUND");
  assert(error_code(leaf::read("../escape"))=="VALIDATION");print(len(text));
-}''')
+}''', newline="\n")
         read=self.project();artifacts=self.artifacts(read)
         self.assertEqual(Path(artifacts['leaf']['artifact']).read_bytes(),original)
         self.assertEqual(read['native_runtime_image'],built['native_runtime_image'])
@@ -302,7 +303,7 @@ server fn main()->unit!{task,fs,io}{
                 (['--nex-task-timeout-ms','25'],'E_TIMEOUT')]:
             observed=self.process([app['artifact'],*args],timeout=15)
             self.assertEqual(observed.returncode,70);self.assertIn(code,observed.stderr)
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}', newline="\n")
         app=self.artifacts(self.project())['app']
         observed=self.process([app['artifact'],'--nex-task-steps','1000','--nex-task-workers','1'],timeout=15)
         self.assertEqual(observed.returncode,70);self.assertIn('E_LIMIT',observed.stderr)
@@ -313,7 +314,7 @@ server fn main()->unit!{task,fs,io}{
         first=self.artifacts(self.project())
         self.assertNotIn('provider_leaf::helper',self.provider(first['leaf'],'leaf')['exports'])
         self.description['components']['leaf']['exports']=['helper'];self.save()
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}', newline="\n")
         second=self.artifacts(self.project())
         self.assertNotEqual(first['leaf']['build_key'],second['leaf']['build_key'])
         export=self.provider(second['leaf'],'leaf')['exports']['provider_leaf::helper']
@@ -358,9 +359,9 @@ server fn main()->unit!{task,fs,io}{
         self.simple('pub fn helper()->i64!{task}{return 42;}pub fn answer()->i64!{task}{return helper();}',
             'fn main()->i64!{task}{return leaf::helper();}')
         self.assertEqual(self.project('plan',ok=False)['code'],'E_PROJECT_EXPORT')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{let f:fn()->i64!{task}=leaf::answer;return f();}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{let f:fn()->i64!{task}=leaf::answer;return f();}', newline="\n")
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::answer();}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::answer();}', newline="\n")
         profiling=self.cli('describe','--field','task_provider_profiling')['value']
         if profiling['public_enabled']:
             profile_plan=self.project('plan',configuration='profile')
@@ -378,11 +379,11 @@ server fn main()->unit!{task,fs,io}{
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}', newline="\n")
         self.description['components']['app'].update(kind='server',entry_function='handle');self.save()
         self.assertIn(self.project('plan',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_TARGET'))
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(x:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(x:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}', newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}', newline="\n")
         self.description['components']['app'].update(kind='executable',entry_function='main');self.save()
         rejected=self.project('plan',ok=False)
         self.assertEqual(rejected['code'],'E_TASK_PROVIDER')
@@ -403,7 +404,7 @@ server fn main()->unit!{task,fs,io}{
             'expect':{'stdout':fixture.OUTPUT,'exit_code':0},'timeout_seconds':120})
         task['requirements'].append({'id':'shared-run','text':'Run the fixed checked task image closure',
             'bindings':[{'program':'app','kind':'function','symbol':'provider_app::main'}],'targets':['native'],'checks':['shared-run']})
-        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task), newline="\n")
         accepted=self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
         self.assertTrue(accepted['ok']);receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
         native=next(row for row in saved['checks'] if row['id']=='build-native')

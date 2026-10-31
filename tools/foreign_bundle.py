@@ -17,7 +17,8 @@ import subprocess
 import sys
 import tempfile
 
-from app_bundle import LinuxApplication, MacApplication, notices_for_sdk
+from app_bundle import LinuxApplication, MacApplication, WindowsApplication, notices_for_sdk
+from windows_pe import image as pe_image
 from sdk_bundle import elf_image, macho, run, sha256
 
 
@@ -106,6 +107,10 @@ class LinuxModule(BoundedModule, LinuxApplication):
     pass
 
 
+class WindowsModule(BoundedModule, WindowsApplication):
+    pass
+
+
 def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
             patchelf='patchelf', selection=None):
     """Return exact old/new manifest pins; never initialize a module or run NEX code.
@@ -184,8 +189,12 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                     collector = LinuxModule(sdk, target, component_selection, dpkg_notices, allow_empty=True)
                     collector.environment = {k: v for k, v in os.environ.items() if k not in ('LD_LIBRARY_PATH', 'LD_PRELOAD')}
                     image = elf_image
+                elif system == 'Windows':
+                    collector = WindowsModule(sdk, target, component_selection, dpkg_notices, allow_empty=True)
+                    collector.pe_directory = (target/manifest['entry']).parent
+                    image = pe_image
                 else:
-                    raise ValueError('native module packaging requires macOS or Linux')
+                    raise ValueError('native module packaging requires a matching native host')
                 collector.sdk_inventory = sdk_inventory
                 roots = []
                 for record in manifest['files']:
@@ -203,11 +212,15 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                 for path, destination in roots:
                     if system == 'Darwin':
                         collector.collect(path, destination, source / manifest['entry'])
+                    elif system == 'Windows':
+                        collector.collect_pe(path,destination)
                     else:
                         collector.collect_elf(path, destination)
                 if system == 'Darwin':
                     collector.relocate_macho()
                     details = {'minimum_macos': '.'.join(map(str, collector.minimum_os)), 'signing': 'ad-hoc'}
+                elif system == 'Windows':
+                    details = {'architecture':collector.images[(source/manifest['entry']).resolve(strict=True)]['machine']}
                 else:
                     glibc, glibcxx = collector.relocate_elf(patchelf)
                     details = {'required_glibc_symbols': sorted(glibc), 'required_glibcxx_symbols': sorted(glibcxx)}
@@ -276,12 +289,15 @@ def prepare(nex, host, sdk, output, notices=None, dpkg_notices=False,
                   'notices_root': 'catalogue',
                   'libraries': result_libraries}
         (stage / 'foreign-package.json').write_text(json.dumps(report, indent=2) + '\n')
-        output.mkdir()
-        try:
+        if platform.system()=='Windows':
             stage.rename(output)
-        except Exception:
-            output.rmdir()
-            raise
+        else:
+            output.mkdir()
+            try:
+                stage.rename(output)
+            except Exception:
+                output.rmdir()
+                raise
         return report
     except Exception as error:
         raise RuntimeError(str(error) + '\nForeign preparation retained at ' + str(stage)) from error

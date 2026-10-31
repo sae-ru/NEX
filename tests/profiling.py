@@ -1,4 +1,5 @@
 """Observable native profiling, graph attribution, bounds and request cleanup."""
+from host_fixture import run_native, host_cpp
 import hashlib
 import json
 import os
@@ -181,11 +182,11 @@ int main(){
   });
   for(auto &thread:threads)thread.join();nex_runtime_finish();return failures?1:0;
 }
-'''.replace('SYMBOL', symbol))
+'''.replace('SYMBOL', symbol), newline="\n")
         executable = self.root / 'host'
-        subprocess.run([self.cli('doctor')['native_compiler'], '-std=c++20', '-DNEX_PROFILE_ENABLED', '-pthread', str(host), '-I', str(resources / 'runtime'), built['executable'], '-o', str(executable)], check=True, capture_output=True)
+        run_native([self.cli('doctor')['native_compiler'], '-std=c++20', '-DNEX_PROFILE_ENABLED', '-pthread', str(host), '-I', str(resources / 'runtime'), built['executable'], '-o', str(executable)], check=True, capture_output=True)
         output = self.root / 'host-profile.json'
-        process = subprocess.run([str(executable)], env={**os.environ, 'NEX_TRACY': '0', 'NEX_PROFILE_OUTPUT': str(output)}, capture_output=True, text=True, timeout=30)
+        process = run_native([str(executable)], env={**os.environ, 'NEX_TRACY': '0', 'NEX_PROFILE_OUTPUT': str(output)}, capture_output=True, text=True, timeout=30)
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
         measured = json.loads(output.read_text())
         self.assertEqual(measured['build']['build_key'],built['build_key'])
@@ -217,6 +218,7 @@ int main(){
         normal = self.cli('build', '--profile', 'release')
         normal_notice=Path(normal['notices']).read_text()
         expected='Dragonbox 1.1.3\n\n'+(harness.REPO/'runtime/third_party/dragonbox/LICENSE-Boost').read_text()+'\n\n'
+        expected+=harness.windows_notices(normal)
         self.assertEqual(normal_notice,expected)
         self.assertNotIn('Tracy',normal_notice)
         self.assertNotIn('nex_profile_enter', Path(normal['llvm']).read_text())

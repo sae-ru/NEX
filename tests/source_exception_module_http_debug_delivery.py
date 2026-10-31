@@ -4,7 +4,7 @@ from pathlib import Path
 
 def verify(state):
  source=state['source'];out=state['out'];compiler=state['debug_compiler'];target=out/'debug-delivery';target.mkdir();report={'ok':False,'DAP':[]}
- def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  previous=list(sys.argv)
  try:
   sys.argv=[sys.argv[0],str(state['emitter'])];from debugging import DAP
@@ -14,7 +14,7 @@ def verify(state):
  assert backend
  for image in state['report']['module_images']:
   if image['optimization']!='2':continue
-  name=image['program'];e=out/name/'O2';foreign=name.startswith('host-');d=target/name;d.mkdir();files=d/'files';files.mkdir();(files/'input').write_text('abcdef');trace=[];hidden=[];response={};client=None;adapter=None;pid=None
+  name=image['program'];e=out/name/'O2';foreign=name.startswith('host-');d=target/name;d.mkdir();files=d/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");trace=[];hidden=[];response={};client=None;adapter=None;pid=None
   manifest=json.loads((e/'debug.json').read_text());fn='leaf::render<mid::Payload>' if foreign else 'leaf::fail';row=next(v for v in manifest['functions'] if v['name']==fn);file=row['task_debug']['file'];text=next(v['source'] for v in manifest['source_context']['units'] if v['file']==file);line=next(i for i,t in enumerate(text.splitlines(),1) if ('throw("TEMPLATE"' if foreign else 'throw("PURE"') in t)
   address=socket.socket();address.bind(('127.0.0.1',0));port=address.getsockname()[1];address.close();path='/api/generic-error' if foreign else '/api/uncaught';args=['--auth',str(out/'auth.json'),'--database',str(d/'database.sqlite'),'--port',str(port),'--workers','4','--timeout-ms','60000'];env={'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(d/'events')}
   if foreign:args+=['--foreign',str(state['catalogue'])]
@@ -62,7 +62,7 @@ def verify(state):
   finally:
    if adapter:
     try:adapter.close()
-    finally:(d/'protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending,'response':response},ensure_ascii=False,indent=2)+'\n')
+    finally:(d/'protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending,'response':response},ensure_ascii=False,indent=2)+'\n', newline="\n")
    for file,temporary in hidden:
     if temporary.exists():temporary.rename(file)
    if client:client.join(timeout=2)

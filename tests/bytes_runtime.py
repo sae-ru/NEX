@@ -1,4 +1,5 @@
 """Internal binary primitives: ownership and canonical RFC 4648 codec agreement."""
+from host_fixture import run_native
 import base64
 import os
 from pathlib import Path
@@ -16,13 +17,13 @@ class BytesRuntime(unittest.TestCase):
     def compare(self, requests, expected):
         text=''.join(kind+' '+value+'\n' for kind,value in requests)
         for command in ([PROBE,'--stream'],[NODE,'--no-warnings',str(ROOT/'tests/bytes-runtime-runner.mjs')]):
-            completed=subprocess.run(command,input=text,text=True,capture_output=True,timeout=60)
+            completed=run_native(command,input=text.encode('utf-8'),capture_output=True,timeout=60)
             self.assertEqual(completed.returncode,0,completed.stderr)
-            self.assertEqual(completed.stdout.splitlines(),expected,command)
+            self.assertEqual(completed.stdout.decode('utf-8').splitlines(),expected,command)
 
     def test_immutable_imports_exports_updates_slices_and_bounds(self):
         for command in ([PROBE],[NODE,'--no-warnings',str(ROOT/'tests/bytes-runtime-runner.mjs'),'--self-test']):
-            completed=subprocess.run(command,text=True,capture_output=True,timeout=30)
+            completed=run_native(command,text=True,capture_output=True,timeout=30)
             self.assertEqual(completed.returncode,0,completed.stderr)
             self.assertEqual(completed.stdout,'8 immutable byte runtime cases passed\n')
 

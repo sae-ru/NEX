@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Real025 normal-CLI HTTP exception boundaries and server cleanup."""
+from host_fixture import stop_server
 import argparse
 import hashlib
 import http.client
@@ -24,18 +25,18 @@ digest=hashlib.sha256(Path(nex).read_bytes()).hexdigest()
 report={'ok':False,'compiler_sha256':digest,'images':[],'requests':[],'servers':[],'file_grants':[],'rejected_options':[]}
 auth=out/'auth.json'
 auth.write_text(json.dumps({'schema':'nex.auth/1','tokens':[{
-    'user':'alice','sha256':hashlib.sha256(b'fixture-alice').hexdigest()}]}))
+    'user':'alice','sha256':hashlib.sha256(b'fixture-alice').hexdigest()}]}), newline="\n")
 payload='λ\0🙂'
-files=out/'files';files.mkdir();(files/'input').write_text('abcdef')
+files=out/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n")
 
 def save():
-    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 
 def cli(project,label,arguments):
     result=subprocess.run([nex,*map(str,arguments),'--json'],cwd=project,
                           capture_output=True,text=True,timeout=600)
-    (out/(label+'.stdout')).write_text(result.stdout)
-    (out/(label+'.stderr')).write_text(result.stderr)
+    (out/(label+'.stdout')).write_text(result.stdout, newline="\n")
+    (out/(label+'.stderr')).write_text(result.stderr, newline="\n")
     assert result.returncode==0,(label,result.stdout,result.stderr)
     return json.loads(result.stdout)
 
@@ -43,7 +44,7 @@ try:
     for tasks in [False,True]:
         mode='task' if tasks else 'sync'
         project=out/mode;project.mkdir()
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
         text='''module public_http;
 import "std/http.nex" as http;
 server fn fail(value:str)->http::Response !{throw}{throw("USER",value);}
@@ -66,7 +67,7 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
  try{return fail(req.body);}catch(code,message){return http::json_response(200,encode_json([code,message,req.user,req.request_id]));}
 }
 '''.replace('EFFECTS','task,fs,throw' if tasks else 'fs,throw').replace('YIELD','task_yield();' if tasks else '')
-        (project/'main.nex').write_text(text)
+        (project/'main.nex').write_text(text, newline="\n")
         for profile in ['debug','release']:
             label=mode+'-'+profile
             built=cli(project,label,['build','--target','server','--profile',profile,
@@ -92,7 +93,7 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
                 # Replacing the selected pathname must not retarget the pinned
                 # capability retained by this live HTTP process or its tasks.
                 pinned=out/(label+'-pinned-files');files.rename(pinned)
-                files.mkdir();(files/'input').write_text('wrong replacement')
+                files.mkdir();(files/'input').write_text('wrong replacement', newline="\n")
                 for path in ['/api/caught','/api/uncaught','/api/caught','/api/rethrow','/api/trap','/api/file-error','/api/file','/api/write','/api/caught']:
                     connection=http.client.HTTPConnection('127.0.0.1',port,timeout=5)
                     try:
@@ -114,13 +115,13 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
                     report['requests'].append({'image':label,'path':path,'status':status,'body':body,'request_id':request_id})
                     save()
             finally:
-                if process.poll() is None:process.send_signal(signal.SIGTERM)
+                if process.poll() is None:stop_server(process)
                 try:stdout,stderr=process.communicate(timeout=15)
                 except subprocess.TimeoutExpired:
                     process.kill();stdout,stderr=process.communicate();raise
                 reader.join(timeout=2)
-                (out/(label+'-server.stdout')).write_text(first+stdout)
-                (out/(label+'-server.stderr')).write_text(stderr)
+                (out/(label+'-server.stdout')).write_text(first+stdout, newline="\n")
+                (out/(label+'-server.stderr')).write_text(stderr, newline="\n")
                 report['servers'].append({'image':label,'exit':process.returncode});save()
                 assert process.returncode==0 and 'E_INTERNAL_LEAK' not in stderr,(label,process.returncode,stderr)
                 pinned=out/(label+'-pinned-files')
@@ -163,12 +164,12 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
                     else:assert not (files/'output').exists()
                     report['file_grants'].append({'image':label,'write':flag,'result':body});save()
                 finally:
-                    if child.poll() is None:child.send_signal(signal.SIGTERM)
+                    if child.poll() is None:stop_server(child)
                     try:stdout,stderr=child.communicate(timeout=15)
                     except subprocess.TimeoutExpired:child.kill();stdout,stderr=child.communicate();raise
                     watcher.join(timeout=2)
-                    (out/(grant_label+'-server.stdout')).write_text(first+stdout)
-                    (out/(grant_label+'-server.stderr')).write_text(stderr)
+                    (out/(grant_label+'-server.stdout')).write_text(first+stdout, newline="\n")
+                    (out/(grant_label+'-server.stderr')).write_text(stderr, newline="\n")
                     assert child.returncode==0 and 'E_INTERNAL_LEAK' not in stderr,(grant_label,child.returncode,stderr)
                 if (files/'output').exists():(files/'output').unlink()
             invalid=[['--files-write','1'],['--files-root','relative'],
@@ -185,8 +186,8 @@ server fn handle(req:http::Request)->http::Response !{EFFECTS}{
     # A server without reachable file operations has no filesystem adapter.
     # Use the same cache as file-enabled images to cover compile-flag identity.
     project=out/'no-files';project.mkdir()
-    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
-    (project/'main.nex').write_text('module no_files;import "std/http.nex" as http;server fn handle(req:http::Request)->http::Response{return http::json_response(200,"42");}')
+    (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
+    (project/'main.nex').write_text('module no_files;import "std/http.nex" as http;server fn handle(req:http::Request)->http::Response{return http::json_response(200,"42");}', newline="\n")
     built=cli(project,'no-files',['build','--target','server','--profile','debug','--build-directory',out/'cache'])
     rejected=subprocess.run([built['executable'],'--auth',str(auth),'--database',str(out/'no-files.sqlite'),
                              '--port','0','--files-root',str(files)],cwd=out,capture_output=True,text=True,timeout=20)

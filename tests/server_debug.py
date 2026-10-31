@@ -1,4 +1,5 @@
 """Server descriptors and real stopped worker frames use checked native images."""
+from sqlite_fixture import connection as sqlite_connection
 import concurrent.futures
 import json
 import os
@@ -29,7 +30,7 @@ pub fn render(body:str)->str{
   let prefix:str="Я🧠:";
   return prefix+body;
 }
-''')
+''', newline="\n")
         (self.root/'service/main.nex').write_text('''module debug_service;
 import "std/http.nex" as http;
 import "../core/main.nex" as c;
@@ -38,13 +39,13 @@ server fn handle(request:http::Request)->http::Response!{db}{
   let rendered:str=c::render(request.body);
   return http::json_response(200,encode_json(rendered));
 }
-''')
-        (self.root/'assets/index.html').write_text('<h1>Debug server</h1>')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'service/main.nex'}))
+''', newline="\n")
+        (self.root/'assets/index.html').write_text('<h1>Debug server</h1>', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'service/main.nex'}), newline="\n")
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'}},'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'render'},
-                'service':{'kind':'server','root':'service','entry':'service/main.nex','dependencies':{'core':'dynamic'}}}}))
+                'service':{'kind':'server','root':'service','entry':'service/main.nex','dependencies':{'core':'dynamic'}}}}), newline="\n")
         self.auth=self.root/'private auth.json';self.database=self.root/'private.sqlite'
         self.arguments=['--auth',str(self.auth),'--database',str(self.database),'--static',str(self.root/'assets'),
             '--port','0','--timeout-ms','60000']
@@ -139,7 +140,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
                 client.request('continue',{'threadId':stop['threadId']})
             self.assertEqual(request.result(timeout=80),(200,'Я🧠:payload'))
             self.stop_server(client,pid)
-            with sqlite3.connect(self.database) as db:
+            with sqlite_connection(self.database) as db:
                 self.assertEqual(db.execute('SELECT value FROM nex_kv WHERE owner=? AND key=?',('debug-user','debug-marker')).fetchone(),(b'payload',))
             self.assertFalse((self.root/'.nex/graph.db').exists())
         finally:
@@ -205,7 +206,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
             status,body=request.result(timeout=30)
             self.assertEqual(status,504);self.assertEqual(body['error']['code'],'E_TIMEOUT')
             self.stop_server(client,pid)
-            with sqlite3.connect(self.database) as db:
+            with sqlite_connection(self.database) as db:
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM nex_kv').fetchone()[0],0)
             self.assertFalse((self.root/'.nex/graph.db').exists())
         finally:

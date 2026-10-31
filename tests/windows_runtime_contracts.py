@@ -41,7 +41,7 @@ class WindowsRuntimeContracts(runtime_contracts.RuntimeContracts):
             'producer_environment': 'WSL', 'reference_TypeScript_proof_profile_environment': 'WSL',
             'native_execution_environment': 'Windows', 'Windows_hosted_compiler_accepted': False,
             'producer_sha256': PRODUCER_SHA256,
-            'observations': observations}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            'observations': observations}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline="\n")
         if success:
             self.assertEqual(process.returncode, 0, record)
         else:

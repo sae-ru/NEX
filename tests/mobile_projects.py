@@ -26,7 +26,7 @@ class MobileProjects(unittest.TestCase):
             with self.subTest(value=value),self.assertRaises(mobile.Failure) as caught:mobile.api_origin(value)
             self.assertEqual(caught.exception.code,'E_MOBILE_API')
         with tempfile.TemporaryDirectory() as directory:
-            index=Path(directory)/'index.html';index.write_text('<html><head></head><body></body></html>')
+            index=Path(directory)/'index.html';index.write_text('<html><head></head><body></body></html>', newline="\n")
             before=mobile.sha(index);receipt=mobile.configure_api(index,'https://api.test:9443')
             self.assertEqual(receipt['original_sha256'],before)
             self.assertEqual(receipt['configured_sha256'],mobile.sha(index))
@@ -53,7 +53,7 @@ class MobileProjects(unittest.TestCase):
 
     def test_existing_and_symlink_outputs_are_preserved(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);output=root/'existing';output.mkdir();marker=output/'keep.txt';marker.write_text('keep')
+            root=Path(directory);output=root/'existing';output.mkdir();marker=output/'keep.txt';marker.write_text('keep', newline="\n")
             args=type('Args',(),dict(app_id='dev.nex.app',name='NEX',platform='ios',directory=str(output)))()
             with self.assertRaises(mobile.Failure) as caught:mobile.generate(args)
             self.assertEqual(caught.exception.code,'E_EXISTS');self.assertEqual(marker.read_text(),'keep')

@@ -22,7 +22,7 @@ def main():
     pinned=image['Id'];started=time.monotonic();commands=[];cases=[]
     def run(label,command,success=True):
         p=subprocess.run(command,capture_output=True,text=True,timeout=60)
-        (root/(label+'.stdout')).write_text(p.stdout);(root/(label+'.stderr')).write_text(p.stderr)
+        (root/(label+'.stdout')).write_text(p.stdout, newline="\n");(root/(label+'.stderr')).write_text(p.stderr, newline="\n")
         commands.append({'name':label,'command':command,'exit_code':p.returncode})
         if (p.returncode==0)!=success:raise RuntimeError(label+': '+p.stdout+p.stderr)
         return p
@@ -76,7 +76,7 @@ else:raise RuntimeError('readonly scratch passed the preflight')
     proof={'ok':True,'scope':'actual Docker CSV paths, payload identity and kernel readonly/evidence-write/network-none controls; no compiler/full-SDK acceptance claim',
            'image_id':pinned,'architecture':image['Architecture'],'helper_sha256':hashlib.sha256((source/'tools/linux/nex_docker_mount.py').read_bytes()).hexdigest(),
            'cases':cases,'commands':commands,'seconds':round(time.monotonic()-started,3)}
-    (root/'report.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n')
+    (root/'report.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n', newline="\n")
     print(json.dumps({'ok':True,'cases':len(cases),'seconds':proof['seconds']}))
 
 if __name__=='__main__':main()

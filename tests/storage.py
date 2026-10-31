@@ -1,4 +1,5 @@
 """Native server capabilities, durable UTF-8 data and transaction isolation."""
+from sqlite_fixture import connection as sqlite_connection
 import os
 from pathlib import Path
 import shutil
@@ -74,7 +75,7 @@ server fn main() -> unit !{db} {
             self.cli('eval', env={'NEX_DATABASE': path})
             self.cli('run', env={'NEX_DATABASE': path})
         path = self.root / 'incorrect.sqlite'
-        with sqlite3.connect(path) as db:
+        with sqlite_connection(path) as db:
             db.execute('CREATE TABLE nex_kv(owner TEXT COLLATE NOCASE NOT NULL,key TEXT NOT NULL,value BLOB NOT NULL,PRIMARY KEY(owner,key))')
         self.source('module invalid_schema; server fn main() -> unit !{db} { assert(error_code(store_get("x")) == "E_STORE_SCHEMA"); }')
         self.cli('eval', env={'NEX_DATABASE': str(path)})

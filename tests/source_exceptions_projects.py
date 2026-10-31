@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ordinary027 concrete source providers with real static/shared/mixed images."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import hashlib
 import json
@@ -78,13 +79,13 @@ server fn main()->unit !{task,fs,io,throw}{
 }
 '''
 def save():
-    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 
 def cli(project,label,arguments,expected=0):
     result=subprocess.run([nex,*map(str,arguments),'--json'],cwd=project,
                           capture_output=True,text=True,timeout=900,env={**os.environ,**case_environment})
-    (out/(label+'.stdout')).write_text(result.stdout)
-    (out/(label+'.stderr')).write_text(result.stderr)
+    (out/(label+'.stdout')).write_text(result.stdout, newline="\n")
+    (out/(label+'.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'label':label,'arguments':list(map(str,arguments)),
                                'exit':result.returncode});save()
     assert result.returncode==expected,(label,result.stdout[-4000:],result.stderr[-4000:])
@@ -105,8 +106,8 @@ def debug(project,mode):
     for command in commands:argv+=['-o',command]
     result=subprocess.run(argv,cwd=project,env={**os.environ,**case_environment},
                           capture_output=True,text=True,timeout=180)
-    (out/(mode+'-lldb.stdout')).write_text(result.stdout)
-    (out/(mode+'-lldb.stderr')).write_text(result.stderr)
+    (out/(mode+'-lldb.stdout')).write_text(result.stdout, newline="\n")
+    (out/(mode+'-lldb.stderr')).write_text(result.stderr, newline="\n")
     assert result.returncode==0,(mode,result.stdout[-3500:],result.stderr[-1500:])
     rows=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
     stack=next(row for row in rows if row.get('schema')=='nex.task-debug-stack/1')
@@ -124,11 +125,11 @@ def debug(project,mode):
 try:
     for mode in ([] if args.pure_only else ['static','shared','mixed']):
         project=out/mode;project.mkdir()
-        files=out/(mode+'-files');files.mkdir();(files/'input').write_text('abcdef')
+        files=out/(mode+'-files');files.mkdir();(files/'input').write_text('abcdef', newline="\n")
         case_environment={'NEX_FILES_ROOT':str(files)}
         for name,text in [('leaf',LEAF),('middle',MIDDLE),('app',APP)]:
-            folder=project/name;folder.mkdir();(folder/'main.nex').write_text(text.replace(chr(92)*2+'u0000',chr(92)+'u0000'))
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}))
+            folder=project/name;folder.mkdir();(folder/'main.nex').write_text(text.replace(chr(92)*2+'u0000',chr(92)+'u0000'), newline="\n")
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}), newline="\n")
         leaf_shared=mode=='shared';middle_shared=mode!='static'
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
                       'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'},'measured':{'profile':'profile'}},
@@ -140,7 +141,7 @@ try:
                       'dependencies':{'leaf':'dynamic' if leaf_shared else 'static'}},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex',
                    'dependencies':{'middle':'dynamic' if middle_shared else 'static'}}}}
-        (project/'nex.build.json').write_text(json.dumps(architecture,indent=2))
+        (project/'nex.build.json').write_text(json.dumps(architecture,indent=2), newline="\n")
         if args.debug_only:
             debug(project,mode)
             continue
@@ -175,7 +176,7 @@ try:
         task['checks'].append({'id':'run-native','kind':'run','target':'native','program':'app','entry':'app::main',
                                'configuration':'debug','expect':{'stdout':'42\n','exit_code':0}})
         task['requirements'][0]['checks'].append('run-native')
-        taskfile=project/'task.json';taskfile.write_text(json.dumps(task,indent=2))
+        taskfile=project/'task.json';taskfile.write_text(json.dumps(task,indent=2), newline="\n")
         checked=cli(project,mode+'-task-check',['task',taskfile,'--kind','check'])
         run=cli(project,mode+'-task-run',['task',taskfile,'--kind','run','--task-hash',checked['task_hash']])
         assert run['ok'] and all(row['status']=='passed' for row in run['checks'])
@@ -190,19 +191,19 @@ try:
         assert (files/'input').read_text()=='abcdef'
         # Project plan/build/run/profile are graph-free. Acceptance-task run
         # deliberately persists its own history after those actions complete.
-        with sqlite3.connect(str(project/'.nex/graph.db')) as database:
+        with sqlite_connection(str(project/'.nex/graph.db')) as database:
             database.execute('pragma query_only=on')
             assert database.execute('select status from task_runs').fetchall()==[('passed',)]
         save()
     for mode in ([] if args.debug_only else ['static','shared']):
         project=out/('pure-'+mode);project.mkdir()
         leaf=project/'leaf';leaf.mkdir();app=project/'app';app.mkdir()
-        (leaf/'main.nex').write_text('module leaf;pub fn answer(fail:bool)->i64 !{throw}{if fail{throw("PURE","leaf");}return 42;}')
-        (app/'main.nex').write_text('module app;import "../leaf/main.nex" as leaf;fn main()->unit !{task,io}{task_yield();try{let ignored:i64=leaf::answer(true);assert(false);}catch(c,m){assert(c=="PURE"&&m=="leaf");}try{print(leaf::answer(false));}catch(c,m){assert(false);}}')
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}))
+        (leaf/'main.nex').write_text('module leaf;pub fn answer(fail:bool)->i64 !{throw}{if fail{throw("PURE","leaf");}return 42;}', newline="\n")
+        (app/'main.nex').write_text('module app;import "../leaf/main.nex" as leaf;fn main()->unit !{task,io}{task_yield();try{let ignored:i64=leaf::answer(true);assert(false);}catch(c,m){assert(c=="PURE"&&m=="leaf");}try{print(leaf::answer(false));}catch(c,m){assert(false);}}', newline="\n")
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'}), newline="\n")
         (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
             'leaf':{'kind':'static_library' if mode=='static' else 'shared_library','root':'leaf','entry':'leaf/main.nex','entry_function':'answer'},
-            'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'leaf':'static' if mode=='static' else 'dynamic'}}}}))
+            'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'leaf':'static' if mode=='static' else 'dynamic'}}}}), newline="\n")
         observed=cli(project,'pure-'+mode+'-run',['project','--kind','run','--component','app'])
         assert observed['observation']['stdout']=='42\n' and observed['observation']['exit_code']==0
         report['cases'].append({'mode':mode,'pure_provider_without_task_effect':True,'passed':True});save()

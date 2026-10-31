@@ -21,6 +21,9 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #ifdef __linux__
 #include <sys/syscall.h>
 #include <linux/fs.h>
@@ -303,7 +306,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
     if(c.kind=="web")web=inspectWebApp(program);
     else if(c.kind!="source") {
       auto abiOptions=native;abiOptions.target=configuration.target;auto declared=configureNative(abiOptions);auto actual=configureNative(native);
-      llvm::Triple imageABI(actual.target);if(sharedSelected&&!imageABI.isMacOSX()&&!imageABI.isOSLinux())fail("shared project images currently require macOS or Linux targets","E_PROJECT_CAPABILITY");
+      llvm::Triple imageABI(actual.target);if(sharedSelected&&!imageABI.isMacOSX()&&!imageABI.isOSLinux()&&!imageABI.isOSWindows())fail("shared project images currently require macOS, Linux or Windows targets","E_PROJECT_CAPABILITY");
       if(declared.target!=actual.target)fail("server target requires a matching explicit toolchain for this configuration","E_TARGET");
       auto captured=inspectNativeToolchain(native);toolchain=Object{{"hash",captured.hash},{"target",captured.target},{"host_compatible",captured.hostCompatible}};
       if(execution&&name==selectedComponent&&!captured.hostCompatible)fail("project execution requires the compiler host ABI","E_TARGET");
@@ -311,7 +314,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       // Entry validation below still precedes tools, cache creation and plan
       // publication, after every selected source closure is available.
       if(options.kind=="package"&&(c.kind=="executable"||c.kind=="server")){
-        if(!imageABI.isMacOSX()&&!imageABI.isOSLinux())fail("project native packages currently require macOS or Linux targets","E_PROJECT_CAPABILITY");
+        if(!imageABI.isMacOSX()&&!imageABI.isOSLinux()&&!imageABI.isOSWindows())fail("project native packages currently require macOS, Linux or Windows targets","E_PROJECT_CAPABILITY");
         if(options.packageProjection&&options.packageProjection->applications.contains(name))native.foreignCatalogue="../foreign/host.json";
       }
       if((c.kind=="static_library"||c.kind=="shared_library")&&owner(program.units.at(program.function(c.function).unit).path)!=name)fail("library entry must be owned by "+name,"E_PROJECT_EXPORT");
@@ -913,6 +916,8 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       int published=::renameatx_np(AT_FDCWD,stage.c_str(),AT_FDCWD,packageOutput.c_str(),RENAME_EXCL);
 #elif defined(__linux__) && defined(SYS_renameat2)
       int published=int(::syscall(SYS_renameat2,AT_FDCWD,stage.c_str(),AT_FDCWD,packageOutput.c_str(),RENAME_NOREPLACE));
+#elif defined(_WIN32)
+      int published=MoveFileExW(stage.c_str(),packageOutput.c_str(),MOVEFILE_WRITE_THROUGH)?0:-1;
 #else
       int published=-1;
 #endif

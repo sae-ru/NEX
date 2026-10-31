@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: { command: 'npm run ' + (development ? 'dev' : 'preview') + ' -- --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173', reuseExistingServer: false },
 });
-''')
+''', newline="\n")
 env = dict(os.environ)
 if args.browsers_path:
     env["PLAYWRIGHT_BROWSERS_PATH"] = str(args.browsers_path.resolve())

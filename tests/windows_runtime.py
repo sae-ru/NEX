@@ -51,8 +51,9 @@ class WindowsRuntimeDescriptor(harness.ToolchainCase):
         self.assertEqual(value['environment_encoding'],'strict_utf8_utf16')
         self.assertTrue(value['files'])
         self.assertTrue(value['host_execution'])
-        self.assertFalse(value['source_foreign_loading'])
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        self.assertTrue(value['source_foreign_loading'])
+        self.assertEqual(value['verified_foreign_architectures'],['x86_64'])
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source('module boundary;client fn main()->result<str>!{io}{return read_env("x");}')
         self.assertEqual(self.cli('check',ok=False)['code'],'E_REALM')
         self.source('module boundary;server fn main()->result<str>{return read_env("x");}')
@@ -63,10 +64,10 @@ class WindowsRuntimeDescriptor(harness.ToolchainCase):
 class WindowsRuntimeBuilds(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.config=self.root/'toolchain.json';self.notices=self.root/'notices.txt'
         licenses=[TOOLS/'LICENSE.TXT',*sorted((TOOLS/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]
-        self.notices.write_text('\n\n'.join(str(p.relative_to(TOOLS))+'\n'+p.read_text() for p in licenses))
+        self.notices.write_text('\n\n'.join(str(p.relative_to(TOOLS))+'\n'+p.read_text() for p in licenses), newline="\n")
 
     def configure(self,arch,sqlite=False):
         value={'schema':'nex.toolchain/1','target':arch+'-w64-windows-gnu','compiler':str(TOOLS/'bin/clang++'),
@@ -75,7 +76,7 @@ class WindowsRuntimeBuilds(harness.ToolchainCase):
         if sqlite:
             self.assertIsNotNone(SQLITE)
             value['sqlite']={'include':str(SQLITE/'sqlite-amalgamation-3540100'),'library':str(SQLITE/arch/'libsqlite3.a')}
-        self.config.write_text(json.dumps(value));return value
+        self.config.write_text(json.dumps(value), newline="\n");return value
 
     def command(self,args):
         result=subprocess.run(list(map(str,args)),capture_output=True,text=True,timeout=180)
@@ -86,7 +87,7 @@ class WindowsRuntimeBuilds(harness.ToolchainCase):
         dest=Path(os.environ['NEX_WINDOWS_RUNTIME_OUTPUT'])/name;dest.mkdir(parents=True,exist_ok=False)
         for key in ('executable','llvm','metadata','debug_manifest','notices'):
             path=Path(built[key]);shutil.copy2(path,dest/path.name)
-        (dest/'result.json').write_text(json.dumps(built,indent=2)+'\n')
+        (dest/'result.json').write_text(json.dumps(built,indent=2)+'\n', newline="\n")
 
     def build_cases(self,source,name,sqlite=False):
         self.source(source);previous=set()
@@ -119,7 +120,7 @@ class WindowsRuntimeBuilds(harness.ToolchainCase):
     def test_unicode_storage_executables_archive_and_source_replay(self):
         last=self.build_cases(STORAGE,'storage',True)
         symbol=self.cli('context','--symbol','persist')['native_symbol']
-        bridge=self.root/'bridge.cpp';bridge.write_text('extern "C" long long '+symbol+'();\nint main(){return '+symbol+'()==42?0:1;}\n')
+        bridge=self.root/'bridge.cpp';bridge.write_text('extern "C" long long '+symbol+'();\nint main(){return '+symbol+'()==42?0:1;}\n', newline="\n")
         for arch in ('x86_64','aarch64'):
             config=self.configure(arch,True)
             archive=self.cli('build','--toolchain',self.config,'--library','--entry','persist','--profile','release',timeout=240)

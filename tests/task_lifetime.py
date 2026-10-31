@@ -61,7 +61,7 @@ try:
     classifications = []
     known_bad={'scope-escape','scope-box-escape','scope-capture-escape','scope-no-current','scope-channel-escape','scope-spawn-escape'}
     for name, body in fixture_map.items():
-        path=output/(name+'.nex');text='module native_steps;\n'+body+'\n';path.write_text(text)
+        path=output/(name+'.nex');text='module native_steps;\n'+body+'\n';path.write_text(text, newline="\n")
         source_hashes[name]=hashlib.sha256(text.encode()).hexdigest()
         code, data=run(probe,path,'main')
         if name in known_bad:
@@ -70,7 +70,7 @@ try:
             assert code==0 and data['ok'] and data['mandatory_runtime_guards'] and not data['fully_static'], (name,data)
         classifications.append({'name':name,'analysis':data})
     for name, body, expected in extras:
-        path=output/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
+        path=output/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n', newline="\n")
         source_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
         code, data=run(probe,path,'main')
         if expected and not expected.startswith('DYNAMIC:'):
@@ -100,7 +100,7 @@ try:
             'native_fixture_sha256':source_hashes,'additional_reference_scenarios':len(extras),
             'fully_static':False,'mandatory_runtime_guards':True,'public_source_tasks':False,
             'bounded_analysis_checked':True,'classifications':classifications}
-    (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+    (output/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
     print(json.dumps({k:v for k,v in report.items() if k not in ['classifications','native_fixture_sha256']}))
 finally:
     if temporary: temporary.cleanup()

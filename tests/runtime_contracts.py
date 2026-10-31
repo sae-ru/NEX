@@ -17,7 +17,7 @@ class RuntimeContracts(harness.ToolchainCase):
         return value
 
     def generate(self, contract, name='guarded', ok=True):
-        path=self.root/(name+'.json');path.write_text(json.dumps(contract,ensure_ascii=False))
+        path=self.root/(name+'.json');path.write_text(json.dumps(contract,ensure_ascii=False), newline="\n")
         directory=self.root/name
         result=self.cli('contract','--kind','runtime','--contracts',path,'--directory',directory,ok=ok,timeout=120)
         if ok:
@@ -31,14 +31,14 @@ class RuntimeContracts(harness.ToolchainCase):
     def web(self,directory,entry='main'):
         folder=directory/('typescript-'+entry)
         self.cli('emit','--kind','typescript','--entry',entry,'--directory',folder,cwd=directory)
-        (folder/'package.json').write_text('{"type":"module"}')
+        (folder/'package.json').write_text('{"type":"module"}', newline="\n")
         (folder/'driver.ts').write_text("""import { entry } from './program.ts';
 import { str, NexError } from './nex-runtime.ts';
 let stdout = ''; console.log = value => { stdout += String(value) + '\\n'; };
 let result; try { const value=entry(); result={ok:true,value:value===undefined?null:str(value),stdout}; }
 catch(e) { if (!(e instanceof NexError)) throw e; result={ok:false,code:e.code,stdout}; }
 process.stdout.write(JSON.stringify(result));
-""")
+""", newline="\n")
         process=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',folder/'driver.ts'],capture_output=True,text=True,timeout=30)
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
         return json.loads(process.stdout)
@@ -165,7 +165,7 @@ import "./helper.nex" as helper;
 fn value(x:i64)->i64{return x;}
 fn main()->i64{return helper::value(value(2));}
 """)
-        (self.root/'helper.nex').write_text('module helper; pub fn value(x:i64)->i64{return x+1;}\n')
+        (self.root/'helper.nex').write_text('module helper; pub fn value(x:i64)->i64{return x+1;}\n', newline="\n")
         directory,_=self.generate(self.contract('helper::value',ensures=['result==x+1']))
         self.agreement(directory,value=3)
         self.source("""module realms;
@@ -221,8 +221,8 @@ fn main()->i64{return looped(3);}
         output=self.root/'huge-output'
         self.assertEqual(self.cli('contract','--kind','runtime','--contracts',huge,'--directory',output,ok=False)['code'],'E_CONTRACT')
         self.assertFalse(output.exists())
-        target=self.root/'existing';target.mkdir();(target/'keep').write_text('preserve')
-        path=self.root/'contract.json';path.write_text(json.dumps(contract))
+        target=self.root/'existing';target.mkdir();(target/'keep').write_text('preserve', newline="\n")
+        path=self.root/'contract.json';path.write_text(json.dumps(contract), newline="\n")
         self.assertEqual(self.cli('contract','--kind','runtime','--contracts',path,'--directory',target,ok=False)['code'],'E_EXISTS')
         self.assertEqual((target/'keep').read_text(),'preserve');self.assertEqual(len(list(target.iterdir())),1)
 
@@ -263,7 +263,7 @@ fn main()->i64{return looped(3);}
         proof=self.cli('contract','--symbol','increment',cwd=directory)
         proof['functions'][0]['requires']=original['functions'][0]['requires']
         proof['functions'][0]['ensures']=original['functions'][0]['ensures']
-        path=directory/'proof.json';path.write_text(json.dumps(proof))
+        path=directory/'proof.json';path.write_text(json.dumps(proof), newline="\n")
         verified=self.cli('verify','--contracts',path,cwd=directory,timeout=90)
         self.assertTrue(verified['ok']);self.assertEqual(verified['functions'][0]['status'],'proven')
         profile=self.cli('profile','--scenario','scalar-contract-allocations',cwd=directory,timeout=300)

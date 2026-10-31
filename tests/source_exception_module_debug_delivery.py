@@ -5,9 +5,9 @@ from source_exception_module_debug_support import bind_images
 
 def verify(source,artifacts,compiler,emitter):
  report={'ok':False,'DAP':[],'relocations':[],'rejections':[],'commands':[]};target=artifacts/'debug-delivery';target.mkdir()
- def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def run(label,argv,env=None,allowed=(0,)):
-  result=subprocess.run(list(map(str,argv)),cwd=artifacts,env=env,text=True,capture_output=True,timeout=240);(target/(label+'.stdout')).write_text(result.stdout);(target/(label+'.stderr')).write_text(result.stderr);report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':result.returncode});save();assert result.returncode in allowed,(label,result.stdout[-2000:],result.stderr[-3000:]);return result
+  result=subprocess.run(list(map(str,argv)),cwd=artifacts,env=env,text=True,capture_output=True,timeout=240);(target/(label+'.stdout')).write_text(result.stdout, newline="\n");(target/(label+'.stderr')).write_text(result.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':result.returncode});save();assert result.returncode in allowed,(label,result.stdout[-2000:],result.stderr[-3000:]);return result
  previous=list(sys.argv)
  try:
   sys.argv=[sys.argv[0],str(emitter)];from debugging import DAP
@@ -42,7 +42,7 @@ def verify(source,artifacts,compiler,emitter):
     adapter.request('continue',{'threadId':identity});assert adapter.event('exited')['exitCode']==42
    finally:
     try:adapter.close()
-    finally:(target/(label+'.json')).write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n')
+    finally:(target/(label+'.json')).write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
    raw=json.dumps({'trace':trace,'pending':adapter.pending});assert 'NEX_PRIVATE_MODULE_DEBUG_CLEANUP' in raw and '\\"ok\\":true' in raw
    report['DAP'].append({'topology':topology,'optimization':optimization,'all_stop':True,'source_machine_stack':True,'caller_watch':True,'stale_reference_rejected':True,'checked_catch_after_unwind':True,'next_after_unwind':True,'protocol_sha256':hashlib.sha256((target/(label+'.json')).read_bytes()).hexdigest(),'passed':True});save()
  for topology in ['shared','mixed']:
@@ -51,7 +51,7 @@ def verify(source,artifacts,compiler,emitter):
    shutil.copy2(file,d/file.name)
    if file.with_name(file.name+'.dSYM').is_dir():shutil.copytree(file.with_name(file.name+'.dSYM'),d/(file.name+'.dSYM'))
   def identity(file):return run('relocated-identity-'+topology+'-'+file.name,[emitter,'identity',file]).stdout.strip().replace('-','').lower()
-  context=bind_images(context,plan,d,identity);manifest=d/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n');options=json.loads((original/'session.json').read_text());options.update(report=str(d/'lldb-report.json'),directory=str(d));config=d/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n');hidden=[]
+  context=bind_images(context,plan,d,identity);manifest=d/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n', newline="\n");options=json.loads((original/'session.json').read_text());options.update(report=str(d/'lldb-report.json'),directory=str(d));config=d/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n', newline="\n");hidden=[]
   try:
    for file in paths:
     temporary=file.with_name(file.name+'.hidden');assert not temporary.exists();file.rename(temporary);hidden.append((file,temporary))
@@ -72,10 +72,10 @@ def verify(source,artifacts,compiler,emitter):
   elif name=='metadata':changed['task_debug']['metadata_hash']='0'*64
   elif name=='registry':changed['task_debug']['registries'][0]['code_count']+=1
   else:changed['module_plan_hash']='0'*64
-  file=target/(name+'.json');file.write_text(json.dumps(changed,ensure_ascii=False,indent=2)+'\n');result=run('reject-'+name,[compiler,'inspect-private-task',capture,'--manifest',file,'--expression','v','--json'],allowed=(1,));error=json.loads(result.stdout);assert error['code']=='E_DEBUG_BUILD',error;report['rejections'].append({'name':name,'code':error['code'],'passed':True});save()
+  file=target/(name+'.json');file.write_text(json.dumps(changed,ensure_ascii=False,indent=2)+'\n', newline="\n");result=run('reject-'+name,[compiler,'inspect-private-task',capture,'--manifest',file,'--expression','v','--json'],allowed=(1,));error=json.loads(result.stdout);assert error['code']=='E_DEBUG_BUILD',error;report['rejections'].append({'name':name,'code':error['code'],'passed':True});save()
  context=root/'context.json';original_arch=json.loads((root/'mixed/architecture.json').read_text());probe=emitter.parent/'nex_source_exception_modules_probe'
  for name,change in [('missing-timeout',lambda a:a.pop('debug_timeout_ms')),('zero-timeout',lambda a:a.update(debug_timeout_ms=0)),('too-large-timeout',lambda a:a.update(debug_timeout_ms=3600001)),('profile-instrumentation',lambda a:a.update(instrumentation='profile')),('old-schema',lambda a:a.update(schema='nex.private-task-architecture/5'))]:
-  value=copy.deepcopy(original_arch);change(value);file=target/(name+'.json');file.write_text(json.dumps(value));result=run('reject-'+name,[probe,'plan',context,file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['rejections'].append({'name':name,'code':'E_EXCEPTION_MODULE','passed':True});save()
+  value=copy.deepcopy(original_arch);change(value);file=target/(name+'.json');file.write_text(json.dumps(value), newline="\n");result=run('reject-'+name,[probe,'plan',context,file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['rejections'].append({'name':name,'code':'E_EXCEPTION_MODULE','passed':True});save()
  report.update(ok=True,DAP_comparisons=len(report['DAP']),relocated_debug_sessions=len(report['relocations']));save();return report
 
 def main():

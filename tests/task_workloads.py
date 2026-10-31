@@ -18,7 +18,7 @@ class TaskWorkloads(harness.ToolchainCase):
             if self.restore:self.restore()
         finally:super().tearDown()
 
-    def save_workload(self):self.workload.write_text(json.dumps(self.definition,ensure_ascii=False))
+    def save_workload(self):self.workload.write_text(json.dumps(self.definition,ensure_ascii=False), newline="\n")
 
     def profile(self,identifier='measure'):
         return {'id':identifier,'program':'app','kind':'profile','target':'server','configuration':'measured',
@@ -34,7 +34,7 @@ class TaskWorkloads(harness.ToolchainCase):
         task['checks'].append(check);task['requirements'].append({'id':check['id'],'text':'Reviewed local HTTP workload and native budget',
             'targets':[check['target']],'checks':[check['id']],'bindings':[{'program':'app','kind':'function','symbol':'workload::service::handle'}]})
 
-    def save(self,task):self.path.write_text(json.dumps(task))
+    def save(self,task):self.path.write_text(json.dumps(task), newline="\n")
     def task(self,kind='run',*args,**kwargs):return self.cli('task',self.path,'--kind',kind,*args,timeout=600,**kwargs)
 
     def test_check_pins_raw_bytes_without_credentials_or_native_processes(self):
@@ -43,12 +43,12 @@ class TaskWorkloads(harness.ToolchainCase):
         summary=checked['workloads']['measure'];self.assertEqual(summary['definition_sha256'],hashlib.sha256(self.workload.read_bytes()).hexdigest())
         self.assertEqual(summary['planned_requests'],16);self.assertFalse((self.root/'.nex/build').exists())
         self.assertFalse(list(self.outer.glob('**/auth.json')));self.assertNotIn(environment['NEX_TEST_WORKLOAD_TOKEN'],json.dumps(checked))
-        self.workload.write_text(self.workload.read_text()+'\n')
+        self.workload.write_text(self.workload.read_text()+'\n', newline="\n")
         self.assertEqual(self.task('check',ok=False)['code'],'E_TASK_WORKLOAD');self.assertFalse((self.root/'.nex/build').exists())
 
     def test_real_dynamic_profile_and_readonly_source_deleted_replay_use_fresh_private_state(self):
-        (self.outer/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'ancestor.nex'}))
-        (self.outer/'ancestor.nex').write_text('module ancestor;fn main()->i64{return 77;}')
+        (self.outer/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'ancestor.nex'}), newline="\n")
+        (self.outer/'ancestor.nex').write_text('module ancestor;fn main()->i64{return 77;}', newline="\n")
         self.cli('check',self.outer/'ancestor.nex',cwd=self.outer);ancestor=harness.database_rows(self.outer/'.nex/graph.db')
         (self.root/'server/main.nex').write_text('''module workload::service;
 import "std/http.nex" as http;import "../core/value.nex" as core;
@@ -61,7 +61,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
  if request.path=="/api/seed"{assert(!is_ok(store_get("seed")));unwrap(store_put("seed",text));return http::text_response(200,"seeded");}
  return http::text_response(200,unwrap(store_get("seed")));
 }
-''')
+''', newline="\n")
         self.definition.update(warmup=0,phases=[{'concurrency':1,'iterations':1}],requests=[
             {'path':'/api/check','expect':{'status':200,'text':'clean|nex-task-workload'}},
             {'method':'POST','path':'/api/seed','expect':{'status':200,'text':'seeded'}},
@@ -104,7 +104,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
         replay=json.loads(process.stdout)
         if process.returncode:
             saved=harness.REPO.parent/'native-083-task-workload-replay-failure-v2';saved.mkdir(exist_ok=True)
-            (saved/'session.json').write_text(process.stdout);(saved/'stderr').write_text(process.stderr)
+            (saved/'session.json').write_text(process.stdout, newline="\n");(saved/'stderr').write_text(process.stderr, newline="\n")
             for check in ['measure','second']:
                 for part in ['logs','artifacts']:
                     base=self.outer/'replayed'/part/check
@@ -122,7 +122,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
         self.assertEqual(probe['hardware'],{'cpu':doctor['cpu'],'target':doctor['host']})
         task['checks'][0]['hardware']=probe['hardware']
         bad_definition=workload_fixture.definition();bad_definition['requests'][0]['expect']['text']='different'
-        bad_definition.update(warmup=0,phases=[{'concurrency':1,'iterations':1}]);bad=self.root/'bad.json';bad.write_text(json.dumps(bad_definition))
+        bad_definition.update(warmup=0,phases=[{'concurrency':1,'iterations':1}]);bad=self.root/'bad.json';bad.write_text(json.dumps(bad_definition), newline="\n")
         negative=self.profile('bad-response');negative.update(workload='bad.json',workload_hash=hashlib.sha256(bad.read_bytes()).hexdigest(),budget={'max_peak_handles':'100000'})
         self.add(task,negative)
         self.save(task);run=self.task('run',ok=False);row=run['checks'][0];self.assertEqual(row['status'],'failed')

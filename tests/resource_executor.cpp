@@ -1,9 +1,12 @@
+#include "host_test.h"
 #include "nex_external_resource.h"
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <iostream>
 #include <mutex>
 #include <thread>

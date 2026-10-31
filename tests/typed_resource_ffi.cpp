@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_foreign.h"
 #include "nex_host.h"
 #include "nex_ffi_types.h"
@@ -33,7 +34,13 @@ template<class F> void error(const char *code,F body){try{body();}catch(const Da
 std::string read(const fs::path &p){std::ifstream in(p,std::ios::binary);return {std::istreambuf_iterator<char>(in),{}};}
 void write(const fs::path &p,const std::string &text){std::ofstream out(p,std::ios::binary);out<<text;require(bool(out),"fixture write failed");}
 std::string sha(std::string_view text){std::unique_ptr<EVP_MD_CTX,decltype(&EVP_MD_CTX_free)> c(EVP_MD_CTX_new(),EVP_MD_CTX_free);std::array<unsigned char,32> bytes{};unsigned count=0;require(c&&EVP_DigestInit_ex2(c.get(),EVP_sha256(),nullptr)==1&&EVP_DigestUpdate(c.get(),text.data(),text.size())==1&&EVP_DigestFinal_ex(c.get(),bytes.data(),&count)==1&&count==32,"fixture SHA256 failed");std::string result;for(auto b:bytes){result+="0123456789abcdef"[b>>4];result+="0123456789abcdef"[b&15];}return result;}
-int descriptors(){int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;
+#endif
+}
 Value call(const ForeignFunction &f,std::vector<Value> args,std::function<void()> poll={},ForeignCallLimits limits={}){return f.invoke(args,std::move(poll),limits);}
 struct Fixture {
   fs::path root,marker;J signatures;std::map<std::string,std::string> pins;
@@ -78,7 +85,7 @@ int main(int argc,char **argv){try{
   });
   run("result-reachable construction works through an immutable result container",[&]{Fixture f(a,b,signatures);auto libs=f.libraries();auto result=call(f.function(*libs,"result_create"),{Value(42)});auto r=unwrap(result);require(call(f.function(*libs,"read"),{r}).scalar==42,"nested output resource constructor failed");});
   run("input-only metadata never grants construction",[&]{Fixture f(a,b,signatures);auto libs=f.libraries();auto r=call(f.function(*libs,"create"),{Value(42)});auto before=f.count('F');require(call(f.function(*libs,"input_constructor"),{r}).scalar==NEX_FFI_TYPE&&f.count('F')==before,"input type granted a constructor");});
-  run("resource factory and destructor must belong to the actual pinned module",[&]{Fixture f(a,b,signatures);auto libs=f.libraries();error("E_FFI",[&]{call(f.function(*libs,"bad_callback"),{Value(42)});});require(!f.count('F')&&!f.count('X')&&libs->resourceBytesUsed()==0,"unowned callback reached factory");});
+  run("resource factory and destructor must belong to the actual pinned module",[&]{Fixture f(a,b,signatures);auto libs=f.libraries();error("E_FFI",[&]{call(f.function(*libs,"bad_callback"),{Value(42)});});require(f.count('R')==1&&!f.count('F')&&!f.count('X')&&libs->resourceBytesUsed()==0,"unowned callback control failed or reached factory");});
   run("written pointers transfer immediately and factory errors roll back physical quotas",[&]{Fixture f(a,b,signatures);auto libs=f.libraries(1,8);auto create=f.function(*libs,"create");for(int n=0;n<3;++n){error("E_FFI",[&]{call(create,{Value(-1)});});require(libs->resourceBytesUsed()==0&&f.count('F')==size_t(n+1)&&f.count('X')==size_t(n+1),"failed factory did not destroy transferred object");}error("E_FFI",[&]{call(create,{Value(-2)});});require(f.count('N')==1&&libs->resourceBytesUsed()==0,"null success retained capacity");auto r=call(create,{Value(42)});require(call(f.function(*libs,"read"),{r}).scalar==42,"quota not reusable after constructor failure");});
   run("a module may forward another image owner but cannot cast its private payload",[&]{Fixture f(a,b,signatures);auto libs=f.libraries(64,64*1048576,2,true);auto r=call(f.function(*libs,"create"),{Value(42)});auto forwarded=call(f.function(*libs,"forward","b"),{r});require(externalResource(forwarded.object).identity()==externalResource(r.object).identity(),"cross-image opaque forward failed");error("E_FFI",[&]{call(f.function(*libs,"read","b"),{r});});require(call(f.function(*libs,"read"),{r}).scalar==42,"origin rejection damaged original owner");});
   run("ordinary records and conflicting resource semantic identities are rejected",[&]{Fixture f(a,b,signatures);auto libs=f.libraries();auto forward=f.function(*libs,"forward");auto record=std::make_shared<Data>(Data::Record);record->text="fixture::Session";error("E_FFI_TYPE",[&]{call(forward,{Value(record)});});ResourceDomain domain;ResourceByteBudget bytes(8);ExternalResourceType<int> type("fixture::Session",std::string(64,'b'));auto owner=ExternalResource::make(domain,type,std::span(&bytes,1),4,std::make_shared<int>(0),[](const ResourcePermit &){return std::make_unique<int>(42);});error("E_FFI_TYPE",[&]{call(forward,{Value(externalValue(owner))});});});

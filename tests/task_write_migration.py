@@ -1,4 +1,5 @@
 """Real SDK131022 history exercises the shared migration preflight and Store."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse,copy,hashlib,json,os,shutil,sqlite3,subprocess,tempfile,time
 from pathlib import Path
 parser=argparse.ArgumentParser();parser.add_argument('probe');parser.add_argument('nex');parser.add_argument('--output',type=Path);args=parser.parse_args()
@@ -15,9 +16,9 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex genuine022 write migratio
 started=time.monotonic();report={'schema':'nex.private023-write-migration-verification/1','ok':False,'state':'starting','commands':[],'checks':[],
  'fixture_sql_sha256':metadata['sql_sha256'],'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
  'genuine022_revisions':3,'genuine_schema_tables':16,'public023_enabled':True,'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def state(database):
- with sqlite3.connect(database) as db:
+ with sqlite_connection(database) as db:
   schema=list(db.execute("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name"))
   names=[x[0] for x in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
   return {'schema':schema,'tables':{n:sorted(db.execute('SELECT * FROM "'+n+'"').fetchall(),key=repr) for n in names}}
@@ -29,11 +30,11 @@ def retained(before,after):
  assert before['tables']['metadata']==after['tables']['metadata']
 def restore(name):
  project=root/name;database=project/'.nex/graph.db';database.parent.mkdir(parents=True)
- with sqlite3.connect(database) as db:db.executescript(raw.decode())
+ with sqlite_connection(database) as db:db.executescript(raw.decode())
  head=next(r for r in metadata['revisions'] if r['revision']==metadata['head'])
  for key,text in head['bundle']['files'].items():
-  p=project/key;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
- (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':head['bundle']['entry']}))
+  p=project/key;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text, newline="\n")
+ (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':head['bundle']['entry']}), newline="\n")
  physical={str(p.relative_to(project)):p.read_bytes() for p in project.rglob('*') if p.is_file() and '.nex' not in p.relative_to(project).parts}
  before=state(database);assert {k:len(v) for k,v in before['tables'].items()}==metadata['tables']
  return project,database,before,physical
@@ -41,16 +42,16 @@ def untouched(project,physical):
  for name,data in physical.items():assert (project/name).read_bytes()==data,name
 def run(name,argv,env,cwd,expected=0):
  report['state']=name;save();result=subprocess.run(list(map(str,argv)),cwd=cwd,env=env,capture_output=True,text=True,timeout=240)
- (root/(name+'.stdout')).write_text(result.stdout);(root/(name+'.stderr')).write_text(result.stderr)
+ (root/(name+'.stdout')).write_text(result.stdout, newline="\n");(root/(name+'.stderr')).write_text(result.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':result.returncode,'expected':expected});save()
  assert result.returncode==expected,(name,result.returncode,result.stdout,result.stderr)
  return result
 def invoke(name,request,expected=0,env=None):
- path=root/(name+'.request.json');path.write_text(json.dumps({'schema':'nex.private-write-migration-request/1',**request},ensure_ascii=False))
+ path=root/(name+'.request.json');path.write_text(json.dumps({'schema':'nex.private-write-migration-request/1',**request},ensure_ascii=False), newline="\n")
  observed=run(name,[probe,path,root/(name+'-evidence')],env or os.environ,root,expected)
  return json.loads(observed.stdout)
 def candidate(name,source):
- p=root/(name+'.sources.json');p.write_text(json.dumps({'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source}}));return str(p)
+ p=root/(name+'.sources.json');p.write_text(json.dumps({'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':source}}), newline="\n");return str(p)
 try:
  current_language=json.loads(run('describe',[compiler,'describe','--json'],os.environ,root).stdout)['version']
  assert current_language=='0.27'
@@ -58,7 +59,7 @@ try:
   name='positive-'+str(index);project,database,before,physical=restore(name);files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
   manifest=project/'nex.json';raw_manifest=manifest.read_bytes()
   try:
-   current=json.loads(raw_manifest);current['language']='0.23';manifest.write_text(json.dumps(current))
+   current=json.loads(raw_manifest);current['language']='0.23';manifest.write_text(json.dumps(current), newline="\n")
    rejected=json.loads(run(name+'-no-implicit-upgrade',[compiler,'check','--json'],env,project,1).stdout)
    assert rejected['code']=='E_LANGUAGE_VERSION' and state(database)==before
   finally:manifest.write_bytes(raw_manifest)
@@ -68,7 +69,7 @@ try:
   assert result['revision']!=row['revision'] and result['previous_revision']==metadata['head']
   after=state(database);retained(before,after);assert after['tables']['head']==[(1,result['revision'])]
   assert len(after['tables']['revisions'])==4
-  with sqlite3.connect(database) as db:
+  with sqlite_connection(database) as db:
    original=db.execute('SELECT source,language FROM revisions WHERE hash=?',(row['revision'],)).fetchone();assert json.loads(original[0])==row['bundle'] and original[1]=='0.22'
    selected=db.execute('SELECT source,language FROM revisions WHERE hash=?',(result['revision'],)).fetchone();assert json.loads(selected[0])==row['bundle'] and selected[1]=='0.23'
   body='\n'.join(row['bundle']['files'].values());task='!{task' in body
@@ -101,7 +102,7 @@ try:
    reviewed=copy.deepcopy(plan['candidate']);assert reviewed['sources']==expected_sources
    text=reviewed['sources']['files'][expected_sources['entry']];assert text.count('!{task,fs}')==2
    reviewed['sources']['files'][expected_sources['entry']]=text.replace('!{task,fs}','!{task,fs,throw}')
-   expected_sources=reviewed['sources'];path=root/(name+'-reviewed-delivery.json');path.write_text(json.dumps(reviewed))
+   expected_sources=reviewed['sources'];path=root/(name+'-reviewed-delivery.json');path.write_text(json.dumps(reviewed), newline="\n")
    arguments.extend(['--candidate',path])
    valid=json.loads(run(name+'-reviewed-plan',[*arguments,'--kind','plan','--json'],os.environ,project).stdout)
    assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used'] and state(database)==before
@@ -111,7 +112,7 @@ try:
   assert result['candidate_used']==needs_delivery and result['previous_revision']==metadata['head'] and not result['materialized']
   after=state(database);retained(before,after);untouched(project,physical)
   assert len(after['tables']['revisions'])==4 and after['tables']['head']==[(1,result['revision'])]
-  with sqlite3.connect(database) as db:
+  with sqlite_connection(database) as db:
    original=db.execute('SELECT source,language FROM revisions WHERE hash=?',(row['revision'],)).fetchone();assert json.loads(original[0])==row['bundle'] and original[1]=='0.22'
    selected=db.execute('SELECT source,language FROM revisions WHERE hash=?',(result['revision'],)).fetchone();assert json.loads(selected[0])==expected_sources and selected[1]==current_language
   files=root/(name+'-files');files.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
@@ -157,7 +158,7 @@ try:
   assert error['code']==code and state(database)==before;untouched(project,physical);report['checks'].append({'name':name,'rejected_without_history_writes':True,'code':code});save()
  for name,language,source in [('corrupt-source','0.22','module changed;fn main()->i64{return 7;}'),('corrupt-language','0.23',None)]:
   project,database,_,physical=restore(name)
-  with sqlite3.connect(database) as db:
+  with sqlite_connection(database) as db:
    if source:
     changed=copy.deepcopy(next(r['bundle'] for r in metadata['revisions'] if r['revision']==origin_revision));changed['files'][changed['entry']]=source
     db.execute('UPDATE revisions SET source=? WHERE hash=?',(json.dumps(changed),origin_revision))
@@ -175,7 +176,7 @@ try:
  retained(before,state(database));untouched(project,physical);report['checks'].append({'name':'raced-synchronize','atomic_cross_version_guard':True,'competing_write_preserved':True});save()
  # A future023 archive cannot evade hash verification by claiming old legacy17.
  future=root/'future-legacy-disguise';shutil.copytree(root/'positive-0',future);database=future/'.nex/graph.db'
- with sqlite3.connect(database) as db:
+ with sqlite_connection(database) as db:
   selected=db.execute('SELECT revision FROM head WHERE id=1').fetchone()[0];db.execute("UPDATE revisions SET language='0.17' WHERE hash=?",(selected,))
  before=state(database);error=invoke('future-legacy-disguise',{'project':str(future),'expected_revision':selected},1)
  assert error['code']=='E_REVISION' and state(database)==before
@@ -186,8 +187,8 @@ try:
  # language switch before its writable Store can upgrade old physical schemas.
  # This is separate from the three genuine022 semantic-history fixtures.
  project=root/'schema1-readonly-control';database=project/'.nex/graph.db';database.parent.mkdir(parents=True)
- (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}));(project/'main.nex').write_text('module modern;fn main()->i64{return 0;}')
- with sqlite3.connect(database) as db:
+ (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.23','entry':'main.nex'}), newline="\n");(project/'main.nex').write_text('module modern;fn main()->i64{return 0;}', newline="\n")
+ with sqlite_connection(database) as db:
   db.executescript("CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT);INSERT INTO metadata VALUES('schema','1');CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT,source TEXT,path TEXT);CREATE TABLE head(id INTEGER PRIMARY KEY,revision TEXT);")
   db.execute('INSERT INTO revisions VALUES(?,?,?,?)',('0'*64,'legacy','module legacy;fn main()->i64{return 0;}','main.nex'));db.execute('INSERT INTO head VALUES(1,?)',('0'*64,))
  before=state(database);rejected=json.loads(run('schema1-readonly-control',[compiler,'check','--json'],os.environ,project,1).stdout)

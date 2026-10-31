@@ -28,6 +28,16 @@ foreach($nexArchitecture in @('x86_64','aarch64')){
   }
 }
 $nexNoticeFiles=@((Join-Path $TargetPrefix 'LICENSE.TXT'))+@(Get-ChildItem -LiteralPath (Join-Path $TargetPrefix 'x86_64-w64-mingw32/share/mingw32') -Filter 'COPYING*' -File | Sort-Object Name | ForEach-Object FullName)
+$nexCryptoPrefix=Join-Path $nexRoot 'build/deps/openssl-windows'
+New-Item -ItemType Directory -Path (Join-Path $nexCryptoPrefix 'include'),(Join-Path $nexCryptoPrefix 'x86_64') -Force > $null
+if(!(Test-Path -LiteralPath (Join-Path $nexCryptoPrefix 'include/openssl'))){
+  New-Item -ItemType Junction -Path (Join-Path $nexCryptoPrefix 'include/openssl') -Target (Join-Path $HostPrefix 'include/openssl') > $null
+}
+foreach($nexCryptoLibrary in @('libcrypto.a','libssl.a')){
+  Copy-Item -LiteralPath (Join-Path $HostPrefix ('lib/'+$nexCryptoLibrary)) -Destination (Join-Path $nexCryptoPrefix ('x86_64/'+$nexCryptoLibrary))
+}
+Copy-Item -LiteralPath (Join-Path $HostPrefix 'share/licenses/openssl/LICENSE') -Destination (Join-Path $nexCryptoPrefix 'LICENSE')
+$nexNoticeFiles+=Join-Path $nexCryptoPrefix 'LICENSE'
 $nexNotices=[IO.MemoryStream]::new()
 foreach($nexNoticeFile in $nexNoticeFiles){
   $nexBytes=[IO.File]::ReadAllBytes($nexNoticeFile);$nexNotices.Write($nexBytes,0,$nexBytes.Length)
@@ -43,6 +53,7 @@ $nexConfiguration=[ordered]@{
   sysroot=(Join-Path $TargetPrefix 'x86_64-w64-mingw32').Replace('\','/')
   windows=@{runtime='ucrt-static';notices=$nexNoticePath.Replace('\','/')}
   sqlite=@{include=(Join-Path $SQLiteRoot 'sqlite-amalgamation-3540100').Replace('\','/');library=(Join-Path $SQLiteRoot 'x86_64/libsqlite3.a').Replace('\','/')}
+  openssl=@{include=(Join-Path $nexCryptoPrefix 'include').Replace('\','/');ssl=(Join-Path $nexCryptoPrefix 'x86_64/libssl.a').Replace('\','/');crypto=(Join-Path $nexCryptoPrefix 'x86_64/libcrypto.a').Replace('\','/')}
 }
 $nexConfigurationPath=Join-Path $BuildDirectory 'toolchain.json'
 [IO.File]::WriteAllText($nexConfigurationPath,($nexConfiguration | ConvertTo-Json -Depth 5)+"`n",[Text.UTF8Encoding]::new($false))

@@ -27,7 +27,7 @@ inline std::wstring quote(std::wstring_view value){
 }
 struct Less {bool operator()(const std::wstring &a,const std::wstring &b)const{return CompareStringOrdinal(a.data(),int(a.size()),b.data(),int(b.size()),TRUE)==CSTR_LESS_THAN;}};
 struct Guard {
-  nexrt::host_windows::Handle job,process,thread,completion;
+  nexrt::host_windows::Handle job,process,thread,completion,stopEvent;
   std::vector<std::unique_ptr<nexrt::host_windows::Handle>> members;
   uint64_t observedMembers=0;
   std::vector<unsigned char> attributeStorage;LPPROC_THREAD_ATTRIBUTE_LIST attributes=nullptr;
@@ -72,6 +72,11 @@ inline TaskProcessResult run(const std::vector<std::string> &arguments,const std
   std::wstring command;for(const auto &value:arguments){if(!command.empty())command+=L' ';command+=quote(wide(value));}
   if(command.size()>=32767)throw Error("E_TASK_PROCESS","Windows task command exceeds32766 UTF-16 units");
   Guard guard;
+  nexrt::host_windows::PrivateSecurity controlSecurity(EVENT_MODIFY_STATE|SYNCHRONIZE);
+  SECURITY_ATTRIBUTES controlAttributes{sizeof(controlAttributes),&controlSecurity.descriptor,FALSE};
+  auto controlName=L"Local\\NEX.Task.Stop."+std::to_wstring(GetCurrentProcessId());
+  guard.stopEvent.value=CreateEventW(&controlAttributes,TRUE,FALSE,controlName.c_str());
+  if(!guard.stopEvent.value||GetLastError()==ERROR_ALREADY_EXISTS)fail("create private task control event");
   std::map<std::wstring,std::wstring,Less> environment;
   auto raw=GetEnvironmentStringsW();if(!raw)fail("read process environment");
   struct Environment {LPWCH value;~Environment(){FreeEnvironmentStringsW(value);}} release{raw};
@@ -119,6 +124,9 @@ inline TaskProcessResult run(const std::vector<std::string> &arguments,const std
     auto waited=WaitForSingleObject(guard.process.value,10);if(waited==WAIT_OBJECT_0)break;if(waited==WAIT_FAILED)fail("wait for task process");
     if(std::chrono::steady_clock::now()>=deadline){result.timedOut=true;break;}
     if(size(out)>8*1024*1024||size(err)>8*1024*1024){result.outputLimit=true;break;}
+    auto control=WaitForSingleObject(guard.stopEvent.value,0);
+    if(control==WAIT_OBJECT_0)interrupted=2;
+    else if(control!=WAIT_TIMEOUT)fail("inspect task control event");
     if(interrupted.load())break;
   }
   if(!GetExitCodeProcess(guard.process.value,&exit))fail("read task exit status");

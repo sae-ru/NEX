@@ -1,4 +1,5 @@
 """Source traits, associated projections, constructor kinds and static dispatch."""
+from sqlite_fixture import connection as sqlite_connection
 import json
 from pathlib import Path
 import sqlite3
@@ -37,10 +38,10 @@ test fn values()->unit {
 class Traits(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
 
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             names=[name for name, in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
             return {name:set(db.execute('SELECT * FROM "'+name.replace('"','""')+'"').fetchall()) for name in names}
 
@@ -133,7 +134,7 @@ pub struct Value {number:i64;}
 fn hidden(value:Value)->i64 {return value.number;}
 impl values:Read for Value {type Item=i64;read=hidden;}
 trait Private {fn hidden(value:Self)->i64;}
-''')
+''', newline="\n")
         self.agreement('''module imported;import "./model.nex" as model;
 fn main()->unit!{io} {print(model::Read<model::Value>::read(model::Value(42)));}
 test fn values()->unit {assert(model::Read<model::Value>::read(model::Value(42))==42);}
@@ -169,7 +170,7 @@ fn main()->unit!{io}{observe<list>([41]);}
         frame={'schema':'nex.debug-frame/1','language':harness.CURRENT_LANGUAGE,'revision':session['revision'],'build_key':manifest['build_key'],
                'function':'mapper::observe<list>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'list<i64>','value':['41']}],'truncated':False}
-        path=self.root/'frame.json';path.write_text(json.dumps(frame))
+        path=self.root/'frame.json';path.write_text(json.dumps(frame), newline="\n")
         for expression,expected in [('identity<F<i64>>(value)',['41']),('Mapper<F>::map<i64,i64>(value,increase)',['42'])]:
             result=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression)
             self.assertEqual(result['value'],expected);self.assertEqual(result['revision'],session['revision'])
@@ -218,7 +219,7 @@ test fn values()->unit{
  assert(unwrap(decode_json<model::Payload>(envelope.body)).value==42);
 }
 fn main()->unit{}
-''')
+''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
 
     def test_api_models_preserve_constructor_kinds_and_nominal_arguments(self):
@@ -242,7 +243,7 @@ test fn values()->unit {
  assert(restored.value.value==42);
 }
 fn main()->unit{}
-''')
+''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
 
     def test_api_associated_models_keep_transitive_witnesses_without_server_methods(self):
@@ -254,11 +255,11 @@ pub struct Box<T> {value:T;}
 pub trait Wrapped {type Item:wire;}
 impl boxes<T:Source>:Wrapped for Box<T> {type Item=Source::Item<T>;}
 pub struct UnusedServerModel {unused:i64;}
-''')
+''', newline="\n")
         (self.root/'model.nex').write_text('''module model;
 import "./contracts.nex" as contract;
 pub struct Payload<T:contract::Wrapped> {value:contract::Wrapped::Item<T>;}
-''')
+''', newline="\n")
         self.source('''module associated_api;
 import "std/api.nex" as api;import "./contracts.nex" as contract;import "./model.nex" as model;
 server fn echo(context:api::Context,input:model::Payload<contract::Box<i64>>)->result<model::Payload<contract::Box<i64>>>{return ok(input);}
@@ -286,9 +287,9 @@ test fn values()->unit {
  assert(unwrap(decode_json<model::Payload<contract::Box<i64>>>(payload.body))==value);
 }
 fn main()->unit{}
-''')
+''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
-        consumer.write_text(consumer.read_text().replace('contract::Box<i64>','bool'))
+        consumer.write_text(consumer.read_text().replace('contract::Box<i64>','bool'), newline="\n")
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_BOUND')
 
     def test_api_constructor_trait_models_keep_kinds_and_reject_missing_witnesses(self):
@@ -316,12 +317,12 @@ test fn values()->unit {
  assert(unwrap(decode_json<model::Payload<list>>(payload.body))==value);
 }
 fn main()->unit{}
-''')
+''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
         original=consumer.read_text()
-        consumer.write_text(original.replace('Payload<list>','Payload<bool>'))
+        consumer.write_text(original.replace('Payload<list>','Payload<bool>'), newline="\n")
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_KIND')
-        consumer.write_text(original.replace('Payload<list>','Payload<Other>'))
+        consumer.write_text(original.replace('Payload<list>','Payload<Other>'), newline="\n")
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_BOUND')
 
     def test_api_library_keeps_callable_generic_traits_and_omits_server_members(self):
@@ -339,7 +340,7 @@ fn main()->unit{}
 server fn hidden(values:list<i64>)->str!{io}{print("SERVER_LIBRARY_TRAIT_197");return "hidden";}
 fn unused_private()->str{return "UNUSED_LIBRARY_PRIVATE_197";}
 ''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'std':'standard'}}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'std':'standard'}}), newline="\n")
         self.source('''module routes;import "std/api.nex" as api;import "std/net.nex" as net;
 pub struct Row {value:i64;}
 server fn echo(context:api::Context,input:Row)->result<Row>{return ok(input);}
@@ -361,7 +362,7 @@ test fn values()->unit {
  assert(apply([41],increase)==[42]);
 }
 fn main()->unit!{io}{print(net::convert([41],increase));}
-''')
+''', newline="\n")
         self.assertEqual(self.cli('eval',consumer,cwd=client)['stdout'],'[42]\n')
         self.assertEqual(self.cli('run',consumer,cwd=client)['stdout'],'[42]\n')
         self.cli('test',consumer,cwd=client);self.cli('test',consumer,'--target','web',cwd=client)
@@ -372,11 +373,11 @@ fn main()->unit!{io}{print(net::convert([41],increase));}
         library=self.root/'helpers';library.mkdir()
         (library/'contracts.nex').write_text('''module helper_contracts;
 pub trait Content {type Item:wire;fn get(value:Self)->Content::Item<Self>;server fn secret(value:Self)->str!{io};}
-''')
+''', newline="\n")
         (library/'marker.nex').write_text('''module helper_marker;
 pub trait Marker {type Item:integer;}
 impl integers:Marker for i64 {type Item=i64;}
-''')
+''', newline="\n")
         (self.root/'model.nex').write_text('''module domain;
 import "helpers/contracts.nex" as contract;import "helpers/marker.nex" as marker;
 pub struct Box<T> {value:T;}
@@ -385,8 +386,8 @@ server fn hidden<T:wire>(value:Box<T>)->str!{io}{print("SERVER_APPLICATION_TRAIT
 impl boxes<T:wire>:contract::Content for Box<T> {type Item=T;get=extract<T>;secret=hidden<T>;}
 pub struct Payload<T:contract::Content> {value:contract::Content::Item<T>;}
 fn unused_private()->str{return "UNUSED_APPLICATION_PRIVATE_198";}
-''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'helpers':'helpers'}}))
+''', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'helpers':'helpers'}}), newline="\n")
         self.source('''module routes;import "std/api.nex" as api;import "./model.nex" as model;
 server fn echo(context:api::Context,input:model::Payload<model::Box<i64>>)->result<model::Payload<model::Box<i64>>>{return ok(input);}
 endpoint echo_value("POST","/api/echo")=echo;
@@ -410,7 +411,7 @@ test fn values()->unit {
  assert(unwrap(decode_json<model::Payload<model::Box<i64>>>(payload.body))==data);
 }
 fn main()->unit{}
-''')
+''', newline="\n")
         self.cli('test',consumer,cwd=client);self.cli('test',consumer,'--target','web',cwd=client)
 
     def test_rejected_conformance_kinds_and_unused_bodies_preserve_graph(self):
@@ -461,9 +462,9 @@ fn main()->unit!{io}{let value:i64=Tag<i64>::tag(21);print(value);}
         replacements=[{'kind':'trait','name':'Tag','source':'trait Tag {fn tag(value:Self)->str;}'},
                       {'kind':'impl','name':'numbers','source':'impl numbers:Tag for i64 {tag=text;}'},
                       {'name':'main','source':'fn main()->unit!{io}{let value:str=Tag<i64>::tag(21);print(value);}'}]
-        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements[:1]}))
+        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements[:1]}), newline="\n")
         self.cli('apply','--patch',patch,ok=False);self.assertEqual(self.rows(),before)
-        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements}))
+        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements}), newline="\n")
         changed=self.cli('apply','--patch',patch)['revision'];self.assertNotEqual(changed,revision)
         self.file.unlink()
         self.assertEqual(self.cli('eval','--revision','HEAD')['stdout'],'n:21\n')
@@ -476,7 +477,7 @@ fn main()->unit!{io}{let value:i64=Tag<i64>::tag(21);print(value);}
     def test_genuine015_migration_preserves_history_ids_and_names(self):
         metadata=json.loads((harness.REPO/'tests/fixtures/language-0.15.json').read_text())
         self.source(metadata['source']);fixture=self.historical_store('0.15')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.15','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.15','entry':'main.nex'}), newline="\n")
         before=self.rows()
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION');self.assertEqual(self.rows(),before)
         self.assertEqual(self.cli('eval','--revision',fixture['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')

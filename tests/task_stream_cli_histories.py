@@ -16,7 +16,7 @@ started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1'
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd=None,env=None,expected=0):
  report['state']=label;save();r=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
- (root/(label+'.stdout')).write_text(r.stdout);(root/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
+ (root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
 def cli(label,project,argv,env=None,expected=0,exe=compiler):return json.loads(run(label,[exe,*argv,'--json'],project,env,expected).stdout)
 def state(project):
  db=(project/'.nex/graph.db').resolve();uri=db.as_uri()+'?mode=ro'+('&immutable=1' if not Path(str(db)+'-wal').exists() else '')
@@ -31,7 +31,7 @@ def preserved(before,after):
 def restore(label,meta,sql):
  project=root/label;project.mkdir();(project/'.nex').mkdir();write(project/'nex.json',meta['project_manifest'])
  for name,text in meta['revisions'][-1]['physical_files'].items():
-  path=Path(name);assert not path.is_absolute() and '..' not in path.parts;path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+  path=Path(name);assert not path.is_absolute() and '..' not in path.parts;path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
  if meta.get('lock') is not None:write(project/'nex.lock.json',meta['lock'])
  with closing(sqlite3.connect(project/'.nex/graph.db')) as db:db.executescript(sql)
  for backend in ['reference','native']:

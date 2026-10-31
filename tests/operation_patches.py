@@ -1,4 +1,6 @@
 """Exact syntax intervals and atomic graph edits that preserve surrounding code."""
+from host_fixture import nonregular
+from sqlite_fixture import connection as sqlite_connection
 import copy
 import json
 import os
@@ -26,7 +28,7 @@ class OperationPatches(harness.ToolchainCase):
         return matches[0]
 
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             return {name:sorted(db.execute('SELECT * FROM "'+name+'"').fetchall(),key=repr)
                     for name, in db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
 
@@ -34,7 +36,7 @@ class OperationPatches(harness.ToolchainCase):
         context=self.cli('operations','--symbol','main','--limit','1')
         patch={'expected_revision':revision or context['revision'],'replacements':replacements}
         if source_hash is not False:patch['expected_source_hash']=context['source_hash'] if source_hash is True else source_hash
-        path=self.root/'patch.json';path.write_text(json.dumps(patch))
+        path=self.root/'patch.json';path.write_text(json.dumps(patch), newline="\n")
         return self.cli('apply','--patch',path,ok=ok)
 
     def op(self, node, source):
@@ -116,7 +118,7 @@ class OperationPatches(harness.ToolchainCase):
 
     def test_type_and_operation_edits_across_modules_preserve_history(self):
         model='module model;pub struct Row{value:i64;}pub fn make()->Row{return Row(41);}'
-        (self.root/'model.nex').write_text(model)
+        (self.root/'model.nex').write_text(model, newline="\n")
         original=self.ready('module app;import "./model.nex" as m;fn main()->unit!{io}{print(m::make().value);}')
         number=self.target('model::make',kind='expression.integer',number=41)
         baseline=self.rows()
@@ -186,13 +188,13 @@ class OperationPatches(harness.ToolchainCase):
         before=self.rows();path=self.root/'input.json'
         for payload,code in [('['*65+']'*65,'E_PATCH_LIMIT'),(' '*4194305,'E_PATCH_LIMIT'),
                              ('{"replacements":['+','.join('{}' for _ in range(1001))+'],"expected_revision":"'+'0'*64+'"}','E_PATCH_LIMIT')]:
-            path.write_text(payload)
+            path.write_text(payload, newline="\n")
             self.assertEqual(self.cli('apply','--patch',path,ok=False)['code'],code)
         path.write_bytes(b'\xff')
         self.assertEqual(self.cli('apply','--patch',path,ok=False)['code'],'E_JSON')
         link=self.root/'link.json';link.symlink_to(path)
         self.assertEqual(self.cli('apply','--patch',link,ok=False)['code'],'E_PATCH_LIMIT')
-        fifo=self.root/'fifo';os.mkfifo(fifo)
+        fifo=self.root/'fifo';nonregular(fifo)
         self.assertEqual(self.cli('apply','--patch',fifo,ok=False,timeout=3)['code'],'E_PATCH_LIMIT')
         self.assertEqual(self.rows(),before)
 
@@ -234,7 +236,7 @@ class OperationPatches(harness.ToolchainCase):
         sql=Path(str(fixture)+'.sql').read_bytes()
         self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
         self.source(metadata['source']);(self.root/'.nex').mkdir()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
+        with sqlite_connection(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
         # Schema4 adds an empty journal without inventing past transitions.
         self.assertEqual(self.cli('changes')['total'],0)
         before=self.rows()

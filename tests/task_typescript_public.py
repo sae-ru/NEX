@@ -41,7 +41,7 @@ def mapping(folder, result):
     assert 'server_secret' not in json.dumps(data)
     # TypeScript normalizes a literal backslash as a separator. The relocation
     # runner fixture contains the same module as ordinary-runner, checked here.
-    if '\\' not in str(folder): programs.append(str(folder/'program.ts'))
+    if os.name=='nt' or '\\' not in str(folder): programs.append(str(folder/'program.ts'))
     return data
 
 runner = """import * as task from './nex-task-runtime.ts';
@@ -75,15 +75,15 @@ fixtures += [
 fixtures=[(name,re.sub(r'(fn(?: main\(\)|\([a-z]+:task_scope\))->(?:i64|str|result<i64>) !)\{task\}',
                        r'\1{task,throw}',body),expected,prefix,workers)
           for name,body,expected,prefix,workers in fixtures]
-(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope-spawn.nex'}))
+(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope-spawn.nex'}), newline="\n")
 
 try:
     for name, body, expected, prefix, _ in fixtures:
-        path = out/(name+'.nex'); path.write_text('module public_typescript;\n'+body+'\nserver fn server_secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}\n')
+        path = out/(name+'.nex'); path.write_text('module public_typescript;\n'+body+'\nserver fn server_secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}\n', newline="\n")
         folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.27'
         data = mapping(folder, result); assert (folder/'nex-task-runtime.ts').is_file()
         assert 'yield' in (folder/'program.ts').read_text()
-        (folder/'package.json').write_text('{"type":"module"}\n'); (folder/'run.mjs').write_text(runner)
+        (folder/'package.json').write_text('{"type":"module"}\n', newline="\n"); (folder/'run.mjs').write_text(runner, newline="\n")
         actual = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'run.mjs']))
         oracle = json.loads(run([reference, path, 'ordinary']))
         assert actual['stdout'] == oracle['stdout'] == prefix, (name, actual, oracle)
@@ -95,33 +95,33 @@ try:
         records.append({'name': name, 'steps': actual['statistics']['steps'], 'ok': True})
 
     # The ordinary runner must await the generator, including relocated paths.
-    path = out/'runner.nex'; path.write_text('module runner;fn main()->unit !{task,io}{task_yield();print("awaited019");}')
+    path = out/'runner.nex'; path.write_text('module runner;fn main()->unit !{task,io}{task_yield();print("awaited019");}', newline="\n")
     for name in ['ordinary-runner', 'relocated\\runner']:
         folder = out/name; result = emit(path, folder, 'test'); mapping(folder, result)
         assert result['exit_code'] == 0 and result['stdout'] == 'awaited019\n', result
         assert 'await task.runTypedSourceErrors(task.call(() => entry()), sourceErrorContracts)' in (folder/'test.ts').read_text()
-    failed = out/'runner-failure.nex'; failed.write_text('module runner_failure;fn main()->unit !{task}{task_yield();assert(false);}')
+    failed = out/'runner-failure.nex'; failed.write_text('module runner_failure;fn main()->unit !{task}{task_yield();assert(false);}', newline="\n")
     result = emit(failed, out/'failed-runner', 'test'); assert result['exit_code'] != 0 and 'E_ASSERT' in result['stderr'], result
     emit(path, out/'raw-private', 'private', code='E_TASK_UNIMPLEMENTED')
     emit(out/'scope-spawn.nex', out/'server-entry', entry='server_secret', code='E_REALM')
-    capability = out/'pure-authority.nex'; capability.write_text('module pure_authority;fn main(scope:task_scope)->task_scope{return scope;}')
+    capability = out/'pure-authority.nex'; capability.write_text('module pure_authority;fn main(scope:task_scope)->task_scope{return scope;}', newline="\n")
     emit(capability, out/'pure-authority', code='E_TASK_UNIMPLEMENTED')
 
     # A returned task callable is reachable even when its factory is pure.
-    path = out/'returned-task.nex'; path.write_text('module returned_task;fn main()->(fn()->i64 !{task}){return fn()->i64 !{task}{task_yield();return 42;};}')
+    path = out/'returned-task.nex'; path.write_text('module returned_task;fn main()->(fn()->i64 !{task}){return fn()->i64 !{task}{task_yield();return 42;};}', newline="\n")
     folder = out/'returned-task'; result = emit(path, folder); assert result['asynchronous']; mapping(folder, result)
-    (folder/'package.json').write_text('{"type":"module"}\n')
-    (folder/'run.mjs').write_text("import * as task from './nex-task-runtime.ts';import {entry,sourceErrorContracts} from './program.ts';const value=await task.runTypedSourceErrors(task.call(function*(){const callback=yield*entry();return yield*task.invoke(callback());}),sourceErrorContracts);if(value!==42n)throw new Error('returned task callback failed');\n")
+    (folder/'package.json').write_text('{"type":"module"}\n', newline="\n")
+    (folder/'run.mjs').write_text("import * as task from './nex-task-runtime.ts';import {entry,sourceErrorContracts} from './program.ts';const value=await task.runTypedSourceErrors(task.call(function*(){const callback=yield*entry();return yield*task.invoke(callback());}),sourceErrorContracts);if(value!==42n)throw new Error('returned task callback failed');\n", newline="\n")
     run([node, '--experimental-strip-types', '--no-warnings', folder/'run.mjs'])
 
     # No source task_yield: checkpoints in the reachable pure helper must allow
     # host timers/cancellation, preserving finally cleanup on cancellation.
-    path = out/'spin.nex'; path.write_text('module spin;fn pure()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return pure();}')
+    path = out/'spin.nex'; path.write_text('module spin;fn pure()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return pure();}', newline="\n")
     folder = out/'spin'; result = emit(path, folder); mapping(folder, result)
-    (folder/'package.json').write_text('{"type":"module"}\n')
-    (folder/'run.mjs').write_text("import * as task from './nex-task-runtime.ts';import {entry,sourceErrorContracts} from './program.ts';const controller=new AbortController();let ticks=0,polls=0,statistics,error;const timer=setInterval(()=>++ticks,1),cancel=setTimeout(()=>controller.abort(),15);try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts,{steps:10000000,signal:controller.signal,observe:(_job,r)=>{if(r.operation==='$poll')++polls;},complete:s=>{statistics=s;}});}catch(e){error=e;}finally{clearInterval(timer);clearTimeout(cancel);}if(error?.code!=='E_CANCELLED'||!ticks||!polls||!statistics?.completed||statistics.activeCalls||statistics.retainedFrames)throw new Error('pure helper starved cancellation or retained frames');process.stdout.write(JSON.stringify({ticks,polls,clean:true})+'\\n');\n")
+    (folder/'package.json').write_text('{"type":"module"}\n', newline="\n")
+    (folder/'run.mjs').write_text("import * as task from './nex-task-runtime.ts';import {entry,sourceErrorContracts} from './program.ts';const controller=new AbortController();let ticks=0,polls=0,statistics,error;const timer=setInterval(()=>++ticks,1),cancel=setTimeout(()=>controller.abort(),15);try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts,{steps:10000000,signal:controller.signal,observe:(_job,r)=>{if(r.operation==='$poll')++polls;},complete:s=>{statistics=s;}});}catch(e){error=e;}finally{clearInterval(timer);clearTimeout(cancel);}if(error?.code!=='E_CANCELLED'||!ticks||!polls||!statistics?.completed||statistics.activeCalls||statistics.retainedFrames)throw new Error('pure helper starved cancellation or retained frames');process.stdout.write(JSON.stringify({ticks,polls,clean:true})+'\\n');\n", newline="\n")
     host = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'run.mjs']))
-    (folder/'limits.mjs').write_text((source/'tests/task_typescript_limits.mjs').read_text())
+    (folder/'limits.mjs').write_text((source/'tests/task_typescript_limits.mjs').read_text(), newline="\n")
     limits_host = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'limits.mjs']))
     # Exercise the actual C++ runner's immutable decimal limit forwarding, not
     # only trusted host calls to task.run. The supervisor remains a separate
@@ -136,16 +136,16 @@ try:
         text = (target/'test.ts').read_text()
         assert f'steps: {steps}, timeoutMs: {timeout_ms}, workers: {workers}' in text, text
 
-    pure = out/'pure.nex'; pure.write_text('module pure;fn main()->i64{return 42;}fn unused()->unit !{task}{task_yield();}')
+    pure = out/'pure.nex'; pure.write_text('module pure;fn main()->i64{return 42;}fn unused()->unit !{task}{task_yield();}', newline="\n")
     folder = out/'pure'; result = emit(pure, folder); assert not result['asynchronous']; mapping(folder, result)
     assert 'function*' not in (folder/'program.ts').read_text()
-    historical = out/'historical.nex'; historical.write_text('module historical;fn main()->i64{return 42;}')
+    historical = out/'historical.nex'; historical.write_text('module historical;fn main()->i64{return 42;}', newline="\n")
     current = emit(historical, out/'historical-current'); result = emit(historical, out/'historical', 'historical')
     assert result['language'] == '0.18' and current['revision'] != result['revision']; mapping(out/'historical', result)
 
     # Pure019 UI and existing browser-worker contracts keep synchronous exports.
     for example in ['web', 'workers']:
-        path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text)
+        path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text, newline="\n")
         folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.27'
         assert 'function*' not in (folder/'src/program.ts').read_text()
         path = out/(example+'-task.nex')
@@ -153,7 +153,7 @@ try:
         # Keep the adapter rejection independent of the examples' pure tests
         # calling the entry whose effect is deliberately changed here.
         task_text = text.split('client test fn', 1)[0]
-        path.write_text(task_text.replace(target, target[:-1]+'!{task}{task_yield();', 1))
+        path.write_text(task_text.replace(target, target[:-1]+'!{task}{task_yield();', 1), newline="\n")
         if example == 'web':
             emit(path, out/(example+'-task-ui'), 'ui', code='E_TASK_UNIMPLEMENTED')
         else:
@@ -163,7 +163,7 @@ try:
             assert (folder/'src/nex-task-runtime.ts').is_file()
             assert 'task.runTypedSourceErrors(task.call(' in (folder/'src/worker-program.ts').read_text()
     path = out/'task-state.nex'
-    path.write_text('module task_state;import "std/web.nex" as web;struct State{callback:fn()->i64 !{task};}client fn title()->str{return "pending";}client fn initial()->State{return State(fn()->i64 !{task}{task_yield();return 42;});}client fn update(state:State,event:web::Event)->State{return state;}client fn view(state:State)->web::View{return web::text("ready");}')
+    path.write_text('module task_state;import "std/web.nex" as web;struct State{callback:fn()->i64 !{task};}client fn title()->str{return "pending";}client fn initial()->State{return State(fn()->i64 !{task}{task_yield();return 42;});}client fn update(state:State,event:web::Event)->State{return state;}client fn view(state:State)->web::View{return web::text("ready");}', newline="\n")
     emit(path, out/'task-state-ui', 'ui', code='E_TASK_UNIMPLEMENTED')
 
     # This optional gate compiles ordinary public019 programs and runs the same
@@ -173,7 +173,7 @@ try:
         for name in ['scope-spawn', 'scope-error-cancels']:
             text = (out/(name+'.nex')).read_text()
             assertion = 'assert(main()==42);' if name == 'scope-spawn' else 'assert(error_code(main())=="E_STOP");'
-            path = out/(name+'-agreement.nex'); path.write_text(text+'test fn agreement()->unit !{task,io,throw}{'+assertion+'print("agreement019");}')
+            path = out/(name+'-agreement.nex'); path.write_text(text+'test fn agreement()->unit !{task,io,throw}{'+assertion+'print("agreement019");}', newline="\n")
             for target in ['native', 'web']:
                 command = [compiler, 'test', path, '--build-directory', out/'native-web-agreement', '--json']
                 if target == 'web': command += ['--target', 'web']
@@ -183,7 +183,7 @@ try:
     assert json.loads((tsc.parent.parent/'package.json').read_text())['version'] == json.loads((source/'web/package.json').read_text())['devDependencies']['typescript']
     run([node, tsc, '--noEmit', '--strict', '--target', 'ES2022', '--module', 'ESNext', '--moduleResolution', 'bundler', '--allowImportingTsExtensions', '--lib', 'ES2022,DOM', *programs])
     report = {'ok': True, 'public019': True, 'independent_asynchronous_ast_agreement': len(records), 'native_cli_agreement': bool(args.compiler), 'strict_typecheck': True, 'pure_helper_cancellation': host, 'task_limits': limits_host, 'records': records}
-    (out/'report.json').write_text(json.dumps(report, indent=2)+'\n'); print(json.dumps(report))
+    (out/'report.json').write_text(json.dumps(report, indent=2)+'\n', newline="\n"); print(json.dumps(report))
 except BaseException:
     print('Public TypeScript fixtures retained at '+str(out)); raise
 else:

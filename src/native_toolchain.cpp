@@ -70,6 +70,12 @@ NativeToolchain hostDefaults() {
   return result;
 }
 }
+NativeToolchain configureWasm(){
+  auto result=hostDefaults();
+  const char *compiler=std::getenv("NEX_WASM_CLANG");if(!compiler)compiler=std::getenv("NEX_CLANG");
+  if(compiler)result.compiler=compiler;
+  return result;
+}
 NativeToolchain configureNative(const BuildOptions &options) {
   NativeToolchain result;
   auto host=llvm::sys::getDefaultTargetTriple();llvm::Triple hostABI(host);
@@ -79,6 +85,12 @@ NativeToolchain configureNative(const BuildOptions &options) {
   result.archiver=defaults.archiver;result.debugPackager=defaults.debugPackager;result.sdkManifest=defaults.sdkManifest;
   bool triple=!options.target.empty()&&options.target!="server"&&options.target!="native";
   result.target=triple?llvm::Triple::normalize(options.target):host;
+  if(triple){llvm::Triple requested(result.target);
+    if(hostABI.isOSWindows()&&!requested.isWindowsGNUEnvironment())throw Error("E_TARGET","Windows host requires an explicit supported Windows GNU/UCRT target: "+result.target);
+    if(!requested.isArch64Bit()||(requested.getArch()!=llvm::Triple::x86_64&&requested.getArch()!=llvm::Triple::aarch64)||
+       (!requested.isMacOSX()&&!requested.isOSLinux()&&requested.getOS()!=llvm::Triple::IOS&&!requested.isWindowsGNUEnvironment()))
+      throw Error("E_TARGET","unsupported native target: "+result.target);
+  }
   std::string manifest;
   auto configuration=options.toolchain;
 #ifdef NEX_DEFAULT_TOOLCHAIN
@@ -123,6 +135,10 @@ NativeToolchain configureNative(const BuildOptions &options) {
       for(const auto &key:{"compiler","linker","archiver","sysroot"})text(*object,key,true);
     }
   }
+  // An implicit development toolchain supplies the Windows SDK and libraries,
+  // while the documented compiler override still selects the actual driver.
+  // Explicit --toolchain manifests remain authoritative.
+  if(options.toolchain.empty()&&override)result.compiler=override;
   llvm::Triple abi(result.target);
   auto supportedArch=[](const llvm::Triple &t){auto name=t.getArchName();return name=="arm64"||name=="aarch64"||name=="x86_64";};
   bool sameOS=abi.getOS()==hostABI.getOS()||(abi.isMacOSX()&&hostABI.isMacOSX());

@@ -133,7 +133,7 @@ class Bundle:
 
     def external(self, source, destination):
         source = source.resolve(strict=True)
-        relative = str(destination.relative_to(self.output))
+        relative = destination.relative_to(self.output).as_posix()
         provenance = {'source': str(source), 'source_sha256': sha256(source), 'component': self.component(source)}
         if destination.exists():
             if self.origins.get(relative) != provenance:
@@ -238,7 +238,7 @@ class Bundle:
             target = self.output / 'libexec/nex/llvm/bin' / name
             original = Path(doctor[{'compiler': 'native_compiler', 'archiver': 'native_archiver', 'debug_packager': 'native_debug_packager', 'wasm_linker': 'wasm_linker'}[key]])
             self.external(original, target)
-            configuration['tools'][key] = str(target.relative_to(self.output))
+            configuration['tools'][key] = target.relative_to(self.output).as_posix()
         # clang++ may invoke clang by name; preserve C++ dispatch through argv[0].
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
@@ -267,9 +267,9 @@ class Bundle:
             self.external(source, target)
             self.destinations[source] = target
             self.collect(source, target, source)
-        configuration['sqlite'] = {'include': str(includes.relative_to(self.output)),
+        configuration['sqlite'] = {'include': includes.relative_to(self.output).as_posix(),
                                    'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
-        configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
+        configuration['openssl'] = {'include': includes.relative_to(self.output).as_posix(),
                                     **{name: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for name, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
         self.relocate_macho()
@@ -319,16 +319,16 @@ class Bundle:
                 target = output / directory / component['name'] / (str(index) + '-' + source.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if target.is_symlink() or (target.exists() and (not target.is_file() or sha256(target) != sha256(source))):
-                    raise ValueError('bundle notice destination collision: ' + str(target.relative_to(output)))
+                    raise ValueError('bundle notice destination collision: ' + target.relative_to(output).as_posix())
                 shutil.copy2(source, target)
-                notice['license_files'].append({'path': str(target.relative_to(output)), 'sha256': sha256(target)})
+                notice['license_files'].append({'path': target.relative_to(output).as_posix(), 'sha256': sha256(target)})
             installed_components.append(notice)
         return installed_components
 
     def inventory(self):
         files = {}
         for path in sorted(self.output.rglob('*')):
-            relative = str(path.relative_to(self.output))
+            relative = path.relative_to(self.output).as_posix()
             if path.is_symlink():
                 if self.output not in path.resolve(strict=True).parents:
                     raise ValueError('escaping bundle symlink: ' + relative)
@@ -348,6 +348,53 @@ class Bundle:
                   'acceptance_passed': False, 'files': files}
         (self.output / 'share/nex/sdk-bundle.json').write_text(json.dumps(report, indent=2) + '\n')
         return report
+
+
+class WindowsBundle(Bundle):
+    """Capture a checked PE dependency closure adjacent to its executable."""
+    def dependency_target(self, source):
+        return getattr(self,'pe_directory',self.output/'bin')/source.name
+
+    def collect_pe(self, source, destination):
+        from windows_pe import inspect, system_directory
+        source=source.resolve(strict=True);destination=Path(destination)
+        info=inspect(source)
+        if source in self.images:return
+        if len(self.images)>=4096:raise ValueError('PE dependency count exceeds bound')
+        self.images[source]=info;self.destinations[source]=destination
+        self.pe_directory=getattr(self,'pe_directory',destination.parent)
+        system=system_directory()
+        for name in info['imports']:
+            # API-set contracts and the real Windows system directory remain
+            # explicit OS prerequisites. No PATH/CWD DLL search is performed.
+            if name.startswith(('api-ms-win-','ext-ms-win-')):
+                self.system_libraries.add(name);continue
+            if (system/name).is_file():
+                self.system_libraries.add(name);continue
+            candidates={}
+            roots=[source.parent]
+            for component in self.components['components']:
+                for value in component['roots']:
+                    root=Path(value)
+                    if root.is_file():
+                        if root.name.lower()==name:candidates[root.resolve(strict=True)]=root
+                    else:roots.extend((root,root/'bin',root/'lib'))
+            for root in roots:
+                candidate=root/name
+                if candidate.is_file():candidates[candidate.resolve(strict=True)]=candidate
+            if not candidates:raise ValueError('unresolved PE import '+name+' from '+str(source))
+            # The owning image's adjacent DLL is the native loader's first
+            # selected candidate. Other roots may supply one identical image.
+            adjacent=(source.parent/name)
+            if adjacent.is_file():dependency=adjacent.resolve(strict=True)
+            else:
+                hashes={sha256(path) for path in candidates}
+                if len(hashes)!=1:raise ValueError('ambiguous PE import: '+name)
+                dependency=sorted(candidates)[0]
+            if inspect(dependency)['machine']!=info['machine']:raise ValueError('PE dependency machine differs: '+name)
+            target=self.dependency_target(dependency)
+            self.external(dependency,target);self.destinations[dependency]=target
+            self.collect_pe(dependency,target)
 
 
 def elf_image(path):
@@ -464,7 +511,7 @@ class LinuxBundle(Bundle):
             target = self.output / 'libexec/nex/llvm/bin' / name
             self.external(Path(doctor[field]), target)
             key = {'clang++': 'compiler', 'llvm-ar': 'archiver', 'ld.lld': 'linker', 'wasm-ld': 'wasm_linker'}[name]
-            configuration['tools'][key] = str(target.relative_to(self.output))
+            configuration['tools'][key] = target.relative_to(self.output).as_posix()
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
         self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
@@ -497,9 +544,9 @@ class LinuxBundle(Bundle):
                 alias = target.parent / soname[1]
                 if not alias.exists():
                     alias.symlink_to(target.name)
-        configuration['sqlite'] = {'include': str(includes.relative_to(self.output)),
+        configuration['sqlite'] = {'include': includes.relative_to(self.output).as_posix(),
                                    'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
-        configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
+        configuration['openssl'] = {'include': includes.relative_to(self.output).as_posix(),
                                     **{key: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for key, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
         required_glibc, required_glibcxx = self.relocate_elf(patchelf)

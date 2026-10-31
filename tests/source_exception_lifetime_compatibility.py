@@ -11,11 +11,11 @@ for n in tree.body:
  if isinstance(n,ast.AugAssign) and isinstance(n.target,ast.Name) and n.target.id=='fixtures':fixtures += [('task-'+item[1],item[2]) for item in ast.literal_eval(n.value)]
 origins[str(f.relative_to(source))]=hashlib.sha256(f.read_bytes()).hexdigest();assert len(fixtures)==66,len(fixtures)
 report={'ok':False,'cases':[],'fixtures':origins,'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'full_region_inference':False}
-def save():(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 save()
 for name,text in fixtures:
- d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}));f=d/'main.nex';f.write_text('module lifetime_compatibility;\n'+text+'\n')
- r=subprocess.run([probe,str(f)],text=True,capture_output=True,timeout=30);(d/'stdout.json').write_text(r.stdout);(d/'stderr.txt').write_text(r.stderr);assert r.returncode==0,(name,r.returncode,r.stdout,r.stderr)
+ d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module lifetime_compatibility;\n'+text+'\n', newline="\n")
+ r=subprocess.run([probe,str(f)],text=True,capture_output=True,timeout=30);(d/'stdout.json').write_text(r.stdout, newline="\n");(d/'stderr.txt').write_text(r.stderr, newline="\n");assert r.returncode==0,(name,r.returncode,r.stdout,r.stderr)
  data=json.loads(r.stdout);assert data['steps']>0 and data['dynamic']>=0 and data['handlers']>=0
  report['cases'].append({'name':name,'source_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'analysis':data,'passed':True});save()
 report['ok']=True;report['source_programs']=len(report['cases']);save();print(json.dumps({'ok':True,'source_programs':len(report['cases']),'report':str(out/'report.json')}))

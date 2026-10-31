@@ -29,7 +29,17 @@
 // native host may omit it; do not fabricate a graph revision for that process.
 // Keep this weak default preemptible when the runtime lives in a shared image.
 #ifdef NEX_SHARED_PROFILE_RUNTIME
+#ifdef NEX_SHARED_WINDOWS_RUNTIME
+#include <windows.h>
+extern "C" const char *nex_profile_build_info(){
+  thread_local bool resolving=false;if(resolving)return nullptr;
+  auto function=reinterpret_cast<const char *(*)()>(GetProcAddress(GetModuleHandleW(nullptr),"nex_profile_build_info"));
+  if(!function||function==nex_profile_build_info)return nullptr;
+  resolving=true;auto result=function();resolving=false;return result;
+}
+#else
 extern "C" __attribute__((weak)) const char *nex_profile_build_info(){return nullptr;}
+#endif
 #else
 // Legacy profile archives retain their strong archived build identity. A weak
 // definition here could stop an archive linker extracting that identity unit.

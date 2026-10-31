@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='nex task limits 🧠 ') as temporary:
     source.write_text('''module limits;
 fn plain(n:i64)->i64{var i:i64=0;while i<n{i=i+1;}return i;}
 fn main()->unit !{task,io}{let held:list<str>=["retained🧠"];task_yield();print(plain(41)+len(held));}
-''')
+''', newline="\n")
     defaults = {'steps': 1000000, 'timeout_ms': 5000, 'workers': 16}
     configured = {'steps': 10000, 'timeout_ms': 2000, 'workers': 2}
     default = cli(root, 'build', source)
@@ -81,13 +81,13 @@ fn main()->unit !{task,io}{let held:list<str>=["retained🧠"];task_yield();prin
     assert execution['configured'] == configured and execution['effective'] == {'steps': 2000, 'timeout_ms': 2000, 'workers': 1}, observed
     assert execution['executor_workers'] == 1 and execution['backend'] == 'native', execution
     pure = root / 'pure.nex'
-    pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->unit{}')
+    pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->unit{}', newline="\n")
     assert cli(root, 'build', pure, '--task-steps', '1000000', success=False)['code'] == 'E_OPTION'
     for bad in ['0', '-1', '9007199254740992', '1.5']:
         assert cli(root, 'build', source, '--task-steps', bad, success=False)['code'] == 'E_OPTION'
     # A pure, non-suspending loop still polls the shared native request budget.
     spin = root / 'spin.nex'
-    spin.write_text('module spin;fn loop()->unit{let held:list<str>=["retained🧠"];while true{assert(len(held)==1);}}fn main()->unit !{task}{task_yield();loop();}')
+    spin.write_text('module spin;fn loop()->unit{let held:list<str>=["retained🧠"];while true{assert(len(held)==1);}}fn main()->unit !{task}{task_yield();loop();}', newline="\n")
     limited = cli(root, 'build', spin, '--task-steps', '1000000000', '--task-timeout-ms', '30', '--task-workers', '1')
     actual = subprocess.run([limited['executable']], cwd='/', env=environment, capture_output=True, text=True, timeout=10)
     assert actual.returncode == 70 and actual.stderr.startswith('E_TIMEOUT:'), actual

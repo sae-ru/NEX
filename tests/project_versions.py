@@ -1,4 +1,5 @@
 """Declared source versions, reachable libraries and explicit archived migration."""
+from sqlite_fixture import connection as sqlite_connection
 import json
 from pathlib import Path
 import sqlite3
@@ -11,14 +12,14 @@ SOURCE='module project_versions;fn value()->i64{return 42;}fn main()->unit!{io}{
 class ProjectVersions(harness.ToolchainCase):
     def manifest(self,**fields):
         value={'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex',**fields}
-        (self.root/'nex.json').write_text(json.dumps(value))
+        (self.root/'nex.json').write_text(json.dumps(value), newline="\n")
         return value
 
     def ready(self):
         self.source(SOURCE);self.manifest();return self.cli('check')['revision']
 
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             names=[name for name, in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
             return {name:sorted(db.execute('SELECT * FROM "'+name.replace('"','""')+'"').fetchall(),key=repr) for name in names}
 
@@ -45,7 +46,7 @@ class ProjectVersions(harness.ToolchainCase):
         self.source(SOURCE)
         for extra in [{},{'schema':'nex.project/1'},{'language':harness.CURRENT_LANGUAGE},
                       {'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'editor':{'layout':'custom'}}]:
-            (self.root/'nex.json').write_text(json.dumps({'entry':'main.nex',**extra}))
+            (self.root/'nex.json').write_text(json.dumps({'entry':'main.nex',**extra}), newline="\n")
             self.cli('check');self.assertEqual(self.cli('graph')['language'],harness.CURRENT_LANGUAGE)
         self.assertEqual(self.cli('eval')['stdout'],'42\n')
 
@@ -102,15 +103,15 @@ class ProjectVersions(harness.ToolchainCase):
         self.source('module application;import "numbers/value.nex" as n;fn main()->unit!{io}{print(n::value());}')
         self.manifest(libraries={'numbers':'./library','unused':'./unused'})
         library=self.root/'library';library.mkdir()
-        (library/'value.nex').write_text('module numbers;pub fn value()->i64{return 42;}')
+        (library/'value.nex').write_text('module numbers;pub fn value()->i64{return 42;}', newline="\n")
         return library
 
     def test_reachable_library_declared_versions_are_checked_without_loading_unused_libraries(self):
         library=self.library();unused=self.root/'unused';unused.mkdir()
-        (unused/'nex.json').write_text(json.dumps({'language':'0.14'}))
-        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE}))
+        (unused/'nex.json').write_text(json.dumps({'language':'0.14'}), newline="\n")
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE}), newline="\n")
         revision=self.cli('check')['revision'];before=self.rows()
-        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.14'}))
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.14'}), newline="\n")
         error=self.cli('check',ok=False);self.assertEqual(error['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(Path(error['file']).resolve(),(library/'nex.json').resolve())
         self.assertEqual(self.rows(),before)
@@ -121,13 +122,13 @@ class ProjectVersions(harness.ToolchainCase):
     def test_reachable_library_bad_schema_and_metadata_are_rejected(self):
         library=self.library();self.cli('check');before=self.rows()
         for value in [{'schema':'nex.project/2'},{'language':None},[]]:
-            (library/'nex.json').write_text(json.dumps(value))
+            (library/'nex.json').write_text(json.dumps(value), newline="\n")
             self.assertEqual(self.cli('check',ok=False)['code'],'E_MANIFEST')
             self.assertEqual(self.rows(),before)
 
     def test_task_physical_preflight_preserves_store_but_archived_candidate_is_allowed(self):
         revision=self.ready();task=self.cli('task',self.file,'--kind','init')
-        path=self.root/'task.json';path.write_text(json.dumps(task))
+        path=self.root/'task.json';path.write_text(json.dumps(task), newline="\n")
         checked=self.cli('task',path,'--kind','check');self.manifest(language='0.14');before=self.rows()
         self.assertEqual(self.cli('task',path,'--kind','check',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertTrue(self.cli('task',path,'--kind','check','--revision',revision)['ok'])

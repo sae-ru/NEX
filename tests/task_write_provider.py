@@ -6,10 +6,10 @@ probe=Path(a.probe).resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex write providers 🧠 ');root=Path(temporary.name).resolve()
 started=time.monotonic();report={'schema':'nex.private-write-provider-execution/1','ok':False,'state':'starting','commands':[],'cases':[],'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public023_enabled':True,'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,args,cwd,env,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=cwd,env=env,capture_output=True,text=True,timeout=300)
- (root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr)
+ (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,args)),'exit_code':r.returncode,'expected':expected});save()
  assert r.returncode==expected,(name,r.returncode,r.stdout,r.stderr)
  return r
@@ -28,8 +28,8 @@ try:
  for index,(mode,profile,debug,kind,body,writes) in enumerate(cases):
   name=f'{index:02d}-{mode}-{profile}-'+('logical-' if debug else '')+kind
   case=root/name;case.mkdir();reference=case/'reference';reference.mkdir();native=case/'native';native.mkdir()
-  for files in (reference,native):(files/'input').write_text('complete')
-  request=case/'request.json';request.write_text(json.dumps({'mode':mode,'profile':profile,'task_debug':debug,'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':body}}},ensure_ascii=False))
+  for files in (reference,native):(files/'input').write_text('complete', newline="\n")
+  request=case/'request.json';request.write_text(json.dumps({'mode':mode,'profile':profile,'task_debug':debug,'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':body}}},ensure_ascii=False), newline="\n")
   env={**os.environ,'NEX_FILES_ROOT':str(reference),'NEX_FILES_WRITE':'0' if kind=='denied' else '1'}
   result=json.loads(run(name+'-build',[probe,request,case/'build'],case,env).stdout)
   assert result['ok'] and result['language']=='0.23' and result['reference_value']==42 and result['reference_stdout']==''

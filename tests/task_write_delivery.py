@@ -7,7 +7,7 @@ p=argparse.ArgumentParser();p.add_argument('--compiler',required=True,type=Path)
 compiler=a.compiler.resolve();resources=(a.resources or Path(__file__).resolve().parents[1]).resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex public writes 🧠 ');root=Path(temporary.name).resolve()
-(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope.nex'}));(root/'scope.nex').write_text('module scope;fn main()->unit{}')
+(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope.nex'}), newline="\n");(root/'scope.nex').write_text('module scope;fn main()->unit{}', newline="\n")
 base={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
 for key in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_FILES_LIMIT','NEX_PROFILE_OUTPUT','NEX_TRACY'):base.pop(key,None)
 started=time.monotonic();report={'schema':'nex.public-task-write-delivery/1','ok':False,'state':'starting','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'commands':[],'migrations':[],'projects':[],'actual_GPU_NPU_resources':False,'full_objective_complete':False}
@@ -16,11 +16,11 @@ if package_notices:
  assert package_notices.is_file()
  report['package_notices']={'path':str(package_notices),'sha256':hashlib.sha256(package_notices.read_bytes()).hexdigest()}
 package_flags=['--notices',package_notices] if package_notices else []
-def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n', newline="\n")
 def process(name,args,cwd=None,env=None,expected=0):
  if package_notices:assert hashlib.sha256(package_notices.read_bytes()).hexdigest()==report['package_notices']['sha256'],'operator notice catalogue changed'
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=cwd or root,env={**base,**(env or {})},capture_output=True,text=True,timeout=600)
- out=root/(name+'.stdout');err=root/(name+'.stderr');out.write_text(r.stdout);err.write_text(r.stderr)
+ out=root/(name+'.stdout');err=root/(name+'.stderr');out.write_text(r.stdout, newline="\n");err.write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,args)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected,'stdout':str(out),'stderr':str(err)});save()
  if package_notices:assert hashlib.sha256(package_notices.read_bytes()).hexdigest()==report['package_notices']['sha256'],'operator notice catalogue changed'
  assert r.returncode==expected,(name,r.returncode,r.stdout,r.stderr)
@@ -38,7 +38,7 @@ def retained(before,after):
  for name,rows in before['tables'].items():
   if name!='head':assert not (Counter(rows)-Counter(after['tables'][name])),name
  assert before['tables']['metadata']==after['tables']['metadata']
-def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
+def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n', newline="\n")
 def artifacts(result):return {row['component']:row for row in result['artifacts']}
 try:
  descriptor=cli('describe','describe');assert descriptor['version']=='0.27' and descriptor['task_file_writes']['public_enabled'] and descriptor['task_providers']['execution_task_abi']==7
@@ -53,7 +53,7 @@ try:
   with closing(sqlite3.connect(database)) as db:db.executescript(sql.decode())
   head=next(r for r in metadata['revisions'] if r['revision']==metadata['head'])
   for name,text in head['bundle']['files'].items():
-   path=project/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+   path=project/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
   manifest=project/'nex.json';write(manifest,{'schema':'nex.project/1','language':'0.22','entry':head['bundle']['entry']});physical=manifest.read_bytes();before=state(database)
   try:
    current=json.loads(physical);current['language']='0.27';write(manifest,current)
@@ -93,7 +93,7 @@ server test fn writes()->unit !{task,fs,throw}{assert(unwrap(solve()));}
  for mode in ('static','shared','mixed'):
   project=root/mode;data=root/(mode+'-files');data.mkdir();env={'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
   for name,body in [('leaf',leaf),('mid',mid),('app',app)]:
-   path=project/name;path.mkdir(parents=True);(path/('main.nex' if name=='app' else 'value.nex')).write_text(body)
+   path=project/name;path.mkdir(parents=True);(path/('main.nex' if name=='app' else 'value.nex')).write_text(body, newline="\n")
   write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})
   leaf_kind='shared_library' if mode=='shared' else 'static_library';mid_kind='static_library' if mode=='static' else 'shared_library'
   definition={'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release','task_limits':{'steps':2000000,'timeout_ms':15000,'workers':2}}},'components':{
@@ -126,10 +126,10 @@ server test fn writes()->unit !{task,fs,throw}{assert(unwrap(solve()));}
   replayed=cli(mode+'-source-deleted-replay','task',receipt,'--kind','replay','--directory',root/(mode+'-replay'),env=env);assert replayed['ok'] and replayed['task_hash']==checked['task_hash']
   report['projects'].append({'mode':mode,'actual_binary_edges':True,'native_reference':True,'write_grant_denied':True,'source_deleted_package':True,'source_deleted_replay':True,'receipt':str(receipt)});save()
  browser=root/'browser';shutil.copytree(resources/'examples/web',browser)
- source=browser/'main.nex';source.write_text(source.read_text()+'\nserver fn hidden_writer()->result<bool> !{task,fs}{return file_write_text("PRIVATE_SERVER_TARGET","private");}\n')
+ source=browser/'main.nex';source.write_text(source.read_text()+'\nserver fn hidden_writer()->result<bool> !{task,fs}{return file_write_text("PRIVATE_SERVER_TARGET","private");}\n', newline="\n")
  generated=root/'browser-output';cli('browser-pruning','web',source,'--directory',generated,cwd=browser)
  client='\n'.join(p.read_text() for p in generated.rglob('*.ts'));assert client and 'PRIVATE_SERVER_TARGET' not in client and 'file_write_text' not in client
- source.write_text(source.read_text()+'\nclient fn forbidden_writer()->result<bool> !{task,fs}{return file_write_text("x","x");}\n')
+ source.write_text(source.read_text()+'\nclient fn forbidden_writer()->result<bool> !{task,fs}{return file_write_text("x","x");}\n', newline="\n")
  rejected=cli('browser-realm','check',source,cwd=browser,expected=1);assert rejected['code']=='E_REALM'
  report.update(ok=True,state='passed',genuine022_migrations=3,all16_tables_schema_rows_ids_preserved=True,native_reference=True,static_shared_binary_edges=True,mixed_static_shared=True,explicit_write_grant_denied=True,source_deleted_package=True,source_deleted_replay=True,browser_exclusion=True)
 except BaseException as error:report.update(state='failed',error=repr(error));raise

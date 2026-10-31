@@ -8,12 +8,12 @@ report={'schema':'nex.private024-stream-project-observability/1','ok':False,'sta
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
  'public_language':'0.27','private_language':'0.24','public025_delivery_accepted':False,'full_objective_complete':False}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n')
+def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def invoke(name,request):
  report['state']=name;save();path=root/(name+'.request.json');write(path,{'compiler':str(compiler),**request})
  r=subprocess.run([probe,path],cwd=root,capture_output=True,text=True,timeout=600)
- (root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr)
+ (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':[str(probe),str(path)],'exit_code':r.returncode});save()
  assert r.returncode==0,(name,r.stdout[-4500:],r.stderr[-4500:]);return json.loads(r.stdout)
 def dap_session(name,session,files,mode):

@@ -67,7 +67,7 @@ def main():
         output.mkdir(parents=True, exist_ok=False)
     workspace = output / "work"
     workspace.mkdir()
-    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": language, "entry": "calls.nex"}))
+    (workspace / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": language, "entry": "calls.nex"}), newline="\n")
     grant = workspace / "grant"
     grant.mkdir()
     (grant / "text").write_bytes("A🧠\0B".encode())
@@ -85,7 +85,7 @@ def main():
         result = subprocess.run(command, cwd=workspace, env=environment, capture_output=True, text=True, timeout=300)
         commands.append(dict(command=command, cwd=str(workspace), exit=result.returncode,
                              stdout=result.stdout, stderr=result.stderr))
-        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n")
+        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n", newline="\n")
         expected_exit = (0 if success else 1) if exit_code is None else exit_code
         assert result.returncode == expected_exit, commands[-1]
         return json.loads(result.stdout)
@@ -105,7 +105,7 @@ def main():
                                 capture_output=True, text=True, timeout=60)
         commands.append(dict(command=command, cwd=str(workspace), environment=extra_environment,
                              exit=result.returncode, stdout=result.stdout, stderr=result.stderr))
-        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n")
+        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n", newline="\n")
         return result
 
     def profile(source, expected, stdout, success=True, error=None, events=None, multiple_resumes=True):
@@ -161,7 +161,7 @@ def main():
         report["descriptor_language"] = descriptor["version"]
         for name, body, expected, stdout in SCENARIOS:
             source = workspace / (name + ".nex")
-            source.write_text("module task_measure;\n" + body)
+            source.write_text("module task_measure;\n" + body, newline="\n")
             reference = run("eval", source)
             native = run("run", source, "--profile", "release")
             assert reference["stdout"] == native["stdout"] == stdout, (name, reference, native)
@@ -187,7 +187,7 @@ def main():
                 assert measured_functions(capped).keys() == measured_functions(saved).keys()
             report["scenarios"].append(name)
         source = workspace / "failure.nex"
-        source.write_text("module task_measure;\n" + FAILURE)
+        source.write_text("module task_measure;\n" + FAILURE, newline="\n")
         reference = run("eval", source, success=False)
         native = run("run", source, "--profile", "release", success=False, exit_code=70)
         assert reference["code"] == "E_DIV_ZERO" and "E_DIV_ZERO" in json.dumps(native), (reference, native)
@@ -197,7 +197,7 @@ def main():
         report["ok"] = True
     finally:
         report["commands"] = len(commands)
-        (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", newline="\n")
         print(json.dumps(report, ensure_ascii=False))
         if temporary:
             temporary.cleanup()

@@ -3,6 +3,7 @@
 #include "nex/task_process.h"
 #include "nex_task_limits.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/Program.h"
 #include <algorithm>
 #include <filesystem>
 #include <cstdlib>
@@ -16,11 +17,13 @@ class ToolDirectory {
   std::filesystem::path original,temporary;
 public:
   explicit ToolDirectory(const std::filesystem::path &directory):original(std::filesystem::absolute(directory)){
+#ifndef _WIN32
     namespace fs=std::filesystem;
     if(fs::weakly_canonical(original).string().find('\\')==std::string::npos)return;
     auto base=fs::canonical(fs::temp_directory_path());
     if(base.string().find('\\')!=std::string::npos)base=fs::canonical("/tmp");
     temporary=createTemporaryDirectory("nex-web",base.string());
+#endif
   }
   ToolDirectory(const ToolDirectory&)=delete;
   ToolDirectory& operator=(const ToolDirectory&)=delete;
@@ -208,7 +211,20 @@ llvm::json::Value buildWebApp(const Program &p,const std::string &directory,cons
   auto project=prepare(p);
   const char *nodeOverride=std::getenv("NEX_NODE"),*npmOverride=std::getenv("NEX_NPM"),*cacheOverride=std::getenv("NEX_NPM_CACHE");
   std::string node=nodeOverride?nodeOverride:"node",npm=npmOverride?npmOverride:"npm";
-  auto nodeVersion=capture({node,"--version"}),npmVersion=capture({npm,"--version"});
+  std::vector<std::string> npmCommand{npm};
+#ifdef _WIN32
+  // npm.cmd is a shell launcher, not a PE executable. Invoke the installed
+  // JavaScript CLI through Node with literal arguments and no shell quoting.
+  if(fs::path(npm).extension()!=".exe"){
+    auto found=llvm::sys::findProgramByName(node);if(!found)throw Error("E_WEB_TOOL","cannot locate Windows Node.js");
+    auto cli=npmOverride?fs::absolute(npm):fs::path(*found).parent_path()/"node_modules/npm/bin/npm-cli.js";
+    if(cli.extension()==".cmd"||cli.extension()==".bat")cli=cli.parent_path()/"node_modules/npm/bin/npm-cli.js";
+    if(!fs::is_regular_file(cli))throw Error("E_WEB_TOOL","Windows npm requires its installed npm-cli.js or an explicit NEX_NPM JavaScript/native executable path");
+    npmCommand={node,cli.string()};
+  }
+#endif
+  auto npmArgs=[&](std::initializer_list<std::string> arguments){auto selected=npmCommand;selected.insert(selected.end(),arguments);return selected;};
+  auto nodeVersion=capture({node,"--version"}),npmVersion=capture(npmArgs({"--version"}));
   if(nodeVersion.code||npmVersion.code)throw Error("E_WEB_TOOL","cannot identify Node.js/npm");
   auto key=hash(project.metadata.getAsObject()->getString("key")->str()+profile+nodeVersion.output+npmVersion.output);
   auto folder=fs::absolute(fs::path(directory)/key/"web"),dist=folder/"dist",marker=folder/"complete-web.json";
@@ -224,9 +240,9 @@ llvm::json::Value buildWebApp(const Program &p,const std::string &directory,cons
     ToolDirectory runner(folder);
     if(runner.relocated())materialize(project,runner.path());
     auto cache=cacheOverride?std::string(cacheOverride):(fs::absolute(directory)/"npm-cache").string();
-    auto install=capture({npm,"--prefix",runner.path().string(),"ci","--ignore-scripts","--no-audit","--no-fund","--cache",cache},180);
+    auto install=capture(npmArgs({"--prefix",runner.path().string(),"ci","--ignore-scripts","--no-audit","--no-fund","--cache",cache}),180);
     if(install.code)throw Error("E_WEB_TOOL","npm ci failed:\n"+install.output+install.errors);
-    std::vector<std::string> command={npm,"--prefix",runner.path().string(),"run","build"};
+    auto command=npmArgs({"--prefix",runner.path().string(),"run","build"});
     if(profile=="debug")command.insert(command.end(),{"--","--minify","false"});
     auto built=capture(command,180);if(built.code)throw Error("E_WEB_TOOL","TypeScript/Vite build failed:\n"+built.output+built.errors);
     runner.retain("dist");runner.retain("node_modules");

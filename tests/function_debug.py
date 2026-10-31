@@ -72,7 +72,7 @@ class CallableFrame(harness.ToolchainCase):
             'offset': '2'})
 
     def inspect(self, expression, frame=None, kind=None, steps=None, **kwargs):
-        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame))
+        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame), newline="\n")
         extra = ['--kind', kind] if kind else []
         if steps is not None:
             extra += ['--steps', str(steps)]
@@ -296,7 +296,7 @@ def __lldb_init_module(debugger,_):
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
 '''.replace('SOURCE', repr(projected)).replace('LINE', str(line))
-                .replace('GENERIC', str(generic)).replace('REPORT', repr(str(report))))
+                .replace('GENERIC', str(generic)).replace('REPORT', repr(str(report))), newline="\n")
             output = self.cli('debug', '--', '--no-lldbinit', '--batch', '-o',
                               'command script import '+json.dumps(str(script)), machine=False)
             self.assertTrue(report.is_file(), output.stdout+output.stderr)
@@ -312,7 +312,7 @@ def __lldb_init_module(debugger,_):
             self.assertEqual([c['path'] for c in result['large_snapshot']['captures']],
                              [[], ['payload'], ['payload', 'Pick::number'], ['offset']])
             self.file.unlink()
-            snapshot = self.root/'snapshot.json'; snapshot.write_text(json.dumps(result['snapshot']))
+            snapshot = self.root/'snapshot.json'; snapshot.write_text(json.dumps(result['snapshot']), newline="\n")
             self.assertEqual(self.cli('inspect', snapshot, '--manifest', self.manifest,
                                      '--expression', 'callback(true)')['value'], '42')
             from debugging import DAP

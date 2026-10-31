@@ -1,4 +1,5 @@
 """Real C11/C++20 dependent resources through public native and AST commands."""
+from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -63,7 +64,7 @@ CASES={
 }
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
-def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 from source_resource_cli import fixture_for_current_cli
 
@@ -80,8 +81,8 @@ def main():
  def save():report['seconds']=round(time.monotonic()-started,3);write(out/'report.json',report)
  def run(label,argv,expected=0,marker=None,cwd=out):
   row={'label':label,'argv':list(map(str,argv)),'cwd':str(cwd)};report['commands'].append(row);save()
-  p=subprocess.run(row['argv'],cwd=cwd,env={**env,'NEX_DEPENDENCY_MARKER':str(marker or out/(label+'.events'))},capture_output=True,text=True,timeout=240)
-  (out/(label+'.stdout')).write_text(p.stdout);(out/(label+'.stderr')).write_text(p.stderr);row['exit_code']=p.returncode;save()
+  p=run_native(row['argv'],cwd=cwd,env={**env,'NEX_DEPENDENCY_MARKER':str(marker or out/(label+'.events'))},capture_output=True,text=True,timeout=240)
+  (out/(label+'.stdout')).write_text(p.stdout, newline="\n");(out/(label+'.stderr')).write_text(p.stderr, newline="\n");row['exit_code']=p.returncode;save()
   assert p.returncode==expected,(label,p.returncode,p.stdout[-2500:],p.stderr[-2500:]);return p
  def source(pin,body):
   lines=['module dependencies;server resource Session;server resource Buffer;client fn client_value()->i64{return 42;}']
@@ -97,12 +98,12 @@ def main():
   signatures=api['signatures'];assert set(signatures)==set(DECLARATIONS)
   for dialect,driver,standard in [('C11','clang','c11'),('CPP20','clang++','c++20')]:
    directory=out/dialect;directory.mkdir();header=directory/'dependent-signatures.h'
-   header.write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in signatures.items())+'\n')
+   header.write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in signatures.items())+'\n', newline="\n")
    image=directory/'module.so'
    driver=os.environ.get('NEX_DEPENDENCY_CC' if dialect=='C11' else 'NEX_DEPENDENCY_CXX',shutil.which(driver))
    run(dialect+'-compile',[driver,'-x','c' if dialect=='C11' else 'c++','-std='+standard,'-shared','-fPIC','-pthread','-I'+str(ROOT/'runtime'),'-I'+str(directory),ROOT/'tests/dependent_resource_module.c','-o',image])
-   (directory/'NOTICE').write_text('NEX dependent resource conformance producer\n')
-   manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('aarch64','arm64') else 'x86_64'),
+   (directory/'NOTICE').write_text('NEX dependent resource conformance producer\n', newline="\n")
+   manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('aarch64','arm64') else 'x86_64'),
     'entry':image.name,'files':[{'path':n,'sha256':sha(directory/n)} for n in (image.name,'NOTICE')],
     'exports':{name:digest(sig) for name,sig in signatures.items()},'notices':['NOTICE']}
    write(directory/'manifest.json',manifest);pin=sha(directory/'manifest.json')
@@ -152,10 +153,10 @@ def main():
     return text+'server fn main()->unit !{task,ffi,io}{assert(legacy_size(0)==296);let p:Session=legacy_session(0);assert(legacy_read(p)==42);assert(resource_close(p));print(42);}'
    legacy_bundle=out/(dialect+'-legacy-signature.json');write(legacy_bundle,{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':legacy_source('0'*64)}})
    old_signatures=json.loads(run(dialect+'-legacy-signatures',command('check',legacy_bundle)).stdout)['signatures']
-   (legacy/'legacy-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in old_signatures.items())+'\n')
+   (legacy/'legacy-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in old_signatures.items())+'\n', newline="\n")
    old_image=legacy/'module.so'
    run(dialect+'-legacy-compile',[driver,'-x','c' if dialect=='C11' else 'c++','-std='+standard,'-shared','-fPIC','-I'+str(ROOT/'runtime'),'-I'+str(legacy),ROOT/'tests/legacy_resource_prefix_module.c','-o',old_image])
-   (legacy/'NOTICE').write_text('NEX genuine old resource table prefix conformance producer\n')
+   (legacy/'NOTICE').write_text('NEX genuine old resource table prefix conformance producer\n', newline="\n")
    old_manifest={'schema':'nex.foreign-bundle/1','platform':manifest['platform'],'entry':'module.so',
     'files':[{'path':n,'sha256':sha(legacy/n)} for n in ['module.so','NOTICE']],
     'exports':{name:digest(sig) for name,sig in old_signatures.items()},'notices':['NOTICE']}

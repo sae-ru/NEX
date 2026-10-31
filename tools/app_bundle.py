@@ -10,7 +10,8 @@ import sys
 import tempfile
 import re
 
-from sdk_bundle import Bundle, LinuxBundle, elf_image, macho, run, sha256
+from windows_pe import image as pe_image
+from sdk_bundle import Bundle, LinuxBundle, WindowsBundle, elf_image, macho, run, sha256
 
 
 class ApplicationInputs:
@@ -34,6 +35,10 @@ class MacApplication(ApplicationInputs, Bundle):
 
 
 class LinuxApplication(ApplicationInputs, LinuxBundle):
+    pass
+
+
+class WindowsApplication(ApplicationInputs, WindowsBundle):
     pass
 
 
@@ -400,8 +405,8 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         if not isinstance(image, dict) or set(image) != {'path', 'sha256', 'key', 'abi', 'kind', 'uuid'}:
             raise ValueError('invalid compiler-owned image fields')
         source = Path(image['path'])
-        if (source.is_symlink() or source.resolve(strict=True).parent != (binary.parent/'images').resolve(strict=True) or
-                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_'+re.escape(image['key'])+r'\.(so|dylib)', source.name) or
+        if (source.is_symlink() or source.resolve(strict=True).parent != (binary.parent if platform.system()=='Windows' else binary.parent/'images').resolve(strict=True) or
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_'+re.escape(image['key'])+r'\.(so|dylib|dll)', source.name) or
                 image['kind'] not in ('runtime', 'library') or
                 any(not isinstance(image[k], str) or not re.fullmatch('[0-9a-f]{64}', image[k]) for k in ('sha256', 'key', 'abi')) or
                 not isinstance(image['uuid'], str) or not re.fullmatch('[0-9a-f]{16,128}', image['uuid']) or
@@ -452,11 +457,14 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             collector.environment = dict(os.environ)
             for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD'):
                 collector.environment.pop(name, None)
+        elif system == 'Windows' and pe_image(binary):
+            collector = WindowsApplication(sdk, stage, selection, dpkg_notices, allow_empty=True)
         else:
-            raise ValueError('application packaging requires a matching macOS Mach-O or Linux ELF host')
+            raise ValueError('application packaging requires a matching native Mach-O, ELF or PE host')
         collector.sdk_inventory = sdk_inventory
         collector.owned_inputs = owned_inputs
-        application = stage / 'bin/app'
+        entry = 'bin/app.exe' if system == 'Windows' else 'bin/app'
+        application = stage / entry
         application.parent.mkdir()
         shutil.copy2(binary, application)
         if sha256(application) != request['binary_sha256']:
@@ -471,6 +479,15 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             details = {'platform': 'macos', 'minimum_macos': '.'.join(map(str, collector.minimum_os)),
                        'external_prerequisites': ['compatible macOS system libraries'],
                        'signing': 'ad-hoc; Developer ID signing/notarization not performed'}
+        elif system == 'Windows':
+            collector.collect_pe(binary, application)
+            for source in owned_inputs:
+                target=collector.dependency_target(source)
+                collector.external(source,target);collector.destinations[source]=target
+                collector.collect_pe(source,target)
+            details={'platform':'windows','architecture':collector.images[binary]['machine'],
+                     'external_prerequisites':['compatible Windows system DLLs listed in system_libraries'],
+                     'signing':'unsigned; publisher signing not performed'}
         else:
             collector.collect_elf(binary, application)
             for source in owned_inputs:
@@ -493,7 +510,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                 minimum = max([tuple(map(int, details['minimum_macos'].split('.')))] +
                               [tuple(map(int, module['minimum_macos'].split('.'))) for module in modules])
                 details['minimum_macos'] = '.'.join(map(str, minimum))
-            else:
+            elif system == 'Linux':
                 for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
                     details[key] = sorted(set(details[key]).union(*(module[key] for module in modules)))
         runtime_notices.read_text()  # Preserve complete UTF-8 runtime notices.
@@ -507,7 +524,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                               owned_image_abi=owned['abi'], input_uuid=owned['uuid'])
             origin.pop('source', None)
         report = {'schema': 'nex.application-package/1', 'assembly_passed': True,
-                  'execution_verified': False, 'entry': 'bin/app',
+                  'execution_verified': False, 'entry': entry,
                   **{key: request[key] for key in ('toolchain', 'language', 'revision', 'build_key',
                       'compiler_build', 'profile', 'kind', 'compiler_target', 'host_compatible', 'binary_sha256')},
                   'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
@@ -519,14 +536,17 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         (stage / 'application.json').write_text(json.dumps(report, indent=2) + '\n')
         # Claim the destination without replacing an existing file/directory, then
         # publish the fully assembled tree over our own empty reservation.
-        output.mkdir()
-        try:
+        if system == 'Windows':
             stage.rename(output)
-        except Exception:
-            output.rmdir()
-            raise
+        else:
+            output.mkdir()
+            try:
+                stage.rename(output)
+            except Exception:
+                output.rmdir()
+                raise
         result = {'schema': 'nex.package/1', 'ok': True, 'directory': str(output),
-                'executable': str(output / 'bin/app'), 'manifest': str(output / 'application.json'),
+                'executable': str(output / entry), 'manifest': str(output / 'application.json'),
                 'build_key': request['build_key'], 'revision': request['revision'],
                 'execution_verified': False, 'files': len(report['files'])}
         if foreign:

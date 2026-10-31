@@ -1,4 +1,5 @@
 """DWARF, artifact integrity, and opt-in real LLDB/DAP interaction checks."""
+from host_fixture import private_permissions
 import json
 from pathlib import Path
 import queue
@@ -30,14 +31,14 @@ fn observe(value:i64)->unit !{io}{
  print(value);
 }
 fn main()->unit !{io}{observe(42);}
-''')
+''', newline="\n")
         first = self.cli('debug', cwd=project)
         program = Path(first['launch']['program'])
         cache = program.parent.parent
         self.assertTrue(cache.name.startswith('nex-debug-'))
         self.addCleanup(shutil.rmtree, cache)
         self.assertNotIn('\\', str(program))
-        self.assertEqual(cache.stat().st_mode & 0o777, 0o700)
+        self.assertTrue(private_permissions(cache,0o700))
         manifest = json.loads(Path(first['manifest']).read_text())
         self.assertEqual(manifest['program'], str(program))
         self.assertEqual(manifest['build_key'], first['build_key'])
@@ -57,7 +58,7 @@ fn main()->unit !{io}{observe(42);}
             self.assertIn('exited with status = 0', stopped.stdout)
 
         # A pointer alone cannot adopt a directory belonging to another project.
-        (cache / 'owner.json').write_text('"another project"\n')
+        (cache / 'owner.json').write_text('"another project"\n', newline="\n")
         third = self.cli('debug', cwd=project)
         repaired = Path(third['launch']['program']).parent.parent
         self.addCleanup(shutil.rmtree, repaired)
@@ -268,7 +269,7 @@ def __lldb_init_module(debugger, context):
         with open(REPORT, "w") as output: json.dump(snapshots, output)
     finally:
         if process and process.GetState() not in (lldb.eStateExited, lldb.eStateInvalid): process.Kill()
-'''.replace("PROJECTED", repr(projected)).replace("IMPORTED", repr(imported)).replace("REPORT", repr(str(report))))
+'''.replace("PROJECTED", repr(projected)).replace("IMPORTED", repr(imported)).replace("REPORT", repr(str(report))), newline="\n")
             self.file.unlink()
             (self.root / "model.nex").unlink()
             output = self.cli("debug", "--revision", "HEAD", "--", "--no-lldbinit", "--batch", "-o",
@@ -317,7 +318,7 @@ def __lldb_init_module(debugger, context):
         process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
     finally:
         if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SYMBOL',repr(symbol)).replace('REPORT',repr(str(report))))
+'''.replace('SYMBOL',repr(symbol)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),output.stdout+output.stderr)
             values={v['name']:v['value'] for v in json.loads(report.read_text())['variables']}

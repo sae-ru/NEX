@@ -1,4 +1,5 @@
 """Real compiled NEX/independent AST file cancellation, deadlines and exits."""
+from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -34,14 +35,14 @@ report = {'schema': 'nex.private024-stream-control/1', 'ok': False,
 
 def save():
     report['seconds'] = round(time.monotonic() - started, 3)
-    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n', newline="\n")
 
 
 def run(name, argv, env=None, input=None):
-    result = subprocess.run(list(map(str, argv)), cwd=root, env=env or os.environ,
+    result = run_native(list(map(str, argv)), cwd=root, env=env or os.environ,
                             input=input, text=True, capture_output=True, timeout=180)
-    (root / (name + '.stdout')).write_text(result.stdout)
-    (root / (name + '.stderr')).write_text(result.stderr)
+    (root / (name + '.stdout')).write_text(result.stdout, newline="\n")
+    (root / (name + '.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'name': name, 'argv': list(map(str, argv)),
                               'exit_code': result.returncode})
     save()
@@ -109,7 +110,7 @@ try:
     sources = {}
     for name, source in programs.items():
         path = root / (name + ('.json' if isinstance(source, dict) else '.nex'))
-        path.write_text(json.dumps(source) if isinstance(source, dict) else source)
+        path.write_text(json.dumps(source) if isinstance(source, dict) else source, newline="\n")
         sources[name] = path
         staged = json.loads(run(name + '-stage', [probe, 'stage', path, root / (name + '-staged'), '0.24', triple, layout]))
         binary = root / (name + '-native')

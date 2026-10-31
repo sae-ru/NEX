@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_files.h"
 #include <atomic>
 #include <barrier>
@@ -29,7 +30,13 @@ auto probe(ResourceDomain &domain,Stats &stats){return domain.make<Probe>([&](co
 ByteBuffer binary(std::string_view text){return ByteBuffer::copy({reinterpret_cast<const uint8_t*>(text.data()),text.size()});}
 std::string text(const ByteBuffer &bytes){auto view=bytes.view();return view.empty()?std::string():std::string(reinterpret_cast<const char*>(view.data()),view.size());}
 void raw(const fs::path &path,const std::string &value){std::ofstream stream(path,std::ios::binary);stream.write(value.data(),value.size());require(bool(stream),"fixture write failed");}
-int descriptors(){int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;
+#endif
+}
 struct Fixture {
   fs::path directory;
   Fixture(){auto pattern=(fs::temp_directory_path()/"nex-resources-XXXXXX").string();auto *p=::mkdtemp(pattern.data());require(p,"cannot create fixture");directory=fs::canonical(p);}
@@ -143,7 +150,7 @@ int main(){
       require(file.write(binary("abc"))==3,"write length differs");file.seek(1);require(file.write(binary("Z"))==1,"seek write differs");file.flush();file.close();
       auto append=files.open("output",FileMode::Append);append.seek(0);require(append.write(binary("!"))==1,"append length differs");append.close();
       require(text(files.open("output",FileMode::Read).read(100))=="aZc!","append ignored kernel end position");
-      auto created=files.open("new-private",FileMode::WriteTruncate);struct stat info{};require(!::stat((root/"new-private").c_str(),&info)&&(info.st_mode&0777)==0600,"new mode not private");
+      auto created=files.open("new-private",FileMode::WriteTruncate);require(nex_test::privateFile(root/"new-private"),"new file permissions not private");
     });
     run("mode permissions and closed zero-length operations",[&]{
       auto before=descriptors();error("CAPABILITY",[&]{readonly.open("denied",FileMode::WriteTruncate);});require(!fs::exists(root/"denied"),"denied create side effect");
@@ -161,7 +168,7 @@ int main(){
       require(file.read(TextFiles::byteLimit).length()==int64_t(TextFiles::byteLimit)&&file.read(1000).length()==123&&file.read(1).length()==0,"stream inherited whole-file size limit");
     });
     run("stream path and nonregular rejection without truncation",[&]{
-      fs::create_symlink(outside/"private",root/"link");fs::create_directory_symlink(outside,root/"dir-link");require(!::mkfifo((root/"fifo").c_str(),0600),"mkfifo failed");auto baseline=descriptors();
+      fs::create_symlink(outside/"private",root/"link");fs::create_directory_symlink(outside,root/"dir-link");nex_test::NonRegular nonregular(root/"fifo");auto baseline=descriptors();
       for(auto mode:{FileMode::Read,FileMode::WriteTruncate,FileMode::Append}){
         for(const auto &path:std::vector<std::string>{"../outside/private","/absolute","nested//bad","nested/../bad","link","dir-link/private","fifo","nested",std::string("bad\0name",8),std::string("\xff",1)})
           error(path==std::string("\xff",1)?"E_UTF8":"VALIDATION",[&]{files.open(path,mode);});

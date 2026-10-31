@@ -25,7 +25,7 @@ def emit(path,name,mode='emit',entry='main',error=None):
     for filename in ['program.ts','nex-map.json']:
         text=(folder/filename).read_text()
         assert 'UNREACHABLE_ASYNC_FILE_SECRET' not in text and 'SERVER_PRIVATE_PATH' not in text and 'server_file_read' not in text
-    (folder/'package.json').write_text('{"type":"module"}\n')
+    (folder/'package.json').write_text('{"type":"module"}\n', newline="\n")
     if value['asynchronous']:
         imports="import * as task from './nex-task-runtime.ts';import {entry} from './program.ts';"
         call='task.call(()=>entry())'
@@ -38,27 +38,27 @@ def emit(path,name,mode='emit',entry='main',error=None):
         else:execution='task.run('+call+')'
         runner=imports+"process.stdout.write(String(await "+execution+")+'\\n');\n"
     else:runner="import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n"
-    (folder/'run.mjs').write_text(runner)
+    (folder/'run.mjs').write_text(runner, newline="\n")
     assert command([node,'--experimental-strip-types','--no-warnings',folder/'run.mjs'])=='42\n'
     command([node,Path(os.environ['NEX_TSC']).resolve(),'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',folder/'program.ts'])
     records.append({'name':name,'language':value['language'],'asynchronous':value['asynchronous'],'revision':value['revision']})
     return value,folder
 try:
     secret='server fn server_file_read()->result<str> !{task,fs}{return file_read_text("SERVER_PRIVATE_PATH/UNREACHABLE_ASYNC_FILE_SECRET");}\n'
-    path=out/'task.nex';path.write_text('module ts_file_boundary;fn main()->i64 !{task}{task_yield();return 42;}\n'+secret)
+    path=out/'task.nex';path.write_text('module ts_file_boundary;fn main()->i64 !{task}{task_yield();return 42;}\n'+secret, newline="\n")
     current,_=emit(path,'current025');old,_=emit(path,'retained019','retained019')
     assert current['language']=='0.27' and old['language']=='0.19' and current['asynchronous'] and old['asynchronous']
     assert current['revision']!=old['revision'] and current['source_hash']==old['source_hash']
     emit(path,'server025',entry='server_file_read',error='E_REALM')
     emit(path,'server019','retained019',entry='server_file_read',error='E_REALM')
-    path=out/'pure.nex';path.write_text('module ts_file_boundary;fn main()->i64{return 42;}\n'+secret)
+    path=out/'pure.nex';path.write_text('module ts_file_boundary;fn main()->i64{return 42;}\n'+secret, newline="\n")
     pure,_=emit(path,'pure025');assert not pure['asynchronous'] and pure['language']=='0.27'
     for realm in ['shared','client']:
-        path=out/(realm+'.nex');path.write_text('module bad_file_realm;'+realm+' fn main()->result<str> !{task,fs}{return file_read_text("bad");}\n')
+        path=out/(realm+'.nex');path.write_text('module bad_file_realm;'+realm+' fn main()->result<str> !{task,fs}{return file_read_text("bad");}\n', newline="\n")
         emit(path,realm+'-fs',error='E_REALM')
     report={'ok':True,'cases':len(records),'standaloneTaskExecutionAndBrowserBoundary':True,'sourceFilesystemInTypeScript':False,'records':records,
       'sha256':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [probe,source/'src/typescript.cpp',source/'web/nex-task-runtime.ts',Path(__file__)]}}
-    (out/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
+    (out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n");print(json.dumps(report))
 except BaseException:
     print('TypeScript file boundary fixtures retained at '+str(out));raise
 else:

@@ -9,13 +9,16 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
-#include <dlfcn.h>
+#include "host_dlfcn.h"
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#else
+#elif !defined(_WIN32)
 #include <link.h>
 #endif
 using namespace nexrt;
+#ifdef _WIN32
+extern "C" decltype(&nex_release) __imp_nex_release;
+#endif
 extern "C" const TaskCodeDescriptor *nex_13_shared_middle_4_work__task_code_address();
 extern "C" const TaskCodeDescriptor *nex_11_shared_leaf_4_work__task_code_address();
 extern "C" const TaskProfileCodeRegistry *nex_task_profile_registry_leaf_v1();
@@ -31,6 +34,8 @@ unsigned runtimeMappings(){
  unsigned count=0;
 #ifdef __APPLE__
  for(uint32_t i=0;i<_dyld_image_count();++i)if(std::filesystem::path(_dyld_get_image_name(i)).filename().string().starts_with("libnex_runtime_"))++count;
+#elif defined(_WIN32)
+ for(auto image:nex_test_loaded_modules()){wchar_t path[32768];auto size=GetModuleFileNameW(image,path,32768);if(size&&size<32768&&std::filesystem::path(path).filename().wstring().starts_with(L"libnex_runtime_"))++count;}
 #else
  dl_iterate_phdr([](dl_phdr_info *info,size_t,void *p){if(info->dlpi_name&&std::filesystem::path(info->dlpi_name).filename().string().starts_with("libnex_runtime_"))++*static_cast<unsigned*>(p);return 0;},&count);
 #endif
@@ -102,7 +107,13 @@ int main(int argc,char **argv){try{
  require(argc==4,"expected middle/leaf/runtime image basenames");const TaskProfileCodeRegistry *registries[]={nex_task_profile_registry_leaf_v1(),nex_task_profile_registry_mid_v1()};nex_task_profile_prepare_registries(registries,2);require(taskProfileCollector(),"private DSO profile collector absent");taskProfileLimits({1000000,5000,1},{1000000,5000,1});middle=nex_13_shared_middle_4_work__task_code_address();leaf=nex_11_shared_leaf_4_work__task_code_address();
  require(middle&&leaf&&middle->abi==taskCodeTypedSourceExceptionABI&&leaf->abi==taskCodeTypedSourceExceptionABI,"actual generated public ABI7 accessors unavailable");
  require(module(reinterpret_cast<const void*>(middle->step))==argv[1]&&module(reinterpret_cast<const void*>(leaf->step))==argv[2],"descriptor points outside the pinned provider image");
- auto *runtime=dlsym(RTLD_DEFAULT,"nex_release");require(runtime&&modulePath(runtime)==std::filesystem::weakly_canonical(argv[3]).string(),"runtime bridge maps to the wrong image");require(runtime==reinterpret_cast<void*>(&nex_release),"driver/runtime bridge identity differs");require(runtimeMappings()==1,"process loaded more than one NEX runtime mapping");
+ auto *runtime=dlsym(RTLD_DEFAULT,"nex_release");require(runtime&&modulePath(runtime)==std::filesystem::weakly_canonical(argv[3]).string(),"runtime bridge maps to the wrong image");require(runtime==reinterpret_cast<void*>(
+#ifdef _WIN32
+ __imp_nex_release
+#else
+ &nex_release
+#endif
+),"driver/runtime bridge identity differs");require(runtimeMappings()==1,"process loaded more than one NEX runtime mapping");
  require(middle->profileSite&&leaf->profileSite&&module(middle->profileSite)==argv[1]&&module(leaf->profileSite)==argv[2],"profileSite does not belong to original provider array");require(taskProfileSiteIndex(middle->profileSite)&&taskProfileSiteIndex(leaf->profileSite),"mapped provider profileSite unregistered");
  for(unsigned i=0;i<4;++i)scenario(i);
  auto profile=taskProfileCollector()->snapshot();for(const auto &task:profile.tasks)require(task.terminal&&task.activeInvocations==0,"provider profile task not terminal after physical drain");for(const auto &site:profile.functions){if(site.name=="shared_middle::work")require(site.calls==4&&site.completed==1&&site.aborted==3,"middle source activation counts changed across physical cancel");if(site.name=="shared_leaf::work")require(site.calls==4&&site.completed==4&&site.aborted==0,"leaf source return counts confused with physical retirement");}const auto &d=profile.drops;require(!d.tasks&&!d.invocations&&!d.guards&&!d.suppressedHooks&&!d.invalidTransitions&&!d.clockFailures&&!d.counterOverflows,"controlled DSO aggregate/clock recording incomplete");require(d.events>0,"events0 fixture did not exercise bounded timeline loss");

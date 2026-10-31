@@ -17,10 +17,10 @@ if args.npm_cache:
     env["NEX_NPM_CACHE"] = str(args.npm_cache.resolve())
 with tempfile.TemporaryDirectory(prefix='nex real web build "quoted" \\ % 🧠 ') as temporary:
     root = Path(temporary)
-    (root / "nex.json").write_text(json.dumps({"entry": "main.nex", "language": "0.24"}))
+    (root / "nex.json").write_text(json.dumps({"entry": "main.nex", "language": "0.24"}), newline="\n")
     source = root / "main.nex"
     secret = "SERVER_ONLY_NEVER_IN_BROWSER_ASSETS"
-    source.write_text((repo / "examples/web/main.nex").read_text() + '\nserver fn secret() -> str { return "' + secret + '"; }\n')
+    source.write_text((repo / "examples/web/main.nex").read_text() + '\nserver fn secret() -> str { return "' + secret + '"; }\n', newline="\n")
     def call(*options):
         result = subprocess.run([str(compiler), *map(str, options), "--json"], cwd=root, env=env, capture_output=True, text=True, timeout=240)
         assert result.returncode == 0, result.stdout + result.stderr
@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='nex real web build "quoted" \\ % 🧠 '
         if file.is_file():
             assert secret not in file.read_text(), file
     assert call("build", "--target", "web", "--profile", "release")["cached"]
-    (dist / "index.html").write_text("corrupted cached browser output")
+    (dist / "index.html").write_text("corrupted cached browser output", newline="\n")
     repaired = call("build", "--target", "web", "--profile", "release")
     assert not repaired["cached"]
     assert "corrupted" not in (dist / "index.html").read_text()

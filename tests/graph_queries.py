@@ -1,4 +1,5 @@
 """Bounded discovery of checked archived source and directed dependencies."""
+from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
 import sqlite3
@@ -26,14 +27,14 @@ class GraphQueries(harness.ToolchainCase):
     def project(self, source=MAIN, library=LIBRARY, directory=None):
         directory = directory or self.root
         directory.mkdir(exist_ok=True)
-        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
-        (directory/'main.nex').write_text(source)
-        (directory/'library.nex').write_text(library)
+        (directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
+        (directory/'main.nex').write_text(source, newline="\n")
+        (directory/'library.nex').write_text(library, newline="\n")
         revision = self.cli('check',cwd=directory)['revision']
         return directory, revision
 
     def rows(self, directory=None):
-        with sqlite3.connect((directory or self.root)/'.nex/graph.db') as db:
+        with sqlite_connection((directory or self.root)/'.nex/graph.db') as db:
             names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
             return {n:sorted(db.execute('SELECT * FROM "'+n+'"').fetchall(),key=repr) for n in names}
 
@@ -110,8 +111,8 @@ class GraphQueries(harness.ToolchainCase):
 
     def test_queries_do_not_sync_physical_source_or_move_head_and_journal(self):
         _,revision=self.project();before=self.rows();original=(self.root/'main.nex').read_text()
-        (self.root/'main.nex').write_text('invalid physical source')
-        (self.root/'nex.json').write_text('{"language":"0.14","entry":"main.nex"}')
+        (self.root/'main.nex').write_text('invalid physical source', newline="\n")
+        (self.root/'nex.json').write_text('{"language":"0.14","entry":"main.nex"}', newline="\n")
         self.assertEqual(self.search('choose')['revision'],revision)
         self.assertEqual(self.subgraph('choose')['revision'],revision)
         (self.root/'main.nex').unlink();(self.root/'library.nex').unlink()
@@ -122,7 +123,7 @@ class GraphQueries(harness.ToolchainCase):
 
     def test_archived_results_retain_old_dependencies_and_sources(self):
         _,old=self.project();original=self.subgraph('choose','--depth','3')
-        (self.root/'main.nex').write_text(MAIN.replace('return lib::middle(lib::Box(lib::echo(0)));','return 7;'))
+        (self.root/'main.nex').write_text(MAIN.replace('return lib::middle(lib::Box(lib::echo(0)));','return 7;'), newline="\n")
         current=self.cli('check')['revision'];self.assertNotEqual(old,current)
         latest=self.subgraph('choose','--depth','3')
         self.assertNotIn('library::middle',self.symbols(latest))
@@ -227,7 +228,7 @@ fn main()->unit{}
         self.assertTrue(match['nodes'][0]['editable'])
 
     def test_invalid_requests_fail_before_creating_store(self):
-        self.file.write_text('module no_store;fn main()->unit{}')
+        self.file.write_text('module no_store;fn main()->unit{}', newline="\n")
         cases=[('search',),('search','--query',''),('search','--query','x','--field','regex'),('search','--query','x','--entity','operation'),('search','--query','x','--limit','0'),('search','--query','x','--limit','1001'),('search','--query','x','--offset','-1'),('search','--query','x','--offset',''),('search','--query','x','--revision',''),('search','--query','x','--revision','unknown'),('search','--query','x','--depth','2'),('search',str(self.file),'--query','x'),('search','--query','x','--interpreter-only'),('search','--query','x','--','argument'),('subgraph','--symbol','x','--entity','all'),('subgraph','--symbol','x','--depth','9'),('subgraph','--symbol','x','--depth','-1'),('subgraph','--symbol','x','--edge-limit','0'),('subgraph','--symbol','x','--direction','sideways'),('subgraph','--symbol','x','--query','x'),('search','--query','x'*1025),('search','--query','\udcff'),('subgraph','--symbol','x'*8193)]
         for args in cases:
             with self.subTest(args=args):
@@ -239,7 +240,7 @@ fn main()->unit{}
         self.project();before=self.rows()
         self.assertEqual(self.subgraph('absent',ok=False)['code'],'E_QUERY_SYMBOL')
         self.assertEqual(self.rows(),before)
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute('DELETE FROM graph_edges WHERE rowid=(SELECT rowid FROM graph_edges LIMIT 1)')
         tampered=self.rows()
         self.assertEqual(self.search('leaf',ok=False)['code'],'E_STORE')

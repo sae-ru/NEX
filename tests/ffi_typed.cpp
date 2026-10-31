@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_ffi_host.h"
 #include "nex_files.h"
 #include "nex_host.h"
@@ -29,7 +30,13 @@ J variant(const char *name,J fields){return J{{"name",name},{"fields",fields}};}
 J enumeration(const char *name,J variants){return J{{"kind","enum"},{"name",name},{"variants",variants}};}
 ForeignSignature integer(){return signature(J::array({primitive("i64")}),J::array({0}),0);}
 auto echo=[](auto,auto a,auto,auto o)->nex_ffi_status{*o=a[0];return NEX_FFI_OK;};
-int descriptors(){int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;
+#endif
+}
 struct Directory {
  std::filesystem::path root;
  Directory(){auto p=(std::filesystem::temp_directory_path()/"nex-ffi-types-XXXXXX").string();require(::mkdtemp(p.data()),"mkdtemp failed");root=p;std::ofstream(root/"input")<<"data";}

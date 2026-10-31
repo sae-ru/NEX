@@ -74,8 +74,8 @@ def run_case(scenario,mode,directory):
   effectful='file_is_open(e)'
  (root/'files').mkdir();(root/'files/input').write_bytes(b'abc')
  for name,text in [('leaf',leaf),('middle',middle),('app',app)]:
-  d=root/name;d.mkdir();(d/'main.nex').write_text(text)
- (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n')
+  d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
+ (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
  source=a.mode=='source';leaf_shared=a.mode=='shared';middle_shared=a.mode in ['shared','mixed']
  architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug','task_limits':{'steps':1000000,'timeout_ms':60000,'workers':2}}},'components':{
   'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['later']},
@@ -84,15 +84,15 @@ def run_case(scenario,mode,directory):
  if source:
   for name in ['leaf','middle']:
    architecture['components'][name].pop('entry_function');architecture['components'][name].pop('exports')
- (root/'nex.build.json').write_text(json.dumps(architecture,indent=2)+'\n')
+ (root/'nex.build.json').write_text(json.dumps(architecture,indent=2)+'\n', newline="\n")
  request={'action':'debug','root':str(root),'source_language':'0.27','compiler':str(compiler),'adapter':'nex-dap'}
- (O/'debug.request.json').write_text(json.dumps(request)+'\n')
+ (O/'debug.request.json').write_text(json.dumps(request)+'\n', newline="\n")
  env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'NEX_FILES_ROOT':str(root/'files'),'PYTHONDONTWRITEBYTECODE':'1'}
  started=time.monotonic();report={'ok':False,'scope':'explicit C++027 native debugger','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'mode':a.mode,'scenario':a.scenario,'resources':str(resources),'watches':watches,'frame_expression':frame_expression,'has_guard':guard,'out_of_scope_expression':out_of_scope,'effectful_expression':effectful,'environment':{'NEX_FILES_ROOT':str(root/'files')}}
- def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  save()
  r=subprocess.run([str(args.probe),str(O/'debug.request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=600)
- (O/'build.stdout').write_text(r.stdout);(O/'build.stderr').write_text(r.stderr);report['build_exit']=r.returncode;save()
+ (O/'build.stdout').write_text(r.stdout, newline="\n");(O/'build.stderr').write_text(r.stderr, newline="\n");report['build_exit']=r.returncode;save()
  assert r.returncode==0,(r.stdout[-3500:],r.stderr[-3500:])
  built=json.loads(r.stdout);session=built['observation'];manifest_path=Path(session['manifest']);manifest=json.loads(manifest_path.read_text())
  report['manifest']=str(manifest_path);report['session']=session;save()
@@ -103,9 +103,9 @@ def run_case(scenario,mode,directory):
   *['nex-eval '+w['expression'] for w in watches],'breakpoint disable','continue']
  argv=[os.environ.get('NEX_LLDB') or shutil.which('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
  for command in commands:argv+=['-o',command]
- (O/'lldb-command.json').write_text(json.dumps(argv,ensure_ascii=False,indent=2)+'\n')
+ (O/'lldb-command.json').write_text(json.dumps(argv,ensure_ascii=False,indent=2)+'\n', newline="\n")
  r=subprocess.run(argv,cwd=root,env=env,text=True,capture_output=True,timeout=180)
- (O/'lldb.stdout').write_text(r.stdout);(O/'lldb.stderr').write_text(r.stderr)
+ (O/'lldb.stdout').write_text(r.stdout, newline="\n");(O/'lldb.stderr').write_text(r.stderr, newline="\n")
  rows=[json.loads(l) for l in r.stdout.splitlines() if l.startswith('{')]
  report.update(lldb_exit=r.returncode,rows=rows,seconds=round(time.monotonic()-started,3))
  def matches(spec,value):
@@ -133,7 +133,7 @@ def run_dap(directory):
  os.environ['NEX_RESOURCE_DIR']=str(args.resources or args.source_root);os.environ['PYTHONDONTWRITEBYTECODE']='1';os.environ.update(base.get('environment',{}))
  adapter=Recorded([sys.executable,manifest['dap_adapter'],'--backend',backend],O)
  report={'ok':False,'mode':base['mode'],'scenario':base.get('scenario','record'),'real_NEX_DAP':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'scope':'explicit C++027 native debugger','observations':[]};started=time.monotonic();hidden=[]
- def save():(O/'dap-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(O/'dap-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def reject(command,arguments):
   identity=adapter.send(command,arguments);value=adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==identity)
   assert not value['success'],value;return value
@@ -198,7 +198,7 @@ def run_dap(directory):
   try:adapter.close()
   finally:
    for file,renamed in hidden:renamed.rename(file)
-   (O/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n');save()
+   (O/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n");save()
  print(json.dumps({'ok':report['ok'],'real_NEX_DAP':True,'typed_watches':len(report['observations'])+1,'report':str(O/'dap-report.json')}))
 
  assert report["ok"],str(O/"dap-report.json")
@@ -219,11 +219,11 @@ def run_synchronous(directory):
   catch(code,message){assert(false);}
  }
  '''
- (root/'main.nex').write_text(source);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n')
- (root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'executable','root':'.','entry':'main.nex'}}})+'\n')
- compiler=args.nex;request={'action':'debug','root':str(root),'source_language':'0.27','compiler':str(compiler),'adapter':'nex-dap'};(O/'request.json').write_text(json.dumps(request)+'\n')
+ (root/'main.nex').write_text(source, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n', newline="\n")
+ (root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'executable','root':'.','entry':'main.nex'}}})+'\n', newline="\n")
+ compiler=args.nex;request={'action':'debug','root':str(root),'source_language':'0.27','compiler':str(compiler),'adapter':'nex-dap'};(O/'request.json').write_text(json.dumps(request)+'\n', newline="\n")
  env={**os.environ,'NEX_RESOURCE_DIR':str(args.resources or args.source_root),'PYTHONDONTWRITEBYTECODE':'1'}
- r=subprocess.run([str(args.probe),str(O/'request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=300);(O/'build.stdout').write_text(r.stdout);(O/'build.stderr').write_text(r.stderr);assert r.returncode==0,(r.stdout,r.stderr)
+ r=subprocess.run([str(args.probe),str(O/'request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=300);(O/'build.stdout').write_text(r.stdout, newline="\n");(O/'build.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0,(r.stdout,r.stderr)
  session=json.loads(r.stdout)['observation'];m=json.loads(Path(session['manifest']).read_text());assert m['schema']=='nex.debug/1',m['schema']
  file=m['sources'][0]['debug_path'];line=next(i for i,l in enumerate(source.splitlines(),1) if 'let answer:' in l)
  argv=[os.environ.get('NEX_LLDB') or shutil.which('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
@@ -231,10 +231,10 @@ def run_synchronous(directory):
   'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(str(compiler)),
   'breakpoint set --file '+json.dumps(file)+' --line '+str(line),'run','nex-frame e','nex-eval e.value','nex-eval e.note','breakpoint disable','continue']:
   argv+=['-o',command]
- r=subprocess.run(argv,cwd=root,env=env,text=True,capture_output=True,timeout=120);(O/'lldb.stdout').write_text(r.stdout);(O/'lldb.stderr').write_text(r.stderr)
+ r=subprocess.run(argv,cwd=root,env=env,text=True,capture_output=True,timeout=120);(O/'lldb.stdout').write_text(r.stdout, newline="\n");(O/'lldb.stderr').write_text(r.stderr, newline="\n")
  rows=[json.loads(l) for l in r.stdout.splitlines() if l.startswith('{')]
  ok=r.returncode==0 and any(v.get('schema')=='nex.expression/1' and v.get('expression')=='e.value' and v.get('value')=='42' for v in rows) and any(v.get('expression')=='e.note' and v.get('value')=='λ\0🙂' for v in rows) and 'exited with status = 0' in r.stdout
- report={'ok':ok,'synchronous_DWARF':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'session':session,'lldb_exit':r.returncode,'rows':rows};(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'ok':ok,'report':str(O/'report.json')}))
+ report={'ok':ok,'synchronous_DWARF':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'session':session,'lldb_exit':r.returncode,'rows':rows};(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n");print(json.dumps({'ok':ok,'report':str(O/'report.json')}))
 
  assert report["ok"],str(O/"report.json")
  return report
@@ -246,9 +246,9 @@ for scenario,mode in [('record','source'),('record','static'),('record','shared'
  lldb=run_case(scenario,mode,directory);dap=run_dap(directory)
  assert lldb['ok'] and dap['ok']
  report['cases'].append({'scenario':scenario,'mode':mode,'real_LLDB':True,'real_NEX_DAP':True,'source_absent':dap['source_absent_during_watch'],'passed':True})
- (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 synchronous=run_synchronous(output/'synchronous-source');assert synchronous['ok']
 report['cases'].append({'scenario':'synchronous','mode':'source','real_DWARF_LLDB':True,'passed':True})
 report.update(ok=True,seconds=round(time.monotonic()-started,3))
-(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 print(json.dumps({'ok':True,'cases':len(report['cases']),'report':str(output/'report.json')}))

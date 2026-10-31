@@ -113,9 +113,9 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
         old=self.cli('check')['revision'];context=self.cli('context','--symbol','repair::first<i64>')
         self.assertEqual(context['template'],'repair::first');self.assertFalse(context['editable'])
         self.assertEqual(context['type_arguments'],['i64'])
-        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':old,'replacements':[{'name':'repair::first<i64>','source':'fn first<T>(xs:list<T>) -> T {return xs[1];}'}]}))
+        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':old,'replacements':[{'name':'repair::first<i64>','source':'fn first<T>(xs:list<T>) -> T {return xs[1];}'}]}), newline="\n")
         self.assertEqual(self.cli('apply','--patch',patch,ok=False)['code'],'E_PATCH_SPECIALIZATION')
-        patch.write_text(json.dumps({'expected_revision':old,'replacements':[{'name':'repair::first','source':'fn first<T>(xs:list<T>) -> T {return xs[1];}'}]}))
+        patch.write_text(json.dumps({'expected_revision':old,'replacements':[{'name':'repair::first','source':'fn first<T>(xs:list<T>) -> T {return xs[1];}'}]}), newline="\n")
         fixed=self.cli('apply','--patch',patch)['revision'];self.assertNotEqual(old,fixed)
         self.file.unlink();self.assertEqual(self.cli('run','--revision',fixed)['stdout'],'42\nafter\n')
         self.assertEqual(self.cli('run','--revision',old)['stdout'],'41\nbefore\n')
@@ -155,7 +155,7 @@ fn main() -> unit !{io} {print(first([41,42])); print(first(["before","after"]))
                 self.assertEqual(self.cli(*command,'--entry',abstract,ok=False)['code'],'E_GENERIC_ENTRY')
 
     def test_local_instance_names_can_contain_qualified_type_arguments(self):
-        (self.root/'model.nex').write_text('module domain::model; pub struct Value {number:i64;}')
+        (self.root/'model.nex').write_text('module domain::model; pub struct Value {number:i64;}', newline="\n")
         self.source('''module app; import "./model.nex" as model;
 struct Box<T> {value:T;}
 fn identity<T>(x:T) -> T {return x;}
@@ -173,7 +173,7 @@ pub enum Maybe<T> {None; Some(value:T);}
 pub struct Tag<T> {count:i64;}
 pub struct Response<T> {items:list<Maybe<T>>; marker:Tag<T>;}
 fn hidden() -> str {return "GENERIC_SERVER_ONLY_SENTINEL";}
-''')
+''', newline="\n")
         self.source('''module service; import "std/api.nex" as api; import "./domain.nex" as model;
 server fn echo(c:api::Context,input:model::Response<model::Value>) -> result<model::Response<model::Value>> {return ok(input);}
 endpoint echo_value("POST","/api/value") = echo;
@@ -194,7 +194,7 @@ test fn models() -> unit {
  assert(unwrap(decode_json<model::Response<model::Value>>(body.body)) == data);
  let response:net::Response = net::Response("1",200,ok(encode_json(ok(data))));
  assert(unwrap(sdk::response_echo_value(web::Event("received",encode_json(response),"/"))) == data);
-}''')
+}''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
         self.cli('build',generated['server_entry'],'--target','server','--profile','release',timeout=180)
 
@@ -209,36 +209,36 @@ fn main() -> unit !{io} {observe(Box(41));}
         frame={'schema':'nex.debug-frame/1','language':manifest['language'],'revision':revision,'build_key':manifest['build_key'],
                'function':'watches::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'box','type':'watches::Box<i64>','value':{'value':'41'}}],'truncated':False}
-        path=self.root/'frame.json';path.write_text(json.dumps(frame))
+        path=self.root/'frame.json';path.write_text(json.dumps(frame), newline="\n")
         for expression,expected in [('identity<T>(box.value)','41'),('identity<Box<i64>>(box)',{'value':'41'}),('identity<str>("uncompiled")','uncompiled')]:
             result=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression)
             self.assertEqual(result['value'],expected);self.assertEqual(result['revision'],revision)
         partial=dict(frame,schema='nex.debug-frame/2',bindings=[{'name':'box','type':'watches::Box<i64>','unavailable':'not captured'}],captures=[])
         for expected in [{'record':'watches::Box<i64>'},'41']:
-            path.write_text(json.dumps(partial))
+            path.write_text(json.dumps(partial), newline="\n")
             demand=self.cli('inspect',path,'--manifest',session['manifest'],'--expression','identity(box).value','--kind','demand')
             request=demand['request'];partial['captures'].append({**{k:request[k] for k in ['binding','path','kind']},'value':expected})
-        path.write_text(json.dumps(partial));result=self.cli('inspect',path,'--manifest',session['manifest'],'--expression','identity(box).value')
+        path.write_text(json.dumps(partial), newline="\n");result=self.cli('inspect',path,'--manifest',session['manifest'],'--expression','identity(box).value')
         self.assertEqual(result['value'],'41');self.assertEqual(result['revision'],revision)
 
     def test_scalar_specialization_can_be_verified_without_proving_template(self):
         self.source('module scalar; fn id<T>(x:T) -> T {return x;} fn main() -> i64 {return id(42);}')
         contract=self.root/'contract.json';self.cli('contract','--symbol','scalar::id<i64>','-o',contract)
-        data=json.loads(contract.read_text());data['functions'][0]['ensures']=['result == x'];contract.write_text(json.dumps(data))
+        data=json.loads(contract.read_text());data['functions'][0]['ensures']=['result == x'];contract.write_text(json.dumps(data), newline="\n")
         result=self.cli('verify','--contracts',contract);self.assertTrue(result['ok'])
         self.cli('contract','--symbol','id','-o',contract)
         result=self.cli('verify','--contracts',contract,ok=False)
         self.assertEqual(result['functions'][0]['status'],'unsupported')
 
     def test_generic_body_edits_recompile_provider_and_reuse_callers(self):
-        model=self.root/'model.nex';model.write_text('module model; pub fn first<T>(values:list<T>) -> T {return values[0];}')
-        (self.root/'left.nex').write_text('module left; import "./model.nex" as m; pub fn value() -> i64 {return m::first([41,42]);}')
-        (self.root/'right.nex').write_text('module right; pub fn value() -> i64 {return 100;}')
+        model=self.root/'model.nex';model.write_text('module model; pub fn first<T>(values:list<T>) -> T {return values[0];}', newline="\n")
+        (self.root/'left.nex').write_text('module left; import "./model.nex" as m; pub fn value() -> i64 {return m::first([41,42]);}', newline="\n")
+        (self.root/'right.nex').write_text('module right; pub fn value() -> i64 {return 100;}', newline="\n")
         self.source('module app; import "./left.nex" as l; import "./right.nex" as r; fn main() -> unit !{io} {print(l::value());print(r::value());}')
         first=self.cli('build');self.assertEqual((first['compiled_modules'],first['reused_modules']),(4,0))
         self.assertEqual(subprocess.check_output([first['executable']],text=True),'41\n100\n')
         warm=self.cli('build');self.assertEqual((warm['compiled_modules'],warm['reused_modules']),(0,4))
-        model.write_text(model.read_text().replace('values[0]','values[1]'))
+        model.write_text(model.read_text().replace('values[0]','values[1]'), newline="\n")
         changed=self.cli('build');self.assertEqual((changed['compiled_modules'],changed['reused_modules']),(1,3))
         self.assertEqual(subprocess.check_output([changed['executable']],text=True),'42\n100\n')
         self.assertEqual(self.cli('eval')['stdout'],'42\n100\n')
@@ -260,7 +260,7 @@ test fn cases() -> unit {assert(id(42) == 42);assert(Box("value").value == "valu
         task['requirements'].append({'id':'templates','text':'Exercise the reviewed generic declarations through concrete tests','bindings':[{'program':'app','kind':'function','symbol':'acceptance_generic::id'},{'program':'app','kind':'structure','symbol':'acceptance_generic::Box'}],'targets':['native'],'checks':[test]})
         task['checks'].append({'id':'profile-instance','kind':'profile','program':'app','target':'native','entry':'acceptance_generic::main','scenario':'one identity call','budget':{'max_calls':{'acceptance_generic::id<i64>':'1'}}})
         task['requirements'].append({'id':'measured','text':'The concrete integer instance is called once in this workload','bindings':[{'program':'app','kind':'function','symbol':'acceptance_generic::id<i64>'}],'targets':['native'],'checks':['profile-instance']})
-        path=self.root/'task.json';path.write_text(json.dumps(task));checked=self.cli('task',path,'--kind','check');self.assertTrue(checked['ok'])
+        path=self.root/'task.json';path.write_text(json.dumps(task), newline="\n");checked=self.cli('task',path,'--kind','check');self.assertTrue(checked['ok'])
         result=self.cli('task',path,'--kind','run','--task-hash',checked['task_hash'],timeout=180);self.assertTrue(result['ok'])
         self.assertTrue(self.cli('task',result['output'],'--kind','replay',timeout=180)['ok'])
 
@@ -295,7 +295,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             result=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.exists(),result.stdout+result.stderr);captured=json.loads(report.read_text())
             self.assertEqual(captured['value']['value'],'41');self.assertEqual(captured['new']['value'],'uncompiled')
@@ -316,7 +316,7 @@ def __lldb_init_module(debugger,_):
                 self.assertEqual([(v['name'],v['value']) for v in fields],[('value','41')])
                 client.request('continue',{'threadId':stop['threadId']});self.assertEqual(client.event('exited')['exitCode'],0)
             finally:client.close()
-            self.file.unlink();path=self.root/'frame.json';path.write_text(json.dumps(captured['snapshot']))
+            self.file.unlink();path=self.root/'frame.json';path.write_text(json.dumps(captured['snapshot']), newline="\n")
             self.assertEqual(self.cli('inspect',path,'--manifest',session['manifest'],'--expression','identity(box).value')['value'],'41')
 
 

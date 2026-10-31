@@ -1,4 +1,5 @@
 """Module visibility, hermetic revisions, dependency locks and relocation."""
+from sqlite_fixture import connection as sqlite_connection
 import copy
 import json
 from pathlib import Path
@@ -16,7 +17,7 @@ class Modules(harness.ToolchainCase):
         directory=self.root / '.nex';directory.mkdir();database=directory / 'graph.db';old='e'*64
         # Model the old, unjournaled schema directly. Rewriting HEAD after a
         # current check would instead create a corrupt schema4 database.
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             db.executescript('''CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
               INSERT INTO metadata VALUES('schema','2');
               CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,created TEXT DEFAULT 'legacy',language TEXT NOT NULL);
@@ -38,7 +39,7 @@ class Modules(harness.ToolchainCase):
         library_source='module legacy_format; pub fn text() -> str { var result: str = "retained"; return result; }'
         bundle={'schema': 'nex.sources/1', 'entry': 'main.nex', 'files': {'main.nex': root_source, 'format.nex': library_source}}
         directory=self.root / '.nex';directory.mkdir();old='f'*64
-        with sqlite3.connect(directory / 'graph.db') as db:
+        with sqlite_connection(directory / 'graph.db') as db:
             db.executescript('''CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
               INSERT INTO metadata VALUES('schema','2');
               CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,created TEXT DEFAULT 'legacy',language TEXT NOT NULL);
@@ -58,7 +59,7 @@ class Modules(harness.ToolchainCase):
 
     def example(self):
         self.source((harness.REPO / "examples/modules/main.nex").read_text())
-        (self.root / "model.nex").write_text((harness.REPO / "examples/modules/model.nex").read_text())
+        (self.root / "model.nex").write_text((harness.REPO / "examples/modules/model.nex").read_text(), newline="\n")
 
     def test_modules_standard_libraries_and_debug_origins(self):
         self.example()
@@ -93,7 +94,7 @@ class Modules(harness.ToolchainCase):
         self.example()
         revision = self.cli("check")["revision"]
         (self.root / "model.nex").unlink()
-        self.file.write_text("broken live source")
+        self.file.write_text("broken live source", newline="\n")
         result = self.cli("run", "--revision", revision)
         self.assertIn("native + web", result["stdout"])
         self.assertEqual(self.cli("context", "--symbol", "example::model::create")["revision"], revision)
@@ -125,18 +126,18 @@ class Modules(harness.ToolchainCase):
         with tempfile.TemporaryDirectory(prefix="nex external library ") as library:
             package = Path(library)
             dependency = package / "numbers.nex"
-            dependency.write_text("module vendor::numbers; pub fn value() -> i64 { return 1; }")
+            dependency.write_text("module vendor::numbers; pub fn value() -> i64 { return 1; }", newline="\n")
             (self.root / "nex.json").write_text(json.dumps({
-                "entry": "main.nex", "libraries": {"numbers": library}}))
+                "entry": "main.nex", "libraries": {"numbers": library}}), newline="\n")
             self.source('module app; import "numbers/numbers.nex" as n; fn main() -> unit !{io} { print(n::value()); }')
             lock = self.cli("lock")
             self.assertEqual(set(lock["lock"]["dependencies"]), {"@pkg/numbers/numbers.nex"})
             revision = self.cli("check")["revision"]
             other = self.root / "other.nex"
-            other.write_text("module other; fn main() -> unit {}")
+            other.write_text("module other; fn main() -> unit {}", newline="\n")
             self.cli("check", other)
             self.assertEqual(set(self.cli("lock", other)["lock"]["dependencies"]), {"@pkg/numbers/numbers.nex"})
-            dependency.write_text(dependency.read_text().replace("return 1", "return 2"))
+            dependency.write_text(dependency.read_text().replace("return 1", "return 2"), newline="\n")
             self.assertEqual(self.cli("check", ok=False)["code"], "E_LOCK")
             self.assertEqual(self.cli("run", "--revision", revision)["stdout"], "1\n")
             self.cli("lock")
@@ -160,16 +161,16 @@ class Modules(harness.ToolchainCase):
         ]
         for body, expression, result, error in cases:
             with self.subTest(body=body):
-                library.write_text("module library; " + body)
+                library.write_text("module library; " + body, newline="\n")
                 self.source('module app; import "./library.nex" as lib; fn main() -> ' + result + ' { return ' + expression + '; }')
                 self.assertEqual(self.cli("check", ok=False)["code"], error)
-        library.write_text('module library; fn secret() -> i64 { return 9; } pub fn visible() -> i64 { return secret(); }')
+        library.write_text('module library; fn secret() -> i64 { return 9; } pub fn visible() -> i64 { return secret(); }', newline="\n")
         self.source('module app; import "./library.nex" as lib; fn main() -> i64 { return lib::visible(); }')
         self.assertEqual(self.cli("eval")["value"], 9)
 
     def test_module_identity_aliases_and_nominal_types(self):
-        (self.root / "left.nex").write_text("module left; pub struct Point { x: i64; } pub fn value() -> i64 { return 1; }")
-        (self.root / "right.nex").write_text("module right; pub struct Point { x: i64; } pub fn value() -> i64 { return 2; }")
+        (self.root / "left.nex").write_text("module left; pub struct Point { x: i64; } pub fn value() -> i64 { return 1; }", newline="\n")
+        (self.root / "right.nex").write_text("module right; pub struct Point { x: i64; } pub fn value() -> i64 { return 2; }", newline="\n")
         self.source('''module app;
 import "./left.nex" as a;
 import "./left.nex" as duplicate;
@@ -180,7 +181,7 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
         self.assertEqual(self.cli("run")["stdout"], "1\n2\n")
         self.cli("test")
         initial = self.cli("check")["revision"]
-        self.file.write_text(self.file.read_text().replace("as a;", "as renamed;").replace("a::", "renamed::"))
+        self.file.write_text(self.file.read_text().replace("as a;", "as renamed;").replace("a::", "renamed::"), newline="\n")
         self.assertEqual(self.cli("check")["revision"], initial)
         self.source('module app; import "./left.nex" as a; import "./right.nex" as b; fn main() -> bool { return a::Point(1) == b::Point(1); }')
         self.assertEqual(self.cli("check", ok=False)["code"], "E_TYPE")
@@ -193,12 +194,12 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
         self.source('module app; import "unknown/library.nex" as m; fn main() -> unit {}')
         self.assertEqual(self.cli("check", ok=False)["code"], "E_IMPORT_PACKAGE")
         library = self.root / "library.nex"
-        library.write_text('module library; import "./main.nex" as app; pub fn value() -> i64 { return 1; }')
+        library.write_text('module library; import "./main.nex" as app; pub fn value() -> i64 { return 1; }', newline="\n")
         self.source('module app; import "./library.nex" as m; fn main() -> unit {}')
         self.assertEqual(self.cli("check", ok=False)["code"], "E_IMPORT_CYCLE")
-        library.write_text('module app; pub fn value() -> i64 { return 1; }')
+        library.write_text('module app; pub fn value() -> i64 { return 1; }', newline="\n")
         self.assertEqual(self.cli("check", ok=False)["code"], "E_MODULE_DUPLICATE")
-        library.write_text('module library; pub fn value() -> i64 { return true; }')
+        library.write_text('module library; pub fn value() -> i64 { return true; }', newline="\n")
         error = self.cli("check", ok=False)
         self.assertEqual(error["code"], "E_TYPE")
         self.assertEqual(error["file"], "library.nex")
@@ -207,13 +208,13 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
 
     def test_atomic_cross_module_patches_and_fragment_boundaries(self):
         library = self.root / "library.nex"
-        library.write_text("module library; pub fn value() -> i64 { return 1; }")
+        library.write_text("module library; pub fn value() -> i64 { return 1; }", newline="\n")
         self.source('module app; import "./library.nex" as lib; fn get() -> i64 { return lib::value(); } fn main() -> unit !{io} { print(get()); }')
         revision = self.cli("check")["revision"]
         patch = self.root / "patch.json"
         patch.write_text(json.dumps({"expected_revision": revision, "replacements": [
             {"name": "library::value", "source": 'pub fn value() -> str { return "two"; }'},
-            {"name": "app::get", "source": 'fn get() -> str { return lib::value(); }'}]}))
+            {"name": "app::get", "source": 'fn get() -> str { return lib::value(); }'}]}), newline="\n")
         applied = self.cli("apply", "--patch", patch)
         self.assertNotEqual(applied["revision"], revision)
         self.assertEqual(self.cli("run", "--revision", "HEAD")["stdout"], "two\n")
@@ -223,7 +224,7 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
         for fragment in ('fn value() -> str { return "two"; }',
                          'pub fn value() -> str { return "two"; } struct Injected { x: i64; }'):
             patch.write_text(json.dumps({"expected_revision": applied["revision"], "replacements": [
-                {"name": "library::value", "source": fragment}]}))
+                {"name": "library::value", "source": fragment}]}), newline="\n")
             result = self.cli("apply", "--patch", patch, ok=False)
             self.assertIn(result["code"], {"E_VISIBILITY", "E_PATCH"})
             self.assertEqual(self.cli("history")["head"], applied["revision"])
@@ -235,28 +236,28 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
         file = self.root / "graph.json"
         changed = copy.deepcopy(graph)
         changed["bundle"]["files"]["model.nex"] += "\nfn added() -> i64 { return 9; }\n"
-        file.write_text(json.dumps(changed))
+        file.write_text(json.dumps(changed), newline="\n")
         self.assertEqual(self.cli("import", file, ok=False)["code"], "E_REVISION")
         changed = copy.deepcopy(graph)
         changed["bundle"]["files"]["unused.nex"] = "module unused;"
-        file.write_text(json.dumps(changed))
+        file.write_text(json.dumps(changed), newline="\n")
         self.assertEqual(self.cli("import", file, ok=False)["code"], "E_BUNDLE")
         changed = copy.deepcopy(graph)
         changed["bundle"]["files"]["../escape.nex"] = "module escape;"
-        file.write_text(json.dumps(changed))
+        file.write_text(json.dumps(changed), newline="\n")
         self.assertEqual(self.cli("import", file, ok=False)["code"], "E_IMPORT_PATH")
-        file.write_text(json.dumps(graph))
+        file.write_text(json.dumps(graph), newline="\n")
         self.cli("import", file)
 
     def test_unicode_module_paths_and_stable_library_nodes(self):
         library = self.root / "数学.nex"
-        library.write_text('module math; pub fn answer() -> i64 { return 42; }')
+        library.write_text('module math; pub fn answer() -> i64 { return 42; }', newline="\n")
         self.source('module first; import "./数学.nex" as math; fn main() -> unit !{io} { print(math::answer()); }')
         self.cli("check")
         before = self.cli("graph")
         node = next(n for n in before["nodes"] if n["name"] == "math::answer")
         self.assertEqual(self.cli("run")["stdout"], "42\n")
-        self.file.write_text(self.file.read_text().replace("module first;", "module second;"))
+        self.file.write_text(self.file.read_text().replace("module first;", "module second;"), newline="\n")
         self.cli("check")
         after = next(n for n in self.cli("graph")["nodes"] if n["name"] == "math::answer")
         self.assertEqual(node["id"], after["id"])
@@ -265,7 +266,7 @@ test fn aliases() -> unit { assert(a::Point(1) == duplicate::Point(1)); }
     def test_export_avoids_collisions_with_project_source_directories(self):
         directory = self.root / "_nex_deps/std"
         directory.mkdir(parents=True)
-        (directory / "math.nex").write_text("module local_math; pub fn value() -> i64 { return 42; }")
+        (directory / "math.nex").write_text("module local_math; pub fn value() -> i64 { return 42; }", newline="\n")
         self.source('''module app;
 import "./_nex_deps/std/math.nex" as local;
 import "std/math.nex" as math;

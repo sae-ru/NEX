@@ -1,4 +1,5 @@
 """Standalone public019 executables use compiled continuations and owned tasks."""
+from host_fixture import run_native
 import json
 from pathlib import Path
 import shutil
@@ -28,20 +29,20 @@ cases = [
 ]
 
 def cli(root, *args, success=True):
-    p = subprocess.run([nex, *map(str, args), '--json'], cwd=root, capture_output=True, text=True, timeout=180)
+    p = run_native([nex, *map(str, args), '--json'], cwd=root, capture_output=True, text=True, timeout=180)
     value = json.loads(p.stdout)
     assert (p.returncode == 0) == success, (args, p.returncode, value, p.stderr)
     return value
 
 with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as temporary:
     root = Path(temporary)
-    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'yield.nex'}))
+    (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'yield.nex'}), newline="\n")
     executable_root = root / 'standalone'
     executable_root.mkdir()
     results = []
     for name, body, status, stdout, trap in cases:
         source = root / (name + '.nex')
-        source.write_text('module application;\n' + body + '\n')
+        source.write_text('module application;\n' + body + '\n', newline="\n")
         for profile in ('debug', 'release'):
             built = cli(root, 'build', source, '--profile', profile)
             metadata = json.loads((Path(built['executable']).parent / 'build.json').read_text())
@@ -56,7 +57,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
             hidden = source.with_suffix('.hidden')
             source.rename(hidden)
             try:
-                actual = subprocess.run([str(target)], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
+                actual = run_native([str(target)], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
             finally:
                 hidden.rename(source)
             assert (actual.returncode, actual.stdout) == (status, stdout), (name, profile, actual.returncode, actual.stdout, actual.stderr)
@@ -69,14 +70,14 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
             results.append((name, profile))
 
     task = root / 'task.nex'
-    task.write_text('module boundary;fn main()->unit !{task}{task_yield();}')
+    task.write_text('module boundary;fn main()->unit !{task}{task_yield();}', newline="\n")
     profiled = cli(root, 'build', task, '--profile', 'profile')
-    dormant = subprocess.run([profiled['executable']], cwd='/', env={'PATH': '/usr/bin:/bin'},
+    dormant = run_native([profiled['executable']], cwd='/', env={'PATH': '/usr/bin:/bin'},
                              capture_output=True, text=True, timeout=15)
     assert (dormant.returncode, dormant.stdout, dormant.stderr) == (0, '', ''), dormant
     assert cli(root, 'build', task, '--library', success=False)['code'] == 'E_TASK_PROVIDER'
     pure = root / 'pure.nex'
-    pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->i64{return 42;}')
+    pure.write_text('module pure;fn unused()->unit !{task}{task_yield();}fn main()->i64{return 42;}', newline="\n")
     built = cli(root, 'build', pure)
     metadata = json.loads((Path(built['executable']).parent / 'build.json').read_text())
     assert metadata['runtime_requirements']['tasks'] is False, metadata
@@ -97,7 +98,7 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     ]
     for name, declaration, value_type in boundary_types:
         source = root / ('binary-boundary-' + name + '.nex')
-        source.write_text('module boundary;' + declaration + 'pub fn identity(value:' + value_type + ')->' + value_type + '{return value;}fn main()->unit{}')
+        source.write_text('module boundary;' + declaration + 'pub fn identity(value:' + value_type + ')->' + value_type + '{return value;}fn main()->unit{}', newline="\n")
         rejected = cli(root, 'build', source, '--library', '--entry', 'identity', success=False)
         assert rejected['code'] == 'E_TASK_PROVIDER', (name, rejected)
         rejected = cli(root, 'emit', source, '--kind', 'mlir', '--library', '--entry', 'identity', success=False)
@@ -105,19 +106,19 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
     # A clean primary entry does not make an additional public ABI export safe.
     exports = root / 'export-project'
     (exports / 'library').mkdir(parents=True)
-    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'library/main.nex'}))
+    (exports / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'library/main.nex'}), newline="\n")
     (exports / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
         'components': {'library': {'kind': 'static_library', 'root': 'library', 'entry': 'library/main.nex', 'entry_function': 'answer', 'exports': ['identity']}},
-    }))
-    (exports / 'library/main.nex').write_text('module exports;pub fn answer()->i64{return 42;}pub struct Box{run:fn()->i64 !{task};}pub fn identity(value:Box)->Box{return value;}')
+    }), newline="\n")
+    (exports / 'library/main.nex').write_text('module exports;pub fn answer()->i64{return 42;}pub struct Box{run:fn()->i64 !{task};}pub fn identity(value:Box)->Box{return value;}', newline="\n")
     rejected = cli(exports, 'project', '--kind', 'build', '--component', 'library', success=False)
     assert rejected['code'] == 'E_TASK_PROVIDER', rejected
     project = root / 'source-project'
     (project / 'app').mkdir(parents=True)
     (project / 'core').mkdir()
-    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'app/main.nex'}))
+    (project / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'app/main.nex'}), newline="\n")
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -125,14 +126,14 @@ with tempfile.TemporaryDirectory(prefix='nex task application 🧠 ') as tempora
             'core': {'kind': 'source', 'root': 'core', 'entry': 'core/work.nex'},
             'app': {'kind': 'executable', 'root': 'app', 'entry': 'app/main.nex', 'dependencies': {'core': 'source'}},
         },
-    }))
-    (project / 'core/work.nex').write_text('module core;pub fn work()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task,throw}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}')
-    (project / 'app/main.nex').write_text('module app;import "../core/work.nex" as core;fn main()->unit !{task,io,throw}{print(core::work());}')
+    }), newline="\n")
+    (project / 'core/work.nex').write_text('module core;pub fn work()->i64 !{task,throw}{return with_tasks(1,fn(s:task_scope)->i64 !{task,throw}{let t:task<i64>=task_spawn(s,fn()->i64 !{task}{task_yield();return 42;});return task_wait(t);});}', newline="\n")
+    (project / 'app/main.nex').write_text('module app;import "../core/work.nex" as core;fn main()->unit !{task,io,throw}{print(core::work());}', newline="\n")
     planned = cli(project, 'project', '--kind', 'build', '--component', 'app')
     app = next(artifact for artifact in planned['artifacts'] if artifact['component'] == 'app')
     metadata = json.loads(Path(app['metadata']).read_text())
     assert metadata['runtime_requirements']['tasks'] is True, metadata
-    actual = subprocess.run([app['artifact']], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
+    actual = run_native([app['artifact']], cwd='/', env={'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, timeout=15)
     assert (actual.returncode, actual.stdout, actual.stderr) == (0, '42\n', ''), actual
     observed = cli(project, 'project', '--kind', 'run', '--component', 'app')
     assert observed['observation']['stdout'] == '42\n' and observed['observation']['exit_code'] == 0, observed

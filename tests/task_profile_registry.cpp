@@ -1,9 +1,12 @@
+#include "host_test.h"
 #include "nex_task_frame.h"
 #include "nex_profile.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 using namespace nexrt;
 extern "C" const char *nex_profile_build_info(){return "{\"schema\":\"nex.profile-build/2\",\"task_profile_catalog\":\"registry-probe\"}";}
@@ -42,7 +45,16 @@ void child(const std::string &mode){
  auto snapshot=collector->snapshot();require(snapshot.functions.size()==3,"site footprint mismatch");require(snapshot.functions[0].calls==0&&snapshot.functions[1].calls==1&&snapshot.functions[2].calls==1,"helper/activation counted incorrectly");require(snapshot.functions[2].completed==1,"root activation did not complete");for(const auto &task:snapshot.tasks)require(task.terminal&&task.activeInvocations==0,"profile task did not retire");require(!snapshot.drops.incomplete,"multi-range measurement incomplete");require(liveObjects.load()==0,"retained source object leak");nex_runtime_finish();
 }
 }
-int main(int argc,char **argv){try{if(argc>1){child(argv[1]);return 0;}char path[]="/tmp/nex-task-registry-XXXXXX";require(::mkdtemp(path),"mkdtemp failed");auto report=std::filesystem::path(path)/"runtime.json";
- for(const auto *mode:{"invalid","duplicate","tracy","dormant","profile"}){auto pid=::fork();require(pid>=0,"fork failed");if(!pid){::unsetenv("NEX_TRACY");::unsetenv("NEX_PROFILE_OUTPUT");if(std::string(mode)=="profile"||std::string(mode)=="duplicate")::setenv("NEX_PROFILE_OUTPUT",report.c_str(),1);::execl(argv[0],argv[0],mode,nullptr);::_exit(127);}int status=0;require(::waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&WEXITSTATUS(status)==0,"registry child failed");}
- std::ifstream input(report);std::string json{std::istreambuf_iterator<char>(input),{}};require(json.find("nex.profile-runtime/3")!=std::string::npos,"provider raw3 absent");require(json.find("\"catalog\":{\"schema\":\"nex.task-profile-runtime-catalog/1\"")!=std::string::npos,"raw range catalog absent");require(json.find("\"incomplete\":false")!=std::string::npos,"valid registry report incomplete");for(const auto *key:{"registry_record_capacity","registry_record_capacity_bytes","registry_component_text_capacity_bytes","metadata_record_capacity_bytes","metadata_text_capacity_bytes","site_lookup_capacity_bytes"})require(json.find(std::string("\"")+key+"\":")!=std::string::npos,"provider backing capacity gauge absent");std::filesystem::remove_all(path);std::cout<<"task profile registry PASS "<<checks<<" parent checks +isolated children\n";return 0;
+int main(int argc,char **argv){try{if(argc>1){child(argv[1]);return 0;}auto pattern=(std::filesystem::temp_directory_path()/"nex-task-registry-XXXXXX").string();auto path=pattern.data();require(::mkdtemp(path),"mkdtemp failed");auto report=std::filesystem::path(path)/"runtime.json";
+ for(const auto *mode:{"invalid","duplicate","tracy","dormant","profile"}){
+#ifdef _WIN32
+ nex_test::Environment tracy("NEX_TRACY",std::nullopt);
+ nex_test::Environment output("NEX_PROFILE_OUTPUT",std::string(mode)=="profile"||std::string(mode)=="duplicate"?std::optional(report.string()):std::nullopt);
+ require(nex_test::run(std::filesystem::absolute(argv[0]),{mode})==0,"registry child failed");
+#else
+auto pid=::fork();require(pid>=0,"fork failed");if(!pid){::unsetenv("NEX_TRACY");::unsetenv("NEX_PROFILE_OUTPUT");if(std::string(mode)=="profile"||std::string(mode)=="duplicate")::setenv("NEX_PROFILE_OUTPUT",report.c_str(),1);::execl(argv[0],argv[0],mode,nullptr);::_exit(127);}int status=0;require(::waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&WEXITSTATUS(status)==0,"registry child failed");
+#endif
+ }
+
+ std::ifstream input(report);std::string json{std::istreambuf_iterator<char>(input),{}};input.close();require(json.find("nex.profile-runtime/3")!=std::string::npos,"provider raw3 absent");require(json.find("\"catalog\":{\"schema\":\"nex.task-profile-runtime-catalog/1\"")!=std::string::npos,"raw range catalog absent");require(json.find("\"incomplete\":false")!=std::string::npos,"valid registry report incomplete");for(const auto *key:{"registry_record_capacity","registry_record_capacity_bytes","registry_component_text_capacity_bytes","metadata_record_capacity_bytes","metadata_text_capacity_bytes","site_lookup_capacity_bytes"})require(json.find(std::string("\"")+key+"\":")!=std::string::npos,"provider backing capacity gauge absent");std::filesystem::remove_all(path);std::cout<<"task profile registry PASS "<<checks<<" parent checks +isolated children\n";return 0;
  }catch(const std::exception &e){std::cerr<<e.what()<<'\n';return 1;}}

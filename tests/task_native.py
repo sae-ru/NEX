@@ -1,4 +1,5 @@
 """Execute real MLIR/LLVM compiled continuation steps through the OS scheduler."""
+from host_fixture import run_native
 import argparse,contextlib,hashlib,json,os,re,shutil,subprocess,sys,tempfile
 from pathlib import Path
 
@@ -10,7 +11,7 @@ env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'}
 if args.sanitizer=='address':env.update(ASAN_OPTIONS='detect_leaks=1:halt_on_error=1:abort_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
 if args.sanitizer=='thread':env.update(TSAN_OPTIONS='halt_on_error=1:abort_on_error=1')
 def run(args,**kw):
- p=subprocess.run(list(map(str,args)),text=True,capture_output=True,env=env,timeout=180,**kw)
+ p=run_native(list(map(str,args)),text=True,capture_output=True,env=env,timeout=180,**kw)
  if p.returncode:raise AssertionError(str(args)+'\n'+p.stdout+p.stderr)
  return p.stdout
 doctor=json.loads(run([nex,'doctor','--json']));clang=doctor['native_compiler']
@@ -200,7 +201,7 @@ with compiled_output() as tmp:
   run([clang,'-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,'-c',runtime/name,'-o',obj]);objects.append(obj)
  mirrors=0;typescript_mirrors=0;asynchronous_ast=0;fixture_hashes={}
  for name,body,result,prefix,minimum in cases:
-  path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
+  path=root/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n', newline="\n")
   fixture_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
   reference=json.loads(run([args.reference,path,'parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'private']))
   assert reference['stdout']==prefix,(name,reference)
@@ -209,9 +210,9 @@ with compiled_output() as tmp:
    if len(expected)>2 and expected[2]!='0':assert reference['line']==int(expected[2]),(name,reference)
   else:assert reference['ok'] is True and reference['representation']==result,(name,reference)
   asynchronous_ast+=1
-  folder=root/name;metadata=json.loads(run([probe,path,folder,triple,layout,'main']))
+  folder=root/(("case-"+name) if os.name=="nt" and name.upper()=="NUL" else name);metadata=json.loads(run([probe,path,folder,triple,layout,'main']))
   assert metadata['public_source_tasks'] is False
-  cpp=folder/'driver.cpp';cpp.write_text(driver.replace('SYMBOL',metadata['symbol']).replace('DESCRIPTOR',metadata['descriptor']).replace('KINDS',','.join(map(str,metadata['slots']))).replace('PARAMETERS',','.join(map(str,metadata['parameters']))).replace('SLOTCOUNT',str(len(metadata['slots']))).replace('PARAMCOUNT',str(len(metadata['parameters']))).replace('MINIMUM',str(minimum)).replace('REPEATS','4' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '2' if name=='loop' else '1').replace('WORKERS','2' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '1').replace('CANCEL_CASE','1' if name=='cancel-call' else '0').replace('INPUTARGS','{nexrt::Value(21)}' if name=='parameter' else '{}'))
+  cpp=folder/'driver.cpp';cpp.write_text(driver.replace('SYMBOL',metadata['symbol']).replace('DESCRIPTOR',metadata['descriptor']).replace('KINDS',','.join(map(str,metadata['slots']))).replace('PARAMETERS',','.join(map(str,metadata['parameters']))).replace('SLOTCOUNT',str(len(metadata['slots']))).replace('PARAMCOUNT',str(len(metadata['parameters']))).replace('MINIMUM',str(minimum)).replace('REPEATS','4' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '2' if name=='loop' else '1').replace('WORKERS','2' if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else '1').replace('CANCEL_CASE','1' if name=='cancel-call' else '0').replace('INPUTARGS','{nexrt::Value(21)}' if name=='parameter' else '{}'), newline="\n")
   for optimize in ('-O0','-O2'):
    executable=folder/('program'+optimize)
    command=[clang,'-std=c++20',optimize,'-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sanitize,folder/'program.ll',cpp,*objects,'-pthread','-o',executable]
@@ -225,9 +226,9 @@ with compiled_output() as tmp:
   mirror=body.replace('task_yield();','').replace('!{task,io}','!{io}').replace('!{task}','')
   call='main(21)' if name=='parameter' else 'main()'
   observation=call+';print(0);' if name=='unit' else 'print('+call+');'
-  mirrored=root/(name+'-mirror.nex');mirrored.write_text('module mirror;\n'+mirror+'\ntest fn observe()->unit !{io}{'+observation+'}\n')
+  mirrored=root/(name+'-mirror.nex');mirrored.write_text('module mirror;\n'+mirror+'\ntest fn observe()->unit !{io}{'+observation+'}\n', newline="\n")
   if result.startswith('TRAP:'):
-   reference=subprocess.run([nex,'eval',str(mirrored),'--entry','observe','--json'],capture_output=True,text=True,env=env)
+   reference=run_native([nex,'eval',str(mirrored),'--entry','observe','--json'],capture_output=True,text=True,env=env)
    value=json.loads(reference.stdout);assert reference.returncode==1 and value['code']==result.split(':')[1] and value['stdout']==prefix,(name,value)
   else:
    text=json.loads(result) if result.startswith('"') else result
@@ -239,7 +240,7 @@ with compiled_output() as tmp:
  for body in [
   'server fn main()->str !{task,fs}{task_yield();return unwrap(file_read_text(\"file\"));}',
  ]:
-  path=root/'rejected.nex';path.write_text('module rejected;'+body)
-  rejected=subprocess.run([probe,str(path),str(root/'rejected'),triple,layout,'main'],capture_output=True,text=True,env=env)
+  path=root/'rejected.nex';path.write_text('module rejected;'+body, newline="\n")
+  rejected=run_native([probe,str(path),str(root/'rejected'),triple,layout,'main'],capture_output=True,text=True,env=env)
   assert rejected.returncode==1 and json.loads(rejected.stdout)['code']=='E_TASK_UNIMPLEMENTED',rejected.stdout+rejected.stderr
  print(json.dumps({'ok':True,'source_scenarios':len(cases),'native_profiles':2,'source_fixture_sha256':fixture_hashes,'independent_asynchronous_ast_scenarios':asynchronous_ast,'reference_scheduler':'independent cooperative checked AST','ordinary_ast_mirrors':mirrors,'ordinary_typescript_mirrors':typescript_mirrors,'mirror_suspension':'yield erased; no asynchronous reference/TypeScript support claimed','compiled_worker_threads':max(2 if name in ('parameter','direct','task-snapshot','scope-basic','scope-spawn') else 1 for name,*_ in cases),'public_source_tasks':False,'native_yield_steps':True,'logical_task_calls':True,'task_closure_descriptors':True,'combined_call_depth':256,'scope_channels':True,'native_scope_channel_scenarios':sum(name.startswith('scope-') for name,*rest in cases),'available_cases':available_cases,'selected_cases':args.selected_cases,'compiled_call_cancellation':True,'sanitizer':args.sanitizer,'sanitizer_scope':'compiled source modules/runtime/driver; ordinary AST/TypeScript mirrors uninstrumented'}))

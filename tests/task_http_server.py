@@ -1,4 +1,5 @@
 """Real public task HTTP requests: control, identity, file authority and cleanup."""
+from host_fixture import stop_server
 import argparse,concurrent.futures,contextlib,hashlib,http.client,json,os,queue,re,signal,socket,ssl,subprocess,tempfile,threading,time,traceback
 from pathlib import Path
 
@@ -11,13 +12,13 @@ report={'schema':'nex.task-http-server/1','ok':False,'state':'starting','command
  'compiler':str(compiler),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
  'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'language':'0.27',
  'images':[],'cancel_observations':[],'public_HTTP_task_target':True,'async_network_DB_claimed':False,'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def require(value,message):
  global checks
  checks+=1;assert value,message
 def run(name,argv,expected=0,timeout=600):
  report['state']=name;save();p=subprocess.run(list(map(str,argv)),cwd=root,capture_output=True,text=True,timeout=timeout)
- (root/(name+'.stdout')).write_text(p.stdout);(root/(name+'.stderr')).write_text(p.stderr)
+ (root/(name+'.stdout')).write_text(p.stdout, newline="\n");(root/(name+'.stderr')).write_text(p.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':p.returncode,'expected':expected});save()
  require(p.returncode==expected,(name,p.returncode,p.stdout[-2000:],p.stderr[-3000:]));return p
 def cli(name,*argv,expected=0):return json.loads(run(name,[compiler,*argv,'--json'],expected).stdout)
@@ -77,10 +78,10 @@ def server(image,*options,grant='write',workers=4,tls=False):
   line=lines.get(timeout=20);match=re.fullmatch(r'NEX server (https?)://127\.0\.0\.1:([0-9]+)\n',line)
   require(bool(match) and match.group(1)==('https' if tls else 'http'),('server failed to start',line));yield int(match.group(2))
  finally:
-  if process.poll() is None:process.send_signal(signal.SIGTERM)
+  if process.poll() is None:stop_server(process)
   try:stdout,stderr=process.communicate(timeout=15)
   except subprocess.TimeoutExpired:process.kill();stdout,stderr=process.communicate();raise
-  thread.join(timeout=2);(root/('server-'+str(number)+'.stdout')).write_text(line+stdout);(root/('server-'+str(number)+'.stderr')).write_text(stderr)
+  thread.join(timeout=2);(root/('server-'+str(number)+'.stdout')).write_text(line+stdout, newline="\n");(root/('server-'+str(number)+'.stderr')).write_text(stderr, newline="\n")
   report.setdefault('servers',[]).append({'number':number,'argv':list(map(str,argv)),'exit_code':process.returncode,'grant':grant,'TLS':tls});save()
   require(process.returncode==0,('server cleanup failed',process.returncode,stderr));require('E_INTERNAL_LEAK' not in stderr and 'libc++abi' not in stderr,stderr)
 def request(port,path,token=None,body=None,method='GET',timeout=5,tls=False):
@@ -94,10 +95,10 @@ def request(port,path,token=None,body=None,method='GET',timeout=5,tls=False):
  report['requests'].append({'path':path,'method':method,'TLS':tls,'input_body':body,'status':status,'response':value,'request_id':head.get('X-Request-Id')})
  return status,value,head
 try:
- source=root/'server.nex';source.write_text(SOURCE);auth=root/'private-auth.json'
- (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'server.nex'})+'\n')
+ source=root/'server.nex';source.write_text(SOURCE, newline="\n");auth=root/'private-auth.json'
+ (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'server.nex'})+'\n', newline="\n")
  alice=cli('alice','token','--user','alice','--auth',auth)['token'];bob=cli('bob','token','--user','bob','--auth',auth)['token']
- files=root/'files';files.mkdir();(files/'input').write_text('input 🌍\0β')
+ files=root/'files';files.mkdir();(files/'input').write_text('input 🌍\0β', newline="\n")
  run('TLS-certificate',['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'private-key.pem','-out',root/'cert.pem','-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'])
  reference=cli('reference','eval',source,'--entry','task_http::reference');oracle=json.loads(reference['value'])
  require(oracle=={'user':'alice','request_id':'1','body':'A🌍\0β','answer':'42'},oracle)

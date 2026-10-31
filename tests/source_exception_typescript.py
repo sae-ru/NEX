@@ -8,7 +8,7 @@ out=Path(a.output or os.environ.get('NEX_EXCEPTION_TYPESCRIPT_OUTPUT') or tempfi
 env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic();records=[];programs=[]
 report={'ok':False,'public_language':'0.24','private_identity':'0.25-prototype','public_source_support':False,'public_typescript_support':False,'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'cases':records}
 def save():
- report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+ report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(cmd,timeout=120):
  r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,timeout=timeout,env=env)
  if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
@@ -32,14 +32,14 @@ process.stdout.write(JSON.stringify({...record,output:logs.join('\n')+(logs.leng
 '''
 save()
 for name,text in cases:
- d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}))
- f=d/'main.nex';f.write_text('module native_exception;\n'+text.replace('\\\\u','\\u')+'\n')
- reference=json.loads(run([probe,'reference',f]));(d/'reference.json').write_text(json.dumps(reference,indent=2)+'\n')
+ d=out/(('case-'+name) if os.name=='nt' and name.upper()=='NUL' else name);d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n")
+ f=d/'main.nex';f.write_text('module native_exception;\n'+text.replace('\\\\u','\\u')+'\n', newline="\n")
+ reference=json.loads(run([probe,'reference',f]));(d/'reference.json').write_text(json.dumps(reference,indent=2)+'\n', newline="\n")
  run([probe,'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text())
  assert mapping['schema']=='nex.private-typescript-exception-map/1' and mapping['language']=='0.25-prototype' and mapping['source_support'] is False and mapping['public_revision'] is False and 'revision' not in mapping
  assert mapping['execution']=='synchronous' and 'function*' not in (d/'program.ts').read_text(),name
  assert all(isinstance(v['operations'],list) and v['operations'] for v in mapping['functions']),name
- script=d/'run.mjs';script.write_text(runner);raw=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]);actual=json.loads(raw);(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
+ script=d/'run.mjs';script.write_text(runner, newline="\n");raw=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]);actual=json.loads(raw);(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n', newline="\n")
  assert actual['kind']==reference['kind'],(name,actual,reference)
  if reference['kind']=='return':
   expected=str(reference['value']) if type(reference['value']) is int else reference['value'];assert actual['value']==expected,(name,actual,reference)
@@ -67,19 +67,19 @@ if(!detail||detail.site[1]!==9||detail.code!=='A\u0000ðŸ§ '||detail.message!=='Î
 const result=nex.resultScope(()=>{try{return nex.propagate(nex.err('RESULT','value'));}catch(error){if(sourceException.details(error)!==undefined)throw new Error('Result propagation entered source handler');throw error;}});
 if(nex.isOk(result)||nex.errorCode(result)!=='RESULT')throw new Error('Result? boundary changed');++cases;
 process.stdout.write(JSON.stringify({ok:true,cases})+'\n');
-''')
+''', newline="\n")
 runtime_boundary=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',boundary/'run.mjs']));assert runtime_boundary['ok'] and runtime_boundary['cases']==8
-(boundary/'result.json').write_text(json.dumps(runtime_boundary,indent=2)+'\n')
+(boundary/'result.json').write_text(json.dumps(runtime_boundary,indent=2)+'\n', newline="\n")
 # Reachable server code is rejected before any client module is produced.
 rejections=[]
 for name,text,code in [
  ('parallel-stage','fn main()->i64{let values:list<i64>=parallel_map([1],fn(v:i64)->i64{return v;},2);return values[0];}','E_EXCEPTION_STAGE'),
  ('server-realm','server fn main()->i64{try{throw("SERVER","x");}catch(code,message){return 42;}}','E_REALM')]:
- d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'language':'0.24','entry':'main.nex'}));f=d/'main.nex';f.write_text('module rejected;'+text)
- r=subprocess.run([probe,'typescript',str(f),str(d)],text=True,capture_output=True,timeout=30,env=env);(d/'stderr.txt').write_text(r.stderr);assert r.returncode==1 and code in r.stderr,(name,r.returncode,r.stderr);assert not (d/'program.ts').exists();rejections.append({'name':name,'code':code,'passed':True})
+ d=out/(('case-'+name) if os.name=='nt' and name.upper()=='NUL' else name);d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module rejected;'+text, newline="\n")
+ r=subprocess.run([probe,'typescript',str(f),str(d)],text=True,capture_output=True,timeout=30,env=env);(d/'stderr.txt').write_text(r.stderr, newline="\n");assert r.returncode==1 and code in r.stderr,(name,r.returncode,r.stderr);assert not (d/'program.ts').exists();rejections.append({'name':name,'code':code,'passed':True})
 # Verify against the compiler pinned by the repository, without package downloads.
 tsc=Path(os.environ['NEX_TSC']).resolve();assert tsc.is_file(),tsc
 package=json.loads((tsc.parent.parent/'package.json').read_text());pin=json.loads((source/'web/package.json').read_text())['devDependencies']['typescript'];assert package['version']==pin,(package['version'],pin)
 checked=subprocess.run([node,str(tsc),'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',*map(str,programs)],text=True,capture_output=True,env=env,timeout=180)
-(out/'typecheck.stdout').write_text(checked.stdout);(out/'typecheck.stderr').write_text(checked.stderr);assert checked.returncode==0,checked.stdout+checked.stderr
+(out/'typecheck.stdout').write_text(checked.stdout, newline="\n");(out/'typecheck.stderr').write_text(checked.stderr, newline="\n");assert checked.returncode==0,checked.stdout+checked.stderr
 report.update(ok=True,native_shared_fixtures=native_count,typescript_comparisons=len(records),runtime_boundary=runtime_boundary,rejections=rejections,strict_typecheck=True,typescript_version=package['version'],native_fixture_file_sha256=hashlib.sha256(fixture_file.read_bytes()).hexdigest(),actual_native_execution_in_this_test=False,independent_reference_agreement=True);save();print(json.dumps({'ok':True,'comparisons':len(records),'runtime_boundary_cases':8,'stage_rejections':len(rejections),'typescript_version':package['version'],'report':str(out/'report.json')}))

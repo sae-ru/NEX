@@ -34,7 +34,7 @@ for(const mode of ['uncaught','rethrow','callable','legacy'])test('typed worker 
  await page.getByRole('button',{name:'Compute',exact:true}).click();await expect(page.getByRole('status')).toHaveText('9007199254741000 Worker 🧠');
 });
 '''
-(project/'tests/typed-browser.spec.js').write_text(spec)
+(project/'tests/typed-browser.spec.js').write_text(spec, newline="\n")
 with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 config=project/'playwright.typed.config.js';config.write_text('''import {defineConfig,devices} from '@playwright/test';
 export default defineConfig({testDir:'./tests',testMatch:'typed-browser.spec.js',workers:3,timeout:30000,
@@ -42,10 +42,10 @@ export default defineConfig({testDir:'./tests',testMatch:'typed-browser.spec.js'
  use:{baseURL:'http://127.0.0.1:PORT',trace:'retain-on-failure'},
  projects:[{name:'chromium',use:{...devices['Desktop Chrome']}},{name:'firefox',use:{...devices['Desktop Firefox']}},{name:'webkit',use:{...devices['Desktop Safari']}}],
  webServer:{command:'npm run preview -- --host 127.0.0.1 --port PORT --strictPort',url:'http://127.0.0.1:PORT',reuseExistingServer:false}});
-'''.replace('PORT',str(port)))
+'''.replace('PORT',str(port)), newline="\n")
 env=dict(os.environ)
 if a.browsers_path:env['PLAYWRIGHT_BROWSERS_PATH']=str(a.browsers_path.resolve())
-start=time.monotonic();r=subprocess.run([str(project/'node_modules/.bin/playwright'),'test','--config',str(config)],cwd=project,env=env,text=True,capture_output=True,timeout=600);(O/'browsers.stdout').write_text(r.stdout);(O/'browsers.stderr').write_text(r.stderr)
+start=time.monotonic();r=subprocess.run([str(project/'node_modules/.bin/playwright'),'test','--config',str(config)],cwd=project,env=env,text=True,capture_output=True,timeout=600);(O/'browsers.stdout').write_text(r.stdout, newline="\n");(O/'browsers.stderr').write_text(r.stderr, newline="\n")
 results=json.loads((project/'typed-browser-results.json').read_text());stats=results['stats'];good=r.returncode==0 and stats['expected']==(33 if a.variant=='async' else 30) and stats['unexpected']==0 and stats['flaky']==0 and stats['skipped']==0
-(O/'browser-report.json').write_text(json.dumps({'ok':good,'variant':a.variant,'actual_module_workers':True,'engines':['chromium','firefox','webkit'],'stats':stats,'exit':r.returncode,'seconds':round(time.monotonic()-start,3),'results':str(project/'typed-browser-results.json')},indent=2)+'\n')
+(O/'browser-report.json').write_text(json.dumps({'ok':good,'variant':a.variant,'actual_module_workers':True,'engines':['chromium','firefox','webkit'],'stats':stats,'exit':r.returncode,'seconds':round(time.monotonic()-start,3),'results':str(project/'typed-browser-results.json')},indent=2)+'\n', newline="\n")
 print(json.dumps({'ok':good,'variant':a.variant,'stats':stats,'report':str(O/'browser-report.json')}));assert good,(r.stdout[-4000:],r.stderr[-1000:])

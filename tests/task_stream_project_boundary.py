@@ -5,12 +5,12 @@ p=argparse.ArgumentParser();p.add_argument('probe',type=Path);p.add_argument('fi
 probe=a.probe.resolve();fixtures=a.fixtures.resolve();root=a.output.resolve();root.mkdir();started=time.monotonic()
 report={'schema':'nex.private024-project-boundary/1','ok':False,'state':'starting','commands':[],'rejections':[],'legacy':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public025_delivery_accepted':False,'full_objective_complete':False}
-def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n')
+def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def invoke(name,request,expected=0,env=None):
  report['state']=name;save();path=root/(name+'.request.json');write(path,request)
  raw=subprocess.run([probe,path],cwd=root,env=env or os.environ,capture_output=True,text=True,timeout=300)
- (root/(name+'.stdout')).write_text(raw.stdout);(root/(name+'.stderr')).write_text(raw.stderr)
+ (root/(name+'.stdout')).write_text(raw.stdout, newline="\n");(root/(name+'.stderr')).write_text(raw.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':[str(probe),str(path)],'exit_code':raw.returncode,'expected':expected});save()
  assert raw.returncode==expected,(name,raw.stdout,raw.stderr);return json.loads(raw.stdout)
 def linkage(capture):return next(row['task_linkage'] for entries in capture['expectations'].values() for row in entries if row['name']=='app')
@@ -44,8 +44,8 @@ try:
  for mode in ['static','shared']:
   project=root/('legacy-'+mode);project.mkdir()
   for part in ['leaf','app']:(project/part).mkdir()
-  (project/'leaf/main.nex').write_text('module leaf;pub server fn read()->str !{task,fs}{return unwrap(file_read_text("input"));}')
-  (project/'app/main.nex').write_text('module app;import "../leaf/main.nex" as leaf;server fn main()->unit !{task,fs,io}{print(leaf::read());}')
+  (project/'leaf/main.nex').write_text('module leaf;pub server fn read()->str !{task,fs}{return unwrap(file_read_text("input"));}', newline="\n")
+  (project/'app/main.nex').write_text('module app;import "../leaf/main.nex" as leaf;server fn main()->unit !{task,fs,io}{print(leaf::read());}', newline="\n")
   write(project/'nex.json',{'schema':'nex.project/1','language':'0.23','entry':'app/main.nex'})
   architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
    'leaf':{'kind':'shared_library' if mode=='shared' else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'read'},

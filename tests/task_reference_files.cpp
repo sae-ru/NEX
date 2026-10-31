@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex/task_reference.h"
 #include "nex/task_frontend.h"
 #include "nex_files.h"

@@ -1,4 +1,5 @@
 """DAP framing, reference separation and ownership on client disconnect."""
+from host_fixture import python_executable
 import base64
 import errno
 import importlib.util
@@ -105,7 +106,7 @@ class Transport(harness.ToolchainCase):
 
     def test_client_eof_sends_terminate_disconnect_to_owned_backend(self):
         marker=self.root/'disconnected.json';backend=self.root/'backend'
-        backend.write_text('#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\nwhile True:\n    r=read_packet(sys.stdin.buffer)\n    if r is None:break\n    if r["type"]=="response":\n        assert r["request_seq"]==900;continue\n    if r["command"]=="disconnect":\n        Path('+repr(str(marker))+').write_text(json.dumps(r));break\n    write_packet(sys.stdout.buffer,{"seq":1,"type":"response","command":r["command"],"request_seq":r["seq"],"success":True,"body":{}})\n    write_packet(sys.stdout.buffer,{"seq":900,"type":"request","command":"runInTerminal","arguments":{"args":["owned-backend"]}})\n')
+        backend=python_executable(backend,'#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\nwhile True:\n    r=read_packet(sys.stdin.buffer)\n    if r is None:break\n    if r["type"]=="response":\n        assert r["request_seq"]==900;continue\n    if r["command"]=="disconnect":\n        Path('+repr(str(marker))+').write_text(json.dumps(r));break\n    write_packet(sys.stdout.buffer,{"seq":1,"type":"response","command":r["command"],"request_seq":r["seq"],"success":True,"body":{}})\n    write_packet(sys.stdout.buffer,{"seq":900,"type":"request","command":"runInTerminal","arguments":{"args":["owned-backend"]}})\n',harness.native_fixture_compiler())
         backend.chmod(0o755)
         process=subprocess.Popen([sys.executable,str(harness.REPO/'debug/nex_dap.py'),'--backend',str(backend)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         timer=threading.Timer(10,process.terminate);timer.start()
@@ -126,7 +127,7 @@ class Transport(harness.ToolchainCase):
 
     def backend(self, body):
         backend=self.root/'backend'
-        backend.write_text('#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\n'+body)
+        backend=python_executable(backend,'#!/usr/bin/env python3\nimport sys,json\nfrom pathlib import Path\nsys.path.insert(0,'+repr(str(harness.REPO/'debug'))+')\nfrom nex_dap import read_packet,write_packet\n'+body,harness.native_fixture_compiler())
         backend.chmod(0o755)
         return backend
 

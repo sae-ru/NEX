@@ -8,17 +8,17 @@ if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex source streams ');root=Path(temporary.name)
 start=time.monotonic();report={'schema':'nex.private024-task-streams/1','ok':False,'state':'starting','cases':[],'commands':[],
  'source_language':'0.24','public_language':'0.24','public_source_streams':True,'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,args,env,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=root,env=env,text=True,capture_output=True,timeout=240)
- (root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr)
+ (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'args':list(map(str,args)),'exit_code':r.returncode,'expected':expected});save()
  assert r.returncode==expected,(name,r.returncode,r.stdout[-4000:],r.stderr[-4000:]);return r
 def invoke(name,mode,source,env,language='0.24',expected=0):
  return json.loads(run(name,[probe,mode,source,root/'native',language],env,expected).stdout)
 def fixture(path):
  path.mkdir();(path/'input').write_bytes(b'abcdef');(path/'large').write_bytes(b'x'*(3*1048576));(path/'directory').mkdir()
- outside=path.parent/(path.name+'-outside');outside.mkdir();(outside/'secret').write_text('unchanged');(path/'link').symlink_to(outside/'secret')
+ outside=path.parent/(path.name+'-outside');outside.mkdir();(outside/'secret').write_text('unchanged', newline="\n");(path/'link').symlink_to(outside/'secret')
  return outside
 
 cases=[
@@ -86,7 +86,7 @@ cases=[
 ]
 try:
  for name,body,writable,stdout in cases:
-  source=root/(name+'.nex');source.write_text('module streams;\n'+body+'\n');seen={}
+  source=root/(name+'.nex');source.write_text('module streams;\n'+body+'\n', newline="\n");seen={}
   for mode in ['reference','native']:
    files=root/(name+'-'+mode);outside=fixture(files);env={**os.environ,'NEX_FILES_ROOT':str(files)};env.pop('NEX_FILES_WRITE',None)
    if writable:env['NEX_FILES_WRITE']='1'
@@ -106,18 +106,18 @@ try:
     seen.update(executable=str(binary),executable_sha256=hashlib.sha256(binary.read_bytes()).hexdigest())
    assert (outside/'secret').read_text()=='unchanged' and not (files/'must-not-write').exists()
   report['cases'].append({'name':name,'native_reference':True,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),**seen});save()
- source=root/'retained023.nex';source.write_text('module old;server fn main()->unit !{task,fs}{file_open_write("must-not-write");}')
+ source=root/'retained023.nex';source.write_text('module old;server fn main()->unit !{task,fs}{file_open_write("must-not-write");}', newline="\n")
  env={**os.environ,'NEX_FILES_ROOT':str(root),'NEX_FILES_WRITE':'1'}
  old=invoke('retained023-check','check',source,env,'0.23');new=invoke('private024-check','check',source,env);assert old['revision']!=new['revision']
  for mode in ['eval','build']:
   result=invoke('retained023-'+mode,mode,source,env,'0.23',1);assert result['code']=='E_TASK_UNIMPLEMENTED'
- source.write_text('module rejected;server fn main()->unit !{task}{file_open_read("x");}')
+ source.write_text('module rejected;server fn main()->unit !{task}{file_open_read("x");}', newline="\n")
  assert invoke('missing-effect','check',source,env,expected=1)['code']=='E_EFFECT'
- source.write_text('module rejected;server fn get()->file !{fs}{return unwrap(file_open_read("x"));}server fn main()->unit !{task,fs}{get();}')
+ source.write_text('module rejected;server fn get()->file !{fs}{return unwrap(file_open_read("x"));}server fn main()->unit !{task,fs}{get();}', newline="\n")
  assert invoke('synchronous-helper','build',source,env,expected=1)['code']=='E_EFFECT'
- source.write_text('module rejected;server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("x"));encode_json(f);}')
+ source.write_text('module rejected;server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("x"));encode_json(f);}', newline="\n")
  assert invoke('wire-file','check',source,env,expected=1)['ok'] is False
- source.write_text('module browser;server fn hidden()->file !{task,fs}{return unwrap(file_open_read("PRIVATE_STREAM_SECRET"));}client fn main()->i64{return 42;}')
+ source.write_text('module browser;server fn hidden()->file !{task,fs}{return unwrap(file_open_read("PRIVATE_STREAM_SECRET"));}client fn main()->i64{return 42;}', newline="\n")
  emitted=invoke('client-pruning','typescript',source,env)['typescript'];assert 'PRIVATE_STREAM_SECRET' not in emitted and 'file_open_read' not in emitted
  assert not (root/'must-not-write').exists()
  report.update(ok=True,state='passed',native_reference_pairs=len(cases),retained023_execution_rejected=True,client_pruning=True,source_entry_absent_native_execution=True)

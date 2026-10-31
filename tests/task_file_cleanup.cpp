@@ -52,7 +52,7 @@ void settled(const ResourceRegionRetirement &retirement){
 }
 }
 int main(){try{
-  char model[]="/tmp/nex-file-cleanup-XXXXXX";auto *created=::mkdtemp(model);require(created,"mkdtemp failed");fs::path root(created);
+  auto model=(fs::temp_directory_path()/"nex-file-cleanup-XXXXXX").string();auto *created=::mkdtemp(model.data());require(created,"mkdtemp failed");fs::path root(created);
   struct Cleanup{fs::path root;~Cleanup(){std::error_code e;fs::remove_all(root,e);}}cleanup{root};
   std::ofstream(root/"input",std::ios::binary)<<"abcdef";
   std::ofstream(root/"existing",std::ios::binary)<<"unchanged";

@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_files.h"
 #include "nex_host.h"
 #include "nex_task_file_read.h"

@@ -150,7 +150,8 @@ struct TextFiles::Impl {
   Descriptor root;
   bool writable;
   ResourceDomain resources;
-  Impl(const std::string &path,bool writable):writable(writable){
+  const std::shared_ptr<const FileIOObserver> observer;
+  Impl(const std::string &path,bool writable,FileIOObserver observer={}):writable(writable),observer(observer?std::make_shared<const FileIOObserver>(std::move(observer)):nullptr){
     if(path.empty()||path.find('\0')!=std::string::npos||!absoluteRoot(path))throw DataError("CAPABILITY","file root must be an absolute configured directory");
     auto text=platform::wide(path);
     root=Descriptor(CreateFileW(text.c_str(),FILE_TRAVERSE|FILE_READ_ATTRIBUTES|SYNCHRONIZE,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,nullptr));
@@ -176,6 +177,7 @@ struct TextFiles::Impl {
   }
 };
 TextFiles::TextFiles(const std::string &root,bool writable):impl(std::make_shared<Impl>(root,writable)){}
+TextFiles::TextFiles(const std::string &root,bool writable,FileIOObserver observer):impl(std::make_shared<Impl>(root,writable,std::move(observer))){}
 TextFiles::~TextFiles()=default;
 std::unique_ptr<TextFiles> TextFiles::retain()const{return std::unique_ptr<TextFiles>(new TextFiles(impl));}
 struct FileReadLease::State {
@@ -320,13 +322,29 @@ struct FileResource::State {
   Descriptor descriptor;
   const FileMode mode;
   mutable std::mutex mutex;
-  State(Descriptor descriptor,FileMode mode):descriptor(std::move(descriptor)),mode(mode){}
+  const std::shared_ptr<const FileIOObserver> observer;
+  State(Descriptor descriptor,FileMode mode,std::shared_ptr<const FileIOObserver> observer):descriptor(std::move(descriptor)),mode(mode),observer(std::move(observer)){}
 };
 namespace {
+void observeFile(const std::shared_ptr<const FileIOObserver> &observer,FileIOOperation operation,
+    FileIOPhase phase,int64_t argument,int64_t result=0,int error=0){
+  if(!observer)return;
+  try{(*observer)(FileIOEvent{operation,phase,argument,result,error});}
+  catch(const DataError &){throw;}
+  catch(const std::bad_alloc &){throw;}
+  catch(...){throw DataError("E_TASK_HOST","file IO observer failed");}
+}
 template<class Lease,class Operation>
-auto streamCall(const Lease &lease,const TextFiles::Poll &poll,Operation operation){
+auto streamCall(const Lease &lease,const TextFiles::Poll &poll,FileIOOperation kind,int64_t argument,Operation operation){
   const auto &state=lease.value();check(poll);lease.check();
-  auto result=[&]{std::lock_guard guard(state.mutex);lease.check();return operation(state);}();
+  observeFile(state.observer,kind,FileIOPhase::Before,argument);
+  if(state.observer){check(poll);lease.check();}
+  int64_t result;DWORD error;
+  {std::lock_guard guard(state.mutex);lease.check();result=operation(state);error=GetLastError();}
+  // Callbacks run after the real syscall and outside the cursor lock. A
+  // callback can revoke/close but cannot publish an unadmitted completion.
+  observeFile(state.observer,kind,FileIOPhase::After,argument,result,result<0?int(error):0);
+  if(result<0)ioError(error);
   check(poll);lease.check();return result;
 }
 }
@@ -353,23 +371,33 @@ void FileStreamLease::checkSeek(int64_t offset)const{
 std::vector<uint8_t> FileStreamLease::read(int64_t maximum,const Poll &poll)const{
   auto retained=*this;auto lease=retained.physical;auto callback=[retained,copy=poll]{retained.check();if(copy)copy();retained.check();};checkRead(maximum);
   std::vector<uint8_t> content(static_cast<size_t>(maximum));
-  auto count=streamCall(lease,callback,[&](const auto &state){return winRead(state.descriptor.get(),content.data(),content.size());});content.resize(count);return content;
+  auto count=streamCall(lease,callback,FileIOOperation::Read,maximum,[&](const auto &state)->int64_t{
+    if(content.empty())return 0;DWORD count=0;
+    if(!ReadFile(state.descriptor.get(),content.data(),DWORD(content.size()),&count,nullptr))return GetLastError()==ERROR_HANDLE_EOF?0:-1;
+    return count;
+  });content.resize(size_t(count));return content;
 }
 int64_t FileStreamLease::write(std::span<const uint8_t> content,const Poll &poll)const{
   auto retained=*this;auto lease=retained.physical;auto callback=[retained,copy=poll]{retained.check();if(copy)copy();retained.check();};checkWrite(content.size());
-  return int64_t(streamCall(lease,callback,[&](const auto &state){return winWrite(state.descriptor.get(),content.data(),content.size());}));
+  return streamCall(lease,callback,FileIOOperation::Write,int64_t(content.size()),[&](const auto &state)->int64_t{
+    if(content.empty())return 0;DWORD count=0;
+    if(!WriteFile(state.descriptor.get(),content.data(),DWORD(content.size()),&count,nullptr))return -1;return count;
+  });
 }
 int64_t FileStreamLease::seek(int64_t offset,const Poll &poll)const{
   auto retained=*this;auto lease=retained.physical;auto callback=[retained,copy=poll]{retained.check();if(copy)copy();retained.check();};checkSeek(offset);
-  return streamCall(lease,callback,[&](const auto &state)->int64_t{LARGE_INTEGER desired{},actual{};desired.QuadPart=offset;if(!SetFilePointerEx(state.descriptor.get(),desired,&actual,FILE_BEGIN))ioError(GetLastError());return actual.QuadPart;});
+  return streamCall(lease,callback,FileIOOperation::Seek,offset,[&](const auto &state)->int64_t{LARGE_INTEGER desired{},actual{};desired.QuadPart=offset;if(!SetFilePointerEx(state.descriptor.get(),desired,&actual,FILE_BEGIN))return -1;return actual.QuadPart;});
 }
 int64_t FileStreamLease::size(const Poll &poll)const{
   auto retained=*this;auto lease=retained.physical;auto callback=[retained,copy=poll]{retained.check();if(copy)copy();retained.check();};
-  return streamCall(lease,callback,[](const auto &state){return fileSize(state.descriptor.get());});
+  return streamCall(lease,callback,FileIOOperation::Size,0,[](const auto &state)->int64_t{
+    LARGE_INTEGER size{};if(!GetFileSizeEx(state.descriptor.get(),&size))return -1;
+    if(size.QuadPart<0){SetLastError(ERROR_FILE_TOO_LARGE);return -1;}return size.QuadPart;
+  });
 }
 void FileStreamLease::flush(const Poll &poll)const{
   auto retained=*this;auto lease=retained.physical;auto callback=[retained,copy=poll]{retained.check();if(copy)copy();retained.check();};checkWrite(0);
-  streamCall(lease,callback,[](const auto &state){nexrt::flush(state.descriptor.get());return 0;});
+  streamCall(lease,callback,FileIOOperation::Flush,0,[](const auto &state)->int64_t{return FlushFileBuffers(state.descriptor.get())?0:-1;});
 }
 ByteBuffer FileResource::read(int64_t maximum,const Poll &poll)const{return ByteBuffer::owned(lease().read(maximum,poll));}
 int64_t FileResource::write(const ByteBuffer &bytes,const Poll &poll)const{auto retained=bytes;return lease().write(retained.view(),poll);}
@@ -391,11 +419,14 @@ FileResource TextFiles::openInAccess(const ResourceAccess &scope,const std::stri
   if(region){logical=region.reserve();settlement=ResourceSettlement::pending();creation.emplace(settlement);logical.attach(settlement);}
   auto create=[retained,path=std::move(path),callback=std::move(callback),mode,logical](const ResourcePermit &permit){
     auto poll=[&]{if(logical)logical.checkCreation();permit.check();check(callback);permit.check();if(logical)logical.checkCreation();};poll();auto parts=components(path);auto directory=parent(retained->root.get(),parts,poll);poll();existingRegular(directory.get(),parts.back());
+    auto operation=mode==FileMode::Read?FileIOOperation::OpenRead:mode==FileMode::WriteTruncate?FileIOOperation::OpenWrite:FileIOOperation::OpenAppend;
+    observeFile(retained->observer,operation,FileIOPhase::Before,0);if(retained->observer)poll();
     std::unique_ptr<PrivateSecurity> security;if(mode!=FileMode::Read)security=std::make_unique<PrivateSecurity>();
     auto file=openRelative(directory.get(),parts.back(),mode==FileMode::Read?FILE_READ_DATA:mode==FileMode::Append?FILE_APPEND_DATA:FILE_WRITE_DATA,
       mode==FileMode::Read?FILE_OPEN:FILE_OPEN_IF,FILE_NON_DIRECTORY_FILE,security?&security->descriptor:nullptr);kind(file.get(),false);poll();
     if(mode==FileMode::WriteTruncate){LARGE_INTEGER zero{};if(!SetFilePointerEx(file.get(),zero,nullptr,FILE_BEGIN)||!SetEndOfFile(file.get()))ioError(GetLastError());}
-    return std::make_unique<FileResource::State>(std::move(file),mode);
+    auto result=std::make_unique<FileResource::State>(std::move(file),mode,retained->observer);
+    observeFile(retained->observer,operation,FileIOPhase::After,0);if(retained->observer)poll();return result;
   };
   auto physical=executor?scope.makeOnExecutor<FileResource::State>(executor,std::move(create),settlement,true):scope.make<FileResource::State>(std::move(create),settlement);
   if(logical)logical.publish(physical.revocation());

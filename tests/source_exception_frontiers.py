@@ -1,4 +1,5 @@
 """Execute checked private mixed images and verify actual code/data ownership."""
+from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -101,18 +102,18 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
               "public_source_support": False, "descriptor_abi": "0x4e45585400002502"}
 
     def save():
-        (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", newline="\n")
 
     def run(label, argv, env=None, allowed=(0,), timeout=300):
-        result = subprocess.run(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout)
+        result = run_native(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout)
         for channel in ["stdout", "stderr"]:
-            (out / (label + "." + channel)).write_text(getattr(result, channel))
+            (out / (label + "." + channel)).write_text(getattr(result, channel), newline="\n")
         report["commands"].append({"label": label, "argv": list(map(str, argv)), "exit": result.returncode})
         save()
         assert result.returncode in allowed, (label, result.returncode, result.stdout[-1200:], result.stderr[-3000:])
         return result
 
-    run("target", [compiler, "-x", "c", "-S", "-emit-llvm", "/dev/null", "-o", out / "target.ll"])
+    run("target", [compiler, "-x", "c", "-S", "-emit-llvm", os.devnull, "-o", out / "target.ll"])
     target = (out / "target.ll").read_text()
     triple = re.search(r'target triple = "([^"]+)"', target)[1]
     layout = re.search(r'target datalayout = "([^"]+)"', target)[1]
@@ -136,7 +137,7 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         recipe = {"compiler": compiler_hash, "source": hashlib.sha256((runtime / name).read_bytes()).hexdigest(), "headers": headers, "flags": flags}
         if not (obj.is_file() and stamp.is_file() and json.loads(stamp.read_text()) == recipe):
             run("compile-" + name.replace('/','_'), [compiler, *flags, "-c", runtime / name, "-o", obj])
-            stamp.write_text(json.dumps(recipe, sort_keys=True) + "\n")
+            stamp.write_text(json.dumps(recipe, sort_keys=True) + "\n", newline="\n")
         objects.append(obj)
     shared_runtime = cache / ("libnex-private-runtime" + suffix)
     run("runtime-shared", [compiler, "-dynamiclib" if mac else "-shared", *objects, crypto, "-pthread", *(["-Wl,-install_name,@rpath/" + shared_runtime.name] if mac else ["-ldl", "-Wl,-soname," + shared_runtime.name]), "-o", shared_runtime])
@@ -147,10 +148,10 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         for name, text in sources.items():
             f = directory / name
             f.parent.mkdir(parents=True, exist_ok=True)
-            f.write_text(text)
-        (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.24", "entry": "app/main.nex"}))
+            f.write_text(text, newline="\n")
+        (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.24", "entry": "app/main.nex"}), newline="\n")
         context = directory / "context.json"
-        context.write_text(json.dumps({"schema": "nex.private-task-source/2", "file": str(directory / "app/main.nex"), "source": sources["app/main.nex"], "entry_unit": "app/main.nex", "units": [{"unit": k, "file": str(directory / k), "source": v} for k, v in sorted(sources.items())]}, ensure_ascii=False))
+        context.write_text(json.dumps({"schema": "nex.private-task-source/2", "file": str(directory / "app/main.nex"), "source": sources["app/main.nex"], "entry_unit": "app/main.nex", "units": [{"unit": k, "file": str(directory / k), "source": v} for k, v in sorted(sources.items())]}, ensure_ascii=False), newline="\n")
         return context, sources
 
     ctx, _ = materialize(out / "signatures", CASES["owned-file-resource"], "0" * 64)
@@ -161,14 +162,14 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     for name, op in [("create", 1), ("read", 2), ("add", 3), ("ordinary", 4), ("bad", 5)]:
         sha = hashlib.sha256(json.dumps(sigs[name], ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         rows.append('{sizeof(nex_ffi_export_v1),0,' + json.dumps(name) + ',' + json.dumps(sha) + ',callback,(void*)' + str(op) + '}')
-    (out / "module.c").write_text(MODULE.replace("EXPORTS", ",".join(rows)))
+    (out / "module.c").write_text(MODULE.replace("EXPORTS", ",".join(rows)), newline="\n")
     run("foreign-module", [compiler, "-x", "c", "-std=c11", "-shared", "-fPIC", "-fvisibility=hidden", "-I" + str(runtime), out / "module.c", "-o", bundle / "module"])
-    (bundle / "NOTICE").write_text("NEX ordinary mixed-image fixture\n")
-    manifest = {"schema": "nex.foreign-bundle/1", "platform": ("macos" if mac else "linux") + "-" + {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x86_64"}[platform.machine()], "entry": "module", "files": [{"path": name, "sha256": hashlib.sha256((bundle / name).read_bytes()).hexdigest()} for name in ["module", "NOTICE"]], "exports": {k: hashlib.sha256(json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest() for k, v in sigs.items()}, "notices": ["NOTICE"]}
-    (bundle / "manifest.json").write_text(json.dumps(manifest) + "\n")
+    (bundle / "NOTICE").write_text("NEX ordinary mixed-image fixture\n", newline="\n")
+    manifest = {"schema": "nex.foreign-bundle/1", "platform": ("windows" if os.name=="nt" else "macos" if mac else "linux") + "-" + {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x86_64", "amd64": "x86_64"}[platform.machine().lower()], "entry": "module", "files": [{"path": name, "sha256": hashlib.sha256((bundle / name).read_bytes()).hexdigest()} for name in ["module", "NOTICE"]], "exports": {k: hashlib.sha256(json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest() for k, v in sigs.items()}, "notices": ["NOTICE"]}
+    (bundle / "manifest.json").write_text(json.dumps(manifest) + "\n", newline="\n")
     pin = hashlib.sha256((bundle / "manifest.json").read_bytes()).hexdigest()
     catalog = out / "host.json"
-    catalog.write_text(json.dumps({"schema": "nex.foreign-host/1", "module_limit": 64, "libraries": {"host": {"directory": "bundle", "manifest_sha256": pin, "exports": list(sigs)}}}))
+    catalog.write_text(json.dumps({"schema": "nex.foreign-host/1", "module_limit": 64, "libraries": {"host": {"directory": "bundle", "manifest_sha256": pin, "exports": list(sigs)}}}), newline="\n")
 
     host_template = r'''#include "nex_host.h"
 #include "nex_task_frame.h"
@@ -239,7 +240,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         for mode in ["host-reference-context", "host-task-ir-context"]:
             files = directory / mode
             files.mkdir()
-            (files / "input").write_text("abcdef")
+            (files / "input").write_text("abcdef", newline="\n")
             events = files / "events"
             env = {**os.environ, "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}
             value = json.loads(run(name + "-" + mode, [reference, mode, ctx, str(budget), catalog if case.get("foreign") else "-"], env).stdout)
@@ -279,7 +280,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             if profiled:architecture['instrumentation'] = 'profile'
             if debugged:architecture.update(instrumentation='debug',debug_timeout_ms=60000)
             arch = model / "architecture.json"
-            arch.write_text(json.dumps(architecture))
+            arch.write_text(json.dumps(architecture), newline="\n")
             plan = json.loads(run(name + "-" + topology + "-plan", [probe, "plan", ctx, arch]).stdout)
             assert plan["schema"] == "nex.private-task-modules/" + str(architecture_version) and plan["archived"] is False and "revision" not in plan
             assert set(plan["component_images"]) == set(components)
@@ -305,7 +306,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     if component == "app":
                         assert ir.count("@main(") == 1
                         code = module / "linked.ll"
-                        code.write_text(ir.replace("@main(", "@nex_private_modules_entry("))
+                        code.write_text(ir.replace("@main(", "@nex_private_modules_entry("), newline="\n")
                     run(label + "-" + component + "-object", [compiler, "-c", "-fPIC", "-O" + optimization, code, "-o", module / "module.o"])
                     meta = json.loads((module / "metadata.json").read_text())
                     metadata += meta["operations"]
@@ -324,7 +325,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     checks.append('addresses=inspect(find(' + json.dumps(accessor) + '),' + json.dumps(function) + ',' + json.dumps(image_file(plan["definition_owners"][function], plan)) + ')&&addresses;')
                 host = host_template.replace("DECLARATIONS", "\n".join(declarations)).replace("CHECKS", "\n".join(checks)).replace("EXPECT_RUNTIME", str(int(shared))).replace("EXPECT_CODE", str(len(plan["images"]) - 1))
                 if debugged:host=host.replace('auto before=nexrt::liveObjects.load();','nex_private_module_debug_start();auto before=nexrt::liveObjects.load();').replace('bool clean=addresses&&','bool clean=nex_private_module_debug_finish()&&addresses&&')
-                (e / "host.cpp").write_text(host)
+                (e / "host.cpp").write_text(host, newline="\n")
                 run(label + "-host", [compiler, *flags, "-c", e / "host.cpp", "-o", e / "host.o"])
                 images, symbols = {}, {}
                 for image in plan["image_load_order"]:
@@ -341,7 +342,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                 assert len(set(v for row in symbols.values() for v in row)) == sum(map(len, symbols.values()))
                 files = e / "files"
                 files.mkdir()
-                (files / "input").write_text("abcdef")
+                (files / "input").write_text("abcdef", newline="\n")
                 events = files / "events"
                 env = {**os.environ, "PATH": "/usr/bin:/bin", "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events), "NEX_RESOURCE_DIR": str(out / "absent-sdk")}
                 if profiled:env['NEX_PROFILE_OUTPUT'] = str(e / 'profile.json')
@@ -415,7 +416,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         bad["unknown-architecture-schema"] = changed
         for name, value in bad.items():
             file = negative / (name + ".json")
-            file.write_text(json.dumps(value))
+            file.write_text(json.dumps(value), newline="\n")
             result = run("reject-" + name, [probe, "plan", ctx, file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": name, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -424,7 +425,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             changed = clone(record)
             changed[field] = value
             file = negative / ("record-" + field + ".json")
-            file.write_text(json.dumps(changed))
+            file.write_text(json.dumps(changed), newline="\n")
             result = run("reject-record-" + field, [probe, "validate", ctx, arch, "leaf", file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": "record-" + field, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -433,7 +434,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         entry["source"] = entry["source"].replace("return mid::run();", "let n:i64=mid::run();return n;")
         changed["source"] = entry["source"]
         ctx_changed = base / "changed-context.json"
-        ctx_changed.write_text(json.dumps(changed))
+        ctx_changed.write_text(json.dumps(changed), newline="\n")
         for topology in CASES["direct-catch"]["topologies"]:
             arch = base / topology / "architecture.json"
             prior = json.loads((out / ("direct-catch-" + topology + "-plan.stdout")).read_text())
@@ -444,7 +445,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             module = old / "changed-app"
             run("incremental-" + topology + "-emit", [probe, "emit", ctx_changed, arch, "app", module, triple, layout, "false"])
             code = module / "linked.ll"
-            code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("))
+            code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("), newline="\n")
             run("incremental-" + topology + "-object", [compiler, "-c", "-fPIC", code, "-o", module / "module.o"])
             # Use a new application filename while retaining the exact old
             # provider archives/shared images and the host's image expectations.
@@ -466,7 +467,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         architecture = json.loads((base / "shared-diamond/architecture.json").read_text())
         architecture["components"]["leaf"]["linkage"] = "static"
         file = base / "duplicate-shared-frontiers.json"
-        file.write_text(json.dumps(architecture))
+        file.write_text(json.dumps(architecture), newline="\n")
         result = run("reject-two-shared-frontiers", [probe, "plan", base / "context.json", file], allowed=(1,))
         assert "E_EXCEPTION_MODULE" in result.stderr and "multiple loaded machine images" in result.stderr
         report["rejections"].append({"name": "same-static-in-two-shared-frontiers", "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -483,7 +484,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             shutil.copyfile(catalog, moved / "host.json")
             files = moved / "files"
             files.mkdir()
-            (files / "input").write_text("abcdef")
+            (files / "input").write_text("abcdef", newline="\n")
             events = files / "events"
             hidden = []
             try:

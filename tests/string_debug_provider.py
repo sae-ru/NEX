@@ -1,4 +1,5 @@
 """Exercise actual provider streaming/range logic with bounded memory fixtures."""
+from host_fixture import nonregular
 import importlib.util
 import sys
 import types
@@ -111,7 +112,7 @@ class CoreImageMetadata(unittest.TestCase):
         self.fixture([(0x1000,0x2000,'/app')])
         link=self.core.with_name('link');link.symlink_to(self.core)
         with self.assertRaises(OSError):provider._elf_core_mapping(str(link),0x1234)
-        fifo=self.core.with_name('fifo');os.mkfifo(fifo)
+        fifo=self.core.with_name('fifo');nonregular(fifo)
         with self.assertRaises(ValueError):provider._elf_core_mapping(str(fifo),0x1234)
         with self.core.open('wb') as stream:stream.truncate(32*1024**3+1)
         with self.assertRaises(ValueError):provider._elf_core_mapping(str(self.core),0x1234)

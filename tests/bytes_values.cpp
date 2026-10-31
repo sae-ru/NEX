@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_host.h"
 #include "nex_files.h"
 #include "nex_json.h"
@@ -54,7 +55,13 @@ struct Environment {
   ~Environment(){if(original)::setenv(name.c_str(),original->c_str(),1);else ::unsetenv(name.c_str());nexrt::resetFileEnvironment();}
 };
 void noTemporary(const fs::path &root){for(const auto &entry:fs::recursive_directory_iterator(root))require(!entry.path().filename().string().starts_with(".nex-write-"),"temporary file leaked");}
-int descriptors(){int result=0;for(int fd=0;fd<512;++fd)if(::fcntl(fd,F_GETFD)>=0)++result;return result;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int result=0;for(int fd=0;fd<512;++fd)if(::fcntl(fd,F_GETFD)>=0)++result;return result;
+#endif
+}
 }
 extern "C" {
 void nex_profile_enter(const char*,const char*,int64_t,const char*){}
@@ -192,7 +199,7 @@ void selfTest(){
     for(auto path:{"../escape","/absolute","nested//file","nested/../file","nested/"}){code(files.readBytes(path),"VALIDATION");code(files.writeBytes(path,input),"VALIDATION");}
     fs::create_symlink(f.path/"target",f.path/"link");code(files.readBytes("link"),"VALIDATION");code(files.writeBytes("link",input),"VALIDATION");
     fs::create_directory_symlink(f.path/"nested",f.path/"linked");code(files.readBytes("linked/file"),"VALIDATION");code(files.writeBytes("linked/file",input),"VALIDATION");
-    require(::mkfifo((f.path/"fifo").c_str(),0600)==0,"FIFO fixture failed");code(files.readBytes("fifo"),"VALIDATION");code(files.writeBytes("fifo",input),"VALIDATION");code(files.readBytes("nested"),"VALIDATION");
+    nex_test::NonRegular nonregular(f.path/"fifo");code(files.readBytes("fifo"),"VALIDATION");code(files.writeBytes("fifo",input),"VALIDATION");code(files.readBytes("nested"),"VALIDATION");
     require(!fs::exists(f.path/"target")&&!fs::exists(f.path/"denied"),"denied write changed filesystem");noTemporary(f.path);
   });
   run("binary cancellation cleans descriptors and temporary files",[]{

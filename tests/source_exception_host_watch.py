@@ -26,16 +26,16 @@ def main():
             expression='f==f';frame=json.loads(run('nex-frame '+expression));assert frame['schema']=='nex.private-task-debug-frame/1'
             file=Path(config['directory'])/('frame-'+str(len(report.get('captures',[])))+'.json');file.write_text(json.dumps(frame,ensure_ascii=False)+'\\n');report.setdefault('captures',[]).append({'file':str(file),'expression':expression,'value':True})
 '''+marker)
-    (root/'host_watch_driver.py').write_text(driver)
+    (root/'host_watch_driver.py').write_text(driver, newline="\n")
     file_identity={'identity_kind':'file'};resource_identity={'identity_kind':'resource'}
     wants={'owned':[{'values':{'f':file_identity,'c':resource_identity},'types':{'f':'file'},'caller_values':{'outer':41},'min_frames':2}],
            'catch':[{'values':{'code':'HOST','message':'λ\0🙂','outer':41},'absent':['f','c','recovered']}],
            'recovered':[{'values':{'code':'HOST','message':'λ\0🙂','outer':41,'recovered':42},'absent':['f','c']}]}
     plans={str(next(i for i,line in enumerate(file.read_text().splitlines(),1) if '// STOP:'+tag in line)):visits for tag,visits in wants.items()}
     report={'ok':False,'cases':[],'commands':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'private_host_abi':'0x4e45585400002502'}
-    def save():(root/'host-watch-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    def save():(root/'host-watch-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,argv,env=None):
-        r=subprocess.run(list(map(str,argv)),cwd=directory,text=True,capture_output=True,env=env,timeout=180);(root/(label+'.stdout')).write_text(r.stdout);(root/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode==0,(label,r.returncode,r.stdout[-3000:],r.stderr[-2000:]);return r
+        r=subprocess.run(list(map(str,argv)),cwd=directory,text=True,capture_output=True,env=env,timeout=180);(root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode==0,(label,r.returncode,r.stdout[-3000:],r.stderr[-2000:]);return r
     save()
     for optimization in ['0','2']:
         label='host-watch-O'+optimization;e=directory/('O'+optimization);binary=e/'program'
@@ -43,8 +43,8 @@ def main():
         context=json.loads((e/'debug-context.json').read_text());assert context['descriptor_abi']==report['private_host_abi'] and context['archived'] is False and 'revision' not in context
         identity=run(label+'-identity',[emitter,'identity',binary]).stdout.strip().replace('-','').lower()
         context.update(program=str(binary),formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'));context['task_debug'].update(image_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),image_uuid=identity)
-        manifest=e/'host-debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n')
-        options=e/'host-session.json';options.write_text(json.dumps({'source':str(file),'plans':plans,'limit':1000000,'report':str(e/'host-lldb-report.json'),'watch':True,'directory':str(e),'source_files':[str(file)],'catalog':str(root/'host.json')},ensure_ascii=False,indent=2)+'\n')
+        manifest=e/'host-debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n', newline="\n")
+        options=e/'host-session.json';options.write_text(json.dumps({'source':str(file),'plans':plans,'limit':1000000,'report':str(e/'host-lldb-report.json'),'watch':True,'directory':str(e),'source_files':[str(file)],'catalog':str(root/'host.json')},ensure_ascii=False,indent=2)+'\n', newline="\n")
         files=e/'debug-files';files.mkdir();(files/'input').write_bytes(b'abcdef');events=files/'events';env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)}
         argv=[debugger,'--no-lldbinit','--batch',binary]
         for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(root/'host_watch_driver.py')),'nex-private-test-session '+str(options)]:argv+=['-o',command]

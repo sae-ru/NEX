@@ -3,6 +3,7 @@
 The probe accepts structured requests; this driver never relabels old source or
 imports a synthetic database in place of the retained 0.97 SDK fixture.
 """
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 from collections import Counter
 from contextlib import closing
@@ -38,7 +39,7 @@ def sha256(data):
 
 
 def write_json(path, value):
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf-8', newline="\n")
 
 
 def bundle(source, **files):
@@ -158,11 +159,11 @@ class MigrationChecks:
         except subprocess.TimeoutExpired as error:
             for suffix, captured in (('.stdout.json', error.stdout), ('.stderr.txt', error.stderr)):
                 text = captured.decode('utf-8', errors='replace') if isinstance(captured, bytes) else captured or ''
-                stem.with_suffix(suffix).write_text(text, encoding='utf-8')
+                stem.with_suffix(suffix).write_text(text, encoding='utf-8', newline="\n")
             write_json(stem.with_suffix('.process.json'), {'timeout': timeout})
             raise AssertionError((name, 'exceeded timeout', timeout)) from error
-        stem.with_suffix('.stdout.json').write_text(process.stdout, encoding='utf-8')
-        stem.with_suffix('.stderr.txt').write_text(process.stderr, encoding='utf-8')
+        stem.with_suffix('.stdout.json').write_text(process.stdout, encoding='utf-8', newline="\n")
+        stem.with_suffix('.stderr.txt').write_text(process.stderr, encoding='utf-8', newline="\n")
         write_json(stem.with_suffix('.process.json'), {'exit_code': process.returncode,
                    'seconds': time.monotonic() - started})
         assert process.returncode == (0 if ok else 1), (name, process.returncode, process.stdout, process.stderr)
@@ -271,7 +272,7 @@ class MigrationChecks:
         self.checks.append('public_current019_task_effect_repair_preserves_origin_all_rows_and_physical_sources')
         assert self.cli('public-current-task-eval', 'eval', '--revision', task['revision'], cwd=task_project)['value'] == 42
         public = self.output/'public-current-from018'; (public/'.nex').mkdir(parents=True)
-        with sqlite3.connect(public/'.nex/graph.db') as db: db.executescript(sql_bytes.decode())
+        with sqlite_connection(public/'.nex/graph.db') as db: db.executescript(sql_bytes.decode())
         for name, content in physical.items(): (public/name).write_bytes(content)
         start = database_state(public/'.nex/graph.db')
         reviewed = copy.deepcopy(original); reviewed['source'] = repaired; reviewed['bundle'] = candidate
@@ -304,9 +305,9 @@ class MigrationChecks:
         store = project / '.nex'
         store.mkdir(parents=True)
         database = store / 'graph.db'
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             db.executescript(sql_bytes.decode())
-        (project / 'main.nex').write_text(metadata['source'], encoding='utf-8')
+        (project / 'main.nex').write_text(metadata['source'], encoding='utf-8', newline="\n")
         write_json(project / 'nex.json', {'schema': 'nex.project/1', 'language': OLD_LANGUAGE, 'entry': 'main.nex'})
         shutil.copyfile(sql_path, project / 'original.sql')
         physical = {name: (project / name).read_bytes() for name in ('main.nex', 'nex.json', 'original.sql')}
@@ -419,9 +420,9 @@ class MigrationChecks:
 
         corrupt = self.output / 'corrupt-language' / '.nex'
         corrupt.mkdir(parents=True)
-        with sqlite3.connect(database) as source, sqlite3.connect(corrupt / 'graph.db') as target:
+        with sqlite_connection(database) as source, sqlite_connection(corrupt / 'graph.db') as target:
             source.backup(target)
-        with sqlite3.connect(corrupt / 'graph.db') as db:
+        with sqlite_connection(corrupt / 'graph.db') as db:
             db.execute('UPDATE revisions SET language=? WHERE hash=?', (OLD_LANGUAGE, revision))
         corrupt_before = database_state(corrupt / 'graph.db')
         rejected = self.probe('corrupt-revision-language', archived, mode='migrate', ok=False,
@@ -527,7 +528,7 @@ class MigrationChecks:
         public = self.output / 'public-migration'
         public_store = public / '.nex'
         public_store.mkdir(parents=True)
-        with sqlite3.connect(public_store / 'graph.db') as db:
+        with sqlite_connection(public_store / 'graph.db') as db:
             db.executescript(sql_bytes.decode())
         (public / 'main.nex').write_bytes(physical['main.nex'])
         (public / 'nex.json').write_bytes(physical['nex.json'])

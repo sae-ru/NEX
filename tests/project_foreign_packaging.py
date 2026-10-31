@@ -35,35 +35,35 @@ class ProjectForeignPackages(harness.ToolchainCase):
         self.application_notices()
         for name in ('core', 'bridge', 'first', 'second', 'server', 'foreign_server', 'assets'):
             (self.root / name).mkdir()
-        (self.root/'assets/index.html').write_text('<h1>Packaged companion</h1>')
+        (self.root/'assets/index.html').write_text('<h1>Packaged companion</h1>', newline="\n")
         original = self.file.read_text()
         (self.root / 'core/main.nex').write_text(original + '''
 pub server fn answer(x:i64)->i64!{ffi}{return echo(x);}
 pub server fn alternate(x:i64)->i64!{ffi}{return unused(x);}
-''')
+''', newline="\n")
         self.file.unlink()
         (self.root / 'bridge/main.nex').write_text('''module bridge;
 import "../core/main.nex" as c;
 pub server fn answer(x:i64)->i64!{ffi}{return c::answer(x);}
-''')
+''', newline="\n")
         (self.root / 'first/main.nex').write_text('''module first;
 import "../bridge/main.nex" as b;
 server fn main()->unit!{ffi,io}{print(b::answer(42));}
-''')
+''', newline="\n")
         (self.root / 'second/main.nex').write_text('''module second;
 import "../core/main.nex" as c;
 server fn main()->unit!{ffi,io}{print(c::alternate(7));}
-''')
+''', newline="\n")
         (self.root / 'server/main.nex').write_text('''module companion;
 import "std/http.nex" as http;
 server fn handle(request:http::Request)->http::Response{return http::json_response(200,"42");}
-''')
+''', newline="\n")
         (self.root / 'foreign_server/main.nex').write_text('''module foreign_service;
 import "std/http.nex" as http;
 import "../core/main.nex" as c;
 server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_response(200,str(c::answer(42)));}
-''')
-        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'first/main.nex'}))
+''', newline="\n")
+        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'first/main.nex'}), newline="\n")
         self.manifest = {'schema':'nex.project-build/1','default_configuration':'release',
             'configurations':{p:{'profile':p} for p in ('release','profile')}, 'components':{
                 'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'answer','exports':['alternate']},
@@ -72,7 +72,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
                 'second':{'kind':'executable','root':'second','entry':'second/main.nex','dependencies':{'core':'dynamic'}},
                 'server':{'kind':'server','root':'server','entry':'server/main.nex','dependencies':{'core':'dynamic'}},
                 'foreign_server':{'kind':'server','root':'foreign_server','entry':'foreign_server/main.nex','dependencies':{'core':'dynamic'}}}}
-        (self.root / 'nex.build.json').write_text(json.dumps(self.manifest))
+        (self.root / 'nex.build.json').write_text(json.dumps(self.manifest), newline="\n")
         self.cli('lock', 'server/main.nex')
 
     def package(self, *args, ok=True):
@@ -143,16 +143,16 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         denied = self.cli('project','--kind','package','--directory',self.root/'package',ok=False,env=self.env)
         self.assertEqual(denied['code'],'E_FFI_PACKAGE')
         self.catalogue['libraries']['test']['exports']=['echo']
-        self.host.write_text(json.dumps(self.catalogue))
+        self.host.write_text(json.dumps(self.catalogue), newline="\n")
         denied = self.package(ok=False)
         self.assertEqual(denied['code'],'E_TASK_FOREIGN_BINDING')
         self.assertFalse((self.root/'.nex').exists())
         self.assertFalse((self.root/'package').exists())
         self.assertEqual(self.events(),'')
         self.catalogue['libraries']['test']['exports']=['echo','unused']
-        self.host.write_text(json.dumps(self.catalogue))
+        self.host.write_text(json.dumps(self.catalogue), newline="\n")
         source=self.root/'core/main.nex'
-        source.write_text(source.read_text().replace(self.pin,'0'*64))
+        source.write_text(source.read_text().replace(self.pin,'0'*64), newline="\n")
         denied=self.package(ok=False)
         self.assertEqual(denied['code'],'E_TASK_FOREIGN_BINDING')
         self.assertFalse((self.root/'.nex').exists())
@@ -194,12 +194,12 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         wrapper=self.root/'compiler'
         wrapper.write_text('#!/bin/sh\nif [ ! -e '+shlex.quote(str(marker))+' ]; then\n'+
             'touch '+shlex.quote(str(marker))+'\nln -sf '+shlex.quote(replacement.name)+' '+shlex.quote(str(source))+'\nfi\n'+
-            'exec '+shlex.quote(driver)+' "$@"\n')
+            'exec '+shlex.quote(driver)+' "$@"\n', newline="\n")
         wrapper.chmod(0o700)
         tools=self.root/'toolchain.json'
-        tools.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.cli('doctor')['host'],'compiler':str(wrapper)}))
+        tools.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.cli('doctor')['host'],'compiler':str(wrapper)}), newline="\n")
         self.manifest['configurations']['release']['toolchain']='toolchain.json'
-        (self.root/'nex.build.json').write_text(json.dumps(self.manifest))
+        (self.root/'nex.build.json').write_text(json.dumps(self.manifest), newline="\n")
         denied=self.package('--component','first',ok=False)
         self.assertTrue(marker.exists())
         self.assertEqual(denied['code'],'E_PROJECT_INPUT_CHANGED')
@@ -217,7 +217,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         task.update(checks=[check],requirements=[{'id':'delivery','text':'Capture the checked FFI deployment without executing it',
             'targets':['native'],'checks':['package'],'bindings':[{'program':'app','kind':'function','symbol':'first::main'}]}])
         taskfile=self.root/'task.json'
-        taskfile.write_text(json.dumps(task))
+        taskfile.write_text(json.dumps(task), newline="\n")
         checked=self.cli('task',taskfile,'--kind','check','--foreign',self.host,env=self.env)
         self.assertTrue(checked['ok'])
         self.assertFalse((self.root/'.nex/build').exists())

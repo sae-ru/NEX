@@ -1,4 +1,5 @@
 """Actual private022 source resource calls, physical retirement and CPU progress."""
+from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -142,7 +143,7 @@ static void destroy(void *pointer){
 '''
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
-def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n', newline="\n")
 from source_resource_cli import fixture_for_current_cli
 
 def main():
@@ -159,8 +160,8 @@ def main():
  if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,marker=None):
   row={'label':label,'command':list(map(str,command))};report['commands'].append(row);write(out/'report.json',report)
-  result=subprocess.run(row['command'],cwd=out,env={**env,'NEX_TYPED_RESOURCE_MARKER':str(marker or out/(label+'.events'))},text=True,capture_output=True,timeout=240)
-  (out/(label+'.stdout')).write_text(result.stdout);(out/(label+'.stderr')).write_text(result.stderr);row['exit_code']=result.returncode
+  result=run_native(row['command'],cwd=out,env={**env,'NEX_TYPED_RESOURCE_MARKER':str(marker or out/(label+'.events'))},text=True,capture_output=True,timeout=240)
+  (out/(label+'.stdout')).write_text(result.stdout, newline="\n");(out/(label+'.stderr')).write_text(result.stderr, newline="\n");row['exit_code']=result.returncode
   assert result.returncode==expected,(label,result.returncode,result.stdout[-2500:],result.stderr[-2500:]);return result
  def source(pin,body):
   lines=['module owned_task;server resource Session;enum Maybe{Some(value:Session);None;}struct Packet{name:str;items:list<Session>;outcome:result<Session>;tag:Maybe;}client fn client_value()->i64{return 42;}']
@@ -191,11 +192,11 @@ def main():
   for dialect,compiler,standard in [('C11','clang','c11'),('CXX20','clang++','c++20')]:
    directory=out/dialect;directory.mkdir();header=directory/'typed-resource-signatures.h'
    digest=lambda s:hashlib.sha256(json.dumps(s,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-   header.write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in signatures.items())+'\n')
-   code=directory/('module.c' if dialect=='C11' else 'module.cpp');code.write_text(module);image=directory/'module.so'
+   header.write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in signatures.items())+'\n', newline="\n")
+   code=directory/('module.c' if dialect=='C11' else 'module.cpp');code.write_text(module, newline="\n");image=directory/'module.so'
    run(dialect+'-compile',[shutil.which(compiler),'-std='+standard,'-shared','-fPIC','-pthread','-I'+str(REPO/'runtime'),'-I'+str(directory),code,'-o',image])
-   (directory/'NOTICE').write_text('NEX source task owned-resource conformance producer\n')
-   manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':image.name,'files':[{'path':name,'sha256':sha(directory/name)} for name in (image.name,'NOTICE')],'exports':{name:digest(sig) for name,sig in signatures.items()},'notices':['NOTICE']}
+   (directory/'NOTICE').write_text('NEX source task owned-resource conformance producer\n', newline="\n")
+   manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':image.name,'files':[{'path':name,'sha256':sha(directory/name)} for name in (image.name,'NOTICE')],'exports':{name:digest(sig) for name,sig in signatures.items()},'notices':['NOTICE']}
    write(directory/'manifest.json',manifest);pin=sha(directory/'manifest.json')
    host=directory/'host.json';policy={'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':8,'resource_bytes':64,'libraries':{'test':{'directory':str(directory),'manifest_sha256':pin,'exports':list(signatures)}}};write(host,policy)
    if args.context_probe:

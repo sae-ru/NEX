@@ -9,10 +9,10 @@ execution=Path(a.existing_execution).resolve() if a.existing_execution else out/
 cmd=[sys.executable,'-B',str(source/'tests/source_exception_task_native.py'),a.emitter,a.reference,a.compiler,'--profile','--output',str(execution)]
 for name in names:cmd += ['--case',name]
 if not a.existing_execution:
-    result=subprocess.run(cmd,text=True,capture_output=True,timeout=1800);(out/'driver.stdout').write_text(result.stdout);(out/'driver.stderr').write_text(result.stderr);assert result.returncode==0,(result.returncode,result.stdout[-1000:],result.stderr[-4000:])
+    result=subprocess.run(cmd,text=True,capture_output=True,timeout=1800);(out/'driver.stdout').write_text(result.stdout, newline="\n");(out/'driver.stderr').write_text(result.stderr, newline="\n");assert result.returncode==0,(result.returncode,result.stdout[-1000:],result.stderr[-4000:])
 native=json.loads((execution/'report.json').read_text());assert native['ok'] and native['comparisons']==18 and native['source_programs']==9
 report={'ok':False,'cases':[],'execution':str(execution),'execution_report_sha256':hashlib.sha256((execution/'report.json').read_bytes()).hexdigest(),'verified_existing_execution':bool(a.existing_execution),'profile_api':'emitSourceExceptionTasksPrototypeNativeProfile','raw_runtime_schema':'nex.profile-runtime/2','public_profile_CLI_support':False,'archived':False,'security_checks_deferred_by_user':True}
-def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 save()
 for item in native['cases']:
     f=execution/item['name']/('O'+item['optimization'])/'profile.json';raw=json.loads(f.read_text());assert hashlib.sha256(f.read_bytes()).hexdigest()==item['profile_sha256']

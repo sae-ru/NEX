@@ -3,6 +3,7 @@
 The temporary TLS certificate is accepted only in the test browser context;
 this verifies CORS/fetch/application semantics, not production PKI deployment.
 """
+from host_fixture import stop_server
 import argparse
 import functools
 import http.server
@@ -26,7 +27,7 @@ args=parser.parse_args()
 repo=Path(__file__).resolve().parents[1];compiler=args.compiler.resolve();project=args.project.resolve();root=args.output.absolute()
 if os.path.lexists(root):raise SystemExit('requires a new output directory')
 root.mkdir(mode=0o700)
-(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'source/server.nex'})+'\n')
+(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'source/server.nex'})+'\n', newline="\n")
 spec=importlib.util.spec_from_file_location('mobile',repo/'tools/mobile_project.py');mobile=importlib.util.module_from_spec(spec);spec.loader.exec_module(mobile)
 env=dict(os.environ)
 if args.browsers_path:env['PLAYWRIGHT_BROWSERS_PATH']=str(args.browsers_path.resolve())
@@ -59,19 +60,19 @@ try:
         if phase=='initial':receipt=mobile.configure_api(root/'www/index.html',address)
         for asset in (root/'www').rglob('*'):
             if asset.is_file():assert all(token.encode() not in asset.read_bytes() for roles in tokens.values() for token in roles.values())
-        config=root/(phase+'-private.json');config.write_text(json.dumps({'client':client,'api':address,'tokens':tokens,'phase':phase,'result':str(root/(phase+'-result.json'))}));config.chmod(0o600)
+        config=root/(phase+'-private.json');config.write_text(json.dumps({'client':client,'api':address,'tokens':tokens,'phase':phase,'result':str(root/(phase+'-result.json'))}), newline="\n");config.chmod(0o600)
         try:
             result=subprocess.run([env.get('NEX_NODE','node'),str(script),str(config)],cwd=project,env=env,capture_output=True,text=True,timeout=150)
-            (root/(phase+'-browser.log')).write_text(result.stdout+result.stderr)
+            (root/(phase+'-browser.log')).write_text(result.stdout+result.stderr, newline="\n")
             assert result.returncode==0,result.stdout+result.stderr
             phases.append(json.loads((root/(phase+'-result.json')).read_text()))
         finally:
-            server.send_signal(signal.SIGTERM);out,err=server.communicate(timeout=15);exit_code=server.returncode;server=None
-            (root/(phase+'-server.log')).write_text(out+err)
+            stop_server(server);out,err=server.communicate(timeout=15);exit_code=server.returncode;server=None
+            (root/(phase+'-server.log')).write_text(out+err, newline="\n")
             assert exit_code==0 and 'E_INTERNAL_LEAK' not in err and 'libc++abi' not in err
     report={'ok':True,'scope':'cross-origin HTTPS fetch/CORS/application semantics; ephemeral certificate trusted by test browser context',
             'compiler_sha256':mobile.sha(compiler),'server_sha256':mobile.sha(built['executable']),'host_configuration':receipt,'phases':phases}
-    (root/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
+    (root/'verification.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
     print(json.dumps({'ok':True,'browsers':3,'phases':2,'report':str(root/'verification.json')}))
 finally:
     if server is not None:server.terminate();server.communicate(timeout=15)

@@ -38,15 +38,15 @@ report = {'schema': 'nex.private024-stream-inflight/1', 'ok': False,
 
 def save():
     report['seconds'] = round(time.monotonic() - started, 3)
-    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n', newline="\n")
 
 
 def run(name, argv, env=None, input=None):
     report['state']=name;save()
     result = subprocess.run(list(map(str, argv)), cwd=root, env=env or os.environ,
                             input=input, text=True, capture_output=True, timeout=180)
-    (root / (name + '.stdout')).write_text(result.stdout)
-    (root / (name + '.stderr')).write_text(result.stderr)
+    (root / (name + '.stdout')).write_text(result.stdout, newline="\n")
+    (root / (name + '.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'name': name, 'argv': list(map(str, argv)),
                               'exit_code': result.returncode})
     save()
@@ -134,9 +134,12 @@ try:
     target = run('target', [clang, '-S', '-emit-llvm', '-x', 'c++', '-', '-o', '-'], input='')
     triple = re.search(r'target triple = "([^"]+)"', target)[1]
     layout = re.search(r'target datalayout = "([^"]+)"', target)[1]
-    runtime = source_root / 'runtime'
+    runtime = Path(os.environ.get('NEX_RESOURCE_DIR',str(source_root))) / 'runtime'
     report['host_support_sha256']=hashlib.sha256((source_root/'tests/task_stream_inflight_support.h').read_bytes()).hexdigest()
     flags = ['-std=c++20', '-g', '-O0', '-pthread', '-DNEX_STRUCTURED_WORKERS', '-DNEX_ASYNC_TASKS', '-I', runtime]
+    if os.name=='nt':flags.append('-static')
+    native_libraries=['-lntdll','-lbcrypt','-ladvapi32'] if os.name=='nt' else ([] if sys.platform=='darwin' else ['-ldl'])
+    report['runtime_header_inventory_sha256']={str(path.relative_to(runtime)):hashlib.sha256(path.read_bytes()).hexdigest() for path in runtime.rglob('*') if path.suffix in ('.h','.hpp')}
     objects = []
     report['native_host_source_sha256'] = hashlib.sha256((source_root / 'tests/task_stream_inflight_native.cpp').read_bytes()).hexdigest()
     for name in ['runtime.cpp', 'nex_files.cpp', 'nex_task_external.cpp', 'nex_task_frame.cpp',
@@ -149,13 +152,13 @@ try:
     sources = {}
     for name, source in programs.items():
         path = root / (name + ('.json' if isinstance(source, dict) else '.nex'))
-        path.write_text(json.dumps(source) if isinstance(source, dict) else source)
+        path.write_text(json.dumps(source) if isinstance(source, dict) else source, newline="\n")
         sources[name] = path
         staged = json.loads(run(name + '-stage', [probe, 'stage', path, root / (name + '-staged'), '0.24', triple, layout]))
-        binary = root / (name + '-native')
+        binary = root / (name + ('-native.exe' if os.name=='nt' else '-native'))
         run(name + '-link', [clang, *flags, '-DNEX_TEST_DESCRIPTOR=' + staged['descriptor'],
                             source_root / 'tests/task_stream_inflight_native.cpp', staged['llvm'],
-                            *objects, *([] if sys.platform == 'darwin' else ['-ldl']), '-o', binary])
+                            *objects, *native_libraries, '-o', binary])
         report['images'][name] = {'executable': str(binary), 'sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
                                  'revision': staged['revision'], 'source_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                                  'llvm': staged['llvm'], 'llvm_sha256': hashlib.sha256(Path(staged['llvm']).read_bytes()).hexdigest(),

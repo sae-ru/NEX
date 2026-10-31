@@ -1,4 +1,5 @@
 """Captured compiler inputs, rejected candidates and frame-bound watch errors."""
+from sqlite_fixture import connection as sqlite_connection
 import base64
 import copy
 import json
@@ -16,11 +17,11 @@ SOURCE='module frontend;\nfn value()->i64{return 42;}\nfn main()->unit!{io}{prin
 
 class FrontendDiagnostics(harness.ToolchainCase):
     def ready(self):
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source(SOURCE);return self.cli('check')['revision']
 
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             names=[n for n, in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
             return {n:sorted(db.execute('SELECT * FROM "'+n.replace('"','""')+'"').fetchall(),key=repr) for n in names}
 
@@ -45,7 +46,7 @@ class FrontendDiagnostics(harness.ToolchainCase):
             page=self.cli('operations','--symbol','value')
             node=next(n for n in page['nodes'] if n['kind']=='expression.integer')
             value['expected_source_hash']=page['source_hash'];value['replacements']=[{'operation_id':node['id'],'source':source}]
-        path=self.root/'patch.json';path.write_text(json.dumps(value));return path
+        path=self.root/'patch.json';path.write_text(json.dumps(value), newline="\n");return path
 
     def test_parse_error_captures_actual_file_and_partial_closure(self):
         self.ready();before=self.rows();text='module broken;\nfn main()->unit{return }'
@@ -55,17 +56,17 @@ class FrontendDiagnostics(harness.ToolchainCase):
 
     def test_dependency_parse_error_captures_all_inputs_read_before_failure(self):
         self.ready();self.source('module app;import "./library.nex" as lib;fn main()->unit{}')
-        library=self.root/'library.nex';library.write_text('module library;pub fn bad()->i64{return }')
+        library=self.root/'library.nex';library.write_text('module library;pub fn bad()->i64{return }', newline="\n")
         first=self.frontend(self.cli('check',ok=False),'parse',complete=False)
         self.assertEqual(first['input_files'],2);self.assertEqual(first['source']['key']['data'],'library.nex')
         self.assertEqual(self.preview(first),library.read_bytes())
-        self.file.write_text('// changed context\n'+self.file.read_text())
+        self.file.write_text('// changed context\n'+self.file.read_text(), newline="\n")
         second=self.frontend(self.cli('check',ok=False),'parse',complete=False)
         self.assertEqual(first['source']['hash'],second['source']['hash']);self.assertNotEqual(first['source_inputs_hash'],second['source_inputs_hash'])
 
     def test_binding_error_has_complete_source_closure_and_no_new_graph_rows(self):
         self.ready();before=self.rows();self.source('module app;import "./library.nex" as lib;fn main()->unit{lib::missing();}')
-        (self.root/'library.nex').write_text('module library;pub fn value()->i64{return 42;}')
+        (self.root/'library.nex').write_text('module library;pub fn value()->i64{return 42;}', newline="\n")
         context=self.frontend(self.cli('check',ok=False),'bind',complete=True)
         self.assertEqual(context['input_files'],2);self.assertIn(b'lib::missing()',self.preview(context));self.assertEqual(self.rows(),before)
 
@@ -149,7 +150,7 @@ class FrontendDiagnostics(harness.ToolchainCase):
         for name in ['nex.json','main.nex']:shutil.copy2(self.root/name,moved/name)
         portable=self.frontend(self.cli('check',cwd=moved,ok=False),'check',complete=True)
         self.assertEqual(first['id'],portable['id']);self.assertEqual(first['source_inputs_hash'],portable['source_inputs_hash'])
-        self.file.write_text('// exact bytes changed\n'+text)
+        self.file.write_text('// exact bytes changed\n'+text, newline="\n")
         changed=self.frontend(self.cli('check',ok=False),'check',complete=True);self.assertNotEqual(first['id'],changed['id'])
 
     def test_frozen_import_error_never_rereads_physical_source(self):
@@ -157,21 +158,21 @@ class FrontendDiagnostics(harness.ToolchainCase):
         bad='module frozen;fn main()->i64{return "bad";}'
         graph={'schema':'nex.graph/2','language':harness.CURRENT_LANGUAGE,'revision':'0'*64,'source':bad,
             'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':bad}}}
-        path=self.root/'candidate.json';path.write_text(json.dumps(graph))
+        path=self.root/'candidate.json';path.write_text(json.dumps(graph), newline="\n")
         context=self.frontend(self.cli('import',path,ok=False),'check',complete=True)
         self.assertEqual(self.preview(context),bad.encode());self.assertEqual(self.rows(),before);self.assertEqual(self.cli('history')['head'],revision)
 
     def test_unicode_source_key_and_preview_remain_exact(self):
         self.ready();name='математика🧠.nex';self.source('module app;import "./'+name+'" as m;fn main()->i64{return m::value();}')
-        text='module library;pub fn value()->i64{return "bad";}';(self.root/name).write_text(text)
+        text='module library;pub fn value()->i64{return "bad";}';(self.root/name).write_text(text, newline="\n")
         context=self.frontend(self.cli('check',ok=False),'check',complete=True)
         self.assertEqual(context['source']['key']['encoding'],'utf-8');self.assertEqual(context['source']['key']['data'],name)
         self.assertEqual(self.preview(context),text.encode())
 
     def test_metadata_and_runtime_errors_keep_their_existing_distinctions(self):
-        self.ready();manifest=self.root/'nex.json';value=json.loads(manifest.read_text());value['language']='0.14';manifest.write_text(json.dumps(value))
+        self.ready();manifest=self.root/'nex.json';value=json.loads(manifest.read_text());value['language']='0.14';manifest.write_text(json.dumps(value), newline="\n")
         error=self.cli('check',ok=False);self.assertEqual(error['code'],'E_LANGUAGE_VERSION');self.assertNotIn('frontend',error)
-        value['language']=harness.CURRENT_LANGUAGE;manifest.write_text(json.dumps(value));self.source('module runtime;fn main()->unit{assert(false);}')
+        value['language']=harness.CURRENT_LANGUAGE;manifest.write_text(json.dumps(value), newline="\n");self.source('module runtime;fn main()->unit{assert(false);}')
         error=self.cli('eval',ok=False);self.assertEqual(error['code'],'E_ASSERT');self.assertNotIn('frontend',error)
         self.assertEqual(len(error['operation_site']),64);self.assertIn('operation_id',error)
 
@@ -193,6 +194,11 @@ class FrontendDiagnostics(harness.ToolchainCase):
 
     def test_non_utf8_source_key_is_rejected_without_json_abort(self):
         if sys.platform=='darwin':self.skipTest('macOS filesystem requires UTF-8 names')
+        if os.name=='nt':
+            self.ready();before=self.rows()
+            result=subprocess.run([harness.NEX,'check',str(self.root/'bad\udcff.nex'),'--json'],cwd=self.root,capture_output=True,timeout=20)
+            self.assertNotEqual(result.returncode,0);self.assertEqual(json.loads(result.stdout)['code'],'E_OPTION');self.assertEqual(self.rows(),before)
+            return
         self.ready();before=self.rows();path=os.fsencode(self.root)+b'/bad\xff.nex'
         with open(path,'wb') as output:output.write(SOURCE.encode())
         result=subprocess.run([os.fsencode(harness.NEX),b'check',path,b'--json'],cwd=self.root,capture_output=True,timeout=20)

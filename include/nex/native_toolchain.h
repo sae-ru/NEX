@@ -12,6 +12,9 @@ struct NativeToolchain {
   std::string identity;
 };
 NativeToolchain configureNative(const BuildOptions &options);
+// Wasm uses the host SDK's all-target LLVM tools, independently of an explicit
+// native target compiler/sysroot. NEX_WASM_CLANG is the dedicated override.
+NativeToolchain configureWasm();
 struct NativeToolchainSnapshot {
   std::string hash, target;
   bool hostCompatible = true;

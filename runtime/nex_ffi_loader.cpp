@@ -132,12 +132,20 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
 }
 struct Image {
   fs::path directory;void *handle=nullptr;
+#ifdef _WIN32
+  std::optional<host_windows::Identity> identity;
+#endif
   std::shared_ptr<foreign_detail::ResourceRegistry> resourceTypes=std::make_shared<foreign_detail::ResourceRegistry>();
   std::map<std::string,nex_ffi_export_v1> exports;
-  ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
+  ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){
+#ifdef _WIN32
+    if(host_windows::identity(directory)!=identity)return;
+    try{host_windows::privateAccess(directory,FILE_ALL_ACCESS);}catch(...){return;}
+#endif
+    std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
     for(fs::recursive_directory_iterator it(directory,e),end;!e&&it!=end;it.increment(e)){
 #ifdef _WIN32
-      // owner_write clears the read-only attribute on Windows files too.
+      try{host_windows::privateAccess(it->path(),FILE_ALL_ACCESS);}catch(...){continue;}
       fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
 #else
       if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
@@ -156,6 +164,7 @@ std::shared_ptr<Image> loadImage(const Manifest &manifest,const Poll &poll){
   pollNow(poll);if(!::mkdtemp(pattern.data()))fail("E_FFI_IO","cannot reserve a private module directory");image->directory=fs::canonical(pattern);
 #ifdef _WIN32
   TextFiles snapshot(image->directory.string(),true);
+  image->identity=host_windows::identity(image->directory);
 #endif
   size_t total=0;std::vector<fs::path> directories;
   for(const auto &[name,sha]:manifest.files){pollNow(poll);auto source=openFile(manifest.root.fd,name,poll);auto destination=image->directory/name;
@@ -175,17 +184,29 @@ std::shared_ptr<Image> loadImage(const Manifest &manifest,const Poll &poll){
         if(!n)fail("E_FFI_IO","module snapshot write made no progress");offset+=size_t(n);}
     });total+=size;if(d.finish()!=sha)fail("E_FFI_HASH","foreign bundle member hash differs");
 #ifdef _WIN32
-    output.flush(poll);output.close();fs::permissions(destination,fs::perms::owner_read,fs::perm_options::replace);
+    output.flush(poll);output.close();
+    // Data helpers are non-executable unless explicitly granted. DLL members
+    // need image-mapping permission independently of executable helper grants.
+    auto pe=host_windows::readRegular(destination,64*1048576);bool library=false;
+    if(pe.size()>=64&&pe[0]=='M'&&pe[1]=='Z'){
+      uint32_t offset=0;for(unsigned i=0;i<4;++i)offset|=uint32_t(uint8_t(pe[60+i]))<<(8*i);
+      if(offset<=pe.size()-24&&pe.compare(offset,4,std::string("PE\0\0",4))==0)
+        library=(uint8_t(pe[offset+23])&0x20)!=0;
+    }
+    host_windows::privateAccess(destination,FILE_GENERIC_READ|((name==manifest.entry||library||manifest.executables.contains(name))?FILE_GENERIC_EXECUTE:0));
 #else
     if(::fchmod(output.fd,manifest.executables.contains(name)?0500:0400))fail("E_FFI_IO","cannot seal module snapshot member");
 #endif
   }
   std::error_code ec;for(fs::recursive_directory_iterator it(image->directory,ec),end;!ec&&it!=end;it.increment(ec))if(it->is_directory())directories.push_back(it->path());
   if(ec)fail("E_FFI_IO","cannot inspect module snapshot directories");std::sort(directories.rbegin(),directories.rend());
-#ifndef _WIN32
+#ifdef _WIN32
+  for(const auto &dir:directories)host_windows::privateAccess(dir,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+  host_windows::privateAccess(image->directory,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+#else
   for(const auto &dir:directories)if(::chmod(dir.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot directory");if(::chmod(image->directory.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot root");
 #endif
-  pollNow(poll);image->handle=::dlopen((image->directory/manifest.entry).c_str(),RTLD_NOW|RTLD_LOCAL);if(!image->handle)fail("E_FFI_LOAD","native module load failed");
+  pollNow(poll);image->handle=::dlopen((image->directory/manifest.entry).c_str(),RTLD_NOW|RTLD_LOCAL);if(!image->handle){auto detail=::dlerror();throw DataError("E_FFI_LOAD",std::string("native module load failed: ")+(detail?detail:"unknown loader error"));}
   pollNow(poll);::dlerror();auto address=::dlsym(image->handle,"nex_ffi_module_entry");const char *failure=::dlerror();
   if(failure||!entryAddress(address,*image,manifest))fail("E_FFI_ABI","native module entry is absent or outside its entry image");
   auto entry=reinterpret_cast<nex_ffi_module_entry_fn>(address);const nex_ffi_module_v1 *table=nullptr;

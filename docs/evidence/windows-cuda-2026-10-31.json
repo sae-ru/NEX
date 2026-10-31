@@ -1,0 +1,1742 @@
+{
+  "schema": "nex.owned-cuda-hardware/1",
+  "ok": true,
+  "environment": "native Windows",
+  "requires_WSL": false,
+  "compiler_sha256": "e4580209356dff08e4bb3b11fce33bf788501385182762d58eff88ccd64b1c43",
+  "module_sha256": "885e16f1fd5a3a115baea19e5936e9ff93d36da14da0293cd3c18143c0df0d15",
+  "manifest_sha256": "83d94089767839b4fb55c9202509fde179177619ed3a3a0bdbe63f0d41292149",
+  "actual_GPU_execution": true,
+  "CUDA_from_NEX_accepted": true,
+  "full_hardware_corpus": true,
+  "full_windows_regression_accepted": false,
+  "seconds": 273.831,
+  "date": "2026-10-31",
+  "source_language": "0.27",
+  "toolchain": "0.152.1",
+  "task_execution_abi": 7,
+  "preparation": {
+    "path": "F:\\sae\\NEX\\build\\owned-cuda-4\\preparation\\report.json",
+    "sha256": "a3caa1f91d696c6c2a74d570ead991166469012e1abd8112371475c942847ac2",
+    "cxx": "F:\\sae\\NEX\\build\\deps\\llvm-mingw-20260616-ucrt-x86_64\\bin\\clang++.exe",
+    "cxx_sha256": "a8b7a614eeadd9105f814be3701a7f312cda4cea51751b75b408c16100c94e85",
+    "cuda_header_sha256": "df07ddd4f392a373023143a956f187c53855c64efdae11e8d6e5f1721c33c703",
+    "source_sha256": {
+      "context_probe.cpp": "8649bd150840d103f8e06bcd0c574eea8e7081ee820a086ae246de34117378fe",
+      "main.nex.in": "6d6eb91b9eaa746a32dd09b26fcb2ec95ca4ffb2a1a7ba1270ac08377581af9f",
+      "module.cpp": "1b6a29227e35b7fc906163690c435fb55de0d4912fe537cf7bdd2c9d398aec40"
+    },
+    "library_sha256": {
+      "compute.nex": "4efaf0e321accc159c03aff619d00ad24cc1779fe4a74f668cb2bfe96e0735f9",
+      "device.nex": "36a26b797232f709d87da7a42274bc02d8c35097ca1ae782b7c59e6e5109e0e5"
+    }
+  },
+  "raw_report": {
+    "path": "F:\\sae\\NEX\\build\\owned-cuda-acceptance-3\\report.json",
+    "sha256": "f93486f4a6f616fe8d860bb8ad460ca9159e208a64de15fff43643246e9f58db"
+  },
+  "provider_source_sha256": "1b6a29227e35b7fc906163690c435fb55de0d4912fe537cf7bdd2c9d398aec40",
+  "verifier_sha256": "534c9ca899485e453a42540e060650cae46519b44dfcd2b6eb35d75fb27218dd",
+  "trusted_host_context_probe": {
+    "executable_sha256": "dab3dced0c228c838ad372b581ce0eb28e73f1443d2f23674e8ce70f6b5bce96",
+    "result": {
+      "ok": true,
+      "actual_CUDA_contexts": 2,
+      "source_reentry_rejected": true,
+      "nested_cleanup_restores_context": true,
+      "constructor_trap_rolls_back": true,
+      "physical_cleanup_verified": true
+    },
+    "trace": {
+      "sessions": [
+        {
+          "name": "NVIDIA GeForce RTX 3090",
+          "uuid": "90d7aee11c97d69e3bd72295859ca4f5",
+          "pci_bus_id": "0000:01:00.0",
+          "ordinal": 0,
+          "driver_version": 13040
+        },
+        {
+          "name": "NVIDIA GeForce RTX 3090",
+          "uuid": "90d7aee11c97d69e3bd72295859ca4f5",
+          "pci_bus_id": "0000:01:00.0",
+          "ordinal": 0,
+          "driver_version": 13040
+        }
+      ],
+      "ledger": {
+        "allocations": 1,
+        "cleanup_errors": 0,
+        "context_frees": 2,
+        "contexts": 2,
+        "event_frees": 0,
+        "events": 0,
+        "frees": 1,
+        "kernel_launches": 0,
+        "live_bytes": 0,
+        "module_frees": 0,
+        "modules": 0,
+        "peak_bytes": 4,
+        "stream_frees": 0,
+        "streams": 0
+      },
+      "completed_kernels": [],
+      "physical_drain": false,
+      "trace_sha256": "a89377681eb82855f779d8532f5b755d6db1c5784d532b4fca12914435a538ba"
+    }
+  },
+  "hardware": {
+    "name": "NVIDIA GeForce RTX 3090",
+    "uuid": "90d7aee11c97d69e3bd72295859ca4f5",
+    "pci_bus_id": "0000:01:00.0",
+    "ordinal": 0,
+    "driver_version": 13040
+  },
+  "cases": [
+    {
+      "name": "small_cpu_oracle",
+      "status": "passed",
+      "native_sha256": "f7804dc506565572079b073dd076bd9928bf203101080c66e5e9c6569b5bd24a",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 13,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "77b5ac7ad33231872405a8faa6d107f1e69b9124d78415b354817355c591e07a",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 13,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "6bd130a6128943cea8ba793352898cd7c0920acd73ad7d85e7af5cbf1604c4e6",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "all_octets",
+      "status": "passed",
+      "native_sha256": "baec266df8d316155a32b2b8b67a9381c0c7f011c305947e0b9e7c9cb0cbd072",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "c8f7b52eee63409c5d53249ce41d7558a133dab6c12da52f742a5b40b057c904",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "739e748001a2cad72e13004fe91da3f65586a3d6798b7286201ab4af165496e3",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "persistent_session_scales",
+      "status": "passed",
+      "native_sha256": "565d78356f6b29b5ca2aa5cdccf240fe7b9cf05d4561d647ab592dde9917de8d",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 16,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 10,
+          "events": 10,
+          "frees": 16,
+          "kernel_launches": 5,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "b6fc04a287ce9d76710615be86942eeb17feda73912b0b8c14ee3c7f3f8d34bb",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 16,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 10,
+          "events": 10,
+          "frees": 16,
+          "kernel_launches": 5,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "d9f805fe2415cf322e2fb7c29442100b51ecd1c544e890b918aed5fe403abc30",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "overflow_is_not_fallback_and_session_recovers",
+      "status": "passed",
+      "native_sha256": "c617231acd4dd407e8fa45965f1e43c1e2446a970b6a62637e2cacb48fb67daf",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 7,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 4,
+          "events": 4,
+          "frees": 7,
+          "kernel_launches": 2,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "e0b2e9c17c136d580c9f64ffabce8fa5565aac4854a6bdacbe781f6dd673dfef",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 7,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 4,
+          "events": 4,
+          "frees": 7,
+          "kernel_launches": 2,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "37e417cdd0d71245bb8be47ded2ded45a5956f1d1550c04715dd5a278fb612ff",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "maximum_262144_elements",
+      "status": "passed",
+      "native_sha256": "ee5a478e3555b65848960c34ba2554c8937c8702f45d86f719a5ff635e110f67",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "4709bf8afda5fad1a7970fba3b618747af8f19cd576e7ff9c71c7850d9124a92",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "96ba7ed370b54dd2a5be445d46b18e67d7da4d0c748051b7573b8fc507afd90a",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "overflow_only_last_of_262144",
+      "status": "passed",
+      "native_sha256": "a56a0fd2b37828bb68b60544052d2d3bf5dca14ec5cf6f8db83c96398d8d8c9e",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "89ee8ee1865238fd0a8294a2ca13c890aece84e8bdbc5d4a77ba067adfd11153",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f7eb8b8041603c5b5f1f4110457b5c5052c51e463988c8962c43eb8ca840aa39",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "hidden_session_after_scope_return",
+      "status": "passed",
+      "native_sha256": "ca17dc8eb45f10a295ed91e20442cf80261599237659fa41b17b41948bf53dff",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "76c8cfa6628de4e640c84a9d0ef5febcc9d3673458ca7d11a309720f36177153",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "5ba039201538715e2caf43254cfc7536e6efeb53a63c498296c82dee48a55e39",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "closed_context_existing_buffer_still_reads",
+      "status": "passed",
+      "native_sha256": "f7ca6297f029c6a3652ca670bf3dcc2bc77323a08354d2137e27d802a2a9ec20",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "d9751fab9dc2d5a42b1de1325cf1b0385f0578aacd5bb685ef57d00b221f89cd",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "6f7ecd8e3dcfb0b1ab69db3d3004fb5234f4cdf2ef6c3a1722b451103783782d",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "sibling_channel_hidden_session",
+      "status": "passed",
+      "native_sha256": "585025c1d8e54060405a1007340ed4b9007995b365cf720564b35385972d5aca",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "446b6b84bdc1108ba7c2741f9f0082f80fc13812deb06d8c863f7c7eb5eb23d0",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "b8a694766a3fd25be5e74a920e1b496f1bd8788cb4408a46186c05d24e443d95",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "cross_session_buffers_rejected",
+      "status": "passed",
+      "native_sha256": "d3d50a19674552974cc2ca3af69b8476ab14f92c3a7946ea63b0ee6ca2b3fbf3",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 2,
+          "contexts": 2,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 4,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 2,
+          "modules": 2,
+          "peak_bytes": 10,
+          "stream_frees": 2,
+          "streams": 2
+        },
+        "trace_sha256": "22aea8317a7998f03efaa30e3399c861cdd96e133517c199c2b9c0fd02e2e302",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 2,
+          "contexts": 2,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 4,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 2,
+          "modules": 2,
+          "peak_bytes": 10,
+          "stream_frees": 2,
+          "streams": 2
+        },
+        "trace_sha256": "db36f8f742511ba91d0a52de327fca494dfa2a5108d26031c3aa940fc03feaab",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "malformed_request_never_uploads",
+      "status": "passed",
+      "native_sha256": "0b32bee844b247229d78bd04bfe957bb1c9d28734f3fae32d33e5f454e7eadfe",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "1c0205ce83b8c11b5b95d6fab3930c3697b6c3d97c03fba7d1df89ba9882d4f7",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "7fde2e392c1887008b86ba5fbf654cecd2e88aae7ff4fefb36c323bc3f5dafbc",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "explicit_placement_and_cpu_fallback",
+      "status": "passed",
+      "native_sha256": "a366f517c11edefe9d8535a798d7607281fb654118aff084ffcbad81aafd252c",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f77ff2e7272835b85e381730bf87d0fb079b6f9f8db1981ad99693236c65c61c",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "519f69ac445f4384cdfc5b2ebc362db5b5c94b9eb3f4bc5f99f84a0775c14e2b",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "unsupported_matmul_fallback",
+      "status": "passed",
+      "native_sha256": "01a906c5bce680c28d653c021a17194daad300e0fac3e729c54547c69a9591f4",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "c4f9bc46b036e663d4ae856fbcd3b546d690bd9631cf3be75d45c4fea38f9e46",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 1,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 1,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 4,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "61e617c4268d7f3a283aa2e0fb4749c654abaed9635674f133b2600dffe26941",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_1",
+      "status": "passed",
+      "native_sha256": "af8fd78486676a48aef90e71659b30cbebb10888898b6a9f010e17b38015035e",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "1df9c6b96eec40646087a0f8458cb9595dcd79f5ab838508cb904291e3a88a14",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "b8a63918e1d454cbf4ab96e65e526821b6bef463902b665e749c33fd77379064",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_1",
+      "status": "passed",
+      "native_sha256": "1442de17e7ccaac7076d246734d70d063e015806dfae9f832fcc6f4eae96a5a2",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "787c1031565a3e73d0f6c7a1dbd853dc3f4b96a426e442912cc5690a12aeeccf",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "0787dc74160f9d2db697787b6b80a06d5e226f3c541c1024c65256f7407534e6",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_31",
+      "status": "passed",
+      "native_sha256": "329e98ce8fa8bdeaa79db581c77e8618524f09943a56c4fbaf3d406e02646ce2",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 97,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "34f5b7000d7d7f43f956f836b0df7971635d4e026e56dc582cfc1ff527ea332a",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 97,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "746b7a870311cd299ab87cd643324e9e6cc4c7f7b079434241b7e3a8877b3a29",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_31",
+      "status": "passed",
+      "native_sha256": "63a8e9dabdfb17cbc7c4c9183a81a389544162ac1902218c47e96779589c5872",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 97,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "472699e888362ff207b20f5bfacb48f4ad92236d79ea1dc7985be66b8e59c667",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 97,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "d9558ccb5a2395bbd32c57991d943b97aa612031a813d6569ce1b73da5d7c898",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_32",
+      "status": "passed",
+      "native_sha256": "14e72e58c5a253e79f8965469a2862e822318837a4b8b7eefa8d593c0ba26911",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 100,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "1d9af759ebdc3bd5ab414b8b4d5d5bce9022beadb58fbbd79792737271857b15",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 100,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f712fdcb207c87fc6de7dddde4e382ee35c242226dcbcbf38313982fd9297897",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_32",
+      "status": "passed",
+      "native_sha256": "ba310f8087a9eef2784052c37315e39c7e55029a0c5102e7ca3f304b6e38e580",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 100,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "2f47f4a2e51c9cc734e8cc252edb2a0dbfcdf121d0f2de39ba16c82a408e93de",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 100,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "8b6b589b312e605b8db0fcd5b2183d14b346619dc984554e76b9993021d3ee57",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_255",
+      "status": "passed",
+      "native_sha256": "d18e6a0afa66abb3ae3c861d6c755f38101373bbfea7227a3e27a4c017160322",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 769,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "49a323eb230ebf5e38281b5b11beea597f1db650f75b94269bfb33c10f99c3db",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 769,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "c4c31476db6bcf66034d8afcab03e84588a88f56adb7726579d989c8607c15c1",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_255",
+      "status": "passed",
+      "native_sha256": "58cbe82a3df91e8b9c2d254138cf899a98da8fec2709aee9496ff928e405885e",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 769,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "99cd2de20bdd2e7a91224c6c1521c4d30254af7b2010869ebed2f7d3f991cd2f",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 769,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f6a08b7741a9e98e4444052ea754dde10b6c08017a004b3e7943bd75a6afc42a",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_256",
+      "status": "passed",
+      "native_sha256": "3fcc4eb497e4148e3cc79b7e11d66c6f11218fb68f6b8993b528a27e016cff4e",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "ee98c90e9e8409c458e031de42a21eb44cee8914a3dae2523d08c466319ba871",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "2259501a20e0942480182cbd50ee165c43f874aa5535afa37bb67f7f6328d632",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_256",
+      "status": "passed",
+      "native_sha256": "0b56167af9218942d6cc3562307627abf3b7e39697965734c327077b64f7b8c2",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "be386173c6f68a8c3d3fb50b859e5a75c43791124b5f193a1e439093a408c3e8",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 772,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "7229fe215c31027dd96ca52627b2ee726bf6d27b790310c87a2e0d0e20f14931",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_257",
+      "status": "passed",
+      "native_sha256": "b949cbefd8a87b3912ac478945385463416fed4fab0a8f0b914c7092171da520",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 775,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "240ff6a4f103ec600b784b23666c958730a11fce2c78403fb1398fc283ba6bc4",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 775,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "b8553d37889cce5082b2bc1fefaf5a2b77c40ce17043551b3905ed011c3ad0b6",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_257",
+      "status": "passed",
+      "native_sha256": "3c96af2b920f2bc20eb963409f6578ee1f175c94c0a551ad25e272a27ad9250e",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 775,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "8b05e5e7850bb86e3df8ff80d928b44e29b97f4e6123a7b940c1738aa129d8ac",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 775,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "9a0feb811b522f0a1ea3777263ecf09f27673ff2ca2618d9491d3dde7960ba9e",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_1023",
+      "status": "passed",
+      "native_sha256": "46f7f0b1f4b669920ec9381d2ee2546357d008ee4b287d8f186bc2a1b6284655",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 3073,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "12a0f23e7e8dc36a0bdafed00726687f4ce64e27577460d9512847168bbf670d",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 3073,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "98d44d38a652d19ca5f90603cedc7272519642127aab2403391d11295733834f",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_1023",
+      "status": "passed",
+      "native_sha256": "70fa1519378259b58a918f9eef994beb940b8b028fbd5d8d762218f28dd18d34",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 3073,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "6893e5924e754a606d50b03fd673c367d862fc9189a4e4347672d317f1eacc56",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 3073,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "08d5ac42d2d452425eedba0f01b5c6ec4ce24ac8fdb8a3fb641ca299fae53a2f",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_4096",
+      "status": "passed",
+      "native_sha256": "83f73d4a59c42c5714df7919ba6630fecdd162a8fcf632c80f135ea656801ab3",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 12292,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f4ced9fda4926d247b7f58afe34962d35a87e799fdb9c89e8edad3b03b025888",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 12292,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "43c63c9969e17a818ece0d25e95df65c52c410ef5d7b564deecf14f69dd9d91c",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_4096",
+      "status": "passed",
+      "native_sha256": "6a83762dd70c95e614f94191d1644ae03cfd70946c45fceb2eb072e64dea3def",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 12292,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "f367ffe3e9d577627ba0e39d02d7cd7e5bf60a719ecc09bd039f2af7a6458ac2",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 12292,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "a65294be9d4c1e93a459f1622773d7ae576eabed2420535d3da88aa8e9e424c1",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_add_262144",
+      "status": "passed",
+      "native_sha256": "92366b2e096a59f76f6e0bb7e2f2da8e3f5da4819b22a4f4c0799c4b8eacdfa3",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "17cfb28bf28dd435c1a966aa48a3efbde4a59d0d350c5550810a9c851a4c8697",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "1321d70c2150b6766f005aa9566ab268ab6a835573235b2fbb2e894192f29a1a",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "edge_affine_262144",
+      "status": "passed",
+      "native_sha256": "ddb146080c7efa58c20952b3bbbdc5ca070a09457c34b0c7b48b2ffaacc4d1e4",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "81dd4d677b20326d34cc9aebd05453622ee0145ea59cbcf882bc14dac4e6183d",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 786436,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "44c6598c00b5156488c85ffa6e67b658e1662390892998d871a8292b9b0688bc",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "i8_i32_storage_roundtrip",
+      "status": "passed",
+      "native_sha256": "b98fb8731e478735bdcdd4173bae9e04f3683150767deb11e515913f14fa98e9",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 3,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 3,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 20,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "e6f06151d5a6dc728581d20355493edd47acbd55e63a21eeb7dfeb045b75aaf0",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 3,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 0,
+          "events": 0,
+          "frees": 3,
+          "kernel_launches": 0,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 20,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "57b3922f1e10ec6cf232a3f0db14ff932c867a9a87ab9138a6733ed4971963d2",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "typed_error_preserves_live_device_buffer",
+      "status": "passed",
+      "native_sha256": "00b3cc0afa7112c8d18f96ccf7079c1da66ab6b53ea4bdcafc05fa3b033e91fa",
+      "expected_error": null,
+      "physical_settlement_before_error_exit": false,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "b4c91b0bd80db0b2366b7edbdbeb933e3efc08a182c0e4ef7bbfe1bbb7aa0842",
+        "physical_drain": false
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 1,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "0a5a507db7929448635364e3b26e2f95ccde4746998483d6cb23b6352022c2f4",
+        "physical_drain": false
+      }
+    },
+    {
+      "name": "cancel_enqueued_GPU",
+      "status": "passed",
+      "native_sha256": "922985e781e2d1637d59e509613cb4b93334570f017b7fbdacaaa2c7a17c78f0",
+      "expected_error": "E_CANCELLED",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 32,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "fd8971fbc76d382357ea8f08f6b0d3b8100f03b9d19949448d64f16922cbc839",
+        "physical_drain": true
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 32,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "4268584d7a9f612655c1fbb04e5a97df5f9138bda61b764075aa6308e5fd6fec",
+        "physical_drain": true
+      }
+    },
+    {
+      "name": "deadline_enqueued_GPU",
+      "status": "passed",
+      "native_sha256": "5f5a6637376f98473084e94de1a4fa4c2ca2eaf74ef9c572e07f708d01d5eb8f",
+      "expected_error": "E_TIMEOUT",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 32,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "9b3086d2994f8999eff69a11ae37eb3e5168fb67ae2563d11716df7d64801904",
+        "physical_drain": true
+      },
+      "native": {
+        "ledger": {
+          "allocations": 4,
+          "cleanup_errors": 0,
+          "context_frees": 1,
+          "contexts": 1,
+          "event_frees": 2,
+          "events": 2,
+          "frees": 4,
+          "kernel_launches": 32,
+          "live_bytes": 0,
+          "module_frees": 1,
+          "modules": 1,
+          "peak_bytes": 7,
+          "stream_frees": 1,
+          "streams": 1
+        },
+        "trace_sha256": "d480c9022f4ca2452985d0e5616b05040821e31f36299b219f4bf7c21707c1b0",
+        "physical_drain": true
+      }
+    }
+  ]
+}

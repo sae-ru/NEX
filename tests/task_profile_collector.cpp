@@ -697,7 +697,9 @@ void failedGuardNonLifoWithRetiredParent(){
 void actualPlatformClockMigration(){
   TaskProfileOptions options;options.limits={2,2,16};TaskProfileCollector collector(options,sites,TaskProfileClock{});
   auto task=collector.task();TaskProfileInvocation call;uint64_t id=0;std::atomic<uint64_t> work{1};std::exception_ptr failure;
-  auto compute=[&]{for(uint64_t i=1;i<=100000;++i)work.fetch_add(i,std::memory_order_relaxed);};
+  // Windows thread CPU accounting can advance in scheduler-sized quanta.
+  // Do enough actual CPU work for a nonzero observation on both threads.
+  auto compute=[&]{for(uint64_t i=1;i<=10000000;++i)work.fetch_add(i,std::memory_order_relaxed);};
   std::thread first([&]{try{auto attached=collector.resume(task);call=collector.invocation(0);id=call.id();
     auto source=collector.source(call);compute();}catch(...){failure=std::current_exception();}});
   first.join();if(failure)std::rethrow_exception(failure);
@@ -705,7 +707,7 @@ void actualPlatformClockMigration(){
     catch(...){failure=std::current_exception();}});
   second.join();if(failure)std::rethrow_exception(failure);
   call.complete();collector.terminal(task,TaskProfileTaskOutcome::Completed);auto snapshot=collector.snapshot();balanced(snapshot);
-  REQUIRE(work.load()==10000100001ULL&&snapshot.functions[0].calls==1&&snapshot.functions[0].completed==1);
+  REQUIRE(work.load()==100000010000001ULL&&snapshot.functions[0].calls==1&&snapshot.functions[0].completed==1);
   REQUIRE(taskRecord(snapshot,task.id()).resumes==2&&taskRecord(snapshot,task.id()).migrations==1);
   REQUIRE(snapshot.segments.size()==2&&snapshot.segments[0].threadId!=snapshot.segments[1].threadId);
   const auto &record=callRecord(snapshot,id);

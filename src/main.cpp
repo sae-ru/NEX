@@ -446,7 +446,12 @@ int run(const Options &o) {
     auto token="nex_"+hex(random);auto digest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(token.data()),token.size()));
     entries->push_back(llvm::json::Object{{"user",user},{"sha256",hex(digest)}});
     auto output=fs::absolute(file);auto temporary=output;temporary+=".tmp."+hex(random).substr(0,16);
-    writeFile(temporary.string(),json(value)+"\n");fs::permissions(temporary,fs::perms::owner_read|fs::perms::owner_write,fs::perm_options::replace);fs::rename(temporary,output);
+#ifdef _WIN32
+    nexrt::host_windows::writePrivateFile(temporary,json(value)+"\n");
+#else
+    writeFile(temporary.string(),json(value)+"\n");fs::permissions(temporary,fs::perms::owner_read|fs::perms::owner_write,fs::perm_options::replace);
+#endif
+    fs::rename(temporary,output);
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
@@ -458,7 +463,7 @@ int run(const Options &o) {
   }
   if(o.command=="doctor") {
     auto runtime=resourceFile("runtime/runtime.cpp");auto native=configureNative({});
-    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
+    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"native_sysroot",native.sysroot},{"native_windows_runtime",native.windowsRuntime},{"native_windows_notices",native.windowsNotices},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
   }
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
@@ -880,7 +885,15 @@ int run(const Options &o) {
 }
 int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
-  try{return run(options(argc,argv));}
+  try{
+#ifdef _WIN32
+    // The UTF-8 CRT can replace an unpaired UTF-16 surrogate while constructing
+    // argv. Reject it before parsing options or opening a project store.
+    if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,GetCommandLineW(),-1,nullptr,0,nullptr,nullptr))
+      throw nex::Error("E_OPTION","Windows command line contains invalid Unicode");
+#endif
+    return run(options(argc,argv));
+  }
   catch(const nex::SourceException &e){
     nex::Error error("E_SOURCE_EXCEPTION",e.message,e.span);error.output=e.output;
     if(machine){auto diagnostic=nex::diagnosticJSON(error,NEX_VERSION,NEX_BUILD_ID);auto *object=diagnostic.getAsObject();if(object){(*object)["message"]=e.message;(*object)["source_exception"]=llvm::json::Object{{"code",e.code},{"message",e.message}};}print(std::move(diagnostic));}

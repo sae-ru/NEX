@@ -1,4 +1,5 @@
 """Retained-build core integrity and opt-in actual native core reports."""
+from host_fixture import nonregular
 import hashlib
 import json
 import os
@@ -52,7 +53,7 @@ class CoreDump(harness.ToolchainCase):
         bad.symlink_to(self.core)
         self.assertEqual(self.cli('core', bad, '--manifest', self.manifest, ok=False)['code'], 'E_CORE_INPUT')
         bad.unlink()
-        os.mkfifo(bad)
+        nonregular(bad)
         self.assertEqual(self.cli('core', bad, '--manifest', self.manifest, ok=False)['code'], 'E_CORE_INPUT')
         bad.unlink()
         with bad.open('wb') as stream:
@@ -93,11 +94,11 @@ class CoreDump(harness.ToolchainCase):
                 with self.subTest(field=field):
                     manifest = json.loads(original)
                     manifest[field] = '0' * 64
-                    self.manifest.write_text(json.dumps(manifest))
+                    self.manifest.write_text(json.dumps(manifest), newline="\n")
                     self.assertEqual(self.core_read(ok=False, env=never)['code'], 'E_CORE_BUILD')
             manifest = json.loads(original)
             manifest['functions'][0]['operation_sites'][0]['kind'] = 'invented'
-            self.manifest.write_text(json.dumps(manifest))
+            self.manifest.write_text(json.dumps(manifest), newline="\n")
             self.assertEqual(self.core_read(ok=False, env=never)['code'], 'E_CORE_BUILD')
         finally:
             self.manifest.write_bytes(original)
@@ -108,7 +109,7 @@ class CoreDump(harness.ToolchainCase):
         shutil.copytree(self.folder, copied)
         manifest = json.loads(self.manifest.read_text())
         manifest['program'] = str(copied/'app')
-        (copied/'debug.json').write_text(json.dumps(manifest))
+        (copied/'debug.json').write_text(json.dumps(manifest), newline="\n")
         result = self.cli('core', self.core, '--manifest', copied/'debug.json',
                           ok=False, env={'NEX_LLDB': str(self.root/'not-a-debugger')})
         self.assertEqual(result['code'], 'E_CORE_BUILD')

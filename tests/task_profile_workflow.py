@@ -92,11 +92,11 @@ class TaskProfileWorkflow(harness.ToolchainCase):
         (self.root/'app').mkdir()
         self.file = self.root/'app/main.nex'
         self.source(SOURCE)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         description = {'schema':'nex.project-build/1','default_configuration':'measured',
             'configurations':{'measured':{'profile':'profile','task_limits':LIMITS}},
             'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}
-        (self.root/'nex.build.json').write_text(json.dumps(description))
+        (self.root/'nex.build.json').write_text(json.dumps(description), newline="\n")
 
     def test_source_only_project_records_effective_lowered_runtime_limits(self):
         self.project()
@@ -126,7 +126,7 @@ class TaskProfileWorkflow(harness.ToolchainCase):
         value['requirements'].append({'id':'profile-task','text':'Measure actual task source calls',
             'bindings':[{'program':'app','kind':'function','symbol':'measured::main'}], 'targets':['native'],'checks':['profile-task']})
         path = self.root/'task.json'
-        path.write_text(json.dumps(value))
+        path.write_text(json.dumps(value), newline="\n")
         return path
 
     def test_reviewed_direct_capture_budget_and_source_deleted_replay(self):

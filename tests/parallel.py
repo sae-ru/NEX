@@ -131,13 +131,13 @@ server fn main()->unit!{fs}{
  let result:list<str>=parallel_map([1,2],callback,2);
 }
 ''')
-        data=self.root/'data';data.mkdir();(data/'input').write_text('owned');env={'NEX_FILES_ROOT':str(data)}
+        data=self.root/'data';data.mkdir();(data/'input').write_text('owned', newline="\n");env={'NEX_FILES_ROOT':str(data)}
         self.cli('check');self.assertEqual(self.cli('eval',env=env,ok=False)['code'],'E_PARALLEL_VALUE')
         native=self.cli('run',env=env,ok=False,timeout=180);self.assertEqual(native['exit_code'],70);self.assertIn('E_PARALLEL_VALUE',native['stderr'])
 
     def test_genuine017_migration_and_reserved_name_failure_preserve_all_history(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.17.json').read_text());self.source(fixture['source']);self.historical_store('0.17')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.17','entry':'main.nex'}), newline="\n")
         database=self.root/'.nex/graph.db';before=harness.database_rows(database)
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(self.cli('eval','--revision',fixture['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
@@ -155,7 +155,7 @@ server fn main()->unit!{fs}{
         repaired=copy.deepcopy(fixture['reserved_graph'])
         source=fixture['reserved_source'].replace('parallel_map','legacy_map')
         repaired['source']=source;repaired['bundle']['files']['main.nex']=source
-        patch=self.root/'repair.json';patch.write_text(json.dumps(repaired));stable=harness.database_rows(database)
+        patch=self.root/'repair.json';patch.write_text(json.dumps(repaired), newline="\n");stable=harness.database_rows(database)
         self.cli('migrate',patch);after=harness.database_rows(database)
         for name,rows in stable[1].items():
             if name!='head':self.assertLessEqual(set(map(repr,rows)),set(map(repr,after[1][name])),name)
@@ -164,16 +164,16 @@ server fn main()->unit!{fs}{
 
     def test_binary_providers_propagate_parallel_runtime_and_opaque_callbacks(self):
         (self.root/'core').mkdir();(self.root/'app').mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'core/value.nex').write_text('''module cpu_provider;
 pub fn ordinary(x:i64)->i64{return x+1;}
 pub fn mapped(callback:fn(i64)->i64)->list<i64>{return parallel_map([1,2],callback,2);}
-''')
+''', newline="\n")
         (self.root/'app/main.nex').write_text('''module cpu_consumer;import "../core/value.nex" as c;
 fn plus(x:i64)->i64{return x+40;}
 fn main()->unit!{io}{print(c::mapped(plus));print(c::ordinary(41));}
 test fn values()->unit{assert(c::mapped(plus)==[41,42]);}
-''')
+''', newline="\n")
         manifest={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
             'core':{'kind':'static_library','root':'core','entry':'core/value.nex','entry_function':'ordinary','exports':['mapped']},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}}}}
@@ -181,15 +181,15 @@ test fn values()->unit{assert(c::mapped(plus)==[41,42]);}
             with self.subTest(linkage=linkage):
                 manifest['components']['core']['kind']='static_library' if linkage=='static' else 'shared_library'
                 manifest['components']['app']['dependencies']['core']=linkage
-                (self.root/'nex.build.json').write_text(json.dumps(manifest))
+                (self.root/'nex.build.json').write_text(json.dumps(manifest), newline="\n")
                 result=self.cli('project','nex.build.json','--kind','run','--component','app',timeout=300)
                 self.assertEqual(result['observation']['stdout'],'[41,42]\n42\n')
                 self.cli('project','nex.build.json','--kind','test','--component','app',timeout=300)
         # The separately compiled provider has no map of its own. Its exported
         # callback must still participate in the consuming group's depth bound.
-        (self.root/'core/value.nex').write_text('module cpu_provider;pub fn ordinary(x:i64)->i64{return x+1;}pub fn recurse(x:i64)->i64{return recurse(x+1);}')
-        (self.root/'app/main.nex').write_text('module cpu_consumer;import "../core/value.nex" as c;fn main()->unit{let out:list<i64>=parallel_map([0],c::recurse,1);}')
-        manifest['components']['core']['exports']=['recurse'];(self.root/'nex.build.json').write_text(json.dumps(manifest))
+        (self.root/'core/value.nex').write_text('module cpu_provider;pub fn ordinary(x:i64)->i64{return x+1;}pub fn recurse(x:i64)->i64{return recurse(x+1);}', newline="\n")
+        (self.root/'app/main.nex').write_text('module cpu_consumer;import "../core/value.nex" as c;fn main()->unit{let out:list<i64>=parallel_map([0],c::recurse,1);}', newline="\n")
+        manifest['components']['core']['exports']=['recurse'];(self.root/'nex.build.json').write_text(json.dumps(manifest), newline="\n")
         failed=self.cli('project','nex.build.json','--kind','run','--component','app',ok=False,timeout=300)
         self.assertIn('E_LIMIT',failed['observation']['stderr'])
 

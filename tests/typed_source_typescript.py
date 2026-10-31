@@ -8,7 +8,7 @@ root=a.source_root.resolve();out=a.output.resolve() if a.output else Path(tempfi
 node=os.environ.get('NEX_NODE','node');probe=str(Path(a.probe).resolve())
 env={**os.environ,'NEX_RESOURCE_DIR':str(a.resources.resolve() if a.resources else root),'PYTHONDONTWRITEBYTECODE':'1'}
 records=[];programs=[];started=time.monotonic();report={'ok':False,'candidate_language':'0.27','public027_enabled':False,'source_graph_archiving_enabled':False,'cases':records}
-def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(cmd,timeout=120):
     r=subprocess.run(list(map(str,cmd)),env=env,text=True,capture_output=True,timeout=timeout)
     if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
@@ -42,13 +42,13 @@ process.stdout.write(JSON.stringify({...actual,output:logs.join('\n')+(logs.leng
 '''
 save()
 for name,text,project in fixtures:
-    d=out/name;d.mkdir();f=d/'main.nex';f.write_text(text if project else 'module typed;\n'+text)
-    if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}')
+    d=out/name;d.mkdir();f=d/'main.nex';f.write_text(text if project else 'module typed;\n'+text, newline="\n")
+    if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}', newline="\n")
     prefix='project-' if project else ''
-    expected=json.loads(run([probe,prefix+'reference',f]));(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n')
+    expected=json.loads(run([probe,prefix+'reference',f]));(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n', newline="\n")
     run([probe,prefix+'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-3' and mapping['public_revision'] is False and 'revision' not in mapping and mapping['language']=='0.27'
-    (d/'run.mjs').write_text(runner.replace('EXPECTED_KEY',json.dumps(expected.get('payload_type_key'))))
-    actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',d/'run.mjs']));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
+    (d/'run.mjs').write_text(runner.replace('EXPECTED_KEY',json.dumps(expected.get('payload_type_key'))), newline="\n")
+    actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',d/'run.mjs']));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n', newline="\n")
     assert actual['kind']==expected['kind'],(name,expected,actual)
     if actual['kind']=='return':assert actual['value']==(str(expected['value']) if type(expected['value']) is int else expected['value']),(name,expected,actual)
     elif actual['kind']=='exception':
@@ -92,11 +92,11 @@ trap(()=>src.raiseTyped(key,'Fault',host,'record','Fault',site));require(!getter
 const result=nex.resultScope(()=>{try{return nex.propagate(nex.err('RESULT','unchanged'));}catch(e){require(src.details(e)===undefined,'Result entered source catch');throw e;}});require(!nex.isOk(result)&&nex.errorCode(result)==='RESULT','Result boundary changed');
 let legacy;try{src.raise('E_MEMORY','source data',site);}catch(e){legacy=e;}const old=src.details(legacy);require(old?.code==='E_MEMORY'&&!src.matches(old,key),'legacy data became runtime fatal/typed');trap(()=>src.readTyped(old,key,'i64','',site));
 process.stdout.write(JSON.stringify({ok:true,cases})+'\n');
-''')
-runtime=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',boundary/'run.mjs']));assert runtime['ok'];(boundary/'result.json').write_text(json.dumps(runtime,indent=2)+'\n')
-rejected=out/'server-rejected';rejected.mkdir();f=rejected/'main.nex';f.write_text('module rejected;server fn main()->i64{try{throw(42);}catch(e:i64){return e;}}')
-r=subprocess.run([probe,'typescript',str(f),str(rejected)],env=env,text=True,capture_output=True);(rejected/'stderr.txt').write_text(r.stderr);assert r.returncode==1 and 'E_REALM' in r.stderr and not (rejected/'program.ts').exists()
+''', newline="\n")
+runtime=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',boundary/'run.mjs']));assert runtime['ok'];(boundary/'result.json').write_text(json.dumps(runtime,indent=2)+'\n', newline="\n")
+rejected=out/'server-rejected';rejected.mkdir();f=rejected/'main.nex';f.write_text('module rejected;server fn main()->i64{try{throw(42);}catch(e:i64){return e;}}', newline="\n")
+r=subprocess.run([probe,'typescript',str(f),str(rejected)],env=env,text=True,capture_output=True);(rejected/'stderr.txt').write_text(r.stderr, newline="\n");assert r.returncode==1 and 'E_REALM' in r.stderr and not (rejected/'program.ts').exists()
 tsc=Path(os.environ['NEX_TSC']).resolve();pin=json.loads((root/'web/package.json').read_text())['devDependencies']['typescript'];assert json.loads((tsc.parent.parent/'package.json').read_text())['version']==pin
 cmd=[node,str(tsc),'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',*map(str,programs)]
-r=subprocess.run(cmd,env=env,text=True,capture_output=True,timeout=180);(out/'typecheck.stdout').write_text(r.stdout);(out/'typecheck.stderr').write_text(r.stderr);assert r.returncode==0,r.stdout+r.stderr
+r=subprocess.run(cmd,env=env,text=True,capture_output=True,timeout=180);(out/'typecheck.stdout').write_text(r.stdout, newline="\n");(out/'typecheck.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0,r.stdout+r.stderr
 report.update(ok=True,comparisons=len(records),runtime_boundary_cases=runtime['cases'],strict_TypeScript=True,typescript_version=pin,reachable_server_rejected=True,unreachable_server_pruned=True);save();print(json.dumps({k:report[k] for k in ['ok','comparisons','runtime_boundary_cases','strict_TypeScript','typescript_version']}))

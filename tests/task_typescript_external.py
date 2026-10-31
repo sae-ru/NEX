@@ -18,13 +18,13 @@ def run(command, timeout=90):
 
 try:
     path = out/'spin.nex'
-    path.write_text('module external_spin;fn helper()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return helper();}\n')
+    path.write_text('module external_spin;fn helper()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return helper();}\n', newline="\n")
     folder = out/'host'
     emitted = json.loads(run([probe, path, folder, 'emit', 'main']))
     assert emitted['language'] == '0.27', emitted
     assert emitted['ok'] and emitted['language'] == json.loads((folder/'nex-map.json').read_text())['language'] and emitted['asynchronous'], emitted
     assert (folder/'nex-task-runtime.ts').read_bytes() == (source/'web/nex-task-runtime.ts').read_bytes()
-    (folder/'package.json').write_text('{"type":"module"}\n')
+    (folder/'package.json').write_text('{"type":"module"}\n', newline="\n")
     shutil.copyfile(source/'tests/task_typescript_external.mjs', folder/'external.mjs')
     host = json.loads(run([node, '--experimental-strip-types', '--no-warnings', folder/'external.mjs']))
     assert host['ok'] and host['cases'] >= 40 and host['cleanupCompletions'] >= 30, host
@@ -33,7 +33,7 @@ try:
     run([node, tsc, '--noEmit', '--strict', '--target', 'ES2022', '--module', 'ESNext', '--moduleResolution', 'bundler', '--allowImportingTsExtensions', '--lib', 'ES2022,DOM', folder/'program.ts'])
     report = {'ok': True, 'strictTypecheck': True, 'host': host, 'emission': emitted,
               'sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in [probe, source/'web/nex-task-runtime.ts', source/'tests/task_typescript_external.mjs', source/'tests/task_typescript_external.py']}}
-    (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
+    (out/'report.json').write_text(json.dumps(report, indent=2)+'\n', newline="\n")
     print(json.dumps(report))
 except BaseException:
     print('Private external TS fixtures retained at '+str(out)); raise

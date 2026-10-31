@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_task_application.h"
 #include <array>
 #include <atomic>
@@ -6,7 +7,9 @@
 #include <future>
 #include <iostream>
 #include <regex>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 using namespace nexrt;
 extern "C" const char *nex_profile_build_info(){return "{\"schema\":\"nex.profile-build/1\",\"toolchain\":\"probe\",\"language\":\"0.20\",\"revision\":\"probe\",\"build_key\":\"probe\",\"compiler_build\":\"probe\",\"source_hash\":\"probe\",\"task_limits\":{\"steps\":1000000,\"timeout_ms\":5000,\"workers\":2}}";}
@@ -71,8 +74,17 @@ void exercise(bool enabled,bool truncated=false,bool overflow=false){
 uint64_t field(const std::string &text,const std::string &key){std::smatch match;require(std::regex_search(text,match,std::regex("\\\""+key+"\\\":([0-9]+)")),"missing raw numeric field");return std::stoull(match[1]);}
 int64_t tracyEntry(int64_t,const char *const *){nex_task_profile_prepare(sites,std::size(sites));throw std::runtime_error("Tracy rejection allowed source entry");}
 void parent(const char *self){
-  char directory[]="/tmp/nex-task-profile-XXXXXX";require(::mkdtemp(directory),"mkdtemp failed");auto report=std::filesystem::path(directory)/"profile.json";
-  auto run=[&](const char *mode){auto pid=::fork();require(pid>=0,"fork failed");if(!pid){::unsetenv("NEX_TRACY");::setenv("NEX_PROFILE_EVENTS",std::string(mode)=="truncated"?"0":"100000",1);if(std::string(mode)!="dormant")::setenv("NEX_PROFILE_OUTPUT",report.c_str(),1);else ::unsetenv("NEX_PROFILE_OUTPUT");::execl(self,self,mode,nullptr);::_exit(127);}int status=0;require(::waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&WEXITSTATUS(status)==0,"runtime profile child failed");};
+  auto pattern=(std::filesystem::temp_directory_path()/"nex-task-profile-XXXXXX").string();auto directory=pattern.data();require(::mkdtemp(directory),"mkdtemp failed");auto report=std::filesystem::path(directory)/"profile.json";
+  auto run=[&](const char *mode){
+#ifdef _WIN32
+    nex_test::Environment tracy("NEX_TRACY",std::nullopt);
+    nex_test::Environment events("NEX_PROFILE_EVENTS",std::string(mode)=="truncated"?"0":"100000");
+    nex_test::Environment output("NEX_PROFILE_OUTPUT",std::string(mode)!="dormant"?std::optional(report.string()):std::nullopt);
+    require(nex_test::run(std::filesystem::absolute(self),{mode})==0,"runtime profile child failed");
+#else
+auto pid=::fork();require(pid>=0,"fork failed");if(!pid){::unsetenv("NEX_TRACY");::setenv("NEX_PROFILE_EVENTS",std::string(mode)=="truncated"?"0":"100000",1);if(std::string(mode)!="dormant")::setenv("NEX_PROFILE_OUTPUT",report.c_str(),1);else ::unsetenv("NEX_PROFILE_OUTPUT");::execl(self,self,mode,nullptr);::_exit(127);}int status=0;require(::waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&WEXITSTATUS(status)==0,"runtime profile child failed");
+#endif
+  };
   run("tracy");require(!std::filesystem::exists(report),"rejected task Tracy initialized a synchronous collector while unwinding");run("dormant");run("profile");
   std::ifstream input(report);std::string raw((std::istreambuf_iterator<char>(input)),{});
   require(raw.find("\"schema\":\"nex.profile-runtime/2\"")!=std::string::npos,"task schema2 absent");require(raw.find("\"incomplete\":false")!=std::string::npos,"valid task report incomplete");
@@ -81,7 +93,7 @@ void parent(const char *self){
   for(std::sregex_iterator it(memory.begin(),memory.end(),pool),end;it!=end;++it){++pools;require((*it)[1]==(*it)[2]&&(*it)[3]=="0"&&(*it)[5]=="0","atomic managed pool did not balance");}require(pools==2,"managed memory pools absent");
   run("truncated");{std::ifstream input(report);raw.assign(std::istreambuf_iterator<char>(input),{});}require(raw.find("\"aggregates\":true,\"timeline\":false,\"memory\":true,\"cpu\":true,\"elapsed\":true,\"lifetime\":true")!=std::string::npos,"event-only loss invalidated exact aggregates/clocks/memory");require(field(raw,"dropped_events")>0,"timeline cap did not report drops");
   run("overflow");{std::ifstream input(report);raw.assign(std::istreambuf_iterator<char>(input),{});}require(raw.find("\"incomplete\":true")!=std::string::npos&&raw.find("\"memory\":false")!=std::string::npos,"late memory overflow emitted a clean report");require(field(raw,"counter_overflows")>0&&field(raw,"serialization_overflows")>0,"memory counter/JSON overflow was not explicit");
-  std::filesystem::remove_all(directory);
+  input.close();std::filesystem::remove_all(directory);
 }
 }
 int main(int argc,char **argv){try{if(argc==1)parent(argv[0]);else if(std::string(argv[1])=="tracy"){::setenv("NEX_TRACY","1",1);bool rejected=false;try{nex_task_profile_prepare(sites,std::size(sites));}catch(const Trap &error){rejected=error.code=="E_TASK_PROFILE";}require(rejected&&!taskProfileCollector(),"task Tracy reached collector/worker startup");require(nex_application_run(reinterpret_cast<void*>(tracyEntry),0,nullptr)==70&&!taskProfileCollector(),"application-wrapper cleanup masked task Tracy rejection");}else exercise(std::string(argv[1])!="dormant",std::string(argv[1])=="truncated",std::string(argv[1])=="overflow");std::cout<<"task profile runtime PASS "<<checks<<" checks\n";return 0;}catch(const std::exception &error){std::cerr<<error.what()<<'\n';return 1;}}

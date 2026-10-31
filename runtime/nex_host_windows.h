@@ -38,7 +38,7 @@ inline int error(DWORD code){
 }
 struct PrivateSecurity {
   SECURITY_DESCRIPTOR descriptor{};std::vector<unsigned char> token,acl;
-  PrivateSecurity(){
+  explicit PrivateSecurity(DWORD access=FILE_ALL_ACCESS){
     HANDLE raw=nullptr;
     if(!OpenThreadToken(GetCurrentThread(),TOKEN_QUERY,TRUE,&raw)){
       if(GetLastError()!=ERROR_NO_TOKEN||!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&raw))throw DataError("E_FILE","cannot inspect current Windows principal");
@@ -49,7 +49,7 @@ struct PrivateSecurity {
     auto sid=reinterpret_cast<TOKEN_USER*>(token.data())->User.Sid;
     auto bytes=DWORD(sizeof(ACL)+sizeof(ACCESS_ALLOWED_ACE)-sizeof(DWORD)+GetLengthSid(sid));acl.resize(bytes);
     if(!InitializeAcl(reinterpret_cast<PACL>(acl.data()),bytes,ACL_REVISION)||
-       !AddAccessAllowedAceEx(reinterpret_cast<PACL>(acl.data()),ACL_REVISION,OBJECT_INHERIT_ACE|CONTAINER_INHERIT_ACE,FILE_ALL_ACCESS,sid)||
+       !AddAccessAllowedAceEx(reinterpret_cast<PACL>(acl.data()),ACL_REVISION,OBJECT_INHERIT_ACE|CONTAINER_INHERIT_ACE,access,sid)||
        !InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||
        !SetSecurityDescriptorOwner(&descriptor,sid,FALSE)||
        !SetSecurityDescriptorDacl(&descriptor,TRUE,reinterpret_cast<PACL>(acl.data()),FALSE)||
@@ -84,17 +84,58 @@ struct Identity {
   bool operator==(const Identity&)const=default;
 };
 inline std::optional<Identity> identity(HANDLE handle){
-  FILE_ATTRIBUTE_TAG_INFO attributes{};FILE_ID_INFO info{};
+  // Some LLVM-MinGW headers hide FILE_ID_INFO behind _WIN32_WINNT. This is
+  // its actual24-byte Win32 ABI, not a synthetic POSIX inode or truncated ID.
+  struct NativeFileId {uint64_t volume;std::array<unsigned char,16> file;};
+  static_assert(sizeof(NativeFileId)==24);
+  FILE_ATTRIBUTE_TAG_INFO attributes{};NativeFileId info{};
   if(handle==INVALID_HANDLE_VALUE||GetFileType(handle)!=FILE_TYPE_DISK||
      !GetFileInformationByHandleEx(handle,FileAttributeTagInfo,&attributes,sizeof(attributes))||
      attributes.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT||
-     !GetFileInformationByHandleEx(handle,FileIdInfo,&info,sizeof(info)))return std::nullopt;
-  Identity result;result.volume=info.VolumeSerialNumber;result.directory=bool(attributes.FileAttributes&FILE_ATTRIBUTE_DIRECTORY);
-  std::copy(std::begin(info.FileId.Identifier),std::end(info.FileId.Identifier),result.file.begin());return result;
+     !GetFileInformationByHandleEx(handle,static_cast<FILE_INFO_BY_HANDLE_CLASS>(18),&info,sizeof(info)))return std::nullopt;
+  Identity result;result.volume=info.volume;result.directory=bool(attributes.FileAttributes&FILE_ATTRIBUTE_DIRECTORY);
+  result.file=info.file;return result;
 }
 inline std::optional<Identity> identity(const std::filesystem::path &path){
   Handle file(CreateFileW(path.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
     OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr));return identity(file.value);
+}
+inline void privateAccess(const std::filesystem::path &path,DWORD access){
+  Handle file(CreateFileW(path.c_str(),WRITE_DAC|READ_CONTROL|FILE_READ_ATTRIBUTES,
+    FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,
+    FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+  if(!identity(file.value))throw DataError("E_FILE","cannot seal a non-regular or reparse snapshot member");
+  PrivateSecurity security(access);
+  auto code=SetSecurityInfo(file.value,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION|PROTECTED_DACL_SECURITY_INFORMATION,
+    nullptr,nullptr,reinterpret_cast<PACL>(security.acl.data()),nullptr);
+  if(code!=ERROR_SUCCESS)throw DataError("E_FILE","cannot set private snapshot ACL: "+std::to_string(code));
+}
+inline void writePrivateFile(const std::filesystem::path &path,const std::string &bytes){
+  PrivateSecurity security;
+  SECURITY_ATTRIBUTES attributes{sizeof(attributes),&security.descriptor,FALSE};
+  Handle file(CreateFileW(path.c_str(),GENERIC_WRITE,0,&attributes,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr));
+  if(file.value==INVALID_HANDLE_VALUE)throw DataError("E_FILE","cannot create private Windows file: "+std::to_string(GetLastError()));
+  size_t offset=0;
+  while(offset<bytes.size()){
+    DWORD written=0,count=DWORD(std::min<size_t>(bytes.size()-offset,MAXDWORD));
+    if(!WriteFile(file.value,bytes.data()+offset,count,&written,nullptr)||!written)
+      throw DataError("E_FILE","cannot write private Windows file: "+std::to_string(GetLastError()));
+    offset+=written;
+  }
+  if(!FlushFileBuffers(file.value))throw DataError("E_FILE","cannot flush private Windows file: "+std::to_string(GetLastError()));
+}
+inline std::filesystem::path canonical(const std::filesystem::path &path){
+  // Win32 normalizes '..' before following reparse points. NEX resolves the
+  // actual parent of an explicitly selected configuration, component by
+  // component, so a link/../configuration keeps its physical provenance.
+  auto full=path.is_absolute()?path:std::filesystem::current_path()/path;
+  auto result=full.root_path();
+  for(const auto &part:full.relative_path()){
+    if(part==L".")continue;
+    if(part==L".."){result=result.parent_path();continue;}
+    result=std::filesystem::canonical(result/part);
+  }
+  return result;
 }
 inline int openRegularDescriptor(const std::filesystem::path &path,int flags){
   bool writable=(flags&(_O_WRONLY|_O_RDWR))!=0;DWORD access=(writable?GENERIC_WRITE:GENERIC_READ)|FILE_READ_ATTRIBUTES;
@@ -156,9 +197,13 @@ inline char *mkdtemp(char *pattern){
 constexpr int RTLD_NOW=2,RTLD_LOCAL=0;
 inline thread_local std::string nexWindowsDllError;
 inline void *dlopen(const wchar_t *path,int){
-  auto module=LoadLibraryExW(path,nullptr,LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
+  std::wstring filename(path);
+  // A trailing dot prevents the Win32 loader from silently adding .dll.
+  if(!std::filesystem::path(filename).has_extension())filename+=L'.';
+  auto module=LoadLibraryExW(filename.c_str(),nullptr,LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
   nexWindowsDllError=module?"":"Windows DLL load failed: "+std::to_string(GetLastError());return module;
 }
+inline void *dlopen(const char *path,int flags){return dlopen(nexrt::platform::wide(path).c_str(),flags);}
 inline int dlclose(void *module){return FreeLibrary(static_cast<HMODULE>(module))?0:-1;}
 inline void *dlsym(void *module,const char *name){
   auto address=GetProcAddress(static_cast<HMODULE>(module),name);

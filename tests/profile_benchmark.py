@@ -30,7 +30,7 @@ fn main() -> unit !{io} {
   while i < ITERATIONS { total = total + add(i); i = i + 1; }
   print(total);
 }
-'''.replace('ITERATIONS', str(options.iterations)))
+'''.replace('ITERATIONS', str(options.iterations)), newline="\n")
 
         def cli(*args):
             result = subprocess.run([str(compiler), *map(str, args), '--json'], cwd=root, capture_output=True, text=True, timeout=180, check=True)
@@ -68,7 +68,7 @@ fn main() -> unit !{io} {
                       revision=context['revision'], builds={mode: b['build_key'] for mode, b in builds.items()}, iterations=options.iterations, runs=options.runs,
                       scenario='checked add in fixed loop', observation='whole-process elapsed time including launch and local report flush; one host/workload; no performance guarantee', results=observed)
         options.output.parent.mkdir(parents=True, exist_ok=True)
-        options.output.write_text(json.dumps(report, indent=2) + '\n')
+        options.output.write_text(json.dumps(report, indent=2) + '\n', newline="\n")
         print(json.dumps(dict(output=str(options.output.resolve()), medians_ms={mode: value['median_ns'] / 1000000 for mode, value in observed.items()})))
 
 

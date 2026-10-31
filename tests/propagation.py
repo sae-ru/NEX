@@ -125,7 +125,7 @@ fn main()->unit{let value:result<i64>=ok(41);let result:result<i64>=helper(value
                'stop':{'process_id':'1','thread_id':'1','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'result<i64>','value':{'ok':'41'}}],
                'truncated':False}
-        path=self.root/'frame.json';path.write_text(json.dumps(frame))
+        path=self.root/'frame.json';path.write_text(json.dumps(frame), newline="\n")
         self.assertEqual(self.cli('inspect',path,'--manifest',manifest,'--expression','value?',ok=False)['code'],'E_DEBUG_RETURN')
         result=self.cli('inspect',path,'--manifest',manifest,'--expression','helper(value)')
         self.assertEqual(result['value'],{'ok':'42'})
@@ -135,7 +135,7 @@ fn main()->unit{let value:result<i64>=ok(41);let result:result<i64>=helper(value
     def test_genuine016_migration_keeps_every_historical_row_and_local_id(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.16.json').read_text())
         self.source(fixture['source']);self.historical_store('0.16')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.16','entry':'main.nex'}), newline="\n")
         before=harness.database_rows(self.root/'.nex/graph.db')
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertEqual(self.cli('eval','--revision',fixture['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
@@ -169,11 +169,11 @@ test fn wanted()->unit{assert(value()==ok("42"));}
         self.assertEqual(source.encode()[span['byte_begin']:span['byte_end']],b'ok(41)?')
         patch={'expected_revision':revision,'expected_source_hash':context['source_hash'],
                'replacements':[{'operation_id':target['id'],'source':'42?'}]}
-        path=self.root/'patch.json';path.write_text(json.dumps(patch))
+        path=self.root/'patch.json';path.write_text(json.dumps(patch), newline="\n")
         before=harness.database_rows(self.root/'.nex/graph.db')
         self.assertEqual(self.cli('apply','--patch',path,ok=False)['code'],'E_TYPE')
         self.assertEqual(harness.database_rows(self.root/'.nex/graph.db'),before)
-        patch['replacements'][0]['source']='ok(42)?';path.write_text(json.dumps(patch))
+        patch['replacements'][0]['source']='ok(42)?';path.write_text(json.dumps(patch), newline="\n")
         self.cli('apply','--patch',path)
         self.assertEqual(self.file.read_text(),source)
         self.assertEqual(self.cli('eval','--revision',revision)['stdout'],'{"ok":"41"}\n')

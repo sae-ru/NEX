@@ -39,12 +39,12 @@ def current_fixture_sources(document, language):
 def fixture_for_current_cli(path, directory, language):
  source=json.loads(path.read_text());authored=current_fixture_sources(source,language)
  destination=directory/'public-current-sources';destination.mkdir(exist_ok=True)
- output=destination/path.name;output.write_text(json.dumps(authored,ensure_ascii=False,indent=2)+'\n')
+ output=destination/path.name;output.write_text(json.dumps(authored,ensure_ascii=False,indent=2)+'\n', newline="\n")
  record={'schema':'nex.test-source-authoring/1','selected_language':language,'unversioned_fixture_input':True,
          'original_bundle':str(path),'input_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
          'authored_bundle':str(output),'authored_sha256':hashlib.sha256(output.read_bytes()).hexdigest(),
          'archived_origin_modified':False}
- output.with_suffix(output.suffix+'.authoring.json').write_text(json.dumps(record,indent=2)+'\n')
+ output.with_suffix(output.suffix+'.authoring.json').write_text(json.dumps(record,indent=2)+'\n', newline="\n")
  return output
 
 
@@ -59,15 +59,15 @@ def main():
  project=args.root.resolve()/'public-cli-projects'/bundle.stem;project.mkdir(parents=True,exist_ok=True)
  for name,text in source['files'].items():
   relative=Path(name);assert not relative.is_absolute() and '..' not in relative.parts
-  path=project/relative;path.parent.mkdir(parents=True,exist_ok=True);assert not path.is_symlink();path.write_text(text)
- (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':source['entry']}))
+  path=project/relative;path.parent.mkdir(parents=True,exist_ok=True);assert not path.is_symlink();path.write_text(text, newline="\n")
+ (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':source['entry']}), newline="\n")
  logs=project/'cli-evidence';logs.mkdir(exist_ok=True);compiler_sha=hashlib.sha256(compiler.read_bytes()).hexdigest()
  def run(command):
   stem=logs/('%03d'%(1+len(list(logs.glob('*.command.json')))))
-  stem.with_suffix('.command.json').write_text(json.dumps({'argv':list(map(str,command)),'cwd':str(project),'compiler_sha256':compiler_sha},indent=2)+'\n')
+  stem.with_suffix('.command.json').write_text(json.dumps({'argv':list(map(str,command)),'cwd':str(project),'compiler_sha256':compiler_sha},indent=2)+'\n', newline="\n")
   p=subprocess.run(list(map(str,command)),cwd=project,capture_output=True,text=True,timeout=240)
-  stem.with_suffix('.stdout').write_text(p.stdout);stem.with_suffix('.stderr').write_text(p.stderr)
-  stem.with_suffix('.process.json').write_text(json.dumps({'exit_code':p.returncode})+'\n')
+  stem.with_suffix('.stdout').write_text(p.stdout, newline="\n");stem.with_suffix('.stderr').write_text(p.stderr, newline="\n")
+  stem.with_suffix('.process.json').write_text(json.dumps({'exit_code':p.returncode})+'\n', newline="\n")
   return p
  def finish(process,value=None):
   if process.stderr:sys.stderr.write(process.stderr)
@@ -92,7 +92,7 @@ def main():
    for item in signature['types']:
     if item['kind']=='resource':resources[item['name']]={'name':item['name'],'identity':item['identity']}
   value={'ok':True,'language':language,'revision':graph['revision'],'resources':resources,'signatures':signatures,'public_cli_checked':True,'compiler_sha256':compiler_sha}
-  if args.output!='-':Path(args.output).write_text(json.dumps(value)+'\n')
+  if args.output!='-':Path(args.output).write_text(json.dumps(value)+'\n', newline="\n")
   return finish(checked,value)
  if args.action in ('reference','reference-timeout'):
   command=[compiler,'eval',entry,'--json']

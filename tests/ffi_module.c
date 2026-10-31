@@ -1,9 +1,10 @@
 #include "nex_ffi_module.h"
+#include "ffi_marker.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-static void mark(char event){const char *path=getenv("NEX_FFI_TEST_MARKER");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_APPEND,0600);if(fd>=0){(void)write(fd,&event,1);close(fd);}}}
+static void mark(char event){nex_test_marker("NEX_FFI_TEST_MARKER",event);}
 __attribute__((constructor)) static void initialized(void){mark('I');}
 __attribute__((destructor)) static void finalized(void){mark('D');}
 static nex_ffi_status echo(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user){

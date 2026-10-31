@@ -79,7 +79,7 @@ class TaskFinally(harness.ToolchainCase):
             result=self.cli('run','--profile',profile,timeout=300)
             self.assertEqual(result['exit_code'],0,result);self.assertEqual(result['stdout'],'42\n')
         folder=self.root/'web';self.cli('emit','--kind','typescript','--directory',folder)
-        driver=folder/'observe.ts';driver.write_text("import { entry, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';import { details } from './nex-source-exception-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts,{complete:s=>{if(s.retainedFrames||s.activeCalls||s.externalPending||s.externalReservedBytes||s.externalMailbox)throw Error('retained task state');}});\n")
+        driver=folder/'observe.ts';driver.write_text("import { entry, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';import { details } from './nex-source-exception-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts,{complete:s=>{if(s.retainedFrames||s.activeCalls||s.externalPending||s.externalReservedBytes||s.externalMailbox)throw Error('retained task state');}});\n", newline="\n")
         observed=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',driver],cwd=folder,capture_output=True,text=True,timeout=90)
         self.assertEqual(observed.returncode,0,observed.stdout+observed.stderr);self.assertEqual(observed.stdout,'42\n')
         tsc=os.environ.get('NEX_TSC')
@@ -126,7 +126,7 @@ fn main()->unit !{task,throw}{try{original();}finally{task_yield();}}
         self.assertEqual(native[0]['source']['operation_site'],native[1]['source']['operation_site'])
         self.assertEqual(native[0]['line'],native[1]['line']);self.assertEqual(native[1]['message'],'λ\0🙂')
         folder=self.root/'web';self.cli('emit','--kind','typescript','--directory',folder)
-        driver=folder/'observe.ts';driver.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';import {details} from './nex-source-exception-runtime.ts';try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);}catch(e){console.log(JSON.stringify(details(e)));}\n")
+        driver=folder/'observe.ts';driver.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';import {details} from './nex-source-exception-runtime.ts';try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);}catch(e){console.log(JSON.stringify(details(e)));}\n", newline="\n")
         p=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',driver],cwd=folder,capture_output=True,text=True,timeout=60)
         self.assertEqual(p.returncode,0,p.stderr);web=json.loads(p.stdout)
         self.assertEqual(web['code'],'ORIGINAL');self.assertEqual(web['message'],'λ\0🙂');self.assertEqual(web['site'][1],2)
@@ -163,7 +163,7 @@ fn main()->unit !{task,io}{print(answer());}
         argv=[debugger,'--no-lldbinit','--batch',session['launch']['program']]
         for command in commands:argv+=['-o',command]
         p=subprocess.run(argv,cwd=self.root,capture_output=True,text=True,timeout=120)
-        (self.root/'lldb.stdout').write_text(p.stdout);(self.root/'lldb.stderr').write_text(p.stderr)
+        (self.root/'lldb.stdout').write_text(p.stdout, newline="\n");(self.root/'lldb.stderr').write_text(p.stderr, newline="\n")
         self.assertEqual(p.returncode,0,p.stdout+p.stderr)
         rows=[json.loads(line) for line in p.stdout.splitlines() if line.startswith('{')]
         self.assertTrue(any(row.get('schema')=='nex.task-expression/1' and row.get('value')=='42' for row in rows),p.stdout)
@@ -185,7 +185,7 @@ fn main()->unit !{task,io}{print(answer());}
         native=self.cli('run',ok=False,timeout=300);self.assertEqual(native['exit_code'],70)
         self.assertIn('E_DIV_ZERO',native['stderr']);self.assertNotIn('E_ASSERT',native['stderr'])
         folder=self.root/'web';self.cli('emit','--kind','typescript','--directory',folder)
-        driver=folder/'observe.ts';driver.write_text("import { entry, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';import { details } from './nex-source-exception-runtime.ts';let code;try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);}catch(error){code=(error as {code:string}).code;}console.log(code);\n")
+        driver=folder/'observe.ts';driver.write_text("import { entry, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';import { details } from './nex-source-exception-runtime.ts';let code;try{await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);}catch(error){code=(error as {code:string}).code;}console.log(code);\n", newline="\n")
         p=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',driver],cwd=folder,capture_output=True,text=True,timeout=60)
         self.assertEqual(p.returncode,0,p.stderr);self.assertEqual(p.stdout,'E_DIV_ZERO\n')
 

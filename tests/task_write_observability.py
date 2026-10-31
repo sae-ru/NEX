@@ -10,7 +10,7 @@ import task_provider_debugging as debug
 import task_provider_profile as profile
 TEXT='A🌍\0λ'
 started=time.monotonic();report={'schema':'nex.public-write-observability/1','ok':False,'state':'starting','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'checks':[],'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-started,3);(O/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(O/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n', newline="\n")
 class WriterDAP(debug.TaskProviderDebugging):
  def test_actual_write_resume(self):
   self.mixed()
@@ -20,12 +20,12 @@ class WriterDAP(debug.TaskProviderDebugging):
  return ok(answer);
 }
 '''
-  (self.root/'leaf/value.nex').write_text(source)
-  (self.root/'mid/value.nex').write_text(debug.MID+'\npub server fn save(path:str,text:str)->result<bool> !{task,fs}{return leaf::save(path,text);}\n')
+  (self.root/'leaf/value.nex').write_text(source, newline="\n")
+  (self.root/'mid/value.nex').write_text(debug.MID+'\npub server fn save(path:str,text:str)->result<bool> !{task,fs}{return leaf::save(path,text);}\n', newline="\n")
   self.description['components']['leaf']['exports'].append('save');self.description['components']['mid']['exports'].append('save');self.save()
   self.file.write_text(r'''module debug_app;import "../mid/value.nex" as mid;
-server fn main()->unit !{task,fs,io}{assert(unwrap(mid::save("written","A🌍\u0000λ")));print(42);}''')
-  grant=self.root/'grant';grant.mkdir();(grant/'written').write_text('original')
+server fn main()->unit !{task,fs,io}{assert(unwrap(mid::save("written","A🌍\u0000λ")));print(42);}''', newline="\n")
+  grant=self.root/'grant';grant.mkdir();(grant/'written').write_text('original', newline="\n")
   _,session,_,manifest=self.prepare()
   function=next(f for f in manifest['functions'] if f['name']=='debug_leaf::save')
   line=next(i+1 for i,text in enumerate(source.splitlines()) if '// actual-write-done' in text)
@@ -58,15 +58,15 @@ server fn main()->unit !{task,fs,io}{assert(unwrap(mid::save("written","A🌍\u0
 class WriterProfile(profile.TaskProviderProfiles):
  def test_actual_write_profiles(self):
   self.shared_graph()
-  (self.root/'leaf/value.nex').write_text(profile.LEAF+'\npub server fn save(path:str,text:str)->result<bool> !{task,fs}{task_yield();return file_write_text(path,text);}\n')
+  (self.root/'leaf/value.nex').write_text(profile.LEAF+'\npub server fn save(path:str,text:str)->result<bool> !{task,fs}{task_yield();return file_write_text(path,text);}\n', newline="\n")
   self.description['components']['leaf']['exports'].append('save')
   self.description['components']['app']['dependencies']={'leaf':'dynamic','unused':'dynamic'};self.save()
   self.file.write_text(r'''module profile_app;import "../leaf/value.nex" as leaf;
 server fn main()->unit !{task,fs,io}{let result:result<bool>=leaf::save("written","A🌍\u0000λ");
- if error_code(result)=="CAPABILITY"{print("CAPABILITY");return;}assert(unwrap(result));print(42);}''')
+ if error_code(result)=="CAPABILITY"{print("CAPABILITY");return;}assert(unwrap(result));print(42);}''', newline="\n")
   expected={name:0 for name in profile.COUNTS if not name.startswith('profile_mid::') and name!='profile_app::local'}
   expected.update({'profile_app::main':1,'profile_leaf::save':1})
-  grant=self.root/'grant';grant.mkdir();(grant/'written').write_text('original')
+  grant=self.root/'grant';grant.mkdir();(grant/'written').write_text('original', newline="\n")
   for allowed,stdout in [(False,'CAPABILITY\n'),(True,'42\n')]:
    result=self.project('profile','app','measured','--events','0',env={'NEX_FILES_ROOT':str(grant),'NEX_FILES_WRITE':'1' if allowed else '0'})
    saved=self.measured(result,expected,stdout,timeline=False)

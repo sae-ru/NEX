@@ -20,7 +20,7 @@ class NativeDiagnostics(harness.ToolchainCase):
 
     def diagnose(self, build, log, **kwargs):
         path = self.root / 'native.log'
-        path.write_text(log)
+        path.write_text(log, newline="\n")
         return self.cli('diagnose', '--manifest', build['debug_manifest'], '--log', path, **kwargs)
 
     def test_runtime_failures_map_to_the_same_operations_as_the_interpreter(self):
@@ -119,13 +119,13 @@ fn main()->unit!{io}{print(sibling());print(broken());}
     def test_standalone_and_new_store_map_after_source_deletion(self):
         self.source('module archived;fn main()->i64{return 9/0;}')
         _, before=self.native_failure();built=self.cli('build')
-        archive=self.root/'graph.json';archive.write_text(json.dumps(self.cli('graph')))
+        archive=self.root/'graph.json';archive.write_text(json.dumps(self.cli('graph')), newline="\n")
         standalone=self.root/'standalone';shutil.copy2(built['executable'],standalone)
         self.file.unlink()
         child=subprocess.run([standalone],capture_output=True,text=True,timeout=30)
         self.assertEqual(child.returncode,70)
-        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.24","entry":"main.nex"}');self.cli('import',archive,cwd=other)
-        log=self.root/'standalone.log';log.write_text(child.stderr)
+        other=self.root/'restored';other.mkdir();(other/'nex.json').write_text('{"language":"0.24","entry":"main.nex"}', newline="\n");self.cli('import',archive,cwd=other)
+        log=self.root/'standalone.log';log.write_text(child.stderr, newline="\n")
         mapped=self.cli('diagnose','--revision','HEAD','--manifest',built['debug_manifest'],'--log',log,cwd=other)['diagnostics'][0]
         self.assertEqual(mapped['status'],'mapped')
         self.assertEqual(mapped['operation_site'],before['operation_site'])
@@ -153,7 +153,7 @@ fn main()->unit!{io}{print(sibling());print(broken());}
 
     def test_log_and_manifest_input_are_bounded_regular_utf8_files(self):
         self.source('module files;fn main()->i64{return 0;}');built=self.cli('build')
-        log=self.root/'input.log';log.write_text('')
+        log=self.root/'input.log';log.write_text('', newline="\n")
         alias=self.root/'alias';alias.symlink_to(log)
         for path in (alias,self.root):
             error=self.cli('diagnose','--manifest',built['debug_manifest'],'--log',path,ok=False)
@@ -193,7 +193,7 @@ server fn handle(request:http::Request)->http::Response{
  return http::json_response(200,"true");
 }''')
         auth=self.root/'auth.json';token=self.cli('token','--user','alice','--auth',auth)['token']
-        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('NEX')
+        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('NEX', newline="\n")
         built=self.cli('build','--target','server','--profile','release',timeout=180)
         process=http.HTTP.launch(self,built['executable'],auth,budget=100)
         requests=[]

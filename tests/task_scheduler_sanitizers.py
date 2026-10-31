@@ -34,7 +34,7 @@ def main():
             'inputs':hashes,'commands':[],'full_objective_complete':False}
     def save():
         report['seconds']=round(time.monotonic()-started,3)
-        state.write_text(json.dumps(report,indent=2)+'\n')
+        state.write_text(json.dumps(report,indent=2)+'\n', newline="\n")
     def guard():
         for name,digest in hashes.items():
             if hashlib.sha256((source/name).read_bytes()).hexdigest()!=digest:
@@ -45,8 +45,8 @@ def main():
         guard();begin=time.monotonic()
         result=subprocess.run(list(map(str,command)),cwd=out,env={**os.environ,**settings},
                               capture_output=True,text=True,timeout=timeout)
-        (out/(name+'.stdout')).write_text(result.stdout)
-        (out/(name+'.stderr')).write_text(result.stderr)
+        (out/(name+'.stdout')).write_text(result.stdout, newline="\n")
+        (out/(name+'.stderr')).write_text(result.stderr, newline="\n")
         report['commands'].append({'name':name,'command':list(map(str,command)),
             'exit_code':result.returncode,'seconds':round(time.monotonic()-begin,3)})
         save();guard()

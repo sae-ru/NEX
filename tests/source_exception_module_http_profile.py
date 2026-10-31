@@ -16,7 +16,7 @@ def observe(binary,row):
  aborted=sum(task['outcome']=='aborted' for task in roots);cancelled=sum(task['outcome']=='cancelled' for task in roots)
  assert aborted+cancelled<=len(roots)
  if 'E_SOURCE_EXCEPTION' not in row['stderr'] and 'NEX_SOURCE_EXCEPTION ' not in row['stderr'] and not any(key in row['stderr'] for key in ['E_TIMEOUT','E_LIMIT','E_CANCELLED','E_ASSERT']):assert not aborted and not cancelled
- expectation=file.with_name('profile-expectation.json');expectation.write_text(json.dumps({'source_hash':plan['source_hash'],'profiling':plan['profiling']},ensure_ascii=False,indent=2)+'\n')
+ expectation=file.with_name('profile-expectation.json');expectation.write_text(json.dumps({'source_hash':plan['source_hash'],'profiling':plan['profiling']},ensure_ascii=False,indent=2)+'\n', newline="\n")
  row['profile_validation']={'ok':True,'profile_sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'expectation_file':str(expectation),'expectation_sha256':hashlib.sha256(expectation.read_bytes()).hexdigest(),'functions':len(functions),'tasks':len(raw['tasks']),'HTTP_roots':len(roots),'aborted_HTTP_roots':aborted,'cancelled_HTTP_roots':cancelled,'disconnected_request':bool(disconnected),'request_ID_correlation_supported':False}
 
 def main():

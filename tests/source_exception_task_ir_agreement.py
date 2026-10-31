@@ -32,16 +32,16 @@ report = {'ok': False, 'cases': [], 'fixtures': origins, 'ordinary_functional_on
           'security_checks_deferred_by_user': True, 'shared_serial_coordinator': True,
           'independent_AST_and_IR_control': True, 'compiled_native_execution': False,
           'physical_workers': False, 'installed_SDK_acceptance_claimed': False}
-def save(): (out/'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
+def save(): (out/'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n', newline="\n")
 save()
 for name, text in fixtures:
-    d = out/name;d.mkdir(exist_ok=True)
-    (d/'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}))
-    f = d/'main.nex';f.write_text('module task_ir_agreement;\n'+text+'\n')
+    d = out/(("case-"+name) if os.name=="nt" and name.upper()=="NUL" else name);d.mkdir(exist_ok=True)
+    (d/'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}), newline="\n")
+    f = d/'main.nex';f.write_text('module task_ir_agreement;\n'+text+'\n', newline="\n")
     outcomes = {}
     for mode in ['reference', 'task-ir']:
         r = subprocess.run([probe, mode, str(f), '1000000'], text=True, capture_output=True, timeout=45)
-        (d/(mode+'.json')).write_text(r.stdout);(d/(mode+'.stderr')).write_text(r.stderr)
+        (d/(mode+'.json')).write_text(r.stdout, newline="\n");(d/(mode+'.stderr')).write_text(r.stderr, newline="\n")
         assert r.returncode == 0, (name, mode, r.returncode, r.stdout, r.stderr)
         outcomes[mode] = json.loads(r.stdout)
     left, right = outcomes['reference'], outcomes['task-ir']

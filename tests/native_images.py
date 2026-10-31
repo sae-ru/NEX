@@ -13,26 +13,26 @@ class NativeImages(harness.ToolchainCase):
         super().setUp()
         self.root=self.root/'images % 🧠';self.root.mkdir()
         for name in ('model','producer','consumer','app'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'model/value.nex').write_text('''module model;
 pub struct Payload{text:str;data:bytes;values:list<f64>;callback:fn(i64)->i64;}
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
 pub fn create()->Payload{return Payload("Я",utf8_bytes("hi"),[1.5,2.25],make(40));}
 pub server fn opened()->file!{fs}{return unwrap(file_open_write("data.bin"));}
 pub fn divide(x:i64)->i64{let held:list<str>=["held","🧠"];assert(len(held)==2);return 10/x;}
-''')
+''', newline="\n")
         (self.root/'producer/main.nex').write_text('''module producer;import "../model/value.nex" as m;
 pub fn transform(p:m::Payload)->m::Payload{return m::Payload(p.text+"🧠",p.data,p.values,p.callback);}
 pub fn divide(x:i64)->i64{return m::divide(x);}
 pub fn identity<T>(x:T)->T{return x;}
-''')
+''', newline="\n")
         (self.root/'consumer/main.nex').write_text('''module consumer;
 import "../model/value.nex" as m;import "../producer/main.nex" as a;
 pub fn transform(p:m::Payload)->m::Payload{return a::identity(a::transform(p));}
 pub fn invoke(f:fn(i64)->i64,x:i64)->i64{return f(x);}
 pub server fn write(f:file)->unit!{fs}{assert(unwrap(file_write(f,utf8_bytes("Я🧠")))==6);}
 pub fn divide(x:i64)->i64{return a::divide(x);}
-''')
+''', newline="\n")
         self.app='''module app;import "../model/value.nex" as m;import "../consumer/main.nex" as c;
 fn check_values()->unit{let p:m::Payload=m::create();let q:m::Payload=c::transform(p);
  assert(p.text=="Я");assert(q.text=="Я🧠");assert(q.data==utf8_bytes("hi"));
@@ -41,7 +41,7 @@ test fn values()->unit{check_values();}
 server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
  let f:file=m::opened();c::write(f);assert(file_close(f));assert(!file_close(f));print("NEX_IMAGES_OK");}
 '''
-        (self.root/'app/main.nex').write_text(self.app)
+        (self.root/'app/main.nex').write_text(self.app, newline="\n")
         self.manifest={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{p:{'profile':p} for p in ('debug','release','profile')},
           'components':{
@@ -51,7 +51,7 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'model':'static','consumer':'dynamic'}}}}
         self.save()
     def save(self):
-        (self.root/'nex.build.json').write_text(json.dumps(self.manifest))
+        (self.root/'nex.build.json').write_text(json.dumps(self.manifest), newline="\n")
     def build(self,profile='debug'):
         return self.cli('project','--kind','build','--configuration',profile,timeout=300)
     def artifacts(self,result):return {a['component']:a for a in result['artifacts']}
@@ -93,7 +93,7 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
     def test_warm_cache_and_app_only_edit_preserve_provider_and_runtime_bytes(self):
         first=self.build();warm=self.build();a=self.artifacts(first);b=self.artifacts(warm)
         self.assertTrue(all(v['cached'] for v in b.values()))
-        (self.root/'app/main.nex').write_text(self.app.replace('NEX_IMAGES_OK','NEX_IMAGES_EDIT'))
+        (self.root/'app/main.nex').write_text(self.app.replace('NEX_IMAGES_OK','NEX_IMAGES_EDIT'), newline="\n")
         edited=self.build();c=self.artifacts(edited)
         self.assertEqual(first['native_runtime_image'],edited['native_runtime_image'])
         for n in ('model','producer','consumer'):
@@ -111,18 +111,18 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         record=json.loads(path.read_text());self.assertEqual(record['build']['build_key'],normal['build_key'])
         self.assertTrue(record['memory']);self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in record['memory']))
         failed=self.app.replace('print("NEX_IMAGES_OK");','print(c::divide(0));')
-        (self.root/'app/main.nex').write_text(failed)
+        (self.root/'app/main.nex').write_text(failed, newline="\n")
         trapped=self.artifacts(self.build('profile'))['app'];path=self.root/'failed-profile.json'
         p=self.execute(trapped['artifact'],profile=path,code=70)
         self.assertIn('E_DIV_ZERO',p.stderr)
         record=json.loads(path.read_text());self.assertEqual(record['build']['build_key'],trapped['build_key'])
         self.assertTrue(record['memory']);self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in record['memory']))
     def test_fully_imported_entry_needs_no_local_function_object(self):
-        (self.root/'producer/main.nex').write_text('module producer;pub fn start()->i64{return 42;}')
+        (self.root/'producer/main.nex').write_text('module producer;pub fn start()->i64{return 42;}', newline="\n")
         self.manifest['components']={
             'producer':{'kind':'shared_library','root':'producer','entry':'producer/main.nex','entry_function':'start'},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','entry_function':'producer::start','dependencies':{'producer':'dynamic'}}}
-        (self.root/'app/main.nex').write_text('module app;import "../producer/main.nex" as p;')
+        (self.root/'app/main.nex').write_text('module app;import "../producer/main.nex" as p;', newline="\n")
         self.save();a=self.artifacts(self.build())['app']
         self.assertEqual(json.loads(Path(a['compilation']).read_text())['units'],[])
         self.execute(a['artifact'],code=42)
@@ -163,7 +163,7 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         for field in ('uuid','sha256','hash','path'):
             bad=copy.deepcopy(metadata);bad['owned_images'][0][field]='forged'
             try:
-                manifest.write_text(json.dumps(bad));self.assertEqual(read()['code'],'E_CORE_BUILD',field)
+                manifest.write_text(json.dumps(bad), newline="\n");self.assertEqual(read()['code'],'E_CORE_BUILD',field)
             finally:manifest.write_bytes(original)
 
     @unittest.skipUnless(LIVE,'use --live for actual DSO stops, watches and relocated native cores')
@@ -173,12 +173,12 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
  let held:str=p.text;
  let output:m::Payload=m::Payload(held+"🧠",p.data,p.values,p.callback);
  return output; // DSO_STOP
-}'''))
+}'''), newline="\n")
         app=self.artifacts(self.build())['app'];manifest=Path(app['debug_manifest']);meta=json.loads(manifest.read_text())
         projection=next(s['projection'] for s in meta['sources'] if Path(s['original']).resolve()==path.resolve())
         line=next(i+1 for i,s in enumerate(Path(projection).read_text().splitlines()) if 'DSO_STOP' in s)
         bad=copy.deepcopy(meta);selected=next(i for i in bad['owned_images'] if Path(i['path']).name.startswith('libnex_producer_'));selected['uuid']='0'*len(selected['uuid'])
-        bad_manifest=self.root/'bad-debug.json';bad_manifest.write_text(json.dumps(bad))
+        bad_manifest=self.root/'bad-debug.json';bad_manifest.write_text(json.dumps(bad), newline="\n")
         core=self.root/'shared.core';report=self.root/'shared-live.json';script=self.root/'shared_live.py'
         data=self.root/'data';data.mkdir()
         script.write_text('''import json,lldb
@@ -209,7 +209,7 @@ def __lldb_init_module(debugger,internal_dict):
   with open(REPORT,'w') as output:json.dump({'watch':watch,'callback':callback,'wrong_uuid_rejected':True},output)
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('PROJECTION',repr(projection)).replace('LINE',str(line)).replace('ENV',repr(['NEX_FILES_ROOT='+str(data),'NEX_FILES_WRITE=1','NEX_TRACY=0','PATH=/usr/bin:/bin'])).replace('CWD',repr(str(self.root))).replace('BAD',repr(str(bad_manifest))).replace('COMPILER',repr(harness.NEX)).replace('MANIFEST',repr(str(manifest))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))))
+'''.replace('PROJECTION',repr(projection)).replace('LINE',str(line)).replace('ENV',repr(['NEX_FILES_ROOT='+str(data),'NEX_FILES_WRITE=1','NEX_TRACY=0','PATH=/usr/bin:/bin'])).replace('CWD',repr(str(self.root))).replace('BAD',repr(str(bad_manifest))).replace('COMPILER',repr(harness.NEX)).replace('MANIFEST',repr(str(manifest))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))), newline="\n")
         args=[os.environ.get('NEX_LLDB','lldb'),app['artifact'],'--no-lldbinit','--batch',
               '-o','settings set target.disable-aslr false',
               '-o','command script import '+json.dumps(str(manifest.parent/'debugger/lldb_nex.py'),ensure_ascii=False),
@@ -223,7 +223,7 @@ def __lldb_init_module(debugger,internal_dict):
         capsule=self.root/'capsule'
         alias_parent=self.root/'alias';alias_parent.mkdir();alias=alias_parent/manifest.parent.name
         alias.symlink_to(manifest.parent,target_is_directory=True)
-        aliased=copy.deepcopy(meta);aliased['program']=str(alias/'app');manifest.write_text(json.dumps(aliased))
+        aliased=copy.deepcopy(meta);aliased['program']=str(alias/'app');manifest.write_text(json.dumps(aliased), newline="\n")
         exported=self.cli('core',core,'--manifest',alias/'debug.json','--export',capsule,'--expression','held',timeout=180)
         self.assertTrue(exported['read_after_export'])
         receipt=(capsule/'capsule.json').read_bytes()

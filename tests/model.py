@@ -8,19 +8,19 @@ if a.output:out.mkdir(exist_ok=False)
 compiler=a.compiler.resolve(strict=True);env={**os.environ,'NEX_RESOURCE_DIR':str(a.resources.resolve(strict=True)),'PYTHONDONTWRITEBYTECODE':'1'}
 language=json.loads(subprocess.check_output([str(compiler),'describe','--json'],cwd=out,env=env,text=True))['version'];assert language=='0.27'
 report={'schema':'nex.model-contract/1','ok':False,'hardware_executed':False,'commands':[],'cases':[],'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'library_sha256':hashlib.sha256((a.resources/'lib/model.nex').read_bytes()).hexdigest()};start=time.monotonic()
-def save():report['seconds']=round(time.monotonic()-start,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-start,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def project(name,body):
- root=out/name;root.mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n');(root/'main.nex').write_text('module model_contract;import "std/model.nex" as m;import "std/compute.nex" as c;\n'+body);return root
+ root=out/name;root.mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n', newline="\n");(root/'main.nex').write_text('module model_contract;import "std/model.nex" as m;import "std/compute.nex" as c;\n'+body, newline="\n");return root
 def cli(root,name,args,code=None):
- command=[str(compiler),*map(str,args),'--json'];r=subprocess.run(command,cwd=root,env=env,capture_output=True,text=True,timeout=300);(root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr);report['commands'].append({'case':root.name,'name':name,'command':command,'exit_code':r.returncode});save();d=json.loads(r.stdout)
+ command=[str(compiler),*map(str,args),'--json'];r=subprocess.run(command,cwd=root,env=env,capture_output=True,text=True,timeout=300);(root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'case':root.name,'name':name,'command':command,'exit_code':r.returncode});save();d=json.loads(r.stdout)
  if code:assert r.returncode!=0 and d.get('code')==code,(name,d)
  else:assert r.returncode==0,(name,r.stdout[-3000:],r.stderr[-3000:])
  return d
 def agree(root,expected):
  assert cli(root,'reference',['eval'])['stdout']==expected
  for mode in ['debug','release']:assert cli(root,'native-'+mode,['run','--profile',mode])['stdout']==expected
- emitted=root/'ts';cli(root,'emit',['emit','--kind','typescript','--directory',emitted]);(emitted/'package.json').write_text('{"type":"module"}');(emitted/'run.ts').write_text("import {entry} from './program.ts';entry();")
- r=subprocess.run([env.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(emitted/'run.ts')],env=env,capture_output=True,text=True,timeout=60);(root/'typescript.stdout').write_text(r.stdout);(root/'typescript.stderr').write_text(r.stderr);assert r.returncode==0 and r.stdout==expected,(r.returncode,r.stdout,r.stderr)
+ emitted=root/'ts';cli(root,'emit',['emit','--kind','typescript','--directory',emitted]);(emitted/'package.json').write_text('{"type":"module"}', newline="\n");(emitted/'run.ts').write_text("import {entry} from './program.ts';entry();", newline="\n")
+ r=subprocess.run([env.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(emitted/'run.ts')],env=env,capture_output=True,text=True,timeout=60);(root/'typescript.stdout').write_text(r.stdout, newline="\n");(root/'typescript.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0 and r.stdout==expected,(r.returncode,r.stdout,r.stderr)
  cli(root,'native-tests',['test','--profile','release']);cli(root,'web-tests',['test','--target','web'])
 
 sha='a'*64

@@ -1,4 +1,6 @@
 """Private022 source task/FFI calls: independent AST and actual compiled apps."""
+from host_fixture import run_native, host_cpp
+from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -86,7 +88,7 @@ NEX_FFI_MODULE_EXPORT const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi
 '''
 
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
-def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
+def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 
 from source_resource_cli import fixture_for_current_cli
 
@@ -106,8 +108,8 @@ def main():
  if args.compiler:report['compiler_sha256']=sha(args.compiler.resolve())
  def run(label,command,expected=0,cwd=out):
   row={'label':label,'command':list(map(str,command)),'cwd':str(cwd)};report['commands'].append(row);write(out/'report.json',report)
-  result=subprocess.run(row['command'],cwd=cwd,env={**env,'NEX_TASK_FOREIGN_TRACE':str(out/(label+'.trace'))},text=True,capture_output=True,timeout=240)
-  (out/(label+'.stdout')).write_text(result.stdout);(out/(label+'.stderr')).write_text(result.stderr);row['exit_code']=result.returncode
+  result=run_native(row['command'],cwd=cwd,env={**env,'NEX_TASK_FOREIGN_TRACE':str(out/(label+'.trace'))},text=True,capture_output=True,timeout=240)
+  (out/(label+'.stdout')).write_text(result.stdout, newline="\n");(out/(label+'.stderr')).write_text(result.stderr, newline="\n");row['exit_code']=result.returncode
   assert result.returncode==expected,(label,result.returncode,result.stdout[-3500:],result.stderr[-3500:])
   return result
  def bundle(label,body,pin=PIN):
@@ -129,11 +131,11 @@ def main():
    exports.append('{sizeof(nex_ffi_export_v1),0,"'+name+'","'+digest+'",'+name+',0}')
   for dialect,compiler,standard in (('C11','clang','c11'),('CXX20','clang++','c++20')):
    directory=out/dialect;directory.mkdir();source=directory/('module.c' if dialect=='C11' else 'module.cpp')
-   source.write_text(MODULE.replace('@EXPORTS@',',\n'.join(exports)))
+   source.write_text(MODULE.replace('@EXPORTS@',',\n'.join(exports)), newline="\n")
    image=directory/('module.dylib' if sys.platform=='darwin' else 'module.so')
    run(dialect+'-compile',[shutil.which(compiler),'-std='+standard,'-shared','-fPIC','-pthread','-I',REPO/'runtime',source,'-o',image])
-   notice=directory/'NOTICE';notice.write_text('NEX task foreign regression module\n')
-   platform=('macos' if sys.platform=='darwin' else 'linux')+('-arm64' if os.uname().machine in ('arm64','aarch64') else '-x86_64')
+   notice=directory/'NOTICE';notice.write_text('NEX task foreign regression module\n', newline="\n")
+   platform=('windows' if os.name=='nt' else 'macos' if sys.platform=='darwin' else 'linux')+('-arm64' if __import__("platform").machine() in ('arm64','aarch64') else '-x86_64')
    manifest={'schema':'nex.foreign-bundle/1','platform':platform,'entry':image.name,'files':[{'path':image.name,'sha256':sha(image)},{'path':'NOTICE','sha256':sha(notice)}],'exports':{name:hashlib.sha256(json.dumps(contract,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest() for name,contract in signatures.items()},'notices':['NOTICE']}
    write(directory/'manifest.json',manifest);pin=sha(directory/'manifest.json')
    host=directory/'host.json';write(host,{'schema':'nex.foreign-host/1','module_limit':64,'libraries':{'calls':{'directory':str(directory),'manifest_sha256':pin,'exports':sorted(signatures)}}})

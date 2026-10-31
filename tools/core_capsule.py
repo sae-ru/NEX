@@ -10,7 +10,8 @@ import os
 from pathlib import Path, PurePosixPath
 import platform
 import re
-import resource
+if os.name != 'nt':
+    import resource
 import stat
 import subprocess
 import sys
@@ -25,6 +26,18 @@ IDENTITY = ('toolchain', 'language', 'compiler_build', 'runtime_view',
             'expression_protocol', 'build_key', 'revision', 'source_hash')
 BUILD_FILES = ('app', 'program.mlir', 'program.ll', 'compilation.json',
                'build.json', 'source-bundle.json', 'complete')
+
+
+def pe_import_inputs(build, inputs, position):
+    result=[]
+    while position<len(inputs) and isinstance(inputs[position],dict) and inputs[position].get('kind')=='import_library':
+        row=inputs[position];path=row.get('path')
+        if (set(row)!={'kind','path'} or '-windows-gnu' not in build.get('compiler_target','') or
+                not isinstance(path,str) or not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll\.a',path) or
+                (result and path<=result[-1]) or len(result)>=130):
+            raise ValueError('invalid PE import-library completion inputs')
+        result.append(path);position+=1
+    return result,position
 
 
 def completion_inputs(build):
@@ -72,11 +85,12 @@ def completion_inputs(build):
         images = []; providers = []
         while kind() == 'owned_image':
             path = inputs[position].get('path')
-            if (not shared or not isinstance(path, str) or not re.fullmatch(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', path) or
+            if (not shared or not isinstance(path, str) or not re.fullmatch(r'(images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)|libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll)', path) or
                     (images and path <= images[-1]) or len(images) >= 129):
                 raise ValueError('invalid debug owned image')
             images.append(path); take('owned_image', path)
         if shared and not images: raise ValueError('debug shared closure needs its runtime')
+        imports,position=pe_import_inputs(build,inputs,position);result.extend(imports)
         while kind() == 'owned_task_provider':
             path = inputs[position].get('path')
             suffix = '.task-provider.json'
@@ -158,7 +172,7 @@ def completion_inputs(build):
             if position != len(inputs):
                 raise ValueError('static profile completion cannot contain image inputs')
             return result
-        image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
+        image = re.compile(r'(images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)|libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll)')
         images = []
         while position < len(inputs) and kind() == 'owned_image':
             path = inputs[position].get('path')
@@ -169,6 +183,7 @@ def completion_inputs(build):
             take('owned_image', path)
         if not images:
             raise ValueError('retained image build requires its runtime')
+        imports,position=pe_import_inputs(build,inputs,position);result.extend(imports)
         providers = []
         while task and position < len(inputs) and kind() == 'owned_task_provider':
             path = inputs[position].get('path')

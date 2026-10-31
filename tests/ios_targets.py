@@ -21,7 +21,7 @@ class IOSTargets(harness.ToolchainCase):
             self.sdks[name] = Path(result.stdout.strip()).resolve()
         self.doctor = self.cli('doctor')
         self.config = self.root / 'toolchain.json'
-        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source('''module ios_logic;
 trait Read {type Item;fn get(value:Self)->Read::Item<Self>;}
 struct Box<T> {value:T;}
@@ -45,7 +45,7 @@ test fn semantics()->unit {assert(answer()==42);}
         name = 'iphonesimulator' if target.endswith('-simulator') else 'iphoneos'
         value = {'schema':'nex.toolchain/1','target':target,'compiler':self.doctor['native_compiler'],
                  'sysroot':str(self.sdks[name] if sdk is None else sdk), **fields}
-        self.config.write_text(json.dumps(value))
+        self.config.write_text(json.dumps(value), newline="\n")
         return value
 
     def build(self, *args, **kwargs):
@@ -62,7 +62,7 @@ test fn semantics()->unit {assert(answer()==42);}
         keys = set()
         symbol = self.cli('context','--symbol','answer')['native_symbol']
         bridge = self.root / 'bridge.cpp'
-        bridge.write_text('extern "C" long long '+symbol+'();\nextern "C" long long nex_ios_answer(){return '+symbol+'();}\n')
+        bridge.write_text('extern "C" long long '+symbol+'();\nextern "C" long long nex_ios_answer(){return '+symbol+'();}\n', newline="\n")
         for target, sdk, arch, apple_platform in (
             ('arm64-apple-ios17.0','iphoneos','arm64','IOS'),
             ('arm64-apple-ios17.0-simulator','iphonesimulator','arm64','IOSSIMULATOR'),
@@ -119,7 +119,7 @@ test fn semantics()->unit {assert(answer()==42);}
             with self.subTest(target=target,sdk=sdk.name):
                 self.configure(target,sdk)
                 self.assertEqual(self.build(ok=False)['code'],'E_TARGET')
-        self.configure();value=json.loads(self.config.read_text());del value['sysroot'];self.config.write_text(json.dumps(value))
+        self.configure();value=json.loads(self.config.read_text());del value['sysroot'];self.config.write_text(json.dumps(value), newline="\n")
         self.assertEqual(self.build(ok=False)['code'],'E_TARGET')
         self.assertEqual(self.cli('build','--target','arm64-apple-ios17.0','--library','--entry','answer',ok=False)['code'],'E_TARGET')
 
@@ -143,7 +143,7 @@ import json,os,subprocess,sys
 with open(LOG,'a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
 args=[x.replace('ios17.0','ios18.0') if x.startswith('--target=') else x for x in sys.argv[1:]]
 os.execv(REAL,[REAL,*args])
-'''.replace('LOG',repr(str(log))).replace('REAL',repr(self.doctor['native_compiler'])))
+'''.replace('LOG',repr(str(log))).replace('REAL',repr(self.doctor['native_compiler'])), newline="\n")
         script.chmod(0o755)
         self.configure(compiler=str(script))
         self.assertEqual(self.build(ok=False)['code'],'E_TARGET')

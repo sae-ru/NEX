@@ -54,7 +54,7 @@ class BinaryFrame(harness.ToolchainCase):
         self.binary = encoded([0, 255, 128, 65])
 
     def inspect(self, expression, frame=None, kind=None, **kwargs):
-        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame))
+        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame), newline="\n")
         return self.cli('inspect', self.framefile, '--manifest', self.manifest,
                         '--expression', expression, *(['--kind', kind] if kind else []), **kwargs)
 
@@ -214,7 +214,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE', repr(projected)).replace('LINE', str(line)).replace('REPORT', repr(str(report))))
+'''.replace('SOURCE', repr(projected)).replace('LINE', str(line)).replace('REPORT', repr(str(report))), newline="\n")
             output = self.cli('debug', '--', '--no-lldbinit', '--batch', '-o',
                               'command script import '+json.dumps(str(script)), machine=False, timeout=120)
             self.assertTrue(report.is_file(), output.stdout+output.stderr)
@@ -231,7 +231,7 @@ def __lldb_init_module(debugger,_):
             self.assertIn('encoded byte budget', whole[0]['unavailable'])
             self.assertIn('bytes[4194304]', json.dumps(result['previews']))
             self.file.unlink()
-            snapshot = self.root/'snapshot.json'; snapshot.write_text(json.dumps(result['snapshot']))
+            snapshot = self.root/'snapshot.json'; snapshot.write_text(json.dumps(result['snapshot']), newline="\n")
             self.assertEqual(self.cli('inspect', snapshot, '--manifest', self.manifest,
                                      '--expression', 'data[len(data)-1]')['value'], '255')
             from debugging import DAP

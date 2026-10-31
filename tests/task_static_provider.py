@@ -1,4 +1,5 @@
 """Concrete static task archives: ownership, semantics and reviewed workflows."""
+from host_fixture import run_native
 import copy
 import hashlib
 import importlib.util
@@ -72,11 +73,11 @@ class StaticTaskProviders(harness.ToolchainCase):
         for name in ('leaf', 'mid', 'app', 'other'):
             (self.root/name).mkdir()
         self.file = self.root/'app/main.nex'
-        (self.root/'leaf/value.nex').write_text(LEAF)
-        (self.root/'mid/value.nex').write_text(MID)
-        self.file.write_text(APP)
-        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':harness.CURRENT_LANGUAGE, 'entry':'app/main.nex'}))
+        (self.root/'leaf/value.nex').write_text(LEAF, newline="\n")
+        (self.root/'mid/value.nex').write_text(MID, newline="\n")
+        self.file.write_text(APP, newline="\n")
+        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1', 'language':harness.CURRENT_LANGUAGE, 'entry':'app/main.nex'}), newline="\n")
         self.description = {'schema':'nex.project-build/1', 'default_configuration':'debug',
             'configurations':{mode:{'profile':mode, 'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -89,7 +90,7 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.save()
 
     def save(self):
-        (self.root/'nex.build.json').write_text(json.dumps(self.description))
+        (self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
 
     def environment(self, extra=None):
         result = {**os.environ, 'PYTHONDONTWRITEBYTECODE':'1'}
@@ -99,12 +100,12 @@ class StaticTaskProviders(harness.ToolchainCase):
         return result
 
     def process(self, command, cwd=None, env=None, timeout=300):
-        result = subprocess.run(list(map(str,command)), cwd=cwd or self.root,
+        result = run_native(list(map(str,command)), cwd=cwd or self.root,
             env=self.environment(env), capture_output=True, text=True, timeout=timeout)
         self.commands.append({'command':list(map(str,command)), 'cwd':str(cwd or self.root),
             'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr})
         if os.environ.get('NEX_TASK_PROVIDER_OUTPUT'):
-            (self.root/'commands.json').write_text(json.dumps(self.commands, ensure_ascii=False, indent=2)+'\n')
+            (self.root/'commands.json').write_text(json.dumps(self.commands, ensure_ascii=False, indent=2)+'\n', newline="\n")
         return result
 
     def cli(self, *args, ok=True, env=None, cwd=None, timeout=300):
@@ -126,8 +127,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         return compilation,{name for unit in compilation['units'] for name in unit['functions']}
 
     def simple(self, provider, application, exports=()):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider)
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application)
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider, newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application, newline="\n")
         self.description['components']={name:self.description['components'][name] for name in ('leaf','app')}
         self.description['components']['leaf']['exports']=list(exports)
         self.description['components']['app']['dependencies']={'leaf':'static'}
@@ -241,17 +242,17 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.assertEqual((low['observation']['exit_code'],low['observation']['stdout']),(0,'42\n'))
         self.assertEqual(low['observation']['task_execution']['effective'],{'steps':500000,'timeout_ms':5000,'workers':1})
         record = Path(built['leaf']['artifact']).parent/'task-provider.json'
-        record.write_text('{}\n')
+        record.write_text('{}\n', newline="\n")
         repaired = self.artifacts(self.project())
         self.assertFalse(repaired['leaf']['cached'])
         self.assertEqual(self.provider(repaired['leaf'],'leaf')['exports'],records['leaf']['exports'])
         # The consumer pins the completed original archive and provider record.
         copied = sorted((Path(repaired['app']['artifact']).parent/'libraries').glob('*.task-provider.json'))
         self.assertEqual(len(copied),2)
-        copied[0].write_text('{}\n')
+        copied[0].write_text('{}\n', newline="\n")
         self.assertFalse(self.artifacts(self.project())['app']['cached'])
         path = self.root/'leaf/value.nex'
-        path.write_text(path.read_text().replace('return value+1;','return value+2;'))
+        path.write_text(path.read_text().replace('return value+1;','return value+2;'), newline="\n")
         edited = self.artifacts(self.project(component='other'))
         self.assertNotEqual(edited['leaf']['build_key'],repaired['leaf']['build_key'])
         self.assertNotEqual(edited['other']['build_key'],other['other']['build_key'])
@@ -262,8 +263,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         (self.root/'leaf/value.nex').write_text(r'''module provider_leaf;
 pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_read_text(path);}
 pub server fn data(path:str)->result<bytes>!{task,fs}{return file_read_bytes(path);}
-''')
-        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub server fn read(path:str)->result<str>!{task,fs}{return leaf::read(path);}')
+''', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub server fn read(path:str)->result<str>!{task,fs}{return leaf::read(path);}', newline="\n")
         self.file.write_text(r'''module provider_app;
 import "../mid/value.nex" as mid;import "../leaf/value.nex" as leaf;
 server fn main()->unit!{task,fs,io}{
@@ -274,7 +275,7 @@ server fn main()->unit!{task,fs,io}{
  assert(error_code(mid::read("missing"))=="NOT_FOUND");
  assert(error_code(mid::read("../escape"))=="VALIDATION");print(len(value));
 }
-''')
+''', newline="\n")
         self.description['components']['leaf']['entry_function']='read'
         self.description['components']['leaf']['exports']=['data']
         self.description['components']['mid']['entry_function']='read'
@@ -296,8 +297,8 @@ server fn main()->unit!{task,fs,io}{
             self.assertEqual((observed.returncode,observed.stdout),(0,output),observed.stderr)
 
     def test_provider_pure_helper_and_suspension_obey_lowered_root_limits(self):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;fn forever()->unit{while true{}}pub fn answer()->unit!{task}{forever();}')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task}{leaf::answer();}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;fn forever()->unit{while true{}}pub fn answer()->unit!{task}{forever();}', newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task}{leaf::answer();}', newline="\n")
         del self.description['components']['mid'];del self.description['components']['other']
         self.description['components']['leaf']['exports']=[]
         self.description['components']['app']['dependencies']={'leaf':'static'}
@@ -310,7 +311,7 @@ server fn main()->unit!{task,fs,io}{
             observed = self.process([executable,*arguments],timeout=15)
             self.assertNotEqual(observed.returncode,0)
             self.assertIn(code,observed.stderr)
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}', newline="\n")
         executable = self.artifacts(self.project())['app']['artifact']
         observed = self.process([executable,'--nex-task-steps','1000'],timeout=15)
         self.assertNotEqual(observed.returncode,0);self.assertIn('E_LIMIT',observed.stderr)
@@ -324,13 +325,13 @@ pub fn answer(value:i64)->i64!{task}{return helper(value);}''',
             self.assertEqual(rejected['code'],'E_PROJECT_EXPORT')
             self.assertIn('helper',rejected['message'])
         self.assertFalse((self.root/'.nex').exists())
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::answer(41));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::answer(41));}', newline="\n")
         first = self.artifacts(self.project())
         record = self.provider(first['leaf'],'leaf')
         self.assertIn('provider_leaf::helper',record['definitions'])
         self.assertNotIn('provider_leaf::helper',record['exports'])
         self.description['components']['leaf']['exports']=['helper'];self.save()
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}', newline="\n")
         second = self.artifacts(self.project())
         export = self.provider(second['leaf'],'leaf')['exports']['provider_leaf::helper']
         self.assertTrue(self.symbols(second['leaf']['artifact']).get(export['accessor'],set()) & {'T','W'})
@@ -362,7 +363,7 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
             'expect':{'stdout':OUTPUT,'exit_code':0},'timeout_seconds':120})
         task['requirements'].append({'id':'provider-run','text':'Run independently owned static task providers',
             'bindings':[{'program':'app','kind':'function','symbol':'provider_app::main'}],'targets':['native'],'checks':['provider-run']})
-        taskfile = self.root/'task.json';taskfile.write_text(json.dumps(task))
+        taskfile = self.root/'task.json';taskfile.write_text(json.dumps(task), newline="\n")
         run = self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
         self.assertTrue(run['ok'])
         receipt = Path(run['output']);saved = json.loads(receipt.read_text())
@@ -410,8 +411,8 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
                 del self.description['components']['mid'];del self.description['components']['other']
                 self.description['components']['leaf']['exports']=[]
                 self.description['components']['app']['dependencies']={'leaf':'static'}
-                (self.root/'leaf/value.nex').write_text('module provider_leaf;'+source)
-                self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task}{task_yield();}')
+                (self.root/'leaf/value.nex').write_text('module provider_leaf;'+source, newline="\n")
+                self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task}{task_yield();}', newline="\n")
                 self.save()
                 for kind in ('plan','build'):
                     self.assertEqual(self.project(kind,ok=False)['code'],'E_TASK_PROVIDER')
@@ -419,17 +420,17 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
 
     def test_missing_exports_function_values_and_unsupported_modes_fail_closed(self):
         del self.description['components']['other']
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(value:i64)->i64!{task}{task_yield();return value;}pub fn hidden()->i64!{task}{return 42;}')
-        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(value:i64)->i64!{task}{return leaf::hidden();}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(value:i64)->i64!{task}{task_yield();return value;}pub fn hidden()->i64!{task}{return 42;}', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(value:i64)->i64!{task}{return leaf::hidden();}', newline="\n")
         self.description['components']['leaf']['exports']=[]
         self.description['components']['mid']['exports']=[]
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{return mid::answer(41);}')
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{return mid::answer(41);}', newline="\n")
         self.save()
         self.assertEqual(self.project('plan',ok=False)['code'],'E_PROJECT_EXPORT')
         self.description['components']['leaf']['exports']=['hidden'];self.save()
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{let f:fn(i64)->i64!{task}=mid::answer;return f(41);}')
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{let f:fn(i64)->i64!{task}=mid::answer;return f(41);}', newline="\n")
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{return mid::answer(41);}')
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->i64!{task}{return mid::answer(41);}', newline="\n")
         original = copy.deepcopy(self.description)
         self.description['components']['mid']['kind']='shared_library'
         self.description['components']['app']['dependencies']={'mid':'dynamic'};self.save()
@@ -472,8 +473,8 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
                 self.assertEqual(self.project('plan',ok=False)['code'],code)
                 self.assertFalse((self.root/'.nex').exists())
         self.description['components']['leaf']['exports']=[];self.save()
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->i64!{task}{return 42;}pub fn generic<T>(value:T)->T!{task}{task_yield();return value;}')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::generic(42);}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->i64!{task}{return 42;}pub fn generic<T>(value:T)->T!{task}{task_yield();return value;}', newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::generic(42);}', newline="\n")
         rejected = self.project('plan',ok=False)
         self.assertIn(rejected['code'],('E_PROJECT_EXPORT','E_TASK_PROVIDER'))
         self.assertIn('generic',rejected['message'])
@@ -481,10 +482,10 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
 
     def test_duplicate_std_machine_definitions_reject_before_compiler(self):
         for component in ('leaf','mid'):
-            (self.root/component/'value.nex').write_text('module provider_'+component+';import "std/math.nex" as math;pub fn answer(value:i64)->i64!{task}{task_yield();return math::abs(value);}')
+            (self.root/component/'value.nex').write_text('module provider_'+component+';import "std/math.nex" as math;pub fn answer(value:i64)->i64!{task}{task_yield();return math::abs(value);}', newline="\n")
             self.description['components'][component]['exports']=[]
             self.description['components'][component].pop('dependencies',None)
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->i64!{task}{return leaf::answer(-20)+mid::answer(-22);}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->i64!{task}{return leaf::answer(-20)+mid::answer(-22);}', newline="\n")
         del self.description['components']['other'];self.save()
         rejected = self.project('plan',ok=False)
         self.assertEqual(rejected['code'],'E_TASK_PROVIDER')
@@ -495,9 +496,9 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
         self.simple('pub fn answer()->i64{return 42;}',
             'fn main()->i64!{task}{let f:fn()->i64=leaf::answer;task_yield();return f();}')
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->i64!{task}{return 42;}pub fn pure()->i64{return 42;}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->i64!{task}{return 42;}pub fn pure()->i64{return 42;}', newline="\n")
         self.description['components']['leaf']['exports']=['pure'];self.save()
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64{return leaf::pure();}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64{return leaf::pure();}', newline="\n")
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
         self.assertFalse((self.root/'.nex').exists())
 
@@ -538,8 +539,8 @@ pub server fn uncalled()->result<str>!{task,fs}{return file_read_text("never-rea
         self.description['components']['app'].update(kind='server',entry_function='handle');self.save()
         self.assertIn(self.project('plan',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_TARGET'))
         self.description['components']['app'].update(kind='executable',entry_function='main')
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(value:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(value:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}', newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}', newline="\n")
         self.save()
         rejected = self.project('plan',ok=False)
         self.assertEqual(rejected['code'],'E_TASK_PROVIDER')

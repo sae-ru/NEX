@@ -3,6 +3,7 @@
 Live all-stop/LLDB/DAP/watch behavior is tested separately by task_debugging.py.
 This gate executes actual images and checks compiler metadata/cache admission.
 """
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import hashlib
 import json
@@ -34,7 +35,7 @@ def main():
         output.mkdir(parents=True, exist_ok=False)
     work = output / "work"
     work.mkdir()
-    (work / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": language, "entry": "calls.nex"}))
+    (work / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": language, "entry": "calls.nex"}), newline="\n")
     grant = work / "grant"
     grant.mkdir()
     (grant / "text").write_bytes("A🧠\0B".encode())
@@ -52,7 +53,7 @@ def main():
         row = {"command": list(map(str, command)), "cwd": str(cwd), "exit": result.returncode,
                "stdout": result.stdout, "stderr": result.stderr}
         commands.append(row)
-        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n")
+        (output / "commands.json").write_text(json.dumps(commands, ensure_ascii=False, indent=2) + "\n", newline="\n")
         assert result.returncode == expected, row
         return result
 
@@ -126,7 +127,7 @@ def main():
         assert descriptor["version"] == language, descriptor
         for name, body, expected, stdout in SCENARIOS:
             source = work / (name + ".nex")
-            source.write_text("module task_native_debug;\n" + body)
+            source.write_text("module task_native_debug;\n" + body, newline="\n")
             reference = cli("eval", source)
             ordinary = cli("run", source, "--profile", "release")
             built = build(source)
@@ -149,10 +150,10 @@ def main():
                 warm = build(source)
                 assert warm["cached"] and warm["build_key"] == built["build_key"], warm
                 before = json.loads(Path(built["debug_manifest"]).read_text())
-                (output / "original-cache-manifest.json").write_text(json.dumps(before, indent=2) + "\n")
+                (output / "original-cache-manifest.json").write_text(json.dumps(before, indent=2) + "\n", newline="\n")
                 corrupt = json.loads(json.dumps(before))
                 corrupt["functions"][0]["task_debug"]["points"][0]["visible"] = [999999]
-                Path(built["debug_manifest"]).write_text(json.dumps(corrupt))
+                Path(built["debug_manifest"]).write_text(json.dumps(corrupt), newline="\n")
                 repaired = build(source)
                 assert not repaired["cached"] and repaired["build_key"] == built["build_key"], repaired
                 repaired_manifest, _ = inspect(repaired, expected)
@@ -177,9 +178,9 @@ def main():
 
         # Imports retain their own frozen source anchors. Unreachable task code
         # is excluded from both the compiled image and debug registry.
-        (work / "helper.nex").write_text("module debug_helper;pub fn value(n:i64)->i64 !{task}{task_yield();return n+1;}pub fn unreachable()->unit !{task}{assert(false);}")
+        (work / "helper.nex").write_text("module debug_helper;pub fn value(n:i64)->i64 !{task}{task_yield();return n+1;}pub fn unreachable()->unit !{task}{assert(false);}", newline="\n")
         source = work / "modules.nex"
-        source.write_text('module debug_modules;import "./helper.nex" as helper;fn main()->unit !{task,io}{print(helper::value(41));}')
+        source.write_text('module debug_modules;import "./helper.nex" as helper;fn main()->unit !{task,io}{print(helper::value(41));}', newline="\n")
         assert cli("eval", source)["stdout"] == cli("run", source, "--profile", "release")["stdout"] == "42\n"
         built = build(source)
         assert execute([built["executable"]], timeout=60).stdout == "42\n"
@@ -189,7 +190,7 @@ def main():
         report["scenarios"].append("module_source_identity")
 
         source = work / "failure.nex"
-        source.write_text("module task_native_debug;\n" + FAILURE)
+        source.write_text("module task_native_debug;\n" + FAILURE, newline="\n")
         reference = cli("eval", source, expected=1)
         ordinary = cli("run", source, "--profile", "release", expected=70)
         built = build(source)
@@ -206,13 +207,13 @@ def main():
         historical = output / "genuine019"
         (historical / ".nex").mkdir(parents=True)
         database = historical / ".nex/graph.db"
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             db.executescript(sql.decode())
         row = fixture["revisions"][-1]
         for name, text in row["bundle"]["files"].items():
-            (historical / name).write_text(text)
+            (historical / name).write_text(text, newline="\n")
         for name, text in fixture["physical_files"].items():
-            (historical / name).write_text(text)
+            (historical / name).write_text(text, newline="\n")
         before = database_state(database)
         physical = {path: path.read_bytes() for path in historical.glob("*") if path.is_file()}
         raw_database = database.read_bytes()
@@ -225,7 +226,7 @@ def main():
         report["ok"] = True
     finally:
         report["commands"] = len(commands)
-        (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", newline="\n")
         print(json.dumps(report, ensure_ascii=False))
         if temporary:
             temporary.cleanup()

@@ -106,10 +106,10 @@ def main():
     cmd=[sys.executable,'-B',str(source/'tests/source_exception_task_native.py'),a.emitter,a.reference,a.compiler,'--debug','--output',str(execution)]
     for name,_,_,_ in DEBUG_CASES:cmd += ['--case',name]
     if not a.existing_execution:
-        r=subprocess.run(cmd,text=True,capture_output=True,timeout=1800);(out/'driver.stdout').write_text(r.stdout);(out/'driver.stderr').write_text(r.stderr);assert r.returncode==0,(r.returncode,r.stdout[-1000:],r.stderr[-4000:])
+        r=subprocess.run(cmd,text=True,capture_output=True,timeout=1800);(out/'driver.stdout').write_text(r.stdout, newline="\n");(out/'driver.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0,(r.returncode,r.stdout[-1000:],r.stderr[-4000:])
     native=json.loads((execution/'report.json').read_text());assert native['ok'] and native['comparisons']==14 and native['source_programs']==7
     definitions={n:e for n,_,e,_ in DEBUG_CASES};report={'ok':False,'cases':[],'execution':str(execution),'execution_report_sha256':hashlib.sha256((execution/'report.json').read_bytes()).hexdigest(),'verified_existing_execution':bool(a.existing_execution),'actual_native_pause_watch_resume':True,'nonowning':True,'LLDB_DAP_acceptance_claimed':False,'public_debug_CLI_support':False,'archived':False,'security_checks_deferred_by_user':True}
-    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     save()
     for item in native['cases']:
         d=execution/item['name'];e=d/('O'+item['optimization']);f=e/'observations.jsonl';assert hashlib.sha256(f.read_bytes()).hexdigest()==item['debug_observations_sha256']

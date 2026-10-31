@@ -133,8 +133,8 @@ def context(directory,text,source,default):
  value=json.loads(path.read_text())
  for row in value['units']:
   row['source']=row['source'].replace('task_yield();throw("PURE",body);','\n task_yield();\n throw("PURE",body);\n').replace('if s=="GENERIC"{throw("TEMPLATE","λ\\u0000🙂");}return s;','if s=="GENERIC"{\n throw("TEMPLATE","λ\\u0000🙂");\n}return s;')
-  Path(row['file']).write_text(row['source'])
- value['source']=next(row['source'] for row in value['units'] if row['unit']==value['entry_unit']);path.write_text(json.dumps(value,ensure_ascii=False)+'\n');return path
+  Path(row['file']).write_text(row['source'], newline="\n")
+ value['source']=next(row['source'] for row in value['units'] if row['unit']==value['entry_unit']);path.write_text(json.dumps(value,ensure_ascii=False)+'\n', newline="\n");return path
 
 
 def observe(binary,row):
@@ -146,7 +146,7 @@ def main():
  import source_exception_http as http
  native_only='--http-debug-native-only' in sys.argv
  if native_only:sys.argv.remove('--http-debug-native-only')
- state=http.main(modules.build,context,'NEX_EXCEPTION_MODULE_HTTP_DEBUG_OUTPUT',['static','shared','mixed'],['/api/generic-error'],False,observe,False,True);modules.contracts(state);modules.reuse_and_relocate(state);out=state['out'];source=state['source'];report=state['report'];run=state['run'];report['debug_sessions']=[];report['captures']=[];driver=out/'http_lldb_session.py';driver.write_text(LLDB_DRIVER);compiler=state['debug_compiler'];assert compiler
+ state=http.main(modules.build,context,'NEX_EXCEPTION_MODULE_HTTP_DEBUG_OUTPUT',['static','shared','mixed'],['/api/generic-error'],False,observe,False,True);modules.contracts(state);modules.reuse_and_relocate(state);out=state['out'];source=state['source'];report=state['report'];run=state['run'];report['debug_sessions']=[];report['captures']=[];driver=out/'http_lldb_session.py';driver.write_text(LLDB_DRIVER, newline="\n");compiler=state['debug_compiler'];assert compiler
  report.update(private_modular_HTTP=True,actual_symbol_and_loader_ownership=True,joined_shutdown_cleanup=True,native_only=native_only)
  if native_only:
   report.update(ok=True,private_module_HTTP_debugging=True,HTTP_requests=len(report['requests']),HTTP_server_launches=len(report['servers']),LLDB_sessions=0);state['save']();return
@@ -156,13 +156,13 @@ def main():
    for file in [e/v['file'] for v in image['images'].values()]+([e/('libnex-private-runtime-http'+('.dylib' if platform.system()=='Darwin' else '.so'))] if plan['runtime_linkage']=='shared' else []):run(label+'-dsym-'+file.name,['dsymutil',file])
   unlinked=json.loads(run(label+'-debug-context',[state['module_probe'],'debug-context',directory/'source-context.json',directory/'architecture.json']).stdout)
   def identity(file):return run(label+'-identity-'+file.name,[state['emitter'],'identity',file]).stdout.strip().replace('-','').lower()
-  manifest=bind_images(unlinked,plan,e,identity);manifest.update(formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'));file=e/'debug.json';file.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+  manifest=bind_images(unlinked,plan,e,identity);manifest.update(formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'));file=e/'debug.json';file.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n', newline="\n")
   variants=[('recover','leaf::leaf' if foreign else 'leaf::fail','/api/recover',200,False,False),('uncaught','leaf::leaf' if foreign else 'leaf::fail','/api/uncaught',500,False,False)]
   if foreign:variants += [('generic','leaf::render<mid::Payload>','/api/generic-error',500,True,False)]
   if name=='host-mixed':variants += [('deadline','leaf::leaf','/api/recover',504,False,True)]
   if name=='host-mixed':variants += [('next','leaf::leaf','/api/uncaught',500,False,False),('overlap','leaf::leaf','/api/recover',200,False,False),('TLS','leaf::leaf','/api/recover',200,False,False)]
   for tag,fn,path,status,generic,deadline in variants:
-   live=e/('debug-'+tag);live.mkdir();files=live/'files';files.mkdir();(files/'input').write_text('abcdef');context_row=next(row for row in manifest['functions'] if row['name']==fn);points=context_row['task_debug']['points'];lines=Path(context_row['task_debug']['file']).read_text().splitlines();line=next(i for i,text in enumerate(lines,1) if ('throw("TEMPLATE"' if generic else 'throw("HOST"' if foreign else 'throw("PURE"') in text);assert any(point['line']==line and point['phase']=='statement' for point in points)
+   live=e/('debug-'+tag);live.mkdir();files=live/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");context_row=next(row for row in manifest['functions'] if row['name']==fn);points=context_row['task_debug']['points'];lines=Path(context_row['task_debug']['file']).read_text().splitlines();line=next(i for i,text in enumerate(lines,1) if ('throw("TEMPLATE"' if generic else 'throw("HOST"' if foreign else 'throw("PURE"') in text);assert any(point['line']==line and point['phase']=='statement' for point in points)
    arguments=['--auth',str(out/'auth.json'),'--database',str(live/'database.sqlite'),'--port','0','--workers','4','--timeout-ms','800' if deadline else '60000']
    if foreign:arguments+=['--foreign',str(state['catalogue'])]
    options={'arguments':arguments,'directory':str(live),'report':str(live/'report.json'),'source_files':[str(directory/'source-context.json'),*[row['file'] for row in manifest['source_context']['units']]],'break_file':context_row['task_debug']['file'],'break_line':line,'function':fn,'owned':foreign and not generic,'generic':generic,'deadline':deadline,'requests':[{'path':path,'user':'alice','body':'A🌍\0β','status':status}]}
@@ -170,7 +170,7 @@ def main():
    if tag=='overlap':options['overlap']=True;options['requests'].append({'path':'/api/echo','user':'bob','body':'background','status':200,'background':True})
    if tag=='TLS':
     options.update(TLS=True,certificate=str(out/'cert.pem'));arguments+=['--cert',str(out/'cert.pem'),'--key',str(out/'key.pem')]
-   config=live/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n');argv=[shutil.which('lldb'),'--no-lldbinit','--batch',binary]
+   config=live/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n', newline="\n");argv=[shutil.which('lldb'),'--no-lldbinit','--batch',binary]
    for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(file))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(driver)),'nex-private-http-test-session '+str(config)]:argv+=['-o',command]
    env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(live/'events')};result=run(label+'-debug-'+tag,argv,env);observed=json.loads((live/'report.json').read_text());assert observed['ok'] and observed['source_files_absent']
    observe(binary,observed);assert observed['cleanup']['ok']

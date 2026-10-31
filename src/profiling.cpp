@@ -171,8 +171,8 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
   std::optional<nexrt::TaskExecutionLimits> configured,effective;
   llvm::json::Object expectedIdentity;
   if(tasks){
-#if !defined(__APPLE__) && !defined(__linux__)
-    throw Error("E_TASK_PROFILE","task profiling requires a macOS/Linux host executable");
+#if !defined(__APPLE__) && !defined(__linux__) && !defined(_WIN32)
+    throw Error("E_TASK_PROFILE","task profiling requires a macOS/Linux/Windows host executable");
 #endif
     if(buildMetadata->getString("profile")!="profile"||buildMetadata->getString("final_kind")!="executable"||
        buildMetadata->getString("revision")!=revision(p)||buildMetadata->getString("key")!=built.key||
@@ -196,14 +196,20 @@ llvm::json::Value profileNative(const Program &p,const BuildResult &built,llvm::
   auto directory=std::filesystem::path(createTemporaryDirectory("nex-profile")),raw=directory/"runtime.json";
   try{
     auto nativeTemporary=directory/"native-tmp";std::filesystem::create_directory(nativeTemporary);
-    // env is launched directly, with no shell expansion. Override a parent's
-    // Tracy setting: local reports never start a profiler listener implicitly.
+    // Pass an explicit child environment through the native supervisor.
+    // Local reports never start a profiler listener implicitly.
     auto started=std::chrono::system_clock::now();
-    std::vector<std::string> arguments{"env","NEX_TRACY=0","NEX_PROFILE_OUTPUT="+raw.string(),"NEX_PROFILE_EVENTS="+std::to_string(options.events),"TMPDIR="+nativeTemporary.string()};arguments.insert(arguments.end(),options.launcher.begin(),options.launcher.end());arguments.push_back(built.executable);arguments.insert(arguments.end(),options.arguments.begin(),options.arguments.end());
+    auto childEnvironment=options.environment;
+    childEnvironment["NEX_TRACY"]="0";childEnvironment["NEX_PROFILE_OUTPUT"]=raw.string();
+    childEnvironment["NEX_PROFILE_EVENTS"]=std::to_string(options.events);childEnvironment["TMPDIR"]=nativeTemporary.string();
+#ifdef _WIN32
+    childEnvironment["TEMP"]=nativeTemporary.string();childEnvironment["TMP"]=nativeTemporary.string();
+#endif
+    auto arguments=options.launcher;arguments.push_back(built.executable);arguments.insert(arguments.end(),options.arguments.begin(),options.arguments.end());
     ProcessResult process;
     {
       auto workingDirectory=options.directory.empty()?std::filesystem::current_path().string():options.directory;
-      auto child=runTaskProcess(arguments,workingDirectory,options.environment,options.timeout,(directory/"logs").string());
+      auto child=runTaskProcess(arguments,workingDirectory,childEnvironment,options.timeout,(directory/"logs").string());
       if(child.interrupted&&options.interrupted)options.interrupted(child.interrupted);
       if(child.interrupted)throw Error("E_PROFILE_INTERRUPTED","profile process interrupted by signal "+std::to_string(child.interrupted));
       if(child.timedOut)throw Error("E_PROFILE_TIMEOUT","profile process exhausted its timeout");

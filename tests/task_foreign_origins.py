@@ -1,4 +1,5 @@
 """Authenticate genuine021 origins; public022 history migration is still pending."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import hashlib
 import json
@@ -25,7 +26,7 @@ def main():
  else:temporary=tempfile.TemporaryDirectory(prefix='nex-task-foreign-origins-');out=Path(temporary.name)
  probe=Path(args.probe).resolve();report={'schema':'nex.task-foreign-genuine021-origins/1','ok':False,'old_language':'0.21','private_candidate':'0.22','public022_migration_complete':False,'fixtures':[]}
  try:
-  (out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'main.nex'}))
+  (out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'main.nex'}), newline="\n")
   for name,pin in PINS.items():
    path=ROOT/'tests/fixtures'/('language-0.21-sdk128-task-foreign-'+name+'.json');metadata=json.loads(path.read_text());sql=path.with_suffix('.sql').read_bytes()
    assert metadata['schema']=='nex.language-021-task-foreign-migration-fixture/1'
@@ -36,19 +37,19 @@ def main():
    try:connection.executescript(sql.decode());connection.commit()
    finally:connection.close()
    original=database.read_bytes()
-   with sqlite3.connect(database.as_uri()+'?mode=ro&immutable=1',uri=True) as connection:
+   with sqlite_connection(database.as_uri()+'?mode=ro&immutable=1',uri=True) as connection:
     tables=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
     assert len(tables)==16
     counts={table:connection.execute('SELECT count(*) FROM "'+table.replace('"','""')+'"').fetchone()[0] for table in tables}
     assert counts==metadata['tables'] and counts['revisions']==3
    assert len(metadata['revisions'])==3
    for index,row in enumerate(metadata['revisions']):
-    bundle=out/(name+'-'+str(index)+'.bundle.json');bundle.write_text(json.dumps(row['bundle']))
+    bundle=out/(name+'-'+str(index)+'.bundle.json');bundle.write_text(json.dumps(row['bundle']), newline="\n")
     observed=[]
     for language in ('0.21','0.22'):
      label=name+'-'+str(index)+'-'+language
      result=subprocess.run([str(probe),'check',str(bundle),str(out),'-',language],cwd=out,capture_output=True,text=True,timeout=30)
-     (out/(label+'.stdout')).write_text(result.stdout);(out/(label+'.stderr')).write_text(result.stderr)
+     (out/(label+'.stdout')).write_text(result.stdout, newline="\n");(out/(label+'.stderr')).write_text(result.stderr, newline="\n")
      assert result.returncode==0,(label,result.stdout,result.stderr)
      checked=json.loads(result.stdout);assert checked['language']==language;observed.append(checked)
     assert observed[0]['revision']==row['revision']
@@ -58,7 +59,7 @@ def main():
    report['fixtures'].append({'name':name,'revisions':3,'tables':16,'genuine021_hashes_verified':True,'resource_nominal_identities_preserved':True,'original_SQL_unchanged':True})
   report.update(ok=True,original_revisions=15)
  finally:
-  (out/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
+  (out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n");print(json.dumps(report),flush=True)
   if temporary:temporary.cleanup()
 
 if __name__=='__main__':main()
