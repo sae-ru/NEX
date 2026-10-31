@@ -1,3 +1,9 @@
+# Current installation / Актуальная установка
+
+For toolchain0.151.1/language0.27 use the [current English guide](getting-started.en.md)
+or [русскую инструкцию](getting-started.ru.md) and [delivery record](releases/0.151.1.json).
+The pinned0.124 snapshot and older milestones below retain their historical scope.
+
 # DNS client development candidate
 
 Discover `nex describe --field dns_provider --json` and `nex guide --kind dns

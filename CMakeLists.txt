@@ -244,7 +244,7 @@ install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
   PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
-install(FILES AGENTS.md README.md LICENSE STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
+install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/tcp_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)

@@ -1,3 +1,14 @@
+# NEX project license
+
+NEX-authored code and documentation are licensed under the [MIT License](LICENSE).
+The components listed below retain their original licenses, copyright notices
+and redistribution conditions. The project license does not replace those terms.
+
+An ordinary CMake prefix and a portable SDK have different contents. The
+[delivery record](docs/releases/0.151.1.json) identifies the accepted development
+bundle; its inventory and license directory describe the redistributed files.
+Version-specific historical notes below retain their original scope.
+
 # Owned OpenCL preparation
 
 The experimental owned-device preparation installs the existing unmodified

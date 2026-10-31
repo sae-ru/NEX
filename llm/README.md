@@ -2,13 +2,14 @@
 
 NEX uses one versioned specification, grammar and compiler interface for Codex,
 Hermes and other LLMs. Start with [BOOTSTRAP.md](BOOTSTRAP.md), then use the
-compact [coding contract](SYSTEM_PROMPT.md). Detailed guides are retrieved for
+compact [coding contract](SYSTEM_PROMPT.md).
+[Learning entry](LEARNING.md) links the public bilingual guides and labelled examples. Detailed guides are retrieved for
 the feature being changed. Current development language is0.27; installed
 compiler capabilities and matching acceptance evidence govern actual support.
 
 ## First use
 
-1. Install a matching SDK and follow the [quickstart](../docs/quickstart.md).
+1. Install a matching SDK and follow the [current installation guide](../docs/getting-started.en.md).
 2. Ask `nex describe --kind index --json`, then `nex describe --field PATH --json`
    for the needed features. Keep compiler_build and descriptor_hash consistent.
    Older SDKs can use `nex describe --json`.

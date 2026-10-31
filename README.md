@@ -1,193 +1,104 @@
-# NEX
+# NEX — Neural Execution Language
 
-**NEX — Neural Execution Language** («язык нейронного исполнения»).
+[Русский](README.ru.md) · [Language overview](docs/overview.en.md) · [Get started](docs/getting-started.en.md) · [For LLMs](llm/LEARNING.md)
 
-Главная идея — минимальное количество токенов для передачи максимального
-количества точного смысла при максимальной производительности и безопасности
-исполняемой системы. Это цель проекта; общее превосходство над C++/Python и
-экономия токенов у разных LLM пока не подтверждены измерениями.
+**Precise programs, bounded context, native execution.**
 
-NEX — язык и инструменты разработки вокруг проверяемого семантического графа.
-Программы пишут люди и LLM, а компилятор проверяет типы, эффекты и границы
-исполнения. Собранной программе для работы не нужна LLM.
+NEX is a programming language and development toolchain for humans and language
+models. Its central idea is to communicate the greatest amount of exact meaning
+with the fewest necessary tokens, while pursuing high execution performance and
+safe runtime behavior. These are engineering goals with explicit acceptance
+criteria.
 
-## Текущее состояние
+You write readable `.nex` source. The compiler checks types, effects and execution
+boundaries, keeps a versioned semantic graph, and generates native code through
+MLIR/LLVM or TypeScript for the browser. The compiled application runs independently
+of an LLM.
 
-Эта ветка разрабатывает **toolchain 0.151.1 / язык 0.27**. Обычный CLI
-проверяет и исполняет программы с типизированными `throw(value)` и
-`catch(value: T)`, упорядоченными обработчиками, фильтрами и `finally`.
-Реализованы интерпретатор, native и TypeScript, включая приостановку задач,
-передачу принадлежащих ошибке значений и освобождение ресурсов.
+```nex
+module hello;
+fn answer(x: i64) -> i64 { return x * 2; }
+fn main() -> unit !{io} { print(answer(21)); }
+test fn answer_is_42() -> unit { assert(answer(21) == 42); }
+```
 
-Native-проекты, библиотеки и провайдеры используют task ABI7; отдельный
-development-эмиттер C++ сохраняет cohort `0x4e45585400002702`.
-Проверяемые карты TypeScript имеют версию 2. UI/Workers сохраняют границы realms
-и запрет file/FFI/server в браузере. Скаляры `i64`, `bool`, `unit` можно собирать
-в Wasm; исключения, heap-значения и эффекты в этом адаптере не поддерживаются.
+## Where the acceleration comes from
 
-Снимки графа сохраняют историю версий 0.26/0.27. Старые графы требуют явной
-миграции; обычная сборка не меняет версию проекта. LLDB/NEX-DAP используют
-захваченные исходники и идентичность собранных образов для просмотра обработчиков.
-Контракты описаны в [спецификации](docs/language.md),
-[провайдерах](docs/typed-error-providers.md),
-[веб-доставке](docs/typed-web-delivery.md) и
-[миграции](docs/typed-error-migration.md).
+- **Less repeated context.** Ask the compiler for one capability or a bounded
+  symbol context instead of loading the whole project into a model prompt.
+- **Earlier feedback.** Checked types, effects, realms and rejected programs
+  expose mistakes before execution. Tests compare observable backend behavior.
+- **Less repeated compilation.** Content identities and cached native functions
+  let unchanged code and runtime objects be reused.
+- **Compiled execution.** Native applications execute machine code. Explicit CPU
+  mapping and device providers cover their advertised, measured scopes.
 
-Это development-кандидат. В полном прогоне 0.151.0 прошли 269 из 284 групп;
-15 групп выявили устаревшие ожидания и ошибки интеграции. Версия 0.151.1
-исправляет повторную проверку debug-снимков и source union профильных задач
-ABI7. Проверки finally используют явные границы завершения task-ресурсов;
-неблокирующий отказ по занятой физической квоте сохраняется.
-Полный прогон этой исправленной сборки, установленный SDK и платформенная
-приёмка ещё не завершены. Предыдущие результаты и внутренние C++ прототипы имеют
-собственную область проверки; см. [историю разработки исключений](docs/typed-exceptions-design.md).
+The repository includes [measurements and limitations](docs/overview.en.md#measurements).
+One historical checked-integer benchmark was close to its checked C++ baseline;
+it does not establish universal C++ parity. End-to-end token savings across LLMs
+have not yet been measured.
 
-Снимок 0.136.1 / 0.25 прошёл полный Mac-прогон 263 групп и установленный SDK
-39 фаз. Его результаты не сертифицируют эту ветку. Проверки Linux, Windows,
-мобильных платформ и ускорителей имеют свои версии и области покрытия.
-Основной локальный проект 0.81 / 0.16 и его исходная история графа сохранены
-отдельно; переход языка требует явной миграции.
+## What you can build
 
-Фактические возможности выбранного компилятора:
+The implemented core includes modules, generics and traits, immutable aggregates,
+Unicode strings and bytes, checked arithmetic, typed source errors and `finally`,
+structured tasks, graph history, project components, native libraries, HTTP/API
+and browser adapters, debugging, profiling and bounded scalar verification.
+
+A project can share portable logic between a native server and a TypeScript /
+React / Vite client. Device execution uses explicit trusted providers. Read the
+[overview](docs/overview.en.md) for the distinction between source features and
+platform acceptance.
+
+## Development status
+
+Current source: **toolchain 0.151.1 / language 0.27**. This is a development preview.
+The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
+source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.151.1.json).
+
+Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
+Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
+Actual native Windows acceptance, CUDA, Metal, Apple NPU, general GPU compilation,
+complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
+
+## Build and use
+
+Start with the [current installation guide](docs/getting-started.en.md). A source
+build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 and
+Python. Web/TypeScript workflows additionally use Node.js 22.18+ and npm with
+the repository's lock file.
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j 4
+ctest --test-dir build --output-on-failure
+cmake --install build --prefix /absolute/path/to/nex-sdk
+```
+
+Keep `bin/nex` and `share/nex` together. Ordinary CMake installation uses the
+build machine's dependencies; [portable SDK packaging](docs/sdk.md) is a separate
+verified workflow.
 
 ```sh
 nex doctor --json
-nex describe --json
-nex describe --field source_exceptions --json
+nex describe --kind index --json
+nex init /path/to/my-app
 ```
 
-[Quickstart](docs/quickstart.md) описывает установку, первый проект, Git и работу
-с Hermes/Codex. Его закреплённые старые SDK имеют собственную область проверки;
-для этой development-ветки используйте сборку ниже и проверяйте `doctor`.
-[PLAN.md](PLAN.md) содержит также будущие возможности.
-[Архив этапов разработки](docs/development-notes.md) сохраняет прежние записи,
-точные версии, результаты и ограничения.
+## Documentation
 
-## Сборка
+[Specification](docs/language.md) · [Grammar](docs/grammar.ebnf) ·
+[Architecture](docs/architecture.md) · [Web](docs/web.md) ·
+[Project builds](docs/project-build.md) · [Errors](docs/exceptions.md) ·
+[Debugging](docs/debugging.md) · [Profiling](docs/profiling.md) ·
+[Quality criteria](docs/quality.md) · [Windows handoff](docs/windows-handoff.md)
 
-Нужны CMake 3.25+, компилятор C++20, LLVM/MLIR **22.1.x**, SQLite3, OpenSSL 3,
-заголовки и библиотеки Z3, Python 3. Для генерации native-программ также нужны
-Clang++ и SDK целевой платформы. CMake распознаёт имеющиеся Homebrew-пути;
-для другой установки задайте `LLVM_DIR`, `MLIR_DIR`, `OPENSSL_ROOT_DIR` и при
-необходимости `NEX_Z3_ROOT`.
+For agents, start with [llms.txt](llms.txt), [AGENTS.md](AGENTS.md),
+[BOOTSTRAP](llm/BOOTSTRAP.md) and the [coding contract](llm/SYSTEM_PROMPT.md).
+The roadmap and historical development notes describe work beyond implemented
+support; always verify the actual compiler and matching evidence.
 
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build -j 4
-ctest --test-dir build --output-on-failure
-```
+## License
 
-TypeScript и веб-проверкам нужны Node.js 22.18+, npm и закреплённые зависимости
-из `web/package-lock.json`. Для тестов задайте `NEX_TSC` на имеющийся `tsc` или
-`NEX_NPM_CACHE` на заполненный npm-кэш. Недостающие инструменты тесты ставят
-офлайн во временные каталоги, без lifecycle-скриптов. HTTP-проверки используют
-локальные сокеты и `openssl` для временного сертификата.
-
-```sh
-cmake --install build --prefix /absolute/path/to/nex-sdk
-export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
-nex doctor
-```
-
-Каталоги `bin/nex` и `share/nex` должны оставаться вместе. Обычная установка
-CMake использует зависимости машины сборки; переносимый SDK создаётся отдельным
-[процессом упаковки и проверки](docs/sdk.md). Для явного выбора ресурсов есть
-`NEX_RESOURCE_DIR`, для native-драйвера — `NEX_CLANG`.
-
-## Первый проект
-
-```sh
-./build/nex init /tmp/nex-demo
-cd /tmp/nex-demo
-nex check
-nex run
-nex test
-nex build --profile release
-```
-
-Если SDK ещё не установлен, добавьте каталог собранного `nex` в `PATH` либо
-используйте абсолютный путь к нему. Исходники имеют расширение `.nex`;
-`nex.json` задаёт язык, точку входа и библиотеки. `nex lock` закрепляет
-зависимости. Сборка не повышает версию старого проекта автоматически.
-
-В Git хранят исходники, манифесты, lock-файлы, тесты, контракты и архитектуру
-проекта. Кэши, бинарники, `node_modules` и секреты туда не входят. История
-семантического графа в `.nex/graph.db` требует отдельного снимка/экспорта:
-Git исходников сам по себе её не сохраняет. Команды резервирования и миграции
-описаны в [Quickstart](docs/quickstart.md), [снимках](docs/snapshots.md) и
-[истории графа](docs/history.md).
-
-## Язык и исполнение
-
-Реализованы проверяемая арифметика, конечные числа, строгий UTF-8 и Unicode,
-строки и байты, неизменяемые агрегаты, сопоставление, generics, traits,
-параметры конструкторов, значения функций и snapshot-замыкания. Типы, эффекты
-и realms проверяются до исполнения. Владение ресурсами и освобождение
-значений входят в семантику native-программ.
-
-`throw(code,message)` и `try/catch` обрабатывают явные ошибки исходной программы.
-Проверяемые ловушки, отмена и ограничения задач остаются отдельными исходами.
-В 0.26 фильтр catch вычисляется один раз; `false` передаёт исходную ошибку дальше.
-См. [спецификацию](docs/language.md), [грамматику](docs/grammar.ebnf) и
-[исключения](docs/exceptions.md).
-
-Native-компилятор использует MLIR/LLVM. Структурированные задачи имеют области
-жизни, futures, каналы, явные эффекты и проверяемые переходы владения. Статические,
-динамические и смешанные provider-образы используют согласованные ABI и один
-runtime. Подробности: [задачи](docs/task-lifetimes.md), [эффекты](docs/language.md),
-[ресурсы](docs/resources.md), [провайдеры исключений](docs/source-exception-providers.md).
-
-## Приложения и архитектура проекта
-
-`nex.build.json` задаёт компоненты, зависимости, экспорты, профили и целевые
-платформы. `static_library`/`static` и `shared_library`/`dynamic` определяют
-связи между компонентами; статическая связь компонента не означает полностью
-статический исполняемый файл. `nex project --kind plan` проверяет выбранную
-архитектуру до сборки. См. [архитектуру](docs/architecture.md),
-[проектную сборку](docs/project-build.md), [пакеты](docs/packaging.md) и
-[контракты проектов](docs/project-tasks.md).
-
-Веб-приложения используют TypeScript/React/Vite: клиент получает только
-достижимый client/shared-код. Серверная логика остаётся в native HTTP/API.
-Вычисления Worker имеют отдельные задачи и границу передачи данных.
-
-```sh
-nex test examples/web/main.nex --target web
-nex build examples/web/main.nex --target web --profile release --json
-```
-
-Запускайте примеры из корня этого checkout с соответствующим компилятором.
-[Web guide](docs/web.md), [сервер](docs/server.md), [API](docs/api.md),
-[браузерные Workers](docs/browser-workers.md) описывают доступные адаптеры.
-
-## Отладка, профилирование и LLM
-
-LLDB/NEX-DAP связывают машинные кадры с исходниками и семантическим графом.
-CPU-профилирование, отчёты владения и captured replay имеют проверяемую
-принадлежность исходникам и образам. См. [отладку](docs/debugging.md),
-[профилирование](docs/profiling.md), [редактор](docs/editor.md) и [core capsules](docs/core-debugging.md).
-
-Разные LLM используют один [SYSTEM_PROMPT](llm/SYSTEM_PROMPT.md),
-[языковой пакет](llm/README.md) и [рабочий процесс](llm/WORKFLOW.md).
-`nex describe` сообщает реальные возможности, а `nex context --symbol NAME`
-даёт ограниченный контекст нужного символа. Патчи проверяют компилятор и тесты;
-план или промпт сами по себе не являются доказательством реализации.
-
-## Открытые работы
-
-Полная приёмка текущего языка 0.27 и SDK, общая система алгебраических эффектов
-и оставшиеся сетевые/асинхронные интеграции ещё впереди.
-macOS/Linux, Windows cross-build/Wine и мобильные артефакты имеют разное
-покрытие. Нужны фактические испытания Windows OS/ARM64 и мобильных устройств;
-Windows DLL, task files/FFI/providers/debug/profile и более широкая доставка
-остаются незавершёнными. См. [Windows](docs/windows.md), [Linux](docs/linux.md),
-[iOS](docs/ios.md) и [mobile](docs/mobile.md).
-
-На Apple M5 Max проверен экспериментальный owned OpenCL-адаптер U8 Add/Affine:
-31 сценарий, 64 исполнения и 48 запусков вычислительных ядер на GPU, включая владение буфером
-в типизированной ошибке. [Точная область и хеши](docs/evidence/macos-opencl-0.151.1.json).
-Metal, Apple NPU и остальные операции требуют отдельной реализации/приёмки.
-
-Проверки CIX/RK3588 с фиксированными FFI-провайдерами не означают универсальный
-GPU/NPU API. Общие ускорители, остальные платформы, крупные системные нагрузки
-и сравнительные измерения скорости/стоимости LLM остаются в [PLAN.md](PLAN.md).
+NEX-authored code and documentation use the [MIT license](LICENSE). Bundled
+components retain their own [licenses and notices](THIRD_PARTY.md).
