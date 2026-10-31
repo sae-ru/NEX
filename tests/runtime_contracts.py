@@ -179,15 +179,16 @@ server fn main()->i64{return guarded(2);}
         self.assertEqual(self.cli('emit','--kind','typescript',cwd=directory,ok=False)['code'],'E_REALM')
 
     def test_stale_pins_unknown_fields_and_invalid_predicates_create_no_output(self):
-        self.source('module rejected; fn guarded(x:i64)->i64{return x;}\n')
+        self.source('module rejected; fn guarded(x:i64)->i64{return x;} fn effectful()->i64 !{io}{print(0);return 0;}\n')
         original=self.contract('guarded')
         variants=[]
         for field in ('expected_revision','source_hash'):
             changed=copy.deepcopy(original);changed[field]='0'*64;variants.append((changed,'E_CONTRACT_STALE'))
         changed=copy.deepcopy(original);changed['functions'][0]['content_hash']='0'*64;variants.append((changed,'E_CONTRACT_STALE'))
         changed=copy.deepcopy(original);changed['unexpected']=True;variants.append((changed,'E_CONTRACT'))
-        for predicate in ('assert(true)','len("x")==1','x.field==0','[1][0]==1','1','missing==0'):
+        for predicate in ('assert(true)','len("x")==1','x.field==0','[1][0]==1','1','missing==0','guarded==guarded','guarded!=guarded','effectful==effectful','true || guarded==guarded','1.0==1.0','[1]==[1]','fn()->bool{return true;}'):
             changed=copy.deepcopy(original);changed['functions'][0]['requires']=[predicate];variants.append((changed,None))
+        changed=copy.deepcopy(original);changed['functions'][0]['ensures']=['guarded==guarded'];variants.append((changed,'E_CONTRACT_EXPRESSION'))
         state=harness.database_rows(self.root/'.nex/graph.db')
         for index,(contract,code) in enumerate(variants):
             with self.subTest(index=index):

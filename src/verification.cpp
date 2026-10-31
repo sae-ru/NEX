@@ -262,20 +262,20 @@ public:
 namespace {
 // Serialize only the deliberately small scalar predicate grammar. Reusing the
 // user's text here would let a trailing line comment swallow generated tokens.
-std::string runtimePredicateText(const E &e){
+std::string runtimePredicateText(const E &e,const std::map<std::string,Type> &locals){
   switch(e->kind){
   case Expr::Integer:return "("+std::to_string(e->number)+")";
   case Expr::Boolean:return e->number?"true":"false";
   case Expr::Name:
-    if(!identifier(e->text))break;
+    if(!identifier(e->text)||!locals.contains(e->text))break;
     return e->text;
   case Expr::Unary:
     if((e->text=="-"||e->text=="!")&&e->args.size()==1)
-      return "("+e->text+runtimePredicateText(e->args[0])+")";
+      return "("+e->text+runtimePredicateText(e->args[0],locals)+")";
     break;
   case Expr::Binary:
     if(e->args.size()==2&&std::set<std::string>{"+","-","*","/","%","<","<=",">",">=","==","!=","&&","||"}.contains(e->text))
-      return "("+runtimePredicateText(e->args[0])+" "+e->text+" "+runtimePredicateText(e->args[1])+")";
+      return "("+runtimePredicateText(e->args[0],locals)+" "+e->text+" "+runtimePredicateText(e->args[1],locals)+")";
     break;
   default:break;
   }
@@ -284,7 +284,7 @@ std::string runtimePredicateText(const E &e){
 std::string runtimePredicate(Program &p,const Function &f,const std::string &text,
                              const std::map<std::string,Type> &locals,const std::string &phase){
   auto expression=parseExpression(text,"<contract:"+f.name+":"+phase+">",4096);
-  auto source=runtimePredicateText(expression);
+  auto source=runtimePredicateText(expression,locals);
   if(checkExpression(p,f.name,expression,locals)!=Type::Bool)
     throw Error("E_CONTRACT_EXPRESSION","runtime contract predicates must return bool",expression->span);
   return source;
