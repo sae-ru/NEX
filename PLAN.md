@@ -1,10 +1,13 @@
 # Runtime contract development — 0.152.0 / language 0.27
 
-The accepted 0.151.1 Mac SDK/publication is recorded in
-[the release receipt](docs/releases/0.151.1.json). The new explicit
-[scalar runtime pre/post projection](docs/runtime-contracts.md) is being checked
-separately. It preserves original source/history and generates a distinct ordinary
-source revision. Full 0.152 regression/SDK/platform delivery remains pending.
+The [0.152 Mac SDK receipt](docs/releases/0.152.0.json) records 284 first-run core passes
+and one unchanged isolated debugger recheck, 40 maintained phases and 15 runtime
+scenarios in each moved/restored SDK.
+The explicit [scalar runtime pre/post projection](docs/runtime-contracts.md)
+preserves original source/history and generates a distinct ordinary source
+revision through private static bodies. Broader platform delivery remains pending.
+The initial modular HTTP LLDB timeout remains under investigation; its successful
+isolated recheck does not establish the cause or remove the original failure.
 The original PLAN includes additional unfinished capabilities.
 
 Текущая разработка0.151 открывает обычный CLI языка0.27: типизированные ошибки,
@@ -44,7 +47,7 @@ with taskABI7 and versioned provider/application/linkage records. Owned typed
 errors preserve their value/key/site across images, suspension and finalizers.
 The normal process entry accepts7; the development emitter remains2702 and
 retained public/private task families keep their separate identities.
-Read [the provider contract](typed-error-providers.md).
+Read [the provider contract](docs/typed-error-providers.md).
 
 The ordinary CLI/default remains026. Public027 selection, graph-snapshot
 delivery, bounded typed debugger views, full current regression and matching
@@ -1231,7 +1234,8 @@ cross-target packaging, общие ресурсы и стабильный FFI о
 - [x] Выбрать первый класс контрактов: JSON для чистых i64/bool/unit-функций, привязанный к ревизии и точным исходникам; предусловия, постусловия, инварианты и убывающие меры циклов.
 - [x] Переводить поддерживаемые скалярные операции в условия корректности: checked i64, деление/остаток, порядок вычисления, короткое замыкание, assert, ациклические вызовы и индуктивные циклы. Память, эффекты и рекурсия остаются за границей этого доказательства.
 - [x] Различать доказательство, контрпример входа/индуктивного состояния, противоречивые предусловия, неизвестно, тайм-аут и неподдерживаемую конструкцию; сохранять SMT-запросы и полный отчёт.
-- [ ] Добавить автоматическое runtime-исполнение новых pre/post-контрактов. Существующие проверки арифметики/assert сохраняются независимо от Z3; JSON-контракт пока является только метаданными проверки.
+- [x] Добавлено явное runtime-исполнение скалярных pre/post-контрактов через отдельно проверенный source-проект; исходная история сохраняется, арифметика/assert остаются проверяемыми независимо от Z3. См. docs/runtime-contracts.md и приёмку 0.152.
+- [ ] Расширить runtime-контракты на effectful/aggregate roots, исполнение loop-контрактов и source-синтаксис; соответствующие модели доказательств остаются отдельной работой.
 - [x] Документировать границы доверия: Z3 и перевод условий доверены; результат не доказывает компилятор/backend/runtime/память/внешние библиотеки и не заменяет испытания.
 - [ ] Установить правила совместимости формата графа, библиотек и инструментов.
 - [ ] Подготовить миграции, резервное копирование, документацию и воспроизводимые сборки.

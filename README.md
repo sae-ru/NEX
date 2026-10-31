@@ -53,10 +53,13 @@ platform acceptance.
 ## Development status
 
 Current source: **toolchain 0.152.0 / language 0.27**.
-The new [runtime pre/post projection](docs/runtime-contracts.md) is under development;
-the accepted SDK below remains 0.151.1. This is a development preview.
+The [scalar runtime pre/post projection](docs/runtime-contracts.md) passed the
+macOS ARM64 development SDK acceptance recorded below. The full run passed
+284/285 groups; one modular HTTP LLDB group timed out and passed its unchanged
+isolated recheck. This intermittent timeout remains under investigation.
+This is a development preview.
 The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
-source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.151.1.json).
+source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.152.0.json).
 
 Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
 Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).

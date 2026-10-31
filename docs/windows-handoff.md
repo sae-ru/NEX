@@ -26,7 +26,7 @@ checkout на этом Windows-компьютере. Сначала провер
 
 Что прочитать:
 - AGENTS.md и актуальные README.md / README.ru.md.
-- docs/releases/0.151.1.json — точный принятый Mac SDK, исходный коммит,
+- docs/releases/0.152.0.json — точный принятый Mac SDK, исходный коммит,
   контрольные суммы, проверки и ограничения. Перепроверь фактические данные.
 - docs/windows.md, docs/windows-files-design.md, docs/architecture.md,
   docs/sdk.md, docs/device.md и docs/compute.md для затронутых адаптеров.
@@ -34,13 +34,21 @@ checkout на этом Windows-компьютере. Сначала провер
 - docs/language.md и docs/grammar.ebnf перед изменением языка.
 
 База, которую нельзя перепутать с Windows-приёмкой:
-- Текущий язык 0.27, toolchain 0.151.1; native task ABI7. Старые ABI и ревизии
+- Текущий язык 0.27, toolchain 0.152.0; native task ABI 7. Старые ABI и ревизии
   сохраняют свои версии. Язык не повышается редактированием nex.json.
 - Кодовая база Mac SDK зафиксирована коммитом
-  61ab2980c7d97feed9d1663925608278cac20b4c; последующая публикация добавляет
-  документацию/лицензию. Сравни фактическую историю main и delivery record.
+  8ecba0f529a4def55cf6c6b43465cb51c4db8027; последующая публикация добавляет
+  итоговые сведения о поставке. Сравни фактическую историю main и delivery record.
+- В исходном полном Mac-прогоне прошли 284/285 групп: один HTTP/LLDB-набор
+  превысил время и прошёл неизменённый изолированный повтор. Причина
+  нестабильности ещё исследуется; подробности в delivery record.
+- Команда `nex contract --kind runtime` генерирует отдельный source-проект
+  со скалярными pre/post-проверками; язык остаётся 0.27. См.
+  docs/runtime-contracts.md. Корневые функции pure i64/bool/unit, loop-контракты
+  не исполняются. Mac SDK проверил 15 сценариев в каждой из двух независимых
+  установок; Windows требует собственных запусков этих сценариев.
 - MIT относится к NEX; сторонние компоненты имеют собственные уведомления.
-- Apple M5 Max прошёл ограниченную проверку OpenCL U8 Add/Affine:31 сценарий,
+- Apple M5 Max с toolchain 0.151.1 прошёл ограниченную проверку OpenCL U8 Add/Affine: 31 сценарий,
   64 исполнения, 48 запусков ядер. В том числе живой GPU-буфер перенесён в
   typed exception через scope/catch/finally. Это не CUDA/Metal/универсальный GPU.
 - CIX/RK Linux GPU/NPU имеют собственный отчёт toolchain 0.151.0. Он не принимает
@@ -70,7 +78,7 @@ checkout на этом Windows-компьютере. Сначала провер
 3. Когда nex запустится, запроси doctor --json, describe --kind index --json,
    затем только нужные поля. Важны source_concurrency, structured_tasks_runtime,
    source_exceptions, source_exceptions.source_providers, foreign_boundary,
-   device, compute и windows_core_target. Не придумывай отсутствующие API.
+   device, compute, runtime_contracts и windows_core_target. Не придумывай отсутствующие API.
 4. Прогони корректность CPU: checked overflow, Unicode/NUL/bytes, aggregates,
    generics/traits, typed errors, guards/finally, задачи/каналы/отмена/лимиты.
    Сравни reference/native/TypeScript там, где backend доступен. Сохраняй

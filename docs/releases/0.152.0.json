@@ -1,0 +1,205 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope_with_isolated_debugger_retry",
+  "verified_at_utc": "2026-10-31T03:40:06.343600+00:00",
+  "toolchain": "0.152.0",
+  "language": "0.27",
+  "source_commit": "8ecba0f529a4def55cf6c6b43465cb51c4db8027",
+  "input_compiler_sha256": "0fd846b5c0516e03ffa9cf4030d1a8114c5827a6f2130818daaf580ed18bd3b8",
+  "license": "MIT",
+  "NEX_MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+  "compiler_full_regression": {
+    "groups": 285,
+    "accepted": true,
+    "CTest_group_skips": 0,
+    "report_sha256": "1311c372616e25ee533146b61eb5038faff6c8885ff22e32be3bfe2c0448922f",
+    "initial_JUnit_sha256": "54c59de3418056f72b96354985f1632d158974d5ec7c1fb70fc240c1538338fd",
+    "qualification": {
+      "initial_full_run_passed": false,
+      "initial_passed_groups": 284,
+      "initial_failed_groups": [
+        "source_exception_module_http_debug"
+      ],
+      "initial_report_sha256": "9406957427d178cb270f92180d1c9334269baa8055e1688c4f639f0f595983bb",
+      "initial_JUnit_sha256": "54c59de3418056f72b96354985f1632d158974d5ec7c1fb70fc240c1538338fd",
+      "isolated_rechecks": 1,
+      "isolated_recheck_passed_groups": 1,
+      "isolated_recheck_report_sha256": "16a1b9c33543d088a1a18dfae8b993985e3907e5e73666867866982d1812392c",
+      "isolated_recheck_JUnit_sha256": "e2cd760377d136076a211f777c73efed9ea28405c6a4147eb504fa50549d253b",
+      "same_source_manifest_and_binary": true,
+      "test_or_timeout_modified": false,
+      "cause_established": false,
+      "intermittent_LLDB_timeout_remains_under_investigation": true
+    },
+    "reported_internal_unittest_skips": [
+      {
+        "group": "parallel_mapping",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_images",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_build",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_actions",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_runtime",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "editor",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_pages",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "debug_image",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "core_dump",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "core_capsules",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "frontend_diagnostics",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "sdk_archives",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "packaging",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_targets",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_targets",
+        "reported_unittest_skips": 7
+      },
+      {
+        "group": "server_debug",
+        "reported_unittest_skips": 4
+      }
+    ],
+    "internal_skips_are_not_platform_acceptance": true
+  },
+  "SDK": {
+    "platform": "arm64-apple-darwin27.0.0",
+    "accepted": true,
+    "validation_workflow": "parallel independent moved/restored acceptance; immutable archive created before tests",
+    "independent_npm_caches": true,
+    "mutually_denied_SDK_roots": true,
+    "minimum_macos": "27.0",
+    "external_prerequisites": [
+      "Apple command line tools/SDK and system C++ runtime/linker",
+      "Python 3.9+",
+      "Node.js/npm for browser builds",
+      "host LLDB/lldb-dap for live debugging"
+    ],
+    "archive": "nex-sdk-0.152.0-macos-arm64-development.tar.gz",
+    "archive_sha256": "8b53343d4b3494eb711d2eb8ed91829a573af49f52432bf7feeb18e3d97df9a2",
+    "archive_bytes": 123404840,
+    "binary_download_published": false,
+    "source_build_guide": "docs/getting-started.en.md",
+    "source_and_dependency_roots_kernel_denied": true,
+    "npm_offline": true,
+    "external_network_blocked": false,
+    "source_documentation_snapshot": "8ecba0f529a4def55cf6c6b43465cb51c4db8027",
+    "post_acceptance_public_metadata_is_a_separate_supplement": true,
+    "moved": {
+      "accepted": true,
+      "phases": 40,
+      "commands": 837,
+      "runtime_contract_scenarios": 15,
+      "live_debugger": true,
+      "production_browser_build": true,
+      "actual_browser_engines_execution_proved_by_this_receipt": false,
+      "compiler_sha256": "ba8eec30ee9fd26755620e88d5b08714b8c455716af40defe7a4eebbc39538bf",
+      "compiler_build": "9351af361c3e7691c92bbe708561d545510cace86be343d0ca71c653241c1c17",
+      "report_sha256": "d1c0196bbcc872b16c73564042cf34bbdd72f82fd654ec745d633d81284b8764",
+      "manifest_sha256": "24b45dc6271af157abc05a24cd3773228b879e11837bd19dc8d0507e69142018",
+      "kernel_read_controls": 5,
+      "kernel_write_controls": 2,
+      "opposite_SDK_read_denied": true,
+      "SDK_write_denied": true,
+      "MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200"
+    },
+    "restored": {
+      "accepted": true,
+      "phases": 40,
+      "commands": 837,
+      "runtime_contract_scenarios": 15,
+      "live_debugger": true,
+      "production_browser_build": true,
+      "actual_browser_engines_execution_proved_by_this_receipt": false,
+      "compiler_sha256": "ba8eec30ee9fd26755620e88d5b08714b8c455716af40defe7a4eebbc39538bf",
+      "compiler_build": "9351af361c3e7691c92bbe708561d545510cace86be343d0ca71c653241c1c17",
+      "report_sha256": "6b9175e3fcb055209ea6cf849153865c2824c46ba49f5615e7dceedab824bb56",
+      "manifest_sha256": "24b45dc6271af157abc05a24cd3773228b879e11837bd19dc8d0507e69142018",
+      "kernel_read_controls": 5,
+      "kernel_write_controls": 2,
+      "opposite_SDK_read_denied": true,
+      "SDK_write_denied": true,
+      "MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200"
+    },
+    "distribution_report_sha256": "ac9bb30b6ca59b55de897ac8426c928311091682c46bdd4ac2de9b6d59b95759"
+  },
+  "runtime_contracts": {
+    "scope": "ordinary concrete pure i64/bool/unit roots; scalar parameter/result predicates",
+    "body_lowering": "ordinary_private_function",
+    "reference_native_TypeScript_agreement": true,
+    "runtime_scenarios_per_packaged_SDK": 15,
+    "scalar_allocation_regression_calls": 50000,
+    "added_managed_allocations_in_scalar_regression": 0,
+    "representative_generated_scalar_contract_Z3_proven": true,
+    "predicate_matrix_valid_equivalent": 39,
+    "predicate_matrix_out_of_scope_rejected": 39,
+    "loop_contracts_executed": false,
+    "guide": "docs/runtime-contracts.md"
+  },
+  "learning_corpus": {
+    "valid_projects": 3,
+    "labelled_rejected_sources": 2,
+    "reference_native_TypeScript_tests_passed": true,
+    "model_token_savings_measured": false,
+    "report_sha256": "6ce3b9dbef7012ba550e6ae279a19ce4b24d44000222d77e3eb9514525a76685"
+  },
+  "hardware_evidence": [
+    {
+      "path": "docs/evidence/macos-opencl-0.151.1.json",
+      "toolchain": "0.151.1",
+      "scope": "one Apple M5 Max owned OpenCL U8 Add/Affine; not Metal/CUDA/NPU",
+      "not_current0_152_hardware_acceptance": true
+    },
+    {
+      "path": "docs/evidence/accelerators-0.151.0.json",
+      "toolchain": "0.151.0",
+      "scope": "specific historical Linux CIX/RK trusted GPU/NPU providers; not current 0.152 platform acceptance",
+      "not_current0_152_hardware_acceptance": true
+    }
+  ],
+  "known_limitations": [
+    "The initial full run passed 284/285 groups. The modular HTTP LLDB group timed out; its unchanged isolated recheck passed. The intermittent timeout cause is not established and remains under investigation."
+  ],
+  "native_Windows_accepted": false,
+  "CUDA_accepted": false,
+  "Metal_accepted": false,
+  "Apple_NPU_accepted": false,
+  "all_PLAN_complete": false
+}

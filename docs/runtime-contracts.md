@@ -100,5 +100,7 @@ It does not copy component architecture manifests or physical host grants. It
 does not copy original Git/SQLite history; the original project retains it.
 Use normal [graph snapshots](snapshots.md) when transferring that history.
 
-The accepted 0.151.1 SDK predates this feature. Matching full regression,
-installed-SDK delivery and native platform acceptance for 0.152 are separate gates.
+The historical 0.151.1 SDK predates this command. The
+[0.152 delivery record](releases/0.152.0.json) records core regression with an explicit isolated debugger retry,
+moved/restored Mac SDK acceptance and 15 runtime scenarios in each SDK. These
+are separate from native Windows/CUDA or other-platform acceptance.

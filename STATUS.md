@@ -1,10 +1,13 @@
 # Runtime contract development — 0.152.0 / language 0.27
 
-The accepted 0.151.1 Mac SDK/publication is recorded in
-[the release receipt](docs/releases/0.151.1.json). The new explicit
-[scalar runtime pre/post projection](docs/runtime-contracts.md) is being checked
-separately. It preserves original source/history and generates a distinct ordinary
-source revision. Full 0.152 regression/SDK/platform delivery remains pending.
+The [0.152 Mac SDK receipt](docs/releases/0.152.0.json) records 284 first-run core passes
+and one unchanged isolated debugger recheck, 40 maintained phases and 15 runtime
+scenarios in each moved/restored SDK.
+The explicit [scalar runtime pre/post projection](docs/runtime-contracts.md)
+preserves original source/history and generates a distinct ordinary source
+revision through private static bodies. Broader platform delivery remains pending.
+The initial modular HTTP LLDB timeout remains under investigation; its successful
+isolated recheck does not establish the cause or remove the original failure.
 The original PLAN includes additional unfinished capabilities.
 
 # Public025 integration candidate — not accepted for delivery

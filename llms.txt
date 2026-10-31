@@ -2,7 +2,7 @@
 
 NEX is a checked programming language and toolchain for humans and LLMs.
 Development toolchain 0.152.0 uses source language 0.27.
-The accepted SDK receipt below retains its 0.151.1 scope. Executables run without
+Executables run without
 an LLM. Precise semantics and small retrieved contexts are design goals;
 end-to-end model-token savings remain unmeasured.
 
@@ -19,7 +19,7 @@ end-to-end model-token savings remain unmeasured.
 - [Grammar](docs/grammar.ebnf)
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
-- [Versioned SDK evidence](docs/releases/0.151.1.json)
+- [Versioned SDK evidence](docs/releases/0.152.0.json)
 
 Use `nex describe --kind index --json`, then `--field PATH --json`.
 Use `nex context --symbol NAME --json` for bounded project context.

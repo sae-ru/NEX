@@ -1,7 +1,7 @@
 {
   "schema": "nex.learning-corpus/1",
   "language": "0.27",
-  "toolchain": "0.151.1",
+  "toolchain": "0.152.0",
   "validation_status": "passed",
   "capability_authority": "nex describe --kind index --json",
   "examples": [
@@ -37,9 +37,9 @@
     }
   ],
   "validation": {
-    "compiler_sha256": "602808c6aee60f8838059b72624f530220037f16f13d697c819bc311b69d86eb",
-    "compiler_build": "75b3445955fe42902e1ca45f6df9c7c5e7af43c0ad9ad876a3b3364835def756",
-    "descriptor_hash": "6adc93f8e24dd9ee46399de8c7a98b04b177ef8a6831b3a0d145f6da4e290d94",
+    "compiler_sha256": "0fd846b5c0516e03ffa9cf4030d1a8114c5827a6f2130818daaf580ed18bd3b8",
+    "compiler_build": "9351af361c3e7691c92bbe708561d545510cace86be343d0ca71c653241c1c17",
+    "descriptor_hash": "a93ce26a1bfc54d234b99dcaaf7fde84019eda3053f05d9e815f04bfa9a82976",
     "valid_projects": 3,
     "rejected_programs": 2,
     "checks": [
