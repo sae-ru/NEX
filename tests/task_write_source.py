@@ -29,7 +29,7 @@ cases=[
  ('text_bytes_unicode_nul_bom','''server fn main()->i64 !{task,fs}{
  let text:str="Привет 🧠";assert(unwrap(file_write_text("text",text)));assert(unwrap(file_read_text("text"))==text);
  let b:bytes=unwrap(bytes([239,187,191,65,0,255]));assert(unwrap(file_write_bytes("bytes",b)));assert(unwrap(file_read_bytes("bytes"))==b);
- let nul:str=unwrap(decode_utf8(unwrap(bytes([65,0,66]))));assert(unwrap(file_write_text("nul",nul)));assert(unwrap(file_read_text("nul"))==nul);return 42;}''','',True,True),
+ let nul:str=unwrap(decode_utf8(unwrap(bytes([65,0,66]))));assert(unwrap(file_write_text("embedded-nul",nul)));assert(unwrap(file_read_text("embedded-nul"))==nul);return 42;}''','',True,True),
  ('empty_and_sliced_owned_input','''server fn main()->i64 !{task,fs}{
  assert(unwrap(file_write_text("empty","")));assert(len(unwrap(file_read_bytes("empty")))==0);
  let original:bytes=unwrap(file_read_bytes("maximum"));let part:bytes=slice(original,17,5);

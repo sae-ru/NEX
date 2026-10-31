@@ -1,3 +1,4 @@
+from host_fixture import copy_link_image
 """Ordinary HTTP execution across actual private static/shared code images."""
 import hashlib
 import copy
@@ -72,9 +73,15 @@ HOST = r'''#include "nex_host.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#ifdef _WIN32
+#include "host_images.h"
+#else
 #include <dirent.h>
-#include <dlfcn.h>
-#ifdef __APPLE__
+#endif
+#include "host_dlfcn.h"
+#ifdef _WIN32
+#include "host_images.h"
+#elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #else
 #include <link.h>
@@ -83,15 +90,23 @@ extern int nex_private_http_main(int,char **);
 extern "C" const nexrt::TaskCodeDescriptor *ENTRY();
 extern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits(){static const nexrt::TaskExecutionLimits limits{100000000,5000,4};return &limits;}
 extern "C" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){return nexrt::executeConfiguredSourceExceptionTaskHttpRequest(*ENTRY(),value,workers);}
-static const char *base(const char *p){auto *s=std::strrchr(p,'/');return s?s+1:p;}
-static long files(){auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;}
+static const char *base(const char *p){auto *s=std::strrchr(p,'/');auto *w=std::strrchr(p,'\\');if(w&&(!s||w>s))s=w;return s?s+1:p;}
+static long files(){
+#ifdef _WIN32
+ return static_cast<long>(nex_test::files().size());
+#else
+auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;
+#endif
+}
 static bool inspect(const char *symbol,const char *function,const char *expected){
  using Accessor=const nexrt::TaskCodeDescriptor *(*)();auto f=reinterpret_cast<Accessor>(dlsym(RTLD_DEFAULT,symbol));auto *c=f?f():nullptr;
  Dl_info data{},step{};bool ok=c&&c->abi==nexrt::taskCodeExceptionHostPrototypeABI&&dladdr(c,&data)&&dladdr(reinterpret_cast<const void*>(c->step),&step)&&!std::strcmp(base(data.dli_fname),expected)&&!std::strcmp(base(step.dli_fname),expected);
  std::fprintf(stderr,"NEX_PRIVATE_HTTP_ADDRESS {\"function\":\"%s\",\"expected\":\"%s\",\"data\":\"%s\",\"step\":\"%s\",\"ok\":%s}\n",function,expected,data.dli_fname?base(data.dli_fname):"",step.dli_fname?base(step.dli_fname):"",ok?"true":"false");return ok;
 }
 static void images(unsigned &runtime,unsigned &code){
-#ifdef __APPLE__
+#ifdef _WIN32
+ runtime=nex_test::imageCount("libnex-private-runtime-http.dll");code=nex_test::imageCount("libimage-");
+#elif defined(__APPLE__)
  for(uint32_t i=0;i<_dyld_image_count();++i){auto *name=base(_dyld_get_image_name(i));if(std::strstr(name,"libnex-private-runtime-http.dylib"))++runtime;if(!std::strncmp(name,"libimage-",9))++code;}
 #else
  struct Counts{unsigned &runtime,&code;} counts{runtime,code};dl_iterate_phdr([](struct dl_phdr_info *image,size_t,void *p){auto &c=*static_cast<Counts*>(p);auto *name=base(image->dlpi_name);if(std::strstr(name,"libnex-private-runtime-http.so"))++c.runtime;if(!std::strncmp(name,"libimage-",9))++c.code;return 0;},&counts);
@@ -135,7 +150,7 @@ def build(state, name, directory, ctx, out, optimization):
     assert plan['schema'] == 'nex.private-task-modules/'+str(version) and plan['host'] == 'http'
     assert plan['components']['app']['entry_kind'] == 'http'
     mac = platform.system() == 'Darwin'
-    suffix = '.dylib' if mac else '.so'
+    suffix = '.dll' if os.name=='nt' else '.dylib' if mac else '.so'
     shared = plan['runtime_linkage'] == 'shared'
     runtime_name = 'libnex-private-runtime-http' + suffix
     runtime_objects = [v for v in state['objects'] if v.name != 'http_main.cpp.o']
@@ -145,7 +160,7 @@ def build(state, name, directory, ctx, out, optimization):
         if not state.get('module_http_runtime_built'):
             run('http-runtime-shared', [compiler, '-dynamiclib' if mac else '-shared', *runtime_objects, state['ssl'], state['crypto'], state['sqlite'], '-pthread', *(['-Wl,-install_name,@rpath/' + runtime.name] if mac else ['-ldl', '-Wl,-soname,' + runtime.name]), '-o', runtime])
             state['module_http_runtime_built'] = True
-        shutil.copyfile(runtime, out / runtime.name)
+        copy_link_image(runtime, out / runtime.name)
     wrapped = state['cache'] / 'http_main_wrapped.o'
     if not state.get('module_http_main_built'):
         run('http-main-wrapped', [compiler, *state['flags'], '-Dmain=nex_private_http_main', '-c', state['runtime'] / 'http_main.cpp', '-o', wrapped])
@@ -171,7 +186,7 @@ def build(state, name, directory, ctx, out, optimization):
         if record['linkage'] == 'static':
             run(label + '-' + component + '-archive', [compiler.parent / 'llvm-ar', 'rcs', out / ('lib' + component + '.a'), module / 'module.o'])
     def filename(image):
-        return 'server' if image == 'app' else 'libimage-' + image + suffix
+        return ('server.exe' if os.name=='nt' else 'server') if image == 'app' else 'libimage-' + image + suffix
     checks = ['addresses=inspect(' + ','.join(map(json.dumps, [accessor, function, filename(plan['definition_owners'][function])])) + ')&&addresses;' for function, accessor in sorted(accessors.items())]
     host = HOST.replace('ENTRY', plan['components']['app']['entry_descriptor']).replace('CHECKS', '\n'.join(checks)).replace('EXPECT_RUNTIME', str(int(shared))).replace('EXPECT_CODE', str(len(plan['images']) - 1))
     if profiled:
@@ -336,7 +351,7 @@ def reuse_and_relocate(state):
         if not directory.exists():continue
         original = directory / 'O2'
         target = out / ('relocated-' + name);target.mkdir()
-        shutil.copyfile(directory / 'source-context.json', target / 'source-context.json')
+        copy_link_image(directory / 'source-context.json', target / 'source-context.json')
         e = target / 'O2';e.mkdir()
         for file in [original / 'server', original / 'plan.json', *original.glob('lib*.so'), *original.glob('lib*.dylib')]:shutil.copy2(file, e / file.name)
         hashes = {file.name: digest(file) for file in e.iterdir() if file.name != 'plan.json'}

@@ -16,7 +16,7 @@ class Editor(harness.ToolchainCase):
         compiler=Path(harness.NEX);installed=compiler.parent.parent/'share/nex/editor/vscode/session.js'
         return installed if compiler.parent.name=='bin' and installed.is_file() else harness.REPO/'editor/vscode/session.js'
     def project_session(self):
-        project=self.root/'project "quoted" \\ % 🧠';shutil.copytree(harness.REPO/'examples/project-tasks',project,ignore=shutil.ignore_patterns('.nex'))
+        project=self.root/("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠');shutil.copytree(harness.REPO/'examples/project-tasks',project,ignore=shutil.ignore_patterns('.nex'))
         (project/'task.json').unlink()
         (project/'core/value.nex').write_text('''module project_task::core;
 pub fn make(offset:i64)->(fn(i64)->i64){
@@ -91,7 +91,7 @@ pub fn decorate(value:str)->str{return value+" 🧠";}
     @unittest.skipUnless(LIVE, 'use --live for actual native editor breakpoints')
     def test_original_breakpoint_and_watch_with_quoted_source_path(self):
         from debugging import DAP
-        project=self.root/'project "quoted" \\ % 🧠'
+        project=self.root/("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠')
         project.mkdir()
         source=project/'main with spaces.nex'
         source.write_text('module editor_quoted;\nfn main()->unit!{io}{\n let total:i64=40;\n print(total+2);\n}\n', newline="\n")

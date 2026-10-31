@@ -78,7 +78,9 @@ fn main()->unit !{io}{observe(42);}
         for source in manifest["sources"]:
             self.assertEqual(Path(source["projection"]).read_text(), Path(source["original"]).read_text())
         tools = Path(self.cli("doctor")["native_compiler"]).parent
-        dwarf = str(tools / "llvm-dwarfdump")
+        local=tools/("llvm-dwarfdump.exe" if sys.platform=="win32" else "llvm-dwarfdump")
+        dwarf = str(local) if local.is_file() else shutil.which("llvm-dwarfdump")
+        self.assertTrue(dwarf,"matching LLVM dwarfdump is required")
         symbols = built["executable"] + ".dSYM" if sys.platform == "darwin" else built["executable"]
         verified = subprocess.run([dwarf, "--verify", symbols], capture_output=True, text=True, timeout=20)
         self.assertEqual(verified.returncode, 0, verified.stdout + verified.stderr)

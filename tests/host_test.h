@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <sys/stat.h>
 #include <set>
+#include "host_file_observers.h"
 inline int setenv(const char *name,const char *value,int overwrite){
   if(!overwrite&&nexrt::platform::environment(name))return 0;
   return ::_wputenv_s(nexrt::platform::wide(name).c_str(),nexrt::platform::wide(value).c_str());
@@ -77,25 +78,7 @@ inline bool privateFile(const std::filesystem::path &path){
   void *raw=nullptr;if(!GetAce(acl,0,&raw))return false;auto ace=static_cast<ACCESS_ALLOWED_ACE*>(raw);
   return ace->Header.AceType==ACCESS_ALLOWED_ACE_TYPE&&!(ace->Header.AceFlags&INHERITED_ACE)&&EqualSid(&ace->SidStart,sid)&&(ace->Mask&FILE_ALL_ACCESS)==FILE_ALL_ACCESS;
 }
-inline std::set<uintptr_t> files(){
-  struct Entry {HANDLE handle;ULONG_PTR handles,pointers;ULONG access,type,attributes,reserved;};
-  struct Snapshot {ULONG_PTR count,reserved;Entry entries[1];};
-  static_assert(sizeof(Entry)==40);
-  using Query=NTSTATUS(NTAPI*)(HANDLE,int,void*,ULONG,ULONG*);
-  auto query=reinterpret_cast<Query>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"),"NtQueryInformationProcess"));
-  if(!query)throw std::runtime_error("cannot inspect own Windows handles");
-  std::vector<unsigned char> data(16384);ULONG bytes=0;NTSTATUS status;
-  while((status=query(GetCurrentProcess(),51,data.data(),ULONG(data.size()),&bytes))<0){
-    if(status!=NTSTATUS(0xc0000004)||data.size()>=16*1024*1024)throw std::runtime_error("own handle snapshot failed");
-    data.resize(std::max<size_t>(data.size()*2,bytes));
-  }
-  auto snapshot=reinterpret_cast<const Snapshot*>(data.data());
-  if(snapshot->count>(data.size()-offsetof(Snapshot,entries))/sizeof(Entry))throw std::runtime_error("invalid Windows handle snapshot");
-  std::set<uintptr_t> result;
-  for(size_t i=0;i<snapshot->count;++i){auto h=snapshot->entries[i].handle;auto kind=GetFileType(h);
-    if(kind==FILE_TYPE_DISK||kind==FILE_TYPE_PIPE||kind==FILE_TYPE_CHAR)result.insert(reinterpret_cast<uintptr_t>(h));}
-  return result;
-}
+
 }
 #endif
 #ifndef _WIN32

@@ -1,3 +1,4 @@
+from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants
 """Pinned workload tasks, synthetic server state, budgets and captured replay."""
 import copy,hashlib,json,os,shutil,signal,subprocess,time
 from pathlib import Path
@@ -103,7 +104,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
             capture_output=True,text=True,timeout=600)
         replay=json.loads(process.stdout)
         if process.returncode:
-            saved=harness.REPO.parent/'native-083-task-workload-replay-failure-v2';saved.mkdir(exist_ok=True)
+            saved=harness.REPO/'build/native-083-task-workload-replay-failure-v2';saved.mkdir(exist_ok=True)
             (saved/'session.json').write_text(process.stdout, newline="\n");(saved/'stderr').write_text(process.stderr, newline="\n")
             for check in ['measure','second']:
                 for part in ['logs','artifacts']:
@@ -146,12 +147,13 @@ if(f>=0){pid_t child=fork();if(child==0){close(f);for(;;){mark('H');struct times
 char line[128];int n=snprintf(line,sizeof(line),"%ld %ld %ld\n",(long)getpid(),(long)getpgrp(),(long)child);if(n>0&&n<(int)sizeof(line))write(f,line,n);close(f);}
 if(getenv("NEX_WORKLOAD_INTERRUPT")){for(;;)pause();}
 struct timespec delay={0,250000000};nanosleep(&delay,0);'''
+        if os.name=='nt':loop=windows_workload_descendant(self.root,self.cli('doctor')['native_compiler'],self.env,finite=True)
         source='''module workload::service;import "std/http.nex" as http;
 server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");
 server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_response(200,str(echo(42)));}
 '''
         try:
-            ffi_fixture.C='#define _POSIX_C_SOURCE 200809L\n'+original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#include <time.h>').replace("mark('C');",loop,1)
+            ffi_fixture.C='#define _POSIX_C_SOURCE 200809L\n'+original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#include <time.h>\n#ifdef _WIN32\n#include <windows.h>\n#include <tlhelp32.h>\n#endif').replace("mark('C');",loop,1)
             ffi_fixture.SourceFFI.program(self,source,{'echo':'echo'})
         finally:ffi_fixture.C=original
         self.definition.update(warmup=0,phases=[{'concurrency':1,'iterations':256}],requests=[{'path':'/api/wait','expect':{'status':200}}],request_timeout_ms=5000)
@@ -176,7 +178,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
                 if not children.exists():
                     out,err=process.communicate(timeout=10);self.fail('native callback was not reached: '+out+err)
                 parent,group,child=map(int,children.read_text().split());self.assertNotEqual(parent,group);self.assertNotEqual(child,group)
-                if mode=='interrupt':process.send_signal(signal.SIGINT)
+                if mode=='interrupt':interrupt_task(process)
                 out,err=process.communicate(timeout=30);report=json.loads(out);rows={row['id']:row for row in report['checks']}
                 self.assertEqual(rows['warm-build']['status'],'passed');self.assertFalse(report['ok'])
                 if mode=='timeout':
@@ -184,10 +186,11 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
                 else:
                     self.assertEqual(process.returncode,130,out+err);self.assertEqual(report['signal'],signal.SIGINT)
                     self.assertEqual(rows['measure']['status'],'interrupted');self.assertEqual(rows['later']['status'],'skipped')
-                first=self.marker.read_bytes();time.sleep(.2);self.assertEqual(first,self.marker.read_bytes());self.assertEqual(list(ambient.iterdir()),[])
+                first=self.marker.read_bytes();time.sleep(.2);self.assertEqual(first,self.marker.read_bytes());self.assertEqual(windows_live_descendants(children),[]) if os.name=='nt' else None;self.assertEqual(list(ambient.iterdir()),[])
             finally:
                 if process.poll() is None:process.send_signal(signal.SIGTERM);process.communicate(timeout=30)
-                if children.exists():
+                if os.name=='nt' and children.exists():windows_live_descendants(children,terminate=True)
+                if children.exists() and os.name!='nt':
                     try:os.killpg(int(children.read_text().split()[1]),signal.SIGKILL)
                     except ProcessLookupError:pass
 

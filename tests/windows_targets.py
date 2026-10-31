@@ -61,9 +61,11 @@ test fn tasks()->unit !{task,throw}{assert(solve()==42);assert(recovered()==42);
 class WindowsConfiguration(harness.ToolchainCase):
     def test_unconfigured_and_unsupported_abis_reject(self):
         self.source('module windows; fn main()->i64 {return 0;}')
+        unconfigured=self.root/'unconfigured.json'
         for target in ('x86_64-w64-windows-gnu', 'aarch64-w64-windows-gnu',
                        'i686-w64-windows-gnu', 'arm64ec-w64-windows-gnu', 'x86_64-pc-windows-msvc'):
-            self.assertEqual(self.cli('build', '--target', target, ok=False)['code'], 'E_TARGET')
+            unconfigured.write_text(json.dumps({'schema':'nex.toolchain/1','target':target}),newline='\n')
+            self.assertEqual(self.cli('build', '--target', target, '--toolchain', unconfigured, ok=False)['code'], 'E_TARGET')
         config = self.root / 'toolchain.json'
         config.write_text(json.dumps({'schema':'nex.toolchain/1', 'target':'x86_64-w64-windows-gnu',
                                      'windows':{'runtime':'ucrt-static'}}), newline="\n")

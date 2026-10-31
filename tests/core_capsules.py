@@ -1,5 +1,5 @@
 """Data integrity, relocation and read-only actual native core capsules."""
-from host_fixture import nonregular
+from host_fixture import nonregular, sparse_file
 import hashlib
 import json
 import os
@@ -81,7 +81,7 @@ class CoreCapsules(harness.ToolchainCase):
         before = graph.read_bytes()
         self.file.unlink()
         self.original_program.parent.rename(self.root/'retained-original')
-        moved = self.root/'moved "quoted" \\ % `data` 🧠'
+        moved = self.root/("moved 'quoted' % `data` 🧠" if os.name=='nt' else 'moved "quoted" \\ % `data` 🧠')
         capsule.rename(moved)
         self.assertFalse(self.original_program.exists())
         report = self.read(moved, ok=False, env={'NEX_LLDB': str(self.root/'not-a-debugger')})
@@ -92,7 +92,7 @@ class CoreCapsules(harness.ToolchainCase):
     def test_historical_import_basename_is_preserved_in_verified_staging(self):
         capsule=self.fake_capsule()
         original_path=capsule/'original-debug.json';original=json.loads(original_path.read_text())
-        source=original['sources'][0];legacy='imported "quoted" % 🧠.nex'
+        source=original['sources'][0];legacy="imported 'quoted' % 🧠.nex" if os.name=='nt' else 'imported "quoted" % 🧠.nex'
         source['debug_path']=str(Path(source['debug_path']).with_name(legacy))
         original_path.write_text(json.dumps(original), newline="\n")
         receipt_path=capsule/'capsule.json';receipt=json.loads(receipt_path.read_text())
@@ -175,7 +175,7 @@ class CoreCapsules(harness.ToolchainCase):
         self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_CAPSULE')
         core.unlink()
         with core.open('wb') as stream:
-            stream.truncate(32*1024**3+1)
+            sparse_file(stream);stream.truncate(32*1024**3+1)
         self.assertEqual(self.read(capsule, ok=False, timeout=10)['code'], 'E_CORE_CAPSULE')
 
     @unittest.skipUnless(LIVE, 'use --live for actual native core capsule relocation')
@@ -209,7 +209,7 @@ class CoreCapsules(harness.ToolchainCase):
         alias.unlink()
         alias_parent.rmdir()
         self.original_program.parent.rename(self.root/'retained-original')
-        moved = self.root/'moved "quoted" \\ % `data` 🧠'
+        moved = self.root/("moved 'quoted' % `data` 🧠" if os.name=='nt' else 'moved "quoted" \\ % `data` 🧠')
         capsule.rename(moved)
         self.assertFalse(self.original_program.exists())
         before = {p.relative_to(moved).as_posix(): digest(p) for p in moved.rglob('*') if p.is_file()}

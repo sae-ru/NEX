@@ -101,12 +101,12 @@ void verifyServerWorkloadInputs(const ServerWorkload &workload){
   if(error||path.string()!=workload.path||bounded(workload.selection)!=workload.source||bounded(workload.helper)!=workload.helperSource)fail("workload inputs changed after preflight","E_PROJECT_INPUT_CHANGED");
 }
 ServerWorkloadRun::ServerWorkloadRun(const ServerWorkload &inputWorkload):workload(inputWorkload){
-  verifyServerWorkloadInputs(workload);auto configured=std::getenv("NEX_PYTHON");auto executable=llvm::sys::findProgramByName(configured?configured:"python3");if(!executable)throw Error("E_TOOL","server workload profiling requires Python3");python=*executable;
+  verifyServerWorkloadInputs(workload);auto executable=llvm::sys::findProgramByName(pythonProgram());if(!executable)throw Error("E_TOOL","server workload profiling requires Python3");python=*executable;
   directory=createTemporaryDirectory("nex-server-workload");input=(fs::path(directory)/"workload.json").string();result=(fs::path(directory)/"result.json").string();runner=(fs::path(directory)/"runner.py").string();
   try{writeFile(input,workload.source);writeFile(runner,workload.helperSource);}catch(...){fs::remove_all(directory);throw;}
 }
 ServerWorkloadRun::~ServerWorkloadRun(){std::error_code ignored;fs::remove_all(directory,ignored);}
-std::vector<std::string> ServerWorkloadRun::launcher()const{return {python,"-B",runner,"--workload",input,"--expected-hash",workload.sha256,"--result",result,"--"};}
+std::vector<std::string> ServerWorkloadRun::launcher()const{return {python,"-B","-X","utf8",runner,"--workload",input,"--expected-hash",workload.sha256,"--result",result,"--"};}
 Value ServerWorkloadRun::evidence()const{
   verifyServerWorkloadInputs(workload);auto parsed=llvm::json::parse(bounded(result));if(!parsed){llvm::consumeError(parsed.takeError());fail("workload runner produced invalid JSON");}
   auto value=parsed->getAsObject();auto planned=workload.plan.getInteger("total_requests");

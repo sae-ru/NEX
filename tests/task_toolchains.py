@@ -167,7 +167,7 @@ os.execv(REAL,[REAL,*sys.argv[1:]])
         # Read-only inspection hashes an executable fixture without invoking it.
         def digest(path):
             fixture=self.root/'hash fixture';shutil.copyfile(path,fixture);fixture.chmod(0o755)
-            tool=self.root/'hash-tool.json';tool.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.doctor['host'],'compiler':str(fixture)}), newline="\n")
+            tool=self.root/'hash-tool.json';tool.write_text(json.dumps({**harness.host_toolchain_defaults(self.doctor),'compiler':str(fixture)}), newline="\n")
             return self.cli('toolchain',tool)['inputs']['files'][str(fixture.resolve())]['hash']
         manifest=folder/'inputs/manifest.json';index=json.loads(manifest.read_text())
         index['files']['inputs/toolchains/selected/config.json']={'hash':digest(config),'bytes':config.stat().st_size}

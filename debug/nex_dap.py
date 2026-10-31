@@ -6,6 +6,7 @@ native scopes. Computed values have independent, paged, read-only references.
 """
 import argparse
 import base64
+import errno
 import json
 import os
 import queue
@@ -26,19 +27,44 @@ class ReaderStopped(Exception):
 
 
 class InterruptibleReader:
-    """POSIX DAP pipe reader with a wake descriptor and no buffered-I/O lock.
+    """Native DAP pipe reader with interruptible reads and no buffered-I/O lock.
 
     One thread owns each input descriptor. The shared wake pipe remains readable
     until both threads join, so stopping also interrupts an unfinished packet.
-    Native DAP hosting currently targets macOS/Linux.
+    Windows uses PeekNamedPipe and the same shared stop event.
     """
     def __init__(self, stream, stopped, wake):
         self.descriptor = stream.fileno()
         self.stopped, self.wake = stopped, wake
         self.buffer = bytearray()
+        if os.name=='nt':
+            import ctypes as C
+            from ctypes import wintypes as W
+            import msvcrt
+            self.kernel=C.WinDLL('kernel32',use_last_error=True)
+            self.kernel.PeekNamedPipe.argtypes=[W.HANDLE,C.c_void_p,W.DWORD,C.c_void_p,C.POINTER(W.DWORD),C.c_void_p]
+            self.kernel.PeekNamedPipe.restype=W.BOOL
+            self.handle=msvcrt.get_osfhandle(self.descriptor)
+            msvcrt.setmode(self.descriptor,os.O_BINARY)
+
 
     def fill(self):
         if self.stopped.is_set():
+            raise ReaderStopped()
+        if os.name=='nt':
+            import ctypes as C
+            from ctypes import wintypes as W
+            while not self.stopped.is_set():
+                available=W.DWORD()
+                if not self.kernel.PeekNamedPipe(self.handle,None,0,None,C.byref(available),None):
+                    error=C.get_last_error()
+                    if error in (109,232,233):return False
+                    raise C.WinError(error)
+                if available.value:
+                    chunk=os.read(self.descriptor,min(65536,available.value))
+                    self.buffer.extend(chunk)
+                    return bool(chunk)
+                self.stopped.wait(.01)
             raise ReaderStopped()
         select.select([self.descriptor, self.wake], [], [])
         if self.stopped.is_set():
@@ -552,11 +578,23 @@ def close_backend_pipes(backend):
     # flushes again after the backend has already closed its read end. This
     # expected cleanup EPIPE must neither turn normal EOF into failure nor mask
     # the original protocol error. Always close the backend output as well.
+    if os.name=='nt':
+        import ctypes as C
+        crt=C.CDLL('ucrtbase.dll',winmode=0x800)
+        get_error=crt._get_doserrno;get_error.argtypes=[C.POINTER(C.c_ulong)];get_error.restype=C.c_int
+        set_error=crt._set_doserrno;set_error.argtypes=[C.c_ulong];set_error.restype=C.c_int
+        set_error(0)
     try:
         try:
             backend.stdin.close()
         except BrokenPipeError:
             pass
+        except OSError as error:
+            # UCRT reports a closed Windows pipe as EINVAL/ERROR_NO_DATA.
+            # Observe this operation's native error; retain unrelated EINVAL.
+            if os.name!='nt' or error.errno!=errno.EINVAL:raise
+            native=C.c_ulong()
+            if get_error(C.byref(native)) or native.value not in (109,232):raise
     finally:
         backend.stdout.close()
 
@@ -565,13 +603,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--backend', required=True, help='trusted installed lldb-dap executable')
     args = parser.parse_args()
-    backend = subprocess.Popen([args.backend], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    backend = subprocess.Popen([args.backend], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name=='nt' else 0)
     events = queue.Queue(maxsize=8)
     stopped = [False]
     readers_stopped = threading.Event()
     wake_read, wake_write = os.pipe()
     def interrupted(*_):stopped[0] = True
     signal.signal(signal.SIGINT, interrupted); signal.signal(signal.SIGTERM, interrupted)
+    if os.name=='nt':signal.signal(signal.SIGBREAK,interrupted)
     def publish(value):
         while not readers_stopped.is_set():
             try:

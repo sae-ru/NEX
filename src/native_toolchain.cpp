@@ -6,9 +6,19 @@
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
+#include <algorithm>
 
 namespace nex {
 namespace {
+std::vector<std::filesystem::path> compilerConfigurations(const std::string &compiler,bool windows){
+  std::vector<std::filesystem::path> result;if(!windows)return result;
+  for(const auto &entry:std::filesystem::directory_iterator(std::filesystem::path(compiler).parent_path())){
+    if(entry.path().extension()!=".cfg")continue;
+    if(!entry.is_regular_file()||entry.file_size()>65536||result.size()>=64)throw Error("E_TOOLCHAIN","invalid/bounded Windows compiler configuration");
+    result.push_back(entry.path());
+  }
+  std::sort(result.begin(),result.end());return result;
+}
 void keys(const llvm::json::Object &object, const std::set<std::string> &allowed) {
   for (const auto &[key,value] : object)
     if (!allowed.contains(key.str())) throw Error("E_TOOLCHAIN", "unknown toolchain field: " + key.str());
@@ -39,7 +49,7 @@ NativeToolchain hostDefaults() {
     auto parsed=llvm::json::parse(readFile(manifest.string()));
     if(!parsed){llvm::consumeError(parsed.takeError());throw Error("E_TOOLCHAIN","invalid SDK descriptor JSON");}
     auto object=parsed->getAsObject();if(!object)throw Error("E_TOOLCHAIN","SDK descriptor must be an object");
-    keys(*object,{"schema","tools","sqlite","openssl"});
+    keys(*object,{"schema","tools","sqlite","openssl","windows"});
     if(text(*object,"schema",true)!="nex.sdk-host/1")throw Error("E_TOOLCHAIN","expected nex.sdk-host/1");
     auto group=[&](const std::string &name,const std::set<std::string> &fields)->const llvm::json::Object&{
       auto value=object->getObject(name);if(!value)throw Error("E_TOOLCHAIN","SDK descriptor requires object: "+name);
@@ -56,15 +66,23 @@ NativeToolchain hostDefaults() {
       // Preserve the final name: clang++ and ld.lld dispatch through argv[0].
       return candidate.string();
     };
-    const auto &tools=group("tools",{"compiler","archiver","linker","debug_packager","wasm_linker"});
+    const auto &tools=group("tools",{"compiler","archiver","linker","debug_packager","wasm_linker","wasm_compiler"});
     result.compiler=path(tools,"compiler",false);result.archiver=path(tools,"archiver",false);
     if(host.isOSLinux()||tools.get("linker"))result.linker=path(tools,"linker",false);
     if(host.isOSDarwin()||tools.get("debug_packager"))result.debugPackager=path(tools,"debug_packager",false);
     result.wasmLinker=tools.get("wasm_linker")?path(tools,"wasm_linker",false):"";
+    if(tools.get("wasm_compiler"))result.wasmCompiler=path(tools,"wasm_compiler",false);
     const auto &sqlite=group("sqlite",{"include","library"});
     result.sqliteInclude=path(sqlite,"include",true);result.sqliteLibrary=path(sqlite,"library",false);
     const auto &ssl=group("openssl",{"include","ssl","crypto"});
     result.opensslInclude=path(ssl,"include",true);result.opensslSSL=path(ssl,"ssl",false);result.opensslCrypto=path(ssl,"crypto",false);
+    if(object->get("windows")){
+      if(!host.isOSWindows())throw Error("E_TOOLCHAIN","Windows SDK selection requires a Windows host");
+      const auto &windows=group("windows",{"sysroot","runtime","notices"});
+      result.sysroot=path(windows,"sysroot",true);result.windowsNotices=path(windows,"notices",false);
+      result.windowsRuntime=text(windows,"runtime",true);
+      if(result.windowsRuntime!="ucrt-static")throw Error("E_TOOLCHAIN","Windows SDK requires ucrt-static runtime");
+    }
     result.sdkManifest=manifest.string();
   }catch(const Error &error){throw Error("E_SDK",std::string(error.what())+"; descriptor: "+manifest.string());}
   return result;
@@ -72,9 +90,18 @@ NativeToolchain hostDefaults() {
 }
 NativeToolchain configureWasm(){
   auto result=hostDefaults();
+  if(!result.wasmCompiler.empty())result.compiler=result.wasmCompiler;
   const char *compiler=std::getenv("NEX_WASM_CLANG");if(!compiler)compiler=std::getenv("NEX_CLANG");
   if(compiler)result.compiler=compiler;
   return result;
+}
+std::string pythonProgram(){
+  if(auto selected=std::getenv("NEX_PYTHON"))return selected;
+#ifdef _WIN32
+  return "python";
+#else
+  return "python3";
+#endif
 }
 NativeToolchain configureNative(const BuildOptions &options) {
   NativeToolchain result;
@@ -83,6 +110,10 @@ NativeToolchain configureNative(const BuildOptions &options) {
   result.wasmLinker=defaults.wasmLinker;
   auto override=std::getenv("NEX_CLANG");result.compiler=override?override:defaults.compiler;
   result.archiver=defaults.archiver;result.debugPackager=defaults.debugPackager;result.sdkManifest=defaults.sdkManifest;
+  if(options.toolchain.empty()&&!defaults.sdkManifest.empty()){
+    result.sysroot=defaults.sysroot;result.linker=defaults.linker;
+    result.windowsRuntime=defaults.windowsRuntime;result.windowsNotices=defaults.windowsNotices;
+  }
   bool triple=!options.target.empty()&&options.target!="server"&&options.target!="native";
   result.target=triple?llvm::Triple::normalize(options.target):host;
   if(triple){llvm::Triple requested(result.target);
@@ -94,7 +125,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   std::string manifest;
   auto configuration=options.toolchain;
 #ifdef NEX_DEFAULT_TOOLCHAIN
-  if(configuration.empty())configuration=NEX_DEFAULT_TOOLCHAIN;
+  if(configuration.empty()&&defaults.sdkManifest.empty())configuration=NEX_DEFAULT_TOOLCHAIN;
 #endif
   if(!configuration.empty()) {
     auto file=std::filesystem::absolute(configuration);
@@ -153,7 +184,7 @@ NativeToolchain configureNative(const BuildOptions &options) {
   if(!abi.isArch64Bit()||(!ios&&!windows&&(!sameOS||abi.getEnvironment()!=hostABI.getEnvironment()||(!crossMac&&!sameArch))))
     throw Error("E_TARGET","target is not configured: "+result.target+"; available: 64-bit host ABI, macOS arm64/x86_64, explicit iOS archive and Windows GNU/UCRT core toolchains");
   if(windows){
-    if(configuration.empty()||result.windowsRuntime!="ucrt-static"||result.windowsNotices.empty())
+    if((configuration.empty()&&defaults.sdkManifest.empty())||result.windowsRuntime!="ucrt-static"||result.windowsNotices.empty())
       throw Error("E_TARGET","Windows core builds require --toolchain FILE with explicit compiler/linker/archiver/sysroot and windows runtime ucrt-static/notices");
     auto bytes=std::filesystem::file_size(result.windowsNotices);
     if(!bytes||bytes>1048576)throw Error("E_TOOLCHAIN","Windows component notices must contain 1..1048576 bytes");
@@ -206,8 +237,10 @@ NativeToolchain configureNative(const BuildOptions &options) {
     sdkIdentity+=name+hash(readFile(file.string()));
   }
   llvm::json::Array arguments;for(const auto &argument:result.driver)arguments.push_back(argument);
+  llvm::json::Array compilerConfigs;
+  for(const auto &path:compilerConfigurations(result.compiler,windows))compilerConfigs.push_back(llvm::json::Object{{"path",path.string()},{"hash",hash(readFile(path.string()))}});
   result.identity=json(llvm::json::Object{{"schema","nex.toolchain-input/1"},{"target",result.target},{"driver",std::move(arguments)},{"sdk_identity",sdkIdentity},
-    {"linker",result.linker},{"linker_hash",result.linker.empty()?"":hash(readFile(result.linker))},
+    {"compiler_configs",std::move(compilerConfigs)},{"linker",result.linker},{"linker_hash",result.linker.empty()?"":hash(readFile(result.linker))},
     {"archiver",result.archiver},{"archiver_hash",hash(readFile(result.archiver))},
     {"debug_packager",result.debugPackager},{"debug_packager_hash",result.debugPackager.empty()?"":hash(readFile(result.debugPackager))},
     {"sqlite_include",result.sqliteInclude},{"sqlite_library",result.sqliteLibrary},{"openssl_include",result.opensslInclude},{"openssl_ssl",result.opensslSSL},{"openssl_crypto",result.opensslCrypto},
@@ -238,6 +271,7 @@ NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {
     auto contents=readFile(name);files[name]=llvm::json::Object{{"hash",hash(contents)},{"bytes",int64_t(contents.size())}};
   };
   file(compiler);
+  for(const auto &path:compilerConfigurations(compiler,llvm::Triple(configured.target).isOSWindows()))file(path);
   file(configured.archiver);
   if(!configured.debugPackager.empty())file(configured.debugPackager);
   if(!configured.linker.empty())file(configured.linker);

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import signal
+from host_fixture import interrupt_task, run_native
 import subprocess
 import time
 from pathlib import Path
@@ -249,7 +250,7 @@ class TaskForeign(harness.ToolchainCase):
             deadline=time.monotonic()+15
             while 'C' not in self.events() and process.poll() is None and time.monotonic()<deadline:time.sleep(.02)
             self.assertIn('C',self.events())
-            process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=15)
+            interrupt_task(process);out,err=process.communicate(timeout=15)
             self.assertEqual(process.returncode,130,out+err)
             result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
             self.assertEqual([c['status'] for c in result['checks']],['interrupted','skipped'])
@@ -263,9 +264,17 @@ class TaskForeign(harness.ToolchainCase):
     def project_process_fixture(self):
         original=fixture.C;shutil.rmtree(self.root/'bundle')
         loop='''mark('C');pid_t child=fork();if(child==0){for(;;)pause();}const char *path=getenv("NEX_TASK_CHILDREN");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd>=0){char line[128];int count=snprintf(line,sizeof(line),"%ld %ld %ld\\n",(long)getpid(),(long)getpgrp(),(long)child);if(count>0&&count<(int)sizeof(line))write(fd,line,(size_t)count);close(fd);}}for(;;)pause();'''
+        if os.name=='nt':
+            child_source=self.root/'uncooperative-child.c'
+            child_source.write_text('#include <windows.h>\nint main(void){for(;;)Sleep(1000);}',newline="\n")
+            child_exe=self.root/'uncooperative-child.exe'
+            compiled=run_native([self.cli('doctor')['native_compiler'],'-x','c','-std=c11',child_source,'-o',child_exe],capture_output=True,text=True,timeout=90)
+            self.assertEqual(compiled.returncode,0,compiled.stdout+compiled.stderr)
+            self.env['NEX_TASK_CHILD_EXE']=str(child_exe)
+            loop="""mark('C');wchar_t child_path[32768],file_path[32768];if(!GetEnvironmentVariableW(L"NEX_TASK_CHILD_EXE",child_path,32768)||!GetEnvironmentVariableW(L"NEX_TASK_CHILDREN",file_path,32768))return NEX_FFI_ARGUMENT;STARTUPINFOW startup={0};startup.cb=sizeof(startup);PROCESS_INFORMATION process={0};if(!CreateProcessW(child_path,0,0,0,FALSE,CREATE_NO_WINDOW,0,0,&startup,&process))return NEX_FFI_ARGUMENT;DWORD child=process.dwProcessId;CloseHandle(process.hThread);CloseHandle(process.hProcess);FILE *file=_wfopen(file_path,L"wb");if(!file)return NEX_FFI_ARGUMENT;fprintf(file,"%lu %lu %lu\\n",(unsigned long)GetCurrentProcessId(),(unsigned long)GetCurrentProcessId(),(unsigned long)child);fclose(file);for(;;)Sleep(1000);"""
         source='''module tasklib;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");pub server fn invoke()->i64!{ffi}{return echo(42);}'''
         try:
-            fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>').replace("mark('C');",loop,1)
+            fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#ifdef _WIN32\n#include <windows.h>\n#endif').replace("mark('C');",loop,1)
             self.program(source,{'echo':'echo'})
         finally:fixture.C=original
         (self.root/'library').mkdir();self.file.rename(self.root/'library/main.nex');(self.root/'app').mkdir()
@@ -284,12 +293,29 @@ server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->uni
         if not self.children.exists():return
         parent,group,child=map(int,self.children.read_text().split());self.assertEqual(parent,group)
         def running(pid):
+            if os.name=='nt':
+                import ctypes as C
+                from ctypes import wintypes as W
+                kernel=C.WinDLL('kernel32',use_last_error=True)
+                kernel.OpenProcess.argtypes=[W.DWORD,W.BOOL,W.DWORD];kernel.OpenProcess.restype=W.HANDLE
+                kernel.WaitForSingleObject.argtypes=[W.HANDLE,W.DWORD];kernel.WaitForSingleObject.restype=W.DWORD
+                kernel.CloseHandle.argtypes=[W.HANDLE]
+                handle=kernel.OpenProcess(0x100000,False,pid)
+                if not handle:
+                    if C.get_last_error()==87:return False
+                    raise C.WinError(C.get_last_error())
+                try:return kernel.WaitForSingleObject(handle,0)==0x102
+                finally:kernel.CloseHandle(handle)
             p=subprocess.run(['ps','-p',str(pid),'-o','stat='],capture_output=True,text=True)
             return p.returncode==0 and p.stdout.strip() and not p.stdout.strip().startswith('Z')
         deadline=time.monotonic()+5
         while (running(parent) or running(child)) and time.monotonic()<deadline:time.sleep(.05)
         if running(parent) or running(child):
-            try:os.killpg(group,signal.SIGKILL)
+            try:
+                if os.name=='nt':
+                    for pid in (parent,child):
+                        if running(pid):subprocess.run(['taskkill','/PID',str(pid),'/T','/F'],capture_output=True)
+                else:os.killpg(group,signal.SIGKILL)
             except ProcessLookupError:pass
             self.fail('task left a native process or its forked descendant running')
 
@@ -325,11 +351,11 @@ server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->uni
                 self.children.unlink(missing_ok=True);self.project_wait_task(mode,90)
                 process=subprocess.Popen([harness.NEX,'task',str(self.taskfile),'--kind','run','--directory',str(self.root/('interrupt-'+mode)),'--foreign',str(self.host),'--json'],cwd=self.root,env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
                 try:
-                    deadline=time.monotonic()+120
+                    deadline=time.monotonic()+(360 if os.name=="nt" else 120)
                     while not self.children.exists() and process.poll() is None and time.monotonic()<deadline:time.sleep(.05)
                     if not self.children.exists():
                         out,err=process.communicate(timeout=10);self.fail(out+err)
-                    process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=30)
+                    interrupt_task(process);out,err=process.communicate(timeout=30)
                     self.assertEqual(process.returncode,130,out+err);result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
                     rows={c['id']:c for c in result['checks']};self.assertEqual(rows['wait']['status'],'interrupted');self.assertEqual(rows['later']['status'],'skipped');self.assert_project_children_stopped()
                     self.assertEqual(list(ambient.glob('nex-task-*')),[]);self.assertEqual(list(ambient.glob('nex-module-*')),[])

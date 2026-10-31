@@ -1,6 +1,7 @@
 #include "nex/profiling.h"
 #include "nex/task_frontend.h"
 #include "nex/native_toolchain.h"
+#include "nex/task_process.h"
 #include <filesystem>
 #include <iostream>
 int main(int argc,char **argv){try{
@@ -31,13 +32,23 @@ int main(int argc,char **argv){try{
   // Feed corrupted raw reports through the same launcher, provenance checks
   // and graph attribution as production, without replacing the compiled image.
   auto raw=std::filesystem::path(argv[2])/"raw.json";
-  auto process=nex::capture({"env","NEX_TRACY=0","NEX_PROFILE_EVENTS=100000","NEX_PROFILE_OUTPUT="+raw.string(),built.executable});
+  auto process=nex::runTaskProcess({built.executable},std::filesystem::current_path().string(),{{"NEX_TRACY","0"},{"NEX_PROFILE_EVENTS","100000"},{"NEX_PROFILE_OUTPUT",raw.string()}},30,(std::filesystem::path(argv[2])/"raw-logs").string()).process;
   if(process.code)throw nex::Error("E_PROFILE","genuine019 profile image failed");
   auto rawValue=nex::parseTaskProfileRuntimeReport(nex::readFile(raw.string()));
   nex::writeFile((std::filesystem::path(argv[2])/"original-runtime.json").string(),nex::json(rawValue));
-  auto folder=std::filesystem::path(built.executable).parent_path();auto wrapper=folder/"report-wrapper",source=folder/"report-wrapper.cpp";
+  auto folder=std::filesystem::path(built.executable).parent_path();auto wrapper=folder/
+#ifdef _WIN32
+    "report-wrapper.exe"
+#else
+    "report-wrapper"
+#endif
+    ,source=folder/"report-wrapper.cpp";
   nex::writeFile(source.string(),"#include <fstream>\n#include <cstdlib>\nint main(){std::ifstream in("+nex::json(raw.string(),false)+",std::ios::binary);std::ofstream out(std::getenv(\"NEX_PROFILE_OUTPUT\"),std::ios::binary);out<<in.rdbuf();return 0;}\n");
-  auto tools=nex::configureNative(options);auto compiled=nex::capture({tools.compiler,"-std=c++20",source.string(),"-o",wrapper.string()});
+  auto tools=nex::configureNative(options);auto command=tools.driver;command.insert(command.end(),{"-std=c++20",source.string(),"-o",wrapper.string()});
+#ifdef _WIN32
+  command.push_back("-static");
+#endif
+  auto compiled=nex::capture(command);
   if(compiled.code)throw nex::Error("E_TOOL",compiled.errors);
   auto wrapped=built;wrapped.executable=wrapper.string();unsigned rejected=0;
   for(const auto *field:{"name","content_hash","file","line"}){

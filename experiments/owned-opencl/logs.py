@@ -5,7 +5,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import resource
+if os.name != "nt":
+ import resource
 import subprocess
 import time
 

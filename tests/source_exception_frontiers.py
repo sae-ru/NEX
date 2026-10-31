@@ -1,5 +1,5 @@
 """Execute checked private mixed images and verify actual code/data ownership."""
-from host_fixture import run_native
+from host_fixture import run_native, copy_link_image
 import argparse
 import hashlib
 import json
@@ -92,7 +92,7 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     compiler = Path(a.compiler).absolute()
     probe, reference, signatures = [Path(getattr(a, n)).resolve() for n in ["probe", "reference", "signatures"]]
     mac = platform.system() == "Darwin"
-    suffix = ".dylib" if mac else ".so"
+    suffix = ".dll" if os.name=="nt" else ".dylib" if mac else ".so"
     crypto = a.crypto_library or ("/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib" if mac else "-lcrypto")
     cache = Path(a.runtime_cache).resolve() if a.runtime_cache else out / "runtime"
     cache.mkdir(parents=True, exist_ok=True)
@@ -176,23 +176,37 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#ifdef _WIN32
+#include "host_images.h"
+#else
 #include <dirent.h>
-#include <dlfcn.h>
-#ifdef __APPLE__
+#endif
+#include "host_dlfcn.h"
+#ifdef _WIN32
+#include "host_images.h"
+#elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #else
 #include <link.h>
 #endif
 DECLARATIONS
 extern "C" int nex_private_modules_entry(int,const char *const *);
-static const char *base(const char *p){auto *s=std::strrchr(p,'/');return s?s+1:p;}
+static const char *base(const char *p){auto *s=std::strrchr(p,'/');auto *w=std::strrchr(p,'\\');if(w&&(!s||w>s))s=w;return s?s+1:p;}
 static const nexrt::TaskCodeDescriptor *find(const char *symbol){using Accessor=const nexrt::TaskCodeDescriptor *(*)();auto f=reinterpret_cast<Accessor>(dlsym(RTLD_DEFAULT,symbol));return f?f():nullptr;}
-static long files(){auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;}
+static long files(){
+#ifdef _WIN32
+ return static_cast<long>(nex_test::files().size());
+#else
+auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;
+#endif
+}
 static bool inspect(const nexrt::TaskCodeDescriptor *code,const char *function,const char *expected){
  Dl_info data{},step{};bool ok=code&&code->abi==nexrt::taskCodeExceptionHostPrototypeABI&&dladdr(code,&data)&&dladdr(reinterpret_cast<const void*>(code->step),&step)&&!std::strcmp(base(data.dli_fname),expected)&&!std::strcmp(base(step.dli_fname),expected);
  std::fprintf(stderr,"NEX_PRIVATE_FRONTIER_ADDRESS {\"function\":\"%s\",\"expected\":\"%s\",\"data\":\"%s\",\"step\":\"%s\",\"ok\":%s}\n",function,expected,data.dli_fname?base(data.dli_fname):"",step.dli_fname?base(step.dli_fname):"",ok?"true":"false");return ok;}
 static void images(unsigned &runtime,unsigned &code){
-#ifdef __APPLE__
+#ifdef _WIN32
+ runtime=nex_test::imageCount("libnex-private-runtime.dll");code=nex_test::imageCount("libimage-");
+#elif defined(__APPLE__)
  for(uint32_t i=0;i<_dyld_image_count();++i){auto *name=base(_dyld_get_image_name(i));if(std::strstr(name,"libnex-private-runtime.dylib"))++runtime;if(!std::strncmp(name,"libimage-",9))++code;}
 #else
  struct Counts{unsigned &runtime,&code;} counts{runtime,code};dl_iterate_phdr([](struct dl_phdr_info *image,size_t,void *p){auto &c=*static_cast<Counts*>(p);auto *name=base(image->dlpi_name);if(std::strstr(name,"libnex-private-runtime.so"))++c.runtime;if(!std::strncmp(name,"libimage-",9))++c.code;return 0;},&counts);
@@ -205,7 +219,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
 '''
 
     def image_file(image, plan):
-        return "program" if image == plan["application"] else "libimage-" + image + suffix
+        return ("program.exe" if os.name=="nt" else "program") if image == plan["application"] else "libimage-" + image + suffix
 
     def link_image(label, directory, image, plan, records, host=None, app_object=None):
         row = plan["images"][image]
@@ -291,7 +305,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                 records, metadata, accessors, compiled_symbols = {}, [], {}, {}
                 shared = plan["runtime_linkage"] == "shared"
                 if shared:
-                    shutil.copyfile(shared_runtime, e / shared_runtime.name)
+                    copy_link_image(shared_runtime, e / shared_runtime.name)
                 for component in plan["load_order"]:
                     module = e / component
                     run(label + "-" + component + "-emit", [probe, "emit", ctx, arch, component, module, triple, layout, str(optimization == "2").lower()])
@@ -481,7 +495,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                 if file.is_file() and (file.name == "program" or file.name.endswith(suffix)):
                     shutil.copy2(file, moved / file.name)
             shutil.copytree(bundle, moved / "bundle")
-            shutil.copyfile(catalog, moved / "host.json")
+            copy_link_image(catalog, moved / "host.json")
             files = moved / "files"
             files.mkdir()
             (files / "input").write_text("abcdef", newline="\n")

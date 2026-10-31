@@ -1,3 +1,4 @@
+from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants
 """Strict workload data and real supervised native server observations."""
 from host_fixture import python_executable
 import copy,hashlib,importlib.util,json,os,signal,subprocess,sys,time,unittest
@@ -226,13 +227,14 @@ class Supervision(harness.ToolchainCase):
         original=ffi_fixture.C
         loop=r'''mark('C');pid_t child=fork();if(child==0){for(;;){mark('H');struct timespec delay={0,20000000};nanosleep(&delay,0);}}
 const char *path=getenv("NEX_WORKLOAD_CHILDREN");if(path){int f=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(f>=0){char line[128];int n=snprintf(line,sizeof(line),"%ld %ld %ld\n",(long)getpid(),(long)getpgrp(),(long)child);if(n>0&&n<(int)sizeof(line))write(f,line,n);close(f);}}for(;;)pause();'''
+        if os.name=='nt':loop=windows_workload_descendant(self.root,self.cli('doctor')['native_compiler'],self.env,finite=False)
         source='''module supervised;
 import "std/http.nex" as http;
 server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");
 server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_response(200,str(echo(42)));}
 '''
         try:
-            ffi_fixture.C='#define _POSIX_C_SOURCE 200809L\n'+original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#include <time.h>').replace("mark('C');",loop,1)
+            ffi_fixture.C='#define _POSIX_C_SOURCE 200809L\n'+original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#include <time.h>\n#ifdef _WIN32\n#include <windows.h>\n#include <tlhelp32.h>\n#endif').replace("mark('C');",loop,1)
             self.program(source,{'echo':'echo'})
         finally:ffi_fixture.C=original
         (self.root/'app').mkdir();self.file.rename(self.root/'app/main.nex')
@@ -259,15 +261,16 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
                     out,err=process.communicate(timeout=10);self.fail(out+err+'; events='+repr(self.marker.read_bytes() if self.marker.exists() else b''))
                 parent,group,child=map(int,children.read_text().split());self.assertNotEqual(parent,group)
                 self.assertNotEqual(child,group)
-                if mode=='interrupt':process.send_signal(signal.SIGINT)
+                if mode=='interrupt':interrupt_task(process)
                 out,err=process.communicate(timeout=15)
                 self.assertNotEqual(process.returncode,0,out+err)
                 self.assertEqual(json.loads(out)['code'],'E_PROFILE_TIMEOUT' if mode=='timeout' else 'E_PROFILE_INTERRUPTED',out+err)
-                first=self.marker.read_bytes();time.sleep(.2);self.assertEqual(self.marker.read_bytes(),first,'native descendant survived supervision')
+                first=self.marker.read_bytes();time.sleep(.2);self.assertEqual(self.marker.read_bytes(),first,'native descendant survived supervision');self.assertEqual(windows_live_descendants(children),[]) if os.name=='nt' else None
                 self.assertEqual(list(ambient.iterdir()),[],'owned profiler/workload/foreign temporaries survived')
             finally:
                 if process.poll() is None:process.send_signal(signal.SIGTERM);process.communicate(timeout=15)
-                if children.exists():
+                if os.name=='nt' and children.exists():windows_live_descendants(children,terminate=True)
+                if children.exists() and os.name!='nt':
                     group=int(children.read_text().split()[1])
                     try:os.killpg(group,signal.SIGKILL)
                     except ProcessLookupError:pass
@@ -285,7 +288,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
             self.assertEqual(list(ambient.iterdir()),[])
         finally:
             if process.poll() is None:process.send_signal(signal.SIGTERM);process.communicate(timeout=15)
-            if children.exists():
+            if children.exists() and os.name!='nt':
                 try:os.killpg(int(children.read_text().split()[1]),signal.SIGKILL)
                 except ProcessLookupError:pass
 

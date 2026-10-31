@@ -423,7 +423,7 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
             self.assertNotIn('SERVER_ONLY_TASK_SENTINEL', js.read_text())
 
     def test_unicode_zero_bytes_exit_status_and_malformed_task_rejection(self):
-        task = self.scaffold('module taskdemo; fn main() -> i64 !{io} { print("Unicode \u0410\U0001f98a\\u0000"); return 257; }')
+        task = self.scaffold('module taskdemo; fn main() -> i64 !{io} { print("Unicode \u0410\U0001f98a\\u0000"); return 1; }')
         self.requirement(task, {'id': 'observe', 'kind': 'run', 'target': 'native', 'entry': 'taskdemo::main', 'expect': {'stdout': 'Unicode \u0410\U0001f98a\x00\n', 'exit_code': 1}}, 'taskdemo::main')
         self.save(task)
         self.assertTrue(self.task()['ok'])

@@ -86,7 +86,7 @@ class Modules(harness.ToolchainCase):
                             if s["original"] == str((self.root / "model.nex").resolve()))
             debug = self.cli("debug", "--", "-b", "-o",
                              "image lookup --verbose --name " + context["native_symbol"], machine=False)
-            self.assertIn(imported["debug_path"], debug.stdout)
+            self.assertIn(str(Path(imported["debug_path"])), debug.stdout)
             self.assertEqual(Path(imported["projection"]).read_text(),
                              (self.root / "model.nex").read_text())
 

@@ -1,3 +1,4 @@
+import os
 """Independent AST scheduler vs ordinary interpreter using exact native/TS fixtures."""
 import argparse,ast,hashlib,json,os,subprocess,tempfile
 from pathlib import Path
@@ -13,7 +14,7 @@ def run(cmd):
  return json.loads(r.stdout)
 save()
 for name,text in cases:
- d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module native_exception;\n'+text.replace('\\\\u','\\u')+'\n', newline="\n")
+ d=out/('case-'+name if os.name=='nt' and name.upper()=='NUL' else name);d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module native_exception;\n'+text.replace('\\\\u','\\u')+'\n', newline="\n")
  ordinary=run([sequential,'reference',str(f)]);actual=run([tasks,str(f)])
  (d/'sequential.json').write_text(json.dumps(ordinary,indent=2)+'\n', newline="\n");(d/'tasks.json').write_text(json.dumps(actual,indent=2)+'\n', newline="\n")
  assert actual==ordinary,(name,actual,ordinary)

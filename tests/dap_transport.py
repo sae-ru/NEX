@@ -1,5 +1,5 @@
 """DAP framing, reference separation and ownership on client disconnect."""
-from host_fixture import python_executable
+from host_fixture import python_executable, run_native
 import base64
 import errno
 import importlib.util
@@ -131,9 +131,13 @@ class Transport(harness.ToolchainCase):
         backend.chmod(0o755)
         return backend
 
-    def launch(self, backend):
+    def launch(self, backend, console=False):
+        options={}
+        if os.name=='nt' and console:
+            startup=subprocess.STARTUPINFO();startup.dwFlags|=subprocess.STARTF_USESHOWWINDOW;startup.wShowWindow=subprocess.SW_HIDE
+            options={'creationflags':subprocess.CREATE_NEW_CONSOLE|subprocess.CREATE_NEW_PROCESS_GROUP,'startupinfo':startup}
         return subprocess.Popen([sys.executable,str(harness.REPO/'debug/nex_dap.py'),'--backend',str(backend)],
-                                stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                                stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,**options)
 
     def test_backend_eof_joins_client_reader_while_client_stdin_remains_open(self):
         backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\n')
@@ -176,14 +180,24 @@ class Transport(harness.ToolchainCase):
     def test_signal_interrupts_partial_headers_and_bodies_and_joins_readers(self):
         marker=self.root/'disconnect.json'
         backend=self.backend('write_packet(sys.stdout.buffer,{"seq":1,"type":"event","event":"ready"})\nwhile True:\n r=read_packet(sys.stdin.buffer)\n if r is None:break\n if r.get("command")=="disconnect":\n  Path('+repr(str(marker))+').write_text(json.dumps(r));break\n')
+        if os.name=='nt':
+            source=self.root/'break-helper.cpp';control=self.root/'break-helper.exe'
+            source.write_text('#include <windows.h>\n#include <cstdlib>\nint wmain(int argc,wchar_t **argv){if(argc!=2)return 2;DWORD pid=wcstoul(argv[1],0,10);FreeConsole();if(!AttachConsole(pid))return int(GetLastError());SetConsoleCtrlHandler(0,TRUE);BOOL sent=GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT,pid);DWORD error=sent?0:GetLastError();FreeConsole();return int(error);}',newline="\n")
+            result=run_native([harness.native_fixture_compiler(),'-std=c++20','-municode',source,'-o',control],capture_output=True,text=True,timeout=120)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         for incoming in [b'Content-Length: 100',b'Content-Length: 100\r\n\r\n{']:
-            for signum in [signal.SIGTERM,signal.SIGINT]:
+            for signum in ([signal.SIGBREAK] if os.name=='nt' else [signal.SIGTERM,signal.SIGINT]):
                 with self.subTest(packet=incoming,signum=signum):
-                    process=self.launch(backend)
+                    marker.unlink(missing_ok=True)
+                    process=self.launch(backend,console=os.name=='nt')
                     try:
                         self.assertEqual(adapter.read_packet(process.stdout)['event'],'ready')
                         process.stdin.write(incoming);process.stdin.flush()
-                        process.send_signal(signum);process.wait(timeout=10)
+                        if os.name=='nt':
+                            sent=subprocess.run([control,str(process.pid)],capture_output=True,timeout=10)
+                            self.assertEqual(sent.returncode,0,sent.stderr)
+                        else:process.send_signal(signum)
+                        process.wait(timeout=10)
                         self.assertEqual(process.returncode,0,process.stderr.read())
                         self.assertTrue(json.loads(marker.read_text())['arguments']['terminateDebuggee'])
                     finally:

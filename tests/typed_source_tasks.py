@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs
 #!/usr/bin/env python3
 """Candidate027 AST/TaskIR/native O0/O2/Node agreement across real task pauses."""
 import os
@@ -9,7 +10,7 @@ out=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-typed-
 started=time.monotonic();records=[];report={'ok':False,'candidate_language':'0.27','public027_enabled':False,'descriptor_abi':'0x4e45585400002702','cases':records,'commands':[]}
 def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(label,cmd,allowed=(0,),timeout=180):
- r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,timeout=timeout,env={**os.environ,'NEX_RESOURCE_DIR':str(root),'NEX_FILES_ROOT':str(out),'NEX_TYPED_HOST_CATALOG':str(out/'host.json') if label.startswith('native-resource-') else '', 'NEX_PRIVATE_HOST_EVENTS':str(out/(label+'.events'))})
+ r=run_native(cmd,text=True,capture_output=True,timeout=timeout,env={**os.environ,'NEX_RESOURCE_DIR':str(root),'NEX_FILES_ROOT':str(out),'NEX_TYPED_HOST_CATALOG':str(out/'host.json') if label.startswith('native-resource-') else '', 'NEX_PRIVATE_HOST_EVENTS':str(out/(label+'.events'))})
  (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'label':label,'exit_code':r.returncode});save()
  assert r.returncode in allowed,(label,r.returncode,r.stdout[-2000:],r.stderr[-5000:],str(out))
@@ -92,7 +93,7 @@ flags=['-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-
 objects=[]
 for name in ['runtime.cpp','nex_files.cpp','files_runtime.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp','nex_task_application.cpp','foreign_runtime.cpp','nex_foreign.cpp','nex_ffi_loader.cpp','nex_ffi.cpp','nex_ffi_types.cpp','nex_ffi_resources.cpp','nex_json.cpp']:
  obj=out/(name+'.o');run('compile-'+name,[compiler,'-std=c++20','-O1','-g','-fPIC',*flags,'-c',runtime/name,'-o',obj]);objects.append(obj)
-host=out/'host.cpp';host.write_text(host_text, newline="\n");host_binary=out/'host';export='-Wl,-export_dynamic' if platform.system()=='Darwin' else '-Wl,--export-dynamic'
+host=out/'host.cpp';host.write_text(host_text, newline="\n");host_binary=out/('host.exe' if os.name=='nt' else 'host');export='-Wl,-export_dynamic' if platform.system()=='Darwin' else '-Wl,--export-dynamic'
 run('link-host',[compiler,'-std=c++20','-O1','-g',*flags,host,*objects,*crypto,export,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',host_binary])
 run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll']);text=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',text)[1];layout=re.search(r'target datalayout = "([^"]+)"',text)[1]
 # A real pinned C FFI producer constructs opaque resources; source programs
@@ -136,7 +137,7 @@ for name,text in cases:
  if name.startswith('fatal'):assert expected['code']==('E_ASSERT' if name=='fatal-filter' else 'E_OVERFLOW'),(name,expected)
  if name.startswith(('authority-runtime-','native-resource-runtime-')):assert expected['code']=='E_TASK_SCOPE',(name,expected)
  for opt in ['0','2']:
-  o=d/('O'+opt);o.mkdir();run(name+'-emit'+opt,[probe,'emit',source,o,triple,layout,str(opt=='2').lower()]);lib=o/('program.dylib' if platform.system()=='Darwin' else 'program.so')
+  o=d/('O'+opt);o.mkdir();run(name+'-emit'+opt,[probe,'emit',source,o,triple,layout,str(opt=='2').lower()]);lib=o/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
   flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run(name+'-link'+opt,[compiler,'-O'+opt,*flags,o/'program.ll','-o',lib])
   for workers in [1,4]:
    r=run(name+'-run'+opt+'-'+str(workers),[host_binary,lib,'workers',str(workers)],allowed=(0,42,70))

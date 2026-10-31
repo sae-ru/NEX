@@ -266,9 +266,9 @@ int run(const Options &o) {
   }
   if(o.command=="lsp"){
     if(!o.values.empty()||!o.flags.empty()||!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","lsp uses standard input/output without CLI options");
-    auto python=llvm::sys::findProgramByName(std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3");
+    auto python=llvm::sys::findProgramByName(pythonProgram());
     if(!python)throw Error("E_LSP","Python3 is required for nex lsp");
-    auto helper=resourceFile("editor/lsp/server.py");std::vector<llvm::StringRef> args{*python,helper,"--compiler",o.compiler};
+    auto helper=resourceFile("editor/lsp/server.py");std::vector<llvm::StringRef> args{*python,"-X","utf8",helper,"--compiler",o.compiler};
     return llvm::sys::ExecuteAndWait(*python,args);
   }
   if(o.command=="core"){
@@ -463,7 +463,7 @@ int run(const Options &o) {
   }
   if(o.command=="doctor") {
     auto runtime=resourceFile("runtime/runtime.cpp");auto native=configureNative({});
-    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"native_sysroot",native.sysroot},{"native_windows_runtime",native.windowsRuntime},{"native_windows_notices",native.windowsNotices},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
+    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"wasm_compiler",configureWasm().compiler},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"native_sysroot",native.sysroot},{"native_windows_runtime",native.windowsRuntime},{"native_windows_notices",native.windowsNotices},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
   }
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);

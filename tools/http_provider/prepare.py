@@ -19,6 +19,11 @@ RUNTIME=('nex_ffi.h','nex_ffi_module.h','nex_error.h','nex_resource.h','nex_reso
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v):Path(p).write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
 def regular(path,maximum):
+ if os.name=='nt':
+  import importlib.util
+  spec=importlib.util.spec_from_file_location('_nex_windows_files',Path(__file__).resolve().parents[1]/'windows_files.py')
+  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+  return module.regular(path,maximum)
  fd=os.open(path,os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK)
  try:
   s=os.fstat(fd)

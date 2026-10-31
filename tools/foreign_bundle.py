@@ -32,6 +32,9 @@ def document(path, maximum=None):
         return result
     if maximum is None:
         text = path.read_text(encoding='utf-8')
+    elif os.name=='nt':
+        from windows_files import regular
+        text=regular(path,maximum).decode('utf-8')
     else:
         # Operator catalogues obey the native host's regular-file, no-follow
         # and 1 MiB input contract before Python parses or normalizes anything.

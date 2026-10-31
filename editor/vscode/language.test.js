@@ -1,4 +1,8 @@
 'use strict';
+function nativeFixturePath(value) {return require('node:path').resolve(process.platform==='win32'?value.replaceAll('"',"'"):value);}
+function nativeFixtureURI(value) {return require('node:url').pathToFileURL(nativeFixturePath(value)).href;}
+function nativeFixtureSourceMap(values) {return 'settings set target.source-map '+values.map(v=>JSON.stringify(nativeFixturePath(v))).join(' ');}
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {EventEmitter} = require('node:events');
@@ -26,13 +30,13 @@ function processFixture() {
 
 test('LSP starts one literal executable and decodes fragmented UTF-8 responses', async () => {
   const child = processFixture(); let observed;
-  const client = new LanguageClient('/sdk with $(literal)/nex', '/project with spaces', {spawn: (...args) => {observed = args; return child;}});
+  const client = new LanguageClient(nativeFixturePath("/sdk with $(literal)/nex"), nativeFixturePath("/project with spaces"), {spawn: (...args) => {observed = args; return child;}});
   try {
     const pending = client.request('echo', {text: 'Я🧠'});
     const raw = frame({id: 1, result: 'Я🧠'});
     for (const byte of raw) child.stdout.write(Buffer.from([byte]));
     assert.equal(await pending, 'Я🧠');
-    assert.equal(observed[0], '/sdk with $(literal)/nex');
+    assert.equal(observed[0], nativeFixturePath("/sdk with $(literal)/nex"));
     assert.deepEqual(observed[1], ['lsp']); assert.equal(observed[2].shell, false);
     assert.equal(child.messages[0].params.text, 'Я🧠');
   } finally {await client.dispose();}
@@ -41,14 +45,14 @@ test('LSP starts one literal executable and decodes fragmented UTF-8 responses',
 test('malformed LSP frames reject pending requests and cannot supply editor data', async () => {
   for (const raw of [Buffer.from('Content-Length: 0\r\n\r\n'), Buffer.from('Content-Length: 2\r\nContent-Length: 2\r\n\r\n{}'),
     Buffer.from('Content-Length: 2\r\n\r\n\xff\xff', 'binary'), Buffer.from('x'.repeat(8193))]) {
-    const child = processFixture(), client = new LanguageClient('nex', '/project', {spawn: () => child});
+    const child = processFixture(), client = new LanguageClient('nex', nativeFixturePath("/project"), {spawn: () => child});
     const pending = client.request('pending'); child.stdout.write(raw);
     await assert.rejects(pending); child.kill(); await client.dispose();
   }
 });
 
 test('cancellation forwards the exact request ID and ignores its late response', async () => {
-  const child = processFixture(), client = new LanguageClient('nex', '/project', {spawn: () => child});
+  const child = processFixture(), client = new LanguageClient('nex', nativeFixturePath("/project"), {spawn: () => child});
   let cancel;
   try {
     const token = {isCancellationRequested: false, onCancellationRequested(callback) {cancel = callback; return {dispose() {}};}};
@@ -62,9 +66,9 @@ test('cancellation forwards the exact request ID and ignores its late response',
 });
 
 test('LSP initialization requires matching UTF-16/full-sync capabilities', async () => {
-  const child = processFixture(), client = new LanguageClient('nex', '/project', {spawn: () => child});
+  const child = processFixture(), client = new LanguageClient('nex', nativeFixturePath("/project"), {spawn: () => child});
   try {
-    const pending = client.start('file:///project');
+    const pending = client.start(nativeFixtureURI("/project"));
     child.stdout.write(frame({id: 1, result: {capabilities: {positionEncoding: 'utf-8'}}}));
     await assert.rejects(pending, /matching language-server/);
   } finally {await client.dispose();}
@@ -78,7 +82,7 @@ function host() {
     static file(value) {return new URI(pathToFileURL(value).href);}
     static parse(value) {return new URI(value);}
   }
-  const document = {uri: URI.file('/project/main.nex'), languageId: 'nex', isClosed: false, isDirty: false, version: 1,
+  const document = {uri: URI.file(nativeFixturePath("/project/main.nex")), languageId: 'nex', isClosed: false, isDirty: false, version: 1,
     text: 'module app; fn main()->i64{return 42;}', getText() {return this.text;}};
   const vscode = {Uri: URI, DiagnosticSeverity: {Error: 0, Warning: 1, Information: 2, Hint: 3}, SymbolKind: {Function: 11, Struct: 22, Enum: 9, Interface: 10, Class: 4, Variable: 12},
     Range: class {constructor(a,b,c,d) {this.start = {line:a,character:b}; this.end = {line:c,character:d};}},
@@ -88,8 +92,8 @@ function host() {
     Location: class {constructor(uri,range) {Object.assign(this,{uri,range});}},
     DocumentSymbol: class {constructor(name,detail,kind,range,selectionRange) {Object.assign(this,{name,detail,kind,range,selectionRange});}},
     workspace: {isTrusted: true, textDocuments: [document], enabled: true,
-      getWorkspaceFolder: () => ({uri: URI.file('/project')}),
-      getConfiguration() {return {get: (key,fallback) => key === 'compilerPath' ? '/sdk/bin/nex' : key === 'languageServer.enabled' ? vscode.workspace.enabled : fallback};}},
+      getWorkspaceFolder: () => ({uri: URI.file(nativeFixturePath("/project"))}),
+      getConfiguration() {return {get: (key,fallback) => key === 'compilerPath' ? nativeFixturePath("/sdk/bin/nex") : key === 'languageServer.enabled' ? vscode.workspace.enabled : fallback};}},
     window: {showErrorMessage: async text => errors.push(text), createOutputChannel: () => ({appendLine: text => logs.push(text), dispose() {}})},
     languages: {createDiagnosticCollection: () => ({set: (uri,values) => published.set(uri.toString(),values), delete: uri => published.delete(uri.toString()), dispose() {published.clear();}})}};
   const clients = [];
@@ -112,10 +116,10 @@ test('references pass declaration context and exact physical locations', async (
     h.clients[0].answer = (method,params) => {
       assert.equal(method,'textDocument/references');
       assert.deepEqual(params.context,{includeDeclaration:false});
-      return [{uri:'file:///project/model.nex',range:span}];
+      return [{uri:nativeFixtureURI("/project/model.nex"),range:span}];
     };
     const values = await integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:false});
-    assert.equal(values.length,1); assert.equal(values[0].uri.fsPath,'/project/model.nex');
+    assert.equal(values.length,1); assert.equal(values[0].uri.fsPath,nativeFixturePath("/project/model.nex"));
     assert.deepEqual(values[0].range.start,span.start);
     h.clients[0].answer = () => [{uri:'https://example.test/model.nex',range:span}];
     await assert.rejects(integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:true}),/non-file reference/);
@@ -124,7 +128,7 @@ test('references pass declaration context and exact physical locations', async (
 
 test('queries flush imported buffers and suppress replies after any connected document changes', async () => {
   const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory,delay:5000});
-  const imported = {...h.document,uri:h.vscode.Uri.file('/project/model.nex'),text:'module model;fn answer()->i64{return 42;}'};
+  const imported = {...h.document,uri:h.vscode.Uri.file(nativeFixturePath("/project/model.nex")),text:'module model;fn answer()->i64{return 42;}'};
   h.vscode.workspace.textDocuments.push(imported);
   try {
     await integration.sync(h.document); await integration.sync(imported);
@@ -148,7 +152,7 @@ test('untrusted, virtual and disabled language features never start a compiler',
   try {
     h.vscode.workspace.isTrusted = false; await integration.sync(h.document);
     h.vscode.workspace.isTrusted = true; h.document.uri = h.vscode.Uri.parse('untitled:/main.nex'); await integration.sync(h.document);
-    h.document.uri = h.vscode.Uri.file('/project/main.nex'); h.vscode.workspace.enabled = false; await integration.sync(h.document);
+    h.document.uri = h.vscode.Uri.file(nativeFixturePath("/project/main.nex")); h.vscode.workspace.enabled = false; await integration.sync(h.document);
     assert.equal(h.clients.length,0);
   } finally {await integration.dispose();}
 });
@@ -189,10 +193,10 @@ test('definitions and outline use physical URIs and checked source ranges', asyn
   const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory});
   try {
     await integration.sync(h.document);
-    h.clients[0].answer = method => method === 'textDocument/definition' ? [{uri:'file:///project/model.nex',range:span}] :
+    h.clients[0].answer = method => method === 'textDocument/definition' ? [{uri:nativeFixtureURI("/project/model.nex"),range:span}] :
       [{name:'main',detail:'shared fn main() -> i64',kind:12,range:span,selectionRange:span}];
     const locations = await integration.providers.definition.provideDefinition(h.document,{line:0,character:3});
-    assert.equal(locations[0].uri.fsPath,'/project/model.nex'); assert.deepEqual(locations[0].range.start,span.start);
+    assert.equal(locations[0].uri.fsPath,nativeFixturePath("/project/model.nex")); assert.deepEqual(locations[0].range.start,span.start);
     const symbols = await integration.providers.symbols.provideDocumentSymbols(h.document);
     assert.equal(symbols[0].kind,h.vscode.SymbolKind.Function); assert.equal(symbols[0].name,'main');
   } finally {await integration.dispose();}
@@ -224,12 +228,12 @@ test('rejected large or malformed editor text cannot reuse an older semantic ind
 });
 
 test('frozen debugger projections use the debugger rather than a live source index', async () => {
-  const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory,isFrozenDocument:uri => uri.fsPath.startsWith('/private/tmp/nex-debug-owned/')});
+  const h = host(), integration = createLanguageIntegration(h.vscode,{createClient:h.factory,isFrozenDocument:uri => uri.fsPath.startsWith(nativeFixturePath("/private/tmp/nex-debug-owned/"))});
   try {
-    h.document.uri=h.vscode.Uri.file('/project/.nex/build/frozen.nex');await integration.sync(h.document);
-    h.document.uri=h.vscode.Uri.file('/private/tmp/nex-debug-owned/source.nex');await integration.sync(h.document);
+    h.document.uri=h.vscode.Uri.file(nativeFixturePath("/project/.nex/build/frozen.nex"));await integration.sync(h.document);
+    h.document.uri=h.vscode.Uri.file(nativeFixturePath("/private/tmp/nex-debug-owned/source.nex"));await integration.sync(h.document);
     assert.equal(h.clients.length,0);
-    h.document.uri=h.vscode.Uri.file('/project/main.nex');await integration.sync(h.document);assert.equal(h.clients.length,1);
+    h.document.uri=h.vscode.Uri.file(nativeFixturePath("/project/main.nex"));await integration.sync(h.document);assert.equal(h.clients.length,1);
   } finally {await integration.dispose();}
 });
 
@@ -247,7 +251,7 @@ test('known manifest changes invalidate an in-flight semantic reply', async () =
     let finish; h.clients[0].answer = () => new Promise(resolve => {finish = resolve;});
     const pending = integration.providers.references.provideReferences(h.document,{line:0,character:3},{includeDeclaration:false});
     while (!finish) await new Promise(resolve => setImmediate(resolve));
-    changes.find(([pattern]) => pattern === '**/nex.json')[1](h.vscode.Uri.file('/project/nex.json'));
+    changes.find(([pattern]) => pattern === '**/nex.json')[1](h.vscode.Uri.file(nativeFixturePath("/project/nex.json")));
     finish([{uri:h.document.uri.toString(),range:span}]);
     assert.deepEqual(await pending,[]);
     assert.ok(h.messages.some(([method]) => method === 'workspace/didChangeWatchedFiles'));

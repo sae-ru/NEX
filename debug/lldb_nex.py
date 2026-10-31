@@ -6,8 +6,9 @@ by the generated manifest; previews deliberately bound recursion and item count.
 """
 import json
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shlex
+import posixpath
 import subprocess
 import base64
 import time
@@ -28,8 +29,38 @@ MAX_TEXT = 4096
 _contexts = {}
 
 
+def _open_readonly_file(path, maximum):
+    # Captured debugger helpers are self-contained, including inside a capsule.
+    if os.name!='nt':
+        return os.open(path,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW|os.O_CLOEXEC)
+    """Return a binary, non-inheriting CRT descriptor for a checked Win32 file."""
+    import msvcrt
+    import ctypes as C
+    from ctypes import wintypes as W
+    path=os.path.abspath(os.fspath(path))
+    if path.startswith(('\\\\.\\','\\\\?\\','\\??\\')):raise ValueError('input must be a filesystem file')
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.CreateFileW.argtypes=[W.LPCWSTR,W.DWORD,W.DWORD,C.c_void_p,W.DWORD,W.DWORD,W.HANDLE];kernel.CreateFileW.restype=W.HANDLE
+    kernel.CloseHandle.argtypes=[W.HANDLE];kernel.CloseHandle.restype=W.BOOL
+    kernel.GetFileType.argtypes=[W.HANDLE];kernel.GetFileType.restype=W.DWORD
+    kernel.GetFileInformationByHandleEx.argtypes=[W.HANDLE,C.c_int,C.c_void_p,W.DWORD];kernel.GetFileInformationByHandleEx.restype=W.BOOL
+    kernel.GetFileSizeEx.argtypes=[W.HANDLE,C.POINTER(C.c_longlong)];kernel.GetFileSizeEx.restype=W.BOOL
+    handle=kernel.CreateFileW(path,0x80000000,1,None,3,0x02200000,None)
+    if handle==C.c_void_p(-1).value:raise C.WinError(C.get_last_error())
+    try:
+        attributes=(W.DWORD*2)();size=C.c_longlong()
+        if (kernel.GetFileType(handle)!=1 or not kernel.GetFileInformationByHandleEx(handle,9,attributes,C.sizeof(attributes)) or attributes[0]&(0x10|0x400)):
+            raise ValueError('input must be regular and without a reparse point')
+        if not kernel.GetFileSizeEx(handle,C.byref(size)):raise C.WinError(C.get_last_error())
+        if not 0<=size.value<=maximum:raise ValueError('input exceeds size limit')
+        descriptor=msvcrt.open_osfhandle(handle,os.O_RDONLY|os.O_BINARY|os.O_NOINHERIT)
+        handle=None;return descriptor
+    finally:
+        if handle is not None:kernel.CloseHandle(handle)
+
+
 def _image_hash(path, deadline=None):
-    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    fd = _open_readonly_file(path, 512*1024**2)
     try:
         before = os.fstat(fd)
         if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 512*1024**2:
@@ -64,17 +95,17 @@ def _owned_images(manifest, program):
     images = manifest.get('owned_images', [])
     if not isinstance(images, list) or len(images) > 129:
         raise ValueError('invalid owned native image inventory')
-    parent = (Path(program).parent/'images').resolve()
+    parent = (Path(program).parent if sys.platform=='win32' else Path(program).parent/'images').resolve()
     if manifest.get('schema') == 'nex.debug/3':
         directory = Path(manifest['artifact_directory'])
         if directory == Path(program).parent:
-            parent = directory/'images'
+            parent = directory if sys.platform=='win32' else directory/'images'
         else:
             package = directory.parent.parent
             if (directory != package/'debugger/retained-build' or
-                    Path(program) != package/'bin/app'):
+                    Path(program) != package/('bin/app.exe' if sys.platform=='win32' else 'bin/app')):
                 raise ValueError('provider debug program is outside its completed/package layout')
-            parent = package/'lib/nex/host'
+            parent = package/('bin' if sys.platform=='win32' else 'lib/nex/host')
     result = {}
     for record in images:
         if not isinstance(record, dict):
@@ -84,8 +115,8 @@ def _owned_images(manifest, program):
                 not isinstance(digest, str) or not re.fullmatch('[0-9a-f]{64}', digest) or
                 not isinstance(uuid, str) or not re.fullmatch('[0-9a-f]{16,128}', uuid) or len(uuid) % 2 or
                 record.get('kind') not in ('runtime', 'library') or
-                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', Path(path).name) or
-                not Path(path).is_absolute() or os.path.normpath(path) != path):
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib|dll)', Path(path).name) or
+                not Path(path).is_absolute() or os.path.normpath(path) != (path.replace('/','\\') if os.name=='nt' else path)):
             raise ValueError('invalid owned native image path/identity')
         resolved = str(Path(path).resolve())
         if (resolved in result or Path(path).is_symlink() or
@@ -108,7 +139,7 @@ def _provider_artifact_layout(manifest, path):
     deadline = time.monotonic() + 10
     for field, name in (('formatter', 'lldb_nex.py'), ('dap_adapter', 'nex_dap.py')):
         script = root/'debugger'/name
-        if (manifest.get(field) != str(script) or script.is_symlink() or script.parent.is_symlink() or
+        if (Path(manifest.get(field,'')) != script or script.is_symlink() or script.parent.is_symlink() or
                 script.resolve(strict=True) != script or not 0 < script.stat().st_size <= 2*1024*1024 or
                 not _task_digest(manifest.get(field+'_hash')) or
                 not _task_digest(manifest.get(field+'_sha256')) or
@@ -1001,7 +1032,7 @@ def _read_path(value, schema, request, budget):
 
 def _elf_core_mapping(path, pc):
     """Read the core's own bounded NT_FILE table, without mapped-file fallback."""
-    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+    fd = _open_readonly_file(path, 32*1024**3)
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or not 64 <= info.st_size <= 32 * 1024**3:
@@ -1014,7 +1045,9 @@ def _elf_core_mapping(path, pc):
             if (offset < 0 or count < 0 or offset + count > info.st_size or
                     consumed > 32 * 1024**2 or time.monotonic() > deadline):
                 raise ValueError("core image ELF metadata exceeds bounds")
-            data = os.pread(fd, count, offset)
+            if os.name=='nt':
+                os.lseek(fd,offset,os.SEEK_SET);data=os.read(fd,count)
+            else:data = os.pread(fd, count, offset)
             if len(data) != count:
                 raise ValueError("core image ELF metadata is truncated")
             return data
@@ -1069,9 +1102,9 @@ def _elf_core_mapping(path, pc):
                         raise ValueError("core image NT_FILE range is invalid")
                     if begin <= pc < finish:
                         name = os.fsdecode(paths[number])
-                        if not name or len(name) > 16384 or not Path(name).is_absolute():
+                        if not name or len(name) > 16384 or not PurePosixPath(name).is_absolute():
                             raise ValueError("core image NT_FILE name is invalid")
-                        matches.append(str(Path(name).resolve()))
+                        matches.append(posixpath.normpath(name))
         if len(matches) != 1:
             raise ValueError("core image has no unique recorded PC mapping")
         return matches[0]
@@ -1111,7 +1144,7 @@ def _require_frame_image(target, frame, program):
         recorded_program = context.get('_capsule_recorded_program', program)
         if (len(key) != 64 or any(c not in '0123456789abcdef' for c in key) or
                 Path(program).parent.name != key or not Path(recorded_program).is_absolute() or
-                Path(recorded_program).parent.name != key or Path(recorded_program).name != 'app'):
+                Path(recorded_program).parent.name != key or Path(recorded_program).name != ('app.exe' if sys.platform == 'win32' else 'app')):
             raise ValueError("core image requires its content-addressed retained build directory")
         recorded = (recorded_program if actual == executable else
                     context.get('_capsule_recorded_images', {}).get(selected, selected))
@@ -1585,7 +1618,7 @@ def _private_module_task_manifest(context, codes=None):
         owner=image['component'];name=expected.get(owner)
         if name is None or owner in by_owner or image['path'] in paths or Path(image['path']).parent!=Path(program).parent:
             raise ValueError('private module physical image owner differs')
-        root=name==layout['application'];expected_name=Path(program).name if root else 'libimage-'+name+('.dylib' if sys.platform=='darwin' else '.so')
+        root=name==layout['application'];expected_name=Path(program).name if root else 'libimage-'+name+('.dll' if sys.platform=='win32' else '.dylib' if sys.platform=='darwin' else '.so')
         if Path(image['path']).name!=expected_name or image['kind']!=('application' if root else 'shared-image') or (root and image['path']!=program):
             raise ValueError('private module image filename/role differs')
         by_owner[owner]=image;paths.add(image['path'])
@@ -1595,7 +1628,7 @@ def _private_module_task_manifest(context, codes=None):
         if runtime!=by_owner[identity(layout['application'])]:raise ValueError('private runtime must be the application')
     elif (runtime['component'] is not None or runtime['kind']!='runtime' or
             Path(runtime['path']).parent!=Path(program).parent or
-            Path(runtime['path']).name!=('libnex-private-runtime-http' if architecture.get('host')=='http' else 'libnex-private-runtime')+('.dylib' if sys.platform=='darwin' else '.so') or runtime['path'] in paths):
+            Path(runtime['path']).name!=('libnex-private-runtime-http' if architecture.get('host')=='http' else 'libnex-private-runtime')+('.dll' if sys.platform=='win32' else '.dylib' if sys.platform=='darwin' else '.so') or runtime['path'] in paths):
         raise ValueError('private shared runtime owner differs')
     if codes is None:return
     registries=catalog.get('registries');summaries=view.get('registries')

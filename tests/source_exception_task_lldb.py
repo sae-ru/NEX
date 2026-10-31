@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs
 """Actual all-stop LLDB/DAP over unarchived compiled private source exceptions."""
 import os
 import argparse, ast, hashlib, json, os, platform, re, shutil, subprocess, sys, tempfile
@@ -207,7 +208,7 @@ def main():
     report={'ok':False,'cases':[],'dap_cases':[],'typescript_cases':[],'commands':[],'archived':False,'public_debug_CLI_support':False,'checked_expression_support':bool(a.watch_compiler),'security_checks_deferred_by_user':True,'ordinary_functional_only':True}
     def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,command,allowed=(0,),cwd=out,timeout=240):
-        r=subprocess.run(list(map(str,command)),cwd=cwd,text=True,capture_output=True,timeout=timeout)
+        r=run_native(command,cwd=cwd,text=True,capture_output=True,timeout=timeout)
         (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
         report['commands'].append({'label':label,'argv':list(map(str,command)),'exit':r.returncode});save()
         assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-4000:]);return r
@@ -309,7 +310,7 @@ def main():
             label=name+'-O'+optimization;e=directory/('O'+optimization);e.mkdir()
             run(label+'-emit',[emitter,'emit-context' if context_input else 'emit',context_input or file,e,triple,layout,str(optimization=='2').lower(),'debug-lldb'])
             ir=(e/'program.ll').read_text();assert ir.count('@main(')==1;ir=ir.replace('@main(','@nex_private_debug_entry(');(e/'linked.ll').write_text(ir, newline="\n")
-            binary=e/'program';run(label+'-link',[compiler,'-O'+optimization,'-g',e/'linked.ll',*objects,'-pthread',*(['-Wl,--build-id'] if platform.system()!='Darwin' else []),'-o',binary])
+            binary=e/('program.exe' if os.name=='nt' else 'program');run(label+'-link',[compiler,'-O'+optimization,'-g',e/'linked.ll',*objects,'-pthread',*(['-Wl,--build-id'] if platform.system()!='Darwin' else []),'-o',binary])
             if platform.system()=='Darwin':run(label+'-symbols',[Path(compiler).parent/'dsymutil',binary])
             context=json.loads((e/'debug-context.json').read_text());assert context['archived'] is False and 'revision' not in context
             identity=run(label+'-identity',[emitter,'identity',binary]).stdout.strip().replace('-','').lower()

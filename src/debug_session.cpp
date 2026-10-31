@@ -129,7 +129,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
        !view->getString("image_sha256")||view->getString("image_sha256")->size()!=64||!view->getString("image_uuid")||view->getString("image_uuid")->empty()||!limits)
       throw Error("E_TASK_DEBUG","task debug launch requires its matching020 native debug executable and catalog");
     if(provider){(void)inspectNativeTaskDebugBuildInputs(built);(void)validateNativeTaskDebugManifest(*debug,folder.string());
-      for(const auto &[key,name]:std::vector<std::pair<std::string,std::string>>{{"formatter","lldb_nex.py"},{"dap_adapter","nex_dap.py"}}){auto file=folder/"debugger"/name;if(debug->getString(key)!=file.string()||(debug->getString(key+"_hash")!=hash(readBoundedText(file.string(),8*1048576,"captured debugger script","E_DEBUG"))||debug->getString(key+"_hash")!=hash(readFile(resourceFile("debug/"+name)))))throw Error("E_DEBUG","provider debug scripts differ from their captured build");}
+      for(const auto &[key,name]:std::vector<std::pair<std::string,std::string>>{{"formatter","lldb_nex.py"},{"dap_adapter","nex_dap.py"}}){auto file=folder/"debugger"/name;if((!debug->getString(key)||fs::path(debug->getString(key)->str()).make_preferred()!=fs::path(file).make_preferred())||(debug->getString(key+"_hash")!=hash(readBoundedText(file.string(),8*1048576,"captured debugger script","E_DEBUG"))||debug->getString(key+"_hash")!=hash(readFile(resourceFile("debug/"+name)))))throw Error("E_DEBUG","provider debug scripts differ from their captured build");}
     }
     auto configured=parseTaskLimitsJSON(*limits,"E_DEBUG");
     if(json(llvm::json::Value(taskLimitsJSON(configured)),false)!=json(*limits,false))throw Error("E_DEBUG","task debug limits are not canonical");
@@ -146,7 +146,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
 #ifdef __APPLE__
   if(!available&&!backend){auto result=capture({"xcrun","--find","lldb-dap"});if(result.code==0){dap=llvm::StringRef(result.output).trim().str();available=!dap.empty();}}
 #endif
-  llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
+  llvm::json::Array adapterCommand{pythonProgram(),"-X","utf8",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
   llvm::json::Object launch{{"type",tasks||kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},
     {"program",built.executable},{"cwd",directory},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
   if(tasks)launch["nexTaskDebug"]=true;

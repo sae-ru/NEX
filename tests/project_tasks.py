@@ -1,3 +1,4 @@
+from host_fixture import python_executable
 """Task acceptance and replay must retain the declared physical architecture."""
 import copy,json,os,shutil,subprocess
 from pathlib import Path
@@ -95,8 +96,8 @@ client test fn correct()->unit{assert(initial()==42);}''', newline="\n")
         run=self.task('run','--revision',old);self.assertTrue(run['ok']);self.assertEqual(p.read_text(),changed);self.assertEqual(self.cli('history')['head'],old)
     def test_current_toolchain_catalogue_is_required_and_check_never_executes_its_driver(self):
         doctor=self.cli('doctor');driver=self.root/'compiler';marker=self.root/'driver-ran'
-        driver.write_text('#!/bin/sh\ntouch "'+str(marker)+'"\nexec "'+doctor['native_compiler']+'" "$@"\n', newline="\n");driver.chmod(0o700)
-        config=self.root/'toolchain.json';config.write_text(json.dumps({'schema':'nex.toolchain/1','target':doctor['host'],'compiler':str(driver)}), newline="\n")
+        driver=python_executable(driver,'#!/usr/bin/env python3\nimport os,sys\nfrom pathlib import Path\nPath('+repr(str(marker))+').write_text("ran")\nos.execv('+repr(doctor['native_compiler'])+',['+repr(doctor['native_compiler'])+',*sys.argv[1:]])\n',doctor['native_compiler'])
+        config=self.root/'toolchain.json';config.write_text(json.dumps({**harness.host_toolchain_defaults(doctor),'compiler':str(driver)}), newline="\n")
         self.architecture['configurations']['debug']['toolchain']='toolchain.json';self.save_architecture();task=self.scaffold();self.save_task(task)
         self.assertTrue(all(c.get('toolchain')=='project' for c in task['checks']));self.assertFalse(marker.exists())
         self.assertEqual(self.task('check',ok=False)['code'],'E_TASK_TOOLCHAIN');self.assertFalse(marker.exists())

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Genuine026 history, guarded027 publication and actual stored-code execution."""
 import os
+from host_fixture import run_native, probe_dll_inputs
 from sqlite_fixture import connection as sqlite_connection
 import argparse,ast,collections,hashlib,json,os,platform,re,shutil,sqlite3,subprocess,tempfile
 from pathlib import Path
@@ -13,7 +14,7 @@ assert hashlib.sha256(sql).hexdigest()==meta['sql_sha256'] and meta['producer'][
 report={'ok':False,'public027_enabled':False,'cases':[],'commands':[]}
 def save(): (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def run(label,command,allowed=(0,)):
-    r=subprocess.run(list(map(str,command)),text=True,capture_output=True,timeout=180,env={**os.environ,'NEX_RESOURCE_DIR':str(root)})
+    r=run_native(command,text=True,capture_output=True,timeout=180,env={**os.environ,'NEX_RESOURCE_DIR':str(root)})
     (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
     report['commands'].append({'name':label,'exit_code':r.returncode});save()
     assert r.returncode in allowed,(label,r.returncode,r.stdout[-3000:],r.stderr[-5000:]);return r
@@ -137,8 +138,8 @@ native=0;node=0
 for name,d,revision in [('same',simple,applied['revision']),('typed',typed,typed_result['revision']),('modular',modular,modular_result['revision'])]:
     for optimization in ['0','2']:
         emitted=out/(name+'-O'+optimization);v=call(name+'-emit'+optimization,d,mode='emit',revision=revision,output=str(emitted),triple=triple,layout=layout,optimized=optimization=='2');assert v['descriptor_abi']==0x4e45585400002702 and v['ast']==v['ir'] and v['ast']['stdout']=='42\n'
-        library=emitted/('program.dylib' if platform.system()=='Darwin' else 'program.so');flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC']
-        run(name+'-link'+optimization,[a.compiler,'-O'+optimization,*flags,emitted/'program.ll','-o',library])
+        library=emitted/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so');flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC']
+        run(name+'-link'+optimization,[a.compiler,'-O'+optimization,*flags,emitted/'program.ll',*(probe_dll_inputs(binary,emitted) if os.name=='nt' else []),'-o',library])
         for workers in [1,4]:
             r=run(name+'-native'+optimization+'-'+str(workers),[binary,library,'workers',workers]);assert r.stdout=='42\n' and not r.stderr,(r.stdout,r.stderr);native+=1
         runner=emitted/'run.mjs';runner.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);\n", newline="\n")

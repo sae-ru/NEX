@@ -35,14 +35,16 @@ def python_executable(path, source, compiler):
     script=path.with_suffix('.py');script.write_text(source,encoding='utf-8',newline='\n')
     repo=Path(__file__).resolve().parents[1]
     launcher=path.with_suffix('.cpp')
+    embedded='import sys;sys.argv[0]=sys.argv.pop(1);exec(compile('+repr(source)+',sys.argv[0],"exec"))'
     launcher.write_text('#include "host_test.h"\nint wmain(int argc,wchar_t **argv){'
-        'std::vector<std::string> args={"-c",'+json.dumps(source,ensure_ascii=False)+'};'
+        'wchar_t module[32768];auto size=GetModuleFileNameW(nullptr,module,32768);if(!size||size>=32768)return 124;'
+        'std::vector<std::string> args={"-c",'+json.dumps(embedded,ensure_ascii=False)+',nexrt::platform::utf8(std::wstring(module,size))};'
         'for(int i=1;i<argc;++i)args.push_back(nexrt::platform::utf8(argv[i]));'
         'return int(nex_test::run(std::filesystem::path(nexrt::platform::wide('
         +json.dumps(sys.executable)+')),args,true,true));}\n',encoding='utf-8',newline='\n')
     command=[str(compiler),'-std=c++20','-O2','-static','-municode','-I'+str(repo/'tests'),
              '-I'+str(repo/'runtime'),str(launcher),'-o',str(path)]
-    result=subprocess.run(command,capture_output=True,text=True,timeout=120)
+    result=run_native(command,capture_output=True,text=True,timeout=120)
     if result.returncode:raise RuntimeError(result.stdout+result.stderr)
     # Build-tool probes derive their matching RC tools beside the driver.
     for name in ('llvm-rc.exe','llvm-cvtres.exe'):
@@ -53,6 +55,18 @@ def python_executable(path, source, compiler):
 
 def exit_code(value):
     return int(value or 0)&(0xffffffff if os.name=='nt' else 0xff)
+
+
+def sparse_file(stream):
+    if os.name!='nt':return
+    import ctypes as C
+    from ctypes import wintypes as W
+    import msvcrt
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.DeviceIoControl.argtypes=[W.HANDLE,W.DWORD,C.c_void_p,W.DWORD,C.c_void_p,W.DWORD,C.POINTER(W.DWORD),C.c_void_p]
+    kernel.DeviceIoControl.restype=W.BOOL
+    count=W.DWORD()
+    if not kernel.DeviceIoControl(msvcrt.get_osfhandle(stream.fileno()),0x900c4,None,0,None,0,C.byref(count),None):raise C.WinError(C.get_last_error())
 
 
 def control_event(process, kind):
@@ -82,17 +96,43 @@ def interrupt_task(process):
     else:process.send_signal(signal.SIGINT)
 
 
+
+def copy_link_image(source, destination):
+    """Copy a genuine DLL and the import archive needed by later fixture links."""
+    import shutil
+    source=Path(source);destination=Path(destination)
+    result=shutil.copyfile(source,destination)
+    if os.name=='nt' and source.suffix.lower()=='.dll' and Path(str(source)+'.a').is_file():
+        shutil.copyfile(str(source)+'.a',str(destination)+'.a')
+    return result
+
 def run_native(arguments, *args, **kwargs):
     """Compile the same native fixture with the Windows SDK's real link closure."""
     import subprocess
-    command=list(map(str,arguments));rename=None
+    command=list(map(str,arguments));rename=None;link_stage=None;link_capture=None
     if os.name=='nt':
         program=Path(command[0])
         if program.parent!=Path('.') and not program.is_file() and program.with_name(program.name+'.exe').is_file():
             command[0]=str(program.with_name(program.name+'.exe'))
-    compiling=any(value in command for value in ('-shared','-c','-emit-llvm')) or any(value.startswith('-std=') for value in command)
+        if Path(command[0]).name.lower() in ('openssl','openssl.exe') and 'req' in command and all(flag in command for flag in ('-out','-keyout')):
+            outputs=[command[command.index(flag)+1] for flag in ('-out','-keyout')]
+            if any(not value.isascii() for value in outputs):
+                import shutil
+                import tempfile
+                with tempfile.TemporaryDirectory(prefix='nex-tls-fixture-') as directory:
+                    if not directory.isascii():raise ValueError('the selected OpenSSL CLI requires an ASCII staging directory')
+                    copies=[]
+                    for flag in ('-out','-keyout'):
+                        index=command.index(flag)+1;destination=Path(command[index])
+                        if not destination.is_absolute():destination=Path(kwargs.get('cwd',Path.cwd()))/destination
+                        staged=Path(directory)/(flag[1:]+'.pem');copies.append((staged,destination));command[index]=str(staged)
+                    result=subprocess.run(command,*args,**kwargs)
+                    if result.returncode==0:
+                        for source,destination in copies:shutil.copy2(source,destination)
+                    return result
+    compiling=any(value in command for value in ('-shared','-c','-emit-llvm')) or any(value.startswith('-std=') for value in command) or ('-o' in command and any(value.lower().endswith(('.o','.obj','.a','.ll','.c','.cpp')) for value in command[1:]))
     if os.name=='nt' and compiling:
-        command=[value.replace('--build-id=sha1','--build-id') for value in command if value!='-ldl']
+        command=[value.replace('--build-id=sha1','--build-id') for value in command if value!='-ldl' and not value.startswith(('-Wl,-soname,','-Wl,-rpath,','-Wl,-z,'))]
         host_exports='-Wl,--export-dynamic' in command
         command=[value for value in command if value!='-Wl,--export-dynamic']
         for value in ('--export-dynamic','-export_dynamic'):
@@ -110,8 +150,17 @@ def run_native(arguments, *args, **kwargs):
         command+=['-I'+str(Path(__file__).resolve().parent)]
         linking='-o' in command and not any(value in command for value in ('-c','-E','-S'))
         if linking:
+            output_index=command.index('-o')+1;requested=Path(command[output_index])
+            if not str(requested).isascii() or '%' in str(requested):
+                import tempfile
+                import shutil
+                directory=Path(tempfile.gettempdir())
+                while '%' in str(directory) or not str(directory).isascii():directory=directory.parent
+                link_stage=tempfile.TemporaryDirectory(prefix='nex-fixture-link-',dir=directory)
+                staged=Path(link_stage.name)/requested.name
+                command[output_index]=str(staged);link_capture=(staged,requested)
             command=[str(Path(value).with_name(Path(value).name+'.a'))
-                     if value.lower().endswith('.dll') and Path(value+'.a').is_file() else value for value in command]
+                     if index!=output_index and value.lower().endswith('.dll') and Path(value+'.a').is_file() else value for index,value in enumerate(command)]
             for value in ('-static','-Wl,--stack,8388608','-lntdll','-lbcrypt','-ladvapi32',
                           '-lcrypt32','-lws2_32','-lsecur32','-ldbghelp','-ldwmapi'):
                 if value not in command:command.append(value)
@@ -120,15 +169,22 @@ def run_native(arguments, *args, **kwargs):
                 command+=['-Wl,--export-all-symbols','-Xlinker','--out-implib','-Xlinker',
                           str(output.parent/('lib'+output.stem+'.dll.a'))]
             if '-shared' in command:
+                if any(value.endswith('entry.def') for value in command):command.append('-Wl,--export-all-symbols')
                 index=command.index('-o')+1;output=Path(command[index])
                 command+=['-Xlinker','--out-implib','-Xlinker',str(output)+'.a']
                 if not output.suffix:
                     rename=(output.with_name(output.name+'.dll'),output)
                     command[index]=str(rename[0])
-            else:command.append(windows_fixture_resource(command[0]))
+            else:command.extend(['-x','none',windows_fixture_resource(command[0])])
         if isinstance(arguments,list):arguments[:]=command
     result=subprocess.run(command,*args,**kwargs)
     if rename and result.returncode==0:rename[0].replace(rename[1])
+    if link_capture and result.returncode==0:
+        source,destination=link_capture
+        if not source.is_file() and source.with_name(source.name+'.exe').is_file():source=source.with_name(source.name+'.exe')
+        shutil.copy2(source,destination)
+        if Path(str(source)+'.a').is_file():shutil.copy2(str(source)+'.a',str(destination)+'.a')
+    if link_stage:link_stage.cleanup()
     return result
 
 
@@ -245,3 +301,49 @@ def private_permissions(path, mode):
         if descriptor:kernel.LocalFree(descriptor)
         if token:kernel.CloseHandle(token)
         kernel.CloseHandle(file)
+
+
+def windows_workload_descendant(root, compiler, environment, finite=False):
+    'Create a genuine native heartbeat child inside the supervisor Job.'
+    import subprocess
+    root=Path(root);source=root/'workload-descendant.c';image=root/'workload-descendant.exe'
+    source.write_text(r'''#include <windows.h>
+int main(void){wchar_t path[32768];if(!GetEnvironmentVariableW(L"NEX_SOURCE_FFI_MARKER",path,32768))return 2;
+for(;;){HANDLE file=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,0,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);if(file==INVALID_HANDLE_VALUE)return 3;DWORD size=0;char event='H';if(!WriteFile(file,&event,1,&size,0)||size!=1)return 4;CloseHandle(file);Sleep(20);}}
+''',encoding='utf-8',newline='\n')
+    result=run_native([compiler,'-x','c','-std=c11',source,'-o',image],capture_output=True,text=True,timeout=120)
+    if result.returncode:raise RuntimeError(result.stdout+result.stderr)
+    environment['NEX_WORKLOAD_CHILD_EXE']=str(image)
+    code=r'''mark('C');BOOL in_job=FALSE;if(!IsProcessInJob(GetCurrentProcess(),0,&in_job)||!in_job)return NEX_FFI_INTERNAL;
+wchar_t child_path[32768],file_path[32768],pending[32768];if(!GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILD_EXE",child_path,32768)||!GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILDREN",file_path,32768))return NEX_FFI_ARGUMENT;
+if(GetFileAttributesW(file_path)==INVALID_FILE_ATTRIBUTES){if(wcslen(file_path)>32700)return NEX_FFI_ARGUMENT;wcscpy(pending,file_path);wcscat(pending,L".pending");HANDLE file=CreateFileW(pending,GENERIC_WRITE,0,0,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,0);if(file==INVALID_HANDLE_VALUE)return NEX_FFI_INTERNAL;
+STARTUPINFOW startup={0};startup.cb=sizeof(startup);PROCESS_INFORMATION process={0};if(!CreateProcessW(child_path,0,0,0,FALSE,CREATE_NO_WINDOW,0,0,&startup,&process)){CloseHandle(file);return NEX_FFI_INTERNAL;}DWORD child=process.dwProcessId;CloseHandle(process.hThread);CloseHandle(process.hProcess);
+DWORD parent=0;HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);PROCESSENTRY32W row={0};row.dwSize=sizeof(row);if(snapshot!=INVALID_HANDLE_VALUE){if(Process32FirstW(snapshot,&row))do{if(row.th32ProcessID==GetCurrentProcessId()){parent=row.th32ParentProcessID;break;}}while(Process32NextW(snapshot,&row));CloseHandle(snapshot);}if(!parent){CloseHandle(file);return NEX_FFI_INTERNAL;}
+char line[128];int count=snprintf(line,sizeof(line),"%lu %lu %lu\n",(unsigned long)GetCurrentProcessId(),(unsigned long)parent,(unsigned long)child);DWORD size=0;BOOL written=WriteFile(file,line,(DWORD)count,&size,0);CloseHandle(file);if(!written||size!=(DWORD)count||!MoveFileExW(pending,file_path,MOVEFILE_WRITE_THROUGH))return NEX_FFI_INTERNAL;}
+'''
+    return code+(r'if(getenv("NEX_WORKLOAD_INTERRUPT")){for(;;)Sleep(1000);}Sleep(250);' if finite else 'for(;;)Sleep(1000);')
+
+
+def windows_live_descendants(record, terminate=False):
+    import ctypes as C
+    from ctypes import wintypes as W
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.OpenProcess.argtypes=[W.DWORD,W.BOOL,W.DWORD];kernel.OpenProcess.restype=W.HANDLE
+    kernel.WaitForSingleObject.argtypes=[W.HANDLE,W.DWORD];kernel.WaitForSingleObject.restype=W.DWORD
+    kernel.TerminateProcess.argtypes=[W.HANDLE,W.UINT];kernel.TerminateProcess.restype=W.BOOL
+    kernel.CloseHandle.argtypes=[W.HANDLE]
+    values=list(map(int,Path(record).read_text().split()));live=[]
+    if len(values)!=3:raise ValueError('invalid fixture process record')
+    for pid in (values[0],values[2]):
+        handle=kernel.OpenProcess(0x100000|(1 if terminate else 0),False,pid)
+        if not handle:
+            if C.get_last_error()==87:continue
+            raise C.WinError(C.get_last_error())
+        try:
+            if kernel.WaitForSingleObject(handle,0)==0x102:
+                live.append(pid)
+                if terminate:
+                    if not kernel.TerminateProcess(handle,137):raise C.WinError(C.get_last_error())
+                    kernel.WaitForSingleObject(handle,2000)
+        finally:kernel.CloseHandle(handle)
+    return live

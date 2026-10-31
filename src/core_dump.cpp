@@ -26,6 +26,11 @@
 
 namespace nex {
 namespace {
+#ifdef _WIN32
+constexpr const char *applicationFile="app.exe";
+#else
+constexpr const char *applicationFile="app";
+#endif
 namespace fs=std::filesystem;
 using JSON=llvm::json::Value;using Object=llvm::json::Object;
 constexpr uint64_t coreLimit=uint64_t(32)*1024*1024*1024;
@@ -103,8 +108,8 @@ Object capsuleIdentity(){return Object{{"compiler_build",NEX_BUILD_ID},{"toolcha
 JSON capsuleWork(Object request){
   Temporary temporary{createTemporaryDirectory("nex-core-files")};
   auto file=temporary.path/"request.json";writeFile(file.string(),json(std::move(request)));
-  const char *python=std::getenv("NEX_PYTHON");
-  auto child=runTaskProcess({python?python:"python3",resourceFile("tools/core_capsule.py"),file.string()},temporary.path.string(),{},900,(temporary.path/"logs").string());
+
+  auto child=runTaskProcess({pythonProgram(),"-X","utf8",resourceFile("tools/core_capsule.py"),file.string()},temporary.path.string(),{},900,(temporary.path/"logs").string());
   if(child.timedOut||child.outputLimit||child.interrupted)throw Error("E_CORE_CAPSULE","core capsule helper exceeded its execution/output limit");
   if(child.process.output.empty())throw Error("E_CORE_CAPSULE","core capsule helper returned no report: "+child.process.errors.substr(0,4096));
   auto result=parseNativeManifest(child.process.output);const auto &o=object(result);
@@ -130,10 +135,10 @@ JSON inspectCore(const CoreOptions &options){
   auto sources=m.getArray("sources");if(!sources||sources->size()!=expectedSources.size())throw Error("E_CORE_BUILD","core frozen source list differs");
   for(const auto &entry:*sources){const auto &source=object(entry);auto digest=hash(text(required(source,"projection"),16*1048576));auto found=expectedSources.find(digest);if(found==expectedSources.end()||digest!=required(source,"hash"))throw Error("E_CORE_BUILD","core frozen source projection differs");expectedSources.erase(found);}
   auto image=fs::absolute(required(m,"program")).lexically_normal();
-  if(image.parent_path()!=folder||image.filename()!="app"||folder.filename().string()!=required(m,"build_key"))throw Error("E_CORE_BUILD","core inspection requires its content-addressed retained executable build workspace");
+  if(image.parent_path()!=folder||image.filename()!=applicationFile||folder.filename().string()!=required(m,"build_key"))throw Error("E_CORE_BUILD","core inspection requires its content-addressed retained executable build workspace");
   if(!options.recordedProgram.empty()){
     fs::path recorded(options.recordedProgram);
-    if(!recorded.is_absolute()||recorded.lexically_normal()!=recorded||recorded.filename()!="app"||recorded.parent_path().filename()!=folder.filename())throw Error("E_CORE_CAPSULE","relocated core requires its original executable build key");
+    if(!recorded.is_absolute()||recorded.lexically_normal()!=recorded||recorded.filename()!=applicationFile||recorded.parent_path().filename()!=folder.filename())throw Error("E_CORE_CAPSULE","relocated core requires its original executable build key");
   }
   auto build=read(folder/"build.json",8*1048576);const auto &b=object(build);
   for(const auto *key:{"revision","compiler_build","profile","target"})if(required(b,key)!=required(m,key))throw Error("E_CORE_BUILD",std::string("debug/build identity differs: ")+key);
@@ -147,7 +152,7 @@ JSON inspectCore(const CoreOptions &options){
   std::vector<std::pair<fs::path,std::string>> ownedHashes;
   if(b.getString("completion_schema")=="nex.native-completion/3"){
     const auto original=options.originalProgram.empty()?image:fs::path(options.originalProgram);
-    if(!original.is_absolute()||original.lexically_normal()!=original||original.filename()!="app"||original.parent_path().filename()!=folder.filename())
+    if(!original.is_absolute()||original.lexically_normal()!=original||original.filename()!=applicationFile||original.parent_path().filename()!=folder.filename())
       throw Error("E_CORE_BUILD","invalid original shared-image application path");
     auto link=read(folder/"image-inputs.json",8*1048576);auto captured=object(link).getArray("images"),projected=m.getArray("owned_images");
     if(!captured||!projected||captured->size()!=projected->size()||captured->empty()||captured->size()>129)
@@ -160,8 +165,8 @@ JSON inspectCore(const CoreOptions &options){
     fs::path originalImageBase;bool relocated=!options.recordedProgram.empty();
     for(size_t i=0;i<captured->size();++i){
       const auto &record=object((*captured)[i]);auto current=Object(record);fs::path old(required(record,"path"));
-      auto relative=fs::path("images")/old.filename();auto path=folder/relative;
-      auto base=old.parent_path().parent_path();if(originalImageBase.empty())originalImageBase=base;
+      auto relative=old.extension()==".dll"?old.filename():fs::path("images")/old.filename();auto path=folder/relative;
+      auto base=old.extension()==".dll"?old.parent_path():old.parent_path().parent_path();if(originalImageBase.empty())originalImageBase=base;
       std::error_code directoryError;
       if(!old.is_absolute()||old.lexically_normal()!=old||old.parent_path().filename()!="images"||base.filename()!=folder.filename()||base!=originalImageBase||
          (!relocated&&!fs::equivalent(base,folder,directoryError))||!expectedImages.contains(relative.generic_string())||!seenImages.insert(relative.generic_string()).second)
@@ -273,6 +278,9 @@ JSON exportCoreCapsule(const std::string &directory,const CoreOptions &options){
   int status=::renameatx_np(AT_FDCWD,staging.path.c_str(),AT_FDCWD,destination.c_str(),RENAME_EXCL);
 #elif defined(__linux__) && defined(SYS_renameat2)
   int status=int(::syscall(SYS_renameat2,AT_FDCWD,staging.path.c_str(),AT_FDCWD,destination.c_str(),RENAME_NOREPLACE));
+#elif defined(_WIN32)
+  int status=MoveFileExW(staging.path.c_str(),destination.c_str(),MOVEFILE_WRITE_THROUGH)?0:-1;
+  if(status)errno=GetLastError()==ERROR_ALREADY_EXISTS||GetLastError()==ERROR_FILE_EXISTS?EEXIST:EIO;
 #else
   int status=-1;
   errno=ENOTSUP;

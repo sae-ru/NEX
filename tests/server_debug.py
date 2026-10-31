@@ -81,6 +81,13 @@ server fn handle(request:http::Request)->http::Response!{db}{
 
     def test_debug_argument_limits_reject_before_build_cache_or_graph(self):
         for arguments in [['x']*129,['x'*4097],['x'*4096]*17]:
+            if os.name=='nt' and sum(len(arg)+1 for arg in arguments)>32767:
+                # CreateProcess rejects this vector before NEX can run.
+                with self.assertRaises(OSError) as caught:
+                    self.cli('project','--kind','debug','--component','service','--json','--',*arguments,machine=False,ok=False)
+                self.assertEqual(caught.exception.winerror,206)
+                self.assertFalse((self.root/'.nex').exists())
+                continue
             process=self.cli('project','--kind','debug','--component','service','--json','--',*arguments,machine=False,ok=False)
             self.assertEqual(json.loads(process.stdout)['code'],'E_OPTION')
             self.assertFalse((self.root/'.nex').exists())

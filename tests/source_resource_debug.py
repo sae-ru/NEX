@@ -47,7 +47,7 @@ def main():
   (bundle/'NOTICE').write_text('NEX actual resource debugger fixture\n', newline="\n")
   manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle/name)} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
   (bundle/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n");pin=sha(bundle/'manifest.json')
-  host=PROJECT/'operator \"quoted\" 🧠.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}},indent=2)+'\n', newline="\n")
+  host=PROJECT/("operator 'quoted' 🧠.json" if os.name=="nt" else 'operator \"quoted\" 🧠.json');host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}},indent=2)+'\n', newline="\n")
   source.write_text(text.replace('PIN',pin), newline="\n")
   import re
   sys.path.insert(0,str(RESOURCE/'tools'))

@@ -113,7 +113,7 @@ try:
         path.write_text(json.dumps(source) if isinstance(source, dict) else source, newline="\n")
         sources[name] = path
         staged = json.loads(run(name + '-stage', [probe, 'stage', path, root / (name + '-staged'), '0.24', triple, layout]))
-        binary = root / (name + '-native')
+        binary = root / (name + ('-native.exe' if os.name=='nt' else '-native'))
         run(name + '-link', [clang, *flags, '-DNEX_TEST_DESCRIPTOR=' + staged['descriptor'],
                             source_root / 'tests/task_stream_control_native.cpp', staged['llvm'],
                             *objects, *([] if sys.platform == 'darwin' else ['-ldl']), '-o', binary])

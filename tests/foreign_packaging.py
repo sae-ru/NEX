@@ -1,5 +1,5 @@
 """Real pinned module closures, recursive relocation and independent execution."""
-from host_fixture import nonregular
+from host_fixture import nonregular, run_native
 from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
@@ -45,7 +45,7 @@ class ForeignPackaging(harness.ToolchainCase):
         driver = self.cli('doctor')['native_compiler']
         dependencies = bundle / 'deps' if inventoried else self.root / 'original dependencies'
         dependencies.mkdir()
-        suffix = '.dylib' if platform.system() == 'Darwin' else '.so'
+        suffix = '.dll' if os.name == 'nt' else '.dylib' if platform.system() == 'Darwin' else '.so'
         leaf, helper = [dependencies / ('lib' + name + suffix) for name in ('leaf', 'helper')]
         leaf_source = self.root / 'leaf.c'
         helper_source = self.root / 'helper.c'
@@ -55,9 +55,9 @@ class ForeignPackaging(harness.ToolchainCase):
             arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', str(source), '-x', 'none', *map(str, inputs), '-o', str(output)]
             if platform.system() == 'Darwin':
                 arguments += ['-Wl,-install_name,' + str(output)]
-            else:
+            elif os.name != 'nt':
                 arguments += ['-Wl,-soname,' + output.name, '-Wl,-rpath,' + str(dependencies)]
-            result = subprocess.run(arguments, capture_output=True, text=True, timeout=60)
+            result = run_native(arguments, capture_output=True, text=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         compile(leaf_source, leaf)
         compile(helper_source, helper, [leaf])
@@ -68,12 +68,12 @@ class ForeignPackaging(harness.ToolchainCase):
             c = c.replace('*o=v[0];return NEX_FFI_OK;', 'static int64_t counter=0;return a->make_i64(c,++counter,o);')
         producer.write_text(c, newline="\n")
         arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden', '-I' + str(harness.REPO / 'runtime'), str(producer), '-x', 'none', str(helper), '-o', str(bundle / 'module')]
-        if platform.system() != 'Darwin':
+        if platform.system() not in ('Darwin','Windows'):
             arguments += ['-Wl,-rpath,' + str(dependencies)]
-        result = subprocess.run(arguments, capture_output=True, text=True, timeout=60)
+        result = run_native(arguments, capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         manifest = json.loads((bundle / 'manifest.json').read_text())
-        names = ['module', 'NOTICE'] + ([str(p.relative_to(bundle)) for p in (helper, leaf)] if inventoried else [])
+        names = ['module', 'NOTICE'] + ([p.relative_to(bundle).as_posix() for p in (helper, leaf)] if inventoried else [])
         manifest['files'] = [{'path': name, 'sha256': foreign_bundle.sha256(bundle / name)} for name in names]
         (bundle / 'manifest.json').write_text(json.dumps(manifest), newline="\n")
         self.pin = foreign_bundle.sha256(bundle / 'manifest.json')
@@ -134,7 +134,7 @@ class ForeignPackaging(harness.ToolchainCase):
         output.rename(moved)
         result = subprocess.run([built['executable'], '--nex-foreign', str(moved / 'host.json')],
                                 cwd='/', capture_output=True, text=True, timeout=20,
-                                env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'})
+                                env=packaging_harness.deployed_environment())
         self.assertEqual((result.returncode, result.stdout), (0, '42\n'), result.stderr)
         final_bundle = moved / host['libraries']['test']['directory']
         manifest = json.loads((final_bundle / 'manifest.json').read_text())
@@ -233,7 +233,7 @@ class ForeignPackaging(harness.ToolchainCase):
         moved = self.root / 'independent 🧠 %'
         output.rename(moved)
         link = self.root / 'entry-link'
-        link.symlink_to(moved / 'bin/app')
+        link.symlink_to(moved / packaging_harness.APP)
         executed = subprocess.run([str(link)], cwd='/', capture_output=True, text=True, timeout=20,
                                   env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent', 'NEX_FOREIGN_CONFIG': '/not-an-authority'})
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
@@ -271,7 +271,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         (self.root / 'assets/index.html').write_text('Built fixture browser assets', newline="\n")
         moved = self.root / 'moved server'
         output.rename(moved)
-        process = http_harness.HTTP.launch(self, str(moved / 'bin/app'), auth, env=self.env)
+        process = http_harness.HTTP.launch(self, str(moved / packaging_harness.APP), auth, env=self.env)
         try:
             self.assertEqual(http_harness.HTTP.request(self, '/api/value')[0], 401)
             self.assertEqual(self.events(), '')
@@ -286,7 +286,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.marker.unlink()
         # Default packaged authority must also be kept outside the static root.
         (moved / 'index.html').write_text('Cannot expose the package as public assets', newline="\n")
-        rejected = subprocess.run([str(moved / 'bin/app'), '--auth', str(auth),
+        rejected = subprocess.run([str(moved / packaging_harness.APP), '--auth', str(auth),
                                    '--database', str(self.root / 'private.sqlite'), '--static', str(moved)],
                                   capture_output=True, text=True, timeout=20, env={**os.environ, **self.env})
         self.assertNotEqual(rejected.returncode, 0)
@@ -334,7 +334,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertEqual(bundle['files']['native.nex'], definition.replace(token, json.dumps(changes[0]['manifest_sha256'])))
         self.assertEqual(bundle['files']['main.nex'], source)
         self.assertEqual(native.read_text(), definition)
-        executed = subprocess.run([str(output / 'bin/app')], capture_output=True, text=True, timeout=20)
+        executed = subprocess.run([str(output / packaging_harness.APP)], capture_output=True, text=True, timeout=20)
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
 
     def test_operator_catalogue_matches_native_regular_file_and_size_limits(self):
@@ -432,8 +432,8 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         shutil.rmtree(dependencies)
         self.file.unlink()
         shutil.rmtree(self.root / '.nex')
-        result = subprocess.run([str(output / 'bin/app')], cwd='/', capture_output=True, text=True, timeout=20,
-                                env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'})
+        result = subprocess.run([str(output / packaging_harness.APP)], cwd='/', capture_output=True, text=True, timeout=20,
+                                env=packaging_harness.deployed_environment())
         self.assertEqual((result.returncode, result.stdout), (0, expected), result.stderr)
 
     def test_aliases_keep_shared_module_state_despite_different_component_notices(self):

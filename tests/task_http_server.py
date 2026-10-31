@@ -1,5 +1,5 @@
 """Real public task HTTP requests: control, identity, file authority and cleanup."""
-from host_fixture import stop_server
+from host_fixture import stop_server, run_native
 import argparse,concurrent.futures,contextlib,hashlib,http.client,json,os,queue,re,signal,socket,ssl,subprocess,tempfile,threading,time,traceback
 from pathlib import Path
 
@@ -17,7 +17,7 @@ def require(value,message):
  global checks
  checks+=1;assert value,message
 def run(name,argv,expected=0,timeout=600):
- report['state']=name;save();p=subprocess.run(list(map(str,argv)),cwd=root,capture_output=True,text=True,timeout=timeout)
+ report['state']=name;save();p=run_native(list(map(str,argv)),cwd=root,capture_output=True,text=True,timeout=timeout)
  (root/(name+'.stdout')).write_text(p.stdout, newline="\n");(root/(name+'.stderr')).write_text(p.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':p.returncode,'expected':expected});save()
  require(p.returncode==expected,(name,p.returncode,p.stdout[-2000:],p.stderr[-3000:]));return p

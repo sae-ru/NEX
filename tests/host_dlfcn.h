@@ -3,6 +3,7 @@
 #include "nex_platform.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <psapi.h>
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
@@ -22,7 +23,7 @@ inline int dladdr(const void *address,Dl_info *info){
   HMODULE module=nullptr;
   if(!address||!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,reinterpret_cast<LPCWSTR>(address),&module))return 0;
   wchar_t path[32768];auto size=GetModuleFileNameW(module,path,32768);if(!size||size>=32768)return 0;
-  thread_local std::string name;name=nexrt::platform::utf8(std::wstring(path,size));
+  thread_local std::unordered_map<HMODULE,std::string> names;auto &name=names[module];auto current=nexrt::platform::utf8(std::wstring(path,size));if(name!=current)name=std::move(current);
   *info={name.c_str(),module,nullptr,nullptr};return 1;
 }
 inline void *dlopen(const char *path,int){

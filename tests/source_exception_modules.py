@@ -1,5 +1,5 @@
 """Actual source-checked private025 static/shared modules, one common runtime."""
-from host_fixture import run_native
+from host_fixture import run_native, copy_link_image
 import os
 import argparse,hashlib,json,os,platform,re,shutil,subprocess,tempfile
 from pathlib import Path
@@ -44,9 +44,45 @@ def main():
   obj=cache/(name+'.o');stamp=obj.with_suffix('.recipe.json');recipe={'compiler':compiler_hash,'source':hashlib.sha256((runtime/name).read_bytes()).hexdigest(),'headers':headers,'flags':flags}
   if not (obj.exists() and stamp.exists() and json.loads(stamp.read_text())==recipe):run('compile-'+name,[compiler,*flags,'-c',runtime/name,'-o',obj]);stamp.write_text(json.dumps(recipe,sort_keys=True)+'\n', newline="\n")
   objects.append(obj)
- (out/'host.cpp').write_text('#include "nex_host.h"\n#include <cstdio>\n#include <cstdlib>\n#include <dirent.h>\n\n#include <cstring>\n#ifdef __APPLE__\n#include <mach-o/dyld.h>\n#else\n#include <link.h>\n#endif\nstatic unsigned runtimeImages(){unsigned count=0;\n#ifdef __APPLE__\n for(uint32_t i=0;i<_dyld_image_count();++i)if(std::strstr(_dyld_get_image_name(i),"libnex-private-runtime.dylib"))++count;\n#else\n dl_iterate_phdr([](struct dl_phdr_info *image,size_t,void *opaque){if(std::strstr(image->dlpi_name,"libnex-private-runtime.so"))++*static_cast<unsigned*>(opaque);return 0;},&count);\n#endif\n return count;}\n\nextern "C" int nex_private_modules_entry(int,const char *const*);\nstatic long files(){auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!=\'.\')++n;closedir(d);return n;}\nint main(int argc,const char *const *argv){auto before=nexrt::liveObjects.load();auto descriptors=files();auto result=nex_private_modules_entry(argc,argv);nex_runtime_finish();bool clean=nexrt::liveObjects.load()==before&&files()==descriptors&&runtimeImages()==NEX_PRIVATE_EXPECT_SHARED;std::fprintf(stderr,"NEX_PRIVATE_MODULE_CLEANUP {\\"ok\\":%s,\\"managed_live\\":%llu,\\"runtime_finish\\":true,\\"file_delta\\":%ld,\\"runtime_images\\":%u}\\n",clean?"true":"false",(unsigned long long)(nexrt::liveObjects.load()-before),files()-descriptors,runtimeImages());return clean?result:71;}\n', newline="\n");
+ (out/'host.cpp').write_text(r'''#include "nex_host.h"
+#include <cstdio>
+#include <cstdlib>
+#ifdef _WIN32
+#include "host_images.h"
+#else
+#include <dirent.h>
+#endif
+
+#include <cstring>
+#ifdef _WIN32
+#include "host_images.h"
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#else
+#include <link.h>
+#endif
+static unsigned runtimeImages(){unsigned count=0;
+#ifdef _WIN32
+ count=nex_test::imageCount("libnex-private-runtime.dll");
+#elif defined(__APPLE__)
+ for(uint32_t i=0;i<_dyld_image_count();++i)if(std::strstr(_dyld_get_image_name(i),"libnex-private-runtime.dylib"))++count;
+#else
+ dl_iterate_phdr([](struct dl_phdr_info *image,size_t,void *opaque){if(std::strstr(image->dlpi_name,"libnex-private-runtime.so"))++*static_cast<unsigned*>(opaque);return 0;},&count);
+#endif
+ return count;}
+
+extern "C" int nex_private_modules_entry(int,const char *const*);
+static long files(){
+#ifdef _WIN32
+ return static_cast<long>(nex_test::files().size());
+#else
+auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;
+#endif
+}
+int main(int argc,const char *const *argv){auto before=nexrt::liveObjects.load();auto descriptors=files();auto result=nex_private_modules_entry(argc,argv);nex_runtime_finish();bool clean=nexrt::liveObjects.load()==before&&files()==descriptors&&runtimeImages()==NEX_PRIVATE_EXPECT_SHARED;std::fprintf(stderr,"NEX_PRIVATE_MODULE_CLEANUP {\"ok\":%s,\"managed_live\":%llu,\"runtime_finish\":true,\"file_delta\":%ld,\"runtime_images\":%u}\n",clean?"true":"false",(unsigned long long)(nexrt::liveObjects.load()-before),files()-descriptors,runtimeImages());return clean?result:71;}
+''', newline="\n");
  for mode,expected in [('static',0),('shared-fixed',1)]:run('compile-host-'+mode,[compiler,*flags,'-DNEX_PRIVATE_EXPECT_SHARED='+str(expected),'-c',out/'host.cpp','-o',out/('host-'+mode+'.o')])
- suffix='.dylib' if mac else '.so';shared_runtime=cache/('libnex-private-runtime'+suffix);run('runtime-shared',[compiler,'-dynamiclib' if mac else '-shared',*objects,crypto,'-pthread',*(['-Wl,-install_name,@rpath/'+shared_runtime.name] if mac else ['-ldl','-Wl,-soname,'+shared_runtime.name]),'-o',shared_runtime])
+ suffix='.dll' if os.name=='nt' else '.dylib' if mac else '.so';shared_runtime=cache/('libnex-private-runtime'+suffix);run('runtime-shared',[compiler,'-dynamiclib' if mac else '-shared',*objects,crypto,'-pthread',*(['-Wl,-install_name,@rpath/'+shared_runtime.name] if mac else ['-ldl','-Wl,-soname,'+shared_runtime.name]),'-o',shared_runtime])
  def materialize(directory,case,pin):
   directory.mkdir();sources={name+'/main.nex':case[name].replace('DECL',DECL.replace('@PIN@',pin)) for name in ['leaf','mid','app'] if name in case}
   for name,text in sources.items():file=directory/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(text, newline="\n")
@@ -76,7 +112,7 @@ def main():
    model=directory/mode;model.mkdir();arch=model/'architecture.json';arch.write_text(json.dumps({'schema':'nex.private-task-architecture/1','mode':mode,'application':'app','components':components})+'\n', newline="\n");plan=json.loads(run(name+'-'+mode+'-plan',[probe,'plan',ctx,arch]).stdout);assert plan['archived'] is False and 'revision' not in plan and plan['descriptor_abi']==0x4e45585400002502
    for optimization in ['0','2']:
     label=name+'-'+mode+'-O'+optimization;e=model/('O'+optimization);e.mkdir();native_objects={};records={};metadata=[]
-    if mode=='shared-fixed':shutil.copyfile(shared_runtime,e/shared_runtime.name)
+    if mode=='shared-fixed':copy_link_image(shared_runtime,e/shared_runtime.name)
     for component in plan['load_order']:
      module=e/component;run(label+'-'+component+'-emit',[probe,'emit',ctx,arch,component,module,triple,layout,str(optimization=='2').lower()]);record=json.loads((module/'module-record.json').read_text());assert record==plan['components'][component] and record['archived'] is False and 'revision' not in record;run(label+'-'+component+'-validate',[probe,'validate',ctx,arch,component,module/'module-record.json']);ir=(module/'module.ll').read_text();assert len(re.findall(r'^define[^\n]*@[^\s(]+__task_step\(',ir,re.M))==len(record['definitions']),(name,component,record['definitions']);
      unit_ir=module/'module.ll'
@@ -86,7 +122,7 @@ def main():
      if component=='app':continue
      if mode=='static':run(label+'-'+component+'-archive',[ar,'rcs',e/('lib'+component+'.a'),module/'module.o'])
      else:run(label+'-'+component+'-shared',[compiler,'-dynamiclib' if mac else '-shared',module/'module.o','-L'+str(e),*['-l'+d for d in records[component]['dependencies']],'-lnex-private-runtime',*(['-Wl,-install_name,@rpath/lib'+component+suffix,'-Wl,-rpath,@loader_path'] if mac else ['-Wl,-soname,lib'+component+suffix,'-Wl,-rpath,$ORIGIN']),'-o',e/('lib'+component+suffix)])
-    providers=[c for c in reversed(plan['load_order']) if c!='app'];binary=e/'program'
+    providers=[c for c in reversed(plan['load_order']) if c!='app'];binary=e/('program.exe' if os.name=='nt' else 'program')
     run(label+'-link',[compiler,native_objects['app'],out/('host-'+mode+'.o'),*([e/('lib'+c+'.a') for c in providers] if mode=='static' else ['-L'+str(e),*['-l'+c for c in providers],'-lnex-private-runtime']),*(objects if mode=='static' else []),*([crypto,'-pthread',*(['-ldl'] if not mac else [])] if mode=='static' else ['-Wl,-rpath,@loader_path' if mac else '-Wl,-rpath,$ORIGIN']),'-o',binary])
     files=e/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");events=files/'events';env={**os.environ,'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events),'NEX_RESOURCE_DIR':str(out/'absent-sdk')};hidden=[]
     try:
@@ -131,8 +167,8 @@ def main():
  if 'owned-file-resource' in selected:
   original=out/'owned-file-resource/shared-fixed/O2';moved=out/'relocated-application';moved.mkdir()
   for file in original.iterdir():
-   if file.is_file() and (file.name=='program' or file.name.endswith(suffix)):shutil.copyfile(file,moved/file.name);shutil.copymode(file,moved/file.name)
-  shutil.copytree(bundle,moved/'bundle');shutil.copyfile(catalog,moved/'host.json');files=moved/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");events=files/'events';hidden=original.with_name(original.name+'.hidden');original.rename(hidden)
+   if file.is_file() and (file.name=='program' or file.name.endswith(suffix)):copy_link_image(file,moved/file.name);shutil.copymode(file,moved/file.name)
+  shutil.copytree(bundle,moved/'bundle');copy_link_image(catalog,moved/'host.json');files=moved/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");events=files/'events';hidden=original.with_name(original.name+'.hidden');original.rename(hidden)
   try:result=run('relocated-shared-execute',[moved/'program','--nex-foreign',moved/'host.json'],{**os.environ,'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'missing-sdk'),'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)},allowed=(42,))
   finally:hidden.rename(original)
   cleanup=next(json.loads(line.split(' ',1)[1]) for line in result.stderr.splitlines() if line.startswith('NEX_PRIVATE_MODULE_CLEANUP '));assert cleanup=={'ok':True,'managed_live':0,'runtime_finish':True,'file_delta':0,'runtime_images':1};observed=events.read_text();assert observed.count('F')==observed.count('X')==1;report['relocated'].append({'original_images_absent':True,'common_runtime_images':1,'foreign_bundle_copied':True,'exit':42,'passed':True})

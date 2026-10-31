@@ -238,7 +238,8 @@ THE SOFTWARE.
                 bundle.selected_wasm_linker(doctor,{'NEX_WASM_LD':value})
         with tempfile.TemporaryDirectory(prefix='nex-wasm-version-') as directory:
             wrong=Path(directory)/'wasm-ld'
-            wrong.write_text('#!/bin/sh\nprintf "LLD 21.1.0\\n"\n', newline="\n");wrong.chmod(0o755)
+            from host_fixture import python_executable
+            wrong=python_executable(wrong, 'print("LLD 21.1.0")\n', shutil.which('clang++'))
             with self.assertRaisesRegex(ValueError,'LLVM 22.1.x'):
                 bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':str(wrong)})
         actual=os.environ.get('NEX_WASM_LD') or shutil.which('wasm-ld')
@@ -277,7 +278,7 @@ THE SOFTWARE.
     def test_debugger_script_paths_preserve_unicode_and_argument_boundaries(self):
         for path in ['/SDK, % 🧠/record.py', '/SDK "quoted"/record.py', '/SDK \\ slash/record.py']:
             command = acceptance.lldb_script_import(Path(path))
-            self.assertEqual(shlex.split(command), ['command', 'script', 'import', path])
+            self.assertEqual(shlex.split(command), ['command', 'script', 'import', str(Path(path))])
         self.assertIn('🧠', acceptance.lldb_script_import(Path('/SDK 🧠/record.py')))
 
     def report(self):
@@ -861,6 +862,7 @@ THE SOFTWARE.
         linkages={'app':{'schema':'nex.project-task-linkage/2','component':'app'},
                   'leaf':{'schema':'nex.project-task-linkage/2','component':'leaf'}}
         def command(cwd,key):
+            cwd=Path(cwd).absolute().as_posix()
             return {'exit_code':0,'timed_out':False,'interrupted':0,'output_limit':False,
                 'command':['/sdk/nex','project','nex.build.json','--kind','build','--component','app','--json'],
                 'elapsed_ns':1,'timeout_seconds':60,'stdout':'logs/build-native/build/stdout','stderr':'logs/build-native/build/stderr',
@@ -958,7 +960,7 @@ THE SOFTWARE.
             # Even an internally indexed catalog row must match the ABI's
             # static frontier raw catalog pin, in addition to archive/sidecar.
             damaged=copy.deepcopy(record);damaged_check=copy.deepcopy(check)
-            catalog_row=next(row for row in damaged['files'] if row['original'].endswith('/libraries/0.task-profile-catalog.json'))
+            catalog_row=next(row for row in damaged['files'] if Path(row['original']).as_posix().endswith('/libraries/0.task-profile-catalog.json'))
             catalog_row['hash']='b'*64
             damaged_check['artifacts'][catalog_row['retained'].split('artifacts/measure-provider/',1)[1]]['hash']='b'*64
             path.write_text(json.dumps(damaged), newline="\n")
@@ -1033,7 +1035,7 @@ THE SOFTWARE.
             capture_proof=acceptance.package_task_provenance(capture_package,capture,capture_project)
             proof=acceptance.package_task_provenance(package_root,packaged,package_project)
             self.assertNotEqual(proof['build_key'],capture_proof['build_key'])
-            self.assertTrue(all('/package-cwd/' in row['original'] for row in proof['files']))
+            self.assertTrue(all('package-cwd' in Path(row['original']).parts for row in proof['files']))
             with self.assertRaises(RuntimeError):acceptance.package_task_provenance(package_root,packaged,capture_project)
             for mutate in (
                 lambda p:p['task_provenance']['files'][0].update(input_hash=capture['task_provenance']['files'][0]['input_hash']),
@@ -1087,7 +1089,7 @@ THE SOFTWARE.
             first=acceptance.package_task_profile_provenance(capture_package,captured,capture)
             proof=acceptance.package_task_profile_provenance(package,meta,project)
             self.assertNotEqual(first['build_key'],proof['build_key'])
-            self.assertTrue(all('/package-cwd/' in row['original'] for row in proof['files']))
+            self.assertTrue(all('package-cwd' in Path(row['original']).parts for row in proof['files']))
             with self.assertRaises(RuntimeError):acceptance.package_task_profile_provenance(package,meta,capture)
             for mutate in (
                 lambda p:p['task_profile_provenance']['files'][0].update(input_hash=captured['task_profile_provenance']['files'][0]['input_hash']),
@@ -1210,22 +1212,24 @@ THE SOFTWARE.
             with self.subTest(field=name),self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
 
 
+ENTRY = 'bin/nex.exe' if os.name == 'nt' else 'bin/nex'
+
 class Archives(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='nex archive, % 🧠 ')
         self.root = Path(self.temp.name)
         self.sdk = self.root/'SDK'
-        for name, value in [('bin/nex', b'owned executable'), ('include/header.h', b'owned header'),
+        for name, value in [(ENTRY, b'owned executable'), ('include/header.h', b'owned header'),
                             ('notes, 🧠.txt', b'UTF-8 paths')]:
             path = self.sdk/name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(value)
-            path.chmod(0o755 if name == 'bin/nex' else 0o644)
-        (self.sdk/'bin/compiler').symlink_to('nex')
+            path.chmod(0o755 if name == ENTRY else 0o644)
+        (self.sdk/'bin/compiler').symlink_to(Path(ENTRY).name)
         self.manifest = {'schema': 'nex.sdk-bundle/1', 'ok': True, 'acceptance_passed': False,
                          'toolchain': '0.33.0', 'language': '0.14', 'platform': 'macos', 'files': {}}
         for path in self.sdk.rglob('*'):
             if path.is_file() or path.is_symlink():
-                name = str(path.relative_to(self.sdk))
-                self.manifest['files'][name] = ({'symlink': str(path.readlink())} if path.is_symlink() else
+                name = path.relative_to(self.sdk).as_posix()
+                self.manifest['files'][name] = ({'symlink': path.readlink().as_posix()} if path.is_symlink() else
                     {'sha256': archive.digest(path), 'bytes': path.stat().st_size,
                      'executable': bool(path.stat().st_mode & 0o111)})
         self.save()
@@ -1241,11 +1245,11 @@ class Archives(unittest.TestCase):
         cache = self.sdk/'tools/__pycache__/module.cpython-39.pyc'
         cache.parent.mkdir(parents=True); cache.write_bytes(b'not a distribution input')
         result = archive.create(self.sdk, self.root/'sdk.tar.gz', 'nex-sdk-test')
-        self.assertEqual(result['excluded_python_cache_files'], [str(cache.relative_to(self.sdk))])
+        self.assertEqual(result['excluded_python_cache_files'], [cache.relative_to(self.sdk).as_posix()])
         restored = archive.restore(result['path'], self.root/'restored', result['sha256'])
-        self.assertEqual((restored/'bin/nex').read_bytes(), b'owned executable')
+        self.assertEqual((restored/ENTRY).read_bytes(), b'owned executable')
         self.assertEqual((restored/'notes, 🧠.txt').read_bytes(), b'UTF-8 paths')
-        self.assertEqual(str((restored/'bin/compiler').readlink()), 'nex')
+        self.assertEqual(str((restored/'bin/compiler').readlink()), Path(ENTRY).name)
         self.assertFalse((restored/'tools/__pycache__').exists())
         self.assertEqual(archive.inventory(restored)[0], self.manifest)
         (self.sdk/'unexpected').write_text('must not ship', newline="\n")
@@ -1265,7 +1269,7 @@ class Archives(unittest.TestCase):
 
     def test_hash_modes_sizes_and_duplicate_manifest_keys_fail(self):
         for key, value in [('sha256', '0'*64), ('bytes', 1), ('executable', False), ('bytes', True)]:
-            manifest = copy.deepcopy(self.manifest); manifest['files']['bin/nex'][key] = value; self.save(manifest)
+            manifest = copy.deepcopy(self.manifest); manifest['files'][ENTRY][key] = value; self.save(manifest)
             with self.subTest(key=key, value=value), self.assertRaises(ValueError): archive.inventory(self.sdk)
         self.save()
         path = self.sdk/archive.MANIFEST
@@ -1274,10 +1278,10 @@ class Archives(unittest.TestCase):
 
     def test_paths_privilege_bits_and_links_cannot_escape_inventory(self):
         for name in ['../outside', '/outside', 'bin/./nex', 'bin//nex', 'bin\\nex']:
-            manifest = copy.deepcopy(self.manifest); manifest['files'][name] = manifest['files'].pop('bin/nex'); self.save(manifest)
+            manifest = copy.deepcopy(self.manifest); manifest['files'][name] = manifest['files'].pop(ENTRY); self.save(manifest)
             with self.subTest(name=name), self.assertRaises(ValueError): archive.inventory(self.sdk)
         self.save()
-        path = self.sdk/'bin/nex'; path.chmod(0o4755)
+        path = self.sdk/ENTRY; path.chmod(0o4755)
         # Some temporary filesystems discard setuid on chmod. The tar test
         # below checks privileged metadata independently of that host policy.
         if path.stat().st_mode & 0o4000:
@@ -1289,7 +1293,7 @@ class Archives(unittest.TestCase):
 
     def test_manifest_symlink_ancestor_is_rejected_before_read(self):
         (self.sdk/archive.MANIFEST).unlink(); (self.sdk/'share/nex').rmdir(); (self.sdk/'share').rmdir()
-        (self.sdk/'share').symlink_to(self.root)
+        (self.sdk/'share').symlink_to(self.root, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, 'manifest has a symlink ancestor'):
             archive.inventory(self.sdk)
 
@@ -1335,7 +1339,7 @@ class Archives(unittest.TestCase):
         with tarfile.open(original['path']) as source, tarfile.open(changed, 'w:gz') as output:
             for item in source:
                 data = source.extractfile(item) if item.isfile() else None
-                if item.name == 'SDK/bin/nex': item.mode |= 0o4000
+                if item.name == 'SDK/'+ENTRY: item.mode |= 0o4000
                 output.addfile(item, data)
         with self.assertRaisesRegex(ValueError, 'unsafe SDK archive metadata'):
             archive.restore(changed, self.root/'restored', archive.digest(changed))

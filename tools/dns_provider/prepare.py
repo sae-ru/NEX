@@ -34,17 +34,23 @@ def policy(path):
             if key in result:raise ValueError('duplicate DNS policy field')
             result[key]=value
         return result
-    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
-    try:
-        info=os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_size>1048576:raise ValueError('policy must be a regular file of at most1MiB')
-        data=bytearray()
-        while True:
-            chunk=os.read(fd,min(65536,1048577-len(data)))
-            if not chunk:break
-            data.extend(chunk)
-            if len(data)>1048576:raise ValueError('DNS policy grew beyond1MiB')
-    finally:os.close(fd)
+    if os.name=='nt':
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('_nex_windows_files',Path(__file__).resolve().parents[1]/'windows_files.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        data=module.regular(path,1048576)
+    else:
+        fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        try:
+            info=os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_size>1048576:raise ValueError('policy must be a regular file of at most1MiB')
+            data=bytearray()
+            while True:
+                chunk=os.read(fd,min(65536,1048577-len(data)))
+                if not chunk:break
+                data.extend(chunk)
+                if len(data)>1048576:raise ValueError('DNS policy grew beyond1MiB')
+        finally:os.close(fd)
     value=json.loads(data.decode('utf-8'),object_pairs_hook=unique)
     if not isinstance(value,dict) or not {'schema','resolvers','authorities'}<=set(value)<={'schema','resolvers','authorities','maximum_calls'} or value['schema']!='nex.dns-targets/1':raise ValueError('expected nex.dns-targets/1')
     maximum=value.get('maximum_calls',16)

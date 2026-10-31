@@ -21,7 +21,7 @@ class ApplicationInputs:
         if owned and sha256(source) != owned['sha256']:
             raise ValueError('compiler-owned image changed before collection')
         if not owned and self.sdk_inventory and self.sdk in source.parents:
-            relative = str(source.relative_to(self.sdk))
+            relative = source.relative_to(self.sdk).as_posix()
             record = self.sdk_inventory.get(relative)
             if not record or not record.get('component') or record.get('sha256') != sha256(source):
                 raise ValueError('SDK library integrity/provenance mismatch: ' + relative)
@@ -89,14 +89,14 @@ def copy_foreign(request, stage):
         if path.is_symlink():
             raise ValueError('symlink in captured foreign inputs')
         if path.is_file():
-            actual[str(path.relative_to(source))] = sha256(path)
+            actual[path.relative_to(source).as_posix()] = sha256(path)
         elif not path.is_dir():
             raise ValueError('non-regular captured foreign input')
     if not actual or actual != expected:
         raise ValueError('foreign capture changed after compilation')
     target = stage / 'foreign'
     shutil.copytree(source, target)
-    if {str(path.relative_to(target)): sha256(path) for path in target.rglob('*') if path.is_file()} != expected:
+    if {path.relative_to(target).as_posix(): sha256(path) for path in target.rglob('*') if path.is_file()} != expected:
         raise ValueError('foreign copy changed after compilation')
     projection = request['foreign_projection']
     if projection.get('schema') != 'nex.foreign-projection/1' or projection['packaged_revision'] != request['revision']:

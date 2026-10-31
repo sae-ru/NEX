@@ -29,7 +29,7 @@ ProviderProfileBuild providerProfileBuild(const BuildResult &built,const llvm::j
   namespace fs=std::filesystem;using Object=llvm::json::Object;using JSON=llvm::json::Value;
   ProviderProfileBuild result;const auto folder=fs::path(built.executable).parent_path();
   auto fail=[](const std::string &message){throw Error("E_PROFILE","invalid measured provider build: "+message);};
-  auto read=[&](const fs::path &path){if(path.lexically_normal()!=path||!path.is_absolute())fail("invalid input path");fs::path current;for(const auto &part:path){current/=part;if(fs::is_symlink(current))fail("symlink input");}if(!fs::is_regular_file(path)||fs::file_size(path)>512ULL*1048576)fail("missing/oversized input");auto bytes=readFile(path.string());result.pins[path.string()]=hash(bytes);return bytes;};
+  auto read=[&](const fs::path &path){if(path.lexically_normal()!=path||!path.is_absolute())fail("invalid input path");fs::path current;for(const auto &part:path){current/=part;if(fs::is_symlink(current))fail("symlink input");}if(!fs::is_regular_file(path)||fs::file_size(path)>512ULL*1048576)fail("missing/oversized input");auto bytes=readFile(path.string());result.pins[fs::path(path).make_preferred().string()]=hash(bytes);return bytes;};
   auto object=[&](const fs::path &path){auto parsed=llvm::json::parse(read(path));if(!parsed||!parsed->getAsObject())fail("invalid JSON input");return Object(*parsed->getAsObject());};
   auto text=[&](const Object &value,const char *key){auto item=value.getString(key);if(!item)fail(std::string("missing ")+key);return item->str();};
   auto sha=[](const std::string &bytes){return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(bytes)),true);};
@@ -44,8 +44,8 @@ ProviderProfileBuild providerProfileBuild(const BuildResult &built,const llvm::j
   auto abi=object(folder/"library-abi.json");auto libraries=abi.getArray("static_libraries");
   if(!libraries||libraries->size()>128||abi.getString("abi")!=provider.cohort)fail("static archive inventory differs");
   for(size_t index=0;index<libraries->size();++index){auto row=(*libraries)[index].getAsObject();if(!row)fail("invalid static archive row");
-    auto prefix="libraries/"+std::to_string(index);auto archive=folder/(prefix+".a"),sidecar=folder/(prefix+".task-provider.json"),catalog=folder/(prefix+".task-profile-catalog.json");
-    if(text(*row,"path")!=archive.string()||text(*row,"task_provider_path")!=sidecar.string()||text(*row,"task_profile_catalog_path")!=catalog.string()||
+    auto prefix="libraries/"+std::to_string(index);auto archive=(folder/(prefix+".a")).make_preferred(),sidecar=(folder/(prefix+".task-provider.json")).make_preferred(),catalog=(folder/(prefix+".task-profile-catalog.json")).make_preferred();
+    if(fs::path(text(*row,"path"))!=archive||fs::path(text(*row,"task_provider_path"))!=sidecar||fs::path(text(*row,"task_profile_catalog_path"))!=catalog||
        !result.pins.contains(archive.string())||!result.pins.contains(sidecar.string())||!result.pins.contains(catalog.string())||
        text(*row,"hash")!=result.pins.at(archive.string())||text(*row,"task_provider_hash")!=result.pins.at(sidecar.string())||text(*row,"task_profile_catalog_hash")!=result.pins.at(catalog.string()))fail("static archive/profile raw pins differ");
     auto recorded=row->get("task_provider");if(!recorded||*recorded!=JSON(object(sidecar)))fail("static provider inventory differs");
@@ -83,7 +83,7 @@ ProviderProfileBuild providerProfileBuild(const BuildResult &built,const llvm::j
     for(const auto &row:*providers){auto value=row.getAsObject();if(!value||value->size()!=4||!providerRows.emplace(text(*value,"image"),value).second)fail("duplicate provider pin");}
     for(const auto &row:*catalogs){auto value=row.getAsObject();if(!value||value->size()!=5||!catalogRows.emplace(text(*value,"image"),value).second)fail("duplicate catalog pin");}
     size_t runtimeCount=0;std::set<std::string> seen;
-    for(const auto &value:*inventory){auto row=value.getAsObject();if(!row)fail("invalid image row");auto path=fs::path(text(*row,"path"));auto relative="images/"+path.filename().string();
+    for(const auto &value:*inventory){auto row=value.getAsObject();if(!row)fail("invalid image row");auto path=fs::path(text(*row,"path"));auto relative=(path.extension()==".dll"?"":"images/")+path.filename().string();
       if(path!=folder/relative||!seen.insert(relative).second)fail("image path differs");auto bytes=read(path);auto kind=text(*row,"kind");
       if(hash(bytes)!=text(*row,"hash")||sha(bytes)!=text(*row,"sha256")||nativeImageUUID(path.string())!=text(*row,"uuid"))fail("physical image differs");
       if(kind=="runtime"){if(!provider.image||provider.image->runtimeKey!=text(*row,"key")||provider.image->runtimeDigest!=hash(bytes))fail("runtime image pin differs");++runtimeCount;images.push_back(Object{{"component","runtime"},{"kind","runtime"},{"key",text(*row,"key")},{"hash",hash(bytes)},{"sha256",sha(bytes)},{"uuid",text(*row,"uuid")},{"provider_hash",nullptr},{"catalog_hash",nullptr}});continue;}
@@ -93,7 +93,7 @@ ProviderProfileBuild providerProfileBuild(const BuildResult &built,const llvm::j
       auto info=parseNativeTaskProvider(JSON(object(folder/providerPath)));auto catalog=parseNativeTaskProfileCatalog(JSON(object(folder/catalogPath)));
       std::map<std::string,std::set<std::string>> imageDefinitions;for(const auto &[name,component]:info.definitionOwners)imageDefinitions[component].insert(name);
       validateTaskProfileCatalogOwnership(info,catalog,imageDefinitions);
-      if(result.pins.at((folder/providerPath).string())!=text(pin,"hash")||result.pins.at((folder/catalogPath).string())!=text(catalogPin,"hash")||!info.profiling||!info.image||
+      if(result.pins.at((folder/providerPath).make_preferred().string())!=text(pin,"hash")||result.pins.at((folder/catalogPath).make_preferred().string())!=text(catalogPin,"hash")||!info.profiling||!info.image||
          nativeTaskProfileInfo(catalog).catalogHash!=info.profiling->catalogHash||info.profiling->catalogHash!=text(catalogPin,"catalog_hash")||info.component!=text(pin,"component")||info.component!=text(catalogPin,"component")||catalog.ownerImage!=info.component||
          info.image->key!=text(*row,"key")||info.image->digest!=hash(bytes)||info.image->sha256!=sha(bytes)||info.image->uuid!=text(*row,"uuid")||!provider.image||info.image->runtimeKey!=provider.image->runtimeKey||info.image->runtimeDigest!=provider.image->runtimeDigest)fail("image profile identity differs");
       for(const auto &registry:catalog.registries)result.catalog.registries.push_back(registry);

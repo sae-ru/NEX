@@ -18,7 +18,8 @@ def main():
  parser.add_argument('--opencl-library',type=Path);parser.add_argument('--index',type=int,default=0);parser.add_argument('--cxx',default=shutil.which('clang++') or shutil.which('g++'))
  parser.add_argument('--check-sdk',action='store_true',help='check actual source and FFI signatures without building or initializing a device')
  args=parser.parse_args();sdk=args.sdk.resolve(strict=True);out=args.output.absolute();compiler=sdk/'bin/nex';resources=sdk/'share/nex'
- if platform.system() not in ('Darwin','Linux') or platform.machine() not in ('arm64','aarch64','x86_64','AMD64'):parser.error('owned OpenCL preparation currently supports64-bit macOS/Linux')
+ if platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('owned OpenCL preparation requires a supported64-bit architecture')
+ if platform.system() not in ('Darwin','Linux') and not (args.check_sdk and os.name=='nt'):parser.error('native OpenCL worker preparation currently supports macOS/Linux; --check-sdk also supports native Windows')
  if not 0<=args.index<64:parser.error('GPU index must be0..63')
  if out.exists():parser.error('output directory must be new')
  if not args.check_sdk and (not args.cxx or not Path(args.cxx).is_file()):parser.error('an actual C++20 compiler is required')

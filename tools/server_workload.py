@@ -210,7 +210,24 @@ def execute(specification,plan,command):
         cancelled.set()
         if process is not None:
             if process.poll() is None:
-                process.terminate()
+                if os.name=='nt':
+                    def stop_server(process):
+                        import ctypes as C
+                        from ctypes import wintypes as W
+                        """Ask this user's NEX server to drain and return through its normal exit."""
+                        kernel=C.WinDLL('kernel32',use_last_error=True)
+                        kernel.OpenEventW.argtypes=[W.DWORD,W.BOOL,W.LPCWSTR];kernel.OpenEventW.restype=W.HANDLE
+                        kernel.SetEvent.argtypes=[W.HANDLE];kernel.SetEvent.restype=W.BOOL
+                        kernel.CloseHandle.argtypes=[W.HANDLE];kernel.CloseHandle.restype=W.BOOL
+                        event=kernel.OpenEventW(2,False,'Local\\NEX.Server.Stop.'+str(process.pid))
+                        if not event:
+                            if process.poll() is not None:return
+                            raise C.WinError(C.get_last_error())
+                        try:
+                            if not kernel.SetEvent(event):raise C.WinError(C.get_last_error())
+                        finally:kernel.CloseHandle(event)
+                    stop_server(process)
+                else:process.terminate()
                 try:process.wait(timeout=2)
                 except subprocess.TimeoutExpired:process.kill();process.wait();result['ok']=False;result['forced_stop']=True
             result['server_exit_code']=process.returncode

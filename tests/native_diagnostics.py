@@ -1,3 +1,4 @@
+from host_fixture import stop_server
 """Native failures, archived graph mappings, cache reuse and hostile log input."""
 import copy
 import json
@@ -206,7 +207,7 @@ server fn handle(request:http::Request)->http::Response{
                 self.assertEqual(headers['X-Request-Id'],body['request_id']);requests.append(body['request_id'])
             self.assertEqual(http.HTTP.request(self,'/health')[0],200)
         finally:
-            process.terminate();stdout,stderr=process.communicate(timeout=20)
+            stop_server(process);stdout,stderr=process.communicate(timeout=20)
         self.assertEqual(process.returncode,0,stdout+stderr)
         mapped=self.diagnose(built,stderr)['diagnostics']
         self.assertEqual(len(mapped),2)

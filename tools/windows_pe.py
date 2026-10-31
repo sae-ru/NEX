@@ -93,8 +93,9 @@ def inspect(path):
             if length<24:continue
             record=block(raw,length)
             if record[:4]!=b'RSDS':continue
-            guid=record[4:20].hex()
-            if guid=='0'*32 or identity not in (None,guid):raise ValueError('invalid or conflicting PE CodeView GUID')
+            raw=record[4:20]
+            guid=(raw[0:4][::-1]+raw[4:6][::-1]+raw[6:8][::-1]+raw[8:]+record[20:24][::-1]).hex()
+            if guid[:32]=='0'*32 or identity not in (None,guid):raise ValueError('invalid or conflicting PE CodeView GUID')
             identity=guid
     return {'machine':'x86_64' if machine==0x8664 else 'arm64','imports':sorted(imports),'uuid':identity}
 

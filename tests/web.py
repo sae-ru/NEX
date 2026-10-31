@@ -10,7 +10,7 @@ import support as harness
 
 class Web(harness.ToolchainCase):
     def test_cli_typescript_tests_in_literal_and_physical_backslash_paths(self):
-        root = self.root / 'project "quoted" \\ % 🧠'
+        root = self.root / ("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠')
         root.mkdir()
         source = root / 'main.nex'
         source.write_text('''module path_semantics;

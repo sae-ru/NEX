@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs
 """Public CLI migration of all genuine SDK1335 stream and mixed FFI revisions."""
 import argparse,copy,json,os,re,sqlite3,subprocess,tempfile,time
 from collections import Counter
@@ -15,7 +16,7 @@ if not (fixtures/'language-0.23-sdk1335-stream-generic-modules.json').is_file():
 started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],'providers':{},'compiler_sha256':sha(compiler),'language':'0.27','installed_SDK_accepted':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd=None,env=None,expected=0):
- report['state']=label;save();r=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
+ report['state']=label;save();r=run_native(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
  (root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
 def cli(label,project,argv,env=None,expected=0,exe=compiler):return json.loads(run(label,[exe,*argv,'--json'],project,env,expected).stdout)
 def state(project):

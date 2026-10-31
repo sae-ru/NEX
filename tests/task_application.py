@@ -1,6 +1,7 @@
 """Standalone public019 executables use compiled continuations and owned tasks."""
 from host_fixture import run_native
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,7 +11,8 @@ import tempfile
 nex = str(Path(sys.argv[1]).resolve())
 cases = [
     ('yield', 'fn main()->i64 !{task,io}{print(7);task_yield();return 42;}', 42, '7\n', None),
-    ('negative-exit', 'fn main()->i64 !{task}{task_yield();return -1;}', 255, '', None),
+    ('wide-exit', 'fn main()->i64 !{task}{task_yield();return 257;}', 257 if os.name=='nt' else 1, '', None),
+    ('negative-exit', 'fn main()->i64 !{task}{task_yield();return -1;}', 0xffffffff if os.name=='nt' else 255, '', None),
     ('unit', 'fn main()->unit !{task}{task_yield();}', 0, '', None),
     ('unused-ffi', 'server fn main()->i64 !{task,ffi,throw}{return with_tasks(1,server fn(s:task_scope)->i64 !{task,ffi,throw}{let child:task<i64>=task_spawn(s,server fn()->i64 !{task,ffi}{task_yield();return 42;});return task_wait(child);});}', 42, '', None),
     ('calls', 'fn item(n:i64)->i64 !{task,io}{print(n);task_yield();return n;}fn sum(a:i64,b:i64)->i64 !{task}{task_yield();return a+b;}fn main()->i64 !{task,io}{return sum(item(20),item(22));}', 42, '20\n22\n', None),

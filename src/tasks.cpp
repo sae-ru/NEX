@@ -543,6 +543,19 @@ struct Runner {
     else if(fs::is_regular_file(source)){fs::create_directories(destination.parent_path());copyFile(source.string(),destination.string(),true);}
     else throw Error("E_TASK_ARTIFACT","missing output artifact: "+source.string());
   }
+  void copyOwnedNativeImages(const fs::path &executable,const fs::path &destination){
+    const auto folder=executable.parent_path();
+    if(fs::is_directory(folder/"images")){copyArtifact(folder/"images",destination/"images");return;}
+    if(executable.extension()!=".exe")return;
+    auto metadata=readJSON(inside(folder,"build.json"),8*1048576);
+    for(const auto &name:nativeCompletionInputs(object(metadata))){
+      const auto relative=fs::path(name);
+      if(relative.extension()==".dll"){
+        if(relative.filename()!=relative)throw Error("E_TASK_INTEGRITY","owned PE image must be adjacent to its executable");
+        copyArtifact(inside(folder,name),destination/relative);
+      }
+    }
+  }
   std::string retainTaskProviderBuild(const fs::path &executable,const fs::path &destination){
     const auto folder=executable.parent_path();auto metadata=readJSON(inside(folder,"build.json"),8*1048576);const auto &build=object(metadata);
     const bool debug=build.getString("completion_schema")=="nex.native-completion/7";
@@ -707,7 +720,7 @@ struct Runner {
         verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyWorkload(id);passed=ok(measured);
         if(!profileSources.empty()){
           Array outputs;for(const auto &item:array(response(compiled),"artifacts",0,128)){const auto &a=object(item);auto name=text(a,"component");auto destination=artifact/"components"/name;auto executable=fs::path(text(a,"artifact"));
-            copyArtifact(executable,destination/executable.filename());if(fs::is_directory(executable.parent_path()/"images"))copyArtifact(executable.parent_path()/"images",destination/"images");
+            copyArtifact(executable,destination/executable.filename());copyOwnedNativeImages(executable,destination);
             for(auto key:{"metadata","compilation","debug_manifest","notices"})if(auto file=a.getString(key);file&&!file->empty())copyArtifact(file->str(),destination/(std::string(key)+(std::string(key)=="notices"?".txt":".json")));
             auto retained=retainTaskProviderBuild(executable,destination);if(retained.empty())throw Error("E_TASK_ARTIFACT","profile provider omitted its completed retained build");
             outputs.push_back(Object{{"component",name},{"kind",text(a,"kind")},{"directory",destination.lexically_relative(directory).generic_string()},{"retained_build",std::move(retained)}});
@@ -757,18 +770,18 @@ struct Runner {
           if(kind=="web")copyArtifact(text(*a.getObject("result"),"dist"),destination/"dist");
           else{
             auto executable=fs::path(text(a,"artifact"));copyArtifact(executable,destination/executable.filename());
-            if(fs::is_directory(executable.parent_path()/"images"))copyArtifact(executable.parent_path()/"images",destination/"images");
+            copyOwnedNativeImages(executable,destination);
             for(auto key:{"metadata","compilation","debug_manifest","notices"})if(auto file=a.getString(key);file&&!file->empty())copyArtifact(file->str(),destination/(std::string(key)+(std::string(key)=="notices"?".txt":".json")));
             auto retained=retainTaskProviderBuild(executable,destination);if(!retained.empty())output["retained_build"]=std::move(retained);
             if(c.getBoolean("task_debug").value_or(false)&&name==text(object(p.projects.at(program)),"component")){
               BuildResult built;built.executable=executable.string();built.key=text(a,"build_key");built.target=text(a,"target");built.compilerTarget=text(a,"compiler_target");built.hostCompatible=a.getBoolean("host_compatible").value_or(false);auto raw=destination/"retained-build";std::map<std::string,std::string> images{{executable.string(),(raw/executable.filename()).string()}};
-              auto manifest=readJSON(executable.parent_path()/"debug.json",8*1048576);auto view=object(manifest).getObject("task_debug");for(const auto &entry:*view->getArray("images")){auto old=text(object(entry),"path");if(old!=executable.string())images[old]=(raw/"images"/fs::path(old).filename()).string();}auto runtime=text(*view->getObject("runtime_image"),"path");if(runtime!=executable.string())images[runtime]=(raw/"images"/fs::path(runtime).filename()).string();
+              auto manifest=readJSON(executable.parent_path()/"debug.json",8*1048576);auto view=object(manifest).getObject("task_debug");for(const auto &entry:*view->getArray("images")){auto old=text(object(entry),"path");if(old!=executable.string())images[old]=((executable.extension()==".exe"?raw:raw/"images")/fs::path(old).filename()).string();}auto runtime=text(*view->getObject("runtime_image"),"path");if(runtime!=executable.string())images[runtime]=((executable.extension()==".exe"?raw:raw/"images")/fs::path(runtime).filename()).string();
               auto relocated=relocateNativeTaskDebugSession(source,built,raw.string(),raw.string(),raw.string(),options.compiler,images);for(const auto &[key,value]:relocated)output[key]=fs::path(value.getAsString()->str()).lexically_relative(directory).generic_string();
             }
           }
           outputs.push_back(std::move(output));
         }row["components"]=std::move(outputs);
-      }else if(passed&&mode!="module"){const auto &r=response(value);if(target=="web")copyArtifact(text(r,"dist"),artifact/"dist");else {auto exe=fs::path(text(r,"executable"));copyArtifact(exe,artifact/exe.filename());auto notices=r.getString("notices").value_or("").str();if(!notices.empty())copyArtifact(notices,artifact/"THIRD_PARTY_NOTICES.txt");for(auto k:{"metadata","compilation","debug_manifest"})if(auto path=r.getString(k))if(fs::is_regular_file(path->str()))copyArtifact(path->str(),artifact/(std::string(k)+".json"));}}
+      }else if(passed&&mode!="module"){const auto &r=response(value);if(target=="web")copyArtifact(text(r,"dist"),artifact/"dist");else {auto exe=fs::path(text(r,"executable"));copyArtifact(exe,artifact/exe.filename());copyOwnedNativeImages(exe,artifact);auto notices=r.getString("notices").value_or("").str();if(!notices.empty())copyArtifact(notices,artifact/"THIRD_PARTY_NOTICES.txt");for(auto k:{"metadata","compilation","debug_manifest"})if(auto path=r.getString(k))if(fs::is_regular_file(path->str()))copyArtifact(path->str(),artifact/(std::string(k)+".json"));}}
     }
     row["status"]=passed?"passed":"failed";row["artifacts"]=fileIndex(artifact,8192,kind=="package"?artifact/"package":fs::path{});return row;
   }
@@ -836,7 +849,9 @@ JSON projectTaskTemplate(const std::string &directory,const std::string &manifes
     checks.push_back(std::move(check));Array bindings;for(const auto &symbol:symbols)bindings.push_back(Object{{"program","app"},{"kind","function"},{"symbol",symbol}});
     requirements.push_back(Object{{"id",id},{"text","Review this scaffold requirement and its acceptance criteria"},{"bindings",std::move(bindings)},{"targets",Array{target}},{"checks",Array{id}}});
   };
-  unsigned index=0;for(const auto &f:program.functions)if(f.test&&object(capture).getObject("function_owners")->getString(f.name)){
+  std::set<std::string> selectedOwners;
+  for(const auto &row:*object(capture).getObject("expectations")->getArray(selected))selectedOwners.insert(text(object(row),"name"));
+  unsigned index=0;for(const auto &f:program.functions)if(f.test&&object(capture).getObject("function_owners")->getString(f.name)&&selectedOwners.contains(object(capture).getObject("function_owners")->getString(f.name)->str())){
     auto id="test-"+std::to_string(index++);add(Object{{"id",id},{"kind","test"},{"target",projectTestNative(capture,f,selected)?"native":"web"},{"tests",Array{Object{{"symbol",f.name},{"content_hash",content(f)}}}}},{f.name});
   }
   auto kind=text(description,"kind");

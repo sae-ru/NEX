@@ -1,3 +1,4 @@
+import os
 """Actual TaskIR instructions versus checked AST actions, under the same serial coordinator."""
 import argparse, ast, hashlib, json, os, re, subprocess, tempfile
 from pathlib import Path

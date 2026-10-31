@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs
 """Actual compiled NEX HTTP descriptor under an existing trusted request host.
 
 This exercises no public HTTP/task compiler target or network transport.
@@ -16,7 +17,7 @@ report={'schema':'nex.task-http-compiled-host/1','ok':False,'state':'starting','
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,argv,cwd=None,env=None,expected=0,timeout=600):
- report['state']=name;save();p=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=timeout)
+ report['state']=name;save();p=run_native(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=timeout)
  (root/(name+'.stdout')).write_text(p.stdout, newline="\n");(root/(name+'.stderr')).write_text(p.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':p.returncode,'expected':expected});save()
  assert p.returncode==expected,(name,p.returncode,p.stdout[-4000:],p.stderr[-4000:]);return p

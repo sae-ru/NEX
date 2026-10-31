@@ -215,10 +215,13 @@ llvm::json::Value buildWebApp(const Program &p,const std::string &directory,cons
 #ifdef _WIN32
   // npm.cmd is a shell launcher, not a PE executable. Invoke the installed
   // JavaScript CLI through Node with literal arguments and no shell quoting.
-  if(fs::path(npm).extension()!=".exe"){
+  if(!llvm::StringRef(fs::path(npm).extension().string()).equals_insensitive(".exe")){
     auto found=llvm::sys::findProgramByName(node);if(!found)throw Error("E_WEB_TOOL","cannot locate Windows Node.js");
-    auto cli=npmOverride?fs::absolute(npm):fs::path(*found).parent_path()/"node_modules/npm/bin/npm-cli.js";
-    if(cli.extension()==".cmd"||cli.extension()==".bat")cli=cli.parent_path()/"node_modules/npm/bin/npm-cli.js";
+    auto selected=llvm::sys::findProgramByName(npm);
+    auto cli=npmOverride?fs::absolute(selected?*selected:npm):fs::path(*found).parent_path()/"node_modules/npm/bin/npm-cli.js";
+    if(llvm::StringRef(cli.filename().string()).equals_insensitive("npm")||
+       llvm::StringRef(cli.extension().string()).equals_insensitive(".cmd")||
+       llvm::StringRef(cli.extension().string()).equals_insensitive(".bat"))cli=cli.parent_path()/"node_modules/npm/bin/npm-cli.js";
     if(!fs::is_regular_file(cli))throw Error("E_WEB_TOOL","Windows npm requires its installed npm-cli.js or an explicit NEX_NPM JavaScript/native executable path");
     npmCommand={node,cli.string()};
   }

@@ -40,7 +40,7 @@ with open(LOG, 'a') as output: output.write(json.dumps([NAME, sys.argv[0], sys.a
 os.execv(REAL, [REAL, *sys.argv[1:]])
 '''.replace('LOG', repr(str(self.log))).replace('NAME', repr(key)).replace('REAL', repr(doctor[field])),harness.native_fixture_compiler())
             wrapper.chmod(0o755)
-            tools[key] = str(relative)
+            tools[key] = wrapper.relative_to(self.prefix).as_posix()
         # These tests exercise tool selection with real compiler/archiver/debug
         # subprocesses. The maintained bundle acceptance separately exercises
         # real relocated headers/libraries and dynamic-loader independence.
@@ -53,6 +53,10 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.config = {'schema': 'nex.sdk-host/1', 'tools': tools,
                        'sqlite': {'include': 'deps/include', 'library': 'deps/sqlite'},
                        'openssl': {'include': 'deps/include', 'ssl': 'deps/ssl', 'crypto': 'deps/crypto'}}
+        if os.name=='nt':
+            shutil.copytree(doctor['native_sysroot'],self.prefix/'windows-sysroot',symlinks=False)
+            shutil.copy2(doctor['native_windows_notices'],self.prefix/'runtime-notices.txt')
+            self.config['windows']={'sysroot':'windows-sysroot','runtime':'ucrt-static','notices':'runtime-notices.txt'}
         self.descriptor.write_text(json.dumps(self.config), newline="\n")
 
     def staged(self, *args, ok=True, env=None):
@@ -79,11 +83,11 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.assertGreater(Path(archive['executable']).stat().st_size, 100)
         self.assertTrue(self.staged('build', '--library')['cached'])
         manifest = self.root / 'target.json'
-        manifest.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host']}), newline="\n")
+        manifest.write_text(json.dumps(harness.host_toolchain_defaults(doctor)), newline="\n")
         inspected = self.staged('toolchain', manifest)
         archiver = moved / self.config['tools']['archiver']
         self.assertIn(str(archiver), inspected['inputs']['files'])
-        archiver.write_text(archiver.read_text() + '\n# revised archive tool\n', newline="\n")
+        archiver.write_bytes(archiver.read_bytes()+b'\n# revised archive tool\n') if os.name=='nt' else archiver.write_text(archiver.read_text() + '\n# revised archive tool\n', newline="\n")
         self.assertNotEqual(inspected['hash'], self.staged('toolchain', manifest)['hash'])
         self.assertFalse(self.staged('build', '--library')['cached'])
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
@@ -118,7 +122,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         override = self.root / 'explicit archiver'
         shutil.copy2(self.prefix / self.config['tools']['archiver'], override)
         config = self.root / 'target.json'
-        config.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host'], 'archiver': str(override)}), newline="\n")
+        config.write_text(json.dumps({**harness.host_toolchain_defaults(doctor), 'archiver': str(override)}), newline="\n")
         inspected = self.staged('toolchain', config)
         self.assertIn(str(override), inspected['inputs']['files'])
         self.staged('build', '--library', '--toolchain', config)

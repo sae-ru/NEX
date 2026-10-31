@@ -30,7 +30,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     const PackageOptions &options,const std::filesystem::path &request,
     const std::string &foreignDirectory,llvm::json::Value projection,llvm::json::Object foreignFiles){
   namespace fs=std::filesystem;auto output=fs::absolute(options.directory).lexically_normal();
-  const char *python=std::getenv("NEX_PYTHON");
+
   auto bytes=readFile(built.executable);
   auto metadata=llvm::json::parse(readFile((fs::path(built.executable).parent_path()/"build.json").string()));
   if(!metadata){llvm::consumeError(metadata.takeError());throw Error("E_PACKAGE","invalid native build metadata");}
@@ -147,7 +147,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     {"host_compatible",built.hostCompatible}};
   if(sharedTasks||profiled||debug)packageRequest["task_inputs"]=llvm::json::Object{{"schema",debug?"nex.application-task-inputs/3":profiled?"nex.application-task-inputs/2":"nex.application-task-inputs/1"},{"files",std::move(taskFiles)}};
   writeFile(request.string(),json(llvm::json::Value(std::move(packageRequest)))+"\n");
-  std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),
+  std::vector<std::string> command={pythonProgram(),"-X","utf8",resourceFile("tools/app_bundle.py"),
     "--request",request.string(),"--output",output.string()};
   if(!options.notices.empty())command.insert(command.end(),{"--notices",fs::absolute(options.notices).string()});
   if(options.dpkgNotices)command.push_back("--dpkg-notices");
@@ -175,12 +175,12 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
 ForeignPackagePreparation prepareForeignPackage(const PackageOptions &options,
   const ForeignSelection &selection,const std::string &workingDirectory){
   namespace fs=std::filesystem;auto folder=fs::path(workingDirectory),request=folder/"request.json";
-  fs::create_directories(folder);const char *python=std::getenv("NEX_PYTHON");
+  fs::create_directories(folder);
   if(selection.empty())throw Error("E_FFI_PACKAGE","foreign preparation requires selected exports");
   llvm::json::Object selectionObject;for(const auto &[name,exports]:selection){llvm::json::Array values;for(const auto &value:exports)values.push_back(value);selectionObject[name]=std::move(values);}
     auto selected=folder/"selection.json";writeFile(selected.string(),json(llvm::json::Value(std::move(selectionObject)))+"\n");
     auto prepared=folder/"prepared";
-    std::vector<std::string> command={python?python:"python3",resourceFile("tools/foreign_bundle.py"),
+    std::vector<std::string> command={pythonProgram(),"-X","utf8",resourceFile("tools/foreign_bundle.py"),
       "--nex",options.compiler,"--foreign",fs::absolute(options.foreign).string(),
       "--sdk-root",fs::path(options.compiler).parent_path().parent_path().string(),
       "--selection",selected.string(),"--output",prepared.string()};

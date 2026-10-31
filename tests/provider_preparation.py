@@ -1,3 +1,4 @@
+from host_fixture import python_executable
 """Actual provider template/signature checks; native tests stop at a declared compiler boundary."""
 import argparse
 import copy
@@ -25,7 +26,7 @@ class ProviderPreparation(unittest.TestCase):
         self.temporary=tempfile.TemporaryDirectory(prefix='nex provider 🧠 ')
         self.addCleanup(self.temporary.cleanup);self.root=Path(self.temporary.name)
         self.sdk=self.root/'SDK';(self.sdk/'bin').mkdir(parents=True);(self.sdk/'share').mkdir()
-        (self.sdk/'bin/nex').symlink_to(COMPILER);(self.sdk/'share/nex').symlink_to(ROOT)
+        (self.sdk/'bin/nex').symlink_to(COMPILER);(self.sdk/'share/nex').symlink_to(ROOT,target_is_directory=True)
         self.env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_RESOURCE_DIR':str(ROOT)}
         result=subprocess.run([str(COMPILER),'describe','--json'],cwd=self.root,env=self.env,capture_output=True,text=True,check=True)
         self.descriptor=json.loads(result.stdout)
@@ -63,7 +64,8 @@ class ProviderPreparation(unittest.TestCase):
         # sources/signature; a deliberate compiler exit prevents native code,
         # runtime initialization or inference from being mistaken for proof.
         compiler=self.root/'stop at native compiler';capture=self.root/'native-compiler.json'
-        compiler.write_text('#!'+sys.executable+'\nimport json,sys\nfrom pathlib import Path\nPath('+repr(str(capture))+').write_text(json.dumps(sys.argv))\nsys.stderr.write("NEX_TEST_NATIVE_BOUNDARY\\n")\nsys.exit(73)\n', newline="\n");compiler.chmod(0o755)
+        doctor=json.loads(subprocess.check_output([str(COMPILER),'doctor','--json'],text=True,env=self.env))
+        compiler=python_executable(compiler,'#!'+sys.executable+'\nimport json,sys\nfrom pathlib import Path\nPath('+repr(str(capture))+').write_text(json.dumps(sys.argv))\nsys.stderr.write("NEX_TEST_NATIVE_BOUNDARY\\n")\nsys.exit(73)\n',doctor['native_compiler'])
         model=self.root/'model.onnx';model.write_bytes(b'not an inference artifact: source preparation fixture')
         library=self.root/'runtime.so';library.write_bytes(b'not loaded: source preparation fixture')
         headers=self.root/'headers';headers.mkdir();specification=self.root/'spec.json'

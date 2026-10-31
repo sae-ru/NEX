@@ -24,7 +24,7 @@ def main():
  if platform.system()!='Linux' or platform.machine() not in ['aarch64','arm64']:p.error('current native provider requires Linux ARM64; other hosts remain pending')
  if a.expect_npu_unsupported and (not a.enable_zhouyi or not a.example):p.error('negative NPU example requires --enable-zhouyi and --example')
  if a.enable_zhouyi and not a.operator_path:p.error('Zhouyi binding needs an explicit installed operator directory')
- origin=Path(__file__).resolve().parent;sdk=a.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin/nex';library=a.ort_library.resolve(strict=True);model=a.model.resolve(strict=True);headers=a.include.resolve(strict=True)
+ origin=Path(__file__).resolve().parent;sdk=a.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=provider_sdk.sdk_compiler(sdk);library=a.ort_library.resolve(strict=True);model=a.model.resolve(strict=True);headers=a.include.resolve(strict=True)
  if not library.is_file() or not model.is_file() or not 0<model.stat().st_size<=33554432 or a.spec.stat().st_size>65536:p.error('bounded existing model/runtime/spec files required')
  spec=json.loads(a.spec.read_text());allowed={'schema','id','sha256','inputs','outputs','precision'}
  if set(spec)-allowed or spec.get('schema')!='nex.model-artifact/1' or not identifier(spec.get('id'),128) or spec.get('sha256')!=sha(model):p.error('spec schema/id/model SHA256 mismatch')

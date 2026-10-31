@@ -40,7 +40,7 @@ def main():
     if platform.system() != 'Linux' or platform.machine() not in ('aarch64', 'arm64'):
         parser.error('this experimental adapter requires Linux ARM64')
     sdk = args.sdk.resolve(strict=True)
-    compiler = sdk / 'bin/nex'
+    compiler = provider_sdk.sdk_compiler(sdk)
     resources = sdk / 'share/nex'
     origin = Path(__file__).resolve().parent
     root = args.output.absolute()
