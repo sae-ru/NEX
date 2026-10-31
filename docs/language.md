@@ -690,7 +690,7 @@ Toolchain 0.10 instruments reachable native function calls and managed shallow a
 ## Executable contract projection (toolchain 0.152)
 
 `nex contract --kind runtime` explicitly produces a separately checked source
-revision with scalar pre/post assertions. It uses existing lambda/assert syntax,
+revision with scalar pre/post assertions. It uses existing function/assert syntax,
 ordinary checked traps and all three existing execution backends; it adds no
 keywords, semantic format or language migration. Source bodies retain their return
 boundary, so postconditions run after normal `finally` return replacement.

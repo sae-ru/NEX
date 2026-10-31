@@ -238,5 +238,5 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    is added. Task network/DB and HTTP task provider/debug/profile remain pending. *)
 
 (* Toolchain0.152 executable scalar contracts explicitly project ordinary
-   assert/lambda source into a distinct checked revision. No new syntax, hidden
+   assert/function source into a distinct checked revision. No new syntax, hidden
    execution flag, runtime ABI or language migration; see runtime-contracts.md. *)

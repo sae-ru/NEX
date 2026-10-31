@@ -253,4 +253,33 @@ fn main()->i64{return looped(3);}
         self.cli('test','--target','web',cwd=directory,timeout=240)
 
 
+
+    def test_generated_scalar_proof_and_no_added_closure_allocations(self):
+        self.source("module measured; fn increment(x:i64)->i64{return x+1;} fn main()->unit{var i:i64=0;var total:i64=0;while i<50000{total=total+increment(i);i=i+1;}assert(total==1250025000);}\n")
+        original=self.contract('increment',['x>=0','x<9223372036854775807'],['result==x+1'])
+        directory,report=self.generate(original)
+        self.assertTrue(report['functions'][0]['implementation_symbol'].startswith('measured::'))
+        proof=self.cli('contract','--symbol','increment',cwd=directory)
+        proof['functions'][0]['requires']=original['functions'][0]['requires']
+        proof['functions'][0]['ensures']=original['functions'][0]['ensures']
+        path=directory/'proof.json';path.write_text(json.dumps(proof))
+        verified=self.cli('verify','--contracts',path,cwd=directory,timeout=90)
+        self.assertTrue(verified['ok']);self.assertEqual(verified['functions'][0]['status'],'proven')
+        profile=self.cli('profile','--scenario','scalar-contract-allocations',cwd=directory,timeout=300)
+        for pool in json.loads(Path(profile['output']).read_text())['memory']:
+            self.assertEqual(pool['allocations'],0);self.assertEqual(pool['live'],0)
+
+    def test_generated_names_preserve_existing_source_definitions(self):
+        body='module collision; fn increment(x:i64)->i64{return x+1;} fn main()->unit{assert(increment(4)==5);}\n'
+        self.source(body)
+        _,first=self.generate(self.contract('increment',ensures=['result==x+1']),'first')
+        implementation=first['functions'][0]['implementation_symbol'].split('::')[-1]
+        changed=body.replace('assert(increment(4)==5);','assert(increment(4)==5);assert('+implementation+'()==99);')
+        changed+='fn '+implementation+'()->i64{return 99;}\n'
+        self.source(changed)
+        directory,second=self.generate(self.contract('increment',ensures=['result==x+1']),'collision')
+        self.assertNotEqual(first['functions'][0]['implementation_symbol'],second['functions'][0]['implementation_symbol'])
+        self.agreement(directory)
+
+
 if __name__=='__main__':unittest.main()

@@ -125,7 +125,9 @@
               "content_hash",
               "requires",
               "ensures",
-              "normal_returns_only"
+              "normal_returns_only",
+              "implementation_symbol",
+              "implementation_content_hash"
             ],
             "properties": {
               "symbol": {
@@ -150,6 +152,13 @@
               },
               "normal_returns_only": {
                 "const": true
+              },
+              "implementation_symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "implementation_content_hash": {
+                "$ref": "#/$defs/digest"
               }
             }
           }
@@ -232,7 +241,9 @@
               "content_hash",
               "requires",
               "ensures",
-              "normal_returns_only"
+              "normal_returns_only",
+              "implementation_symbol",
+              "implementation_content_hash"
             ],
             "properties": {
               "symbol": {
@@ -257,6 +268,13 @@
               },
               "normal_returns_only": {
                 "const": true
+              },
+              "implementation_symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "implementation_content_hash": {
+                "$ref": "#/$defs/digest"
               }
             }
           }

@@ -3605,6 +3605,8 @@
       "runtime loop contracts",
       "source contract syntax"
     ],
-    "session_schema": "nex.runtime-contract-session/1"
+    "session_schema": "nex.runtime-contract-session/1",
+    "body_lowering": "ordinary_private_function",
+    "projection_introduces_closures": false
   }
 }

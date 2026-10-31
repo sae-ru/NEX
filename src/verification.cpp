@@ -298,7 +298,14 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     for(const auto &[key,value]:*files)if(key==name||key.str().starts_with(std::string(name)+"/"))
       throw Error("E_CONTRACT_RUNTIME","source member conflicts with runtime contract export metadata");
   struct Edit {size_t begin,end;std::string text;};
-  std::map<std::string,std::vector<Edit>> edits;Array coverage;
+  std::map<std::string,std::vector<Edit>> edits;
+  std::map<std::string,std::string> implementations;
+  std::map<std::string,std::set<std::string>> identifiers;
+  std::set<std::string> globalNames;
+  for(const auto &function:original.functions)globalNames.insert(function.localName);
+  for(const auto &type:original.structures)globalNames.insert(type.localName);
+  for(const auto &trait:original.traits)globalNames.insert(trait.localName);
+  Array coverage;
   // Predicate checking may prepare derived frontend metadata. Keep it separate
   // from the immutable source snapshot and avoid holding vector references.
   auto checked=original;
@@ -335,17 +342,34 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       return out;
     };
     auto replacement=checks(spec.pre,"requires");
-    // A source lambda provides the original return boundary. All of its normal
-    // exits, including return replacement in finally, converge at the caller.
-    // Original parameter snapshots stay outside local shadows in the body.
+    // A private ordinary function retains the original return boundary without
+    // introducing a closure allocation. Original recursive references still
+    // select the guarded source function, never the implementation name.
+    if(!identifiers.contains(f.unit)){
+      auto &names=identifiers[f.unit];names=globalNames;
+      for(const auto &token:sourceTokens(source->str(),f.span.file))if(token.identifier)names.insert(token.text);
+    }
+    auto stem="nex_contract_body_"+hash(f.name+contentHash(f)).substr(0,16),implementation=stem;
+    auto &names=identifiers.at(f.unit);
+    for(unsigned suffix=1;names.contains(implementation)||globalNames.contains(implementation);++suffix)implementation=stem+"_"+std::to_string(suffix);
+    names.insert(implementation);globalNames.insert(implementation);
+    std::string parameters,arguments;
+    for(const auto &param:f.params){
+      if(!parameters.empty()){parameters+=", ";arguments+=", ";}
+      parameters+=param.name+": "+typeName(param.type);arguments+=param.name;
+    }
+    implementations[f.unit]+="\n\n"+f.realm+" fn "+implementation+"("+parameters+") -> "+typeName(f.result)+" {"+definition.substr(open+1,close-open-1)+"}\n";
     replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+typeName(f.result)+" = ";
-    replacement+="("+f.realm+" fn() -> "+typeName(f.result)+" {\n"+definition.substr(open+1,close-open-1)+"\n  })();\n";
+    replacement+=implementation+"("+arguments+");\n";
+    auto owner=f.name.substr(0,f.name.rfind("::"));
+    auto implementationSymbol=owner+"::"+implementation;
     if(f.result!=Type::Unit)locals[spec.result]=f.result;
     replacement+=checks(spec.post,"ensures");
     replacement+=f.result==Type::Unit?"  return;\n":"  return "+spec.result+";\n";
     edits[f.unit].push_back({f.span.begin+open+1,f.span.begin+close,"\n"+replacement});
     coverage.push_back(Object{{"symbol",f.name},{"origin_content_hash",contentHash(f)},
-      {"requires",spec.pre.size()},{"ensures",spec.post.size()},{"normal_returns_only",true}});
+      {"requires",spec.pre.size()},{"ensures",spec.post.size()},{"normal_returns_only",true},
+      {"implementation_symbol",implementationSymbol}});
   }
   for(auto &[unit,changes]:edits){
     auto source=files->getString(unit)->str();
@@ -354,12 +378,17 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       if(edit.begin>edit.end||edit.end>previous)throw Error("E_CONTRACT_RUNTIME","overlapping source contract roots");
       source.replace(edit.begin,edit.end-edit.begin,edit.text);previous=edit.begin;
     }
-    (*files)[unit]=std::move(source);
+    source+=implementations.at(unit);(*files)[unit]=std::move(source);
   }
-  // Every generated expression/closure is checked using the ordinary language,
+  // Every generated expression/function is checked using the ordinary language,
   // realm, effect and lifetime rules before an output directory is created.
   auto candidate=loadBundle(bundle,root);
-  for(auto &item:coverage){auto object=item.getAsObject();(*object)["content_hash"]=contentHash(candidate.function(required(*object,"symbol")));}
+  for(auto &item:coverage){
+    auto object=item.getAsObject();(*object)["content_hash"]=contentHash(candidate.function(required(*object,"symbol")));
+    const auto &implementation=candidate.function(required(*object,"implementation_symbol"));
+    if(implementation.exported||implementation.closure)throw Error("E_INTERNAL","runtime contract implementation must remain private and static");
+    (*object)["implementation_content_hash"]=contentHash(implementation);
+  }
   return Object{{"schema","nex.runtime-contract-candidate/1"},{"language",languageVersion},
     {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
     {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},

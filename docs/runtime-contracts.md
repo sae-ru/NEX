@@ -24,9 +24,11 @@ NEX project with **a distinct source revision** and ordinary build/cache keys.
 Generation does not execute the application or prove its properties.
 
 For each selected function, the generator inserts ordered `assert` calls for
-`requires`, invokes the original body once inside a pure source lambda, inserts
-ordered assertions for `ensures`, and returns the actual value. The lambda keeps
-the original realm and return boundary. Postconditions observe original immutable
+`requires`, invokes the original body once through a private ordinary source function, inserts
+ordered assertions for `ensures`, and returns the actual value. The body function keeps
+the original realm, parameter names/types and return boundary. Its deterministic
+fresh name avoids existing identifiers; the receipt records its qualified symbol
+and content hash. It is not exported from its source module. Postconditions observe original immutable
 parameters and the `returns` binding, after all normal body finalizers and return
 replacement. Local shadows remain inside the body. A unit function has no return
 binding; its fallthrough and explicit returns both reach the postconditions.
@@ -43,7 +45,8 @@ The runtime needs no Z3 dependency.
 
 This is an explicit transformation, not an invisible execution mode. Stack traces,
 debug locations, function hashes and profiling refer to generated source, including
-the body lambda. It adds calls, closure allocation and assertions; normal call/step
+the private body function. It adds a static call and assertions; no closure is
+introduced by the projection. The body retains its own ordinary allocations; normal call/step
 budgets still apply. There is no promise of identical overhead or maximum accepted
 recursion depth. Assertions remain enabled in release builds.
 
@@ -84,12 +87,16 @@ hashes/check counts, compiler identity and both complete source bundles. Its
 `proof_performed: false` and `loop_checks: false` are explicit. It is reproducibility
 evidence, not an authenticated certificate and not a substitute for a separate
 `nex verify` run. Original contract pins do not automatically certify the generated
-revision; regenerate/review proof metadata when proving generated code.
+revision; regenerate/review proof metadata when proving generated code. Ordinary
+nonrecursive scalar body calls remain inside the current verifier subset. Its
+other limits still apply; loops in body helpers need separately reviewed helper
+annotations at their generated coordinates.
 
 Commit original sources, reviewed contracts and tests. When distributing the
 guarded project, commit its generated sources, manifest/lock and receipt together,
 or regenerate them from a pinned compiler and compare recorded hashes. A receipt
-is data: executing edited sources does not automatically validate it. Generation
+is data: executing edited sources does not automatically validate it. Generation exports the selected source closure and a source-project manifest.
+It does not copy component architecture manifests or physical host grants. It
 does not copy original Git/SQLite history; the original project retains it.
 Use normal [graph snapshots](snapshots.md) when transferring that history.
 
