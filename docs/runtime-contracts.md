@@ -62,7 +62,7 @@ Roots must be ordinary concrete source functions. Signatures may use checked
 strings, bytes, finite f64, aggregates, results, callables and genuine resource/task
 values under their existing realm and lifetime rules. Declared effects are
 preserved in both the wrapper and the private body. Tests, externs, generic roots/instances,
-trait signatures or compiler-generated closures can be selected. Their bodies
+trait signatures and compiler-generated closures are rejected. Selected bodies
 retain ordinary checked source semantics, including loops, local aggregates,
 internally handled source errors and `finally`. Recursion is permitted at runtime;
 it remains outside the current scalar proof engine.
