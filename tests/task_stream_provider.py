@@ -7,10 +7,10 @@ if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex stream providers ');root=Path(temporary.name).resolve()
 started=time.monotonic();report={'schema':'nex.private024-stream-providers/1','ok':False,'state':'starting','commands':[],'cases':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.24','private_language':'0.24','public024_published':False,'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,args,env,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,args)),cwd=root,env=env,capture_output=True,text=True,timeout=300)
- (root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr)
+ (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,args)),'exit_code':r.returncode,'expected':expected});save()
  assert r.returncode==expected,(name,r.returncode,r.stdout,r.stderr);return r
 producer='''module producer;pub server fn save()->file !{task,fs}{
@@ -41,7 +41,7 @@ try:
   for backend in ['reference','native']:
    files=case/backend;files.mkdir();(files/'input').write_bytes(b'abcdef')
   request=case/'request.json';request.write_text(json.dumps({'mode':mode,'profile':profile,'task_debug':debug,
-   'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':body}}}))
+   'bundle':{'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':body}}}), newline="\n")
   env={**os.environ,'NEX_FILES_ROOT':str(case/'reference'),'NEX_FILES_WRITE':'1' if writable else '0'}
   result=json.loads(run(name+'-build',[probe,request,case/'build'],env).stdout)
   assert result['ok'] and result['language']=='0.24' and result['reference_error']==error,result

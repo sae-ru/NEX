@@ -1,4 +1,5 @@
 """Observable language, native/interpreter, graph and LLM protocol checks."""
+from sqlite_fixture import connection as sqlite_connection
 import json
 import hashlib
 import os
@@ -13,6 +14,30 @@ import unittest
 
 NEX = str(Path(sys.argv.pop(1)).resolve())
 REPO = Path(__file__).resolve().parents[1]
+
+
+def native_fixture_compiler():
+    return json.loads(subprocess.check_output([NEX,'doctor','--json'],text=True))['native_compiler']
+
+
+def host_toolchain_defaults(doctor):
+    result={'schema':'nex.toolchain/1','target':doctor['host']}
+    if os.name=='nt':
+        result.update(compiler=doctor['native_compiler'],linker=doctor['native_linker'],
+            archiver=doctor['native_archiver'],sysroot=doctor['native_sysroot'],
+            windows={'runtime':doctor['native_windows_runtime'],'notices':doctor['native_windows_notices']})
+    return result
+
+def windows_notices(built):
+    """Selected operator notices must survive the captured Windows runtime."""
+    metadata=json.loads(Path(built['metadata']).read_bytes())
+    selected=json.loads(metadata['toolchain_inputs'])
+    path=selected.get('windows_notices','')
+    if not path:return ''
+    original=Path(path).read_bytes()
+    captured=Path(metadata['runtime_source_projection'])/'third_party/windows-runtime-notices.txt'
+    assert captured.read_bytes()==original,'operator Windows notices changed during capture'
+    return 'Operator-supplied Windows UCRT/static C++ runtime notices\n\n'+Path(path).read_text()+'\n\n'
 def __getattr__(name):
     # DAP clients reuse debugging.py from private host/probe processes. Import
     # alone must not execute that probe as if it were the compiler CLI. Actual
@@ -63,7 +88,10 @@ class ToolchainCase(unittest.TestCase):
             print('Preserved failed fixture: '+str(target),file=sys.stderr)
         self.temp.cleanup()
 
-    def cli(self, *args, ok=True, machine=True, cwd=None, env=None, timeout=60):
+    # Cold native C++ runtime compilation on Windows can exceed 60 s under
+    # parallel CTest load. Source task deadlines and explicit call budgets stay
+    # independent of this parent-process watchdog.
+    def cli(self, *args, ok=True, machine=True, cwd=None, env=None, timeout=(180 if os.name == "nt" else 60)):
         command = [NEX, *map(str, args)]
         if machine:
             command.append("--json")
@@ -84,8 +112,8 @@ class ToolchainCase(unittest.TestCase):
         manifest=self.root/'nex.json'
         if not manifest.exists():
             manifest.write_text(json.dumps({'schema':'nex.project/1','language':getattr(sys.modules[__name__],'CURRENT_LANGUAGE'),
-                                            'entry':self.file.relative_to(self.root).as_posix()})+'\n')
-        self.file.write_text(body)
+                                            'entry':self.file.relative_to(self.root).as_posix()})+'\n', newline="\n")
+        self.file.write_text(body, newline="\n")
         return self.file
 
     def historical_store(self, language):
@@ -99,7 +127,7 @@ class ToolchainCase(unittest.TestCase):
         directory=self.root/'.nex';directory.mkdir(exist_ok=True)
         # The genuine SDK 0.22 sidecar predates this optional filename field.
         # Keep its archived SQL/JSON bytes intact; NEX stores use graph.db.
-        with sqlite3.connect(directory/metadata.get('database','graph.db')) as connection:
+        with sqlite_connection(directory/metadata.get('database','graph.db')) as connection:
             connection.executescript(sql.decode())
             connection.execute('PRAGMA user_version='+str(metadata.get('user_version',0)))
         return metadata

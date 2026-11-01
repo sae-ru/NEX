@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs
 """Actual compiled NEX HTTP descriptor under an existing trusted request host.
 
 This exercises no public HTTP/task compiler target or network transport.
@@ -14,14 +15,14 @@ report={'schema':'nex.task-http-compiled-host/1','ok':False,'state':'starting','
  'compiler':str(compiler),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
  'public_HTTP_task_target':True,'async_network_or_DB_claimed':False,'full_objective_complete':False}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,argv,cwd=None,env=None,expected=0,timeout=600):
- report['state']=name;save();p=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=timeout)
- (root/(name+'.stdout')).write_text(p.stdout);(root/(name+'.stderr')).write_text(p.stderr)
+ report['state']=name;save();p=run_native(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=timeout)
+ (root/(name+'.stdout')).write_text(p.stdout, newline="\n");(root/(name+'.stderr')).write_text(p.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':p.returncode,'expected':expected});save()
  assert p.returncode==expected,(name,p.returncode,p.stdout[-4000:],p.stderr[-4000:]);return p
 def cli(name,*argv,cwd=None,expected=0):return json.loads(run(name,[compiler,*argv,'--json'],cwd=cwd,expected=expected).stdout)
-def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n')
+def write(path,value):path.write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 HANDLER='''module hosted_http;
 import "std/http.nex" as http;
 pub server fn handle(req:http::Request)->http::Response !{task,throw}{
@@ -40,8 +41,8 @@ pub server fn reference()->str !{task,throw}{
 '''
 try:
  project=root/'project';(project/'handler').mkdir(parents=True);(project/'app').mkdir()
- (project/'handler/main.nex').write_text(HANDLER)
- (project/'app/main.nex').write_text('module hosted_app;import "../handler/main.nex" as h;server fn main()->unit !{task,io,throw}{print(h::reference());}\n')
+ (project/'handler/main.nex').write_text(HANDLER, newline="\n")
+ (project/'app/main.nex').write_text('module hosted_app;import "../handler/main.nex" as h;server fn main()->unit !{task,io,throw}{print(h::reference());}\n', newline="\n")
  write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})
  write(project/'nex.build.json',{'schema':'nex.project-build/1','default_configuration':'debug',
   'configurations':{'debug':{'profile':'debug','target':'native'}},'components':{

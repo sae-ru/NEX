@@ -1,0 +1,69 @@
+{
+  "schema": "nex.windows-lldb-source-build-evidence/1",
+  "recorded_at_utc": "2026-10-31T22:51:11.763550+00:00",
+  "scope": "Native Windows debugger source build, embedded Python/SB API startup and measured PE DLL closures only",
+  "version": "23.1.4+nex-windows-7a75c2898046",
+  "prefix": "build/deps/windows-debugger23-source-b/clang64",
+  "build_passed": true,
+  "embedded_python_and_sb_api_startup_passed": true,
+  "requires_WSL": false,
+  "requires_MSYS_runtime": false,
+  "full_debugger_regression_accepted": false,
+  "full_windows_regression_accepted": false,
+  "compiler_scope": "NEX compiler and applications still use LLVM/MLIR22.1.8; this auxiliary debugger is isolated",
+  "inputs": [
+    {
+      "path": "build/local/lldb23-backport-v1/lldb23-windows-backport.json",
+      "sha256": "dbedd56028ac3179238fc0fb3fa81ff8c0d8c4762928d048786e88a5d5ee8f29"
+    },
+    {
+      "path": "build/local/lldb23-backport-v1/lldb23-windows-backport.patch",
+      "sha256": "7a75c28980462171f8d020f62a102def00eb4d49c2e7bd95da7736e02049f81a"
+    },
+    {
+      "path": "tools/windows/debugger23-dependencies.lock.json",
+      "sha256": "1c9becb8d01a5f71bf95b58533f0bf96d8629120fd2c535ce7dd51ae3efb00d1"
+    },
+    {
+      "path": "tools/windows/debugger-build23-dependencies.lock.json",
+      "sha256": "7d0454b73e71ee4b94d770e6ca61a662333f02ba7dfa2764d4c4121cbce698fa"
+    }
+  ],
+  "files": {
+    "lldb.exe": "3d9413ba0b91b537e7d465bb395dfb798f73f70cf45cddf395df164faf0e7d25",
+    "lldb-dap.exe": "abdd0581d0d71abdaf4cd13c5229087c996b30b4a7725d05cb9c1b2be0a65630",
+    "lldb-server.exe": "9640073e262ac0b5c2d3714157a6f915715c6f2e5122d23eca31ded7c8afa4ce",
+    "liblldb.dll": "a295e71c208b70ec5ce737a04821ace79907fdefec6338f73f989fcd4de12e10"
+  },
+  "evidence": [
+    {
+      "path": "build/deps/windows-debugger23-source-b/clang64/nex-debugger-build.json",
+      "sha256": "614d102835668e2717beebd55ea31a9c00394e3f7b9543f7b6f3cf6a4ff9cec5"
+    },
+    {
+      "path": "build/local/windows-lldb23-source-repro.log",
+      "sha256": "308ee2df399ce0407e5bd3620db1b172e7fbab21fa5cb8255914defe746456f9"
+    },
+    {
+      "path": "build/local/windows-lldb23-source-api-startup.log",
+      "sha256": "45cd5b34d3a2549d475fdc35e159257112f0b0467575dd6036fc9cf440c07822"
+    },
+    {
+      "path": "build/local/windows-lldb23-source-b-lldb.exe-closure.json",
+      "sha256": "6e773a234cfe4a97b05bcf9a81dd18f29839aafbd9106e4dade198f509a2d39f"
+    },
+    {
+      "path": "build/local/windows-lldb23-source-b-lldb-dap.exe-closure.json",
+      "sha256": "67429bb7f86e3098488364add6854d40d8c6b22ad2ec4708b07307383fe4e4d1"
+    },
+    {
+      "path": "build/local/windows-lldb23-source-b-lldb-server.exe-closure.json",
+      "sha256": "81e0a1fd365eb54d1774fa13c826c984b5748401ad9ebfc6065e64b6bd4313bf"
+    }
+  ],
+  "pending": [
+    "Repeated real DLL breakpoint/stack/watch/continue checks",
+    "NEX-DAP regression, full CTest and relocated SDK with the final compiler cohort"
+  ],
+  "external_block": "New ordinary Windows launches requiring sandbox escalation await restoration of Codex automatic approval review quota; user said they will notify us."
+}

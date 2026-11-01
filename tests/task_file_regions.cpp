@@ -12,7 +12,7 @@ namespace fs=std::filesystem;
 void require(bool ok,const char *why){if(!ok)throw std::runtime_error(why);}
 template<class F>void error(const char *code,F f){try{f();}catch(const DataError &e){require(e.code==code,"wrong diagnostic");return;}throw std::runtime_error("expected rejection");}
 int main(){try{
-  char path[]="/tmp/nex-file-regions-XXXXXX";auto *created=::mkdtemp(path);require(created,"mkdtemp failed");fs::path root(created);
+  auto path=(fs::temp_directory_path()/"nex-file-regions-XXXXXX").string();auto *created=::mkdtemp(path.data());require(created,"mkdtemp failed");fs::path root(created);
   struct Cleanup{fs::path root;~Cleanup(){std::error_code e;fs::remove_all(root,e);}}cleanup{root};
   std::ofstream(root/"input",std::ios::binary)<<"abcdef";
   TextFiles files(root.string(),true);FileScope scope(files);auto reads=captureFileReadGrant(false);

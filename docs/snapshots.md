@@ -93,8 +93,11 @@ this is not a filesystem sandbox against concurrent path replacement.
 `--timeout` is 1–3600 seconds, default 60. The cooperative deadline covers SQLite
 busy/locked retries, progress and incremental file copying; an operating-system
 I/O call may still block. No fixed graph byte limit or disk-space reservation is
-implied. The current implementation targets macOS/Linux POSIX hosts; Windows
-and other platform validation remain pending.
+implied. The Windows x64 adapter uses protected current-user ACLs, real64-bit
+file identities and `FlushFileBuffers`. A local graph-schema4 snapshot/recovery,
+HEAD execution and explicit source export are checked in the
+[Windows-hosted compiler receipt](windows-host.md). Full Windows snapshot
+regression and other platform validation remain pending.
 
 Invalid options return `E_OPTION`; member/path problems `E_SNAPSHOT_FILE`;
 unsupported metadata/structure `E_SNAPSHOT_FORMAT`; digest or recovered-state

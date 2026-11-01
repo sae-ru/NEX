@@ -90,7 +90,7 @@ test fn codec() -> unit {
         self.cli('test','--target','web')
 
     def test_imported_cases_visibility_and_nominal_identity(self):
-        (self.root/'model.nex').write_text('module model; pub enum E { A(value:i64); B; } enum Hidden { X; }')
+        (self.root/'model.nex').write_text('module model; pub enum E { A(value:i64); B; } enum Hidden { X; }', newline="\n")
         self.source('''module app; import "./model.nex" as m;
 fn value(e:m::E) -> i64 { match e { m::E::A(n) => {return n;} m::E::B() => {return 0;} } }
 fn main() -> unit !{io} { print(value(m::E::A(42))); }
@@ -98,7 +98,7 @@ test fn works() -> unit { assert(value(m::E::A(42)) == 42); }''')
         self.agree('42\n')
         revision=self.cli('check')['revision'];(self.root/'model.nex').unlink()
         self.assertEqual(self.cli('run','--revision',revision)['stdout'],'42\n')
-        (self.root/'model.nex').write_text('module model; enum Hidden { X; }')
+        (self.root/'model.nex').write_text('module model; enum Hidden { X; }', newline="\n")
         self.source('module app; import "./model.nex" as m; fn main() -> unit { m::Hidden::X(); }')
         self.assertEqual(self.cli('check',ok=False)['code'],'E_VISIBILITY')
 
@@ -137,14 +137,14 @@ test fn allowed() -> unit { let value:Link = nested(21); assert(unwrap(decode_js
         graph=self.cli('graph');self.assertEqual({n['name']:n['id'] for n in graph['nodes']},{n['name']:n['id'] for n in old_graph['nodes']})
 
     def test_case_ids_bindings_and_native_cache_survive_reordered_cases(self):
-        model=self.root/'model.nex';model.write_text('module model; pub enum E { A(value:i64); B; } pub fn value() -> E { return E::A(42); }')
+        model=self.root/'model.nex';model.write_text('module model; pub enum E { A(value:i64); B; } pub fn value() -> E { return E::A(42); }', newline="\n")
         self.source('''module app; import "./model.nex" as m;
 fn number(e:m::E) -> i64 { match e { m::E::A(value) => {return value;} m::E::B() => {return 0;} } }
 fn main() -> unit !{io} { print(number(m::value())); }''')
         self.cli('check');old=self.cli('operations','--symbol','number','--limit','1000')['nodes']
         first=self.cli('build');self.assertEqual(first['compiled_modules'],2)
         self.assertEqual(self.cli('build')['compiled_modules'],0)
-        model.write_text(model.read_text().replace('A(value:i64); B;','B; A(value:i64);'))
+        model.write_text(model.read_text().replace('A(value:i64); B;','B; A(value:i64);'), newline="\n")
         self.cli('check');new=self.cli('operations','--symbol','number','--limit','1000')['nodes']
         before={n['path']:n for n in old};after={n['path']:n for n in new}
         cases=[p for p,n in before.items() if n['kind']=='pattern.case'];self.assertEqual(len(cases),2)

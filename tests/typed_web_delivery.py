@@ -78,14 +78,14 @@ def build_case(variant):
  '''+old;assert old in text;text=text.replace(old,new,1)
  old='web::button("Trap", "trap")';new='web::button("Recover typed", "recover"), web::button("Typed uncaught", "uncaught"), web::button("Typed rethrow", "rethrow"), web::button("Legacy error", "legacy"), web::button("Callable payload", "callable"), '+old;assert old in text;text=text.replace(old,new,1)
  text+='\nserver fn never_ship()->unit !{throw}{throw(ServerOnlyFault("SERVER_MUST_NOT_SHIP_150"));}\nclient fn unused_client()->str{return "UNUSED_CLIENT_MUST_NOT_SHIP_150";}\n'
- (root/'main.nex').write_text(text);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n')
- manifest={'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release'},'debug':{'profile':'debug'}},'components':{'app':{'kind':'web','root':'.','entry':'main.nex'}}};(root/'nex.build.json').write_text(json.dumps(manifest)+'\n')
+ (root/'main.nex').write_text(text, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n', newline="\n")
+ manifest={'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release'},'debug':{'profile':'debug'}},'components':{'app':{'kind':'web','root':'.','entry':'main.nex'}}};(root/'nex.build.json').write_text(json.dumps(manifest)+'\n', newline="\n")
  report={'ok':False,'variant':a.variant,'scope':'explicit C++027 checked web delivery','commands':[],'cases':[]};started=time.monotonic()
- def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def run(label,argv,cwd=root,timeout=600,expected=0):
-  r=subprocess.run(list(map(str,argv)),cwd=cwd,env=env,text=True,capture_output=True,timeout=timeout);(O/(label+'.stdout')).write_text(r.stdout);(O/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode==expected,(label,r.stdout[-3500:],r.stderr[-3000:]);return r
+  r=subprocess.run(list(map(str,argv)),cwd=cwd,env=env,text=True,capture_output=True,timeout=timeout);(O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode==expected,(label,r.stdout[-3500:],r.stderr[-3000:]);return r
  def request(label,action='build',**extra):
-  data={'action':action,'root':str(root),'source_language':'0.27','configuration':'release',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n');return json.loads(run(label,[args.project_probe,file]).stdout)
+  data={'action':action,'root':str(root),'source_language':'0.27','configuration':'release',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n', newline="\n");return json.loads(run(label,[args.project_probe,file]).stdout)
  plan=request('plan','plan');assert not plan['graph_store_opened'];checked=plan['components'][0]
  built=request('build');assert not built['graph_store_opened'];app=Path(built['artifacts'][0]['result']['directory']);report['generated_project']=str(app);save()
  for name,execution in [('nex-map.json','synchronous'),('nex-worker-map.json','task-generator' if a.variant=='async' else 'synchronous')]:
@@ -109,7 +109,7 @@ def build_case(variant):
  if(result.code===''){const value=JSON.parse(result.body);assert.equal(value.value,process.argv[2]==='legacy'?'42':'9007199254741000');assert.equal(value.data,EXPECTED_BYTES);}
  else {assert.equal(result.body,'');assert(!JSON.stringify(result).includes('PRIVATE_TYPED'));if(result.code==='E_SOURCE_EXCEPTION')assert.equal(result.message,'Uncaught NEX source exception');}
  process.stdout.write(JSON.stringify({ok:true,mode:process.argv[2],code:result.code})+'\\n');
- '''.replace('EXPECTED_BYTES',json.dumps(base64.b64encode('A🧠\0'.encode()).decode())))
+ '''.replace('EXPECTED_BYTES',json.dumps(base64.b64encode('A🧠\0'.encode()).decode())), newline="\n")
  for mode,code in [('normal',''),('callable',''),('legacy',''),('uncaught','E_SOURCE_EXCEPTION'),('rethrow','E_SOURCE_EXCEPTION'),('trap','E_DIV_ZERO')]:
   run('node-'+mode,[env['NEX_NODE'],'--experimental-strip-types','--no-warnings',driver,mode,code]);report['cases'].append({'mode':mode,'Node_UI_and_worker_entry':True,'code':code,'passed':True});save()
  cached=request('cached-build');assert cached['artifacts'][0]['result']['cached']
@@ -120,10 +120,10 @@ def build_case(variant):
 
 def agreement_cases():
  O=output/'agreement';O.mkdir();report={'ok':False,'cases':[],'commands':[]};started=time.monotonic()
- def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def run(label,argv,cwd=O,expected=0):
   r=subprocess.run(list(map(str,argv)),cwd=cwd,env=env,text=True,capture_output=True,timeout=600)
-  (O/(label+'.stdout')).write_text(r.stdout);(O/(label+'.stderr')).write_text(r.stderr)
+  (O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n")
   report['commands'].append({'label':label,'exit':r.returncode});save();assert r.returncode==expected,(label,r.stdout[-3000:],r.stderr[-2500:]);return r
  for variant in ['async','pure']:
   source=(output/variant/'project/main.nex').read_text().replace('client fn','shared fn')
@@ -135,21 +135,21 @@ def agreement_cases():
   assert(worker_compute(Input(0,0,"legacy")).value==42);
   print(42);
  }\n'''
-  root=O/variant;root.mkdir();(root/'main.nex').write_text(source);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n');(root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release'}},'components':{'app':{'kind':'executable','root':'.','entry':'main.nex'}}})+'\n')
+  root=O/variant;root.mkdir();(root/'main.nex').write_text(source, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n', newline="\n");(root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release'}},'components':{'app':{'kind':'executable','root':'.','entry':'main.nex'}}})+'\n', newline="\n")
   reference=json.loads(run(variant+'-reference',[args.reference_probe,'project-reference',root/'main.nex']).stdout);assert reference=={'kind':'return','value':None,'output':'42\n'},reference
-  request=O/(variant+'.request.json');request.write_text(json.dumps({'action':'run','root':str(root),'source_language':'0.27','configuration':'release'})+'\n');native=json.loads(run(variant+'-native',[args.project_probe,request],root).stdout);actual=native['observation'];assert actual['exit_code']==0 and actual['stdout']=='42\n' and not actual['stderr'],actual
+  request=O/(variant+'.request.json');request.write_text(json.dumps({'action':'run','root':str(root),'source_language':'0.27','configuration':'release'})+'\n', newline="\n");native=json.loads(run(variant+'-native',[args.project_probe,request],root).stdout);actual=native['observation'];assert actual['exit_code']==0 and actual['stdout']=='42\n' and not actual['stderr'],actual
   generated=root/'retained-typescript';run(variant+'-typescript',[args.reference_probe,'project-typescript',root/'main.nex',generated]);mapping=json.loads((generated/'nex-map.json').read_text());assert mapping['schema']=='nex.development-typescript/027-3' and mapping['public_revision'] is False and 'revision' not in mapping
-  (generated/'runner.ts').write_text("import { main, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>main()),sourceErrorContracts);\n")
+  (generated/'runner.ts').write_text("import { main, sourceErrorContracts } from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>main()),sourceErrorContracts);\n", newline="\n")
   actual=run(variant+'-node',[env['NEX_NODE'],'--experimental-strip-types','--no-warnings',generated/'runner.ts']);assert actual.stdout=='42\n',actual.stdout
   assert not (root/'.nex/graph.db').exists()
   report['cases'].append({'variant':variant,'reference_native_Node_agreement':True,'retained_development_map_preserved':True,'stdout':'42\n','passed':True});save()
  golden=json.loads((Path(__file__).resolve().parent/'fixtures/web-026-sdk149-origin.json').read_text())
- control=O/'retained026';control.mkdir();(control/'main.nex').write_text(golden['source'])
+ control=O/'retained026';control.mkdir();(control/'main.nex').write_text(golden['source'], newline="\n")
  for name,text in golden['library_sources'].items():
-  file=control/'lib'/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(text)
- (control/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex','libraries':{'std':'lib'}})+'\n')
- (control/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'web','root':'.','entry':'main.nex'}}})+'\n')
- request=O/'retained026.request.json';request.write_text(json.dumps({'action':'plan','root':str(control),'source_language':'0.26'})+'\n')
+  file=control/'lib'/name;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(text, newline="\n")
+ (control/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex','libraries':{'std':'lib'}})+'\n', newline="\n")
+ (control/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'web','root':'.','entry':'main.nex'}}})+'\n', newline="\n")
+ request=O/'retained026.request.json';request.write_text(json.dumps({'action':'plan','root':str(control),'source_language':'0.26'})+'\n', newline="\n")
  new=json.loads(run('retained026-new',[args.project_probe,request],control).stdout)['components'][0]
  assert new['web_projection']==golden['web_projection'] and new['revision']==golden['revision'] and new['source_bundle_hash']==golden['source_bundle_hash']
  report['cases'].append({'genuine026_web_asset_and_source_identity_preserved':True,'passed':True})
@@ -159,9 +159,9 @@ def contract_cases():
  O=output/'contracts';O.mkdir()
  text=(output/'async/project/main.nex').read_text();manifest=json.loads((output/'async/project/nex.build.json').read_text())
  report={'ok':False,'cases':[]}
- def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def request(root,label,action,expected=0,**extra):
-  data={'action':action,'root':str(root),'source_language':'0.27','configuration':'release',**extra};f=O/(label+'.request.json');f.write_text(json.dumps(data)+'\n');r=subprocess.run([str(args.project_probe),str(f)],cwd=root,env=env,text=True,capture_output=True,timeout=600);(O/(label+'.stdout')).write_text(r.stdout);(O/(label+'.stderr')).write_text(r.stderr);assert r.returncode==expected,(label,r.stdout[-2500:],r.stderr[-2000:]);return json.loads(r.stdout)
+  data={'action':action,'root':str(root),'source_language':'0.27','configuration':'release',**extra};f=O/(label+'.request.json');f.write_text(json.dumps(data)+'\n', newline="\n");r=subprocess.run([str(args.project_probe),str(f)],cwd=root,env=env,text=True,capture_output=True,timeout=600);(O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n");assert r.returncode==expected,(label,r.stdout[-2500:],r.stderr[-2000:]);return json.loads(r.stdout)
  begin=text.index('client fn worker_compute(');end=text.index('client fn update(',begin)
  negatives=[
   ('worker-io',text.replace('worker_compute(input: Input) -> Output !{task,throw}','worker_compute(input: Input) -> Output !{task,throw,io}'),{'E_WEB_SIGNATURE'}),
@@ -172,13 +172,13 @@ def contract_cases():
   ('file-wire',text[:begin]+'server fn worker_compute(input:file)->file !{fs}{return input;}\n'+text[end:],{'E_WEB_SIGNATURE'}),
  ]
  for label,source,codes in negatives:
-  root=O/label;root.mkdir();(root/'main.nex').write_text(source);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n');(root/'nex.build.json').write_text(json.dumps(manifest)+'\n')
+  root=O/label;root.mkdir();(root/'main.nex').write_text(source, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n', newline="\n");(root/'nex.build.json').write_text(json.dumps(manifest)+'\n', newline="\n")
   actual=request(root,label,'plan',expected=1);assert actual['code'] in codes,(label,actual);assert not (root/'.nex').exists()
   report['cases'].append({'rejection':label,'code':actual['code'],'no_generated_state':True,'passed':True});save()
  root=output/'async/project';r=subprocess.run([str(args.nex),'project','--kind','plan','--component','app','--configuration','release','--json'],cwd=root,env=env,text=True,capture_output=True);actual=json.loads(r.stdout);assert r.returncode==0 and actual['language']=='0.27' and not actual['graph_store_opened'],actual
  control=request(root,'ordinary-CLI-control','plan');assert actual['components']==control['components'] and actual['plan_hash']==control['plan_hash']
  report['cases'].append({'ordinary027_CLI_plan_agrees':True,'passed':True});save()
- capture=request(root,'capture','capture');file=O/'capture.json';file.write_text(json.dumps(capture,ensure_ascii=False,indent=2)+'\n');assert request(root,'validate','validate',capture=str(file))['ok']
+ capture=request(root,'capture','capture');file=O/'capture.json';file.write_text(json.dumps(capture,ensure_ascii=False,indent=2)+'\n', newline="\n");assert request(root,'validate','validate',capture=str(file))['ok']
  restored=request(root,'restore','restore',capture=str(file),directory=str(O/'restored'));assert restored['language']=='0.27';plan=request(Path(restored['root']),'restored-plan','plan');assert plan['language']=='0.27' and not plan['graph_store_opened']
  report['cases'].append({'checked027_web_capture_replay':True,'passed':True});save()
  packaged=request(root,'package','package',package_directory=str(O/'package'),compiler=str(args.nex));assert packaged['ok'] and packaged['language']=='0.27'
@@ -193,7 +193,7 @@ def contract_cases():
   report['cases'].append({'relocated_source_absent_web_package':True,'requires_compiler_or_LLM':False,'passed':True});save()
  finally:hidden.rename(source);hidden_cache.rename(cache)
  for i,bad in enumerate(['fs/../escape','fs/.','fs/','/absolute','fs/x/./y']):
-  value=copy.deepcopy(capture);value['project_root']=bad;file=O/('invalid-path-'+str(i)+'.json');file.write_text(json.dumps(value)+'\n')
+  value=copy.deepcopy(capture);value['project_root']=bad;file=O/('invalid-path-'+str(i)+'.json');file.write_text(json.dumps(value)+'\n', newline="\n")
   rejected=request(root,'invalid-path-'+str(i),'validate',expected=1,capture=str(file));assert rejected['code']=='E_PROJECT_CAPTURE'
   report['cases'].append({'strict_untrusted_path_rejected':bad,'passed':True})
  report['package']=str(moved);report['ok']=True;save();print(json.dumps({'ok':True,'cases':len(report['cases']),'report':str(O/'report.json')}))
@@ -205,5 +205,5 @@ for variant in ['async','pure']:
  value=build_case(variant);assert value['ok'];report['cases'].append({'variant':variant,'Node_cases':len(value['cases']),'production_build':True,'passed':True})
 value=agreement_cases();assert value['ok'];report['engine_agreement_and_retained026_cases']=len(value['cases'])
 value=contract_cases();assert value['ok'];report['boundary_capture_package_cases']=len(value['cases'])
-report['ok']=True;(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+report['ok']=True;(output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 print(json.dumps({'ok':True,'production_projects':2,'Node_cases':12,'engine_agreement_and_retained026_cases':report['engine_agreement_and_retained026_cases'],'boundary_capture_package_cases':report['boundary_capture_package_cases'],'report':str(output/'report.json')}))

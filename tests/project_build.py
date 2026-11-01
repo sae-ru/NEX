@@ -1,4 +1,5 @@
 """Project architecture must constrain actual imports and drive real artifacts."""
+from sqlite_fixture import connection as sqlite_connection
 import copy,json,os,shlex,sqlite3,subprocess,sys
 from pathlib import Path
 import unittest
@@ -10,17 +11,17 @@ class Projects(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
         for name in ['core','app','bridge','browser']:(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
-        (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x*3+7;}pub server fn secret()->str{return "NEX_SERVER_ONLY_POISON";}')
-        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}test fn check_value()->unit{assert(m::calculate(5)==22);}')
-        (self.root/'bridge/main.nex').write_text('module bridge;import "../core/value.nex" as m;pub fn answer()->i64{return m::calculate(5);}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
+        (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x*3+7;}pub server fn secret()->str{return "NEX_SERVER_ONLY_POISON";}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}test fn check_value()->unit{assert(m::calculate(5)==22);}', newline="\n")
+        (self.root/'bridge/main.nex').write_text('module bridge;import "../core/value.nex" as m;pub fn answer()->i64{return m::calculate(5);}', newline="\n")
         (self.root/'browser/main.nex').write_text('''module browser;
 import "std/web.nex" as web;import "../core/value.nex" as m;
 client fn initial()->i64{return m::calculate(0);}
 client fn update(s:i64,e:web::Event)->i64{return s+1;}
 client fn view(s:i64)->web::View{return web::element("main",[],[],[web::text(str(s))]);}
 client fn title()->str{return "Project browser";}
-''')
+''', newline="\n")
         self.description={'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'}},
             'components':{
@@ -30,10 +31,10 @@ client fn title()->str{return "Project browser";}
                 'browser':{'kind':'web','root':'browser','entry':'browser/main.nex','dependencies':{'core':'source'}}}}
         self.save()
     def save(self):
-        (self.root/'nex.build.json').write_text(json.dumps(self.description))
+        (self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
     def plan(self,*args,**kwargs):return self.cli('project',*args,**kwargs)
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             tables=[n for n, in db.execute("SELECT name FROM sqlite_master WHERE type='table'")]
             return {n:sorted(db.execute('SELECT * FROM "'+n+'"').fetchall(),key=repr) for n in tables}
     def test_read_only_plan_binds_sources_configuration_and_direct_architecture_edges(self):
@@ -48,12 +49,12 @@ client fn title()->str{return "Project browser";}
         selected=self.plan('--component','app','--configuration','release')
         self.assertEqual([c['name'] for c in selected['components']],['core','app'])
         self.assertNotEqual(a['plan_hash'],selected['plan_hash'])
-        (self.root/'core/value.nex').write_text((self.root/'core/value.nex').read_text().replace('x*3+7','x*3+8'))
+        (self.root/'core/value.nex').write_text((self.root/'core/value.nex').read_text().replace('x*3+7','x*3+8'), newline="\n")
         self.assertNotEqual(self.plan()['plan_hash'],a['plan_hash'])
     def test_plan_does_not_execute_configured_native_compiler(self):
-        target=self.cli('doctor')['host'];fake=self.root/'never-execute';marker=self.root/'executed'
-        fake.write_text('#!/bin/sh\ntouch '+shlex.quote(str(marker))+'\nexit 97\n');fake.chmod(0o700)
-        (self.root/'toolchain.json').write_text(json.dumps({'schema':'nex.toolchain/1','target':target,'compiler':str(fake)}))
+        doctor=self.cli('doctor');target=doctor['host'];fake=self.root/'never-execute';marker=self.root/'executed'
+        fake.write_text('#!/bin/sh\ntouch '+shlex.quote(str(marker))+'\nexit 97\n', newline="\n");fake.chmod(0o700)
+        (self.root/'toolchain.json').write_text(json.dumps({**harness.host_toolchain_defaults(doctor),'compiler':str(fake)}), newline="\n")
         self.description['configurations']['debug']['toolchain']='toolchain.json';self.save()
         self.assertTrue(self.plan('--component','app')['ok']);self.assertFalse(marker.exists())
         self.assertFalse((self.root/'.nex').exists())
@@ -68,7 +69,7 @@ client fn title()->str{return "Project browser";}
         self.cli('test','--target','web')
         library=artifacts['bridge'];debug=json.loads(Path(library['debug_manifest']).read_text())
         symbol=next(f['native_symbol'] for f in debug['functions'] if f['name']=='bridge::answer')
-        host=self.root/'host.cpp';host.write_text('#include "nex_host.h"\nextern "C" long long '+symbol+'();int main(){nexrt::RequestScope scope;return '+symbol+'()==22?0:1;}')
+        host=self.root/'host.cpp';host.write_text('#include "nex_host.h"\nextern "C" long long '+symbol+'();int main(){nexrt::RequestScope scope;return '+symbol+'()==22?0:1;}', newline="\n")
         compiler=self.cli('doctor')['native_compiler'];exe=self.root/'host'
         runtime=json.loads((Path(library['artifact']).parent/'build.json').read_text())['runtime_source_projection']
         linked=subprocess.run([compiler,'-std=c++20','-I',runtime,str(host),library['artifact'],'-o',str(exe)],capture_output=True,text=True,timeout=30)
@@ -90,9 +91,9 @@ client fn title()->str{return "Project browser";}
         self.description['components']['app']['dependencies']={'bridge':'source'};self.save()
         self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_BOUNDARY')
     def test_configured_package_alias_cannot_bypass_component_ownership(self):
-        p=self.root/'nex.json';metadata=json.loads(p.read_text());metadata['libraries']={'alias':'core'};p.write_text(json.dumps(metadata))
+        p=self.root/'nex.json';metadata=json.loads(p.read_text());metadata['libraries']={'alias':'core'};p.write_text(json.dumps(metadata), newline="\n")
         self.description['components']['app']['dependencies']={};self.save()
-        (self.root/'app/main.nex').write_text('module app;import "alias/value.nex" as m;fn main()->i64{return m::calculate(5);}')
+        (self.root/'app/main.nex').write_text('module app;import "alias/value.nex" as m;fn main()->i64{return m::calculate(5);}', newline="\n")
         self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_BOUNDARY')
         self.description['components']['app']['dependencies']={'core':'source'};self.save()
         app=self.plan('--component','app')['components'][-1]
@@ -109,8 +110,8 @@ client fn title()->str{return "Project browser";}
         self.description=copy.deepcopy(baseline);(self.root/'alias').symlink_to(self.root/'core',target_is_directory=True)
         self.description['components']['app']['root']='alias';self.description['components']['app']['entry']='alias/value.nex';self.save()
         self.assertEqual(self.plan(ok=False)['code'],'E_PROJECT_BUILD')
-        self.description=baseline;self.save();(self.root/'hidden.nex').write_text('module hidden;pub fn value()->i64{return 1;}')
-        (self.root/'app/main.nex').write_text('module app;import "../hidden.nex" as h;fn main()->i64{return h::value();}')
+        self.description=baseline;self.save();(self.root/'hidden.nex').write_text('module hidden;pub fn value()->i64{return 1;}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../hidden.nex" as h;fn main()->i64{return h::value();}', newline="\n")
         self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_BOUNDARY')
     def test_unknown_configuration_component_fields_and_unsupported_linkage_reject(self):
         for option,value in [('--component','absent'),('--configuration','absent')]:
@@ -134,8 +135,8 @@ client fn title()->str{return "Project browser";}
         return built,artifacts,run
     def archived_alias_fixture(self):
         self.binary_core()
-        p=self.root/'nex.json';metadata=json.loads(p.read_text());metadata['libraries']={'alias':'core'};p.write_text(json.dumps(metadata))
-        (self.root/'core/value.nex').write_text('module model;import "./logic.nex" as detail;pub fn calculate(x:i64)->i64{return detail::offset(x);}')
+        p=self.root/'nex.json';metadata=json.loads(p.read_text());metadata['libraries']={'alias':'core'};p.write_text(json.dumps(metadata), newline="\n")
+        (self.root/'core/value.nex').write_text('module model;import "./logic.nex" as detail;pub fn calculate(x:i64)->i64{return detail::offset(x);}', newline="\n")
         (self.root/'core/logic.nex').write_text('''module library_detail;
 pub fn offset(x:i64)->i64{
  let held:list<str>=["Я","🧠"];
@@ -143,8 +144,8 @@ pub fn offset(x:i64)->i64{
  assert(len(held)==2);
  return result; // LIBRARY_STOP
 }
-''')
-        (self.root/'app/main.nex').write_text('module app;import "alias/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}')
+''', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "alias/value.nex" as m;fn main()->unit!{io}{print(m::calculate(5));}', newline="\n")
         _,artifacts,run=self.build_binary_app('debug')
         self.assertEqual((run.returncode,run.stdout),(0,'22\n'),run.stderr)
         return artifacts
@@ -197,7 +198,7 @@ def __lldb_init_module(debugger,internal_dict):
   with open(REPORT,'w') as output:json.dump({'watch':watch,'source_listing':listing},output)
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('PROJECTED',repr(projected)).replace('LINE',str(line)).replace('CWD',repr(str(self.root))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))))
+'''.replace('PROJECTED',repr(projected)).replace('LINE',str(line)).replace('CWD',repr(str(self.root))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))), newline="\n")
         for p in self.root.glob('core/*.nex'):p.unlink()
         (self.root/'app/main.nex').unlink()
         args=[os.environ.get('NEX_LLDB','lldb'),app['artifact'],'--no-lldbinit','--batch',
@@ -244,7 +245,7 @@ def __lldb_init_module(debugger,internal_dict):
         private=Path(fixed['app']['artifact']).parent/'libraries/0.a';private.write_bytes(b'bad captured input')
         _,fixed,last=self.build_binary_app();self.assertFalse(fixed['app']['cached'])
         self.assertEqual((last.returncode,last.stdout),(0,'22\n'),last.stderr)
-        abi=Path(fixed['core']['artifact']).parent/'library-abi.json';abi.write_text('{}')
+        abi=Path(fixed['core']['artifact']).parent/'library-abi.json';abi.write_text('{}', newline="\n")
         _,fixed,last=self.build_binary_app();self.assertFalse(fixed['core']['cached'])
         self.assertEqual((last.returncode,last.stdout),(0,'22\n'),last.stderr)
     def test_library_exports_aggregates_callbacks_and_snapshot_closures(self):
@@ -256,7 +257,7 @@ pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};
 pub fn roundtrip(p:Payload)->Payload{return Payload(p.text+"🧠",p.data,p.values,p.callback);}
 pub fn invoke(f:fn(i64)->i64,x:i64)->i64{return f(x);}
 pub fn packed(value:Payload)->result<Envelope>{return ok(Envelope::Some(value));}
-''')
+''', newline="\n")
         (self.root/'app/main.nex').write_text('''module app;import "../core/value.nex" as m;
 fn plus(x:i64)->i64{return x+1;}
 fn verify()->unit{
@@ -271,7 +272,7 @@ assert(m::invoke(plus,41)==42);let named:fn(i64)->i64=m::calculate;assert(named(
 }
 fn main()->unit!{io}{verify();print("ok");}
 test fn agreement()->unit{verify();}
-''')
+''', newline="\n")
         self.binary_core();self.description['components']['core']['exports']=['make','roundtrip','invoke','packed'];self.save()
         for profile in ['debug','release']:
             built,artifacts,run=self.build_binary_app(profile)
@@ -282,8 +283,8 @@ test fn agreement()->unit{verify();}
         self.cli('test','--target','web',timeout=180)
     def test_missing_ordinary_export_rejects_before_build_and_can_be_explicitly_added(self):
         self.binary_core()
-        (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x;}pub fn other()->i64{return 42;}')
-        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::other());}')
+        (self.root/'core/value.nex').write_text('module model;pub fn calculate(x:i64)->i64{return x;}pub fn other()->i64{return 42;}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::other());}', newline="\n")
         for kind in ['plan','build']:
             self.assertEqual(self.plan('--kind',kind,'--component','app',ok=False)['code'],'E_PROJECT_EXPORT')
             self.assertFalse((self.root/'.nex').exists())
@@ -293,7 +294,7 @@ test fn agreement()->unit{verify();}
         self.binary_core();del self.description['components']['browser']
         self.description['components']['bridge']['dependencies']={'core':'static'}
         self.description['components']['app']['dependencies']={'bridge':'static'};self.save()
-        (self.root/'app/main.nex').write_text('module app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::answer());}')
+        (self.root/'app/main.nex').write_text('module app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::answer());}', newline="\n")
         _,artifacts,run=self.build_binary_app();self.assertEqual((run.returncode,run.stdout),(0,'22\n'),run.stderr)
         bridge=json.loads(Path(artifacts['bridge']['compilation']).read_text())
         self.assertEqual([f for u in bridge['units'] for f in u['functions']],['bridge::answer'])
@@ -306,13 +307,13 @@ test fn agreement()->unit{verify();}
 pub fn calculate(x:i64)->i64{return x;}
 pub fn prefix()->str{return "v=";}
 pub fn format<T>(x:T)->str{return prefix()+str(x);}
-''')
-        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::format<i64>(42));}')
+''', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::format<i64>(42));}', newline="\n")
         plan=self.plan('--component','app');app=plan['components'][-1]
         self.assertIn('model::prefix',app['consumer_instantiations'])
         self.assertTrue(any('format' in n for n in app['consumer_instantiations']))
         _,_,run=self.build_binary_app();self.assertEqual((run.returncode,run.stdout),(0,'v=42\n'),run.stderr)
-        p=self.root/'app/main.nex';p.write_text(p.read_text().replace('print(m::format<i64>(42));','print(m::format<i64>(42));print(m::prefix());'))
+        p=self.root/'app/main.nex';p.write_text(p.read_text().replace('print(m::format<i64>(42));','print(m::format<i64>(42));print(m::prefix());'), newline="\n")
         self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_EXPORT')
     def test_runtime_files_and_traps_cross_the_archive_boundary(self):
         self.binary_core()
@@ -321,30 +322,30 @@ pub fn calculate(x:i64)->i64{return x;}
 pub server fn opened()->file!{fs}{return unwrap(file_open_write("data.bin"));}
 pub server fn write(f:file)->unit!{fs}{assert(unwrap(file_write(f,utf8_bytes("Я🧠")))==6);}
 pub fn divide(x:i64)->i64{let owned:list<str>=["held","🧠"];assert(len(owned)==2);return 10/x;}
-''')
+''', newline="\n")
         self.description['components']['core']['exports']=['opened','write','divide'];self.save()
         p=self.root/'app/main.nex';p.write_text('''module app;import "../core/value.nex" as m;
 server fn main()->unit!{fs,io}{let f:file=m::opened();m::write(f);assert(file_close(f));print("files-ok");}
-''')
+''', newline="\n")
         built=self.plan('--kind','build','--component','app',timeout=180);exe=next(a['artifact'] for a in built['artifacts'] if a['component']=='app')
         data=self.root/'data';data.mkdir();env={**os.environ,'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
         run=subprocess.run([exe],env=env,capture_output=True,text=True,timeout=15)
         self.assertEqual((run.returncode,run.stdout),(0,'files-ok\n'),run.stderr)
         self.assertEqual((data/'data.bin').read_bytes(),'Я🧠'.encode())
-        p.write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::divide(0));}')
+        p.write_text('module app;import "../core/value.nex" as m;fn main()->unit!{io}{print(m::divide(0));}', newline="\n")
         for profile in ['debug','release']:
             _,_,run=self.build_binary_app(profile);self.assertNotEqual(run.returncode,0)
             self.assertIn('E_DIV_ZERO',run.stderr);self.assertNotIn('E_INTERNAL_LEAK',run.stderr)
     def test_binary_module_identity_conflict_rejects_even_when_not_imported_by_consumer(self):
         self.binary_core()
-        (self.root/'core/api.nex').write_text('module api;pub fn calculate(x:i64)->i64{return x+1;}')
-        (self.root/'core/value.nex').write_text('module app;import "./api.nex" as api;pub fn root()->i64{return api::calculate(1);}')
+        (self.root/'core/api.nex').write_text('module api;pub fn calculate(x:i64)->i64{return x+1;}', newline="\n")
+        (self.root/'core/value.nex').write_text('module app;import "./api.nex" as api;pub fn root()->i64{return api::calculate(1);}', newline="\n")
         self.description['components']['core'].update(entry_function='root',exports=['api::calculate']);self.save()
-        (self.root/'app/main.nex').write_text('module app;import "../core/api.nex" as a;fn main()->unit!{io}{print(a::calculate(1));}')
+        (self.root/'app/main.nex').write_text('module app;import "../core/api.nex" as a;fn main()->unit!{io}{print(a::calculate(1));}', newline="\n")
         self.assertEqual(self.plan('--component','app',ok=False)['code'],'E_PROJECT_ABI')
         self.assertFalse((self.root/'.nex').exists())
     def test_all_selected_sources_preflight_before_any_artifact_and_selection_is_explicit(self):
-        (self.root/'browser/main.nex').write_text('module broken;fn broken(}')
+        (self.root/'browser/main.nex').write_text('module broken;fn broken(}', newline="\n")
         self.assertTrue(self.plan('--component','app')['ok'])
         out=self.root/'never-created'
         self.plan('--kind','build','--build-directory',out,ok=False)
@@ -358,7 +359,7 @@ server fn main()->unit!{fs,io}{let f:file=m::opened();m::write(f);assert(file_cl
         for raw in [b'{"schema":"nex.project-build/1","schema":"other"}',b'\xff',b' '*262145]:
             p.write_bytes(raw);self.plan(ok=False);self.assertFalse((self.root/'.nex').exists())
     def test_noncurrent_language_is_rejected_before_any_graph_or_artifact(self):
-        p=self.root/'nex.json';x=json.loads(p.read_text());x['language']='0.15';p.write_text(json.dumps(x))
+        p=self.root/'nex.json';x=json.loads(p.read_text());x['language']='0.15';p.write_text(json.dumps(x), newline="\n")
         self.assertEqual(self.plan('--kind','build',ok=False)['code'],'E_LANGUAGE_VERSION');self.assertFalse((self.root/'.nex').exists())
 
 if __name__=='__main__':unittest.main()

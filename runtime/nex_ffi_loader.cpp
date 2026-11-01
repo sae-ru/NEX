@@ -2,6 +2,10 @@
 #include "nex_ffi_module.h"
 #include "nex_ffi_resources.h"
 #include "nex_json.h"
+#ifdef _WIN32
+#include "nex_files.h"
+#include "nex_host_windows.h"
+#endif
 #include "third_party/json.hpp"
 #include <openssl/evp.h>
 #include <array>
@@ -12,7 +16,9 @@
 #include <filesystem>
 #include <thread>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -23,6 +29,10 @@ using J=nlohmann::ordered_json;
 using Poll=std::function<void()>;
 [[noreturn]] void fail(const char *code,const char *message){throw DataError(code,message);}
 void pollNow(const Poll &poll){if(poll)poll();}
+#ifdef _WIN32
+struct WindowsFile {std::shared_ptr<TextFiles> root;FileResource file;};
+struct FD {WindowsFile fd;FD()=default;explicit FD(WindowsFile value):fd(std::move(value)){};};
+#else
 struct FD {
   int fd=-1;
   explicit FD(int fd=-1):fd(fd){}
@@ -31,6 +41,7 @@ struct FD {
   FD &operator=(FD &&other)noexcept{if(this!=&other){if(fd>=0)::close(fd);fd=std::exchange(other.fd,-1);}return *this;}
   ~FD(){if(fd>=0)::close(fd);}
 };
+#endif
 struct Digest {
   std::unique_ptr<EVP_MD_CTX,decltype(&EVP_MD_CTX_free)> context{EVP_MD_CTX_new(),EVP_MD_CTX_free};
   Digest(){if(!context||EVP_DigestInit_ex2(context.get(),EVP_sha256(),nullptr)!=1)fail("E_FFI_HASH","SHA-256 initialization failed");}
@@ -55,6 +66,20 @@ std::vector<std::string> pathParts(const std::string &path){
     if(part.empty()||part=="."||part==".."||part.size()>255||result.size()>=128)fail("E_FFI_MANIFEST","invalid bundle path component");result.push_back(std::move(part));begin=end+1;
   }return result;
 }
+#ifdef _WIN32
+FD openFile(const WindowsFile &root,const std::string &path,const Poll &poll){
+  (void)pathParts(path);pollNow(poll);
+  try{return FD(WindowsFile{root.root,root.root->open(path,FileMode::Read,poll)});}
+  catch(const DataError &error){fail("E_FFI_IO",error.what());}
+}
+template<class Consume> size_t readFile(const WindowsFile &file,size_t limit,const Poll &poll,Consume consume){
+  size_t total=0;auto lease=file.file.lease();
+  for(;;){pollNow(poll);auto bytes=lease.read(65536,poll);if(bytes.empty())break;
+    if(bytes.size()>limit-total)fail("E_FFI_LIMIT","bundle member exceeds byte limit");
+    consume(reinterpret_cast<const char*>(bytes.data()),bytes.size());total+=bytes.size();}
+  return total;
+}
+#else
 FD parent(int root,const std::vector<std::string> &parts,const Poll &poll){FD dir(::fcntl(root,F_DUPFD_CLOEXEC,0));if(dir.fd<0)fail("E_FFI_IO","cannot duplicate bundle directory");
   for(size_t i=0;i+1<parts.size();++i){pollNow(poll);FD next(::openat(dir.fd,parts[i].c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));if(next.fd<0)fail("E_FFI_IO","bundle parent is unavailable or a symbolic link");dir=std::move(next);}return dir;
 }
@@ -69,10 +94,15 @@ template<class Consume> size_t readFile(int fd,size_t limit,const Poll &poll,Con
     if(size_t(n)>limit-total)fail("E_FFI_LIMIT","bundle member exceeds byte limit");consume(buffer.data(),size_t(n));total+=size_t(n);
   }return total;
 }
+#endif
 struct Manifest {FD root;std::string pin,entry,text;std::map<std::string,std::string> files,exports;std::set<std::string> executables;};
 std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Poll &poll){
   auto result=std::make_shared<Manifest>();result->pin=grant.manifestSha256;pollNow(poll);
+#ifdef _WIN32
+  result->root=FD(WindowsFile{std::make_shared<TextFiles>(grant.directory,false),{}});
+#else
   result->root=FD(::open(grant.directory.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC));if(result->root.fd<0)fail("E_FFI_IO","configured bundle directory is unavailable");
+#endif
   auto file=openFile(result->root.fd,"manifest.json",poll);std::string text;
   readFile(file.fd,1048576,poll,[&](const char *data,size_t size){text.append(data,size);});
   if(digest(text)!=result->pin)fail("E_FFI_HASH","foreign bundle manifest hash differs");
@@ -102,10 +132,25 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
 }
 struct Image {
   fs::path directory;void *handle=nullptr;
+#ifdef _WIN32
+  std::optional<host_windows::Identity> identity;
+#endif
   std::shared_ptr<foreign_detail::ResourceRegistry> resourceTypes=std::make_shared<foreign_detail::ResourceRegistry>();
   std::map<std::string,nex_ffi_export_v1> exports;
-  ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
-    for(fs::recursive_directory_iterator it(directory,e),end;!e&&it!=end;it.increment(e))if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
+  ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){
+#ifdef _WIN32
+    if(host_windows::identity(directory)!=identity)return;
+    try{host_windows::privateAccess(directory,FILE_ALL_ACCESS);}catch(...){return;}
+#endif
+    std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
+    for(fs::recursive_directory_iterator it(directory,e),end;!e&&it!=end;it.increment(e)){
+#ifdef _WIN32
+      try{host_windows::privateAccess(it->path(),FILE_ALL_ACCESS);}catch(...){continue;}
+      fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
+#else
+      if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
+#endif
+    }
     e.clear();fs::remove_all(directory,e);}}
 };
 bool ownedAddress(const void *address,const Image &image,const Manifest &manifest){Dl_info info{};if(!address||!::dladdr(address,&info)||!info.dli_fname)return false;
@@ -117,19 +162,51 @@ std::string bounded(const char *text,size_t maximum){if(!text)fail("E_FFI_ABI","
 std::shared_ptr<Image> loadImage(const Manifest &manifest,const Poll &poll){
   auto image=std::make_shared<Image>();auto pattern=(fs::temp_directory_path()/"nex-module-XXXXXX").string();
   pollNow(poll);if(!::mkdtemp(pattern.data()))fail("E_FFI_IO","cannot reserve a private module directory");image->directory=fs::canonical(pattern);
+#ifdef _WIN32
+  TextFiles snapshot(image->directory.string(),true);
+  image->identity=host_windows::identity(image->directory);
+#endif
   size_t total=0;std::vector<fs::path> directories;
   for(const auto &[name,sha]:manifest.files){pollNow(poll);auto source=openFile(manifest.root.fd,name,poll);auto destination=image->directory/name;
     std::error_code ec;fs::create_directories(destination.parent_path(),ec);if(ec)fail("E_FFI_IO","cannot create module snapshot directories");
+#ifdef _WIN32
+    auto output=snapshot.open(name,FileMode::WriteTruncate,poll);Digest d;
+#else
     FD output(::open(destination.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600));if(output.fd<0)fail("E_FFI_IO","cannot create module snapshot member");Digest d;
+#endif
     auto size=readFile(source.fd,std::min<size_t>(64*1048576,256*1048576-total),poll,[&](const char *data,size_t size){
-      d.add(data,size);for(size_t offset=0;offset<size;){pollNow(poll);auto n=::write(output.fd,data+offset,size-offset);if(n<0){if(errno==EINTR)continue;fail("E_FFI_IO","module snapshot write failed");}if(!n)fail("E_FFI_IO","module snapshot write made no progress");offset+=size_t(n);}
+      d.add(data,size);for(size_t offset=0;offset<size;){pollNow(poll);
+#ifdef _WIN32
+        auto first=reinterpret_cast<const uint8_t*>(data+offset);auto n=output.lease().write(std::span<const uint8_t>(first,size-offset),poll);
+#else
+        auto n=::write(output.fd,data+offset,size-offset);if(n<0){if(errno==EINTR)continue;fail("E_FFI_IO","module snapshot write failed");}
+#endif
+        if(!n)fail("E_FFI_IO","module snapshot write made no progress");offset+=size_t(n);}
     });total+=size;if(d.finish()!=sha)fail("E_FFI_HASH","foreign bundle member hash differs");
+#ifdef _WIN32
+    output.flush(poll);output.close();
+    // Data helpers are non-executable unless explicitly granted. DLL members
+    // need image-mapping permission independently of executable helper grants.
+    auto pe=host_windows::readRegular(destination,64*1048576);bool library=false;
+    if(pe.size()>=64&&pe[0]=='M'&&pe[1]=='Z'){
+      uint32_t offset=0;for(unsigned i=0;i<4;++i)offset|=uint32_t(uint8_t(pe[60+i]))<<(8*i);
+      if(offset<=pe.size()-24&&pe.compare(offset,4,std::string("PE\0\0",4))==0)
+        library=(uint8_t(pe[offset+23])&0x20)!=0;
+    }
+    host_windows::privateAccess(destination,FILE_GENERIC_READ|((name==manifest.entry||library||manifest.executables.contains(name))?FILE_GENERIC_EXECUTE:0));
+#else
     if(::fchmod(output.fd,manifest.executables.contains(name)?0500:0400))fail("E_FFI_IO","cannot seal module snapshot member");
+#endif
   }
   std::error_code ec;for(fs::recursive_directory_iterator it(image->directory,ec),end;!ec&&it!=end;it.increment(ec))if(it->is_directory())directories.push_back(it->path());
   if(ec)fail("E_FFI_IO","cannot inspect module snapshot directories");std::sort(directories.rbegin(),directories.rend());
+#ifdef _WIN32
+  for(const auto &dir:directories)host_windows::privateAccess(dir,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+  host_windows::privateAccess(image->directory,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+#else
   for(const auto &dir:directories)if(::chmod(dir.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot directory");if(::chmod(image->directory.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot root");
-  pollNow(poll);image->handle=::dlopen((image->directory/manifest.entry).c_str(),RTLD_NOW|RTLD_LOCAL);if(!image->handle)fail("E_FFI_LOAD","native module load failed");
+#endif
+  pollNow(poll);image->handle=::dlopen((image->directory/manifest.entry).c_str(),RTLD_NOW|RTLD_LOCAL);if(!image->handle){auto detail=::dlerror();throw DataError("E_FFI_LOAD",std::string("native module load failed: ")+(detail?detail:"unknown loader error"));}
   pollNow(poll);::dlerror();auto address=::dlsym(image->handle,"nex_ffi_module_entry");const char *failure=::dlerror();
   if(failure||!entryAddress(address,*image,manifest))fail("E_FFI_ABI","native module entry is absent or outside its entry image");
   auto entry=reinterpret_cast<nex_ffi_module_entry_fn>(address);const nex_ffi_module_v1 *table=nullptr;
@@ -172,6 +249,8 @@ std::string foreignPlatform(){
   const char *os="macos";
 #elif defined(__linux__)
   const char *os="linux";
+#elif defined(_WIN32)
+  const char *os="windows";
 #else
   fail("E_FFI_PLATFORM","native modules are unsupported on this host OS");
 #endif

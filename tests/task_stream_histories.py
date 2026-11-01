@@ -14,7 +14,7 @@ report={'schema':'nex.private024-expanded-stream-histories/1','ok':False,'state'
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'source_probe_sha256':hashlib.sha256(source_probe.read_bytes()).hexdigest(),
  'public_language':'0.27','private_language':'0.24','public025_delivery_accepted':False,'full_objective_complete':False}
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
-def write(p,d):p.write_text(json.dumps(d,indent=2,ensure_ascii=False)+'\n')
+def write(p,d):p.write_text(json.dumps(d,indent=2,ensure_ascii=False)+'\n', newline="\n")
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def state(project):
  database=(project/'.nex/graph.db').resolve();uri=database.as_uri()+'?mode=ro'+('&immutable=1' if not Path(str(database)+'-wal').exists() else '')
@@ -28,7 +28,7 @@ def preserved(before,after):
  assert before['tables']['metadata']==after['tables']['metadata']
 def run(label,argv,project=None,expected=0,env=None):
  report['state']=label;save();r=subprocess.run(list(map(str,argv)),cwd=project or root,env=env or os.environ,capture_output=True,text=True,timeout=240)
- (root/(label+'.stdout')).write_text(r.stdout);(root/(label+'.stderr')).write_text(r.stderr)
+ (root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(project or root),'exit_code':r.returncode,'expected':expected});save()
  assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
 
@@ -36,7 +36,7 @@ def restore(name,meta,sql):
  project=root/name;project.mkdir();(project/'.nex').mkdir();write(project/'nex.json',meta['project_manifest'])
  for n,text in meta['revisions'][-1]['physical_files'].items():
   relative=Path(n);assert not relative.is_absolute() and '..' not in relative.parts
-  path=project/relative;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+  path=project/relative;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
  if meta['lock'] is not None:write(project/'nex.lock.json',meta['lock'])
  (project/'files').mkdir();(project/'files/input').write_bytes(b'abcdef')
  with closing(sqlite3.connect(project/'.nex/graph.db')) as db:db.executescript(sql)
@@ -87,7 +87,7 @@ try:
    emitted=json.loads(run(label+'-web-emission',[source_probe,'web',bundle,project,web,'0.24']).stdout);assert emitted['ok']
    text='\n'.join(q.read_text() for q in web.glob('program.ts'))
    assert 'file_open_read' not in text and 'file_read_bytes' not in text and 'histories::' not in text
-   (web/'package.json').write_text('{"type":"module"}\n');(web/'run.mjs').write_text("import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n")
+   (web/'package.json').write_text('{"type":"module"}\n', newline="\n");(web/'run.mjs').write_text("import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n", newline="\n")
    client=run(label+'-typescript',[os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--disable-warning=ExperimentalWarning',web/'run.mjs'])
    assert client.stdout==str(row['expected_value'])+'\n' and client.stderr==''
    report['cases'].append({'name':label,'origin_revision':row['revision'],'revision':value['revision'],'expected_value':row['expected_value'],'old_error':row['old_error'],

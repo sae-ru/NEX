@@ -1,3 +1,4 @@
+import importlib.util
 #!/usr/bin/env python3
 """Reject malformed operator policies and incompatible HTTP dependency records.
 
@@ -109,7 +110,10 @@ def main():
         link.symlink_to(target)
         rejected('symlink-policy', lambda: prepare.policy(link), path=link)
         fifo = out / 'policy-pipe'
-        os.mkfifo(fifo)
+        if os.name=='nt':
+            spec=importlib.util.spec_from_file_location('nex_windows_files_fixture',Path(__file__).resolve().parents[1]/'windows_files.py')
+            module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);module.nonregular_fixture(fifo)
+        else:os.mkfifo(fifo)
         rejected('FIFO-policy', lambda: prepare.policy(fifo), path=fifo)
         ca = out / 'public-CA.pem'
         for name, data in [('CA-private-key', b'-----BEGIN CERTIFICATE-----\n-----BEGIN PRIVATE KEY-----'),

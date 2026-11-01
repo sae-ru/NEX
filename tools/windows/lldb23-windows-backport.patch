@@ -1,0 +1,868 @@
+--- a/lldb/include/lldb/Host/common/NativeProcessProtocol.h
++++ b/lldb/include/lldb/Host/common/NativeProcessProtocol.h
+@@ -526,8 +526,11 @@
+ 
+   NativeThreadProtocol *GetThreadByIDUnlocked(lldb::tid_t tid);
+ 
++  /// Notify the delegates of \p state. For plugins that set a state with
++  /// SetState(state, /*notify_delegates=*/false) and report it later.
++  void SynchronouslyNotifyProcessStateChanged(lldb::StateType state);
++
+ private:
+-  void SynchronouslyNotifyProcessStateChanged(lldb::StateType state);
+   llvm::Expected<SoftwareBreakpoint>
+   EnableSoftwareBreakpoint(lldb::addr_t addr, uint32_t size_hint);
+ };
+--- a/lldb/source/Host/common/TCPSocket.cpp
++++ b/lldb/source/Host/common/TCPSocket.cpp
+@@ -54,7 +54,7 @@
+ 
+ llvm::Expected<TCPSocket::Pair> TCPSocket::CreatePair() {
+   auto listen_socket_up = std::make_unique<TCPSocket>(true);
+-  if (Status error = listen_socket_up->Listen("localhost:0", 5); error.Fail())
++  if (Status error = listen_socket_up->Listen("127.0.0.1:0", 5); error.Fail())
+     return error.takeError();
+ 
+   std::string connect_address =
+--- a/lldb/source/Plugins/DynamicLoader/Windows-DYLD/DynamicLoaderWindowsDYLD.cpp
++++ b/lldb/source/Plugins/DynamicLoader/Windows-DYLD/DynamicLoaderWindowsDYLD.cpp
+@@ -148,8 +148,15 @@
+   // Try to fetch the load address of the file from the process, since there
+   // could be randomization of the load address.
+   lldb::addr_t load_addr = GetLoadAddress(executable);
+-  if (load_addr == LLDB_INVALID_ADDRESS)
+-    return;
++  if (load_addr == LLDB_INVALID_ADDRESS) {
++    // The process does not know the executable under the target's path: it
++    // was started through another path to the same file, or runs a different
++    // one. Take the modules it reports as loaded, which replaces the target's
++    // executable with the process's.
++    auto error = m_process->LoadModules();
++    LLDB_LOG_ERROR(log, std::move(error), "failed to load modules: {0}");
++    return;
++  }
+ 
+   // Request the process base address.
+   lldb::addr_t image_base = m_process->GetImageInfoAddress();
+--- a/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
++++ b/lldb/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
+@@ -1165,12 +1165,11 @@
+     // At this moment we only have the base name of the DLL. The full path can
+     // only be seen after the dynamic loading.  Our best guess is Try to get it
+     // with the help of the object file's directory.
+-    llvm::SmallString<128> dll_fullpath;
+     FileSpec dll_specs(dll_name);
+     dll_specs.SetDirectory(m_file.GetDirectory());
+ 
+-    if (!llvm::sys::fs::real_path(dll_specs.GetPath(), dll_fullpath))
+-      m_deps_filespec->EmplaceBack(dll_fullpath);
++    if (FileSystem::Instance().Exists(dll_specs))
++      m_deps_filespec->Append(dll_specs);
+     else {
+       // Known DLLs or DLL not found in the object file directory.
+       m_deps_filespec->EmplaceBack(dll_name);
+--- a/lldb/source/Plugins/Process/Windows/Common/DebuggerThread.cpp
++++ b/lldb/source/Plugins/Process/Windows/Common/DebuggerThread.cpp
+@@ -29,12 +29,14 @@
+ #include "lldb/Utility/LLDBLog.h"
+ #include "llvm/ADT/STLExtras.h"
+ #include "llvm/Support/ConvertUTF.h"
++#include "llvm/Support/Path.h"
+ #include "llvm/Support/Threading.h"
+ #include "llvm/Support/raw_ostream.h"
+ 
+ #include <optional>
+ #include <pathcch.h>
+ #include <psapi.h>
++#include <winternl.h>
+ 
+ #ifndef STATUS_WX86_BREAKPOINT
+ #define STATUS_WX86_BREAKPOINT 0x4000001FL // For WOW64
+@@ -42,6 +44,17 @@
+ 
+ using namespace lldb;
+ using namespace lldb_private;
++
++
++// LLVM23 predates Host/windows/PathUtils.h. Keep the upstream Windows path
++// spelling rule local to this backport, including extended UNC names.
++static std::string StripExtendedLengthPrefix(llvm::StringRef path) {
++  if (path.starts_with_insensitive(R"(\\?\UNC\)"))
++    return "\\\\" + path.drop_front(8).str();
++  if (path.starts_with(R"(\\?\)"))
++    return path.drop_front(4).str();
++  return path.str();
++}
+ 
+ typedef BOOL WINAPI WaitForDebugEventFn(LPDEBUG_EVENT, DWORD);
+ static WaitForDebugEventFn *g_wait_for_debug_event = nullptr;
+@@ -203,7 +216,7 @@
+   // breakpoint messing around in the debugger), continue it now.  But only
+   // AFTER calling TerminateProcess to make sure that the very next call to
+   // WaitForDebugEventEx is an exit process event.
+-  if (m_active_exception.get()) {
++  if (GetActiveException().lock()) {
+     LLDB_LOG(log, "masking active exception");
+     ContinueAsyncException(ExceptionResult::MaskException);
+   }
+@@ -239,16 +252,31 @@
+   return error;
+ }
+ 
++std::weak_ptr<ExceptionRecord> DebuggerThread::GetActiveException() {
++  std::lock_guard<std::mutex> guard(m_active_exception_mutex);
++  return m_active_exception;
++}
++
+ void DebuggerThread::ContinueAsyncException(ExceptionResult result) {
+-  if (!m_active_exception.get())
+-    return;
++  {
++    std::lock_guard<std::mutex> guard(m_active_exception_mutex);
++    if (!m_active_exception)
++      return;
++    m_active_exception.reset();
++  }
+ 
+   Log *log = GetLog(WindowsLog::Process | WindowsLog::Exception);
+   LLDB_LOG(log, "broadcasting for inferior process {0}.",
+            m_process.GetProcessId());
+ 
+-  m_active_exception.reset();
+   m_exception_pred.SetValue(result, eBroadcastAlways);
++}
++
++void DebuggerThread::ReportDeferredStopAndWaitForResume() {
++  m_dll_event_pred.SetValue(false, eBroadcastNever);
++  m_debug_delegate->ReportDeferredStop();
++  if (!m_is_shutting_down)
++    m_dll_event_pred.WaitForValueEqualTo(true);
+ }
+ 
+ void DebuggerThread::ContinueAsyncDllEvent() {
+@@ -268,10 +296,33 @@
+   Log *log = GetLog(WindowsLog::Event);
+   DEBUG_EVENT dbe = {};
+   bool should_debug = true;
++  constexpr unsigned max_drained_events = 64;
++  unsigned drained_events = 0;
+   LLDB_LOG_VERBOSE(log, "Entering WaitForDebugEventEx loop");
+   while (should_debug) {
++    bool draining = !m_is_shutting_down && m_debug_delegate->HasDeferredStop();
++
++    if (draining && drained_events >= max_drained_events) {
++      LLDB_LOG(log, "reporting the stop after taking {0} queued debug events",
++               drained_events);
++      ReportDeferredStopAndWaitForResume();
++      draining = false;
++    }
++
++    if (!draining)
++      drained_events = 0;
++
+     LLDB_LOG_VERBOSE(log, "Calling WaitForDebugEvent");
+-    BOOL wait_result = g_wait_for_debug_event(&dbe, INFINITE);
++    BOOL wait_result = g_wait_for_debug_event(&dbe, draining ? 0 : INFINITE);
++
++    if (draining) {
++      if (!wait_result) {
++        ReportDeferredStopAndWaitForResume();
++        continue;
++      }
++      ++drained_events;
++    }
++
+     if (wait_result) {
+       DWORD continue_status = DBG_CONTINUE;
+       bool shutting_down = m_is_shutting_down;
+@@ -401,15 +452,31 @@
+ 
+   bool first_chance = (info.dwFirstChance != 0);
+ 
+-  m_active_exception.reset(
+-      new ExceptionRecord(info.ExceptionRecord, thread_id));
++  ExceptionRecordSP active_exception =
++      std::make_shared<ExceptionRecord>(info.ExceptionRecord, thread_id);
++  {
++    std::lock_guard<std::mutex> guard(m_active_exception_mutex);
++    m_active_exception = active_exception;
++  }
++  // Set this before calling the delegate. The delegate can wake up the thread
++  // driving the debugger, and that thread can call ContinueAsyncException
++  // before OnDebugException returns.
++  m_exception_pred.SetValue(ExceptionResult::BreakInDebugger, eBroadcastNever);
++
+   LLDB_LOG(log, "encountered {0} chance exception {1:x} on thread {2:x}",
+            first_chance ? "first" : "second",
+            info.ExceptionRecord.ExceptionCode, thread_id);
+ 
+   ExceptionResult result =
+-      m_debug_delegate->OnDebugException(first_chance, *m_active_exception);
+-  m_exception_pred.SetValue(result, eBroadcastNever);
++      m_debug_delegate->OnDebugException(first_chance, *active_exception);
++  // The delegate only says what to do, it never continues the exception. If the
++  // result is not BreakInDebugger, continue it here, or the wait below never
++  // ends. If the other thread already continued it, this does nothing and its
++  // result is what the wait below returns.
++  if (result != ExceptionResult::BreakInDebugger)
++    ContinueAsyncException(result);
++  else
++    m_debug_delegate->ReportDeferredStop();
+ 
+   LLDB_LOG(log, "waiting for ExceptionPred != BreakInDebugger");
+   result = *m_exception_pred.WaitForValueNotEqualTo(
+@@ -431,6 +498,49 @@
+   return DBG_CONTINUE;
+ }
+ 
++/// Read the path the process was created with from its process parameters
++/// (PEB::ProcessParameters->ImagePathName).
++///
++/// This keeps the subst drive, junction or symbolic link the process was
++/// launched through.
++static std::optional<std::string> GetImagePathFromPEB(HANDLE process) {
++  // winternl.h declares NtQueryInformationProcess, but there is no import
++  // library for it.
++  static LazyImport<decltype(&::NtQueryInformationProcess)>
++      s_query_information_process{L"ntdll.dll", "NtQueryInformationProcess"};
++  if (!s_query_information_process)
++    return std::nullopt;
++
++  PROCESS_BASIC_INFORMATION pbi = {};
++  if ((*s_query_information_process)(process, ProcessBasicInformation, &pbi,
++                                     sizeof(pbi), nullptr) < 0 ||
++      !pbi.PebBaseAddress)
++    return std::nullopt;
++
++  PEB peb = {};
++  if (!::ReadProcessMemory(process, pbi.PebBaseAddress, &peb, sizeof(peb),
++                           nullptr) ||
++      !peb.ProcessParameters)
++    return std::nullopt;
++
++  RTL_USER_PROCESS_PARAMETERS params = {};
++  if (!::ReadProcessMemory(process, peb.ProcessParameters, &params,
++                           sizeof(params), nullptr) ||
++      !params.ImagePathName.Buffer || params.ImagePathName.Length == 0)
++    return std::nullopt;
++
++  std::wstring wpath(params.ImagePathName.Length / sizeof(wchar_t), L'\0');
++  if (!::ReadProcessMemory(process, params.ImagePathName.Buffer, wpath.data(),
++                           params.ImagePathName.Length, nullptr))
++    return std::nullopt;
++
++  std::string path;
++  if (!llvm::convertWideToUTF8(wpath, path))
++    return std::nullopt;
++  // A process launched through an extended-length path has the "\\?\" prefix.
++  return StripExtendedLengthPrefix(path);
++}
++
+ DWORD
+ DebuggerThread::HandleCreateProcessEvent(const CREATE_PROCESS_DEBUG_INFO &info,
+                                          DWORD thread_id) {
+@@ -454,6 +564,7 @@
+   m_image_file = info.hFile;
+ 
+   lldb::addr_t load_addr = reinterpret_cast<lldb::addr_t>(info.lpBaseOfImage);
++  m_image_path = GetImagePathFromPEB(info.hProcess).value_or("");
+   m_debug_delegate->OnDebuggerConnected(load_addr);
+ 
+   return DBG_CONTINUE;
+@@ -595,15 +706,17 @@
+   return GetMappedFileDosPath(::GetCurrentProcess(), pMem.get());
+ }
+ 
+-static std::optional<std::string> GetFileNameByLoadAddress(HANDLE process,
+-                                                           LPVOID base_addr) {
++/// The path the loader recorded for the module at \p base_addr, or nullopt if
++/// the loader's module list has no entry for it yet.
++static std::optional<std::string> GetLoaderModuleName(HANDLE process,
++                                                      LPVOID base_addr) {
+   std::vector<wchar_t> module_filename(MAX_PATH + 1);
+   while (module_filename.size() <= PATHCCH_MAX_CCH) {
+     DWORD len =
+         ::GetModuleFileNameExW(process, reinterpret_cast<HMODULE>(base_addr),
+                                module_filename.data(), module_filename.size());
+     if (len == 0)
+-      break; // Not loaded as a module; fall back to the mapped-file query.
++      return std::nullopt;
+     if (len < module_filename.size()) {
+       std::string path_utf8;
+       llvm::convertWideToUTF8(std::wstring_view(module_filename.data(), len),
+@@ -612,9 +725,7 @@
+     }
+     module_filename.resize(module_filename.size() * 2);
+   }
+-
+-  // Fallback: ask the kernel for the file backing the mapping at this address.
+-  return GetMappedFileDosPath(process, base_addr);
++  return std::nullopt;
+ }
+ 
+ // Determine how many bytes can be read at `addr` in `process` before crossing
+@@ -725,7 +836,22 @@
+     action = m_debug_delegate->OnLoadDll(module_spec, load_addr, thread_id);
+   };
+ 
+-  std::optional<std::string> resolved_path;
++  HANDLE process = m_process.GetNativeProcess().GetSystemHandle();
++
++  // Prefer the path the loader used for the DLL, which keeps the subst drive,
++  // junction or symbolic link it was reached through.
++  std::optional<std::string> loader_path =
++      GetFileNameFromImageNameField(process, info);
++  if (loader_path && !llvm::sys::path::is_absolute(
++                         *loader_path, llvm::sys::path::Style::windows))
++    loader_path.reset();
++  if (!loader_path)
++    loader_path = GetLoaderModuleName(process, info.lpBaseOfDll);
++  if (loader_path)
++    loader_path = StripExtendedLengthPrefix(*loader_path);
++
++  // The file handle gives the resolved path, with the on-disk case.
++  std::optional<std::string> file_path;
+   if (info.hFile != nullptr) {
+     std::vector<wchar_t> buffer(1);
+     DWORD required_size =
+@@ -736,19 +862,24 @@
+                                 VOLUME_NAME_DOS);
+       std::string path_str_utf8;
+       llvm::convertWideToUTF8(buffer.data(), path_str_utf8);
+-      llvm::StringRef path_str = path_str_utf8;
+-      path_str.consume_front("\\\\?\\");
+-      resolved_path = path_str.str();
++      file_path = StripExtendedLengthPrefix(path_str_utf8);
+     } else {
+-      resolved_path = GetFileNameFromHandleFallback(info.hFile);
++      file_path = GetFileNameFromHandleFallback(info.hFile);
+     }
+   }
+ 
+-  HANDLE process = m_process.GetNativeProcess().GetSystemHandle();
++  // The loader's path often differs from the on-disk one only in case (e.g.
++  // C:\windows\System32\KERNEL32.DLL). If that's the case, keep the on disk
++  // spelling.
++  std::optional<std::string> resolved_path = loader_path;
++  if (!resolved_path ||
++      (file_path &&
++       llvm::StringRef(*file_path).equals_insensitive(*resolved_path)))
++    resolved_path = file_path;
+   if (!resolved_path)
+     resolved_path = GetFileNameFromImageNameField(process, info);
+   if (!resolved_path)
+-    resolved_path = GetFileNameByLoadAddress(process, info.lpBaseOfDll);
++    resolved_path = GetMappedFileDosPath(process, info.lpBaseOfDll);
+ 
+   if (resolved_path)
+     on_load_dll(*resolved_path);
+@@ -763,8 +894,10 @@
+   if (info.hFile != nullptr)
+     ::CloseHandle(info.hFile);
+ 
+-  if (action == DllEventAction::ParkDebugLoop && !m_is_shutting_down.load())
++  if (action == DllEventAction::ParkDebugLoop && !m_is_shutting_down.load()) {
++    m_debug_delegate->ReportDeferredStop();
+     m_dll_event_pred.WaitForValueEqualTo(true);
++  }
+   return DBG_CONTINUE;
+ }
+ 
+@@ -778,8 +911,10 @@
+   m_dll_event_pred.SetValue(false, eBroadcastNever);
+   DllEventAction action = m_debug_delegate->OnUnloadDll(
+       reinterpret_cast<lldb::addr_t>(info.lpBaseOfDll), thread_id);
+-  if (action == DllEventAction::ParkDebugLoop && !m_is_shutting_down.load())
++  if (action == DllEventAction::ParkDebugLoop && !m_is_shutting_down.load()) {
++    m_debug_delegate->ReportDeferredStop();
+     m_dll_event_pred.WaitForValueEqualTo(true);
++  }
+   return DBG_CONTINUE;
+ }
+ 
+--- a/lldb/source/Plugins/Process/Windows/Common/DebuggerThread.h
++++ b/lldb/source/Plugins/Process/Windows/Common/DebuggerThread.h
+@@ -11,6 +11,7 @@
+ 
+ #include <atomic>
+ #include <memory>
++#include <mutex>
+ 
+ #include "ForwardDecl.h"
+ #include "lldb/Host/HostProcess.h"
+@@ -34,9 +35,8 @@
+ 
+   HostProcess GetProcess() const { return m_process; }
+   HostThread GetMainThread() const { return m_main_thread; }
+-  std::weak_ptr<ExceptionRecord> GetActiveException() {
+-    return m_active_exception;
+-  }
++  const std::string &GetImagePath() const { return m_image_path; }
++  std::weak_ptr<ExceptionRecord> GetActiveException();
+ 
+   Status StopDebugging(bool terminate);
+ 
+@@ -48,6 +48,10 @@
+   void ContinueAsyncDllEvent();
+ 
+ private:
++  /// Have the delegate report the stop it collected, then wait until the
++  /// client resumes before taking the next debug event.
++  void ReportDeferredStopAndWaitForResume();
++
+   void FreeProcessHandles();
+   void DebugLoop();
+   ExceptionResult HandleExceptionEvent(const EXCEPTION_DEBUG_INFO &info,
+@@ -73,9 +77,11 @@
+ 
+   // The image file of the process being debugged.
+   HANDLE m_image_file = nullptr;
++  std::string m_image_path;
+ 
+   // The current exception waiting to be handled
+   ExceptionRecordSP m_active_exception;
++  std::mutex m_active_exception_mutex;
+ 
+   // A predicate which gets signalled when an exception is finished processing
+   // and the debug loop can be continued.
+--- a/lldb/source/Plugins/Process/Windows/Common/IDebugDelegate.h
++++ b/lldb/source/Plugins/Process/Windows/Common/IDebugDelegate.h
+@@ -37,6 +37,13 @@
+                                    lldb::tid_t thread_id) = 0;
+   virtual DllEventAction OnUnloadDll(lldb::addr_t module_addr,
+                                      lldb::tid_t thread_id) = 0;
++  /// Whether the delegate has a stop that it recorded but has not reported
++  /// to its client yet. While this is true, DebuggerThread keeps taking the
++  /// debug events that are already queued, so they are reported in the same
++  /// stop.
++  virtual bool HasDeferredStop() { return false; }
++  /// Report the stop the delegate holds, if any.
++  virtual void ReportDeferredStop() {}
+   virtual void OnDebugString(lldb::addr_t debug_string_addr, bool is_unicode,
+                              uint16_t length_lower_word) = 0;
+   virtual void OnDebuggerError(const Status &error, uint32_t type) = 0;
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp
+@@ -113,6 +113,7 @@
+     bool failed = false;
+     for (uint32_t i = 0; i < m_threads.size(); ++i) {
+       auto thread = static_cast<NativeThreadWindows *>(m_threads[i].get());
++      thread->ClearSingleStepping();
+       const ResumeAction *const action =
+           resume_actions.GetActionForThread(thread->GetID(), true);
+       if (action == nullptr)
+@@ -357,33 +358,56 @@
+ }
+ 
+ Status NativeProcessWindows::CacheLoadedModules() {
+-  Status error;
+-  if (!m_loaded_modules.empty())
+-    return Status();
+-
+-  // Retrieve loaded modules by a Target/Module-free implementation.
+-  AutoHandle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetID()));
+-  if (snapshot.IsValid()) {
+-    MODULEENTRY32W me;
+-    me.dwSize = sizeof(MODULEENTRY32W);
+-    if (Module32FirstW(snapshot.get(), &me)) {
+-      do {
+-        std::string path;
+-        if (!llvm::convertWideToUTF8(me.szExePath, path))
+-          continue;
+-
+-        FileSpec file_spec(path);
+-        FileSystem::Instance().Resolve(file_spec);
+-        m_loaded_modules[file_spec] = (addr_t)me.modBaseAddr;
+-      } while (Module32Next(snapshot.get(), &me));
+-    }
+-
+-    if (!m_loaded_modules.empty())
+-      return Status();
+-  }
+-
+-  error = Status(::GetLastError(), lldb::ErrorType::eErrorTypeWin32);
+-  return error;
++  llvm::sys::ScopedLock lock(m_mutex);
++  // Reconcile even a nonempty event cache: parallel startup can discard a
++  // speculative mapping of the same file after another mapping has won.
++  // Toolhelp32's MODULEENTRY32W::szExePath is bounded by MAX_PATH; PSAPI's
++  // caller-sized buffer also preserves complete paths to long-name DLLs.
++  AutoHandle process(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
++                                 FALSE, GetID()));
++  if (!process.IsValid())
++    return Status(::GetLastError(), lldb::ErrorType::eErrorTypeWin32);
++  std::vector<HMODULE> modules(1024);
++  DWORD needed = 0;
++  if (!EnumProcessModulesEx(process.get(), modules.data(),
++                            DWORD(modules.size() * sizeof(HMODULE)), &needed,
++                            LIST_MODULES_ALL))
++    return Status(::GetLastError(), lldb::ErrorType::eErrorTypeWin32);
++  if (needed > 4096 * sizeof(HMODULE))
++    return Status::FromErrorString("Windows module inventory exceeds4096 images");
++  if (needed > modules.size() * sizeof(HMODULE)) {
++    modules.resize((needed + sizeof(HMODULE) - 1) / sizeof(HMODULE));
++    if (!EnumProcessModulesEx(process.get(), modules.data(),
++                              DWORD(modules.size() * sizeof(HMODULE)), &needed,
++                              LIST_MODULES_ALL))
++      return Status(::GetLastError(), lldb::ErrorType::eErrorTypeWin32);
++  }
++  if (needed > modules.size() * sizeof(HMODULE))
++    return Status::FromErrorString("Windows module inventory changed during capture");
++  std::vector<wchar_t> buffer(32768);
++  for (size_t index = 0; index < needed / sizeof(HMODULE); ++index) {
++    DWORD length = GetModuleFileNameExW(process.get(), modules[index],
++                                       buffer.data(), DWORD(buffer.size()));
++    if (!length || length >= buffer.size())
++      continue;
++    std::string path;
++    if (!llvm::convertWideToUTF8(std::wstring_view(buffer.data(), length), path))
++      continue;
++    const addr_t base = reinterpret_cast<addr_t>(modules[index]);
++    auto known = llvm::find_if(m_loaded_modules, [base](const auto &entry) {
++      return entry.second == base;
++    });
++    // Keep the event's loader spelling when it still identifies a real file.
++    if (known != m_loaded_modules.end() &&
++        FileSystem::Instance().Exists(known->first))
++      continue;
++    if (known != m_loaded_modules.end())
++      m_loaded_modules.erase(known);
++    FileSpec file_spec(path);
++    FileSystem::Instance().Resolve(file_spec);
++    m_loaded_modules[file_spec] = base;
++  }
++  return Status();
+ }
+ 
+ Status NativeProcessWindows::GetLoadedModuleFileSpec(const char *module_path,
+@@ -455,6 +479,7 @@
+   StopStdioForwarding();
+ 
+   ProcessDebugger::OnExitProcess(exit_code);
++  m_deferred_stop = false;
+ 
+   // No signal involved.  It is just an exit event.
+   WaitStatus wait_status(WaitStatus::Exit, exit_code);
+@@ -488,6 +513,9 @@
+ 
+   if (got_info) {
+     FileSpec exe = info.GetExecutableFile();
++    if (const std::string &image_path = m_session_data->m_debugger->GetImagePath();
++        !image_path.empty() && !llvm::StringRef(image_path).equals_insensitive(exe.GetPath()))
++      exe = FileSpec(image_path);
+     if (exe) {
+       FileSystem::Instance().Resolve(exe);
+       m_loaded_modules[exe] = image_base;
+@@ -499,6 +527,59 @@
+   m_threads.push_back(std::make_unique<NativeThreadWindows>(
+       *this, m_session_data->m_debugger->GetMainThread()));
+ }
++
++void NativeProcessWindows::DeferStop() {
++  if (GetState() == eStateStopped) {
++    if (!m_deferred_stop)
++      LLDB_LOG(GetLog(WindowsLog::Exception),
++               "debug event on thread {0:x} while a reported stop is current",
++               GetCurrentThreadID());
++    return;
++  }
++  SetState(eStateStopped, /*notify_delegates=*/false);
++  m_deferred_stop = true;
++  m_deferred_stop_tid = GetCurrentThreadID();
++}
++
++void NativeProcessWindows::ReportDeferredStop() {
++  llvm::sys::ScopedLock lock(m_mutex);
++  if (!m_deferred_stop)
++    return;
++  m_deferred_stop = false;
++  if (GetThreadByID(m_deferred_stop_tid))
++    SetCurrentThreadID(m_deferred_stop_tid);
++  SynchronouslyNotifyProcessStateChanged(eStateStopped);
++}
++
++
++bool NativeProcessWindows::RewindTrapOfRemovedBreakpoint(
++    const ExceptionRecord &record) {
++  if (!m_initial_stop_seen)
++    return false;
++  NativeThreadWindows *thread = GetThreadByID(record.GetThreadID());
++  if (!thread)
++    return false;
++  const lldb::addr_t trap_addr = record.GetExceptionAddress();
++  llvm::ArrayRef<uint8_t> trap_opcode =
++      cantFail(GetSoftwareBreakpointTrapOpcode(0));
++  NativeRegisterContextWindows &reg_ctx = thread->GetRegisterContext();
++  if (reg_ctx.GetPC() != trap_addr + trap_opcode.size())
++    return false;
++  llvm::SmallVector<uint8_t, 4> bytes(trap_opcode.size(), 0);
++  size_t bytes_read = 0;
++  if (ProcessDebugger::ReadMemory(trap_addr, bytes.data(), bytes.size(),
++                                  bytes_read)
++          .Fail() ||
++      bytes_read != bytes.size() ||
++      llvm::ArrayRef<uint8_t>(bytes) == trap_opcode)
++    return false;
++  LLDB_LOG(GetLog(WindowsLog::Exception),
++           "Trap at {0:x} on thread {1:x} is from a removed breakpoint, "
++           "rewinding the thread onto the original instruction.",
++           trap_addr, thread->GetID());
++  return reg_ctx.SetPC(trap_addr).Success();
++}
++
+ 
+ ExceptionResult
+ NativeProcessWindows::HandleSingleStepException(const ExceptionRecord &record) {
+@@ -523,10 +604,19 @@
+     }
+   }
+ #endif
+-  if (wp_id == LLDB_INVALID_INDEX32)
++  if (wp_id == LLDB_INVALID_INDEX32) {
++    NativeThreadWindows *thread = GetThreadByID(record.GetThreadID());
++    if (thread && !thread->IsSingleStepping()) {
++      LLDB_LOG(GetLog(WindowsLog::Exception),
++               "ignoring a late single-step trap on thread {0:x}, which this "
++               "resume did not step",
++               record.GetThreadID());
++      return ExceptionResult::MaskException;
++    }
+     StopThread(record.GetThreadID(), StopReason::eStopReasonTrace);
+-
+-  SetState(eStateStopped, true);
++  }
++
++  DeferStop();
+   return ExceptionResult::MaskException;
+ }
+ 
+@@ -545,7 +635,7 @@
+       StopThread(thread_id, StopReason::eStopReasonBreakpoint);
+       // The current PC is AFTER the BP opcode, on all architectures.
+       reg_ctx.SetPC(reg_ctx.GetPC() - GetSoftwareBreakpointPCOffset());
+-      SetState(eStateStopped, true);
++      DeferStop();
+       return ExceptionResult::MaskException;
+     }
+ 
+@@ -572,10 +662,13 @@
+                     exception_addr)
+                 .str();
+         StopThread(thread_id, StopReason::eStopReasonWatchpoint, desc);
+-        SetState(eStateStopped, true);
++        DeferStop();
+         return ExceptionResult::MaskException;
+       }
+     }
++
++    if (RewindTrapOfRemovedBreakpoint(record))
++      return ExceptionResult::MaskException;
+   }
+ 
+   if (!m_initial_stop_seen) {
+@@ -623,7 +716,7 @@
+     SetCurrentThreadID(thread_id);
+     if (NativeThreadWindows *injected = GetThreadByID(thread_id))
+       injected->SetStopReason(signal_info, "interrupt");
+-    SetState(eStateStopped, true);
++    DeferStop();
+     return ExceptionResult::BreakInDebugger;
+   }
+ 
+@@ -640,7 +733,7 @@
+                              record.GetExceptionValue(), exception_addr)
+                          .str();
+   StopThread(thread_id, StopReason::eStopReasonException, std::move(desc));
+-  SetState(eStateStopped, true);
++  DeferStop();
+   return ExceptionResult::MaskException;
+ }
+ 
+@@ -666,7 +759,7 @@
+   StopThread(record.GetThreadID(), StopReason::eStopReasonException,
+              std::move(desc));
+ 
+-  SetState(eStateStopped, true);
++  DeferStop();
+   return ExceptionResult::BreakInDebugger;
+ }
+ 
+@@ -699,6 +792,8 @@
+ 
+ void NativeProcessWindows::OnCreateThread(const HostThread &new_thread) {
+   llvm::sys::ScopedLock lock(m_mutex);
++  const StateType state = GetState();
++  std::lock_guard<std::recursive_mutex> threads_guard(m_threads_mutex);
+ 
+   auto thread = std::make_unique<NativeThreadWindows>(*this, new_thread);
+   thread->GetRegisterContext().ClearAllHardwareWatchpoints();
+@@ -708,8 +803,7 @@
+                           wp.m_hardware);
+   }
+ 
+-  if (StateType state = GetState();
+-      state == eStateStopped || state == eStateCrashed) {
++  if (state == eStateStopped || state == eStateCrashed) {
+     if (Status error = thread->DoStop(); error.Fail()) {
+       Log *log = GetLog(WindowsLog::Thread);
+       LLDB_LOG(log, "failed to suspend newly-created thread {0}: {1}",
+@@ -725,6 +819,7 @@
+ 
+ void NativeProcessWindows::OnExitThread(lldb::tid_t thread_id,
+                                         uint32_t exit_code) {
++  llvm::sys::ScopedLock lock(m_mutex);
+   std::lock_guard<std::recursive_mutex> guard(m_threads_mutex);
+   llvm::erase_if(m_threads, [thread_id](const auto &t) {
+     return t->GetID() == thread_id;
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h
+@@ -139,6 +139,8 @@
+                              lldb::tid_t thread_id) override;
+   void OnDebugString(lldb::addr_t debug_string_addr, bool is_unicode,
+                      uint16_t length_lower_word) override;
++  bool HasDeferredStop() const { return m_deferred_stop; }
++  void ReportDeferredStop();
+ 
+ protected:
+   NativeThreadWindows *GetThreadByID(lldb::tid_t thread_id);
+@@ -165,6 +167,16 @@
+ 
+   NativeProcessWindows(lldb::pid_t pid, int terminal_fd,
+                        NativeDelegate &delegate, llvm::Error &E);
++
++  /// Stop the process without notifying the delegate yet.
++  void DeferStop();
++
++  /// A breakpoint trap whose debug event was only delivered after the client
++  /// removed that breakpoint: the thread executed the trap before the stop
++  /// that removed it, but its event was held back until it ran again. Moves
++  /// the PC back onto the original instruction. Returns false if \p record is
++  /// not such a trap.
++  bool RewindTrapOfRemovedBreakpoint(const ExceptionRecord &record);
+ 
+   ExceptionResult HandleSingleStepException(const ExceptionRecord &record);
+   ExceptionResult HandleBreakpointException(const ExceptionRecord &record);
+@@ -187,6 +199,15 @@
+   /// Set when Halt() / Interrupt() schedules a DebugBreakProcess injection.
+   bool m_pending_halt = false;
+ 
++  /// Whether the process is stopped but the stop has not been reported to the
++  /// delegate yet. Set by DeferStop(), cleared once the stop is reported or the
++  /// process exits.
++  bool m_deferred_stop = false;
++
++  /// The thread whose debug event started the deferred stop. Reported as the
++  /// stop's thread even if later events made another thread current.
++  lldb::tid_t m_deferred_stop_tid = LLDB_INVALID_THREAD_ID;
++
+   bool m_client_supports_libraries_read = false;
+ 
+   /// PseudoConsole for the lldb-server stdio-forwarding path.
+@@ -255,6 +276,10 @@
+     return m_process.OnDebuggerError(error, type);
+   }
+ 
++  bool HasDeferredStop() override { return m_process.HasDeferredStop(); }
++
++  void ReportDeferredStop() override { m_process.ReportDeferredStop(); }
++
+ private:
+   NativeProcessWindows &m_process;
+ };
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeThreadWindows.cpp
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeThreadWindows.cpp
+@@ -51,31 +51,8 @@
+   if (resume_state == current_state)
+     return Status();
+ 
+-  if (resume_state == eStateStepping) {
+-    Log *log = GetLog(LLDBLog::Thread);
+-
+-    uint32_t flags_index =
+-        GetRegisterContext().ConvertRegisterKindToRegisterNumber(
+-            eRegisterKindGeneric, LLDB_REGNUM_GENERIC_FLAGS);
+-    uint64_t flags_value =
+-        GetRegisterContext().ReadRegisterAsUnsigned(flags_index, 0);
+-    const ArchSpec &arch = GetProcess().GetArchitecture();
+-    switch (arch.GetMachine()) {
+-    case llvm::Triple::x86:
+-    case llvm::Triple::x86_64:
+-      flags_value |= 0x100; // Set the trap flag on the CPU
+-      break;
+-    case llvm::Triple::aarch64:
+-    case llvm::Triple::arm:
+-    case llvm::Triple::thumb:
+-      flags_value |= 0x200000; // The SS bit in PState
+-      break;
+-    default:
+-      LLDB_LOG(log, "single stepping unsupported on this architecture");
+-      break;
+-    }
+-    GetRegisterContext().WriteRegisterFromUnsigned(flags_index, flags_value);
+-  }
++  if (resume_state == eStateStepping)
++    SetSingleStepFlag();
+ 
+   if (resume_state == eStateStepping || resume_state == eStateRunning) {
+     // Clear any stop info left over from a previous stop.
+@@ -95,9 +72,36 @@
+ 
+     } while (previous_suspend_count > 1);
+     m_state = eStateRunning;
++    m_single_stepping = resume_state == eStateStepping;
+   }
+ 
+   return Status();
++}
++
++void NativeThreadWindows::SetSingleStepFlag() {
++  Log *log = GetLog(LLDBLog::Thread);
++
++  uint32_t flags_index =
++      GetRegisterContext().ConvertRegisterKindToRegisterNumber(
++          eRegisterKindGeneric, LLDB_REGNUM_GENERIC_FLAGS);
++  uint64_t flags_value =
++      GetRegisterContext().ReadRegisterAsUnsigned(flags_index, 0);
++  const ArchSpec &arch = GetProcess().GetArchitecture();
++  switch (arch.GetMachine()) {
++  case llvm::Triple::x86:
++  case llvm::Triple::x86_64:
++    flags_value |= 0x100; // Set the trap flag on the CPU
++    break;
++  case llvm::Triple::aarch64:
++  case llvm::Triple::arm:
++  case llvm::Triple::thumb:
++    flags_value |= 0x200000; // The SS bit in PState
++    break;
++  default:
++    LLDB_LOG(log, "single stepping unsupported on this architecture");
++    break;
++  }
++  GetRegisterContext().WriteRegisterFromUnsigned(flags_index, flags_value);
+ }
+ 
+ std::string NativeThreadWindows::GetName() {
+--- a/lldb/source/Plugins/Process/Windows/Common/NativeThreadWindows.h
++++ b/lldb/source/Plugins/Process/Windows/Common/NativeThreadWindows.h
+@@ -28,6 +28,13 @@
+   Status DoStop();
+   Status DoResume(lldb::StateType resume_state);
+ 
++  /// Whether the current resume single-steps this thread.
++  bool IsSingleStepping() const { return m_single_stepping; }
++
++  void ClearSingleStepping() { m_single_stepping = false; }
++
++  void SetSingleStepFlag();
++
+   std::string GetName() override;
+ 
+   lldb::StateType GetState() override { return m_state; }
+@@ -55,6 +62,7 @@
+ protected:
+   lldb::StateType m_state = lldb::StateType::eStateInvalid;
+   std::string m_name;
++  bool m_single_stepping = false;
+   std::unique_ptr<NativeRegisterContextWindows> m_reg_context_up;
+   // Cache address and index of the watchpoints and hardware breakpoints since
+   // the register context does not.

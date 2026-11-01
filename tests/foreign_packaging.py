@@ -1,4 +1,6 @@
 """Real pinned module closures, recursive relocation and independent execution."""
+from host_fixture import nonregular, run_native
+from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
 import os
@@ -41,21 +43,21 @@ class ForeignPackaging(harness.ToolchainCase):
     def closure(self, inventoried=False, counter=False):
         bundle = self.program(SOURCE, {'echo': 'echo', 'unused': 'echo'})
         driver = self.cli('doctor')['native_compiler']
-        dependencies = bundle / 'deps' if inventoried else self.root / 'original dependencies'
-        dependencies.mkdir()
-        suffix = '.dylib' if platform.system() == 'Darwin' else '.so'
+        dependencies = bundle if inventoried and os.name=='nt' else bundle / 'deps' if inventoried else self.root / 'original dependencies'
+        dependencies.mkdir(exist_ok=dependencies==bundle)
+        suffix = '.dll' if os.name == 'nt' else '.dylib' if platform.system() == 'Darwin' else '.so'
         leaf, helper = [dependencies / ('lib' + name + suffix) for name in ('leaf', 'helper')]
         leaf_source = self.root / 'leaf.c'
         helper_source = self.root / 'helper.c'
-        leaf_source.write_text('long leaf_value(void){return 41;}')
-        helper_source.write_text('extern long leaf_value(void); long dependency_value(void){return leaf_value()+1;}')
+        leaf_source.write_text('long leaf_value(void){return 41;}', newline="\n")
+        helper_source.write_text('extern long leaf_value(void); long dependency_value(void){return leaf_value()+1;}', newline="\n")
         def compile(source, output, inputs=()):
             arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', str(source), '-x', 'none', *map(str, inputs), '-o', str(output)]
             if platform.system() == 'Darwin':
                 arguments += ['-Wl,-install_name,' + str(output)]
-            else:
+            elif os.name != 'nt':
                 arguments += ['-Wl,-soname,' + output.name, '-Wl,-rpath,' + str(dependencies)]
-            result = subprocess.run(arguments, capture_output=True, text=True, timeout=60)
+            result = run_native(arguments, capture_output=True, text=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         compile(leaf_source, leaf)
         compile(helper_source, helper, [leaf])
@@ -64,27 +66,27 @@ class ForeignPackaging(harness.ToolchainCase):
         c = c.replace("mark('C');", "if(dependency_value()!=42)return NEX_FFI_ARGUMENT;mark('C');")
         if counter:
             c = c.replace('*o=v[0];return NEX_FFI_OK;', 'static int64_t counter=0;return a->make_i64(c,++counter,o);')
-        producer.write_text(c)
+        producer.write_text(c, newline="\n")
         arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden', '-I' + str(harness.REPO / 'runtime'), str(producer), '-x', 'none', str(helper), '-o', str(bundle / 'module')]
-        if platform.system() != 'Darwin':
+        if platform.system() not in ('Darwin','Windows'):
             arguments += ['-Wl,-rpath,' + str(dependencies)]
-        result = subprocess.run(arguments, capture_output=True, text=True, timeout=60)
+        result = run_native(arguments, capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         manifest = json.loads((bundle / 'manifest.json').read_text())
-        names = ['module', 'NOTICE'] + ([str(p.relative_to(bundle)) for p in (helper, leaf)] if inventoried else [])
+        names = ['module', 'NOTICE'] + ([p.relative_to(bundle).as_posix() for p in (helper, leaf)] if inventoried else [])
         manifest['files'] = [{'path': name, 'sha256': foreign_bundle.sha256(bundle / name)} for name in names]
-        (bundle / 'manifest.json').write_text(json.dumps(manifest))
+        (bundle / 'manifest.json').write_text(json.dumps(manifest), newline="\n")
         self.pin = foreign_bundle.sha256(bundle / 'manifest.json')
         self.catalogue['libraries']['test']['manifest_sha256'] = self.pin
         self.catalogue['module_limit'] = 17
-        self.host.write_text(json.dumps(self.catalogue))
+        self.host.write_text(json.dumps(self.catalogue), newline="\n")
         self.source(SOURCE.replace('@PIN@', self.pin))
         license_file = self.root / 'fixture-license.txt'
-        license_file.write_text('Complete independent C test fixture license.\n')
+        license_file.write_text('Complete independent C test fixture license.\n', newline="\n")
         self.notices = self.root / 'notices.json'
         self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': [
             {'name': 'fixture', 'version': '1', 'url': 'https://example.invalid/nex-test-fixture',
-             'roots': list(map(str, {bundle, dependencies})), 'license_files': [str(license_file)]}]}))
+             'roots': list(map(str, {bundle, dependencies})), 'license_files': [str(license_file)]}]}), newline="\n")
         return bundle, dependencies
 
     def prepare(self, output, **kwargs):
@@ -132,7 +134,7 @@ class ForeignPackaging(harness.ToolchainCase):
         output.rename(moved)
         result = subprocess.run([built['executable'], '--nex-foreign', str(moved / 'host.json')],
                                 cwd='/', capture_output=True, text=True, timeout=20,
-                                env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'})
+                                env=packaging_harness.deployed_environment())
         self.assertEqual((result.returncode, result.stdout), (0, '42\n'), result.stderr)
         final_bundle = moved / host['libraries']['test']['directory']
         manifest = json.loads((final_bundle / 'manifest.json').read_text())
@@ -154,7 +156,7 @@ class ForeignPackaging(harness.ToolchainCase):
 
     def test_missing_provenance_and_dependency_reject_without_initialization(self):
         bundle, dependencies = self.closure()
-        self.notices.write_text('{"schema":"nex.sdk-notices/1","components":[]}')
+        self.notices.write_text('{"schema":"nex.sdk-notices/1","components":[]}', newline="\n")
         with self.assertRaisesRegex(RuntimeError, 'no component/license provenance'):
             self.prepare(self.root / 'missing-notice')
         self.assertFalse((self.root / 'missing-notice').exists())
@@ -162,7 +164,7 @@ class ForeignPackaging(harness.ToolchainCase):
         # Restore provenance, then remove a required transitive image.
         self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': [
             {'name': 'fixture', 'version': '1', 'url': 'https://example.invalid/fixture',
-             'roots': [str(bundle), str(dependencies)], 'license_files': [str(bundle / 'NOTICE')]}]}))
+             'roots': [str(bundle), str(dependencies)], 'license_files': [str(bundle / 'NOTICE')]}]}), newline="\n")
         next(dependencies.glob('*leaf*')).unlink()
         with self.assertRaisesRegex(RuntimeError, 'unresolved.*dependency'):
             self.prepare(self.root / 'missing-dependency')
@@ -183,17 +185,17 @@ class ForeignPackaging(harness.ToolchainCase):
         dependencies = [Path(doctor[key]) for key in ('native_openssl_crypto', 'native_openssl_ssl', 'native_sqlite_library') if doctor.get(key)]
         value = json.loads(self.notices.read_text())
         value['components'][0]['roots'] += list(map(str, self.library_inputs(dependencies)))
-        self.notices.write_text(json.dumps(value))
+        self.notices.write_text(json.dumps(value), newline="\n")
 
     def test_package_retains_source_history_and_runs_without_inputs_or_sdk(self):
         bundle, dependencies = self.closure()
         self.application_notices()
         # An unreachable catalogue entry must not become a deployment input.
         self.catalogue['libraries']['unreachable'] = {'directory': 'absent', 'manifest_sha256': '0' * 64, 'exports': ['secret']}
-        self.host.write_text(json.dumps(self.catalogue))
+        self.host.write_text(json.dumps(self.catalogue), newline="\n")
         original = self.file.read_text()
         checked = self.cli('check')
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             before_source = db.execute('SELECT source FROM revisions WHERE hash=?', (checked['revision'],)).fetchone()[0]
             before_ids = db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         output = self.root / 'application'
@@ -213,10 +215,12 @@ class ForeignPackaging(harness.ToolchainCase):
             if platform.system() == 'Darwin':
                 self.assertGreaterEqual(tuple(map(int, report['minimum_macos'].split('.'))),
                                         tuple(map(int, module['minimum_macos'].split('.'))))
+            elif os.name=='nt':
+                self.assertEqual(report['architecture'], module['architecture'])
             else:
                 for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
                     self.assertGreaterEqual(set(report[key]), set(module[key]))
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (checked['revision'],)).fetchone()[0], before_source)
             self.assertEqual(db.execute('SELECT revision FROM head WHERE id=1').fetchone()[0], checked['revision'])
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(), before_ids)
@@ -231,16 +235,16 @@ class ForeignPackaging(harness.ToolchainCase):
         moved = self.root / 'independent 🧠 %'
         output.rename(moved)
         link = self.root / 'entry-link'
-        link.symlink_to(moved / 'bin/app')
+        link.symlink_to(moved / packaging_harness.APP)
         executed = subprocess.run([str(link)], cwd='/', capture_output=True, text=True, timeout=20,
-                                  env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent', 'NEX_FOREIGN_CONFIG': '/not-an-authority'})
+                                  env=packaging_harness.deployed_environment(NEX_FOREIGN_CONFIG='/not-an-authority'))
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
         self.assertEqual(self.events(), '')
         # A changed host cannot make the compiled derived pin accept another one.
         host_path = moved / 'foreign/host.json'
         host = json.loads(host_path.read_text())
         host['libraries']['test']['manifest_sha256'] = self.pin
-        host_path.write_text(json.dumps(host))
+        host_path.write_text(json.dumps(host), newline="\n")
         rejected = subprocess.run([str(link)], cwd='/', capture_output=True, text=True, timeout=20, env={**os.environ, **self.env})
         self.assertEqual(rejected.returncode, 70)
         self.assertIn('E_FFI_HASH', rejected.stderr)
@@ -266,10 +270,10 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         auth = self.root / 'auth.json'
         token = self.cli('token', '--user', 'alice', '--auth', auth)['token']
         (self.root / 'assets').mkdir()
-        (self.root / 'assets/index.html').write_text('Built fixture browser assets')
+        (self.root / 'assets/index.html').write_text('Built fixture browser assets', newline="\n")
         moved = self.root / 'moved server'
         output.rename(moved)
-        process = http_harness.HTTP.launch(self, str(moved / 'bin/app'), auth, env=self.env)
+        process = http_harness.HTTP.launch(self, str(moved / packaging_harness.APP), auth, env=self.env)
         try:
             self.assertEqual(http_harness.HTTP.request(self, '/api/value')[0], 401)
             self.assertEqual(self.events(), '')
@@ -283,8 +287,8 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
             http_harness.HTTP.stop(self, process)
         self.marker.unlink()
         # Default packaged authority must also be kept outside the static root.
-        (moved / 'index.html').write_text('Cannot expose the package as public assets')
-        rejected = subprocess.run([str(moved / 'bin/app'), '--auth', str(auth),
+        (moved / 'index.html').write_text('Cannot expose the package as public assets', newline="\n")
+        rejected = subprocess.run([str(moved / packaging_harness.APP), '--auth', str(auth),
                                    '--database', str(self.root / 'private.sqlite'), '--static', str(moved)],
                                   capture_output=True, text=True, timeout=20, env={**os.environ, **self.env})
         self.assertNotEqual(rejected.returncode, 0)
@@ -315,7 +319,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
                       'pub server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo",'
                       '// Also preserve this comment: ' + self.pin + '\n' + token + ');\n'
                       'server extern fn unused(x:i64)->i64!{ffi}=foreign("hidden","hidden","' + '0' * 64 + '");\n')
-        native.write_text(definition)
+        native.write_text(definition, newline="\n")
         source = ('module callers;import "./native.nex" as native;'
                   'server fn invoke(cb:server fn(i64)->i64!{ffi})->i64!{ffi}{return cb(42);}'
                   'server fn main()->unit!{ffi,io}{assert("' + self.pin + '"=="' + self.pin + '");print(invoke(native::echo));}')
@@ -327,12 +331,12 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         report = json.loads((output / 'application.json').read_text())
         changes = report['foreign_projection']['changes']
         self.assertEqual([c['function'] for c in changes], ['bridge::echo'])
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             bundle = json.loads(db.execute('SELECT source FROM revisions WHERE hash=?', (result['revision'],)).fetchone()[0])
         self.assertEqual(bundle['files']['native.nex'], definition.replace(token, json.dumps(changes[0]['manifest_sha256'])))
         self.assertEqual(bundle['files']['main.nex'], source)
         self.assertEqual(native.read_text(), definition)
-        executed = subprocess.run([str(output / 'bin/app')], capture_output=True, text=True, timeout=20)
+        executed = subprocess.run([str(output / packaging_harness.APP)], capture_output=True, text=True, timeout=20)
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
 
     def test_operator_catalogue_matches_native_regular_file_and_size_limits(self):
@@ -340,10 +344,10 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         regular = self.host.with_name('regular-host.json')
         self.host.rename(regular)
         self.host.symlink_to(regular)
-        with self.assertRaisesRegex(RuntimeError, 'symbolic link|Too many levels'):
+        with self.assertRaisesRegex(RuntimeError, 'symbolic link|Too many levels|reparse point'):
             self.prepare(self.root / 'symlink-denied')
         self.host.unlink()
-        os.mkfifo(self.host, 0o600)
+        nonregular(self.host, 0o600)
         with self.assertRaisesRegex(RuntimeError, 'regular file'):
             self.prepare(self.root / 'fifo-denied')
         self.host.unlink()
@@ -352,7 +356,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertTrue(self.prepare(self.root / 'exact-limit')['assembly_passed'])
         with self.host.open('ab') as stream:
             stream.write(b' ')
-        with self.assertRaisesRegex(RuntimeError, 'byte limit'):
+        with self.assertRaisesRegex(RuntimeError, 'byte limit|size limit'):
             self.prepare(self.root / 'oversized-denied')
         self.assertEqual(self.events(), '')
 
@@ -384,7 +388,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertEqual(pack['documents']['foreign_package_schema'], descriptor['preparation_schema'])
 
     def module_identity(self, distinct):
-        first, dependencies = self.closure(counter=True)
+        first, dependencies = self.closure(inventoried=os.name=='nt',counter=True)
         second = self.root / 'second-bundle'
         shutil.copytree(first, second)
         first_pin = self.pin
@@ -394,21 +398,21 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         second_pin = foreign_bundle.sha256(second / 'manifest.json')
         self.host.write_text(json.dumps({'schema': 'nex.foreign-host/1', 'module_limit': 64, 'libraries': {
             name: {'directory': str(directory), 'manifest_sha256': pin, 'exports': ['echo']}
-            for name, directory, pin in [('first', first, first_pin), ('second', second, second_pin)]}}))
+            for name, directory, pin in [('first', first, first_pin), ('second', second, second_pin)]}}), newline="\n")
         self.source('module identities;server extern fn first(x:i64)->i64!{ffi}=foreign("first","echo","' + first_pin + '");'
                     'server extern fn second(x:i64)->i64!{ffi}=foreign("second","echo","' + second_pin + '");'
                     'server fn main()->unit!{ffi,io}{print(first(0));print(second(0));}')
         components = []
         for name, directory in [('first', first), ('second', second)]:
             notice = self.root / (name + '-LICENSE')
-            notice.write_text('Complete ' + name + ' fixture notice.\n')
+            notice.write_text('Complete ' + name + ' fixture notice.\n', newline="\n")
             components.append({'name': name, 'version': 'fixture', 'url': 'https://example.invalid/' + name,
                                'roots': [str(directory)], 'license_files': [str(notice)]})
         components[0]['roots'].append(str(dependencies))
         if distinct:
             # Identical relocated code/notices must retain distinct source pins.
             components = [{**components[0], 'roots': [str(first), str(second), str(dependencies)]}]
-        self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}))
+        self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}), newline="\n")
         self.application_notices()
         expected = '1\n1\n' if distinct else '1\n2\n'
         self.assertEqual(self.cli('eval', '--foreign', self.host)['stdout'], expected)
@@ -425,13 +429,11 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         for library in libraries.values():
             bundle = output / 'foreign/bundles' / library['manifest_sha256']
             self.assertEqual((bundle / library['source_identity_file']).read_text(), library['source_manifest_sha256'] + '\n')
-        shutil.rmtree(first)
-        shutil.rmtree(second)
-        shutil.rmtree(dependencies)
+        for directory in dict.fromkeys((first,second,dependencies)):shutil.rmtree(directory)
         self.file.unlink()
         shutil.rmtree(self.root / '.nex')
-        result = subprocess.run([str(output / 'bin/app')], cwd='/', capture_output=True, text=True, timeout=20,
-                                env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'})
+        result = subprocess.run([str(output / packaging_harness.APP)], cwd='/', capture_output=True, text=True, timeout=20,
+                                env=packaging_harness.deployed_environment())
         self.assertEqual((result.returncode, result.stdout), (0, expected), result.stderr)
 
     def test_aliases_keep_shared_module_state_despite_different_component_notices(self):

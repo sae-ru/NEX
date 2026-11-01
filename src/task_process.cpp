@@ -10,6 +10,9 @@
 #include <filesystem>
 #include <fstream>
 #include <thread>
+#ifdef _WIN32
+#include "nex/task_process_windows.h"
+#endif
 #if defined(__APPLE__) || defined(__linux__)
 #include <cerrno>
 #include <fcntl.h>
@@ -173,6 +176,8 @@ TaskProcessResult runTaskProcess(const std::vector<std::string> &arguments,const
   result.outputLimit=result.outputLimit||size(out)>outputCap||size(err)>outputCap;
   for(const auto &path:{out,err})if(size(path)>outputCap)std::filesystem::resize_file(path,outputCap);
   return result;
+#elif defined(_WIN32)
+  return windows_process::run(arguments,directory,overrides,seconds,logs);
 #else
   (void)arguments;(void)directory;(void)overrides;(void)seconds;(void)logs;
   throw Error("E_TASK_PLATFORM","task process supervision is not configured on this host");

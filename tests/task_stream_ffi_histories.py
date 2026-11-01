@@ -1,4 +1,5 @@
 """Preserve genuine SDK023 mixed File/FFI histories through explicit024 migration."""
+from host_fixture import run_native, host_cpp
 import argparse
 import copy
 import json
@@ -47,10 +48,10 @@ def save():
 def run(label, argv, project=None, env=None, expected=0):
     report['state'] = label
     save()
-    result = subprocess.run(list(map(str, argv)), cwd=project or root, env=env or os.environ,
+    result = run_native(list(map(str, argv)), cwd=project or root, env=env or os.environ,
                             capture_output=True, text=True, timeout=300)
-    (root / (label + '.stdout')).write_text(result.stdout)
-    (root / (label + '.stderr')).write_text(result.stderr)
+    (root / (label + '.stdout')).write_text(result.stdout, newline="\n")
+    (root / (label + '.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'name': label, 'argv': list(map(str, argv)), 'cwd': str(project or root),
                               'exit_code': result.returncode, 'expected': expected})
     save()
@@ -86,7 +87,7 @@ def restore(name, meta, sql):
         assert not relative.is_absolute() and '..' not in relative.parts
         path = project / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+        path.write_text(text, newline="\n")
     (project / 'files').mkdir()
     (project / 'files/input').write_bytes(b'abcdef')
     with closing(sqlite3.connect(project / '.nex/graph.db')) as db:
@@ -223,8 +224,8 @@ try:
             run(label + '-web-emission', [source_probe, 'web', candidate_path, project, web, '0.24'])
             text = (web / 'program.ts').read_text()
             assert 'file_open_read' not in text and 'histories::mixed_ffi::main' not in text
-            (web / 'package.json').write_text('{"type":"module"}\n')
-            (web / 'run.mjs').write_text("import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n")
+            (web / 'package.json').write_text('{"type":"module"}\n', newline="\n")
+            (web / 'run.mjs').write_text("import {entry} from './program.ts';process.stdout.write(String(entry())+'\\n');\n", newline="\n")
             client = run(label + '-typescript', [os.environ.get('NEX_NODE', 'node'), '--experimental-strip-types',
                          '--disable-warning=ExperimentalWarning', web / 'run.mjs'])
             assert client.stdout == str(row['expected_value']) + '\n' and client.stderr == ''

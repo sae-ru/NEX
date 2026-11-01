@@ -15,6 +15,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace nex { namespace {
 namespace fs=std::filesystem;
@@ -22,11 +25,17 @@ using Object=llvm::json::Object;using Value=llvm::json::Value;
 [[noreturn]] void fail(const std::string &message,const char *code="E_SERVER_WORKLOAD"){throw Error(code,message);}
 std::string sha(const std::string &text){return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(text)),true);}
 std::string bounded(const std::string &path,size_t limit=1048576){
+#ifdef _WIN32
+  std::string text;
+  try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
+  catch(const nexrt::DataError &error){fail(error.what());}
+#else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
   if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)fail("workload inputs require bounded regular non-symlink files");
   std::string text;std::array<char,65536> bytes{};
   for(;;){auto count=::read(file.fd,bytes.data(),bytes.size());if(count<0){if(errno==EINTR)continue;fail("cannot read workload input");}if(!count)break;if(size_t(count)>limit-text.size())fail("workload input exceeds its byte limit");text.append(bytes.data(),size_t(count));}
+#endif
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){fail("workload input must be strict UTF-8");}return text;
 }
 void keys(const Object &object,const std::set<std::string> &allowed){for(const auto &[key,value]:object){(void)value;if(!allowed.contains(key.str()))fail("unknown workload field: "+key.str());}}
@@ -92,12 +101,12 @@ void verifyServerWorkloadInputs(const ServerWorkload &workload){
   if(error||path.string()!=workload.path||bounded(workload.selection)!=workload.source||bounded(workload.helper)!=workload.helperSource)fail("workload inputs changed after preflight","E_PROJECT_INPUT_CHANGED");
 }
 ServerWorkloadRun::ServerWorkloadRun(const ServerWorkload &inputWorkload):workload(inputWorkload){
-  verifyServerWorkloadInputs(workload);auto configured=std::getenv("NEX_PYTHON");auto executable=llvm::sys::findProgramByName(configured?configured:"python3");if(!executable)throw Error("E_TOOL","server workload profiling requires Python3");python=*executable;
+  verifyServerWorkloadInputs(workload);auto executable=llvm::sys::findProgramByName(pythonProgram());if(!executable)throw Error("E_TOOL","server workload profiling requires Python3");python=*executable;
   directory=createTemporaryDirectory("nex-server-workload");input=(fs::path(directory)/"workload.json").string();result=(fs::path(directory)/"result.json").string();runner=(fs::path(directory)/"runner.py").string();
   try{writeFile(input,workload.source);writeFile(runner,workload.helperSource);}catch(...){fs::remove_all(directory);throw;}
 }
 ServerWorkloadRun::~ServerWorkloadRun(){std::error_code ignored;fs::remove_all(directory,ignored);}
-std::vector<std::string> ServerWorkloadRun::launcher()const{return {python,"-B",runner,"--workload",input,"--expected-hash",workload.sha256,"--result",result,"--"};}
+std::vector<std::string> ServerWorkloadRun::launcher()const{return {python,"-B","-X","utf8",runner,"--workload",input,"--expected-hash",workload.sha256,"--result",result,"--"};}
 Value ServerWorkloadRun::evidence()const{
   verifyServerWorkloadInputs(workload);auto parsed=llvm::json::parse(bounded(result));if(!parsed){llvm::consumeError(parsed.takeError());fail("workload runner produced invalid JSON");}
   auto value=parsed->getAsObject();auto planned=workload.plan.getInteger("total_requests");

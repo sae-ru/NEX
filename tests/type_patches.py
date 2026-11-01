@@ -1,4 +1,5 @@
 """Atomic source-type edits, archived layouts and checked backend agreement."""
+from sqlite_fixture import connection as sqlite_connection
 import copy
 import json
 import shutil
@@ -20,19 +21,19 @@ test fn value_test()->unit{assert(m::make().value==41);}
 
 class TypePatches(harness.ToolchainCase):
     def project(self, model=MODEL, main=MAIN):
-        (self.root / 'nex.json').write_text(json.dumps({'language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source(main)
-        (self.root / 'model.nex').write_text(model)
+        (self.root / 'model.nex').write_text(model, newline="\n")
         return self.cli('check')['revision']
 
     def rows(self):
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
             return {name: sorted(db.execute('SELECT * FROM "'+name+'"').fetchall(), key=repr) for name in names}
 
     def apply(self, revision, replacements, ok=True):
         patch = self.root / 'patch.json'
-        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements}))
+        patch.write_text(json.dumps({'expected_revision':revision,'replacements':replacements}), newline="\n")
         return self.cli('apply','--patch',patch,ok=ok)
 
     def changed(self, value='after'):
@@ -161,7 +162,7 @@ test fn value_test()->unit{assert(read(m::Choice<i64>::Some(42))==42);}
         ]
         for document in documents:
             path = self.root/'bad.json'
-            path.write_text(json.dumps(document))
+            path.write_text(json.dumps(document), newline="\n")
             self.assertEqual(self.cli('apply','--patch',path,ok=False)['code'],'E_JSON')
             self.assertEqual(self.rows(),baseline)
 
@@ -183,7 +184,7 @@ test fn value_test()->unit{assert(read(m::Choice<i64>::Some(42))==42);}
         processes = []
         for value in ('first','second'):
             path = self.root/(value+'.json')
-            path.write_text(json.dumps({'expected_revision':revision,'replacements':self.changed(value)}))
+            path.write_text(json.dumps({'expected_revision':revision,'replacements':self.changed(value)}), newline="\n")
             processes.append(subprocess.Popen([harness.NEX,'apply','--patch',str(path),'--json'],
                 cwd=self.root,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True))
         results = []

@@ -43,13 +43,13 @@ class Verification(harness.ToolchainCase):
 
     def verify(self, contract, *args, ok=True):
         path = self.root / 'contracts.json'
-        path.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + '\n')
+        path.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + '\n', newline="\n")
         return self.cli('verify', '--contracts', path, *args, ok=ok, timeout=90)
 
     def web(self, entry='main'):
         folder = self.root / 'typescript'
         self.cli('emit', '--kind', 'typescript', '--entry', entry, '--directory', folder)
-        (folder / 'package.json').write_text('{"type":"module"}')
+        (folder / 'package.json').write_text('{"type":"module"}', newline="\n")
         (folder / 'driver.ts').write_text('''import { entry } from './program.ts';
 import { str, NexError } from './nex-runtime.ts';
 let stdout = '';
@@ -58,7 +58,7 @@ let result;
 try { const value = entry(); result = {ok: true, value: value === undefined ? null : str(value), stdout}; }
 catch(e) { if (!(e instanceof NexError)) throw e; result = {ok: false, code: e.code, stdout}; }
 process.stdout.write(JSON.stringify(result));
-''')
+''', newline="\n")
         process = subprocess.run([os.environ.get('NEX_NODE', 'node'), '--experimental-strip-types', '--no-warnings', str(folder / 'driver.ts')], capture_output=True, text=True, timeout=30)
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
         return json.loads(process.stdout)
@@ -183,7 +183,7 @@ pub fn safe(x: i64) -> i64 { return x; }
         self.source(original)
         contract = self.contract('identity', [], ['result == x'])
         first = self.verify(contract)
-        self.file.write_text('// changed locations\n' + original)
+        self.file.write_text('// changed locations\n' + original, newline="\n")
         self.assertEqual(self.verify(contract, ok=False)['code'], 'E_CONTRACT_STALE')
         self.file.unlink()
         archived = self.verify(contract, '--revision', first['revision'])

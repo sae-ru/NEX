@@ -1,4 +1,6 @@
+from host_fixture import run_native, probe_dll_inputs
 """Actual all-stop LLDB/DAP over unarchived compiled private source exceptions."""
+import os
 import argparse, ast, hashlib, json, os, platform, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
@@ -34,7 +36,7 @@ int main(int argc,const char *const *argv){
 '''
 
 LLDB_DRIVER = r'''
-import base64,json,time,traceback
+import base64,json,time,traceback,os
 from pathlib import Path
 import lldb
 def session(debugger,command,result,internal_dict):
@@ -105,6 +107,7 @@ def session(debugger,command,result,internal_dict):
                 original=Path(name);temporary=original.with_suffix('.hidden');assert not temporary.exists();original.rename(temporary);hidden.append((original,temporary))
             report['source_absent_during_watch']=all(not original.exists() for original,_ in hidden)
             report['hidden_sources']=config['source_files']
+        if os.name=='nt':run('settings set target.error-path '+json.dumps(str(Path(config['directory'])/'inferior.stderr'),ensure_ascii=False))
         arm();run('run --nex-task-workers 2 --nex-task-steps '+str(config['limit'])+(' --nex-task-timeout-ms 800' if config.get('deadline') else ''))
         process=target.GetProcess()
         while process.GetState()==lldb.eStateStopped:
@@ -150,6 +153,12 @@ def session(debugger,command,result,internal_dict):
             request('continue')
         assert process.GetState()==lldb.eStateExited,(process.GetState(),process.GetExitDescription())
         assert all(counts[line]==len(wants) for line,wants in plans.items()),counts
+        for read in (process.GetSTDOUT,process.GetSTDERR):
+            while True:
+                chunk=read(1048576)
+                if not chunk:break
+                result.PutCString(chunk)
+        if os.name=='nt':result.PutCString((Path(config['directory'])/'inferior.stderr').read_text(encoding='utf-8'))
         report.update(ok=True,exit=process.GetExitStatus(),counts=counts,all_stop=True)
     except Exception:
         report['failure']=traceback.format_exc();result.SetError(report['failure'])
@@ -204,10 +213,10 @@ def main():
     out=Path(a.output or os.environ.get('NEX_EXCEPTION_TASK_WATCH_OUTPUT' if a.watch_compiler else 'NEX_EXCEPTION_TASK_LLDB_OUTPUT') or tempfile.mkdtemp(prefix='nex-private-lldb-')).resolve();out.mkdir(parents=True,exist_ok=True)
     emitter=str(Path(a.emitter).resolve());reference=str(Path(a.reference).resolve());compiler=str(Path(a.compiler).absolute())
     report={'ok':False,'cases':[],'dap_cases':[],'typescript_cases':[],'commands':[],'archived':False,'public_debug_CLI_support':False,'checked_expression_support':bool(a.watch_compiler),'security_checks_deferred_by_user':True,'ordinary_functional_only':True}
-    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,command,allowed=(0,),cwd=out,timeout=240):
-        r=subprocess.run(list(map(str,command)),cwd=cwd,text=True,capture_output=True,timeout=timeout)
-        (out/(label+'.stdout')).write_text(r.stdout);(out/(label+'.stderr')).write_text(r.stderr)
+        r=run_native(command,cwd=cwd,text=True,capture_output=True,timeout=timeout)
+        (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
         report['commands'].append({'label':label,'argv':list(map(str,command)),'exit':r.returncode});save()
         assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-4000:]);return r
     def dap_case(binary,manifest,directory,plans,optimization):
@@ -261,19 +270,21 @@ def main():
             adapter.request('continue',{'threadId':identity});exited=adapter.event('exited');assert exited['exitCode']==42,exited
         finally:
             try:adapter.close()
-            finally:(directory/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n')
-        raw=json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False)
-        assert 'NEX_PRIVATE_LLDB_CLEANUP' in raw and '\\"ok\\":true' in raw,raw[-2000:]
+            finally:(directory/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
+        messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
+        output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
+        cleanup=json.loads(next(line.split(' ',1)[1] for line in output.splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
+        assert cleanup=={'ok':True,'live_frames':0,'managed_live':0},output
         report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
     save();debugger=shutil.which('lldb');assert debugger,'actual LLDB required'
-    run('target',[compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',out/'target.ll'])
+    run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
     target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_TASK_DEBUG_ENABLED','-I'+str(runtime)]
     objects=[]
     for name in ['runtime.cpp','nex_files.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp','nex_task_application.cpp','nex_task_debug.cpp']:
         obj=out/(name+'.o');run('compile-'+name,[compiler,*flags,'-c',runtime/name,'-o',obj]);objects.append(obj)
-    host=out/'host.cpp';host.write_text(HOST);run('compile-host',[compiler,*flags,'-c',host,'-o',out/'host.o']);objects.append(out/'host.o')
-    driver=out/'lldb_session.py';driver.write_text(LLDB_DRIVER)
+    host=out/'host.cpp';host.write_text(HOST, newline="\n");run('compile-host',[compiler,*flags,'-c',host,'-o',out/'host.o']);objects.append(out/'host.o')
+    driver=out/'lldb_session.py';driver.write_text(LLDB_DRIVER, newline="\n")
     tree=ast.parse((source/'tests/source_exception_task_debug.py').read_text());assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='DEBUG_CASES' for t in n.targets))
     fixtures=ast.literal_eval(assignment.value)
     step=next(v for v in fixtures if v[0]=='debug-call-rethrow')
@@ -287,17 +298,17 @@ def main():
     if a.watch_compiler:fixtures+=WATCH_CASES
     if a.case:fixtures=[v for v in fixtures if v[0] in a.case]
     for name,text,expectations,limit in fixtures:
-        directory=out/name;directory.mkdir();(directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}));file=directory/'main.nex'
+        directory=out/name;directory.mkdir();(directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");file=directory/'main.nex'
         context_input=None
         if isinstance(text,dict):
-            for unit,content in text.items():(directory/unit).write_text(content)
-            context_input=directory/'input-context.json';context_input.write_text(json.dumps({'schema':'nex.private-task-source/2','file':str(file),'source':text['main.nex'],'entry_unit':'main.nex','units':[{'unit':key,'file':str(directory/key),'source':value} for key,value in sorted(text.items())]},ensure_ascii=False)+'\n')
-        else:file.write_text('module private_lldb;\n'+text+'\n')
-        expected=json.loads(run(name+'-reference',[reference,'reference-context' if context_input else 'reference',context_input or file,str(limit)]).stdout);(directory/'reference.json').write_text(json.dumps(expected,ensure_ascii=False,indent=2)+'\n')
+            for unit,content in text.items():(directory/unit).write_text(content, newline="\n")
+            context_input=directory/'input-context.json';context_input.write_text(json.dumps({'schema':'nex.private-task-source/2','file':str(file),'source':text['main.nex'],'entry_unit':'main.nex','units':[{'unit':key,'file':str(directory/key),'source':value} for key,value in sorted(text.items())]},ensure_ascii=False)+'\n', newline="\n")
+        else:file.write_text('module private_lldb;\n'+text+'\n', newline="\n")
+        expected=json.loads(run(name+'-reference',[reference,'reference-context' if context_input else 'reference',context_input or file,str(limit)]).stdout);(directory/'reference.json').write_text(json.dumps(expected,ensure_ascii=False,indent=2)+'\n', newline="\n")
         if name.startswith('watch-'):
             ts=directory/'typescript';ts.mkdir();run(name+'-typescript-emit',[reference,'typescript-context' if context_input else 'typescript',context_input or file,ts])
             tree=ast.parse((source/'tests/source_exception_tasks_typescript.py').read_text());assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='runner' for t in n.targets));runner=ast.literal_eval(assignment.value)
-            script=ts/'run.mjs';script.write_text(runner.replace('STEPS',str(limit)));node=os.environ.get('NEX_NODE','node')
+            script=ts/'run.mjs';script.write_text(runner.replace('STEPS',str(limit)), newline="\n");node=os.environ.get('NEX_NODE','node')
             actual=json.loads(run(name+'-typescript-execute',[node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]).stdout)
             assert actual['kind']=='return' and actual['value']==str(expected['value']) and actual['output']==expected['output'],actual
             tsc=Path(os.environ['NEX_TSC']);pin=json.loads((source/'web/package.json').read_text())['devDependencies']['typescript'];assert json.loads((tsc.parent.parent/'package.json').read_text())['version']==pin
@@ -307,15 +318,15 @@ def main():
         for optimization in ['0','2']:
             label=name+'-O'+optimization;e=directory/('O'+optimization);e.mkdir()
             run(label+'-emit',[emitter,'emit-context' if context_input else 'emit',context_input or file,e,triple,layout,str(optimization=='2').lower(),'debug-lldb'])
-            ir=(e/'program.ll').read_text();assert ir.count('@main(')==1;ir=ir.replace('@main(','@nex_private_debug_entry(');(e/'linked.ll').write_text(ir)
-            binary=e/'program';run(label+'-link',[compiler,'-O'+optimization,'-g',e/'linked.ll',*objects,'-pthread',*(['-Wl,--build-id'] if platform.system()!='Darwin' else []),'-o',binary])
+            ir=(e/'program.ll').read_text();assert ir.count('@main(')==1;ir=ir.replace('@main(','@nex_private_debug_entry(');(e/'linked.ll').write_text(ir, newline="\n")
+            binary=e/('program.exe' if os.name=='nt' else 'program');run(label+'-link',[compiler,'-O'+optimization,'-g',e/'linked.ll',*objects,'-pthread',*(['-Wl,--build-id'] if platform.system()!='Darwin' else []),'-o',binary])
             if platform.system()=='Darwin':run(label+'-symbols',[Path(compiler).parent/'dsymutil',binary])
             context=json.loads((e/'debug-context.json').read_text());assert context['archived'] is False and 'revision' not in context
             identity=run(label+'-identity',[emitter,'identity',binary]).stdout.strip().replace('-','').lower()
             context.update(program=str(binary),formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'))
             context['task_debug'].update(image_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),image_uuid=identity)
-            manifest=e/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n')
-            options=e/'session.json';options.write_text(json.dumps({'source':str(file),'plans':plans,'limit':limit,'step':name=='lldb-exception-step','deadline':name=='lldb-stopped-deadline','report':str(e/'lldb-report.json'),'watch':bool(a.watch_compiler),'directory':str(e),'source_files':[str(directory/key) for key in text] if isinstance(text,dict) else [str(file)]},ensure_ascii=False,indent=2)+'\n')
+            manifest=e/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n', newline="\n")
+            options=e/'session.json';options.write_text(json.dumps({'source':str(file),'plans':plans,'limit':limit,'step':name=='lldb-exception-step','deadline':name=='lldb-stopped-deadline','report':str(e/'lldb-report.json'),'watch':bool(a.watch_compiler),'directory':str(e),'source_files':[str(directory/key) for key in text] if isinstance(text,dict) else [str(file)]},ensure_ascii=False,indent=2)+'\n', newline="\n")
             command=[debugger,'--no-lldbinit','--batch',binary]
             for line in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+(' --compiler '+json.dumps(str(Path(a.watch_compiler).resolve())) if a.watch_compiler else ''),'command script import '+json.dumps(str(driver)),'nex-private-test-session '+str(options)]:command += ['-o',line]
             result=run(label+'-lldb',command,timeout=180)

@@ -1,10 +1,12 @@
 """Real HTTP DAP sessions: checked caller/request identity and terminal steps."""
 import hashlib,http.client,json,os,platform,shutil,signal,socket,ssl,subprocess,sys,threading,time,traceback
 from pathlib import Path
+from types import SimpleNamespace
+from host_fixture import control_event
 
 def verify(state):
  source=state['source'];out=state['out'];compiler=state['debug_compiler'];target=out/'debug-delivery';target.mkdir();report={'ok':False,'DAP':[]}
- def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ def save():(target/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  previous=list(sys.argv)
  try:
   sys.argv=[sys.argv[0],str(state['emitter'])];from debugging import DAP
@@ -14,7 +16,7 @@ def verify(state):
  assert backend
  for image in state['report']['module_images']:
   if image['optimization']!='2':continue
-  name=image['program'];e=out/name/'O2';foreign=name.startswith('host-');d=target/name;d.mkdir();files=d/'files';files.mkdir();(files/'input').write_text('abcdef');trace=[];hidden=[];response={};client=None;adapter=None;pid=None
+  name=image['program'];e=out/name/'O2';foreign=name.startswith('host-');d=target/name;d.mkdir();files=d/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");trace=[];hidden=[];response={};client=None;adapter=None;pid=None
   manifest=json.loads((e/'debug.json').read_text());fn='leaf::render<mid::Payload>' if foreign else 'leaf::fail';row=next(v for v in manifest['functions'] if v['name']==fn);file=row['task_debug']['file'];text=next(v['source'] for v in manifest['source_context']['units'] if v['file']==file);line=next(i for i,t in enumerate(text.splitlines(),1) if ('throw("TEMPLATE"' if foreign else 'throw("PURE"') in t)
   address=socket.socket();address.bind(('127.0.0.1',0));port=address.getsockname()[1];address.close();path='/api/generic-error' if foreign else '/api/uncaught';args=['--auth',str(out/'auth.json'),'--database',str(d/'database.sqlite'),'--port',str(port),'--workers','4','--timeout-ms','60000'];env={'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(d/'events')}
   if foreign:args+=['--foreign',str(state['catalogue'])]
@@ -46,7 +48,7 @@ def verify(state):
    for namefile in [out/name/'source-context.json',*[Path(v['file']) for v in manifest['source_context']['units']]]:
     temporary=namefile.with_name(namefile.name+'.hidden');assert namefile.is_file() and not temporary.exists();namefile.rename(temporary);hidden.append((namefile,temporary))
    adapter=Recorded([sys.executable,str(source/'debug/nex_dap.py'),'--backend',backend],d);adapter.request('initialize',{'clientID':'private-HTTP-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
-   launch=adapter.send('launch',{'program':str(e/'server'),'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':args,'env':env,'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(e/'debug.json'))+' --compiler '+json.dumps(str(compiler))],'postRunCommands':['process handle -s false -p true -n false SIGTERM']});adapter.event('initialized');bp=adapter.request('setBreakpoints',{'source':{'path':file},'breakpoints':[{'line':line}]});assert all(v['verified'] for v in bp['breakpoints']);adapter.request('configurationDone');adapter.response(launch)
+   launch=adapter.send('launch',{'program':str(e/('server.exe' if os.name=='nt' else 'server')),'stdio':[None,str(d/'inferior.stdout'),str(d/'inferior.stderr')],'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':args,'env':env,'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(e/'debug.json'))+' --compiler '+json.dumps(str(compiler))],'postRunCommands':[] if os.name=='nt' else ['process handle -s false -p true -n false SIGTERM']});adapter.event('initialized');bp=adapter.request('setBreakpoints',{'source':{'path':file},'breakpoints':[{'line':line}]});assert all(v['verified'] for v in bp['breakpoints']);adapter.request('configurationDone');adapter.response(launch)
    pid=adapter.event('process')['systemProcessId'];assert type(pid) is int and pid>0
    client=threading.Thread(target=request,daemon=True);client.start();stop=adapter.event('stopped');assert stop['allThreadsStopped'];identity=adapter.request('threads')['nex']['selected'];stack=adapter.request('stackTrace',{'threadId':identity});frames=stack['stackFrames'];assert frames[0]['name']==fn;caller=next(f for f in frames if f['name']=='mid::run');frame=frames[0]['id'];scope=adapter.request('scopes',{'frameId':frame})['scopes'][0]['variablesReference']
    def watch(expression,frame):return adapter.request('evaluate',{'expression':expression,'frameId':frame,'context':'watch'})['nex']['value']
@@ -56,13 +58,15 @@ def verify(state):
    stale=adapter.send('variables',{'variablesReference':scope});rejected=adapter.wait(lambda v:v.get('type')=='response' and v.get('request_seq')==stale);assert not rejected['success']
    stale=adapter.send('evaluate',{'expression':'1','frameId':frame,'context':'watch'});rejected=adapter.wait(lambda v:v.get('type')=='response' and v.get('request_seq')==stale);assert not rejected['success']
    adapter.request('continue',{'threadId':identity});client.join(timeout=40);assert not client.is_alive() and 'failure' not in response and response['status']==500 and response['request_id']==request_id,response
-   os.kill(pid,signal.SIGTERM);assert adapter.event('exited')['exitCode']==0
-   output=adapter.wait(lambda v:v.get('type')=='event' and v.get('event')=='output' and 'NEX_PRIVATE_MODULE_DEBUG_CLEANUP' in v.get('body',{}).get('output',''));raw=output['body']['output'];cleanup=json.loads(next(v.split(' ',1)[1] for v in raw.splitlines() if v.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')));assert cleanup['ok'] and cleanup['live_frames']==0
+   if os.name=='nt':control_event(SimpleNamespace(pid=pid),'Server')
+   else:os.kill(pid,signal.SIGTERM)
+   assert adapter.event('exited')['exitCode']==0
+   raw=(d/'inferior.stderr').read_text(encoding='utf-8');cleanup=json.loads(next(v.split(' ',1)[1] for v in raw.splitlines() if v.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')));assert cleanup['ok'] and cleanup['live_frames']==0
    report['DAP'].append({'program':name,'optimization':'2','request_id':request_id,'TLS':tls,'source_files_absent':True,'all_stop':True,'terminal_step_out':True,'stale_frame_and_reference_rejected':True,'response':response,'cleanup':cleanup,'exit':0,'passed':True});save()
   finally:
    if adapter:
     try:adapter.close()
-    finally:(d/'protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending,'response':response},ensure_ascii=False,indent=2)+'\n')
+    finally:(d/'protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending,'response':response},ensure_ascii=False,indent=2)+'\n', newline="\n")
    for file,temporary in hidden:
     if temporary.exists():temporary.rename(file)
    if client:client.join(timeout=2)

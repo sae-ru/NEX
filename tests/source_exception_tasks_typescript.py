@@ -7,7 +7,7 @@ out=Path(a.output or os.environ.get('NEX_EXCEPTION_TASK_TYPESCRIPT_OUTPUT') or t
 env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic();records=[];programs=[]
 report={'ok':False,'public_language':'0.24','private_identity':'0.25-prototype','public_source_support':False,'private_task_typescript':True,'native_task_exceptions':False,'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'cases':records}
 def save():
- report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+ report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(cmd,timeout=120):
  r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,env=env,timeout=timeout)
  if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
@@ -26,10 +26,10 @@ process.stdout.write(JSON.stringify({...record,output:logs.join('\n')+(logs.leng
 '''
 save()
 for kind,name,text,steps in fixtures:
- d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}));f=d/'main.nex';f.write_text('module task_exception;\n'+text+'\n')
- reference=json.loads(run([probe,'reference',f,str(steps)]));(d/'reference.json').write_text(json.dumps(reference,indent=2)+'\n')
+ d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module task_exception;\n'+text+'\n', newline="\n")
+ reference=json.loads(run([probe,'reference',f,str(steps)]));(d/'reference.json').write_text(json.dumps(reference,indent=2)+'\n', newline="\n")
  run([probe,'typescript',f,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['schema']=='nex.private-typescript-exception-map/1' and mapping['language']=='0.25-prototype' and mapping['task_source_exceptions'] is True and mapping['execution']=='task-generator' and not mapping['source_support'] and 'revision' not in mapping
- script=d/'run.mjs';script.write_text(runner.replace('STEPS',str(steps)));actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n')
+ script=d/'run.mjs';script.write_text(runner.replace('STEPS',str(steps)), newline="\n");actual=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]));(d/'actual.json').write_text(json.dumps(actual,indent=2)+'\n', newline="\n")
  assert actual['kind']==reference['kind'],(name,actual,reference)
  if actual['kind']=='return':
   expected=str(reference['value']) if type(reference['value']) is int else reference['value'];assert actual['value']==expected,(name,actual,reference)
@@ -63,11 +63,11 @@ const controller=new AbortController();
 try{await task.runSourceExceptionPrototype(task.call(function*(){while(true)yield task.request('task_yield',[]);}),classify,{signal:controller.signal,observe:()=>controller.abort(),complete:finish});throw new Error('cancellation missing');}catch(e){if(!(e instanceof nex.NexError)||e.code!=='E_CANCELLED'||source.details(e)!==undefined)throw e;++count;}
 try{await task.runSourceExceptionPrototype(task.call(function*(){while(true)yield task.request('task_yield',[]);}),classify,{timeoutMs:5,steps:1000000,complete:finish});throw new Error('deadline missing');}catch(e){if(!(e instanceof nex.NexError)||e.code!=='E_TIMEOUT'||source.details(e)!==undefined)throw e;++count;}
 process.stdout.write(JSON.stringify({ok:true,cases:count,completed_drivers:statistics.length})+'\n');
-""")
+""", newline="\n")
 controls=json.loads(run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',boundary/'run.mjs']));assert controls['ok'] and controls['cases']==6 and controls['completed_drivers']==6
-(boundary/'result.json').write_text(json.dumps(controls,indent=2)+'\n')
+(boundary/'result.json').write_text(json.dumps(controls,indent=2)+'\n', newline="\n")
 # The exact pinned compiler is an explicit prerequisite, as for the other private TS probes.
 tsc=Path(os.environ['NEX_TSC']).resolve();assert tsc.is_file();package=json.loads((tsc.parent.parent/'package.json').read_text());pin=json.loads((source/'web/package.json').read_text())['devDependencies']['typescript'];assert package['version']==pin
 checked=subprocess.run([node,str(tsc),'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',*map(str,programs)],text=True,capture_output=True,env=env,timeout=180)
-(out/'typecheck.stdout').write_text(checked.stdout);(out/'typecheck.stderr').write_text(checked.stderr);assert checked.returncode==0,checked.stdout+checked.stderr
+(out/'typecheck.stdout').write_text(checked.stdout, newline="\n");(out/'typecheck.stderr').write_text(checked.stderr, newline="\n");assert checked.returncode==0,checked.stdout+checked.stderr
 report.update(ok=True,comparisons=len(records),reference_fixture_file_sha256=hashlib.sha256(fixture_file.read_bytes()).hexdigest(),driver_boundaries=controls,strict_typecheck=True,typescript_version=package['version'],reference_agreement=True,actual_native_task_execution=False);save();print(json.dumps({'ok':True,'comparisons':len(records),'typescript_version':package['version'],'report':str(out/'report.json')}))

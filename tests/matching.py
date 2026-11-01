@@ -145,7 +145,7 @@ test fn names() -> unit {
  assert((match (match true {true=>false,false=>true}) {true=>0,false=>42}) == 42);
 }''')
         self.backends()
-        (self.root/'model.nex').write_text('module namespace_match; pub enum E {A(value:i64);B;}')
+        (self.root/'model.nex').write_text('module namespace_match; pub enum E {A(value:i64);B;}', newline="\n")
         self.source('module namespaced; import "./model.nex" as match; fn main() -> unit {match match::E::A(42) {match::E::A(n)=>{assert(n==42);},match::E::B()=>{assert(false);}}}')
         self.assertEqual(self.cli('run')['exit_code'],0)
         self.source('module indexed; fn main() -> unit {let match:list<i64>=[41];match match[0]+1 {42=>{assert(true);},_=>{assert(false);}}}')
@@ -168,7 +168,7 @@ test fn cases() -> unit {assert(take(ok(Maybe::Some(42)))==42);assert(take<i64>(
         self.assertTrue(any(n['kind']=='expression.match' for n in operations))
         bindings={n['id'] for n in operations if n['kind']=='pattern.binding'}
         self.assertTrue(any(any(r['role']=='binding' and r['id'] in bindings for r in n['references']) for n in operations if n['kind']=='expression.name'))
-        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'graph_match::choose','source':'fn choose(value:result<i64>) -> i64 {return match value {ok(n) if n>0=>n+1,ok(_)=>0,err(_,_)=>-1};}'}]}))
+        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'graph_match::choose','source':'fn choose(value:result<i64>) -> i64 {return match value {ok(n) if n>0=>n+1,ok(_)=>0,err(_,_)=>-1};}'}]}), newline="\n")
         after=self.cli('apply','--patch',patch)['revision'];self.file.unlink()
         self.assertEqual(self.cli('run','--revision',before)['stdout'],'42\n');self.assertEqual(self.cli('run','--revision',after)['stdout'],'43\n')
         project=self.root/'export';self.cli('export','--revision',after,'--directory',project);self.assertEqual(self.cli('check',cwd=project)['revision'],after)
@@ -196,8 +196,8 @@ fn main() -> unit !{io} {observe(ok(Maybe::Some(41,["unread"])));}
         path=self.root/'frame.json';expression='match value {ok(Maybe::Some(n,_)) if n>0 => n+1,_=>0}'
         expected=[([],{'ok':True}),(['ok'],{'case':'Some'}),(['ok','Some::number'],'41')]
         for selected,value in expected:
-            path.write_text(json.dumps(frame));demand=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression,'--kind','demand')['request'];self.assertEqual(demand['path'],selected);frame['captures'].append({**{k:demand[k] for k in ('binding','path','kind')},'value':value})
-        path.write_text(json.dumps(frame));value=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression);self.assertEqual(value['value'],'42');self.assertTrue(all('Some::large' not in row['path'] for row in value['read_paths']))
+            path.write_text(json.dumps(frame), newline="\n");demand=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression,'--kind','demand')['request'];self.assertEqual(demand['path'],selected);frame['captures'].append({**{k:demand[k] for k in ('binding','path','kind')},'value':value})
+        path.write_text(json.dumps(frame), newline="\n");value=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression);self.assertEqual(value['value'],'42');self.assertTrue(all('Some::large' not in row['path'] for row in value['read_paths']))
         plan=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression,'--kind','plan');self.assertEqual([v['name'] for v in plan['variables']],['value'])
         self.file.unlink();self.assertEqual(self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression)['value'],'42')
 
@@ -217,8 +217,8 @@ test fn cases() -> unit {assert(choose(ok(42))==42);assert(choose(err<i64>("E","
 ''')
         task=self.cli('task',self.file,'--kind','init');native=next(c for c in task['checks'] if c['kind']=='test');web=dict(native,id='web',target='web');task['checks'].append(web)
         task['requirements'].append({'id':'matching','text':'Preserve reviewed match selection in native and browser backends','bindings':[{'program':'app','kind':'function','symbol':'match_accept::choose'}],'targets':['native','web'],'checks':[native['id'],'web']})
-        path=self.root/'task.json';path.write_text(json.dumps(task));failed=self.cli('task',path,'--kind','run',ok=False,timeout=180)
-        revision=self.cli('check')['revision'];patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':revision,'replacements':[{'name':'match_accept::choose','source':'pub fn choose(value:result<i64>) -> i64 {return match value {ok(n) if n>0=>n,_=>-1};}'}]}))
+        path=self.root/'task.json';path.write_text(json.dumps(task), newline="\n");failed=self.cli('task',path,'--kind','run',ok=False,timeout=180)
+        revision=self.cli('check')['revision'];patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':revision,'replacements':[{'name':'match_accept::choose','source':'pub fn choose(value:result<i64>) -> i64 {return match value {ok(n) if n>0=>n,_=>-1};}'}]}), newline="\n")
         fixed=self.cli('apply','--patch',patch)['revision'];passed=self.cli('task',path,'--kind','run','--revision',fixed,'--task-hash',failed['task_hash'],timeout=180)
         self.assertEqual(passed['task_hash'],failed['task_hash']);self.file.unlink();replay=self.cli('task',passed['output'],'--kind','replay',timeout=180);self.assertEqual(replay['status'],'passed')
         self.assertEqual(replay['task_hash'],failed['task_hash'])
@@ -258,7 +258,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(source)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             result=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),result.stdout+result.stderr);data=json.loads(report.read_text());values={v['name']:v['value'] for v in data['values']['variables']}
             self.assertEqual(values['number'],'41');self.assertEqual(values['answer'],'42');self.assertIn('\\0🌍',values['label']);self.assertNotIn('n',values)
@@ -274,7 +274,7 @@ def __lldb_init_module(debugger,_):
                 self.assertEqual(result['nex']['value'],'42');self.assertEqual(result['nex']['revision'],session['revision'])
                 client.request('continue',{'threadId':stop['threadId']});self.assertEqual(client.event('exited')['exitCode'],0)
             finally:client.close()
-            self.file.unlink();snapshot=self.root/'frame.json';snapshot.write_text(json.dumps(data['frame']));self.assertEqual(self.cli('inspect',snapshot,'--manifest',session['manifest'],'--expression','match value {ok(E::Pair(n,_,_))=>n+1,_=>0}')['value'],'42')
+            self.file.unlink();snapshot=self.root/'frame.json';snapshot.write_text(json.dumps(data['frame']), newline="\n");self.assertEqual(self.cli('inspect',snapshot,'--manifest',session['manifest'],'--expression','match value {ok(E::Pair(n,_,_))=>n+1,_=>0}')['value'],'42')
 
 
 if __name__=='__main__':unittest.main()

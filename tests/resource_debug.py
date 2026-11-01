@@ -34,7 +34,7 @@ class ResourceFrame(harness.ToolchainCase):
                 ('callback','server fn(file)->bool',{'function':'resource_debug::make::$lambda_0','identity':'9001','captures':{'first':{'file':'17'}}})]],'truncated':False}
 
     def inspect(self,expression,frame=None,kind=None,**kw):
-        self.framefile.write_text(json.dumps(self.frame if frame is None else frame));args=['inspect',self.framefile,'--manifest',self.manifest,'--expression',expression]
+        self.framefile.write_text(json.dumps(self.frame if frame is None else frame), newline="\n");args=['inspect',self.framefile,'--manifest',self.manifest,'--expression',expression]
         if kind:args+=['--kind',kind]
         return self.cli(*args,**kw)
 
@@ -93,12 +93,12 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),env=self.env,machine=False,timeout=120)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);result=json.loads(report.read_text())
             self.assertTrue(result['equal']['value']);self.assertFalse(result['other']['value']);self.assertTrue(result['capture']['value'])
             self.assertRegex(result['first']['value']['file'],r'^[1-9][0-9]*$');self.assertIn('<file ',json.dumps(result['previews']))
-            self.file.unlink();snapshot=self.root/'snapshot.json';snapshot.write_text(json.dumps(result['snapshot']))
+            self.file.unlink();snapshot=self.root/'snapshot.json';snapshot.write_text(json.dumps(result['snapshot']), newline="\n")
             self.assertTrue(self.cli('inspect',snapshot,'--manifest',self.manifest,'--expression','first==alias')['value'])
             from debugging import DAP
             client=DAP(session['adapter_command'],self.root)

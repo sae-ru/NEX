@@ -1,5 +1,8 @@
 #include "nex_task_file_write.h"
 #include "nex_host.h"
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #include "nex_tasks.h"
 #include <atomic>
 #include <chrono>
@@ -30,7 +33,15 @@ struct Directory {
   ~Directory(){std::error_code ignored;fs::remove_all(path,ignored);}
 };
 void write(const fs::path &path,const std::string &bytes){std::ofstream f(path,std::ios::binary);f.write(bytes.data(),bytes.size());require(bool(f),"fixture write failed");}
-std::string read(const fs::path &path){std::ifstream f(path,std::ios::binary);require(bool(f),"fixture read failed");return {std::istreambuf_iterator<char>(f),{}};}
+std::string read(const fs::path &path){
+#ifdef _WIN32
+  // Native NEX readers share deletion so a concurrent atomic replacement can
+  // keep the old physical file alive. UCRT ifstream opts out of that sharing.
+  return nexrt::host_windows::readRegular(path,TextFiles::byteLimit);
+#else
+  std::ifstream f(path,std::ios::binary);require(bool(f),"fixture read failed");return {std::istreambuf_iterator<char>(f),{}};
+#endif
+}
 std::span<const uint8_t> raw(const std::string &s){return {reinterpret_cast<const uint8_t*>(s.data()),s.size()};}
 bool temporaryExists(const fs::path &root){for(const auto &e:fs::directory_iterator(root))if(e.path().filename().string().starts_with(".nex-write-"))return true;return false;}
 void noTemporary(const fs::path &root){require(!temporaryExists(root),"unpublished temporary leaked");}

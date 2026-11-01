@@ -24,7 +24,7 @@ server fn main()->unit !{task,fs,io}{
  assert(file_close(box.value));print(42);}
 '''
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
-def write(p,v):Path(p).write_text(json.dumps(v,indent=2)+'\n')
+def write(p,v):Path(p).write_text(json.dumps(v,indent=2)+'\n', newline="\n")
 notices=a.notices.resolve(strict=True) if a.notices else None
 if notices:
  declared=json.loads(notices.read_text());assert declared['schema']=='nex.sdk-notices/1'
@@ -41,7 +41,7 @@ if notices:
 def save():report['seconds']=round(time.monotonic()-start,3);write(root/'report.json',report)
 def run(name,argv,env=None,expected=0):
  report['state']=name;save();r=subprocess.run(list(map(str,argv)),cwd=root,env=env or os.environ,capture_output=True,text=True,timeout=600)
- (root/(name+'.stdout')).write_text(r.stdout);(root/(name+'.stderr')).write_text(r.stderr)
+ (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':r.returncode,'expected':expected});save()
  assert r.returncode==expected,(name,r.returncode,r.stdout[-4500:],r.stderr[-4500:]);return r
 def invoke(name,request,expected=0,env=None):
@@ -67,7 +67,7 @@ try:
   for profile,debug in [('debug',False),('release',False),('profile',False),('debug',True)]:
    name=mode+'-'+profile+('-logical' if debug else '');case=root/name;case.mkdir();project=case/'project';project.mkdir()
    for part in ['leaf','app']:(project/part).mkdir()
-   (project/'leaf/main.nex').write_text(LEAF);(project/'app/main.nex').write_text(APP)
+   (project/'leaf/main.nex').write_text(LEAF, newline="\n");(project/'app/main.nex').write_text(APP, newline="\n")
    write(project/'nex.json',{'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'})
    architecture={'schema':'nex.project-build/1','components':{
     'leaf':{'kind':'shared_library' if mode=='shared' else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'opened','exports':['transit']},

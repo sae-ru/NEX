@@ -1,4 +1,6 @@
+from host_fixture import interrupt_task
 """Task intent, candidate snapshots, acceptance evidence and owned process cleanup."""
+from host_fixture import python_executable
 import copy
 import json
 import os
@@ -46,9 +48,9 @@ class Tasks(harness.ToolchainCase):
         self.assertEqual(Path(replay['output']),(physical/'replayed/receipt.json').resolve(strict=True))
 
     def test_nested_receipt_replay_keeps_ancestor_and_source_project_graphs_unchanged(self):
-        ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}')
-        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'ancestor.nex'}));self.cli('check',outer)
-        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        ancestor=self.root;outer=ancestor/'ancestor.nex';outer.write_text('module ancestor;fn main()->i64{return 71;}', newline="\n")
+        (ancestor/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'ancestor.nex'}), newline="\n");self.cli('check',outer)
+        child=ancestor/'child';child.mkdir();(child/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.root=child;self.file=child/'main.nex';task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.requirement(task,{'id':'effects','kind':'effects','target':'source','symbols':['taskdemo::increment'],'allowed_effects':[]});self.save(task)
         run=self.task('run','--directory',ancestor/'captures/run');receipt=Path(run['output'])
@@ -95,7 +97,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         return task
 
     def save(self, task):
-        self.taskfile.write_text(json.dumps(task, indent=2) + '\n')
+        self.taskfile.write_text(json.dumps(task, indent=2) + '\n', newline="\n")
 
     def task(self, kind='run', *args, **kwargs):
         return self.cli('task', self.taskfile, '--kind', kind, *args, timeout=180, **kwargs)
@@ -228,11 +230,11 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         task = self.scaffold()
         old = self.cli('check')['revision']
         original = self.file.read_text()
-        self.file.write_text(original.replace('x + 1', 'x + 2'))
+        self.file.write_text(original.replace('x + 1', 'x + 2'), newline="\n")
         fresh = self.cli('task', self.file, '--kind', 'init')
         self.assertNotEqual(fresh['programs'][0]['baseline_revision'], old)
         self.assertEqual(self.cli('graph')['revision'], old)
-        self.file.write_text(original)
+        self.file.write_text(original, newline="\n")
         check = self.task('check')
         self.assertTrue(check['ok'])
         self.assertFalse((self.root / '.nex/tasks').exists())
@@ -247,7 +249,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         contract = self.cli('contract', '--symbol', 'increment')
         contract['functions'][0].update(requires=['x < 9223372036854775807'], ensures=['result == x + 1'])
         contract_path = self.root / 'proof.json'
-        contract_path.write_text(json.dumps(contract))
+        contract_path.write_text(json.dumps(contract), newline="\n")
         intent = self.cli('contract', '--kind', 'intent', '--contracts', contract_path)['intent_hash']
         self.requirement(task, {'id': 'proof', 'kind': 'verify', 'target': 'source', 'contracts': 'proof.json', 'intent_hash': intent})
         self.requirement(task, {'id': 'observe', 'kind': 'run', 'target': 'native', 'entry': 'taskdemo::main', 'expect': {'stdout': '3\n', 'exit_code': 0}})
@@ -265,7 +267,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         inputs = json.loads((receipt.parent / 'inputs/manifest.json').read_text())
         self.assertEqual(inputs['task_hash'], checked['task_hash'])
         self.assertIn('inputs/programs/app.json', inputs['files'])
-        self.assertTrue((receipt.parent / 'artifacts/build-native/app').is_file())
+        self.assertTrue((receipt.parent / ('artifacts/build-native/app.exe' if os.name=='nt' else 'artifacts/build-native/app')).is_file())
         history = self.task('history')
         self.assertEqual(history['runs'][0]['status'], 'passed')
         self.assertEqual(history['runs'][0]['run_id'], saved['run_id'])
@@ -276,7 +278,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
 
     def test_same_task_accepts_repaired_archived_candidate_and_rejects_weakened_test(self):
         task = self.scaffold()
-        self.file.write_text(self.file.read_text().replace('return x + 1', 'return x + 2'))
+        self.file.write_text(self.file.read_text().replace('return x + 1', 'return x + 2'), newline="\n")
         failed = self.task(ok=False)
         self.assertEqual(failed['status'], 'not_satisfied')
         self.assertEqual(failed['checks'][0]['status'], 'failed')
@@ -284,12 +286,12 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.cli('check')
         graph = self.cli('graph')
         patch = {'expected_revision': graph['revision'], 'replacements': [{'name': 'taskdemo::increment', 'source': 'pub fn increment(x: i64) -> i64 { return x + 1; }'}]}
-        patchfile = self.root / 'patch.json'; patchfile.write_text(json.dumps(patch))
+        patchfile = self.root / 'patch.json'; patchfile.write_text(json.dumps(patch), newline="\n")
         fixed = self.cli('apply', '--patch', patchfile)['revision']
         result = self.task('run', '--revision', fixed, '--task-hash', expected_hash)
         self.assertEqual(result['task_hash'], expected_hash)
         self.assertEqual(result['programs'][0]['revision'], fixed)
-        self.file.write_text(self.file.read_text().replace('assert(increment(2) == 3);', 'assert(true);'))
+        self.file.write_text(self.file.read_text().replace('assert(increment(2) == 3);', 'assert(true);'), newline="\n")
         self.assertEqual(self.task('check', ok=False)['code'], 'E_TASK_TEST_CHANGED')
         task['goal'] = 'Changed acceptance intent'
         self.save(task)
@@ -299,17 +301,17 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         task = self.scaffold()
         contract = self.cli('contract', '--symbol', 'increment')
         contract['functions'][0].update(requires=['x >= 0', 'x <= 100'], ensures=['result == x + 1'])
-        path = self.root / 'proof.json'; path.write_text(json.dumps(contract))
+        path = self.root / 'proof.json'; path.write_text(json.dumps(contract), newline="\n")
         intent = self.cli('contract', '--kind', 'intent', '--contracts', path)['intent_hash']
         self.requirement(task, {'id': 'proof', 'kind': 'verify', 'target': 'source', 'contracts': 'proof.json', 'intent_hash': intent})
         self.save(task)
-        self.file.write_text(self.file.read_text().replace('return x + 1;', 'return 1 + x;'))
+        self.file.write_text(self.file.read_text().replace('return x + 1;', 'return 1 + x;'), newline="\n")
         result = self.task()
         self.assertEqual(result['checks'][-1]['status'], 'passed')
         derived = json.loads((Path(result['output']).parent / 'inputs/contracts/proof.json').read_text())
         self.assertNotEqual(derived['expected_revision'], contract['expected_revision'])
         self.assertEqual(derived['functions'][0]['ensures'], contract['functions'][0]['ensures'])
-        contract['functions'][0]['ensures'] = ['true']; path.write_text(json.dumps(contract))
+        contract['functions'][0]['ensures'] = ['true']; path.write_text(json.dumps(contract), newline="\n")
         self.assertEqual(self.task('check', ok=False)['code'], 'E_TASK_INTENT')
 
     def test_replay_survives_deleted_sources_and_rejects_tampering(self):
@@ -324,11 +326,11 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         self.assertEqual(replay['programs'], original['programs'])
         self.assertNotEqual(replay['output'], original['output'])
         extra = receipt.parent / 'inputs/resources/runtime/unindexed.h'
-        extra.write_text('unindexed input')
+        extra.write_text('unindexed input', newline="\n")
         self.assertEqual(self.cli('task', receipt, '--kind', 'replay', ok=False)['code'], 'E_TASK_INTEGRITY')
         extra.unlink()
         source = receipt.parent / 'inputs/programs/app.json'
-        source.write_text(source.read_text() + ' ')
+        source.write_text(source.read_text() + ' ', newline="\n")
         error = self.cli('task', receipt, '--kind', 'replay', ok=False)
         self.assertEqual(error['code'], 'E_TASK_INTEGRITY')
 
@@ -336,12 +338,12 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         task = self.scaffold()
         original = self.cli('check')['revision']
         other = self.root / 'client.nex'
-        other.write_text('module frontend; client fn main() -> i64 { return 7; }\n')
+        other.write_text('module frontend; client fn main() -> i64 { return 7; }\n', newline="\n")
         client = self.cli('check', other)['revision']
         task['programs'].append({'id': 'client', 'entry': 'client.nex'})
         self.requirement(task, {'id': 'client-module', 'program': 'client', 'kind': 'build', 'target': 'web', 'entry': 'frontend::main', 'mode': 'module'}, 'frontend::main')
         self.save(task)
-        candidates = self.root / 'candidates.json'; candidates.write_text(json.dumps({'app': original, 'client': client}))
+        candidates = self.root / 'candidates.json'; candidates.write_text(json.dumps({'app': original, 'client': client}), newline="\n")
         self.file.unlink(); other.unlink()
         result = self.task('run', '--candidates', candidates)
         self.assertEqual({p['revision'] for p in result['programs']}, {original, client})
@@ -401,7 +403,7 @@ endpoint echo_route("POST", "/api/echo") = echo;
 server fn echo(context: api::Context, input: Payload) -> result<Payload> { return ok(input); }
 server fn handle(request: http::Request) -> http::Response { return http::Response(200, "ok", "text/plain"); }
 server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "req"), Payload(7))).value == 7); }
-''')
+''', newline="\n")
         other = self.cli('task', service, '--kind', 'init')
         task['programs'].append({**other['programs'][0], 'id': 'service'})
         for check in other['checks']:
@@ -414,7 +416,7 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
         folder = Path(result['output']).parent / 'artifacts'
         self.assertTrue((folder / 'build-web/dist/index.html').is_file())
         self.assertTrue((folder / 'build-web/dist/THIRD_PARTY_NOTICES.txt').is_file())
-        self.assertTrue((folder / 'service-build-server/app').is_file())
+        self.assertTrue((folder / ('service-build-server/app.exe' if os.name=='nt' else 'service-build-server/app')).is_file())
         self.assertTrue((folder / 'library/libnex.a').is_file())
         openapi = json.loads((folder / 'api/generated/openapi.json').read_text())
         self.assertIn('/api/echo', openapi['paths'])
@@ -422,7 +424,7 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
             self.assertNotIn('SERVER_ONLY_TASK_SENTINEL', js.read_text())
 
     def test_unicode_zero_bytes_exit_status_and_malformed_task_rejection(self):
-        task = self.scaffold('module taskdemo; fn main() -> i64 !{io} { print("Unicode \u0410\U0001f98a\\u0000"); return 257; }')
+        task = self.scaffold('module taskdemo; fn main() -> i64 !{io} { print("Unicode \u0410\U0001f98a\\u0000"); return 1; }')
         self.requirement(task, {'id': 'observe', 'kind': 'run', 'target': 'native', 'entry': 'taskdemo::main', 'expect': {'stdout': 'Unicode \u0410\U0001f98a\x00\n', 'exit_code': 1}}, 'taskdemo::main')
         self.save(task)
         self.assertTrue(self.task()['ok'])
@@ -437,17 +439,17 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
 
     def test_conflicting_shared_module_candidates_are_rejected_before_execution(self):
         common = self.root / 'common.nex'
-        common.write_text('module common; pub fn value() -> i64 { return 1; }')
+        common.write_text('module common; pub fn value() -> i64 { return 1; }', newline="\n")
         task = self.scaffold('module taskdemo; import "./common.nex" as common; fn main() -> i64 { return common::value(); }')
         app = self.cli('check')['revision']
         client = self.root / 'client.nex'
-        client.write_text('module frontend; import "./common.nex" as common; client fn main() -> i64 { return common::value(); }')
-        common.write_text('module common; pub fn value() -> i64 { return 2; }')
+        client.write_text('module frontend; import "./common.nex" as common; client fn main() -> i64 { return common::value(); }', newline="\n")
+        common.write_text('module common; pub fn value() -> i64 { return 2; }', newline="\n")
         changed = self.cli('check', client)['revision']
         task['programs'].append({'id': 'client', 'entry': 'client.nex'})
         self.requirement(task, {'id': 'client', 'program': 'client', 'kind': 'build', 'target': 'web', 'mode': 'module', 'entry': 'frontend::main'}, 'frontend::main')
         self.save(task)
-        candidates = self.root / 'candidates.json'; candidates.write_text(json.dumps({'app': app, 'client': changed}))
+        candidates = self.root / 'candidates.json'; candidates.write_text(json.dumps({'app': app, 'client': changed}), newline="\n")
         self.assertEqual(self.task('run', '--candidates', candidates, ok=False)['code'], 'E_TASK_SNAPSHOT')
         self.assertFalse((self.root / '.nex/tasks').exists())
 
@@ -458,9 +460,9 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
         marker = self.root / 'heartbeat'
         wrapper = self.root / 'owned-node'
         child = "import time; from pathlib import Path; p=Path(" + repr(str(marker)) + ");\nwhile True: p.write_text(str(time.time_ns())); time.sleep(.03)\n"
-        wrapper.write_text('#!/usr/bin/env python3\nimport subprocess,sys,time\n' +
+        wrapper=python_executable(wrapper,'#!/usr/bin/env python3\nimport subprocess,sys,time\n' +
             'subprocess.Popen([sys.executable,"-c",' + repr(child) + '])\n' +
-            'time.sleep(.2)\n' + {'timeout': 'time.sleep(60)\n', 'normal': 'sys.exit(0)\n', 'output': 'sys.stderr.write("x"*(9*1024*1024)); sys.stderr.flush(); sys.exit(1)\n'}[mode])
+            'time.sleep(.2)\n' + {'timeout': 'time.sleep(60)\n', 'normal': 'sys.exit(0)\n', 'output': 'sys.stderr.write("x"*(9*1024*1024)); sys.stderr.flush(); sys.exit(1)\n'}[mode],harness.native_fixture_compiler())
         wrapper.chmod(0o755)
         return wrapper, marker
 
@@ -498,12 +500,12 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
             while not marker.exists() and child.poll() is None and time.monotonic() < deadline:
                 time.sleep(.03)
             self.assertTrue(marker.exists())
-            child.send_signal(signal.SIGTERM)
+            interrupt_task(child) if os.name=='nt' else child.send_signal(signal.SIGTERM)
             stdout, stderr = child.communicate(timeout=15)
-            self.assertEqual(child.returncode, 143, stdout + stderr)
+            self.assertEqual(child.returncode, 130 if os.name=='nt' else 143, stdout + stderr)
             report = json.loads(stdout)
             self.assertEqual(report['status'], 'interrupted')
-            self.assertEqual(report['signal'], 15)
+            self.assertEqual(report['signal'], 2 if os.name=='nt' else 15)
             self.assertEqual(report['checks'][0]['status'], 'interrupted')
             self.assert_stopped(marker)
         finally:

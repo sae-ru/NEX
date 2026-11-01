@@ -10,7 +10,8 @@ import os
 from pathlib import Path, PurePosixPath
 import platform
 import re
-import resource
+if os.name != 'nt':
+    import resource
 import stat
 import subprocess
 import sys
@@ -23,8 +24,21 @@ FILE_LIMIT = 512 * 1024**2
 MAX_FILES = 4096
 IDENTITY = ('toolchain', 'language', 'compiler_build', 'runtime_view',
             'expression_protocol', 'build_key', 'revision', 'source_hash')
-BUILD_FILES = ('app', 'program.mlir', 'program.ll', 'compilation.json',
+APP_NAME = 'app.exe' if os.name=='nt' else 'app'
+BUILD_FILES = (APP_NAME, 'program.mlir', 'program.ll', 'compilation.json',
                'build.json', 'source-bundle.json', 'complete')
+
+
+def pe_import_inputs(build, inputs, position):
+    result=[]
+    while position<len(inputs) and isinstance(inputs[position],dict) and inputs[position].get('kind')=='import_library':
+        row=inputs[position];path=row.get('path')
+        if (set(row)!={'kind','path'} or '-windows-gnu' not in build.get('compiler_target','') or
+                not isinstance(path,str) or not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll\.a',path) or
+                (result and path<=result[-1]) or len(result)>=130):
+            raise ValueError('invalid PE import-library completion inputs')
+        result.append(path);position+=1
+    return result,position
 
 
 def completion_inputs(build):
@@ -72,11 +86,12 @@ def completion_inputs(build):
         images = []; providers = []
         while kind() == 'owned_image':
             path = inputs[position].get('path')
-            if (not shared or not isinstance(path, str) or not re.fullmatch(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)', path) or
+            if (not shared or not isinstance(path, str) or not re.fullmatch(r'(images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)|libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll)', path) or
                     (images and path <= images[-1]) or len(images) >= 129):
                 raise ValueError('invalid debug owned image')
             images.append(path); take('owned_image', path)
         if shared and not images: raise ValueError('debug shared closure needs its runtime')
+        imports,position=pe_import_inputs(build,inputs,position);result.extend(imports)
         while kind() == 'owned_task_provider':
             path = inputs[position].get('path')
             suffix = '.task-provider.json'
@@ -158,7 +173,7 @@ def completion_inputs(build):
             if position != len(inputs):
                 raise ValueError('static profile completion cannot contain image inputs')
             return result
-        image = re.compile(r'images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)')
+        image = re.compile(r'(images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.(so|dylib)|libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\.dll)')
         images = []
         while position < len(inputs) and kind() == 'owned_image':
             path = inputs[position].get('path')
@@ -169,6 +184,7 @@ def completion_inputs(build):
             take('owned_image', path)
         if not images:
             raise ValueError('retained image build requires its runtime')
+        imports,position=pe_import_inputs(build,inputs,position);result.extend(imports)
         providers = []
         while task and position < len(inputs) and kind() == 'owned_task_provider':
             path = inputs[position].get('path')
@@ -209,8 +225,8 @@ def completion_inputs(build):
 def host():
     machine = platform.machine().lower()
     machine = {'aarch64': 'arm64', 'amd64': 'x86_64'}.get(machine, machine)
-    if sys.platform not in ('darwin', 'linux') or machine not in ('arm64', 'x86_64'):
-        raise ValueError('core capsules currently require macOS/Linux ARM64 or x86-64')
+    if sys.platform not in ('darwin', 'linux', 'win32') or machine not in ('arm64', 'x86_64'):
+        raise ValueError('core capsules require a supported matching native host')
     return {'os': sys.platform, 'machine': machine}
 
 
@@ -239,7 +255,10 @@ class Files:
         self.count = 0
 
     def checked(self, path, limit, destination=None):
-        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
+        if os.name=='nt':
+            from windows_files import open_regular_fd
+            fd=open_regular_fd(path,limit)
+        else:fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW | os.O_CLOEXEC)
         target = None
         try:
             info = os.fstat(fd)
@@ -251,8 +270,12 @@ class Files:
                 raise ValueError('capsule input count/total size exceeds limit')
             if destination is not None:
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                target = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
-                                 os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+                if os.name=='nt':
+                    from windows_files import create_private_fd
+                    target=create_private_fd(destination)
+                else:
+                    target = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                                     os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
             digest = hashlib.sha256()
             contents = bytearray() if destination is None and limit <= 16*1024**2 else None
             count = 0
@@ -305,6 +328,9 @@ def write_json(path, value):
 
 def system_dependencies(program, owned_names=()):
     # Read native headers without using ldd or launching the image's loader.
+    if sys.platform == 'win32':
+        from windows_pe import inspect
+        return sorted(set(inspect(program)['imports'])-{name.lower() for name in owned_names})
     if sys.platform == 'darwin':
         args = ['/usr/bin/otool', '-L', str(program)]
     elif sys.platform == 'linux':
@@ -350,17 +376,17 @@ def owned_image_paths(manifest, build):
     if any(not isinstance(r, dict) or not isinstance(r.get('path'), str) for r in records):
         raise ValueError('invalid capsule owned image records')
     paths = [Path(r['path']) for r in records]
-    if (any(not p.is_absolute() or os.path.normpath(str(p)) != str(p) or p.parent.name != 'images' or
-            p.parent.parent.name != build['key'] for p in paths) or
-            len({str(p.parent.parent) for p in paths}) != 1 or
-            [p.parent.name+'/'+p.name for p in paths] != names):
+    base=Path(manifest['program']).parent
+    if (any(not p.is_absolute() or os.path.normpath(str(p)) != str(p) or
+            p.parent != (base if p.suffix=='.dll' else base/'images') or base.name != build['key'] for p in paths) or
+            [p.relative_to(base).as_posix() for p in paths] != names):
         raise ValueError('capsule owned image paths/order differ')
     return names
 
 
 def native_dependencies(folder, images):
     names = {PurePosixPath(name).name for name in images}
-    return sorted({dependency for name in ['app', *images]
+    return sorted({dependency for name in [APP_NAME, *images]
                    for dependency in system_dependencies(folder/name, names)})
 
 
@@ -372,7 +398,7 @@ def identity(manifest):
     if not re.fullmatch('[0-9a-f]{64}', result['build_key']):
         raise ValueError('invalid capsule build key')
     program = Path(manifest['program'])
-    if not program.is_absolute() or program.name != 'app' or program.parent.name != result['build_key']:
+    if not program.is_absolute() or program.name != APP_NAME or program.parent.name != result['build_key']:
         raise ValueError('capsule requires its original content-addressed executable path')
     return result
 
@@ -386,7 +412,7 @@ def export(request):
     manifest, original_record = files.json_record(original)
     bound = identity(manifest)
     recorded_program = str(Path(manifest['program']).resolve(strict=True))
-    if Path(recorded_program).parent.name != bound['build_key'] or Path(recorded_program).name != 'app':
+    if Path(recorded_program).parent.name != bound['build_key'] or Path(recorded_program).name != APP_NAME:
         raise ValueError('original executable alias does not resolve to its retained build key')
     if any(bound[key] != request['identity'][key] for key in ('compiler_build', 'toolchain', 'language')):
         raise ValueError('capsule export requires the matching compiler')
@@ -471,7 +497,7 @@ def prepare(request):
     recorded = receipt['recorded_program']
     if (not isinstance(recorded, str) or not recorded or len(recorded.encode('utf-8')) > 16384 or '\0' in recorded or
             not Path(recorded).is_absolute() or os.path.normpath(recorded) != recorded or
-            Path(recorded).parent.name != bound['build_key'] or Path(recorded).name != 'app' or
+            Path(recorded).parent.name != bound['build_key'] or Path(recorded).name != APP_NAME or
             receipt['identity'] != bound or receipt['original_program'] != manifest['program'] or
             prefix != 'build/'+bound['build_key'] or receipt['core'] != 'process.core' or
             receipt['original_manifest'] != 'original-debug.json' or
@@ -537,15 +563,15 @@ def prepare(request):
     if native_dependencies(folder, images) != receipt['native_dependencies']:
         raise ValueError('capsule native dependencies differ')
     for image in manifest.get('owned_images', []):
-        original_image_base = Path(image['path']).parent.parent
-        image['path'] = str(folder/'images'/Path(image['path']).name)
+        original_image_base = Path(image['path']).parent if Path(image['path']).suffix=='.dll' else Path(image['path']).parent.parent
+        image['path'] = str((folder if Path(image['path']).suffix=='.dll' else folder/'images')/Path(image['path']).name)
         for symbol in image.get('symbols', []):
             relative_symbol = Path(symbol['path']).relative_to(original_image_base)
             relative(relative_symbol.as_posix())
             if prefix+'/'+relative_symbol.as_posix() not in inventory:
                 raise ValueError('capsule owned symbols are outside the retained inventory')
             symbol['path'] = str(folder/relative_symbol)
-    manifest['program'] = str(folder/'app')
+    manifest['program'] = str(folder/APP_NAME)
     mappings = []
     for index, source in enumerate(manifest['sources']):
         path = folder/'capsule-sources'/('%04d' % index)/'source.nex'

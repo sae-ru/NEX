@@ -34,7 +34,7 @@ def main():
  if platform.system()!='Linux' or platform.machine() not in ('aarch64','arm64'):p.error('requires Linux ARM64')
  if a.backend=='npu' and (not a.vendor_include or not a.vendor_license):p.error('NPU requires operator-provided RKNN SDK headers and license')
  if a.backend!='gpu' and (a.api=='compute' or a.opencl_library):p.error('--api compute and --opencl-library currently require --backend gpu')
- origin=Path(__file__).resolve().parent;sdk=a.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin/nex'
+ origin=Path(__file__).resolve().parent;sdk=a.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=provider_sdk.sdk_compiler(sdk)
  root=a.output.absolute();root.mkdir(exist_ok=False)
  env={**os.environ,'NEX_RESOURCE_DIR':str(resources)}
  commands=[]

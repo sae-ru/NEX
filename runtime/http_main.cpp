@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#endif
+#endif
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #define CPPHTTPLIB_REQUEST_URI_MAX_LENGTH 2048
 #include "third_party/httplib.h"
@@ -5,6 +10,9 @@
 #include "nex_io.h"
 #include "nex_json.h"
 #include "nex_auth.h"
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #ifdef NEX_HTTP_FILES_ENABLED
 #include "nex_files.h"
 #endif
@@ -35,7 +43,8 @@ extern "C" nexrt::Handle *nex_server_dispatch(nexrt::Handle *request);
 #endif
 namespace {
 namespace fs=std::filesystem;
-volatile std::sig_atomic_t interrupted=0;
+std::atomic<bool> interrupted{false};
+static_assert(std::atomic<bool>::is_always_lock_free);
 void signal(int){interrupted=1;}
 std::string read(const std::string &path){std::ifstream file(path,std::ios::binary);if(!file)throw std::runtime_error("cannot read configured file");return {std::istreambuf_iterator<char>(file),{}};}
 std::array<unsigned char,32> digest(const std::string &token){
@@ -277,8 +286,27 @@ int main(int argc,char **argv){
     if(port){if(!server->bind_to_port(c.host,port))throw std::runtime_error("cannot bind HTTP server");}
     else {port=server->bind_to_any_port(c.host);if(port<1)throw std::runtime_error("cannot bind HTTP server");}
     std::signal(SIGINT,signal);std::signal(SIGTERM,signal);
-    std::jthread shutdown([&](std::stop_token stop){while(!stop.stop_requested()&&!interrupted)std::this_thread::sleep_for(std::chrono::milliseconds(20));if(interrupted)server->stop();});
+#ifdef _WIN32
+    // TerminateProcess cannot deliver a cooperative signal. A same-user host
+    // can request cancellation through this protected per-process event.
+    nexrt::host_windows::PrivateSecurity controlSecurity(EVENT_MODIFY_STATE|SYNCHRONIZE);
+    SECURITY_ATTRIBUTES controlAttributes{sizeof(controlAttributes),&controlSecurity.descriptor,FALSE};
+    auto controlName=L"Local\\NEX.Server.Stop."+std::to_wstring(GetCurrentProcessId());
+    nexrt::host_windows::Handle control(CreateEventW(&controlAttributes,TRUE,FALSE,controlName.c_str()));
+    if(!control.value||GetLastError()==ERROR_ALREADY_EXISTS)throw std::runtime_error("cannot create private server control event");
+#endif
+    std::atomic<bool> controlFailed{false};
+    std::jthread shutdown([&](std::stop_token stop){
+      while(!stop.stop_requested()&&!interrupted){
+#ifdef _WIN32
+        auto status=WaitForSingleObject(control.value,20);
+        if(status==WAIT_OBJECT_0)interrupted=true;
+        else if(status!=WAIT_TIMEOUT){controlFailed=true;interrupted=true;}
+#else
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+#endif
+      }if(interrupted)server->stop();});
     std::cout<<"NEX server "<<(c.cert.empty()?"http":"https")<<"://"<<c.host<<":"<<port<<std::endl;
-    bool listened=server->listen_after_bind();shutdown.request_stop();shutdown.join();server.reset();nex_runtime_finish();return listened?0:1;
+    bool listened=server->listen_after_bind();shutdown.request_stop();shutdown.join();server.reset();nex_runtime_finish();return !controlFailed&&(listened||interrupted)?0:1;
   }catch(const std::exception &e){std::cerr<<"NEX server: "<<e.what()<<'\n';return 1;}
 }

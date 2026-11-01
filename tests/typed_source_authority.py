@@ -8,7 +8,7 @@ probe=str(Path(sys.argv[1]).resolve())
 rows=json.loads((root/'tests/fixtures/typed-error-authority-static.json').read_text())['cases']
 with tempfile.TemporaryDirectory(prefix='nex-typed-authority-static-') as scratch:
     for row in rows:
-        path=Path(scratch)/(row['name']+'.nex');path.write_text(row['source'])
+        path=Path(scratch)/(row['name']+'.nex');path.write_text(row['source'], newline="\n")
         result=subprocess.run([probe,'check',str(path)],text=True,capture_output=True,timeout=30)
         if row['expected']=='accepted':
             assert result.returncode==0,(row['name'],result.stderr)

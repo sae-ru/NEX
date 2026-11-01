@@ -41,6 +41,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace fs=std::filesystem;
 namespace {
@@ -76,11 +79,17 @@ llvm::json::Value parseJSON(const std::string &text) {
   auto value=llvm::json::parse(text);if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));return std::move(*value);
 }
 std::string readBoundedText(const std::string &path,size_t limit,const std::string &label,const std::string &code){
+#ifdef _WIN32
+  std::string text;
+  try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
+  catch(const nexrt::DataError &error){throw Error(code,label+": "+error.what());}
+#else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
   if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error(code,label+" requires a regular non-symlink file of at most "+std::to_string(limit)+" bytes");
   std::string text;std::array<char,65536> buffer{};
   for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read "+label);}if(!count)break;if(size_t(count)>limit-text.size())throw Error(code,label+" exceeds "+std::to_string(limit)+" bytes");text.append(buffer.data(),size_t(count));}
+#endif
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
   return text;
 }
@@ -257,9 +266,9 @@ int run(const Options &o) {
   }
   if(o.command=="lsp"){
     if(!o.values.empty()||!o.flags.empty()||!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","lsp uses standard input/output without CLI options");
-    auto python=llvm::sys::findProgramByName(std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3");
+    auto python=llvm::sys::findProgramByName(pythonProgram());
     if(!python)throw Error("E_LSP","Python3 is required for nex lsp");
-    auto helper=resourceFile("editor/lsp/server.py");std::vector<llvm::StringRef> args{*python,helper,"--compiler",o.compiler};
+    auto helper=resourceFile("editor/lsp/server.py");std::vector<llvm::StringRef> args{*python,"-X","utf8",helper,"--compiler",o.compiler};
     return llvm::sys::ExecuteAndWait(*python,args);
   }
   if(o.command=="core"){
@@ -412,7 +421,7 @@ int run(const Options &o) {
       if(output.empty())print(std::move(result));else {if(fs::exists(output))throw Error("E_EXISTS","task init requires a new output file");writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"task_hash",hash(json(result,false))}});}return 0;
     }
     if(kind=="replay"){auto result=replayTask(path.string(),options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;}
-    if(!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_TASK","missing or oversized task JSON");auto task=parseJSON(readFile(path));
+    if(!fs::is_regular_file(path)||fs::file_size(path)>1048576)throw Error("E_TASK","missing or oversized task JSON");auto task=parseJSON(readFile(path.string()));
     if(kind=="history"){auto object=task.getAsObject();if(!object)throw Error("E_TASK","task must be an object");Store store(root/".nex");print(store.taskHistory(required(*object,"id")));return 0;}
     if(kind!="check"&&kind!="run")throw Error("E_OPTION","task kind must be init, notices, check, run, replay or history");
     auto result=kind=="run"?runTask(task,options):checkTask(task,options);auto object=result.getAsObject();auto code=object->getInteger("signal");auto success=object->getBoolean("ok").value_or(false);print(std::move(result));return code?128+int(*code):success?0:1;
@@ -437,7 +446,12 @@ int run(const Options &o) {
     auto token="nex_"+hex(random);auto digest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(token.data()),token.size()));
     entries->push_back(llvm::json::Object{{"user",user},{"sha256",hex(digest)}});
     auto output=fs::absolute(file);auto temporary=output;temporary+=".tmp."+hex(random).substr(0,16);
-    writeFile(temporary.string(),json(value)+"\n");fs::permissions(temporary,fs::perms::owner_read|fs::perms::owner_write,fs::perm_options::replace);fs::rename(temporary,output);
+#ifdef _WIN32
+    nexrt::host_windows::writePrivateFile(temporary,json(value)+"\n");
+#else
+    writeFile(temporary.string(),json(value)+"\n");fs::permissions(temporary,fs::perms::owner_read|fs::perms::owner_write,fs::perm_options::replace);
+#endif
+    fs::rename(temporary,output);
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
@@ -449,7 +463,7 @@ int run(const Options &o) {
   }
   if(o.command=="doctor") {
     auto runtime=resourceFile("runtime/runtime.cpp");auto native=configureNative({});
-    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
+    print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"wasm_compiler",configureWasm().compiler},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"native_sysroot",native.sysroot},{"native_windows_runtime",native.windowsRuntime},{"native_windows_notices",native.windowsNotices},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
   }
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
@@ -871,7 +885,15 @@ int run(const Options &o) {
 }
 int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
-  try{return run(options(argc,argv));}
+  try{
+#ifdef _WIN32
+    // The UTF-8 CRT can replace an unpaired UTF-16 surrogate while constructing
+    // argv. Reject it before parsing options or opening a project store.
+    if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,GetCommandLineW(),-1,nullptr,0,nullptr,nullptr))
+      throw nex::Error("E_OPTION","Windows command line contains invalid Unicode");
+#endif
+    return run(options(argc,argv));
+  }
   catch(const nex::SourceException &e){
     nex::Error error("E_SOURCE_EXCEPTION",e.message,e.span);error.output=e.output;
     if(machine){auto diagnostic=nex::diagnosticJSON(error,NEX_VERSION,NEX_BUILD_ID);auto *object=diagnostic.getAsObject();if(object){(*object)["message"]=e.message;(*object)["source_exception"]=llvm::json::Object{{"code",e.code},{"message",e.message}};}print(std::move(diagnostic));}

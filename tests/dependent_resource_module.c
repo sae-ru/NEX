@@ -10,7 +10,8 @@
 /* Both C11 and C++20 compile this producer. Child payloads really dereference
    parent storage during use and destruction; events detect premature release. */
 typedef struct Object {int64_t value;struct Object *parent;uint32_t child;} Object;
-static void event(char c){const char *p=getenv("NEX_DEPENDENCY_MARKER");if(p){int f=open(p,O_WRONLY|O_APPEND|O_CREAT,0600);if(f>=0){(void)write(f,&c,1);close(f);}}}
+#include "ffi_marker.h"
+static void event(char c){nex_test_marker("NEX_DEPENDENCY_MARKER",c);}
 __attribute__((constructor)) static void load(void){event('I');}
 __attribute__((destructor)) static void unload(void){event('D');}
 static void destroy(void *p){Object *o=(Object*)p;if(o->parent&&o->parent->value!=42)event('!');event(o->child?'C':'P');o->value=-1;free(o);}

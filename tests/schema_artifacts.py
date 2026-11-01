@@ -220,15 +220,15 @@ fn main()->unit !{io,task}{print(leaf(41));}
     def test_current_provider_records_and_native_package(self):
         for name in ('core','app'):
             (self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
-        (self.root/'core/main.nex').write_text('module core;pub fn answer(value:i64)->i64 !{task,throw}{task_yield();try{throw("USER","data");}catch(code,message){return value+1;}}')
-        (self.root/'app/main.nex').write_text('module app;import "../core/main.nex" as c;fn main()->unit !{io,task,throw}{print(c::answer(41));}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
+        (self.root/'core/main.nex').write_text('module core;pub fn answer(value:i64)->i64 !{task,throw}{task_yield();try{throw("USER","data");}catch(code,message){return value+1;}}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../core/main.nex" as c;fn main()->unit !{io,task,throw}{print(c::answer(41));}', newline="\n")
         for edge in ('static','dynamic'):
             architecture={'schema':'nex.project-build/1','default_configuration':'debug',
                 'configurations':{p:{'profile':p} for p in ('debug','profile')},'components':{
                     'core':{'kind':'static_library' if edge=='static' else 'shared_library','root':'core','entry':'core/main.nex','entry_function':'answer'},
                     'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':edge}}}}
-            (self.root/'nex.build.json').write_text(json.dumps(architecture))
+            (self.root/'nex.build.json').write_text(json.dumps(architecture), newline="\n")
             for kind,extra in [('build',[]),('build',['--configuration','profile']),('debug',['--adapter','nex-dap'])]:
                 built=self.cli('project','--kind',kind,'--component','app',*extra,timeout=240)
                 for artifact in built['artifacts']:
@@ -245,13 +245,13 @@ fn main()->unit !{io,task}{print(leaf(41));}
         environment={**os.environ,'NEX_RESOURCE_DIR':str(old.parent.parent/'share/nex')}
         for name in ('core','app'):
             (self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}))
-        (self.root/'core/main.nex').write_text('module core;pub fn answer(value:i64)->i64 !{task}{task_yield();return value+1;}')
-        (self.root/'app/main.nex').write_text('module app;import "../core/main.nex" as c;fn main()->unit !{io,task}{print(c::answer(41));}')
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'app/main.nex'}), newline="\n")
+        (self.root/'core/main.nex').write_text('module core;pub fn answer(value:i64)->i64 !{task}{task_yield();return value+1;}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../core/main.nex" as c;fn main()->unit !{io,task}{print(c::answer(41));}', newline="\n")
         architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{
             'core':{'kind':'static_library','root':'core','entry':'core/main.nex','entry_function':'answer'},
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'static'}}}}
-        (self.root/'nex.build.json').write_text(json.dumps(architecture))
+        (self.root/'nex.build.json').write_text(json.dumps(architecture), newline="\n")
         result=original_run([str(old),'project','--kind','build','--component','app','--json'],cwd=self.root,env=environment,capture_output=True,text=True,timeout=240)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         built=json.loads(result.stdout)
@@ -308,8 +308,8 @@ try:
                   retained_runtime_verified=bool(args.retained_nex) and counts['native-stream-task-provider']>0 and result.wasSuccessful())
 finally:
     subprocess.run=original_run
-    (OUTPUT/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    (OUTPUT/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     for name,value in samples.items():
-        (OUTPUT/(name+'.sample.json')).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+        (OUTPUT/(name+'.sample.json')).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n', newline="\n")
 print(json.dumps({k:report.get(k) for k in ['ok','state','tests','failures','test_errors','missing']}))
 raise SystemExit(0 if report['ok'] else 1)

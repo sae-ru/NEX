@@ -17,7 +17,7 @@ class Notices(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory(prefix='nex-reviewed-notices-');self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name).resolve();self.sdk=self.root/'sdk';self.sdk.mkdir()
         self.vendor=self.root/'vendor';self.vendor.mkdir();self.crypto=self.vendor/'libcrypto.so.3';self.crypto.write_bytes(b'private vendor fixture')
-        self.license=self.vendor/'LICENSE';self.license.write_text('Complete independent test fixture notice.\n')
+        self.license=self.vendor/'LICENSE';self.license.write_text('Complete independent test fixture notice.\n', newline="\n")
         self.component={'name':'vendor','version':'1','url':'https://example.invalid/vendor',
                         'roots':[str(self.crypto)],'license_files':[str(self.license)]}
 
@@ -53,7 +53,7 @@ class Notices(unittest.TestCase):
                 acceptance.merge_notice_components([self.component],[{**self.component,field:value}])
 
     def test_same_name_with_different_license_bytes_is_rejected(self):
-        other=self.root/'different-license';other.write_text('Different notice.\n')
+        other=self.root/'different-license';other.write_text('Different notice.\n', newline="\n")
         with self.assertRaisesRegex(RuntimeError,'conflicting package notice component: vendor'):
             acceptance.merge_notice_components([self.component],[{**self.component,'license_files':[str(other)]}])
 

@@ -78,24 +78,24 @@ def make_driver(source):
 
 def main():
  source=Path(__file__).resolve().parents[1];state=frontiers.main(CASES,6,'NEX_EXCEPTION_MODULE_DEBUG_OUTPUT',False,'debug');out=state['output'];report=state['report'];run=state['run'];save=state['save'];probe=state['probe'];emitter=Path(sys.argv[3]).resolve();watch_compiler=Path(state['debug_compiler']).resolve();debugger=shutil.which('lldb');assert debugger
- driver=out/'module_lldb_session.py';driver.write_text(make_driver(source));report['debug_sessions']=[];report['captures']=[]
+ driver=out/'module_lldb_session.py';driver.write_text(make_driver(source), newline="\n");report['debug_sessions']=[];report['captures']=[]
  if state['debug_native_only']:
   for c in report['cases']:
    label=c['name']+'-'+c['topology']+'-O'+c['optimization'];text=(out/(label+'-execute.stderr')).read_text();cleanup=json.loads(next(line.split(' ',1)[1] for line in text.splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')));assert cleanup['ok'] and cleanup['live_frames']==0
   report.update(ok=True,native_only=True,LLDB_comparisons=0);save();print(json.dumps({'ok':True,'native_comparisons':report['native_comparisons']}));return
  def identity(file):return run('identity-'+file.parent.name+'-'+file.name,[emitter,'identity',file]).stdout.strip().replace('-','').lower()
  for c in report['cases']:
-  name=c['name'];case=CASES[name];directory=out/name;e=directory/c['topology']/('O'+c['optimization']);arch=directory/c['topology']/'architecture.json';plan=json.loads((out/(name+'-'+c['topology']+'-plan.stdout')).read_text());label=name+'-'+c['topology']+'-O'+c['optimization'];binary=e/'program'
+  name=c['name'];case=CASES[name];directory=out/name;e=directory/c['topology']/('O'+c['optimization']);arch=directory/c['topology']/'architecture.json';plan=json.loads((out/(name+'-'+c['topology']+'-plan.stdout')).read_text());label=name+'-'+c['topology']+'-O'+c['optimization'];binary=e/('program.exe' if os.name=='nt' else 'program')
   cleanup_text=(out/(label+'-execute.stderr')).read_text();cleanup=json.loads(next(line.split(' ',1)[1] for line in cleanup_text.splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')));assert cleanup['ok'] and cleanup['live_frames']==0 and cleanup['registries']==len(plan['components'])
   if platform.system()=='Darwin':
    for file in [binary,*[e/('libimage-'+image+state['suffix']) for image in plan['images'] if image!=plan['application']],*([e/('libnex-private-runtime'+state['suffix'])] if plan['runtime_linkage']=='shared' else [])]:run(label+'-dsym-'+file.name,['dsymutil',file])
-  context=json.loads(run(label+'-debug-context',[probe,'debug-context',directory/'context.json',arch]).stdout);context=bind_images(context,plan,e,identity);context.update(formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'));manifest=e/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n')
+  context=json.loads(run(label+'-debug-context',[probe,'debug-context',directory/'context.json',arch]).stdout);context=bind_images(context,plan,e,identity);context.update(formatter=str(source/'debug/lldb_nex.py'),dap_adapter=str(source/'debug/nex_dap.py'));manifest=e/'debug.json';manifest.write_text(json.dumps(context,ensure_ascii=False,indent=2)+'\n', newline="\n")
   plans={}
   for unit,tags in case['pauses'].items():
    file=directory/unit;lines=file.read_text().splitlines()
    for tag,visits in tags.items():
     line=next(i for i,text in enumerate(lines,1) if '// STOP:'+tag in text);plans[str(file)+'#'+str(line)]=visits
-  options=e/'session.json';options.write_text(json.dumps({'plans':plans,'breakpoint_files':sorted({key.rsplit('#',1)[0] for key in plans}),'limit':case.get('budget',1000000),'report':str(e/'lldb-report.json'),'watch':True,'directory':str(e),'source_files':[str(directory/n) for n in c['source_hashes']]+[str(directory/'context.json')],'catalog':str(state['catalog']) if case.get('foreign') else None,'step':name in ['debug-calls','debug-labels'],'deadline':bool(case.get('deadline'))},ensure_ascii=False,indent=2)+'\n')
+  options=e/'session.json';options.write_text(json.dumps({'plans':plans,'breakpoint_files':sorted({key.rsplit('#',1)[0] for key in plans}),'limit':case.get('budget',1000000),'report':str(e/'lldb-report.json'),'watch':True,'directory':str(e),'source_files':[str(directory/n) for n in c['source_hashes']]+[str(directory/'context.json')],'catalog':str(state['catalog']) if case.get('foreign') else None,'step':name in ['debug-calls','debug-labels'],'deadline':bool(case.get('deadline'))},ensure_ascii=False,indent=2)+'\n', newline="\n")
   files=e/'debug-files';files.mkdir();(files/'input').write_bytes(b'abcdef');events=files/'events';env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)}
   argv=[debugger,'--no-lldbinit','--batch',binary]
   for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+' --compiler '+json.dumps(str(watch_compiler)),'command script import '+json.dumps(str(driver)),'nex-private-test-session '+str(options)]:argv+=['-o',command]

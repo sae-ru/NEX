@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_external_resource.h"
 #include "nex_ffi_host.h"
 #include "nex_json.h"
@@ -6,7 +7,9 @@
 #include "nex_task_values.h"
 #include <array>
 #include <condition_variable>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <iostream>
 #include <map>
 #include <thread>

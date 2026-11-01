@@ -1,3 +1,4 @@
+from host_fixture import python_executable
 """Actual provider template/signature checks; native tests stop at a declared compiler boundary."""
 import argparse
 import copy
@@ -25,7 +26,7 @@ class ProviderPreparation(unittest.TestCase):
         self.temporary=tempfile.TemporaryDirectory(prefix='nex provider 🧠 ')
         self.addCleanup(self.temporary.cleanup);self.root=Path(self.temporary.name)
         self.sdk=self.root/'SDK';(self.sdk/'bin').mkdir(parents=True);(self.sdk/'share').mkdir()
-        (self.sdk/'bin/nex').symlink_to(COMPILER);(self.sdk/'share/nex').symlink_to(ROOT)
+        (self.sdk/'bin/nex').symlink_to(COMPILER);(self.sdk/'share/nex').symlink_to(ROOT,target_is_directory=True)
         self.env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_RESOURCE_DIR':str(ROOT)}
         result=subprocess.run([str(COMPILER),'describe','--json'],cwd=self.root,env=self.env,capture_output=True,text=True,check=True)
         self.descriptor=json.loads(result.stdout)
@@ -56,20 +57,21 @@ class ProviderPreparation(unittest.TestCase):
                 self.assertEqual(report['source_sha256'],hashlib.sha256(report['probe_source'].encode()).hexdigest())
                 self.assertEqual([row['exit_code'] for row in report['commands']],[0]*(2+len(report['signatures'])))
                 self.assertEqual(len(report['checked_revision']),64)
-                if EVIDENCE:(EVIDENCE/(provider+'-'+('-'.join(arguments) if arguments else 'default')+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+                if EVIDENCE:(EVIDENCE/(provider+'-'+('-'.join(arguments) if arguments else 'default')+'.json')).write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 
     def test_native_model_and_compute_paths_use_the_current_source_checker(self):
         # Only platform selection is simulated. NEX checks the real generated
         # sources/signature; a deliberate compiler exit prevents native code,
         # runtime initialization or inference from being mistaken for proof.
         compiler=self.root/'stop at native compiler';capture=self.root/'native-compiler.json'
-        compiler.write_text('#!'+sys.executable+'\nimport json,sys\nfrom pathlib import Path\nPath('+repr(str(capture))+').write_text(json.dumps(sys.argv))\nsys.stderr.write("NEX_TEST_NATIVE_BOUNDARY\\n")\nsys.exit(73)\n');compiler.chmod(0o755)
+        doctor=json.loads(subprocess.check_output([str(COMPILER),'doctor','--json'],text=True,env=self.env))
+        compiler=python_executable(compiler,'#!'+sys.executable+'\nimport json,sys\nfrom pathlib import Path\nPath('+repr(str(capture))+').write_text(json.dumps(sys.argv))\nsys.stderr.write("NEX_TEST_NATIVE_BOUNDARY\\n")\nsys.exit(73)\n',doctor['native_compiler'])
         model=self.root/'model.onnx';model.write_bytes(b'not an inference artifact: source preparation fixture')
         library=self.root/'runtime.so';library.write_bytes(b'not loaded: source preparation fixture')
         headers=self.root/'headers';headers.mkdir();specification=self.root/'spec.json'
         specification.write_text(json.dumps({'schema':'nex.model-artifact/1','id':'source-check',
             'sha256':hashlib.sha256(model.read_bytes()).hexdigest(),
-            'inputs':[{'name':'X','dtype':'u8','shape':[1]}],'outputs':[{'name':'Y','dtype':'u8','shape':[1]}]}))
+            'inputs':[{'name':'X','dtype':'u8','shape':[1]}],'outputs':[{'name':'Y','dtype':'u8','shape':[1]}]}), newline="\n")
         for provider,arguments in [('cix-p1',[]),('models',['--model',model,'--spec',specification,'--ort-library',library,'--include',headers]),
                                    ('rk3588',['--backend','gpu','--api','compute','--opencl-library',library])]:
             with self.subTest(provider=provider):
@@ -94,8 +96,8 @@ class ProviderPreparation(unittest.TestCase):
                     directory=EVIDENCE/('native-boundary-'+provider);directory.mkdir()
                     for path in [*output.glob('prepare-*.stdout'),*output.glob('prepare-*.stderr'),output/'main.nex',output/'nex.json',capture]:
                         (directory/path.name).write_bytes(path.read_bytes())
-                    (directory/'boundary.stderr').write_text(result.stderr)
-                    (directory/'scope.json').write_text(json.dumps({'platform_selection_simulated':'Linux ARM64','actual_NEX_source_and_signature_check':True,'compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),'native_compiler_deliberately_stopped':True,'native_worker_built':False,'hardware_executed':False})+'\n')
+                    (directory/'boundary.stderr').write_text(result.stderr, newline="\n")
+                    (directory/'scope.json').write_text(json.dumps({'platform_selection_simulated':'Linux ARM64','actual_NEX_source_and_signature_check':True,'compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),'native_compiler_deliberately_stopped':True,'native_worker_built':False,'hardware_executed':False})+'\n', newline="\n")
 
     def test_versions_require_capabilities_and_supported_contracts(self):
         for language in ['0.20','0.21','0.24','0.24']:

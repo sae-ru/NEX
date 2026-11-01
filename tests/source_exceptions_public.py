@@ -23,13 +23,13 @@ compiler_hash=hashlib.sha256(Path(nex).read_bytes()).hexdigest()
 report={'ok':False,'language':'0.27','compiler_sha256':compiler_hash,'commands':[],'passed':[]}
 
 def save():
-    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 
 def command(label,arguments,expected=0):
     result=subprocess.run([nex,*map(str,arguments),'--json'],cwd=project,
                           capture_output=True,text=True,timeout=600)
-    (out/(label+'.stdout')).write_text(result.stdout)
-    (out/(label+'.stderr')).write_text(result.stderr)
+    (out/(label+'.stdout')).write_text(result.stdout, newline="\n")
+    (out/(label+'.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'label':label,'arguments':list(map(str,arguments)),
                                'exit':result.returncode})
     save()
@@ -79,7 +79,7 @@ fn recover()->i64 !{task}{
 fn main()->unit !{task,io}{print(recover());}
 test fn typed_value()->unit !{task}{assert(recover()==42);}
 fn scalar()->i64{return 7*6;}
-''')
+''', newline="\n")
     checked=command('typed-check',['check'])
     assert command('typed-reference',['eval'])['stdout']=='42\n'
     for profile in ('debug','release'):
@@ -94,14 +94,14 @@ fn scalar()->i64{return 7*6;}
     assert mapping['revision']==checked['revision'] and mapping['source_exceptions']=='nex.source-errors/2'
     wasm=command('typed-scalar-wasm',['build','--target','wasm','--entry','scalar','--profile','release'])
     driver=out/'typed-wasm.mjs'
-    driver.write_text('import fs from "node:fs";import {createNexWasm} from '+json.dumps(Path(wasm['wrapper']).as_uri())+';const instance=await createNexWasm(fs.readFileSync('+json.dumps(wasm['module'])+'));if(instance.call([])!==42n)throw Error("wrong scalar result");console.log("42");\n')
+    driver.write_text('import fs from "node:fs";import {createNexWasm} from '+json.dumps(Path(wasm['wrapper']).as_uri())+';const instance=await createNexWasm(fs.readFileSync('+json.dumps(wasm['module'])+'));if(instance.call([])!==42n)throw Error("wrong scalar result");console.log("42");\n', newline="\n")
     observed=subprocess.run([os.environ.get('NEX_NODE','node'),driver],capture_output=True,text=True,timeout=30)
     assert observed.returncode==0 and observed.stdout=='42\n',(observed.stdout,observed.stderr)
     for name,text,code in [
         ('typed-effect','fn main()->unit{throw(42);}','E_EFFECT'),
         ('typed-immutable','fn main()->unit{try{throw(42);}catch(e:i64){e=0;}}','E_MUTABILITY'),
     ]:
-        (project/'main.nex').write_text('module rejected;'+text+'\n')
+        (project/'main.nex').write_text('module rejected;'+text+'\n', newline="\n")
         assert command(name,['check'],1)['code']==code
     report['passed'].append({'ordinary_typed_CLI':True,'native_debug_release':True,
                              'typescript':True,'checked_map':True,'actual_scalar_Wasm':True,
@@ -114,15 +114,15 @@ fn scalar()->i64{return 7*6;}
            ('assert','fn main()->i64{try{assert(false);return 0;}catch(c,m){return 42;}}','E_ASSERT'),
            ('overflow','fn main()->i64{try{return 9223372036854775807+1;}catch(c,m){return 42;}}','E_OVERFLOW')]
     for name,text,code in cases:
-        (project/'main.nex').write_text('module failure;'+text+'\n')
+        (project/'main.nex').write_text('module failure;'+text+'\n', newline="\n")
         response=command(name+'-reference',['eval'],1)
         assert response['code']==code
         if name=='uncaught':
             assert response['source_exception']=={'code':'USER','message':'λ\0🙂'}
         build=command(name+'-build',['build','--build-directory',out/'cache'])
         process=subprocess.run([build['executable']],capture_output=True,text=True,timeout=30)
-        (out/(name+'-native.stdout')).write_text(process.stdout)
-        (out/(name+'-native.stderr')).write_text(process.stderr)
+        (out/(name+'-native.stdout')).write_text(process.stdout, newline="\n")
+        (out/(name+'-native.stderr')).write_text(process.stderr, newline="\n")
         assert process.returncode==70,(name,process.returncode,process.stderr)
         if name=='uncaught':
             line=next(line for line in process.stderr.splitlines() if line.startswith('NEX_SOURCE_EXCEPTION '))

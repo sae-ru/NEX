@@ -97,11 +97,11 @@ fn main()->unit !{io,throw}{
 }
 '''
 def save():
- report['seconds']=round(time.monotonic()-started,3);(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+ report['seconds']=round(time.monotonic()-started,3);(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def request(root,label,action,expected=0,**extra):
- data={'root':str(root),'source_language':'0.27','action':action,'component':'app',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n')
+ data={'root':str(root),'source_language':'0.27','action':action,'component':'app',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n', newline="\n")
  r=subprocess.run([str(Path(a.probe).resolve()),str(file)],text=True,capture_output=True,timeout=600,env={**os.environ,'NEX_FILES_ROOT':str(root/'files')})
- (O/(label+'.stdout')).write_text(r.stdout);(O/(label+'.stderr')).write_text(r.stderr)
+ (O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'label':label,'action':action,'exit_code':r.returncode});save()
  assert r.returncode==expected,(label,r.stdout[-4000:],r.stderr[-4000:])
  return json.loads(r.stdout)
@@ -109,8 +109,8 @@ try:
  for mode in ([] if a.sync_only else a.mode or ['source','static','shared','mixed']):
   root=O/mode;root.mkdir();(root/'files').mkdir();(root/'files/input').write_bytes(b'abc')
   for name,text in [('leaf',LEAF),('middle',MIDDLE),('app',APP)]:
-   d=root/name;d.mkdir();(d/'main.nex').write_text(text)
-  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n')
+   d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
+  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
   leaf_shared=mode=='shared';middle_shared=mode in ['shared','mixed'];source=mode=='source'
   manifest={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'},'measured':{'profile':'profile'}},'components':{
    'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['pure','text','later','next','callback','owned_file']},
@@ -119,13 +119,13 @@ try:
   if source:
    for name in ['leaf','middle']:
     manifest['components'][name].pop('entry_function');manifest['components'][name].pop('exports')
-  (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n')
+  (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n")
   if mode=='mixed':
    invalid=copy.deepcopy(manifest);invalid['components']['app']['dependencies']['leaf']='static'
-   (root/'nex.build.json').write_text(json.dumps(invalid)+'\n')
+   (root/'nex.build.json').write_text(json.dumps(invalid)+'\n', newline="\n")
    rejected=request(root,'duplicate-owner','plan',expected=1);assert rejected['code']=='E_TASK_PROVIDER'
    assert not (root/'.nex').exists()
-   (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n')
+   (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n")
   for profile in ['debug','release']:
    label=mode+'-'+profile;plan=request(root,label+'-plan','plan',configuration=profile)
    assert plan['language']=='0.27' and not plan['graph_store_opened']
@@ -144,14 +144,14 @@ try:
    assert not (root/'.nex/graph.db').exists()
    report['cases'].append({'mode':mode,'profile':profile,'passed':True,'stdout':'42\n'});save()
   if mode=='mixed':
-   captured=request(root,'capture','capture');capture=O/'capture.json';capture.write_text(json.dumps(captured,ensure_ascii=False)+'\n')
+   captured=request(root,'capture','capture');capture=O/'capture.json';capture.write_text(json.dumps(captured,ensure_ascii=False)+'\n', newline="\n")
    assert request(root,'validate-capture','validate',capture=str(capture))['ok']
    for tag,edit in [
     ('old-language',lambda c:c.update(language='0.26')),
     ('wrong-abi',lambda c:c['expectations']['debug'][0]['task_linkage'].update(execution_abi=6)),
     ('retagged-schema',lambda c:c['expectations']['debug'][0]['task_linkage'].update(schema='nex.project-task-linkage/11')),
    ]:
-    changed=copy.deepcopy(captured);edit(changed);bad=O/(tag+'.json');bad.write_text(json.dumps(changed)+'\n')
+    changed=copy.deepcopy(captured);edit(changed);bad=O/(tag+'.json');bad.write_text(json.dumps(changed)+'\n', newline="\n")
     rejected=request(root,tag,'validate',expected=1,capture=str(bad));assert rejected['code']=='E_PROJECT_CAPTURE'
    restored=request(root,'restore','restore',capture=str(capture),directory=str(O/'restored'))
    replay=Path(restored['root']);(replay/'files').mkdir();(replay/'files/input').write_bytes(b'abc')
@@ -174,13 +174,13 @@ try:
      environment={k:v for k,v in os.environ.items() if k not in ['NEX_RESOURCE_DIR','NEX_CLANG','NEX_NODE','NEX_NPM']}
      environment['NEX_FILES_ROOT']=str(root/'files')
      r=subprocess.run([str(moved/'apps/app/bin/app'),'--nex-task-workers','4'],text=True,capture_output=True,env=environment,timeout=60)
-     (O/'moved.stdout').write_text(r.stdout);(O/'moved.stderr').write_text(r.stderr)
+     (O/'moved.stdout').write_text(r.stdout, newline="\n");(O/'moved.stderr').write_text(r.stderr, newline="\n")
      assert r.returncode==0 and r.stdout=='42\n' and not r.stderr,(r.returncode,r.stdout,r.stderr)
     finally:hidden.rename(cache)
     report['cases'].append({'mode':mode,'relocated_package_source_absent':True,'workers':4,'passed':True});save()
    # All earlier source/receipt bytes are retained in the captured frontier.
    # Rebuild only the root entry to test the public uncaught-error boundary.
-   (root/'app/main.nex').write_text('module app;import "../middle/main.nex" as middle;fn main()->unit !{task,throw}{task_yield();middle::text();}\n')
+   (root/'app/main.nex').write_text('module app;import "../middle/main.nex" as middle;fn main()->unit !{task,throw}{task_yield();middle::text();}\n', newline="\n")
    uncaught=request(root,'uncaught','run')['observation'];assert uncaught['exit_code']==70 and not uncaught['stdout']
    rows=[json.loads(line.split(' ',1)[1]) for line in uncaught['stderr'].splitlines() if line.startswith('NEX_SOURCE_EXCEPTION ')]
    assert len(rows)==1 and rows[0]['message']=='typed source error' and 'Problem' in rows[0]['code']
@@ -189,8 +189,8 @@ try:
  for mode in a.mode or ['source','static','shared','mixed']:
   root=O/('sync-'+mode);root.mkdir();(root/'files').mkdir()
   for name,text in [('leaf',SYNC_LEAF),('middle',SYNC_MIDDLE),('app',SYNC_APP)]:
-   d=root/name;d.mkdir();(d/'main.nex').write_text(text)
-  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n')
+   d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
+  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
   source=mode=='source';leaf_shared=mode=='shared';middle_shared=mode in ['shared','mixed']
   components={
    'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['pure','text','later','next','callback']},
@@ -199,7 +199,7 @@ try:
   if source:
    for name in ['leaf','middle']:components[name].pop('entry_function');components[name].pop('exports')
   manifest={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'}},'components':components}
-  (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n')
+  (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n")
   for profile in ['debug','release']:
    label='sync-'+mode+'-'+profile;plan=request(root,label+'-plan','plan',configuration=profile)
    assert plan['language']=='0.27' and not plan['graph_store_opened']

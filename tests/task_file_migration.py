@@ -1,4 +1,5 @@
 """Genuine SDK115 language019 archives migrate explicitly to language020."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import copy
 import json
@@ -53,12 +54,12 @@ class FileMigrationChecks(MigrationChecks):
     def restore(self, label, metadata, sql):
         project = self.output/label
         directory = project/'.nex'; directory.mkdir(parents=True)
-        with sqlite3.connect(directory/'graph.db') as db: db.executescript(sql.decode())
+        with sqlite_connection(directory/'graph.db') as db: db.executescript(sql.decode())
         head = next(row for row in metadata['revisions'] if row['revision'] == metadata['head'])
         for key, text in head['bundle']['files'].items():
-            path = project/key; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
+            path = project/key; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text, newline="\n")
         write_json(project/'nex.json', {'schema':'nex.project/1','language':'0.19','entry':head['bundle']['entry']})
-        for key, text in metadata.get('physical_files', {}).items(): (project/key).write_text(text)
+        for key, text in metadata.get('physical_files', {}).items(): (project/key).write_text(text, newline="\n")
         (project/'original.sql').write_bytes(sql)
         before = database_state(directory/'graph.db')
         assert {name:len(rows) for name, rows in before['tables'].items()} == metadata['tables']
@@ -178,7 +179,7 @@ class FileMigrationChecks(MigrationChecks):
     def corruption(self, metadata, sql):
         for language in ('0.1', '0.18', '0.17', TARGET, 'unknown'):
             project, database, _, physical = self.restore('corrupt-'+language, metadata, sql)
-            with sqlite3.connect(database) as db:
+            with sqlite_connection(database) as db:
                 db.execute('UPDATE revisions SET language=? WHERE hash=?', (language, metadata['head']))
             before = database_state(database)
             rejected = self.cli('corrupt-origin-'+language, 'migrate', cwd=project, ok=False)
@@ -186,7 +187,7 @@ class FileMigrationChecks(MigrationChecks):
             assert database_state(database) == before
             self.unmodified(project, physical)
         project, database, _, _ = self.restore('corrupt-source', metadata, sql)
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             raw = db.execute('SELECT source FROM revisions WHERE hash=?', (metadata['head'],)).fetchone()[0]
             db.execute('UPDATE revisions SET source=? WHERE hash=?', (raw.replace('return 42', 'return 43'), metadata['head']))
         before = database_state(database)
@@ -252,7 +253,7 @@ server fn main()->result<str> !{task,fs}{
         revisions = {}
         for language in ('0.19', RETAINED_TARGET):
             directory = self.output/('from018-'+language)/'.nex'; directory.mkdir(parents=True)
-            with sqlite3.connect(directory/'graph.db') as db: db.executescript(sql.decode())
+            with sqlite_connection(directory/'graph.db') as db: db.executescript(sql.decode())
             before = database_state(directory/'graph.db')
             result = self.probe('explicit018-to-'+language, candidate, language, mode='migrate',
                                 store_directory=str(directory), expected_head=meta['revision'], original_revision=meta['revision'])

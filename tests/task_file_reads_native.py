@@ -42,7 +42,7 @@ def run(root, command, env, expected=0):
     receipt = dict(command=list(map(str, command)), exit=completed.returncode, stdout=completed.stdout, stderr=completed.stderr)
     receipts.append(receipt)
     if args.output:
-        (args.output / 'commands.json').write_text(json.dumps(receipts, ensure_ascii=False, indent=2) + '\n')
+        (args.output / 'commands.json').write_text(json.dumps(receipts, ensure_ascii=False, indent=2) + '\n', newline="\n")
     assert completed.returncode == expected, receipt
     return completed
 
@@ -74,7 +74,7 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
             for result in ('i64','result<i64>'):
                 body=body.replace('server fn(s:task_scope)->'+result+' !{task,fs}', 'server fn(s:task_scope)->'+result+' !{task,fs,throw}')
         source = root / (name + '.nex')
-        source.write_text('module native_reads;\n' + body + '\n')
+        source.write_text('module native_reads;\n' + body + '\n', newline="\n")
         env = configured if grant else absent
         actual = cli(root, env, 'eval', source)
         assert actual['value'] == 42 and actual['stdout'] == stdout, (name, actual)
@@ -101,13 +101,13 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
             finally:
                 source.with_suffix('.hidden').rename(source)
     boundary = root / 'unsupported.nex'
-    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(error_code(file_write_text("created","forbidden"))=="CAPABILITY");return 42;}')
+    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(error_code(file_write_text("created","forbidden"))=="CAPABILITY");return 42;}', newline="\n")
     readonly = {**configured, 'NEX_FILES_WRITE':'0'}
     built = cli(root, readonly, 'build', boundary)
     assert cli(root, readonly, 'eval', boundary)['value'] == 42
     run(root, [built['executable']], readonly, 42)
     assert not (files / 'created').exists()
-    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(unwrap(file_write_text("created","complete")));assert(unwrap(file_read_text("created"))=="complete");return 42;}')
+    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{assert(unwrap(file_write_text("created","complete")));assert(unwrap(file_read_text("created"))=="complete");return 42;}', newline="\n")
     writable = {**configured, 'NEX_FILES_WRITE':'1'}
     built = cli(root, writable, 'build', boundary)
     assert cli(root, writable, 'eval', boundary)['value'] == 42
@@ -117,9 +117,9 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
         'server fn read()->result<str> !{fs}{return file_read_text("text");}server fn main()->i64 !{task,fs}{return len(unwrap(read()));}',
         'server fn main()->i64 !{task,fs}{let f:server fn()->result<str> !{fs}=server fn()->result<str> !{fs}{return file_read_text("text");};return len(unwrap(f()));}',
     ]:
-        boundary.write_text('module boundary;' + body)
+        boundary.write_text('module boundary;' + body, newline="\n")
         assert cli(root, configured, 'check', boundary, success=False)['code'] == 'E_EFFECT'
-    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{return len(unwrap(file_read_text("text")));}')
+    boundary.write_text('module boundary;server fn main()->i64 !{task,fs}{return len(unwrap(file_read_text("text")));}', newline="\n")
     for options, code in [(['--library'], 'E_TASK_PROVIDER'), (['--target', 'server', '--entry', 'main'], 'E_HTTP_SIGNATURE')]:
         assert cli(root, configured, 'build', boundary, *options, success=False)['code'] == code
     profiled = cli(root, configured, 'build', boundary, '--profile', 'profile')
@@ -133,13 +133,13 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
     assert all(pool['live'] == 0 and pool['allocations'] == pool['frees'] for pool in measured['memory']), measured
     assert cli(root, configured, 'emit', boundary, '--kind', 'typescript', success=False)['code'] == 'E_REALM'
     checked_test = root / 'checked-test.nex'
-    checked_test.write_text('module checked_test;server test fn read_ok()->unit !{task,fs}{assert(len(unwrap(file_read_bytes("data")))==3);}')
+    checked_test.write_text('module checked_test;server test fn read_ok()->unit !{task,fs}{assert(len(unwrap(file_read_bytes("data")))==3);}', newline="\n")
     tested = cli(root, configured, 'test', checked_test)
     assert tested['ok'] is True, tested
     project = root / 'source-project'
     (project / 'core').mkdir(parents=True)
     (project / 'app').mkdir()
-    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language=language, entry='app/main.nex')))
+    (project / 'nex.json').write_text(json.dumps(dict(schema='nex.project/1', language=language, entry='app/main.nex')), newline="\n")
     (project / 'nex.build.json').write_text(json.dumps({
         'schema': 'nex.project-build/1', 'default_configuration': 'debug',
         'configurations': {'debug': {'profile': 'debug', 'target': 'native'}},
@@ -147,9 +147,9 @@ with tempfile.TemporaryDirectory(prefix='nex native task file reads 🧠 ') as d
             'core': {'kind': 'source', 'root': 'core', 'entry': 'core/read.nex'},
             'app': {'kind': 'executable', 'root': 'app', 'entry': 'app/main.nex', 'dependencies': {'core': 'source'}},
         },
-    }))
-    (project / 'core/read.nex').write_text('module core;pub server fn read()->i64 !{task,fs}{return len(unwrap(file_read_bytes("data")));}')
-    (project / 'app/main.nex').write_text('module app;import "../core/read.nex" as core;server fn main()->unit !{task,fs,io}{assert(core::read()==3);print(42);}')
+    }), newline="\n")
+    (project / 'core/read.nex').write_text('module core;pub server fn read()->i64 !{task,fs}{return len(unwrap(file_read_bytes("data")));}', newline="\n")
+    (project / 'app/main.nex').write_text('module app;import "../core/read.nex" as core;server fn main()->unit !{task,fs,io}{assert(core::read()==3);print(42);}', newline="\n")
     built_project = cli(project, configured, 'project', '--kind', 'build', '--component', 'app')
     artifact = next(item for item in built_project['artifacts'] if item['component'] == 'app')
     metadata = json.loads(Path(artifact['metadata']).read_text())

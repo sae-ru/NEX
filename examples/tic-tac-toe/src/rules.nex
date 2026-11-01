@@ -1,0 +1,62 @@
+module rules;
+
+// Immutable values: a move returns a new board; previous boards stay valid.
+pub struct Game { cells:list<i64>; turn:i64; winner:i64; line:i64; moves:i64; }
+pub fn fresh()->Game { return Game([0,0,0,0,0,0,0,0,0],1,0,-1,0); }
+pub fn line_cells(n:i64)->list<i64> {
+  return match n {
+    0=>[0,1,2], 1=>[3,4,5], 2=>[6,7,8],
+    3=>[0,3,6], 4=>[1,4,7], 5=>[2,5,8],
+    6=>[0,4,8], _=>[2,4,6]
+  };
+}
+pub fn move(game:Game, cell:i64)->Game {
+  if cell<0 || cell>=9 || game.winner!=0 { return game; }
+  if game.cells[cell]!=0 { return game; }
+  let cells:list<i64>=set(game.cells,cell,game.turn);
+  var n:i64=0;
+  while n<8 {
+    let p:list<i64>=line_cells(n);
+    if cells[p[0]]==game.turn && cells[p[1]]==game.turn && cells[p[2]]==game.turn {
+      return Game(cells,game.turn,game.turn,n,game.moves+1);
+    }
+    n=n+1;
+  }
+  if game.moves==8 { return Game(cells,game.turn,3,-1,9); }
+  return Game(cells,3-game.turn,0,-1,game.moves+1);
+}
+pub fn sequence(cells:list<i64>)->Game {
+  var game:Game=fresh(); var i:i64=0;
+  while i<len(cells) { game=move(game,cells[i]); i=i+1; }
+  return game;
+}
+test fn every_winning_line()->unit {
+  var n:i64=0;
+  while n<8 {
+    let p:list<i64>=line_cells(n);
+    // Construct a valid pre-win state for each player and each line.
+    var cells:list<i64>=[0,0,0,0,0,0,0,0,0];
+    cells=set(set(cells,p[0],1),p[1],1);
+    let x:Game=move(Game(cells,1,0,-1,2),p[2]);
+    assert(x.winner==1 && x.line==n);
+    cells=set(set(cells,p[0],2),p[1],2);
+    let o:Game=move(Game(cells,2,0,-1,2),p[2]);
+    assert(o.winner==2 && o.line==n); n=n+1;
+  }
+}
+test fn legal_turns_and_immutable_snapshots()->unit {
+  let old:Game=fresh(); let next:Game=move(old,4);
+  assert(old.cells[4]==0 && old.moves==0);
+  assert(next.cells[4]==1 && next.turn==2 && next.moves==1);
+  assert(move(next,4)==next);
+  assert(move(next,-1)==next && move(next,9)==next);
+}
+test fn draw_and_terminal_board()->unit {
+  let draw:Game=sequence([0,1,2,4,3,5,7,6,8]);
+  assert(draw.winner==3 && draw.moves==9);
+  assert(move(draw,0)==draw);
+  let win:Game=sequence([0,3,1,4,2]);
+  assert(win.winner==1 && win.line==0 && win.moves==5);
+  assert(move(win,8)==win);
+  assert(fresh().moves==0);
+}

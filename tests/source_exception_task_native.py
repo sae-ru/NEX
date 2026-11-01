@@ -1,4 +1,6 @@
 """Real private native task continuations at O0/O2, AST comparison and physical worker overlap."""
+from host_fixture import run_native, host_cpp, probe_dll_inputs
+import os
 import argparse, ast, hashlib, json, os, platform, re, subprocess, tempfile
 from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('emitter');p.add_argument('reference');p.add_argument('compiler');p.add_argument('--output');p.add_argument('--case',action='append');p.add_argument('--profile',action='store_true');p.add_argument('--debug',action='store_true');a=p.parse_args();assert not(a.profile and a.debug)
@@ -6,13 +8,13 @@ source=Path(__file__).resolve().parents[1];runtime=source/'runtime'
 out=Path(a.output or os.environ.get('NEX_EXCEPTION_TASK_NATIVE_OUTPUT') or tempfile.mkdtemp(prefix='nex-native-task-exceptions-')).resolve();out.mkdir(parents=True,exist_ok=True)
 emitter=str(Path(a.emitter).resolve());reference=str(Path(a.reference).resolve());compiler=a.compiler
 report={'ok':False,'cases':[],'stage_rejections':[],'parallel_runs':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_language':'0.24','private_identity':'0.25-prototype','compiled_native_task_execution':True,'public_build_support':False,'installed_SDK_acceptance_claimed':False,'commands':[]}
-def save(): (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+def save(): (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def run(label,cmd,allowed=(0,),**kw):
-    r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,timeout=180,**kw)
-    (out/(label+'.stdout')).write_text(r.stdout);(out/(label+'.stderr')).write_text(r.stderr)
+    r=run_native(list(map(str,cmd)),text=True,capture_output=True,timeout=180,**kw)
+    (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
     report['commands'].append({'label':label,'argv':list(map(str,cmd)),'exit_code':r.returncode});save()
     assert r.returncode in allowed,(label,r.returncode,r.stdout[-1000:],r.stderr[-4000:]);return r
-save();run('target',[compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',out/'target.ll'])
+save();run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
 target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
 objects=[];extra_flags=[]
 runtime_names=['runtime.cpp','nex_files.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp','nex_task_application.cpp']
@@ -25,7 +27,11 @@ for name in runtime_names:
     obj=out/(Path(name).name+'.o');run('compile-'+name.replace('/','_'),[compiler,'-std=c++20','-O1','-g','-fPIC','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS',*extra_flags,'-I'+str(runtime),'-c',runtime/name,'-o',obj]);objects.append(obj)
 host=out/'host.cpp';host.write_text(r'''
 #include "nex_task_application.h"
+#ifdef _WIN32
+#include "host_dlfcn.h"
+#else
 #include <dlfcn.h>
+#endif
 #include <cstdio>
 #include <mutex>
 #include <map>
@@ -82,7 +88,7 @@ int main(int argc,char **argv){try{
   {std::lock_guard lock(allocationsMutex);if(!allocations.empty())throw std::runtime_error("native task outcome retained tracked allocations");}
   dlclose(library);return status;
 }catch(const std::exception &e){std::fprintf(stderr,"native test host: %s\n",e.what());return 71;}}
-''')
+''', newline="\n")
 host_binary=out/'host';export='-Wl,-export_dynamic' if platform.system()=='Darwin' else '-Wl,--export-dynamic'
 run('link-host',[compiler,'-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS',*extra_flags,'-I'+str(runtime),host,*objects,export,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',host_binary])
 fixtures=[];origins={}
@@ -106,9 +112,9 @@ if a.debug:
 if a.case: fixtures=[(n,s) for n,s in fixtures if n in a.case];assert len(fixtures)==len(a.case)
 report['fixtures']=origins;report['selected_programs']=len(fixtures);save()
 for name,text in fixtures:
-    d=out/name;d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}));f=d/'main.nex';f.write_text('module native_task_exception;\n'+text+'\n')
+    d=out/(("case-"+name) if os.name=="nt" and name.upper()=="NUL" else name);d.mkdir(exist_ok=True);(d/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");f=d/'main.nex';f.write_text('module native_task_exception;\n'+text+'\n', newline="\n")
     limit=debug_specs[name][1] if a.debug else 1000000
-    expected=json.loads(run(name+'-reference',[reference,'reference',f,str(limit)]).stdout);(d/'reference.json').write_text(json.dumps(expected,ensure_ascii=False,indent=2)+'\n')
+    expected=json.loads(run(name+'-reference',[reference,'reference',f,str(limit)]).stdout);(d/'reference.json').write_text(json.dumps(expected,ensure_ascii=False,indent=2)+'\n', newline="\n")
     for optimization in ['0','2']:
         e=d/('O'+optimization);e.mkdir(exist_ok=True)
         if name=='task-client-pruning':
@@ -116,7 +122,7 @@ for name,text in fixtures:
             report['stage_rejections'].append({'name':name,'optimization':optimization,'code':'E_REALM','source_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'reason':'client realm has no native application entry','passed':True});save();continue
         run(name+'-emit-O'+optimization,[emitter,'emit',f,e,triple,layout,str(optimization=='2').lower(),*(['profile'] if a.profile else ['debug'] if a.debug else [])])
         library=e/('program.dylib' if platform.system()=='Darwin' else 'program.so')
-        run(name+'-link-O'+optimization,[compiler,'-O'+optimization,'-shared','-fPIC',e/'program.ll',*(['-Wl,-undefined,dynamic_lookup'] if platform.system()=='Darwin' else []),'-o',library])
+        run(name+'-link-O'+optimization,[compiler,'-O'+optimization,'-shared','-fPIC',e/'program.ll',*(probe_dll_inputs(host_binary,e) if os.name=='nt' else ['-Wl,-undefined,dynamic_lookup'] if platform.system()=='Darwin' else []),'-o',library])
         environment={**os.environ}
         if a.profile:
             environment.pop('NEX_TRACY',None);environment.update(NEX_PROFILE_OUTPUT=str(e/'profile.json'),NEX_PROFILE_EVENTS='100000')
@@ -125,7 +131,7 @@ for name,text in fixtures:
             for tag,visits in debug_specs[name][0].items():
                 line=next(i for i,text in enumerate(f.read_text().splitlines(),1) if '// STOP:'+tag in text);plans.append(str(line)+':'+str(len(visits)))
             environment.update(NEX_PRIVATE_DEBUG_OUTPUT=str(e/'observations.jsonl'),NEX_PRIVATE_DEBUG_LINES=','.join(plans),NEX_PRIVATE_DEBUG_STEPS=str(limit))
-        result=subprocess.run([str(host_binary),str(library)],text=True,capture_output=True,timeout=40,env=environment);(e/'stdout.txt').write_text(result.stdout);(e/'stderr.txt').write_text(result.stderr)
+        result=run_native([str(host_binary),str(library)],text=True,capture_output=True,timeout=40,env=environment);(e/'stdout.txt').write_text(result.stdout, newline="\n");(e/'stderr.txt').write_text(result.stderr, newline="\n")
         debug_stats=None
         if a.debug:
             debug_stats=json.loads(next(line.split(' ',1)[1] for line in result.stderr.splitlines() if line.startswith('NEX_PRIVATE_DEBUG ')))

@@ -1,4 +1,5 @@
 """Public CLI022 migration of genuine SDK128 language021 histories."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import copy
 import json
@@ -16,10 +17,10 @@ ROOT=Path(__file__).resolve().parents[1]
 class PublicMigrationChecks(MigrationChecks):
  def restore(self,name,metadata,sql):
   project=self.output/name;(project/'.nex').mkdir(parents=True);database=project/'.nex/graph.db'
-  with sqlite3.connect(database) as db:db.executescript(sql.decode())
+  with sqlite_connection(database) as db:db.executescript(sql.decode())
   selected=next(row for row in metadata['revisions'] if row['revision']==metadata['head'])
   for key,text in selected['bundle']['files'].items():
-   path=project/key;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+   path=project/key;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
   write_json(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':selected['bundle']['entry']})
   physical={str(p.relative_to(project)):p.read_bytes() for p in project.rglob('*') if p.is_file() and '.nex' not in p.relative_to(project).parts}
   return project,database,database_state(database),physical
@@ -93,9 +94,9 @@ class PublicMigrationChecks(MigrationChecks):
   # Use isolated copies for every deliberate corruption; positive stores stay intact.
   for bad,revision,language in [('modern-origin',metadata['head'],'0.19'),('022-as-legacy',head,'0.1')]:
    corrupt=self.output/bad;(corrupt/'.nex').mkdir(parents=True);target=corrupt/'.nex/graph.db'
-   with sqlite3.connect(database) as source,sqlite3.connect(target) as destination:source.backup(destination)
+   with sqlite_connection(database) as source,sqlite_connection(target) as destination:source.backup(destination)
    write_json(corrupt/'nex.json',{'schema':'nex.project/1','language':self.current_language,'entry':'main.nex'})
-   with sqlite3.connect(target) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',(language,revision))
+   with sqlite_connection(target) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',(language,revision))
    before=database_state(target)
    rejected=self.cli(bad,'migrate','--revision',revision,cwd=corrupt,ok=False)
    assert rejected['code']=='E_REVISION' and database_state(target)==before

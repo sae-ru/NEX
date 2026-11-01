@@ -17,7 +17,7 @@ test fn checks()->unit !{task,throw}{assert(solve()==42);}
 LIMITS={'steps':100000,'timeout_ms':5000,'workers':1}
 
 class TaskLimitsWorkflow(harness.ToolchainCase):
-    def save(self,path,value):path.write_text(json.dumps(value,indent=2)+'\n')
+    def save(self,path,value):path.write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 
     def add(self,task,check):
         check['program']='app';task['checks'].append(check)
@@ -88,7 +88,7 @@ class TaskLimitsWorkflow(harness.ToolchainCase):
         (self.root/'app').mkdir();(self.root/'core').mkdir()
         self.file=self.root/'app/main.nex'
         self.source(SOURCE.replace('module capped;','module capped;import "../core/value.nex" as c;').replace('return 42;','return c::value();'))
-        (self.root/'core/value.nex').write_text('module value;pub fn value()->i64{return 42;}')
+        (self.root/'core/value.nex').write_text('module value;pub fn value()->i64{return 42;}', newline="\n")
         self.save(self.root/'nex.json',{'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'})
         architecture={'schema':'nex.project-build/1','default_configuration':'debug',
           'configurations':{'debug':{'profile':'debug','task_limits':LIMITS}},

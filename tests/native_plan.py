@@ -11,12 +11,12 @@ class NativePlan(harness.ToolchainCase):
 pub struct Box{text:str;}
 pub fn value()->str{return "left";}
 pub fn make()->Box{return Box(value());}
-''')
+''', newline="\n")
         (self.root/'right.nex').write_text('''module right;
 pub struct Box{flag:bool;}
 pub fn value()->bool{return true;}
 pub fn make()->Box{return Box(value());}
-''')
+''', newline="\n")
         self.source('''module app;
 import "./left.nex" as left;import "./right.nex" as right;
 struct Box{number:i64;}

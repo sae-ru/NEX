@@ -9,6 +9,7 @@
 #include "nex_source_error.h"
 #include "nex/task_provider_debug.h"
 #include "nex/native_images.h"
+#include "nex/native_file.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
 #include "nex/operations.h"
@@ -43,6 +44,7 @@
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include <cstdlib>
+#include <cwchar>
 #include <array>
 #include <filesystem>
 #include <sstream>
@@ -52,6 +54,10 @@
 #include <limits>
 #include <regex>
 #include <variant>
+
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace nex {
 namespace {
@@ -1339,7 +1345,11 @@ std::string lower(const std::string &source,const std::string &sourcePath,const 
   if(!module)throw Error("E_MLIR","generated MLIR could not be parsed");
   module->getOperation()->setLoc(mlir::FileLineColLoc::get(&context,sourcePath,1,1));
   if(mlir::failed(mlir::verify(*module)))throw Error("E_MLIR","generated MLIR failed verification");
-  mlir::registerConversionPasses();
+  mlir::registerArithToLLVMConversionPass();
+  mlir::registerConvertFuncToLLVMPass();
+  mlir::registerFinalizeMemRefToLLVMConversionPass();
+  mlir::registerConvertControlFlowToLLVMPass();
+  mlir::registerReconcileUnrealizedCastsPass();
   mlir::PassManager pm(&context);
   if(mlir::failed(mlir::parsePassPipeline("convert-arith-to-llvm,convert-func-to-llvm,finalize-memref-to-llvm,convert-cf-to-llvm,reconcile-unrealized-casts",pm)))throw Error("E_MLIR","cannot construct conversion pipeline");
   pm.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass({mlir::LLVM::DIEmissionKind::Full}));
@@ -1358,7 +1368,16 @@ void atomicWrite(const std::filesystem::path &path,const std::string &text){
   if(auto ec=llvm::sys::fs::openFileForWrite(temporary.string(),fd,llvm::sys::fs::CD_CreateNew))throw Error("E_FILE",ec.message());
   try{
     {llvm::raw_fd_ostream output(fd,true);output<<text;output.close();if(output.has_error())throw Error("E_FILE","cannot write "+path.string());}
-    std::filesystem::rename(temporary,path);
+    auto renamed=replaceNativeFile(temporary,path);
+#ifdef _WIN32
+    // A concurrent builder may have published the same immutable bytes while
+    // Clang is reading them without FILE_SHARE_DELETE. Reuse only an exact
+    // completed match; never truncate or replace an image being read.
+    if(renamed&&std::filesystem::is_regular_file(path)&&readFile(path.string())==text){
+      std::filesystem::remove(temporary);return;
+    }
+#endif
+    if(renamed)throw Error("E_FILE","cannot publish captured file "+path.string()+": "+renamed.message());
   }catch(...){std::filesystem::remove(temporary);throw;}
 }
 void captureFile(const std::filesystem::path &path,const std::string &text){
@@ -1402,14 +1421,37 @@ std::string linkIR(const std::vector<NativeArtifact> &artifacts,const std::strin
   combined->setSourceFileName(source);std::string text;llvm::raw_string_ostream stream(text);combined->print(stream,nullptr);return text;
 }
 }
-int execute(const std::vector<std::string> &args) {
+static int executeWithEnvironment(const std::vector<std::string> &args,const std::optional<std::vector<std::string>> &environment) {
   if(args.empty())throw Error("E_PROCESS","empty command");
   auto program=llvm::sys::findProgramByName(args[0]);if(!program)throw Error("E_TOOL","cannot find executable "+args[0]);
   std::vector<llvm::StringRef> refs;for(const auto &a:args)refs.push_back(a);
+  std::vector<llvm::StringRef> entries;std::optional<llvm::ArrayRef<llvm::StringRef>> selectedEnvironment;
+  if(environment){for(const auto &entry:*environment)entries.push_back(entry);selectedEnvironment=llvm::ArrayRef<llvm::StringRef>(entries);}
   std::string error;bool failed=false;
-  int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,{},0,0,&error,&failed);
+  int status=llvm::sys::ExecuteAndWait(*program,refs,selectedEnvironment,{},0,0,&error,&failed);
   if(failed||status<0)throw Error("E_PROCESS",error.empty()?"process failed":error);return status;
 }
+int execute(const std::vector<std::string> &args){return executeWithEnvironment(args,std::nullopt);}
+#ifdef _WIN32
+static std::optional<std::vector<std::string>> windowsBuildToolEnvironment(std::filesystem::path &temporary){
+  std::optional<std::vector<std::string>> environment;
+  auto base=std::filesystem::canonical(std::filesystem::temp_directory_path());
+  if(base.native().find(L'%')!=std::wstring::npos){
+    temporary=createTemporaryDirectory("nex-native-tool");
+    auto block=GetEnvironmentStringsW();if(!block)throw Error("E_PROCESS","cannot capture native tool environment");
+    struct Release {wchar_t *value;~Release(){FreeEnvironmentStringsW(value);}} release{block};
+    std::vector<std::wstring> entries;
+    for(auto current=block;*current;current+=std::wcslen(current)+1){
+      std::wstring entry(current);auto name=entry.substr(0,entry.find(L'='));
+      if(_wcsicmp(name.c_str(),L"TEMP")&&_wcsicmp(name.c_str(),L"TMP")&&_wcsicmp(name.c_str(),L"TMPDIR")&&_wcsicmp(name.c_str(),L"TEMPDIR"))entries.push_back(std::move(entry));
+    }
+    for(const auto *name:{L"TEMP",L"TMP",L"TMPDIR",L"TEMPDIR"})entries.push_back(std::wstring(name)+L"="+temporary.native());
+    std::sort(entries.begin(),entries.end(),[](const auto &a,const auto &b){return CompareStringOrdinal(a.c_str(),int(a.size()),b.c_str(),int(b.size()),TRUE)==CSTR_LESS_THAN;});
+    environment.emplace();for(const auto &entry:entries)environment->push_back(nexrt::platform::utf8(entry));
+  }
+  return environment;
+}
+#endif
 int executeNativeBuildTool(const std::vector<std::string> &arguments){
   if(arguments.empty())throw Error("E_PROCESS","empty native build command");
   std::vector<llvm::StringRef> refs;size_t bytes=0;
@@ -1433,13 +1475,19 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments){
   }
   // LLVM tools create their own temporary files too (notably dsymutil).
   // Scope the workaround to build tools; application environments stay intact.
+  std::optional<std::vector<std::string>> toolEnvironment;
+  struct ToolTemporary {std::filesystem::path path;~ToolTemporary(){if(!path.empty()){std::error_code ignored;std::filesystem::remove_all(path,ignored);}}} toolTemporary;
+#ifdef _WIN32
+  toolEnvironment=windowsBuildToolEnvironment(toolTemporary.path);
+#else
   auto base=std::filesystem::canonical(std::filesystem::temp_directory_path());
   if(base.string().find('%')!=std::string::npos){
     std::vector<std::string> scoped{"/usr/bin/env","TMPDIR=/tmp","TMP=/tmp","TEMP=/tmp","TEMPDIR=/tmp"};
     scoped.insert(scoped.end(),command.begin(),command.end());command=std::move(scoped);
   }
+#endif
   try{
-    auto status=execute(command);
+    auto status=executeWithEnvironment(command,toolEnvironment);
     if(!response.empty()){
       if(status!=0)throw Error("E_LINK","native build tool exited "+std::to_string(status)+"; response file retained at "+response.string());
       std::error_code ignored;std::filesystem::remove_all(response.parent_path(),ignored);
@@ -1453,26 +1501,46 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments){
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &directory){
   namespace fs=std::filesystem;
   auto base=fs::canonical(directory.empty()?fs::temp_directory_path():fs::path(directory));
+#ifdef _WIN32
+  // LLVM expands '%' in its own temporary-file templates, including parents.
+  // Reserve a private sibling under the closest usable ancestor instead.
+  while(base.native().find(L'%')!=std::wstring::npos){auto parent=base.parent_path();if(parent==base)throw Error("E_FILE","Windows temporary root has no LLVM-safe ancestor");base=std::move(parent);}
+  auto pattern=(base/(prefix+"-XXXXXX")).string();
+  if(!::mkdtemp(pattern.data()))throw Error("E_FILE","cannot create a private Windows temporary directory");
+  return pattern;
+#else
   // LLVM expands '%' throughout temporary filename models, including parents.
   // Its object/archive writers also need a physical staging path without '%'.
   if(base.string().find('%')!=std::string::npos)base=fs::canonical("/tmp");
   llvm::SmallString<128> temporary;
   if(auto error=llvm::sys::fs::createUniqueDirectory((base/prefix).string(),temporary))throw Error("E_FILE",error.message());
   return temporary.str().str();
+#endif
 }
-ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSeconds) {
+static ProcessResult captureWithEnvironment(const std::vector<std::string> &args,unsigned timeoutSeconds,const std::optional<std::vector<std::string>> &environment) {
   if(args.empty())throw Error("E_PROCESS","empty command");
   auto program=llvm::sys::findProgramByName(args[0]);if(!program)throw Error("E_TOOL","cannot find executable "+args[0]);
   std::filesystem::path folder(createTemporaryDirectory("nex-process"));
   try {
     auto stdoutPath=(folder/"stdout").string(),stderrPath=(folder/"stderr").string();
     std::vector<llvm::StringRef> refs;for(const auto &a:args)refs.push_back(a);
+    std::vector<llvm::StringRef> entries;std::optional<llvm::ArrayRef<llvm::StringRef>> selectedEnvironment;
+    if(environment){for(const auto &entry:*environment)entries.push_back(entry);selectedEnvironment=llvm::ArrayRef<llvm::StringRef>(entries);}
     std::optional<llvm::StringRef> redirects[]={llvm::StringRef(""),llvm::StringRef(stdoutPath),llvm::StringRef(stderrPath)};
     std::string error;bool failed=false;
-    int status=llvm::sys::ExecuteAndWait(*program,refs,std::nullopt,redirects,timeoutSeconds,0,&error,&failed);
+    int status=llvm::sys::ExecuteAndWait(*program,refs,selectedEnvironment,redirects,timeoutSeconds,0,&error,&failed);
     if(failed||status<0)throw Error("E_PROCESS",error.empty()?"child process failed or timed out":error);
     ProcessResult result{status,readFile(stdoutPath),readFile(stderrPath)};std::filesystem::remove_all(folder);return result;
   }catch(...){std::filesystem::remove_all(folder);throw;}
+}
+ProcessResult capture(const std::vector<std::string> &args,unsigned timeoutSeconds){return captureWithEnvironment(args,timeoutSeconds,std::nullopt);}
+ProcessResult captureNativeBuildTool(const std::vector<std::string> &args,unsigned timeoutSeconds){
+  std::optional<std::vector<std::string>> environment;
+  struct Temporary {std::filesystem::path path;~Temporary(){if(!path.empty()){std::error_code ignored;std::filesystem::remove_all(path,ignored);}}} temporary;
+#ifdef _WIN32
+  environment=windowsBuildToolEnvironment(temporary.path);
+#endif
+  return captureWithEnvironment(args,timeoutSeconds,environment);
 }
 namespace {
 struct TaskNativeLinkage {
@@ -1921,7 +1989,7 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
     while(kind()=="debug_source_projection"){auto p=path();if(++projections>8192||p<=previous||!std::regex_match(p,projection))invalid();previous=p;take("debug_source_projection",p,false);}if(!projections)invalid();
     if(shared){take("link_inputs","image-inputs.json");take("objects","objects.a");}
     size_t archives=0;while(kind()=="static_library"){if(archives>=128)invalid();auto prefix="libraries/"+std::to_string(archives++);take("static_library",prefix+".a");take("static_task_provider",prefix+".task-provider.json");take("static_debug_catalog",prefix+".task-debug-catalog.json",false);take("static_debug_sources",prefix+".task-debug-sources.json",false);}
-    if(shared){while(kind()=="owned_image"){auto p=path();take("owned_image",p);}while(kind()=="owned_task_provider"){auto p=path();if(!llvm::StringRef(p).ends_with(".task-provider.json"))invalid();auto image=p.substr(0,p.size()-std::string(".task-provider.json").size());take("owned_task_provider",p);take("owned_debug_catalog",image+".task-debug-catalog.json",false);take("owned_debug_sources",image+".task-debug-sources.json",false);}while(kind()=="owned_symbols"){auto p=path();take("owned_symbols",p);}}
+    if(shared){while(kind()=="owned_image"){auto p=path();take("owned_image",p);}while(kind()=="import_library"){auto p=path();take("import_library",p);}while(kind()=="owned_task_provider"){auto p=path();if(!llvm::StringRef(p).ends_with(".task-provider.json"))invalid();auto image=p.substr(0,p.size()-std::string(".task-provider.json").size());take("owned_task_provider",p);take("owned_debug_catalog",image+".task-debug-catalog.json",false);take("owned_debug_sources",image+".task-debug-sources.json",false);}while(kind()=="owned_symbols"){auto p=path();take("owned_symbols",p);}}
     take("debug_manifest","debug.json",false);take("debug_formatter","debugger/lldb_nex.py",false);take("debug_adapter","debugger/nex_dap.py",false);
     const bool rootSymbols=(mode=="static-application"||mode=="shared-application")&&llvm::Triple(metadata.getString("compiler_target").value_or("")).isOSDarwin();
     if(rootSymbols){take("root_symbols","debug-symbols.complete",false);take("root_symbols","app.dSYM/Contents/Info.plist",false);take("root_symbols","app.dSYM/Contents/Resources/DWARF/app",false);}
@@ -1940,6 +2008,7 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
     size_t archives=0;while(kind()=="static_library"){if(archives>=128)invalid();auto prefix="libraries/"+std::to_string(archives++);take("static_library",prefix+".a");take("static_task_provider",prefix+".task-provider.json");take("static_profile_catalog",prefix+".task-profile-catalog.json",false);}
     if(!shared){if(next!=values->size())invalid();return result;}
     while(kind()=="owned_image"){auto path=(*values)[next].getAsObject()->getString("path");if(!path)invalid();take("owned_image",path->str());}
+    while(kind()=="import_library"){auto path=(*values)[next].getAsObject()->getString("path");if(!path)invalid();take("import_library",path->str());}
     while(kind()=="owned_task_provider"){auto path=(*values)[next].getAsObject()->getString("path");if(!path||!path->ends_with(".task-provider.json"))invalid();auto image=path->drop_back(std::string(".task-provider.json").size()).str();take("owned_task_provider",path->str());take("owned_profile_catalog",image+".task-profile-catalog.json",false);}
     while(next<values->size()){auto path=(*values)[next].getAsObject()?(*values)[next].getAsObject()->getString("path"):std::nullopt;if(!path)invalid();take("owned_symbols",path->str());}
     auto translated=llvm::json::Object(metadata);translated["completion_schema"]="nex.native-completion/5";translated["completion_inputs"]=std::move(base);(void)nativeCompletionInputs(translated);return result;
@@ -1970,7 +2039,7 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
       if(archives>=128)invalid();auto base="libraries/"+std::to_string(archives++);take("static_library",base+".a");
       if(taskImages){if(next>=values->size())invalid();take("static_task_provider",base+".task-provider.json");}
     }
-    static const std::regex image("images/(libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\\.(so|dylib))");
+    static const std::regex image("(images/libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\\.(so|dylib)|libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_[0-9a-f]{64}\\.dll)");
     std::set<std::string> images;std::string previous;
     while(next<values->size()&&kind()=="owned_image"){
       auto path=(*values)[next].getAsObject()->getString("path");
@@ -1978,6 +2047,13 @@ std::vector<std::string> nativeCompletionInputs(const llvm::json::Object &metada
       previous=path->str();images.insert(previous);take("owned_image",previous);
     }
     if(images.empty())invalid();previous.clear();
+    size_t importCount=0;
+    while(next<values->size()&&kind()=="import_library"){
+      auto path=(*values)[next].getAsObject()->getString("path");
+      if(!path||!llvm::Triple(metadata.getString("compiler_target").value_or("")).isOSWindows()||
+         !path->ends_with(".dll.a")||!std::regex_match(path->drop_back(2).str(),image)||path->str()<=previous||++importCount>130)invalid();
+      previous=path->str();take("import_library",previous);
+    }previous.clear();
     if(taskImages){
       size_t providers=0;const std::string suffix=".task-provider.json";
       while(next<values->size()&&kind()=="owned_task_provider"){
@@ -2083,16 +2159,15 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   bool server=options.target=="server";
   validateNativeBuildEntry(p,options);
   llvm::Triple configuredABI(toolchain.target);
-  if(taskMode==NativeTaskLinkageMode::SharedFixed&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())throw Error("E_TASK_TARGET","fixed shared task providers require macOS or Linux");
+  if(taskMode==NativeTaskLinkageMode::SharedFixed&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!configuredABI.isOSWindows())throw Error("E_TASK_TARGET","fixed shared task providers require macOS, Linux or Windows");
   bool windows=configuredABI.isWindowsGNUEnvironment();
   bool tasks=usesNativeTasks(p,options.entry);for(const auto &entry:options.libraryExports)tasks|=usesNativeTasks(p,entry);
   tasks|=taskProviders&&supportsSourceExceptionTasks(p);
   if(tasks&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)throw Error("E_TASK_TARGET","compiled task applications require macOS, Linux or the configured Windows GNU/UCRT target",p.function(options.entry).span);
-  if(windows&&tasks&&(taskProviders||options.taskDebug))throw Error("E_TASK_TARGET","Windows source task providers and task debugging remain pending",p.function(options.entry).span);
+
   const bool objectArchive=options.libraryEntry||options.deferredLink;
-  if(options.deferredLink&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())
-    throw Error("E_TARGET","deferred image staging currently supports macOS and Linux targets");
-  if(windows&&(server||options.profile=="profile"))throw Error("E_TARGET","Windows core supports debug/release executables and archives; HTTP servers and profiling remain pending");
+  if(options.deferredLink&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)
+    throw Error("E_TARGET","deferred image staging requires macOS, Linux or Windows GNU/UCRT");
   if(configuredABI.getOS()==llvm::Triple::IOS&&(!options.libraryEntry||options.profile=="profile"))
     throw Error("E_TARGET","iOS currently supports --library with debug/release; application packaging and device/simulator execution remain pending");
   auto compiler=toolchain.compiler;
@@ -2147,12 +2222,10 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
   const auto taskExecutionABI=p.sourceLanguage==SourceLanguage::TypedErrors027?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
-  if(windows&&tasks&&(files||foreign))throw Error("E_TASK_TARGET","Windows task filesystem/resource operations and foreign modules remain pending native platform validation");
-  if(windows&&(files||foreign))throw Error("E_TARGET","Windows filesystem/resource operations and source foreign modules remain pending native platform validation");
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
-  if(parallel&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux())
-    throw Error("E_TARGET","native parallel_map currently requires macOS or Linux; other CPU worker targets remain pending validation");
+  if(parallel&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)
+    throw Error("E_TARGET","native parallel_map requires macOS, Linux or Windows GNU/UCRT");
   if(storage&&(toolchain.sqliteInclude.empty()||toolchain.sqliteLibrary.empty()))throw Error("E_TARGET_LIBRARY","target storage requires sqlite include/library paths in --toolchain FILE; host libraries cannot be used for another architecture");
   if(server&&(toolchain.opensslInclude.empty()||toolchain.opensslSSL.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","target server requires openssl include/ssl/crypto paths in --toolchain FILE");
   if(foreign&&(toolchain.opensslInclude.empty()||toolchain.opensslCrypto.empty()))throw Error("E_TARGET_LIBRARY","foreign calls require target OpenSSL Crypto include/library paths");
@@ -2169,8 +2242,9 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
-  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
+  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});if(windows&&!tasks)headers.push_back("nex_files_windows.h");}
   if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"});}
+  if(windows){headers.push_back("nex_windows.manifest");if(foreign||server)headers.push_back("nex_host_windows.h");}
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;
@@ -2204,6 +2278,20 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(!options.foreignCatalogue.empty()&&(!foreign||options.libraryEntry||options.foreignCatalogue!="../foreign/host.json"))
     throw Error("E_PACKAGE","invalid packaged foreign catalogue build configuration");
   std::string runtimeIdentity=options.foreignCatalogue+":files="+std::to_string(files)+":parallel="+std::to_string(parallel)+":tasks="+std::to_string(tasks)+":task_debug="+std::to_string(options.taskDebug);for(const auto &[file,source]:runtimeFiles)runtimeIdentity+=file+source;
+  std::string windowsResources,windowsResourceConverter;
+  if(windows&&!options.libraryEntry&&!options.deferredLink){
+#ifdef _WIN32
+    constexpr auto resourceSuffix=".exe";
+#else
+    constexpr auto resourceSuffix="";
+#endif
+    windowsResources=(std::filesystem::path(compiler).parent_path()/(std::string("llvm-rc")+resourceSuffix)).string();
+    windowsResourceConverter=(std::filesystem::path(compiler).parent_path()/(std::string("llvm-cvtres")+resourceSuffix)).string();
+    for(const auto &tool:{windowsResources,windowsResourceConverter}){
+      if(!std::filesystem::is_regular_file(tool))throw Error("E_TOOLCHAIN","Windows executables require matching LLVM resource tools: "+tool);
+      runtimeIdentity+=tool+hash(readFile(tool));
+    }
+  }
   if(storage)runtimeIdentity+=std::string(toolchain.sqliteInclude)+toolchain.sqliteLibrary+hash(readFile(toolchain.sqliteLibrary))+hash(readFile((std::filesystem::path(toolchain.sqliteInclude)/"sqlite3.h").string()));
   if(server)runtimeIdentity+=std::string(toolchain.opensslInclude)+toolchain.opensslSSL+toolchain.opensslCrypto+hash(readFile(toolchain.opensslSSL))+hash(readFile(toolchain.opensslCrypto))+hash(readFile((std::filesystem::path(toolchain.opensslInclude)/"openssl/ssl.h").string()));
   auto formatter=readFile(resourceFile("debug/lldb_nex.py"));auto dapAdapter=readFile(resourceFile("debug/nex_dap.py"));
@@ -2481,9 +2569,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
   for(const auto &[file,source]:runtimeFiles){
     auto target=runtimeProjection/file;
-    if(!std::filesystem::is_regular_file(target)||readFile(target.string())!=source){
-      auto temporary=target;temporary+=".tmp."+std::to_string(std::random_device{}());writeFile(temporary.string(),source);std::filesystem::rename(temporary,target);
-    }
+    captureFile(target,source);
   }
   // Debuggers refer to an immutable projection, not a subsequently edited working file.
   for(const auto &[unitKey,unit]:snapshot.units){captureFile(unit.path,unit.source);writeFile((unitKey==snapshot.entryUnit?folder/"source.nex":folder/"sources"/unitKey).string(),unit.source);}
@@ -2635,7 +2721,24 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       if(taskProviders&&(profiling||options.taskDebug)){if(driverABI.isOSDarwin())link.insert(link.end(),{"-Xlinker","-force_load","-Xlinker",archive});else link.insert(link.end(),{"-Xlinker","--whole-archive",archive,"-Xlinker","--no-whole-archive"});}
       else link.push_back(archive);
     }
-    if(windows){link.push_back("-static");if(tasks)link.insert(link.end(),{"-lntdll","-lbcrypt"});}
+    if(windows){
+      if(!windowsResources.empty()){
+        auto rc=folder/"application.rc",object=folder/"application-resource.o";
+        writeFile(rc.string(),"1 24 "+json((runtimeProjection/"nex_windows.manifest").generic_string(),false)+"\n");
+        struct ResourceStage {std::filesystem::path path=createTemporaryDirectory("nex-resource");~ResourceStage(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}} resourceStage;
+        auto res=resourceStage.path/"application.res",coff=resourceStage.path/"application.o";
+        if(executeNativeBuildTool({windowsResources,"/no-preprocess","/X","/C","65001","/FO",res.string(),rc.string()})!=0)
+          throw Error("E_LINK","Windows application resource compilation failed");
+        auto machine=configuredABI.getArch()==llvm::Triple::aarch64?"ARM64":"X64";
+        if(executeNativeBuildTool({windowsResourceConverter,std::string("/MACHINE:")+machine,"/TIMESTAMP:0","/OUT:"+coff.string(),res.string()})!=0)
+          throw Error("E_LINK","Windows application resource COFF conversion failed");
+        copyFile(coff.string(),object.string(),true);
+        link.push_back(object.string());
+      }
+      link.insert(link.end(),{"-static","-Wl,--stack,8388608","-Wl,--build-id"});if(tasks||files)link.insert(link.end(),{"-lntdll","-lbcrypt","-ladvapi32"});
+      if(foreign||server)link.insert(link.end(),{"-lcrypt32","-lws2_32"});
+      if(profiling)link.insert(link.end(),{"-lws2_32","-lsecur32","-ldbghelp","-ldwmapi"});
+    }
     if(!toolchain.linker.empty())link.push_back("--ld-path="+toolchain.linker);
     // Profiles and captured application images also require physical identity.
     // A Clang distribution need not request an ELF build ID by default.
@@ -2681,6 +2784,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(taskProviders){abiRecord["task_provider"]=nativeTaskProviderJSON(result.taskProvider);abiRecord["task_provider_hash"]=result.taskProviderDigest;}
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Value(std::move(abiRecord)))+"\n");
   auto buildRecord=llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema",taskProviders?"nex.native-completion/4":"nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}};
+  buildRecord["static_link_inputs"]=nativeStaticLinkInputs(toolchain,!options.deferredLink&&storage,!options.deferredLink&&foreign,!options.deferredLink&&server);
   if(supportsTaskFileStreams(p)){
     buildRecord["task_file_streams"]=taskFiles.streams;
     (*buildRecord.getObject("runtime_requirements"))["task_file_streams"]=taskFiles.streams;

@@ -29,8 +29,13 @@ def source_language(descriptor, kind=None):
     return language
 
 
+def sdk_compiler(sdk):
+    root=Path(sdk);native=root/'bin/nex.exe'
+    return native if os.name=='nt' and native.is_file() else root/'bin/nex'
+
+
 def check_sdk(sdk, source, libraries, symbols, kind=None):
-    sdk=Path(sdk).resolve(strict=True);compiler=sdk/'bin/nex';resources=sdk/'share/nex'
+    sdk=Path(sdk).resolve(strict=True);compiler=sdk_compiler(sdk);resources=sdk/'share/nex'
     if not compiler.is_file() or not resources.is_dir():
         raise RuntimeError('provider SDK needs bin/nex and share/nex')
     environment={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}

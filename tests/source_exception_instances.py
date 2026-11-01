@@ -168,7 +168,7 @@ def main():
             runner.write_text(r'''import * as program from './program.ts';import * as task from './nex-task-runtime.ts';import * as source from './nex-source-exception-runtime.ts';
 let statistics;const value=await task.runSourceExceptionPrototype(task.call(()=>program.main()),e=>source.details(e)!==undefined,{steps:1000000,timeoutMs:10000,workers:2,complete:s=>statistics=s});
 if(value!==42n||!statistics?.completed||statistics.retainedFrames||statistics.activeCalls||statistics.externalPending||statistics.externalReservedBytes||statistics.externalMailbox)throw new Error('wrong result or retained task state');process.stdout.write(JSON.stringify({ok:true,value:String(value)})+'\n');
-''')
+''', newline="\n")
             actual = json.loads(run(name + "-typescript-run", [os.environ.get("NEX_NODE", "node"), "--experimental-strip-types", "--disable-warning=ExperimentalWarning", runner]).stdout)
             assert actual == {"ok": True, "value": "42"}
             programs.append(ts / "program.ts")
@@ -233,7 +233,7 @@ def extra_checks(state):
         bad["missing-explicit-instantiation-list"] = changed
         for name, value in bad.items():
             file = negative / (name + ".json")
-            file.write_text(json.dumps(value))
+            file.write_text(json.dumps(value), newline="\n")
             result = run("reject-" + name, [probe, "plan", context, file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": name, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -260,7 +260,7 @@ def extra_checks(state):
         bad_records["legacy-record"] = changed
         for name, value in bad_records.items():
             file = negative / ("record-" + name + ".json")
-            file.write_text(json.dumps(value))
+            file.write_text(json.dumps(value), newline="\n")
             result = run("reject-record-" + name, [probe, "validate", context, arch, "app", file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": "record-" + name, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -270,7 +270,7 @@ def extra_checks(state):
             changed["source"] = source
             next(v for v in changed["units"] if v["unit"] == "app/main.nex")["source"] = source
             file = negative / (name + ".json")
-            file.write_text(json.dumps(changed))
+            file.write_text(json.dumps(changed), newline="\n")
             result = run("reject-" + name, [probe, "instances", file], allowed=(1,))
             assert code in result.stderr
             report["rejections"].append({"name": name, "code": code, "passed": True})
@@ -282,7 +282,7 @@ def extra_checks(state):
         changed = clone(architecture)
         changed["components"]["app"]["instantiations"] = ["leaf::helper<app::Number>"]
         file = base / "private-selector.json"
-        file.write_text(json.dumps(changed))
+        file.write_text(json.dumps(changed), newline="\n")
         result = run("reject-private-template-selector", [probe, "plan", base / "context.json", file], allowed=(1,))
         assert "E_EXCEPTION_MODULE" in result.stderr
         report["rejections"].append({"name": "private-template-selector", "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -290,14 +290,14 @@ def extra_checks(state):
         changed["source"] = 'module app;import "../leaf/main.nex" as leaf;fn main()->i64 !{task}{return leaf::offset();}'
         next(v for v in changed["units"] if v["unit"] == "app/main.nex")["source"] = changed["source"]
         file = base / "private-source-call.json"
-        file.write_text(json.dumps(changed))
+        file.write_text(json.dumps(changed), newline="\n")
         result = run("reject-direct-private-support-call", [probe, "instances", file], allowed=(1,))
         assert "E_VISIBILITY" in result.stderr
         report["rejections"].append({"name": "direct-private-support-call", "code": "E_VISIBILITY", "passed": True})
         record = json.loads((base / "static-template/O0/leaf/module-record.json").read_text())
         record["support_exports"]["leaf::offset"]["signature"] = "0" * 64
         file = base / "bad-support-record.json"
-        file.write_text(json.dumps(record))
+        file.write_text(json.dumps(record), newline="\n")
         result = run("reject-support-contract", [probe, "validate", base / "context.json", arch, "leaf", file], allowed=(1,))
         assert "E_EXCEPTION_MODULE" in result.stderr
         report["rejections"].append({"name": "support-contract", "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -311,7 +311,7 @@ def extra_checks(state):
             current["source"] = source
             next(v for v in current["units"] if v["unit"] == "app/main.nex")["source"] = source
             ctx = base / (change + "-context.json")
-            ctx.write_text(json.dumps(current))
+            ctx.write_text(json.dumps(current), newline="\n")
             for topology in CASES["private-template-support"]["topologies"]:
                 label = "incremental-" + change + "-" + topology
                 arch = base / topology / "architecture.json"
@@ -327,10 +327,10 @@ def extra_checks(state):
                 run(label + "-emit", [probe, "emit", ctx, arch, "app", module, state["triple"], state["layout"], "false"])
                 run(label + "-validate", [probe, "validate", ctx, arch, "app", module / "module-record.json"])
                 code = module / "linked.ll"
-                code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("))
+                code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("), newline="\n")
                 run(label + "-object", [state["compiler"], "-c", "-fPIC", code, "-o", module / "module.o"])
                 saved = old / "original-program"
-                (old / "program").rename(saved)
+                (old / ("program.exe" if os.name=="nt" else "program")).rename(saved)
                 try:
                     binary = state["link_image"](label, old, "app", plan, {}, old / "host.o", module / "module.o")
                     result = run(label + "-execute", [binary], allowed=(42,))
@@ -339,7 +339,7 @@ def extra_checks(state):
                     binary.rename(old / ("program-" + change))
                 finally:
                     if saved.exists():
-                        saved.rename(old / "program")
+                        saved.rename(old / ("program.exe" if os.name=="nt" else "program"))
                 assert sha(provider) == before
                 report["incremental"].append({"change": change, "topology": topology, "provider_record_identical": True, "provider_artifact_sha256": before, "provider_artifact_unchanged": True, "consumer_record_changed": True, "binding_witness_changed": change == "method-binding", "native_exit": 42, "passed": True})
     if (out / "associated-file-future").is_dir():
@@ -350,19 +350,19 @@ def extra_checks(state):
             moved.mkdir()
             images = {}
             for file in original.iterdir():
-                if file.is_file() and (file.name == "program" or file.name.endswith(state["suffix"])):
+                if file.is_file() and (file.name == ("program.exe" if os.name=="nt" else "program") or file.name.endswith(state["suffix"])):
                     shutil.copy2(file, moved / file.name)
                     images[file.name] = sha(file)
             files = moved / "files"
             files.mkdir()
-            (files / "input").write_text("abcdef")
+            (files / "input").write_text("abcdef", newline="\n")
             hidden = []
             try:
                 for path in [original, base / "context.json", *[base / (k + "/main.nex") for k in CASES["associated-file-future"]["sources"]]]:
                     saved = path.with_name(path.name + ".hidden")
                     path.rename(saved)
                     hidden.append((path, saved))
-                result = run("relocated-file-" + topology, [moved / "program"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1"}, allowed=(42,))
+                result = run("relocated-file-" + topology, [moved / ("program.exe" if os.name=="nt" else "program")], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1"}, allowed=(42,))
             finally:
                 for path, saved in reversed(hidden):
                     if saved.exists():
@@ -375,7 +375,7 @@ def extra_checks(state):
         arch = json.loads((base / "shared-consumer/architecture.json").read_text())
         arch["components"]["leaf"]["instantiations"] = []
         file = base / "ambiguous-helper-owner.json"
-        file.write_text(json.dumps(arch))
+        file.write_text(json.dumps(arch), newline="\n")
         result = run("reject-ambiguous-private-family-owner", [probe, "plan", base / "context.json", file], allowed=(1,))
         assert "E_EXCEPTION_MODULE" in result.stderr and "different owners" in result.stderr
         report["rejections"].append({"name": "ambiguous-private-family-owner", "code": "E_EXCEPTION_MODULE", "passed": True})

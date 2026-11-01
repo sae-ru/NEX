@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.153.0 LANGUAGES C CXX)
+project(NEX VERSION 0.154.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Native Windows Ninja response files contain Windows path separators.
+  string(APPEND CMAKE_C_FLAGS " --rsp-quoting=windows")
+  string(APPEND CMAKE_CXX_FLAGS " --rsp-quoting=windows")
+endif()
+set(NEX_DEFAULT_TOOLCHAIN "" CACHE FILEPATH "Explicit default target toolchain for this local compiler installation")
 
 if(NOT LLVM_DIR AND EXISTS "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
   set(LLVM_DIR "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
@@ -18,6 +24,24 @@ if(NOT OPENSSL_ROOT_DIR AND EXISTS "/opt/homebrew/opt/openssl@3")
   set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
 endif()
 find_package(OpenSSL 3 REQUIRED)
+# Source-only native acceptance executables must also run after SDK paths
+# disappear. Prefer the genuine Windows archives for their private test hosts.
+set(NEX_PRIVATE_CRYPTO_LIBRARY "${OPENSSL_CRYPTO_LIBRARY}")
+set(NEX_PRIVATE_SSL_LIBRARY "${OPENSSL_SSL_LIBRARY}")
+set(NEX_PRIVATE_SQLITE_LIBRARY "${SQLite3_LIBRARY}")
+if(WIN32)
+  foreach(NEX_PRIVATE_DEPENDENCY IN ITEMS CRYPTO SSL SQLITE)
+    get_filename_component(NEX_PRIVATE_LIBDIR "${NEX_PRIVATE_${NEX_PRIVATE_DEPENDENCY}_LIBRARY}" DIRECTORY)
+    string(TOLOWER "${NEX_PRIVATE_DEPENDENCY}" NEX_PRIVATE_LIBNAME)
+    if(NEX_PRIVATE_DEPENDENCY STREQUAL "SQLITE")
+      set(NEX_PRIVATE_LIBNAME sqlite3)
+    endif()
+    if(EXISTS "${NEX_PRIVATE_LIBDIR}/lib${NEX_PRIVATE_LIBNAME}.a")
+      set(NEX_PRIVATE_${NEX_PRIVATE_DEPENDENCY}_LIBRARY "${NEX_PRIVATE_LIBDIR}/lib${NEX_PRIVATE_LIBNAME}.a")
+    endif()
+  endforeach()
+endif()
+
 set(NEX_Z3_ROOT "" CACHE PATH "Z3 development installation prefix")
 if(APPLE AND NOT NEX_Z3_ROOT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
   set(NEX_Z3_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/build/deps/z3-5.3.1-arm64-osx-13.3")
@@ -26,12 +50,17 @@ find_path(NEX_Z3_INCLUDE z3++.h HINTS "${NEX_Z3_ROOT}/include" REQUIRED)
 find_library(NEX_Z3_LIBRARY NAMES z3 libz3 HINTS "${NEX_Z3_ROOT}/lib" "${NEX_Z3_ROOT}/bin" REQUIRED)
 find_program(NEX_Z3_EXECUTABLE z3 HINTS "${NEX_Z3_ROOT}/bin")
 get_filename_component(NEX_Z3_LIBRARY_DIR "${NEX_Z3_LIBRARY}" DIRECTORY)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 message(STATUS "NEX uses LLVM ${LLVM_PACKAGE_VERSION} and MLIR at ${MLIR_DIR}")
 
-file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp")
+file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp" "runtime/*.manifest")
+list(APPEND NEX_COMPILER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.manifest" "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.rc.in")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${NEX_COMPILER_FILES})
 set(NEX_BUILD_INPUTS "${PROJECT_VERSION};${LLVM_PACKAGE_VERSION};${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${CMAKE_BUILD_TYPE}")
+if(NEX_DEFAULT_TOOLCHAIN)
+  file(SHA256 "${NEX_DEFAULT_TOOLCHAIN}" NEX_DEFAULT_TOOLCHAIN_HASH)
+  string(APPEND NEX_BUILD_INPUTS ";${NEX_DEFAULT_TOOLCHAIN};${NEX_DEFAULT_TOOLCHAIN_HASH}")
+endif()
 foreach(NEX_INPUT IN LISTS NEX_COMPILER_FILES)
   file(SHA256 "${NEX_INPUT}" NEX_INPUT_HASH)
   string(APPEND NEX_BUILD_INPUTS ";${NEX_INPUT_HASH}")
@@ -47,12 +76,32 @@ target_include_directories(nex_frontend PUBLIC include runtime)
 target_include_directories(nex_frontend PRIVATE runtime)
 target_include_directories(nex_frontend SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(nex_frontend PUBLIC LLVM SQLite::SQLite3 OpenSSL::Crypto ${CMAKE_DL_LIBS})
+if(WIN32)
+  target_link_libraries(nex_frontend PUBLIC ntdll bcrypt advapi32)
+endif()
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
 add_library(nex_native_backend STATIC src/backend.cpp src/private_task_modules.cpp src/native_toolchain.cpp
   src/native_image_identity.cpp src/incremental.cpp src/task_debug_manifest.cpp)
 target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
+if(WIN32)
+  # The CLANG64 MLIR DLL exports the C facade, not the C++ backend API.
+  # Keep the exact checked conversion pipeline and link its native components.
+  target_link_libraries(nex_native_backend PUBLIC
+    MLIRIR MLIRParser MLIRPass MLIRArithDialect MLIRControlFlowDialect
+    MLIRFuncDialect MLIRMemRefDialect MLIRLLVMDialect MLIRLLVMIRTransforms
+    MLIRArithToLLVM MLIRFuncToLLVM MLIRMemRefToLLVM MLIRControlFlowToLLVM
+    MLIRReconcileUnrealizedCasts MLIRBuiltinToLLVMIRTranslation MLIRLLVMToLLVMIRTranslation)
+endif()
 add_executable(nex src/main.cpp src/native_diagnostics.cpp src/debugging.cpp src/profiling.cpp src/verification.cpp src/tasks.cpp src/task_process.cpp src/project.cpp src/graph_snapshot.cpp src/change_store.cpp src/operation_store.cpp src/graph_store.cpp src/typescript.cpp src/web.cpp src/api.cpp src/packaging.cpp src/foreign_catalogue.cpp)
+if(WIN32)
+  if(NOT CMAKE_RC_COMPILER)
+    set(CMAKE_RC_COMPILER "${LLVM_TOOLS_BINARY_DIR}/llvm-windres.exe" CACHE FILEPATH "Native Windows resource compiler")
+  endif()
+  enable_language(RC)
+  configure_file(tools/windows/nex.rc.in "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc" @ONLY)
+  target_sources(nex PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+endif()
 target_include_directories(nex PRIVATE runtime)
 target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
 target_sources(nex PRIVATE src/task_profile_report.cpp)
@@ -66,15 +115,23 @@ target_compile_options(nex PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_definitions(nex PRIVATE
   NEX_VERSION="${PROJECT_VERSION}"
   NEX_BUILD_ID="${NEX_BUILD_ID}"
+  NEX_DEFAULT_TOOLCHAIN="${NEX_DEFAULT_TOOLCHAIN}"
   NEX_RUNTIME_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime.cpp"
   NEX_LLVM_TOOLS="${LLVM_TOOLS_BINARY_DIR}"
   NEX_WASM_LD="${NEX_WASM_LD}"
-  NEX_CLANG="${LLVM_TOOLS_BINARY_DIR}/clang++")
+  NEX_CLANG="${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}")
 target_compile_definitions(nex PRIVATE NEX_SQLITE_INCLUDE="${SQLite3_INCLUDE_DIRS}" NEX_SQLITE_LIBRARY="${SQLite3_LIBRARIES}")
 target_compile_definitions(nex PRIVATE NEX_OPENSSL_INCLUDE="${OPENSSL_INCLUDE_DIR}" NEX_OPENSSL_SSL="${OPENSSL_SSL_LIBRARY}" NEX_OPENSSL_CRYPTO="${OPENSSL_CRYPTO_LIBRARY}")
 # The production executable and the private native-stage probe use the same
 # backend objects, compiler identity and selected toolchain defaults.
 get_target_property(NEX_NATIVE_DEFINITIONS nex COMPILE_DEFINITIONS)
+if(WIN32)
+  add_executable(nex_windows_host_runtime_probe tests/windows_host_runtime.cpp "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+  target_include_directories(nex_windows_host_runtime_probe PRIVATE runtime)
+  target_link_libraries(nex_windows_host_runtime_probe PRIVATE nex_frontend)
+  add_test(NAME windows_host_runtime COMMAND nex_windows_host_runtime_probe "${CMAKE_CURRENT_BINARY_DIR}/host-runtime-artifacts")
+  set_tests_properties(windows_host_runtime PROPERTIES TIMEOUT 120)
+endif()
 target_compile_definitions(nex_native_backend PRIVATE ${NEX_NATIVE_DEFINITIONS})
 target_include_directories(nex_native_backend PRIVATE runtime)
 target_include_directories(nex_native_backend SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
@@ -103,7 +160,7 @@ add_test(NAME task_file_stream_mixed COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CU
 set_tests_properties(task_file_stream_mixed PROPERTIES TIMEOUT 1800)
 add_test(NAME source_external_resources COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_resources.py $<TARGET_FILE:nex_source_resource_probe>
-  ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --nex $<TARGET_FILE:nex>)
+  ${CMAKE_CURRENT_SOURCE_DIR} --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --nex $<TARGET_FILE:nex>)
 set_tests_properties(source_external_resources PROPERTIES TIMEOUT 600)
 add_test(NAME source_task_foreign_prototype COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_foreign_source.py $<TARGET_FILE:nex_source_resource_probe>
@@ -243,8 +300,12 @@ set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_
 install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
-  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
+  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE
+  PATTERN .build EXCLUDE PATTERN windows-tic-tac-toe/dist EXCLUDE
+  PATTERN windows-tic-tac-toe/src/gui.nex EXCLUDE
+  PATTERN tic-tac-toe/dist EXCLUDE PATTERN tic-tac-toe/src/gui.nex EXCLUDE)
 install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
+install(FILES tests/sqlite_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/tcp_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
@@ -257,6 +318,8 @@ install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-opencl
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-cuda/ DESTINATION share/nex/tools/owned-cuda
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/cix-p1/include/ DESTINATION share/nex/tools/owned-opencl/include)
 install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)
@@ -292,7 +355,7 @@ install(FILES tests/task_provider_debug_lifetime.cpp DESTINATION share/nex/tools
 install(FILES tests/fixtures/language-0.19-sdk115-history.json tests/fixtures/language-0.19-sdk115-history.sql tests/fixtures/language-0.19-sdk115-tasks.json tests/fixtures/language-0.19-sdk115-tasks.sql tests/fixtures/language-0.19-sdk115-fs-helper.json tests/fixtures/language-0.19-sdk115-fs-helper.sql DESTINATION share/nex/examples/task-migration)
 install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
-install(FILES tools/sdk_bundle.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_bundle.py tools/windows_pe.py tools/windows_files.py DESTINATION share/nex/tools)
 install(FILES tools/sdk_archive.py DESTINATION share/nex/tools)
 install(FILES tools/app_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/foreign_bundle.py DESTINATION share/nex/tools)
@@ -1103,7 +1166,7 @@ set_tests_properties(source_exception_discovery PROPERTIES TIMEOUT 120)
 add_executable(nex_source_exception_native_probe tests/source_exception_native.cpp src/typescript.cpp)
 target_link_libraries(nex_source_exception_native_probe PRIVATE nex_native_backend ${CMAKE_DL_LIBS})
 set_target_properties(nex_source_exception_native_probe PROPERTIES ENABLE_EXPORTS ON)
-add_test(NAME source_exception_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_native.py $<TARGET_FILE:nex_source_exception_native_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+add_test(NAME source_exception_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_native.py $<TARGET_FILE:nex_source_exception_native_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_exception_native PROPERTIES TIMEOUT 1200)
 
 add_test(NAME source_exception_typescript COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_typescript.py $<TARGET_FILE:nex_source_exception_native_probe>)
@@ -1143,10 +1206,10 @@ target_link_libraries(nex_source_exception_task_native_emit_probe PRIVATE nex_na
 add_test(NAME source_exception_host COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_host.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe>
-  $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR} --watch-compiler $<TARGET_FILE:nex>)
+  $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR} --watch-compiler $<TARGET_FILE:nex>)
 set_tests_properties(source_exception_host PROPERTIES TIMEOUT 2400)
-add_test(NAME source_exception_task_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_native.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+add_test(NAME source_exception_task_native COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_native.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_exception_task_native PROPERTIES TIMEOUT 2400)
 add_executable(nex_source_exception_task_scheduler_probe tests/source_exception_task_scheduler.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
 target_include_directories(nex_source_exception_task_scheduler_probe PRIVATE runtime)
@@ -1155,13 +1218,13 @@ target_compile_options(nex_source_exception_task_scheduler_probe PRIVATE -Wall -
 target_link_libraries(nex_source_exception_task_scheduler_probe PRIVATE Threads::Threads)
 add_test(NAME source_exception_task_scheduler COMMAND nex_source_exception_task_scheduler_probe)
 set_tests_properties(source_exception_task_scheduler PROPERTIES TIMEOUT 120)
-add_test(NAME source_exception_task_native_profile COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_profile.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+add_test(NAME source_exception_task_native_profile COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_profile.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_exception_task_native_profile PROPERTIES TIMEOUT 2400)
-add_test(NAME source_exception_task_native_debug COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_debug.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+add_test(NAME source_exception_task_native_debug COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_debug.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_exception_task_native_debug PROPERTIES TIMEOUT 2400)
-add_test(NAME source_exception_task_lldb COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++)
+add_test(NAME source_exception_task_lldb COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_exception_task_lldb PROPERTIES TIMEOUT 2400)
-add_test(NAME source_exception_task_watch COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++ --watch-compiler $<TARGET_FILE:nex>)
+add_test(NAME source_exception_task_watch COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_task_lldb.py $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --watch-compiler $<TARGET_FILE:nex>)
 set_tests_properties(source_exception_task_watch PROPERTIES TIMEOUT 2400)
 
 add_executable(nex_source_exception_http_request_probe tests/source_exception_http_request.cpp
@@ -1176,18 +1239,18 @@ set_tests_properties(source_exception_http_request_host PROPERTIES TIMEOUT 120)
 add_test(NAME source_exception_http COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_http.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  ${LLVM_TOOLS_BINARY_DIR}/clang++ --openssl-include ${OPENSSL_INCLUDE_DIR}
-  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
-  --sqlite-library ${SQLite3_LIBRARY})
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --openssl-include ${OPENSSL_INCLUDE_DIR}
+  --ssl-library ${NEX_PRIVATE_SSL_LIBRARY} --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --sqlite-library ${NEX_PRIVATE_SQLITE_LIBRARY})
 set_tests_properties(source_exception_http PROPERTIES TIMEOUT 1800)
 
 add_test(NAME source_exception_module_http COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
   --openssl-include ${OPENSSL_INCLUDE_DIR}
-  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
-  --sqlite-library ${SQLite3_LIBRARY}
+  --ssl-library ${NEX_PRIVATE_SSL_LIBRARY} --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --sqlite-library ${NEX_PRIVATE_SQLITE_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-runtime)
 set_tests_properties(source_exception_module_http PROPERTIES TIMEOUT 2400 RESOURCE_LOCK private_exception_http_runtime)
 
@@ -1197,59 +1260,59 @@ target_link_libraries(nex_source_exception_modules_probe PRIVATE nex_native_back
 add_test(NAME source_exception_modules COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_modules.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_modules PROPERTIES TIMEOUT 2400 FIXTURES_SETUP private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
 add_test(NAME source_exception_frontiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_frontiers.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_frontiers PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
 add_test(NAME source_exception_instances COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_instances.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_instances PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
 add_test(NAME source_exception_module_profile COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_profile.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-profile-runtime)
 set_tests_properties(source_exception_module_profile PROPERTIES TIMEOUT 3000 RESOURCE_LOCK private_exception_module_profile_runtime)
 add_test(NAME source_exception_module_http_profile COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http_profile.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
   --openssl-include ${OPENSSL_INCLUDE_DIR}
-  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
-  --sqlite-library ${SQLite3_LIBRARY}
+  --ssl-library ${NEX_PRIVATE_SSL_LIBRARY} --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --sqlite-library ${NEX_PRIVATE_SQLITE_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-profile-runtime)
 set_tests_properties(source_exception_module_http_profile PROPERTIES TIMEOUT 3000 RESOURCE_LOCK private_exception_module_http_profile_runtime)
 
 add_test(NAME source_exception_module_debug COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_debug.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++
-  --debug-compiler $<TARGET_FILE:nex> --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
+  $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --debug-compiler $<TARGET_FILE:nex> --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-debug-runtime)
 set_tests_properties(source_exception_module_debug PROPERTIES TIMEOUT 3600 RESOURCE_LOCK private_exception_module_debug_runtime)
 
 add_test(NAME source_exception_module_http_debug COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_http_debug.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
-  ${LLVM_TOOLS_BINARY_DIR}/clang++ --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --module-probe $<TARGET_FILE:nex_source_exception_modules_probe>
   --debug-compiler $<TARGET_FILE:nex> --openssl-include ${OPENSSL_INCLUDE_DIR}
-  --ssl-library ${OPENSSL_SSL_LIBRARY} --crypto-library ${OPENSSL_CRYPTO_LIBRARY}
-  --sqlite-library ${SQLite3_LIBRARY}
+  --ssl-library ${NEX_PRIVATE_SSL_LIBRARY} --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --sqlite-library ${NEX_PRIVATE_SQLITE_LIBRARY}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-http-debug-runtime)
 set_tests_properties(source_exception_module_http_debug PROPERTIES TIMEOUT 3600 RESOURCE_LOCK private_exception_module_http_debug_runtime)
 
@@ -1360,7 +1423,7 @@ target_compile_options(nex_typed_source_native_probe PRIVATE -Wall -Wextra -Wped
 set_target_properties(nex_typed_source_native_probe PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME typed_source_native COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_native.py $<TARGET_FILE:nex_typed_source_native_probe>
-  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++)
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(typed_source_native PROPERTIES TIMEOUT 1200)
 install(FILES tests/typed_source_native.cpp tests/typed_source_native.py DESTINATION share/nex/tests)
 
@@ -1381,7 +1444,7 @@ target_link_libraries(nex_typed_source_tasks_probe PRIVATE nex_native_backend ne
 target_compile_options(nex_typed_source_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME typed_source_tasks COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_source_tasks.py $<TARGET_FILE:nex_typed_source_tasks_probe>
-  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --crypto-library ${OPENSSL_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR})
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR})
 set_tests_properties(typed_source_tasks PROPERTIES TIMEOUT 1800)
 install(FILES tests/typed_source_tasks.cpp tests/typed_source_tasks.py DESTINATION share/nex/tests)
 
@@ -1412,7 +1475,7 @@ target_compile_definitions(nex_typed_error_migration_probe PRIVATE NEX_VERSION="
 target_compile_options(nex_typed_error_migration_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME typed_error_history_migration COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_migration.py $<TARGET_FILE:nex_typed_error_migration_probe>
-  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++ --ordinary-compiler $<TARGET_FILE:nex>)
+  --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX} --ordinary-compiler $<TARGET_FILE:nex>)
 set_tests_properties(typed_error_history_migration PROPERTIES TIMEOUT 900)
 install(FILES tests/typed_error_migration.cpp tests/typed_error_migration.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.26-modular-typed-origin.json tests/fixtures/language-0.26-modular-typed-origin.sql DESTINATION share/nex/tests/fixtures)
@@ -1434,3 +1497,35 @@ install(FILES tests/typed_graph_snapshots.py tests/typed_scalar_wasm.py tests/ty
 set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)
 
 install(FILES tests/source_exceptions_public.py DESTINATION share/nex/tests)
+
+# Standalone probes compile the same Windows file/ACL implementation as the
+# frontend and must resolve its NT, crypto and security imports as well.
+if(WIN32)
+  get_directory_property(NEX_WINDOWS_TARGETS BUILDSYSTEM_TARGETS)
+  foreach(NEX_WINDOWS_TARGET IN LISTS NEX_WINDOWS_TARGETS)
+    get_target_property(NEX_WINDOWS_SOURCES ${NEX_WINDOWS_TARGET} SOURCES)
+    if("runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES OR "${CMAKE_CURRENT_SOURCE_DIR}/runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES)
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ntdll bcrypt advapi32)
+    endif()
+    if(NEX_WINDOWS_TARGET MATCHES "^nex_.*_probe$" OR NEX_WINDOWS_TARGET STREQUAL "typed_resource_ffi" OR NEX_WINDOWS_TARGET STREQUAL "external_values")
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ws2_32)
+    endif()
+    if("runtime/third_party/tracy/public/TracyClient.cpp" IN_LIST NEX_WINDOWS_SOURCES)
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE secur32)
+    endif()
+    get_target_property(NEX_WINDOWS_TYPE ${NEX_WINDOWS_TARGET} TYPE)
+    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE")
+      # Match the ordinary Unix worker stack reservation so checked source
+      # depth/action limits run before the Windows default1MiB is exhausted.
+      target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--stack,8388608")
+      get_target_property(NEX_WINDOWS_EXPORTS ${NEX_WINDOWS_TARGET} ENABLE_EXPORTS)
+      if(NEX_WINDOWS_EXPORTS)
+        target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--export-all-symbols")
+      endif()
+    endif()
+    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE" AND NOT "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc" IN_LIST NEX_WINDOWS_SOURCES)
+      target_sources(${NEX_WINDOWS_TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+    endif()
+  endforeach()
+endif()
+install(FILES tests/host_fixture.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)

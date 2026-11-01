@@ -1,4 +1,5 @@
 """Compiled NEX/independent AST ownership of mixed genuine File and C resources."""
+from host_fixture import run_native
 import argparse, hashlib, json, os, platform, shutil, subprocess, tempfile, time
 from pathlib import Path
 
@@ -70,11 +71,11 @@ CASES=[
 ]
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-def write(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+def write(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,env=None,expected=0):
- report['state']=label;save();result=subprocess.run(list(map(str,argv)),cwd=root,env=env or os.environ,capture_output=True,text=True,timeout=300)
- (root/(label+'.stdout')).write_text(result.stdout);(root/(label+'.stderr')).write_text(result.stderr)
+ report['state']=label;save();result=run_native(list(map(str,argv)),cwd=root,env=env or os.environ,capture_output=True,text=True,timeout=300)
+ (root/(label+'.stdout')).write_text(result.stdout, newline="\n");(root/(label+'.stderr')).write_text(result.stderr, newline="\n")
  report['commands'].append({'name':label,'argv':list(map(str,argv)),'exit_code':result.returncode,'expected':expected});save()
  assert result.returncode==expected,(label,result.returncode,result.stdout[-3000:],result.stderr[-3000:]);return result
 def bundle(label,body,pin):
@@ -89,17 +90,17 @@ try:
  for dialect,compiler,standard in [('C11','clang','c11'),('CXX20','clang++','c++20')]:
   directory=root/dialect;directory.mkdir()
   digest=lambda value:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-  (directory/'typed-resource-signatures.h').write_text(''.join('#define PIN_'+name.upper()+' "'+digest(value)+'"\n' for name,value in signatures.items()))
+  (directory/'typed-resource-signatures.h').write_text(''.join('#define PIN_'+name.upper()+' "'+digest(value)+'"\n' for name,value in signatures.items()), newline="\n")
   module=(REPO/'tests/typed_resource_module.c').read_text();first=module.index('static const nex_ffi_export_v1 exports[]={');last=module.index('\n};',first)
   entries=['{sizeof(nex_ffi_export_v1),0,"'+name+'",PIN_'+name.upper()+',callback,(void*)(uintptr_t)'+str(op)+'}' for name,(_,_,op) in DECLARATIONS.items()]
   module=module[:first]+'static const nex_ffi_export_v1 exports[]={\n'+',\n'.join(entries)+module[last:]
-  code=directory/('module.c' if dialect=='C11' else 'module.cpp');code.write_text(module);image=directory/'module.so'
+  code=directory/('module.c' if dialect=='C11' else 'module.cpp');code.write_text(module, newline="\n");image=directory/'module.so'
   selected_compiler=os.environ.get('NEX_MIXED_C_COMPILER' if dialect=='C11' else 'NEX_MIXED_CXX_COMPILER') or shutil.which(compiler)
   compiler_args=[selected_compiler,'-std='+standard,'-shared','-fPIC','-pthread','-I'+str(REPO/'runtime'),'-I'+str(directory)]
   if os.environ.get('NEX_MIXED_SANITIZER'):compiler_args+=['-fsanitize='+os.environ['NEX_MIXED_SANITIZER'],'-fno-omit-frame-pointer','-fno-sanitize-recover=all']
   run(dialect+'-compile',[*compiler_args,code,'-o',image])
-  (directory/'NOTICE').write_text('NEX mixed file and external-resource conformance producer\n')
-  foreign={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ['arm64','aarch64'] else 'x86_64'),'entry':image.name,
+  (directory/'NOTICE').write_text('NEX mixed file and external-resource conformance producer\n', newline="\n")
+  foreign={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ['arm64','aarch64'] else 'x86_64'),'entry':image.name,
    'files':[{'path':name,'sha256':sha(directory/name)} for name in [image.name,'NOTICE']],'exports':{name:digest(value) for name,value in signatures.items()},'notices':['NOTICE']}
   write(directory/'manifest.json',foreign);pin=sha(directory/'manifest.json')
   host=directory/'host.json';write(host,{'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':1,'resource_bytes':8,'libraries':{'test':{'directory':str(directory),'manifest_sha256':pin,'exports':list(signatures)}}})

@@ -1,4 +1,5 @@
 """Committed source provenance and optimistic, source-deleted graph restoration."""
+from sqlite_fixture import connection as sqlite_connection
 import concurrent.futures
 import copy
 import hashlib
@@ -16,14 +17,14 @@ class ChangeHistory(harness.ToolchainCase):
         return self.cli('check','--note','initial 🧠','--actor','operator')['revision']
 
     def rows(self):
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             names=[n for n, in db.execute("SELECT name FROM sqlite_master WHERE type='table'")]
             return {n:sorted(db.execute('SELECT * FROM "'+n+'"').fetchall(),key=repr) for n in names}
 
     def patch(self,number,revision=None):
         path=self.root/('patch-'+str(number)+'.json')
         path.write_text(json.dumps({'expected_revision':revision or self.cli('history')['head'],
-            'replacements':[{'name':'history::value','source':'fn value()->i64{return '+str(number)+';}'}]}))
+            'replacements':[{'name':'history::value','source':'fn value()->i64{return '+str(number)+';}'}]}), newline="\n")
         return path
 
     def edit(self,number):
@@ -96,7 +97,7 @@ class ChangeHistory(harness.ToolchainCase):
 
     def test_corrupt_latest_record_rejects_query_and_rolls_back_candidate(self):
         self.ready();self.edit(42)
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute("UPDATE change_journal SET data=replace(data,'change to 42','changed text') WHERE sequence=2")
         before=self.rows()
         self.assertEqual(self.cli('changes',ok=False)['code'],'E_CHANGE_INTEGRITY')
@@ -105,7 +106,7 @@ class ChangeHistory(harness.ToolchainCase):
 
     def test_head_rewritten_outside_journal_is_rejected_without_new_rows(self):
         first=self.ready();self.edit(42)
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute('UPDATE head SET revision=? WHERE id=1',(first,))
         before=self.rows()
         self.assertEqual(self.cli('changes',ok=False)['code'],'E_CHANGE_INTEGRITY')
@@ -143,7 +144,7 @@ class ChangeHistory(harness.ToolchainCase):
         metadata=json.loads(Path(str(fixture)+'.json').read_text());sql=Path(str(fixture)+'.sql').read_bytes()
         self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
         (self.root/'.nex').mkdir()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
+        with sqlite_connection(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
         original=self.rows();report=self.cli('changes');upgraded=self.rows()
         self.assertEqual((report['total'],report['head'],report['base_revision']),(0,metadata['head_revision'],metadata['head_revision']))
         for table,rows in original.items():
@@ -216,10 +217,10 @@ class ChangeHistory(harness.ToolchainCase):
 
     def test_invalid_utf8_declared_author_is_rejected_before_any_graph_change(self):
         self.ready();path=self.patch(42);before=self.rows()
-        result=harness.subprocess.run([harness.os.fsencode(harness.NEX),b'apply',b'--patch',harness.os.fsencode(path),
-            b'--actor',b'\xff',b'--json'],cwd=self.root,capture_output=True,timeout=10)
+        arguments=[harness.NEX,'apply','--patch',str(path),'--actor','\udcff','--json'] if harness.os.name=='nt' else [harness.os.fsencode(harness.NEX),b'apply',b'--patch',harness.os.fsencode(path),b'--actor',b'\xff',b'--json']
+        result=harness.subprocess.run(arguments,cwd=self.root,capture_output=True,timeout=10)
         self.assertNotEqual(result.returncode,0)
-        self.assertEqual(json.loads(result.stdout.decode())['code'],'E_CHANGE')
+        self.assertEqual(json.loads(result.stdout.decode())['code'],'E_OPTION' if harness.os.name=='nt' else 'E_CHANGE')
         self.assertEqual(self.rows(),before)
 
 if __name__=='__main__':unittest.main()

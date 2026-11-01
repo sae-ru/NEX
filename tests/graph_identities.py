@@ -1,4 +1,6 @@
 """Persistent declaration nodes and checked, atomic cross-store references."""
+from host_fixture import nonregular
+from sqlite_fixture import connection as sqlite_connection
 import copy
 import hashlib
 import json
@@ -27,9 +29,9 @@ class GraphIdentities(harness.ToolchainCase):
     def project(self, name, source=MAIN, library=LIBRARY):
         directory = self.root / name
         directory.mkdir()
-        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex'}))
-        (directory / 'main.nex').write_text(source)
-        (directory / 'library.nex').write_text(library)
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex'}), newline="\n")
+        (directory / 'main.nex').write_text(source, newline="\n")
+        (directory / 'library.nex').write_text(library, newline="\n")
         checked = self.cli('check', cwd=directory)
         return directory, checked['revision']
 
@@ -38,14 +40,14 @@ class GraphIdentities(harness.ToolchainCase):
 
     def reconcile(self, directory, packet, *, expected=None, ok=True):
         path = self.root / 'manifest.json'
-        path.write_text(json.dumps(packet))
+        path.write_text(json.dumps(packet), newline="\n")
         if expected is None:
             expected = self.cli('history', cwd=directory)['head']
         return self.cli('identities', '--kind', 'reconcile', '--manifest', path,
                         '--expected-revision', expected, cwd=directory, ok=ok)
 
     def rows(self, directory):
-        with sqlite3.connect(directory / '.nex/graph.db') as db:
+        with sqlite_connection(directory / '.nex/graph.db') as db:
             names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
             return {name: sorted(db.execute('SELECT * FROM "' + name + '"').fetchall(), key=repr) for name in names}
 
@@ -58,8 +60,8 @@ class GraphIdentities(harness.ToolchainCase):
         self.assertEqual(old['common::Box']['kind'], 'type')
         self.assertIn('common::Box<i64>', old)
         self.assertEqual(graph['modules'][0]['id'], old[graph['modules'][0]['name']]['id'])
-        (directory / 'library.nex').write_text(LIBRARY.replace('return 40;', 'return 41;').replace('value:T;', 'value:T;flag:bool;'))
-        (directory / 'main.nex').write_text(MAIN.replace('lib::Box(2)', 'lib::Box(2,true)'))
+        (directory / 'library.nex').write_text(LIBRARY.replace('return 40;', 'return 41;').replace('value:T;', 'value:T;flag:bool;'), newline="\n")
+        (directory / 'main.nex').write_text(MAIN.replace('lib::Box(2)', 'lib::Box(2,true)'), newline="\n")
         revised = self.cli('check', cwd=directory)['revision']
         self.assertNotEqual(original, revised)
         new = {n['symbol']: n for n in self.cli('declarations', '--limit', '1000', cwd=directory)['nodes']}
@@ -96,7 +98,7 @@ class GraphIdentities(harness.ToolchainCase):
                                 '--from-revision', packet['revision'], '--node', remote['id'], cwd=target)
             self.assertEqual(resolved['target']['node']['id'], before_ids[(kind, remote['symbol'], remote['path'])])
         self.assertEqual(self.reconcile(target, packet)['mappings'], response['mappings'])
-        (target / 'library.nex').write_text(LIBRARY.replace('return 40;', 'return 41;'))
+        (target / 'library.nex').write_text(LIBRARY.replace('return 40;', 'return 41;'), newline="\n")
         new_revision = self.cli('check', cwd=target)['revision']
         args = ('identities', '--kind', 'resolve', '--origin', packet['namespace'],
                 '--from-revision', revision, '--node', packet['nodes'][0]['id'])
@@ -166,7 +168,7 @@ class GraphIdentities(harness.ToolchainCase):
             pages += self.cli('identities', '--offset', str(offset), '--limit', '7', cwd=directory)['nodes']
         self.assertEqual(pages, full['nodes'])
         before = self.packet(directory, '--entity', 'function', '--symbol', 'a')['nodes'][0]
-        (directory / 'main.nex').write_text(source.replace('return 1;', 'return 2;'))
+        (directory / 'main.nex').write_text(source.replace('return 1;', 'return 2;'), newline="\n")
         self.cli('check', cwd=directory)
         after = self.packet(directory, '--entity', 'function', '--symbol', 'a')['nodes'][0]
         self.assertEqual(before['id'], after['id'])
@@ -181,8 +183,8 @@ class GraphIdentities(harness.ToolchainCase):
         self.assertEqual(hashlib.sha256(sql).hexdigest(), metadata['sql_sha256'])
         directory = self.root / 'archived'
         (directory / '.nex').mkdir(parents=True)
-        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': metadata['language'], 'entry': 'main.nex'}))
-        with sqlite3.connect(directory / '.nex/graph.db') as db:
+        (directory / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': metadata['language'], 'entry': 'main.nex'}), newline="\n")
+        with sqlite_connection(directory / '.nex/graph.db') as db:
             db.executescript(sql.decode())
             source_rows = db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall()
         old = Path(os.environ.get('NEX_LEGACY_043_COMPILER', str(harness.REPO / 'build/nex-043-corrected-verified')))
@@ -191,8 +193,8 @@ class GraphIdentities(harness.ToolchainCase):
             # schema4 journal deliberately prevents legacy unrecorded writers.
             legacy = self.root / 'legacy'
             (legacy / '.nex').mkdir(parents=True)
-            (legacy / 'nex.json').write_text((directory / 'nex.json').read_text())
-            with sqlite3.connect(legacy / '.nex/graph.db') as db:db.executescript(sql.decode())
+            (legacy / 'nex.json').write_text((directory / 'nex.json').read_text(), newline="\n")
+            with sqlite_connection(legacy / '.nex/graph.db') as db:db.executescript(sql.decode())
             process = subprocess.run([str(old), 'eval', '--revision', 'HEAD', '--json'], cwd=legacy, capture_output=True, text=True, timeout=30)
             self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
             self.assertEqual(json.loads(process.stdout)['stdout'], metadata['stdout'])
@@ -200,7 +202,7 @@ class GraphIdentities(harness.ToolchainCase):
         migrated=self.cli('migrate','--revision',metadata['revision'],cwd=directory)['revision']
         graph=self.cli('graph','--revision','HEAD',cwd=directory)
         self.assertEqual(graph['revision'],migrated);self.assertNotEqual(migrated,metadata['revision'])
-        with sqlite3.connect(directory / '.nex/graph.db') as db:
+        with sqlite_connection(directory / '.nex/graph.db') as db:
             self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0], '4')
             self.assertTrue(set(source_rows)<=set(db.execute('SELECT hash,source,path,language FROM revisions ORDER BY hash').fetchall()))
             self.assertEqual([list(r) for r in db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name')], metadata['node_ids'])
@@ -252,7 +254,7 @@ class GraphIdentities(harness.ToolchainCase):
         ]
         for index, mutation in enumerate(mutations):
             directory, _ = self.project('corrupt-'+str(index))
-            with sqlite3.connect(directory / '.nex/graph.db') as db:
+            with sqlite_connection(directory / '.nex/graph.db') as db:
                 db.execute(mutation)
             before = self.rows(directory)
             self.cli('identities', cwd=directory, ok=False)
@@ -262,10 +264,10 @@ class GraphIdentities(harness.ToolchainCase):
         first, revision = self.project('source', MAIN+'test fn consistent()->unit{assert(lib::bump(2)==42);}')
         graph = self.cli('graph', cwd=first)
         graph_file = self.root / 'graph.json'
-        graph_file.write_text(json.dumps(graph))
+        graph_file.write_text(json.dumps(graph), newline="\n")
         second = self.root / 'imported'
         second.mkdir()
-        (second / 'nex.json').write_text(json.dumps({'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex'}))
+        (second / 'nex.json').write_text(json.dumps({'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex'}), newline="\n")
         self.assertEqual(self.cli('import', graph_file, cwd=second)['revision'], revision)
         (first / 'main.nex').unlink()
         (first / 'library.nex').unlink()
@@ -309,7 +311,7 @@ class GraphIdentities(harness.ToolchainCase):
         processes = []
         for index, value in enumerate((packet, changed)):
             file = self.root / ('page-'+str(index)+'.json')
-            file.write_text(json.dumps(value))
+            file.write_text(json.dumps(value), newline="\n")
             processes.append(subprocess.Popen([harness.NEX, 'identities', '--kind', 'reconcile',
                 '--manifest', str(file), '--expected-revision', revision, '--json'],
                 cwd=second, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True))
@@ -339,7 +341,7 @@ fn main()->unit{}
         self.assertNotIn('kind', function)
         self.assertEqual(self.cli('context', '--entity', 'endpoint', '--symbol', 'read', cwd=second, ok=False)['code'], 'E_IDENTITY_SYMBOL')
         self.assertIn('return ok(42)', function['source'])
-        (second / 'main.nex').write_text(source.replace('ok(42)', 'ok(43)'))
+        (second / 'main.nex').write_text(source.replace('ok(42)', 'ok(43)'), newline="\n")
         self.cli('check', cwd=second)
         local = self.packet(second, '--entity', 'endpoint', '--symbol', 'fetch_value')['nodes'][0]
         self.assertEqual(local['hash'], packet['nodes'][0]['hash'])
@@ -364,7 +366,7 @@ fn main()->unit{}
         link = self.root / 'link.json'
         link.symlink_to(file)
         fifo = self.root / 'fifo.json'
-        os.mkfifo(fifo)
+        nonregular(fifo)
         for path in (link, fifo, self.root):
             self.assertEqual(reconcile(path, False)['code'], 'E_IDENTITY_LIMIT')
         self.assertEqual(self.rows(second), baseline)
@@ -374,17 +376,17 @@ fn main()->unit{}
         original = self.packet(directory)
         (directory / 'library.nex').rename(directory / 'relocated.nex')
         reordered = LIBRARY.replace('pub fn value()->i64{return 40;}\n', '')+'pub fn value()->i64{return 40;}\n'
-        (directory / 'relocated.nex').write_text(reordered)
-        (directory / 'main.nex').write_text(MAIN.replace('library.nex', 'relocated.nex').replace('as lib;', 'as renamed;').replace('lib::', 'renamed::'))
+        (directory / 'relocated.nex').write_text(reordered, newline="\n")
+        (directory / 'main.nex').write_text(MAIN.replace('library.nex', 'relocated.nex').replace('as lib;', 'as renamed;').replace('lib::', 'renamed::'), newline="\n")
         after = self.cli('identities', directory / 'main.nex', '--limit', '1000', cwd=directory)
         self.assertEqual(after['revision'], revision)
         self.assertNotEqual(after['source_hash'], original['source_hash'])
         self.assertEqual(after['nodes'], original['nodes'])
         old_choice = next(n for n in original['nodes'] if n['kind'] == 'type' and n['symbol'] == 'common::Choice')
-        (directory / 'relocated.nex').write_text(reordered.replace('pub enum Choice{None;Some(value:i64);}', ''))
+        (directory / 'relocated.nex').write_text(reordered.replace('pub enum Choice{None;Some(value:i64);}', ''), newline="\n")
         self.cli('check', cwd=directory)
         self.assertFalse(any(n['symbol'] == 'common::Choice' for n in self.packet(directory)['nodes']))
-        (directory / 'relocated.nex').write_text(reordered)
+        (directory / 'relocated.nex').write_text(reordered, newline="\n")
         self.cli('check', cwd=directory)
         restored = next(n for n in self.packet(directory)['nodes'] if n['kind'] == 'type' and n['symbol'] == 'common::Choice')
         self.assertEqual(restored, old_choice)
@@ -410,7 +412,7 @@ fn main()->i64{return calculate();}
 '''
         directory, _ = self.project('arm-types', source)
         before = self.packet(directory, '--entity', 'function', '--symbol', 'calculate')['nodes'][0]
-        (directory / 'main.nex').write_text(source.replace('enum Tag{One;Two;}', 'enum Tag{One;Two;Three;}'))
+        (directory / 'main.nex').write_text(source.replace('enum Tag{One;Two;}', 'enum Tag{One;Two;Three;}'), newline="\n")
         self.cli('check', cwd=directory)
         after = self.packet(directory, '--entity', 'function', '--symbol', 'calculate')['nodes'][0]
         self.assertEqual(before['hash'], after['hash'])

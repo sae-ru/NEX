@@ -18,11 +18,11 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex023 histories 🧠 ');root
 env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
 for key in ['NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_PROFILE_OUTPUT','NEX_TRACY']:env.pop(key,None)
 started=time.monotonic();report={'schema':'nex.public-task-write-histories/1','ok':False,'state':'starting','language':'0.27','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'origin_SDK_sha256':SDK,'origins':[],'migrations':[],'commands':[],'actual_opaque_resource_operations':False,'actual_GPU_NPU_execution':False,'full_objective_complete':False}
-def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n', newline="\n")
 def cli(name,project,*args,expected=0):
  report['state']=name;save();label='%03d-'%(len(report['commands'])+1)+name
  command=[str(compiler),*map(str,args),'--json'];p=subprocess.run(command,cwd=project,env=env,capture_output=True,text=True,timeout=600)
- (root/(label+'.stdout')).write_text(p.stdout);(root/(label+'.stderr')).write_text(p.stderr)
+ (root/(label+'.stdout')).write_text(p.stdout, newline="\n");(root/(label+'.stderr')).write_text(p.stderr, newline="\n")
  report['commands'].append({'name':name,'argv':command,'cwd':str(project),'exit_code':p.returncode,'expected':expected});save()
  assert p.returncode==expected,(name,p.returncode,p.stdout,p.stderr)
  return json.loads(p.stdout)
@@ -63,10 +63,10 @@ try:
    with closing(sqlite3.connect(database)) as db:db.executescript(sql.decode())
    for relative,text in metadata['revisions'][-1]['bundle']['files'].items():
     path=Path(relative);assert not path.is_absolute() and '..' not in path.parts
-    path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
-   manifest=project/'nex.json';manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':row['bundle']['entry']}));physical=manifest.read_bytes();before=state(database)
+    path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
+   manifest=project/'nex.json';manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.22','entry':row['bundle']['entry']}), newline="\n");physical=manifest.read_bytes();before=state(database)
    assert len(before['tables'])==16 and {n:len(v) for n,v in before['tables'].items()}==metadata['tables']
-   manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':row['bundle']['entry']}))
+   manifest.write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':row['bundle']['entry']}), newline="\n")
    try:
     refused=cli(label+'-HEAD-guard',project,'check',expected=1);assert refused['code']=='E_LANGUAGE_VERSION' and state(database)==before
    finally:manifest.write_bytes(physical)
@@ -77,7 +77,7 @@ try:
     assert plan['target_diagnostic']['code']=='E_EFFECT'
     refused=cli(label+'-missing-delivery',project,*arguments,expected=1);assert refused['code']=='E_EFFECT' and state(database)==before
     candidate=copy.deepcopy(plan['candidate']);assert candidate['sources']==row['bundle']
-    candidate['sources']=reviewed_delivery_sources(candidate['sources']);expected_sources=candidate['sources'];candidate_path=root/(label+'-reviewed-target.json');candidate_path.write_text(json.dumps(candidate))
+    candidate['sources']=reviewed_delivery_sources(candidate['sources']);expected_sources=candidate['sources'];candidate_path=root/(label+'-reviewed-target.json');candidate_path.write_text(json.dumps(candidate), newline="\n")
     arguments.extend(['--candidate',candidate_path])
     valid=cli(label+'-reviewed-plan',project,*arguments,'--kind','plan');assert valid['origin_verified'] and valid['target_valid'] and valid['candidate_used'] and state(database)==before
    migrated=cli(label+'-migrate',project,*arguments,'--expected-revision',metadata['head'])

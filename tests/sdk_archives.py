@@ -78,14 +78,14 @@ class DistributionWorkflow(unittest.TestCase):
             root=Path(temporary)
             for index,name in enumerate(names):
                 path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
-                path.write_text('owned SDK text '+str(index)+' Я🧠',encoding='utf-8')
+                path.write_text('owned SDK text '+str(index)+' Я🧠',encoding='utf-8', newline="\n")
             recorded=acceptance.language_resource_inventory(root,[names[0]],'0.27')
             self.assertEqual(set(recorded),set(names))
             for name in names:
                 self.assertEqual(recorded[name],hashlib.sha256((root/name).read_bytes()).hexdigest())
             retained=acceptance.language_resource_inventory(root,[names[0]],'0.26')
             self.assertEqual(retained,{names[0]:recorded[names[0]]})
-            changed=root/names[-1];changed.write_text('changed origin bytes',encoding='utf-8')
+            changed=root/names[-1];changed.write_text('changed origin bytes',encoding='utf-8', newline="\n")
             current=acceptance.language_resource_inventory(root,[names[0]],'0.27')
             self.assertEqual([name for name in names if current[name]!=recorded[name]],[names[-1]])
             changed.unlink()
@@ -95,7 +95,7 @@ class DistributionWorkflow(unittest.TestCase):
     def test_language_resource_inventory_keeps_path_and_UTF8_guards(self):
         with tempfile.TemporaryDirectory(prefix='nex inventory guards ') as temporary:
             root=Path(temporary)/'sdk';root.mkdir()
-            outside=Path(temporary)/'outside.txt';outside.write_text('outside')
+            outside=Path(temporary)/'outside.txt';outside.write_text('outside', newline="\n")
             with self.assertRaisesRegex(RuntimeError,'missing/escaped language resource'):
                 acceptance.language_resource_inventory(root,['../outside.txt'],'0.26')
             (root/'alias.txt').symlink_to(outside)
@@ -121,10 +121,10 @@ class DistributionWorkflow(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='nex ELF context % 🧠 ') as temporary:
             root=Path(temporary);inputs=root/'inputs';mid=inputs/'middle';leaf=inputs/'leaf';other=inputs/'other'
             for path in (mid,leaf,other):path.mkdir(parents=True)
-            (inputs/'leaf.c').write_text('int leaf(void){return VALUE;}\n')
-            (inputs/'middle.c').write_text('int leaf(void);int middle(void){return leaf()+1;}\n')
-            (inputs/'top.c').write_text('int middle(void);int top(void){return middle()+1;}\n')
-            (inputs/'app.c').write_text('#include <stdio.h>\nint top(void);int main(void){printf("%d\\n",top());return 0;}\n')
+            (inputs/'leaf.c').write_text('int leaf(void){return VALUE;}\n', newline="\n")
+            (inputs/'middle.c').write_text('int leaf(void);int middle(void){return leaf()+1;}\n', newline="\n")
+            (inputs/'top.c').write_text('int middle(void);int top(void){return middle()+1;}\n', newline="\n")
+            (inputs/'app.c').write_text('#include <stdio.h>\nint top(void);int main(void){printf("%d\\n",top());return 0;}\n', newline="\n")
             leafname='libnex_context_leaf.so.1';midname='libnex_context_middle.so.1';topname='libnex_context_top.so.1'
             for folder,value in ((leaf,40),(other,140)):
                 run([compiler,'-shared','-fPIC','-DVALUE='+str(value),inputs/'leaf.c','-Wl,-soname,'+leafname,'-o',folder/leafname])
@@ -162,10 +162,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-''')
+''', newline="\n")
             notices=root/'notices.json';notices.write_text(json.dumps({'schema':'nex.sdk-notices/1','components':[
                 {'name':'owned-ELF-fixtures','version':'1','url':'https://github.com/sae-ru/NEX',
-                 'roots':[str(inputs)],'license_files':[str(license_file)]}]}))
+                 'roots':[str(inputs)],'license_files':[str(license_file)]}]}), newline="\n")
             def collector(output):
                 output.mkdir();b=bundle.LinuxBundle(root,output,notices)
                 b.environment=environment
@@ -216,7 +216,7 @@ THE SOFTWARE.
             root=Path(directory)
             marker=root/'marker, % 🧠7 "quote" \\ slash\n\tend'
             source=root/'probe.c'
-            source.write_text('#include <stdio.h>\nint main(void){FILE *f=fopen(MARKER,"wb");if(!f)return 1;int ok=fputs("42",f)>=0;return fclose(f)==0&&ok?0:2;}\n')
+            source.write_text('#include <stdio.h>\nint main(void){FILE *f=fopen(MARKER,"wb");if(!f)return 1;int ok=fputs("42",f)>=0;return fclose(f)==0&&ok?0:2;}\n', newline="\n")
             for language,standard in (('c','c11'),('c++','c++20')):
                 with self.subTest(language=language):
                     executable=root/('probe-'+standard)
@@ -238,7 +238,8 @@ THE SOFTWARE.
                 bundle.selected_wasm_linker(doctor,{'NEX_WASM_LD':value})
         with tempfile.TemporaryDirectory(prefix='nex-wasm-version-') as directory:
             wrong=Path(directory)/'wasm-ld'
-            wrong.write_text('#!/bin/sh\nprintf "LLD 21.1.0\\n"\n');wrong.chmod(0o755)
+            from host_fixture import python_executable
+            wrong=python_executable(wrong, 'print("LLD 21.1.0")\n', shutil.which('clang++'))
             with self.assertRaisesRegex(ValueError,'LLVM 22.1.x'):
                 bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':str(wrong)})
         actual=os.environ.get('NEX_WASM_LD') or shutil.which('wasm-ld')
@@ -277,7 +278,7 @@ THE SOFTWARE.
     def test_debugger_script_paths_preserve_unicode_and_argument_boundaries(self):
         for path in ['/SDK, % 🧠/record.py', '/SDK "quoted"/record.py', '/SDK \\ slash/record.py']:
             command = acceptance.lldb_script_import(Path(path))
-            self.assertEqual(shlex.split(command), ['command', 'script', 'import', path])
+            self.assertEqual(shlex.split(command), ['command', 'script', 'import', str(Path(path))])
         self.assertIn('🧠', acceptance.lldb_script_import(Path('/SDK 🧠/record.py')))
 
     def report(self):
@@ -861,6 +862,7 @@ THE SOFTWARE.
         linkages={'app':{'schema':'nex.project-task-linkage/2','component':'app'},
                   'leaf':{'schema':'nex.project-task-linkage/2','component':'leaf'}}
         def command(cwd,key):
+            cwd=Path(cwd).absolute().as_posix()
             return {'exit_code':0,'timed_out':False,'interrupted':0,'output_limit':False,
                 'command':['/sdk/nex','project','nex.build.json','--kind','build','--component','app','--json'],
                 'elapsed_ns':1,'timeout_seconds':60,'stdout':'logs/build-native/build/stdout','stderr':'logs/build-native/build/stderr',
@@ -935,7 +937,7 @@ THE SOFTWARE.
                     row={'original':str(original/name),'retained':copied.relative_to(receipt).as_posix(),
                         'hash':digit*64,'bytes':len(payload[name])};record['files'].append(row)
                     check['artifacts'][copied.relative_to(receipt/'artifacts/measure-provider').as_posix()]={'hash':row['hash'],'bytes':row['bytes']}
-                path=receipt/component['retained_build'];path.write_text(json.dumps(record))
+                path=receipt/component['retained_build'];path.write_text(json.dumps(record), newline="\n")
                 check['artifacts'][path.relative_to(receipt/'artifacts/measure-provider').as_posix()]={'hash':'f'*64,'bytes':path.stat().st_size}
                 return artifact,component,check,record,inputs,path
             artifact,component,check,record,inputs,path=fixture('capture','a')
@@ -951,22 +953,22 @@ THE SOFTWARE.
                 lambda r:r['files'][0].update(hash='b'*64),
                 lambda r:r['files'][0].update(bytes=True),
                 lambda r:r['files'].reverse()):
-                damaged=copy.deepcopy(record);mutate(damaged);path.write_text(json.dumps(damaged))
+                damaged=copy.deepcopy(record);mutate(damaged);path.write_text(json.dumps(damaged), newline="\n")
                 check['artifacts'][path.relative_to(receipt/'artifacts/measure-provider').as_posix()]['bytes']=path.stat().st_size
                 with self.subTest(mutate=mutate),self.assertRaises(RuntimeError):
                     acceptance.retained_task_profile_build(receipt,check,artifact,component,'f'*64,lambda unused:inputs)
             # Even an internally indexed catalog row must match the ABI's
             # static frontier raw catalog pin, in addition to archive/sidecar.
             damaged=copy.deepcopy(record);damaged_check=copy.deepcopy(check)
-            catalog_row=next(row for row in damaged['files'] if row['original'].endswith('/libraries/0.task-profile-catalog.json'))
+            catalog_row=next(row for row in damaged['files'] if Path(row['original']).as_posix().endswith('/libraries/0.task-profile-catalog.json'))
             catalog_row['hash']='b'*64
             damaged_check['artifacts'][catalog_row['retained'].split('artifacts/measure-provider/',1)[1]]['hash']='b'*64
-            path.write_text(json.dumps(damaged))
+            path.write_text(json.dumps(damaged), newline="\n")
             record_key=path.relative_to(receipt/'artifacts/measure-provider').as_posix()
             damaged_check['artifacts'][record_key]['bytes']=path.stat().st_size
             with self.assertRaisesRegex(RuntimeError,'triple pins'):
                 acceptance.retained_task_profile_build(receipt,damaged_check,artifact,component,'f'*64,lambda unused:inputs)
-            path.write_text(json.dumps(record))
+            path.write_text(json.dumps(record), newline="\n")
             record_key=path.relative_to(receipt/'artifacts/measure-provider').as_posix()
             check['artifacts'][record_key]['bytes']=path.stat().st_size
             for corrupt in ({'hash':'f'*64,'bytes':True},{'hash':'0','bytes':path.stat().st_size},{}):
@@ -988,7 +990,7 @@ THE SOFTWARE.
                 original=project/'.nex/build'/key;original.mkdir(parents=True)
                 package=base/(label+'-package');package.mkdir()
                 runtime_key=letter*63+'2'
-                def write_json(path,value):path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(value)+'\n')
+                def write_json(path,value):path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(value)+'\n', newline="\n")
                 def image(identity,payload):return {'key':identity,'hash':letter*64,'sha256':hashlib.sha256(payload).hexdigest(),
                     'uuid':letter*32,'runtime_key':runtime_key,'runtime_hash':'f'*64}
                 app_image=image(key,(label+'-app-original').encode());leaf_image=image(leaf_key,(label+'-leaf-original').encode())
@@ -1006,7 +1008,7 @@ THE SOFTWARE.
                 write_json(original/'image-inputs.json',links)
                 metadata={'key':key,'completion_schema':'nex.native-completion/5','compiler_build':'c'*64,
                     'task_provider':own,'task_provider_hash':pin('task-provider.json')}
-                write_json(original/'build.json',metadata);(original/'complete').write_text(letter*64+'\n')
+                write_json(original/'build.json',metadata);(original/'complete').write_text(letter*64+'\n', newline="\n")
                 result={'build_key':key,'compiler_build':'c'*64,'entry':'bin/app','files':{}}
                 for path,data in [('bin/app',(label+'-app-relocated').encode()),('lib/'+image_name,(label+'-leaf-relocated').encode())]:
                     target=package/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
@@ -1033,7 +1035,7 @@ THE SOFTWARE.
             capture_proof=acceptance.package_task_provenance(capture_package,capture,capture_project)
             proof=acceptance.package_task_provenance(package_root,packaged,package_project)
             self.assertNotEqual(proof['build_key'],capture_proof['build_key'])
-            self.assertTrue(all('/package-cwd/' in row['original'] for row in proof['files']))
+            self.assertTrue(all('package-cwd' in Path(row['original']).parts for row in proof['files']))
             with self.assertRaises(RuntimeError):acceptance.package_task_provenance(package_root,packaged,capture_project)
             for mutate in (
                 lambda p:p['task_provenance']['files'][0].update(input_hash=capture['task_provenance']['files'][0]['input_hash']),
@@ -1055,14 +1057,14 @@ THE SOFTWARE.
                 provider={'schema':'nex.native-task-provider/3','component':'app','mode':'static',
                     'profiling':{'schema':'nex.native-task-profile/1','catalog_hash':digit*64}}
                 catalog={'schema':'nex.task-profile-catalog/1','registry_abi':1,'owner_image':'app'}
-                (original/'task-provider.json').write_text(json.dumps(provider))
-                (original/'task-profile-catalog.json').write_text(json.dumps(catalog))
+                (original/'task-provider.json').write_text(json.dumps(provider), newline="\n")
+                (original/'task-profile-catalog.json').write_text(json.dumps(catalog), newline="\n")
                 # These are opaque matching-compiler BLAKE3 labels. This fixture
                 # independently hashes bytes with SHA256 only for transport.
                 pin=lambda name:hashlib.sha256((original/name).read_bytes()).hexdigest()
                 metadata={'key':key,'compiler_build':'f'*64,'profile':'profile','completion_schema':'nex.native-completion/6',
                     'completion_mode':'static-application','task_provider':provider,'task_provider_hash':pin('task-provider.json')}
-                (original/'build.json').write_text(json.dumps(metadata));(original/'complete').write_text(digit*64+'\n')
+                (original/'build.json').write_text(json.dumps(metadata), newline="\n");(original/'complete').write_text(digit*64+'\n', newline="\n")
                 output=package/'bin/app';output.parent.mkdir();output.write_bytes((label+' relocated app').encode())
                 output_sha=hashlib.sha256(output.read_bytes()).hexdigest()
                 meta={'build_key':key,'compiler_build':'f'*64,'entry':'bin/app',
@@ -1087,7 +1089,7 @@ THE SOFTWARE.
             first=acceptance.package_task_profile_provenance(capture_package,captured,capture)
             proof=acceptance.package_task_profile_provenance(package,meta,project)
             self.assertNotEqual(first['build_key'],proof['build_key'])
-            self.assertTrue(all('/package-cwd/' in row['original'] for row in proof['files']))
+            self.assertTrue(all('package-cwd' in Path(row['original']).parts for row in proof['files']))
             with self.assertRaises(RuntimeError):acceptance.package_task_profile_provenance(package,meta,capture)
             for mutate in (
                 lambda p:p['task_profile_provenance']['files'][0].update(input_hash=captured['task_profile_provenance']['files'][0]['input_hash']),
@@ -1210,22 +1212,24 @@ THE SOFTWARE.
             with self.subTest(field=name),self.assertRaises(RuntimeError):acceptance.validate_completed_report(changed)
 
 
+ENTRY = 'bin/nex.exe' if os.name == 'nt' else 'bin/nex'
+
 class Archives(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='nex archive, % 🧠 ')
         self.root = Path(self.temp.name)
         self.sdk = self.root/'SDK'
-        for name, value in [('bin/nex', b'owned executable'), ('include/header.h', b'owned header'),
+        for name, value in [(ENTRY, b'owned executable'), ('include/header.h', b'owned header'),
                             ('notes, 🧠.txt', b'UTF-8 paths')]:
             path = self.sdk/name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(value)
-            path.chmod(0o755 if name == 'bin/nex' else 0o644)
-        (self.sdk/'bin/compiler').symlink_to('nex')
+            path.chmod(0o755 if name == ENTRY else 0o644)
+        (self.sdk/'bin/compiler').symlink_to(Path(ENTRY).name)
         self.manifest = {'schema': 'nex.sdk-bundle/1', 'ok': True, 'acceptance_passed': False,
                          'toolchain': '0.33.0', 'language': '0.14', 'platform': 'macos', 'files': {}}
         for path in self.sdk.rglob('*'):
             if path.is_file() or path.is_symlink():
-                name = str(path.relative_to(self.sdk))
-                self.manifest['files'][name] = ({'symlink': str(path.readlink())} if path.is_symlink() else
+                name = path.relative_to(self.sdk).as_posix()
+                self.manifest['files'][name] = ({'symlink': path.readlink().as_posix()} if path.is_symlink() else
                     {'sha256': archive.digest(path), 'bytes': path.stat().st_size,
                      'executable': bool(path.stat().st_mode & 0o111)})
         self.save()
@@ -1235,20 +1239,20 @@ class Archives(unittest.TestCase):
 
     def save(self, value=None):
         path = self.sdk/archive.MANIFEST; path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.manifest if value is None else value, ensure_ascii=False))
+        path.write_text(json.dumps(self.manifest if value is None else value, ensure_ascii=False), newline="\n")
 
     def test_inventory_roundtrip_ignores_only_regular_python_caches(self):
         cache = self.sdk/'tools/__pycache__/module.cpython-39.pyc'
         cache.parent.mkdir(parents=True); cache.write_bytes(b'not a distribution input')
         result = archive.create(self.sdk, self.root/'sdk.tar.gz', 'nex-sdk-test')
-        self.assertEqual(result['excluded_python_cache_files'], [str(cache.relative_to(self.sdk))])
+        self.assertEqual(result['excluded_python_cache_files'], [cache.relative_to(self.sdk).as_posix()])
         restored = archive.restore(result['path'], self.root/'restored', result['sha256'])
-        self.assertEqual((restored/'bin/nex').read_bytes(), b'owned executable')
+        self.assertEqual((restored/ENTRY).read_bytes(), b'owned executable')
         self.assertEqual((restored/'notes, 🧠.txt').read_bytes(), b'UTF-8 paths')
-        self.assertEqual(str((restored/'bin/compiler').readlink()), 'nex')
+        self.assertEqual(str((restored/'bin/compiler').readlink()), Path(ENTRY).name)
         self.assertFalse((restored/'tools/__pycache__').exists())
         self.assertEqual(archive.inventory(restored)[0], self.manifest)
-        (self.sdk/'unexpected').write_text('must not ship')
+        (self.sdk/'unexpected').write_text('must not ship', newline="\n")
         with self.assertRaisesRegex(ValueError, 'unmanifested'):
             archive.inventory(self.sdk)
 
@@ -1265,19 +1269,19 @@ class Archives(unittest.TestCase):
 
     def test_hash_modes_sizes_and_duplicate_manifest_keys_fail(self):
         for key, value in [('sha256', '0'*64), ('bytes', 1), ('executable', False), ('bytes', True)]:
-            manifest = copy.deepcopy(self.manifest); manifest['files']['bin/nex'][key] = value; self.save(manifest)
+            manifest = copy.deepcopy(self.manifest); manifest['files'][ENTRY][key] = value; self.save(manifest)
             with self.subTest(key=key, value=value), self.assertRaises(ValueError): archive.inventory(self.sdk)
         self.save()
         path = self.sdk/archive.MANIFEST
-        path.write_text(path.read_text().replace('"ok": true', '"ok": false, "ok": true'))
+        path.write_text(path.read_text().replace('"ok": true', '"ok": false, "ok": true'), newline="\n")
         with self.assertRaisesRegex(ValueError, 'duplicate'): archive.inventory(self.sdk)
 
     def test_paths_privilege_bits_and_links_cannot_escape_inventory(self):
         for name in ['../outside', '/outside', 'bin/./nex', 'bin//nex', 'bin\\nex']:
-            manifest = copy.deepcopy(self.manifest); manifest['files'][name] = manifest['files'].pop('bin/nex'); self.save(manifest)
+            manifest = copy.deepcopy(self.manifest); manifest['files'][name] = manifest['files'].pop(ENTRY); self.save(manifest)
             with self.subTest(name=name), self.assertRaises(ValueError): archive.inventory(self.sdk)
         self.save()
-        path = self.sdk/'bin/nex'; path.chmod(0o4755)
+        path = self.sdk/ENTRY; path.chmod(0o4755)
         # Some temporary filesystems discard setuid on chmod. The tar test
         # below checks privileged metadata independently of that host policy.
         if path.stat().st_mode & 0o4000:
@@ -1289,7 +1293,7 @@ class Archives(unittest.TestCase):
 
     def test_manifest_symlink_ancestor_is_rejected_before_read(self):
         (self.sdk/archive.MANIFEST).unlink(); (self.sdk/'share/nex').rmdir(); (self.sdk/'share').rmdir()
-        (self.sdk/'share').symlink_to(self.root)
+        (self.sdk/'share').symlink_to(self.root, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, 'manifest has a symlink ancestor'):
             archive.inventory(self.sdk)
 
@@ -1323,7 +1327,7 @@ class Archives(unittest.TestCase):
         result = archive.create(self.sdk, self.root/'sdk.tar.gz', 'SDK')
         with self.assertRaisesRegex(ValueError, 'checksum'):
             archive.restore(result['path'], self.root/'new', '0'*64)
-        destination = self.root/'existing'; destination.mkdir(); (destination/'keep').write_text('keep')
+        destination = self.root/'existing'; destination.mkdir(); (destination/'keep').write_text('keep', newline="\n")
         with self.assertRaisesRegex(ValueError, 'must be new'):
             archive.restore(result['path'], destination, result['sha256'])
         self.assertEqual((destination/'keep').read_text(), 'keep')
@@ -1335,7 +1339,7 @@ class Archives(unittest.TestCase):
         with tarfile.open(original['path']) as source, tarfile.open(changed, 'w:gz') as output:
             for item in source:
                 data = source.extractfile(item) if item.isfile() else None
-                if item.name == 'SDK/bin/nex': item.mode |= 0o4000
+                if item.name == 'SDK/'+ENTRY: item.mode |= 0o4000
                 output.addfile(item, data)
         with self.assertRaisesRegex(ValueError, 'unsafe SDK archive metadata'):
             archive.restore(changed, self.root/'restored', archive.digest(changed))

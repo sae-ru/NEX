@@ -26,6 +26,14 @@ Versioned notes below preserve their earlier scopes rather than the new default.
 
 # Source-backed native task-provider debugging
 
+Native Windows x64 now implements the source-backed static/shared/mixed image
+path as well. The Windows candidate passed eight typed-error CLI/DAP scenarios
+and seven provider-debugging tests, including source-absent watches, logical
+steps and relocated packages. It uses the isolated native debugger described in
+[the Windows build recipe](windows-debugger-build.md). Compiler and target code
+remain on LLVM/MLIR22.1.8. These targeted results do not replace the final full
+Windows regression and relocated SDK acceptance; see the dated evidence files.
+
 Working126/toolchain0.119.0/language0.20 enables this development slice after
 actual generated-image debugger and physical-drain/sanitizer preflights. Complete
 delivery acceptance remains specific to the matching compiler/resources/platform. Query `nex describe --field task_provider_debugging

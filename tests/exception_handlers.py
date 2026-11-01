@@ -51,7 +51,7 @@ test fn child_delivery()->unit !{task}{assert(delegated()==42);}
 class ExceptionHandlers(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
 
     def test_sync_task_reference_native_typescript_and_owned_cleanup(self):
         self.source(SOURCE)
@@ -89,7 +89,7 @@ import { details } from './nex-source-exception-runtime.ts';
 let payload;try{entry();}catch(error){payload=details(error);}
 if(!payload)throw new Error('source error missing');
 process.stdout.write(JSON.stringify(payload));
-''')
+''', newline="\n")
             p=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',driver],
                              capture_output=True,text=True,cwd=folder,timeout=60)
             self.assertEqual(p.returncode,0,p.stderr);web_records.append(json.loads(p.stdout))
@@ -113,7 +113,7 @@ test fn order()->unit !{io,throw}{main();}
         self.assertEqual(self.cli('run',timeout=240)['stdout'],expected)
         self.cli('test','--target','web',timeout=240)
         folder=self.root/'web-order';self.cli('emit','--kind','typescript','--directory',folder)
-        driver=folder/'run.ts';driver.write_text("import {entry} from './program.ts';entry();\n")
+        driver=folder/'run.ts';driver.write_text("import {entry} from './program.ts';entry();\n", newline="\n")
         p=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',driver],
                          capture_output=True,text=True,cwd=folder,timeout=60)
         self.assertEqual(p.returncode,0,p.stderr);self.assertEqual(p.stdout,expected)
@@ -171,7 +171,7 @@ test fn values()->unit !{throw}{assert(main()==142);}
         graph=self.root/'.nex/graph.db';graph.parent.mkdir()
         connection=sqlite3.connect(str(graph));connection.executescript(sql.decode());connection.close()
         self.source(metadata['source'])
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}), newline="\n")
         before=harness.database_rows(graph)
         self.assertEqual({name:len(rows) for name,rows in before[1].items()},metadata['table_counts'])
         plan=self.cli('migrate','--kind','plan')
@@ -179,7 +179,7 @@ test fn values()->unit !{throw}{assert(main()==142);}
         self.assertEqual(plan['origin_revision'],metadata['head'])
         self.assertEqual(harness.database_rows(graph),before)
         candidate=plan['candidate'];candidate['sources']['files']['main.nex']=metadata['source'].replace('finally','finished')
-        reviewed=self.root/'reviewed.json';reviewed.write_text(json.dumps(candidate))
+        reviewed=self.root/'reviewed.json';reviewed.write_text(json.dumps(candidate), newline="\n")
         changed=self.cli('migrate','--candidate',reviewed,'--expected-revision',metadata['head'])
         after=harness.database_rows(graph);self.assertEqual(before[0],after[0])
         self.assertEqual(set(before[1]),set(after[1]))
@@ -195,7 +195,7 @@ test fn values()->unit !{throw}{assert(main()==142);}
     def test_actual025_keyword_origin_reviewed_repair_and_all_history_rows(self):
         origin=Path(os.environ['NEX_GENUINE025_COMPILER']).resolve()
         origin_resources=Path(os.environ['NEX_GENUINE025_RESOURCES']).resolve()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.25','entry':'main.nex'}), newline="\n")
         text='module origin;fn finally()->i64{return 41;}fn main()->unit !{io}{print(finally());}'
         def old_check():
             p=subprocess.run([origin,'check','--json'],cwd=self.root,capture_output=True,text=True,
@@ -208,7 +208,7 @@ test fn values()->unit !{throw}{assert(main()==142);}
         self.assertEqual(plan['origin_language'],'0.25');self.assertEqual(plan['target_language'],'0.27')
         self.assertEqual(harness.database_rows(graph),before)
         candidate=plan['candidate'];candidate['sources']['files']['main.nex']=text.replace('41','42').replace('finally','finished')
-        path=self.root/'reviewed.json';path.write_text(json.dumps(candidate))
+        path=self.root/'reviewed.json';path.write_text(json.dumps(candidate), newline="\n")
         migrated=self.cli('migrate','--candidate',path,'--expected-revision',head)
         after=harness.database_rows(graph)
         self.assertEqual(before[0],after[0]);self.assertEqual(set(before[1]),set(after[1]))

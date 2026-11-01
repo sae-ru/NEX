@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_files.h"
 #include <atomic>
 #include <filesystem>
@@ -15,7 +16,13 @@ void successful(const nexrt::Value &value){require(nexrt::isSuccess(value),nexrt
 std::string text(const nexrt::Value &value){successful(value);return nexrt::unwrap(value).object->text;}
 void code(const nexrt::Value &value,const std::string &expected){require(!nexrt::isSuccess(value)&&value.object->text==expected,"expected "+expected+", got "+nexrt::printable(value));}
 void raw(const fs::path &path,const std::string &value){std::ofstream stream(path,std::ios::binary);stream.write(value.data(),value.size());require(bool(stream),"fixture write failed");}
-int descriptors(){int count=0;for(int fd=0;fd<512;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int count=0;for(int fd=0;fd<512;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;
+#endif
+}
 void noTemporary(const fs::path &root){for(const auto &entry:fs::recursive_directory_iterator(root))require(!entry.path().filename().string().starts_with(".nex-write-"),"orphan temporary file");}
 struct Fixture {
   fs::path directory;
@@ -57,13 +64,15 @@ int main(){
       maximum+='x';code(files.write("too-large",maximum),"LIMIT");raw(root/"too-large",maximum);code(files.read("too-large"),"LIMIT");
     });
     run("non-regular files do not block",[&]{
-      require(::mkfifo((root/"fifo").c_str(),0600)==0,"cannot create FIFO");
+      nex_test::NonRegular nonregular(root/"fifo");
       code(files.read("fifo"),"VALIDATION");code(files.write("fifo","x"),"VALIDATION");code(files.read("nested"),"VALIDATION");
+      #ifndef _WIN32
       code(nexrt::TextFiles("/dev",false).read("null"),"VALIDATION");
+#endif
     });
     run("private replacement mode",[&]{
       auto old=::umask(077);auto result=files.write("mode","value");::umask(old);successful(result);
-      struct stat info{};require(::stat((root/"mode").c_str(),&info)==0 && (info.st_mode&0777)==0600,"new file mode is not private");
+      require(nex_test::privateFile(root/"mode"),"new file permissions are not private");
     });
     run("cancellation before commit preserves destination",[&]{
       successful(files.write("original","preserved"));auto baseline=descriptors();

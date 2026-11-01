@@ -20,7 +20,7 @@ class Results(harness.ToolchainCase):
         self.assertEqual(built['kind'], 'executable')
         notices = Path(built['notices'])
         expected = ('Dragonbox 1.1.3\n\n' + (vendor / 'dragonbox/LICENSE-Boost').read_text() + '\n\n'
-                    + 'nlohmann/json 3.12.0\n\n' + (vendor / 'JSON-LICENSE.MIT').read_text() + '\n\n')
+                    + harness.windows_notices(built) + 'nlohmann/json 3.12.0\n\n' + (vendor / 'JSON-LICENSE.MIT').read_text() + '\n\n')
         self.assertEqual(notices.read_text(), expected)
         self.assertEqual(str(notices), str(target) + '.THIRD_PARTY_NOTICES.txt')
         metadata = json.loads(Path(built['metadata']).read_text())
@@ -35,7 +35,7 @@ class Results(harness.ToolchainCase):
             self.assertEqual(hashlib.sha256(original).hexdigest(),record['sha256'])
             self.assertEqual((Path(metadata['runtime_source_projection'])/'third_party/dragonbox'/name).read_bytes(),original)
         self.assertTrue(self.cli('build', '--profile', 'release')['cached'])
-        Path(metadata['notices']).write_text('corrupted notice')
+        Path(metadata['notices']).write_text('corrupted notice', newline="\n")
         rebuilt = self.cli('build', '--profile', 'release')
         self.assertFalse(rebuilt['cached'])
         self.assertEqual(Path(rebuilt['notices']).read_text(), expected)
@@ -94,7 +94,7 @@ class Results(harness.ToolchainCase):
                 self.assertEqual(self.cli("check", ok=False)["code"], code)
 
     def test_imported_types_in_annotations_and_bounded_context(self):
-        (self.root / "model.nex").write_text('module models; pub struct Row { id: i64; }')
+        (self.root / "model.nex").write_text('module models; pub struct Row { id: i64; }', newline="\n")
         self.source('module app; import "./model.nex" as m; fn parse() -> result<m::Row> { return decode_json<m::Row>("{\\\"id\\\":\\\"7\\\"}"); } fn main() -> unit { assert(unwrap(parse()).id == 7); } test fn parse_test() -> unit { main(); }')
         self.cli("test")
         self.cli("test", "--target", "web")

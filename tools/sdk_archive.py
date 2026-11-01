@@ -80,7 +80,7 @@ def inventory(sdk, allow_python_cache=True):
             resolved = candidate.resolve(strict=True)
             if sdk not in resolved.parents or not resolved.is_file():
                 raise ValueError('SDK link does not resolve to an owned regular file: ' + name)
-            if str(resolved.relative_to(sdk)) not in files:
+            if resolved.relative_to(sdk).as_posix() not in files:
                 raise ValueError('SDK link target is outside its inventory: ' + name)
         else:
             size, checksum, executable = item.get('bytes'), item.get('sha256'), item.get('executable')
@@ -98,7 +98,7 @@ def inventory(sdk, allow_python_cache=True):
             candidate = Path(directory) / name
             if candidate.is_dir() and not candidate.is_symlink():
                 continue
-            key = str(candidate.relative_to(sdk))
+            key = candidate.relative_to(sdk).as_posix()
             if key not in selected:
                 if (allow_python_cache and candidate.is_file() and not candidate.is_symlink() and
                         '__pycache__' in candidate.relative_to(sdk).parts and candidate.suffix == '.pyc'):

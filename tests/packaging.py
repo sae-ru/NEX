@@ -1,4 +1,7 @@
 """Relocated native applications, provenance failures and retained runtime behavior."""
+from host_fixture import stop_server, run_native
+from host_fixture import python_executable
+from host_fixture import deployed_environment
 import hashlib
 import json
 import os
@@ -18,6 +21,9 @@ import urllib.request
 import support as harness
 
 
+APP = 'bin/app.exe' if os.name == 'nt' else 'bin/app'
+NEX = 'bin/nex.exe' if os.name == 'nt' else 'bin/nex'
+
 def loader_environment():
     return {k:v for k,v in os.environ.items() if k not in ('LD_LIBRARY_PATH','LD_PRELOAD')}
 
@@ -35,12 +41,23 @@ class Packaging(harness.ToolchainCase):
             path = Path(pending.pop()).resolve()
             if path in found:continue
             found.add(path)
+            if os.name=='nt' and path.suffix.lower()=='.dll' and Path(str(path)+'.a').is_file():pending.append(Path(str(path)+'.a'))
             if platform.system() == 'Darwin':
                 listing = subprocess.check_output(['/usr/bin/otool', '-L', path], text=True)
                 for line in listing.splitlines()[1:]:
                     name = line.strip().split(' (compatibility version ', 1)[0]
                     if name.startswith('/') and not name.startswith(('/usr/lib/', '/System/Library/')):
                         pending.append(name)
+            elif os.name=='nt':
+                import sys
+                sys.path.insert(0,str(harness.REPO/'tools'))
+                from windows_pe import inspect,system_directory
+                if path.read_bytes().startswith(b'!<arch>\n'):continue
+                for name in inspect(path)['imports']:
+                    if name.startswith(('api-ms-win-','ext-ms-win-')) or (system_directory()/name).is_file():continue
+                    dependency=path.parent/name
+                    self.assertTrue(dependency.is_file(),'unresolved PE fixture dependency: '+name)
+                    pending.append(dependency)
             else:
                 listing = subprocess.check_output(['ldd', path], text=True, env=loader_environment())
                 self.assertNotIn('=> not found', listing, 'unresolved ELF fixture dependency: '+str(path))
@@ -85,18 +102,18 @@ class Packaging(harness.ToolchainCase):
 
     def notice(self, roots):
         license_file = self.root / 'fixture-license.txt'
-        license_file.write_text('Complete fixture provenance notice for explicitly selected test inputs.\n')
+        license_file.write_text('Complete fixture provenance notice for explicitly selected test inputs.\n', newline="\n")
         notices = self.root / 'notices.json'
         notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': [
             {'name': 'test-inputs', 'version': 'fixture', 'url': 'https://sqlite.org',
-             'roots': list(map(str, roots)), 'license_files': [str(license_file)]}]}))
+             'roots': list(map(str, roots)), 'license_files': [str(license_file)]}]}), newline="\n")
         return notices
 
     def validate_inventory(self, directory):
         report = json.loads((directory / 'application.json').read_text())
         self.assertEqual(report['schema'], 'nex.application-package/1')
         self.assertFalse(report['execution_verified'])
-        actual = {str(p.relative_to(directory)) for p in directory.rglob('*') if p.is_file() or p.is_symlink()}
+        actual = {p.relative_to(directory).as_posix() for p in directory.rglob('*') if p.is_file() or p.is_symlink()}
         self.assertEqual(actual, set(report['files']) | {'application.json'})
         for relative, record in report['files'].items():
             path = directory / relative
@@ -121,24 +138,30 @@ class Packaging(harness.ToolchainCase):
         if platform.system() == 'Darwin':
             shutil.copy2(original, library)
             subprocess.run(['/usr/bin/install_name_tool', '-id', '@rpath/' + library.name, library], check=True)
+        elif os.name=='nt':
+            # Export the selected genuine SQLite archive as a fixture DLL so
+            # native PE closure/provenance is exercised independently of the packager.
+            library=prefix/'sqlite3.dll'
+            result=run_native([doctor['native_compiler'],'-shared','-Wl,--whole-archive',original,'-Wl,--no-whole-archive','-Wl,--export-all-symbols','-o',library],capture_output=True,text=True,timeout=120)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         else:
             library=self.copy_elf_fixture_closure(original,prefix)
         config = self.root / 'toolchain.json'
-        config.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host'],
-            'sqlite': {'include': doctor['native_sqlite_include'], 'library': str(library)}}))
+        config.write_text(json.dumps({**harness.host_toolchain_defaults(doctor),
+            'sqlite': {'include': doctor['native_sqlite_include'], 'library': str(library)+('.a' if os.name=='nt' else '')}}), newline="\n")
         return config, library
 
     @unittest.skipUnless(platform.system()=='Linux','actual private ELF fixture closure')
     def test_fixture_copy_keeps_transitive_libraries_without_ambient_loader_paths(self):
         doctor=self.cli('doctor');compiler=doctor['native_compiler'];original=self.root/'original % 🧠';original.mkdir()
-        (original/'leaf.c').write_text('int leaf(void){return 40;}\n')
-        (original/'provider.c').write_text('int leaf(void);int answer(void){return leaf()+2;}\n')
+        (original/'leaf.c').write_text('int leaf(void){return 40;}\n', newline="\n")
+        (original/'provider.c').write_text('int leaf(void);int answer(void){return leaf()+2;}\n', newline="\n")
         leaf=original/'libnex_fixture_leaf.so.1';provider=original/'libnex_fixture_provider.so.1'
         for argv in ([compiler,'-x','c','-shared','-fPIC',original/'leaf.c','-Wl,-soname,'+leaf.name,'-o',leaf],
                      [compiler,'-x','c','-shared','-fPIC',original/'provider.c','-L'+str(original),'-l:'+leaf.name,
                       '-Wl,-soname,'+provider.name,'-Wl,-rpath,$ORIGIN','-o',provider]):
             subprocess.run(list(map(str,argv)),check=True,env=loader_environment())
-        probe=self.root/'probe.c';probe.write_text('#include <dlfcn.h>\n#include <stdio.h>\nint main(int argc,char **argv){if(argc!=2)return 2;void *h=dlopen(argv[1],RTLD_NOW);if(!h){puts(dlerror());return 3;}int(*f)(void)=(int(*)(void))dlsym(h,"answer");if(!f)return 4;printf("%d\\n",f());return dlclose(h)!=0;}\n')
+        probe=self.root/'probe.c';probe.write_text('#include <dlfcn.h>\n#include <stdio.h>\nint main(int argc,char **argv){if(argc!=2)return 2;void *h=dlopen(argv[1],RTLD_NOW);if(!h){puts(dlerror());return 3;}int(*f)(void)=(int(*)(void))dlsym(h,"answer");if(!f)return 4;printf("%d\\n",f());return dlclose(h)!=0;}\n', newline="\n")
         binary=self.root/'probe';subprocess.run([compiler,'-x','c',str(probe),'-ldl','-o',str(binary)],check=True)
         copied=self.root/'copied % 🧠';copied.mkdir();library=self.copy_elf_fixture_closure(provider,copied)
         self.assertIn(leaf.name,{p.name for p in copied.iterdir()})
@@ -163,7 +186,7 @@ class Packaging(harness.ToolchainCase):
         self.assertEqual(report['revision'], revision)
         self.assertEqual(report['components'], [])
         shutil.rmtree(self.root / '.nex')
-        child = subprocess.run([moved / 'bin/app'], env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'}, capture_output=True, text=True)
+        child = subprocess.run([moved / APP], env=deployed_environment(), capture_output=True, text=True)
         self.assertEqual((child.returncode, child.stdout), (7, 'Я🧠\n'), child.stderr)
 
     def test_storage_needs_provenance_and_survives_original_library_removal(self):
@@ -193,7 +216,7 @@ server fn main() -> unit !{db,io} {
         shutil.rmtree(self.root / '.nex')
         moved = self.root / 'deployed, % 🧠'
         output.rename(moved)
-        child = subprocess.run([moved / 'bin/app'], env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent', **env}, capture_output=True, text=True)
+        child = subprocess.run([moved / APP], env=deployed_environment(**env), capture_output=True, text=True)
         self.assertEqual((child.returncode, child.stdout), (0, 'Я🧠\n'), child.stderr)
 
     @unittest.skipUnless(platform.system() == 'Linux', 'ELF private GNU C++ runtime')
@@ -209,16 +232,16 @@ server fn main() -> unit !{db,io} {
             subprocess.run(['patchelf','--set-rpath','$ORIGIN',target],check=True)
             if target.name!=soname:(private/soname).symlink_to(target.name)
         doctor=self.cli('doctor');wrapper=self.root/'private-driver.py'
-        wrapper.write_text('#!/usr/bin/env python3\nimport subprocess,sys\nfrom pathlib import Path\n'
+        wrapper=python_executable(wrapper,'#!/usr/bin/env python3\nimport subprocess,sys\nfrom pathlib import Path\n'
             'args=sys.argv[1:]\nr=subprocess.run(['+repr(doctor['native_compiler'])+ ',*args])\n'
             'if r.returncode==0 and "-o" in args and not any(x in args for x in ["-c","-###","-E","-S"]):\n'
             ' p=Path(args[args.index("-o")+1])\n'
             ' if p.is_file() and p.read_bytes()[:4]==b"\\x7fELF":\n'
             '  r=subprocess.run(["patchelf","--set-rpath",'+repr(str(private))+',str(p)])\n'
-            'raise SystemExit(r.returncode)\n')
+            'raise SystemExit(r.returncode)\n',harness.native_fixture_compiler())
         wrapper.chmod(0o755)
         config=self.root/'private-toolchain.json';config.write_text(json.dumps({
-            'schema':'nex.toolchain/1','target':doctor['host'],'compiler':str(wrapper)}))
+            'schema':'nex.toolchain/1','target':doctor['host'],'compiler':str(wrapper)}), newline="\n")
         output=self.root/'private-package'
         failure=self.cli('package','--toolchain',config,'--directory',output,ok=False,timeout=180)
         self.assertEqual(failure['code'],'E_PACKAGE');self.assertIn('provenance',failure['message'])
@@ -231,13 +254,13 @@ server fn main() -> unit !{db,io} {
         self.assertEqual([c['name'] for c in report['components']],['test-inputs'])
         shutil.rmtree(private);shutil.rmtree(self.root/'.nex');self.file.unlink()
         moved=self.root/'moved private application';output.rename(moved)
-        child=subprocess.run([moved/'bin/app'],env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent'},capture_output=True,text=True)
+        child=subprocess.run([moved/APP],env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent'},capture_output=True,text=True)
         self.assertEqual((child.returncode,child.stdout),(0,'42\n'),child.stderr)
 
     def test_existing_output_and_unsupported_modes_are_rejected(self):
         self.source('module rejected; fn main() -> unit {}')
         output = self.root / 'occupied';output.mkdir()
-        marker = output / 'keep';marker.write_text('original')
+        marker = output / 'keep';marker.write_text('original', newline="\n")
         self.assertEqual(self.cli('package', '--directory', output, ok=False)['code'], 'E_EXISTS')
         self.assertEqual(marker.read_text(), 'original')
         dangling = self.root / 'dangling';dangling.symlink_to(self.root / 'missing')
@@ -251,20 +274,20 @@ server fn main() -> unit !{db,io} {
         # A small SDK-inventory fixture exercises the real compiler/helper and
         # selected real SQLite image, not the full SDK distribution workflow.
         sdk = self.root / 'sdk';(sdk / 'bin').mkdir(parents=True)
-        shutil.copy2(harness.NEX, sdk / 'bin/nex')
+        shutil.copy2(harness.NEX, sdk / NEX)
         config, library = self.sqlite_toolchain(sdk / 'libraries')
-        notice = sdk / 'notice.txt';notice.write_text('Retained SDK fixture notice.\n')
+        notice = sdk / 'notice.txt';notice.write_text('Retained SDK fixture notice.\n', newline="\n")
         resources = sdk / 'share/nex';resources.mkdir(parents=True)
         manifest = {'schema': 'nex.sdk-bundle/1', 'ok': True,
-            'files': {str(library.relative_to(sdk)): {'sha256': hashlib.sha256(library.read_bytes()).hexdigest(), 'component': 'sqlite-fixture'}},
+            'files': {p.relative_to(sdk).as_posix(): {'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'component': 'sqlite-fixture'} for p in self.library_inputs([library]) if p.is_relative_to(sdk)},
             'components': [{'name': 'sqlite-fixture', 'version': 'fixture', 'url': 'https://sqlite.org',
                 'license_files': [{'path': 'notice.txt', 'sha256': hashlib.sha256(notice.read_bytes()).hexdigest()}]}]}
-        (resources / 'sdk-bundle.json').write_text(json.dumps(manifest))
+        (resources / 'sdk-bundle.json').write_text(json.dumps(manifest), newline="\n")
         self.source('module sdk_app; server fn main() -> unit !{db} { store_put("k", "v"); }')
         external = self.library_inputs([library]) - {library}
         extra_notices = ['--notices', self.notice(external)] if external else []
         def attempt(destination, ok=True):
-            child = subprocess.run([sdk / 'bin/nex', 'package', '--directory', destination, '--toolchain', config, *extra_notices, '--json'],
+            child = subprocess.run([sdk / NEX, 'package', '--directory', destination, '--toolchain', config, *extra_notices, '--json'],
                 cwd=self.root, env={**os.environ, 'NEX_RESOURCE_DIR': str(harness.REPO)}, capture_output=True, text=True, timeout=120)
             self.assertEqual(child.returncode == 0, ok, child.stdout + child.stderr)
             return json.loads(child.stdout)
@@ -291,7 +314,7 @@ server fn handle(request: http::Request) -> http::Response !{db} {
         auth = self.root / 'secret-auth.json'
         tokens = [self.cli('token', '--user', user, '--auth', auth)['token'] for user in ('alice', 'bob')]
         cert, key = self.root / 'cert.pem', self.root / 'secret-key.pem'
-        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', cert,
+        run_native(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', cert,
                         '-days', '1', '-subj', '/CN=localhost', '-addext', 'subjectAltName=IP:127.0.0.1'],
                        capture_output=True, check=True)
         output = self.root / 'server'
@@ -303,8 +326,8 @@ server fn handle(request: http::Request) -> http::Response !{db} {
         moved = self.root / 'server moved, % 🧠';output.rename(moved)
         self.file.unlink();shutil.rmtree(self.root / '.nex')
         def launch():
-            process = subprocess.Popen([moved / 'bin/app', '--auth', auth, '--database', self.root / 'database.sqlite',
-                '--cert', cert, '--key', key, '--port', '0'], env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent'},
+            process = subprocess.Popen([moved / APP, '--auth', auth, '--database', self.root / 'database.sqlite',
+                '--cert', cert, '--key', key, '--port', '0'], env=deployed_environment(),
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             lines = queue.Queue()
             threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
@@ -333,7 +356,7 @@ server fn handle(request: http::Request) -> http::Response !{db} {
                 self.assertEqual(request(base, tokens[0]), (200, 'Я🧠'))
                 self.assertEqual(request(base, tokens[1]), (200, 'empty'))
             finally:
-                process.send_signal(signal.SIGTERM)
+                stop_server(process)
                 stdout, stderr = process.communicate(timeout=15)
                 self.assertEqual(process.returncode, 0, stdout + stderr)
                 self.assertNotIn('E_INTERNAL_LEAK', stderr)

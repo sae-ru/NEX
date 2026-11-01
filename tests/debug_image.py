@@ -50,7 +50,7 @@ def __lldb_init_module(debugger, context):
         records.append({'command':command,'success':result.Succeeded(),'output':result.GetOutput(),'error':result.GetError()})
     after=[process.GetProcessID(),process.GetStopID(),process.GetSelectedThread().GetThreadID()]
     print('NEX_IMAGE_PROBE '+json.dumps({'records':records,'before':before,'after':after},ensure_ascii=False))
-''')
+''', newline="\n")
 
         def inspect(*args):
             process = self.cli('debug', *args, '--', '--no-lldbinit', '--batch',
@@ -91,7 +91,7 @@ def __lldb_init_module(debugger, context):
         relocated = json.loads(Path(other['manifest']).read_text())
         relocated['program'] = str(image)
         manifest = self.root / 'different-image-at-original-path.json'
-        manifest.write_text(json.dumps(relocated))
+        manifest.write_text(json.dumps(relocated), newline="\n")
         quote = lambda p: json.dumps(str(p), ensure_ascii=False)
         try:
             shutil.copyfile(other['launch']['program'], image)

@@ -1,0 +1,150 @@
+{
+  "schema": "nex.windows-typed-debug-evidence/1",
+  "date": "2026-11-01",
+  "ok": true,
+  "scope": "All eight explicit027 typed debugger scenarios; real CLI/DAP, source/static/shared/mixed, record/list/legacy/file values, source-absent watches, stale/effectful rejection and synchronous DWARF",
+  "compiler": "build/windows-wave19-cohort/nex.exe",
+  "compiler_sha256": "3f948a38fae7a045377106c84157afff8d25d196f63b76c91bbb6b0adc4bbd73",
+  "requires_WSL": false,
+  "cases": [
+    {
+      "scenario": "record",
+      "mode": "source",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "record",
+      "mode": "static",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "record",
+      "mode": "shared",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "record",
+      "mode": "mixed",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "list",
+      "mode": "mixed",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "legacy",
+      "mode": "mixed",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "file",
+      "mode": "mixed",
+      "real_LLDB": true,
+      "real_NEX_DAP": true,
+      "source_absent": true,
+      "passed": true
+    },
+    {
+      "scenario": "synchronous",
+      "mode": "source",
+      "real_DWARF_LLDB": true,
+      "passed": true
+    }
+  ],
+  "seconds": 227.4,
+  "full_debugger_regression_accepted": false,
+  "full_windows_regression_accepted": false,
+  "evidence": [
+    {
+      "path": "build/windows-typed-debug19d/report.json",
+      "sha256": "d6bbaa8c3524a12d152214b4958e5a07ae14e1d42d936afc11ef7040ecca66ae"
+    },
+    {
+      "path": "build/local/windows-typed-debug19d.log",
+      "sha256": "f80d0010c7912b627000ca6b5e38daf9846b0981b00a56b9af31b96cbef5cfee"
+    },
+    {
+      "path": "build/deps/windows-debugger23-source-d/clang64/nex-debugger-build.json",
+      "sha256": "14f70b48d73fe54bb425bb580d904c99a4cf09048753e8eedb047a6a6a0a7f42"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-source/report.json",
+      "sha256": "89e045dafcd99541c199c2abe087d9b81dc9b2db3e75d1611fedd4fbef535909"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-source/dap-report.json",
+      "sha256": "af01e2e4bcbbd07158a7f80969edd3bcdbd54d4132233d3d1563d20f94b25758"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-static/report.json",
+      "sha256": "3e3382ae1620fa4a210e274f9e375f2c3b39538fba41ae47eb04836dd4dbdead"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-static/dap-report.json",
+      "sha256": "cc06dabfcdf6139c88f11a87291b9217c9406d2bf36aed20472092ab87a55536"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-shared/report.json",
+      "sha256": "03ac35164ddb8d5e6cc9c7f67c6adc569ae0073e1df0f6a9ea156962ed98d8b8"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-shared/dap-report.json",
+      "sha256": "1ff33a055bc661f787e9acc572203403aa697b9da3479c3e53ea78ad1700f085"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-mixed/report.json",
+      "sha256": "439ae84145e9b3a1294e8c3adaaeddbbac9d7dcc0862f4fb355dcc4e0956f105"
+    },
+    {
+      "path": "build/windows-typed-debug19d/record-mixed/dap-report.json",
+      "sha256": "e57186477ca33fc279fffde7a46efee653f712c8b943704defd617279cee25b2"
+    },
+    {
+      "path": "build/windows-typed-debug19d/list-mixed/report.json",
+      "sha256": "8151ee44f1e8248b87aaa07cef68e5a2df44c49b751f615973ffb6978dbc9ee8"
+    },
+    {
+      "path": "build/windows-typed-debug19d/list-mixed/dap-report.json",
+      "sha256": "f11e8f0535bc708223a98441a2cf4b9c513f37e7cd7eae1930bd9e525faad093"
+    },
+    {
+      "path": "build/windows-typed-debug19d/legacy-mixed/report.json",
+      "sha256": "aec26bf1288248150662d37fd893bcc914b6373cb571aa8d9737c33a63863e4b"
+    },
+    {
+      "path": "build/windows-typed-debug19d/legacy-mixed/dap-report.json",
+      "sha256": "16aaebd18da742e0953804ad5417fb9c2999b111dab0f80a8303d1b69f324b61"
+    },
+    {
+      "path": "build/windows-typed-debug19d/file-mixed/report.json",
+      "sha256": "3ccbc5cc396918f05002a9978bb8ee47923de614f887a90e3a88c65b84a26e45"
+    },
+    {
+      "path": "build/windows-typed-debug19d/file-mixed/dap-report.json",
+      "sha256": "ae1d1c302f0e4e5fbcfac4584089a76413cd8cab17eaa04b72d4617e91087d8c"
+    },
+    {
+      "path": "build/windows-typed-debug19d/synchronous-source/report.json",
+      "sha256": "b01aa60bf23dbfb22f6b57b7a6434f8cde1db528b838b829d0628a8e182db0cf"
+    }
+  ]
+}

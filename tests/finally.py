@@ -1,4 +1,6 @@
 """Synchronous and resumable finally agreement, ownership and retained identities."""
+from sqlite_fixture import connection as sqlite_connection
+from host_fixture import run_native
 import hashlib
 import json
 import os
@@ -68,7 +70,7 @@ class FinallyFoundation(harness.ToolchainCase):
     def web(self, entry, driver):
         folder=self.root/('web-'+entry)
         self.cli('emit','--kind','typescript','--entry',entry,'--directory',folder)
-        path=folder/'observe.ts';path.write_text(driver)
+        path=folder/'observe.ts';path.write_text(driver, newline="\n")
         result=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',path],
                               cwd=folder,capture_output=True,text=True,timeout=60)
         self.assertEqual(result.returncode,0,result.stderr)
@@ -151,7 +153,7 @@ fn main()->unit{}
         self.source('module bounded;fn compute(flag:bool)->i64{'+body+'}fn main()->unit{assert(compute(false)==1);}')
         self.assertEqual(self.cli('build',ok=False,timeout=120)['code'],'E_FINALLY_LIMIT')
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual native LLDB scope check')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual native LLDB scope check')
     def test_native_finally_return_uses_outer_lexical_debug_scope(self):
         debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
         if not debugger:self.skipTest('LLDB is not available')
@@ -185,8 +187,8 @@ fn main()->unit !{io}{
               '-o','run','-o','frame variable value','-o','expr value',
               '-o','nex-frame value','-o','nex-eval value','-o','continue']
         observed=subprocess.run(argv,cwd=self.root,capture_output=True,text=True,timeout=120)
-        (self.root/'lldb-finally.stdout').write_text(observed.stdout)
-        (self.root/'lldb-finally.stderr').write_text(observed.stderr)
+        (self.root/'lldb-finally.stdout').write_text(observed.stdout, newline="\n")
+        (self.root/'lldb-finally.stderr').write_text(observed.stderr, newline="\n")
         self.assertEqual(observed.returncode,0,observed.stdout+observed.stderr)
         self.assertRegex(observed.stdout,r'(?m)^\([^\n]*\) value = 42\s*$')
         self.assertIn('$0 = 42',observed.stdout)
@@ -204,7 +206,7 @@ fn main()->unit !{io}{
         self.assertEqual(metadata['producer']['toolchain'],'0.137.1')
         self.assertFalse(metadata['retagged_source'])
         self.source(metadata['source']);graph=self.root/'.nex/graph.db';graph.parent.mkdir(exist_ok=True)
-        with sqlite3.connect(str(graph)) as db:db.executescript(sql.decode())
+        with sqlite_connection(str(graph)) as db:db.executescript(sql.decode())
         before=harness.database_rows(graph)
         self.assertEqual({k:len(v) for k,v in before[1].items()},metadata['table_counts'])
         self.assertEqual(self.cli('eval','--revision',metadata['revision'],ok=False)['code'],'E_LANGUAGE_VERSION')
@@ -221,15 +223,15 @@ fn main()->unit !{io}{
             if table!='head':self.assertLessEqual(set(rows),set(after[1][table]),table)
         self.assertEqual(self.cli('eval','--revision',migrated['revision'])['value'],42)
         fresh=self.root/'fresh';fresh.mkdir()
-        (fresh/'main.nex').write_text(metadata['source'])
-        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}))
+        (fresh/'main.nex').write_text(metadata['source'], newline="\n")
+        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
         self.assertEqual(self.cli('check',cwd=fresh)['revision'],migrated['revision'])
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual C11 provider requires a supported native host')
     def test_pending_return_and_partial_argument_release_physical_resource_before_catch_or_finalizer(self):
         self.physical_resource_outcomes(False)
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual C11 provider requires a supported native host')
     def test_resumable_pending_outcomes_release_physical_resource(self):
         self.physical_resource_outcomes(True)
 
@@ -273,25 +275,25 @@ server fn main()->unit !{ffi,io}{
         pins={name:hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
               for name,value in signatures.items()}
         (self.root/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin)
-                                                             for name,pin in pins.items())+'\n')
-        bundle=self.root/'bundle';bundle.mkdir();marker=self.root/'events';module=bundle/'module.so'
-        compiler=Path(self.cli('doctor')['native_compiler']).with_name('clang')
+                                                             for name,pin in pins.items())+'\n', newline="\n")
+        bundle=self.root/'bundle';bundle.mkdir();marker=self.root/'events';module=bundle/('module.dll' if os.name=='nt' else 'module.so')
+        compiler=Path(self.cli('doctor')['native_compiler'])
         literal='"'+''.join(chr(b) if 32<=b<127 and b not in (34,92) else '\\%03o'%b
                             for b in str(marker).encode())+'"'
-        produced=subprocess.run([compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden',
+        produced=run_native([compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden',
             '-I'+str(harness.REPO/'runtime'),'-I'+str(self.root),'-DNEX_RESOURCE_MARKER='+literal,
             harness.REPO/'examples/source-resource-producer.c','-o',module],capture_output=True,text=True,timeout=60)
         self.assertEqual(produced.returncode,0,produced.stderr)
-        (bundle/'NOTICE').write_text('NEX finally conformance producer\n')
-        host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
-        manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so',
-                  'files':[{'path':n,'sha256':hashlib.sha256((bundle/n).read_bytes()).hexdigest()} for n in ('module.so','NOTICE')],
+        (bundle/'NOTICE').write_text('NEX finally conformance producer\n', newline="\n")
+        host_platform=('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
+        manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':module.name,
+                  'files':[{'path':n,'sha256':hashlib.sha256((bundle/n).read_bytes()).hexdigest()} for n in (module.name,'NOTICE')],
                   'exports':pins,'notices':['NOTICE']}
-        (bundle/'manifest.json').write_text(json.dumps(manifest))
+        (bundle/'manifest.json').write_text(json.dumps(manifest), newline="\n")
         pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest()
         host=self.root/'host.json';host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,
             'resource_limit':1,'resource_bytes':8,'libraries':{'owned':{'directory':str(bundle),
-            'manifest_sha256':pin,'exports':['create','read']}}}))
+            'manifest_sha256':pin,'exports':['create','read']}}}), newline="\n")
         self.source(source.replace('PIN',pin))
         for engine in ('reference','debug','release'):
             with self.subTest(engine=engine):

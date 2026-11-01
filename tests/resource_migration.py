@@ -1,4 +1,5 @@
 """Actual SDK122 language020 histories, explicit021 migration and resource editing."""
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import copy
 import json
@@ -40,10 +41,10 @@ class ResourceMigrationChecks(MigrationChecks):
  def restore(self,label,data,sql):
   project=self.output/label;(project/'.nex').mkdir(parents=True)
   database=project/'.nex/graph.db'
-  with sqlite3.connect(database) as db:db.executescript(sql.decode())
+  with sqlite_connection(database) as db:db.executescript(sql.decode())
   row=next(r for r in data['revisions'] if r['revision']==data['head'])
   for key,text in row['bundle']['files'].items():
-   path=project/key;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+   path=project/key;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
   write_json(project/'nex.json',{'schema':'nex.project/1','language':'0.20','entry':row['bundle']['entry']})
   state=database_state(database)
   assert {name:len(rows) for name,rows in state['tables'].items()}==data['tables']
@@ -109,7 +110,7 @@ class ResourceMigrationChecks(MigrationChecks):
   # A corrupt modern origin must fail before a writable Store or target directory.
   data,sql=self.fixture('nominal')
   project,database,_,_,_=self.restore('corrupt-origin',data,sql)
-  with sqlite3.connect(database) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',('0.19',data['head']))
+  with sqlite_connection(database) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',('0.19',data['head']))
   before=database_state(database)
   error=self.cli('corrupt-modern-origin','migrate',cwd=project,ok=False)
   assert error['code']=='E_REVISION' and database_state(database)==before
@@ -137,8 +138,8 @@ server fn alive(x:resource<i64>)->bool !{ffi}{return resource_is_open(x);}
 server fn forward(x:api::Session)->api::Session{return x;}
 fn main()->i64{return 42;}
 '''
-  (project/'main.nex').write_text(main)
-  (project/'types.nex').write_text('module external_types;pub server resource Session;')
+  (project/'main.nex').write_text(main, newline="\n")
+  (project/'types.nex').write_text('module external_types;pub server resource Session;', newline="\n")
   checked=self.cli('resource-check','check','main.nex',cwd=project)
   database=project/'.nex/graph.db';before=database_state(database)
   for flag in ([],['--references'],['--details']):

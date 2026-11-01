@@ -55,7 +55,7 @@ def main():
             assert runtime['build']['build_key'] == built['build_key']
             assert runtime['build']['revision'] == built['revision']
             exported = subprocess.run([str(exporter), str(trace)], capture_output=True, text=True, timeout=30, check=True)
-            (output / f'zones-{index}.csv').write_text(exported.stdout)
+            (output / f'zones-{index}.csv').write_text(exported.stdout, newline="\n")
             zones = list(csv.DictReader(io.StringIO(exported.stdout)))
             calls = {f['name']: f['calls'] for f in runtime['functions']}
             assert {row['name']: int(row['counts']) for row in zones} == calls
@@ -82,7 +82,7 @@ def main():
                 collector.terminate()
                 collector.wait(timeout=5)
     report = dict(schema='nex.tracy-acceptance/1', startup='application listener ready before capture', runs=records)
-    (output / 'acceptance.json').write_text(json.dumps(report, indent=2) + '\n')
+    (output / 'acceptance.json').write_text(json.dumps(report, indent=2) + '\n', newline="\n")
     print(json.dumps(dict(output=str(output / 'acceptance.json'), captures=len(records), inspected=bool(options.inspect))))
 
 

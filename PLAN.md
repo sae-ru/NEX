@@ -1,3 +1,12 @@
+# Windows/runtime integration — 0.154.0 / language 0.27
+
+Combine native Windows acceptance bfe4486 with Mac runtime loop contracts7272ebc.
+The merge retains language0.27/taskABI7 and both parents' pinned evidence.
+Current work: fresh integrated build, complete Mac regression, relocated/restored
+SDK qualification, then current Windows acceptance. Parent passes do not accept
+this combined compiler. General GPU compilation, complete Windows SDK, remaining
+language/platform/tooling capabilities below are still unfinished.
+
 # Runtime loop contract development — 0.153.0 / language 0.27
 
 Selected while rules now project invariant entry/back-edge checks, nonnegative

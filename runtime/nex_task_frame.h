@@ -39,12 +39,10 @@ struct TaskFrameHostContext {
   std::shared_ptr<ResourceExecutor> foreignCleanup;
 #endif
   TaskFrameHostContext()=default;
-#ifndef _WIN32
   FileReadGrant fileReads;
   FileWriteGrant fileWrites;
   std::shared_ptr<ResourceExecutor> fileCleanup;
   explicit TaskFrameHostContext(FileReadGrant grant):fileReads(std::move(grant)){}
-#endif
 };
 struct NativeTaskRequest {
   TaskRequestKind operation;

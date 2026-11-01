@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Migrate genuine024 stores without changing their origins, IDs or schema."""
+from sqlite_fixture import connection as sqlite_connection
 import collections
 import hashlib
 import json
@@ -17,14 +18,14 @@ class Public025Migration(harness.ToolchainCase):
         sql=base.with_suffix('.sql').read_bytes()
         self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
         self.source(metadata['source'])
-        (self.root/'nex.json').write_text(json.dumps(metadata['manifest']))
+        (self.root/'nex.json').write_text(json.dumps(metadata['manifest']), newline="\n")
         directory=self.root/'.nex';directory.mkdir()
-        with sqlite3.connect(str(directory/'graph.db')) as db:
+        with sqlite_connection(str(directory/'graph.db')) as db:
             db.executescript(sql.decode())
         return metadata
 
     def state(self):
-        with sqlite3.connect(str(self.root/'.nex/graph.db')) as db:
+        with sqlite_connection(str(self.root/'.nex/graph.db')) as db:
             db.execute('pragma query_only=on')
             schema=db.execute('select * from sqlite_master order by name').fetchall()
             tables=[r[0] for r in db.execute("select name from sqlite_master where type='table' order by name")]
@@ -53,7 +54,7 @@ class Public025Migration(harness.ToolchainCase):
         self.assertEqual(self.cli('eval','--revision','HEAD')['value'],42)
         self.assertFalse(self.cli('migrate','--expected-revision',result['revision'])['changed'])
         self.assertEqual(self.state(),after)
-        with sqlite3.connect(str(self.root/'.nex/graph.db')) as db:
+        with sqlite_connection(str(self.root/'.nex/graph.db')) as db:
             self.assertEqual(db.execute("select hash from revisions where language='0.24' order by hash").fetchall(),[(v,) for v in sorted(metadata['revisions'])])
 
     def repair(self,name,diagnostic,target):
@@ -65,9 +66,9 @@ class Public025Migration(harness.ToolchainCase):
         self.assertEqual(self.cli('migrate',ok=False)['code'],diagnostic)
         self.assertEqual(self.state(),before)
         candidate=plan['candidate'];candidate['sources']['files']['main.nex']=target
-        file=self.root/'candidate.json';file.write_text(json.dumps(candidate))
+        file=self.root/'candidate.json';file.write_text(json.dumps(candidate), newline="\n")
         bad=dict(candidate);bad['origin_source_hash']='0'*64
-        badfile=self.root/'bad.json';badfile.write_text(json.dumps(bad))
+        badfile=self.root/'bad.json';badfile.write_text(json.dumps(bad), newline="\n")
         self.assertEqual(self.cli('migrate','--candidate',badfile,ok=False)['code'],'E_MIGRATION_CANDIDATE')
         self.assertEqual(self.state(),before)
         repaired=self.cli('migrate','--candidate',file,'--kind','plan')

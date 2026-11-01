@@ -4,7 +4,7 @@
 namespace nex {
 struct NativeToolchain {
   std::string compiler, target, sysroot, linker, archiver, debugPackager, sdkManifest;
-  std::string wasmLinker;
+  std::string wasmLinker, wasmCompiler;
   std::string windowsRuntime, windowsNotices;
   std::string sqliteInclude, sqliteLibrary, opensslInclude, opensslSSL, opensslCrypto;
   bool hostCompatible = true;
@@ -12,6 +12,11 @@ struct NativeToolchain {
   std::string identity;
 };
 NativeToolchain configureNative(const BuildOptions &options);
+// Wasm uses the host SDK's all-target LLVM tools, independently of an explicit
+// native target compiler/sysroot. NEX_WASM_CLANG is the dedicated override.
+NativeToolchain configureWasm();
+// Completed Windows links retain hashes for statically linked vendor notices.
+llvm::json::Array nativeStaticLinkInputs(const NativeToolchain &tools,bool storage,bool foreign,bool server);
 struct NativeToolchainSnapshot {
   std::string hash, target;
   bool hostCompatible = true;

@@ -1,4 +1,5 @@
 """Source resources: checked successes/refusals and real C/CPP/native boundary."""
+from host_fixture import run_native
 import argparse,datetime,hashlib,json,os,platform,subprocess,tempfile,time,traceback
 from pathlib import Path
 parser=argparse.ArgumentParser()
@@ -10,17 +11,17 @@ if cli.legacy_fixtures is None and os.environ.get('NEX_TEST_RESOURCE020_FIXTURES
 ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};ENV.pop('NEX_RESOURCE_DIR',None)
 report={'schema':'nex.source-resource-preflight/1','ok':False,'state':'starting','source':str(SOURCE),'probe':str(PROBE),'output':str(OUT),'commands':[],'cases':[],'public_source_resources':True,'public_language':'0.24','source_language':'0.24','migration_accepted':False,'source_task_resource_bridge':False,'actual_GPU_NPU_resources':False};started=time.monotonic()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
-def save():report.update(seconds=round(time.monotonic()-started,3),updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report.update(seconds=round(time.monotonic()-started,3),updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def command(label,args,cwd=OUT,expected=0,code=None,parse=True,env=ENV):
  report['state']=label;row={'label':label,'command':list(map(str,args)),'cwd':str(cwd)};report['commands'].append(row);save()
- p=subprocess.run(row['command'],cwd=cwd,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=240)
- for key in ('stdout','stderr'):(OUT/(label+'.'+key)).write_text(getattr(p,key))
+ p=run_native(row['command'],cwd=cwd,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=240)
+ for key in ('stdout','stderr'):(OUT/(label+'.'+key)).write_text(getattr(p,key), newline="\n")
  row.update(exit_code=p.returncode,passed=p.returncode==expected);save();assert p.returncode==expected,(label,p.stdout[-3000:],p.stderr[-3000:])
  result=json.loads(p.stdout) if parse else p.stdout
  if code is not None:assert result.get('code')==code,(label,result,code)
  return result
 def bundle(name,files):
- root=OUT/name;root.mkdir();doc={'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':files} if isinstance(files,str) else files};path=root/'sources.json';path.write_text(json.dumps(doc,ensure_ascii=False,indent=2)+'\n');return root,path
+ root=OUT/name;root.mkdir();doc={'schema':'nex.sources/1','entry':'main.nex','files':{'main.nex':files} if isinstance(files,str) else files};path=root/'sources.json';path.write_text(json.dumps(doc,ensure_ascii=False,indent=2)+'\n', newline="\n");return root,path
 def check(name,text,error=None,language='0.24'):
  root,path=bundle(name,text);r=command(name,[PROBE,'check',path,root,'-',language],expected=1 if error else 0,code=error);report['cases'].append({'name':name,'expected_error':error,'revision':r.get('revision')});save();return r,root,path
 try:
@@ -100,15 +101,15 @@ try:
  generated=project/'generated';generated.mkdir()
  lines=[]
  for name,sig in api['signatures'].items():lines.append('#define PIN_'+name.upper()+' "'+hashlib.sha256(json.dumps(sig,sort_keys=True,separators=(',',':')).encode()).hexdigest()+'"')
- (generated/'typed-resource-signatures.h').write_text('\n'.join(lines)+'\n')
+ (generated/'typed-resource-signatures.h').write_text('\n'.join(lines)+'\n', newline="\n")
  for kind in ('C','CPP'):
   bundle_dir=project/('bundle-'+kind);bundle_dir.mkdir();module=bundle_dir/'module.so';compiler=cli.compiler if kind=='CPP' else cli.compiler.with_name('clang')
   args=[compiler,'-x','c' if kind=='C' else 'c++','-std=c11' if kind=='C' else '-std=c++20','-shared','-fPIC','-pthread','-fvisibility=hidden','-I'+str(SOURCE/'runtime'),'-I'+str(generated),SOURCE/'tests/typed_resource_module.c','-o',module]
   command('compile-'+kind,args,parse=False)
-  (bundle_dir/'NOTICE').write_text('NEX source-resource conformance module\n')
+  (bundle_dir/'NOTICE').write_text('NEX source-resource conformance module\n', newline="\n")
   exported={name:hashlib.sha256(json.dumps(sig,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,sig in api['signatures'].items()}
-  manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle_dir/name)} for name in ('module.so','NOTICE')],'exports':exported,'notices':['NOTICE']};(bundle_dir/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n');pin=sha(bundle_dir/'manifest.json')
-  host=project/('host-'+kind+'.json');host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'test':{'directory':str(bundle_dir),'manifest_sha256':pin,'exports':list(exported)}}},indent=2)+'\n')
+  manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':name,'sha256':sha(bundle_dir/name)} for name in ('module.so','NOTICE')],'exports':exported,'notices':['NOTICE']};(bundle_dir/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n', newline="\n");pin=sha(bundle_dir/'manifest.json')
+  host=project/('host-'+kind+'.json');host.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'test':{'directory':str(bundle_dir),'manifest_sha256':pin,'exports':list(exported)}}},indent=2)+'\n', newline="\n")
   root,compiled_bundle=bundle('execution-'+kind,program(pin))
   r=command('reference-'+kind,[PROBE,'reference',compiled_bundle,root,host]);assert r['value']==0 and r['output']=='<resource>\n' and r['external_capacity_after_scope']==0
   web=OUT/('client-'+kind);command('web-isolation-'+kind,[PROBE,'web',compiled_bundle,root,web]);text=(web/'program.ts').read_text();assert 'fixture::Session' not in text and pin not in text and node['identity'] not in text
@@ -116,10 +117,10 @@ try:
   output=command('native-run-'+kind,[native['executable'],'--nex-foreign',host],parse=False);assert output=='<resource>\n'
   if cli.nex:
    sources=json.loads(compiled_bundle.read_text())
-   for name,text in sources['files'].items():(root/name).write_text(text)
+   for name,text in sources['files'].items():(root/name).write_text(text, newline="\n")
    compiler=cli.nex.resolve()
    language=command('public-language-'+kind,[compiler,'describe','--kind','index','--json'],cwd=root)['language']
-   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':sources['entry']})+'\n')
+   (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':sources['entry']})+'\n', newline="\n")
    checked=command('public-check-'+kind,[compiler,'check','main.nex','--json'],cwd=root)
    exported=command('public-ffi-'+kind,[compiler,'ffi','main.nex','--symbol','fixture::create','--json'],cwd=root)
    assert exported==api['signatures']['create']

@@ -68,7 +68,7 @@ def reader_module():
         else:sys.modules['lldb']=previous
 
 
-@unittest.skipUnless(platform.system() in ('Darwin','Linux'),'provider debugger requires actual Mach-O/ELF LLDB')
+@unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'provider debugger requires a supported native LLDB host')
 class TaskProviderDebugging(harness.ToolchainCase):
     def setUp(self):
         super().setUp();retained=os.environ.get('NEX_TASK_PROVIDER_DEBUG_OUTPUT')
@@ -77,10 +77,10 @@ class TaskProviderDebugging(harness.ToolchainCase):
             self.root=Path(retained).resolve()/self._testMethodName;self.root.mkdir(parents=True,exist_ok=False)
         self.commands=[]
         for name in ('pure','unused','leaf','mid','app','other'):(self.root/name).mkdir()
-        for name,text in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(text)
-        self.file=self.root/'app/main.nex';self.file.write_text(APP)
-        (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(1));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        for name,text in (('pure',PURE),('unused',UNUSED),('leaf',LEAF),('mid',MID)):(self.root/name/'value.nex').write_text(text, newline="\n")
+        self.file=self.root/'app/main.nex';self.file.write_text(APP, newline="\n")
+        (self.root/'other/main.nex').write_text('module debug_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::work(1));}', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         self.description={'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -94,7 +94,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
                 'other':{'kind':'executable','root':'other','entry':'other/main.nex','dependencies':{'mid':'static'}}}}
         self.save()
 
-    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description))
+    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
     environment=shared.SharedTaskProviders.environment
     symbols=shared.SharedTaskProviders.symbols
     artifacts=shared.SharedTaskProviders.artifacts
@@ -105,7 +105,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.commands.append({'argv':list(map(str,argv)),'cwd':str(cwd or self.root),'exit_code':run.returncode,
             'stdout':run.stdout,'stderr':run.stderr})
         if os.environ.get('NEX_TASK_PROVIDER_DEBUG_OUTPUT'):
-            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n')
+            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n', newline="\n")
         return run
 
     def cli(self,*args,ok=True,cwd=None,env=None,timeout=300):
@@ -137,10 +137,10 @@ class TaskProviderDebugging(harness.ToolchainCase):
         debugger=shutil.which('lldb');self.assertTrue(debugger,'actual LLDB with Python is required')
         manifest=json.loads(Path(session['manifest']).read_text())
         argv=[debugger,'--no-lldbinit','--batch',session['launch']['program']]
-        for command in ['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter']),
-            'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(harness.NEX),*commands]:argv+=['-o',command]
+        for command in ['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter'],ensure_ascii=False),
+            'nex-load-debug '+json.dumps(session['manifest'],ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False),*commands]:argv+=['-o',command]
         run=self.process(argv,env=env,timeout=180)
-        (self.root/(label+'.stdout')).write_text(run.stdout);(self.root/(label+'.stderr')).write_text(run.stderr)
+        (self.root/(label+'.stdout')).write_text(run.stdout, newline="\n");(self.root/(label+'.stderr')).write_text(run.stderr, newline="\n")
         self.assertEqual(run.returncode,0,run.stdout+run.stderr)
         return run,[json.loads(line) for line in run.stdout.splitlines() if line.startswith('{')]
 
@@ -162,6 +162,31 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertEqual(expression['value'],'42');self.assertEqual(expression['source_identity'],frame['source_identity'])
         self.assertIn('exited with status = 0',run.stdout)
 
+    @unittest.skipUnless(os.name=='nt','Windows long-path debugger contract')
+    def test_windows_long_paths_preserve_real_cli_dap_provider_identity(self):
+        source=self.root;entries=list(source.iterdir())
+        directory=source/('long native project 🧠 '+90*'x');directory.mkdir()
+        for entry in entries:
+            if entry.is_dir():shutil.copytree(entry,directory/entry.name)
+            else:shutil.copy2(entry,directory/entry.name)
+        self.root=directory;self.file=directory/'app/main.nex';self.mixed()
+        _,session,_,manifest=self.prepare()
+        self.assertGreater(max(len(row['path']) for row in manifest['owned_images']),260)
+        observed,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',
+            'nex-task-stack','nex-eval input+1','breakpoint disable','continue'])
+        self.assertEqual(next(row['value'] for row in rows if row.get('schema')=='nex.task-expression/2'),'42')
+        self.assertIn('exited with status = 0',observed.stdout)
+        def body(adapter):
+            tasks=adapter.request('threads');selected=tasks['nex']['selected'];self.assertTrue(selected)
+            stack=adapter.request('stackTrace',{'threadId':selected})
+            self.assertEqual(stack['stackFrames'][0]['name'],'debug_leaf::work')
+            watch=adapter.request('evaluate',{'expression':'input+1','frameId':stack['stackFrames'][0]['id'],'context':'watch'})
+            self.assertEqual(watch['nex']['value'],'42')
+            adapter.request('setFunctionBreakpoints',{'breakpoints':[]})
+            adapter.request('continue',{'threadId':selected})
+            self.assertEqual(adapter.event('exited')['exitCode'],0)
+        self.dap(session,'debug_leaf::work',body)
+
     def dap(self,session,breakpoint,body):
         from debugging import DAP
         manifest=json.loads(Path(session['manifest']).read_text());backend=shutil.which('lldb-dap')
@@ -176,15 +201,15 @@ class TaskProviderDebugging(harness.ToolchainCase):
             adapter.request('initialize',{'clientID':'nex-provider-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
             launch=adapter.send('launch',{'program':session['launch']['program'],'cwd':str(self.root),'stopOnEntry':False,
                 'nexTaskDebug':True,'initCommands':['settings set target.disable-aslr false',
-                    'command script import '+json.dumps(manifest['formatter']),
-                    'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(harness.NEX)]})
+                    'command script import '+json.dumps(manifest['formatter'],ensure_ascii=False),
+                    'nex-load-debug '+json.dumps(session['manifest'],ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False)]})
             adapter.event('initialized');points=adapter.request('setFunctionBreakpoints',{'breakpoints':[{'name':breakpoint}]})
             self.assertTrue(points['breakpoints'][0]['verified']);adapter.request('configurationDone');adapter.response(launch)
             stopped=adapter.event('stopped');self.assertTrue(stopped['allThreadsStopped']);self.assertNotIn('threadId',stopped)
             body(adapter)
         finally:
             try:adapter.close()
-            finally:(self.root/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n')
+            finally:(self.root/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
 
     def test_mixed_shared_actual_dap_call_yield_return_and_stale_selection(self):
         self.mixed();_,session,_,_=self.prepare()
@@ -224,7 +249,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         owner=next(image for image in view['images'] if image['component']=='unused')
         # A retained step is compiler-private; its actual owner image must
         # contain its local code symbol, without exporting the step as an API.
-        symbols=self.process(['nm','-a',owner['path']])
+        symbols=self.process([shutil.which('llvm-nm') or 'nm','-a',owner['path']])
         self.assertEqual(symbols.returncode,0,symbols.stderr)
         owned=[line.split() for line in symbols.stdout.splitlines()
                if len(line.split())>=2 and line.split()[-2] in ('t','T','w','W')
@@ -262,7 +287,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         _,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run','nex-frame input+1','continue'])
         frame=next(row for row in rows if row.get('schema')=='nex.debug-frame/4')
         def reject(candidate,document,expected):
-            altered=path.parent/'inspector-negative.json';altered.write_text(json.dumps(document))
+            altered=path.parent/'inspector-negative.json';altered.write_text(json.dumps(document), newline="\n")
             run=self.process([harness.NEX,'inspect','--manifest',altered,'--expression','input+1','--kind','plan','--json'],
                 input=json.dumps(candidate),timeout=30)
             self.assertNotEqual(run.returncode,0,run.stdout+run.stderr)
@@ -275,7 +300,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
             reject(frame,altered,'E_DEBUG_BUILD')
 
     def test_provider_channel_dependency_progress_unicode_and_opaque_authority(self):
-        self.mixed();self.file.write_text('module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::exchange());}')
+        self.mixed();self.file.write_text('module debug_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::exchange());}', newline="\n")
         _,session,_,_=self.prepare('app','--','--nex-task-workers','1')
         run,rows=self.lldb(session,['nex-task-break function debug_leaf::observe','run','nex-task-values',
             'nex-task-next','nex-task-next','nex-task-next','nex-task-values','nex-eval len(label)',
@@ -290,10 +315,10 @@ class TaskProviderDebugging(harness.ToolchainCase):
  return text;
 }
 '''
-        (self.root/'leaf/value.nex').write_text(read_source)
-        (self.root/'mid/value.nex').write_text(MID+'\npub server fn read(path:str)->str!{task,fs}{return leaf::read(path);}\n')
+        (self.root/'leaf/value.nex').write_text(read_source, newline="\n")
+        (self.root/'mid/value.nex').write_text(MID+'\npub server fn read(path:str)->str!{task,fs}{return leaf::read(path);}\n', newline="\n")
         self.description['components']['leaf']['exports'].append('read');self.description['components']['mid']['exports'].append('read');self.save()
-        self.file.write_text('module debug_app;import "../mid/value.nex" as mid;server fn main()->unit!{task,fs,io}{print(mid::read("text"));}')
+        self.file.write_text('module debug_app;import "../mid/value.nex" as mid;server fn main()->unit!{task,fs,io}{print(mid::read("text"));}', newline="\n")
         grant=self.root/'grant';grant.mkdir();(grant/'text').write_bytes('A🌍\0λ'.encode())
         _,session,_,manifest=self.prepare()
         function=next(f for f in manifest['functions'] if f['name']=='debug_leaf::read')
@@ -316,11 +341,11 @@ class TaskProviderDebugging(harness.ToolchainCase):
             'targets':['native'],'checks':['prepare-provider']}]
         mixed=copy.deepcopy(task);mixed['checks'].append({'id':'ordinary','kind':'build','program':'app','target':'native',
             'configuration':'logical_debug','timeout_seconds':300});mixed['requirements'][0]['checks'].append('ordinary')
-        bad=self.root/'mixed-task.json';bad.write_text(json.dumps(mixed))
+        bad=self.root/'mixed-task.json';bad.write_text(json.dumps(mixed), newline="\n")
         refused=self.cli('task',bad,'--kind','check',ok=False)
         self.assertEqual(refused['code'],'E_TASK');self.assertIn('dedicated configuration',refused['message'])
         self.assertFalse((self.root/'.nex/build').exists())
-        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task), newline="\n")
         physical=self.root/'capture-parent';physical.mkdir()
         alias=self.root/'capture-alias';alias.symlink_to(physical,target_is_directory=True)
         accepted=self.cli('task',taskfile,'--kind','run','--directory',alias/'capture',timeout=900)
@@ -388,8 +413,12 @@ class TaskProviderDebugging(harness.ToolchainCase):
             if sys.platform=='darwin':
                 symbols=['script nex_symbol_target=lldb.debugger.GetSelectedTarget()',
                     'script print(__import__("json").dumps({"schema":"nex.test-loaded-symbols/1","images":[{"path":str(nex_symbol_target.GetModuleAtIndex(i).GetFileSpec()),"symbols":str(nex_symbol_target.GetModuleAtIndex(i).GetSymbolFileSpec())} for i in range(nex_symbol_target.GetNumModules())]}))']
+            # A logical out may complete at process exit (the0.152.1 resume
+            # contract). Never issue a native continue to an exited inferior;
+            # if still stopped, use the same bounded event-aware resume helper.
+            finish='script nex_test_process=lldb.debugger.GetSelectedTarget().GetProcess(); nex_test_error=__import__("lldb_nex")._task_resume(lldb.debugger,nex_test_process) if nex_test_process.GetState() in (lldb.eStateStopped,lldb.eStateSuspended) else None; assert (nex_test_error is None or nex_test_error.Success()) and nex_test_process.GetState()==lldb.eStateExited and nex_test_process.GetExitStatus()==0'
             run,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',*symbols,
-                'nex-task-stack','nex-frame input+1','nex-eval pure::offset(input)','nex-task-next','nex-task-in','nex-task-out','continue'],label=label+'-lldb')
+                'nex-task-stack','nex-frame input+1','nex-eval pure::offset(input)','nex-task-next','nex-task-in','nex-task-out',finish],label=label+'-lldb')
             value=next(row for row in rows if row.get('schema')=='nex.task-expression/2')
             self.assertEqual(value['value'],'42');self.assertEqual(value['source_identity']['component'],'leaf')
             self.assertIn('exited with status = 0',run.stdout)
@@ -405,7 +434,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
                     lambda d:d['owned_images'][0]['symbols'][0].update(path='/tmp/forged-nex-symbols')])
             for mutate in mutations:
                 altered=copy.deepcopy(relocated);mutate(altered)
-                negative=Path(session['manifest']).with_name('inspector-negative.json');negative.write_text(json.dumps(altered))
+                negative=Path(session['manifest']).with_name('inspector-negative.json');negative.write_text(json.dumps(altered), newline="\n")
                 refused=self.process([harness.NEX,'inspect','--manifest',negative,'--expression','input+1','--kind','plan','--json'],input=json.dumps(frame))
                 self.assertNotEqual(refused.returncode,0,refused.stdout+refused.stderr)
                 self.assertEqual(json.loads(refused.stdout)['code'],'E_DEBUG_BUILD')
@@ -422,7 +451,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.file.write_text('''module source_debug;
 fn child(input:i64)->i64!{task}{task_yield();return input+1;}
 fn main()->unit!{task,io,throw}{print(child(41));}
-''')
+''', newline="\n")
         self.description['components']={'app':{'kind':'executable','root':'app','entry':'app/main.nex'}};self.save()
         planned=self.cli('project','--kind','plan','--component','app','--task-debug')
         self.assertEqual(planned['components'][0]['task_linkage']['schema'],'nex.project-task-linkage/16')

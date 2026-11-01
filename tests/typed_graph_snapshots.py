@@ -2,6 +2,7 @@
 
 Uses the selected compiler and explicit migration API; preserves original history.
 """
+from sqlite_fixture import connection as sqlite_connection
 from pathlib import Path
 import argparse,collections,hashlib,json,os,shutil,sqlite3,subprocess,sys,tempfile,time
 parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('nex',type=Path)
@@ -10,12 +11,12 @@ args=parser.parse_args();W=args.source_root.resolve();O=args.output.resolve() if
 compiler=args.nex.resolve();probe=args.probe.resolve();sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 env={**os.environ,'NEX_RESOURCE_DIR':str(args.resources.resolve() if args.resources else W),'PYTHONDONTWRITEBYTECODE':'1'}
 report={'ok':False,'scope':'checked graph-snapshot027 recovery and retained026 history','public027_enabled':False,'compiler_sha256':sha(compiler),'cases':[],'commands':[]}
-def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def run(label,argv,cwd=O,code=0):
  r=subprocess.run(list(map(str,argv)),cwd=cwd,env=env,text=True,capture_output=True,timeout=180)
- (O/(label+'.stdout')).write_text(r.stdout);(O/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'label':label,'exit':r.returncode});save();assert r.returncode==code,(label,r.stdout[-3000:],r.stderr[-2500:]);return r
+ (O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'exit':r.returncode});save();assert r.returncode==code,(label,r.stdout[-3000:],r.stderr[-2500:]);return r
 def api(label,project,mode,**extra):
- request={'schema':'nex.typed-error-migration-request/1','mode':mode,'project':str(project),**extra};f=O/(label+'.request.json');f.write_text(json.dumps(request,ensure_ascii=False)+'\n');return json.loads(run(label,[probe,f]).stdout)
+ request={'schema':'nex.typed-error-migration-request/1','mode':mode,'project':str(project),**extra};f=O/(label+'.request.json');f.write_text(json.dumps(request,ensure_ascii=False)+'\n', newline="\n");return json.loads(run(label,[probe,f]).stdout)
 def cli(label,root,*args,error=None):
  value=json.loads(run(label,[compiler,*args,'--json'],root,1 if error else 0).stdout)
  assert (value.get('code')==error if error else value.get('ok') is True),(label,value);return value
@@ -31,8 +32,8 @@ def rows(p):
 def passed(name,**data):report['cases'].append({'name':name,'passed':True,**data});save()
 
 meta=json.loads((W/'tests/fixtures/language-0.26-typed-origin.json').read_text());sql=(W/'tests/fixtures/language-0.26-typed-origin.sql').read_bytes();assert sha(W/'tests/fixtures/language-0.26-typed-origin.sql')==meta['sql_sha256']
-root=O/'project λ';root.mkdir();(root/'.nex').mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'})+'\n');(root/'main.nex').write_text(meta['source'])
-with sqlite3.connect(root/'.nex/graph.db') as db:db.executescript(sql.decode())
+root=O/'project λ';root.mkdir();(root/'.nex').mkdir();(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'})+'\n', newline="\n");(root/'main.nex').write_text(meta['source'], newline="\n")
+with sqlite_connection(root/'.nex/graph.db') as db:db.executescript(sql.decode())
 before=rows(root/'.nex/graph.db');assert len(before[1])==16
 plan=api('plan',root,'plan',expected_revision=meta['head'])
 text=meta['source'].replace('throw("APP","λ\\u0000🙂");','throw(Box<i64>(value));').replace('catch(code,message) if code=="APP"{assert(message=="λ\\u0000🙂");}','catch(e:Box<str>){assert(false);}\n catch(e:Box<i64>){task_yield();assert(e.value==41);}\n catch(code,message){assert(false);}')
@@ -42,7 +43,7 @@ applied=api('apply',root,'apply',expected_revision=meta['head'],candidate=candid
 for table,values in before[1].items():
  if table!='head':assert not (values-after[1][table]),table
 passed('genuine026_migration_preserves_all16_tables_and_old_ids',target_revision=target)
-with sqlite3.connect(root/'.nex/graph.db') as db:revisions=list(db.execute('SELECT hash,language FROM revisions ORDER BY hash'))
+with sqlite_connection(root/'.nex/graph.db') as db:revisions=list(db.execute('SELECT hash,language FROM revisions ORDER BY hash'))
 assert {lang for _,lang in revisions}=={'0.26','0.27'} and len(revisions)==3
 expected={}
 for i,(revision,language) in enumerate(revisions):
@@ -72,15 +73,15 @@ try:
 finally:held.rollback();held.close()
 original_manifest=(snapshot/'snapshot.json').read_text()
 for label,field,value in [('head','head','0'*64),('language','head_language','0.26')]:
- changed=json.loads(original_manifest);changed['state'][field]=value;(snapshot/'snapshot.json').write_text(json.dumps(changed)+'\n');destination=O/('bad-'+label)
+ changed=json.loads(original_manifest);changed['state'][field]=value;(snapshot/'snapshot.json').write_text(json.dumps(changed)+'\n', newline="\n");destination=O/('bad-'+label)
  try:
   cli('bad-'+label,O,'recover',snapshot,'--directory',destination,error='E_SNAPSHOT_INTEGRITY');assert not destination.exists();passed('tampered_'+label+'_rejected_without_output')
- finally:(snapshot/'snapshot.json').write_text(original_manifest)
+ finally:(snapshot/'snapshot.json').write_text(original_manifest, newline="\n")
 raw=(snapshot/'graph.db').read_bytes();(snapshot/'graph.db').write_bytes(raw+b'corrupt')
 try:
  destination=O/'bad-database';cli('bad-database',O,'recover',snapshot,'--directory',destination,error='E_SNAPSHOT_INTEGRITY');assert not destination.exists();passed('tampered_database_rejected_without_output')
 finally:(snapshot/'graph.db').write_bytes(raw)
-sentinel=recovered/'keep';sentinel.write_text('keep');cli('existing-target',O,'recover',snapshot,'--directory',recovered,error='E_EXISTS');assert sentinel.read_text()=='keep' and rows(recovered/'.nex/graph.db')==after;passed('existing_recovery_never_overwritten')
+sentinel=recovered/'keep';sentinel.write_text('keep', newline="\n");cli('existing-target',O,'recover',snapshot,'--directory',recovered,error='E_EXISTS');assert sentinel.read_text()=='keep' and rows(recovered/'.nex/graph.db')==after;passed('existing_recovery_never_overwritten')
 assert rows(root/'.nex/graph.db')==after and sha(compiler)==report['compiler_sha256']
 report.update(ok=True,history_tables=16,retained026_revisions=2,recovered027_revisions=1,source_absent=True,source_language_selection_changed=False,SDK_accepted=False,goal_complete=False);save();print(json.dumps({'ok':True,'cases':len(report['cases']),'history_tables':16,'report':str(O/'report.json')}),flush=True)
 

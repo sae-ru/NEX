@@ -1,4 +1,5 @@
 """Observable language, native/interpreter, graph and LLM protocol checks."""
+from sqlite_fixture import connection as sqlite_connection
 import json
 import os
 from pathlib import Path
@@ -59,7 +60,8 @@ class Toolchain(harness.ToolchainCase):
                       'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
             self.assertIs(shared[field],False)
         self.assertTrue(reads['http_task_handlers'])
-        for field in ('typescript', 'windows', 'wasm'):
+        self.assertTrue(reads['windows'])
+        for field in ('typescript', 'wasm'):
             self.assertFalse(reads[field])
         profiled=descriptor['task_provider_profiling']
         self.assertEqual(profiled,pack['task_provider_profiling'])
@@ -80,8 +82,9 @@ class Toolchain(harness.ToolchainCase):
         else:
             self.assertEqual(profiled['supported_actions'],[]);self.assertIs(profiled['reviewed_capture_replay'],False)
         for field in ('authority_transport','callable_transport','logical_debugging','combined_debug_profile',
-                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','windows','wasm'):
+                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','wasm'):
             self.assertIs(profiled[field],False)
+        self.assertTrue(profiled['windows'])
         debugging=descriptor['task_provider_debugging']
         self.assertEqual(debugging,pack['task_provider_debugging'])
         self.assertEqual((debugging['language'],debugging['configuration']),(harness.CURRENT_LANGUAGE,'debug'))
@@ -98,9 +101,10 @@ class Toolchain(harness.ToolchainCase):
         if debugging['public_enabled']:self.assertEqual(debugging['supported_actions'],['plan','build','debug','package'])
         else:self.assertEqual(debugging['supported_actions'],[])
         self.assertTrue(debugging['ordinary_pure_helper_logical_frames'])
+        self.assertTrue(debugging['windows'])
         for field in ('combined_debug_profile','runtime_load_unload',
                       'authority_transport','callable_transport','foreign','binary_only','http_task_handlers',
-                      'reference','typescript','windows','wasm','language_migration_required'):
+                      'reference','typescript','wasm','language_migration_required'):
             self.assertIs(debugging[field],False)
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):
@@ -254,7 +258,7 @@ test fn branches() -> unit {
         patch = self.root / "patch.json"
         patch.write_text(json.dumps({"expected_revision": context["revision"], "replacements": [
             {"name": "sum", "source": "fn sum(n: i64) -> i64 { return n * (n + 1) / 2; }"}
-        ]}))
+        ]}), newline="\n")
         applied = self.cli("apply", "--patch", patch)
         self.assertNotEqual(applied["revision"], context["revision"])
         self.assertFalse(applied["materialized"])
@@ -265,10 +269,10 @@ test fn branches() -> unit {
         self.cli("export", "--revision", "HEAD", "-o", self.root / "export.nex")
         self.assertIn("return n *", (self.root / "export.nex").read_text())
         graphfile = self.root / "graph.json"
-        graphfile.write_text(json.dumps(graph))
+        graphfile.write_text(json.dumps(graph), newline="\n")
         self.assertEqual(self.cli("import", graphfile)["revision"], applied["revision"])
         graph["source"] = graph["source"].replace("return n *", "return (n + 1) *")
-        graphfile.write_text(json.dumps(graph))
+        graphfile.write_text(json.dumps(graph), newline="\n")
         self.assertEqual(self.cli("import", graphfile, ok=False)["code"], "E_BUNDLE")
 
     def test_cache_target_and_ir_artifacts(self):
@@ -286,7 +290,7 @@ test fn branches() -> unit {
         self.assertIn("func.func", Path(first["mlir"]).read_text())
         self.assertIn("define", Path(first["llvm"]).read_text())
         self.assertEqual(self.cli("build", "--target", "unsupported-triple", ok=False)["code"], "E_TARGET")
-        self.file.write_text("// new source line\n" + self.file.read_text())
+        self.file.write_text("// new source line\n" + self.file.read_text(), newline="\n")
         changed = self.cli("build")
         self.assertEqual(first["revision"], changed["revision"])
         self.assertNotEqual(first["build_key"], changed["build_key"])
@@ -353,7 +357,7 @@ test fn branches() -> unit {
         graph = self.cli("graph")
         self.assertEqual(graph["structures"][0]["name"], "data::User")
         graphfile = self.root / "graph.json"
-        graphfile.write_text(json.dumps(graph))
+        graphfile.write_text(json.dumps(graph), newline="\n")
         self.cli("import", graphfile)
 
     def test_ownership_aliases_scopes_and_early_returns(self):
@@ -482,7 +486,7 @@ fn main() -> unit !{io} { print(response().message); }
         directory.mkdir()
         old = "a" * 64
         source = "// retained\0comment\nmodule legacy; fn main() -> i64 { return 0; }"
-        with sqlite3.connect(directory / "graph.db") as db:
+        with sqlite_connection(directory / "graph.db") as db:
             db.executescript('''CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
               INSERT INTO metadata VALUES('schema','1');
               CREATE TABLE revisions(hash TEXT PRIMARY KEY,module TEXT NOT NULL,source TEXT NOT NULL,path TEXT NOT NULL,created TEXT DEFAULT 'legacy');
@@ -500,7 +504,7 @@ fn main() -> unit !{io} { print(response().message); }
         self.assertEqual((self.root / "legacy.nex").read_text(), source)
         self.cli("run", "--revision", "HEAD")
         legacy_graph = self.root / "legacy.json"
-        legacy_graph.write_text(json.dumps({"schema": "nex.graph/1", "language": "0.1", "source": source, "revision": old}))
+        legacy_graph.write_text(json.dumps({"schema": "nex.graph/1", "language": "0.1", "source": source, "revision": old}), newline="\n")
         self.assertEqual(self.cli("import", legacy_graph, ok=False)["code"], "E_LANGUAGE_VERSION")
         self.assertEqual(self.cli("migrate", legacy_graph)["revision"], migrated["revision"])
 

@@ -1,4 +1,5 @@
 """Fixed startup-linked task images: real ownership, runtime and retained delivery."""
+from host_fixture import run_native, shared_read
 import copy
 import ctypes
 import hashlib
@@ -10,12 +11,13 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 import support as harness
 import task_static_provider as fixture
 
 
-@unittest.skipUnless(platform.system() in ('Darwin', 'Linux'), 'fixed task images require Mach-O/ELF')
+@unittest.skipUnless(platform.system() in ('Darwin', 'Linux', 'Windows'), 'fixed task images require a supported native host')
 class SharedTaskProviders(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -27,11 +29,11 @@ class SharedTaskProviders(harness.ToolchainCase):
         for name in ('leaf', 'mid', 'app', 'other'):
             (self.root/name).mkdir()
         self.file = self.root/'app/main.nex'
-        (self.root/'leaf/value.nex').write_text(fixture.LEAF)
-        (self.root/'mid/value.nex').write_text(fixture.MID)
-        self.file.write_text(fixture.APP)
-        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'leaf/value.nex').write_text(fixture.LEAF, newline="\n")
+        (self.root/'mid/value.nex').write_text(fixture.MID, newline="\n")
+        self.file.write_text(fixture.APP, newline="\n")
+        (self.root/'other/main.nex').write_text('module provider_other;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         self.description = {'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{mode:{'profile':mode,'task_limits':fixture.LIMITS} for mode in ('debug','release','profile')},
             'components':{
@@ -44,7 +46,7 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.save()
 
     def save(self):
-        (self.root/'nex.build.json').write_text(json.dumps(self.description))
+        (self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
 
     def environment(self, extra=None):
         value = {**os.environ,'PYTHONDONTWRITEBYTECODE':'1'}
@@ -55,12 +57,12 @@ class SharedTaskProviders(harness.ToolchainCase):
         return value
 
     def process(self, command, cwd=None, env=None, timeout=300):
-        result = subprocess.run(list(map(str,command)),cwd=cwd or self.root,env=self.environment(env),
+        result = run_native(list(map(str,command)),cwd=cwd or self.root,env=self.environment(env),
             capture_output=True,text=True,timeout=timeout)
         self.commands.append({'command':list(map(str,command)),'cwd':str(cwd or self.root),
             'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr})
         if os.environ.get('NEX_SHARED_PROVIDER_OUTPUT'):
-            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n')
+            (self.root/'commands.json').write_text(json.dumps(self.commands,ensure_ascii=False,indent=2)+'\n', newline="\n")
         return result
 
     def cli(self,*args,ok=True,env=None,cwd=None,timeout=300):
@@ -77,9 +79,17 @@ class SharedTaskProviders(harness.ToolchainCase):
     functions = fixture.StaticTaskProviders.functions
     symbols = fixture.StaticTaskProviders.symbols
 
+    def windows_runtime_addresses(self,artifacts,symbol):
+        setup='import ctypes,sys;sys.path.insert(0,'+repr(str(Path(__file__).resolve().parent))+');from windows_loader_fixture import import_address;'
+        body=setup+'first=ctypes.CDLL(sys.argv[1]);second=ctypes.CDLL(sys.argv[2]);assert import_address(first,sys.argv[3])==import_address(second,sys.argv[3])'
+        # PE lookup is local to the DLL. Inspect the actual imported source-site
+        # runtime entry instead of ELF's recursive dlsym dependency lookup.
+        result=self.process([sys.executable,'-c',body,artifacts['leaf']['artifact'],artifacts['mid']['artifact'],symbol+'_at'])
+        self.assertEqual(result.returncode,0,result.stderr)
+
     def simple(self,provider,application,exports=()):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider)
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application)
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider, newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application, newline="\n")
         self.description['components']={name:self.description['components'][name] for name in ('leaf','app')}
         self.description['components']['leaf']['exports']=list(exports)
         self.description['components']['app']['dependencies']={'leaf':'dynamic'}
@@ -121,6 +131,15 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.assertEqual(sum(row['kind']=='runtime' for row in images),1)
         self.assertEqual(len({Path(row['path']).name for row in images}),len(images))
         expected={Path(row['path']).name for row in images}
+        if os.name=='nt':
+            from windows_loader_fixture import run
+            observed,loaded=run([artifact['artifact']],cwd=self.root.anchor,env=self.environment(env))
+            self.assertEqual((observed.returncode,observed.stdout),(0,expected_output),observed.stderr)
+            for name in expected:
+                self.assertEqual(sum(path.name.casefold()==name.casefold() for path in loaded),1,(name,loaded))
+            runtime_names={path.name for path in loaded if path.name.startswith('libnex_runtime_')}
+            self.assertEqual(runtime_names,{Path(row['path']).name for row in images if row['kind']=='runtime'})
+            return observed
         setting={'DYLD_PRINT_LIBRARIES':'1'} if platform.system()=='Darwin' else {'LD_DEBUG':'libs'}
         observed=self.process([artifact['artifact']],cwd='/',env={**(env or {}),**setting})
         self.assertEqual((observed.returncode,observed.stdout),(0,expected_output),observed.stderr)
@@ -163,8 +182,10 @@ class SharedTaskProviders(harness.ToolchainCase):
                                'nex_release','nex_retain','nex_task_frame_call_at'):
                     self.assertFalse(symbols.get(symbol,set()) & {'T','W'},symbol)
                 self.assertFalse(any(types & {'T','W'} for symbol,types in symbols.items() if symbol.endswith('__task_step')))
-            first=ctypes.CDLL(artifacts['leaf']['artifact']);second=ctypes.CDLL(artifacts['mid']['artifact'])
-            self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
+            if os.name=='nt':self.windows_runtime_addresses(artifacts,'nex_release')
+            else:
+                first=ctypes.CDLL(artifacts['leaf']['artifact']);second=ctypes.CDLL(artifacts['mid']['artifact'])
+                self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
             watched={Path(row['artifact']) for row in artifacts.values()}
             for artifact in artifacts.values():
@@ -177,23 +198,24 @@ class SharedTaskProviders(harness.ToolchainCase):
             leaf_owned,_=self.functions(artifacts['leaf'])
             runtime=Path(next(row['path'] for row in leaf_owned['owned_images'] if row['kind']=='runtime'))
             permissions=runtime.stat().st_mode & 0o777
-            with runtime.open('rb') as previous_inode:
+            with shared_read(runtime) as previous_inode:
                 old_inode=os.fstat(previous_inode.fileno()).st_ino
                 old_bytes=previous_inode.read()
-                runtime.chmod(0o700 if permissions!=0o700 else 0o755)
+                runtime.chmod(permissions^0o222 if os.name=='nt' else 0o700 if permissions!=0o700 else 0o755)
                 self.assertTrue(all(row['cached'] for row in self.project(configuration=mode)['artifacts']))
                 self.assertNotEqual(runtime.stat().st_ino,old_inode,'image repair truncated the loaded inode')
                 self.assertEqual(runtime.stat().st_mode & 0o777,permissions)
                 previous_inode.seek(0)
                 self.assertEqual(previous_inode.read(),old_bytes,'image repair changed an existing mapping input')
-            self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
+            if os.name=='nt':self.windows_runtime_addresses(artifacts,'nex_retain')
+            else:self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
 
 
     def test_mixed_static_frontiers_have_exact_final_image_owners(self):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}')
-        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}')
-        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn pure(x:i64)->i64{return x+1;}pub fn answer(x:i64)->i64!{task}{task_yield();return pure(x);}pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;import "../leaf/value.nex" as leaf;pub fn answer(x:i64)->i64!{task}{return leaf::answer(x);}', newline="\n")
+        self.file.write_text('module provider_app;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(41));}', newline="\n")
         del self.description['components']['other']
         for name in ('leaf','mid'):self.description['components'][name]['exports']=[]
         self.description['components']['leaf']['exports']=['read']
@@ -219,10 +241,10 @@ class SharedTaskProviders(harness.ToolchainCase):
                 self.loaded(artifacts['app'],'42\n')
 
     def test_independent_roots_may_embed_same_static_provider_once_per_process(self):
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(x:i64)->i64!{task}{task_yield();return x+1;}')
-        (self.root/'mid/value.nex').write_text('module provider_mid;pub fn answer(x:i64)->i64!{task}{task_yield();return x;}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer(x:i64)->i64!{task}{task_yield();return x+1;}', newline="\n")
+        (self.root/'mid/value.nex').write_text('module provider_mid;pub fn answer(x:i64)->i64!{task}{task_yield();return x;}', newline="\n")
         for name in ('app','other'):
-            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(leaf::answer(41)));}')
+            (self.root/name/'main.nex').write_text('module provider_'+name+';import "../leaf/value.nex" as leaf;import "../mid/value.nex" as mid;fn main()->unit!{task,io,throw}{print(mid::answer(leaf::answer(41)));}', newline="\n")
             self.description['components'][name]['dependencies']={'leaf':'static','mid':'dynamic'}
         self.description['components']['leaf'].update(kind='static_library',exports=[])
         self.description['components']['mid'].pop('dependencies');self.description['components']['mid']['exports']=[]
@@ -239,8 +261,8 @@ class SharedTaskProviders(harness.ToolchainCase):
         # An unrelated ordinary shared project retains its own mode/runtime.
         # Selecting all roots must not combine its source ABI with task images.
         for name in ('sync','plain'):(self.root/name).mkdir()
-        (self.root/'sync/value.nex').write_text('module ordinary_shared;pub fn answer()->i64{return 7;}')
-        (self.root/'plain/main.nex').write_text('module ordinary_app;import "../sync/value.nex" as sync;fn main()->unit!{io}{print(sync::answer());}')
+        (self.root/'sync/value.nex').write_text('module ordinary_shared;pub fn answer()->i64{return 7;}', newline="\n")
+        (self.root/'plain/main.nex').write_text('module ordinary_app;import "../sync/value.nex" as sync;fn main()->unit!{io}{print(sync::answer());}', newline="\n")
         self.description['components']['sync']={'kind':'shared_library','root':'sync','entry':'sync/value.nex','entry_function':'answer'}
         self.description['components']['plain']={'kind':'executable','root':'plain','entry':'plain/main.nex','dependencies':{'sync':'dynamic'}}
         self.save();mixed=self.project(component=None);mixed_artifacts=self.artifacts(mixed)
@@ -283,7 +305,7 @@ server fn main()->unit!{task,fs,io}{
  assert(error_code(leaf::read("data"))=="E_UTF8");
  assert(error_code(leaf::read("missing"))=="NOT_FOUND");
  assert(error_code(leaf::read("../escape"))=="VALIDATION");print(len(text));
-}''')
+}''', newline="\n")
         read=self.project();artifacts=self.artifacts(read)
         self.assertEqual(Path(artifacts['leaf']['artifact']).read_bytes(),original)
         self.assertEqual(read['native_runtime_image'],built['native_runtime_image'])
@@ -302,7 +324,7 @@ server fn main()->unit!{task,fs,io}{
                 (['--nex-task-timeout-ms','25'],'E_TIMEOUT')]:
             observed=self.process([app['artifact'],*args],timeout=15)
             self.assertEqual(observed.returncode,70);self.assertIn(code,observed.stderr)
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub fn answer()->unit!{task}{while true{task_yield();}}', newline="\n")
         app=self.artifacts(self.project())['app']
         observed=self.process([app['artifact'],'--nex-task-steps','1000','--nex-task-workers','1'],timeout=15)
         self.assertEqual(observed.returncode,70);self.assertIn('E_LIMIT',observed.stderr)
@@ -313,7 +335,7 @@ server fn main()->unit!{task,fs,io}{
         first=self.artifacts(self.project())
         self.assertNotIn('provider_leaf::helper',self.provider(first['leaf'],'leaf')['exports'])
         self.description['components']['leaf']['exports']=['helper'];self.save()
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->unit!{task,io,throw}{print(leaf::helper(41));}', newline="\n")
         second=self.artifacts(self.project())
         self.assertNotEqual(first['leaf']['build_key'],second['leaf']['build_key'])
         export=self.provider(second['leaf'],'leaf')['exports']['provider_leaf::helper']
@@ -358,9 +380,9 @@ server fn main()->unit!{task,fs,io}{
         self.simple('pub fn helper()->i64!{task}{return 42;}pub fn answer()->i64!{task}{return helper();}',
             'fn main()->i64!{task}{return leaf::helper();}')
         self.assertEqual(self.project('plan',ok=False)['code'],'E_PROJECT_EXPORT')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{let f:fn()->i64!{task}=leaf::answer;return f();}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{let f:fn()->i64!{task}=leaf::answer;return f();}', newline="\n")
         self.assertEqual(self.project('plan',ok=False)['code'],'E_TASK_PROVIDER')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::answer();}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;fn main()->i64!{task}{return leaf::answer();}', newline="\n")
         profiling=self.cli('describe','--field','task_provider_profiling')['value']
         if profiling['public_enabled']:
             profile_plan=self.project('plan',configuration='profile')
@@ -378,11 +400,11 @@ server fn main()->unit!{task,fs,io}{
                 self.assertEqual(row['task_linkage']['mode'],'shared-fixed')
                 self.assertEqual(row['task_linkage']['debugging']['registry_abi'],1)
         else:self.assertIn(self.project('debug',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_DEBUG'))
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}')
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;import "std/http.nex" as http;server fn handle(request:http::Request)->http::Response!{task}{return http::text_response(200,str(leaf::answer()));}', newline="\n")
         self.description['components']['app'].update(kind='server',entry_function='handle');self.save()
         self.assertIn(self.project('plan',ok=False)['code'],('E_TASK_PROVIDER','E_TASK_TARGET'))
-        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(x:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}')
-        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}')
+        (self.root/'leaf/value.nex').write_text('module provider_leaf;pub server extern fn host(x:i64)->i64!{ffi}=foreign("probe","host","'+'0'*64+'");pub server fn answer()->i64!{task,ffi}{task_yield();return host(42);}', newline="\n")
+        self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;server fn main()->i64!{task,ffi}{return leaf::answer();}', newline="\n")
         self.description['components']['app'].update(kind='executable',entry_function='main');self.save()
         rejected=self.project('plan',ok=False)
         self.assertEqual(rejected['code'],'E_TASK_PROVIDER')
@@ -403,7 +425,7 @@ server fn main()->unit!{task,fs,io}{
             'expect':{'stdout':fixture.OUTPUT,'exit_code':0},'timeout_seconds':120})
         task['requirements'].append({'id':'shared-run','text':'Run the fixed checked task image closure',
             'bindings':[{'program':'app','kind':'function','symbol':'provider_app::main'}],'targets':['native'],'checks':['shared-run']})
-        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task), newline="\n")
         accepted=self.cli('task',taskfile,'--kind','run','--directory',self.root/'capture',timeout=900)
         self.assertTrue(accepted['ok']);receipt=Path(accepted['output']);saved=json.loads(receipt.read_text())
         native=next(row for row in saved['checks'] if row['id']=='build-native')
@@ -445,7 +467,7 @@ server fn main()->unit!{task,fs,io}{
                 'input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'})
             self.assertTrue(row['path'].startswith('provenance/task/%03d-'%index))
             basename=Path(row['path']).name.split('-',1)[1]
-            original=app_folder/('images' if row['kind']=='owned_provider' else '')/basename
+            original=app_folder/('images' if row['kind']=='owned_provider' and os.name!='nt' else '')/basename
             raw=(package/'apps/app'/row['path']).read_bytes()
             self.assertEqual(raw,original.read_bytes());self.assertEqual(len(raw),row['bytes'])
             self.assertEqual(hashlib.sha256(raw).hexdigest(),row['input_sha256'])
@@ -461,11 +483,14 @@ server fn main()->unit!{task,fs,io}{
                 self.assertEqual((source['image']['key'],source['image']['sha256'],source['image']['uuid']),
                     (row['input_image_key'],row['input_image_sha256'],row['input_uuid']))
         moved=self.root/'moved closure';moved.mkdir()
-        shutil.copy2(app_folder/'app',moved/'app');shutil.copytree(app_folder/'images',moved/'images')
+        shutil.copy2(app_folder/('app.exe' if os.name=='nt' else 'app'),moved/('app.exe' if os.name=='nt' else 'app'))
+        if os.name=='nt':
+            for image in app_folder.glob('*.dll'):shutil.copy2(image,moved/image.name)
+        else:shutil.copytree(app_folder/'images',moved/'images')
         owned_images=json.loads((app_folder/'compilation.json').read_text())['owned_images']
         for name in ('leaf','mid','app','other','.nex'):shutil.rmtree(self.root/name)
         for name in ('nex.json','nex.build.json','task.json'):(self.root/name).unlink()
-        for path in (package/'apps/app/bin/app',moved/'app'):
+        for path in (package/('apps/app/bin/app.exe' if os.name=='nt' else 'apps/app/bin/app'),moved/('app.exe' if os.name=='nt' else 'app')):
             self.loaded({'artifact':str(path)},fixture.OUTPUT,{'NEX_RESOURCE_DIR':'/absent'},images=owned_images)
         replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'replay',timeout=900)
         self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],accepted['programs'])

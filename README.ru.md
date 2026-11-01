@@ -51,8 +51,9 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 ## Состояние разработки
 
-Текущие исходники: **toolchain 0.153.0 / язык 0.27**, экспериментальная версия.
-Runtime-контракты циклов проходят проверку; принятый SDK ниже остаётся0.152.1.
+Текущие исходники: **toolchain 0.154.0 / язык 0.27**, экспериментальная версия.
+Объединение Windows и runtime-контрактов проходит проверку. Результаты родительских
+Mac0.153 и Windows0.152.1 относятся к прежним исходникам; общей версии нужны новые испытания.
 Принятая сборка 0.152.1 на macOS ARM64 прошла все 285 групп CTest. Development SDK
 прошёл по 40 этапов в перемещённой и восстановленной установках. Дополнительно прошли 126 тестов
 production UI/Workers в Chromium, Firefox и WebKit. Области проверки описаны в
@@ -63,14 +64,25 @@ production UI/Workers в Chromium, Firefox и WebKit. Области прове�
 
 Для Apple M5 Max есть [испытания OpenCL U8 Add/Affine на физическом GPU](docs/evidence/macos-opencl-0.151.1.json).
 Результаты ускорителей Linux CIX/RK сохраняют [версию 0.151.0](docs/evidence/accelerators-0.151.0.json).
-Приёмка в настоящей Windows, CUDA, Metal, Apple NPU, общая GPU-компиляция,
+[Локальный компилятор Windows](docs/windows-host.md) собирает и запускает x64
+`.exe` непосредственно в Windows, включая CPU/tasks/files и SQLite.
+Предыдущая [приёмка target-кода](docs/windows-native-acceptance.md) сохраняет
+раздельные результаты WSL producer, Windows execution и CUDA driver prerequisite.
+У [SDL-примера «Крестики-нолики»](examples/tic-tac-toe/README.md) общие исходники
+NEX/SDL и нативные скрипты сборки для Windows, macOS и Linux. GPU и перенос
+автономного пакета проверены в Windows; исполнение на macOS/Linux ещё не проверено.
+Нативный Windows-компилятор прошёл **274/274 групп CTest**.
+CUDA U8 Add/Affine из NEX прошла 35 аппаратных сценариев на RTX 3090;
+[текущий Windows-отчёт](docs/evidence/windows-native-2026-11-01.json)
+отделяет этот результат от полной регрессии и приёмки SDK.
+Полная приёмка Windows-hosted SDK, Metal, Apple NPU, общая GPU-компиляция,
 полная мобильная/UI-поставка и остальные пункты [PLAN](PLAN.md) ещё открыты.
 
 ## Сборка и использование
 
 Начните с [актуальной инструкции](docs/getting-started.ru.md). Для сборки из
 исходников нужны C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 и
-Python. Для веба/TypeScript нужны также Node.js 22.18+ и npm с lock-файлом проекта.
+Python 3.10+. Для веба/TypeScript нужны также Node.js 22.18+ и npm с lock-файлом проекта.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -95,7 +107,7 @@ nex init /path/to/my-app
 [Архитектура](docs/architecture.md) · [Веб](docs/web.md) ·
 [Сборка проектов](docs/project-build.md) · [Ошибки](docs/exceptions.md) ·
 [Отладка](docs/debugging.md) · [Профилирование](docs/profiling.md) ·
-[Критерии качества](docs/quality.md) · [Передача работы на Windows](docs/windows-handoff.md)
+[Критерии качества](docs/quality.md) · [Передача работы на Windows](docs/windows-handoff-current.md)
 
 Для агентов предусмотрены [llms.txt](llms.txt), [AGENTS.md](AGENTS.md),
 [BOOTSTRAP](llm/BOOTSTRAP.md) и [контракт программирования](llm/SYSTEM_PROMPT.md).

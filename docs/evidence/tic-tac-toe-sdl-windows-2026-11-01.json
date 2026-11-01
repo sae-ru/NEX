@@ -1,0 +1,134 @@
+{
+  "schema": "nex.tic-tac-toe-sdl/1",
+  "checked_utc": "2026-11-01T08:48:06.610608+00:00",
+  "requires_WSL": false,
+  "toolchain": "0.152.1",
+  "language": "0.27",
+  "implementation": {
+    "game_rules": "NEX",
+    "window_input_graphics": "SDL3 C FFI",
+    "sdl_version": "3.4.18",
+    "platform_backends": {
+      "windows": "direct3d11",
+      "macos": "metal",
+      "linux": "opengl"
+    }
+  },
+  "source_sha256": {
+    "examples/tic-tac-toe/.gitignore": "460f645d343bac06bccf6c042fc62a5d6748ba9e0f66b67b509aed5d02cbb4fa",
+    "examples/tic-tac-toe/LICENSE": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+    "examples/tic-tac-toe/README.md": "65e945168815e5b4996c30cbd86832364187f664026e7825b06eab2a6cc6a54e",
+    "examples/tic-tac-toe/build.bat": "df1ac59f7e5da91a4bcef7a8f839bad81e14953a02001103bf1af39b047739ac",
+    "examples/tic-tac-toe/build.sh": "d205d46d7faf01ff72839cdb32adb938ebac1d62080c81b0f8a4ffbea3590753",
+    "examples/tic-tac-toe/build_provider.py": "ee0cc1aea2ada1d996eb622ae0522aa1b8a10c28a57ed0499c1e5b6b4e5a2d54",
+    "examples/tic-tac-toe/native/CMakeLists.txt": "a820f1ec15ebc49842a7bcd5b13053cb9316859b270b49934cc3356a5d97fcce",
+    "examples/tic-tac-toe/native/gui.cpp": "d0eebc64d54d1a41b0c7be023ec8e63260c0061eed66c8de93da4eef2cee6527",
+    "examples/tic-tac-toe/nex.json": "4eafa2de7cdae878dd5b4d3b61f430390212b0daa8fe9ba47d66f9e7c8613479",
+    "examples/tic-tac-toe/package.bat": "7a6126017bad935dfa7ce0071409acc480715611a5336fc8502d6fb5981730cd",
+    "examples/tic-tac-toe/package.sh": "44c8b366c9eeda4dcfbcd7e6a5aa93e0bc74b6c87035a5a88dd6102061167f78",
+    "examples/tic-tac-toe/project.py": "c69a2c0ed57b02468b09ca44c800a71d1b13932e218d0f29e8bab4d49d9bdae3",
+    "examples/tic-tac-toe/run.bat": "f27b58a09ffd3e1b5bb75065b93e3fa31264a9762f76abfaebf161670fe6dd01",
+    "examples/tic-tac-toe/run.sh": "7c60a8393afbe52170f5cfd34524e902996e0df07fe5b280cf45c83809aec243",
+    "examples/tic-tac-toe/src/gui.nex.in": "bd0f8509a0f24222feffa1b690b589360bfb79889a3d76243b64f538cd8b89fc",
+    "examples/tic-tac-toe/src/main.nex": "7fbe398046ffd88a3e15f51fb26e6cc75fc8cd17e4aae41b55ebac8d1cdc1c4c",
+    "examples/tic-tac-toe/src/rules.nex": "073b7ed7f9bdb7216a5f6be86b7b640fd37cad1de4f63dff3a09d010a0671c30",
+    "examples/tic-tac-toe/test.bat": "743954e623d85215621528c6ed09cd3be5703f28d5580869d0cd8bcfac7448a5",
+    "examples/tic-tac-toe/test.sh": "7363bc07792a9b99de89b11923303d82f6ba51388a83db288c75338a6a24f683",
+    "examples/tic-tac-toe/vendor/SDL-LICENSE.txt": "1c040b8271b37e5076359f8fd54240e371114112924d2df81ef87c7d6a1dfdfd",
+    "examples/tic-tac-toe/vendor/dependencies.json": "009b1431012e46cf62ff5b1f855ee40d86871bb0e23002b79b776984e1560078"
+  },
+  "windows": {
+    "schema": "nex.windows-tic-tac-toe-sdk/1",
+    "ok": true,
+    "requires_WSL": false,
+    "sdk": "F:\\sae\\NEX\\build\\SDK Windows 22b переезд % 🧠",
+    "commands": [
+      {
+        "name": "build-bat",
+        "argv": [
+          "C:\\WINDOWS\\system32\\cmd.exe",
+          "/d",
+          "/c",
+          "build.bat",
+          "--sdl-archive",
+          "F:\\sae\\NEX\\build\\deps\\SDL3-3.4.18.tar.gz"
+        ],
+        "exit_code": 0
+      },
+      {
+        "name": "test-bat",
+        "argv": [
+          "C:\\WINDOWS\\system32\\cmd.exe",
+          "/d",
+          "/c",
+          "test.bat",
+          "--sdl-archive",
+          "F:\\sae\\NEX\\build\\deps\\SDL3-3.4.18.tar.gz"
+        ],
+        "exit_code": 0
+      },
+      {
+        "name": "run-bat",
+        "argv": [
+          "C:\\WINDOWS\\system32\\cmd.exe",
+          "/d",
+          "/c",
+          "run.bat"
+        ],
+        "exit_code": 0
+      },
+      {
+        "name": "package-bat",
+        "argv": [
+          "C:\\WINDOWS\\system32\\cmd.exe",
+          "/d",
+          "/c",
+          "package.bat",
+          "--sdl-archive",
+          "F:\\sae\\NEX\\build\\deps\\SDL3-3.4.18.tar.gz"
+        ],
+        "exit_code": 0
+      },
+      {
+        "name": "standalone-without-project",
+        "argv": [
+          "F:\\sae\\NEX\\build\\game-sdl-sdk26-evidence\\standalone moved % 🧠\\bin\\app.exe"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "compiler_sha256": "05aab8e2d11eba0f6e2ea836ac1064ba4b54734263b5a8a7d86ffd8df72f1ab2",
+    "application_sha256": "e7a18a3474f6a35b4d1ad3ec98b48c516d8cb7622a4b3ff4616732da5762f85d",
+    "standalone": "F:\\sae\\NEX\\build\\game-sdl-sdk26-evidence\\standalone moved % 🧠\\bin\\app.exe",
+    "adapter": "NVIDIA GeForce RTX 3090",
+    "source_absent_during_standalone": true,
+    "tests": [
+      "all four batch launchers",
+      "NEX native/reference",
+      "TypeScript",
+      "actual D3D11 hardware readback",
+      "full five-move game and score",
+      "standalone relocated package integrity"
+    ],
+    "report": "build\\game-sdl-sdk26-evidence\\report.json",
+    "report_sha256": "689400b76e5034559a413d2c025e644383b7dda870f15fdecabe117216007809",
+    "canonical_all": {
+      "exit_code": 0,
+      "log": "build/local/game-sdl-canonical26.log",
+      "log_sha256": "05abda69553a3cb5d10d70ea6d29fcc3410fe9d6c6b692a2e827e1c10ed521c7",
+      "package": "examples\\tic-tac-toe\\dist\\tic-tac-toe-1793522858882107100",
+      "application_sha256": "f58f0707e52a20f1bcddef2fd14af2d3b0090ce651d7ebd469c1d9246fe2219d",
+      "gpu_colored_pixels": 13216
+    }
+  },
+  "macos": {
+    "source_build_recipe": true,
+    "execution_accepted": false,
+    "reason": "No macOS host available in this session"
+  },
+  "linux": {
+    "source_build_recipe": true,
+    "execution_accepted": false,
+    "reason": "No native Linux host available in this session"
+  }
+}

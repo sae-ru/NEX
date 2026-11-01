@@ -1,4 +1,5 @@
 """Relative host-SDK selection, real native tools and rejected broken bundles."""
+from host_fixture import python_executable
 import json
 import os
 from pathlib import Path
@@ -33,26 +34,30 @@ class HostSDK(harness.ToolchainCase):
             relative = Path('tools') / name
             wrapper = self.prefix / relative
             wrapper.parent.mkdir(exist_ok=True)
-            wrapper.write_text('''#!/usr/bin/env python3
+            wrapper=python_executable(wrapper,'''#!/usr/bin/env python3
 import json, os, sys
 with open(LOG, 'a') as output: output.write(json.dumps([NAME, sys.argv[0], sys.argv[1:]])+'\\n')
 os.execv(REAL, [REAL, *sys.argv[1:]])
-'''.replace('LOG', repr(str(self.log))).replace('NAME', repr(key)).replace('REAL', repr(doctor[field])))
+'''.replace('LOG', repr(str(self.log))).replace('NAME', repr(key)).replace('REAL', repr(doctor[field])),harness.native_fixture_compiler())
             wrapper.chmod(0o755)
-            tools[key] = str(relative)
+            tools[key] = wrapper.relative_to(self.prefix).as_posix()
         # These tests exercise tool selection with real compiler/archiver/debug
         # subprocesses. The maintained bundle acceptance separately exercises
         # real relocated headers/libraries and dynamic-loader independence.
         (self.prefix / 'deps/include').mkdir(parents=True)
-        (self.prefix / 'deps/include/sqlite3.h').write_text('/* fingerprint fixture */\n')
+        (self.prefix / 'deps/include/sqlite3.h').write_text('/* fingerprint fixture */\n', newline="\n")
         (self.prefix / 'deps/include/openssl').mkdir()
-        (self.prefix / 'deps/include/openssl/ssl.h').write_text('/* fingerprint fixture */\n')
+        (self.prefix / 'deps/include/openssl/ssl.h').write_text('/* fingerprint fixture */\n', newline="\n")
         for name in ['sqlite', 'ssl', 'crypto']:
             (self.prefix / 'deps' / name).write_bytes(b'host SDK selection fixture')
         self.config = {'schema': 'nex.sdk-host/1', 'tools': tools,
                        'sqlite': {'include': 'deps/include', 'library': 'deps/sqlite'},
                        'openssl': {'include': 'deps/include', 'ssl': 'deps/ssl', 'crypto': 'deps/crypto'}}
-        self.descriptor.write_text(json.dumps(self.config))
+        if os.name=='nt':
+            shutil.copytree(doctor['native_sysroot'],self.prefix/'windows-sysroot',symlinks=False)
+            shutil.copy2(doctor['native_windows_notices'],self.prefix/'runtime-notices.txt')
+            self.config['windows']={'sysroot':'windows-sysroot','runtime':'ucrt-static','notices':'runtime-notices.txt'}
+        self.descriptor.write_text(json.dumps(self.config), newline="\n")
 
     def staged(self, *args, ok=True, env=None):
         result = subprocess.run([str(self.prefix / 'bin/nex'), *map(str, args), '--json'],
@@ -78,11 +83,11 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.assertGreater(Path(archive['executable']).stat().st_size, 100)
         self.assertTrue(self.staged('build', '--library')['cached'])
         manifest = self.root / 'target.json'
-        manifest.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host']}))
+        manifest.write_text(json.dumps(harness.host_toolchain_defaults(doctor)), newline="\n")
         inspected = self.staged('toolchain', manifest)
         archiver = moved / self.config['tools']['archiver']
         self.assertIn(str(archiver), inspected['inputs']['files'])
-        archiver.write_text(archiver.read_text() + '\n# revised archive tool\n')
+        archiver.write_bytes(archiver.read_bytes()+b'\n# revised archive tool\n') if os.name=='nt' else archiver.write_text(archiver.read_text() + '\n# revised archive tool\n', newline="\n")
         self.assertNotEqual(inspected['hash'], self.staged('toolchain', manifest)['hash'])
         self.assertFalse(self.staged('build', '--library')['cached'])
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
@@ -93,7 +98,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.stage()
         self.source('module bad_sdk; fn main() -> i64 { return 0; }')
         outside = self.root / 'outside tool'
-        outside.write_text('unused')
+        outside.write_text('unused', newline="\n")
         (self.prefix / 'escape').symlink_to(outside)
         variants = []
         for compiler in ['missing', '../outside tool', str(outside), 'escape']:
@@ -103,11 +108,11 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
                      {**self.config, 'sqlite': {}}, {**self.config, 'tools': []}]
         for config in variants:
             with self.subTest(config=config):
-                self.descriptor.write_text(json.dumps(config))
+                self.descriptor.write_text(json.dumps(config), newline="\n")
                 self.assertEqual(self.staged('doctor', ok=False)['code'], 'E_SDK')
                 self.assertEqual(self.staged('build', ok=False)['code'], 'E_SDK')
         self.assertFalse(self.log.exists())
-        self.descriptor.write_text('{')
+        self.descriptor.write_text('{', newline="\n")
         self.assertEqual(self.staged('doctor', ok=False)['code'], 'E_SDK')
 
     def test_explicit_archive_tool_is_captured_and_used(self):
@@ -117,7 +122,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         override = self.root / 'explicit archiver'
         shutil.copy2(self.prefix / self.config['tools']['archiver'], override)
         config = self.root / 'target.json'
-        config.write_text(json.dumps({'schema': 'nex.toolchain/1', 'target': doctor['host'], 'archiver': str(override)}))
+        config.write_text(json.dumps({**harness.host_toolchain_defaults(doctor), 'archiver': str(override)}), newline="\n")
         inspected = self.staged('toolchain', config)
         self.assertIn(str(override), inspected['inputs']['files'])
         self.staged('build', '--library', '--toolchain', config)

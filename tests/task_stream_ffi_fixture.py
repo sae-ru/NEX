@@ -22,12 +22,12 @@ def digest(value):
 
 
 def write(path, value):
-    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', newline="\n")
 
 
 def current_platform():
-    return ('macos' if sys.platform == 'darwin' else 'linux') + '-' + (
-        'arm64' if platform.machine() in ('arm64', 'aarch64') else 'x86_64')
+    return ('windows' if sys.platform=='win32' else 'macos' if sys.platform=='darwin' else 'linux') + '-' + (
+        'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x86_64')
 
 
 def sources(kind, answer, pin):
@@ -67,10 +67,10 @@ def build_provider(repo, directory, dialect, source, signatures, run, label,
     directory.mkdir()
     header = ''.join('#define PIN_' + name.upper() + ' "' + digest(value) + '"\n'
                      for name, value in signatures.items())
-    (directory / 'typed-resource-signatures.h').write_text(header)
+    (directory / 'typed-resource-signatures.h').write_text(header, newline="\n")
     code = directory / ('module.c' if dialect == 'C11' else 'module.cpp')
-    code.write_text(source)
-    image = directory / 'module.so'
+    code.write_text(source, newline="\n")
+    image = directory / ('module.dll' if os.name=='nt' else 'module.so')
     generic_compiler = os.environ.get('NEX_MIXED_COMPILER')
     selected = generic_compiler or (os.environ.get('NEX_MIXED_C_COMPILER' if dialect == 'C11' else 'NEX_MIXED_CXX_COMPILER')
                 if instrumented else None) or shutil.which('clang' if dialect == 'C11' else 'clang++')
@@ -89,9 +89,9 @@ def build_provider(repo, directory, dialect, source, signatures, run, label,
     if sanitizer:
         argv += ['-fsanitize=' + sanitizer, '-fno-omit-frame-pointer', '-fno-sanitize-recover=all']
     run(label + '-compile', [*argv, code, '-o', image])
-    (directory / 'NOTICE').write_text(NOTICE)
+    (directory / 'NOTICE').write_text(NOTICE, newline="\n")
     manifest = {'schema': 'nex.foreign-bundle/1', 'platform': current_platform(), 'entry': image.name,
-                'files': [{'path': name, 'sha256': sha(directory / name)} for name in ('module.so', 'NOTICE')],
+                'files': [{'path': name, 'sha256': sha(directory / name)} for name in (image.name, 'NOTICE')],
                 'exports': {name: digest(value) for name, value in signatures.items()}, 'notices': ['NOTICE']}
     write(directory / 'manifest.json', manifest)
     pin = sha(directory / 'manifest.json')

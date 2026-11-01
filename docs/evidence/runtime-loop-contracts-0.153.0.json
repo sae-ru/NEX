@@ -1,0 +1,40 @@
+{
+  "schema": "nex.runtime-loop-parent-evidence/1",
+  "toolchain": "0.153.0",
+  "language": "0.27",
+  "source_commit": "7272ebca4fe5f893c6226eedd54158d611f7b559",
+  "source_compiler_sha256": "164afb3e4f7981e6d16b7cd5ba9eb10cdce232552cc2d8078684cc5411e873d9",
+  "host": "macOS ARM64",
+  "parent_scope_only": true,
+  "does_not_accept_0_154_integration": true,
+  "full_ctest": {
+    "groups_passed": 286,
+    "groups_failed": 0,
+    "outer_group_skips": 0,
+    "seconds": 4045.125,
+    "report_sha256": "33cc78dac27b4061252c1bc3e86a8fd8b29b732b37d9916fb6ea23dfc4cf6559",
+    "junit_sha256": "d15f0f0943b8e049fdb815db3d7449f512b3cf420ae9c37436e04456acb27e21",
+    "internal_platform_skips_are_not_execution": true
+  },
+  "sdk": {
+    "verification_sha256": "330108c301e4bb4dfcc93fd0904fb628d4bfba18fc79762fa6345e265224c8d0",
+    "archive_name": "nex-sdk-0.153.0-macos-arm64-development.tar.gz",
+    "archive_sha256": "6a786a66c5292414f54b4d2caf98d3fb0f2c7917a97edc1e15dad00122475332",
+    "archive_bytes": 123467298,
+    "compiler_sha256": "6806bf73e80aa8b129c4f27f72063817480937b11ff53785942eda758d26b5c0",
+    "moved_phases": 40,
+    "restored_phases": 40,
+    "extra_scenarios_per_install": {
+      "runtime_prepost": 15,
+      "runtime_loops": 15,
+      "debugger_resume": 4
+    },
+    "source_and_dependency_read_denials_checked": true,
+    "SDK_write_denials_checked": true,
+    "production_browser_126_rerun": false
+  },
+  "pending": [
+    "fresh merged-source validation",
+    "all remaining PLAN work"
+  ]
+}

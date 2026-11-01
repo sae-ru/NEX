@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import signal
+from host_fixture import interrupt_task, run_native
 import subprocess
 import time
 from pathlib import Path
@@ -35,14 +36,16 @@ class TaskForeign(harness.ToolchainCase):
         task=self.cli('task',self.file,'--kind','init',env=self.env)
         for check in task['checks']:
             if check['kind']=='test':check['foreign_hash']=self.catalogue_report['hash']
+            # Replayed release builds use a fresh captured-resource root and a cold cache.
+            if os.name=='nt' and check['kind']=='build':check['timeout_seconds']=300
         self.save(task)
         return task
 
     def save(self,task):
-        self.taskfile.write_text(json.dumps(task))
+        self.taskfile.write_text(json.dumps(task), newline="\n")
 
     def task(self,kind='run',*args,**kwargs):
-        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=240,**kwargs)
+        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=900 if os.name=='nt' else 240,**kwargs)
 
     def add(self,task,check):
         check.update(program='app')
@@ -57,13 +60,13 @@ class TaskForeign(harness.ToolchainCase):
         self.assertFalse(first['module_initialization']);self.assertEqual(self.events(),'')
         moved=self.root/'approved';moved.mkdir();shutil.copytree(self.root/'bundle',moved/'module')
         host=moved/'host.json';policy=copy.deepcopy(self.catalogue);policy['libraries']['test']['directory']='module'
-        host.write_text(json.dumps(policy,indent=2))
+        host.write_text(json.dumps(policy,indent=2), newline="\n")
         self.assertEqual(self.cli('foreign',host)['hash'],first['hash'])
-        policy['libraries']['test']['exports'].reverse();host.write_text(json.dumps(policy))
+        policy['libraries']['test']['exports'].reverse();host.write_text(json.dumps(policy), newline="\n")
         self.assertEqual(self.cli('foreign',host)['hash'],first['hash'])
-        policy['module_limit']=32;host.write_text(json.dumps(policy))
+        policy['module_limit']=32;host.write_text(json.dumps(policy), newline="\n")
         self.assertNotEqual(self.cli('foreign',host)['hash'],first['hash'])
-        policy['module_limit']=64;policy['libraries']['test']['exports']=['echo'];host.write_text(json.dumps(policy))
+        policy['module_limit']=64;policy['libraries']['test']['exports']=['echo'];host.write_text(json.dumps(policy), newline="\n")
         self.assertNotEqual(self.cli('foreign',host)['hash'],first['hash'])
         data=moved/'module/module';data.write_bytes(data.read_bytes()+b'x')
         self.assertEqual(self.cli('foreign',host,ok=False,env=self.env)['code'],'E_FFI_HASH')
@@ -72,7 +75,7 @@ class TaskForeign(harness.ToolchainCase):
     def test_reviewed_execution_and_replay_after_sources_and_original_bundle_are_deleted(self):
         task=self.scaffold()
         self.add(task,{'id':'observe','kind':'run','target':'native','entry':'taskffi::main','expect':{'stdout':'42\n','exit_code':0}})
-        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
+        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','timeout_seconds':180 if os.name=='nt' else 60,'scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
         self.save(task);checked=self.task('check')
         self.assertEqual(checked['foreign_catalogue']['hash'],self.catalogue_report['hash']);self.assertEqual(self.events(),'')
         result=self.task('run','--task-hash',checked['task_hash'])
@@ -85,16 +88,16 @@ class TaskForeign(harness.ToolchainCase):
         self.assertIn('inputs/foreign/bundles/'+self.pin+'/module',index['files'])
         for label in ('reference','native'):
             command=json.loads((folder/('artifacts/observe/commands/'+label+'.json')).read_text())['command']
-            self.assertIn('--foreign',command);self.assertIn(str(captured/'host.json'),command)
+            self.assertIn('--foreign',command);self.assertEqual(Path(command[command.index('--foreign')+1]).resolve(),(captured/'host.json').resolve())
         command=json.loads((folder/'artifacts/build-native/commands/build.json').read_text())['command']
         self.assertNotIn('--foreign',command)
         approved=self.root/'current-operator';approved.mkdir();shutil.copytree(self.root/'bundle',approved/'bundle')
-        self.host=approved/'host.json';self.host.write_text(json.dumps(self.catalogue))
+        self.host=approved/'host.json';self.host.write_text(json.dumps(self.catalogue), newline="\n")
         for path in (self.file,self.taskfile,self.root/'producer.c',self.root/'host.json'):path.unlink()
         shutil.rmtree(self.root/'bundle');self.marker.unlink()
         self.assertEqual(self.cli('task',receipt,'--kind','replay',ok=False,env=self.env)['code'],'E_TASK_FOREIGN')
         self.assertEqual(self.events(),'')
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
         self.assertTrue(replay['ok']);self.assertEqual(replay['task_hash'],checked['task_hash'])
         self.assertEqual(replay['foreign_catalogue'],result['foreign_catalogue']);self.assertNotEqual(replay['output'],result['output'])
 
@@ -108,15 +111,15 @@ class TaskForeign(harness.ToolchainCase):
 
     def test_changed_grants_and_source_bindings_fail_before_native_initialization(self):
         task=self.scaffold()
-        self.catalogue['module_limit']=32;self.host.write_text(json.dumps(self.catalogue))
+        self.catalogue['module_limit']=32;self.host.write_text(json.dumps(self.catalogue), newline="\n")
         self.assertEqual(self.task('check',ok=False)['code'],'E_TASK_FOREIGN')
-        self.catalogue['module_limit']=64;self.host.write_text(json.dumps(self.catalogue))
-        original=self.file.read_text();self.file.write_text(original.replace(self.pin,'f'*64))
+        self.catalogue['module_limit']=64;self.host.write_text(json.dumps(self.catalogue), newline="\n")
+        original=self.file.read_text();self.file.write_text(original.replace(self.pin,'f'*64), newline="\n")
         changed=self.cli('task',self.file,'--kind','init')
         for c in changed['checks']:
             if c['kind']=='test':c['foreign_hash']=self.catalogue_report['hash']
         self.save(changed);self.assertEqual(self.task('check',ok=False)['code'],'E_TASK_FOREIGN_BINDING')
-        self.file.write_text(original.replace('echo(x:i64)->i64','echo(x:i64)->bool').replace('echo(17)==17','echo(17)'))
+        self.file.write_text(original.replace('echo(x:i64)->i64','echo(x:i64)->bool').replace('echo(17)==17','echo(17)'), newline="\n")
         changed=self.cli('task',self.file,'--kind','init')
         for c in changed['checks']:
             if c['kind']=='test':c['foreign_hash']=self.catalogue_report['hash']
@@ -130,7 +133,7 @@ class TaskForeign(harness.ToolchainCase):
             for directory,dirs,files in os.walk(harness.REPO/name):
                 dirs[:]=[n for n in dirs if n not in excluded]
                 resources+=sum((Path(directory)/name).is_file() for name in files)
-        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py'))
+        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py','tools/windows_pe.py','tools/windows_files.py'))
         # Task + program, two catalogue files, and three original bundle members.
         remaining=8192-resources-7
         original=json.loads((self.root/'bundle/manifest.json').read_text());index=0
@@ -140,36 +143,37 @@ class TaskForeign(harness.ToolchainCase):
             self.assertGreaterEqual(count,3)
             directory=self.root/('extra-'+str(index));directory.mkdir()
             shutil.copyfile(self.root/'bundle/module',directory/'module')
-            (directory/'NOTICE').write_text('Independent inventory '+str(index))
+            (directory/'NOTICE').write_text('Independent inventory '+str(index), newline="\n")
             names=['module','NOTICE']
             for number in range(count-3):
                 name='empty-'+str(number);(directory/name).write_bytes(b'');names.append(name)
             manifest=copy.deepcopy(original)
             manifest['files']=[{'path':name,'sha256':hashlib.sha256((directory/name).read_bytes()).hexdigest()} for name in names]
-            (directory/'manifest.json').write_text(json.dumps(manifest))
+            (directory/'manifest.json').write_text(json.dumps(manifest), newline="\n")
             self.catalogue['libraries']['extra_'+str(index)]={'directory':directory.name,
                 'manifest_sha256':hashlib.sha256((directory/'manifest.json').read_bytes()).hexdigest(),'exports':['echo','done']}
             remaining-=count;index+=1
         self.assertLessEqual(len(self.catalogue['libraries']),128)
-        self.host.write_text(json.dumps(self.catalogue));self.scaffold()
+        self.host.write_text(json.dumps(self.catalogue), newline="\n");self.scaffold()
         result=self.task();receipt=Path(result['output'])
         manifest=json.loads((receipt.parent/'inputs/manifest.json').read_text())
         self.assertEqual(len(manifest['files']),8192)
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
         self.assertTrue(replay['ok'])
 
     def test_capture_tampering_is_rejected_even_when_the_receipt_is_rehashed(self):
         self.scaffold();result=self.task();receipt=Path(result['output']);folder=receipt.parent;self.marker.unlink()
         captured=folder/'inputs/foreign/host.json';policy=json.loads(captured.read_text())
-        policy['libraries']['test']['exports']=['echo'];captured.write_text(json.dumps(policy))
+        policy['libraries']['test']['exports']=['echo'];captured.write_text(json.dumps(policy), newline="\n")
         def digest(path):
             target=self.root/'hash-fixture';shutil.copyfile(path,target);target.chmod(0o755)
-            config=self.root/'hash-config.json';config.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.cli('doctor')['host'],'compiler':str(target)}))
+            description=harness.host_toolchain_defaults(self.cli('doctor'));description['compiler']=str(target)
+            config=self.root/'hash-config.json';config.write_text(json.dumps(description), newline="\n")
             return self.cli('toolchain',config)['inputs']['files'][str(target.resolve())]['hash']
         manifest=folder/'inputs/manifest.json';index=json.loads(manifest.read_text())
         index['files']['inputs/foreign/host.json']={'hash':digest(captured),'bytes':captured.stat().st_size}
-        manifest.write_text(json.dumps(index))
-        saved=json.loads(receipt.read_text());saved['input_hash']=digest(manifest);receipt.write_text(json.dumps(saved))
+        manifest.write_text(json.dumps(index), newline="\n")
+        saved=json.loads(receipt.read_text());saved['input_hash']=digest(manifest);receipt.write_text(json.dumps(saved), newline="\n")
         rejected=self.cli('task',receipt,'--kind','replay','--foreign',self.host,ok=False,env=self.env)
         self.assertEqual(rejected['code'],'E_TASK_INTEGRITY');self.assertEqual(self.events(),'')
 
@@ -249,7 +253,7 @@ class TaskForeign(harness.ToolchainCase):
             deadline=time.monotonic()+15
             while 'C' not in self.events() and process.poll() is None and time.monotonic()<deadline:time.sleep(.02)
             self.assertIn('C',self.events())
-            process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=15)
+            interrupt_task(process);out,err=process.communicate(timeout=15)
             self.assertEqual(process.returncode,130,out+err)
             result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
             self.assertEqual([c['status'] for c in result['checks']],['interrupted','skipped'])
@@ -263,19 +267,27 @@ class TaskForeign(harness.ToolchainCase):
     def project_process_fixture(self):
         original=fixture.C;shutil.rmtree(self.root/'bundle')
         loop='''mark('C');pid_t child=fork();if(child==0){for(;;)pause();}const char *path=getenv("NEX_TASK_CHILDREN");if(path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd>=0){char line[128];int count=snprintf(line,sizeof(line),"%ld %ld %ld\\n",(long)getpid(),(long)getpgrp(),(long)child);if(count>0&&count<(int)sizeof(line))write(fd,line,(size_t)count);close(fd);}}for(;;)pause();'''
+        if os.name=='nt':
+            child_source=self.root/'uncooperative-child.c'
+            child_source.write_text('#include <windows.h>\nint main(void){for(;;)Sleep(1000);}',newline="\n")
+            child_exe=self.root/'uncooperative-child.exe'
+            compiled=run_native([self.cli('doctor')['native_compiler'],'-x','c','-std=c11',child_source,'-o',child_exe],capture_output=True,text=True,timeout=90)
+            self.assertEqual(compiled.returncode,0,compiled.stdout+compiled.stderr)
+            self.env['NEX_TASK_CHILD_EXE']=str(child_exe)
+            loop="""mark('C');wchar_t child_path[32768],file_path[32768];if(!GetEnvironmentVariableW(L"NEX_TASK_CHILD_EXE",child_path,32768)||!GetEnvironmentVariableW(L"NEX_TASK_CHILDREN",file_path,32768))return NEX_FFI_ARGUMENT;STARTUPINFOW startup={0};startup.cb=sizeof(startup);PROCESS_INFORMATION process={0};if(!CreateProcessW(child_path,0,0,0,FALSE,CREATE_NO_WINDOW,0,0,&startup,&process))return NEX_FFI_ARGUMENT;DWORD child=process.dwProcessId;CloseHandle(process.hThread);CloseHandle(process.hProcess);FILE *file=_wfopen(file_path,L"wb");if(!file)return NEX_FFI_ARGUMENT;fprintf(file,"%lu %lu %lu\\n",(unsigned long)GetCurrentProcessId(),(unsigned long)GetCurrentProcessId(),(unsigned long)child);fclose(file);for(;;)Sleep(1000);"""
         source='''module tasklib;server extern fn echo(x:i64)->i64!{ffi}=foreign("test","echo","@PIN@");pub server fn invoke()->i64!{ffi}{return echo(42);}'''
         try:
-            fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>').replace("mark('C');",loop,1)
+            fixture.C=original.replace('#include <fcntl.h>','#include <fcntl.h>\n#include <stdio.h>\n#ifdef _WIN32\n#include <windows.h>\n#endif').replace("mark('C');",loop,1)
             self.program(source,{'echo':'echo'})
         finally:fixture.C=original
         (self.root/'library').mkdir();self.file.rename(self.root/'library/main.nex');(self.root/'app').mkdir()
         (self.root/'app/main.nex').write_text('''module taskffi;import "../library/main.nex" as l;
-server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->unit!{ffi}{assert(l::invoke()==42);}''')
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->unit!{ffi}{assert(l::invoke()==42);}''', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
             'configurations':{'debug':{'profile':'debug'},'profile':{'profile':'profile'}},'components':{
                 'library':{'kind':'shared_library','root':'library','entry':'library/main.nex','entry_function':'invoke'},
-                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'library':'dynamic'}}}}))
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'library':'dynamic'}}}}), newline="\n")
         self.catalogue_report=self.cli('foreign',self.host);self.children=self.root/'children'
         self.env['NEX_TASK_CHILDREN']=str(self.children);ambient=self.root/'ambient-tmp';ambient.mkdir();self.env['TMPDIR']=str(ambient)
         return ambient
@@ -284,19 +296,36 @@ server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->uni
         if not self.children.exists():return
         parent,group,child=map(int,self.children.read_text().split());self.assertEqual(parent,group)
         def running(pid):
+            if os.name=='nt':
+                import ctypes as C
+                from ctypes import wintypes as W
+                kernel=C.WinDLL('kernel32',use_last_error=True)
+                kernel.OpenProcess.argtypes=[W.DWORD,W.BOOL,W.DWORD];kernel.OpenProcess.restype=W.HANDLE
+                kernel.WaitForSingleObject.argtypes=[W.HANDLE,W.DWORD];kernel.WaitForSingleObject.restype=W.DWORD
+                kernel.CloseHandle.argtypes=[W.HANDLE]
+                handle=kernel.OpenProcess(0x100000,False,pid)
+                if not handle:
+                    if C.get_last_error()==87:return False
+                    raise C.WinError(C.get_last_error())
+                try:return kernel.WaitForSingleObject(handle,0)==0x102
+                finally:kernel.CloseHandle(handle)
             p=subprocess.run(['ps','-p',str(pid),'-o','stat='],capture_output=True,text=True)
             return p.returncode==0 and p.stdout.strip() and not p.stdout.strip().startswith('Z')
         deadline=time.monotonic()+5
         while (running(parent) or running(child)) and time.monotonic()<deadline:time.sleep(.05)
         if running(parent) or running(child):
-            try:os.killpg(group,signal.SIGKILL)
+            try:
+                if os.name=='nt':
+                    for pid in (parent,child):
+                        if running(pid):subprocess.run(['taskkill','/PID',str(pid),'/T','/F'],capture_output=True)
+                else:os.killpg(group,signal.SIGKILL)
             except ProcessLookupError:pass
             self.fail('task left a native process or its forked descendant running')
 
     def project_wait_task(self,mode,timeout):
         configuration='profile' if mode=='profile' else 'debug'
         scaffold=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration',configuration)
-        task=copy.deepcopy(scaffold);task['checks']=[c for c in scaffold['checks'] if c['kind']=='build'];task['requirements']=[r for r in scaffold['requirements'] if r['checks']==['build-native']]
+        task=copy.deepcopy(scaffold);task['checks']=[{**c,'timeout_seconds':300} for c in scaffold['checks'] if c['kind']=='build'];task['requirements']=[r for r in scaffold['requirements'] if r['checks']==['build-native']]
         check={'id':'wait','kind':mode,'target':'native','configuration':configuration,'timeout_seconds':timeout}
         if mode=='test':check['tests']=next(c['tests'] for c in scaffold['checks'] if c['kind']=='test')
         elif mode=='run':check.update(entry='taskffi::main',expect={'stdout':'42\n','exit_code':0})
@@ -325,11 +354,11 @@ server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->uni
                 self.children.unlink(missing_ok=True);self.project_wait_task(mode,90)
                 process=subprocess.Popen([harness.NEX,'task',str(self.taskfile),'--kind','run','--directory',str(self.root/('interrupt-'+mode)),'--foreign',str(self.host),'--json'],cwd=self.root,env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
                 try:
-                    deadline=time.monotonic()+120
+                    deadline=time.monotonic()+(360 if os.name=="nt" else 120)
                     while not self.children.exists() and process.poll() is None and time.monotonic()<deadline:time.sleep(.05)
                     if not self.children.exists():
                         out,err=process.communicate(timeout=10);self.fail(out+err)
-                    process.send_signal(signal.SIGINT);out,err=process.communicate(timeout=30)
+                    interrupt_task(process);out,err=process.communicate(timeout=30)
                     self.assertEqual(process.returncode,130,out+err);result=json.loads(out);self.assertEqual(result['signal'],signal.SIGINT)
                     rows={c['id']:c for c in result['checks']};self.assertEqual(rows['wait']['status'],'interrupted');self.assertEqual(rows['later']['status'],'skipped');self.assert_project_children_stopped()
                     self.assertEqual(list(ambient.glob('nex-task-*')),[]);self.assertEqual(list(ambient.glob('nex-module-*')),[])

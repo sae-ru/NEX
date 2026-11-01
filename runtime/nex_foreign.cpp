@@ -9,6 +9,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #if defined(NEX_FOREIGN_DEFAULT) && defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
@@ -23,6 +26,9 @@ std::string packagedForeignCatalogue(){
 #elif defined(__linux__)
   std::vector<char> path(1048576);auto size=::readlink("/proc/self/exe",path.data(),path.size());
   if(size<=0||size_t(size)>=path.size())throw DataError("E_FFI_IO","cannot locate packaged executable");executable.assign(path.data(),size_t(size));
+#elif defined(_WIN32)
+  std::vector<wchar_t> path(32768);auto size=GetModuleFileNameW(nullptr,path.data(),DWORD(path.size()));
+  if(!size||size==path.size())throw DataError("E_FFI_IO","cannot locate packaged executable");executable=platform::utf8(std::wstring_view(path.data(),size));
 #else
   throw DataError("E_FFI_PLATFORM","packaged catalogue location is unsupported on this platform");
 #endif
@@ -82,15 +88,29 @@ std::shared_ptr<Binding> resolve(const std::shared_ptr<State> &state,const std::
 std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &configuration){
   if(configuration.empty()||configuration.size()>4096||configuration.find('\0')!=std::string::npos)invalid("E_FFI_GRANT","invalid foreign host configuration path");
   try{unicodeOffsets(configuration,false);}catch(const DataError&){invalid("E_FFI_GRANT","foreign host configuration path must be UTF-8");}
+#ifdef _WIN32
+  auto absolute=std::filesystem::path(platform::wide(configuration));
+  if(!absolute.is_absolute())absolute=std::filesystem::current_path()/absolute;
+  std::filesystem::path parent;
+  try{parent=host_windows::canonical(absolute.parent_path());absolute=parent/absolute.filename();}
+  catch(const std::filesystem::filesystem_error&){invalid("E_FFI_IO","foreign host configuration parent is unavailable");}
+#else
   std::error_code ec;auto absolute=std::filesystem::absolute(configuration,ec);if(ec)invalid("E_FFI_IO","cannot resolve foreign host configuration path");
   auto parent=std::filesystem::canonical(absolute.parent_path(),ec);if(ec)invalid("E_FFI_IO","foreign host configuration parent is unavailable");absolute=parent/absolute.filename();
+#endif
   // Opening a caller-selected configuration does not execute any native code.
+#ifdef _WIN32
+  std::string text;
+  try{text=host_windows::readRegular(absolute,1048576);}
+  catch(const DataError &error){invalid(error.code=="E_LIMIT"?"E_FFI_LIMIT":"E_FFI_IO",error.what());}
+#else
   struct File {int fd;~File(){if(fd>=0)::close(fd);}} file{::open(absolute.c_str(),O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC)};
   if(file.fd<0)invalid("E_FFI_IO","foreign host configuration is unavailable");struct stat info{};
   if(::fstat(file.fd,&info)||!S_ISREG(info.st_mode))invalid("E_FFI_IO","foreign host configuration must be a regular file");
   if(info.st_size<0||uint64_t(info.st_size)>1048576)invalid("E_FFI_LIMIT","foreign host configuration exceeds 1 MiB");
   std::string text;std::array<char,65536> chunk{};
   for(;;){auto n=::read(file.fd,chunk.data(),chunk.size());if(n<0){if(errno==EINTR)continue;invalid("E_FFI_IO","cannot read foreign host configuration");}if(!n)break;if(uint64_t(n)>1048576-text.size())invalid("E_FFI_LIMIT","foreign host configuration exceeds 1 MiB");text.append(chunk.data(),size_t(n));}
+#endif
   auto doc=parse(text,"E_FFI_GRANT");
   if(!doc.is_object()||!doc.contains("schema")||!doc.contains("libraries")||!doc.contains("module_limit"))invalid("E_FFI_GRANT","missing foreign host field");
   for(auto it=doc.begin();it!=doc.end();++it)if(it.key()!="schema"&&it.key()!="libraries"&&it.key()!="module_limit"&&it.key()!="resource_limit"&&it.key()!="resource_bytes")invalid("E_FFI_GRANT","unknown foreign host field");

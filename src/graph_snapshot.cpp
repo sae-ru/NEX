@@ -15,6 +15,9 @@
 #include <set>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 
 namespace nex {
 namespace {
@@ -28,20 +31,39 @@ struct Deadline {
 };
 struct File {
   int fd=-1;
-  File(const fs::path &path,int flags):fd(::open(path.c_str(),flags|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK,0600)){
+  File(const fs::path &path,int flags)
+#ifdef _WIN32
+    :fd(nexrt::host_windows::openRegularDescriptor(path,flags)){
+#else
+    :fd(::open(path.c_str(),flags|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK,0600)){
+#endif
     struct stat info{};if(fd<0||::fstat(fd,&info)||!S_ISREG(info.st_mode)){if(fd>=0)::close(fd);fd=-1;throw Error("E_SNAPSHOT_FILE","snapshot member requires a regular non-symlink file");}
   }
   ~File(){if(fd>=0)::close(fd);}
   File(const File&)=delete;File&operator=(const File&)=delete;
 };
 struct Output {
-  fs::path path;dev_t device;ino_t inode;bool retained=false;
+  fs::path path;bool retained=false;
+#ifdef _WIN32
+  std::optional<nexrt::host_windows::Identity> identity;
+#else
+  dev_t device;ino_t inode;
+#endif
   explicit Output(const std::string &directory){
     path=fs::absolute(directory).lexically_normal();fs::create_directories(path.parent_path());
+#ifdef _WIN32
+    if(!nexrt::host_windows::createPrivateDirectory(path))throw Error(errno==EEXIST?"E_EXISTS":"E_SNAPSHOT_FILE","snapshot/recovery requires a new output directory");
+    identity=nexrt::host_windows::identity(path);if(!identity||!identity->directory)throw Error("E_SNAPSHOT_FILE","cannot identify snapshot output directory");
+#else
     if(::mkdir(path.c_str(),0700))throw Error(errno==EEXIST?"E_EXISTS":"E_SNAPSHOT_FILE","snapshot/recovery requires a new output directory");
     struct stat info{};if(::lstat(path.c_str(),&info)){::rmdir(path.c_str());throw Error("E_SNAPSHOT_FILE","cannot identify output directory");}device=info.st_dev;inode=info.st_ino;
+#endif
   }
+#ifdef _WIN32
+  ~Output(){if(!retained&&nexrt::host_windows::identity(path)==identity){std::error_code error;fs::remove_all(path,error);}}
+#else
   ~Output(){if(retained)return;struct stat info{};if(!::lstat(path.c_str(),&info)&&S_ISDIR(info.st_mode)&&info.st_dev==device&&info.st_ino==inode){std::error_code error;fs::remove_all(path,error);}}
+#endif
 };
 void failure(int code,const std::string &operation,Deadline &deadline,std::string detail={}){deadline.check();if(detail.size()>1024)detail.resize(1024);throw Error("E_SNAPSHOT",operation+" failed (SQLite "+std::to_string(code)+": "+sqlite3_errstr(code)+(detail.empty()?"":"; "+detail)+")");}
 struct Database {
@@ -50,7 +72,7 @@ struct Database {
     File regular(path,O_RDONLY);
     int flags=(writable?SQLITE_OPEN_READWRITE:SQLITE_OPEN_READONLY)|SQLITE_OPEN_FULLMUTEX|SQLITE_OPEN_NOFOLLOW;
     auto filename=fs::canonical(path.parent_path())/path.filename();
-    auto rc=sqlite3_open_v2(filename.c_str(),&db,flags,nullptr);if(rc!=SQLITE_OK){if(db)sqlite3_close(db);db=nullptr;failure(rc,"open graph database",deadline);}
+    auto rc=sqlite3_open_v2(filename.string().c_str(),&db,flags,nullptr);if(rc!=SQLITE_OK){if(db)sqlite3_close(db);db=nullptr;failure(rc,"open graph database",deadline);}
     sqlite3_busy_timeout(db,25);sqlite3_enable_load_extension(db,0);
     sqlite3_db_config(db,SQLITE_DBCONFIG_DEFENSIVE,1,nullptr);sqlite3_db_config(db,SQLITE_DBCONFIG_TRUSTED_SCHEMA,0,nullptr);
     sqlite3_limit(db,SQLITE_LIMIT_SQL_LENGTH,1048576);sqlite3_limit(db,SQLITE_LIMIT_EXPR_DEPTH,128);sqlite3_limit(db,SQLITE_LIMIT_ATTACHED,0);
@@ -109,11 +131,25 @@ Object summary(Database &db){
   return Object{{"graph_schema",int64_t(version[0]-'0')},{"head",head},{"head_language",language},{"namespace",nameSpace},{"table_counts",std::move(counts)}};
 }
 void syncDirectory(const fs::path &path){
+#ifdef _WIN32
+  nexrt::host_windows::Handle directory(CreateFileW(path.c_str(),GENERIC_READ|GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+    nullptr,OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+  auto id=nexrt::host_windows::identity(directory.value);
+  if(!id||!id->directory||!FlushFileBuffers(directory.value))throw Error("E_SNAPSHOT_FILE","cannot synchronize Windows snapshot directory");
+#else
   int fd=::open(path.c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
   if(fd<0)throw Error("E_SNAPSHOT_FILE","cannot open snapshot directory for synchronization");
   auto result=::fsync(fd);::close(fd);if(result)throw Error("E_SNAPSHOT_FILE","cannot synchronize snapshot directory");
+#endif
 }
-void syncFile(File &file){if(::fsync(file.fd))throw Error("E_SNAPSHOT_FILE","cannot synchronize snapshot file");}
+void syncFile(File &file){
+#ifdef _WIN32
+  if(nexrt::host_windows::synchronize(file.fd))
+#else
+  if(::fsync(file.fd))
+#endif
+    throw Error("E_SNAPSHOT_FILE","cannot synchronize snapshot file");
+}
 void write(const fs::path &path,const std::string &text){File file(path,O_WRONLY|O_CREAT|O_EXCL);size_t offset=0;while(offset<text.size()){auto count=::write(file.fd,text.data()+offset,text.size()-offset);if(count<0){if(errno==EINTR)continue;throw Error("E_SNAPSHOT_FILE","cannot write snapshot metadata");}if(!count)throw Error("E_SNAPSHOT_FILE","short snapshot write");offset+=size_t(count);}syncFile(file);}
 struct Digest {std::string sha;int64_t bytes;};
 Digest copyHash(const fs::path &source,const fs::path *destination,Deadline &deadline){
@@ -132,7 +168,13 @@ std::string readManifest(const fs::path &path){
   unsigned depth=0;bool quoted=false,escape=false;for(char c:result){if(quoted){if(escape)escape=false;else if(c=='\\')escape=true;else if(c=='"')quoted=false;continue;}if(c=='"')quoted=true;else if(c=='{'||c=='['){if(++depth>16)throw Error("E_SNAPSHOT_FORMAT","snapshot manifest exceeds depth 16");}else if((c=='}'||c==']')&&depth)--depth;}
   return result;
 }
-std::string created(){auto value=std::time(nullptr);std::tm utc{};if(!gmtime_r(&value,&utc))throw Error("E_SNAPSHOT","cannot read UTC time");char text[32];std::strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&utc);return text;}
+std::string created(){auto value=std::time(nullptr);std::tm utc{};
+#ifdef _WIN32
+  if(gmtime_s(&utc,&value))
+#else
+  if(!gmtime_r(&value,&utc))
+#endif
+    throw Error("E_SNAPSHOT","cannot read UTC time");char text[32];std::strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&utc);return text;}
 }
 JSON createGraphSnapshot(const std::string &root,const std::string &directory,unsigned timeoutSeconds){
   Deadline deadline(timeoutSeconds);Database source(fs::path(root)/".nex/graph.db",false,deadline);
@@ -145,7 +187,15 @@ JSON createGraphSnapshot(const std::string &root,const std::string &directory,un
     auto code=sqlite3_backup_finish(backup);guard.handle=nullptr;if(code!=SQLITE_OK)failure(code,"finish graph backup",deadline);
     sql(destination,"PRAGMA journal_mode=DELETE");state=summary(destination);destination.close();
   }
-  sql(source,"ROLLBACK");source.close();{File file(path,O_RDONLY);syncFile(file);}auto data=copyHash(path,nullptr,deadline);
+  sql(source,"ROLLBACK");source.close();{
+#ifdef _WIN32
+    // FlushFileBuffers requires write access to the newly created backup.
+    File file(path,O_RDWR);
+#else
+    File file(path,O_RDONLY);
+#endif
+    syncFile(file);
+  }auto data=copyHash(path,nullptr,deadline);
   auto selectedHead=state.getString("head")->str(),selectedNamespace=state.getString("namespace")->str();auto selectedSchema=*state.getInteger("graph_schema");
   Object manifest{{"schema","nex.graph-snapshot/1"},{"created",created()},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},
     {"database",Object{{"file","graph.db"},{"sha256",data.sha},{"bytes",data.bytes}}},{"state",std::move(state)},
@@ -164,7 +214,13 @@ JSON recoverGraphSnapshot(const std::string &snapshot,const std::string &directo
   if(creator.empty()||creator.size()>64||creator.find('\0')!=std::string::npos||timestamp.size()!=20)throw Error("E_SNAPSHOT_FORMAT","invalid snapshot creator/time metadata");
   for(size_t n=0;n<timestamp.size();++n){char fixed=n==4||n==7?'-':n==10?'T':n==13||n==16?':':n==19?'Z':0;if(fixed?timestamp[n]!=fixed:timestamp[n]<'0'||timestamp[n]>'9')throw Error("E_SNAPSHOT_FORMAT","invalid snapshot timestamp");}
   Array expectedContents{"graph_database","archived_sources","local_identities","identity_aliases","change_journal","task_run_index"};if(*contents!=expectedContents)throw Error("E_SNAPSHOT_FORMAT","unsupported snapshot contents");
-  Output output(directory);auto dataDirectory=output.path/".nex";if(::mkdir(dataDirectory.c_str(),0700))throw Error("E_SNAPSHOT_FILE","cannot create recovered graph directory");auto target=dataDirectory/"graph.db";
+  Output output(directory);auto dataDirectory=output.path/".nex";
+#ifdef _WIN32
+  if(!nexrt::host_windows::createPrivateDirectory(dataDirectory))
+#else
+  if(::mkdir(dataDirectory.c_str(),0700))
+#endif
+    throw Error("E_SNAPSHOT_FILE","cannot create recovered graph directory");auto target=dataDirectory/"graph.db";
   auto data=copyHash(input/"graph.db",&target,deadline);if(data.sha!=database->getString("sha256")->str()||data.bytes!=*database->getInteger("bytes"))throw Error("E_SNAPSHOT_INTEGRITY","snapshot database does not match its manifest digest/size");
   Object recovered;
   {Database db(target,false,deadline);recovered=summary(db);db.close();}

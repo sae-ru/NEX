@@ -1,4 +1,7 @@
 """Consistent, identity-preserving graph snapshots and non-overwriting recovery."""
+from host_fixture import private_permissions
+from host_fixture import nonregular
+from sqlite_fixture import connection as sqlite_connection
 import concurrent.futures
 import hashlib
 import json
@@ -18,14 +21,14 @@ class GraphSnapshots(harness.ToolchainCase):
         return self.cli('check','--note','first 🧠')['revision']
 
     def rows(self,root=None):
-        with sqlite3.connect((root or self.root)/'.nex/graph.db') as db:
+        with sqlite_connection((root or self.root)/'.nex/graph.db') as db:
             names=[n for n, in db.execute("SELECT name FROM sqlite_master WHERE type='table'")]
             return {n:sorted(db.execute('SELECT * FROM "'+n.replace('"','""')+'"').fetchall(),key=repr) for n in names}
 
     def edit(self,number):
         patch=self.root/('patch-'+str(number)+'.json')
         patch.write_text(json.dumps({'expected_revision':self.cli('history')['head'],
-            'replacements':[{'name':'value','source':'fn value()->i64{return '+str(number)+';}'}]}))
+            'replacements':[{'name':'value','source':'fn value()->i64{return '+str(number)+';}'}]}), newline="\n")
         return self.cli('apply','--patch',patch)['revision']
 
     def snapshot(self,name='saved'):
@@ -53,7 +56,7 @@ class GraphSnapshots(harness.ToolchainCase):
         self.assertTrue(self.cli('test','--revision','HEAD','--target','web',cwd=recovered)['ok'])
         self.assertFalse((recovered/'main.nex').exists())
         self.assertEqual(self.rows(),before)
-        self.assertEqual((archive.stat().st_mode&0o777,(archive/'graph.db').stat().st_mode&0o777),(0o700,0o600))
+        self.assertTrue(private_permissions(archive,0o700));self.assertTrue(private_permissions(archive/'graph.db',0o600))
 
     def test_committed_wal_data_is_included_in_a_standalone_snapshot(self):
         self.ready()
@@ -71,13 +74,13 @@ class GraphSnapshots(harness.ToolchainCase):
 
     def test_timestamp_defaults_preserve_schema_and_stored_values(self):
         self.ready()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute("CREATE TABLE timestamp_probe(value TEXT DEFAULT(strftime('%s','now'))) STRICT")
             db.execute('INSERT INTO timestamp_probe DEFAULT VALUES')
             schema=db.execute("SELECT sql FROM sqlite_schema WHERE name='timestamp_probe'").fetchone()[0]
         before=self.rows();archive,_,_=self.snapshot();recovered,_=self.recover(archive)
         self.assertEqual(self.rows(),before);self.assertEqual(self.rows(recovered),before)
-        with sqlite3.connect(recovered/'.nex/graph.db') as db:
+        with sqlite_connection(recovered/'.nex/graph.db') as db:
             self.assertEqual(db.execute("SELECT sql FROM sqlite_schema WHERE name='timestamp_probe'").fetchone()[0],schema)
 
     def test_current_writer_and_snapshot_observe_one_coherent_database(self):
@@ -113,7 +116,7 @@ class GraphSnapshots(harness.ToolchainCase):
         metadata=json.loads(Path(str(fixture)+'.json').read_text());sql=Path(str(fixture)+'.sql').read_bytes()
         self.assertEqual(hashlib.sha256(sql).hexdigest(),metadata['sql_sha256'])
         (self.root/'.nex').mkdir()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
+        with sqlite_connection(self.root/'.nex/graph.db') as db:db.executescript(sql.decode())
         before=self.rows();archive,_,manifest=self.snapshot()
         self.assertEqual(manifest['state']['graph_schema'],3);self.assertEqual(self.rows(),before)
         recovered,_=self.recover(archive);self.assertEqual(self.rows(recovered),before)
@@ -132,22 +135,22 @@ class GraphSnapshots(harness.ToolchainCase):
         self.assertEqual(self.rows(),before)
 
     def test_multi_module_and_frozen_library_source_survive_deletion(self):
-        library=self.root/'library';library.mkdir();(library/'math.nex').write_text('module numbers;pub fn answer()->i64{return 42;}')
-        (self.root/'nex.json').write_text(json.dumps({'language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'numbers':'./library'}}))
+        library=self.root/'library';library.mkdir();(library/'math.nex').write_text('module numbers;pub fn answer()->i64{return 42;}', newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'language':harness.CURRENT_LANGUAGE,'entry':'main.nex','libraries':{'numbers':'./library'}}), newline="\n")
         self.source('module app;import "numbers/math.nex" as n;fn main()->unit!{io}{print(n::answer());}')
         self.cli('check');archive,_,_=self.snapshot();self.file.unlink();shutil.rmtree(library)
         recovered,_=self.recover(archive)
         self.assertEqual(self.cli('run','--revision','HEAD',cwd=recovered)['stdout'],'42\n')
 
     def test_existing_targets_never_change_and_bad_members_are_cleaned_up(self):
-        self.ready();archive,_,_=self.snapshot();existing=self.root/'existing';existing.mkdir();sentinel=existing/'keep';sentinel.write_text('keep')
+        self.ready();archive,_,_=self.snapshot();existing=self.root/'existing';existing.mkdir();sentinel=existing/'keep';sentinel.write_text('keep', newline="\n")
         self.assertEqual(self.cli('snapshot','--directory',existing,ok=False)['code'],'E_EXISTS')
         self.assertEqual(self.cli('recover',archive,'--directory',existing,ok=False)['code'],'E_EXISTS')
         self.assertEqual(sentinel.read_text(),'keep')
         database=archive/'graph.db';original=database.read_bytes();database.write_bytes(original+b'corrupt')
         target,error=self.recover(archive,ok=False);self.assertEqual(error['code'],'E_SNAPSHOT_INTEGRITY');self.assertFalse(target.exists())
         database.write_bytes(original)
-        data=json.loads((archive/'snapshot.json').read_text());data['state']['head']='0'*64;(archive/'snapshot.json').write_text(json.dumps(data))
+        data=json.loads((archive/'snapshot.json').read_text());data['state']['head']='0'*64;(archive/'snapshot.json').write_text(json.dumps(data), newline="\n")
         target,error=self.recover(archive,ok=False);self.assertEqual(error['code'],'E_SNAPSHOT_INTEGRITY');self.assertFalse(target.exists())
 
     def test_manifest_shape_utf8_bounds_and_links_are_rejected(self):
@@ -163,7 +166,7 @@ class GraphSnapshots(harness.ToolchainCase):
         database=archive/'graph.db';database.rename(archive/'original.db');database.symlink_to(archive/'original.db')
         target,error=self.recover(archive,ok=False);self.assertEqual(error['code'],'E_SNAPSHOT_FILE');self.assertFalse(target.exists())
         database.unlink()
-        path.unlink();os.mkfifo(path)
+        path.unlink();nonregular(path)
         target,error=self.recover(archive,name='fifo',ok=False);self.assertEqual(error['code'],'E_SNAPSHOT_FILE');self.assertFalse(target.exists())
 
     def test_discovery_guides_and_model_pack_match_snapshot_protocol(self):
@@ -189,12 +192,12 @@ class GraphSnapshots(harness.ToolchainCase):
 
     def test_source_views_and_triggers_are_not_executed_or_packaged(self):
         self.ready()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute('CREATE VIEW unwanted AS SELECT 1')
         before=self.rows();target=self.root/'bad'
         self.assertEqual(self.cli('snapshot','--directory',target,ok=False)['code'],'E_SNAPSHOT_FORMAT')
         self.assertFalse(target.exists());self.assertEqual(self.rows(),before)
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             db.execute('DROP VIEW unwanted')
             db.execute("CREATE TRIGGER unwanted BEFORE INSERT ON metadata BEGIN UPDATE revisions SET source='destroyed';END")
         before=self.rows()

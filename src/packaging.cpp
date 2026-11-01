@@ -30,7 +30,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     const PackageOptions &options,const std::filesystem::path &request,
     const std::string &foreignDirectory,llvm::json::Value projection,llvm::json::Object foreignFiles){
   namespace fs=std::filesystem;auto output=fs::absolute(options.directory).lexically_normal();
-  const char *python=std::getenv("NEX_PYTHON");
+
   auto bytes=readFile(built.executable);
   auto metadata=llvm::json::parse(readFile((fs::path(built.executable).parent_path()/"build.json").string()));
   if(!metadata){llvm::consumeError(metadata.takeError());throw Error("E_PACKAGE","invalid native build metadata");}
@@ -41,11 +41,13 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     throw Error("E_PACKAGE","packaging requires its matching checked native application artifact");
   if(!foreignDirectory.empty()&&info->getString("foreign_catalogue")!="../foreign/host.json")
     throw Error("E_FFI_PACKAGE","foreign package artifact lacks its executable-relative catalogue default");
-  auto buildFolder=fs::path(built.executable).parent_path();std::string complete=built.key;
+  auto buildFolder=fs::path(built.executable).parent_path();
+  const bool windows=llvm::Triple(built.target).isOSWindows();auto imagesFolder=windows?buildFolder:buildFolder/"images";std::string complete=built.key;
   for(const auto &file:{fs::path(built.executable),buildFolder/"program.mlir",buildFolder/"program.ll",buildFolder/"compilation.json",buildFolder/"build.json",buildFolder/"source-bundle.json"})complete+=hash(readFile(file.string()));
   for(const auto &name:nativeCompletionInputs(*info))complete+=hash(readFile((buildFolder/name).string()));
   if(readFile((buildFolder/"complete").string())!=hash(complete)+"\n")throw Error("E_PACKAGE","native artifact completion differs before packaging");
   llvm::json::Array owned,taskFiles;
+  std::set<fs::path> ownedImagePaths;
   const bool debug=info->getString("completion_schema")=="nex.native-completion/7";
   const bool profiled=info->getString("completion_schema")=="nex.native-completion/6";
   const bool sharedTasks=info->getString("completion_schema")=="nex.native-completion/5"||((profiled||debug)&&info->getString("completion_mode")=="shared-application");
@@ -61,7 +63,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     if(provider){const bool application=kind=="application_provider"||kind=="application_profile_catalog";
       if(!application&&!provider->image)throw Error("E_PACKAGE","task provider has no physical image");
       auto suffix=kind=="owned_profile_catalog"?std::string(".task-profile-catalog.json"):std::string(".task-provider.json");
-      auto image=application?fs::path(built.executable):buildFolder/"images"/path.filename().string().substr(0,path.filename().string().size()-suffix.size());
+      auto image=application?fs::path(built.executable):imagesFolder/path.filename().string().substr(0,path.filename().string().size()-suffix.size());
       record["component"]=provider->component;record["image"]=image.string();
       record["image_key"]=application?built.key:provider->image->key;record["image_sha256"]=sha256(readFile(image.string()));record["image_uuid"]=nativeImageUUID(image.string());}
     taskFiles.push_back(std::move(record));
@@ -76,11 +78,12 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
       auto record=entry.getAsObject();if(!record)throw Error("E_PACKAGE","invalid compiler-owned image record");
       auto path=record->getString("path"),digest=record->getString("sha256"),key=record->getString("key"),abi=record->getString("abi"),kind=record->getString("kind"),uuid=record->getString("uuid");
       if(!path||!digest||!key||!abi||!kind||!uuid)throw Error("E_PACKAGE","missing compiler-owned image identity");
-      auto relative=(fs::path("images")/fs::path(path->str()).filename()).generic_string();if(sharedTasks)physical(path->str());
+      auto relative=(windows?fs::path(path->str()).filename():fs::path("images")/fs::path(path->str()).filename()).generic_string();if(sharedTasks)physical(path->str());
       if(fs::path(path->str())!=buildFolder/relative||!expected.contains(relative)||!seen.insert(relative).second||
          (sharedTasks&&record->getString("hash")!=hash(readFile(path->str())))||sha256(readFile(path->str()))!=*digest||nativeImageUUID(path->str())!=*uuid||*abi!=built.libraryABI)
         throw Error("E_PACKAGE","compiler-owned native image bytes/UUID/path differ");
       imageRecords.emplace(relative,record);runtimes+=*kind=="runtime";
+      ownedImagePaths.insert(fs::path(path->str()).lexically_normal());
       owned.push_back(llvm::json::Object{{"path",path->str()},{"sha256",digest->str()},{"key",key->str()},{"abi",abi->str()},{"kind",kind->str()},{"uuid",uuid->str()}});
     }
     if(seen!=expected||(sharedTasks&&runtimes!=1))throw Error("E_PACKAGE","compiler-owned image inventory is incomplete");
@@ -144,9 +147,16 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     {"compiler_build",info->getString("compiler_build").value_or("")},
     {"profile",info->getString("profile").value_or("")},{"kind",info->getString("kind").value_or("")},
     {"host_compatible",built.hostCompatible}};
+  if(auto inputs=info->getArray("static_link_inputs")){
+    for(const auto &value:*inputs){const auto *input=value.getAsObject();auto path=input?input->getString("path"):std::nullopt;auto digest=input?input->getString("sha256"):std::nullopt;auto size=input?input->getInteger("bytes"):std::nullopt;
+      if(!path||!digest||!size||*size<0||*size>256LL*1048576)throw Error("E_PACKAGE","invalid completed static link input");
+      physical(path->str());auto data=readFile(path->str());if(int64_t(data.size())!=*size||sha256(data)!=*digest)throw Error("E_PACKAGE","static link input changed after compilation");
+    }
+    packageRequest["static_link_inputs"]=llvm::json::Array(*inputs);
+  }
   if(sharedTasks||profiled||debug)packageRequest["task_inputs"]=llvm::json::Object{{"schema",debug?"nex.application-task-inputs/3":profiled?"nex.application-task-inputs/2":"nex.application-task-inputs/1"},{"files",std::move(taskFiles)}};
   writeFile(request.string(),json(llvm::json::Value(std::move(packageRequest)))+"\n");
-  std::vector<std::string> command={python?python:"python3",resourceFile("tools/app_bundle.py"),
+  std::vector<std::string> command={pythonProgram(),"-X","utf8",resourceFile("tools/app_bundle.py"),
     "--request",request.string(),"--output",output.string()};
   if(!options.notices.empty())command.insert(command.end(),{"--notices",fs::absolute(options.notices).string()});
   if(options.dpkgNotices)command.push_back("--dpkg-notices");
@@ -159,7 +169,7 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
     std::map<std::string,std::string> imageOutputs;
     for(const auto &value:*rows){const auto &row=*value.getAsObject();if(auto image=row.getString("output_image")){auto original=row.getString("input_image_key");if(!original)throw Error("E_PACKAGE","debug package image key missing");auto relative=row.getString("relative")->str();std::string input;
         if(relative==fs::path(built.executable).filename().string()||relative=="task-provider.json"||relative=="task-debug-catalog.json"||relative=="task-debug-sources.json")input=built.executable;
-        else if(relative.starts_with("images/")){input=(buildFolder/relative).string();for(const auto &suffix:{std::string(".task-provider.json"),std::string(".task-debug-catalog.json"),std::string(".task-debug-sources.json")})if(input.ends_with(suffix))input.resize(input.size()-suffix.size());}
+        else{auto owner=(buildFolder/relative).string();for(const auto &suffix:{std::string(".task-provider.json"),std::string(".task-debug-catalog.json"),std::string(".task-debug-sources.json")})if(owner.ends_with(suffix))owner.resize(owner.size()-suffix.size());if(ownedImagePaths.contains(fs::path(owner).lexically_normal()))input=std::move(owner);}
         if(input.empty())throw Error("E_PACKAGE","unexpected debug package image association");auto target=output/image->str();if(sha256(readFile(target.string()))!=row.getString("output_image_sha256"))throw Error("E_PACKAGE","debug package loaded output image changed");auto [old,inserted]=imageOutputs.emplace(input,target.string());if(!inserted&&old->second!=target.string())throw Error("E_PACKAGE","debug package image mapping differs");
       }}
     auto raw=output/"debugger/retained-build";auto finalOutput=options.publishedDirectory.empty()?output:fs::absolute(options.publishedDirectory).lexically_normal();auto relocated=relocateNativeTaskDebugSession(candidate,built,raw.string(),output.string(),finalOutput.string(),options.compiler,imageOutputs);
@@ -174,12 +184,12 @@ llvm::json::Value packageCapturedArtifact(const Program &candidate,const BuildRe
 ForeignPackagePreparation prepareForeignPackage(const PackageOptions &options,
   const ForeignSelection &selection,const std::string &workingDirectory){
   namespace fs=std::filesystem;auto folder=fs::path(workingDirectory),request=folder/"request.json";
-  fs::create_directories(folder);const char *python=std::getenv("NEX_PYTHON");
+  fs::create_directories(folder);
   if(selection.empty())throw Error("E_FFI_PACKAGE","foreign preparation requires selected exports");
   llvm::json::Object selectionObject;for(const auto &[name,exports]:selection){llvm::json::Array values;for(const auto &value:exports)values.push_back(value);selectionObject[name]=std::move(values);}
     auto selected=folder/"selection.json";writeFile(selected.string(),json(llvm::json::Value(std::move(selectionObject)))+"\n");
     auto prepared=folder/"prepared";
-    std::vector<std::string> command={python?python:"python3",resourceFile("tools/foreign_bundle.py"),
+    std::vector<std::string> command={pythonProgram(),"-X","utf8",resourceFile("tools/foreign_bundle.py"),
       "--nex",options.compiler,"--foreign",fs::absolute(options.foreign).string(),
       "--sdk-root",fs::path(options.compiler).parent_path().parent_path().string(),
       "--selection",selected.string(),"--output",prepared.string()};
@@ -308,7 +318,7 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     const std::string &buildDirectory,const std::string &root,Store &store,
     const PackageOptions &options) {
   namespace fs=std::filesystem;
-  if(llvm::Triple(configureNative(buildOptions).target).isOSWindows())throw Error("E_TARGET","Windows application packages are not configured; build the explicit GNU/UCRT core artifact");
+
   auto output=fs::absolute(options.directory).lexically_normal();
   if(fs::exists(output)||fs::is_symlink(output))throw Error("E_EXISTS","package requires a new output directory");
   auto folder=fs::path(createTemporaryDirectory("nex-package")),request=folder/"request.json";

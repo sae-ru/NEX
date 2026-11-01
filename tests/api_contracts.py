@@ -1,4 +1,5 @@
 """Endpoint semantics, graph transactions, generated SDKs, OpenAPI and live routing."""
+from host_fixture import stop_server
 import base64
 import json
 from pathlib import Path
@@ -57,7 +58,7 @@ test fn binary_helpers()->unit{
  let invalid:net::Response=net::Response("1",200,ok("{\"ok\":{\"data\":\"AB==\",\"parts\":[]}}"));
  assert(error_code(sdk::response_echo_blob(web::Event("received",encode_json(invalid),"/")))=="E_JSON");
 }
-''')
+''', newline="\n")
         self.cli('test', consumer)
         self.cli('test', consumer, '--profile', 'release')
         if shutil.which('node'):
@@ -95,7 +96,7 @@ test fn binary_helpers()->unit{
                 self.assertEqual(request({'data': '/w==', 'parts': []})[0], 500)
             self.assertEqual(request(value), (200, expected))
         finally:
-            process.send_signal(signal.SIGTERM)
+            stop_server(process)
             output, errors = process.communicate(timeout=15)
             self.assertEqual(process.returncode, 0, output+errors)
             self.assertNotIn('E_INTERNAL_LEAK', errors)
@@ -117,7 +118,7 @@ endpoint double_value("POST","/api/double")=handle;
         app=client/'numeric.nex';app.write_text('''module numeric_sdk;import "./models/numeric_api.nex" as model;
 fn main()->unit!{io}{print(encode_json(model::Sample(1.25)));}
 test fn wire()->unit{assert(unwrap(decode_json<model::Sample>("{\\"value\\":1.25}")).value==1.25);}
-''')
+''', newline="\n")
         self.assertEqual(self.cli('run',app,cwd=client)['stdout'],'{"value":1.25e0}\n')
         self.cli('test',app,cwd=client);self.cli('test',app,'--target','web',cwd=client)
 
@@ -135,15 +136,15 @@ test fn wire()->unit{assert(unwrap(decode_json<model::Sample>("{\\"value\\":1.25
         libraries = {'std': 'standard'}
         if helpers:
             directory = self.root/'helpers'; directory.mkdir()
-            (directory/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}')
+            (directory/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}', newline="\n")
             libraries['helpers'] = 'helpers'
         for name in ('api.nex', 'http.nex', 'web.nex', 'net.nex'):
             text = (harness.REPO/'lib'/name).read_text()
             if name == 'net.nex':
                 text += extra
-            (standard/name).write_text(text)
+            (standard/name).write_text(text, newline="\n")
         (self.root/'nex.json').write_text(json.dumps({
-            'entry': 'main.nex', 'language': self.cli('describe')['version'], 'libraries': libraries}))
+            'entry': 'main.nex', 'language': self.cli('describe')['version'], 'libraries': libraries}), newline="\n")
         self.source(self.simple()+'\nimport "std/net.nex" as custom_net;\n')
         self.cli('api', self.file, '--directory', self.root/'generated')
         return self.root/'generated/client'
@@ -165,7 +166,7 @@ fn unused_private()->str{return "CALLBACK_PRIVATE_SENTINEL";}
         app = client/'callbacks.nex'
         app.write_text('module sdk_callbacks;import "std/net.nex" as net;'
             'fn main()->unit!{io}{print(net::capture(40)(2));}'
-            'test fn cases()->unit{assert(net::capture(40)(2)==42);}')
+            'test fn cases()->unit{assert(net::capture(40)(2)==42);}', newline="\n")
         self.assertEqual(self.cli('eval', app, cwd=client)['stdout'], '42\n')
         self.assertEqual(self.cli('run', app, cwd=client)['stdout'], '42\n')
         self.cli('test', app, cwd=client)
@@ -183,12 +184,12 @@ pub fn consume(callback:fn(types::Token)->i64)->i64{return 42;}
         app.write_text('module sdk_callback_types;import "std/net.nex" as net;'
             'import "helpers/types.nex" as types;'
             'fn take(value:types::Token)->i64{return value.id;}'
-            'test fn cases()->unit{assert(net::consume(take)==42);}')
+            'test fn cases()->unit{assert(net::consume(take)==42);}', newline="\n")
         self.cli('test', app, cwd=client)
         self.cli('test', app, '--target', 'web', cwd=client)
 
     def test_phantom_callable_type_arguments_preserve_extracted_model_imports(self):
-        (self.root/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}')
+        (self.root/'types.nex').write_text('module callback_types;pub struct Token{id:i64;}', newline="\n")
         callback = 'fn(types::Token)->(fn()->types::Token)'
         self.source('module routes;import "std/api.nex" as api;import "./types.nex" as types;'
             'pub struct Tag<T>{id:i64;}'
@@ -204,7 +205,7 @@ pub fn consume(callback:fn(types::Token)->i64)->i64{return 42;}
         app.write_text('module sdk_phantom;import "./models/routes.nex" as model;'
             'import "./models/callback_types.nex" as types;'
             'test fn cases()->unit{let tag:model::Tag<'+callback+'> = model::Tag(42);'
-            'assert(encode_json(tag)=="{\\"id\\":\\"42\\"}");}')
+            'assert(encode_json(tag)=="{\\"id\\":\\"42\\"}");}', newline="\n")
         self.cli('test', app, cwd=client)
         self.cli('test', app, '--target', 'web', cwd=client)
 
@@ -240,7 +241,7 @@ pub fn consume(callback:fn(types::Token)->i64)->i64{return 42;}
         self.assertEqual(context['handler']['name'], 'routes::handle')
         self.assertIn('routes::create', self.cli('context', '--symbol', 'handle')['callers'])
         patch = self.root / 'patch.json'
-        patch.write_text(json.dumps({'expected_revision': revision, 'replacements': [{'name': 'create', 'source': 'endpoint create("POST", "/api/new", 202) = handle;'}]}))
+        patch.write_text(json.dumps({'expected_revision': revision, 'replacements': [{'name': 'create', 'source': 'endpoint create("POST", "/api/new", 202) = handle;'}]}), newline="\n")
         changed = self.cli('apply', '--patch', patch)['revision']
         self.assertNotEqual(changed, revision)
         second = self.cli('graph')['endpoints'][0]
@@ -305,10 +306,10 @@ test fn codecs() -> unit {
 
     def test_imported_endpoints_and_transitive_models_generate_portably(self):
         (self.root/'domain').mkdir()
-        (self.root/'domain/base.nex').write_text('module domain::base; pub struct Child { value: i64; }')
-        (self.root/'domain/rows.nex').write_text('module domain::rows; import "./base.nex" as b; pub struct Row { children: list<b::Child>; }')
-        (self.root/'impl.nex').write_text('module implementation; import "std/api.nex" as api; import "./domain/rows.nex" as m; pub server fn fetch(context: api::Context) -> result<m::Row> { return ok(m::Row([])); }')
-        (self.root/'routes.nex').write_text('module routes; import "./impl.nex" as service; endpoint fetch_rows("GET", "/api/rows") = service::fetch;')
+        (self.root/'domain/base.nex').write_text('module domain::base; pub struct Child { value: i64; }', newline="\n")
+        (self.root/'domain/rows.nex').write_text('module domain::rows; import "./base.nex" as b; pub struct Row { children: list<b::Child>; }', newline="\n")
+        (self.root/'impl.nex').write_text('module implementation; import "std/api.nex" as api; import "./domain/rows.nex" as m; pub server fn fetch(context: api::Context) -> result<m::Row> { return ok(m::Row([])); }', newline="\n")
+        (self.root/'routes.nex').write_text('module routes; import "./impl.nex" as service; endpoint fetch_rows("GET", "/api/rows") = service::fetch;', newline="\n")
         self.source('module root_app; import "./routes.nex" as routes; fn main() -> unit {}')
         built=self.cli('api',self.file,'--directory',self.root/'generated')
         self.cli('check',built['server_entry'])
@@ -324,9 +325,9 @@ test fn codecs() -> unit {
         for file in ('api.nex','http.nex','web.nex','net.nex'):
             text=(harness.REPO/'lib'/file).read_text()
             if file=='net.nex': text=text.replace('fn typed_request(', 'fn renamed_typed_request(')
-            (standard/file).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':harness.CURRENT_LANGUAGE,'libraries':{'std':'standard'}}))
-        self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
+            (standard/file).write_text(text, newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':harness.CURRENT_LANGUAGE,'libraries':{'std':'standard'}}), newline="\n")
+        self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n', newline="\n")
         destination=self.root/'generated'
         self.assertEqual(self.cli('api',self.file,'--directory',destination,ok=False)['code'],'E_NAME')
         self.assertFalse(destination.exists())
@@ -335,7 +336,7 @@ test fn codecs() -> unit {
     def test_sdk_excludes_server_and_private_unused_standard_code(self):
         self.example();standard=self.root/'standard';standard.mkdir()
         helpers=self.root/'helpers';helpers.mkdir()
-        (helpers/'tools.nex').write_text('module helpers::tools; pub fn data() -> str { return format(); } fn format() -> str { return "data"; } pub server fn hidden() -> str { return "SERVER_PKG_SECRET"; }')
+        (helpers/'tools.nex').write_text('module helpers::tools; pub fn data() -> str { return format(); } fn format() -> str { return "data"; } pub server fn hidden() -> str { return "SERVER_PKG_SECRET"; }', newline="\n")
         for name in ('api.nex','http.nex','web.nex','net.nex'):
             text=(harness.REPO/'lib'/name).read_text()
             if name=='net.nex': text+='''
@@ -346,9 +347,9 @@ struct PrivateStore { value: str; }
 pub fn public_helper() -> str { return helper() + tools::data(); }
 fn helper() -> str { return "public data"; }
 '''
-            (standard/name).write_text(text)
-        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':harness.CURRENT_LANGUAGE,'libraries':{'std':'standard','helpers':'helpers'}}))
-        self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n')
+            (standard/name).write_text(text, newline="\n")
+        (self.root/'nex.json').write_text(json.dumps({'entry':'service.nex','language':harness.CURRENT_LANGUAGE,'libraries':{'std':'standard','helpers':'helpers'}}), newline="\n")
+        self.file.write_text(self.file.read_text()+'\nimport "std/net.nex" as custom_net;\n', newline="\n")
         self.cli('api',self.file,'--directory',self.root/'generated')
         client=self.root/'generated/client'
         for source in client.rglob('*.nex'):
@@ -391,7 +392,7 @@ test fn helpers() -> unit {
  assert(unwrap(decode_json<m::Event>(payload.body)) == e);
  let response:net::Response = net::Response("1",200,ok(encode_json(ok(e))));
  assert(unwrap(sdk::response_echo_event(web::Event("received",encode_json(response),"/"))) == e);
-}''')
+}''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
         built=self.cli('build',generated['server_entry'],'--target','server','--profile','release',timeout=180)
         auth=self.root/'auth.json';token=self.cli('token','--user','alice','--auth',auth)['token']
@@ -412,7 +413,7 @@ test fn helpers() -> unit {
             for _ in range(3):self.assertEqual(request({'case':'Set','fields':{'value':'-1'}})[0],500)
             self.assertEqual(request(event),(200,{'ok':event}))
         finally:
-            process.send_signal(signal.SIGTERM);output,errors=process.communicate(timeout=15)
+            stop_server(process);output,errors=process.communicate(timeout=15)
             self.assertEqual(process.returncode,0,output+errors);self.assertNotIn('E_INTERNAL_LEAK',errors)
 
     def test_generated_server_auth_strict_inputs_transactions_and_context(self):
@@ -426,7 +427,7 @@ server fn fail(context: api::Context, trap: bool) -> result<bool> !{db} {
   store_put("probe", "uncommitted"); if trap { assert(false); } return err("DENIED", "Rejected");
 }
 server fn probe(context: api::Context) -> result<str> !{db} { return store_get("probe"); }
-''')
+''', newline="\n")
         generated = self.cli('api', self.file, '--directory', self.root / 'generated')
         built = self.cli('build', generated['server_entry'], '--target', 'server', '--profile', 'release', timeout=180)
         auth = self.root / 'auth.json'
@@ -460,7 +461,7 @@ server fn probe(context: api::Context) -> result<str> !{db} { return store_get("
             self.assertEqual(request('GET','/api/probe')[1]['error']['code'],'NOT_FOUND')
             self.assertEqual(request('DELETE',body={'id':'1'})[1],{'ok': []})
         finally:
-            process.send_signal(signal.SIGTERM)
+            stop_server(process)
             output, errors=process.communicate(timeout=15)
             self.assertEqual(process.returncode,0,output+errors)
             self.assertNotIn('E_INTERNAL_LEAK',errors)

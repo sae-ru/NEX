@@ -9,13 +9,16 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
-#include <dlfcn.h>
+#include "host_dlfcn.h"
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#else
+#elif !defined(_WIN32)
 #include <link.h>
 #endif
 using namespace nexrt;
+#ifdef _WIN32
+extern "C" decltype(&nex_release) __imp_nex_release;
+#endif
 extern "C" const TaskCodeDescriptor *nex_13_shared_middle_4_work__task_code_address();
 extern "C" const TaskCodeDescriptor *nex_11_shared_leaf_4_work__task_code_address();
 namespace {
@@ -28,6 +31,8 @@ unsigned runtimeMappings(){
  unsigned count=0;
 #ifdef __APPLE__
  for(uint32_t i=0;i<_dyld_image_count();++i)if(std::filesystem::path(_dyld_get_image_name(i)).filename().string().starts_with("libnex_runtime_"))++count;
+#elif defined(_WIN32)
+ for(auto image:nex_test_loaded_modules()){wchar_t path[32768];auto size=GetModuleFileNameW(image,path,32768);if(size&&size<32768&&std::filesystem::path(path).filename().wstring().starts_with(L"libnex_runtime_"))++count;}
 #else
  dl_iterate_phdr([](dl_phdr_info *info,size_t,void *p){if(info->dlpi_name&&std::filesystem::path(info->dlpi_name).filename().string().starts_with("libnex_runtime_"))++*static_cast<unsigned*>(p);return 0;},&count);
 #endif
@@ -99,7 +104,13 @@ int main(int argc,char **argv){try{
  require(argc==4,"expected middle/leaf/runtime image basenames");middle=nex_13_shared_middle_4_work__task_code_address();leaf=nex_11_shared_leaf_4_work__task_code_address();
  require(middle&&leaf&&middle->abi==taskCodeTypedSourceExceptionABI&&leaf->abi==taskCodeTypedSourceExceptionABI,"actual generated public ABI7 accessors unavailable");
  require(module(reinterpret_cast<const void*>(middle->step))==argv[1]&&module(reinterpret_cast<const void*>(leaf->step))==argv[2],"descriptor points outside the pinned provider image");
- auto *runtime=dlsym(RTLD_DEFAULT,"nex_release");require(runtime&&modulePath(runtime)==std::filesystem::weakly_canonical(argv[3]).string(),"runtime bridge maps to the wrong image");require(runtime==reinterpret_cast<void*>(&nex_release),"driver/runtime bridge identity differs");require(runtimeMappings()==1,"process loaded more than one NEX runtime mapping");
+ auto *runtime=dlsym(RTLD_DEFAULT,"nex_release");require(runtime&&modulePath(runtime)==std::filesystem::weakly_canonical(argv[3]).string(),"runtime bridge maps to the wrong image");require(runtime==reinterpret_cast<void*>(
+#ifdef _WIN32
+ __imp_nex_release
+#else
+ &nex_release
+#endif
+),"driver/runtime bridge identity differs");require(runtimeMappings()==1,"process loaded more than one NEX runtime mapping");
  for(unsigned i=0;i<4;++i)scenario(i);
  require(leafSite&&middleSite,"generated suspended source sites were not mapped to both providers");
  std::cout<<"{\"ok\":true,\"cases\":4,\"checks\":"<<checks.load()<<",\"execution_abi\":7,\"runtime_mappings\":"<<runtimeMappings()<<",\"physical_barrier_cases\":4,\"single_task_worker_progress\":true,\"first_fatal_retained\":true,\"provider_site_lifetime\":true,\"live_objects\":"<<liveObjects.load()<<",\"runtime_bridge_address\":\""<<address(runtime)<<"\",\"runtime_image_path\":"<<std::quoted(modulePath(runtime))<<",\"registry_address\":\""<<address(&liveObjects)<<"\",\"source_regular_file_retirement_claim\":false,\"arbitrary_host_source_bridge\":false}\n";return 0;

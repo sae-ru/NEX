@@ -16,7 +16,7 @@ class Editor(harness.ToolchainCase):
         compiler=Path(harness.NEX);installed=compiler.parent.parent/'share/nex/editor/vscode/session.js'
         return installed if compiler.parent.name=='bin' and installed.is_file() else harness.REPO/'editor/vscode/session.js'
     def project_session(self):
-        project=self.root/'project "quoted" \\ % 🧠';shutil.copytree(harness.REPO/'examples/project-tasks',project,ignore=shutil.ignore_patterns('.nex'))
+        project=self.root/("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠');shutil.copytree(harness.REPO/'examples/project-tasks',project,ignore=shutil.ignore_patterns('.nex'))
         (project/'task.json').unlink()
         (project/'core/value.nex').write_text('''module project_task::core;
 pub fn make(offset:i64)->(fn(i64)->i64){
@@ -24,7 +24,7 @@ pub fn make(offset:i64)->(fn(i64)->i64){
  return fn(value:i64)->i64{return value+base;};
 }
 pub fn decorate(value:str)->str{return value+" 🧠";}
-''')
+''', newline="\n")
         before=self.cli('project',project/'nex.build.json','--kind','plan','--component','app','--configuration','debug',cwd=project)
         script='''const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]}).then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});'''
         config={'type':'nex','request':'launch','cwd':str(project),'project':{'manifest':'nex.build.json','component':'app','configuration':'debug'}}
@@ -72,7 +72,7 @@ pub fn decorate(value:str)->str{return value+" 🧠";}
         self.assertEqual(process.returncode,0,process.stdout+process.stderr)
 
     def test_actual_compiler_session_maps_only_matching_original_source(self):
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.cli('describe')['version'],'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.cli('describe')['version'],'entry':'main.nex'}), newline="\n")
         self.source('module editor_case; fn main()->unit!{io} {let value:i64=40;print(value+2);}')
         descriptor=self.cli('debug',self.file,'--kind','nex-dap')
         if not descriptor['nex_adapter']['available']:self.skipTest('matching native LLDB DAP backend unavailable')
@@ -91,11 +91,11 @@ pub fn decorate(value:str)->str{return value+" 🧠";}
     @unittest.skipUnless(LIVE, 'use --live for actual native editor breakpoints')
     def test_original_breakpoint_and_watch_with_quoted_source_path(self):
         from debugging import DAP
-        project=self.root/'project "quoted" \\ % 🧠'
+        project=self.root/("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠')
         project.mkdir()
         source=project/'main with spaces.nex'
-        source.write_text('module editor_quoted;\nfn main()->unit!{io}{\n let total:i64=40;\n print(total+2);\n}\n')
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.cli('describe')['version'],'entry':source.name}))
+        source.write_text('module editor_quoted;\nfn main()->unit!{io}{\n let total:i64=40;\n print(total+2);\n}\n', newline="\n")
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.cli('describe')['version'],'entry':source.name}), newline="\n")
         descriptor=self.cli('debug',source,'--kind','nex-dap',cwd=project)
         if not descriptor['nex_adapter']['available']:self.skipTest('matching native LLDB DAP backend unavailable')
         script='''const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]}).then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});'''

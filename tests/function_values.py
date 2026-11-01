@@ -42,7 +42,7 @@ class FunctionValues(harness.ToolchainCase):
             saved=self.historical_store('0.9');old=saved['revision'];graph=saved['graph'];nodes=saved['operations']
         self.assertEqual(old,fixture['revision'])
         self.file.unlink()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.9','entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.9','entry':'main.nex'}), newline="\n")
         self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION')
         current=self.cli('migrate');self.assertEqual(current['language'],harness.CURRENT_LANGUAGE);self.assertNotEqual(current['revision'],old)
         self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9',harness.CURRENT_LANGUAGE})
@@ -91,7 +91,7 @@ fn main()->unit!{io}{print(choose(ok(Maybe::Some(42))));}
         self.assertEqual(len(history['revisions']),1)
         fixed=fixture['source'].replace('serialize<T>','serialize<T:wire>')
         graph=copy.deepcopy(fixture['graph']);graph['source']=fixed;graph['bundle']['files']['main.nex']=fixed
-        repair=self.root/'repair.json';repair.write_text(json.dumps(graph))
+        repair=self.root/'repair.json';repair.write_text(json.dumps(graph), newline="\n")
         current=self.cli('migrate',repair)
         self.assertEqual(current['language'],harness.CURRENT_LANGUAGE)
         self.assertEqual({r['language'] for r in self.cli('history')['revisions']},{'0.9',harness.CURRENT_LANGUAGE})
@@ -146,7 +146,7 @@ test fn cases()->unit{
         (self.root/'model.nex').write_text('''module callback_model;
 pub fn increment(value:i64)->i64{return value+1;}
 pub fn make<T>(value:T)->(fn()->T){return fn()->T{return value;};}
-''')
+''', newline="\n")
         self.source('''module imports;import "./model.nex" as model;
 fn main()->unit!{io}{let callback:fn(i64)->i64=model::increment;print(callback(41));print(model::make("NEX")());}
 test fn cases()->unit{let callback:fn(i64)->i64=model::increment;assert(callback(41)==42);assert(model::make(42)()==42);}
@@ -155,14 +155,14 @@ test fn cases()->unit{let callback:fn(i64)->i64=model::increment;assert(callback
 
     def test_introducing_a_cross_module_reference_invalidates_bridge_provider(self):
         model=self.root/'model.nex'
-        model.write_text('module bridge_model;pub fn increment(value:i64)->i64{return value+1;}')
+        model.write_text('module bridge_model;pub fn increment(value:i64)->i64{return value+1;}', newline="\n")
         self.source('module bridge_user;import "./model.nex" as model;fn main()->unit!{io}{print(model::increment(41));}')
         self.cli('build');self.assertEqual(self.cli('run')['stdout'],'42\n')
         self.source('module bridge_user;import "./model.nex" as model;fn main()->unit!{io}{let callback:fn(i64)->i64=model::increment;print(callback(41));}')
         built=self.cli('build')
         self.assertEqual(built['compiled_modules'],2)
         self.assertEqual(self.cli('run')['stdout'],'42\n')
-        model.write_text('module bridge_model;pub fn increment(value:i64)->i64{return value+2;}')
+        model.write_text('module bridge_model;pub fn increment(value:i64)->i64{return value+2;}', newline="\n")
         updated=self.cli('build');self.assertEqual(updated['compiled_modules'],1);self.assertEqual(updated['reused_modules'],1)
         self.assertEqual(self.cli('run')['stdout'],'43\n');self.assertEqual(self.cli('eval')['stdout'],'43\n')
 
@@ -180,7 +180,7 @@ test fn cases()->unit{assert((fn(a:i64,b:i64)->i64{return a+b;})(40,2)==42);}
         self.backends('callee\nleft\nright\n42\ndone\n')
 
     def test_hidden_names_cannot_collide_with_source_functions_or_modules(self):
-        (self.root/'model.nex').write_text('module collision::make;pub fn lambda_0(value:i64)->i64{return value+100;}')
+        (self.root/'model.nex').write_text('module collision::make;pub fn lambda_0(value:i64)->i64{return value+100;}', newline="\n")
         self.source('''module collision;import "./model.nex" as model;
 fn make__lambda_0(value:i64)->i64{return value+200;}
 fn make(offset:i64)->(fn(i64)->i64){return fn(value:i64)->i64{return value+offset;};}
@@ -263,7 +263,7 @@ test fn cases()->unit{assert(marker().id==42);}
         task['requirements'].append({'id':'callback-type','text':'Retain the nominal callback argument contract',
             'bindings':[{'program':'app','kind':'structure','symbol':'callback_contract::Token'}],
             'targets':[check['target']],'checks':[check['id']]})
-        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task))
+        taskfile=self.root/'task.json';taskfile.write_text(json.dumps(task), newline="\n")
         with self.subTest(kind='task linkage'):
             self.assertTrue(self.cli('task',taskfile,'--kind','check')['ok'])
 

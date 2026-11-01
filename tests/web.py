@@ -10,14 +10,14 @@ import support as harness
 
 class Web(harness.ToolchainCase):
     def test_cli_typescript_tests_in_literal_and_physical_backslash_paths(self):
-        root = self.root / 'project "quoted" \\ % 🧠'
+        root = self.root / ("project 'quoted' % 🧠" if os.name=="nt" else 'project "quoted" \\ % 🧠')
         root.mkdir()
         source = root / 'main.nex'
         source.write_text('''module path_semantics;
 fn main() -> unit !{io} { print("A🧠\\u0000"); print(9007199254740993 + 1); }
 test fn value_test() -> unit !{io} { main(); assert(slice("A🧠B", 1, 1) == "🧠"); }
 server fn secret() -> str { return "SERVER_PATH_SECRET"; }
-''')
+''', newline="\n")
         revision = self.cli("check", cwd=root)["revision"]
         self.assertEqual(self.cli("run", cwd=root)["stdout"], self.cli("eval", cwd=root)["stdout"])
         self.assertEqual(self.cli("run", "--build-directory", root / 'native-temp-case', cwd=root,
@@ -40,7 +40,7 @@ server fn secret() -> str { return "SERVER_PATH_SECRET"; }
         if revision:
             options += ["--revision", revision]
         self.cli(*options)
-        (destination / "package.json").write_text('{"type":"module"}')
+        (destination / "package.json").write_text('{"type":"module"}', newline="\n")
         driver = destination / "driver.ts"
         driver.write_text('''import { entry } from './program.ts';
 import { str, NexError } from './nex-runtime.ts';
@@ -55,7 +55,7 @@ try {
   result = { ok: false, stdout: output, code: error.code, site: error.site };
 }
 process.stdout.write(JSON.stringify(result));
-''')
+''', newline="\n")
         result = subprocess.run([os.environ.get("NEX_NODE", "node"), "--experimental-strip-types", "--no-warnings", str(driver)],
                                 cwd=self.root, capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -143,7 +143,7 @@ client test fn client_test() -> unit { assert(shared_value() == "shared"); }
         self.assertTrue(next(t for t in tests if t["name"] == "realms::client_test")["web"])
 
     def test_typescript_uses_archived_sources_after_deletion(self):
-        (self.root / "values.nex").write_text('module values; pub fn answer() -> i64 { return 42; }')
+        (self.root / "values.nex").write_text('module values; pub fn answer() -> i64 { return 42; }', newline="\n")
         self.source('module app; import "./values.nex" as v; fn main() -> unit !{io} { print(v::answer()); }')
         revision = self.cli("check")["revision"]
         self.file.unlink(); (self.root / "values.nex").unlink()
@@ -166,7 +166,7 @@ const value = nex.record('A', [['__proto__', original]]);
 assert.throws(() => { value.__proto__ = []; }, TypeError);
 assert.equal(nex.equal(value, nex.record('B', [['__proto__', original]])), false);
 assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
-''')
+''', newline="\n")
         result = subprocess.run([os.environ.get("NEX_NODE", "node"), "--experimental-strip-types", "--no-warnings", str(driver)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

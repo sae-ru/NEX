@@ -126,7 +126,7 @@ class Numbers(harness.ToolchainCase):
         self.assertEqual(history['head'],fixture['revision']);self.assertEqual(len(history['revisions']),1)
         repaired=copy.deepcopy(fixture['graph']);source=fixture['source'].replace('as_f64','legacy_float')
         repaired['source']=source;repaired['bundle']['files']['main.nex']=source
-        patch=self.root/'repair.json';patch.write_text(json.dumps(repaired));self.cli('migrate',patch)
+        patch=self.root/'repair.json';patch.write_text(json.dumps(repaired), newline="\n");self.cli('migrate',patch)
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],'42\n')
         old=self.root/'old';self.cli('export','--revision',fixture['revision'],'--directory',old)
         self.assertEqual((old/'main.nex').read_text(),fixture['source'])
@@ -162,7 +162,7 @@ int main(){
  assert(std::fegetround()==FE_UPWARD&&std::fetestexcept(FE_ALL_EXCEPT)==FE_INVALID);
  std::fesetenv(FE_DFL_ENV);nex_runtime_finish();
 }
-''')
+''', newline="\n")
         target=self.root/'host';compiler=self.cli('doctor')['native_compiler']
         completed=subprocess.run([compiler,'-std=c++20','-I',str(harness.REPO/'runtime'),str(host),library['executable'],'-o',str(target)],capture_output=True,text=True)
         self.assertEqual(completed.returncode,0,completed.stdout+completed.stderr)
@@ -208,7 +208,7 @@ class NumericFrames(harness.ToolchainCase):
             'function':self.target,'identity':'10001','captures':{'offset':0.25}}}
 
     def inspect(self,expression,frame=None,kind=None,**kwargs):
-        self.framefile.write_text(json.dumps(self.frame if frame is None else frame))
+        self.framefile.write_text(json.dumps(self.frame if frame is None else frame), newline="\n")
         return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression',expression,
                         *(['--kind',kind] if kind else []),**kwargs)
 
@@ -269,7 +269,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);captured=json.loads(report.read_text())
             self.assertEqual(captured['root']['display'],'1.25e0')
@@ -277,7 +277,7 @@ def __lldb_init_module(debugger,_):
             self.assertEqual(captured['negative']['value'],-2.5)
             self.assertEqual(captured['callback']['value'],1.5)
             self.assertEqual(captured['whole']['value']['captures'],{'offset':0.25})
-            self.file.unlink();snapshot=self.root/'saved.json';snapshot.write_text(json.dumps(captured['snapshot']))
+            self.file.unlink();snapshot=self.root/'saved.json';snapshot.write_text(json.dumps(captured['snapshot']), newline="\n")
             self.assertEqual(self.cli('inspect',snapshot,'--manifest',self.manifest,'--expression','callback(number)+values[0]')['value'],1.5)
             from debugging import DAP
             client=DAP(session['adapter_command'],self.root)

@@ -31,14 +31,14 @@ report = {'schema': 'nex.private024-stream-requirements/1', 'ok': False,
 
 def save():
     report['seconds'] = round(time.monotonic() - started, 3)
-    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n', newline="\n")
 
 
 def run(name, argv, env=None, expected=0):
     result = subprocess.run(list(map(str, argv)), cwd=root, env=env or os.environ,
                             text=True, capture_output=True, timeout=240)
-    (root / (name + '.stdout')).write_text(result.stdout)
-    (root / (name + '.stderr')).write_text(result.stderr)
+    (root / (name + '.stdout')).write_text(result.stdout, newline="\n")
+    (root / (name + '.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'name': name, 'argv': list(map(str, argv)),
                                'exit_code': result.returncode})
     save()
@@ -88,7 +88,7 @@ try:
     for name, body, expected in operations:
         source = root / (name + '.nex')
         parameter = 'f:file' if name in ['read','write','seek','size','flush','close','is_open','typed_file_transit'] else ''
-        source.write_text('module requirements;server fn target(' + parameter + ')->unit !{task,fs}{' + body + '}\n')
+        source.write_text('module requirements;server fn target(' + parameter + ')->unit !{task,fs}{' + body + '}\n', newline="\n")
         flags = image_flags(invoke(name, 'emit', source, entry='target')['mlir'])
         assert flags == [expected], (name, flags, expected)
         report['operation_cases'].append({'name': name, 'flags': flags})
@@ -104,7 +104,7 @@ try:
     ]
     for name, body, expected, writable in applications:
         source = root / (name + '-main.nex')
-        source.write_text('module app;server fn unreachable()->unit !{task,fs}{file_open_write("UNREACHABLE_WRITE");}server fn main()->i64 !{task,fs}{' + body + 'return 42;}\n')
+        source.write_text('module app;server fn unreachable()->unit !{task,fs}{file_open_write("UNREACHABLE_WRITE");}server fn main()->i64 !{task,fs}{' + body + 'return 42;}\n', newline="\n")
         emitted = invoke(name + '-emit', 'emit', source)['mlir']
         assert image_flags(emitted) == [expected]
         assert 'UNREACHABLE_WRITE' not in emitted
@@ -143,7 +143,7 @@ try:
 
     # Published023 retains its ABI4 descriptor and rejects stream execution.
     source = root / 'retained023.nex'
-    source.write_text('module retained;server fn main()->i64 !{task,fs}{assert(unwrap(file_write_bytes("output",utf8_bytes("x"))));return 42;}\n')
+    source.write_text('module retained;server fn main()->i64 !{task,fs}{assert(unwrap(file_write_bytes("output",utf8_bytes("x"))));return 42;}\n', newline="\n")
     old = invoke('retained023-build', 'build', source, '0.23')
     metadata = json.loads((Path(old['executable']).parent / 'build.json').read_text())
     assert metadata['task_execution_abi'] == 0x4e45585400000004

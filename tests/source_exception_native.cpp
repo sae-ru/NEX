@@ -1,9 +1,12 @@
+#include "host_test.h"
 #include "nex/backend.h"
 #include "nex/web.h"
 #include "nex/task_frontend.h"
 #include "nex_host.h"
 #include "nex_value.h"
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <filesystem>
 #include <iostream>
 using namespace nex;

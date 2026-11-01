@@ -1,4 +1,5 @@
 """Execute checked private mixed images and verify actual code/data ownership."""
+from host_fixture import run_native, copy_link_image, native_task_definitions, needed_windows_dlls, shared_profile_objects
 import argparse
 import hashlib
 import json
@@ -91,7 +92,7 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     compiler = Path(a.compiler).absolute()
     probe, reference, signatures = [Path(getattr(a, n)).resolve() for n in ["probe", "reference", "signatures"]]
     mac = platform.system() == "Darwin"
-    suffix = ".dylib" if mac else ".so"
+    suffix = ".dll" if os.name=="nt" else ".dylib" if mac else ".so"
     crypto = a.crypto_library or ("/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib" if mac else "-lcrypto")
     cache = Path(a.runtime_cache).resolve() if a.runtime_cache else out / "runtime"
     cache.mkdir(parents=True, exist_ok=True)
@@ -101,18 +102,18 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
               "public_source_support": False, "descriptor_abi": "0x4e45585400002502"}
 
     def save():
-        (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", newline="\n")
 
     def run(label, argv, env=None, allowed=(0,), timeout=300):
-        result = subprocess.run(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout)
+        result = run_native(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout)
         for channel in ["stdout", "stderr"]:
-            (out / (label + "." + channel)).write_text(getattr(result, channel))
+            (out / (label + "." + channel)).write_text(getattr(result, channel), newline="\n")
         report["commands"].append({"label": label, "argv": list(map(str, argv)), "exit": result.returncode})
         save()
         assert result.returncode in allowed, (label, result.returncode, result.stdout[-1200:], result.stderr[-3000:])
         return result
 
-    run("target", [compiler, "-x", "c", "-S", "-emit-llvm", "/dev/null", "-o", out / "target.ll"])
+    run("target", [compiler, "-x", "c", "-S", "-emit-llvm", os.devnull, "-o", out / "target.ll"])
     target = (out / "target.ll").read_text()
     triple = re.search(r'target triple = "([^"]+)"', target)[1]
     layout = re.search(r'target datalayout = "([^"]+)"', target)[1]
@@ -133,13 +134,15 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         obj = cache / (name + ".o")
         obj.parent.mkdir(parents=True, exist_ok=True)
         stamp = obj.with_suffix(".recipe.json")
-        recipe = {"compiler": compiler_hash, "source": hashlib.sha256((runtime / name).read_bytes()).hexdigest(), "headers": headers, "flags": flags}
+        compile_flags=[flag for flag in flags if not (os.name=='nt' and name=='nex_profile.cpp' and flag=='-DNEX_SHARED_PROFILE_RUNTIME')]
+        recipe = {"compiler": compiler_hash, "source": hashlib.sha256((runtime / name).read_bytes()).hexdigest(), "headers": headers, "flags": compile_flags}
         if not (obj.is_file() and stamp.is_file() and json.loads(stamp.read_text()) == recipe):
-            run("compile-" + name.replace('/','_'), [compiler, *flags, "-c", runtime / name, "-o", obj])
-            stamp.write_text(json.dumps(recipe, sort_keys=True) + "\n")
+            run("compile-" + name.replace('/','_'), [compiler, *compile_flags, "-c", runtime / name, "-o", obj])
+            stamp.write_text(json.dumps(recipe, sort_keys=True) + "\n", newline="\n")
         objects.append(obj)
     shared_runtime = cache / ("libnex-private-runtime" + suffix)
-    run("runtime-shared", [compiler, "-dynamiclib" if mac else "-shared", *objects, crypto, "-pthread", *(["-Wl,-install_name,@rpath/" + shared_runtime.name] if mac else ["-ldl", "-Wl,-soname," + shared_runtime.name]), "-o", shared_runtime])
+    shared_objects=shared_profile_objects(objects,flags,compiler,runtime,run) if profiled else objects
+    run("runtime-shared", [compiler, "-dynamiclib" if mac else "-shared", *shared_objects, crypto, "-pthread", *(["-Wl,-install_name,@rpath/" + shared_runtime.name] if mac else ["-ldl", "-Wl,-soname," + shared_runtime.name]), "-o", shared_runtime])
 
     def materialize(directory, case, pin):
         directory.mkdir()
@@ -147,10 +150,10 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         for name, text in sources.items():
             f = directory / name
             f.parent.mkdir(parents=True, exist_ok=True)
-            f.write_text(text)
-        (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.24", "entry": "app/main.nex"}))
+            f.write_text(text, newline="\n")
+        (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.24", "entry": "app/main.nex"}), newline="\n")
         context = directory / "context.json"
-        context.write_text(json.dumps({"schema": "nex.private-task-source/2", "file": str(directory / "app/main.nex"), "source": sources["app/main.nex"], "entry_unit": "app/main.nex", "units": [{"unit": k, "file": str(directory / k), "source": v} for k, v in sorted(sources.items())]}, ensure_ascii=False))
+        context.write_text(json.dumps({"schema": "nex.private-task-source/2", "file": str(directory / "app/main.nex"), "source": sources["app/main.nex"], "entry_unit": "app/main.nex", "units": [{"unit": k, "file": str(directory / k), "source": v} for k, v in sorted(sources.items())]}, ensure_ascii=False), newline="\n")
         return context, sources
 
     ctx, _ = materialize(out / "signatures", CASES["owned-file-resource"], "0" * 64)
@@ -161,37 +164,51 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     for name, op in [("create", 1), ("read", 2), ("add", 3), ("ordinary", 4), ("bad", 5)]:
         sha = hashlib.sha256(json.dumps(sigs[name], ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         rows.append('{sizeof(nex_ffi_export_v1),0,' + json.dumps(name) + ',' + json.dumps(sha) + ',callback,(void*)' + str(op) + '}')
-    (out / "module.c").write_text(MODULE.replace("EXPORTS", ",".join(rows)))
+    (out / "module.c").write_text(MODULE.replace("EXPORTS", ",".join(rows)), newline="\n")
     run("foreign-module", [compiler, "-x", "c", "-std=c11", "-shared", "-fPIC", "-fvisibility=hidden", "-I" + str(runtime), out / "module.c", "-o", bundle / "module"])
-    (bundle / "NOTICE").write_text("NEX ordinary mixed-image fixture\n")
-    manifest = {"schema": "nex.foreign-bundle/1", "platform": ("macos" if mac else "linux") + "-" + {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x86_64"}[platform.machine()], "entry": "module", "files": [{"path": name, "sha256": hashlib.sha256((bundle / name).read_bytes()).hexdigest()} for name in ["module", "NOTICE"]], "exports": {k: hashlib.sha256(json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest() for k, v in sigs.items()}, "notices": ["NOTICE"]}
-    (bundle / "manifest.json").write_text(json.dumps(manifest) + "\n")
+    (bundle / "NOTICE").write_text("NEX ordinary mixed-image fixture\n", newline="\n")
+    manifest = {"schema": "nex.foreign-bundle/1", "platform": ("windows" if os.name=="nt" else "macos" if mac else "linux") + "-" + {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x86_64", "amd64": "x86_64"}[platform.machine().lower()], "entry": "module", "files": [{"path": name, "sha256": hashlib.sha256((bundle / name).read_bytes()).hexdigest()} for name in ["module", "NOTICE"]], "exports": {k: hashlib.sha256(json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest() for k, v in sigs.items()}, "notices": ["NOTICE"]}
+    (bundle / "manifest.json").write_text(json.dumps(manifest) + "\n", newline="\n")
     pin = hashlib.sha256((bundle / "manifest.json").read_bytes()).hexdigest()
     catalog = out / "host.json"
-    catalog.write_text(json.dumps({"schema": "nex.foreign-host/1", "module_limit": 64, "libraries": {"host": {"directory": "bundle", "manifest_sha256": pin, "exports": list(sigs)}}}))
+    catalog.write_text(json.dumps({"schema": "nex.foreign-host/1", "module_limit": 64, "libraries": {"host": {"directory": "bundle", "manifest_sha256": pin, "exports": list(sigs)}}}), newline="\n")
 
     host_template = r'''#include "nex_host.h"
 #include "nex_task_frame.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#ifdef _WIN32
+#include "host_images.h"
+#else
 #include <dirent.h>
-#include <dlfcn.h>
-#ifdef __APPLE__
+#endif
+#include "host_dlfcn.h"
+#ifdef _WIN32
+#include "host_images.h"
+#elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #else
 #include <link.h>
 #endif
 DECLARATIONS
 extern "C" int nex_private_modules_entry(int,const char *const *);
-static const char *base(const char *p){auto *s=std::strrchr(p,'/');return s?s+1:p;}
+static const char *base(const char *p){auto *s=std::strrchr(p,'/');auto *w=std::strrchr(p,'\\');if(w&&(!s||w>s))s=w;return s?s+1:p;}
 static const nexrt::TaskCodeDescriptor *find(const char *symbol){using Accessor=const nexrt::TaskCodeDescriptor *(*)();auto f=reinterpret_cast<Accessor>(dlsym(RTLD_DEFAULT,symbol));return f?f():nullptr;}
-static long files(){auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;}
+static long files(){
+#ifdef _WIN32
+ return static_cast<long>(nex_test::files().size());
+#else
+auto *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!='.')++n;closedir(d);return n;
+#endif
+}
 static bool inspect(const nexrt::TaskCodeDescriptor *code,const char *function,const char *expected){
  Dl_info data{},step{};bool ok=code&&code->abi==nexrt::taskCodeExceptionHostPrototypeABI&&dladdr(code,&data)&&dladdr(reinterpret_cast<const void*>(code->step),&step)&&!std::strcmp(base(data.dli_fname),expected)&&!std::strcmp(base(step.dli_fname),expected);
  std::fprintf(stderr,"NEX_PRIVATE_FRONTIER_ADDRESS {\"function\":\"%s\",\"expected\":\"%s\",\"data\":\"%s\",\"step\":\"%s\",\"ok\":%s}\n",function,expected,data.dli_fname?base(data.dli_fname):"",step.dli_fname?base(step.dli_fname):"",ok?"true":"false");return ok;}
 static void images(unsigned &runtime,unsigned &code){
-#ifdef __APPLE__
+#ifdef _WIN32
+ runtime=nex_test::imageCount("libnex-private-runtime.dll");code=nex_test::imageCount("libimage-");
+#elif defined(__APPLE__)
  for(uint32_t i=0;i<_dyld_image_count();++i){auto *name=base(_dyld_get_image_name(i));if(std::strstr(name,"libnex-private-runtime.dylib"))++runtime;if(!std::strncmp(name,"libimage-",9))++code;}
 #else
  struct Counts{unsigned &runtime,&code;} counts{runtime,code};dl_iterate_phdr([](struct dl_phdr_info *image,size_t,void *p){auto &c=*static_cast<Counts*>(p);auto *name=base(image->dlpi_name);if(std::strstr(name,"libnex-private-runtime.so"))++c.runtime;if(!std::strncmp(name,"libimage-",9))++c.code;return 0;},&counts);
@@ -204,7 +221,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
 '''
 
     def image_file(image, plan):
-        return "program" if image == plan["application"] else "libimage-" + image + suffix
+        return ("program.exe" if os.name=="nt" else "program") if image == plan["application"] else "libimage-" + image + suffix
 
     def link_image(label, directory, image, plan, records, host=None, app_object=None):
         row = plan["images"][image]
@@ -215,12 +232,14 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             statics += ["-Wl,-force_load," + str(archive)] if mac else ["-Wl,--whole-archive," + str(archive) + ",--no-whole-archive"]
         libraries = (["-Wl,-needed_library," + str(directory / image_file(name, plan)) for name in row["dependencies"]]
                      if mac else ["-Wl,--no-as-needed", "-L" + str(directory), *["-limage-" + name for name in row["dependencies"]]])
+        if os.name=='nt':
+            libraries=needed_windows_dlls([directory/(image_file(name,plan)+'.a') for name in row['dependencies']],compiler)
         shared = plan["runtime_linkage"] == "shared"
         output = directory / image_file(image, plan)
         args = [compiler, *([] if image == "app" else ["-dynamiclib" if mac else "-shared"]), own, *([host] if host else []), *statics, *libraries]
         if image == "app":
             args += ["-Wl,-export_dynamic" if mac else "-Wl,--export-dynamic"]
-        if shared and mac:
+        if shared and (mac or os.name=='nt'):
             args += ["-L" + str(directory)]
         args += ["-lnex-private-runtime"] if shared else [*objects, crypto, "-pthread", *([] if mac else ["-ldl"])]
         if image != "app":
@@ -239,7 +258,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         for mode in ["host-reference-context", "host-task-ir-context"]:
             files = directory / mode
             files.mkdir()
-            (files / "input").write_text("abcdef")
+            (files / "input").write_text("abcdef", newline="\n")
             events = files / "events"
             env = {**os.environ, "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}
             value = json.loads(run(name + "-" + mode, [reference, mode, ctx, str(budget), catalog if case.get("foreign") else "-"], env).stdout)
@@ -279,7 +298,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             if profiled:architecture['instrumentation'] = 'profile'
             if debugged:architecture.update(instrumentation='debug',debug_timeout_ms=60000)
             arch = model / "architecture.json"
-            arch.write_text(json.dumps(architecture))
+            arch.write_text(json.dumps(architecture), newline="\n")
             plan = json.loads(run(name + "-" + topology + "-plan", [probe, "plan", ctx, arch]).stdout)
             assert plan["schema"] == "nex.private-task-modules/" + str(architecture_version) and plan["archived"] is False and "revision" not in plan
             assert set(plan["component_images"]) == set(components)
@@ -290,7 +309,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                 records, metadata, accessors, compiled_symbols = {}, [], {}, {}
                 shared = plan["runtime_linkage"] == "shared"
                 if shared:
-                    shutil.copyfile(shared_runtime, e / shared_runtime.name)
+                    copy_link_image(shared_runtime, e / shared_runtime.name)
                 for component in plan["load_order"]:
                     module = e / component
                     run(label + "-" + component + "-emit", [probe, "emit", ctx, arch, component, module, triple, layout, str(optimization == "2").lower()])
@@ -305,7 +324,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     if component == "app":
                         assert ir.count("@main(") == 1
                         code = module / "linked.ll"
-                        code.write_text(ir.replace("@main(", "@nex_private_modules_entry("))
+                        code.write_text(ir.replace("@main(", "@nex_private_modules_entry("), newline="\n")
                     run(label + "-" + component + "-object", [compiler, "-c", "-fPIC", "-O" + optimization, code, "-o", module / "module.o"])
                     meta = json.loads((module / "metadata.json").read_text())
                     metadata += meta["operations"]
@@ -324,14 +343,14 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     checks.append('addresses=inspect(find(' + json.dumps(accessor) + '),' + json.dumps(function) + ',' + json.dumps(image_file(plan["definition_owners"][function], plan)) + ')&&addresses;')
                 host = host_template.replace("DECLARATIONS", "\n".join(declarations)).replace("CHECKS", "\n".join(checks)).replace("EXPECT_RUNTIME", str(int(shared))).replace("EXPECT_CODE", str(len(plan["images"]) - 1))
                 if debugged:host=host.replace('auto before=nexrt::liveObjects.load();','nex_private_module_debug_start();auto before=nexrt::liveObjects.load();').replace('bool clean=addresses&&','bool clean=nex_private_module_debug_finish()&&addresses&&')
-                (e / "host.cpp").write_text(host)
+                (e / "host.cpp").write_text(host, newline="\n")
                 run(label + "-host", [compiler, *flags, "-c", e / "host.cpp", "-o", e / "host.o"])
                 images, symbols = {}, {}
                 for image in plan["image_load_order"]:
                     binary = link_image(label, e, image, plan, records, e / "host.o" if image == "app" else None)
                     images[image] = {"file": binary.name, "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
                     text = run(label + "-symbols-" + image, [compiler.parent / "llvm-nm", "--defined-only", "--format=posix", binary]).stdout
-                    symbols[image] = [v.lstrip("_") for v in re.findall(r'^([^ ]+__task_step) ', text, re.M)]
+                    symbols[image] = native_task_definitions(text,binary,compiler)
                     expected_symbols = {v for component, row in records.items() if row["machine_image"] == image for v in compiled_symbols[component]}
                     assert len(symbols[image]) == len(plan["images"][image]["definitions"]) and set(symbols[image]) == expected_symbols, (name, image, symbols[image], expected_symbols)
                     for function in plan["images"][image]["definitions"]:
@@ -341,7 +360,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                 assert len(set(v for row in symbols.values() for v in row)) == sum(map(len, symbols.values()))
                 files = e / "files"
                 files.mkdir()
-                (files / "input").write_text("abcdef")
+                (files / "input").write_text("abcdef", newline="\n")
                 events = files / "events"
                 env = {**os.environ, "PATH": "/usr/bin:/bin", "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events), "NEX_RESOURCE_DIR": str(out / "absent-sdk")}
                 if profiled:env['NEX_PROFILE_OUTPUT'] = str(e / 'profile.json')
@@ -354,7 +373,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                         saved = path.with_name(path.name + ".hidden")
                         path.rename(saved)
                         hidden.append((path, saved))
-                    executed = run(label + "-execute", [e / "program", "--nex-task-workers", "4", "--nex-task-steps", str(budget), *(["--nex-foreign", catalog] if case.get("foreign") else [])], env, (42, 70))
+                    executed = run(label + "-execute", [e / ("program.exe" if os.name=="nt" else "program"), "--nex-task-workers", "4", "--nex-task-steps", str(budget), *(["--nex-foreign", catalog] if case.get("foreign") else [])], env, (42, 70))
                 finally:
                     for path, saved in hidden:
                         if saved.exists():
@@ -415,7 +434,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         bad["unknown-architecture-schema"] = changed
         for name, value in bad.items():
             file = negative / (name + ".json")
-            file.write_text(json.dumps(value))
+            file.write_text(json.dumps(value), newline="\n")
             result = run("reject-" + name, [probe, "plan", ctx, file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": name, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -424,7 +443,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             changed = clone(record)
             changed[field] = value
             file = negative / ("record-" + field + ".json")
-            file.write_text(json.dumps(changed))
+            file.write_text(json.dumps(changed), newline="\n")
             result = run("reject-record-" + field, [probe, "validate", ctx, arch, "leaf", file], allowed=(1,))
             assert "E_EXCEPTION_MODULE" in result.stderr
             report["rejections"].append({"name": "record-" + field, "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -433,7 +452,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         entry["source"] = entry["source"].replace("return mid::run();", "let n:i64=mid::run();return n;")
         changed["source"] = entry["source"]
         ctx_changed = base / "changed-context.json"
-        ctx_changed.write_text(json.dumps(changed))
+        ctx_changed.write_text(json.dumps(changed), newline="\n")
         for topology in CASES["direct-catch"]["topologies"]:
             arch = base / topology / "architecture.json"
             prior = json.loads((out / ("direct-catch-" + topology + "-plan.stdout")).read_text())
@@ -444,11 +463,11 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             module = old / "changed-app"
             run("incremental-" + topology + "-emit", [probe, "emit", ctx_changed, arch, "app", module, triple, layout, "false"])
             code = module / "linked.ll"
-            code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("))
+            code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("), newline="\n")
             run("incremental-" + topology + "-object", [compiler, "-c", "-fPIC", code, "-o", module / "module.o"])
             # Use a new application filename while retaining the exact old
             # provider archives/shared images and the host's image expectations.
-            original_binary = old / "program"
+            original_binary = old / ("program.exe" if os.name=="nt" else "program")
             saved_binary = old / "original-program"
             original_binary.rename(saved_binary)
             try:
@@ -466,7 +485,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
         architecture = json.loads((base / "shared-diamond/architecture.json").read_text())
         architecture["components"]["leaf"]["linkage"] = "static"
         file = base / "duplicate-shared-frontiers.json"
-        file.write_text(json.dumps(architecture))
+        file.write_text(json.dumps(architecture), newline="\n")
         result = run("reject-two-shared-frontiers", [probe, "plan", base / "context.json", file], allowed=(1,))
         assert "E_EXCEPTION_MODULE" in result.stderr and "multiple loaded machine images" in result.stderr
         report["rejections"].append({"name": "same-static-in-two-shared-frontiers", "code": "E_EXCEPTION_MODULE", "passed": True})
@@ -477,13 +496,13 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             moved = out / ("relocated-" + topology)
             moved.mkdir()
             for file in original.iterdir():
-                if file.is_file() and (file.name == "program" or file.name.endswith(suffix)):
+                if file.is_file() and (file.name == ("program.exe" if os.name=="nt" else "program") or file.name.endswith(suffix)):
                     shutil.copy2(file, moved / file.name)
             shutil.copytree(bundle, moved / "bundle")
-            shutil.copyfile(catalog, moved / "host.json")
+            copy_link_image(catalog, moved / "host.json")
             files = moved / "files"
             files.mkdir()
-            (files / "input").write_text("abcdef")
+            (files / "input").write_text("abcdef", newline="\n")
             events = files / "events"
             hidden = []
             try:
@@ -491,7 +510,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     saved = path.with_name(path.name + ".hidden")
                     path.rename(saved)
                     hidden.append((path, saved))
-                result = run("relocated-" + topology + "-execute", [moved / "program", "--nex-foreign", moved / "host.json"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}, allowed=(42,))
+                result = run("relocated-" + topology + "-execute", [moved / ("program.exe" if os.name=="nt" else "program"), "--nex-foreign", moved / "host.json"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}, allowed=(42,))
             finally:
                 for path, saved in reversed(hidden):
                     if saved.exists():

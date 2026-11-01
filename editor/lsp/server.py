@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import urllib.parse
+import urllib.request
 
 MAX_MESSAGE = 16 * 1048576
 MAX_DOCUMENT = 1048576
@@ -37,7 +38,9 @@ def file_path(uri):
         text = urllib.parse.unquote(parsed.path, errors='strict')
         if '\0' in text or not text.startswith('/'):
             raise ValueError('invalid path')
-        return Path(text).resolve()
+        # Convert a Windows file URI's /C:/ prefix with the native codec.
+        # Give it the original escaped path so percent bytes are decoded once.
+        return Path(urllib.request.url2pathname(parsed.path) if os.name=='nt' else text).resolve()
     except (ValueError, UnicodeError, OSError) as error:
         raise RPCError(-32602, 'Invalid UTF-8 file URI') from error
 

@@ -1,4 +1,5 @@
 """Separate native compilation checked against real compiler calls and behavior."""
+from host_fixture import python_executable
 import json
 import os
 from pathlib import Path
@@ -18,8 +19,8 @@ class Incremental(harness.ToolchainCase):
         super().setUp()
         self.left = self.root / 'left.nex'
         self.right = self.root / 'right.nex'
-        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 { return n + 1; }')
-        self.right.write_text('module inc::right; pub fn value(n: i64) -> i64 { return n + 10; }')
+        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 { return n + 1; }', newline="\n")
+        self.right.write_text('module inc::right; pub fn value(n: i64) -> i64 { return n + 10; }', newline="\n")
         self.source('''module inc::app;
 import "./left.nex" as left;
 import "./right.nex" as right;
@@ -28,11 +29,11 @@ test fn smoke() -> unit !{io} { assert(len(str(left::value(5))) > 0); assert(rig
 ''')
         self.log = self.root / 'compiler-log.jsonl'
         self.identity = self.root / 'compiler-identity.txt'
-        self.identity.write_text('')
+        self.identity.write_text('', newline="\n")
         self.fake_target = self.root / 'compiler-target.txt'
         real = self.cli('doctor')['native_compiler']
         self.wrapper = self.root / 'compiler spy'
-        self.wrapper.write_text('''#!/usr/bin/env python3
+        self.wrapper=python_executable(self.wrapper,'''#!/usr/bin/env python3
 import json, os, pathlib, re, sys
 entry = {"arguments": sys.argv[1:], "definitions": []}
 if "-c" in sys.argv:
@@ -46,12 +47,12 @@ if "-emit-llvm" in sys.argv and pathlib.Path(TARGET).is_file():
 if "--version" in sys.argv and pathlib.Path(IDENTITY).read_text():
     print(pathlib.Path(IDENTITY).read_text(), flush=True)
 os.execv(REAL, [REAL, *sys.argv[1:]])
-'''.replace('LOG', repr(str(self.log))).replace('IDENTITY', repr(str(self.identity))).replace('TARGET', repr(str(self.fake_target))).replace('REAL', repr(real)))
+'''.replace('LOG', repr(str(self.log))).replace('IDENTITY', repr(str(self.identity))).replace('TARGET', repr(str(self.fake_target))).replace('REAL', repr(real)),harness.native_fixture_compiler())
         self.wrapper.chmod(0o755)
         self.env = {'NEX_CLANG': str(self.wrapper)}
 
     def build(self, *arguments, **options):
-        self.log.write_text('')
+        self.log.write_text('', newline="\n")
         result = self.cli('build', *arguments, env={**self.env, **options.pop('env', {})}, **options)
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
         native = [call for call in calls if '-c' in call['arguments'] and any(a.endswith('.ll') for a in call['arguments'])]
@@ -72,7 +73,7 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.assertTrue(warm['cached'])
         self.assertEqual((warm['compiled_modules'], warm['reused_modules']), (0, 3))
         before = {u['module']: u['input_key'] for u in report['units']}
-        self.left.write_text(self.left.read_text().replace('n + 1;', 'n + 2;'))
+        self.left.write_text(self.left.read_text().replace('n + 1;', 'n + 2;'), newline="\n")
         changed, report = self.build()
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (1, 2))
         self.assertEqual(self.last_compiled, ['nex_3_inc_4_left_5_value'])
@@ -160,7 +161,7 @@ test fn scenario()->unit{assert(with_arg(1)==2);}
         for name,code in [('with_arg','E_ENTRY'),('text','E_ENTRY'),('ui','E_REALM'),
                           ('generic','E_GENERIC_ENTRY'),('scenario','E_ENTRY')]:
             with self.subTest(entry=name):
-                self.log.write_text('')
+                self.log.write_text('', newline="\n")
                 rejected=self.cli('build','--entry',name,env=self.env,ok=False)
                 self.assertEqual(rejected['code'],code)
                 calls=[json.loads(line) for line in self.log.read_text().splitlines()]
@@ -182,10 +183,10 @@ test fn scenario()->unit{assert(with_arg(1)==2);}
             if unit['identity']!='callbacks::first': self.assertTrue(unit['reused'],unit['identity'])
 
     def test_interface_effect_changes_invalidate_unchanged_consumers(self):
-        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 { return n + 1; }')
+        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 { return n + 1; }', newline="\n")
         first, before = self.build()
         original = self.file.read_bytes()
-        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 !{io} { print(99); return n + 1; }')
+        self.left.write_text('module inc::left; pub fn value(n: i64) -> i64 !{io} { print(99); return n + 1; }', newline="\n")
         changed, after = self.build()
         self.assertEqual(self.file.read_bytes(), original)
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (2, 1))
@@ -196,19 +197,19 @@ test fn scenario()->unit{assert(with_arg(1)==2);}
         self.assertEqual(functions['inc::left::value']['callers'], ['inc::app::main'])
         units = {u['unit']: u for u in after['dependencies']['units']}
         self.assertIn('main.nex', units['left.nex']['consumers'])
-        self.left.write_text('module inc::left; pub fn value(n: i64) -> bool { return n > 0; }')
+        self.left.write_text('module inc::left; pub fn value(n: i64) -> bool { return n > 0; }', newline="\n")
         typed, _ = self.build()
         self.assertEqual(self.file.read_bytes(), original)
         self.assertEqual((typed['compiled_modules'], typed['reused_modules']), (2, 1))
         self.assert_behavior(typed, 'true\n15\n')
         self.cli('test', '--target', 'web')
         # Rejected signatures are checked even with a previously warm cache.
-        self.left.write_text('module inc::left; pub fn value(n: bool) -> i64 { return 1; }')
+        self.left.write_text('module inc::left; pub fn value(n: bool) -> i64 { return 1; }', newline="\n")
         self.assertEqual(self.cli('build', env=self.env, ok=False)['code'], 'E_TYPE')
 
     def test_parameter_rename_does_not_invalidate_callers(self):
         self.build()
-        self.left.write_text('module inc::left; pub fn value(argument: i64) -> i64 { return argument + 1; }')
+        self.left.write_text('module inc::left; pub fn value(argument: i64) -> i64 { return argument + 1; }', newline="\n")
         changed, _ = self.build()
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (1, 2))
         self.assert_behavior(changed, '6\n15\n')
@@ -218,7 +219,7 @@ test fn scenario()->unit{assert(with_arg(1)==2);}
         models.write_text('''module inc::models;
 pub struct Pair { left: i64; right: i64; }
 pub struct Envelope { pairs: list<Pair>; }
-''')
+''', newline="\n")
         self.left.write_text('''module inc::left;
 import "./models.nex" as model;
 pub fn value(n: i64) -> str {
@@ -228,10 +229,10 @@ pub fn value(n: i64) -> str {
   assert(is_ok(parsed));
   return str(pair.left) + ":" + encode_json(unwrap(parsed));
 }
-''')
+''', newline="\n")
         first, _ = self.build()
         self.assert_behavior(first, '2:{"pairs":[{"left":"2","right":"9"}]}\n15\n')
-        models.write_text(models.read_text().replace('left: i64; right: i64;', 'right: i64; left: i64;'))
+        models.write_text(models.read_text().replace('left: i64; right: i64;', 'right: i64; left: i64;'), newline="\n")
         changed, report = self.build()
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (1, 2))
         self.assertEqual(self.last_compiled, ['nex_3_inc_4_left_5_value'])
@@ -249,30 +250,30 @@ pub fn value(n: i64) -> str {
             self.assert_behavior(built, '6\n15\n')
         warm, _ = self.build()
         self.assertEqual(warm['compiled_modules'], 0)
-        self.identity.write_text('NEX test compiler identity 2')
+        self.identity.write_text('NEX test compiler identity 2', newline="\n")
         changed, _ = self.build()
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (3, 0))
         resources = self.root / 'resources'
         for directory in ('runtime', 'debug', 'lib'): shutil.copytree(harness.REPO / directory, resources / directory)
-        (resources / 'runtime/runtime.cpp').write_text((resources / 'runtime/runtime.cpp').read_text() + '\n// changed matching runtime input\n')
+        (resources / 'runtime/runtime.cpp').write_text((resources / 'runtime/runtime.cpp').read_text() + '\n// changed matching runtime input\n', newline="\n")
         changed, _ = self.build(env={'NEX_RESOURCE_DIR': str(resources)})
         self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (3, 0))
         self.assert_behavior(changed, '6\n15\n')
         self.assertEqual(self.cli('build', '--target', 'unsupported-triple', env=self.env, ok=False)['code'], 'E_TARGET')
-        self.fake_target.write_text('wasm32-unknown-unknown')
+        self.fake_target.write_text('wasm32-unknown-unknown', newline="\n")
         self.assertEqual(self.cli('build', env=self.env, ok=False)['code'], 'E_TARGET')
 
     def test_pinned_library_body_updates_and_archived_reuse(self):
         package = self.root / 'package'
         package.mkdir()
         library = package / 'numbers.nex'
-        library.write_text('module inc::numbers; pub fn add(n: i64) -> i64 { return n + 1; }')
-        (self.root / 'nex.json').write_text(json.dumps({'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}))
-        self.left.write_text('module inc::left; import "numbers/numbers.nex" as numbers; pub fn value(n: i64) -> i64 { return numbers::add(n); }')
+        library.write_text('module inc::numbers; pub fn add(n: i64) -> i64 { return n + 1; }', newline="\n")
+        (self.root / 'nex.json').write_text(json.dumps({'language': harness.CURRENT_LANGUAGE, 'entry': 'main.nex', 'libraries': {'numbers': 'package'}}), newline="\n")
+        self.left.write_text('module inc::left; import "numbers/numbers.nex" as numbers; pub fn value(n: i64) -> i64 { return numbers::add(n); }', newline="\n")
         self.cli('lock')
         first, _ = self.build()
         revision = first['revision']
-        library.write_text(library.read_text().replace('n + 1;', 'n + 3;'))
+        library.write_text(library.read_text().replace('n + 1;', 'n + 3;'), newline="\n")
         self.assertEqual(self.cli('build', env=self.env, ok=False)['code'], 'E_LOCK')
         self.cli('lock')
         changed, _ = self.build()
@@ -297,27 +298,52 @@ pub fn value(n: i64) -> str {
         self.assertEqual((restored['compiled_modules'], restored['reused_modules']), (1, 2))
         self.assert_behavior(restored, '6\n15\n')
         left = next(u for u in report['units'] if u['module'] == 'inc::left')
-        Path(left['cache_record']).write_text('{"invalid":true}')
+        Path(left['cache_record']).write_text('{"invalid":true}', newline="\n")
         restored, report = self.build()
         self.assertEqual((restored['compiled_modules'], restored['reused_modules']), (1, 2))
         Path(report['units'][0]['object']).write_bytes(b'bad local object')
         restored, _ = self.build()
         self.assertEqual((restored['compiled_modules'], restored['reused_modules']), (0, 3))
-        Path(restored['llvm']).write_text('bad aggregate LLVM')
+        Path(restored['llvm']).write_text('bad aggregate LLVM', newline="\n")
         restored, _ = self.build()
         self.assertFalse(restored['cached'])
         self.assertEqual((restored['compiled_modules'], restored['reused_modules']), (0, 3))
         self.assertIn('define', Path(restored['llvm']).read_text())
         self.assert_behavior(restored, '6\n15\n')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows rename-handle sharing')
+    def test_runtime_snapshot_remains_readable_until_publisher_closes_rename_handle(self):
+        import ctypes
+        from ctypes import wintypes
+        first, _ = self.build()
+        metadata = json.loads(Path(first['metadata']).read_text())
+        captured = Path(metadata['runtime_source_projection']) / 'nex_external_resource.h'
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                      ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        kernel.CreateFileW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel.CloseHandle.restype = wintypes.BOOL
+        # A publisher retains DELETE access briefly after the new name becomes
+        # visible. Readers must share deletion even when they only read bytes.
+        handle = kernel.CreateFileW(str(captured), 0x10000, 7, None, 3, 0x80, None)
+        self.assertNotEqual(handle, wintypes.HANDLE(-1).value, ctypes.get_last_error())
+        try:
+            self.left.write_text(self.left.read_text().replace('n + 1;', 'n + 2;'), newline="\n")
+            changed, _ = self.build()
+            self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (1, 2))
+            self.assert_behavior(changed, '7\n15\n')
+        finally:
+            self.assertTrue(kernel.CloseHandle(handle))
+
     def test_concurrent_builds_share_verified_units_with_unicode_paths(self):
         common_dir = self.root / 'lib Юникод%'
         common_dir.mkdir()
-        (common_dir / 'common.nex').write_text('module inc::common; pub fn add(n: i64) -> i64 { return n + 5; }')
+        (common_dir / 'common.nex').write_text('module inc::common; pub fn add(n: i64) -> i64 { return n + 5; }', newline="\n")
         revisions = []
         for name, number in (('one', 1), ('two', 2)):
             path = self.root / (name + '.nex')
-            path.write_text('module inc::%s; import "./lib Юникод%%/common.nex" as common; fn main() -> unit !{io} { print(common::add(%d)); }' % (name, number))
+            path.write_text('module inc::%s; import "./lib Юникод%%/common.nex" as common; fn main() -> unit !{io} { print(common::add(%d)); }' % (name, number), newline="\n")
             revisions.append(self.cli('check', path)['revision'])
         children = [subprocess.Popen([harness.NEX, 'build', '--revision', revision, '--json'], cwd=self.root,
                                      env={**os.environ, **self.env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -392,7 +418,7 @@ fn main()->unit!{io}{print(first());print(observe(1.25));}
                         self.assertEqual(value['nex']['value'],1.5)
                         raw=client.request('evaluate',{'expression':'`nex-frame local','frameId':frame['id'],'context':'repl'})
                         captured=self.root/('frame-'+built['revision']+'.json')
-                        captured.write_text(json.dumps(json.loads(raw['result'])))
+                        captured.write_text(json.dumps(json.loads(raw['result'])), newline="\n")
                         client.request('continue',{'threadId':stopped['threadId']})
                         self.assertEqual(client.event('exited')['exitCode'],0)
                         self.assertEqual(self.cli('inspect',captured,'--manifest',session['manifest'],'--expression','local')['value'],1.5)

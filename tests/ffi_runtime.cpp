@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_ffi_host.h"
 #include "nex_host.h"
 #include "nex_files.h"
@@ -26,7 +27,13 @@ Value call(Body body,std::vector<Value> args={},std::function<void()> poll={},Fo
   auto bridge=[](const nex_ffi_api_v1*,nex_ffi_call c,const nex_ffi_ref *a,uint64_t n,nex_ffi_ref *o,void *p)->nex_ffi_status{return (*static_cast<Body*>(p))(c,a,n,o);};
   return invokeForeign(bridge,args,&body,std::move(poll),limits);
 }
-int descriptors(){int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;
+#endif
+}
 struct Directory {
   std::filesystem::path root;
   Directory(){auto p=(std::filesystem::temp_directory_path()/"nex-ffi-XXXXXX").string();require(::mkdtemp(p.data()),"mkdtemp failed");root=p;std::ofstream(root/"input")<<"data";}
@@ -35,7 +42,10 @@ struct Directory {
 std::string copiedLabel(nex_ffi_call c,nex_ffi_ref r,uint64_t i){uint64_t size=0,written=0;ok(api->label_size(c,r,i,&size));std::string text(size,'\0');ok(api->copy_label(c,r,i,0,reinterpret_cast<uint8_t*>(text.data()),size,&written));require(written==size,"short label");return text;}
 }
 int main(){try{
- unsigned count=0;auto run=[&](const char *name,auto body){auto fds=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==fds,"descriptor leak");++count;std::cout<<"PASS "<<name<<std::endl;};
+ unsigned count=0;auto run=[&](const char *name,auto body){
+    auto before=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==before,"file descriptor leak");
+    ++count;std::cout<<"PASS "<<name<<std::endl;
+  };
  run("C ABI negotiation and immutable table prefix",[]{
   require(api&&api->abi_version==1&&api->struct_size==sizeof(*api),"bad API table");
   require(nex_ffi_get_api(1,8)==api&&nex_ffi_get_api(1,0)==api,"prefix negotiation failed");

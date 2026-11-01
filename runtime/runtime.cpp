@@ -1,6 +1,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#include <windows.h>
+#endif
 #include <limits>
 #include "nex_host.h"
 #include "nex_io.h"
@@ -24,7 +29,20 @@
 
 // A link-specific strong definition is emitted for executables/servers. Static
 // NEX libraries retain the weak null fallback and do not collide at host link.
+#ifdef NEX_SHARED_WINDOWS_RUNTIME
+extern "C" const char *nex_application_identity()noexcept{
+  // PE does not preempt a DLL's definition with the executable's strong one.
+  // Resolve the final application's exported identity from its actual image.
+  thread_local bool resolving=false;
+  if(resolving)return nullptr;
+  auto address=GetProcAddress(GetModuleHandleW(nullptr),"nex_application_identity");
+  auto function=reinterpret_cast<const char *(*)()noexcept>(address);
+  if(!function||function==nex_application_identity)return nullptr;
+  resolving=true;auto result=function();resolving=false;return result;
+}
+#else
 extern "C" __attribute__((weak)) const char *nex_application_identity()noexcept{return nullptr;}
+#endif
 
 namespace nexrt {
 namespace {
@@ -918,6 +936,19 @@ static void impl_nex_runtime_finish(nexrt::SourceLocation location){
 void nex_runtime_finish(){return impl_nex_runtime_finish(nexrt::SourceLocation{});}
 void nex_runtime_finish_at(const nexrt::NativeSite *nex_site){return impl_nex_runtime_finish(nexrt::SourceLocation{0,nex_site});}
 static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *const *argv,nexrt::SourceLocation location){
+#ifdef _WIN32
+  // NEX print preserves UTF-8 bytes, including explicit CR/LF in strings.
+  // Flush before restoring the modes of a trusted embedding host.
+  struct OutputModes {
+    int output=::_setmode(::_fileno(stdout),_O_BINARY);
+    int errors=::_setmode(::_fileno(stderr),_O_BINARY);
+    ~OutputModes(){
+      std::fflush(stdout);std::fflush(stderr);
+      if(output!=-1)::_setmode(::_fileno(stdout),output);
+      if(errors!=-1)::_setmode(::_fileno(stderr),errors);
+    }
+  } outputModes;
+#endif
   try{
     nexrt::ApplicationScope scope;
     if(!entry)nexrt::runtimeFail("E_ENTRY","application entry is absent",location);

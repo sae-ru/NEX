@@ -1,5 +1,16 @@
 # Windows GNU/UCRT core target
 
+The current [Windows-hosted compiler guide](windows-host.md) describes the local
+x64 `nex.exe`, its native dependency chain and direct Windows `.exe` workflow.
+No WSL process is used by that path. Portable SDK delivery remains pending.
+
+The Windows development adapter now enables synchronous whole-file/stream IO
+and ordinary task/fs operations through the handle-relative Windows runtime.
+The current language remains0.27 and current task ABI7; retained0.25/ABI6 keeps
+its historical identity. Native x64 Windows/NTFS checks, WSL-producer/native
+execution recipes and remaining SDK/CUDA boundaries are recorded in
+[Windows acceptance](windows-native-acceptance.md).
+
 Toolchain0.136.1 adds ordinary compiled structured CPU tasks for both configured
 GNU/UCRT64 targets, using the existing source language0.25 and task descriptor
 ABI6. Scopes, futures, rendezvous/buffered channels, immutable captures, nested
@@ -7,12 +18,13 @@ tasks and source exception transport use the common runtime. Compiled step,
 deadline and worker ceilings still apply; `--nex-task-*` can only lower them.
 This platform adapter adds no syntax or language migration.
 
-Windows task filesystem/foreign operations, source provider images, task
+Windows task foreign operations, source provider images, task
 debugging/profiling and HTTP hosting remain unavailable. Ordinary foreign-ABI
 run/test/debug/profile commands still return `E_TARGET_RUN`; the compiler does
 not launch Wine. Cross-builds, opt-in x64 Wine compatibility and execution on an
-actual Windows OS are distinct evidence. Actual Windows OS and ARM64 execution
-remain unverified.
+actual Windows OS are distinct evidence. The historical0.136.1 scope below
+does not replace the current x64 receipt; actual ARM64 Windows execution
+remains unverified.
 
 ```nex
 module windows_tasks;
@@ -26,8 +38,10 @@ fn main()->unit !{io,task,throw}{
 ```
 
 Query `structured_tasks_runtime.windows_cpu_tasks` for the actual compiler's
-contract. The configured `windows_targets` suite cross-builds debug/release for
-x64 and ARM64, checks ABI6/PE imports and rebuilds from archived source after
+contract. Its `file_tasks` field is true and `foreign_tasks` remains false;
+the legacy combined `file_or_foreign_tasks` flag remains false because that
+combined contract is not enabled. The configured `windows_targets` suite cross-builds debug/release for
+x64 and ARM64, checks current ABI7/PE imports and rebuilds from archived source after
 the original is deleted. Set `NEX_WINDOWS_WINE_IMAGE` to a prepared local amd64
 image exposing `/usr/lib/wine/wine64` to opt into actual x64 Wine compatibility
 checks. Those checks execute normal/nested/channel/error paths, original rethrow
@@ -37,15 +51,15 @@ containers with external networking disabled.
 Toolchain0.64 adds explicit cross-builds for `x86_64-w64-windows-gnu` and
 `aarch64-w64-windows-gnu`. Debug/release executables are PE/COFF `app.exe`;
 `--library --entry NAME` produces a GNU `libnex.a` archive. This adds no source
-syntax or language0.16 migration. This is an initial core target, with Windows
-OS execution and a Windows-hosted compiler still pending validation.
+syntax or language0.16 migration. That initial core scope did not validate
+Windows OS execution or a Windows-hosted compiler.
 
 The0.65 candidate adds standalone environment reads and per-principal SQLite
 storage. Their NEX realms/effects and explicit capability requirements are
-unchanged. Native Windows execution remains pending; record cross-build and
-Wine compatibility results separately. Filesystem/resource operations remain
-rejected by the CLI while the [Windows filesystem prototype](windows-files-design.md)
-awaits native platform validation.
+unchanged. Native Windows execution was pending in that scope; record cross-build and
+Wine compatibility results separately. Filesystem/resource operations were
+rejected in that0.65 scope. The current [Windows filesystem adapter](windows-files-design.md)
+has separate native validation and enables standalone/task file operations.
 
 Supply an installed LLVM-MinGW UCRT toolchain and its matching target sysroot.
 The maintained build uses LLVM22.1. Do not point these paths at host SDK tools
@@ -92,8 +106,10 @@ external inputs; this fingerprint is not a complete hermetic SDK inventory.
 
 The initial target accepts the checked core language, immutable aggregates,
 traits/generics, function values, finite numbers, Unicode and binary values,
-strict JSON and `print`. Standard-output text contains UTF-8 bytes; the platform
-CRT uses Windows line endings. Console rendering depends on the receiving host.
+strict JSON and `print`. Current application stdout preserves UTF-8 bytes and
+explicit CR/LF/NUL values, with LF appended by `print`, matching the interpreter.
+The historical adapter used CRT Windows line endings. Console rendering depends
+on the receiving host.
 In the0.64 baseline, reachable database, filesystem/resource operations,
 environment reads, external modules, HTTP servers and profile builds fail
 explicitly. The0.65 candidate adds only the environment/SQLite facilities
@@ -119,8 +135,8 @@ pair to the configuration above:
 }
 ```
 
-The cross-build prerequisite uses SQLite3.54.1 with `SQLITE_THREADSAFE=1` and
-`SQLITE_OMIT_LOAD_EXTENSION=1`, built for the same GNU/UCRT target. It is an
+The current native-machine receipt uses SQLite3.54.1 with
+`SQLITE_THREADSAFE=1`, built for the same GNU/UCRT target. It is an
 external prerequisite. For ARM64, supply the separately compiled ARM64 archive.
 The compiler captures the configured `sqlite3.h` and library bytes in build and
 toolchain identities. It cannot substitute host libraries for an unconfigured

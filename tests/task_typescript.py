@@ -60,17 +60,17 @@ process.stdout.write(JSON.stringify({...observation,stdout:logs.join('\\n')+(log
 programs=[]
 try:
  for name,body,expected,prefix,_ in cases:
-  path=out/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n')
+  path=out/(name+'.nex');path.write_text('module native_steps;\n'+body+'\n', newline="\n")
   if name in native_names:fixture_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
   folder=out/name;metadata=json.loads(run([emitter,path,folder,'main']))
   assert metadata['ok'] and not metadata['public_source_tasks'] and metadata['schema']=='nex.private-typescript-task-map/1'
   mapping=json.loads((folder/'nex-map.json').read_text());assert mapping['schema']==metadata['schema'] and not mapping['public_source_tasks'] and 'revision' not in mapping
-  (folder/'package.json').write_text('{"type":"module"}\n')
+  (folder/'package.json').write_text('{"type":"module"}\n', newline="\n")
   mode='parameter' if name=='parameter' else 'cancel' if name=='cancel-call' else 'private'
-  (folder/'run.mjs').write_text(runner.replace('MODE',json.dumps(mode)).replace('INPUTS','[21n]' if mode=='parameter' else '[]'))
+  (folder/'run.mjs').write_text(runner.replace('MODE',json.dumps(mode)).replace('INPUTS','[21n]' if mode=='parameter' else '[]'), newline="\n")
   actual_text=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',folder/'run.mjs'])
-  (folder/'result.json').write_text(actual_text);actual=json.loads(actual_text)
-  oracle_text=run([reference,path,mode]);(folder/'reference.json').write_text(oracle_text);oracle=json.loads(oracle_text)
+  (folder/'result.json').write_text(actual_text, newline="\n");actual=json.loads(actual_text)
+  oracle_text=run([reference,path,mode]);(folder/'reference.json').write_text(oracle_text, newline="\n");oracle=json.loads(oracle_text)
   assert actual['stdout']==oracle['stdout']==prefix,(name,actual,oracle)
   if expected.startswith('TRAP:'):
    parts=expected.split(':');assert actual['ok'] is oracle['ok'] is False and actual['code']==oracle['code']==parts[1],(name,actual,oracle)
@@ -81,12 +81,12 @@ try:
 
  host=None
  if not args.selected:
-  spin=out/'host-spin.nex';spin.write_text('module host_spin;server fn secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}fn spin()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return spin();}')
-  folder=out/'host-spin';run([emitter,spin,folder,'main']);(folder/'package.json').write_text('{"type":"module"}\n');programs.append(str(folder/'program.ts'))
+  spin=out/'host-spin.nex';spin.write_text('module host_spin;server fn secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}fn spin()->i64{var i:i64=0;while true{i=i+1;}return 0;}fn main()->i64 !{task}{return spin();}', newline="\n")
+  folder=out/'host-spin';run([emitter,spin,folder,'main']);(folder/'package.json').write_text('{"type":"module"}\n', newline="\n");programs.append(str(folder/'program.ts'))
   assert 'UNREACHABLE_SERVER_TASK_SECRET' not in (folder/'program.ts').read_text()
   assert 'secret' not in (folder/'nex-map.json').read_text()
   script=out/'scope-spawn'/'host.mjs';shutil.copy2(source/'tests/task_typescript_host.mjs',script)
-  raw=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]);(out/'host-boundary-result.json').write_text(raw);host=json.loads(raw)
+  raw=run([node,'--experimental-strip-types','--disable-warning=ExperimentalWarning',script]);(out/'host-boundary-result.json').write_text(raw, newline="\n");host=json.loads(raw)
   assert host['ok'] and host['host_guard_cases']==16 and host['actual_node_host_cancellation'] and host['event_loop_timer_ticks']>0 and host['compiler_checkpoint_turns']>0,host
  # Use the exact pinned TypeScript compiler, preferring an operator-selected
  # existing installation. Otherwise install locked packages from the cache;
@@ -101,9 +101,9 @@ try:
   tsc=tool/'node_modules/typescript/bin/tsc'
  package=json.loads((tsc.parent.parent/'package.json').read_text());pin=json.loads((source/'web/package.json').read_text())['devDependencies']['typescript'];assert package['version']==pin,(package['version'],pin)
  checked=subprocess.run([node,str(tsc),'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',*programs],text=True,capture_output=True,env=env,timeout=180)
- (out/'typecheck.stdout').write_text(checked.stdout);(out/'typecheck.stderr').write_text(checked.stderr);assert checked.returncode==0,checked.stdout+checked.stderr
+ (out/'typecheck.stdout').write_text(checked.stdout, newline="\n");(out/'typecheck.stderr').write_text(checked.stderr, newline="\n");assert checked.returncode==0,checked.stdout+checked.stderr
  report={'ok':True,'source_scenarios':len(records),'native_fixture_scenarios':sum(r['name'] not in {c[0] for c in extras} for r in records),'available_native_scenarios':available_native,'independent_asynchronous_typescript':True,'native_source_fixture_sha256':fixture_hashes,'host_boundary':host,'independent_ast_agreement':True,'actual_native_execution_in_this_test':False,'strict_typecheck':True,'typescript_version':package['version'],'public_source_tasks':False,'records':records,'seconds':round(time.monotonic()-started,3)}
- (out/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
+ (out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n");print(json.dumps(report))
 except BaseException:
  print('Failed TypeScript task sources/runtime/results retained at '+str(out),file=sys.stderr);raise
 else:

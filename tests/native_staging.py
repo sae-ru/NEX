@@ -10,7 +10,7 @@ class NativeStaging(harness.ToolchainCase):
         self.root=self.root/'PIC % 🧠';self.root.mkdir()
         self.cache=self.root/'cache'
         for name in ('producer','consumer','app'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'producer/main.nex').write_text('''module producer;
 pub struct Payload{text:str;data:bytes;values:list<f64>;callback:fn(i64)->i64;}
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
@@ -18,12 +18,12 @@ pub fn create()->Payload{return Payload("Я",utf8_bytes("hi"),[1.5,2.25],make(40
 pub fn decorate(text:str)->str{return text+"🧠";}
 pub server fn opened()->file!{fs}{return unwrap(file_open_write("data.bin"));}
 pub fn divide(x:i64)->i64{let held:list<str>=["held","🧠"];assert(len(held)==2);return 10/x;}
-''')
+''', newline="\n")
         (self.root/'consumer/main.nex').write_text('''module consumer;import "../producer/main.nex" as a;
 pub fn transform(p:a::Payload)->a::Payload{return a::Payload(a::decorate(p.text),p.data,p.values,p.callback);}
 pub fn invoke(f:fn(i64)->i64,x:i64)->i64{return f(x);}
 pub server fn write(f:file)->unit!{fs}{assert(unwrap(file_write(f,utf8_bytes("Я🧠")))==6);}
-''')
+''', newline="\n")
         self.app='''module app;import "../producer/main.nex" as a;import "../consumer/main.nex" as b;
 fn check_values()->unit{let p:a::Payload=a::create();let q:a::Payload=b::transform(p);
  assert(p.text=="Я");assert(q.text=="Я🧠");assert(q.data==utf8_bytes("hi"));
@@ -32,7 +32,7 @@ test fn values()->unit{check_values();}
 server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
  let f:file=a::opened();b::write(f);assert(file_close(f));assert(!file_close(f));print("NEX_PIC_OK");}
 '''
-        (self.root/'app/main.nex').write_text(self.app)
+        (self.root/'app/main.nex').write_text(self.app, newline="\n")
     def run_tool(self,command,*,env=None,ok=True):
         p=subprocess.run(list(map(str,command)),cwd=self.root,env=env,capture_output=True,text=True,timeout=180)
         self.assertEqual(p.returncode==0,ok,p.stdout+p.stderr)
@@ -58,7 +58,7 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         self.assertEqual(self.stage(defer=True,pic=True,entry='check_values',library=False,exports=['check_values'],ok=False)['code'],'E_OPTION')
         self.assertEqual(self.stage(defer=True,pic=True,entry='values',ok=False)['code'],'E_ENTRY')
         # Deferred output must not relax the executable contract into a library.
-        (self.root/'app/main.nex').write_text('module app;fn main(x:i64)->i64{return x;}')
+        (self.root/'app/main.nex').write_text('module app;fn main(x:i64)->i64{return x;}', newline="\n")
         self.assertEqual(self.stage(defer=True,pic=True,ok=False)['code'],'E_ENTRY')
     def test_stage_preserves_main_and_profile_and_server_contracts_without_runtime(self):
         profiled=self.stage(pic=True,defer=True,profile='profile')
@@ -71,7 +71,7 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         self.assertFalse((folder/'profile-identity.cpp').exists())
         (self.root/'app/main.nex').write_text('''module app;import "std/http.nex" as http;
 server fn handle(request:http::Request)->http::Response{return http::text_response(200,request.path);}
-''')
+''', newline="\n")
         server=self.stage(pic=True,defer=True,entry='handle',target='server')
         folder=Path(server['artifact']).parent;meta=json.loads(Path(server['metadata']).read_text())
         self.assertEqual((meta['kind'],meta['final_kind']),('object_archive','http_server'))
@@ -105,7 +105,7 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
         bad=dict(staged['producer']);bad['hash']='0'*64
         self.assertEqual(self.stage(pic=True,defer=True,libraries=[bad],ok=False)['code'],'E_PROJECT_INPUT_CHANGED')
         folder=Path(staged['app']['artifact']).parent
-        (folder/'library-abi.json').write_text('{}')
+        (folder/'library-abi.json').write_text('{}', newline="\n")
         repaired=self.closure()['app'];self.assertFalse(repaired['cached'])
         self.assertEqual(repaired['compiled_functions'],0)
         self.assertEqual(repaired['hash'],staged['app']['hash'])
@@ -163,7 +163,7 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
         profile_identity={'schema':'nex.test-profile-link/1','marker':'bound shared PIC runtime'}
         source=objects/'identity.cpp';text='extern "C" const char *nex_application_identity()noexcept{return '+json.dumps(json.dumps(identity))+';}'
         if profiling:text+='extern "C" const char *nex_profile_build_info(){return '+json.dumps(json.dumps(profile_identity))+';}'
-        source.write_text(text)
+        source.write_text(text, newline="\n")
         identity_object=objects/'identity.o';self.run_tool(driver+['-std=c++20','-c',source,'-fPIC','-o',identity_object])
         def executable(item,filename):
             app=bundle/'bin'/filename
@@ -184,7 +184,7 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             # An ordinary C++ process owns no NEX application/profile identity.
             debug=json.loads((Path(built['producer']['artifact']).parent/'debug.json').read_text())
             symbol=next(f['native_symbol'] for f in debug['functions'] if f['name']=='producer::create')
-            host=objects/'unbound.cpp';host.write_text('extern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" void nex_runtime_finish();int main(){auto p='+symbol+'();nex_release(p);nex_runtime_finish();}')
+            host=objects/'unbound.cpp';host.write_text('extern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" void nex_runtime_finish();int main(){auto p='+symbol+'();nex_release(p);nex_runtime_finish();}', newline="\n")
             host_image=bundle/'bin/unbound-host'
             self.link_output(link_driver+[host,libraries['producer'],runtime,*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib')],host_image)
             unbound_environment={**environment,'NEX_PROFILE_OUTPUT':str(data/'unbound-profile.json')}
@@ -192,7 +192,7 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             self.assertEqual(denied.returncode,70);self.assertIn('E_CONTEXT',denied.stderr)
             # An ownership boundary does not bind a profile/application identity.
             # Keep the host unbound while enclosing owned generated functions.
-            host.write_text('#include <cstdint>\nextern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" int64_t nex_application_run(void*,int64_t,const char*const*);static int64_t entry(int64_t,const char*const*){auto p='+symbol+'();nex_release(p);return 0;}int main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}')
+            host.write_text('#include <cstdint>\nextern "C" void *'+symbol+'();extern "C" void nex_release(void*);extern "C" int64_t nex_application_run(void*,int64_t,const char*const*);static int64_t entry(int64_t,const char*const*){auto p='+symbol+'();nex_release(p);return 0;}int main(){return static_cast<int>(nex_application_run(reinterpret_cast<void*>(&entry),0,nullptr));}', newline="\n")
             self.link_output(link_driver+[host,libraries['producer'],runtime,*rpath('@executable_path/../lib' if darwin else '$ORIGIN/../lib')],host_image)
             observed=self.run_tool([host_image],env=unbound_environment);self.assertEqual((observed.stdout,observed.stderr),('',''))
             unbound=json.loads((data/'unbound-profile.json').read_text())
@@ -200,7 +200,7 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             self.assertEqual(next(f['calls'] for f in unbound['functions'] if f['name']=='producer::create'),1)
             self.assertTrue(all(p['live']==0 and p['allocations']==p['frees'] for p in unbound['memory']))
         self.assertEqual((data/'data.bin').read_bytes(),'Я🧠'.encode())
-        (self.root/'app/main.nex').write_text(self.app.replace('print("NEX_PIC_OK");','print(a::divide(0));'))
+        (self.root/'app/main.nex').write_text(self.app.replace('print("NEX_PIC_OK");','print(a::divide(0));'), newline="\n")
         failed=self.closure(profile=profile);self.assertTrue(failed['producer']['cached']);self.assertTrue(failed['consumer']['cached'])
         trap=self.run_tool([executable(failed['app'],'failing')],env=environment,ok=False)
         self.assertEqual(trap.returncode,70);self.assertIn('E_DIV_ZERO',trap.stderr);self.assertNotIn('E_INTERNAL_LEAK',trap.stderr)

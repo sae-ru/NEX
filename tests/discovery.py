@@ -68,7 +68,7 @@ class Discovery(harness.ToolchainCase):
 
     def test_empty_stale_and_invalid_projects_are_not_loaded(self):
         for text in ['{', json.dumps({'schema': 'nex.project/1', 'language': 'old', 'entry': 'absent.nex'})]:
-            (self.root / 'nex.json').write_text(text)
+            (self.root / 'nex.json').write_text(text, newline="\n")
             self.assertEqual(self.cli('describe', '--field', 'version')['value'], harness.CURRENT_LANGUAGE)
             self.assertEqual(self.cli('describe', '--kind', 'index')['language'], harness.CURRENT_LANGUAGE)
             self.assertFalse((self.root / '.nex').exists())
@@ -78,7 +78,7 @@ class Discovery(harness.ToolchainCase):
         self.cli('check')
         database = self.root / '.nex/graph.db'
         before = harness.database_rows(database)
-        (self.root / 'nex.json').write_text('{invalid live project')
+        (self.root / 'nex.json').write_text('{invalid live project', newline="\n")
         paths = [self.file, self.root / 'nex.json']
         modes = {path: stat.S_IMODE(path.stat().st_mode) for path in paths}
         for path in paths:

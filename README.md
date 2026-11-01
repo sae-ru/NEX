@@ -52,8 +52,9 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.153.0 / language 0.27**.
-Runtime loop contracts are under validation; accepted SDK evidence below remains0.152.1.
+Current source: **toolchain 0.154.0 / language 0.27**.
+Windows/runtime integration is under validation. Parent Mac0.153 and Windows0.152.1
+receipts describe their exact earlier sources; this merged source requires fresh acceptance.
 The accepted 0.152.1 macOS ARM64 source build passed all 285 CTest groups. The development SDK
 passed 40 maintained phases in each moved/restored installation. An additional 126 production UI/Worker
 tests passed across Chromium, Firefox and WebKit. This is a development preview.
@@ -64,14 +65,25 @@ source commits and hardware scopes are recorded in the [delivery record](docs/re
 
 Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
 Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
-Actual native Windows acceptance, CUDA, Metal, Apple NPU, general GPU compilation,
+The [local Windows compiler](docs/windows-host.md) builds and runs x64 `.exe`
+applications directly on Windows, including CPU/tasks/files and SQLite.
+The earlier [target-only receipt](docs/windows-native-acceptance.md) preserves
+its separate WSL producer, Windows execution and CUDA driver prerequisite results.
+The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) has shared NEX/SDL
+sources and native build scripts for Windows, macOS and Linux. Its Windows
+GPU and relocated standalone package checks passed; macOS/Linux execution remains pending.
+The native Windows compiler passed all 274 CTest groups.
+NEX CUDA U8 Add/Affine passed 35 physical-device cases on RTX 3090;
+[the current Windows record](docs/evidence/windows-native-2026-11-01.json)
+keeps that scope separate from full regression and SDK acceptance.
+Full Windows-hosted SDK acceptance, Metal, Apple NPU, general GPU compilation,
 complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
 
 ## Build and use
 
 Start with the [current installation guide](docs/getting-started.en.md). A source
 build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 and
-Python. Web/TypeScript workflows additionally use Node.js 22.18+ and npm with
+Python 3.10+. Web/TypeScript workflows additionally use Node.js 22.18+ and npm with
 the repository's lock file.
 
 ```sh
@@ -97,7 +109,7 @@ nex init /path/to/my-app
 [Architecture](docs/architecture.md) · [Web](docs/web.md) ·
 [Project builds](docs/project-build.md) · [Errors](docs/exceptions.md) ·
 [Debugging](docs/debugging.md) · [Profiling](docs/profiling.md) ·
-[Quality criteria](docs/quality.md) · [Windows handoff](docs/windows-handoff.md)
+[Quality criteria](docs/quality.md) · [Windows handoff](docs/windows-handoff-current.md)
 
 For agents, start with [llms.txt](llms.txt), [AGENTS.md](AGENTS.md),
 [BOOTSTRAP](llm/BOOTSTRAP.md) and the [coding contract](llm/SYSTEM_PROMPT.md).

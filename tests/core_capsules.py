@@ -1,4 +1,5 @@
 """Data integrity, relocation and read-only actual native core capsules."""
+from host_fixture import nonregular, sparse_file
 import hashlib
 import json
 import os
@@ -45,7 +46,7 @@ class CoreCapsules(harness.ToolchainCase):
                    'core': str(self.core), 'core_sha256': digest(self.core),
                    'identity': {key: manifest[key] for key in ('compiler_build', 'toolchain', 'language')}}
         path = self.root/'copy-request.json'
-        path.write_text(json.dumps(request))
+        path.write_text(json.dumps(request), newline="\n")
         installed = Path(harness.NEX).parent.parent/'share/nex/tools/core_capsule.py'
         helper = installed if installed.is_file() else harness.REPO/'tools/core_capsule.py'
         copied = subprocess.run([sys.executable, str(helper), str(path)],
@@ -80,7 +81,7 @@ class CoreCapsules(harness.ToolchainCase):
         before = graph.read_bytes()
         self.file.unlink()
         self.original_program.parent.rename(self.root/'retained-original')
-        moved = self.root/'moved "quoted" \\ % `data` 🧠'
+        moved = self.root/("moved 'quoted' % `data` 🧠" if os.name=='nt' else 'moved "quoted" \\ % `data` 🧠')
         capsule.rename(moved)
         self.assertFalse(self.original_program.exists())
         report = self.read(moved, ok=False, env={'NEX_LLDB': str(self.root/'not-a-debugger')})
@@ -91,17 +92,17 @@ class CoreCapsules(harness.ToolchainCase):
     def test_historical_import_basename_is_preserved_in_verified_staging(self):
         capsule=self.fake_capsule()
         original_path=capsule/'original-debug.json';original=json.loads(original_path.read_text())
-        source=original['sources'][0];legacy='imported "quoted" % 🧠.nex'
+        source=original['sources'][0];legacy="imported 'quoted' % 🧠.nex" if os.name=='nt' else 'imported "quoted" % 🧠.nex'
         source['debug_path']=str(Path(source['debug_path']).with_name(legacy))
-        original_path.write_text(json.dumps(original))
+        original_path.write_text(json.dumps(original), newline="\n")
         receipt_path=capsule/'capsule.json';receipt=json.loads(receipt_path.read_text())
         receipt['files']['original-debug.json']={'bytes':original_path.stat().st_size,'sha256':digest(original_path)}
-        receipt_path.write_text(json.dumps(receipt))
+        receipt_path.write_text(json.dumps(receipt), newline="\n")
         before={p.relative_to(capsule).as_posix():digest(p) for p in capsule.rglob('*') if p.is_file()}
         work=self.root/'verified staging';work.mkdir()
         request={'mode':'prepare','capsule':str(capsule),'work':str(work),
                  'identity':{key:original[key] for key in ('compiler_build','toolchain','language')}}
-        path=self.root/'prepare-request.json';path.write_text(json.dumps(request))
+        path=self.root/'prepare-request.json';path.write_text(json.dumps(request), newline="\n")
         installed=Path(harness.NEX).parent.parent/'share/nex/tools/core_capsule.py'
         helper=installed if installed.is_file() else harness.REPO/'tools/core_capsule.py'
         prepared=subprocess.run([sys.executable,str(helper),str(path)],capture_output=True,text=True,timeout=60)
@@ -137,17 +138,17 @@ class CoreCapsules(harness.ToolchainCase):
         for name in ['../escape', '/absolute', 'a//b', 'a/./b', 'a\\b']:
             changed = json.loads(receipt_bytes)
             changed['files'][name] = {'bytes': 0, 'sha256': '0'*64}
-            receipt_path.write_text(json.dumps(changed))
+            receipt_path.write_text(json.dumps(changed), newline="\n")
             self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_CAPSULE')
         receipt_path.write_bytes(receipt_bytes)
         original_path = capsule/'original-debug.json'
         original = original_path.read_bytes()
         manifest = json.loads(original)
         manifest['functions'][0]['operation_sites'][0]['kind'] = 'invented'
-        original_path.write_text(json.dumps(manifest))
+        original_path.write_text(json.dumps(manifest), newline="\n")
         receipt['files']['original-debug.json'] = {'bytes': original_path.stat().st_size,
                                                   'sha256': digest(original_path)}
-        receipt_path.write_text(json.dumps(receipt))
+        receipt_path.write_text(json.dumps(receipt), newline="\n")
         self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_BUILD')
 
     def test_symlink_fifo_oversized_core_duplicate_fields_and_host_are_rejected(self):
@@ -159,7 +160,7 @@ class CoreCapsules(harness.ToolchainCase):
         receipt.write_bytes(original)
         data = json.loads(original)
         data['host']['machine'] = 'unsupported'
-        receipt.write_text(json.dumps(data))
+        receipt.write_text(json.dumps(data), newline="\n")
         self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_CAPSULE')
         receipt.write_bytes(original)
         link = self.root/'link'
@@ -167,14 +168,14 @@ class CoreCapsules(harness.ToolchainCase):
         self.assertEqual(self.read(link, ok=False)['code'], 'E_CORE_CAPSULE')
         core = capsule/'process.core'
         core.unlink()
-        os.mkfifo(core)
+        nonregular(core)
         self.assertEqual(self.read(capsule, ok=False, timeout=10)['code'], 'E_CORE_CAPSULE')
         core.unlink()
         core.symlink_to(self.core)
         self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_CAPSULE')
         core.unlink()
         with core.open('wb') as stream:
-            stream.truncate(32*1024**3+1)
+            sparse_file(stream);stream.truncate(32*1024**3+1)
         self.assertEqual(self.read(capsule, ok=False, timeout=10)['code'], 'E_CORE_CAPSULE')
 
     @unittest.skipUnless(LIVE, 'use --live for actual native core capsule relocation')
@@ -198,7 +199,7 @@ class CoreCapsules(harness.ToolchainCase):
         alias.symlink_to(self.original_program.parent, target_is_directory=True)
         aliased_manifest = json.loads(self.manifest.read_text())
         aliased_manifest['program'] = str(alias/'app')
-        self.manifest.write_text(json.dumps(aliased_manifest))
+        self.manifest.write_text(json.dumps(aliased_manifest), newline="\n")
         capsule = self.root/'capsule'
         exported = self.cli('core', self.core, '--manifest', alias/'debug.json', '--export', capsule,
                             '--expression', 'text + str(items[1])', timeout=180)
@@ -208,7 +209,7 @@ class CoreCapsules(harness.ToolchainCase):
         alias.unlink()
         alias_parent.rmdir()
         self.original_program.parent.rename(self.root/'retained-original')
-        moved = self.root/'moved "quoted" \\ % `data` 🧠'
+        moved = self.root/("moved 'quoted' % `data` 🧠" if os.name=='nt' else 'moved "quoted" \\ % `data` 🧠')
         capsule.rename(moved)
         self.assertFalse(self.original_program.exists())
         before = {p.relative_to(moved).as_posix(): digest(p) for p in moved.rglob('*') if p.is_file()}
@@ -222,29 +223,29 @@ class CoreCapsules(harness.ToolchainCase):
         original = json.loads(original_path.read_text())
         marker = self.root/'untrusted-script-ran'
         script = self.root/'untrusted.py'
-        script.write_text('from pathlib import Path\nPath('+repr(str(marker))+').touch()\n')
+        script.write_text('from pathlib import Path\nPath('+repr(str(marker))+').touch()\n', newline="\n")
         for field in ('formatter', 'dap_adapter', '_compiler'):
             original[field] = str(script)
-        original_path.write_text(json.dumps(original))
+        original_path.write_text(json.dumps(original), newline="\n")
         receipt_path = moved/'capsule.json'
         receipt = json.loads(receipt_path.read_text())
         receipt['files']['original-debug.json'] = {'bytes': original_path.stat().st_size,
                                                   'sha256': digest(original_path)}
-        receipt_path.write_text(json.dumps(receipt))
+        receipt_path.write_text(json.dumps(receipt), newline="\n")
         self.assertEqual(self.read(moved, '--expression', 'text + str(items[1])', timeout=120)['watch']['value'], 'Я🧠2')
         self.assertFalse(marker.exists())
         image = moved/receipt['build_directory']/'app'
         original_image = image.read_bytes()
         image.write_bytes(original_image+b'changed')
         receipt['files'][image.relative_to(moved).as_posix()] = {'bytes': image.stat().st_size, 'sha256': digest(image)}
-        receipt_path.write_text(json.dumps(receipt))
+        receipt_path.write_text(json.dumps(receipt), newline="\n")
         self.assertEqual(self.read(moved, ok=False, timeout=120)['code'], 'E_CORE_BUILD')
         image.write_bytes(original_image)
         receipt['files'][image.relative_to(moved).as_posix()] = {'bytes': image.stat().st_size, 'sha256': digest(image)}
-        receipt_path.write_text(json.dumps(receipt))
+        receipt_path.write_text(json.dumps(receipt), newline="\n")
         if sys.platform == 'linux':
             receipt['recorded_program'] = str(self.root/'invented'/image.parent.name/'app')
-            receipt_path.write_text(json.dumps(receipt))
+            receipt_path.write_text(json.dumps(receipt), newline="\n")
             self.assertEqual(self.read(moved, ok=False, timeout=120)['code'], 'E_CORE_READ')
         self.assertEqual(graph.read_bytes(), graph_before)
         self.assertEqual(digest(self.core), core_digest)

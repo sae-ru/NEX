@@ -18,9 +18,9 @@ class Commands(harness.ToolchainCase):
         self.prepare()
         self.cli('test', self.file, '--target', 'web')
         original = self.file.read_text()
-        self.file.write_text(original.replace('client fn', 'shared fn').replace('client test fn', 'shared test fn'))
+        self.file.write_text(original.replace('client fn', 'shared fn').replace('client test fn', 'shared test fn'), newline="\n")
         self.cli('test', self.file)
-        self.file.write_text(original)
+        self.file.write_text(original, newline="\n")
         output = self.root / 'generated'
         self.cli('web', self.file, '--directory', output)
         source = (output / 'src/program.ts').read_text()
@@ -40,13 +40,13 @@ class Commands(harness.ToolchainCase):
             original.replace('client fn commands', 'server fn commands'),
             original.replace('-> list<net::Command> {', '-> list<net::Command> !{io} {'),
         ]:
-            self.file.write_text(invalid)
+            self.file.write_text(invalid, newline="\n")
             self.assertEqual(self.cli('web', self.file, '--directory', self.root / 'output', ok=False)['code'], 'E_WEB_SIGNATURE')
-        self.file.write_text(original)
+        self.file.write_text(original, newline="\n")
         library = self.root / 'custom-net.nex'
         source = (harness.REPO / 'lib/net.nex').read_text().replace('import "./web.nex"', 'import "std/web.nex"')
-        library.write_text(source.replace('timeout_ms: i64;', 'timeout_ms: i64; extra: str;').replace('action, timeout_ms)', 'action, timeout_ms, "")').replace('"", 0)', '"", 0, "")'))
-        self.file.write_text(original.replace('"std/net.nex"', '"./custom-net.nex"'))
+        library.write_text(source.replace('timeout_ms: i64;', 'timeout_ms: i64; extra: str;').replace('action, timeout_ms)', 'action, timeout_ms, "")').replace('"", 0)', '"", 0, "")'), newline="\n")
+        self.file.write_text(original.replace('"std/net.nex"', '"./custom-net.nex"'), newline="\n")
         self.assertEqual(self.cli('web', self.file, '--directory', self.root / 'output', ok=False)['code'], 'E_WEB_SIGNATURE')
 
 

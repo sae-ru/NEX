@@ -112,17 +112,17 @@ test fn aliases() -> unit {
             self.source(test);result=self.cli('test','--target','web',ok=False);self.assertIn(code,json.dumps(result))
 
     def test_imported_constraints_atomic_patch_and_source_deleted_archives(self):
-        library=self.root/'math.nex';library.write_text('module bound_math; pub fn sum<T:add>(x:T,y:T) -> T {return x+y;}')
+        library=self.root/'math.nex';library.write_text('module bound_math; pub fn sum<T:add>(x:T,y:T) -> T {return x+y;}', newline="\n")
         self.source('''module app; import "./math.nex" as math;
 fn main() -> unit !{io} {print(math::sum("NEX ","🧠"));}
 test fn examples() -> unit {assert(math::sum(20,22) == 42);}
 ''')
         before=self.cli('check')['revision'];context=self.cli('context','--symbol','bound_math::sum')
         self.assertEqual(context['type_bounds'],{'bound_math::sum::T':['add']})
-        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'bound_math::sum','source':'pub fn sum<T:integer>(x:T,y:T) -> T {return x+y;}'}]}))
+        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'bound_math::sum','source':'pub fn sum<T:integer>(x:T,y:T) -> T {return x+y;}'}]}), newline="\n")
         self.assertEqual(self.cli('apply','--patch',patch,ok=False)['code'],'E_GENERIC_BOUND')
         self.assertEqual(self.cli('history')['head'],before)
-        patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'bound_math::sum','source':'pub fn sum<T:add>(x:T,y:T) -> T {return y+x;}'}]}))
+        patch.write_text(json.dumps({'expected_revision':before,'replacements':[{'name':'bound_math::sum','source':'pub fn sum<T:add>(x:T,y:T) -> T {return y+x;}'}]}), newline="\n")
         fixed=self.cli('apply','--patch',patch)['revision'];self.assertNotEqual(fixed,before)
         self.file.unlink();library.unlink()
         self.assertEqual(self.cli('run','--revision',before)['stdout'],'NEX 🧠\n')
@@ -150,7 +150,7 @@ test fn examples() -> unit {assert(math::sum(20,22) == 42);}
 pub struct Pair<T:add> {left:T;right:T;}
 pub enum Count<T:integer> {Zero;Value(value:T);}
 pub struct Payload<T:add,U:integer> {pair:Pair<T>;count:Count<U>;}
-''')
+''', newline="\n")
         self.source('''module bound_service; import "std/api.nex" as api;import "./model.nex" as model;
 server fn echo(c:api::Context,input:model::Payload<str,i64>) -> result<model::Payload<str,i64>> {return ok(input);}
 endpoint echo_value("POST","/api/value") = echo;
@@ -162,10 +162,10 @@ endpoint echo_value("POST","/api/value") = echo;
 import "./generated/client/models/bound_model.nex" as model;
 fn main() -> unit {}
 test fn models() -> unit {let data:model::Payload<str,i64> = model::Payload(model::Pair("A","🧠"),model::Count::Value(42));assert(unwrap(decode_json<model::Payload<str,i64>>(encode_json(data))) == data);}
-''')
+''', newline="\n")
         self.cli('test',consumer);self.cli('test',consumer,'--target','web')
         self.cli('build',generated['server_entry'],'--target','server',timeout=180)
-        consumer.write_text(consumer.read_text().replace('model::Payload<str,i64>','model::Payload<bool,i64>'))
+        consumer.write_text(consumer.read_text().replace('model::Payload<str,i64>','model::Payload<bool,i64>'), newline="\n")
         self.assertEqual(self.cli('check',consumer,ok=False)['code'],'E_GENERIC_BOUND')
 
     def test_constrained_pure_watches_and_concrete_scalar_proof(self):
@@ -179,14 +179,14 @@ fn main() -> unit !{io} {observe(41);}
         frame={'schema':'nex.debug-frame/1','language':harness.CURRENT_LANGUAGE,'revision':revision,'build_key':manifest['build_key'],
                'function':'bound_watch::observe<i64>','stop':{'process_id':'1','thread_id':'2','frame_id':0,'stop_id':'1'},
                'bindings':[{'name':'value','type':'i64','value':'41'}],'truncated':False}
-        path=self.root/'frame.json';path.write_text(json.dumps(frame))
+        path=self.root/'frame.json';path.write_text(json.dumps(frame), newline="\n")
         for expression,value in [('increment<T>(value)','42'),('combine("A","🌍")','A🌍')]:
             inspected=self.cli('inspect',path,'--manifest',session['manifest'],'--expression',expression)
             self.assertEqual(inspected['value'],value);self.assertEqual(inspected['revision'],revision)
         self.assertEqual(self.cli('inspect',path,'--manifest',session['manifest'],'--expression','combine(true,false)',ok=False)['code'],'E_GENERIC_BOUND')
         self.assertEqual(self.cli('graph')['revision'],revision)
         contract=self.root/'contract.json';self.cli('contract','--symbol','bound_watch::increment<i64>','-o',contract)
-        proof=json.loads(contract.read_text());proof['functions'][0].update(requires=['x < 9223372036854775807'],ensures=['result == x + 1']);contract.write_text(json.dumps(proof))
+        proof=json.loads(contract.read_text());proof['functions'][0].update(requires=['x < 9223372036854775807'],ensures=['result == x + 1']);contract.write_text(json.dumps(proof), newline="\n")
         self.assertTrue(self.cli('verify','--contracts',contract)['ok'])
         self.file.unlink();self.assertEqual(self.cli('inspect',path,'--manifest',session['manifest'],'--expression','increment<T>(value)')['value'],'42')
 
@@ -200,9 +200,9 @@ test fn examples() -> unit {assert(combine(20,22) == 42);assert(combine("NEX ","
         task['requirements'].append({'id':'template','text':'Combine bounded types with identical checked operations','bindings':[{'program':'app','kind':'function','symbol':'bound_accept::combine'}],'targets':['native'],'checks':[test]})
         task['checks'].append({'id':'measure','kind':'profile','program':'app','target':'native','entry':'bound_accept::main','scenario':'one bounded integer combine','budget':{'max_calls':{'bound_accept::combine<i64>':'1'}}})
         task['requirements'].append({'id':'measurement','text':'Measure the concrete bounded instance','bindings':[{'program':'app','kind':'function','symbol':'bound_accept::combine<i64>'}],'targets':['native'],'checks':['measure']})
-        path=self.root/'task.json';path.write_text(json.dumps(task))
+        path=self.root/'task.json';path.write_text(json.dumps(task), newline="\n")
         failed=self.cli('task',path,'--kind','run',ok=False,timeout=180);self.assertEqual(failed['status'],'not_satisfied')
-        checked=self.cli('check');patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':checked['revision'],'replacements':[{'name':'bound_accept::combine','source':'pub fn combine<T:add>(x:T,y:T) -> T {return x+y;}'}]}))
+        checked=self.cli('check');patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':checked['revision'],'replacements':[{'name':'bound_accept::combine','source':'pub fn combine<T:add>(x:T,y:T) -> T {return x+y;}'}]}), newline="\n")
         fixed=self.cli('apply','--patch',patch)['revision']
         passed=self.cli('task',path,'--kind','run','--revision',fixed,'--task-hash',failed['task_hash'],timeout=180)
         self.assertEqual(passed['task_hash'],failed['task_hash']);self.file.unlink()
@@ -236,7 +236,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SYMBOL',repr(symbol)).replace('REPORT',repr(str(report))))
+'''.replace('SYMBOL',repr(symbol)).replace('REPORT',repr(str(report))), newline="\n")
             result=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),result.stdout+result.stderr);data=json.loads(report.read_text())
             self.assertEqual(data['integer']['value'],'42');self.assertEqual(data['string']['value'],'A🌍')

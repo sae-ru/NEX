@@ -1,4 +1,5 @@
 """Retain actual026 identities while the ordinary CLI selects027."""
+from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
 from pathlib import Path
@@ -16,14 +17,14 @@ class TypedErrorOrigin(harness.ToolchainCase):
         self.assertEqual(meta['language'],'0.26');self.assertFalse(meta['retagged_source'])
         self.assertEqual(meta['producer']['toolchain'],'0.139.0')
         self.assertEqual(hashlib.sha256(sql).hexdigest(),meta['sql_sha256'])
-        self.source(meta['source']);(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}))
+        self.source(meta['source']);(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.26','entry':'main.nex'}), newline="\n")
         graph=self.root/'.nex/graph.db';graph.parent.mkdir(exist_ok=True)
-        with sqlite3.connect(str(graph)) as db:db.executescript(sql.decode())
+        with sqlite_connection(str(graph)) as db:db.executescript(sql.decode())
         before=harness.database_rows(graph)
         self.assertEqual(len(before[1]),16);self.assertEqual({k:len(v) for k,v in before[1].items()},meta['table_counts'])
         def inspect(mode,**extra):
             request=self.root/'inspect.json'
-            request.write_text(json.dumps({'schema':'nex.typed-error-migration-request/1','mode':mode,'project':str(self.root),**extra}))
+            request.write_text(json.dumps({'schema':'nex.typed-error-migration-request/1','mode':mode,'project':str(self.root),**extra}), newline="\n")
             observed=subprocess.run([PROBE,request],capture_output=True,text=True,timeout=60)
             self.assertEqual(observed.returncode,0,observed.stdout+observed.stderr)
             return json.loads(observed.stdout)

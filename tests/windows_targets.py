@@ -10,6 +10,7 @@ import unittest
 import uuid
 
 import support as harness
+import windows_native_cases as native_cases
 
 TOOLS = Path(os.environ['NEX_WINDOWS_TOOLCHAIN_ROOT']).resolve() if os.environ.get('NEX_WINDOWS_TOOLCHAIN_ROOT') else None
 WINE_IMAGE = os.environ.get('NEX_WINDOWS_WINE_IMAGE')
@@ -60,12 +61,14 @@ test fn tasks()->unit !{task,throw}{assert(solve()==42);assert(recovered()==42);
 class WindowsConfiguration(harness.ToolchainCase):
     def test_unconfigured_and_unsupported_abis_reject(self):
         self.source('module windows; fn main()->i64 {return 0;}')
+        unconfigured=self.root/'unconfigured.json'
         for target in ('x86_64-w64-windows-gnu', 'aarch64-w64-windows-gnu',
                        'i686-w64-windows-gnu', 'arm64ec-w64-windows-gnu', 'x86_64-pc-windows-msvc'):
-            self.assertEqual(self.cli('build', '--target', target, ok=False)['code'], 'E_TARGET')
+            unconfigured.write_text(json.dumps({'schema':'nex.toolchain/1','target':target}),newline='\n')
+            self.assertEqual(self.cli('build', '--target', target, '--toolchain', unconfigured, ok=False)['code'], 'E_TARGET')
         config = self.root / 'toolchain.json'
         config.write_text(json.dumps({'schema':'nex.toolchain/1', 'target':'x86_64-w64-windows-gnu',
-                                     'windows':{'runtime':'ucrt-static'}}))
+                                     'windows':{'runtime':'ucrt-static'}}), newline="\n")
         self.assertEqual(self.cli('toolchain', config, ok=False)['code'], 'E_TOOLCHAIN')
 
 
@@ -73,11 +76,11 @@ class WindowsConfiguration(harness.ToolchainCase):
 class WindowsTargets(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.config = self.root/'toolchain.json'
         self.notices = self.root/'runtime-notices.txt'
         files = [TOOLS/'LICENSE.TXT', *sorted((TOOLS/'x86_64-w64-mingw32/share/mingw32').glob('COPYING*'))]
-        self.notices.write_text('\n\n'.join(str(p.relative_to(TOOLS))+'\n'+p.read_text() for p in files))
+        self.notices.write_text('\n\n'.join(str(p.relative_to(TOOLS))+'\n'+p.read_text() for p in files), newline="\n")
         self.source('''module windows_core;
 trait Read {type Item; fn get(value:Self)->Read::Item<Self>;}
 struct Box<T> {value:T;}
@@ -105,7 +108,7 @@ test fn semantics()->unit {assert(answer()==42);}
                'linker':str(TOOLS/'bin/ld.lld'),'archiver':str(TOOLS/'bin/llvm-ar'),
                'sysroot':str(TOOLS/(arch+'-w64-mingw32')),
                'windows':{'runtime':'ucrt-static','notices':str(self.notices)}, **fields}
-        self.config.write_text(json.dumps(value));return value
+        self.config.write_text(json.dumps(value), newline="\n");return value
 
     def command(self, args, timeout=90):
         result=subprocess.run(list(map(str,args)),capture_output=True,text=True,timeout=timeout)
@@ -116,7 +119,7 @@ test fn semantics()->unit {assert(answer()==42);}
         dest=Path(os.environ['NEX_WINDOWS_TEST_OUTPUT'])/name;dest.mkdir(parents=True,exist_ok=False)
         for key in ('executable','llvm','metadata','debug_manifest','notices'):
             path=Path(built[key]);shutil.copy2(path,dest/path.name)
-        (dest/'result.json').write_text(json.dumps(built,indent=2))
+        (dest/'result.json').write_text(json.dumps(built,indent=2), newline="\n")
 
     def test_real_pe_archives_abi_cache_and_archived_source(self):
         self.cli('test',timeout=120);self.cli('test','--target','web',timeout=120)
@@ -125,7 +128,7 @@ test fn semantics()->unit {assert(answer()==42);}
         bridge=self.root/'bridge.cpp';bridge.write_text('#include <cstdint>\nextern "C" int64_t '+symbol+'();\n'
             'extern "C" int64_t nex_application_run(void*,int64_t,const char*const*);\n'
             'int64_t entry(int64_t,const char*const*){return '+symbol+'()==42?0:1;}\n'
-            'int main(int argc,char**argv){return int(nex_application_run(reinterpret_cast<void*>(entry),argc,argv));}\n')
+            'int main(int argc,char**argv){return int(nex_application_run(reinterpret_cast<void*>(entry),argc,argv));}\n', newline="\n")
         for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
             self.configure(arch);inspected=self.cli('toolchain',self.config)
             self.assertFalse(inspected['host_compatible']);self.assertEqual(inspected['manifest']['windows']['runtime'],'ucrt-static')
@@ -168,7 +171,7 @@ test fn semantics()->unit {assert(answer()==42);}
         self.source('module storage;server fn main()->unit!{db} {assert(is_ok(store_keys("")));}')
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET_LIBRARY')
         for source,code in (
-            ('server fn main()->unit!{task,fs} {assert(is_ok(file_read_text("input")));}', 'E_TASK_TARGET'),
+            ('server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{task,ffi} {task_yield();return opaque();}', 'E_TASK_TARGET'),
             ('server extern fn opaque()->i64!{ffi}=foreign("x","y","'+'0'*64+'"); server fn main()->i64!{ffi} {return opaque();}', 'E_TARGET')
         ):
             self.source('module unavailable;'+source)
@@ -233,7 +236,7 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
                         (output/(tag+'-wine-'+profile+'.json')).write_text(json.dumps({'command':command,
                             'stdout':result.stdout,'stderr':result.stderr,'exit_code':result.returncode,
                             'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
-                            'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2))
+                            'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2), newline="\n")
 
     def test_structured_cpu_task_executables_and_archived_replay(self):
         feature=self.cli('describe','--field','structured_tasks_runtime')['value']
@@ -249,7 +252,7 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
                 built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
                 metadata=json.loads(Path(built['metadata']).read_text())
                 self.assertTrue(metadata['runtime_requirements']['tasks'])
-                self.assertEqual(metadata['task_execution_abi'],0x4e45585400000006)
+                self.assertEqual(metadata['task_execution_abi'],0x4e45585400000007)
                 self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
                 imports=self.command([TOOLS/'bin/llvm-readobj','--coff-imports',built['executable']]).lower()
                 self.assertIn('ntdll.dll',imports);self.assertIn('bcrypt.dll',imports)
@@ -258,6 +261,23 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
         restored=self.cli('build','--revision',built['revision'],'--toolchain',self.config,'--profile','release',timeout=300)
         self.assertEqual(restored['build_key'],built['build_key'])
         self.assertGreater(restored['reused_functions'],0)
+
+    def test_files_and_owned_task_streams_pe_for_both_architectures(self):
+        """Cross-build contract; actual OS execution belongs to acceptance.py."""
+        for label,source,tasks in (('files',native_cases.FILES,False),
+                                   ('task-files',native_cases.TASK_FILES,True)):
+            self.source(source)
+            for arch,machine in (('x86_64','IMAGE_FILE_MACHINE_AMD64'),('aarch64','IMAGE_FILE_MACHINE_ARM64')):
+                self.configure(arch)
+                for profile in ('debug','release'):
+                    built=self.cli('build','--toolchain',self.config,'--profile',profile,timeout=300)
+                    metadata=json.loads(Path(built['metadata']).read_text())
+                    self.assertIn('nex_files.cpp',metadata['runtime_components'])
+                    projection=Path(metadata['runtime_source_projection'])
+                    self.assertEqual((projection/'nex_files_windows.h').read_bytes(),(harness.REPO/'runtime/nex_files_windows.h').read_bytes())
+                    self.assertEqual(metadata['runtime_requirements']['tasks'],tasks)
+                    self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
+                    self.retain(built,label+'-'+arch+'-'+profile)
 
     @unittest.skipUnless(WINE_IMAGE,'set NEX_WINDOWS_WINE_IMAGE to opt into isolated x64 Wine compatibility checks')
     def test_structured_cpu_tasks_with_explicit_wine_compatibility(self):
@@ -288,7 +308,7 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
                 (output/(label+'.json')).write_text(json.dumps({'command':command,
                     'executable_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),
                     'stdout':result.stdout,'stderr':result.stderr,'exit_code':result.returncode,
-                    'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2))
+                    'Wine_compatibility_only':True,'actual_Windows_OS_execution':False},ensure_ascii=False,indent=2), newline="\n")
             return result
 
         for profile in ('debug','release'):
@@ -311,16 +331,16 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
 
     def test_required_inputs_wrong_driver_and_notice_identity(self):
         for field in ('compiler','linker','archiver','sysroot'):
-            value=self.configure();del value[field];self.config.write_text(json.dumps(value))
+            value=self.configure();del value[field];self.config.write_text(json.dumps(value), newline="\n")
             self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TOOLCHAIN')
         self.configure(windows={'runtime':'msvcrt','notices':str(self.notices)})
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET')
         real=self.cli('doctor')['native_compiler'];driver=self.root/'wrong driver'
-        driver.write_text('#!/usr/bin/env python3\nimport os,sys\nreal='+repr(real)+'\nargs=[x for x in sys.argv[1:] if not x.startswith(("--target=","--sysroot="))]\nos.execv(real,[real,*args])\n')
+        driver.write_text('#!/usr/bin/env python3\nimport os,sys\nreal='+repr(real)+'\nargs=[x for x in sys.argv[1:] if not x.startswith(("--target=","--sysroot="))]\nos.execv(real,[real,*args])\n', newline="\n")
         driver.chmod(0o755);self.configure(compiler=str(driver))
         self.assertEqual(self.cli('build','--toolchain',self.config,ok=False)['code'],'E_TARGET')
         self.configure();before=self.cli('toolchain',self.config);a=self.cli('build','--toolchain',self.config,timeout=180)
-        self.notices.write_text(self.notices.read_text()+'\nAdditional reviewed runtime notice.\n')
+        self.notices.write_text(self.notices.read_text()+'\nAdditional reviewed runtime notice.\n', newline="\n")
         after=self.cli('toolchain',self.config);self.assertNotEqual(before['hash'],after['hash'])
         b=self.cli('build','--toolchain',self.config,timeout=180);self.assertNotEqual(a['build_key'],b['build_key'])
         self.assertIn('Additional reviewed runtime notice.',Path(b['notices']).read_text())

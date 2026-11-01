@@ -20,7 +20,7 @@ class DeviceContract(unittest.TestCase):
   temporary=tempfile.TemporaryDirectory(prefix='nex owned device 🧠 ');self.addCleanup(temporary.cleanup);self.root=Path(temporary.name)
   self.env={**os.environ,'NEX_RESOURCE_DIR':str(ROOT),'PYTHONDONTWRITEBYTECODE':'1'}
   self.descriptor=self.cli('describe')
-  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.descriptor['version'],'entry':'main.nex'}))
+  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':self.descriptor['version'],'entry':'main.nex'}), newline="\n")
  def cli(self,*arguments,expected=0):
   result=subprocess.run([str(COMPILER),*map(str,arguments),'--json'],cwd=self.root,env=self.env,capture_output=True,text=True,timeout=180)
   self.assertEqual(result.returncode,expected,(arguments,result.stdout,result.stderr));return json.loads(result.stdout)
@@ -60,10 +60,10 @@ class DeviceContract(unittest.TestCase):
   for group,cases in [('normal',verify.CASES),('error',verify.ERROR_CASES),('fault',faults.CASES)]:
    for name,case in cases.items():
     with self.subTest(group=group,name=name):
-     (self.root/'main.nex').write_text(verify.source_program(prefix,case[0],language));self.cli('check')
+     (self.root/'main.nex').write_text(verify.source_program(prefix,case[0],language), newline="\n");self.cli('check')
   # Keep the missing-effect program rejected: scope completion can deliver a
   # child source error even when this particular callback returns normally.
-  (self.root/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+verify.CASES['hidden_session_after_scope_return'][0]+'print(42); }\n')
+  (self.root/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+verify.CASES['hidden_session_after_scope_return'][0]+'print(42); }\n', newline="\n")
   self.assertEqual(self.cli('check',expected=1)['code'],'E_EFFECT')
  def test_effect_realm_and_wire_boundaries(self):
   prefix='import "std/device.nex" as d;import "std/compute.nex" as c;'
@@ -72,7 +72,7 @@ class DeviceContract(unittest.TestCase):
    ('server fn bad(ctx:d::Context,value:c::Tensor)->result<d::Tensor> !{ffi}{return d::upload(ctx,value);}',{'E_EFFECT'}),
    ('server fn bad(value:d::Tensor)->str{return encode_json(value);}',{'E_GENERIC_BOUND'})]:
    with self.subTest(body=body):
-    (self.root/'main.nex').write_text('module invalid;'+prefix+body+'fn main()->unit{}')
+    (self.root/'main.nex').write_text('module invalid;'+prefix+body+'fn main()->unit{}', newline="\n")
     self.assertIn(self.cli('check',expected=1)['code'],codes)
  def test_browser_emits_only_reachable_client_code(self):
   shutil.copyfile(ROOT/'examples/device/main.nex',self.root/'main.nex');directory=self.root/'web'

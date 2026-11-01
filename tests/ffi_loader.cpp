@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_ffi_loader.h"
 #include "third_party/json.hpp"
 #include <openssl/evp.h>
@@ -18,7 +19,13 @@ std::string read(const fs::path &path){std::ifstream in(path,std::ios::binary);r
 void write(const fs::path &path,std::string_view value){std::ofstream out(path,std::ios::binary);out.write(value.data(),value.size());require(bool(out),"fixture write failed");}
 std::string sha(std::string_view text){unsigned char bytes[32];unsigned size=0;auto *ctx=EVP_MD_CTX_new();require(ctx,"digest allocation");require(EVP_DigestInit_ex2(ctx,EVP_sha256(),nullptr)==1&&EVP_DigestUpdate(ctx,text.data(),text.size())==1&&EVP_DigestFinal_ex(ctx,bytes,&size)==1&&size==32,"test digest failed");EVP_MD_CTX_free(ctx);std::string result;for(auto b:bytes){result+="0123456789abcdef"[b>>4];result+="0123456789abcdef"[b&15];}return result;}
 ForeignSignature integer(){return ForeignSignature(R"({"schema":"nex.foreign-signature/1","parameters":[0],"result":0,"types":[{"kind":"i64"}]})");}
-int descriptors(){int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;
+#endif
+}
 struct Fixture {
   fs::path root,bundle,marker;J manifest;std::string pin;
   Fixture(const fs::path &module){auto pattern=(fs::temp_directory_path()/"nex-module-test-XXXXXX").string();require(::mkdtemp(pattern.data()),"mkdtemp failed");root=fs::canonical(pattern);bundle=root/"bundle";marker=root/"marker";fs::create_directories(bundle/"legal");
@@ -42,7 +49,10 @@ struct Request {
 }
 int main(int argc,char **argv){try{
   require(argc==3||argc==5,"usage: ffi_loader MODULE MISSING_ENTRY_MODULE [EXECUTABLE_MODULE WORKER]");fs::path module=fs::canonical(argv[1]),missing=fs::canonical(argv[2]);unsigned count=0;
-  auto run=[&](const char *name,auto body){int before=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==before,"descriptor leak");++count;std::cout<<"PASS "<<name<<std::endl;};
+  auto run=[&](const char *name,auto body){
+    auto before=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==before,"file descriptor leak");
+    ++count;std::cout<<"PASS "<<name<<std::endl;
+  };
   run("canonical signature digest is independent of object key order",[]{auto first=integer();ForeignSignature reordered(R"({"types":[{"kind":"i64"}],"result":0,"parameters":[0],"schema":"nex.foreign-signature/1"})");require(foreignSignatureDigest(first)=="67271321265625b9f0499796f5997cf2f9c6161ed418867840d9551d879f987d"&&foreignSignatureDigest(first)==foreignSignatureDigest(reordered),"canonical digest differs");});
   run("explicit catalogue and export subset are required before initialization",[&]{Fixture f(module);ForeignLibraries empty({});error("E_FFI_GRANT",[&]{f.bind(empty);});ForeignLibraries restricted({{"test",f.grant({"wrong"})}});error("E_FFI_GRANT",[&]{f.bind(restricted);});require(f.events().empty(),"denied grant initialized code");});
   run("host and requested manifest pins must agree",[&]{Fixture f(module);ForeignLibraries libs(f.grants());error("E_FFI_HASH",[&]{libs.bind("test","echo",integer(),std::string(64,'0'));});require(f.events().empty(),"wrong request pin initialized code");});
@@ -70,7 +80,11 @@ int main(int argc,char **argv){try{
     const auto executableModule=fs::canonical(argv[3]),worker=fs::canonical(argv[4]);
     auto prepare=[&](Fixture &f){fs::copy_file(worker,f.bundle/"worker");f.manifest["files"].push_back(J{{"path","worker"},{"sha256",sha(read(f.bundle/"worker"))}});};
     run("original executable bits alone do not grant snapshot execution",[&]{Fixture f(executableModule);prepare(f);fs::permissions(f.bundle/"worker",fs::perms::owner_all);f.save();ForeignLibraries libs(f.grants());auto function=f.bind(libs);require(invoke(function).scalar==-EACCES,"unlisted helper acquired execution permission");});
-    run("explicit pinned helper executes from a readonly private snapshot",[&]{Fixture f(executableModule);prepare(f);fs::permissions(f.bundle/"worker",fs::perms::owner_read);f.manifest["executables"]=J::array({"worker"});f.save();ForeignLibraries libs(f.grants());auto function=f.bind(libs);require(invoke(function).scalar==42,"pinned readonly helper did not execute");fs::remove(f.bundle/"worker");write(f.bundle/"worker","changed source");require(invoke(function).scalar==42,"original helper replacement affected snapshot execution");});
+    run("explicit pinned helper executes from a readonly private snapshot",[&]{Fixture f(executableModule);prepare(f);fs::permissions(f.bundle/"worker",fs::perms::owner_read);f.manifest["executables"]=J::array({"worker"});f.save();ForeignLibraries libs(f.grants());auto function=f.bind(libs);require(invoke(function).scalar==42,"pinned readonly helper did not execute");
+#ifdef _WIN32
+      fs::permissions(f.bundle/"worker",fs::perms::owner_write,fs::perm_options::add);
+#endif
+      fs::remove(f.bundle/"worker");write(f.bundle/"worker","changed source");require(invoke(function).scalar==42,"original helper replacement affected snapshot execution");});
     run("executable helper hashes are checked before module initialization",[&]{Fixture f(module);prepare(f);f.manifest["executables"]=J::array({"worker"});f.save();write(f.bundle/"worker","wrong bytes");ForeignLibraries libs(f.grants());error("E_FFI_HASH",[&]{f.bind(libs);});require(f.events().empty(),"modified helper initialized module");});
   }
   std::cout<<"native module loader: "<<count<<" cases passed\n";return 0;

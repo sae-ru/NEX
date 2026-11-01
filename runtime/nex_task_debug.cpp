@@ -1,5 +1,8 @@
 #include "nex_task_debug.h"
 #include "nex_task_frame.h"
+#ifdef _WIN32
+#include "nex_platform.h"
+#endif
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -66,6 +69,8 @@ uint64_t nativeThread()noexcept{
   uint64_t value=0;pthread_threadid_np(nullptr,&value);return value;
 #elif defined(__linux__)
   return uint64_t(::syscall(SYS_gettid));
+#elif defined(_WIN32)
+  return uint64_t(::GetCurrentThreadId());
 #else
   return 0;
 #endif
@@ -226,8 +231,22 @@ extern "C" void nex_task_debug_prepare_registries(const nexrt::TaskDebugCodeRegi
   }catch(const DataError &error){throw Trap(error.code,error.what(),0);}catch(...){throw Trap("E_DEBUG_INIT","task debugger registry initialization failed before source execution",0);}
 }
 extern "C" __attribute__((weak,noinline,used)) void nex_task_debug_stop_marker(const nexrt::TaskDebugStop *stop)noexcept{
+#ifdef _WIN32
+  // PE does not preempt a DLL definition with the startup host export.
+  // Preserve the weak marker observer contract using that explicit export.
+  using Observer=void(*)(const nexrt::TaskDebugStop *)noexcept;
+  static const auto observer=reinterpret_cast<Observer>(GetProcAddress(GetModuleHandleW(nullptr),"nex_task_debug_stop_marker"));
+  if(observer&&observer!=&nex_task_debug_stop_marker)observer(stop);
+#endif
   asm volatile("" : : "r"(stop) : "memory");
 }
 extern "C" __attribute__((weak,noinline,used)) void nex_task_debug_completion_marker(const nexrt::TaskDebugCompletionStop *stop)noexcept{
+#ifdef _WIN32
+  // PE does not preempt a DLL definition with the startup host export.
+  // Preserve the weak marker observer contract using that explicit export.
+  using Observer=void(*)(const nexrt::TaskDebugCompletionStop *)noexcept;
+  static const auto observer=reinterpret_cast<Observer>(GetProcAddress(GetModuleHandleW(nullptr),"nex_task_debug_completion_marker"));
+  if(observer&&observer!=&nex_task_debug_completion_marker)observer(stop);
+#endif
   asm volatile("" : : "r"(stop) : "memory");
 }

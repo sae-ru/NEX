@@ -1,4 +1,6 @@
 """Private host ABI2502: real file/FFI/resource cleanup in AST, IR and native code."""
+from host_fixture import run_native
+import os
 import argparse,ast,hashlib,json,os,platform,re,subprocess,sys,tempfile
 from pathlib import Path
 
@@ -62,7 +64,12 @@ MODULE=r'''
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+static void event(char ch){const char *p=getenv("NEX_PRIVATE_HOST_EVENTS");if(p){int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,p,-1,0,0);if(n<=0)abort();wchar_t *path=malloc(n*sizeof(wchar_t));if(!path)abort();if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,p,-1,path,n))abort();HANDLE f=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,0,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);free(path);if(f==INVALID_HANDLE_VALUE)abort();DWORD written=0;if(!WriteFile(f,&ch,1,&written,0)||written!=1)abort();CloseHandle(f);}}
+#else
 static void event(char ch){const char *p=getenv("NEX_PRIVATE_HOST_EVENTS");if(p){int f=open(p,O_CREAT|O_WRONLY|O_APPEND,0600);if(f>=0){(void)write(f,&ch,1);close(f);}}}
+#endif
 static void destroy(void *p){free(p);event('X');}
 static nex_ffi_status factory(const nex_ffi_api_v1 *a,nex_ffi_call c,void *u,void **out){(void)a;(void)c;int64_t *p=malloc(sizeof(*p));if(!p)return NEX_FFI_LIMIT;*p=*(int64_t*)u;*out=p;event('F');return NEX_FFI_OK;}
 #define TRY(x) do{nex_ffi_status s=(x);if(s)return s;}while(0)
@@ -85,10 +92,10 @@ def main():
     source=Path(__file__).resolve().parents[1];runtime=source/'runtime';out=Path(a.output or os.environ.get('NEX_EXCEPTION_HOST_OUTPUT') or tempfile.mkdtemp(prefix='nex-source-host-')).resolve();out.mkdir(parents=True,exist_ok=True)
     emitter=str(Path(a.emitter).resolve());reference=str(Path(a.reference).resolve());compiler=str(Path(a.compiler).absolute());crypto=[a.crypto_library] if a.crypto_library else ([str(Path('/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib'))] if platform.system()=='Darwin' else ['-lcrypto'])
     report={'ok':False,'cases':[],'commands':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_source_support':False,'public_language':'0.24','private_identity':'0.25-prototype','private_host_abi':'0x4e45585400002502'}
-    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,cmd,allowed=(0,),env=None):
-        r=subprocess.run(list(map(str,cmd)),cwd=out,text=True,capture_output=True,env=env,timeout=240);(out/(label+'.stdout')).write_text(r.stdout);(out/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'label':label,'argv':list(map(str,cmd)),'exit':r.returncode});save();assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-3500:]);return r
-    save();run('target',[compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',out/'target.ll']);target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
+        r=run_native(list(map(str,cmd)),cwd=out,text=True,capture_output=True,env=env,timeout=240);(out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,cmd)),'exit':r.returncode});save();assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-3500:]);return r
+    save();run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll']);target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-fPIC','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_TASK_DEBUG_ENABLED','-DNEX_FOREIGN_ENABLED','-I'+str(runtime)]
     if a.crypto_include:flags.append('-I'+str(Path(a.crypto_include).resolve()))
     names=['runtime.cpp','nex_files.cpp','files_runtime.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_task_application.cpp','nex_task_debug.cpp','foreign_runtime.cpp','nex_foreign.cpp','nex_ffi_loader.cpp','nex_ffi.cpp','nex_ffi_types.cpp','nex_ffi_resources.cpp','nex_external_resource.cpp','nex_resource_region.cpp','nex_resource_executor.cpp','nex_json.cpp']
@@ -99,21 +106,21 @@ def main():
         stamp=obj.with_suffix(obj.suffix+'.json')
         if obj.exists() and stamp.exists() and json.loads(stamp.read_text())==recipe:
             report.setdefault('reused_objects',[]).append(str(obj));save();return
-        run(label,[compiler,*flags,'-c',unit,'-o',obj]);stamp.write_text(json.dumps(recipe,sort_keys=True)+'\n')
+        run(label,[compiler,*flags,'-c',unit,'-o',obj]);stamp.write_text(json.dumps(recipe,sort_keys=True)+'\n', newline="\n")
     objects=[]
     for name in names:
         obj=cache/(name+'.o');compile_object('compile-'+name,runtime/name,obj);objects.append(obj)
-    tree=ast.parse((source/'tests/source_exception_task_lldb.py').read_text());assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(getattr(t,'id','')=='HOST' for t in n.targets));host=ast.literal_eval(assignment.value).replace('NEX_PRIVATE_LLDB_CLEANUP','NEX_PRIVATE_HOST_CLEANUP');host=host.replace('#include <atomic>','#include <atomic>\n#include <dirent.h>\nstatic long openFiles(){DIR *d=opendir(\"/dev/fd\");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!=\'.\')++n;closedir(d);return n;}').replace('auto baseline=nexrt::liveObjects.load();','auto baseline=nexrt::liveObjects.load();auto beforeFiles=openFiles();').replace('bool clean=nexrt::liveObjects.load()==baseline','bool clean=openFiles()==beforeFiles&&nexrt::liveObjects.load()==baseline');(out/'host.cpp').write_text(host);compile_object('compile-host',out/'host.cpp',cache/'host.o');objects.append(cache/'host.o')
-    signatures=out/'signature.nex';signatures.write_text('module host_exception;\n'+DECLARATIONS.replace('@PIN@','0'*64)+'server fn main()->i64 !{task}{return 42;}');sigs=json.loads(run('signatures',[emitter,'signatures',signatures]).stdout)
+    tree=ast.parse((source/'tests/source_exception_task_lldb.py').read_text());assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(getattr(t,'id','')=='HOST' for t in n.targets));host=ast.literal_eval(assignment.value).replace('NEX_PRIVATE_LLDB_CLEANUP','NEX_PRIVATE_HOST_CLEANUP');host=host.replace('#include <atomic>','#include <atomic>\n#ifdef _WIN32\n#include "host_file_observers.h"\n#else\n#include <dirent.h>\n#endif\nstatic long openFiles(){\n#ifdef _WIN32\nreturn static_cast<long>(nex_test::files().size());\n#else\nDIR *d=opendir("/dev/fd");if(!d)std::abort();long n=0;while(auto *e=readdir(d))if(e->d_name[0]!=\'.\')++n;closedir(d);return n;\n#endif\n}').replace('auto baseline=nexrt::liveObjects.load();','auto baseline=nexrt::liveObjects.load();auto beforeFiles=openFiles();').replace('bool clean=nexrt::liveObjects.load()==baseline','bool clean=openFiles()==beforeFiles&&nexrt::liveObjects.load()==baseline');(out/'host.cpp').write_text(host, newline="\n");compile_object('compile-host',out/'host.cpp',cache/'host.o');objects.append(cache/'host.o')
+    signatures=out/'signature.nex';signatures.write_text('module host_exception;\n'+DECLARATIONS.replace('@PIN@','0'*64)+'server fn main()->i64 !{task}{return 42;}', newline="\n");sigs=json.loads(run('signatures',[emitter,'signatures',signatures]).stdout)
     bundle=out/'bundle';bundle.mkdir();rows=[]
     for name,op in [('create',1),('read',2),('add',3),('ordinary',4),('bad',5)]:
         digest=hashlib.sha256(json.dumps(sigs[name],ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest();rows.append('{sizeof(nex_ffi_export_v1),0,'+json.dumps(name)+','+json.dumps(digest)+',callback,(void*)'+str(op)+'}')
-    producer=out/'module.c';producer.write_text(MODULE.replace('EXPORTS',','.join(rows)));run('module',[compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(runtime),producer,'-o',bundle/'module']);(bundle/'NOTICE').write_text('NEX private source host conformance fixture\n')
-    manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64'}[platform.machine()]),'entry':'module','files':[{'path':name,'sha256':hashlib.sha256((bundle/name).read_bytes()).hexdigest()} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in sigs.items()},'notices':['NOTICE']};(bundle/'manifest.json').write_text(json.dumps(manifest)+'\n');pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest();catalog=out/'host.json';catalog.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':64,'libraries':{'host':{'directory':'bundle','manifest_sha256':pin,'exports':list(sigs)}}})+'\n')
+    producer=out/'module.c';producer.write_text(MODULE.replace('EXPORTS',','.join(rows)), newline="\n");run('module',[compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(runtime),producer,'-o',bundle/'module']);(bundle/'NOTICE').write_text('NEX private source host conformance fixture\n', newline="\n")
+    manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64','amd64':'x86_64'}[platform.machine().lower()]),'entry':'module','files':[{'path':name,'sha256':hashlib.sha256((bundle/name).read_bytes()).hexdigest()} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in sigs.items()},'notices':['NOTICE']};(bundle/'manifest.json').write_text(json.dumps(manifest)+'\n', newline="\n");pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest();catalog=out/'host.json';catalog.write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':64,'libraries':{'host':{'directory':'bundle','manifest_sha256':pin,'exports':list(sigs)}}})+'\n', newline="\n")
     fixtures=[(name,text,False) for name,text in FILES]+[(name,DECLARATIONS.replace('@PIN@',pin)+text,True) for name,text in FOREIGN]
     if a.case:fixtures=[v for v in fixtures if v[0] in a.case]
     for name,text,foreign in fixtures:
-        directory=out/name;directory.mkdir();(directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}));file=directory/'main.nex';file.write_text('module host_exception;\n'+text+'\n')
+        directory=out/name;directory.mkdir();(directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'main.nex'}), newline="\n");file=directory/'main.nex';file.write_text('module host_exception;\n'+text+'\n', newline="\n")
         expected=None
         for mode in ['host-reference','host-task-ir']:
             files=directory/mode;files.mkdir();(files/'input').write_bytes(b'abcdef');events=files/'events';env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)}
@@ -133,7 +140,7 @@ def main():
             if name.startswith(('resource-','outer-resource-','uncaught-resource-','mixed-file-resource-','result-early-resource-')):assert observed.count('F')>0,(name,mode,observed)
         for optimization in ['0','2']:
             e=directory/('O'+optimization);e.mkdir();run(name+'-O'+optimization+'-emit',[emitter,'emit',file,e,triple,layout,str(optimization=='2').lower(),'debug-lldb']);meta=json.loads((e/'metadata.json').read_text());context=json.loads((e/'debug-context.json').read_text());assert meta['descriptor_abi']==0x4e45585400002502 and context['descriptor_abi']=='0x4e45585400002502'
-            ir=(e/'program.ll').read_text();assert ir.count('@main(')==1;(e/'linked.ll').write_text(ir.replace('@main(','@nex_private_debug_entry('));binary=e/'program';run(name+'-O'+optimization+'-link',[compiler,'-O'+optimization,e/'linked.ll',*objects,*crypto,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',binary])
+            ir=(e/'program.ll').read_text();assert ir.count('@main(')==1;(e/'linked.ll').write_text(ir.replace('@main(','@nex_private_debug_entry('), newline="\n");binary=e/'program';run(name+'-O'+optimization+'-link',[compiler,'-O'+optimization,e/'linked.ll',*objects,*crypto,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',binary])
             files=e/'files';files.mkdir();(files/'input').write_bytes(b'abcdef');events=files/'events';env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)}
             result=run(name+'-O'+optimization+'-execute',[binary,'--nex-task-workers','2',*(['--nex-foreign',catalog] if foreign else [])],allowed=(42,70),env=env);cleanup=next(json.loads(line.split(' ',1)[1]) for line in result.stderr.splitlines() if line.startswith('NEX_PRIVATE_HOST_CLEANUP '));assert cleanup=={'ok':True,'live_frames':0,'managed_live':0}
             if expected['kind']=='return':assert result.returncode==expected['value'] and result.stdout==expected['output'],(name,expected,result.returncode,result.stdout,result.stderr)

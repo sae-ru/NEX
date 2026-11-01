@@ -122,7 +122,7 @@ class SourceExceptionDiscovery(harness.ToolchainCase):
         graph=json.loads(exported.read_text())
         nodes = {node['name']: {'hash': node['hash'], 'definition': node['definition']} for node in graph['nodes']}
         self.assertEqual(nodes, fixture['functions'])
-        (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.24', 'entry': 'main.nex'}), newline="\n")
         self.source(fixture['source'])
         self.assertEqual(self.cli('check',ok=False)['code'],'E_LANGUAGE_VERSION')
         plan=self.cli('migrate',exported,'--kind','plan')
@@ -136,11 +136,11 @@ class SourceExceptionDiscovery(harness.ToolchainCase):
     def test_private_identity_cannot_enable_a_public_project_or_store(self):
         self.source('module x;fn main()->i64{return 42;}')
         for language in ('0.25', '0.25-prototype'):
-            (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}))
+            (self.root / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}), newline="\n")
             rejected = self.cli('check', ok=False)
             self.assertEqual(rejected['code'], 'E_LANGUAGE_VERSION')
             self.assertFalse((self.root / '.nex').exists())
-        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root / 'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.assertTrue(self.cli('check')['ok'])
 
 

@@ -27,7 +27,7 @@ with (output/'compile.log').open('w') as log:
     subprocess.run(['node',str(tsc),'--strict','--target','ES2020','--module','ESNext','--moduleResolution','Bundler',
         '--rewriteRelativeImportExtensions','--rootDir',str(root/'web'),'--outDir',str(public),
         str(root/('web/nex-runtime.ts' if args.managed else 'web/nex-bytes.ts'))],stdout=log,stderr=subprocess.STDOUT,check=True)
-(public/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>NEX byte runtime test</title>')
+(public/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>NEX byte runtime test</title>', newline="\n")
 report['emitted_sha256']=hashlib.sha256((public/'nex-bytes.js').read_bytes()).hexdigest()
 if args.managed:report['emitted']={file.name:hashlib.sha256(file.read_bytes()).hexdigest() for file in public.glob('*.js')}
 
@@ -47,5 +47,5 @@ try:
     report.update(ok=True,browsers=browsers['browsers'])
 finally:
     server.shutdown();server.server_close();thread.join(timeout=5)
-    (output/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
+    (output/'verification.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 print(json.dumps(report,indent=2))

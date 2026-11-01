@@ -101,7 +101,7 @@ class TaskDebugging(harness.ToolchainCase):
             self.root=Path(retained).resolve()/self._testMethodName
             self.root.mkdir(parents=True,exist_ok=False)
             self.file=self.root/'main.nex'
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
 
     def test_resume_ignores_stale_restarted_and_other_process_stops(self):
         reader=reader_module()
@@ -196,7 +196,7 @@ class TaskDebugging(harness.ToolchainCase):
 
     def private(self, text):
         self.source(text)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         result = subprocess.run([BUILD_PROBE, str(self.file), str(self.root/'artifact')],
                                 capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -214,8 +214,8 @@ class TaskDebugging(harness.ToolchainCase):
                         *commands]:
             argv += ['-o', command]
         run = subprocess.run(argv, cwd=self.root, capture_output=True, text=True, timeout=120)
-        (self.root/'lldb.stdout').write_text(run.stdout)
-        (self.root/'lldb.stderr').write_text(run.stderr)
+        (self.root/'lldb.stdout').write_text(run.stdout, newline="\n")
+        (self.root/'lldb.stderr').write_text(run.stderr, newline="\n")
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
         rows = []
         for line in run.stdout.splitlines():
@@ -354,7 +354,7 @@ fn main()->unit !{task,io,throw}{print(child(41));}
             adapter.request('continue',{'threadId':selected});adapter.event('exited')
         finally:
             try: adapter.close()
-            finally: (self.root/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},indent=2,default=str)+'\n')
+            finally: (self.root/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},indent=2,default=str)+'\n', newline="\n")
 
     def test_public_launch_limits_rejections_source_deleted_archive_and_source_only_project(self):
         source='''module task_public;
@@ -382,12 +382,12 @@ fn main()->unit !{task,io,throw}{print(child(41));}
         self.assertEqual(next(row['value'] for row in rows if row.get('schema')=='nex.task-expression/1'),'42')
         self.assertFalse(self.file.exists());self.assertFalse((self.root/'.nex/graph.db').exists())
         project=self.root/'project';(project/'app').mkdir(parents=True)
-        (project/'app/main.nex').write_text(source)
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (project/'app/main.nex').write_text(source, newline="\n")
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         limits={'steps':1000000,'timeout_ms':60000,'workers':2}
         (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debugged',
             'configurations':{'debugged':{'profile':'debug','task_limits':limits}},
-            'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}))
+            'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}), newline="\n")
         process=self.cli('project','--kind','debug','--component','app','--adapter','nex-dap','--json',
                         '--','--nex-task-timeout-ms','30000','--nex-task-workers','1',cwd=project,timeout=180,machine=False)
         result=json.loads(process.stdout)
@@ -457,7 +457,7 @@ fn main()->unit !{task,io,throw}{
         self.assertEqual(result['value'],'42');self.assertEqual(result['language'],'0.19')
         command=[harness.NEX,'inspect','--manifest',built['debug_manifest'],'--expression','40+2','--kind','plan','--json']
         def rejects(candidate,document,code):
-            path=self.root/'inspect-manifest.json';path.write_text(json.dumps(document))
+            path=self.root/'inspect-manifest.json';path.write_text(json.dumps(document), newline="\n")
             # Keep the verified bundle beside the temporary manifest, exactly
             # as production inspection resolves its archive.
             shutil.copyfile(Path(built['debug_manifest']).parent/'source-bundle.json',self.root/'source-bundle.json')

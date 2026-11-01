@@ -1,4 +1,5 @@
 """Persistent operation identities, semantic sites and real lowering/diagnostics."""
+from sqlite_fixture import connection as sqlite_connection
 import copy,json,os,shutil,sqlite3,subprocess,sys,unittest
 from pathlib import Path
 LIVE='--live' in sys.argv
@@ -22,7 +23,7 @@ class Operations(harness.ToolchainCase):
     def bypath(self,symbol='pick',**kwargs):
         return {n['path']:n for n in self.nodes(symbol,**kwargs)}
     def edit(self,source):
-        self.file.write_text(source);return self.cli('check')['revision']
+        self.file.write_text(source, newline="\n");return self.cli('check')['revision']
 
     def test_complete_tree_typed_definitions_and_binding_call_edges(self):
         graph=self.cli('graph');nodes=graph['operation_graph']['nodes'];byid={n['id']:n for n in nodes}
@@ -88,24 +89,24 @@ class Operations(harness.ToolchainCase):
 
     def test_database_v2_upgrade_backfill_and_rejected_patch_are_history_preserving(self):
         before=self.cli('graph');database=self.root/'.nex/graph.db'
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             sources=db.execute('SELECT hash,source,language FROM revisions').fetchall()
             db.executescript("DROP TABLE operation_functions; DROP TABLE operation_versions; DROP TABLE operation_ids; UPDATE metadata SET value='2' WHERE key='schema';")
         self.file.unlink();after=self.cli('graph')
         self.assertEqual([(n['id'],n['hash']) for n in before['nodes']],[(n['id'],n['hash']) for n in after['nodes']])
-        with sqlite3.connect(database) as db:
+        with sqlite_connection(database) as db:
             self.assertEqual(db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()[0],'4')
             self.assertEqual(db.execute('SELECT hash,source,language FROM revisions').fetchall(),sources)
             counts=[db.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['operation_ids','operation_versions']]
-        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':'0'*64,'replacements':[{'name':'ops::pick','source':'fn pick(a: i64, b: i64) -> i64 { return 0; }'}]}))
+        patch=self.root/'patch.json';patch.write_text(json.dumps({'expected_revision':'0'*64,'replacements':[{'name':'ops::pick','source':'fn pick(a: i64, b: i64) -> i64 { return 0; }'}]}), newline="\n")
         self.assertEqual(self.cli('apply','--patch',patch,ok=False)['code'],'E_CONFLICT')
-        with sqlite3.connect(database) as db:self.assertEqual(counts,[db.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['operation_ids','operation_versions']])
+        with sqlite_connection(database) as db:self.assertEqual(counts,[db.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['operation_ids','operation_versions']])
         self.assertEqual(self.cli('history')['head'],self.revision)
 
     def test_import_rechecks_sources_and_does_not_trust_foreign_derived_ids(self):
         before=self.cli('graph');foreign=copy.deepcopy(before)
         for n in foreign['operation_graph']['nodes']:n['id']='0'*32
-        graph=self.root/'foreign.json';graph.write_text(json.dumps(foreign));directory=self.root/'other';directory.mkdir()
+        graph=self.root/'foreign.json';graph.write_text(json.dumps(foreign), newline="\n");directory=self.root/'other';directory.mkdir()
         shutil.copyfile(self.root/'nex.json',directory/'nex.json')
         self.cli('import',graph,cwd=directory);after=self.cli('graph',cwd=directory)
         first={n['site']:n['id'] for n in before['operation_graph']['nodes']};second={n['site']:n['id'] for n in after['operation_graph']['nodes']}
@@ -127,12 +128,12 @@ class Operations(harness.ToolchainCase):
         directory=self.root/'ts';self.cli('emit','--kind','typescript','--directory',directory)
         mapping=json.loads((directory/'nex-map.json').read_text());self.assertNotIn('SERVER_ONLY_OPERATION_SENTINEL',json.dumps(mapping))
         self.assertNotIn('ops::hidden',{f['name'] for f in mapping['functions']})
-        (directory/'package.json').write_text('{"type":"module"}')
-        (directory/'driver.ts').write_text("import {entry} from './program.ts';try{entry()}catch(e){process.stdout.write(JSON.stringify({code:e.code,site:e.site}));}")
+        (directory/'package.json').write_text('{"type":"module"}', newline="\n")
+        (directory/'driver.ts').write_text("import {entry} from './program.ts';try{entry()}catch(e){process.stdout.write(JSON.stringify({code:e.code,site:e.site}));}", newline="\n")
         result=subprocess.run([os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',str(directory/'driver.ts')],text=True,capture_output=True,timeout=30)
         self.assertEqual(result.returncode,0,result.stderr);record=json.loads(result.stdout.removeprefix('before\n'))
         self.assertEqual(record['code'],'E_DIV_ZERO');self.assertEqual(record['site'][3],node['site'])
-        before=error['source_hash'];self.file.write_text('// moved source\n'+self.file.read_text())
+        before=error['source_hash'];self.file.write_text('// moved source\n'+self.file.read_text(), newline="\n")
         moved=self.cli('eval',ok=False);self.assertEqual(moved['operation_id'],error['operation_id']);self.assertEqual(moved['operation_site'],node['site'])
         self.assertNotEqual(moved['source_hash'],before);self.assertEqual(self.cli('context','--site',node['site'])['source_hash'],before)
 
@@ -161,7 +162,7 @@ class Operations(harness.ToolchainCase):
         self.assertEqual([(n['id'],n['hash'],n['site']) for n in before],[(n['id'],n['hash'],n['site']) for n in live])
 
     def test_imported_operations_keep_identity_when_the_entry_module_changes(self):
-        (self.root/'library.nex').write_text('module math; pub fn answer() -> i64 { return 42; }')
+        (self.root/'library.nex').write_text('module math; pub fn answer() -> i64 { return 42; }', newline="\n")
         source='module first; import "./library.nex" as math; fn main() -> i64 { return math::answer(); }'
         self.edit(source);before=self.nodes('math::answer')
         self.edit(source.replace('module first;','module second;'))
@@ -201,7 +202,7 @@ def __lldb_init_module(debugger, _):
         process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
     finally:
         if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(source)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(source)).replace('REPORT',repr(str(report))), newline="\n")
             self.file.unlink();(self.root/'model.nex').unlink()
             result=self.cli('debug','--revision','HEAD','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False)
             self.assertTrue(report.is_file(),result.stdout+result.stderr);snapshot=json.loads(report.read_text())

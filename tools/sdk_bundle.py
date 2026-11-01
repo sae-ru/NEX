@@ -133,7 +133,7 @@ class Bundle:
 
     def external(self, source, destination):
         source = source.resolve(strict=True)
-        relative = str(destination.relative_to(self.output))
+        relative = destination.relative_to(self.output).as_posix()
         provenance = {'source': str(source), 'source_sha256': sha256(source), 'component': self.component(source)}
         if destination.exists():
             if self.origins.get(relative) != provenance:
@@ -238,7 +238,7 @@ class Bundle:
             target = self.output / 'libexec/nex/llvm/bin' / name
             original = Path(doctor[{'compiler': 'native_compiler', 'archiver': 'native_archiver', 'debug_packager': 'native_debug_packager', 'wasm_linker': 'wasm_linker'}[key]])
             self.external(original, target)
-            configuration['tools'][key] = str(target.relative_to(self.output))
+            configuration['tools'][key] = target.relative_to(self.output).as_posix()
         # clang++ may invoke clang by name; preserve C++ dispatch through argv[0].
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
@@ -267,9 +267,9 @@ class Bundle:
             self.external(source, target)
             self.destinations[source] = target
             self.collect(source, target, source)
-        configuration['sqlite'] = {'include': str(includes.relative_to(self.output)),
+        configuration['sqlite'] = {'include': includes.relative_to(self.output).as_posix(),
                                    'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
-        configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
+        configuration['openssl'] = {'include': includes.relative_to(self.output).as_posix(),
                                     **{name: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for name, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
         self.relocate_macho()
@@ -307,7 +307,7 @@ class Bundle:
     def copy_notices(self, directory="share/nex/licenses/sdk", *, output=None):
         output = self.output if output is None else output
         installed_components = []
-        used = {item['component'] for item in self.origins.values()}
+        used = {item['component'] for item in self.origins.values()} | getattr(self,'linked_components',set())
         for component in self.components['components']:
             if component['name'] not in used:
                 continue
@@ -319,16 +319,16 @@ class Bundle:
                 target = output / directory / component['name'] / (str(index) + '-' + source.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if target.is_symlink() or (target.exists() and (not target.is_file() or sha256(target) != sha256(source))):
-                    raise ValueError('bundle notice destination collision: ' + str(target.relative_to(output)))
+                    raise ValueError('bundle notice destination collision: ' + target.relative_to(output).as_posix())
                 shutil.copy2(source, target)
-                notice['license_files'].append({'path': str(target.relative_to(output)), 'sha256': sha256(target)})
+                notice['license_files'].append({'path': target.relative_to(output).as_posix(), 'sha256': sha256(target)})
             installed_components.append(notice)
         return installed_components
 
     def inventory(self):
         files = {}
         for path in sorted(self.output.rglob('*')):
-            relative = str(path.relative_to(self.output))
+            relative = path.relative_to(self.output).as_posix()
             if path.is_symlink():
                 if self.output not in path.resolve(strict=True).parents:
                     raise ValueError('escaping bundle symlink: ' + relative)
@@ -348,6 +348,124 @@ class Bundle:
                   'acceptance_passed': False, 'files': files}
         (self.output / 'share/nex/sdk-bundle.json').write_text(json.dumps(report, indent=2) + '\n')
         return report
+
+
+class WindowsBundle(Bundle):
+    """Capture a checked PE dependency closure adjacent to its executable."""
+    def dependency_target(self, source):
+        return getattr(self,'pe_directory',self.output/'bin')/source.name
+
+    def collect_pe(self, source, destination, _directory=None):
+        from windows_pe import inspect, system_directory
+        source=source.resolve(strict=True);destination=Path(destination)
+        info=inspect(source)
+        visited=getattr(self,'pe_visited',set());self.pe_visited=visited
+        if (source,destination) in visited:return
+        visited.add((source,destination))
+        if len(self.images)>=4096:raise ValueError('PE dependency count exceeds bound')
+        self.images[source]=info;self.destinations[source]=destination
+        directory=_directory or getattr(self,'pe_directory',destination.parent)
+        system=system_directory()
+        for name in info['imports']:
+            if name in ('msys-2.0.dll','cygwin1.dll'):raise ValueError('non-native Windows runtime dependency: '+name)
+            # API-set contracts and the real Windows system directory remain
+            # explicit OS prerequisites. No PATH/CWD DLL search is performed.
+            if name.startswith(('api-ms-win-','ext-ms-win-')):
+                self.system_libraries.add(name);continue
+            if (system/name).is_file():
+                self.system_libraries.add(name);continue
+            candidates={}
+            roots=[source.parent]
+            for component in self.components['components']:
+                for value in component['roots']:
+                    root=Path(value)
+                    if root.is_file():
+                        if root.name.lower()==name:candidates[root.resolve(strict=True)]=root
+                    else:roots.extend((root,root/'bin',root/'lib'))
+            for root in roots:
+                candidate=root/name
+                if candidate.is_file():candidates[candidate.resolve(strict=True)]=candidate
+            if not candidates:raise ValueError('unresolved PE dependency '+name+' from '+str(source)+'; explicit component/license provenance is required')
+            # The owning image's adjacent DLL is the native loader's first
+            # selected candidate. Other roots may supply one identical image.
+            adjacent=(source.parent/name)
+            contexts=[root/name for root in getattr(self,'pe_contexts',{}).get(source,[]) if (root/name).is_file()]
+            if adjacent.is_file():dependency=adjacent.resolve(strict=True)
+            elif contexts:
+                if len({sha256(path) for path in contexts})!=1:raise ValueError('ambiguous declared PE context: '+name)
+                dependency=contexts[0].resolve(strict=True)
+            else:
+                hashes={sha256(path) for path in candidates}
+                if len(hashes)!=1:raise ValueError('ambiguous PE import: '+name)
+                dependency=sorted(candidates)[0]
+            if inspect(dependency)['machine']!=info['machine']:raise ValueError('PE dependency machine differs: '+name)
+            target=directory/dependency.name
+            self.external(dependency,target);self.destinations[dependency]=target
+            self.collect_pe(dependency,target,directory)
+
+    def assemble(self):
+        environment={**os.environ,'NEX_RESOURCE_DIR':str(self.sdk/'share/nex')}
+        for name in ('NEX_CLANG','NEX_WASM_CLANG'):environment.pop(name,None)
+        source=self.sdk/'bin/nex.exe'
+        doctor=json.loads(run([source,'doctor','--json'],env=environment))
+        doctor=selected_wasm_linker(doctor,environment)
+        if doctor.get('sdk_manifest') or doctor.get('native_windows_runtime')!='ucrt-static':
+            raise ValueError('input must be an unbundled native Windows UCRT SDK')
+        shutil.copytree(self.sdk,self.output,symlinks=False)
+        # Without an SDK manifest or a Wasm override, this compiler is the
+        # build's NEX_CLANG from LLVM_TOOLS_BINARY_DIR. Its directory is the
+        # declared LLVM runtime context for the unbundled NEX host.
+        self.pe_contexts={source.resolve(strict=True):[Path(doctor['wasm_compiler']).parent]}
+        self.collect_pe(source,self.output/'bin/nex.exe')
+        configuration={'schema':'nex.sdk-host/1','tools':{}}
+        selections=[('compiler','native_compiler','clang++.exe'),('archiver','native_archiver','llvm-ar.exe'),
+                    ('linker','native_linker','ld.lld.exe')]
+        for key,field,name in selections:
+            original=Path(doctor[field]);target=self.output/'libexec/nex/native/bin'/name
+            self.external(original,target);self.collect_pe(original,target)
+            configuration['tools'][key]=target.relative_to(self.output).as_posix()
+        native=Path(doctor['native_compiler'])
+        for name in ('clang.exe','clang-'+doctor['llvm'].split('.')[0]+'.exe','llvm-rc.exe','llvm-cvtres.exe'):
+            original=native.parent/name;target=self.output/'libexec/nex/native/bin'/name
+            self.external(original,target);self.collect_pe(original,target)
+        # MinGW Clang locates libc++ headers relative to its executable, even
+        # when the C runtime sysroot was selected explicitly.
+        self.external_tree(native.parent.parent/'include/c++',self.output/'libexec/nex/native/include/c++')
+        for config in sorted(native.parent.glob('*.cfg')):
+            self.external(config,self.output/'libexec/nex/native/bin'/config.name)
+        resource=Path(run([native,'-print-resource-dir'],env=environment).strip())
+        self.external_tree(resource,self.output/'libexec/nex/native/lib/clang'/resource.name)
+        # Retain the actual target SDK as regular files, following only the
+        # operator-selected SDK's include aliases while copying their bytes.
+        sysroot=self.output/'lib/nex/windows/sysroot'
+        self.external_tree(Path(doctor['native_sysroot']),sysroot)
+        notices=self.output/'share/nex/windows-runtime-notices.txt'
+        self.external(Path(doctor['native_windows_notices']),notices)
+        configuration['windows']={'runtime':'ucrt-static','sysroot':sysroot.relative_to(self.output).as_posix(),
+                                  'notices':notices.relative_to(self.output).as_posix()}
+        includes=self.output/'lib/nex/deps/include'
+        for name in ('sqlite3.h','sqlite3ext.h'):
+            self.external(Path(doctor['native_sqlite_include'])/name,includes/name)
+        self.external_tree(Path(doctor['native_openssl_include'])/'openssl',includes/'openssl')
+        for group,fields in (('sqlite',{'library':'native_sqlite_library'}),
+                             ('openssl',{'ssl':'native_openssl_ssl','crypto':'native_openssl_crypto'})):
+            configuration[group]={'include':includes.relative_to(self.output).as_posix()}
+            for key,field in fields.items():
+                original=Path(doctor[field]);target=self.output/'lib/nex/host'/original.name
+                self.external(original,target);configuration[group][key]=target.relative_to(self.output).as_posix()
+        # Native MinGW Clang need not contain the Wasm backend. Capture the
+        # separately selected all-target compiler and its matching linker.
+        wasm=Path(doctor['wasm_compiler']);wasm_bin=self.output/'libexec/nex/wasm/bin'
+        for key,original,name in (('wasm_compiler',wasm,'clang++.exe'),
+                                  ('wasm_linker',Path(doctor['wasm_linker']),'wasm-ld.exe')):
+            target=wasm_bin/name;self.external(original,target);self.collect_pe(original,target)
+            configuration['tools'][key]=target.relative_to(self.output).as_posix()
+        resource=Path(run([wasm,'-print-resource-dir'],env=environment).strip())
+        self.external_tree(resource,self.output/'libexec/nex/wasm/lib/clang'/resource.name)
+        return self.finish(configuration,doctor,{'platform':'windows','architecture':'x86_64',
+            'requires_WSL':False,'requires_MSYS_runtime':False,
+            'external_prerequisites':['Windows system DLLs listed in system_libraries','native Python','Node.js/npm','native LLDB for debugger acceptance'],
+            'signing':'unsigned; publisher signing not performed'})
 
 
 def elf_image(path):
@@ -464,7 +582,7 @@ class LinuxBundle(Bundle):
             target = self.output / 'libexec/nex/llvm/bin' / name
             self.external(Path(doctor[field]), target)
             key = {'clang++': 'compiler', 'llvm-ar': 'archiver', 'ld.lld': 'linker', 'wasm-ld': 'wasm_linker'}[name]
-            configuration['tools'][key] = str(target.relative_to(self.output))
+            configuration['tools'][key] = target.relative_to(self.output).as_posix()
         (self.output / 'libexec/nex/llvm/bin/clang').symlink_to('clang++')
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
         self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
@@ -497,9 +615,9 @@ class LinuxBundle(Bundle):
                 alias = target.parent / soname[1]
                 if not alias.exists():
                     alias.symlink_to(target.name)
-        configuration['sqlite'] = {'include': str(includes.relative_to(self.output)),
+        configuration['sqlite'] = {'include': includes.relative_to(self.output).as_posix(),
                                    'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
-        configuration['openssl'] = {'include': str(includes.relative_to(self.output)),
+        configuration['openssl'] = {'include': includes.relative_to(self.output).as_posix(),
                                     **{key: str(self.destinations[Path(doctor[field]).resolve()].relative_to(self.output))
                                        for key, field in [('ssl', 'native_openssl_ssl'), ('crypto', 'native_openssl_crypto')]}}
         required_glibc, required_glibcxx = self.relocate_elf(patchelf)
@@ -553,8 +671,8 @@ def main():
     parser.add_argument('--patchelf', default='patchelf', help='ELF rewriting tool for Linux packaging only')
     arguments = parser.parse_args()
     system = platform.system()
-    if system not in ('Darwin', 'Linux'):
-        parser.error('SDK bundling currently supports macOS/Linux; Windows packaging is pending')
+    if system not in ('Darwin', 'Linux', 'Windows'):
+        parser.error('SDK bundling requires a supported native host')
     sdk, output = arguments.sdk.resolve(strict=True), arguments.output.resolve()
     if output.exists() or sdk in output.parents or output in sdk.parents:
         parser.error('--output must be new and separate from the input SDK')
@@ -563,6 +681,9 @@ def main():
         if not patchelf:
             parser.error('Linux packaging requires patchelf; it is not needed to use the assembled SDK')
         report = LinuxBundle(sdk, output, arguments.notices.resolve(strict=True), arguments.dpkg_notices).assemble(patchelf)
+    elif system == 'Windows':
+        if arguments.dpkg_notices:parser.error('--dpkg-notices is Linux-only')
+        report = WindowsBundle(sdk, output, arguments.notices.resolve(strict=True)).assemble()
     else:
         if arguments.dpkg_notices:
             parser.error('--dpkg-notices is Linux-only')

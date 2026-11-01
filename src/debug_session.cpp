@@ -16,16 +16,25 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 namespace nex {
 namespace fs=std::filesystem;
 namespace {
 llvm::json::Value parseJSON(const std::string &text){auto v=llvm::json::parse(text);if(!v)throw Error("E_JSON",llvm::toString(v.takeError()));return std::move(*v);}
 std::string readBoundedText(const std::string &path,size_t limit,const std::string &label,const std::string &code){
+#ifdef _WIN32
+  std::string text;
+  try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
+  catch(const nexrt::DataError &error){throw Error(code,label+": "+error.what());}
+#else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
   if(file.fd<0||::fstat(file.fd,&info)||!S_ISREG(info.st_mode)||info.st_size<0||uint64_t(info.st_size)>limit)throw Error(code,label+" requires a regular non-symlink file of at most "+std::to_string(limit)+" bytes");
   std::string text;std::array<char,65536> buffer{};
   for(;;){auto count=::read(file.fd,buffer.data(),buffer.size());if(count<0){if(errno==EINTR)continue;throw Error("E_FILE","cannot read "+label);}if(!count)break;if(size_t(count)>limit-text.size())throw Error(code,label+" exceeds "+std::to_string(limit)+" bytes");text.append(buffer.data(),size_t(count));}
+#endif
   try{nexrt::unicodeOffsets(text,false);}catch(const nexrt::DataError&){throw Error("E_JSON",label+" must be valid UTF-8");}
   return text;
 }
@@ -70,10 +79,15 @@ std::string nativeDebugBuildDirectory(const std::string &directory){
       auto record=parseJSON(readBoundedText(pointer.string(),8192,"debug cache pointer","E_DEBUG_CACHE"));
       auto path=record.getAsString();
       if(path){
-        fs::path cached(path->str());struct stat info{};
+        fs::path cached(path->str());
+#ifdef _WIN32
+        bool ownedPrivate=nexrt::host_windows::isPrivateDirectory(cached);
+#else
+        struct stat info{};
+        bool ownedPrivate=::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&(info.st_mode&0777)==0700;
+#endif
         if(cached.parent_path()==base&&cached.filename().string().starts_with("nex-debug-")&&
-           ::lstat(cached.c_str(),&info)==0&&S_ISDIR(info.st_mode)&&info.st_uid==::getuid()&&
-           (info.st_mode&0777)==0700&&fs::canonical(cached)==cached&&
+           ownedPrivate&&fs::canonical(cached)==cached&&
            readBoundedText((cached/"owner.json").string(),8192,"debug cache owner","E_DEBUG_CACHE")==json(original.string(),false)+"\n")return cached.string();
       }
     }catch(const std::exception&){/* Missing/stale cache pointers are cache misses. */}
@@ -115,7 +129,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
        !view->getString("image_sha256")||view->getString("image_sha256")->size()!=64||!view->getString("image_uuid")||view->getString("image_uuid")->empty()||!limits)
       throw Error("E_TASK_DEBUG","task debug launch requires its matching020 native debug executable and catalog");
     if(provider){(void)inspectNativeTaskDebugBuildInputs(built);(void)validateNativeTaskDebugManifest(*debug,folder.string());
-      for(const auto &[key,name]:std::vector<std::pair<std::string,std::string>>{{"formatter","lldb_nex.py"},{"dap_adapter","nex_dap.py"}}){auto file=folder/"debugger"/name;if(debug->getString(key)!=file.string()||(debug->getString(key+"_hash")!=hash(readBoundedText(file.string(),8*1048576,"captured debugger script","E_DEBUG"))||debug->getString(key+"_hash")!=hash(readFile(resourceFile("debug/"+name)))))throw Error("E_DEBUG","provider debug scripts differ from their captured build");}
+      for(const auto &[key,name]:std::vector<std::pair<std::string,std::string>>{{"formatter","lldb_nex.py"},{"dap_adapter","nex_dap.py"}}){auto file=folder/"debugger"/name;if((!debug->getString(key)||fs::path(debug->getString(key)->str()).make_preferred()!=fs::path(file).make_preferred())||(debug->getString(key+"_hash")!=hash(readBoundedText(file.string(),8*1048576,"captured debugger script","E_DEBUG"))||debug->getString(key+"_hash")!=hash(readFile(resourceFile("debug/"+name)))))throw Error("E_DEBUG","provider debug scripts differ from their captured build");}
     }
     auto configured=parseTaskLimitsJSON(*limits,"E_DEBUG");
     if(json(llvm::json::Value(taskLimitsJSON(configured)),false)!=json(*limits,false))throw Error("E_DEBUG","task debug limits are not canonical");
@@ -132,7 +146,7 @@ llvm::json::Value nativeDebugSession(const Program &p,const BuildResult &built,
 #ifdef __APPLE__
   if(!available&&!backend){auto result=capture({"xcrun","--find","lldb-dap"});if(result.code==0){dap=llvm::StringRef(result.output).trim().str();available=!dap.empty();}}
 #endif
-  llvm::json::Array adapterCommand{std::getenv("NEX_PYTHON")?std::getenv("NEX_PYTHON"):"python3",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
+  llvm::json::Array adapterCommand{pythonProgram(),"-X","utf8",(folder/"debugger/nex_dap.py").string(),"--backend",dap};
   llvm::json::Object launch{{"type",tasks||kind=="nex-dap"?"nex":"lldb-dap"},{"request","launch"},{"name","NEX"},
     {"program",built.executable},{"cwd",directory},{"stopOnEntry",false},{"initCommands",std::move(commands)}};
   if(tasks)launch["nexTaskDebug"]=true;
@@ -172,7 +186,7 @@ llvm::json::Object relocateNativeTaskDebugSession(const Program &p,const BuildRe
   auto fresh=finalizeNativeTaskDebugManifest(std::move(base),catalog,sources,bundles,std::move(images),std::move(runtime));auto freshPath=finalRaw/"debug-relocated.json";
   auto sessionValue=nativeDebugSession(p,built,physical.string(),compiler,"nex-dap",{});auto session=Object(*sessionValue.getAsObject());session["manifest"]=freshPath.string();
   auto launch=Object(*session.getObject("launch"));launch["program"]=fresh.getString("program")->str();launch["cwd"]=published.string();launch["sourceMap"]=Array(*fresh.getArray("source_map"));launch["initCommands"]=Array{"command script import "+json((finalRaw/"debugger/lldb_nex.py").string(),false),"nex-load-debug "+json(freshPath.string(),false)+" --compiler "+json(compiler,false)};session["launch"]=Object(launch);
-  auto adapter=Object(*session.getObject("nex_adapter"));auto command=Array(*adapter.getArray("command"));command[1]=(finalRaw/"debugger/nex_dap.py").string();adapter["command"]=Array(command);adapter["launch"]=std::move(launch);session["nex_adapter"]=std::move(adapter);session["adapter_command"]=std::move(command);
+  auto adapter=Object(*session.getObject("nex_adapter"));auto command=Array(*adapter.getArray("command"));if(command.size()!=6||command[1].getAsString()!="-X"||command[2].getAsString()!="utf8"||command[4].getAsString()!="--backend")throw Error("E_DEBUG","invalid captured Python adapter command");command[3]=(finalRaw/"debugger/nex_dap.py").string();adapter["command"]=Array(command);adapter["launch"]=std::move(launch);session["nex_adapter"]=std::move(adapter);session["adapter_command"]=std::move(command);
   Object receipt{{"schema","nex.task-debug-relocation/1"},{"compiler_build",NEX_BUILD_ID},{"build_key",built.key},{"original_directory",original.string()},{"artifact_directory",finalRaw.string()},{"metadata_rewritten",false},{"raw_files",std::move(rawPins)},{"images",std::move(mappings)}};
   fresh["relocation"]=Object{{"path","debug-relocation.json"},{"hash",hash(json(Object(receipt),false))}};
   writeFile((raw/"debug-relocated.json").string(),json(Object(fresh))+"\n");writeFile((raw/"debug-session.json").string(),json(Object(session))+"\n");writeFile((raw/"debug-relocation.json").string(),json(Object(receipt))+"\n");

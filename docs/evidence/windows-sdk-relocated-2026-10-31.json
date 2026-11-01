@@ -1,0 +1,46 @@
+{
+  "sdk": "F:\\sae\\NEX\\build\\SDK переезд % 🧠 d",
+  "compiler_sha256": "599d51957c79c72ddb12b75a0490a1ac27987286caf328cfdc5e6c22a3b06a97",
+  "commands": [
+    {
+      "argv": [
+        "F:\\sae\\NEX\\build\\SDK переезд % 🧠 d\\bin\\nex.exe",
+        "doctor",
+        "--json"
+      ],
+      "code": 0,
+      "stdout": "{\n  \"cpu\": \"alderlake\",\n  \"host\": \"x86_64-w64-windows-gnu\",\n  \"language\": \"0.27\",\n  \"llvm\": \"22.1.8\",\n  \"native_archiver\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\libexec\\\\nex\\\\native\\\\bin\\\\llvm-ar.exe\",\n  \"native_compiler\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\libexec\\\\nex\\\\native\\\\bin\\\\clang++.exe\",\n  \"native_debug_packager\": \"\",\n  \"native_linker\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\libexec\\\\nex\\\\native\\\\bin\\\\ld.lld.exe\",\n  \"native_openssl_crypto\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\host\\\\libcrypto.a\",\n  \"native_openssl_include\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\deps\\\\include\",\n  \"native_openssl_ssl\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\host\\\\libssl.a\",\n  \"native_sqlite_include\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\deps\\\\include\",\n  \"native_sqlite_library\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\host\\\\libsqlite3.a\",\n  \"native_sysroot\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\lib\\\\nex\\\\windows\\\\sysroot\",\n  \"native_windows_notices\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\share\\\\nex\\\\windows-runtime-notices.txt\",\n  \"native_windows_runtime\": \"ucrt-static\",\n  \"runtime\": \"F:/sae/NEX/build/SDK переезд % 🧠 d\\\\share/nex\\\\runtime/runtime.cpp\",\n  \"runtime_available\": true,\n  \"schema\": \"nex.doctor/1\",\n  \"sdk_manifest\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\share/nex/sdk-host.json\",\n  \"verifier\": \"Z3\",\n  \"verifier_version\": \"4.16.0.0\",\n  \"version\": \"0.152.1\",\n  \"wasm_compiler\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\libexec\\\\nex\\\\wasm\\\\bin\\\\clang++.exe\",\n  \"wasm_linker\": \"F:\\\\sae\\\\NEX\\\\build\\\\SDK переезд % 🧠 d\\\\libexec\\\\nex\\\\wasm\\\\bin\\\\wasm-ld.exe\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "F:\\sae\\NEX\\build\\SDK переезд % 🧠 d\\bin\\nex.exe",
+        "build",
+        "--json"
+      ],
+      "code": 0,
+      "stdout": "{\n  \"build_key\": \"1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\",\n  \"cached\": false,\n  \"compilation\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\compilation.json\",\n  \"compiled_functions\": 1,\n  \"compiled_modules\": 1,\n  \"compiler_target\": \"x86_64-w64-windows-gnu\",\n  \"debug_manifest\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\debug.json\",\n  \"executable\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\app.exe\",\n  \"host_compatible\": true,\n  \"kind\": \"executable\",\n  \"llvm\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\program.ll\",\n  \"metadata\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\build.json\",\n  \"mlir\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\program.mlir\",\n  \"notices\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\\\THIRD_PARTY_NOTICES.txt\",\n  \"ok\": true,\n  \"reused_functions\": 0,\n  \"reused_modules\": 0,\n  \"revision\": \"88f7a1baa7fba0ec2f87748b6f78f6cd0cf3adf73da266cf72a4143ae2c3a8de\",\n  \"target\": \"x86_64-w64-windows-gnu\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-sdk-client-wave11\\.nex/build\\1851cc2f873ff44b138d4e9ab435c155f4c9243ad5deaacc0b2586c0c0c94770\\app.exe"
+      ],
+      "code": 0,
+      "stdout": "Я🧠\n42\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "F:\\sae\\NEX\\build\\SDK переезд % 🧠 d\\bin\\nex.exe",
+        "build",
+        "--library",
+        "--json"
+      ],
+      "code": 0,
+      "stdout": "{\n  \"build_key\": \"a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\",\n  \"cached\": false,\n  \"compilation\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\compilation.json\",\n  \"compiled_functions\": 1,\n  \"compiled_modules\": 1,\n  \"compiler_target\": \"x86_64-w64-windows-gnu\",\n  \"debug_manifest\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\debug.json\",\n  \"executable\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\libnex.a\",\n  \"host_compatible\": true,\n  \"kind\": \"static_library\",\n  \"llvm\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\program.ll\",\n  \"metadata\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\build.json\",\n  \"mlir\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\program.mlir\",\n  \"notices\": \"F:\\\\sae\\\\NEX\\\\build\\\\windows-sdk-client-wave11\\\\.nex/build\\\\a75991103125da4143ed6aad512df9e334a90a80aee45a4fe0d6befd05ac6ffa\\\\THIRD_PARTY_NOTICES.txt\",\n  \"ok\": true,\n  \"reused_functions\": 0,\n  \"reused_modules\": 0,\n  \"revision\": \"88f7a1baa7fba0ec2f87748b6f78f6cd0cf3adf73da266cf72a4143ae2c3a8de\",\n  \"target\": \"x86_64-w64-windows-gnu\"\n}\n",
+      "stderr": ""
+    }
+  ],
+  "ok": true
+}

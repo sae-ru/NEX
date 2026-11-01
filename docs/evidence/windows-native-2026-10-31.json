@@ -1,0 +1,3902 @@
+{
+  "schema": "nex.windows-machine-evidence/1",
+  "verified_at_utc": "2026-10-31T11:13:55.648222+00:00",
+  "status": "scoped_native_target_checks_complete_full_regression_failed",
+  "source_base_commit": "948d72b39bf16b9e8f3797d7ac0a613be28727bb",
+  "toolchain": "0.152.1",
+  "language": "0.27",
+  "native_task_ABI": 7,
+  "compiler_sha256": "d12752b6e7425617992005aa9ffc4ba8a13a8e7a27a032291a5729680272b098",
+  "compiler_build": "7896901a23dc0ab96eb94b008c741ef51d95a3be0d03f3d751035b9bed1fc499",
+  "descriptor_hash": "e381acf3d06dbae1821929b8dab9e9db4aaf51d1bf6f3035c668e076915c3a8b",
+  "native_tool_binary_sha256": {
+    "LLVM_MinGW_clang": "a8b7a614eeadd9105f814be3701a7f312cda4cea51751b75b408c16100c94e85",
+    "Windows_IO_probe": "41e052f17aa9d79ad9181204116302928e1d624eb1c5a8e93dfe8db2852da599",
+    "Windows_ASan_IO_probe": "51096d6adae85d3d47c5368cd4bb10b49154548716a96fcb3b3b7873c8b1c42d",
+    "Windows_CUDA_driver_probe": "e504194418adbd6aa69f93a611d6a0ff61ab70d006ba670f65385fbdfadf77d6"
+  },
+  "host": {
+    "schema": "nex.windows-inventory/1",
+    "environment": "native Windows",
+    "os": "Майкрософт Windows 11 Pro для рабочих станций",
+    "version": "10.0.26200",
+    "build": "26200",
+    "update_revision": 9711,
+    "architecture": "64-разрядная",
+    "RAM_bytes": 68477890560,
+    "cpu": [
+      {
+        "Name": "12th Gen Intel(R) Core(TM) i5-12400F",
+        "NumberOfCores": 6,
+        "NumberOfLogicalProcessors": 12
+      }
+    ],
+    "gpu": [
+      {
+        "Name": "NVIDIA GeForce RTX 3090",
+        "DriverVersion": "32.0.16.1714",
+        "DriverDate": "2026-09-17T03:00:00+03:00"
+      }
+    ],
+    "tools": {
+      "python": {
+        "path": "C:\\Python314\\python.exe",
+        "version": "Python 3.14.3"
+      },
+      "git": {
+        "path": "C:\\Program Files\\Git\\cmd\\git.exe",
+        "version": "git version 2.51.0.windows.1"
+      },
+      "nvcc": {
+        "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe",
+        "version": "nvcc: NVIDIA (R) Cuda compiler driver\r\nCopyright (c) 2005-2022 NVIDIA Corporation\r\nBuilt on Wed_Sep_21_10:41:10_Pacific_Daylight_Time_2022\r\nCuda compilation tools, release 11.8, V11.8.89\r\nBuild cuda_11.8.r11.8/compiler.31833905_0"
+      },
+      "node": {
+        "path": "C:\\Program Files\\nodejs\\node.exe",
+        "version": "v24.14.0"
+      },
+      "nvidia-smi": {
+        "path": "C:\\WINDOWS\\system32\\nvidia-smi.exe",
+        "version": "NVIDIA GeForce RTX 3090, 617.14, 00000000:01:00.0, 24576 MiB"
+      },
+      "cmake": {
+        "path": "C:\\Program Files\\CMake\\bin\\cmake.exe",
+        "version": "cmake version 3.26.1\r\n\r\nCMake suite maintained and supported by Kitware (kitware.com/cmake)."
+      },
+      "llvm_mingw": {
+        "path": "F:\\sae\\NEX\\build\\deps\\llvm-mingw-20260616-ucrt-x86_64",
+        "version": "clang version 22.1.8 (https://github.com/llvm/llvm-project.git ca7933e47d3a3451d81e72ac174dcb5aa28b59d1)\r\nTarget: x86_64-w64-windows-gnu\r\nThread model: posix\r\nInstalledDir: F:/sae/NEX/build/deps/llvm-mingw-20260616-ucrt-x86_64/bin\r\nConfiguration file: F:/sae/NEX/build/deps/llvm-mingw-20260616-ucrt-x86_64/bin/x86_64-w64-windows-gnu.cfg"
+      }
+    },
+    "visual_studio": [
+      {
+        "installationPath": "F:\\Program Files\\Microsoft Visual Studio\\2022\\Community",
+        "installationVersion": "17.14.37827.9"
+      }
+    ]
+  },
+  "volumes": [
+    {
+      "DeviceID": "C:",
+      "FileSystem": "NTFS",
+      "Size": 3979109064704
+    },
+    {
+      "DeviceID": "F:",
+      "FileSystem": "NTFS",
+      "Size": 10000812470272
+    }
+  ],
+  "producer": {
+    "schema": "nex.wsl-producer-inventory/1",
+    "environment": "Ubuntu-22.04 WSL2",
+    "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.10.12",
+    "packages": {
+      "exit_code": 0,
+      "stdout": "clang-22 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\ngdb 12.1-0ubuntu1~22.04.2\nlibmlir-22-dev 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\nlibsqlite3-dev 3.37.2-2ubuntu0.8\nlibssl-dev 3.0.2-0ubuntu1.30\nlibz3-dev 4.8.12-1\nlld-22 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\nlldb-22 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\nllvm-22-dev 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\nmlir-22-tools 1:22.1.8~++20260613092327+e80beda6e255-1~exp1~20260613092437.81\nninja-build 1.10.1-1\npatchelf 0.14.3-1\nz3 4.8.12-1",
+      "stderr": ""
+    },
+    "binary_sha256": {
+      "/home/sae/nex-build/nex": "d12752b6e7425617992005aa9ffc4ba8a13a8e7a27a032291a5729680272b098",
+      "/usr/lib/llvm-22/bin/clang++": "ebced28c19b0f18b7cea5c1c8b05ad2e47ec45a138cecacab9a25a85003574d1",
+      "/usr/lib/llvm-22/bin/llvm-config": "9343268e10ce83a5f56e9cce41d54a08ed7d626bc76e154f61e872c42e566704",
+      "/usr/lib/llvm-22/bin/mlir-opt": "da5da869a1f04e220d766dbecf7fa4369a14b63925d7125b6aa63c394b83c82f",
+      "/home/sae/nex-deps/llvm-mingw-20260616-ucrt-ubuntu-22.04-x86_64/bin/clang": "94bbed849359917e3ed8e18b3e437c967c456d18652c372e061a49963c8b215f",
+      "/home/sae/nex-deps/node-v22.18.0-linux-x64/bin/node": "ccacb2d6d87ba6d118b2bffc1ae33747a05cc5fc6b1f1ec4fc1d420b687e952d"
+    },
+    "doctor": {
+      "exit_code": 0,
+      "stdout": "{\n  \"cpu\": \"alderlake\",\n  \"host\": \"x86_64-pc-linux-gnu\",\n  \"language\": \"0.27\",\n  \"llvm\": \"22.1.8\",\n  \"native_archiver\": \"/usr/lib/llvm-22/bin/llvm-ar\",\n  \"native_compiler\": \"/usr/lib/llvm-22/bin/clang++\",\n  \"native_debug_packager\": \"\",\n  \"native_linker\": \"/usr/lib/llvm-22/bin/ld.lld\",\n  \"native_openssl_crypto\": \"/usr/lib/x86_64-linux-gnu/libcrypto.so.3\",\n  \"native_openssl_include\": \"/usr/include\",\n  \"native_openssl_ssl\": \"/usr/lib/x86_64-linux-gnu/libssl.so.3\",\n  \"native_sqlite_include\": \"/usr/include\",\n  \"native_sqlite_library\": \"/usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6\",\n  \"runtime\": \"/mnt/f/sae/NEX/runtime/runtime.cpp\",\n  \"runtime_available\": true,\n  \"schema\": \"nex.doctor/1\",\n  \"sdk_manifest\": \"\",\n  \"verifier\": \"Z3\",\n  \"verifier_version\": \"4.8.12.0\",\n  \"version\": \"0.152.1\",\n  \"wasm_linker\": \"/usr/lib/llvm-22/bin/wasm-ld\"\n}",
+      "stderr": ""
+    },
+    "llvm_version": {
+      "exit_code": 0,
+      "stdout": "Ubuntu clang version 22.1.8 (++20260613092327+e80beda6e255-1~exp1~20260613092437.81)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/lib/llvm-22/bin",
+      "stderr": ""
+    },
+    "node": {
+      "exit_code": 0,
+      "stdout": "v22.18.0",
+      "stderr": ""
+    },
+    "cmake": {
+      "exit_code": 0,
+      "stdout": "cmake version 3.31.6\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+      "stderr": ""
+    },
+    "node_archive_sha256": "c1bfeecf1d7404fa74728f9db72e697decbd8119ccc6f5a294d795756dfcfca7"
+  },
+  "producer_configuration": {
+    "schema": "nex.producer-build-configuration/1",
+    "values": {
+      "CMAKE_BUILD_TYPE": "Release",
+      "CMAKE_CXX_COMPILER": "/usr/lib/llvm-22/bin/clang++",
+      "LLVM_DIR": "/usr/lib/llvm-22/lib/cmake/llvm",
+      "MLIR_DIR": "/usr/lib/llvm-22/lib/cmake/mlir",
+      "NEX_CARES_PREFIX": "",
+      "NEX_HTTP_PREFIX": "",
+      "CMAKE_GENERATOR": "Ninja"
+    },
+    "cache_sha256": "73ba5e6c7a05c2edcfa4657978510a912d20f6fa540392d6a94e1bbd1fa0aa78",
+    "unconfigured_optional_conformance": [
+      "DNS c-ares operational provider",
+      "HTTP curl/nghttp2/c-ares operational provider and stream delivery"
+    ]
+  },
+  "other_accelerator_availability": {
+    "schema": "nex.windows-accelerator-availability/1",
+    "execution": "native Windows",
+    "DirectML_execution_verified": false,
+    "NEX_DirectML_or_NPU_accepted": false,
+    "libraries": [
+      {
+        "version": "1.15.6+260914-0959.1.os-germanium.2f9444f",
+        "name": "DirectML.dll",
+        "sha256": "19fe59703b10eab58595ea82d3653957493b71238b0124ebaa0c217f8d5313e9"
+      },
+      {
+        "version": "10.0.26100.9549 (WinBuild.160101.0800)",
+        "name": "d3d12.dll",
+        "sha256": "0963513f3291a67ea56985a6e8b7ed8088a1e858803be6dc3373faa07460ce02"
+      }
+    ],
+    "OS_discovered_NPU": [],
+    "query_scope": "OS name/class query only; absence is not physical NPU certification"
+  },
+  "dxdiag_accelerator_summary": [
+    "          DirectX Version: DirectX 12",
+    "           Card name: NVIDIA GeForce RTX 3090",
+    "         DDI Version: 12",
+    "      Feature Levels: 12_2,12_1,12_0,11_1,11_0,10_1,10_0,9_3,9_2,9_1,1_0_CORE",
+    "        Driver Model: WDDM 3.2"
+  ],
+  "checks": {
+    "native_Windows_runtime": {
+      "status": "passed",
+      "cases": 24,
+      "failed": 0,
+      "log": "build/local/windows-io-final.log",
+      "sha256": "d077271b9d19c958065683fcb86bb36a87be5867ad4ac261d652885476e04683"
+    },
+    "native_NEX_CPU_tasks_files": {
+      "status": "passed",
+      "program_executions": 36,
+      "rejected_sources": 3,
+      "reference_environment": "WSL",
+      "native_environment": "Windows",
+      "report": "build/native-acceptance-2/report.json",
+      "report_sha256": "f2bb888fe95ded866fbed0ed4058cbf4062672fd8762ffdd619bea982b1fd95a",
+      "cases": [
+        {
+          "name": "core",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\da13e115ac75ea01f10ecf6862ed21e4b925aaee8ed23c71cf65752481067362\\app.exe",
+          "sha256": "95995da9e880802fabaff84daa69d98d712b3f4014fe7077921688b3362b271f",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "core",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\16cc5eb7c6a009bc5c70e48e4e1424e8ca8891b779f29e1e859e66351a59165a\\app.exe",
+          "sha256": "568497b89b45456d39fffe5696157e7b9c6334d212bc62d50b855558db3f2b30",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_add",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\ccd54ce30536b243c587df96fddd3ec4c5ec745c781e4cbf18ba6305f7fbcf97\\app.exe",
+          "sha256": "b699d95d4caaa411b3d9580f35da9c98796333c9dbaeb0605e99f502d735ed4f",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_add",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\dcbaf3c38de86939cb16ef10b030c2c74f2c95bf2a8db765902d2a955f484840\\app.exe",
+          "sha256": "3e90dc60c43941ed25e32e5392abad8a21c4abbc2b8b71113a276cb6cee3d18d",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_sub",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\38c7ac73f8d7ea75edd0ee18f44032169ff7db92372a91ff30f4a1f37128f968\\app.exe",
+          "sha256": "bb1eeb66c9a7c26fe485332875f79597240d81afe415a79fc8890ca0ef0949d7",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_sub",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\b791bb0d3e69017614af9304faa8c777064449ee9f26182839bfd7993a275a6e\\app.exe",
+          "sha256": "b2fc964fb31d16fc6da632c328b42c773178657cc8286054096fc4fb235f0719",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_mul",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\23ef573dfa1422ae176f0f739ce2c4bea1b36c843a48386d9a9344641db140bd\\app.exe",
+          "sha256": "f9d9f3bb133d7f9c94319f3378c24a4587e6ebf999b50f468d2296975b0bc3de",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_mul",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\9587db9253cdd527ace3a11816450bd5fbb472051be87e131c1746bad6557caf\\app.exe",
+          "sha256": "f94f9257c9012b133812d9de43a140c5d6729ac0df3304de18e06c21d072991e",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_div",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\e303defc7634381d7a542855ee121bdf330e969feb168b1826ddd9463d9e80f3\\app.exe",
+          "sha256": "8c2e2f9758b9404fea14aadbe56c17f90a2cd69d278ea14637c91fdabdd89237",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "overflow_div",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\95f4ac88bfcbbcb4b364cea2d4b4efb68298d2cbf6c3ad8e992c883ee92d924e\\app.exe",
+          "sha256": "8adf38d935f7beaeae6d835c245d435acf2e03604ccd45417a6ec0e4ef90c026",
+          "expected_failure": "E_OVERFLOW",
+          "reference_compared": true
+        },
+        {
+          "name": "divide_zero",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\ef0ed9b0c0b5b9c7e5c4644e2cdb457dd4f4fdf246926a4aac0e436f5d751a32\\app.exe",
+          "sha256": "a5e5b88c14e0b571e754df2f864d4d4b00c20b9333516d528be2e0c62fa129b8",
+          "expected_failure": "E_DIV_ZERO",
+          "reference_compared": true
+        },
+        {
+          "name": "divide_zero",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\03aefd6415aab2ad84f41d70667632e09dedde9405e70ecdfded6337f2f2a867\\app.exe",
+          "sha256": "09d8ab07edde3afee0d84e223473874413257e5308cca7117c9af7b9ca8b2fc8",
+          "expected_failure": "E_DIV_ZERO",
+          "reference_compared": true
+        },
+        {
+          "name": "bad_index",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\8434ef6b56e118558abcb4faacf591ea853e3c3d418aeaf49a2b8d67547302a8\\app.exe",
+          "sha256": "e7f22cbec47078ea5064ab12572d36a559d0066bc53405ab5a798b9f62d612df",
+          "expected_failure": "E_BOUNDS",
+          "reference_compared": true
+        },
+        {
+          "name": "bad_index",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\core\\.nex\\build\\98bc695b72a9cc8dd382fdca1caeb7110fa23acdef6292d4e92cfe1ea05453d8\\app.exe",
+          "sha256": "6fbbd0101bf9d13970d6ec05bed71dcdbf1a48a2ae601e37e4ae5655253062c5",
+          "expected_failure": "E_BOUNDS",
+          "reference_compared": true
+        },
+        {
+          "name": "tasks",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\tasks\\.nex\\build\\62cca70e5823c544b0c595a73de2fb2c69aaeb77f14d3da70fdd6b9f96c14ee6\\app.exe",
+          "sha256": "7779dcf4121b1991857bbf72baf3ac15d65f6a14b7eb4b4e4e665fa1cebc1423",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "tasks",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\tasks\\.nex\\build\\648f84a12652dce2ee89750e91c6ec245625966164e120926f8d927502a624b7\\app.exe",
+          "sha256": "64cdab581394a25d5ddfbf60dbdea913da56b3686a40e2dc3ce481368e980cc3",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "task-steps",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\tasks\\.nex\\build\\62cca70e5823c544b0c595a73de2fb2c69aaeb77f14d3da70fdd6b9f96c14ee6\\app.exe",
+          "sha256": "7779dcf4121b1991857bbf72baf3ac15d65f6a14b7eb4b4e4e665fa1cebc1423",
+          "expected_failure": "E_LIMIT",
+          "reference_compared": false
+        },
+        {
+          "name": "task-steps",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\tasks\\.nex\\build\\648f84a12652dce2ee89750e91c6ec245625966164e120926f8d927502a624b7\\app.exe",
+          "sha256": "64cdab581394a25d5ddfbf60dbdea913da56b3686a40e2dc3ce481368e980cc3",
+          "expected_failure": "E_LIMIT",
+          "reference_compared": false
+        },
+        {
+          "name": "typed",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\5709e6a772dc107e298ef80c82a190bb8ad27dcc16da65ae391fc7b2991fe8f3\\app.exe",
+          "sha256": "827ce7bace0ccd0a62b57eaa13a9321cc9636dc0a2a186af9abb39e6c0362bb1",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "typed",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\753afda79dd0519fe9815d37648a0076a76d3d68d9acc8c4572b95e5ce7e2f19\\app.exe",
+          "sha256": "c9f0182343a159b37c102665c412df815e3279935b22472f91f27b3848ce6f62",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "cancel",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\e53945a2fc7814ef24f71a477fcc70dbc7a712d2405cbe3fc61d0e88a9b97e1d\\app.exe",
+          "sha256": "dca3704e65ca9a38ea8f18d365f6f6f21d70f6e52185e553900448588d5ab5f9",
+          "expected_failure": "E_CANCELLED",
+          "reference_compared": true
+        },
+        {
+          "name": "cancel",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\6489a858ad26cf5c58c7c14b08644005c27c4748d11c59835a9fbaacfc9b5b00\\app.exe",
+          "sha256": "56a08941fb7b6d1dd89ef32038b0fa7787fb0fd83de4abb657b74dc93ba32822",
+          "expected_failure": "E_CANCELLED",
+          "reference_compared": true
+        },
+        {
+          "name": "deadline",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\43a212a2fdd0f46e8c6008e3f642258e7fbcfb51c5e9e7773d7d3388b73bfb19\\app.exe",
+          "sha256": "fbb95a3500921a52feb873bdd111ab24bf4becbbc13bd8296e1efddab0df3aca",
+          "expected_failure": "E_TIMEOUT",
+          "reference_compared": false
+        },
+        {
+          "name": "deadline",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\typed\\.nex\\build\\54885e389fb7342caaa3442f50eb13dc67243913bcc250197cbeba498782fc30\\app.exe",
+          "sha256": "53d3109e7f4c69ba25091ee44e3c8ee411d7f07881fb9c5cc3b1cd7f9e2002d4",
+          "expected_failure": "E_TIMEOUT",
+          "reference_compared": false
+        },
+        {
+          "name": "files",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\files\\.nex\\build\\2164c5b14f01ab55e0989b431153b36136e987bac84017f12dd461dc09875f5b\\app.exe",
+          "sha256": "c37a3e3c44f120837f0dc22348aee101e5201764226482425aaacaf57154f7d1",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "files",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\files\\.nex\\build\\0fa87997891ec570348d99b44cbfae205a234f8c9f615f61b62899ca5d52fcc9\\app.exe",
+          "sha256": "7d1b6ca611295271686a95c23eec212ebfdb971a7544e42374e925e58f4ff829",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "read-only",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\files\\.nex\\build\\04083d4e4f0904c7493ce1afa6b0d1f402d376e2ce1f72a6c6e1ddf97aa78a68\\app.exe",
+          "sha256": "d6ce4f7aa241de34b5d70303ac3e54688a8d11e5fc58af5ebcbe4503e35febaf",
+          "expected_failure": null,
+          "reference_compared": false
+        },
+        {
+          "name": "read-only",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\files\\.nex\\build\\4be1dfa6f9d452aece1bff8c83eeb36c66911b425b807b4fbdf03a17d10d2f33\\app.exe",
+          "sha256": "d627bf30f82d2d020518ae3ae07fd6f75a3b7df2a5881f47e5993fc3fe0562ac",
+          "expected_failure": null,
+          "reference_compared": false
+        },
+        {
+          "name": "task-files",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\e14b5dcb24097e8791b65042e1f12fc73d811129fd11957c391a7fe16751b013\\app.exe",
+          "sha256": "50d8643e81b36ed843e195931a8fed17b33eb5eedb4ef76074504f98bf50bdcc",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "task-files",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\1a6da2e383afea93886386f8818c4dfafd14e5b463d696f7818ce1dc2f8e5e50\\app.exe",
+          "sha256": "249c56dfd9d1405ae77e74328373a0eaf5e03162ffd1d1de026b18e73ba7ec78",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "typed-file",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\5eae511950f513aecf24b76e61862f33fc533b149dedcbd1b4dcd929cdceaa47\\app.exe",
+          "sha256": "91d9d01ccbd514f808c03367af67f3d467b8f28d46a9ba6b8cbfc0b0e6e9f3cb",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "typed-file",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\6e8d500f2a53b94c0de8c37daea7fe24505f6da56f5b457b78985cc3c5aaee9e\\app.exe",
+          "sha256": "8ea84edc2cb03d8ec7cf02aa64d0a4726d334f3f8c06f83afad1b2d6db237ea8",
+          "expected_failure": null,
+          "reference_compared": true
+        },
+        {
+          "name": "cancel-file",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\a96eb043326f42aeddd415d0d0e5c99ca37d8c74c090f7e16011e272c9fa501d\\app.exe",
+          "sha256": "48f6b4658987cde9ca664a1a7a2f779b58bbec9e8f8897fd4427fba744be46d5",
+          "expected_failure": "E_CANCELLED",
+          "reference_compared": true
+        },
+        {
+          "name": "cancel-file",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\task-files\\.nex\\build\\dc61688b325ddeb7e3e0920d3e910c57f8db853f76e4ad8e879e3c8cfe56dfa3\\app.exe",
+          "sha256": "45177d68382782bf301d58c5d5251e95277ed7fb7d1a4d34050bc79dfd4d12d7",
+          "expected_failure": "E_CANCELLED",
+          "reference_compared": true
+        },
+        {
+          "name": "environment",
+          "profile": "debug",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\environment\\.nex\\build\\4ef3ffb868d4bd33174b13ea491d9b0bfb8d3e298cc9183007a0186fb104e9a1\\app.exe",
+          "sha256": "bd34112d8cde422e7faf08ddd8393117a4351bf9d5674c7d083354894b1c320e",
+          "expected_failure": null,
+          "reference_compared": false
+        },
+        {
+          "name": "environment",
+          "profile": "release",
+          "status": "passed",
+          "artifact": "F:\\sae\\NEX\\build\\native-acceptance-2\\environment\\.nex\\build\\e6bd65d7ace207aea9ae0123517d48bb0a1621befff6734216fc1ae76602d1b8\\app.exe",
+          "sha256": "4507262e48c36c8ca1b849e100c96b2a2f94b89afc8b4d58d2c10b59a6939728",
+          "expected_failure": null,
+          "reference_compared": false
+        },
+        {
+          "name": "overflow_literal",
+          "status": "passed",
+          "rejected": true,
+          "diagnostic": "E_RANGE"
+        },
+        {
+          "name": "missing_effect",
+          "status": "passed",
+          "rejected": true,
+          "diagnostic": "E_EFFECT"
+        },
+        {
+          "name": "wrong_realm",
+          "status": "passed",
+          "rejected": true,
+          "diagnostic": "E_REALM"
+        }
+      ]
+    },
+    "native_NEX_SQLite": {
+      "status": "passed",
+      "program_executions": 12,
+      "report": "build/windows-storage/report.json",
+      "report_sha256": "92f5c5544837fd48db86bbce443a19f56dfc3f074ca93dd8d97ebde636428efe",
+      "cases": [
+        {
+          "name": "storage-debug-0",
+          "status": "passed",
+          "profile": "debug",
+          "owner": "alice Я🧠",
+          "mode": "seed",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\70cde683d86a0f6f8e54880d1c026f61002371f5a0ee213d7d52f54989d7d5fc\\app.exe",
+          "sha256": "8dd3e7d76b97cdc58a3d79d9f50bd603e271889553118b6fafdc7bba2acd1d41"
+        },
+        {
+          "name": "storage-debug-1",
+          "status": "passed",
+          "profile": "debug",
+          "owner": "alice Я🧠",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\70cde683d86a0f6f8e54880d1c026f61002371f5a0ee213d7d52f54989d7d5fc\\app.exe",
+          "sha256": "8dd3e7d76b97cdc58a3d79d9f50bd603e271889553118b6fafdc7bba2acd1d41"
+        },
+        {
+          "name": "storage-debug-2",
+          "status": "passed",
+          "profile": "debug",
+          "owner": "bob",
+          "mode": "seed",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\70cde683d86a0f6f8e54880d1c026f61002371f5a0ee213d7d52f54989d7d5fc\\app.exe",
+          "sha256": "8dd3e7d76b97cdc58a3d79d9f50bd603e271889553118b6fafdc7bba2acd1d41"
+        },
+        {
+          "name": "storage-debug-3",
+          "status": "passed",
+          "profile": "debug",
+          "owner": "bob",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\70cde683d86a0f6f8e54880d1c026f61002371f5a0ee213d7d52f54989d7d5fc\\app.exe",
+          "sha256": "8dd3e7d76b97cdc58a3d79d9f50bd603e271889553118b6fafdc7bba2acd1d41"
+        },
+        {
+          "name": "storage-debug-4",
+          "status": "passed",
+          "profile": "debug",
+          "owner": "alice Я🧠",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\70cde683d86a0f6f8e54880d1c026f61002371f5a0ee213d7d52f54989d7d5fc\\app.exe",
+          "sha256": "8dd3e7d76b97cdc58a3d79d9f50bd603e271889553118b6fafdc7bba2acd1d41"
+        },
+        {
+          "name": "storage-no-grant",
+          "status": "passed",
+          "profile": "debug"
+        },
+        {
+          "name": "storage-release-0",
+          "status": "passed",
+          "profile": "release",
+          "owner": "alice Я🧠",
+          "mode": "seed",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\22741d18304008bd7d2639339fbe1876af84b47794b10b0e308c9487ca902f77\\app.exe",
+          "sha256": "148d095e90e17fe1c5bd30d9e190939a1f6284bb0f720471cf91a066eb824fd7"
+        },
+        {
+          "name": "storage-release-1",
+          "status": "passed",
+          "profile": "release",
+          "owner": "alice Я🧠",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\22741d18304008bd7d2639339fbe1876af84b47794b10b0e308c9487ca902f77\\app.exe",
+          "sha256": "148d095e90e17fe1c5bd30d9e190939a1f6284bb0f720471cf91a066eb824fd7"
+        },
+        {
+          "name": "storage-release-2",
+          "status": "passed",
+          "profile": "release",
+          "owner": "bob",
+          "mode": "seed",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\22741d18304008bd7d2639339fbe1876af84b47794b10b0e308c9487ca902f77\\app.exe",
+          "sha256": "148d095e90e17fe1c5bd30d9e190939a1f6284bb0f720471cf91a066eb824fd7"
+        },
+        {
+          "name": "storage-release-3",
+          "status": "passed",
+          "profile": "release",
+          "owner": "bob",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\22741d18304008bd7d2639339fbe1876af84b47794b10b0e308c9487ca902f77\\app.exe",
+          "sha256": "148d095e90e17fe1c5bd30d9e190939a1f6284bb0f720471cf91a066eb824fd7"
+        },
+        {
+          "name": "storage-release-4",
+          "status": "passed",
+          "profile": "release",
+          "owner": "alice Я🧠",
+          "mode": "read",
+          "artifact": "F:\\sae\\NEX\\build\\windows-storage\\storage\\.nex\\build\\22741d18304008bd7d2639339fbe1876af84b47794b10b0e308c9487ca902f77\\app.exe",
+          "sha256": "148d095e90e17fe1c5bd30d9e190939a1f6284bb0f720471cf91a066eb824fd7"
+        },
+        {
+          "name": "storage-no-grant",
+          "status": "passed",
+          "profile": "release"
+        }
+      ]
+    },
+    "Windows_Node_TypeScript": {
+      "status": "passed",
+      "cases": 10,
+      "node": "v24.14.0",
+      "report": "build/windows-typescript-2/report.json",
+      "report_sha256": "7ae554ba8c7e805c58578683a7accf08cf312e68390e5baa54fb7594a2c791bd"
+    },
+    "runtime_contracts": {
+      "status": "passed",
+      "scenario_methods": 15,
+      "native_PE_executions": 37,
+      "methods_with_native_PE_runs": 12,
+      "generation_reference_TypeScript_proof_profile_environment": "WSL",
+      "run_observation_environment": "native Windows",
+      "report": "build/windows-contracts/report.json",
+      "report_sha256": "20882d7c45db81943e7230065cff5f4142c555ab9ac6f0fe0932dfad412bf7b0",
+      "log_sha256": "82c305915ffb39a660677e45abced3f2c34fd723a0d722a1a3f0aabc4074d4ab"
+    },
+    "CUDA_driver_prerequisite": {
+      "status": "passed",
+      "NEX_invocation": false,
+      "device": {
+        "ordinal": 0,
+        "count": 1,
+        "name": "NVIDIA GeForce RTX 3090",
+        "pci_bus_id": "0000:01:00.0",
+        "uuid_hex": "90d7aee11c97d69e3bd72295859ca4f5",
+        "driver_version": 13040
+      },
+      "kernel_launches_per_run": 38,
+      "ordinary_cases": 36,
+      "overflow_cases": 2,
+      "physical_completion_before_resource_release": true,
+      "memory": {
+        "free_before": 24469569536,
+        "free_after": 24469569536,
+        "total": 25769279488,
+        "shared_display_device": true
+      },
+      "timing_scope": "independent CPU reference plus input generation; upload, GPU event kernel, download and wall time including allocations recorded separately; no speedup claim",
+      "resource_ledger": {
+        "buffers_allocated": 152,
+        "buffers_freed": 152,
+        "live_buffer_bytes": 0,
+        "peak_buffer_bytes": 786436,
+        "events_created": 72,
+        "events_destroyed": 72,
+        "contexts_created": 1,
+        "contexts_destroyed": 1,
+        "modules_loaded": 1,
+        "modules_unloaded": 1,
+        "cleanup_errors": 0,
+        "last_cleanup_error": 0,
+        "last_cleanup_operation": ""
+      },
+      "report": "build/local/cuda-report.json",
+      "report_sha256": "1fc1fa1330d7b4b58fcecbd4d38ccf4cbd4cef71ea8324f1cc4ef46b33bb63a2",
+      "memcheck": {
+        "status": "passed",
+        "version": "NVIDIA (R) Compute Sanitizer\nCopyright (c) 2020-2023 NVIDIA Corporation\nVersion 2023.1.0",
+        "summary": "0 errors",
+        "log_sha256": "adba10db853bd67fe9009b776eefe7b61210d2cbe3eee029ba6fa188978b5832"
+      }
+    },
+    "NVCC_MSVC_compile": {
+      "status": "failed",
+      "NVCC": "12.1.66",
+      "MSVC": "19.44.35229",
+      "diagnostic": "Host compiler targets unsupported OS",
+      "unsupported_compiler_override": false,
+      "direct_MSVC_WIN64_preprocess": "passed",
+      "log_sha256": "e0ed59dedbb5e6007c0c1172a6fba6258a189cb97c042d53fe0412774c96b76e"
+    },
+    "producer_CMake_build": {
+      "status": "passed",
+      "generator": "Ninja",
+      "configuration": "Release",
+      "parallelism": 4,
+      "log_sha256": "0b17fde122a82726789feaa2f8d45a56fca0a9e74207bbbb079c4bc1e4cabf8b"
+    },
+    "native_Windows_CTest": {
+      "status": "passed",
+      "groups": 2,
+      "skipped": 0,
+      "scope": "direct Windows runtime and CUDA driver prerequisite; not Windows-hosted compiler full CTest",
+      "JUnit_sha256": "af70c063342fb942b7d42f52f2bfe759dcacb5e45d855c6c810cfe0d08e4f69f"
+    },
+    "producer_full_CTest": {
+      "status": "failed",
+      "environment": "WSL Ubuntu-22.04",
+      "Windows_cross_targets_configured": true,
+      "Wine_configured": false,
+      "observed_failed_groups": [
+        "task_provider_debugging_native",
+        "task_foreign",
+        "task_typescript_steps",
+        "task_typescript_public",
+        "verification",
+        "public_task_write_delivery",
+        "task_file_reads_typescript",
+        "task_external_typescript",
+        "source_exception_typescript",
+        "source_exception_tasks_typescript",
+        "source_exception_task_lldb",
+        "source_exception_host",
+        "source_exception_task_watch",
+        "source_exception_instances",
+        "source_exception_module_debug",
+        "source_exception_module_http_debug",
+        "typed_source_typescript",
+        "typed_source_tasks"
+      ],
+      "groups": 271,
+      "failed_groups": [
+        "task_typescript_steps",
+        "task_provider_debugging_native",
+        "task_typescript_public",
+        "task_foreign",
+        "verification",
+        "public_task_write_delivery",
+        "task_file_reads_typescript",
+        "task_external_typescript",
+        "source_exception_typescript",
+        "source_exception_tasks_typescript",
+        "source_exception_host",
+        "source_exception_task_lldb",
+        "source_exception_task_watch",
+        "source_exception_instances",
+        "source_exception_module_debug",
+        "source_exception_module_http_debug",
+        "typed_source_typescript",
+        "typed_source_tasks"
+      ],
+      "skipped_groups": [],
+      "JUnit_sha256": "aa3640f9a81c2279047c99d0ed8f91a0ed713137fa41e79e8bfd0419ee193911",
+      "log_sha256": "cdc9d7567bbe5c021ae052c54453969266373b35a892274d07a0d0b1d9969798",
+      "reported_internal_unittest_cases": [
+        {
+          "group": "source_exception_modules",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "programs": 12,
+              "native_comparisons": 48
+            }
+          ]
+        },
+        {
+          "group": "project_foreign_packaging",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "server_workload",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "project_packaging",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "foreign_packaging",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_images",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/native_images.py",
+              "line": 10,
+              "expression": "unittest.skipUnless(platform.system() in ('Darwin','Linux'),'native shared images require Mach-O/ELF')"
+            },
+            {
+              "source": "tests/native_images.py",
+              "line": 169,
+              "expression": "unittest.skipUnless(LIVE,'use --live for actual DSO stops, watches and relocated native cores')"
+            }
+          ]
+        },
+        {
+          "group": "server_debug",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 4,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/server_debug.py",
+              "line": 122,
+              "expression": "unittest.skipUnless(LIVE,'opt-in real HTTP/DAP worker debugging')"
+            },
+            {
+              "source": "tests/server_debug.py",
+              "line": 185,
+              "expression": "unittest.skipUnless(LIVE,'opt-in actual project editor server launch and source breakpoint')"
+            },
+            {
+              "source": "tests/server_debug.py",
+              "line": 189,
+              "expression": "unittest.skipUnless(LIVE,'opt-in actual source editor HTTP-target launch and source breakpoint')"
+            },
+            {
+              "source": "tests/server_debug.py",
+              "line": 193,
+              "expression": "unittest.skipUnless(LIVE,'opt-in real HTTP/DAP deadline preservation')"
+            }
+          ]
+        },
+        {
+          "group": "native_staging",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_arithmetic",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_workloads",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "project_build",
+          "reported_unittest_cases": 22,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/project_build.py",
+              "line": 168,
+              "expression": "unittest.skipUnless(LIVE,'use --live for actual LLDB archive stops, watches and moved core capsules')"
+            }
+          ]
+        },
+        {
+          "group": "task_provider_profile_lifetime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 4,
+              "runtime_mappings": 1,
+              "physical_barrier_cases": 4
+            }
+          ]
+        },
+        {
+          "group": "task_provider_debug_lifetime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 4,
+              "runtime_mappings": 1,
+              "physical_barrier_cases": 4
+            }
+          ]
+        },
+        {
+          "group": "task_provider_debugging_native",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "display_truncated": false,
+              "frame_truncated": false,
+              "ok": true,
+              "steps": 6,
+              "schema": "nex.task-expression/2"
+            }
+          ]
+        },
+        {
+          "group": "task_static_provider_native",
+          "reported_unittest_cases": 17,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_shared_provider_lifetime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 4,
+              "runtime_mappings": 1,
+              "physical_barrier_cases": 4
+            }
+          ]
+        },
+        {
+          "group": "project_actions",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/project_actions.py",
+              "line": 128,
+              "expression": "unittest.skipUnless(LIVE,'opt-in real debugger/HTTP preview')"
+            }
+          ]
+        },
+        {
+          "group": "task_shared_provider_native",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_foreign",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "project_tasks",
+          "reported_unittest_cases": 10,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "windows_runtime",
+          "reported_unittest_cases": 3,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "wasm",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_pages",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/native_pages.py",
+              "line": 14,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual native indexed pages')"
+            },
+            {
+              "source": "tests/native_pages.py",
+              "line": 17,
+              "expression": "self.skipTest('matching lldb-dap unavailable')"
+            }
+          ]
+        },
+        {
+          "group": "debug_image",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/debug_image.py",
+              "line": 23,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual LLDB core image identity')"
+            }
+          ]
+        },
+        {
+          "group": "editor",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 2,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/editor.py",
+              "line": 44,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual project editor breakpoints')"
+            },
+            {
+              "source": "tests/editor.py",
+              "line": 91,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual native editor breakpoints')"
+            },
+            {
+              "source": "tests/editor.py",
+              "line": 78,
+              "expression": "self.skipTest('matching native LLDB DAP backend unavailable')"
+            },
+            {
+              "source": "tests/editor.py",
+              "line": 100,
+              "expression": "self.skipTest('matching native LLDB DAP backend unavailable')"
+            }
+          ]
+        },
+        {
+          "group": "core_dump",
+          "reported_unittest_cases": 6,
+          "reported_unittest_skips": 2,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/core_dump.py",
+              "line": 117,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual read-only LLDB core reports')"
+            },
+            {
+              "source": "tests/core_dump.py",
+              "line": 151,
+              "expression": "unittest.skipUnless(LIVE and sys.platform == 'linux', 'use --live on Linux for kernel ELF SIGABRT core')"
+            },
+            {
+              "source": "tests/core_dump.py",
+              "line": 157,
+              "expression": "self.skipTest('kernel core naming is not scoped to the fixture cwd')"
+            },
+            {
+              "source": "tests/core_dump.py",
+              "line": 161,
+              "expression": "self.skipTest('per-process hard core limit is below the fixture bound')"
+            }
+          ]
+        },
+        {
+          "group": "core_capsules",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 2,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/core_capsules.py",
+              "line": 180,
+              "expression": "unittest.skipUnless(LIVE, 'use --live for actual native core capsule relocation')"
+            },
+            {
+              "source": "tests/core_capsules.py",
+              "line": 253,
+              "expression": "unittest.skipUnless(LIVE and sys.platform == 'linux', 'use --live on Linux for pure-program kernel ELF capsule')"
+            },
+            {
+              "source": "tests/core_capsules.py",
+              "line": 261,
+              "expression": "self.skipTest('kernel core naming is not scoped to the fixture cwd')"
+            },
+            {
+              "source": "tests/core_capsules.py",
+              "line": 265,
+              "expression": "self.skipTest('per-process hard core limit is below the fixture bound')"
+            }
+          ]
+        },
+        {
+          "group": "project_package_tasks",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "string_debug",
+          "reported_unittest_cases": 15,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "graph_queries",
+          "reported_unittest_cases": 18,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "frontend_diagnostics",
+          "reported_unittest_cases": 21,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "project_versions",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "graph_snapshots",
+          "reported_unittest_cases": 16,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "change_history",
+          "reported_unittest_cases": 14,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "traits",
+          "reported_unittest_cases": 20,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_plan",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "operation_patches",
+          "reported_unittest_cases": 18,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "frontend_io",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_provider_profile_native",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_diagnostics",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_file_stream_mixed",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 24
+            }
+          ]
+        },
+        {
+          "group": "source_task_foreign_prototype",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "seconds": 189.1326004839998
+            }
+          ]
+        },
+        {
+          "group": "source_task_foreign_genuine021_origins",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "public022_migration_complete": false,
+              "original_revisions": 15,
+              "schema": "nex.task-foreign-genuine021-origins/1"
+            }
+          ]
+        },
+        {
+          "group": "source_task_resource_prototype",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "seconds": 199.6917705019996
+            }
+          ]
+        },
+        {
+          "group": "source_external_resources",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "public_task_foreign_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "seconds": 200.0515059090003
+            }
+          ]
+        },
+        {
+          "group": "resource_language_migration",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine020_fixtures": 5,
+              "original_revisions": 15,
+              "tables_each": 16,
+              "requests": 110,
+              "seconds": 16.004584835999594,
+              "schema": "nex.resource-migration-tests/1"
+            }
+          ]
+        },
+        {
+          "group": "public_task_foreign_language_migration",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine021_histories": 5,
+              "original_revisions": 15,
+              "original_tables_each": 16,
+              "actual_native_programs": 15,
+              "actual_reference_programs": 15,
+              "actual_native_TS_test_pairs": 15,
+              "public_CLI": true,
+              "requests": 205,
+              "seconds": 100.47406955099996,
+              "schema": "nex.public022-genuine021-CLI-migration/1"
+            }
+          ]
+        },
+        {
+          "group": "source_resource_debugger",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "seconds": 34.18137485899979,
+              "actual_resource_DAP": true
+            }
+          ]
+        },
+        {
+          "group": "source_task_foreign_genuine021_history",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "public022_enabled": true,
+              "public022_CLI_migration_verified": false,
+              "genuine021_histories": 5,
+              "original_revisions": 15,
+              "original_tables_each": 16,
+              "native_archived_programs": 15,
+              "reference_archived_programs": 30,
+              "requests": 107,
+              "seconds": 188.47690251199992,
+              "schema": "nex.private022-genuine021-history/1"
+            }
+          ]
+        },
+        {
+          "group": "task_static_provider_boundary_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "checks": 49,
+              "descriptor_layout_unchanged": true,
+              "execution_abi": 3,
+              "native_tools_executed": false,
+              "ok": true,
+              "rejections": 36,
+              "runtime_execution_claim": false
+            }
+          ]
+        },
+        {
+          "group": "task_provider_profile_boundary_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "checks": 31,
+              "execution_abi": 3,
+              "ok": true,
+              "registry_abi": 1,
+              "rejections": 23,
+              "tools_executed": false
+            }
+          ]
+        },
+        {
+          "group": "task_provider_debug_boundary_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "catalog_abi": 2,
+              "checks": 44,
+              "execution_abi": 3,
+              "native_tools_executed": false,
+              "ok": true,
+              "registry_abi": 1,
+              "rejections": 30
+            }
+          ]
+        },
+        {
+          "group": "task_shared_provider_boundary_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "checks": 61,
+              "descriptor_bytes": 88,
+              "execution_abi": 3,
+              "native_tools_executed": false,
+              "ok": true,
+              "rejections": 43,
+              "source_runtime_execution_claim": false
+            }
+          ]
+        },
+        {
+          "group": "owned_device_contract",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "sdk_operator_notices",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_stream_project",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 8
+            }
+          ]
+        },
+        {
+          "group": "native_tool_arguments",
+          "reported_unittest_cases": 2,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "parallel_mapping",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/parallel.py",
+              "line": 196,
+              "expression": "unittest.skipUnless(LIVE,'use --live for actual CPU worker breakpoints and watches')"
+            },
+            {
+              "source": "tests/parallel.py",
+              "line": 208,
+              "expression": "self.skipTest('matching lldb-dap unavailable')"
+            }
+          ]
+        },
+        {
+          "group": "result_propagation",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "compute_contract",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "discovery",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "language_server",
+          "reported_unittest_cases": 33,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "editor_language_client",
+          "reported_unittest_cases": 2,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_frontend_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 54,
+              "public_source_tasks": true,
+              "private018_guards": true
+            }
+          ]
+        },
+        {
+          "group": "task_lifetime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_scenarios": 91,
+              "native_fixtures": 91,
+              "base_native_fixtures": 58,
+              "additional_reference_scenarios": 33,
+              "fully_static": false,
+              "mandatory_runtime_guards": true,
+              "public_source_tasks": false,
+              "bounded_analysis_checked": true
+            }
+          ]
+        },
+        {
+          "group": "task_migration_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "requests": 73,
+              "seconds": 4.8081559450001805,
+              "schema": "nex.task-migration-tests/1"
+            }
+          ]
+        },
+        {
+          "group": "model_contract",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 9,
+              "compiler_commands": 29
+            }
+          ]
+        },
+        {
+          "group": "task_http_request_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 90,
+              "concurrent_requests": 8,
+              "parent_control_preserved": true,
+              "public_HTTP_task_target": true,
+              "compiled_NEX_claimed": false
+            }
+          ]
+        },
+        {
+          "group": "task_http_request_compiled",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "compiled_native_reference_agreement": true,
+              "source_absent_execution": true,
+              "host_checks": 43,
+              "public_HTTP_task_target": true
+            }
+          ]
+        },
+        {
+          "group": "task_http_server",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 148,
+              "profiles": 2,
+              "concurrent_requests_each": 8,
+              "public_HTTP_task_target": true,
+              "async_network_DB_claimed": false
+            }
+          ]
+        },
+        {
+          "group": "task_application_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "standalone_profiles": 34,
+              "cases": 17,
+              "compiled_continuations": true,
+              "source_hidden_execution": true,
+              "warm_cache": true,
+              "pure_reachability_preserved": true,
+              "source_component_project": true,
+              "binary_boundary_signature_cases": 10,
+              "additional_library_export_rejected": true
+            }
+          ]
+        },
+        {
+          "group": "task_limits_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "standalone": true,
+              "no_environment_authority": true,
+              "malformed_launcher_cases": 10,
+              "cache_identity": true,
+              "native_loop_deadline": true,
+              "effective_reporting": true
+            }
+          ]
+        },
+        {
+          "group": "task_ir_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_scenarios": 27,
+              "checks_including_repeated_resume_protocol": 227,
+              "native_task_execution": false,
+              "public_source_tasks": false
+            }
+          ]
+        },
+        {
+          "group": "task_ast_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_scenarios": 32,
+              "checks_including_repeated_resume_protocol": 243,
+              "independent_ast_control": true,
+              "scheduler_integrated": true,
+              "native_task_execution": false,
+              "public_source_tasks": false
+            }
+          ]
+        },
+        {
+          "group": "task_reference_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 35,
+              "independent_ast_scheduler": true,
+              "native_family_fixture": true,
+              "ok": true,
+              "public_source_tasks": false,
+              "reference_dispatch_uses_native_scheduler": false
+            }
+          ]
+        },
+        {
+          "group": "task_limits_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 19,
+              "nested_absolute_deadline": true,
+              "ok": true,
+              "pure_helpers_and_atoms_deadline": true,
+              "reference_execution_workers": 1,
+              "resource_priority_and_cleanup": true,
+              "step_threshold_backend_parity_claim": false
+            }
+          ]
+        },
+        {
+          "group": "string_debug_provider",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "frontend_diagnostics_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 26,
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "native_sites_runtime",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 8
+            }
+          ]
+        },
+        {
+          "group": "source_error_native_packet",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 71,
+              "native_boundary": true,
+              "physical_retirement": true
+            }
+          ]
+        },
+        {
+          "group": "dependent_resource_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 37
+            }
+          ]
+        },
+        {
+          "group": "task_native_steps",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_scenarios": 91,
+              "native_profiles": 2,
+              "independent_asynchronous_ast_scenarios": 91,
+              "ordinary_ast_mirrors": 24,
+              "ordinary_typescript_mirrors": 21,
+              "compiled_worker_threads": 2,
+              "public_source_tasks": false,
+              "native_yield_steps": true,
+              "logical_task_calls": true,
+              "task_closure_descriptors": true,
+              "combined_call_depth": 256,
+              "scope_channels": true,
+              "native_scope_channel_scenarios": 60,
+              "available_cases": 91,
+              "compiled_call_cancellation": true
+            }
+          ]
+        },
+        {
+          "group": "sdk_archives",
+          "reported_unittest_cases": 51,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "provider_preparation_source",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "resource_debug",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "owned_functions_runtime",
+          "reported_unittest_cases": 2,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "structured_workers_runtime",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 26,
+              "verified_simultaneous_workers": 4,
+              "handle_allocations": 180,
+              "object_allocations": 406,
+              "live_handles": 0,
+              "live_objects": 0
+            }
+          ]
+        },
+        {
+          "group": "task_scheduler_runtime",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 65,
+              "source_async": false
+            }
+          ]
+        },
+        {
+          "group": "compiled_workers_native",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "ffi_types",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "resources",
+          "reported_unittest_cases": 14,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "float_runtime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "packaging",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "modules",
+          "reported_unittest_cases": 13,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "integration",
+          "reported_unittest_cases": 21,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "results",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "storage",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "http",
+          "reported_unittest_cases": 3,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "files",
+          "reported_unittest_cases": 13,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "debugging",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/debugging.py",
+              "line": 24,
+              "expression": "unittest.skipUnless(sys.platform == 'darwin', 'Darwin LLDB image-path workaround')"
+            }
+          ]
+        },
+        {
+          "group": "operations",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "graph_identities",
+          "reported_unittest_cases": 17,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "expressions",
+          "reported_unittest_cases": 17,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "dap_transport",
+          "reported_unittest_cases": 15,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "type_patches",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "native_targets",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 5,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/native_targets.py",
+              "line": 37,
+              "expression": "unittest.skipUnless(platform.system() == 'Darwin', 'Mach-O run-path selection')"
+            },
+            {
+              "source": "tests/native_targets.py",
+              "line": 74,
+              "expression": "unittest.skipUnless(platform.system() == 'Linux', 'ELF runtime library selection')"
+            },
+            {
+              "source": "tests/native_targets.py",
+              "line": 161,
+              "expression": "self.skipTest('no configured host linker')"
+            },
+            {
+              "source": "tests/native_targets.py",
+              "line": 214,
+              "expression": "self.skipTest('macOS SDK cross-build')"
+            }
+          ]
+        },
+        {
+          "group": "api",
+          "reported_unittest_cases": 14,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "ios_targets",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 4,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/ios_targets.py",
+              "line": 12,
+              "expression": "unittest.skipUnless(platform.system() == 'Darwin', 'iOS cross compilation requires a macOS host')"
+            },
+            {
+              "source": "tests/ios_targets.py",
+              "line": 20,
+              "expression": "self.skipTest('Xcode SDK unavailable: ' + name)"
+            }
+          ]
+        },
+        {
+          "group": "mobile_projects",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "sdk_host",
+          "reported_unittest_cases": 3,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "incremental",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "verification",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "profiling",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "runtime_contracts",
+          "reported_unittest_cases": 15,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_toolchains",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 2,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/task_toolchains.py",
+              "line": 92,
+              "expression": "self.skipTest('macOS cross SDK')"
+            }
+          ]
+        },
+        {
+          "group": "enums",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "tasks",
+          "reported_unittest_cases": 19,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "windows_targets",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/windows_targets.py",
+              "line": 73,
+              "expression": "unittest.skipUnless(TOOLS, 'set NEX_WINDOWS_TOOLCHAIN_ROOT to an LLVM-MinGW UCRT installation')"
+            },
+            {
+              "source": "tests/windows_targets.py",
+              "line": 280,
+              "expression": "unittest.skipUnless(WINE_IMAGE,'set NEX_WINDOWS_WINE_IMAGE to opt into isolated x64 Wine compatibility checks')"
+            }
+          ]
+        },
+        {
+          "group": "source_ffi",
+          "reported_unittest_cases": 17,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/source_ffi.py",
+              "line": 157,
+              "expression": "unittest.skipUnless(platform.system()=='Darwin','Darwin @rpath install-name regression')"
+            }
+          ]
+        },
+        {
+          "group": "matching",
+          "reported_unittest_cases": 13,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "generics",
+          "reported_unittest_cases": 14,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "constraints",
+          "reported_unittest_cases": 11,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "bytes_debug",
+          "reported_unittest_cases": 7,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "function_debug",
+          "reported_unittest_cases": 10,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "function_values",
+          "reported_unittest_cases": 16,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_external_file_lease",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 45,
+              "worker_reads_explicit_physical_lease": true,
+              "explicit_root_grant": true,
+              "lexical_revoke": true,
+              "request_revoke": true,
+              "logical_cancel_is_not_physical_completion": true,
+              "public_async_io": false
+            }
+          ]
+        },
+        {
+          "group": "task_external_file_write_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "host_write_cases": 23,
+              "public_source_writes": false
+            }
+          ]
+        },
+        {
+          "group": "task_external_file_stream_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "host_stream_cases": 27,
+              "public_source_support": false,
+              "maximum_chunk_bytes": 1048576,
+              "one_shot_typed_open": true,
+              "physical_drain": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_source_boundaries",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "public025_builds": 3,
+              "retained023_rejections": 3,
+              "unreachable_retained_declaration": true,
+              "private_names_not_reserved": true,
+              "client_prunes_file_authority": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_regions_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "file_region_cases": 12,
+              "public_source_support": false
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 13
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_requirements",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "operation_checks": 14,
+              "standalone_applications": 6
+            }
+          ]
+        },
+        {
+          "group": "bytes",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "file_io_observation",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "file_observer_cases": 11,
+              "no_authority_reconstruction": true,
+              "reentrant_callbacks_outside_cursor_locks": true
+            }
+          ]
+        },
+        {
+          "group": "task_marker_record",
+          "reported_unittest_cases": 10,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "numbers",
+          "reported_unittest_cases": 12,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_file_stream_control",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 12,
+              "compiled_images": 6
+            }
+          ]
+        },
+        {
+          "group": "task_limits_workflow",
+          "reported_unittest_cases": 4,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_stream_provider_boundary",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "stream_boundary_checks": 22,
+              "stream_mask": 3871
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_inflight",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 62,
+              "compiled_images": 12
+            }
+          ]
+        },
+        {
+          "group": "task_write_provider_boundary",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "retained_ABI3_mask31": true,
+              "write_ABI4_mask799": true
+            }
+          ]
+        },
+        {
+          "group": "public_task_stream_delivery",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 5,
+              "rejected_programs": 3
+            }
+          ]
+        },
+        {
+          "group": "public_task_write_histories",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine022_histories": 6,
+              "genuine022_revisions": 18
+            }
+          ]
+        },
+        {
+          "group": "public_task_write_observability",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "task_write_provider",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 16,
+              "public023_enabled": true
+            }
+          ]
+        },
+        {
+          "group": "task_stream_provider",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 20
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_migration",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks_passed": 8
+            }
+          ]
+        },
+        {
+          "group": "task_write_migration",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks_passed": 22
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_protocol",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "stream_protocol_cases": 22,
+              "retained_ABI3_ABI4_strict": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_cleanup_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "file_cleanup_cases": 12,
+              "public024_published": false
+            }
+          ]
+        },
+        {
+          "group": "typed_task_public_protocol",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 115,
+              "descriptor_abi": 7,
+              "resumed_calls": 4,
+              "compiled_C_entry_runs": 2,
+              "cross_cohort_rejections": 16,
+              "private_entry_rejections": 4,
+              "private_entry_retained_runs": 4,
+              "physical_cleanup": true
+            }
+          ]
+        },
+        {
+          "group": "typed_error_provider_records",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "checks": 102,
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_histories",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine023_revisions": 15,
+              "rejected_migrations": 15
+            }
+          ]
+        },
+        {
+          "group": "typed_error_debugging",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 3
+            },
+            {
+              "ok": true,
+              "build_exit": 0,
+              "lldb_exit": 0
+            },
+            {
+              "ok": true,
+              "real_NEX_DAP": true,
+              "typed_watches": 5
+            },
+            {
+              "ok": true
+            },
+            {
+              "ok": true,
+              "cases": 8
+            }
+          ]
+        },
+        {
+          "group": "typed_error_projects",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 20,
+              "seconds": 335.194
+            }
+          ]
+        },
+        {
+          "group": "task_write_protocol",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 13,
+              "retained_ABI3_mask31": true,
+              "write_ABI4": true
+            }
+          ]
+        },
+        {
+          "group": "task_write_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "native_reference_pairs": 15
+            }
+          ]
+        },
+        {
+          "group": "task_external_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "bounded_raw_mailbox": true,
+              "cancel_deadline_physical_retirement_fence": true,
+              "cases": 61,
+              "empty_owned_region_retirement_fence": true,
+              "fatal_resource_cleanup_priority": true,
+              "host_boundary_allocation_errors": true,
+              "independent_reference_coordinator": true,
+              "ok": true,
+              "owner_generation_single_use": true,
+              "public_source_async_io": false,
+              "retained_capacity_quotas": true,
+              "source_execution_workers": 1
+            }
+          ]
+        },
+        {
+          "group": "task_file_reads_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 48,
+              "source_task_file_reads": true,
+              "independent_checked_ast": true,
+              "actual_source_workers": 1
+            }
+          ]
+        },
+        {
+          "group": "task_file_reads_frontend",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 17,
+              "retained019": true,
+              "exact_callable_effects": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_reads_native_runtime",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 29,
+              "compiled_request_file_reads": true,
+              "public_source_test_separate": true
+            }
+          ]
+        },
+        {
+          "group": "task_file_stream_ffi_histories",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine023_revisions": 12,
+              "rejected_migrations": 12
+            }
+          ]
+        },
+        {
+          "group": "task_file_migration_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "requests": 75,
+              "seconds": 2.159910692000267,
+              "schema": "nex.task-file-migration-tests/1"
+            }
+          ]
+        },
+        {
+          "group": "task_profile_collector_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 42,
+              "assertions": 72499,
+              "actual_threads": 2,
+              "deterministic_clocks": true,
+              "actual_platform_clock_smoke": true,
+              "public_profiling_claim": false,
+              "scheduler_integration_claim": false,
+              "request_scope_integration_claim": false,
+              "schema": "nex.private-task-profile-collector-test/1"
+            }
+          ]
+        },
+        {
+          "group": "task_profile_report_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 60
+            }
+          ]
+        },
+        {
+          "group": "typed_web_delivery",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 6
+            },
+            {
+              "ok": true,
+              "cases": 6
+            },
+            {
+              "ok": true,
+              "cases": 14
+            },
+            {
+              "ok": true,
+              "production_projects": 2,
+              "Node_cases": 12,
+              "engine_agreement_and_retained026_cases": 3,
+              "boundary_capture_package_cases": 14
+            }
+          ]
+        },
+        {
+          "group": "task_file_reads_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 9,
+              "commands": 49,
+              "native_reference_agreement": true,
+              "standalone_without_compiler": true,
+              "source_component_project": true
+            }
+          ]
+        },
+        {
+          "group": "task_profile_versioned_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "clock_failures": 0,
+              "counter_overflows": 0,
+              "dropped_allocations": 0,
+              "dropped_events": 14,
+              "dropped_frames": 0,
+              "dropped_functions": 0,
+              "dropped_guards": 0,
+              "dropped_invocations": 0,
+              "dropped_tasks": 0,
+              "duration_ns": 37758288,
+              "exit_code": 0,
+              "incomplete": true,
+              "invalid_transitions": 0,
+              "ok": true,
+              "origin_wall_ns": 6678770937773,
+              "provenance_rejections": 4,
+              "serialization_overflows": 0,
+              "started_unix_ms": 1793442447653,
+              "suppressed_hooks": 0,
+              "total_functions": 4,
+              "total_invocations": 0,
+              "total_segments": 0,
+              "total_tasks": 2,
+              "tracy": false,
+              "untracked_frees": 0,
+              "schema": "nex.profile-session/2"
+            }
+          ]
+        },
+        {
+          "group": "task_debug_runtime_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 109,
+              "markers": 614,
+              "catalog_abi": 1,
+              "execution_abi": 3,
+              "nonowning": true
+            }
+          ]
+        },
+        {
+          "group": "task_debug_registry_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 165,
+              "markers": 614,
+              "completions": 5,
+              "catalog_abi": 2,
+              "execution_abi": 3,
+              "nonowning": true
+            }
+          ]
+        },
+        {
+          "group": "task_profile_workflow_native",
+          "reported_unittest_cases": 5,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_debug_ir_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "assertions": 183,
+              "cases": 9,
+              "initialized_lexical_visibility": true,
+              "live_debugger_claim": false,
+              "ok": true,
+              "opt_in_metadata_only": true,
+              "unchanged_execution_ir": true
+            }
+          ]
+        },
+        {
+          "group": "task_profile_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "commands": 31,
+              "numerical_timing_or_speed_claim": false,
+              "reference_profiling_claim": false,
+              "profile_dormant_agreement": true,
+              "task_tracy_rejected_before_source_output": true,
+              "schema": "nex.task-profile-native-test/1"
+            }
+          ]
+        },
+        {
+          "group": "task_debug_versioned_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cached": false,
+              "checked_functions": 4,
+              "genuine019": true,
+              "live_debugger_claim": false,
+              "ok": true,
+              "source_unchanged": true,
+              "schema": "nex.private-task-debug-versioned/1"
+            }
+          ]
+        },
+        {
+          "group": "dns_policy",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "dns_library",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_network_transport",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 87,
+              "actual_IPv4_IPv6": true,
+              "source_language_enabled": false,
+              "schema": "nex.task-tcp-kernel/1"
+            }
+          ]
+        },
+        {
+          "group": "task_debugging_native",
+          "reported_unittest_cases": 14,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "task_debug_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "live_debugger_claim": false,
+              "general_provider_claim": false,
+              "opt_in_cache_and_metadata_image_repair": true,
+              "genuine019_cli_rejected_all16_tables_ddl_head_and_physical_bytes_unchanged": true,
+              "commands": 39,
+              "schema": "nex.task-debug-native-test/1"
+            }
+          ]
+        },
+        {
+          "group": "http_client_policy",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "target_rejections": 48,
+              "seconds": 0.022
+            }
+          ]
+        },
+        {
+          "group": "http_client_library",
+          "reported_unittest_cases": 2,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "http_stream_library",
+          "reported_unittest_cases": 2,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "source_exception_prototype",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 29,
+              "native_supported": false,
+              "typescript_supported": false,
+              "task_supported": false
+            }
+          ]
+        },
+        {
+          "group": "source_exception_discovery",
+          "reported_unittest_cases": 3,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "source_exception_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 70
+            }
+          ]
+        },
+        {
+          "group": "source_exception_tasks_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "task_ir_experiment": false,
+              "ok": true,
+              "cases": 33,
+              "task_reference_experiment": true,
+              "native_task_exceptions": true,
+              "native_execution_in_this_probe": false,
+              "typescript_task_exceptions": true
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_agreement",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 35
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_lifetimes",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 19,
+              "complete_region_inference": false,
+              "exception_lifetime_analysis": true,
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "source_exception_lifetime_compatibility",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_programs": 66
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_ir_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "task_ir_experiment": true,
+              "ok": true,
+              "cases": 33,
+              "task_reference_experiment": true,
+              "native_task_exceptions": true,
+              "native_execution_in_this_probe": false,
+              "typescript_task_exceptions": true
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_ir_machine",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 25,
+              "native_task_execution": false,
+              "ok": true,
+              "physical_workers": false,
+              "task_ir_machine": true
+            }
+          ]
+        },
+        {
+          "group": "task_tcp_delivery",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "target_rejections": 22,
+              "authority_rejections": 18,
+              "source_deleted_package": true,
+              "seconds": 218.07720145799976
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_ir_agreement",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 74
+            }
+          ]
+        },
+        {
+          "group": "public_task_stream_histories",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "genuine023_revisions": 27,
+              "native_reference_pairs": 27,
+              "rejected_migrations": 9
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_scheduler",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 14,
+              "runtime_priority_repetitions": 32,
+              "implicit_priority_repetitions": 32,
+              "global_fatal_cases": 3,
+              "physical_workers": true
+            }
+          ]
+        },
+        {
+          "group": "task_tcp_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "case_count": 36,
+              "seconds": 283.4448972780001
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_native_profile",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 18
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 148,
+              "stage_rejections": 2
+            }
+          ]
+        },
+        {
+          "group": "source_exception_task_native_debug",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 14,
+              "pauses": 26
+            }
+          ]
+        },
+        {
+          "group": "source_exception_http_request_host",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 61,
+              "private_ABIs": 2,
+              "concurrent_requests": 8,
+              "parent_control_preserved": true,
+              "source_and_runtime_separate": true,
+              "compiled_NEX_claimed": false
+            }
+          ]
+        },
+        {
+          "group": "source_exception_http",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "images": 4,
+              "references": 11,
+              "requests": 114
+            }
+          ]
+        },
+        {
+          "group": "source_exception_frontiers",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "source_programs": 14,
+              "native_comparisons": 54
+            }
+          ]
+        },
+        {
+          "group": "source_exception_module_http",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "images": 12,
+              "requests": 362
+            }
+          ]
+        },
+        {
+          "group": "source_exception_module_profile",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "programs": 7,
+              "profiled_runs": 42
+            }
+          ]
+        },
+        {
+          "group": "source_exception_module_http_profile",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "images": 12,
+              "profiled_servers": 48,
+              "requests": 362
+            }
+          ]
+        },
+        {
+          "group": "store_transactions_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 85,
+              "deferred_HTTP_start": true,
+              "legacy_eager_constructor": true,
+              "busy_timeout_ms": 1000,
+              "real_write_conflict_retained": true
+            }
+          ]
+        },
+        {
+          "group": "source_exceptions_migration",
+          "reported_unittest_cases": 3,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "source_exception_handlers",
+          "reported_unittest_cases": 8,
+          "reported_unittest_skips": 1,
+          "driver_summaries": [],
+          "declared_skip_guards_not_a_runtime_trace": [
+            {
+              "source": "tests/exception_handlers.py",
+              "line": 194,
+              "expression": "unittest.skipUnless(os.environ.get('NEX_GENUINE025_COMPILER'),'set NEX_GENUINE025_COMPILER for actual025 history migration')"
+            }
+          ]
+        },
+        {
+          "group": "source_exception_provider_records",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "checks": 24,
+              "source_provider_mask": 7967
+            }
+          ]
+        },
+        {
+          "group": "source_exceptions_public",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "source_exceptions_projects_debug",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 3
+            }
+          ]
+        },
+        {
+          "group": "source_exceptions_http_public",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true
+            }
+          ]
+        },
+        {
+          "group": "source_error_owned_payload",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "cases": 29,
+              "concrete_type_context": true,
+              "ok": true,
+              "owned_payload_packets": true,
+              "source_syntax_enabled": false
+            }
+          ]
+        },
+        {
+          "group": "typed_source_frontend_reference",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 57,
+              "source027_archivable": true
+            }
+          ]
+        },
+        {
+          "group": "source_finally_foundation",
+          "reported_unittest_cases": 9,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "typed_error_genuine026_origin",
+          "reported_unittest_cases": 1,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "typed_source_native",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "comparisons": 78
+            }
+          ]
+        },
+        {
+          "group": "source_error_authority_kernel",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 52,
+              "source_prepare_outside_lock": true,
+              "physical_retirement": true
+            }
+          ]
+        },
+        {
+          "group": "source_error_authority_typescript",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 40,
+              "unknown_keys_rejected": true,
+              "private_payload_metadata": true,
+              "scope_guards": true
+            }
+          ]
+        },
+        {
+          "group": "typed_source_authority_provenance",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 20,
+              "known_escapes_rejected": 10
+            }
+          ]
+        },
+        {
+          "group": "typed_error_history_migration",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "history_tables": 16,
+              "old_revisions": 2,
+              "native_executions": 12,
+              "Node_executions": 6,
+              "graph_namespace_preserved": true
+            }
+          ]
+        },
+        {
+          "group": "typed_scalar_wasm",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "actual_Wasm_Node_checks": 59,
+              "rejected_cases": 4
+            }
+          ]
+        },
+        {
+          "group": "source_task_finally",
+          "reported_unittest_cases": 6,
+          "reported_unittest_skips": 0,
+          "driver_summaries": []
+        },
+        {
+          "group": "typed_graph_snapshots",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 12,
+              "history_tables": 16
+            }
+          ]
+        },
+        {
+          "group": "source_exceptions_projects",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "cases": 8
+            }
+          ]
+        },
+        {
+          "group": "public_task_resource_source",
+          "reported_unittest_cases": 0,
+          "reported_unittest_skips": 0,
+          "driver_summaries": [
+            {
+              "ok": true,
+              "seconds": 185.1764940510002
+            }
+          ]
+        }
+      ],
+      "LastTest_log_sha256": "5306ff253c546de9aac9ad5fdf7d45de96f38f1f241d21d24c87207e44813d13"
+    },
+    "task_typescript_steps_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/task-typescript-rerun/report.json",
+      "report_sha256": "8c5d292c8b15b41f3866a4e9b0aa4e1803d107dfce7b37541a099efabec21e1b",
+      "initial_environment_issue": "NEX_TSC not set",
+      "source_scenarios": 100
+    },
+    "task_typescript_public_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/task-typescript-public-rerun/report.json",
+      "report_sha256": "8b306cc94a31e6e19c4867715df09c80833d9e8df8c3c2ed31928f921d06b5fd",
+      "initial_environment_issue": "NEX_TSC not set",
+      "source_scenarios": 11
+    },
+    "task_file_reads_typescript_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/task-typescript-files-rerun/report.json",
+      "report_sha256": "24902d1a03269f594e67c7a6c7869563c65a1566be3f8ae4ec3029befd317dde",
+      "initial_environment_issue": "NEX_TSC not set",
+      "cases": 7
+    },
+    "task_external_typescript_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/task-typescript-external-rerun/report.json",
+      "report_sha256": "f693504885fa5eb894180dbaf042b6c248c15cf64402a5eddadc28bfac4793a1",
+      "initial_environment_issue": "NEX_TSC not set",
+      "cases": 87
+    },
+    "source_exception_typescript_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/source-exception-typescript-rerun/report.json",
+      "report_sha256": "80b328ec61770456ffaf7fc34c0e0e73cab194e8b4fbcd91262f4c9f71a7b920",
+      "initial_environment_issue": "NEX_TSC not set",
+      "comparisons": 36
+    },
+    "source_exception_tasks_typescript_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/source-exception-tasks-typescript-rerun/report.json",
+      "report_sha256": "1a0637f460acc99839f5f8ff9a2c27f9962fd23441bb8992d15f623c08fd4e8b",
+      "initial_environment_issue": "NEX_TSC not set",
+      "comparisons": 31
+    },
+    "source_exception_instances_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/source-exception-instances-rerun/report.json",
+      "report_sha256": "550a8464df01b16799e10bc1b8dad8c62423f3eb481bfec58a2b02b0ef267be4",
+      "initial_environment_issue": "NEX_TSC not set",
+      "reported_counts": {
+        "source_programs": 16,
+        "native_comparisons": 64,
+        "architecture_version": 3
+      },
+      "case_records": 64
+    },
+    "typed_source_typescript_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/typed-source-typescript-rerun/report.json",
+      "report_sha256": "439272414403a5ca805e4d2c42753584fe82654644ae2a9daf6a37be5231a7f9",
+      "initial_environment_issue": "NEX_TSC not set",
+      "reported_counts": {
+        "comparisons": 39,
+        "runtime_boundary_cases": 41
+      },
+      "case_records": 39
+    },
+    "typed_source_tasks_with_pinned_tsc": {
+      "status": "passed",
+      "environment": "WSL",
+      "report": "build/typed-source-tasks-rerun/report.json",
+      "report_sha256": "3991611ba137d34387b090c13d636f8bb8eab0bb24b0ba5497d6b565357961ac",
+      "initial_environment_issue": "NEX_TSC not set",
+      "reported_counts": {
+        "programs": 43,
+        "native_comparisons": 172,
+        "AST_TaskIR_comparisons": 43,
+        "AST_TaskIR_Node_comparisons": 35,
+        "actual_native_worker_overlap_runs": 2,
+        "rejected_programs": 2
+      },
+      "case_records": 172
+    },
+    "private_source_exception_LLDB": {
+      "status": "failed",
+      "environment": "WSL LLDB22",
+      "observed": "first checkpoint is seen; subsequent expected catch/rethrow checkpoints are not seen before exit42",
+      "affected_groups": [
+        "source_exception_task_lldb",
+        "source_exception_task_watch",
+        "source_exception_host",
+        "source_exception_module_debug"
+      ],
+      "separate_HTTP_debug_issue": {
+        "group": "source_exception_module_http_debug",
+        "observed": "expected shared-library-event stop is instead SIGSTOP plus task completion breakpoint"
+      },
+      "fixtures": [
+        {
+          "original": "/tmp/nex-private-lldb-kgx8svpw",
+          "preserved": "/mnt/f/sae/NEX/build/ctest-failures/nex-private-lldb-kgx8svpw",
+          "files": 97
+        },
+        {
+          "original": "/tmp/nex-private-lldb-dozm21vw",
+          "preserved": "/mnt/f/sae/NEX/build/ctest-failures/nex-private-lldb-dozm21vw",
+          "files": 59
+        },
+        {
+          "original": "/tmp/nex-source-host-zu173_sb",
+          "preserved": "/mnt/f/sae/NEX/build/ctest-failures/nex-source-host-zu173_sb",
+          "files": 1042
+        },
+        {
+          "original": "/tmp/nex-frontiers-_2uqq404",
+          "preserved": "/mnt/f/sae/NEX/build/ctest-failures/nex-frontiers-_2uqq404",
+          "files": 2000
+        },
+        {
+          "original": "/tmp/nex-private-http-36lp0yjh",
+          "preserved": "/mnt/f/sae/NEX/build/ctest-failures/nex-private-http-36lp0yjh",
+          "files": 1686
+        }
+      ],
+      "requirements_weakened": false
+    },
+    "LLDB_terminal_state_fixture": {
+      "status": "passed",
+      "scenario_methods": 1,
+      "environment": "WSL LLDB22",
+      "log_sha256": "01a20ab57b485bc2d81378d363563ad42d3f31a1909fa05ea917479db3d2387c",
+      "fix": "logical out may finish at process exit; conditionally resume stopped processes and explicitly assert exit0"
+    },
+    "Z3_5_3_1_verifier_candidate": {
+      "status": "passed_tests_dependency_unification_pending",
+      "scenario_methods": 11,
+      "doctor": {
+        "cpu": "alderlake",
+        "host": "x86_64-pc-linux-gnu",
+        "language": "0.27",
+        "llvm": "22.1.8",
+        "native_archiver": "/usr/lib/llvm-22/bin/llvm-ar",
+        "native_compiler": "/usr/lib/llvm-22/bin/clang++",
+        "native_debug_packager": "",
+        "native_linker": "/usr/lib/llvm-22/bin/ld.lld",
+        "native_openssl_crypto": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+        "native_openssl_include": "/usr/include",
+        "native_openssl_ssl": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+        "native_sqlite_include": "/usr/include",
+        "native_sqlite_library": "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6",
+        "runtime": "/mnt/f/sae/NEX/runtime/runtime.cpp",
+        "runtime_available": true,
+        "schema": "nex.doctor/1",
+        "sdk_manifest": "",
+        "verifier": "Z3",
+        "verifier_version": "5.3.1.0",
+        "version": "0.152.1",
+        "wasm_linker": "/usr/lib/llvm-22/bin/wasm-ld"
+      },
+      "index": {
+        "bootstrap_prompt": "llm/BOOTSTRAP.md",
+        "compiler_build": "7896901a23dc0ab96eb94b008c741ef51d95a3be0d03f3d751035b9bed1fc499",
+        "descriptor_hash": "e381acf3d06dbae1821929b8dab9e9db4aaf51d1bf6f3035c668e076915c3a8b",
+        "field_command": "nex describe --field PATH --json",
+        "fields": [
+          "api_features",
+          "api_guide",
+          "application_package_command",
+          "application_package_foreign",
+          "application_package_guide",
+          "application_package_limits",
+          "application_package_platforms",
+          "application_package_schema",
+          "binary_features",
+          "binary_guide",
+          "binary_integration_pending",
+          "binary_limits",
+          "browser_workers",
+          "build_features",
+          "build_guide",
+          "builtins",
+          "compatibility_guide",
+          "compute",
+          "debug_expression_protocol",
+          "debug_features",
+          "debug_frame_protocols",
+          "debug_frame_schema",
+          "debug_guide",
+          "debug_runtime_view",
+          "debug_value_protocol",
+          "debug_wire_schema",
+          "device",
+          "diagnostic_features",
+          "discovery_commands",
+          "dns_provider",
+          "editor_analysis",
+          "editor_extension_manifest",
+          "editor_features",
+          "editor_integration_pending",
+          "editor_project_debug",
+          "effects",
+          "expression_guide",
+          "features",
+          "file_environment",
+          "file_features",
+          "file_guide",
+          "file_limits",
+          "file_platforms",
+          "foreign_boundary",
+          "frontend_diagnostic_features",
+          "frontend_diagnostic_guide",
+          "frontend_diagnostic_limits",
+          "frontend_diagnostic_schema",
+          "function_value_features",
+          "function_value_guide",
+          "function_value_limits",
+          "generic_constraints",
+          "generic_features",
+          "generic_limits",
+          "grammar",
+          "graph_database_schema",
+          "graph_features",
+          "graph_guide",
+          "graph_identity_limits",
+          "graph_identity_policy",
+          "graph_identity_schema",
+          "graph_query_entities",
+          "graph_query_features",
+          "graph_query_guide",
+          "graph_query_limits",
+          "graph_query_schema",
+          "graph_schema",
+          "history_features",
+          "history_guide",
+          "history_limits",
+          "history_schema",
+          "host_resource_runtime",
+          "host_sdk_schema",
+          "http_client_provider",
+          "http_response_streams",
+          "http_storage_transactions",
+          "ios_archive_target",
+          "language_server",
+          "linux_guide",
+          "llm_prompt",
+          "match_features",
+          "match_guide",
+          "match_limits",
+          "mobile_project_generation",
+          "model",
+          "native_application_lifetime",
+          "native_core",
+          "native_debug_image_binding",
+          "native_debug_pages",
+          "native_debug_session",
+          "native_diagnostic_guide",
+          "native_diagnostic_limits",
+          "native_diagnostic_schema",
+          "native_target_policy",
+          "native_tool_arguments",
+          "native_toolchain_schema",
+          "not_yet_supported",
+          "numeric_features",
+          "numeric_integration_pending",
+          "numeric_limits",
+          "operation_guide",
+          "operation_identity_policy",
+          "operation_schema",
+          "operation_source_kinds",
+          "parser_limits",
+          "partial_debug_frame_schema",
+          "patch_entities",
+          "patch_features",
+          "patch_limits",
+          "profile_features",
+          "profile_guide",
+          "project_build",
+          "project_features",
+          "project_manifest_schema",
+          "realms",
+          "resource_executor",
+          "resource_features",
+          "resource_guide",
+          "resource_regions",
+          "result_propagation",
+          "runtime_contracts",
+          "schema",
+          "scoped_discovery",
+          "sdk_bundle_platforms",
+          "sdk_bundle_tool",
+          "server_cors",
+          "server_guide",
+          "snapshot_external_artifacts_included",
+          "snapshot_features",
+          "snapshot_guide",
+          "snapshot_limits",
+          "snapshot_schema",
+          "source_concurrency",
+          "source_exception_prototype",
+          "source_exceptions",
+          "source_resources",
+          "specification",
+          "string_debug_capture_kind",
+          "string_debug_features",
+          "string_debug_guide",
+          "string_debug_limits",
+          "string_debug_schema",
+          "structured_tasks_runtime",
+          "task_catalogue_command",
+          "task_debugging",
+          "task_execution_limits",
+          "task_external_completion",
+          "task_features",
+          "task_file_reads",
+          "task_file_streams",
+          "task_file_streams_host",
+          "task_file_streams_prototype",
+          "task_file_writes",
+          "task_file_writes_host",
+          "task_file_writes_prototype",
+          "task_foreign_field",
+          "task_foreign_prototype",
+          "task_guide",
+          "task_network_transport",
+          "task_profile_collector",
+          "task_profiling",
+          "task_provider_debugging",
+          "task_provider_profiling",
+          "task_providers",
+          "task_schema",
+          "task_shared_providers",
+          "task_value_retirement",
+          "tcp_provider",
+          "toolchain_fingerprint",
+          "trait_features",
+          "trait_integration_pending",
+          "trait_limits",
+          "types",
+          "verification_features",
+          "verification_guide",
+          "version",
+          "wasm_features",
+          "web_guide",
+          "windows_core_target"
+        ],
+        "full_command": "nex describe --json",
+        "full_schema": "nex.language/1",
+        "guide": "docs/discovery.md",
+        "kind": "index",
+        "language": "0.27",
+        "schema": "nex.discovery/1",
+        "toolchain": "0.152.1"
+      },
+      "compiler_sha256": "2e00f7cf9785e322117caab1f309a20757ac7490f99502358cca789097acf28e",
+      "log_sha256": "eca1a60454b328cae229795f2f066af45e6cdad837760c5928234af55d562ea7",
+      "ldd_sha256": "918f2966cc92b56a974d01fbfc6f1528c8fb02f850e43d2da50e7d1d409b5dac",
+      "query_comparison": {
+        "schema": "nex.z3-pinned-comparison/1",
+        "query_sha256": "c171077b9ef6a0cd616436bd601aa21b36d70ce869ea79c40336938dcfac2cf3",
+        "query": "/mnt/f/sae/NEX/build/ctest-failures/__main__.Verification.test_branches_calls_assertions_and_graph_attribution-nex_test_txd2a0k0/.nex/verify/run-4216391534-3048543409/f6295ff18a8d2e5bdd19d545adfc00e1f8b1beed3b069c4f7bdceaedf0a7ca16/queries/1.smt2",
+        "solver_timeout_ms": 2000,
+        "solver_resource_limit": 1000000,
+        "old_version": "Z3 version 4.8.12 - 64 bit",
+        "old_stdout": "unknown\n",
+        "old_stderr": "",
+        "new_version": "5.3.1.0",
+        "new_result": "unsat",
+        "new_seconds": 0.005710516000362986,
+        "new_reason": "",
+        "new_statistics": "(:bound-simplifications 1\n :max-memory            18.12\n :memory                18.12\n :num-allocs            61055\n :rlimit-count          437\n :solve-eqs-elim-vars   1\n :solve-eqs-steps       1\n :time                  0.00)",
+        "NEX_binary_changed": false
+      },
+      "known_issue": "distro LLVM requires libz3.so.4 while candidate directly uses libz3.so.5.3; not promoted as an accepted SDK toolchain",
+      "primary_compiler_changed": false,
+      "solver_limits_increased": false
+    },
+    "native_Windows_ASan": {
+      "status": "passed",
+      "groups": 1,
+      "failed_groups": [],
+      "scope": "direct Windows file runtime and instrumented SQLite; no Windows LSan claim",
+      "JUnit_sha256": "7e499b2a53575d3305f4e92fe1dc4ef60f531579f09cb23b1460a7cf58124cec",
+      "log_sha256": "7782d4da0fa09e311879c8be768885ebc4dd4fde4b9e392b1c5510fd0438ada5"
+    },
+    "sequential_timeout_followup": {
+      "status": "failed",
+      "groups": 2,
+      "failed_groups": [
+        "public_task_write_delivery"
+      ],
+      "environment": "WSL",
+      "parallelism": 1,
+      "limits_increased": false,
+      "JUnit_sha256": "789411995b06cd43a01e9dc3dfb2a1fa743ebf8e66c681e8e788384cd529f5b1",
+      "log_sha256": "625c169a1416a88d803d505e7f11f453e68edee4371f6a4e1e03c07cb62a33a6"
+    }
+  },
+  "pending": [
+    {
+      "item": "Windows-hosted NEX compiler and portable SDK",
+      "status": "pending",
+      "reason": "Windows LLVM/MLIR dependency chain and POSIX compiler/process/debug/packaging portability remain open"
+    },
+    {
+      "item": "Windows native parallel_map",
+      "status": "pending",
+      "reason": "ordinary structured CPU tasks are tested separately; parallel_map target still rejects Windows"
+    },
+    {
+      "item": "Windows checked DLL/FFI loader and CUDA from NEX",
+      "status": "pending",
+      "reason": "POSIX FFI loader remains rejected; no std/device CUDA provider or NEX CUDA invocation accepted"
+    },
+    {
+      "item": "CUDA cancellation/deadline/typed errors/owned lifetimes",
+      "status": "pending",
+      "reason": "driver prerequisite probe is not a NEX task/resource adapter"
+    },
+    {
+      "item": "actual ARM64 Windows execution",
+      "status": "pending",
+      "reason": "no physical ARM64 Windows device; cross-builds are separate"
+    },
+    {
+      "item": "Windows debugger/profiler/HTTP/packaging/browser UI delivery",
+      "status": "pending",
+      "reason": "not accepted by the scoped native CPU/file/Node probes"
+    },
+    {
+      "item": "DirectX/DirectML/NPU execution from NEX",
+      "status": "pending",
+      "reason": "only OS device/DLL availability observed; no NEX execution or separate provider contract accepted"
+    }
+  ],
+  "skipped": [
+    {
+      "item": "Wine compatibility",
+      "status": "skipped",
+      "reason": "not configured; actual Windows execution checked separately"
+    },
+    {
+      "item": "Mac SDK binary checksum and Mac rerun",
+      "status": "skipped",
+      "reason": "Mac binaries not published in the source delivery record and not installed on Windows"
+    }
+  ],
+  "Windows_hosted_SDK_accepted": false,
+  "CUDA_NEX_accepted": false,
+  "all_PLAN_complete": false,
+  "delivery_record_checks": {
+    "record": "docs/releases/0.152.1.json",
+    "Mac_source_commit": "7de7a9033a9eb2244b26f2a3a2ff9bfcc8e4c0cb",
+    "Mac_source_is_ancestor_of_base": true,
+    "publication_preserves_compiler_sources": true,
+    "NEX_MIT_notice_sha256_matches": true,
+    "browser_fixture_sha256_matches": true,
+    "Mac_SDK_archive_verified_here": false,
+    "native_Mac_retested_here": false
+  },
+  "changed_code_sha256": {
+    "llm/language-pack.json": "df856d65290032f184356b19115de989b4a6f6884b191b37444f360958d485eb",
+    "runtime/nex_files.h": "49d7a85000b76a8474d2c862f58f484f9b1e980e73e37a24cb574b1b58e67e2f",
+    "runtime/nex_files_windows.h": "88bafdd61ff6c72c6c96ed9bb7f2ff2e5740931969002cbcd2c1bbdceae662c9",
+    "runtime/nex_task_application.cpp": "d2b50cd85e561f412e2523905ada8b6019bfffc3ce147f6f1aab38dc35665de8",
+    "runtime/nex_task_file_read.h": "f433a64e64e43f1bc6b3049f14f9cef02f0a2c7fc087615b83630d9200f547d7",
+    "runtime/nex_task_file_source.h": "5489d4c4f4fc979dee79caf4579c556efcea953f390bd4ab9b4ad9482de91b13",
+    "runtime/nex_task_file_stream.h": "dff73d32763de8f527cd3d3bd37c6fe7fc46e62d5ccd660f4f85a770da4ce960",
+    "runtime/nex_task_file_write.h": "da6adfc5feb20681985f5323610bb49b5017fd3a6f917aa17b6d5542bbd00c77",
+    "runtime/nex_task_frame.cpp": "4bdaedfb4690301ba99caeb699e147afb0d8c2aff8f68a04dfef8d00aee7ce21",
+    "runtime/nex_task_frame.h": "a3f689237be807b8e8d4e3bc0a26be6c1f9d495e300788877dc856425940e352",
+    "src/backend.cpp": "b32cc89749b42bdf1b945a67c22311dd2268c6b96040879ac04bde25a3d01cd7",
+    "src/language.cpp": "062e873c0ad72cbde89643afe2f9dac71233091abf18fd25214e66bb9a6d0428",
+    "tests/task_provider_debugging.py": "827949ab8c76b311cfe92a03fd59f75e1afc9377ce83e9dc73269c4e651b2478",
+    "tests/windows_io.cpp": "2f885e8e75d64c21134c67c321b6d1e9587f11ce274aa61a5a48411d2a83556b",
+    "tests/windows_native_cases.py": "4475d15403e76c8f962a70efcdf4235bac85131d0ad5dc487c42562ba6b55d4d",
+    "tests/windows_runtime.py": "03f34cb87ece89e1ecceb5f449ebd873008b4636891de0133fa6e7ee73797f87",
+    "tests/windows_runtime_contracts.py": "d570c3f6e07216030e0d58a50bace9f31329cab6b99977b1d97a5a69c080f156",
+    "tests/windows_targets.py": "909e6b00057fe784896087469b6a38a4e4c5da4c1aca391e9f068afa4f9f2485",
+    "tools/windows/CMakeLists.txt": "a749ee8f756b24e5afb5ee3e8741afbd76481a0d8492f689590dc7ea81b8cac0",
+    "tools/windows/acceptance.py": "4a10580f6a5e2955f1944ae6e3f4c45c31b93ee28411b27f9d00842c89d43392",
+    "tools/windows/cuda_probe.cpp": "fa23c783250fc620655ecee1c9498fa559c6905e6adf648ff6b148818ceaebc5",
+    "tools/windows/cuda_toolchain_check.cu": "a561c22fe225d23144f3bfdac4b30d2f96df3da18d95ce426b59fbe0b027f0a9",
+    "tools/windows/dependencies.json": "90f6d935f7f177389826d558817f612060164c0c93bf66dc5e246cc607bc75ad",
+    "tools/windows/inventory.ps1": "e12c254102a77cb45c9b239a52ba9921ca84ae331ca873e927b48cccf8d5a362",
+    "tools/windows/producer-env.sh": "e645d731b37c461e9b413e3769ac23c0913cbc46363d73b36b913c362cc7ba8f",
+    "tools/windows/run-target.ps1": "31b58b56118ea1431d57458222d96280851884452772bdf3832c478eae2a9f08",
+    "tools/windows/run_pe.py": "076239b77229c9455fefef09e853e97d4eca0fe33a49cbe9c4f4a9fa87d1f7a5",
+    "tools/windows/summarize.py": "93914eb626d10c772844ae3019839573bf11443bc81bece37049b1bd46ab1c3a",
+    "tools/windows/typescript_acceptance.py": "1e866ea562f7e817bb1d4c3dc599794b2c54aa3cf5268bc9871e658df9c40213"
+  },
+  "preserved_failures": [
+    "build/local/windows-io.log",
+    "build/local/windows-io-native.log",
+    "build/native-acceptance-1/report.json",
+    "build/native-acceptance-2/report-before-resume-1.json",
+    "build/native-acceptance-2/report-before-resume-2.json",
+    "build/local/ctest-wsl-initial.log"
+  ]
+}

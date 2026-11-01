@@ -1,4 +1,5 @@
 """Source file ownership, effects/realms, backends and genuine 0.13 migration."""
+from sqlite_fixture import connection as sqlite_connection
 import copy
 import json
 from pathlib import Path
@@ -174,7 +175,7 @@ endpoint file_api("POST","/api/file")=handler;
         self.assertEqual(self.cli('check',ok=False)['code'],'E_TYPE')
 
     def test_browser_excludes_unused_server_files_and_allows_contextual_alias(self):
-        (self.root/'model.nex').write_text('module model;pub struct Item{value:i64;}')
+        (self.root/'model.nex').write_text('module model;pub struct Item{value:i64;}', newline="\n")
         self.source('''module browser;
 import "./model.nex" as file;
 struct Private{resource:file;}
@@ -195,20 +196,20 @@ client test fn browser_test()->unit{let file:fn(i64)->i64=fn(n:i64)->i64{return 
 
     def test_genuine_013_plain_migration_keeps_history_and_ids(self):
         fixture=json.loads((harness.REPO/'tests/fixtures/language-0.13.json').read_text());self.source(fixture['source']);old=self.historical_store('0.13')['revision'];self.file.unlink()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             old_source=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             ids=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('graph',ok=False)['code'],'E_LANGUAGE_VERSION');current=self.cli('migrate')
         self.assertEqual(current['language'],harness.CURRENT_LANGUAGE);self.assertNotEqual(current['revision'],old)
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],old_source)
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(),ids)
         self.assertEqual({v['language'] for v in self.cli('history')['revisions']},{'0.13',harness.CURRENT_LANGUAGE})
 
     def repair_fixture(self,suffix):
         fixture=json.loads((harness.REPO/('tests/fixtures/language-'+suffix+'.json')).read_text());self.source(fixture['source']);old=self.historical_store(suffix)['revision'];self.file.unlink()
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             original=db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0]
             identities=db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
         self.assertEqual(self.cli('migrate',ok=False)['code'],'E_DUPLICATE')
@@ -218,10 +219,10 @@ client test fn browser_test()->unit{let file:fn(i64)->i64=fn(n:i64)->i64{return 
         for key,source in bundle['files'].items():
             for name in names:source=re.sub(r'\b'+name+r'\b','LegacyFile' if name=='file' else 'legacy_'+name,source)
             bundle['files'][key]=source
-        candidate=self.root/'repair.json';candidate.write_text(json.dumps({'schema':'nex.graph/2','language':'0.13','revision':old,'bundle':bundle}))
+        candidate=self.root/'repair.json';candidate.write_text(json.dumps({'schema':'nex.graph/2','language':'0.13','revision':old,'bundle':bundle}), newline="\n")
         current=self.cli('migrate',candidate);self.assertEqual(current['language'],harness.CURRENT_LANGUAGE)
         self.assertEqual(self.cli('run','--revision','HEAD')['stdout'],fixture['stdout']);self.cli('test','--revision','HEAD','--target','web')
-        with sqlite3.connect(self.root/'.nex/graph.db') as db:
+        with sqlite_connection(self.root/'.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?',(old,)).fetchone()[0],original)
             after=set(db.execute('SELECT module,name,id FROM node_ids').fetchall());self.assertTrue(set(identities)<=after)
 

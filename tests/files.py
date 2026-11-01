@@ -1,4 +1,7 @@
 """Text-file source semantics, native/reference agreement and preserved 0.11 history."""
+from host_fixture import stop_server
+from host_fixture import run_native
+from sqlite_fixture import connection as sqlite_connection
 import json
 import os
 from pathlib import Path
@@ -46,7 +49,7 @@ server fn main() -> unit !{fs,io} {
         self.assertEqual((self.data / 'nested/Я🧠.txt').read_bytes(), 'Я🧠\0text'.encode())
 
     def test_capability_is_explicit_and_read_only_by_default(self):
-        (self.data / 'existing').write_text('kept')
+        (self.data / 'existing').write_text('kept', newline="\n")
         self.source('''module capabilities;
 server fn main() -> unit !{fs,io} {
  print(error_code(file_read_text("existing")));
@@ -59,7 +62,7 @@ server fn main() -> unit !{fs,io} {
         self.assertEqual((self.data / 'existing').read_text(), 'kept')
 
     def test_paths_symlinks_invalid_text_and_limits_match(self):
-        outside = self.root / 'outside';outside.write_text('private')
+        outside = self.root / 'outside';outside.write_text('private', newline="\n")
         (self.data / 'escape').symlink_to(outside)
         (self.data / 'alias').symlink_to(self.root, target_is_directory=True)
         (self.data / 'invalid').write_bytes(b'\xc3\x28')
@@ -162,10 +165,10 @@ fn main()->unit{}
         task['requirements'] = [{'id': 'file-policy', 'text': 'Allow only the reviewed server filesystem effect.',
             'bindings': [{'program': 'app', 'kind': 'function', 'symbol': 'reviewed_files::load'}],
             'targets': ['source'], 'checks': ['effects']}]
-        path = self.root / 'task.json';path.write_text(json.dumps(task))
+        path = self.root / 'task.json';path.write_text(json.dumps(task), newline="\n")
         self.assertEqual(self.cli('task', path, '--kind', 'run')['status'], 'passed')
         task['checks'][0]['allowed_effects'] = []
-        path.write_text(json.dumps(task))
+        path.write_text(json.dumps(task), newline="\n")
         failed = self.cli('task', path, '--kind', 'run', ok=False)
         self.assertEqual(failed['status'], 'not_satisfied')
         self.assertEqual(failed['checks'][0]['violations'], [{'symbol': 'reviewed_files::load', 'effect': 'fs'}])
@@ -176,14 +179,14 @@ fn main()->unit{}
 server fn observe()->str!{fs}{let value:str="snapshot";return value;}
 server fn main()->unit!{fs,io}{print(observe());}
 ''')
-        (self.data / 'private').write_text('kept')
+        (self.data / 'private').write_text('kept', newline="\n")
         session = self.cli('debug')
         manifest = Path(session['manifest']);identity = json.loads(manifest.read_text())
         frame = {'schema': 'nex.debug-frame/1', 'language': harness.CURRENT_LANGUAGE, 'revision': identity['revision'],
             'build_key': identity['build_key'], 'function': 'watched_files::observe',
             'stop': {'process_id': '100', 'thread_id': '101', 'frame_id': 0, 'stop_id': '1'},
             'bindings': [{'name': 'value', 'type': 'str', 'value': 'snapshot'}], 'truncated': False}
-        path = self.root / 'frame.json';path.write_text(json.dumps(frame))
+        path = self.root / 'frame.json';path.write_text(json.dumps(frame), newline="\n")
         for expression in ('file_read_text("private")', 'file_write_text("private","changed")'):
             with self.subTest(expression=expression):
                 self.assertEqual(self.cli('inspect', path, '--manifest', manifest, '--expression', expression,
@@ -194,14 +197,14 @@ server fn main()->unit!{fs,io}{print(observe());}
         fixture = json.loads((harness.REPO / 'tests/fixtures/language-0.11.json').read_text())
         self.source(fixture['source']);metadata = self.historical_store('0.11');self.file.unlink()
         old = metadata['revision']
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             ids_before = db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall()
             source_before = db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0]
         self.assertEqual(self.cli('graph', ok=False)['code'], 'E_LANGUAGE_VERSION')
         migrated = self.cli('migrate')
         self.assertEqual(migrated['language'], harness.CURRENT_LANGUAGE);self.assertNotEqual(migrated['revision'], old)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT module,name,id FROM node_ids ORDER BY module,name').fetchall(), ids_before)
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], source_before)
         self.assertEqual({r['language'] for r in self.cli('history')['revisions']}, {'0.11', harness.CURRENT_LANGUAGE})
@@ -210,7 +213,7 @@ server fn main()->unit!{fs,io}{print(observe());}
         fixture = json.loads((harness.REPO / 'tests/fixtures/language-0.11-intrinsic.json').read_text())
         self.source(fixture['source']);metadata = self.historical_store('0.11-intrinsic');self.file.unlink()
         old = metadata['revision']
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             original = db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0]
         self.assertEqual(self.cli('migrate', ok=False)['code'], 'E_DUPLICATE')
         self.assertEqual(self.cli('history')['head'], old)
@@ -218,14 +221,14 @@ server fn main()->unit!{fs,io}{print(observe());}
         for name, source in bundle['files'].items():
             bundle['files'][name] = source.replace('file_read_text', 'legacy_read').replace('file_write_text', 'legacy_write')
         candidate = self.root / 'reviewed-repair.json'
-        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.11', 'revision': old, 'bundle': bundle}))
+        candidate.write_text(json.dumps({'schema': 'nex.graph/2', 'language': '0.11', 'revision': old, 'bundle': bundle}), newline="\n")
         migrated = self.cli('migrate', candidate)
         self.assertEqual(self.cli('run', '--revision', migrated['revision'])['stdout'], metadata['stdout'])
-        with sqlite3.connect(self.root / '.nex/graph.db') as db:
+        with sqlite_connection(self.root / '.nex/graph.db') as db:
             self.assertEqual(db.execute('SELECT source FROM revisions WHERE hash=?', (old,)).fetchone()[0], original)
 
     def test_native_http_does_not_inherit_cli_file_capability(self):
-        (self.data / 'private').write_text('do not expose')
+        (self.data / 'private').write_text('do not expose', newline="\n")
         self.source('''module http_files;
 import "std/http.nex" as http;
 server fn handle(request:http::Request)->http::Response!{fs}{
@@ -247,7 +250,7 @@ server fn handle(request:http::Request)->http::Response!{fs}{
                 with urllib.request.urlopen(request, timeout=10) as response:
                     value = json.loads(response.read());self.assertEqual(value['error']['code'], 'CAPABILITY')
         finally:
-            if process.poll() is None:process.send_signal(signal.SIGTERM)
+            if process.poll() is None:stop_server(process)
             stdout, stderr = process.communicate(timeout=15)
             self.assertEqual(process.returncode, 0, stdout + stderr);self.assertNotIn('E_INTERNAL_LEAK', stderr)
         self.assertEqual((self.data / 'private').read_text(), 'do not expose')
@@ -297,13 +300,13 @@ int main(int argc,char **argv){
   nex_runtime_finish();std::cout<<"granted and cancelled cleanly\n";return 0;
  }catch(const std::exception &error){std::cerr<<error.what()<<'\n';return 1;}
 }
-'''.replace('SYMBOL', symbol))
+'''.replace('SYMBOL', symbol), newline="\n")
         compiler = self.cli('doctor')['native_compiler']
         executable = self.root / 'host'
-        result = subprocess.run([compiler, '-std=c++20', '-pthread', str(driver), built['executable'],
+        result = run_native([compiler, '-std=c++20', '-pthread', str(driver), built['executable'],
             '-I' + str(harness.REPO / 'runtime'), '-o', str(executable)], capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        result = subprocess.run([str(executable), str(self.data)], env={**os.environ, 'NEX_FILES_ROOT': '/not-the-granted-root',
+        result = run_native([str(executable), str(self.data)], env={**os.environ, 'NEX_FILES_ROOT': '/not-the-granted-root',
             'NEX_FILES_WRITE': '0'}, capture_output=True, text=True, timeout=30)
         self.assertEqual((result.returncode, result.stdout), (0, 'granted and cancelled cleanly\n'), result.stderr)
 

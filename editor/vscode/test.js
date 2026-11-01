@@ -1,4 +1,8 @@
 'use strict';
+function nativeFixturePath(value) {return require('node:path').resolve(process.platform==='win32'?value.replaceAll('"',"'"):value);}
+function nativeFixtureURI(value) {return require('node:url').pathToFileURL(nativeFixturePath(value)).href;}
+function nativeFixtureSourceMap(values) {return 'settings set target.source-map '+values.map(v=>JSON.stringify(nativeFixturePath(v))).join(' ');}
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
@@ -8,21 +12,21 @@ const {createProjectDebugCommand} = require('./project-command');
 
 function descriptor() {
   return {schema: 'nex.debug-session/1', ok: true, adapter: 'nex-dap', revision: 'frozen-revision', build_key: 'frozen-build',
-    nex_adapter: {schema: 'nex.dap-adapter/1', available: true}, manifest: '/frozen debug/debug.json',
-    adapter_command: ['python3', '/sdk with spaces/debugger/nex_dap.py', '--backend', '/llvm/bin/lldb-dap'],
-    launch: {type: 'nex', request: 'launch', program: '/frozen source/app', cwd: '/project with spaces',
-      initCommands: ['command script import "captured formatter.py"'], sourceMap: [['/frozen', '/original']], args: ['--nex-grant', 'exact-manifest']}};
+    nex_adapter: {schema: 'nex.dap-adapter/1', available: true}, manifest: nativeFixturePath("/frozen debug/debug.json"),
+    adapter_command: ['python3', nativeFixturePath("/sdk with spaces/debugger/nex_dap.py"), '--backend', nativeFixturePath("/llvm/bin/lldb-dap")],
+    launch: {type: 'nex', request: 'launch', program: nativeFixturePath("/frozen source/app"), cwd: nativeFixturePath("/project with spaces"),
+      initCommands: ['command script import "captured formatter.py"'], sourceMap: [[nativeFixturePath("/frozen"), nativeFixturePath("/original")]], args: ['--nex-grant', 'exact-manifest']}};
 }
-const configuration = {type: 'nex', request: 'launch', name: 'Observe NEX', source: 'main $(literal).nex', cwd: '/project with spaces'};
+const configuration = {type: 'nex', request: 'launch', name: 'Observe NEX', source: 'main $(literal).nex', cwd: nativeFixturePath("/project with spaces")};
 const emptyManifest = async () => JSON.stringify({schema: 'nex.debug/1', revision: 'frozen-revision', build_key: 'frozen-build', sources: []});
 
 test('fresh compiler preparation preserves the frozen launch and argument boundaries', async () => {
   let observed;
   const original = descriptor();
   const prepared = await prepareSession({...configuration, args: ['a b', '$(literal)'], stopOnEntry: true}, {
-    compiler: '/sdk with spaces/bin/nex', readFile: emptyManifest, execute: async (...args) => { observed = args; return {stdout: JSON.stringify(original)}; }
+    compiler: nativeFixturePath("/sdk with spaces/bin/nex"), readFile: emptyManifest, execute: async (...args) => { observed = args; return {stdout: JSON.stringify(original)}; }
   });
-  assert.equal(observed[0], '/sdk with spaces/bin/nex');
+  assert.equal(observed[0], nativeFixturePath("/sdk with spaces/bin/nex"));
   assert.deepEqual(observed[1], ['debug', path.resolve(configuration.cwd, configuration.source), '--kind', 'nex-dap', '--json']);
   assert.equal(observed[2].shell, false);
   assert.equal(observed[2].cwd, configuration.cwd);
@@ -30,7 +34,7 @@ test('fresh compiler preparation preserves the frozen launch and argument bounda
   assert.equal(prepared.launch.program, original.launch.program);
   assert.deepEqual(prepared.launch.initCommands, original.launch.initCommands);
   assert.equal(prepared.launch.sourceMap, undefined);
-  assert.deepEqual(prepared.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"']);
+  assert.deepEqual(prepared.launch.preRunCommands, [nativeFixtureSourceMap(["/frozen","/original"])]);
   assert.deepEqual(prepared.launch.args, ['--nex-grant', 'exact-manifest', 'a b', '$(literal)']);
   assert.equal(prepared.launch.stopOnEntry, true);
   assert.equal(prepared.revision, 'frozen-revision');
@@ -39,7 +43,7 @@ test('fresh compiler preparation preserves the frozen launch and argument bounda
 test('malformed source launches fail before invoking any executable', async () => {
   let calls = 0;
   const execute = async () => { calls++; throw new Error('must not run'); };
-  for (const change of [{request: 'attach'}, {type: 'other'}, {source: '/a.json'}, {source: ''}, {cwd: 'bad\0path'}, {args: ['x\0y']}, {args: {}}, {stopOnEntry: 'false'}]) {
+  for (const change of [{request: 'attach'}, {type: 'other'}, {source: nativeFixturePath("/a.json")}, {source: ''}, {cwd: 'bad\0path'}, {args: ['x\0y']}, {args: {}}, {stopOnEntry: 'false'}]) {
     await assert.rejects(prepareSession({...configuration, ...change}, {execute}));
   }
   await assert.rejects(prepareSession(configuration, {execute, compiler: ''}));
@@ -64,7 +68,7 @@ test('mismatched or unavailable compiler responses cannot supply an adapter', as
 
 function host() {
   const errors = [];
-  return {errors, workspace: {isTrusted: true, getConfiguration: () => ({get: () => '/configured/nex'})},
+  return {errors, workspace: {isTrusted: true, getConfiguration: () => ({get: () => nativeFixturePath("/configured/nex")})},
     window: {showErrorMessage: async message => errors.push(message)},
     DebugAdapterExecutable: class {constructor(command, args, options) {Object.assign(this, {command, args, options});}}};
 }
@@ -85,11 +89,11 @@ test('each registered launch consumes only its own freshly prepared command', as
   const prepared = {launch: descriptor().launch, command: descriptor().adapter_command};
   let options;
   const integration = createIntegration(vscode, async (_, value) => {options = value; return prepared;});
-  const folder = {uri: {scheme: 'file', fsPath: '/workspace'}};
+  const folder = {uri: {scheme: 'file', fsPath: nativeFixturePath("/workspace")}};
   const first = await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(folder, configuration);
   const second = await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(folder, configuration);
   assert.notEqual(first._nexSession, second._nexSession);
-  assert.deepEqual(options, {folder: '/workspace', compiler: '/configured/nex'});
+  assert.deepEqual(options, {folder: nativeFixturePath("/workspace"), compiler: nativeFixturePath("/configured/nex")});
   const selected = integration.factory.createDebugAdapterDescriptor({configuration: second});
   assert.equal(selected.command, prepared.command[0]); assert.deepEqual(selected.args, prepared.command.slice(1));
   assert.equal(selected.options.cwd, prepared.launch.cwd);
@@ -107,17 +111,17 @@ test('trust changes during compiler preparation prevent launch registration', as
 });
 
 test('original breakpoint files map only when they match the exact frozen source bytes', async () => {
-  const response = descriptor(), original = '/project with spaces/library.nex', frozen = '/frozen/library/source.nex';
+  const response = descriptor(), original = nativeFixturePath("/project with spaces/library.nex"), frozen = nativeFixturePath("/frozen/library/source.nex");
   const manifest = {schema: 'nex.debug/1', revision: response.revision, build_key: response.build_key,
-    sources: [{original, projection: frozen, debug_path: '/anchor/source.nex'}]};
+    sources: [{original, projection: frozen, debug_path: nativeFixturePath("/anchor/source.nex")}]};
   const files = new Map([[response.manifest, JSON.stringify(manifest)], [original, Buffer.from('exact source 🧠')], [frozen, Buffer.from('exact source 🧠')]]);
   const options = {execute: async () => ({stdout: JSON.stringify(response)}), readFile: async name => files.get(name)};
   const matched = await prepareSession(configuration, options);
   assert.equal(matched.launch.sourceMap, undefined);
-  assert.deepEqual(matched.launch.preRunCommands, ['settings set target.source-map "/anchor/source.nex" "/project with spaces/library.nex" "/frozen" "/original"']);
+  assert.deepEqual(matched.launch.preRunCommands, [nativeFixtureSourceMap(["/anchor/source.nex","/project with spaces/library.nex","/frozen","/original"])]);
   files.set(original, Buffer.from('changed source'));
   const changed = await prepareSession(configuration, options);
-  assert.deepEqual(changed.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"']);
+  assert.deepEqual(changed.launch.preRunCommands, [nativeFixtureSourceMap(["/frozen","/original"])]);
   assert.deepEqual(changed.frozenSourceFallbacks, [original]);
   await assert.rejects(prepareSession({...configuration, source: original}, options), /changed after compilation/);
   manifest.build_key = 'another build';files.set(response.manifest, JSON.stringify(manifest));
@@ -140,10 +144,10 @@ test('physical entry aliases retain editor breakpoints and reject a retargeted s
     await fs.writeFile(changed, 'different source');await fs.symlink(original, selected);
     const response = descriptor();response.manifest = path.join(root, 'manifest.json');
     await fs.writeFile(response.manifest, JSON.stringify({schema: 'nex.debug/1', revision: response.revision,
-      build_key: response.build_key, sources: [{original: await fs.realpath(original), projection, debug_path: '/anchor/entry.nex'}]}));
+      build_key: response.build_key, sources: [{original: await fs.realpath(original), projection, debug_path: nativeFixturePath("/anchor/entry.nex")}]}));
     const config = {...configuration, source: selected};
     const prepared = await prepareSession(config, {execute: async () => ({stdout: JSON.stringify(response)})});
-    assert.deepEqual(prepared.originalSourceMappings, [['/anchor/entry.nex', selected]]);
+    assert.deepEqual(prepared.originalSourceMappings, [[nativeFixturePath("/anchor/entry.nex"), selected]]);
     await assert.rejects(prepareSession(config, {execute: async () => {
       await fs.unlink(selected);await fs.symlink(changed, selected);
       return {stdout: JSON.stringify(response)};
@@ -155,7 +159,7 @@ test('compiler pre-run commands survive source-map configuration and malformed m
   const response = descriptor();response.launch.preRunCommands = ['settings set target.disable-aslr false'];
   const options = {readFile: emptyManifest, execute: async () => ({stdout: JSON.stringify(response)})};
   const prepared = await prepareSession({...configuration, preRunCommands: ['untrusted command'], sourceMap: [['ignored', 'user map']]}, options);
-  assert.deepEqual(prepared.launch.preRunCommands, ['settings set target.source-map "/frozen" "/original"', 'settings set target.disable-aslr false']);
+  assert.deepEqual(prepared.launch.preRunCommands, [nativeFixtureSourceMap(["/frozen","/original"]), 'settings set target.disable-aslr false']);
   for (const value of ['bad', [null], [['a']], [['a', 'b\0c']], [['a', 4]]]) {
     response.launch.sourceMap = value;
     await assert.rejects(prepareSession(configuration, options), /invalid frozen source maps/);
@@ -168,7 +172,7 @@ test('compiler pre-run commands survive source-map configuration and malformed m
 });
 
 function projectFixture() {
-  const root = '/project with spaces', source = root + '/app/main.nex', projection = '/frozen app/source.nex';
+  const root = nativeFixturePath("/project with spaces"), source = nativeFixturePath(root + '/app/main.nex'), projection = nativeFixturePath("/frozen app/source.nex");
   const selection = {manifest: 'architecture $(literal).json', component: 'app', configuration: 'debug'};
   const config = {type: 'nex', request: 'launch', cwd: root, project: selection, args: ['two words', '$(literal)']};
   const plan = {schema: 'nex.project-plan/1', ok: true, source_checked: true, graph_store_opened: false, external_tools_invoked: false,
@@ -180,9 +184,9 @@ function projectFixture() {
     plan_hash: plan.plan_hash, plan, observation,
     artifacts: [{component: 'app', kind: 'executable', host_compatible: true, artifact: observation.launch.program, build_key: observation.build_key}]};
   const files = new Map([[observation.manifest, JSON.stringify({schema: 'nex.debug/1', revision: observation.revision, build_key: observation.build_key,
-    sources: [{original: source, projection, debug_path: '/anchor/app.nex'}]})], [source, Buffer.from('exact app 🧠')], [projection, Buffer.from('exact app 🧠')]]);
+    sources: [{original: source, projection, debug_path: nativeFixturePath("/anchor/app.nex")}]})], [source, Buffer.from('exact app 🧠')], [projection, Buffer.from('exact app 🧠')]]);
   const calls = [];
-  const options = {compiler: '/sdk with spaces/bin/nex', realpath: async name => name, readFile: async name => files.get(name),
+  const options = {compiler: nativeFixturePath("/sdk with spaces/bin/nex"), realpath: async name => name, readFile: async name => files.get(name),
     execute: async (compiler, args, processOptions) => {calls.push({compiler, args, processOptions});return {stdout: JSON.stringify(args[args.indexOf('--kind') + 1] === 'debug' ? response : plan)};}};
   return {root, source, config, plan, response, files, calls, options};
 }
@@ -228,8 +232,8 @@ test('non-executable and foreign-host plans do not invoke project debug', async 
 
 test('a different project artifact, configuration or architecture cannot supply the adapter', async () => {
   for (const mutate of [f => {f.response.schema = 'other';}, f => {f.response.component = 'core';}, f => {f.response.plan_hash = 'c'.repeat(64);},
-    f => {f.response.artifacts[0].artifact = '/other/app';}, f => {f.response.artifacts[0].build_key = 'different';},
-    f => {f.response.observation.launch.cwd = '/different';}, f => {f.response.graph_store_opened = true;},
+    f => {f.response.artifacts[0].artifact = nativeFixturePath("/other/app");}, f => {f.response.artifacts[0].build_key = 'different';},
+    f => {f.response.observation.launch.cwd = nativeFixturePath("/different");}, f => {f.response.graph_store_opened = true;},
     f => {f.response.observation.adapter_command = ['untrusted\0adapter'];}]) {
     const f = projectFixture();mutate(f);await assert.rejects(prepareSession(f.config, f.options));
   }
@@ -241,7 +245,7 @@ test('source and architecture changes during project preparation require a fresh
   await assert.rejects(prepareSession(f.config, f.options), /changed after compilation/);
   for (const retarget of [false, true]) {
     const f = projectFixture(), execute = f.options.execute;let changed = false;
-    f.options.realpath = async name => changed && retarget && name === f.source ? '/other/entry.nex' : name;
+    f.options.realpath = async name => changed && retarget && name === f.source ? nativeFixturePath("/other/entry.nex") : name;
     f.options.execute = async (...args) => {const value = await execute(...args);if (f.calls.length === 3) {changed = true;f.files.set(f.source, Buffer.from('changed source'));}return value;};
     await assert.rejects(prepareSession(f.config, f.options), /selected source changed after compilation/);
   }
@@ -249,7 +253,7 @@ test('source and architecture changes during project preparation require a fresh
 
 test('retargeted architecture aliases and structured project errors do not register a launch', async () => {
   const f = projectFixture(), execute = f.options.execute;let changed = false;
-  f.options.realpath = async name => changed && name === f.plan.manifest ? '/other/architecture.json' : name;
+  f.options.realpath = async name => changed && name === f.plan.manifest ? nativeFixturePath("/other/architecture.json") : name;
   f.options.execute = async (...args) => {const value = await execute(...args);if (f.calls.length === 2) changed = true;return value;};
   await assert.rejects(prepareSession(f.config, f.options), /manifest or project root changed/);
   const g = projectFixture();g.options.execute = async () => {throw Object.assign(new Error('exit 1'), {stdout: JSON.stringify({code: 'E_PROJECT_BOUNDARY', message: 'undeclared component edge'})});};
@@ -257,25 +261,25 @@ test('retargeted architecture aliases and structured project errors do not regis
 });
 
 test('project aliases map provider source breakpoints through the editor workspace spelling', async () => {
-  const f = projectFixture(), alias = '/workspace alias';f.config.cwd = alias;
-  f.options.realpath = async name => name === alias || name.startsWith(alias + '/') ? f.root + name.slice(alias.length) : name;
-  const provider = f.root + '/core/value.nex', projection = '/frozen core/source.nex';
-  const manifest = JSON.parse(f.files.get(f.response.observation.manifest));manifest.sources.push({original: provider, projection, debug_path: '/anchor/core.nex'});
+  const f = projectFixture(), alias = nativeFixturePath("/workspace alias");f.config.cwd = alias;
+  f.options.realpath = async name => name === alias || name.startsWith(nativeFixturePath(alias + '/')) ? f.root + name.slice(alias.length) : name;
+  const provider = f.root + '/core/value.nex', projection = nativeFixturePath("/frozen core/source.nex");
+  const manifest = JSON.parse(f.files.get(f.response.observation.manifest));manifest.sources.push({original: provider, projection, debug_path: nativeFixturePath("/anchor/core.nex")});
   f.files.set(f.response.observation.manifest, JSON.stringify(manifest));f.files.set(projection, Buffer.from('core source'));
-  f.files.set(alias + '/app/main.nex', f.files.get(f.source));f.files.set(alias + '/core/value.nex', Buffer.from('core source'));
+  f.files.set(nativeFixturePath(alias + '/app/main.nex'), f.files.get(f.source));f.files.set(nativeFixturePath(alias + '/core/value.nex'), Buffer.from('core source'));
   const result = await prepareSession(f.config, f.options);
-  assert.ok(result.originalSourceMappings.some(row => row[1] === alias + '/core/value.nex'));
-  assert.ok(result.originalSourceMappings.some(row => row[1] === alias + '/app/main.nex'));
+  assert.ok(result.originalSourceMappings.some(row => row[1] === nativeFixturePath(alias + '/core/value.nex')));
+  assert.ok(result.originalSourceMappings.some(row => row[1] === nativeFixturePath(alias + '/app/main.nex')));
 });
 
 test('dirty compiled project documents prevent launch registration without saving buffers', async () => {
-  const vscode = host();vscode.workspace.textDocuments = [{isDirty: true, uri: {scheme: 'file', fsPath: '/project/app/main.nex'}}];
+  const vscode = host();vscode.workspace.textDocuments = [{isDirty: true, uri: {scheme: 'file', fsPath: nativeFixturePath("/project/app/main.nex")}}];
   const prepared = {project: {component: 'app'}, launch: descriptor().launch, command: descriptor().adapter_command,
-    originalSourceMappings: [['/anchor/main.nex', '/project/app/main.nex']]};
+    originalSourceMappings: [[nativeFixturePath("/anchor/main.nex"), nativeFixturePath("/project/app/main.nex")]]};
   const integration = createIntegration(vscode, async () => prepared);
   assert.equal(await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(undefined, {}), undefined);
   assert.match(vscode.errors[0], /Save the project sources/);
-  vscode.workspace.textDocuments[0].uri.fsPath = '/unrelated/project.nex';
+  vscode.workspace.textDocuments[0].uri.fsPath = nativeFixturePath("/unrelated/project.nex");
   const selected = await integration.provider.resolveDebugConfigurationWithSubstitutedVariables(undefined, {});
   assert.ok(selected._nexSession);
   integration.dispose();
@@ -283,7 +287,7 @@ test('dirty compiled project documents prevent launch registration without savin
 
 function projectCommandHost() {
   const vscode = host(), launches = [], choices = [];
-  vscode.workspace.workspaceFolders = [{name: 'Project', uri: {scheme: 'file', fsPath: '/project with spaces'}}];
+  vscode.workspace.workspaceFolders = [{name: 'Project', uri: {scheme: 'file', fsPath: nativeFixturePath("/project with spaces")}}];
   vscode.debug = {startDebugging: async (...args) => {launches.push(args);return true;}};
   vscode.window.showQuickPick = async items => {choices.push(items);return items[0];};
   const metadata = {schema: 'nex.project-build/1', default_configuration: 'release',
@@ -297,7 +301,7 @@ test('project command chooses declared configurations and delegates to the fresh
   const h = projectCommandHost();assert.equal(await createProjectDebugCommand(h.vscode, h.options)(), true);
   assert.equal(h.launches.length, 1);assert.equal(h.choices.length, 1);
   assert.deepEqual(h.launches[0][1].project, {manifest: 'nex.build.json', component: 'app', configuration: 'release'});
-  assert.equal(h.launches[0][1].source, undefined);assert.equal(h.launches[0][1].cwd, '/project with spaces');
+  assert.equal(h.launches[0][1].source, undefined);assert.equal(h.launches[0][1].cwd, nativeFixturePath("/project with spaces"));
 });
 
 test('project command respects cancellation and trust changes without starting a debug session', async () => {
@@ -333,19 +337,19 @@ test('server project command keeps runtime settings explicit and observes cancel
 test('checked server project launch preserves runtime args and reviews foreign catalogue only at debug preparation', async () => {
   const f = projectFixture();f.plan.components[1].kind = 'server';f.response.artifacts[0].kind = 'server';
   f.response.observation.application_kind = 'http_server';f.response.observation.host_compatible = true;
-  f.response.observation.launch.args = ['--foreign', '/operator/catalogue.json'];
-  const prepared = await prepareSession({...f.config, foreign: '/operator/catalogue.json', args: ['--auth', 'private auth.json']}, f.options);
-  assert.deepEqual(prepared.launch.args, ['--foreign', '/operator/catalogue.json', '--auth', 'private auth.json']);
+  f.response.observation.launch.args = ['--foreign', nativeFixturePath("/operator/catalogue.json")];
+  const prepared = await prepareSession({...f.config, foreign: nativeFixturePath("/operator/catalogue.json"), args: ['--auth', 'private auth.json']}, f.options);
+  assert.deepEqual(prepared.launch.args, ['--foreign', nativeFixturePath("/operator/catalogue.json"), '--auth', 'private auth.json']);
   assert.equal(f.calls.length, 3);
   assert.equal(f.calls[0].args.includes('--foreign'), false);assert.equal(f.calls[2].args.includes('--foreign'), false);
-  assert.deepEqual(f.calls[1].args.slice(-3), ['--foreign', '/operator/catalogue.json', '--json']);
+  assert.deepEqual(f.calls[1].args.slice(-3), ['--foreign', nativeFixturePath("/operator/catalogue.json"), '--json']);
 });
 
 test('source server launch requests the HTTP target and refuses an unmarked artifact or conflicting authority', async () => {
   let observed;const source = descriptor();source.application_kind='http_server';source.host_compatible=true;
   await prepareSession({...configuration,target:'server',foreign:'operator.json',args:['--auth','private auth.json']}, {
     readFile:emptyManifest,execute:async(...args)=>{observed=args;return {stdout:JSON.stringify(source)};}});
-  assert.deepEqual(observed[1].slice(-4), ['--target','server','--foreign','/project with spaces/operator.json']);
+  assert.deepEqual(observed[1].slice(-4), ['--target','server','--foreign',nativeFixturePath("/project with spaces/operator.json")]);
   delete source.application_kind;
   await assert.rejects(prepareSession({...configuration,target:'server'}, {readFile:emptyManifest,execute:async()=>({stdout:JSON.stringify(source)})}), /checked host HTTP/);
   let calls=0;

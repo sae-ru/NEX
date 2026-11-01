@@ -27,13 +27,13 @@ def quotient(a,b):
 
 class Wasm(harness.ToolchainCase):
  def setUp(self):
-  super().setUp();(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+  super().setUp();(self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
  def wasm(self,entry='compute',profile='release',**kw):
   doctor=self.cli('doctor');linker=os.environ.get('NEX_WASM_LD',doctor.get('wasm_linker',''))
   if not linker or not Path(linker).is_file():self.skipTest('matching LLVM22.1 wasm-ld is not installed')
   return self.cli('build','--target','wasm','--entry',entry,'--profile',profile,timeout=180,**kw)
  def node(self,body,typescript=False):
-  path=self.root/('driver.ts' if typescript else 'driver.mjs');path.write_text(body)
+  path=self.root/('driver.ts' if typescript else 'driver.mjs');path.write_text(body, newline="\n")
   args=[os.environ.get('NEX_NODE','node')]
   if typescript:args+=['--experimental-strip-types','--no-warnings']
   result=subprocess.run([*args,str(path)],cwd=self.root,capture_output=True,text=True,timeout=60)
@@ -73,7 +73,7 @@ class Wasm(harness.ToolchainCase):
   self.source(SOURCE+'test fn matrix()->unit{'+checks+'}\nfn main()->unit{}')
   self.cli('test',timeout=180);self.cli('test','--target','web',timeout=180)
   ts=self.root/'typescript';self.cli('emit','--kind','typescript','--entry','compute','--directory',ts)
-  (self.root/'package.json').write_text('{"type":"module"}')
+  (self.root/'package.json').write_text('{"type":"module"}', newline="\n")
   for profile in ('debug','release'):
    with self.subTest(profile=profile):
     build=self.wasm(profile=profile)
@@ -168,11 +168,11 @@ for(const value of [0,1,0n,1n,'true',null]){
   self.source('module unsupported;fn main()->i64{return 1;}')
   self.assertEqual(self.wasm('main',profile='profile',ok=False)['code'],'E_OPTION')
  def test_literal_percent_quoted_unicode_and_newline_paths(self):
-  self.root=self.root/'Wasm output % "quoted", \\ 🧠\nnext';self.root.mkdir()
+  self.root=self.root/("Wasm output % 'quoted', 🧠" if os.name=='nt' else 'Wasm output % "quoted", \\ 🧠\nnext');self.root.mkdir()
   self.file=self.root/'main.nex'
-  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+  (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
   self.source(SOURCE)
-  temporary=self.root/'temporary % "quoted", 🧠';temporary.mkdir()
+  temporary=self.root/("temporary % 'quoted', 🧠" if os.name=='nt' else 'temporary % "quoted", 🧠');temporary.mkdir()
   env={name:str(temporary) for name in ['TMPDIR','TMP','TEMP','TEMPDIR']}
   for profile in ['debug','release']:
    build=self.wasm(profile=profile,env=env)
@@ -187,7 +187,7 @@ for(const value of [0,1,0n,1n,'true',null]){
     self.assertEqual(Path(build[field]).read_bytes(),(runtime/name).read_bytes())
    independent={**build,'module':str(runtime/'module.wasm'),'wrapper':str(runtime/'module.mjs')}
    body=self.imports(independent)+"console.log(JSON.stringify({value:String(instance.call([0n,9007199254740993n,1n]))}));"
-   driver=runtime/'driver.mjs';driver.write_text(body)
+   driver=runtime/'driver.mjs';driver.write_text(body, newline="\n")
    result=subprocess.run([os.environ.get('NEX_NODE','node'),str(driver)],cwd=runtime,capture_output=True,text=True,timeout=60)
    self.assertEqual(result.returncode,0,result.stdout+result.stderr)
    self.assertEqual(json.loads(result.stdout),{'value':'9007199254740994'})
@@ -200,7 +200,7 @@ for(const value of [0,1,0n,1n,'true',null]){
    self.assertNotIn(b'WASM_SERVER_SECRET_EXCLUDED_060',Path(first[name]).read_bytes())
   module=Path(first['module']);original=module.read_bytes();module.write_bytes(original+b'x')
   self.assertFalse(self.wasm()['cached']);self.assertEqual(module.read_bytes(),original)
-  revision=first['revision'];self.file.write_text(SOURCE.replace('return x*y','return x+y'))
+  revision=first['revision'];self.file.write_text(SOURCE.replace('return x*y','return x+y'), newline="\n")
   changed=self.wasm();self.assertNotEqual(changed['build_key'],first['build_key'])
   self.file.unlink();destination=self.root/'copied module'
   historical=self.cli('build','--revision',revision,'--target','wasm','--entry','compute','--profile','release','-o',destination,timeout=180)

@@ -633,3 +633,26 @@ workflow additionally requires its versioned provider, file/network, debugger,
 browser and platform gates. Retained024 provider families keep ABI5 and their
 original record schemas;025 uses ABI6 and record families11/12/13.
 
+
+
+### Static vendor provenance in Windows applications
+
+Windows native builds record SHA-256 and byte counts for the selected SQLite
+and OpenSSL static archives in the completed build metadata. Application
+packaging verifies those same inputs before collecting their explicit component
+licenses, even though a PE import table cannot name statically linked code.
+`application.json` records the archive names, hashes, sizes and license component
+without retaining local source paths. Relocated SDK archives also remain subject
+to the SDK inventory hash check. A changed archive or missing component license
+rejects packaging.
+
+### Native Windows CUDA helpers
+
+CMake installs the CUDA provider sources and `prepare.py`, `verify.py`,
+`memcheck.py` in `share/nex/tools/owned-cuda`, next to the shared owned-opencl
+corpus. Installed preparation discovers `bin/nex.exe` from that SDK, without
+a source-tree fallback. The moved Windows SDK was checked with System32-only
+PATH, explicit Python, native EXE/static/Wasm/packages, all four game batch
+launchers, all 35 physical CUDA cases and memcheck with local Named Pipes.
+See the [scoped receipt](evidence/windows-sdk-2026-11-01.json). These checks do
+not substitute for the complete maintained 40-phase distribution workflow.

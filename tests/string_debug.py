@@ -18,7 +18,7 @@ class StringFrames(harness.ToolchainCase):
         self.shape={'function':'string_debug::make::$lambda_0','identity':'12345'};self.size=1000000000
 
     def inspect(self,expression,frame=None,kind=None,**kw):
-        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame))
+        self.framefile.write_text(json.dumps(frame if frame is not None else self.frame), newline="\n")
         return self.cli('inspect',self.framefile,'--manifest',self.manifest,'--expression',expression,*(['--kind',kind] if kind else []),**kw)
 
     def supply(self,request):
@@ -190,7 +190,7 @@ def __lldb_init_module(debugger,_):
   process.Continue();assert process.GetState()==lldb.eStateExited and process.GetExitStatus()==0
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))))
+'''.replace('SOURCE',repr(projected)).replace('LINE',str(line)).replace('REPORT',repr(str(report))), newline="\n")
             output=self.cli('debug','--','--no-lldbinit','--batch','-o','command script import '+json.dumps(str(script)),machine=False,timeout=180)
             self.assertTrue(report.is_file(),output.stdout+output.stderr);values=json.loads(report.read_text())
             self.assertEqual(values['length']['value'],'2097152');self.assertEqual(values['last']['value'],'λ')

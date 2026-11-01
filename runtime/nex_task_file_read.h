@@ -2,7 +2,6 @@
 #include "nex_files.h"
 #include "nex_task_external.h"
 
-#ifndef _WIN32
 namespace nexrt {
 inline bool ordinaryTaskFileReadError(const std::string &code){
   return code=="CAPABILITY"||code=="NOT_FOUND"||code=="PERMISSION"||code=="VALIDATION"||code=="LIMIT"||code=="E_FILE"||code=="E_UTF8";
@@ -65,4 +64,3 @@ public:
   }
 };
 }
-#endif

@@ -1,15 +1,17 @@
+from host_fixture import run_native, probe_dll_inputs
 #!/usr/bin/env python3
 """Candidate027 AST/TaskIR/native O0/O2/Node agreement across real task pauses."""
+import os
 import argparse,ast,hashlib,json,os,platform,re,shutil,subprocess,tempfile,time
 from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--compiler',required=True);p.add_argument('--crypto-library');p.add_argument('--crypto-include');p.add_argument('--output',type=Path);a=p.parse_args()
 root=Path(__file__).resolve().parents[1];runtime=root/'runtime';probe=str(Path(a.probe).resolve());compiler=a.compiler
 out=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-typed-source-tasks-'));out.mkdir(parents=True,exist_ok=a.output is None)
 started=time.monotonic();records=[];report={'ok':False,'candidate_language':'0.27','public027_enabled':False,'descriptor_abi':'0x4e45585400002702','cases':records,'commands':[]}
-def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(label,cmd,allowed=(0,),timeout=180):
- r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,timeout=timeout,env={**os.environ,'NEX_RESOURCE_DIR':str(root),'NEX_FILES_ROOT':str(out),'NEX_TYPED_HOST_CATALOG':str(out/'host.json') if label.startswith('native-resource-') else '', 'NEX_PRIVATE_HOST_EVENTS':str(out/(label+'.events'))})
- (out/(label+'.stdout')).write_text(r.stdout);(out/(label+'.stderr')).write_text(r.stderr)
+ r=run_native(cmd,text=True,capture_output=True,timeout=timeout,env={**os.environ,'NEX_RESOURCE_DIR':str(root),'NEX_FILES_ROOT':str(out),'NEX_TYPED_HOST_CATALOG':str(out/'host.json') if label.startswith('native-resource-') else '', 'NEX_PRIVATE_HOST_EVENTS':str(out/(label+'.events'))})
+ (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'label':label,'exit_code':r.returncode});save()
  assert r.returncode in allowed,(label,r.returncode,r.stdout[-2000:],r.stderr[-5000:],str(out))
  if label.startswith('native-resource-') and re.search(r'-(ast|ir|run[02]-[14])$',label):
@@ -91,26 +93,26 @@ flags=['-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-
 objects=[]
 for name in ['runtime.cpp','nex_files.cpp','files_runtime.cpp','nex_task_frame.cpp','nex_task_external.cpp','nex_resource_region.cpp','nex_external_resource.cpp','nex_resource_executor.cpp','nex_task_application.cpp','foreign_runtime.cpp','nex_foreign.cpp','nex_ffi_loader.cpp','nex_ffi.cpp','nex_ffi_types.cpp','nex_ffi_resources.cpp','nex_json.cpp']:
  obj=out/(name+'.o');run('compile-'+name,[compiler,'-std=c++20','-O1','-g','-fPIC',*flags,'-c',runtime/name,'-o',obj]);objects.append(obj)
-host=out/'host.cpp';host.write_text(host_text);host_binary=out/'host';export='-Wl,-export_dynamic' if platform.system()=='Darwin' else '-Wl,--export-dynamic'
+host=out/'host.cpp';host.write_text(host_text, newline="\n");host_binary=out/('host.exe' if os.name=='nt' else 'host');export='-Wl,-export_dynamic' if platform.system()=='Darwin' else '-Wl,--export-dynamic'
 run('link-host',[compiler,'-std=c++20','-O1','-g',*flags,host,*objects,*crypto,export,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',host_binary])
-run('target',[compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',out/'target.ll']);text=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',text)[1];layout=re.search(r'target datalayout = "([^"]+)"',text)[1]
+run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll']);text=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',text)[1];layout=re.search(r'target datalayout = "([^"]+)"',text)[1]
 # A real pinned C FFI producer constructs opaque resources; source programs
 # exercise their error paths with both independent engines and native workers.
 tree=ast.parse((root/'tests/source_exception_host.py').read_text())
 literal=lambda name:ast.literal_eval(next(n.value for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(v,ast.Name) and v.id==name for v in n.targets)))
 declarations=literal('DECLARATIONS');module=literal('MODULE')
-signature=out/'signature.nex';signature.write_text('module typed_tasks;\n'+declarations.replace('@PIN@','0'*64)+'server fn main()->i64 !{task}{return 42;}')
+signature=out/'signature.nex';signature.write_text('module typed_tasks;\n'+declarations.replace('@PIN@','0'*64)+'server fn main()->i64 !{task}{return 42;}', newline="\n")
 signatures=json.loads(run('resource-signatures',[probe,'signatures',signature]).stdout)
 bundle=out/'bundle';bundle.mkdir();exports=[]
 for name,operation in [('create',1),('read',2),('add',3),('ordinary',4),('bad',5)]:
  digest=hashlib.sha256(json.dumps(signatures[name],ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest();exports.append('{sizeof(nex_ffi_export_v1),0,'+json.dumps(name)+','+json.dumps(digest)+',callback,(void*)'+str(operation)+'}')
-producer=out/'module.c';producer.write_text(module.replace('EXPORTS',','.join(exports)))
+producer=out/'module.c';producer.write_text(module.replace('EXPORTS',','.join(exports)), newline="\n")
 run('resource-module',[compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(runtime),producer,'-o',bundle/'module'])
-(bundle/'NOTICE').write_text('NEX typed error authority conformance fixture\n')
+(bundle/'NOTICE').write_text('NEX typed error authority conformance fixture\n', newline="\n")
 sha=lambda file:hashlib.sha256(file.read_bytes()).hexdigest()
-manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64'}[platform.machine()]),'entry':'module','files':[{'path':name,'sha256':sha(bundle/name)} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()},'notices':['NOTICE']}
-(bundle/'manifest.json').write_text(json.dumps(manifest)+'\n');pin=sha(bundle/'manifest.json')
-(out/'host.json').write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':2,'resource_limit':4,'resource_bytes':32,'libraries':{'host':{'directory':str(bundle),'manifest_sha256':pin,'exports':list(signatures)}}})+'\n')
+manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64','amd64':'x86_64'}[platform.machine().lower()]),'entry':'module','files':[{'path':name,'sha256':sha(bundle/name)} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()},'notices':['NOTICE']}
+(bundle/'manifest.json').write_text(json.dumps(manifest)+'\n', newline="\n");pin=sha(bundle/'manifest.json')
+(out/'host.json').write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':2,'resource_limit':4,'resource_bytes':32,'libraries':{'host':{'directory':str(bundle),'manifest_sha256':pin,'exports':list(signatures)}}})+'\n', newline="\n")
 resource_cases=[
  ('owned','server fn main()->i64 !{task,ffi,throw}{try{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi,throw}{throw(create(42));});}catch(e:Counter){task_yield();assert(read(e)==42);assert(resource_close(e));return 42;}catch(c,m){return 0;}return 0;}'),
  ('unobserved','server fn main()->i64 !{task,ffi,throw}{try{with_tasks(1,server fn(s:task_scope)->unit !{task,ffi}{task_spawn(s,server fn()->unit !{task,ffi,throw}{task_yield();throw(create(42));});});}catch(e:Counter){assert(read(e)==42);assert(resource_close(e));return 42;}catch(c,m){return 0;}return 0;}'),
@@ -128,15 +130,15 @@ catch(error){const detail=sourceException.details(error);if(detail)actual={kind:
 process.stdout.write(JSON.stringify({...actual,output:logs.join('\n')+(logs.length?'\n':'')})+'\n');
 """
 for name,text in cases:
- d=out/name;d.mkdir();source=d/'main.nex';source.write_text('module typed_tasks;\n'+text)
+ d=out/name;d.mkdir();source=d/'main.nex';source.write_text('module typed_tasks;\n'+text, newline="\n")
  expected=json.loads(run(name+'-ast',[probe,'ast',source]).stdout);actual_ir=json.loads(run(name+'-ir',[probe,'ir',source]).stdout);assert actual_ir==expected,(name,expected,actual_ir)
  assert expected['kind']==('exception' if name=='uncaught' else 'trap' if name.startswith(('fatal','authority-runtime-','native-resource-runtime-')) else 'return'),(name,expected)
  if expected['kind']=='return':assert expected['value']==42,(name,expected)
  if name.startswith('fatal'):assert expected['code']==('E_ASSERT' if name=='fatal-filter' else 'E_OVERFLOW'),(name,expected)
  if name.startswith(('authority-runtime-','native-resource-runtime-')):assert expected['code']=='E_TASK_SCOPE',(name,expected)
  for opt in ['0','2']:
-  o=d/('O'+opt);o.mkdir();run(name+'-emit'+opt,[probe,'emit',source,o,triple,layout,str(opt=='2').lower()]);lib=o/('program.dylib' if platform.system()=='Darwin' else 'program.so')
-  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run(name+'-link'+opt,[compiler,'-O'+opt,*flags,o/'program.ll','-o',lib])
+  o=d/('O'+opt);o.mkdir();run(name+'-emit'+opt,[probe,'emit',source,o,triple,layout,str(opt=='2').lower()]);lib=o/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
+  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run(name+'-link'+opt,[compiler,'-O'+opt,*flags,o/'program.ll',*(probe_dll_inputs(host_binary,o) if os.name=='nt' else []),'-o',lib])
   for workers in [1,4]:
    r=run(name+'-run'+opt+'-'+str(workers),[host_binary,lib,'workers',str(workers)],allowed=(0,42,70))
    if expected['kind']=='return':assert r.returncode==42 and r.stdout==expected['output'] and not r.stderr,(name,workers,r.returncode,r.stdout,r.stderr)
@@ -150,7 +152,7 @@ for name,text in cases:
  if name.startswith(('native-file-','native-resource-')):
   r=run(name+'-typescript-realm',[probe,'typescript',source,d],allowed=(1,));assert 'E_REALM' in r.stderr and not (d/'program.ts').exists();continue
  run(name+'-typescript',[probe,'typescript',source,d]);mapping=json.loads((d/'nex-map.json').read_text());assert mapping['execution']=='task-generator' and mapping['public_revision'] is False and mapping['schema']=='nex.development-typescript/027-3'
- (d/'run.mjs').write_text(runner);actual=json.loads(run(name+'-node',[node,'--experimental-strip-types','--no-warnings',d/'run.mjs']).stdout)
+ (d/'run.mjs').write_text(runner, newline="\n");actual=json.loads(run(name+'-node',[node,'--experimental-strip-types','--no-warnings',d/'run.mjs']).stdout)
  for key in ['kind','value','code','message','line','output']:
   if key in expected:assert actual[key]==expected[key],(name,key,expected,actual)
  programs.extend(d.glob('*.ts'))
@@ -162,7 +164,7 @@ rejections=[
  ('handler-assignment','fn main()->unit !{task,throw}{with_tasks(1,fn(outer:task_scope)->unit !{task,throw}{let leaked:channel<i64>=with_tasks(1,fn(inner:task_scope)->channel<i64> !{task}{var value:channel<i64>=channel_new<i64>(outer,1);try{value=channel_new<i64>(inner,1);throw(42);}catch(e:i64){task_yield();}return value;});});}','E_TASK_LIFETIME'),
 ]
 for name,text,code in rejections:
- f=out/(name+'.nex');f.write_text('module rejected;\n'+text);r=run(name,[probe,'check',f],allowed=(1,));assert code in r.stderr,(name,r.stderr)
+ f=out/(name+'.nex');f.write_text('module rejected;\n'+text, newline="\n");r=run(name,[probe,'check',f],allowed=(1,));assert code in r.stderr,(name,r.stderr)
 tsc=Path(os.environ['NEX_TSC']);pin=json.loads((root/'web/package.json').read_text())['devDependencies']['typescript'];assert json.loads((tsc.parent.parent/'package.json').read_text())['version']==pin
 run('strict-typescript',[node,tsc,'--noEmit','--strict','--target','ES2022','--module','ESNext','--moduleResolution','bundler','--allowImportingTsExtensions','--lib','ES2022,DOM',*programs])
 report.update(ok=True,programs=len(cases),native_comparisons=len(records),AST_TaskIR_comparisons=len(cases),AST_TaskIR_Node_comparisons=node_comparisons,actual_native_worker_overlap_runs=2,physical_Data_and_Handle_retirement=True,strict_TypeScript=True,rejected_programs=len(rejections),typescript_version=pin);save()

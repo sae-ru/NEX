@@ -1,14 +1,17 @@
+from host_fixture import run_native
+from host_fixture import exit_code, probe_dll_inputs
+import os
 import argparse,json,os,platform,re,subprocess,tempfile,time
 from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1]);p.add_argument('--output',type=Path);p.add_argument('--compiler',default=os.environ.get('NEX_CLANG','clang++'));a=p.parse_args()
 root=a.source_root.resolve();out=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-typed-source-native-'));out.mkdir(parents=True,exist_ok=a.output is None);probe=str(Path(a.probe).resolve());started=time.monotonic();records=[]
 report={'ok':False,'candidate_language':'0.27','public027_enabled':False,'actual_native_execution':True,'cases':records}
-def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+def save():report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(cmd,timeout=120):
- r=subprocess.run(list(map(str,cmd)),text=True,capture_output=True,timeout=timeout)
+ r=run_native(list(map(str,cmd)),text=True,capture_output=True,timeout=timeout)
  if r.returncode:raise AssertionError((list(map(str,cmd)),r.returncode,r.stdout,r.stderr))
  return r
-host=out/'host.ll';run([a.compiler,'-x','c','-S','-emit-llvm','/dev/null','-o',host]);t=host.read_text();triple=re.search(r'target triple = "(.*?)"',t)[1];layout=re.search(r'target datalayout = "(.*?)"',t)[1]
+host=out/'host.ll';run([a.compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',host]);t=host.read_text();triple=re.search(r'target triple = "(.*?)"',t)[1];layout=re.search(r'target datalayout = "(.*?)"',t)[1]
 fixtures=re.findall(r'value\(R"\((.*?)\)"(?:,"(.*?)")?\);',(root/'tests/typed_source.cpp').read_text(),re.S);assert len(fixtures)==31
 fixtures=[(f'reference-{i:02d}',text,False) for i,(text,_) in enumerate(fixtures)]
 fixtures += [
@@ -23,14 +26,14 @@ fixtures += [
 ]
 save()
 for name,text,project in fixtures:
- d=out/name;d.mkdir();f=d/'main.nex';f.write_text(text if project else 'module typed;\n'+text)
- if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}')
- expected=json.loads(run([probe,'reference',f]).stdout);(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n')
+ d=out/name;d.mkdir();f=d/'main.nex';f.write_text(text if project else 'module typed;\n'+text, newline="\n")
+ if project:(d/'library.nex').write_text('module errors;pub struct Fault{number:i64;}pub fn fail()->unit !{throw}{throw(Fault(42));}', newline="\n")
+ expected=json.loads(run([probe,'reference',f]).stdout);(d/'reference.json').write_text(json.dumps(expected,indent=2)+'\n', newline="\n")
  for optimization in ['0','2']:
-  e=d/('O'+optimization);e.mkdir();run([probe,'emit',f,e,triple,layout,str(optimization=='2').lower()]);lib=e/('program.dylib' if platform.system()=='Darwin' else 'program.so');flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run([a.compiler,'-O'+optimization,*flags,e/'program.ll','-o',lib])
-  actual=subprocess.run([probe,'run',str(lib)],text=True,capture_output=True,timeout=60);(e/'stdout.txt').write_text(actual.stdout);(e/'stderr.txt').write_text(actual.stderr)
+  e=d/('O'+optimization);e.mkdir();run([probe,'emit',f,e,triple,layout,str(optimization=='2').lower()]);lib=e/('program.dylib' if platform.system()=='Darwin' else 'program.so');flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else (['-shared',*probe_dll_inputs(probe,out)] if os.name=='nt' else ['-shared','-fPIC']);run([a.compiler,'-O'+optimization,*flags,e/'program.ll','-o',lib])
+  actual=run_native([probe,'run',str(lib)],text=True,capture_output=True,timeout=60);(e/'stdout.txt').write_text(actual.stdout, newline="\n");(e/'stderr.txt').write_text(actual.stderr, newline="\n")
   if expected['kind']=='return':
-   assert actual.returncode==(expected['value'] or 0)%256,(name,optimization,actual.returncode,actual.stderr)
+   assert actual.returncode==exit_code(expected['value']),(name,optimization,actual.returncode,actual.stderr)
    assert actual.stdout==expected['output'] and not actual.stderr,(name,actual.stdout,actual.stderr,expected)
   elif expected['kind']=='exception':
    assert actual.returncode==70,(name,actual.returncode,actual.stderr)

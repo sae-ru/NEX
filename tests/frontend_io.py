@@ -10,7 +10,7 @@ class FrontendIO(unittest.TestCase):
     def setUp(self):
         self.temporary=tempfile.TemporaryDirectory(prefix='nex-compiler-io-')
         self.addCleanup(self.temporary.cleanup)
-        self.root=Path(self.temporary.name)/'quoted " % \\ Я🧠'
+        self.root=Path(self.temporary.name)/("quoted ' % Я🧠" if os.name=='nt' else 'quoted " % \\ Я🧠')
         self.root.mkdir()
 
     def command(self,path):return [PROBE,str(path),json.dumps({'read_file':True})]
@@ -82,7 +82,7 @@ class FrontendIO(unittest.TestCase):
         raw+=b'test fn edge()->unit{assert(len(text())==1);assert(len(utf8_bytes(text()))==4);}\n'
         self.assertEqual(raw.index(emoji),65534)
         source=self.root/'boundary.nex';source.write_bytes(raw)
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':CURRENT_LANGUAGE,'entry':'boundary.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':CURRENT_LANGUAGE,'entry':'boundary.nex'}), newline="\n")
         for args in [('check',),('eval',),('run','--profile','release'),('test',),('test','--target','web')]:
             with self.subTest(command=args):
                 p=subprocess.run([COMPILER,*args,'--json'],cwd=self.root,capture_output=True,text=True,timeout=60)

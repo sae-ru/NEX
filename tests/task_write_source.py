@@ -10,10 +10,10 @@ else:
 started=time.monotonic();report={'schema':'nex.private023-task-writes/1','ok':False,'state':'starting','cases':[],'commands':[],
     'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'public_language':'0.24','source_language':'0.23','public_source_writes':True,'full_objective_complete':False}
 def save():
-    report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+    report['seconds']=round(time.monotonic()-started,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def run(name,argv,env,expected=0):
     report['state']=name;save();result=subprocess.run(list(map(str,argv)),cwd=root,env=env,capture_output=True,text=True,timeout=240)
-    (root/(name+'.stdout')).write_text(result.stdout);(root/(name+'.stderr')).write_text(result.stderr)
+    (root/(name+'.stdout')).write_text(result.stdout, newline="\n");(root/(name+'.stderr')).write_text(result.stderr, newline="\n")
     report['commands'].append({'name':name,'argv':list(map(str,argv)),'exit_code':result.returncode,'expected':expected});save()
     assert result.returncode==expected,(name,result.returncode,result.stdout,result.stderr)
     return result
@@ -21,15 +21,15 @@ def invoke(name,mode,path,env,language='0.23',expected=0,profile='debug'):
     result=run(name,[probe,mode,path,root/'native',language,profile],env,expected)
     return json.loads(result.stdout)
 def fixture(path):
-    path.mkdir();(path/'maximum').write_bytes(b'x'*1048576);(path/'existing').write_text('old complete value');(path/'directory').mkdir()
-    outside=path.parent/(path.name+'-outside');outside.mkdir();(outside/'secret').write_text('outside unchanged')
+    path.mkdir();(path/'maximum').write_bytes(b'x'*1048576);(path/'existing').write_text('old complete value', newline="\n");(path/'directory').mkdir()
+    outside=path.parent/(path.name+'-outside');outside.mkdir();(outside/'secret').write_text('outside unchanged', newline="\n")
     (path/'link').symlink_to(outside/'secret');(path/'linked').symlink_to(outside,target_is_directory=True)
     return outside
 cases=[
  ('text_bytes_unicode_nul_bom','''server fn main()->i64 !{task,fs}{
  let text:str="Привет 🧠";assert(unwrap(file_write_text("text",text)));assert(unwrap(file_read_text("text"))==text);
  let b:bytes=unwrap(bytes([239,187,191,65,0,255]));assert(unwrap(file_write_bytes("bytes",b)));assert(unwrap(file_read_bytes("bytes"))==b);
- let nul:str=unwrap(decode_utf8(unwrap(bytes([65,0,66]))));assert(unwrap(file_write_text("nul",nul)));assert(unwrap(file_read_text("nul"))==nul);return 42;}''','',True,True),
+ let nul:str=unwrap(decode_utf8(unwrap(bytes([65,0,66]))));assert(unwrap(file_write_text("embedded-nul",nul)));assert(unwrap(file_read_text("embedded-nul"))==nul);return 42;}''','',True,True),
  ('empty_and_sliced_owned_input','''server fn main()->i64 !{task,fs}{
  assert(unwrap(file_write_text("empty","")));assert(len(unwrap(file_read_bytes("empty")))==0);
  let original:bytes=unwrap(file_read_bytes("maximum"));let part:bytes=slice(original,17,5);
@@ -65,7 +65,7 @@ cases=[
 ]
 try:
  for name,body,stdout,grant,writable in cases:
-    source=root/(name+'.nex');source.write_text('module writes;\n'+body+'\n')
+    source=root/(name+'.nex');source.write_text('module writes;\n'+body+'\n', newline="\n")
     observed={}
     for mode in ['reference','native']:
       files=root/(name+'-'+mode);outside=fixture(files);env={**os.environ};env.pop('NEX_FILES_ROOT',None);env.pop('NEX_FILES_WRITE',None)
@@ -92,7 +92,7 @@ try:
  # Explicit versioned bundle loading must preserve checked imports and exports.
  source=root/'module_bundle.json';source.write_text(json.dumps({'schema':'nex.sources/1','entry':'main.nex','files':{
    'main.nex':'module app;import "./writer.nex" as writer;server fn main()->i64 !{task,fs}{assert(unwrap(writer::save("imported","from module")));assert(unwrap(file_read_text("imported"))=="from module");return 42;}',
-   'writer.nex':'module writer;pub server fn save(path:str,text:str)->result<bool> !{task,fs}{task_yield();return file_write_text(path,text);}'}}))
+   'writer.nex':'module writer;pub server fn save(path:str,text:str)->result<bool> !{task,fs}{task_yield();return file_write_text(path,text);}'}}), newline="\n")
  observed={}
  for mode in ['reference','native']:
    files=root/('modules-'+mode);fixture(files);env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
@@ -111,7 +111,7 @@ try:
  ('trap_after_committed_write','''server fn main()->i64 !{task,fs}{assert(unwrap(file_write_text("before-trap","complete")));let n:i64=9223372036854775807;return n+1;}''','E_OVERFLOW')]
  report['checked_aborts']=[]
  for name,body,code in aborts:
-   source=root/(name+'.nex');source.write_text('module aborts;'+body);observed={}
+   source=root/(name+'.nex');source.write_text('module aborts;'+body, newline="\n");observed={}
    for mode in ['reference','native']:
      files=root/(name+'-'+mode);fixture(files);env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
      if mode=='reference':
@@ -123,7 +123,7 @@ try:
      if name=='trap_after_committed_write':assert (files/'before-trap').read_text()=='complete'
    report['checked_aborts'].append({'name':name,'code':code,'native_reference':True,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),**observed});save()
  # Old source execution cannot gain this capability through an ordinary recheck.
- source=root/'retained022.nex';source.write_text('module old;server fn main()->unit !{task,fs}{file_write_text("must-not-exist","bad");}')
+ source=root/'retained022.nex';source.write_text('module old;server fn main()->unit !{task,fs}{file_write_text("must-not-exist","bad");}', newline="\n")
  env={**os.environ,'NEX_FILES_ROOT':str(root),'NEX_FILES_WRITE':'1'}
  checkedOld=invoke('old022-check','check',source,env,'0.22')
  checkedNew=invoke('new023-check','check',source,env);assert checkedOld['revision']!=checkedNew['revision']
@@ -131,14 +131,14 @@ try:
     error=invoke('old022-'+mode,mode,source,env,'0.22',1);assert error['code']=='E_TASK_UNIMPLEMENTED'
  assert not (root/'must-not-exist').exists()
  rejected=invoke('browser-realm','typescript',source,env,expected=1);assert rejected['code']=='E_REALM'
- source=root/'unreachable_server.nex';source.write_text('module browser;server fn hidden()->unit !{task,fs}{file_write_text("PRIVATE_SERVER_WRITE","secret");}client fn main()->i64{return 42;}')
+ source=root/'unreachable_server.nex';source.write_text('module browser;server fn hidden()->unit !{task,fs}{file_write_text("PRIVATE_SERVER_WRITE","secret");}client fn main()->i64{return 42;}', newline="\n")
  emitted=invoke('browser-prunes-server','typescript',source,env);assert 'PRIVATE_SERVER_WRITE' not in emitted['typescript'] and 'file_write_text' not in emitted['typescript']
- source=root/'explicit_read_grant.nex';source.write_text('module grant;server fn main()->i64 !{task,fs}{assert(error_code(file_write_text("read-cannot-write","bad"))=="CAPABILITY");return 42;}')
+ source=root/'explicit_read_grant.nex';source.write_text('module grant;server fn main()->i64 !{task,fs}{assert(error_code(file_write_text("read-cannot-write","bad"))=="CAPABILITY");return 42;}', newline="\n")
  denied=invoke('explicit-read-cannot-escalate','eval-read-grant',source,env);assert denied['value']==42 and not (root/'read-cannot-write').exists()
  for name,body in [('missing_fs','server fn main()->unit !{task}{file_write_text("x","bad");}'),
   ('sync_helper','server fn save()->result<bool> !{fs}{return file_write_text("x","bad");} server fn main()->unit !{task,fs}{save();}'),
   ('stream','server fn main()->unit !{task,fs}{file_open_write("x");}')]:
-    source=root/(name+'.nex');source.write_text('module rejected;'+body)
+    source=root/(name+'.nex');source.write_text('module rejected;'+body, newline="\n")
     error=invoke(name,'build',source,env,expected=1);assert error['code'] in ['E_EFFECT','E_TASK_UNIMPLEMENTED']
  assert not (root/'x').exists()
  report.update(ok=True,state='passed',native_reference_pairs=len(report['cases'])+len(report['checked_aborts']),success_pairs=len(report['cases']),checked_abort_pairs=len(report['checked_aborts']),retained022_execution_rejected=True,browser_realm_rejected=True)

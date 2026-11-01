@@ -3,6 +3,7 @@
 This proves the versioned graph core, not public CLI022 publication. Preserve
 every original row/schema/identity and execute actual archived source afterwards.
 """
+from sqlite_fixture import connection as sqlite_connection
 import argparse
 import copy
 import hashlib
@@ -27,7 +28,7 @@ class HistoryChecks(MigrationChecks):
    assert metadata['sdk']['native_reference_and_TypeScript'] is True
    assert hashlib.sha256(sql).hexdigest()==pin==metadata['sql_sha256']
    project=self.output/name;(project/'.nex').mkdir(parents=True);database=project/'.nex/graph.db'
-   with sqlite3.connect(database) as db:db.executescript(sql.decode())
+   with sqlite_connection(database) as db:db.executescript(sql.decode())
    write_json(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':'main.nex'})
    physical=(project/'nex.json').read_bytes();initial=database_state(database)
    assert len(initial['tables'])==16 and {n:len(rows) for n,rows in initial['tables'].items()}==metadata['tables']
@@ -52,7 +53,7 @@ class HistoryChecks(MigrationChecks):
     assert result['output']==old_result['output'] and result['value']==old_result['value']
     built=self.execute(label+'-native-build',[source_probe,'native',bundle,project,self.output/(label+'-app'),'0.22'],timeout=180)
     process=subprocess.run([built['executable']],capture_output=True,text=True,timeout=15)
-    (self.raw/(label+'-native.stdout')).write_text(process.stdout);(self.raw/(label+'-native.stderr')).write_text(process.stderr)
+    (self.raw/(label+'-native.stdout')).write_text(process.stdout, newline="\n");(self.raw/(label+'-native.stderr')).write_text(process.stderr, newline="\n")
     write_json(self.raw/(label+'-native.process.json'),{'argv':[built['executable']],'exit_code':process.returncode,'executable_sha256':hashlib.sha256(Path(built['executable']).read_bytes()).hexdigest()})
     assert process.returncode==0 and process.stdout==result['output'],(label,process.returncode,process.stdout,process.stderr)
     self.checks.append(label+'_genuine021_history_private022_native_reference')
@@ -64,8 +65,8 @@ class HistoryChecks(MigrationChecks):
   # A valid target cannot conceal a corrupt retained origin.
   row=metadata['revisions'][0]
   stable=database_state(database);corrupt=self.output/'corrupt-origin';corrupt.mkdir();corrupt_database=corrupt/'graph.db'
-  with sqlite3.connect(database) as original,sqlite3.connect(corrupt_database) as destination:original.backup(destination)
-  with sqlite3.connect(corrupt_database) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',('0.18',row['revision']))
+  with sqlite_connection(database) as original,sqlite_connection(corrupt_database) as destination:original.backup(destination)
+  with sqlite_connection(corrupt_database) as db:db.execute('UPDATE revisions SET language=? WHERE hash=?',('0.18',row['revision']))
   before=database_state(corrupt_database)
   failed=self.probe('corrupt-origin',row['bundle'],'0.22',mode='migrate',ok=False,store_directory=str(corrupt),expected_head=head,original_revision=row['revision'])
   assert failed['code']=='E_REVISION' and database_state(corrupt_database)==before and database_state(database)==stable

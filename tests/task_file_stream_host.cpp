@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_task_file_stream.h"
 #include "nex_host.h"
 #include "nex_tasks.h"
@@ -7,14 +8,22 @@
 #include <fstream>
 #include <future>
 #include <iostream>
+#ifndef _WIN32
 #include <spawn.h>
+#endif
+#ifndef _WIN32
 #include <sys/resource.h>
+#endif
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <thread>
 #include <unistd.h>
 
+#ifndef _WIN32
 extern char **environ;
+#endif
 namespace fs=std::filesystem;
 using namespace nexrt;
 using namespace std::chrono_literals;
@@ -85,12 +94,14 @@ TaskBody progressTask(TaskGroup &,std::shared_ptr<TaskState> state){state->progr
 TaskBody makeStreamTask(TaskGroup &group,Value,Value){return streamTask(group,factoryState);}
 TaskBody makeProgressTask(TaskGroup &group,Value,Value){return progressTask(group,factoryState);}
 
+#ifndef _WIN32
 void partialChild(const fs::path &root){
   rlimit limit{1024,1024};require(::setrlimit(RLIMIT_FSIZE,&limit)==0,"cannot set child-only file limit");
   TextFiles capability(root.string(),true);FileScope scope(capability);auto file=fileOpen("partial",FileMode::WriteTruncate,false);
   std::string input(2048,'p');auto value=execute(PreparedTaskFileStream::write(file,raw(input)));
   require(unwrap(value).scalar==1024&&fs::file_size(root/"partial")==1024,"stream write fabricated a complete count");
 }
+#endif
 void tests(){
   Directory directory;auto root=directory.path/"root";fs::create_directory(root);write(root/"input","abcdef");
   TextFiles capability(root.string(),true);const auto initial=liveObjects.load();
@@ -133,12 +144,14 @@ void tests(){
     require(unwrap(execute(PreparedTaskFileStream::seek(file,0))).scalar==0,"append seek failed");
     require(unwrap(execute(PreparedTaskFileStream::write(file,raw("new")))).scalar==3&&read(root/"append")=="oldnew","append overwrote the file");
   });
+#ifndef _WIN32
   scenario("actual_partial_write_count_in_separate_child",[&]{
     auto executable=self.string(),path=root.string();char *args[]={executable.data(),const_cast<char*>("--partial-root"),path.data(),nullptr};pid_t child=0;
     require(::posix_spawn(&child,executable.c_str(),nullptr,nullptr,args,environ)==0,"cannot spawn partial-write child");int status=0;
     while(::waitpid(child,&status,0)<0)require(errno==EINTR,"cannot wait for partial-write child");
     require(WIFEXITED(status)&&WEXITSTATUS(status)==0,"partial-write child failed");
   });
+#endif
   scenario("modes_ranges_and_existing_error_priority",[&]{
     FileScope scope(capability);auto input=fileOpen("input",FileMode::Read,false),output=fileOpen("mode",FileMode::WriteTruncate,false);std::string oversized(TextFiles::byteLimit+1,'x');
     rejects("CAPABILITY",[&]{(void)PreparedTaskFileStream::write(input,raw(oversized));});
@@ -156,7 +169,7 @@ void tests(){
     PreparedTaskFileOpen prepared(readGrant.openRead("input"));auto file=execute(prepared);require(file.isOpen(),"read-only grant lost reads");
   });
   scenario("invalid_paths_and_nonregular_files_do_not_open",[&]{
-    fs::create_directory(root/"directory");fs::create_symlink("input",root/"symlink");require(::mkfifo((root/"fifo").c_str(),0600)==0,"fifo fixture failed");FileScope scope(capability);auto grant=captureFileReadGrant(false);
+    fs::create_directory(root/"directory");fs::create_symlink("input",root/"symlink");nex_test::NonRegular nonregular(root/"fifo");FileScope scope(capability);auto grant=captureFileReadGrant(false);
     for(const auto &path:{"../escape","/absolute","a/../input"})rejects("VALIDATION",[&]{(void)grant.openRead(path);});
     rejects("E_UTF8",[&]{(void)grant.openRead(std::string("\xff",1));});
     for(const auto &path:{"directory","symlink","fifo"}){PreparedTaskFileOpen prepared(grant.openRead(path));rejects("VALIDATION",[&]{(void)execute(prepared);});}
@@ -270,6 +283,12 @@ void tests(){
 }
 }
 int main(int argc,char **argv){
-  try{self=fs::absolute(argv[0]);if(argc==3&&std::string(argv[1])=="--partial-root"){partialChild(argv[2]);return 0;}tests();std::cout<<"{\"ok\":true,\"host_stream_cases\":"<<cases<<",\"public_source_support\":false,\"maximum_chunk_bytes\":1048576,\"one_shot_typed_open\":true,\"physical_drain\":true}\n";return 0;}
+  try{self=fs::absolute(argv[0]);
+#ifndef _WIN32
+if(argc==3&&std::string(argv[1])=="--partial-root"){partialChild(argv[2]);return 0;}
+#else
+(void)argc;
+#endif
+tests();std::cout<<"{\"ok\":true,\"host_stream_cases\":"<<cases<<",\"public_source_support\":false,\"maximum_chunk_bytes\":1048576,\"one_shot_typed_open\":true,\"physical_drain\":true}\n";return 0;}
   catch(const std::exception &error){std::cerr<<error.what()<<'\n';std::cout<<"{\"ok\":false,\"host_stream_cases\":"<<cases<<"}\n";return 1;}
 }

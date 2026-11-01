@@ -17,9 +17,9 @@ signatures={'create':create,'read':read,'forward':forward,'close_borrow':read,'s
 
 if __name__=='__main__':
     out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-    (out/'signatures.json').write_text(json.dumps(signatures,sort_keys=True,indent=2)+'\n')
+    (out/'signatures.json').write_text(json.dumps(signatures,sort_keys=True,indent=2)+'\n', newline="\n")
     lines=['/* Independently computed canonical signature SHA256 pins. */']
     for name,value in signatures.items():
         digest=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         lines.append('#define PIN_'+name.upper()+' "'+digest+'"')
-    (out/'typed-resource-signatures.h').write_text('\n'.join(lines)+'\n')
+    (out/'typed-resource-signatures.h').write_text('\n'.join(lines)+'\n', newline="\n")

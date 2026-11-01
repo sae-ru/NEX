@@ -1,0 +1,341 @@
+{
+  "ok": true,
+  "cases": [
+    {
+      "name": "physical-source-overlap",
+      "optimization": "0",
+      "source_sha256": "f1cfd6f0d6cdfa24f37e5a3cb94d09871841612110dc3af490aea6bab914369f",
+      "expected": {
+        "kind": "return",
+        "output": "",
+        "value": 42
+      },
+      "native_exit": 42,
+      "passed": true,
+      "physical_overlap": {
+        "arrivals": 2,
+        "distinct_workers": 2,
+        "public_entry_rejected": true
+      }
+    },
+    {
+      "name": "physical-source-overlap",
+      "optimization": "2",
+      "source_sha256": "f1cfd6f0d6cdfa24f37e5a3cb94d09871841612110dc3af490aea6bab914369f",
+      "expected": {
+        "kind": "return",
+        "output": "",
+        "value": 42
+      },
+      "native_exit": 42,
+      "passed": true,
+      "physical_overlap": {
+        "arrivals": 2,
+        "distinct_workers": 2,
+        "public_entry_rejected": true
+      }
+    }
+  ],
+  "stage_rejections": [],
+  "parallel_runs": [],
+  "ordinary_functional_only": true,
+  "security_checks_deferred_by_user": true,
+  "public_language": "0.24",
+  "private_identity": "0.25-prototype",
+  "compiled_native_task_execution": true,
+  "public_build_support": false,
+  "installed_SDK_acceptance_claimed": false,
+  "commands": [
+    {
+      "label": "target",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-x",
+        "c",
+        "-S",
+        "-emit-llvm",
+        "nul",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\target.ll"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-runtime.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\runtime.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\runtime.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_files.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_files.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_files.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_task_frame.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_task_frame.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_frame.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_task_external.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_task_external.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_external.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_resource_region.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_resource_region.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_resource_region.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_external_resource.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_external_resource.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_external_resource.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_resource_executor.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_resource_executor.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_resource_executor.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "compile-nex_task_application.cpp",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fPIC",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "-c",
+        "F:\\sae\\NEX\\runtime\\nex_task_application.cpp",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_application.cpp.o"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "link-host",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-DNEX_PROFILE_ENABLED",
+        "-DNEX_STRUCTURED_WORKERS",
+        "-DNEX_ASYNC_TASKS",
+        "-IF:\\sae\\NEX\\runtime",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\host.cpp",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\runtime.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_files.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_frame.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_external.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_resource_region.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_external_resource.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_resource_executor.cpp.o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\nex_task_application.cpp.o",
+        "-Wl,--export-dynamic",
+        "-pthread",
+        "-ldl",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\host"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-reference",
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-wave12-cohort\\nex_source_exception_tasks_probe.exe",
+        "reference",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\main.nex",
+        "1000000"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-emit-O0",
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-wave12-cohort\\nex_source_exception_task_native_emit_probe.exe",
+        "emit",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\main.nex",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O0",
+        "x86_64-w64-windows-gnu",
+        "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128",
+        "false"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-link-O0",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-O0",
+        "-shared",
+        "-fPIC",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O0\\program.ll",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O0\\entry.def",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\libhost.dll.a",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O0\\program.so"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-observe-O0",
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\host",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O0\\program.so",
+        "observe",
+        "nex_user_main__task_code_address"
+      ],
+      "exit_code": 42
+    },
+    {
+      "label": "physical-source-overlap-emit-O2",
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-wave12-cohort\\nex_source_exception_task_native_emit_probe.exe",
+        "emit",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\main.nex",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O2",
+        "x86_64-w64-windows-gnu",
+        "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128",
+        "true"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-link-O2",
+      "argv": [
+        "F:/sae/NEX/build/deps/windows-host/clang64/bin/clang++.exe",
+        "-O2",
+        "-shared",
+        "-fPIC",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O2\\program.ll",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O2\\entry.def",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\libhost.dll.a",
+        "-o",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O2\\program.so"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "physical-source-overlap-observe-O2",
+      "argv": [
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\host",
+        "F:\\sae\\NEX\\build\\windows-physical-source-overlap-wave12\\physical-source-overlap\\O2\\program.so",
+        "observe",
+        "nex_user_main__task_code_address"
+      ],
+      "exit_code": 42
+    }
+  ],
+  "fixtures": {
+    "tests\\source_exception_native.py": "5c7bf032e00e8a4477370bcc3b75d13b0f11f58099ec796a03f6aea301dd93b6",
+    "tests\\source_exception_tasks.cpp": "f6bd5b0457369b54c361283de695e13b4de0592aa9c359716fff78a8bc3ee173",
+    "tests\\source_exception_tasks_typescript.py": "bb03462dccc4f8f7344988e76e04c94312dc27ff1c781793de5d17a070f00336",
+    "tests\\source_exception_task_ir_agreement.py": "0e697d18e18aa016b283237289e95082db88790afb2e5f664708c6ef8fc86b7d"
+  },
+  "selected_programs": 1,
+  "comparisons": 2,
+  "source_programs": 1,
+  "native_source_programs": 1,
+  "all_current_handles_terminal": true
+}

@@ -25,5 +25,5 @@ try:
  assert files=={name:sha(module/name) for name in files}
  report.update(module_files=files,inputs_unchanged=True,playwright_version=expected,
   seconds=round(time.monotonic()-started,3),scope='actual desktop browser compute example only; not physical device or complete SDK acceptance')
- (output/'verification.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
+ (output/'verification.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n");print(json.dumps(report))
 finally:server.shutdown();thread.join(5);server.server_close()

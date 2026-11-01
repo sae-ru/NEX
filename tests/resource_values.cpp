@@ -1,3 +1,4 @@
+#include "host_test.h"
 #include "nex_file_abi.h"
 #include "nex_files.h"
 #include "nex_json.h"
@@ -25,7 +26,13 @@ void code(const Value &value,const std::string &expected){require(!isSuccess(val
 Value checked(Handle *handle){auto value=readHandle(handle);require(isSuccess(value),printable(value));return unwrap(value);}
 ByteBuffer binary(std::string_view text){return ByteBuffer::copy({reinterpret_cast<const uint8_t*>(text.data()),text.size()});}
 std::string text(const ByteBuffer &bytes){auto v=bytes.view();return v.empty()?std::string():std::string(reinterpret_cast<const char*>(v.data()),v.size());}
-int descriptors(){int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;}
+int descriptors(){
+#ifdef _WIN32
+return int(nex_test::files().size());
+#else
+int n=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++n;return n;
+#endif
+}
 void raw(const fs::path &path,const std::string &text){std::ofstream out(path,std::ios::binary);out.write(text.data(),text.size());require(bool(out),"fixture write failed");}
 struct Fixture {
   fs::path root;

@@ -10,7 +10,8 @@ import sys
 import tempfile
 import re
 
-from sdk_bundle import Bundle, LinuxBundle, elf_image, macho, run, sha256
+from windows_pe import image as pe_image
+from sdk_bundle import Bundle, LinuxBundle, WindowsBundle, elf_image, macho, run, sha256
 
 
 class ApplicationInputs:
@@ -20,7 +21,7 @@ class ApplicationInputs:
         if owned and sha256(source) != owned['sha256']:
             raise ValueError('compiler-owned image changed before collection')
         if not owned and self.sdk_inventory and self.sdk in source.parents:
-            relative = str(source.relative_to(self.sdk))
+            relative = source.relative_to(self.sdk).as_posix()
             record = self.sdk_inventory.get(relative)
             if not record or not record.get('component') or record.get('sha256') != sha256(source):
                 raise ValueError('SDK library integrity/provenance mismatch: ' + relative)
@@ -34,6 +35,10 @@ class MacApplication(ApplicationInputs, Bundle):
 
 
 class LinuxApplication(ApplicationInputs, LinuxBundle):
+    pass
+
+
+class WindowsApplication(ApplicationInputs, WindowsBundle):
     pass
 
 
@@ -84,14 +89,14 @@ def copy_foreign(request, stage):
         if path.is_symlink():
             raise ValueError('symlink in captured foreign inputs')
         if path.is_file():
-            actual[str(path.relative_to(source))] = sha256(path)
+            actual[path.relative_to(source).as_posix()] = sha256(path)
         elif not path.is_dir():
             raise ValueError('non-regular captured foreign input')
     if not actual or actual != expected:
         raise ValueError('foreign capture changed after compilation')
     target = stage / 'foreign'
     shutil.copytree(source, target)
-    if {str(path.relative_to(target)): sha256(path) for path in target.rglob('*') if path.is_file()} != expected:
+    if {path.relative_to(target).as_posix(): sha256(path) for path in target.rglob('*') if path.is_file()} != expected:
         raise ValueError('foreign copy changed after compilation')
     projection = request['foreign_projection']
     if projection.get('schema') != 'nex.foreign-projection/1' or projection['packaged_revision'] != request['revision']:
@@ -125,7 +130,7 @@ def debug_task_package_inputs(request, binary, owned_inputs):
         'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
         'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
     task = request.get('task_inputs')
-    if (set(request) != expected_fields or request['kind'] != 'executable' or request['profile'] != 'debug' or
+    if (set(request)-{'static_link_inputs'} != expected_fields or request['kind'] != 'executable' or request['profile'] != 'debug' or
             request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
             not isinstance(task, dict) or set(task) != {'schema', 'files'} or task['schema'] != 'nex.application-task-inputs/3' or
             not isinstance(task['files'], list) or not 14 <= len(task['files']) <= 16391):
@@ -144,7 +149,7 @@ def debug_task_package_inputs(request, binary, owned_inputs):
     result = []; total = 0
     for row, (kind, relative) in zip(task['files'], expected):
         if (not isinstance(row, dict) or set(row) != {'kind', 'relative', 'path', 'hash', 'sha256', 'bytes', 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
-                row['kind'] != kind or row['relative'] != relative or row['path'] != str(binary.parent/relative) or
+                row['kind'] != kind or row['relative'] != relative or Path(row['path']) != binary.parent/relative or
                 any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
                 type(row['bytes']) is not int or not 0 <= row['bytes'] <= 512*1024**2):
             raise ValueError('invalid debug raw completed input identity')
@@ -183,7 +188,7 @@ def task_package_inputs(request, binary, owned_inputs):
         'runtime_notices_sha256', 'sdk_root', 'toolchain', 'language', 'revision',
         'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
         'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
-    if (set(request) != expected_fields or request['kind'] != 'executable' or (request['profile'] != 'profile' if profile else request['profile'] == 'profile') or
+    if (set(request)-{'static_link_inputs'} != expected_fields or request['kind'] != 'executable' or (request['profile'] != 'profile' if profile else request['profile'] == 'profile') or
             request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
             not isinstance(task, dict) or set(task) != {'schema', 'files'} or
             task['schema'] != ('nex.application-task-inputs/2' if profile else 'nex.application-task-inputs/1') or
@@ -211,7 +216,7 @@ def task_package_inputs(request, binary, owned_inputs):
     for row, (kind, source, image) in zip(task['files'], expected):
         if (not isinstance(row, dict) or set(row) != {'kind', 'path', 'hash', 'sha256', 'bytes',
                 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
-                row['kind'] != kind or row['path'] != str(source) or
+                row['kind'] != kind or Path(row['path']) != source or
                 any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
                 type(row['bytes']) is not int or not 1 <= row['bytes'] <= (64 if profile else 16)*1024**2 or
                 source.is_symlink() or source.resolve(strict=True) != source or
@@ -224,7 +229,7 @@ def task_package_inputs(request, binary, owned_inputs):
             if any(row[k] is not None for k in ('component', 'image', 'image_key', 'image_sha256', 'image_uuid')):
                 raise ValueError('nonprovider task input cannot claim image identity')
         else:
-            if (row['image'] != str(image) or not isinstance(row['component'], str) or
+            if (Path(row['image']) != image or not isinstance(row['component'], str) or
                     not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', row['component'])):
                 raise ValueError('task provider image association differs')
             provider = json.loads(source.read_text(), object_pairs_hook=unique_task_fields)
@@ -400,8 +405,8 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         if not isinstance(image, dict) or set(image) != {'path', 'sha256', 'key', 'abi', 'kind', 'uuid'}:
             raise ValueError('invalid compiler-owned image fields')
         source = Path(image['path'])
-        if (source.is_symlink() or source.resolve(strict=True).parent != (binary.parent/'images').resolve(strict=True) or
-                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_'+re.escape(image['key'])+r'\.(so|dylib)', source.name) or
+        if (source.is_symlink() or source.resolve(strict=True).parent != (binary.parent if platform.system()=='Windows' else binary.parent/'images').resolve(strict=True) or
+                not re.fullmatch(r'libnex_[A-Za-z_][A-Za-z_0-9]{0,63}_'+re.escape(image['key'])+r'\.(so|dylib|dll)', source.name) or
                 image['kind'] not in ('runtime', 'library') or
                 any(not isinstance(image[k], str) or not re.fullmatch('[0-9a-f]{64}', image[k]) for k in ('sha256', 'key', 'abi')) or
                 not isinstance(image['uuid'], str) or not re.fullmatch('[0-9a-f]{16,128}', image['uuid']) or
@@ -452,11 +457,14 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             collector.environment = dict(os.environ)
             for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD'):
                 collector.environment.pop(name, None)
+        elif system == 'Windows' and pe_image(binary):
+            collector = WindowsApplication(sdk, stage, selection, dpkg_notices, allow_empty=True)
         else:
-            raise ValueError('application packaging requires a matching macOS Mach-O or Linux ELF host')
+            raise ValueError('application packaging requires a matching native Mach-O, ELF or PE host')
         collector.sdk_inventory = sdk_inventory
         collector.owned_inputs = owned_inputs
-        application = stage / 'bin/app'
+        entry = 'bin/app.exe' if system == 'Windows' else 'bin/app'
+        application = stage / entry
         application.parent.mkdir()
         shutil.copy2(binary, application)
         if sha256(application) != request['binary_sha256']:
@@ -471,6 +479,15 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
             details = {'platform': 'macos', 'minimum_macos': '.'.join(map(str, collector.minimum_os)),
                        'external_prerequisites': ['compatible macOS system libraries'],
                        'signing': 'ad-hoc; Developer ID signing/notarization not performed'}
+        elif system == 'Windows':
+            collector.collect_pe(binary, application)
+            for source in owned_inputs:
+                target=collector.dependency_target(source)
+                collector.external(source,target);collector.destinations[source]=target
+                collector.collect_pe(source,target)
+            details={'platform':'windows','architecture':collector.images[binary]['machine'],
+                     'external_prerequisites':['compatible Windows system DLLs listed in system_libraries'],
+                     'signing':'unsigned; publisher signing not performed'}
         else:
             collector.collect_elf(binary, application)
             for source in owned_inputs:
@@ -484,6 +501,26 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                        'packager_patchelf': run([patchelf, '--version']).strip()}
         collector.debug_input_binary = str(binary)
         task_provenance = copy_task_provenance(task_inputs, stage, application, collector, request['schema'] == 'nex.application-request/3', request['schema'] == 'nex.application-request/4')
+        static_inputs=[]
+        records=request.get('static_link_inputs',[])
+        if not isinstance(records,list) or len(records)>3:
+            raise ValueError('invalid static link input inventory')
+        collector.linked_components=set()
+        for record in records:
+            if not isinstance(record,dict) or set(record)!={'path','sha256','bytes'}:
+                raise ValueError('invalid static link input fields')
+            source=Path(record['path'])
+            if source.is_symlink() or not source.is_absolute() or source.suffix!='.a' or not source.is_file() or not 0<=record['bytes']<=256*1024**2:
+                raise ValueError('invalid static link input path/size')
+            source=source.resolve(strict=True)
+            if source.stat().st_size!=record['bytes'] or sha256(source)!=record['sha256']:
+                raise ValueError('static link input changed after compilation')
+            if sdk_inventory and sdk in source.parents:
+                retained=sdk_inventory.get(source.relative_to(sdk).as_posix())
+                if not retained or retained.get('sha256')!=record['sha256'] or not retained.get('component'):
+                    raise ValueError('SDK static library integrity/provenance mismatch')
+            component=collector.component(source);collector.linked_components.add(component)
+            static_inputs.append({'name':source.name,'sha256':record['sha256'],'bytes':record['bytes'],'component':component})
         used_components = collector.copy_notices('licenses')
         foreign, foreign_components, foreign_system = copy_foreign(request, stage)
         used_components += foreign_components
@@ -493,7 +530,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                 minimum = max([tuple(map(int, details['minimum_macos'].split('.')))] +
                               [tuple(map(int, module['minimum_macos'].split('.'))) for module in modules])
                 details['minimum_macos'] = '.'.join(map(str, minimum))
-            else:
+            elif system == 'Linux':
                 for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
                     details[key] = sorted(set(details[key]).union(*(module[key] for module in modules)))
         runtime_notices.read_text()  # Preserve complete UTF-8 runtime notices.
@@ -507,10 +544,10 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                               owned_image_abi=owned['abi'], input_uuid=owned['uuid'])
             origin.pop('source', None)
         report = {'schema': 'nex.application-package/1', 'assembly_passed': True,
-                  'execution_verified': False, 'entry': 'bin/app',
+                  'execution_verified': False, 'entry': entry,
                   **{key: request[key] for key in ('toolchain', 'language', 'revision', 'build_key',
                       'compiler_build', 'profile', 'kind', 'compiler_target', 'host_compatible', 'binary_sha256')},
-                  'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
+                  'components': used_components, 'static_link_inputs':static_inputs, 'system_libraries': sorted(collector.system_libraries | foreign_system),
                   **details, 'files': collector.inventory()}
         if task_provenance:
             report['task_debug_provenance' if request['schema'] == 'nex.application-request/4' else 'task_profile_provenance' if request['schema'] == 'nex.application-request/3' else 'task_provenance'] = task_provenance
@@ -519,14 +556,17 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
         (stage / 'application.json').write_text(json.dumps(report, indent=2) + '\n')
         # Claim the destination without replacing an existing file/directory, then
         # publish the fully assembled tree over our own empty reservation.
-        output.mkdir()
-        try:
+        if system == 'Windows':
             stage.rename(output)
-        except Exception:
-            output.rmdir()
-            raise
+        else:
+            output.mkdir()
+            try:
+                stage.rename(output)
+            except Exception:
+                output.rmdir()
+                raise
         result = {'schema': 'nex.package/1', 'ok': True, 'directory': str(output),
-                'executable': str(output / 'bin/app'), 'manifest': str(output / 'application.json'),
+                'executable': str(output / entry), 'manifest': str(output / 'application.json'),
                 'build_key': request['build_key'], 'revision': request['revision'],
                 'execution_verified': False, 'files': len(report['files'])}
         if foreign:

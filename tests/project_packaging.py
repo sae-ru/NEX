@@ -8,19 +8,19 @@ class ProjectPackages(harness.ToolchainCase):
     def setUp(self):
         super().setUp();self.root=self.root.resolve()/'project % 🧠';self.root.mkdir()
         for name in ('core','bridge','app','browser'):(self.root/name).mkdir()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex'}), newline="\n")
         (self.root/'core/math.nex').write_text('''module model;
 pub fn make(offset:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+offset;};}
 pub fn decorate(x:str)->str{return x+" 🧠";}
 pub server fn secret()->str{return "NEX_SERVER_ONLY_POISON";}
-''')
-        (self.root/'bridge/main.nex').write_text('module bridge;import "../core/math.nex" as m;pub fn answer()->str{return m::decorate(str(m::make(40)(2)));}')
-        (self.root/'app/main.nex').write_text('module app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::answer());}')
+''', newline="\n")
+        (self.root/'bridge/main.nex').write_text('module bridge;import "../core/math.nex" as m;pub fn answer()->str{return m::decorate(str(m::make(40)(2)));}', newline="\n")
+        (self.root/'app/main.nex').write_text('module app;import "../bridge/main.nex" as b;fn main()->unit!{io}{print(b::answer());}', newline="\n")
         (self.root/'browser/main.nex').write_text('''module browser;import "std/web.nex" as web;
 client fn initial()->i64{return 0;}client fn update(s:i64,e:web::Event)->i64{return s+1;}
 client fn view(s:i64)->web::View{return web::element("main",[],[],[web::text(str(s))]);}
 client fn title()->str{return "Packaged NEX";}
-''')
+''', newline="\n")
         self.description={'schema':'nex.project-build/1','default_configuration':'release',
           'configurations':{p:{'profile':p} for p in ('debug','release','profile')},
           'components':{
@@ -29,7 +29,7 @@ client fn title()->str{return "Packaged NEX";}
             'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'bridge':'dynamic'}},
             'browser':{'kind':'web','root':'browser','entry':'browser/main.nex'}}}
         self.save()
-    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description))
+    def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
     def package(self,*args,**kwargs):
         return self.cli('project','--kind','package','--directory',self.root/'package',*args,timeout=300,**kwargs)
     def inventory(self,folder):
@@ -67,7 +67,7 @@ client fn title()->str{return "Packaged NEX";}
         raw=json.loads(profile.read_text());self.assertEqual(raw['build']['build_key'],app['build_key'])
         self.assertTrue(raw['memory']);self.assertTrue(all(v['live']==0 and v['allocations']==v['frees'] for v in raw['memory']))
     def test_output_and_invalid_selection_fail_before_build_or_store_creation(self):
-        output=self.root/'package';output.mkdir();marker=output/'keep';marker.write_text('keep')
+        output=self.root/'package';output.mkdir();marker=output/'keep';marker.write_text('keep', newline="\n")
         self.assertEqual(self.package(ok=False)['code'],'E_EXISTS');self.assertEqual(marker.read_text(),'keep');shutil.rmtree(output)
         self.assertEqual(self.package('--component','core',ok=False)['code'],'E_PROJECT_CAPABILITY')
         self.assertEqual(self.cli('project','--kind','package',ok=False)['code'],'E_OPTION')
@@ -79,13 +79,13 @@ client fn title()->str{return "Packaged NEX";}
         self.description['configurations']['release']['toolchain']=config.name
         (self.root/'app/main.nex').write_text('''module app;import "../bridge/main.nex" as b;
 server fn main()->unit!{db,io}{assert(is_ok(store_put("key",b::answer())));print(unwrap(store_get("key")));}
-''');self.save()
+''', newline="\n");self.save()
         database=self.root/'private.sqlite';env={'NEX_DATABASE':str(database),'NEX_STORAGE_OWNER':'alice'}
         failed=self.package('--component','app',ok=False,env=env)
         self.assertEqual(failed['code'],'E_PROJECT_PACKAGE');self.assertIn('provenance',failed['message']);self.assertFalse((self.root/'package').exists());self.assertFalse(database.exists())
         notices=helper.notice(helper.library_inputs([library]));self.package('--component','app','--notices',notices,env=env)
         self.assertFalse(database.exists());shutil.rmtree(library.parent);shutil.rmtree(self.root/'.nex')
-        p=subprocess.run([str(self.root/'package/apps/app/bin/app')],env={'PATH':'/usr/bin:/bin',**env},capture_output=True,text=True,timeout=20)
+        p=subprocess.run([str(self.root/('package/apps/app/bin/app.exe' if os.name=='nt' else 'package/apps/app/bin/app'))],env={'PATH':'/usr/bin:/bin',**env},capture_output=True,text=True,timeout=20)
         self.assertEqual((p.returncode,p.stdout),(0,'42 🧠\n'),p.stderr)
 
 if __name__=='__main__':unittest.main()

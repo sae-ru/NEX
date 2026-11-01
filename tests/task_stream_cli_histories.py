@@ -1,3 +1,4 @@
+from host_fixture import run_native, probe_dll_inputs, deployed_environment
 """Public CLI migration of all genuine SDK1335 stream and mixed FFI revisions."""
 import argparse,copy,json,os,re,sqlite3,subprocess,tempfile,time
 from collections import Counter
@@ -15,8 +16,8 @@ if not (fixtures/'language-0.23-sdk1335-stream-generic-modules.json').is_file():
 started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],'providers':{},'compiler_sha256':sha(compiler),'language':'0.27','installed_SDK_accepted':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd=None,env=None,expected=0):
- report['state']=label;save();r=subprocess.run(list(map(str,argv)),cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
- (root/(label+'.stdout')).write_text(r.stdout);(root/(label+'.stderr')).write_text(r.stderr);report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
+ report['state']=label;save();r=run_native(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
+ (root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
 def cli(label,project,argv,env=None,expected=0,exe=compiler):return json.loads(run(label,[exe,*argv,'--json'],project,env,expected).stdout)
 def state(project):
  db=(project/'.nex/graph.db').resolve();uri=db.as_uri()+'?mode=ro'+('&immutable=1' if not Path(str(db)+'-wal').exists() else '')
@@ -31,7 +32,7 @@ def preserved(before,after):
 def restore(label,meta,sql):
  project=root/label;project.mkdir();(project/'.nex').mkdir();write(project/'nex.json',meta['project_manifest'])
  for name,text in meta['revisions'][-1]['physical_files'].items():
-  path=Path(name);assert not path.is_absolute() and '..' not in path.parts;path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+  path=Path(name);assert not path.is_absolute() and '..' not in path.parts;path=project/path;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
  if meta.get('lock') is not None:write(project/'nex.lock.json',meta['lock'])
  with closing(sqlite3.connect(project/'.nex/graph.db')) as db:db.executescript(sql)
  for backend in ['reference','native']:
@@ -104,7 +105,7 @@ try:
     path=project/n;other=path.with_name(path.name+'.hidden');path.rename(other);hidden.append((path,other))
    native_marker=root/(label+'-native.events')
    try:
-    native=run(label+'-source-absent-native',[binary,*(['--nex-foreign',host] if host else [])],env={'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(project/'native'),'NEX_FILES_WRITE':'1','NEX_TYPED_RESOURCE_MARKER':str(native_marker)},expected=row['expected_value']);assert native.stdout==native.stderr==''
+    native=run(label+'-source-absent-native',[binary,*(['--nex-foreign',host] if host else [])],env=deployed_environment(NEX_FILES_ROOT=str(project/'native'),NEX_FILES_WRITE='1',NEX_TYPED_RESOURCE_MARKER=str(native_marker)),expected=row['expected_value']);assert native.stdout==native.stderr==''
    finally:
     for path,other in hidden:other.rename(path)
    if host:

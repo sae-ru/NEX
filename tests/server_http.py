@@ -1,4 +1,6 @@
 """Real native HTTP/TLS, hashed credentials, durable per-principal APIs and rollback."""
+from host_fixture import private_permissions, stop_server
+from sqlite_fixture import connection as sqlite_connection
 import concurrent.futures
 import hashlib
 import http.client
@@ -45,7 +47,7 @@ class HTTP(harness.ToolchainCase):
             process.terminate(); process.communicate(timeout=10); raise
 
     def stop(self, process):
-        process.send_signal(signal.SIGTERM)
+        stop_server(process)
         stdout, stderr = process.communicate(timeout=15)
         self.assertEqual(process.returncode, 0, stdout + stderr)
         self.assertNotIn('E_INTERNAL_LEAK', stderr)
@@ -70,7 +72,7 @@ class HTTP(harness.ToolchainCase):
     def test_explicit_cors_preflight_authentication_and_denied_mutations(self):
         self.source((harness.REPO/'examples/server/main.nex').read_text())
         auth=self.root/'private-auth.json';alice=self.cli('token','--user','alice','--auth',auth)['token']
-        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('<h1>CORS</h1>')
+        assets=self.root/'assets';assets.mkdir();(assets/'index.html').write_text('<h1>CORS</h1>', newline="\n")
         executable=self.cli('build','--target','server','--profile','release',timeout=180)['executable']
         process=self.launch(executable,auth,cors=('capacitor://localhost','https://localhost','https://client.test'))
         def raw(method='GET',headers=(),body=None):
@@ -133,8 +135,8 @@ class HTTP(harness.ToolchainCase):
         data = json.loads(auth.read_text())
         self.assertNotIn(alice, auth.read_text()); self.assertNotIn(bob, auth.read_text())
         self.assertEqual(data['tokens'][0]['sha256'], hashlib.sha256(alice.encode()).hexdigest())
-        self.assertEqual(auth.stat().st_mode & 0o777, 0o600)
-        assets = self.root / 'assets'; assets.mkdir(); (assets / 'index.html').write_text('<h1>Static client</h1>')
+        self.assertTrue(private_permissions(auth,0o600))
+        assets = self.root / 'assets'; assets.mkdir(); (assets / 'index.html').write_text('<h1>Static client</h1>', newline="\n")
         (assets / 'outside-link.txt').symlink_to(auth)
         built = self.cli('build', '--target', 'server', '--profile', 'release', timeout=180)
         self.assertEqual(built['kind'], 'http_server')
@@ -193,7 +195,7 @@ class HTTP(harness.ToolchainCase):
         try:
             active = False
             for _ in range(100):
-                with sqlite3.connect(self.root / 'app.sqlite', timeout=0) as observer:
+                with sqlite_connection(self.root / 'app.sqlite', timeout=0) as observer:
                     try:
                         observer.execute('BEGIN IMMEDIATE'); observer.rollback()
                     except sqlite3.OperationalError as error:
@@ -202,7 +204,7 @@ class HTTP(harness.ToolchainCase):
             self.assertTrue(active, 'native request never acquired its transaction')
         finally:
             self.stop(process); connection.close()
-        with sqlite3.connect(self.root / 'app.sqlite') as observer:
+        with sqlite_connection(self.root / 'app.sqlite') as observer:
             self.assertEqual(observer.execute("SELECT count(*) FROM nex_kv WHERE owner='alice' AND key='probe'").fetchone()[0], 0)
         # The executable starts without NEX/LLVM/model services and keeps its committed data.
         subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-sha256', '-days', '1',
@@ -226,7 +228,7 @@ class HTTP(harness.ToolchainCase):
         self.source('module invalid; server fn handle() -> unit {}')
         self.assertEqual(self.cli('build', '--target', 'server', ok=False)['code'], 'E_HTTP_SIGNATURE')
         auth = self.root / 'auth.json'
-        auth.write_text('{"schema":"nex.auth/1","tokens":[],"tokens":[]}')
+        auth.write_text('{"schema":"nex.auth/1","tokens":[],"tokens":[]}', newline="\n")
         self.assertEqual(self.cli('token', '--user', 'alice', '--auth', auth, ok=False)['code'], 'E_AUTH')
         self.assertEqual(auth.read_text(), '{"schema":"nex.auth/1","tokens":[],"tokens":[]}')
 

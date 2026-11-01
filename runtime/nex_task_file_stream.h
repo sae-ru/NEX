@@ -6,7 +6,6 @@
 #include <optional>
 #include <utility>
 
-#ifndef _WIN32
 namespace nexrt {
 namespace task_file_stream_detail {
 inline bool ordinary(const std::string &code){
@@ -219,4 +218,3 @@ public:
   }
 };
 }
-#endif

@@ -23,7 +23,7 @@ def check_policy_rejections(out):
   invalid.append((label,{'authorities':[row]}))
  for label,change in invalid:write(target,{**good,**change});rejected(label,target)
  for label,data in [('duplicate-JSON',b'{"schema":"nex.dns-targets/1","schema":"nex.dns-targets/1"}'),('invalid-UTF8',b'\xff'),('oversized-JSON',b' '*(1048576+1))]:target.write_bytes(data);rejected(label,target)
- write(target,good);link=out/'policy-link';link.symlink_to(target);rejected('symlink',link);fifo=out/'policy-pipe';os.mkfifo(fifo);rejected('FIFO',fifo)
+ write(target,good);link=out/'policy-link';link.symlink_to(target);rejected('symlink',link);fifo=out/'policy-pipe';(load('nex_windows_files_fixture',HERE.parent/'windows_files.py').nonregular_fixture(fifo) if os.name=='nt' else os.mkfifo(fifo));rejected('nonregular',fifo)
  write(target,{**good,'resolvers':[{'address':'::1','port':53}],'authorities':[{'name':'all','domain':'*','subdomains':True},{'name':'root','domain':'EXAMPLE.TEST.','subdomains':False}]});actual=prepare.policy(target);assert actual['authorities'][1]['domain']=='example.test' and actual['maximum_calls']==16
  return rows
 def main():

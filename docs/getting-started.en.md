@@ -1,9 +1,9 @@
-# Start with NEX 0.152.1
+# Start with NEX
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree
-uses toolchain 0.153.0 / language 0.27. Check [delivery evidence](releases/0.152.1.json)
+uses toolchain 0.154.0 / language 0.27. Check [delivery evidence](releases/0.152.1.json)
 for the exact accepted SDK, source commit, platform, archive hash and prerequisites.
 
 ## Install a matching SDK or build the compiler
@@ -17,7 +17,7 @@ it. The macOS ARM64 SDK is not a Windows executable. A CMake install is a local
 prefix; portable bundles have their own dependency-capture and relocation tests.
 
 For a source build, install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x**, SQLite 3.37+,
-OpenSSL 3, Z3 development files and Python 3.9+. Web/TypeScript also needs Node 22.18+
+OpenSSL 3, Z3 development files and Python 3.10+. Web/TypeScript also needs Node 22.18+
 and npm. Use the locked `web/package-lock.json` dependencies. Native code needs
 the target platform's compiler/SDK; LLDB workflows need compatible debugger tools.
 
@@ -33,8 +33,9 @@ cmake --install build --prefix /absolute/path/to/nex-sdk
 
 Set `LLVM_DIR`, `MLIR_DIR`, `OPENSSL_ROOT_DIR` and `NEX_Z3_ROOT` to your selected
 installations when CMake cannot discover them. See [SDK delivery](sdk.md) and
-[Linux](linux.md) for the maintained recipes. Native Windows hosting is an open
-port/validation task; follow the [Windows handoff](windows-handoff.md).
+[Linux](linux.md) for the maintained recipes. Native Windows x64 hosting has separate [0.152.1 acceptance](windows-handoff-current.md);
+this 0.154 integration requires fresh platform acceptance. Use the Windows host
+recipe and keep host and target C++ ABI/CRT dependencies separate.
 
 Add the chosen SDK's `bin` directory to PATH, then verify selection:
 

@@ -1,4 +1,6 @@
 """Actual compiler/stdio LSP, unsaved projects and persistent-history isolation."""
+from host_fixture import python_executable
+from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import importlib.util
 import io
@@ -115,7 +117,7 @@ class Client:
 class LanguageServer(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
-        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}))
+        (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source('module app; fn twice(n:i64)->i64{return n*2;} fn main()->i64{return twice(21);}')
         self.clients=[]
 
@@ -131,14 +133,14 @@ class LanguageServer(harness.ToolchainCase):
 
     def overlay(self, files):
         path=self.root/'overlay.json'
-        path.write_text(json.dumps({'schema':'nex.overlay/1','files':{str(k.resolve()):v for k,v in files.items()}}))
+        path.write_text(json.dumps({'schema':'nex.overlay/1','files':{str(k.resolve()):v for k,v in files.items()}}), newline="\n")
         return path
 
     def rows(self):
         path=self.root/'.nex/graph.db'
         if not path.exists():
             return None
-        with sqlite3.connect(path) as connection:
+        with sqlite_connection(path) as connection:
             names=[row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
             return {name:sorted(connection.execute('SELECT * FROM "'+name+'"').fetchall(),key=repr) for name in names}
 
@@ -167,15 +169,15 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(result['frontend']['source']['sha256'],hashlib.sha256(invalid.encode()).hexdigest())
         self.assertFalse((self.root/'.nex').exists())
         manifest=self.root/'nex.json'
-        value=json.loads(manifest.read_text());value['language']='0.15';manifest.write_text(json.dumps(value))
+        value=json.loads(manifest.read_text());value['language']='0.15';manifest.write_text(json.dumps(value), newline="\n")
         self.assertEqual(self.cli('analyze',self.file,ok=False)['code'],'E_LANGUAGE_VERSION')
         self.assertFalse((self.root/'.nex').exists())
         value['language']=harness.CURRENT_LANGUAGE
         value['libraries']={'dep':'library'}
-        manifest.write_text(json.dumps(value))
+        manifest.write_text(json.dumps(value), newline="\n")
         library=self.root/'library';library.mkdir()
-        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'model.nex'}))
-        dependency=library/'model.nex';dependency.write_text('module dep;pub fn answer()->i64{return 1;}')
+        (library/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'model.nex'}), newline="\n")
+        dependency=library/'model.nex';dependency.write_text('module dep;pub fn answer()->i64{return 1;}', newline="\n")
         self.source('module app;import "dep/model.nex" as d;fn main()->i64{return d::answer();}')
         self.cli('lock',self.file)
         before=self.rows()
@@ -188,7 +190,7 @@ class LanguageServer(harness.ToolchainCase):
         path=self.root/'overlay.json'
         for files in [{'main.nex':'module app;'}, {str(self.root/'link/main.nex'):'module app;'},
                       {str(self.file):'x'*(1048576+1)}]:
-            path.write_text(json.dumps({'schema':'nex.overlay/1','files':files}))
+            path.write_text(json.dumps({'schema':'nex.overlay/1','files':files}), newline="\n")
             self.assertEqual(self.cli('analyze',self.file,'--overlay',path,ok=False)['code'],'E_OVERLAY')
         self.assertFalse((self.root/'.nex').exists())
 
@@ -277,7 +279,7 @@ class LanguageServer(harness.ToolchainCase):
         self.cli('test',self.file,'--target','web')
 
     def test_cross_module_references_aliases_open_entries_and_unicode_crlf(self):
-        helper=self.root/'model 🧠.nex';library='module model;\npub fn answer(n:i64)->i64{return n;}\n';helper.write_text(library)
+        helper=self.root/'model 🧠.nex';library='module model;\npub fn answer(n:i64)->i64{return n;}\n';helper.write_text(library, newline="\n")
         main=('module app;\r\nimport "./model 🧠.nex" as a;\r\nimport "./model 🧠.nex" as b;\r\n'
               'fn main()->i64{let s:str="Я🧠";return a::answer(1)+b::answer(2);}')
         self.source(main);physical=self.file.read_bytes();client=self.client();self.assertTrue(client.initialize()['capabilities']['referencesProvider'])
@@ -289,7 +291,7 @@ class LanguageServer(harness.ToolchainCase):
         query['context']['includeDeclaration']=True
         with_declaration=client.request('textDocument/references',query);self.assertEqual(len(with_declaration),3)
         orphan=self.root/'orphan.nex';orphan_text='module orphan;import "./model 🧠.nex" as m;fn read()->i64{return m::answer(3);}'
-        orphan.write_text(orphan_text);client.open(orphan,orphan_text)
+        orphan.write_text(orphan_text, newline="\n");client.open(orphan,orphan_text)
         expanded=client.request('textDocument/references',query);self.assertEqual(len(expanded),4)
         self.assertEqual(len([row for row in expanded if row['uri']==helper.resolve().as_uri()]),1)
         client.send('textDocument/didClose',{'textDocument':{'uri':orphan.as_uri()}})
@@ -387,7 +389,7 @@ class LanguageServer(harness.ToolchainCase):
     def test_import_alias_type_and_variant_components_have_separate_definitions(self):
         library=('module model;pub enum Maybe<T>{Some(value:T);None;}\n'
                  'pub fn echo<T>(value:T)->T{return value;}')
-        helper=self.root/'model 🧠.nex';helper.write_text(library)
+        helper=self.root/'model 🧠.nex';helper.write_text(library, newline="\n")
         text=('module types;\r\nimport "./model 🧠.nex" as m;\r\n'
               'fn read(x:m::Maybe<i64>)->i64{return match x{m::Maybe::Some(n)=>n,m::Maybe::None()=>0};}\r\n'
               'fn main()->i64{let s:str="Я🧠";return read(m::Maybe<i64>::Some(m::echo<i64>(42)));}')
@@ -411,13 +413,13 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(client.request('textDocument/hover',query(text.index('Maybe<i64>')))['contents']['value'],'pub enum model::Maybe<T>')
         self.assertFalse((self.root/'.nex').exists());self.assertEqual(self.file.read_bytes(),text.encode())
         # Visibility and import errors are still compiler errors, with no partial index.
-        helper.write_text(library.replace('pub enum','enum'))
+        helper.write_text(library.replace('pub enum','enum'), newline="\n")
         error=self.cli('analyze',self.file,'--references',ok=False);self.assertIn('E_VISIBILITY',json.dumps(error))
         self.assertFalse((self.root/'.nex').exists())
 
     def test_module_prefix_cannot_invent_a_trait_qualifier_reference(self):
         library='module catalog::Nested;pub fn answer()->i64{return 42;}'
-        (self.root/'nested.nex').write_text(library)
+        (self.root/'nested.nex').write_text(library, newline="\n")
         text=('module catalog;import "./nested.nex" as n;'
               'trait Nested{fn value(x:Self)->Self;}'
               'fn main()->i64{return n::answer();}')
@@ -631,9 +633,9 @@ class LanguageServer(harness.ToolchainCase):
         self.assertFalse((self.root/'.nex').exists())
 
     def test_imported_document_unsaved_and_old_versions_are_ignored(self):
-        helper=self.root/'helper.nex';helper.write_text('module model;pub fn answer()->i64{return 1;}')
+        helper=self.root/'helper.nex';helper.write_text('module model;pub fn answer()->i64{return 1;}', newline="\n")
         text='module app;import "./helper.nex" as m;fn main()->i64{return m::answer();}'
-        self.file.write_text(text)
+        self.file.write_text(text, newline="\n")
         client=self.client();client.initialize();client.open(self.file,text)
         client.open(helper,'module model;pub fn answer()->i64{return true;}',2)
         self.assertEqual(client.diagnostics(helper,2)[0]['code'],'E_TYPE')
@@ -646,7 +648,7 @@ class LanguageServer(harness.ToolchainCase):
 
     def test_new_file_and_cancellation_do_not_block_protocol(self):
         wrapper=self.root/'slow compiler'
-        wrapper.write_text('#!'+sys.executable+'\nimport os,time\ntime.sleep(0.5)\nos.execv('+repr(harness.NEX)+', ['+repr(harness.NEX)+']+__import__("sys").argv[1:])\n')
+        wrapper=python_executable(wrapper,'#!'+sys.executable+'\nimport os,time\ntime.sleep(0.5)\nos.execv('+repr(harness.NEX)+', ['+repr(harness.NEX)+']+__import__("sys").argv[1:])\n',harness.native_fixture_compiler())
         wrapper.chmod(0o700)
         client=self.client([sys.executable,str(harness.REPO/'editor/lsp/server.py'),'--compiler',str(wrapper)])
         client.initialize();client.open(self.file,self.file.read_text())

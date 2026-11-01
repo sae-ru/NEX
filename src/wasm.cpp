@@ -72,10 +72,12 @@ ProcessResult command(const std::vector<std::string> &args){
  auto selected=args;
  // LLVM substitutes '%' in temporary-file templates. Keep literal-percent
  // SDK work directories usable without changing their emitted artifact paths.
+#ifndef _WIN32
  if(fs::canonical(fs::temp_directory_path()).string().find('%')!=std::string::npos){
   selected={"/usr/bin/env","TMPDIR=/tmp","TMP=/tmp","TEMP=/tmp","TEMPDIR=/tmp"};selected.insert(selected.end(),args.begin(),args.end());
  }
- auto result=capture(selected,300);
+#endif
+ auto result=captureNativeBuildTool(selected,300);
  if(result.code!=0)throw Error("E_WASM_BUILD","Wasm build tool failed: "+args[0]+"\n"+result.output+result.errors);
  return result;
 }
@@ -97,7 +99,7 @@ JSON buildWasm(const Program &p,const std::string &directory,const std::string &
    throw Error("E_EXISTS","Wasm output requires a new or empty directory");
  }
  auto names=validate(p,requestedEntry);const auto &entry=p.function(requestedEntry);
- auto host=configureNative(BuildOptions{});auto compiler=tool(host.compiler);
+ auto host=configureWasm();auto compiler=tool(host.compiler);
  auto override=std::getenv("NEX_WASM_LD");auto linker=tool(override?override:host.wasmLinker);
  auto compilerVersion=command({compiler,"--version"}).output,linkerVersion=command({linker,"--version"}).output;
  if(compilerVersion.find("clang version 22.1.")==std::string::npos||linkerVersion.find("LLD 22.1.")==std::string::npos)
