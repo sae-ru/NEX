@@ -757,6 +757,26 @@ def _stream_host_contract():
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 
+def validate_installed_stream_host(report, version):
+    contract=_stream_host_contract();CASES,HEADERS,SOURCES=contract.CASES,contract.HEADERS,contract.SOURCES
+    writes=report.get('evidence',{}).get('structured_task_file_writes',{})
+    host=writes.get('private_stream_host',{}) if isinstance(writes,dict) else {}
+    pins=host.get('installed_sources',{}) if isinstance(host,dict) else {}
+    names=host.get('case_names',[]) if isinstance(host,dict) else []
+    required={'tools/task_file_stream_host_acceptance.cpp',*('runtime/'+n for n in (*HEADERS,*SOURCES))}
+    if version >= (0,154,0):
+        required.add('tests/host_test.h')
+    require(isinstance(host,dict) and host.get('schema')=='nex.installed-task-stream-host/1' and
+            all(host.get(key) is True for key in ('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants',
+                'physical_quota_retention','single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots',
+                'large_file_streaming','protocol_rejections')) and host.get('source_support') is False and
+            type(host.get('cases')) is int and host['cases']==27 and isinstance(names,list) and len(names)==27 and
+            all(isinstance(n,str) for n in names) and set(names)==set(CASES) and
+            isinstance(host.get('probe_sha256'),str) and re.fullmatch('[0-9a-f]{64}',host['probe_sha256']) and
+            isinstance(pins,dict) and set(pins)==required and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in pins.values()),
+            'SDK acceptance lacks actual installed private stream host evidence')
+
+
 def validate_task_http_evidence(report):
     """Validate this gate's receipt shape; other SDK gates remain mandatory."""
     http=report.get('evidence',{}).get('structured_task_http',{})
@@ -914,21 +934,7 @@ def validate_completed_report(report):
                     for key in ('delivery_report_sha256','history_report_sha256')),
                 'SDK acceptance lacks all genuine023 public024 migrations and preserved histories')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,2):
-        contract=_stream_host_contract();CASES,HEADERS,SOURCES=contract.CASES,contract.HEADERS,contract.SOURCES
-        writes=report.get('evidence',{}).get('structured_task_file_writes',{})
-        host=writes.get('private_stream_host',{}) if isinstance(writes,dict) else {}
-        pins=host.get('installed_sources',{}) if isinstance(host,dict) else {}
-        names=host.get('case_names',[]) if isinstance(host,dict) else []
-        required={'tools/task_file_stream_host_acceptance.cpp',*('runtime/'+n for n in (*HEADERS,*SOURCES))}
-        require(isinstance(host,dict) and host.get('schema')=='nex.installed-task-stream-host/1' and
-                all(host.get(key) is True for key in ('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants',
-                    'physical_quota_retention','single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots',
-                    'large_file_streaming','protocol_rejections')) and host.get('source_support') is False and
-                type(host.get('cases')) is int and host['cases']==27 and isinstance(names,list) and len(names)==27 and
-                all(isinstance(n,str) for n in names) and set(names)==set(CASES) and
-                isinstance(host.get('probe_sha256'),str) and re.fullmatch('[0-9a-f]{64}',host['probe_sha256']) and
-                isinstance(pins,dict) and set(pins)==required and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in pins.values()),
-                'SDK acceptance lacks actual installed private stream host evidence')
+        validate_installed_stream_host(report,tuple(map(int,version)))
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,133,1):
         writes=report.get('evidence',{}).get('structured_task_file_writes',{})
         history=writes.get('extended_histories',{}) if isinstance(writes,dict) else {}

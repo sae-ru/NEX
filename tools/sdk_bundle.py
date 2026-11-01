@@ -38,7 +38,11 @@ def selected_wasm_linker(doctor, environment):
     if not selected:
         raise ValueError('NEX_WASM_LD must select an executable LLVM 22.1 wasm-ld')
     # Keep the selected filename for multicall LLVM tools' argv[0] dispatch.
-    if 'LLD 22.1.' not in run([selected, '--version'], env=environment):
+    try:
+        version = run([selected, '--version'], env=environment, timeout=30)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        raise ValueError('NEX_WASM_LD requires a runnable wasm-ld from LLVM 22.1.x') from error
+    if 'LLD 22.1.' not in version:
         raise ValueError('NEX_WASM_LD requires wasm-ld from LLVM 22.1.x')
     return {**doctor, 'wasm_linker': str(Path(selected).absolute())}
 

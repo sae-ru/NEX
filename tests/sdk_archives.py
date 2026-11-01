@@ -239,9 +239,13 @@ THE SOFTWARE.
         with tempfile.TemporaryDirectory(prefix='nex-wasm-version-') as directory:
             wrong=Path(directory)/'wasm-ld'
             from host_fixture import python_executable
-            wrong=python_executable(wrong, 'print("LLD 21.1.0")\n', shutil.which('clang++'))
+            wrong=python_executable(wrong, '#!'+sys.executable+'\nprint("LLD 21.1.0")\n', shutil.which('clang++'))
             with self.assertRaisesRegex(ValueError,'LLVM 22.1.x'):
                 bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':str(wrong)})
+            malformed=Path(directory)/('malformed-wasm-ld.exe' if os.name=='nt' else 'malformed-wasm-ld')
+            malformed.write_bytes(b'not a native executable\n');malformed.chmod(0o700)
+            with self.assertRaisesRegex(ValueError,'runnable wasm-ld from LLVM 22.1.x'):
+                bundle.selected_wasm_linker(doctor,{**os.environ,'NEX_WASM_LD':str(malformed)})
         actual=os.environ.get('NEX_WASM_LD') or shutil.which('wasm-ld')
         if actual is None:
             self.skipTest('actual LLVM22.1 wasm-ld was not selected for the packaging regression')
@@ -521,6 +525,31 @@ THE SOFTWARE.
             bad=copy.deepcopy(current);bad['evidence']['structured_task_file_writes']['private_stream_host'][field]=value
             with self.subTest(field=field),self.assertRaisesRegex(RuntimeError,'installed private stream host'):
                 acceptance.validate_completed_report(bad)
+
+    def test_sdk154_stream_host_requires_the_installed_compatibility_header(self):
+        contract=acceptance._stream_host_contract()
+        fields=('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants','physical_quota_retention',
+                'single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots','large_file_streaming','protocol_rejections')
+        pins={'tools/task_file_stream_host_acceptance.cpp',
+              *('runtime/'+n for n in (*contract.HEADERS,*contract.SOURCES))}
+        host={'schema':'nex.installed-task-stream-host/1',**{k:True for k in fields},'source_support':False,
+              'cases':27,'case_names':list(contract.CASES),'probe_sha256':'a'*64,
+              'installed_sources':{name:'b'*64 for name in pins}}
+        report={'evidence':{'structured_task_file_writes':{'private_stream_host':host}}}
+        acceptance.validate_installed_stream_host(report,(0,153,0))
+        with self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+            acceptance.validate_installed_stream_host(report,(0,154,0))
+        host['installed_sources']['tests/host_test.h']='c'*64
+        acceptance.validate_installed_stream_host(report,(0,154,0))
+        for value in ('not-a-hash','d'*63,None):
+            changed=copy.deepcopy(report)
+            changed['evidence']['structured_task_file_writes']['private_stream_host']['installed_sources']['tests/host_test.h']=value
+            with self.subTest(value=value),self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+                acceptance.validate_installed_stream_host(changed,(0,154,0))
+        changed=copy.deepcopy(report)
+        changed['evidence']['structured_task_file_writes']['private_stream_host']['installed_sources']['unreviewed.hpp']='e'*64
+        with self.assertRaisesRegex(RuntimeError,'installed private stream host'):
+            acceptance.validate_installed_stream_host(changed,(0,154,0))
 
     def test_sdk1331_requires_extended_genuine_history_before_other_acceptance(self):
         current=self.report();current.update(version='0.133.1',language='0.23',doctor={'version':'0.133.1'},compiler_sha256='a'*64)
