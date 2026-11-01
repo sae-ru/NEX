@@ -3,14 +3,30 @@
 [English](getting-started.en.md) · [Описание](overview.ru.md)
 
 Версия инструментария отличается от версии языка. Здесь используется
-toolchain 0.156.0 / язык 0.27. [Состояние поставки](releases/0.152.1.json) указывает
+toolchain 0.156.0 / язык 0.27. [Состояние поставки](releases/0.156.0.json) указывает
 точный принятый SDK, коммит, платформу, SHA256 архива и внешние зависимости.
 
 ## Установить подходящий SDK или собрать компилятор
 
-Для этого снимка используйте сборку из исходников ниже. Готовый архив для
-публичного скачивания ещё не опубликован; проверенный macOS-архив указан
-в состоянии поставки.
+Для macOS ARM64 с macOS27.0+ скачайте [development SDK0.156.0](https://github.com/sae-ru/NEX/releases/tag/v0.156.0).
+Нужны Apple command line tools/SDK и Python3.10+; для веба также Node/npm,
+для живой отладки — host LLDB. Сверьте SHA256 перед добавлением SDK в PATH:
+
+```sh
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.156.0/nex-sdk-0.156.0-macos-arm64-development.tar.gz' -o 'nex-sdk-0.156.0-macos-arm64-development.tar.gz'
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.156.0/nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256' -o 'nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256'
+shasum -a 256 -c 'nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256'
+tar -xzf 'nex-sdk-0.156.0-macos-arm64-development.tar.gz'
+export PATH="$PWD/nex-sdk-0.156.0-macos-arm64-development/bin:$PATH"
+nex doctor --json
+nex describe --kind index --json
+```
+
+Опубликованный SHA256: `7e145b75e8fe7b195f485699411d68ad9d9c1aa7690ddcf91201dee8cfda7a04`.
+
+Для Windows/Linux или другой цели используйте исходники и соответствующее
+платформенное руководство ниже. Области приёмки и точные хеши исходников/архива
+указаны в квитанции поставки.
 
 SDK содержит `bin/nex` и `share/nex`; оставьте их вместе. Выбирайте архив своей
 ОС/архитектуры и сверяйте опубликованный SHA256 до распаковки. macOS ARM64 SDK

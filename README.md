@@ -53,18 +53,24 @@ platform acceptance.
 ## Development status
 
 Current source: **toolchain 0.156.0 / language 0.27**.
-Generic runtime contracts are under development and require matching acceptance.
-The previous0.155 source passed [287 Mac CTest groups](docs/evidence/runtime-value-contracts-0.155.0.json)
-and two40-phase SDK workflows on Python3.14. Its corrected Python3.10+ packaging
-is undergoing separate qualification. Earlier Windows receipts retain their own
-source scope; they do not accept the current compiler.
-The accepted 0.152.1 macOS ARM64 source build passed all 285 CTest groups. The development SDK
-passed 40 maintained phases in each moved/restored installation. An additional 126 production UI/Worker
-tests passed across Chromium, Firefox and WebKit. This is a development preview.
-Read the [logical debugger evidence](docs/evidence/lldb-resume-0.152.1.json) and
-[runtime contract guide](docs/runtime-contracts.md) for their exact scopes.
-The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
-source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.152.1.json).
+
+The [macOS development SDK](docs/releases/0.156.0.json) passed all **288 CTest groups**.
+Moved and archive-restored installations each passed **40 maintained phases**
+and **57 additional contract/debugger cases**, on actual Python 3.10.22 and
+3.14.9 respectively. The published archive is the exact immutable archive
+created before those workflows.
+
+Runtime contracts now cover ordinary concrete and generic source functions.
+Generic predicates check parametrically under the original bounds and constructor
+kinds; all specializations use the guarded template. Earlier receipt families
+remain compatible. Source language 0.27 and task ABI7 are unchanged.
+
+This is a development preview for macOS ARM64, minimum macOS 27.0.
+[Install it](docs/getting-started.en.md), or build from source for another host.
+Discover actual capabilities with nex describe. Current Windows/Linux acceptance,
+general GPU compilation, mobile/UI and remaining PLAN work have separate gates.
+The earlier [126 production-browser tests](docs/evidence/sdk-browsers-0.152.1.json)
+retain their 0.152.1 source scope; the 0.156 SDK browser phase builds production assets.
 
 Apple M5 Max OpenCL U8 Add/Affine passed [0.156 GPU checks](docs/evidence/macos-opencl-0.156.0.json):
 21 native/reference scenarios and six native source profiles, including generic

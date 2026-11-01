@@ -276,8 +276,8 @@
   "primary081_preserved": true,
   "source_absent_hardware_run": false,
   "system_OpenCL_framework_is_external_unpinned_prerequisite": true,
-  "installed_SDK_accepted": false,
-  "full_regression_accepted": false,
+  "installed_SDK_accepted": true,
+  "full_regression_accepted": true,
   "full_objective_complete": false,
   "pending": [
     "matching full288 and installed SDK acceptance",
@@ -288,7 +288,7 @@
   "memory_scope": "Visible NEX managed handle/object shallow pools only; excludes aliases, dynamic backing, coroutine/scheduler backing, external allocator total and whole-process RAM. Separate physical traces verify GPU buffer/session cleanup.",
   "local_qualification_sha256": "ddfbdd4b9035178e3ce6695915183e3fd2900cbeb53502db271ec6d52b6413a3",
   "compiler_source_commit": "3a220f36fc978e57756d254267605b4505cfbb57",
-  "status": "scoped_physical_GPU_and_source_profile_checks_passed_full_and_SDK_pending",
+  "status": "scoped_physical_GPU_and_source_profile_checks_passed_matching_Mac_delivery_accepted",
   "artifact_paths": "Relative labels under runtime-generic-contracts-156 build evidence; raw artifacts retained locally, not published as SDK downloads",
   "hardware_cases": 21,
   "native_source_profile_cases": 6,
@@ -547,5 +547,7 @@
       "native_kernel_events": 1,
       "all_buffers_released": true
     }
-  ]
+  ],
+  "matching_delivery_record": "../releases/0.156.0.json",
+  "acceptance_updated_after_hardware_qualification": true
 }

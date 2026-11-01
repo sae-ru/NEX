@@ -1,0 +1,214 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope",
+  "verified_at_utc": "2026-11-01T20:55:18.864493+00:00",
+  "toolchain": "0.156.0",
+  "language": "0.27",
+  "source_task_ABI": 7,
+  "source_commit": "3a220f36fc978e57756d254267605b4505cfbb57",
+  "SDK_source_commit": "3a220f36fc978e57756d254267605b4505cfbb57",
+  "publication_changes": "Documentation and evidence only after source3a220f3; compiler/runtime/CMake unchanged.",
+  "input_compiler_sha256": "fe6f1902d1d02b92e6c27f726142b87d84bff3130d89341a2f3192185c8fcb49",
+  "compiler_build": "22ffe59357bb16e324bbf4907dddb2599cec6912b6b8daa50859bd18571e350d",
+  "descriptor_hash": "f423495dfe7e5b77e3fde207a8f4fe116aa9c5fb14091392543f217b240fdaa5",
+  "license": "MIT",
+  "NEX_MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+  "compiler_full_regression": {
+    "accepted": true,
+    "groups": 288,
+    "CTest_group_failures": [],
+    "CTest_group_skips": [],
+    "reported_internal_unittest_skips": [
+      {
+        "group": "parallel_mapping",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_images",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_build",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "task_provider_debugging_native",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_actions",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_runtime",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "editor",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_pages",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "debug_image",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "core_dump",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "core_capsules",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "frontend_diagnostics",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "sdk_archives",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "packaging",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "incremental",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_targets",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_targets",
+        "reported_unittest_skips": 8
+      },
+      {
+        "group": "server_debug",
+        "reported_unittest_skips": 4
+      }
+    ],
+    "internal_skips_do_not_prove_other_platforms": true,
+    "seconds": 4901.747,
+    "report_sha256": "e28d09a154f46b3cc0dbcad4e8727fb960fbefcfa29c52ebfba57a77154e786f",
+    "JUnit_sha256": "91f54025f8c691bc3cba1e03d75aeb7eab79db48c11539baa324de96c77ae54e",
+    "source_manifest_sha256": "36ae8505acd35bcac01bd5be933d002b8350c610800288b87ba24e3c6abed7ae"
+  },
+  "SDK": {
+    "accepted": true,
+    "platform": "arm64-apple-darwin27.0.0",
+    "minimum_macos": "27.0",
+    "external_prerequisites": [
+      "Apple command line tools/SDK and system C++ runtime/linker",
+      "Python 3.10+",
+      "Node.js/npm for browser builds",
+      "host LLDB/lldb-dap for live debugging"
+    ],
+    "moved": {
+      "ok": true,
+      "python": "Python 3.10.22",
+      "python_sha256": "c21b8f194a501a60896bc83a39835b72a6c684302a40f7e72d8f0629ada47e5f",
+      "phases": 40,
+      "seconds": 4171.192,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "24de1a98efeab088eb8d1a95713e749dc5ab60f4ff1654b56aeef8a290d27b4a",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 6,
+      "original_source_read_controls": 5,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "runtime_generic_contract_scenarios": 9,
+      "resume_protocol_scenarios": 4
+    },
+    "restored": {
+      "ok": true,
+      "python": "Python 3.14.9",
+      "python_sha256": "51504e3c551bf50ebff1f4d88aa68ec1a1cb8c742f9b8bd3baccd6c3991141b7",
+      "phases": 40,
+      "seconds": 4167.915,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "24de1a98efeab088eb8d1a95713e749dc5ab60f4ff1654b56aeef8a290d27b4a",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 6,
+      "original_source_read_controls": 5,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "runtime_generic_contract_scenarios": 9,
+      "resume_protocol_scenarios": 4
+    },
+    "qualification_report_sha256": "a7304ed7be916bb321675a97f2d1f345e658ce7ee0dcdd2c1dff0fa3a3de1cab",
+    "published_archive": {
+      "filename": "nex-sdk-0.156.0-macos-arm64-development.tar.gz",
+      "sha256": "7e145b75e8fe7b195f485699411d68ad9d9c1aa7690ddcf91201dee8cfda7a04",
+      "bytes": 123669813,
+      "files_in_inventory": 3304,
+      "download_url": "https://github.com/sae-ru/NEX/releases/download/v0.156.0/nex-sdk-0.156.0-macos-arm64-development.tar.gz",
+      "release_tag": "v0.156.0",
+      "pre_release": true
+    },
+    "archive_created_before_both_full_workflows": true,
+    "post_qualification_payload_changes": false,
+    "signing": "Ad hoc Mach-O signatures; no Developer ID notarization"
+  },
+  "runtime_contract_scope": {
+    "legacy_scalar_cases": 15,
+    "loop_cases": 15,
+    "value_effectful_cases": 14,
+    "generic_cases": 9,
+    "extra_resume_protocol_cases": 4,
+    "extra_cases_per_SDK": 57,
+    "receipt_families": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "generic_root_scope": "source_template_all_instantiations",
+    "source_contract_syntax": false,
+    "Z3_scalar_scope_unchanged": true
+  },
+  "separate_evidence": {
+    "OpenCL_and_native_source_profiles": "../evidence/macos-opencl-0.156.0.json",
+    "SDL_Metal_Retina": "../evidence/sdl-metal-retina-0.155.0.json",
+    "previous_delivery": "0.155.0.json",
+    "prior_Windows_source": "../evidence/windows-native-2026-11-01.json",
+    "prior_Windows_SDK_CUDA": "../evidence/windows-sdk-2026-11-01.json",
+    "earlier_production_browser_execution": "../evidence/sdk-browsers-0.152.1.json"
+  },
+  "physical_GPU_scope": {
+    "device": "Apple M5 Max",
+    "API": "OpenCL",
+    "operations": [
+      "U8 Add",
+      "U8 Affine"
+    ],
+    "native_reference_cases": 21,
+    "native_host_source_profiles": 6,
+    "physical_kernel_events": 47,
+    "native_executable_pins": 27,
+    "generic_control_cases": 2,
+    "all_visible_managed_shallow_pools_balanced": true,
+    "integrated_GPU_timeline": false
+  },
+  "known_scope_limits": [
+    "Current Windows/Linux regression and SDK acceptance remain separate; earlier receipts retain their source identities.",
+    "The SDK browser phase builds production assets; it does not replace a fresh three-browser execution cohort.",
+    "Visible managed profile pools exclude aliases, dynamic/coroutine/scheduler backing, external allocator totals and whole-process RAM.",
+    "General GPU code generation, Metal compute, Apple NPU, full mobile/UI/Studio/converter, source contract syntax and other original PLAN work remain incomplete."
+  ],
+  "goal_complete": false
+}

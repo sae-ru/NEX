@@ -1,3 +1,16 @@
+# macOS development SDK delivery - 0.156.0 / language 0.27
+
+Source 3a220f3 passed 288 CTest groups. Both moved/restored SDKs passed 40 phases
+plus 57 extra contract/debugger cases on actual Python 3.10.22 and 3.14.9.
+The published archive is the exact immutable archive used by both workflows:
+docs/releases/0.156.0.json. Concrete/generic runtime contracts retain exact types,
+effects, bounds and owned cleanup; scalar/loop/value/generic families1/2/3/4 coexist.
+Physical Apple M5 Max OpenCL and native source-profile scopes are recorded
+separately. This accepts the recorded Mac development scope; current Windows/Linux,
+mobile, general GPU/NPU, UI/Studio/converter, source contract syntax and every
+other unfinished original requirement below remain open. Earlier entries preserve
+their historical development states and do not override this receipt.
+
 # Scoped Mac GPU and generic profiling qualification - 0.156.0
 
 Compiler source 3a220f3 passed 21 actual OpenCL native/reference scenarios and six

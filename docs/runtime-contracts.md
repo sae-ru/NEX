@@ -199,9 +199,9 @@ Native Windows/CUDA and other-platform acceptance remain separate.
 Toolchain0.153 develops loop projection. Matching full regression, SDK and platform
 acceptance for that extension remain separate from the accepted0.152.1 SDK.
 
-The previous0.155 source passed [287 Mac CTest groups](evidence/runtime-value-contracts-0.155.0.json),
-including14 value/effectful scenarios, and moved/restored40-phase SDK execution on
-Python3.14. The archive's overstated Python3.9 requirement was repaired separately;
-fresh qualification with the actual Python3.10 minimum remains in progress.
-The0.156 generic extension requires its own full288 regression, installed SDK
-and platform acceptance. Earlier platform receipts retain their exact source scope.
+The [0.156 Mac delivery](releases/0.156.0.json) records full288 regression,
+40 maintained phases plus15 scalar,15 loop,14 value,9 generic and4 debugger-protocol
+cases in each moved/restored SDK. The published archive is the exact payload used
+by both workflows. OpenCL hardware and source-memory profiles have a separate
+[scoped receipt](evidence/macos-opencl-0.156.0.json). Current Windows/Linux,
+source contract syntax, broader proof models and other PLAN work remain open.
