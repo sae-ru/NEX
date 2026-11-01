@@ -10,7 +10,7 @@ def check_installed_resource_executor(run,root,resources,driver):
     module=out/'executor-module.so';probe=out/'resource-executor'
     run([driver,'-std=c++20','-pthread','-shared','-fPIC','-I'+str(runtime),
          tools/'resource_executor_module.cpp','-o',module],cwd=out)
-    args=[driver,'-std=c++20','-pthread','-I'+str(runtime),
+    args=[driver,'-std=c++20','-pthread','-I'+str(runtime),'-I'+str(resources/'tests'),
           tools/'resource_executor_acceptance.cpp',runtime/'nex_resource_executor.cpp',
           runtime/'nex_external_resource.cpp',runtime/'nex_resource_region.cpp','-o',probe]
     if platform.system()=='Linux':args.append('-ldl')
@@ -27,4 +27,4 @@ def check_installed_resource_executor(run,root,resources,driver):
             'installed_sources':{str(p.relative_to(resources)):_sha(p.read_bytes()) for p in
               (runtime/'nex_resource_executor.h',runtime/'nex_resource_executor.cpp',runtime/'nex_resource_region.h',runtime/'nex_resource_region.cpp',
                runtime/'nex_resource.h',runtime/'nex_external_resource.h',runtime/'nex_external_resource.cpp',
-               tools/'resource_executor_acceptance.cpp',tools/'resource_executor_module.cpp')}}
+               tools/'resource_executor_acceptance.cpp',tools/'resource_executor_module.cpp',resources/'tests/host_test.h')}}

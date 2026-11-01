@@ -30,7 +30,7 @@ def check_installed_task_streams(run,root,resources,driver):
  root,resources=Path(root),Path(resources);out=root/'private-task-file-streams';out.mkdir()
  runtime=resources/'runtime';source=resources/'tools/task_file_stream_host_acceptance.cpp';binary=out/'file-stream-host'
  sources=[source,*[runtime/name for name in SOURCES]]
- command=[driver,'-std=c++20','-pthread','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),*sources,'-o',binary]
+ command=[driver,'-std=c++20','-pthread','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-I'+str(runtime),'-I'+str(resources/'tests'),*sources,'-o',binary]
  if platform.system()=='Linux':command.append('-ldl')
  run(command,cwd=out,timeout=300);output=run([binary],cwd=out,timeout=120)
  names=[line[5:] for line in output.splitlines() if line.startswith('PASS ')]
@@ -44,4 +44,4 @@ def check_installed_task_streams(run,root,resources,driver):
    'actual_partial_write':True,'typed_open_no_raw_file_ids':True,'original_grants':True,'physical_quota_retention':True,
    'single_CPU_worker_progress':True,'cancel_physical_drain':True,'immutable_input_snapshots':True,'large_file_streaming':True,
    'protocol_rejections':True,'probe_sha256':_sha(binary.read_bytes()),'raw_report':raw,
-   'installed_sources':{str(p.relative_to(resources)):_sha(p.read_bytes()) for p in [*sources,*[runtime/name for name in HEADERS]]}}
+   'installed_sources':{str(p.relative_to(resources)):_sha(p.read_bytes()) for p in [*sources,*[runtime/name for name in HEADERS],resources/'tests/host_test.h']}}
