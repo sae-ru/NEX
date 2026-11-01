@@ -1261,7 +1261,7 @@ add_test(NAME source_exception_modules COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_modules.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_modules PROPERTIES TIMEOUT 2400 FIXTURES_SETUP private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
@@ -1269,7 +1269,7 @@ add_test(NAME source_exception_frontiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_frontiers.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_frontiers PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
@@ -1277,7 +1277,7 @@ add_test(NAME source_exception_instances COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_instances.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-modules-runtime)
 set_tests_properties(source_exception_instances PROPERTIES TIMEOUT 2400 FIXTURES_REQUIRED private_exception_modules RESOURCE_LOCK private_exception_module_runtime)
 
@@ -1285,7 +1285,7 @@ add_test(NAME source_exception_module_profile COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_profile.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-profile-runtime)
 set_tests_properties(source_exception_module_profile PROPERTIES TIMEOUT 3000 RESOURCE_LOCK private_exception_module_profile_runtime)
 add_test(NAME source_exception_module_http_profile COMMAND ${Python3_EXECUTABLE} -B
@@ -1302,7 +1302,7 @@ add_test(NAME source_exception_module_debug COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_module_debug.py
   $<TARGET_FILE:nex_source_exception_modules_probe> $<TARGET_FILE:nex_source_exception_tasks_probe>
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe> ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --debug-compiler $<TARGET_FILE:nex> --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY}
+  --debug-compiler $<TARGET_FILE:nex> --crypto-library ${NEX_PRIVATE_CRYPTO_LIBRARY} --crypto-include ${OPENSSL_INCLUDE_DIR}
   --runtime-cache ${CMAKE_CURRENT_BINARY_DIR}/source-exception-module-debug-runtime)
 set_tests_properties(source_exception_module_debug PROPERTIES TIMEOUT 3600 RESOURCE_LOCK private_exception_module_debug_runtime)
 

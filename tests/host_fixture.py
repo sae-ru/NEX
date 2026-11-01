@@ -137,7 +137,7 @@ def copy_link_image(source, destination):
     return result
 
 def run_native(arguments, *args, **kwargs):
-    """Compile the same native fixture with the Windows SDK's real link closure."""
+    """Compile native fixtures with shared host headers and the real OS link closure."""
     import subprocess
     command=list(map(str,arguments));rename=None;link_stage=None;link_capture=None
     if os.name=='nt':
@@ -161,6 +161,8 @@ def run_native(arguments, *args, **kwargs):
                         for source,destination in copies:shutil.copy2(source,destination)
                     return result
     compiling=any(value in command for value in ('-shared','-c','-emit-llvm')) or any(value.startswith('-std=') for value in command) or ('-o' in command and any(value.lower().endswith(('.o','.obj','.a','.ll','.c','.cpp')) for value in command[1:]))
+    if compiling:
+        command+=['-I'+str(Path(__file__).resolve().parent)]
     if os.name=='nt' and compiling:
         command=[value.replace('--build-id=sha1','--build-id') for value in command if value!='-ldl' and not value.startswith(('-Wl,-soname,','-Wl,-rpath,','-Wl,-z,'))]
         host_exports='-Wl,--export-dynamic' in command
@@ -177,7 +179,6 @@ def run_native(arguments, *args, **kwargs):
                     count=4 if index+1<len(command) and command[index+1]=='-Xlinker' else 3
                     del command[index-1:index-1+count]
                 else:raise ValueError('unexpected ELF-only fixture option shape')
-        command+=['-I'+str(Path(__file__).resolve().parent)]
         linking='-o' in command and not any(value in command for value in ('-c','-E','-S'))
         if linking:
             output_index=command.index('-o')+1;requested=Path(command[output_index])

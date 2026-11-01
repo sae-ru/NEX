@@ -81,6 +81,7 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     p.add_argument("--output", default=os.environ.get(output_env))
     p.add_argument("--runtime-cache")
     p.add_argument("--crypto-library")
+    p.add_argument("--crypto-include")
     p.add_argument("--debug-compiler")
     p.add_argument("--debug-native-only",action="store_true")
     p.add_argument("--case", action="append")
@@ -118,6 +119,7 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
     triple = re.search(r'target triple = "([^"]+)"', target)[1]
     layout = re.search(r'target datalayout = "([^"]+)"', target)[1]
     flags = ["-std=c++20", "-O1", "-g", "-fPIC", "-DNEX_STRUCTURED_WORKERS", "-DNEX_ASYNC_TASKS", "-DNEX_FOREIGN_ENABLED", "-I" + str(runtime)]
+    if a.crypto_include:flags.extend(["-I",a.crypto_include])
     profiled = instrumentation == 'profile'
     debugged = instrumentation == 'debug'
     assert instrumentation is None or (profiled and architecture_version == 5) or (debugged and architecture_version == 6)
