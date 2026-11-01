@@ -1,0 +1,33 @@
+{
+  "expected_revision": "677a110f1e44daee98edd5a4c4f944f3a0c3fe25bbe269ac3d2bab454dd7449d",
+  "functions": [
+    {
+      "content_hash": "f1bc3207d0271fb5c46ac62738de2fcfdb53deaa43c220eb17a0f7acadaf7db8",
+      "ensures": [
+        "result>=left",
+        "result>=right"
+      ],
+      "loops": [],
+      "requires": [
+        "true"
+      ],
+      "returns": "result",
+      "symbol": "generic_guards::maximum"
+    },
+    {
+      "content_hash": "2c28887ffe5e219217e12ce92d2039920a488b2aa769fca073eba0089a1ac6d7",
+      "ensures": [
+        "result==value"
+      ],
+      "loops": [],
+      "requires": [
+        "true"
+      ],
+      "returns": "result",
+      "symbol": "generic_guards::identity"
+    }
+  ],
+  "language": "0.27",
+  "schema": "nex.verification-contracts/1",
+  "source_hash": "36245edec8dbc5c247c92404141ffcb201ed8f7fbb601317e96d4708f82af636"
+}

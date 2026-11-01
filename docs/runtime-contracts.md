@@ -58,11 +58,11 @@ recursion depth. Assertions remain enabled in release builds.
 
 ## Supported scope
 
-Roots must be ordinary concrete source functions. Signatures may use checked
+Roots must be ordinary concrete or generic source functions. Signatures may use checked
 strings, bytes, finite f64, aggregates, results, callables and genuine resource/task
 values under their existing realm and lifetime rules. Declared effects are
-preserved in both the wrapper and the private body. Tests, externs, generic roots/instances,
-trait signatures or compiler-generated closures can be selected. Their bodies
+preserved in both the wrapper and the private body. Tests, externs, derived generic instances,
+trait signatures and compiler-generated closures are rejected. Selected bodies
 retain ordinary checked source semantics, including loops, local aggregates,
 internally handled source errors and `finally`. Recursion is permitted at runtime;
 it remains outside the current scalar proof engine.
@@ -121,9 +121,38 @@ checks, and the original body/return boundaries remain in the private body
 function. This adds ordinary checked source steps and calls; step/call budgets,
 source locations and profiles include them. There is no zero-overhead promise.
 Loop annotations still use only visible i64/bool bindings and the scalar
-expression subset; these compose with effectful/aggregate roots. Generic root
-projection and source-level contract syntax remain pending. The separate Z3
+expression subset; these compose with effectful/aggregate and generic roots.
+Source-level contract syntax remains pending. The separate Z3
 verifier retains its narrower scalar proof subset and limits.
+
+## Generic roots (development toolchain 0.156)
+
+Select the source template, for example `library::identity`, rather than a
+derived `library::identity<i64>` instance. The original generic signature,
+bounds, constructor arities, realm and effects are retained in the wrapper and
+the private body. The wrapper passes every type parameter explicitly, including
+phantom parameters that cannot be inferred from value arguments.
+
+Predicates are checked parametrically against the declared bounds, even if the
+template is unused or all current callers select i64. An unconstrained `T`
+therefore cannot acquire arithmetic from the current set of callers. Explicit
+type annotations and calls in predicates can refer to the template's parameters,
+including constructor parameters and trait-associated projections. The ordinary
+purity, visibility, ownership and generic expansion limits still apply.
+
+The projected source template enforces its checks for existing specializations
+and for specializations added by later ordinary source edits. This is a runtime
+property of the generated template; a later edit still changes its checked
+project revision. The receipt pins the exact generated snapshot and does not
+approve that later revision. Direct instance replacement remains prohibited.
+
+Generic projections use candidate/session `/4`, with
+`generic_root_scope: "source_template_all_instantiations"`. Each function records
+ordered `type_parameters` containing original qualified names, constructor
+arities and bounds; concrete roots in a mixed projection record an empty array.
+At least one selected root is generic. Receipt/session `/1`, `/2` and `/3`
+remain unchanged. Generic runtime checking adds no source keywords, runtime ABI,
+language migration or new Z3 proof support.
 
 ## Evidence and version control
 
@@ -137,7 +166,8 @@ non-scalar roots, or predicates outside the original scalar subset, use
 session/candidate `/3` with `predicate_scope: "pure_source_expressions"`.
 Each `/3` function records its original checked realm, effects, parameter/result
 types and loop coverage (possibly empty); `loop_checks` states whether any loops
-were selected. All six shapes are defined by the linked schema.
+were selected. These six legacy shapes and the two generic shapes are defined
+by the linked schema.
 
 The destination contains `nex.json`, a matching `nex.lock.json`, exported sources
 and `runtime-contracts.receipt.json` ([receipt schema](../llm/runtime-contracts.schema.json)). `intent_hash` retains the normalized pre/post acceptance intent; `contract_hash`
@@ -169,6 +199,9 @@ Native Windows/CUDA and other-platform acceptance remain separate.
 Toolchain0.153 develops loop projection. Matching full regression, SDK and platform
 acceptance for that extension remain separate from the accepted0.152.1 SDK.
 
-Toolchain0.155 develops value/effectful projection. Its full regression, matching
-installed SDK and platform acceptance remain pending until matching receipts are
-published. The frozen0.154 integration is validated separately.
+The previous0.155 source passed [287 Mac CTest groups](evidence/runtime-value-contracts-0.155.0.json),
+including14 value/effectful scenarios, and moved/restored40-phase SDK execution on
+Python3.14. The archive's overstated Python3.9 requirement was repaired separately;
+fresh qualification with the actual Python3.10 minimum remains in progress.
+The0.156 generic extension requires its own full288 regression, installed SDK
+and platform acceptance. Earlier platform receipts retain their exact source scope.

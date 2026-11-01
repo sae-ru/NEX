@@ -20,6 +20,12 @@
     },
     {
       "$ref": "#/$defs/value_session"
+    },
+    {
+      "$ref": "#/$defs/generic_receipt"
+    },
+    {
+      "$ref": "#/$defs/generic_session"
     }
   ],
   "$defs": {
@@ -1032,6 +1038,460 @@
         },
         "predicate_scope": {
           "const": "pure_source_expressions"
+        }
+      }
+    },
+    "type_parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "arity",
+        "bounds"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "bounds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "generic_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "origin_revision",
+        "origin_source_hash",
+        "revision",
+        "source_hash",
+        "contract_hash",
+        "intent_hash",
+        "compiler_build",
+        "toolchain",
+        "failure_code",
+        "loop_checks",
+        "proof_performed",
+        "bundle",
+        "origin_bundle",
+        "contracts",
+        "functions",
+        "predicate_scope",
+        "generic_root_scope"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.runtime-contract-candidate/4"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "origin_revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "origin_source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "contract_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "intent_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "compiler_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "toolchain": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "failure_code": {
+          "const": "E_ASSERT"
+        },
+        "loop_checks": {
+          "type": "boolean"
+        },
+        "proof_performed": {
+          "const": false
+        },
+        "bundle": {
+          "$ref": "#/$defs/bundle"
+        },
+        "origin_bundle": {
+          "$ref": "#/$defs/bundle"
+        },
+        "contracts": {
+          "$ref": "verification.schema.json"
+        },
+        "functions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "symbol",
+              "origin_content_hash",
+              "content_hash",
+              "requires",
+              "ensures",
+              "normal_returns_only",
+              "implementation_symbol",
+              "implementation_content_hash",
+              "loops",
+              "realm",
+              "parameters",
+              "result_type",
+              "effects",
+              "type_parameters"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "origin_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "requires": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "ensures": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "normal_returns_only": {
+                "const": true
+              },
+              "implementation_symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "implementation_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "loops": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "$ref": "#/$defs/loop"
+                }
+              },
+              "realm": {
+                "enum": [
+                  "shared",
+                  "server",
+                  "client"
+                ]
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "type"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "result_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "effects": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "io",
+                    "db",
+                    "fs",
+                    "ffi",
+                    "task",
+                    "throw"
+                  ]
+                }
+              },
+              "type_parameters": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "$ref": "#/$defs/type_parameter"
+                }
+              }
+            }
+          },
+          "contains": {
+            "type": "object",
+            "required": [
+              "type_parameters"
+            ],
+            "properties": {
+              "type_parameters": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          },
+          "minContains": 1
+        },
+        "predicate_scope": {
+          "const": "pure_source_expressions"
+        },
+        "generic_root_scope": {
+          "const": "source_template_all_instantiations"
+        }
+      }
+    },
+    "generic_session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "language",
+        "origin_revision",
+        "origin_source_hash",
+        "revision",
+        "source_hash",
+        "contract_hash",
+        "intent_hash",
+        "compiler_build",
+        "toolchain",
+        "failure_code",
+        "loop_checks",
+        "proof_performed",
+        "functions",
+        "ok",
+        "directory",
+        "receipt",
+        "predicate_scope",
+        "generic_root_scope"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.runtime-contract-session/4"
+        },
+        "language": {
+          "const": "0.27"
+        },
+        "origin_revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "origin_source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "revision": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "contract_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "intent_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "compiler_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "toolchain": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "failure_code": {
+          "const": "E_ASSERT"
+        },
+        "loop_checks": {
+          "type": "boolean"
+        },
+        "proof_performed": {
+          "const": false
+        },
+        "functions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "symbol",
+              "origin_content_hash",
+              "content_hash",
+              "requires",
+              "ensures",
+              "normal_returns_only",
+              "implementation_symbol",
+              "implementation_content_hash",
+              "loops",
+              "realm",
+              "parameters",
+              "result_type",
+              "effects",
+              "type_parameters"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "origin_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "requires": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "ensures": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "normal_returns_only": {
+                "const": true
+              },
+              "implementation_symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "implementation_content_hash": {
+                "$ref": "#/$defs/digest"
+              },
+              "loops": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "$ref": "#/$defs/loop"
+                }
+              },
+              "realm": {
+                "enum": [
+                  "shared",
+                  "server",
+                  "client"
+                ]
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "type"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "result_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "effects": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "io",
+                    "db",
+                    "fs",
+                    "ffi",
+                    "task",
+                    "throw"
+                  ]
+                }
+              },
+              "type_parameters": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "$ref": "#/$defs/type_parameter"
+                }
+              }
+            }
+          },
+          "contains": {
+            "type": "object",
+            "required": [
+              "type_parameters"
+            ],
+            "properties": {
+              "type_parameters": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          },
+          "minContains": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicate_scope": {
+          "const": "pure_source_expressions"
+        },
+        "generic_root_scope": {
+          "const": "source_template_all_instantiations"
         }
       }
     }

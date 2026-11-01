@@ -1,3 +1,17 @@
+# Generic runtime contract development - 0.156.0 / language 0.27
+
+The next source candidate projects ordinary generic templates without a language
+or ABI change. Predicates must type-check under the template bounds even when
+unused; type parameters and constructor kinds are carried to the private body.
+New candidate/session4 records exact original parameter metadata. Existing scalar,
+loop and value receipt families stay compatible. All-target build and targeted
+scalar15, loop15, value14 and final generic9 cases passed. The generic example
+passed reference, native Debug/Release and TypeScript tests. The initial invalid
+str/ordered fixture remains retained; string addition and numeric ordering are
+checked under their actual bounds. Full288 regression, installed SDK and platform
+acceptance remain pending.
+Frozen0.155 full287 and relocated/restored SDK gates continue independently.
+
 # SDL Metal/Retina example qualification — 0.155.0 compiler
 
 The SDL example now maps its logical board to the actual physical presentation

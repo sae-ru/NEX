@@ -687,7 +687,7 @@ Toolchains 0.13 and 0.14 evaluate pure NEX expressions over exact typed stopped-
 
 Toolchain 0.10 instruments reachable native function calls and managed shallow allocation pools in profile builds, without changing language 0.5 effects or observable execution rules. Reports attribute measured function content to the selected graph revision and node IDs; optional Tracy CPU zones use the same names and frozen source locations. Debug/release output and the reference interpreter/TypeScript semantics are unchanged. See [profiling.md](profiling.md) for wall-time definitions, overhead, bounds and remaining browser/GPU coverage.
 
-## Executable contract projection (toolchains 0.152–0.155)
+## Executable contract projection (toolchains 0.152–0.156)
 
 `nex contract --kind runtime` explicitly produces a separately checked source
 revision with pre/post assertions and selected while invariant/ranking
@@ -700,6 +700,13 @@ early return/source errors do not create a back edge. It uses existing function/
 ordinary checked traps and all three existing execution backends; it adds no
 keywords, semantic format or language migration. Source bodies retain their return
 boundary, so postconditions run after normal `finally` return replacement.
+Toolchain0.156 also projects source generic templates, retaining parameter bounds
+and constructor kinds. Predicates must check parametrically without inherited
+effects, and all generated specializations use the guarded template. Derived
+instances cannot be selected for direct replacement. Existing receipt families
+remain unchanged; generic projections use candidate/session4 with original type
+parameter metadata. This extends runtime projection without extending scalar Z3
+proof support or changing source grammar, canonical formats or language0.27.
 Original source/history remain intact. This feature does not insert checks merely
 because a verification JSON exists. Scope, diagnostics, receipt and overhead are
 specified in [runtime-contracts.md](runtime-contracts.md).

@@ -653,7 +653,7 @@ int run(const Options &o) {
     auto output=(fs::path(directory)/"runtime-contracts.receipt.json").string();
     writeFile(output,json(receipt)+"\n");
     auto summary=llvm::json::Object(*object);summary.erase("bundle");summary.erase("origin_bundle");summary.erase("contracts");
-    summary["schema"]=object->getString("schema")=="nex.runtime-contract-candidate/3"?"nex.runtime-contract-session/3":object->getBoolean("loop_checks").value_or(false)?"nex.runtime-contract-session/2":"nex.runtime-contract-session/1";summary["ok"]=true;summary["directory"]=fs::absolute(directory).string();summary["receipt"]=fs::absolute(output).string();
+    summary["schema"]=object->getString("schema")=="nex.runtime-contract-candidate/4"?"nex.runtime-contract-session/4":object->getString("schema")=="nex.runtime-contract-candidate/3"?"nex.runtime-contract-session/3":object->getBoolean("loop_checks").value_or(false)?"nex.runtime-contract-session/2":"nex.runtime-contract-session/1";summary["ok"]=true;summary["directory"]=fs::absolute(directory).string();summary["receipt"]=fs::absolute(output).string();
     print(std::move(summary));return 0;
   }
   if(o.command=="contract"){

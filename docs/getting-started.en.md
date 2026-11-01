@@ -3,7 +3,7 @@
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree
-uses toolchain 0.155.0 / language 0.27. Check [delivery evidence](releases/0.152.1.json)
+uses toolchain 0.156.0 / language 0.27. Check [delivery evidence](releases/0.152.1.json)
 for the exact accepted SDK, source commit, platform, archive hash and prerequisites.
 
 ## Install a matching SDK or build the compiler

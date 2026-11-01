@@ -258,3 +258,8 @@ Use the explicit `contract --kind runtime` projection with reviewed snapshot pin
 inspect its generated revision/receipt, then validate the generated project.
 A verification JSON or successful Z3 result alone does not enable runtime checks.
 Keep origin and generated revisions distinct; see `docs/runtime-contracts.md`.
+When `generic_roots` is advertised, select the source template and retain its
+bounds and constructor kinds. Predicates must check parametrically, including
+unused templates; current concrete callers grant no extra operations. Candidate4
+records all-instantiation scope. A later source edit still needs its own revision
+checks; generic runtime checks do not extend scalar Z3 proof support.

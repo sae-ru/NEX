@@ -337,7 +337,9 @@ Program loadSourceExceptionTaskContext(const llvm::json::Object &context){
 void bindExpression(const Program &p,const std::string &function,E expression){
   const auto &f=p.function(function);std::map<std::string,Symbols> symbols;
   const Function *generic=&f;for(unsigned depth=0;generic->closure&&depth<64;++depth)generic=&p.function(generic->closureOwner);
-  std::map<std::string,Type> parameters;if(!generic->templateName.empty()){const auto &source=p.functionTemplates.at(generic->templateName);for(size_t i=0;i<source.typeParameters.size();++i){const auto &name=source.typeParameters[i];parameters[name.substr(name.rfind("::")+2)]=generic->typeArguments[i];}}
+  std::map<std::string,Type> parameters;
+  if(!generic->templateName.empty()){const auto &source=p.functionTemplates.at(generic->templateName);for(size_t i=0;i<source.typeParameters.size();++i){const auto &name=source.typeParameters[i];parameters[name.substr(name.rfind("::")+2)]=generic->typeArguments[i];}}
+  else for(const auto &name:generic->typeParameters){Type type(Type::Parameter);type.name=name;parameters[name.substr(name.rfind("::")+2)]=std::move(type);}
   for(const auto &[key,_]:p.units)symbols[key];
   for(const auto &fn:p.functions)symbols[fn.unit].functions[fn.localName]=fn.exported;
   for(const auto &s:p.structures){auto &table=symbols[s.unit];table.structures[s.localName]=s.exported;if(s.enumeration){table.enumerations.insert(s.localName);for(const auto &v:s.variants)table.variants[s.localName+"::"+v.name]=s.exported;}}

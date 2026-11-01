@@ -1,0 +1,129 @@
+{
+  "schema": "nex.runtime-value-contract-validation/1",
+  "toolchain": "0.155.0",
+  "language": "0.27",
+  "status": "core_and_SDK_execution_passed_on_Python314_packaging_floor_repaired_separately",
+  "source_commit": "ce72e9f931d7a8983cc3364b25ae1277bb23d3fe",
+  "compiler_sha256": "d8107f42132387a2034d6b23f72f31a6dbc3f4132ed9091fa69f9f17361e00d5",
+  "compiler_build": "9da45a7aaa57735edbee4f04068e55bbaf23fc9e3be15f760fa6b11338e3dbfe",
+  "descriptor_hash": "77d63b348615e51050bb86e2d943121654164925485af3c86e98d896400bfd89",
+  "compiler_full_regression": {
+    "ok": true,
+    "CTest_groups": 287,
+    "failed": [],
+    "CTest_group_skips": [],
+    "reported_internal_unittest_skips": [
+      {
+        "group": "parallel_mapping",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_images",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_build",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "task_provider_debugging_native",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_actions",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_runtime",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "editor",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_pages",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "debug_image",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "core_dump",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "core_capsules",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "frontend_diagnostics",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "sdk_archives",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "packaging",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "incremental",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_targets",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_targets",
+        "reported_unittest_skips": 8
+      },
+      {
+        "group": "server_debug",
+        "reported_unittest_skips": 4
+      }
+    ],
+    "platform_skips_do_not_prove_other_platforms": true,
+    "seconds": 4835.598,
+    "report_sha256": "3aab376f2a9b46c7a559b5cdea44071683ac2156c2d52091e4f041fddec44b30",
+    "JUnit_sha256": "69e8d30c394fbbcd7f9043fbf5fe7c5b3f5520f39c3d058cae86f2e74d35b152",
+    "source_manifest_sha256": "6780c429da9999884106eeb21370be83493adb5aa104d0f67c7f542eb8995832"
+  },
+  "SDK_first_cohort": {
+    "execution_ok": true,
+    "Python": "3.14.9",
+    "moved_phases": 40,
+    "restored_phases": 40,
+    "extra_cases_per_SDK": {
+      "scalar_contracts": 15,
+      "loop_contracts": 15,
+      "value_contracts": 14,
+      "resume_protocol": 4
+    },
+    "archive_sha256": "9bb939c3593f79d11b27b289bca3ca81e12574dfe5d2c146806692cb750a6894",
+    "archive_bytes": 123625658,
+    "relocated_compiler_sha256": "f7a143a5ac38959ec436ca36fe5c323bd1cf58ceed442ce7bdeebff4d5284843",
+    "report_sha256": "f2e749b387672eeab8bba65c4d490f698d698755be7e288c65f65ac9e1e2e805",
+    "release_ready": false,
+    "known_metadata_defect": "Manifest advertised Python3.9 although Windows-integrated installed helpers require3.10; actual3.9 failure retained. This cohort proves execution on3.14 only.",
+    "repair_commit": "670e1fd35d40d8f8247953de40decfcb2cb0aeeb",
+    "corrected_minimum_Python_SDK_qualification": "pending separately"
+  },
+  "value_contract_scope": {
+    "cases": 14,
+    "ordinary_concrete_roots": true,
+    "pure_source_predicates": true,
+    "reference_native_debug_native_release_TypeScript_Node": true,
+    "owned_cleanup_and_real_FFI": true,
+    "scalar_Z3_support_unchanged": true,
+    "generic_roots": false
+  },
+  "limits": [
+    "Current Windows and Linux acceptance for this compiler remains pending",
+    "Production browser execution is not established by the SDK browser build",
+    "General GPU kernels, Apple NPU, full mobile/UI/Studio/converter and unfinished PLAN requirements remain open"
+  ]
+}

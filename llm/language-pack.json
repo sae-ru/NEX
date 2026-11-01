@@ -3599,7 +3599,7 @@
     "receipt_schema": "nex.runtime-contract-candidate/1",
     "ordinary_source_revision": true,
     "original_preserved": true,
-    "roots": "ordinary concrete source functions with checked value signatures and declared effects",
+    "roots": "ordinary concrete or generic source functions with checked value signatures and declared effects",
     "predicates": "checked pure source expressions over parameters and the completed result",
     "failure_code": "E_ASSERT",
     "normal_returns_after_finally": true,
@@ -3610,7 +3610,6 @@
     "installed_sdk_accepted": false,
     "pending": [
       "matching full regression and installed SDK acceptance",
-      "generic root contracts",
       "source contract syntax"
     ],
     "session_schema": "nex.runtime-contract-session/1",
@@ -3625,6 +3624,11 @@
     "value_session_schema": "nex.runtime-contract-session/3",
     "predicate_scope": "pure_source_expressions",
     "root_effects_in_predicates": false,
-    "value_loop_bindings": "i64/bool only"
+    "value_loop_bindings": "i64/bool only",
+    "generic_roots": true,
+    "generic_root_scope": "source_template_all_instantiations",
+    "concrete_instance_roots": false,
+    "generic_receipt_schema": "nex.runtime-contract-candidate/4",
+    "generic_session_schema": "nex.runtime-contract-session/4"
   }
 }

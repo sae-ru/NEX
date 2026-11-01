@@ -1,3 +1,15 @@
+# Generic runtime contract development - 0.156.0 / language 0.27
+
+Project source templates with parametric pure predicates, explicit phantom and
+constructor arguments, ordinary trait bounds and all-instantiation coverage.
+Derived instance edits remain rejected; candidate/session4 records parameter
+kinds and bounds while earlier receipt families retain their shapes. All-target
+build, targeted scalar15/loop15/value14 and final generic9 cases passed, including
+native/reference/TypeScript agreement, future instantiations, owned files and
+typed source errors. Full288 regression and matching installed SDK remain pending.
+The0.155 Python-floor SDK qualification continues on frozen670e1fd separately;
+all original platform, language, GPU/NPU, UI and tooling requirements remain.
+
 # SDL Metal/Retina example correction — 0.155.0 compiler
 
 Map the board to physical presentation pixels, retain readback surfaces through

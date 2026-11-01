@@ -248,3 +248,7 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    lexical signatures. Pre/post predicates reuse the expression grammar under
    ordinary checking with empty effects; no contract keyword, language/ABI
    migration or canonical identity change. Loop rules retain their scalar scope. *)
+
+(* Toolchain0.156 projects source generic templates through the existing type
+   parameters, bounds, constructor kinds, ordinary calls and assertions. Pure
+   predicates check parametrically; no source keyword or language change. *)

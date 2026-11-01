@@ -402,6 +402,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
   auto parsed=contracts(original,contract);
   bool loopChecks=std::any_of(parsed.begin(),parsed.end(),[](const auto &item){return !item.second.loops.empty();});
   bool valueChecks=false;
+  bool genericChecks=false;
   auto bundle=sourceBundle(original);auto files=bundle.getAsObject()->getObject("files");
   // The evidence and dependency lock must never overwrite a source member.
   for(const auto &name:{"runtime-contracts.receipt.json","nex.lock.json","nex.json"})
@@ -422,9 +423,12 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
   for(const auto &[symbol,spec]:parsed){
     const auto f=original.function(symbol);
     auto scalar=[](Type type){return type==Type::I64||type==Type::Bool;};
-    if(f.foreign||f.test||f.closure||f.traitSignature||!f.traitOwner.empty()||
-       !f.templateName.empty()||!f.typeParameters.empty()||!f.typeArguments.empty())
-      throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary concrete source functions",f.span);
+    if(!f.templateName.empty()||!f.typeArguments.empty())
+      throw Error("E_CONTRACT_RUNTIME","select the source generic template; derived instances cannot be contract roots",f.span);
+    if(f.foreign||f.test||f.closure||f.traitSignature||!f.traitOwner.empty())
+      throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary source functions",f.span);
+    genericChecks|=!f.typeParameters.empty();
+    valueChecks|=!f.typeParameters.empty();
     valueChecks|=!f.effects.empty()||(f.result!=Type::Unit&&!scalar(f.result))||
       std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return !scalar(param.type);});
     auto source=files->getString(f.unit);
@@ -482,7 +486,18 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     auto resultType=source->substr(resultRange.begin,resultRange.end-resultRange.begin).str();
     implementations[f.unit]+="\n\n"+header+"{"+projected.body+"}\n"+projected.helpers;
     replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+resultType+"\n = ";
-    replacement+=implementation+"("+arguments+");\n";
+    replacement+=implementation;
+    // Carry every template argument explicitly, including phantom parameters
+    // that cannot be inferred from arguments or the ordinary result context.
+    if(!f.typeParameters.empty()){
+      replacement+="<";
+      for(size_t i=0;i<f.typeParameters.size();++i){
+        if(i)replacement+=", ";
+        const auto &name=f.typeParameters[i];replacement+=name.substr(name.rfind("::")+2);
+      }
+      replacement+=">";
+    }
+    replacement+="("+arguments+");\n";
     auto owner=f.name.substr(0,f.name.rfind("::"));
     auto implementationSymbol=owner+"::"+implementation;
     if(f.result!=Type::Unit)locals[spec.result]=f.result;
@@ -517,6 +532,16 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       (*object)["result_type"]=typeName(origin.result);(*object)["effects"]=std::move(effects);
       if(!object->getArray("loops"))(*object)["loops"]=Array{};
     }
+    if(genericChecks){
+      const auto &origin=original.function(required(*object,"symbol"));Array parameters;
+      for(size_t i=0;i<origin.typeParameters.size();++i){
+        Array bounds;
+        if(i<origin.typeBounds.size())for(const auto &bound:origin.typeBounds[i])bounds.push_back(bound);
+        parameters.push_back(Object{{"name",origin.typeParameters[i]},
+          {"arity",i<origin.typeArities.size()?origin.typeArities[i]:0},{"bounds",std::move(bounds)}});
+      }
+      (*object)["type_parameters"]=std::move(parameters);
+    }
     const auto &implementation=candidate.function(required(*object,"implementation_symbol"));
     if(implementation.exported||implementation.closure)throw Error("E_INTERNAL","runtime contract implementation must remain private and static");
     (*object)["implementation_content_hash"]=contentHash(implementation);
@@ -526,7 +551,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       (*loop)["head_helper_content_hash"]=contentHash(helper);
     }
   }
-  Object result{{"schema",valueChecks?"nex.runtime-contract-candidate/3":loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
+  Object result{{"schema",genericChecks?"nex.runtime-contract-candidate/4":valueChecks?"nex.runtime-contract-candidate/3":loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
     {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
     {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},
     {"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},
@@ -534,6 +559,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     {"functions",std::move(coverage)},{"bundle",sourceBundle(candidate)},
     {"origin_bundle",sourceBundle(original)},{"contracts",contract}};
   if(valueChecks)result["predicate_scope"]="pure_source_expressions";
+  if(genericChecks)result["generic_root_scope"]="source_template_all_instantiations";
   return result;
 }
 

@@ -21,7 +21,7 @@ class RuntimeContracts(harness.ToolchainCase):
         directory=self.root/name
         result=self.cli('contract','--kind','runtime','--contracts',path,'--directory',directory,ok=ok,timeout=120)
         if ok:
-            self.assertIn(result['schema'],('nex.runtime-contract-session/1','nex.runtime-contract-session/3'))
+            self.assertIn(result['schema'],('nex.runtime-contract-session/1','nex.runtime-contract-session/3','nex.runtime-contract-session/4'))
             self.assertFalse(result['proof_performed'])
             self.assertEqual(result['loop_checks'],any(f['loops'] for f in contract['functions']))
             self.assertNotEqual(result['origin_revision'],result['revision'])
@@ -213,10 +213,12 @@ test fn tested()->unit{}
 fn looped(n:i64)->i64{var i:i64=0;while i<n{i=i+1;}return i;}
 fn main()->i64{return looped(3);}
 """)
-        for symbol in ('generic','tested','looped'):
+        for symbol in ('tested','looped'):
             with self.subTest(symbol=symbol):
                 _,result=self.generate(self.contract(symbol),'reject-'+symbol,ok=False)
                 self.assertEqual(result['code'],'E_CONTRACT_RUNTIME')
+        _,generic=self.generate(self.contract('generic',ensures=['result==x']),'generic-template')
+        self.assertEqual(generic['schema'],'nex.runtime-contract-session/4')
         contract=self.contract('looped',ensures=['result==n']);contract['functions'][0]['loops']=[]
         directory,_=self.generate(contract)
         self.agreement(directory,value=3)
