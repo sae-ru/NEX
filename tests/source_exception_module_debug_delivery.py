@@ -26,7 +26,7 @@ def verify(source,artifacts,compiler,emitter):
    adapter=Recorded([sys.executable,str(source/'debug/nex_dap.py'),'--backend',backend],d)
    try:
     adapter.request('initialize',{'clientID':'private-module-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
-    launch=adapter.send('launch',{'program':str(d/('program.exe' if os.name=='nt' else 'program')),'stdio':[None,None,str(d/'dap-inferior.stderr')],'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':['--nex-task-workers','2'],'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(d/'debug.json'))+' --compiler '+json.dumps(str(compiler))]});adapter.event('initialized')
+    launch=adapter.send('launch',{'program':str(d/('program.exe' if os.name=='nt' else 'program')),**({'stdio':[None,None,str(d/'dap-inferior.stderr')]} if os.name=='nt' else {}),'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':['--nex-task-workers','2'],'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(d/'debug.json'))+' --compiler '+json.dumps(str(compiler))]});adapter.event('initialized')
     for file,line in [(leaf,leaf_line),(app,catch_line)]:
      response=adapter.request('setBreakpoints',{'source':{'path':str(file)},'breakpoints':[{'line':line}]});assert all(v['verified'] for v in response['breakpoints'])
     adapter.request('configurationDone');adapter.response(launch);assert adapter.event('stopped')['allThreadsStopped']
@@ -45,7 +45,8 @@ def verify(source,artifacts,compiler,emitter):
     finally:(target/(label+'.json')).write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
    messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
    output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
-   cleanup=json.loads(next(line.split(' ',1)[1] for line in (d/'dap-inferior.stderr').read_text(encoding='utf-8').splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')))
+   cleanup_text=(d/'dap-inferior.stderr').read_text(encoding='utf-8') if os.name=='nt' else output
+   cleanup=json.loads(next(line.split(' ',1)[1] for line in cleanup_text.splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')))
    assert cleanup['ok'] is True and cleanup['live_frames']==0,output
    report['DAP'].append({'topology':topology,'optimization':optimization,'all_stop':True,'source_machine_stack':True,'caller_watch':True,'stale_reference_rejected':True,'checked_catch_after_unwind':True,'next_after_unwind':True,'protocol_sha256':hashlib.sha256((target/(label+'.json')).read_bytes()).hexdigest(),'passed':True});save()
  for topology in ['shared','mixed']:
