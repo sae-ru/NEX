@@ -52,7 +52,7 @@ platform acceptance.
 
 ## Development status
 
-Current development source: **toolchain0.158.0 / ordinary language0.27**.
+Current development source: **toolchain0.159.0 / ordinary language0.27**.
 The explicit C++ [language028 contract candidate](docs/source-contracts.md) is
 under development; it is not enabled in the ordinary CLI. The accepted download
 below retains its exact0.156 source and qualification.

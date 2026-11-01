@@ -33,11 +33,24 @@ using LoopKey=std::pair<unsigned,unsigned>;
 struct Loop {std::vector<std::string> invariants;std::string decreases;};
 struct Contract {std::string result;std::vector<std::string> pre,post;std::map<LoopKey,Loop> loops;};
 using Contracts=std::map<std::string,Contract>;
+const std::vector<S> &sourceBody(const Program &p,const Function &function){
+  if(!function.sourceRequires&&!function.sourceEnsures)return function.body;
+  // The wrapper has one assertion per precondition, then exactly one body call.
+  // Walk this checked relationship instead of guessing a generated name.
+  if(function.body.size()<=function.sourceRequires)throw Error("E_INTERNAL","invalid source contract wrapper",function.span);
+  const auto &statement=function.body[function.sourceRequires];
+  if((statement->kind!=Stmt::Let&&statement->kind!=Stmt::Expression)||!statement->expr||statement->expr->kind!=Expr::Call)
+    throw Error("E_INTERNAL","source contract wrapper omitted its body call",function.span);
+  const auto &implementation=p.function(statement->expr->text);
+  if(implementation.sourceContractOrigin!=function.name)
+    throw Error("E_INTERNAL","source contract body origin differs",function.span);
+  return implementation.body;
+}
 void loops(const std::vector<S> &body,std::map<LoopKey,S> &found){for(auto s:body){if(s->kind==Stmt::While)found.emplace(LoopKey{s->span.line,s->span.column},s);childBlocks(s,[&](const auto &body){loops(body,found);});}}
 Contracts contracts(const Program &p,const JSON &value){
   auto object=value.getAsObject();if(!object)throw Error("E_CONTRACT","contract must be an object");
   fields(*object,{"schema","language","expected_revision","source_hash","functions"});
-  if(required(*object,"schema")!="nex.verification-contracts/1"||required(*object,"language")!=languageVersion)throw Error("E_CONTRACT","unsupported contract schema/language");
+  if(required(*object,"schema")!="nex.verification-contracts/1"||required(*object,"language")!=programLanguage(p))throw Error("E_CONTRACT","unsupported contract schema/language");
   if(required(*object,"expected_revision")!=revision(p)||required(*object,"source_hash")!=sourcesHash(p))throw Error("E_CONTRACT_STALE","contract revision or exact source bundle differs; review and regenerate the contract");
   auto functions=object->getArray("functions");if(!functions||functions->empty()||functions->size()>64)throw Error("E_CONTRACT","functions must contain 1..64 contracts");
   Contracts result;
@@ -49,7 +62,7 @@ Contracts contracts(const Program &p,const JSON &value){
     if(f.result==Type::Unit){if(!contract.result.empty())throw Error("E_CONTRACT","unit contract returns binding must be empty");}
     else if(!identifier(contract.result)||std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return param.name==contract.result;}))throw Error("E_CONTRACT","returns must be a fresh identifier distinct from parameters");
     auto annotations=entry->getArray("loops");if(!annotations||annotations->size()>64)throw Error("E_CONTRACT","loops must be an array of at most 64 annotations");
-    std::map<LoopKey,S> actual;loops(f.body,actual);
+    std::map<LoopKey,S> actual;loops(sourceBody(p,f),actual);
     for(const auto &annotation:*annotations){
       auto loop=annotation.getAsObject();if(!loop)throw Error("E_CONTRACT","loop annotation must be an object");fields(*loop,{"line","column","invariants","decreases"});
       auto line=loop->getInteger("line"),column=loop->getInteger("column");if(!line||!column||*line<1||*column<1||*line>UINT32_MAX||*column>UINT32_MAX)throw Error("E_CONTRACT","loop line/column must be positive source coordinates");
@@ -146,6 +159,7 @@ class Engine {
   }
   std::vector<Flow> loop(S s,State incoming){
     auto found=specs.find(calls.back()->name);
+    if(found==specs.end()&&!calls.back()->sourceContractOrigin.empty())found=specs.find(calls.back()->sourceContractOrigin);
     if(found==specs.end()||!found->second.loops.contains({s->span.line,s->span.column}))throw Stop{"unsupported","while requires an explicit invariant and decreases annotation",s->span};
     const auto &annotation=found->second.loops.at({s->span.line,s->span.column});
     if(annotation.invariants.empty()||annotation.decreases.empty())throw Stop{"unsupported","while requires nonempty invariants and a decreases expression",s->span};
@@ -336,7 +350,7 @@ RuntimeLoops runtimeLoops(Program &checked,const Function &f,const Contract &spe
   std::function<void(const std::vector<S>&,Locals)> visit;
   visit=[&](const std::vector<S> &body,Locals locals){
     for(const auto &statement:body){
-      if(statement->kind==Stmt::Let||statement->kind==Stmt::Var){locals[statement->name]=statement->type;continue;}
+      if(statement->kind==Stmt::Let||statement->kind==Stmt::Var){if(statement->sourceRange.valid)locals[statement->name]=statement->type;continue;}
       if(statement->kind==Stmt::While){
         auto annotation=spec.loops.find({statement->span.line,statement->span.column});
         if(annotation!=spec.loops.end()){
@@ -392,7 +406,7 @@ RuntimeLoops runtimeLoops(Program &checked,const Function &f,const Contract &spe
     }
   };
   Locals locals;for(const auto &parameter:f.params)locals[parameter.name]=parameter.type;
-  visit(f.body,std::move(locals));
+  visit(sourceBody(checked,f),std::move(locals));
   if(result.coverage.size()!=spec.loops.size())throw Error("E_CONTRACT_RUNTIME","not every annotated loop has a lexical source projection",f.span);
   for(auto i=insertions.rbegin();i!=insertions.rend();++i)result.body.insert(i->first-begin,i->second);
   return result;
@@ -475,6 +489,14 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     // Keep the parsed signature's spelling, rather than printing resolved
     // nominal types that may not be accessible through this module's aliases.
     auto header=definition.substr(0,open);size_t declaration=0;
+    // The original declaration keeps its explicit checks. The new body helper
+    // must not copy them and execute every source predicate a second time.
+    if(f.sourceRequires||f.sourceEnsures){
+      const auto &range=f.sourceContractClauses;
+      if(!range.valid||range.begin<f.span.begin||range.begin>=range.end||range.end>f.span.begin+open)
+        throw Error("E_CONTRACT_RUNTIME","contract root has no exact source clause interval",f.span);
+      header.erase(range.begin-f.span.begin,range.end-range.begin);
+    }
     while(declaration<tokens.size()&&tokens[declaration].text!="fn")++declaration;
     if(declaration+1>=tokens.size()||tokens[declaration+1].text!=f.localName)
       throw Error("E_CONTRACT_RUNTIME","cannot identify the source function name",f.span);
@@ -521,7 +543,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
   }
   // Every generated expression/function is checked using the ordinary language,
   // realm, effect and lifetime rules before an output directory is created.
-  auto candidate=loadBundle(bundle,root);
+  auto candidate=loadVersionedBundle(bundle,root,programLanguage(original));
   for(auto &item:coverage){
     auto object=item.getAsObject();(*object)["content_hash"]=contentHash(candidate.function(required(*object,"symbol")));
     if(valueChecks){
@@ -551,7 +573,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       (*loop)["head_helper_content_hash"]=contentHash(helper);
     }
   }
-  Object result{{"schema",genericChecks?"nex.runtime-contract-candidate/4":valueChecks?"nex.runtime-contract-candidate/3":loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
+  Object result{{"schema",genericChecks?"nex.runtime-contract-candidate/4":valueChecks?"nex.runtime-contract-candidate/3":loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",programLanguage(original)},
     {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
     {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},
     {"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},
@@ -565,20 +587,21 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
 
 std::string verifierVersion(){return Z3_get_full_version();}
 std::string verificationIntentHash(const JSON &value){
-  auto object=value.getAsObject();if(!object||object->getString("schema")!="nex.verification-contracts/1"||object->getString("language")!=languageVersion)throw Error("E_CONTRACT","unsupported verification intent format/language");
+  auto object=value.getAsObject();auto language=object?object->getString("language"):std::nullopt;
+  if(!object||object->getString("schema")!="nex.verification-contracts/1"||!language||(*language!=languageVersion&&!isTypedSourceErrorVersion(*language)))throw Error("E_CONTRACT","unsupported verification intent format/language");
   auto functions=object->getArray("functions");if(!functions||functions->empty()||functions->size()>64)throw Error("E_CONTRACT","verification intent requires 1..64 functions");Object intents;
   for(const auto &item:*functions){
     auto function=item.getAsObject();if(!function)throw Error("E_CONTRACT","invalid verification intent function");auto name=required(*function,"symbol");if(intents.get(name))throw Error("E_CONTRACT","duplicate verification intent function");
     Array pre,post;for(const auto &text:clauses(*function,"requires"))pre.push_back(text);for(const auto &text:clauses(*function,"ensures"))post.push_back(text);
     intents[name]=Object{{"returns",required(*function,"returns")},{"requires",std::move(pre)},{"ensures",std::move(post)}};
   }
-  return hash(json(Object{{"schema","nex.verification-intent/1"},{"language",languageVersion},{"functions",std::move(intents)}},false));
+  return hash(json(Object{{"schema","nex.verification-intent/1"},{"language",language->str()},{"functions",std::move(intents)}},false));
 }
 JSON contractTemplate(const Program &p,const std::string &symbol){
-  const auto &f=p.function(symbol);std::map<LoopKey,S> found;loops(f.body,found);Array annotations;
+  const auto &f=p.function(symbol);std::map<LoopKey,S> found;loops(sourceBody(p,f),found);Array annotations;
   for(const auto &[key,loop]:found)annotations.push_back(Object{{"line",key.first},{"column",key.second},{"invariants",Array{"true"}},{"decreases",""}});
   std::string result=f.result==Type::Unit?"":"result";while(std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return param.name==result;}))result+="_";
-  return Object{{"schema","nex.verification-contracts/1"},{"language",languageVersion},{"expected_revision",revision(p)},{"source_hash",sourcesHash(p)},
+  return Object{{"schema","nex.verification-contracts/1"},{"language",programLanguage(p)},{"expected_revision",revision(p)},{"source_hash",sourcesHash(p)},
     {"functions",Array{Object{{"symbol",f.name},{"content_hash",contentHash(f)},{"returns",result},{"requires",Array{}},{"ensures",Array{"true"}},{"loops",std::move(annotations)}}}}};
 }
 JSON verifyContracts(const Program &p,const JSON &contract,const JSON &graph,const VerificationOptions &options){
@@ -594,7 +617,7 @@ JSON verifyContracts(const Program &p,const JSON &contract,const JSON &graph,con
     for(const auto &node:*graph.getAsObject()->getArray("nodes")){auto value=node.getAsObject();if(value->getString("name")==symbol){(*object)["node_id"]=value->getString("id")->str();break;}}
     if(object->getString("status")!="proven")ok=false;reports.push_back(std::move(report));
   }
-  Object report{{"schema","nex.verification/1"},{"ok",ok},{"revision",revision(p)},{"source_hash",sourcesHash(p)},{"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"language",languageVersion},{"solver","Z3"},{"solver_version",verifierVersion()},
+  Object report{{"schema","nex.verification/1"},{"ok",ok},{"revision",revision(p)},{"source_hash",sourcesHash(p)},{"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"language",programLanguage(p)},{"solver","Z3"},{"solver_version",verifierVersion()},
     {"limits",Object{{"solver_timeout_ms",options.solverTimeoutMs},{"solver_resource_limit",options.resourceLimit},{"total_timeout_seconds",options.totalTimeoutSeconds},{"obligations_per_function",4096},{"paths",256},{"call_depth",32},{"symbolic_steps",50000}}},
     {"coverage","pure i64/bool/unit functions; checked arithmetic/assertions; annotated while loops with inductive invariants and strict nonnegative i64 ranking; fully inlined nonrecursive callees"},
     {"trust_boundary","Z3 and NEX verification translation are trusted; no proof of compiler/native/TypeScript/runtime correctness, allocation/resource limits, external libraries or unsupported values/effects"},

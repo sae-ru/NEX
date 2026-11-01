@@ -269,7 +269,7 @@ class Parser {
     auto makeHelper=[&](const std::string &purpose){
       auto result=function;result.name=freshContractName("nex_source_contract_"+purpose+"_"+function.name);
       result.exported=false;result.test=false;result.body.clear();result.foreign.reset();
-      result.resultTypeSource={};result.sourceContractOrigin=function.name;
+      result.resultTypeSource={};result.sourceContractClauses={};result.sourceContractOrigin=function.name;
       result.span.begin=result.span.end=0;
       result.result=substituteType(function.result,{});
       for(auto &parameter:result.params)parameter.type=substituteType(parameter.type,{});
@@ -707,6 +707,7 @@ public:
       std::vector<E> pre;std::vector<Postcondition> post;
       if(sourceContracts)while(peek().text=="requires"||peek().text=="ensures"){
         auto clause=take();
+        if(!f.sourceContractClauses.valid)f.sourceContractClauses={clause.span.begin,clause.span.end,true};
         if(external)throw Error("E_CONTRACT_SYNTAX","contracts require an ordinary source function body",clause.span);
         if(clause.text=="requires"){
           if(pre.size()>=64)throw Error("E_CONTRACT_LIMIT","function exceeds64 preconditions",clause.span);
@@ -725,6 +726,7 @@ public:
           post.push_back(std::move(condition));
         }
       }
+      if(f.sourceContractClauses.valid)f.sourceContractClauses.end=peek().span.begin;
       if(external){
         expect("=");expect("foreign");expect("(");
         auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};

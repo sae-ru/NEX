@@ -108,3 +108,20 @@ This is an explicit C++ delivery candidate. It introduces no ordinary CLI flag
 or default language change. Matching full294 regression, source-free installed
 SDK acceptance and current Windows/Linux/device acceptance remain required
 independently.
+
+## Detached-contract composition in the0.159 working source
+
+The version-selected C++ projection retains the original program language in
+its template, intent hash and rechecked candidate. Physical clause intervals
+are derived metadata and do not change retained027 or028 canonical identities.
+The original declaration keeps its source clauses; the added private body does
+not copy them. Original loop coordinates remain discoverable through the checked
+wrapper/body relation. Synthetic ranking locals are excluded from detached
+source observations. A reviewed scalar JSON loop annotation can follow that
+relation in the existing bounded proof engine; inline annotations alone request
+runtime checks. The [scoped composition receipt](evidence/source-contract-composition-0.159.0.json)
+records9 cases, including14 native O0/O2 executions, AST/TaskIR/Node agreement,
+strict TypeScript, an explicit scalar-loop proof and cross-language refusal.
+All seven retained contract/verification/migration groups also passed. Full
+integrated regression and installed delivery remain required before ordinary028
+activation is accepted; this working compiler still defaults to027.

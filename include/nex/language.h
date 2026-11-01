@@ -151,6 +151,8 @@ struct Function {
   // Original spelling, including aliases/parentheses. Derived source metadata;
   // it never participates in semantic identities or archived canonical ASTs.
   SourceRange resultTypeSource;
+  // Physical clause interval, retained only for source projections.
+  SourceRange sourceContractClauses;
   std::vector<S> body; Span span; bool test = false;
   bool exported=false; std::string owner,localName,unit;
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;

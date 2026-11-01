@@ -1,0 +1,68 @@
+{
+  "schema": "nex.source-contract-composition-evidence/1",
+  "scope": "macOS ARM64 explicit C++028 detached/source contract composition; ordinary CLI remains027",
+  "toolchain": "0.159.0",
+  "ordinary_language": "0.27",
+  "candidate_language": "0.28",
+  "public028_enabled": false,
+  "base_commit": "6fb91f45154d928f59745d98fb8fe7c50ca21d3b",
+  "implementation_overlay_sha256": {
+    "CMakeLists.txt": "c0c9c171aa4e8fb1129d5c0b1ec549fca7e5f7896cf4a36caabf5503d2092cd5",
+    "include/nex/language.h": "a6417596168e91a56eab6b99a92af08a42987ba78bad4f98adf3f59bd3a17b7d",
+    "src/language.cpp": "0fed9b3f76798fb532cc9cdfe3547582fa46e857dfde49ecfb8c06461ebced32",
+    "src/verification.cpp": "633a6941e5b4ded9e63e48e0f7c9533b7c0190f8571042d4cf6724c9491d4b7b",
+    "tests/source_contracts.cpp": "0f5a8d21e2e0621fba891924d380e603fd8b6858e89f2b94c1d5d715902142f9",
+    "tests/source_contract_projection.py": "8cd4a1180a05591c82be5fa27bf720edebfb78ac099dcc846d11f0793d99f6d5"
+  },
+  "compiler_sha256": "74fe3a601481469e76b4fdcb02056532d61e7b7b021616c526161eb10875078c",
+  "probe_sha256": "942b67e4e89bd22e30215b58dc0ce90ca369f871d3fce0f00c11136be970dea7",
+  "native_host_sha256": "38b735a576526181e031bc55f18d8ac61dfffecd9d4f6ce5e91ffb1c20c02e14",
+  "baseline": {
+    "source_commit": "6fb91f45154d928f59745d98fb8fe7c50ca21d3b",
+    "compiler_sha256": "e018dd482e840c07d51cdd27eca763b0ab3bb3b5db8ec8da46f7a2186c00a885",
+    "template_language": "0.27",
+    "actual_source_language": "0.28",
+    "physical_loops": 1,
+    "discovered_loops": 0,
+    "runtime_projection_error": "E_PARSE: expected brace, found requires"
+  },
+  "checks": {
+    "all_target_build": true,
+    "composition_cases": 9,
+    "native_O0_O2_executions": 14,
+    "AST_TaskIR_Node_agreement": true,
+    "strict_TypeScript": true,
+    "explicit_review_bound_scalar_loop_proof": true,
+    "wrong_language_refused_before_output": true,
+    "original_source_preserved": true,
+    "retained_groups": [
+      "verification",
+      "runtime_contracts",
+      "runtime_loop_contracts",
+      "runtime_value_contracts",
+      "runtime_generic_contracts",
+      "source_contracts",
+      "source_contract_history_migration"
+    ],
+    "retained_groups_passed": 7,
+    "skipped": 0,
+    "failed": 0,
+    "primary081_guard_passed": true
+  },
+  "report_sha256": {
+    "composition-v1/report.json": "e9b842ac948e762b583cdc74311b5cc579270b89b61d0cd1947b2c2f2e7fe302",
+    "focused-v1/report.json": "efeda0f77dba67d16b1f7c01a8bcdc1edaa87c7cc89fef9442f13a2abd4316e3",
+    "focused-v1/full.xml": "a77a4ed86a157d1c341fca057776b831dd1378e9e39ec5e3f8e81698648a6aa1"
+  },
+  "full_regression_accepted": false,
+  "installed_SDK_accepted": false,
+  "automatic_inline_proof": false,
+  "pending": [
+    "Ordinary028 CLI/default, metadata and genuine027 migration/snapshot/edit gates",
+    "Current examples, normative grammar/spec and model prompts",
+    "Installed source-contract SDK phase and exact provider/version evidence maps",
+    "Final integrated full regression and moved/restored SDK acceptance",
+    "Every remaining original PLAN requirement"
+  ],
+  "recorded_utc": "2026-11-01T23:21:07.080046+00:00"
+}

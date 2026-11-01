@@ -1,6 +1,7 @@
 #include "host_test.h"
 #include "nex/backend.h"
 #include "nex/web.h"
+#include "nex/verification.h"
 #include "nex/task_frontend.h"
 #include "nex/task_reference.h"
 #include "nex/task_native.h"
@@ -38,6 +39,18 @@ int main(int argc,char **argv){
       auto snapshot=sourceBundle(p);auto roundtrip=loadVersionedBundle(snapshot,path.parent_path().string(),programLanguage(p));
       if(revision(roundtrip)!=revision(p))throw Error("E_TEST","source contract archive failed roundtrip");
       std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},{"functions",std::move(functions)}})<<'\n';return 0;
+    }
+    if(mode=="contract-template"){
+      if(argc!=4)throw Error("E_OPTION","contract-template needs a symbol");
+      std::cout<<json(contractTemplate(p,argv[3]))<<'\n';return 0;
+    }
+    if(mode=="runtime-contract"||mode=="verify-contract"){
+      if(argc!=5)throw Error("E_OPTION","contract action needs input JSON and output path");
+      auto value=llvm::json::parse(readFile(argv[3]));if(!value){llvm::consumeError(value.takeError());throw Error("E_TEST","invalid contract fixture");}
+      auto result=mode=="runtime-contract"?runtimeContractCandidate(p,*value,root.string()):
+        verifyContracts(p,*value,llvm::json::Object{{"nodes",llvm::json::Array{}}},VerificationOptions{"",argv[4]});
+      if(mode=="runtime-contract")writeFile(argv[4],json(result)+"\n");
+      std::cout<<json(result)<<'\n';return 0;
     }
     if(mode=="cohort-import"){
       auto value=llvm::json::parse(readFile(argv[6]));if(!value){llvm::consumeError(value.takeError());throw Error("E_TEST","invalid provider fixture");}

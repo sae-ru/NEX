@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.158.0 LANGUAGES C CXX)
+project(NEX VERSION 0.159.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1566,7 +1566,10 @@ add_test(NAME source_contract_projects COMMAND ${Python3_EXECUTABLE} -B
   --compiler $<TARGET_FILE:nex> --source-language 0.28)
 set_tests_properties(source_contract_projects PROPERTIES TIMEOUT 2400)
 
-target_sources(nex_source_contracts_probe PRIVATE src/web.cpp src/task_process.cpp)
+target_sources(nex_source_contracts_probe PRIVATE src/web.cpp src/task_process.cpp src/verification.cpp)
+target_include_directories(nex_source_contracts_probe SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
+target_link_libraries(nex_source_contracts_probe PRIVATE ${NEX_Z3_LIBRARY})
+target_compile_definitions(nex_source_contracts_probe PRIVATE ${NEX_NATIVE_DEFINITIONS})
 add_test(NAME source_contract_cohorts COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_cohorts.py $<TARGET_FILE:nex_task_stream_project_probe>
   $<TARGET_FILE:nex_source_contracts_probe>)
@@ -1580,3 +1583,9 @@ add_test(NAME source_contract_web_delivery COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_web_delivery.py $<TARGET_FILE:nex_task_stream_project_probe>
   $<TARGET_FILE:nex_typed_source_typescript_probe> $<TARGET_FILE:nex> --source-language 0.28)
 set_tests_properties(source_contract_web_delivery PROPERTIES TIMEOUT 1800)
+
+add_test(NAME source_contract_projection COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_projection.py $<TARGET_FILE:nex_source_contracts_probe>
+  --native-host $<TARGET_FILE:nex_source_contract_host> --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
+set_tests_properties(source_contract_projection PROPERTIES TIMEOUT 1200)
+install(FILES tests/source_contract_projection.py DESTINATION share/nex/tests)

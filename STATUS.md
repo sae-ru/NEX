@@ -1,3 +1,17 @@
+# Public028 integration in progress — toolchain0.159 / ordinary language0.27
+
+The next working source composes explicit028 clauses with detached runtime
+contracts. It preserves the selected source version, discovers original loops
+through checked wrapper/body relationships and retains source checks once.
+The physical clause interval is derived source metadata, outside canonical IDs.
+All-target build,9 composed native/reference/TaskIR/Node/TypeScript/proof/refusal
+cases and7 retained contract/verification/migration groups passed. The
+[scoped receipt](docs/evidence/source-contract-composition-0.159.0.json) records
+these inputs. Full integrated acceptance remains open; ordinary028 CLI/default,
+history/project/example and installed SDK delivery remain in progress. Every
+original PLAN item remains.
+The preceding158 delivery is frozen at6fb91f4 for full294;157 passed full290 at59bdf23.
+
 # Source-contract project delivery candidate0.158 / ordinary language0.27
 
 Version-selected028 source/static/shared/mixed components retain exact source
