@@ -12,7 +12,11 @@ import urllib.request
 
 def build(project, repo, work, generated, doctor, run, archive=None):
     dependency=json.loads((project/'vendor/dependencies.json').read_bytes())['SDL']
-    cxx=Path(doctor['native_compiler']).resolve(strict=True)
+    # Clang selects C++ driver/link behavior from argv[0]. Keep clang++ even
+    # when it is a symlink to the shared clang executable.
+    cxx=Path(doctor['native_compiler']).absolute()
+    if not cxx.is_file():
+        raise RuntimeError('The selected native C++ compiler is unavailable: '+str(cxx))
     root=Path(os.environ.get('NEX_GAME_BUILD_ROOT',tempfile.gettempdir()))
     if os.name=='nt':
         while not str(root).isascii() or '%' in str(root):root=root.parent
