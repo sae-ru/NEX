@@ -16,10 +16,13 @@ inline constexpr const char *languageVersion = "0.27";
 inline constexpr const char *taskCandidateLanguageVersion = "0.27";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027 };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028 };
 inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TypedErrors027;
+inline bool isTypedSourceErrorLanguage(SourceLanguage language){
+  return language==SourceLanguage::TypedErrors027||language==SourceLanguage::Contracts028;
+}
 inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
-  return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026||language==SourceLanguage::TypedErrors027;
+  return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language);
 }
 using TypeBounds = std::vector<std::set<std::string>>;
 struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::string file; };
@@ -90,8 +93,13 @@ struct Expr {
   std::vector<Type> traitArguments;
   std::string traitContract,implementation;
   std::vector<std::shared_ptr<MatchArm>> arms;bool statementMatch=false;
+  // Checked028 loop observations have their own pure, non-returning boundary.
+  // Execution uses the ordinary expression; the marker participates in identity.
+  bool contractPure=false;
 };
 using E = std::shared_ptr<Expr>;
+// Independent syntax copy before module binding or generic specialization.
+E cloneSourceExpression(E);
 struct Stmt {
   enum Kind { Let, Var, Assign, Expression, Return, If, While, Match, Try, Throw, Finally, TypedThrow, TypedTry, CatchClause } kind;
   Span span;SourceRange sourceRange; std::string name; Type type = Type::Unknown; E expr;
@@ -148,6 +156,9 @@ struct Function {
   bool traitSignature=false;
   bool closure=false;std::string closureOwner;std::vector<Param> captures;
   std::optional<ForeignBinding> foreign;
+  // Generated contract helpers have no editable physical declaration.
+  std::string sourceContractOrigin;
+  unsigned sourceRequires=0,sourceEnsures=0;
 };
 struct Import { std::string path,alias,target; Span span; };
 struct Endpoint {

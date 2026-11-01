@@ -117,7 +117,7 @@ TaskFileRequirements nativeTaskFiles(const Program &p,const std::set<std::string
   return result;
 }
 int64_t privateExceptionTaskABI(const Program &p,const std::vector<TaskFunctionIR> &functions){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027)return nexrt::taskCodeTypedAuthorityDevelopmentABI;
+  if(isTypedSourceErrorLanguage(p.sourceLanguage))return nexrt::taskCodeTypedAuthorityDevelopmentABI;
   if(isPublicSourceExceptionLanguage(p.sourceLanguage))return nexrt::taskCodeSourceExceptionABI;
   TaskFileRequirements files;for(const auto &ir:functions){files.include(p,ir);const auto &f=p.function(ir.name);if(f.effects.contains("fs")||f.effects.contains("ffi"))return nexrt::taskCodeExceptionHostPrototypeABI;}
   return files.reads||files.writes||files.streams?nexrt::taskCodeExceptionHostPrototypeABI:nexrt::taskCodeExceptionPrototypeABI;
@@ -1146,7 +1146,7 @@ public:
     }
     declaration("nex_application_run","!llvm.ptr, i64, !llvm.ptr","i64");
     if(tasks){
-      declaration((sourceExceptionTasksPrototype(p)||(p.sourceLanguage==SourceLanguage::TypedErrors027&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
+      declaration((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits","!llvm.ptr, i64, !llvm.ptr, i64, i64, i64","i64");
       if(profiling){declaration("nex_task_profile_prepare","!llvm.ptr, i64");if(!profileRegistryAccessor.empty())declaration("nex_task_profile_prepare_application_v1","");}
     }
     if(wasm){declaration("nex_wasm_enter","i64");declaration("nex_wasm_leave","");}
@@ -1313,7 +1313,7 @@ public:
     if(tasks){
       auto descriptor=fresh();line(descriptor+" = llvm.mlir.addressof @"+taskCodes.at(main.name)+" : !llvm.ptr",main.span);
       auto steps=constant(taskLimits.steps,Type::I64,main.span),timeout=constant(taskLimits.timeoutMs,Type::I64,main.span),workers=constant(taskLimits.workers,Type::I64,main.span);
-      value=call((sourceExceptionTasksPrototype(p)||(p.sourceLanguage==SourceLanguage::TypedErrors027&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
+      value=call((sourceExceptionTasksPrototype(p)||(isTypedSourceErrorLanguage(p.sourceLanguage)&&forcedExceptionABI!=nexrt::taskCodeTypedSourceExceptionABI))?"nex_task_source_exception_application_execute_limits":"nex_task_application_execute_limits",{{descriptor,Type::Str},{"%nex_argc64",Type::I64},{"%nex_argv",Type::Str},steps,timeout,workers},Type::I64,main.span);
     }else{
       std::vector<Value> args;Value error;
       if(main.effects.contains("throw")){error=exceptionSlot(main.span);args.push_back(error);}
@@ -1554,7 +1554,7 @@ struct TaskNativeLinkage {
   int64_t privateExceptionABI=0;
 };
 TaskNativeStep emitTaskNative(const Program &p,const std::string &entry,bool application,bool optimized=false,const nexrt::TaskExecutionLimits &taskLimits={},bool profiling=false,bool taskDebug=false,const TaskNativeLinkage *linkage=nullptr,bool exceptionTasks=false,int64_t forcedExecutionABI=0){
-  if(forcedExecutionABI&&(p.sourceLanguage!=SourceLanguage::TypedErrors027||forcedExecutionABI!=nexrt::taskCodeTypedSourceExceptionABI))throw Error("E_TASK_PROVIDER","invalid typed task build cohort");
+  if(forcedExecutionABI&&(!isTypedSourceErrorLanguage(p.sourceLanguage)||forcedExecutionABI!=nexrt::taskCodeTypedSourceExceptionABI))throw Error("E_TASK_PROVIDER","invalid typed task build cohort");
   const auto selectedExceptionABI=forcedExecutionABI?forcedExecutionABI:linkage?linkage->privateExceptionABI:0;
   exceptionTasks|=isPublicSourceExceptionLanguage(p.sourceLanguage);
   if(sourceExceptionTasksPrototype(p)&&!exceptionTasks)throw Error("E_EXCEPTION_BACKEND","native task exceptions require compiled-frame and physical scheduler integration");
@@ -1597,7 +1597,7 @@ TaskNativeStep detail::emitPrivateTaskModule(const Program &p,const PrivateTaskM
   return emitTaskNative(p,module.entry,module.application&&!module.http,optimized,limits,module.profiling,module.debugging,&linkage,true);
 }
 TaskNativeStep emitTypedErrorTasksDevelopmentNative(const Program &p,const std::string &entry,bool optimized){
-  if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed task development requires explicit027 selection");
+  if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed task development requires explicit027 selection");
   (void)nativeEntry(p,entry,false,false,false,true);(void)analyzeTaskLifetimes(p,entry);
   return emitTaskNative(p,entry,true,optimized,{},false,false,nullptr,true);
 }
@@ -1648,7 +1648,7 @@ TaskNativeStep emitSourceExceptionTasksPrototypeNativeDebug(const Program &p,con
   return result;
 }
 std::string emitMLIR(const Program &p,const std::string &entry,bool testEntry,bool libraryEntry){
-  if(p.sourceLanguage==SourceLanguage::TypedErrors027){
+  if(isTypedSourceErrorLanguage(p.sourceLanguage)){
     BuildOptions options;options.entry=entry;options.testEntry=testEntry;options.libraryEntry=libraryEntry;
     validateNativeBuildEntry(p,options);
     if(usesNativeTasks(p,entry))return emitTaskNative(p,entry,!libraryEntry,false,{},false,false,nullptr,false,nexrt::taskCodeTypedSourceExceptionABI).mlir;
@@ -2221,7 +2221,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   // ABI5 uses the same checked operation classification as emitted descriptors.
   const bool taskFileReads=tasks&&(supportsTaskFileStreams(p)?taskFiles.reads:files);
   const bool taskFileWrites=tasks&&taskFiles.writes;
-  const auto taskExecutionABI=p.sourceLanguage==SourceLanguage::TypedErrors027?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
+  const auto taskExecutionABI=isTypedSourceErrorLanguage(p.sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:isPublicSourceExceptionLanguage(p.sourceLanguage)?nexrt::taskCodeSourceExceptionABI:supportsTaskFileStreams(p)?nexrt::taskCodeStreamABI:supportsTaskFileWrites(p)?nexrt::taskCodeWriteABI:nexrt::taskCodeABI;
   if(configuredABI.getOS()==llvm::Triple::IOS&&foreign)
     throw Error("E_TARGET","iOS source foreign-library loading is not configured");
   if(parallel&&!configuredABI.isMacOSX()&&!configuredABI.isOSLinux()&&!windows)
@@ -2579,7 +2579,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   const NativeEmissionContext emissionContext{callableTargets,parallel};
   auto emittedTaskAccessors=taskExportNames;if(taskMode==NativeTaskLinkageMode::SharedFixed&&options.functionsOnly)emittedTaskAccessors.insert(p.function(options.entry).name);
   const TaskNativeLinkage taskLinkage{localNames,names,emittedTaskAccessors,importedTaskExports,taskFileReads,taskMode==NativeTaskLinkageMode::SharedFixed,taskFileWrites,taskProviders&&profiling?nativeTaskProfileRegistryAccessor(options.taskComponent):std::string{},options.taskComponent,taskProviders&&options.taskDebug?nativeTaskDebugRegistryAccessor(options.taskComponent):std::string{},options.taskComponent,taskFiles.streams};
-  auto mlir=tasks?emitTaskNative(snapshot,options.entry,!options.libraryEntry&&!options.functionsOnly&&!server,options.profile!="debug",options.taskLimits,profiling,options.taskDebug,taskProviders?&taskLinkage:nullptr,false,p.sourceLanguage==SourceLanguage::TypedErrors027?taskExecutionABI:0).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
+  auto mlir=tasks?emitTaskNative(snapshot,options.entry,!options.libraryEntry&&!options.functionsOnly&&!server,options.profile!="debug",options.taskLimits,profiling,options.taskDebug,taskProviders?&taskLinkage:nullptr,false,isTypedSourceErrorLanguage(p.sourceLanguage)?taskExecutionABI:0).mlir:Emitter(snapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&localNames,&names,options.projectLibraryABI,parallel);writeFile(result.mlir,mlir);
   std::string optimization=options.profile=="debug"?"-O0":"-O2";
   auto link=toolchain.driver;llvm::json::Array compiledUnits;
   for(size_t i=0;i<plan.units.size();++i){
@@ -2588,7 +2588,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
       std::filesystem::path stage(createTemporaryDirectory("nex-native-unit"));
       try{
         auto unitSnapshot=codeSnapshot;if(unitSnapshot.units.contains(unit.unit))unitSnapshot.path=unitSnapshot.units.at(unit.unit).path;
-        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,!options.libraryEntry&&!options.functionsOnly&&!server,options.profile!="debug",options.taskLimits,profiling,options.taskDebug,taskProviders?&taskLinkage:nullptr,false,p.sourceLanguage==SourceLanguage::TypedErrors027?taskExecutionABI:0).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
+        artifact.mlir=tasks?emitTaskNative(unitSnapshot,options.entry,!options.libraryEntry&&!options.functionsOnly&&!server,options.profile!="debug",options.taskLimits,profiling,options.taskDebug,taskProviders?&taskLinkage:nullptr,false,isTypedSourceErrorLanguage(p.sourceLanguage)?taskExecutionABI:0).mlir:Emitter(unitSnapshot,options.profile!="debug",profiling,&operationIndex,false,&emissionContext).run(options.entry,options.testEntry,options.libraryEntry||server||options.functionsOnly,&unit.functions,&names,options.projectLibraryABI,parallel);
         writeFile((stage/"program.mlir").string(),artifact.mlir);artifact.llvm=lower(artifact.mlir,unitSnapshot.path,compilerTarget,dataLayout);writeFile((stage/"program.ll").string(),artifact.llvm);
         auto compile=command({"-c",(stage/"program.ll").string(),"-o",(stage/"program.o").string(),"-g",optimization});
         if(options.profile=="profile")compile.push_back("-fno-omit-frame-pointer");

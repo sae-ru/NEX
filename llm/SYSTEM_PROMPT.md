@@ -263,3 +263,9 @@ bounds and constructor kinds. Predicates must check parametrically, including
 unused templates; current concrete callers grant no extra operations. Candidate4
 records all-instantiation scope. A later source edit still needs its own revision
 checks; generic runtime checks do not extend scalar Z3 proof support.
+
+Source-level requires/ensures/invariant/decreases exist only in the explicit028
+C++ development frontend while source_contracts_development.public_enabled is
+false. Do not emit that syntax for ordinary027 projects; use the advertised
+explicit runtime projection instead. Read its candidate guide before C++ frontend
+work, and require explicit history migration before adopting a newer language.

@@ -260,7 +260,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     for(const auto *name:{"llvm-rc","llvm-cvtres"}){auto tool=bin/(std::string(name)+suffix);resources[tool.string()]=digest(tool);}runtimeSeed["windows_resource_tools"]=std::move(resources);}
   if(sharedTasks){requirements["tasks"]=tasks;requirements["task_file_reads"]=taskReads;requirements["task_file_writes"]=taskWrites;runtimeSeed["task_linkage_mode"]="shared-fixed";runtimeSeed["tasks"]=tasks;runtimeSeed["task_file_reads"]=taskReads;runtimeSeed["task_file_writes"]=taskWrites;}
   if(sharedTasks&&supportsTaskFileStreams(*inputs.front().program)){requirements["task_file_streams"]=taskStreams;runtimeSeed["task_file_streams"]=taskStreams;}
-  if(sharedTasks&&supportsSourceExceptionTasks(*inputs.front().program)){const auto abi=inputs.front().program->sourceLanguage==SourceLanguage::TypedErrors027?nexrt::taskCodeTypedSourceExceptionABI:nexrt::taskCodeSourceExceptionABI;requirements["task_execution_abi"]=abi;runtimeSeed["task_execution_abi"]=abi;}
+  if(sharedTasks&&supportsSourceExceptionTasks(*inputs.front().program)){const auto abi=isTypedSourceErrorLanguage(inputs.front().program->sourceLanguage)?nexrt::taskCodeTypedSourceExceptionABI:nexrt::taskCodeSourceExceptionABI;requirements["task_execution_abi"]=abi;runtimeSeed["task_execution_abi"]=abi;}
   auto runtimeText=json(JSON(Object(runtimeSeed)),false),runtimeKey=hash(runtimeText);auto runtimeFolder=root/("runtime-"+runtimeKey);
   auto extension=windows?".dll":darwin?".dylib":".so";auto runtime=runtimeFolder/("libnex_runtime_"+runtimeKey+extension);auto projection=runtimeFolder/"runtime-inputs";
   for(const auto &[name,data]:sources)writeFile((projection/name).string(),data);

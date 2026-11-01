@@ -1,3 +1,16 @@
+# Source-contract028 development - toolchain0.157 / ordinary language0.27
+
+Explicit version-selected028 syntax adds requires/ensures to ordinary named
+functions and invariant/decreases to while loops. Static helpers retain generic
+bounds, original return/finally boundaries and ordinary checked exits. Loop
+observations check purely outside body-local shadows; retained027 parser/identities
+and guarded history migration stay separate. Public CLI/default remain027.
+Focused29 native/reference/TaskIR/Node programs and16 rejected programs passed,
+including exact clause locations. The genuine027 fixture retains two revisions
+and all16 tables. Matching full290, installed SDK, public028 project/provider/browser/debug/profile
+integration and all remaining original PLAN requirements are still pending.
+The accepted immutable0.156 SDK/main publication remains a separate milestone.
+
 # macOS development SDK delivery - 0.156.0 / language 0.27
 
 Source 3a220f3 passed 288 CTest groups. Both moved/restored SDKs passed 40 phases

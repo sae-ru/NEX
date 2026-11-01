@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.156.0 LANGUAGES C CXX)
+project(NEX VERSION 0.157.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1535,3 +1535,28 @@ if(WIN32)
   endforeach()
 endif()
 install(FILES tests/host_fixture.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)
+
+# Explicit028 candidate; public source/default and immutable027 releases remain separate.
+add_executable(nex_source_contracts_probe tests/source_contracts.cpp src/typescript.cpp)
+target_link_libraries(nex_source_contracts_probe PRIVATE nex_native_backend nex_frontend MLIR Threads::Threads)
+target_compile_options(nex_source_contracts_probe PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(nex_source_contracts_probe PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME source_contracts COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contracts.py $<TARGET_FILE:nex_source_contracts_probe>
+  --native-host $<TARGET_FILE:nex_source_contract_host> --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
+set_tests_properties(source_contracts PROPERTIES TIMEOUT 1200)
+install(FILES tests/source_contracts.cpp tests/source_contracts.py DESTINATION share/nex/tests)
+add_test(NAME source_contract_history_migration COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_migration.py $<TARGET_FILE:nex_typed_error_migration_probe>
+  $<TARGET_FILE:nex_source_contracts_probe> --native-host $<TARGET_FILE:nex_source_contract_host> --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
+set_tests_properties(source_contract_history_migration PROPERTIES TIMEOUT 1200)
+install(FILES tests/source_contract_migration.py DESTINATION share/nex/tests)
+install(FILES tests/fixtures/language-0.27-contract-origin.json tests/fixtures/language-0.27-contract-origin.sql DESTINATION share/nex/tests/fixtures)
+add_executable(nex_source_contract_host tests/source_contract_host.cpp runtime/runtime.cpp
+  runtime/nex_files.cpp runtime/nex_task_external.cpp runtime/nex_task_frame.cpp runtime/nex_task_application.cpp
+  runtime/nex_resource_region.cpp runtime/nex_external_resource.cpp runtime/nex_resource_executor.cpp)
+target_compile_definitions(nex_source_contract_host PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_include_directories(nex_source_contract_host PRIVATE runtime tests)
+target_link_libraries(nex_source_contract_host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+set_target_properties(nex_source_contract_host PROPERTIES ENABLE_EXPORTS ON)
+install(FILES tests/source_contract_host.cpp DESTINATION share/nex/tests)

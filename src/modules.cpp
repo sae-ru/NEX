@@ -160,7 +160,7 @@ class Loader {
     std::function<void(E)> expr;std::function<void(const std::vector<S>&)> block;
     expr=[&](E e){if(e){e->span.file=key;if(e->lambda){auto &fn=*e->lambda;fn.span.file=key;for(auto &param:fn.params)param.span.file=key;block(fn.body);}for(auto arm:e->arms){arm->span.file=key;visitPattern(arm->pattern,[&](P pattern){pattern->span.file=key;});}for(auto a:e->args)expr(a);}};
     block=[&](const auto &body){for(auto s:body){s->span.file=key;for(auto arm:s->arms){arm->span.file=key;for(auto &binding:arm->bindings)binding.span.file=key;}expr(s->expr);childBlocks(s,block);}};
-    for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;for(auto &p:f.params)p.span.file=key;block(f.body);}
+    for(auto &f:unit.functions){f.span.file=key;f.owner=unit.module;f.localName=f.name;f.unit=key;if(!f.sourceContractOrigin.empty())f.sourceContractOrigin=unit.module+"::"+f.sourceContractOrigin;for(auto &p:f.params)p.span.file=key;block(f.body);}
     for(auto &s:unit.structures){s.span.file=key;if(s.nameOrigin)s.nameOrigin->file=key;s.owner=unit.module;s.localName=s.name;s.unit=key;for(auto &f:s.fields)f.span.file=key;for(auto &v:s.variants){v.span.file=key;for(auto &f:v.fields)f.span.file=key;}}
     for(auto &value:unit.traits){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &method:value.methods){method.span.file=key;method.owner=unit.module;method.unit=key;method.localName=value.localName+"::"+method.name;for(auto &parameter:method.params)parameter.span.file=key;}}
     for(auto &value:unit.implementations){value.span.file=key;value.owner=unit.module;value.localName=value.name;value.unit=key;for(auto &[name,method]:value.methods)method.span.file=key;}
@@ -308,7 +308,8 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.25")return bundleProgram(bundle,root,true,true,SourceLanguage::SourceExceptions025);
   if(language=="0.26")return bundleProgram(bundle,root,true,true,SourceLanguage::ExceptionHandlers026);
   if(language=="0.27")return bundleProgram(bundle,root,true,true,SourceLanguage::TypedErrors027);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26 and0.27");
+  if(language=="0.28")return bundleProgram(bundle,root,true,true,SourceLanguage::Contracts028);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27 and0.28");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){

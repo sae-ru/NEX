@@ -109,7 +109,7 @@ Project prepare(const Program &p){
     // Each dedicated worker owns one root scheduler. Only wire values cross
     // the host boundary; scopes/futures/channels remain inside that scheduler.
     auto compute=nativeSymbol(workerCompute->name);
-    auto execution=worker.asynchronous?(p.sourceLanguage==SourceLanguage::TypedErrors027?"task.runTypedSourceErrors(task.call(() => "+compute+"(input)), sourceErrorContracts)":worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)";
+    auto execution=worker.asynchronous?(isTypedSourceErrorLanguage(p.sourceLanguage)?"task.runTypedSourceErrors(task.call(() => "+compute+"(input)), sourceErrorContracts)":worker.privateSourceExceptions?"task.runSourceErrors(task.call(() => "+compute+"(input)), error => sourceException.details(error) !== undefined)":"task.run(task.call(() => "+compute+"(input)))"):compute+"(input)";
     if(worker.privateSourceExceptions)
       worker.source+="\nexport async function execute(input: Parameters<typeof "+compute+">[0]) { try { return await "+execution+"; } catch (error) { if (sourceException.details(error) !== undefined) throw new nex.NexError('E_SOURCE_EXCEPTION', 'Uncaught NEX source exception'); throw error; } }\n";
     else worker.source+="\nexport function execute(input: Parameters<typeof "+compute+">[0]) { return "+execution+"; }\n";
@@ -147,7 +147,7 @@ Project prepare(const Program &p){
   files["README.md"]="# Generated NEX web application\n\nEdit NEX sources and regenerate this directory.\n\nRun `npm ci --ignore-scripts`, `npm run build`, then `npm run preview`.\nThe `dist` directory contains the client application; configure SPA route fallback to index.html.\nNo NEX compiler or model is needed to serve/run the result.\n\nOptional pure commands(before, after, event) describes bounded same-origin /api/ requests and cancellation using std/net.nex. Responses return as typed JSON in ordinary web events. Configure credentials at runtime; no token is bundled by NEX. Serve this dist with the native HTTP server's --static option for a same-origin API. See the installed web/server guides for contracts and limits.\n";
   llvm::json::Object hashes;for(const auto &[name,text]:files)hashes[name]=hash(text);
   llvm::json::Value fileHashes=std::move(hashes);auto key=hash(json(fileHashes,false));
-  llvm::json::Value metadata=llvm::json::Object{{"schema",p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.web/2":"nex.web/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
+  llvm::json::Value metadata=llvm::json::Object{{"schema",isTypedSourceErrorLanguage(p.sourceLanguage)?"nex.web/2":"nex.web/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"key",key},{"files",std::move(fileHashes)}};
   return {std::move(files),std::move(metadata)};
 }
 void materialize(const Project &project,const std::filesystem::path &directory){

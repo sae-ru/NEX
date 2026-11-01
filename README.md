@@ -52,7 +52,10 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.156.0 / language 0.27**.
+Current development source: **toolchain0.157.0 / ordinary language0.27**.
+The explicit C++ [language028 contract candidate](docs/source-contracts.md) is
+under development; it is not enabled in the ordinary CLI. The accepted download
+below retains its exact0.156 source and qualification.
 
 The [macOS development SDK](docs/releases/0.156.0.json) passed all **288 CTest groups**.
 Moved and archive-restored installations each passed **40 maintained phases**

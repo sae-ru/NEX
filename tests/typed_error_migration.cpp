@@ -35,6 +35,9 @@ int main(int argc,char **argv){try{
   if(argc!=2)throw Error("E_OPTION","expected one typed-error migration request JSON");
   auto value=llvm::json::parse(readFile(argv[1]));if(!value){llvm::consumeError(value.takeError());throw Error("E_OPTION","invalid migration request JSON");}
   const auto o=value->getAsObject();if(!o||o->getString("schema")!="nex.typed-error-migration-request/1")throw Error("E_OPTION","invalid migration request schema");
+  const auto targetLanguage=o->getString("target_language").value_or("0.27").str();
+  if(targetLanguage!="0.27"&&targetLanguage!="0.28")throw Error("E_OPTION","unsupported explicit migration test target");
+  const auto target=targetLanguage=="0.28"?SourceLanguage::Contracts028:SourceLanguage::TypedErrors027;
   const auto mode=field(*o,"mode");const fs::path project=field(*o,"project"),directory=project/".nex";
   if(mode=="inspect-versioned-source"){
     const auto sources=o->get("sources");if(!sources)throw Error("E_OPTION","missing versioned source bundle");
@@ -60,25 +63,25 @@ int main(int argc,char **argv){try{
     }
     std::cout<<json(std::move(result))<<'\n';return 0;
   }
-  auto plan=preflightGraphMigration(directory,o->getString("origin_revision").value_or("HEAD").str(),field(*o,"expected_revision"),SourceLanguage::TypedErrors027,o->getObject("candidate"));
+  auto plan=preflightGraphMigration(directory,o->getString("origin_revision").value_or("HEAD").str(),field(*o,"expected_revision"),target,o->getObject("candidate"));
   if(mode=="plan"){
-    std::cout<<json(llvm::json::Object{{"ok",true},{"origin_verified",plan.originVerified},{"origin_revision",plan.originRevision},{"origin_source_hash",plan.originSourceHash},{"target_revision",plan.targetRevision},{"source_hash",plan.targetSourceHash},{"namespace",plan.identityNamespace},{"language","0.27"},{"sources",plan.sources}})<<'\n';return 0;
+    std::cout<<json(llvm::json::Object{{"ok",true},{"origin_verified",plan.originVerified},{"origin_revision",plan.originRevision},{"origin_source_hash",plan.originSourceHash},{"target_revision",plan.targetRevision},{"source_hash",plan.targetSourceHash},{"namespace",plan.identityNamespace},{"language",targetLanguage},{"sources",plan.sources}})<<'\n';return 0;
   }
   if(mode=="race"){
-    const auto other=o->get("race_sources");if(!other)throw Error("E_OPTION","missing race source bundle");auto program=preflightMigrationTarget(*other,project,SourceLanguage::TypedErrors027);
+    const auto other=o->get("race_sources");if(!other)throw Error("E_OPTION","missing race source bundle");auto program=preflightMigrationTarget(*other,project,target);
     {Store writer(directory);writer.save(program,plan.expectedHead,true,{"migrate","competing writer","test","",""},plan.identityNamespace);}
     backup(directory/"graph.db",project/"race-before-apply.db");
   }else if(mode=="namespace-race"){
     sqlite3 *db=nullptr;if(sqlite3_open((directory/"graph.db").string().c_str(),&db)!=SQLITE_OK)throw Error("E_TEST","cannot open namespace race");
     auto rc=sqlite3_exec(db,"UPDATE metadata SET value='00000000000000000000000000000000' WHERE key='identity_namespace'",nullptr,nullptr,nullptr);sqlite3_close(db);if(rc!=SQLITE_OK)throw Error("E_TEST","namespace race failed");backup(directory/"graph.db",project/"race-before-apply.db");
   }else if(mode=="unguarded"){
-    auto p=loadVersionedBundle(plan.sources,project.string(),"0.27");Store store(directory);store.save(p);throw Error("E_TEST","unguarded source-version change was accepted");
+    auto p=loadVersionedBundle(plan.sources,project.string(),targetLanguage);Store store(directory);store.save(p);throw Error("E_TEST","unguarded source-version change was accepted");
   }else if(mode!="apply"&&mode!="tampered-plan")throw Error("E_OPTION","unknown migration request mode");
   if(mode=="tampered-plan")plan.targetRevision.assign(64,'0');
   auto result=applyGraphMigration(plan);
   if(auto output=o->getString("export")){
-    exportProject(plan.sources,output->str(),"0.27");result["exported"]=output->str();
-    auto exported=loadVersionedProgram((fs::path(output->str())/"main.nex").string(),output->str(),SourceLanguage::TypedErrors027);
+    exportProject(plan.sources,output->str(),targetLanguage);result["exported"]=output->str();
+    auto exported=loadVersionedProgram((fs::path(output->str())/"main.nex").string(),output->str(),target);
     result["export_roundtrip"]=revision(exported)==plan.targetRevision;
   }
   std::cout<<json(std::move(result))<<'\n';return 0;

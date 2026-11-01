@@ -1,7 +1,9 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Development toolchain 0.156.0 uses source language 0.27.
+Development toolchain0.157 keeps ordinary source language0.27.
+The explicit C++028 source-contract candidate is not enabled in ordinary CLI;
+accepted SDK downloads retain their0.156 scope.
 Executables run without
 an LLM. Precise semantics and small retrieved contexts are design goals;
 end-to-end model-token savings remain unmeasured.

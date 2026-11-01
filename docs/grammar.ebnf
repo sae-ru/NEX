@@ -252,3 +252,6 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 (* Toolchain0.156 projects source generic templates through the existing type
    parameters, bounds, constructor kinds, ordinary calls and assertions. Pure
    predicates check parametrically; no source keyword or language change. *)
+
+(* Explicit C++028 source-contract development has its separate candidate grammar
+   in source-contracts-028.ebnf; the ordinary grammar above remains027. *)

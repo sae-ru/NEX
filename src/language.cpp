@@ -239,6 +239,120 @@ public:
 class Parser {
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
   bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false;std::map<std::string,Span> parameterOrigins;
+  std::set<std::string> generatedNames;
+  unsigned contractLoopCounter=0;
+  std::map<const Stmt*,std::vector<S>> loopPrefixes;
+  bool sourceContracts=false;
+  std::string freshContractName(const std::string &stem){
+    auto candidate=stem;
+    for(unsigned n=1;!generatedNames.insert(candidate).second;++n)candidate=stem+"_"+std::to_string(n);
+    return candidate;
+  }
+  E generatedExpression(Expr::Kind kind,Span span,std::string text={},std::vector<E> args={}){
+    auto value=std::make_shared<Expr>();value->kind=kind;value->span=span;value->text=std::move(text);value->args=std::move(args);return value;
+  }
+  S generatedStatement(Stmt::Kind kind,Span span,E expression={}){
+    auto value=std::make_shared<Stmt>();value->kind=kind;value->span=span;value->expr=std::move(expression);return value;
+  }
+  S contractAssertion(E predicate){
+    return generatedStatement(Stmt::Expression,predicate->span,generatedExpression(Expr::Call,predicate->span,"assert",{predicate}));
+  }
+  E contractClause(){
+    expect("(");auto value=expression();expect(")");
+    if(value->sourceRange.end-value->sourceRange.begin>4096)
+      throw Error("E_CONTRACT_LIMIT","source contract clause exceeds4096 bytes",value->span);
+    return value;
+  }
+  struct Postcondition {std::string result;Span binding;E predicate;};
+  void lowerFunctionContracts(Function &function,const std::vector<E> &pre,const std::vector<Postcondition> &post){
+    if(pre.empty()&&post.empty())return;
+    auto makeHelper=[&](const std::string &purpose){
+      auto result=function;result.name=freshContractName("nex_source_contract_"+purpose+"_"+function.name);
+      result.exported=false;result.test=false;result.body.clear();result.foreign.reset();
+      result.resultTypeSource={};result.sourceContractOrigin=function.name;
+      result.span.begin=result.span.end=0;
+      result.result=substituteType(function.result,{});
+      for(auto &parameter:result.params)parameter.type=substituteType(parameter.type,{});
+      return result;
+    };
+    auto call=[&](const Function &target,bool withResult,const std::string &resultName){
+      std::vector<E> arguments;
+      for(const auto &param:function.params)arguments.push_back(generatedExpression(Expr::Name,param.span,param.name));
+      if(withResult)arguments.push_back(generatedExpression(Expr::Name,function.span,resultName));
+      auto expression=generatedExpression(Expr::Call,function.span,target.name,std::move(arguments));
+      for(const auto &name:function.typeParameters){auto argument=Type::record(name);argument.kind=Type::Parameter;expression->typeArguments.push_back(std::move(argument));}
+      return expression;
+    };
+    auto implementation=makeHelper("body");implementation.body=std::move(function.body);
+    std::vector<S> guarded;
+    size_t ordinal=0;
+    for(auto predicate:pre){
+      auto helper=makeHelper("pre"+std::to_string(++ordinal));helper.effects.clear();helper.result=Type::Bool;
+      helper.body={generatedStatement(Stmt::Return,predicate->span,predicate)};
+      auto invocation=call(helper,false,"");invocation->span=predicate->span;
+      guarded.push_back(contractAssertion(invocation));p.functions.push_back(std::move(helper));
+    }
+    auto resultName=freshContractName("nex_source_contract_result_"+function.name);
+    auto invocation=call(implementation,false,"");
+    if(function.result==Type::Unit)guarded.push_back(generatedStatement(Stmt::Expression,function.span,invocation));
+    else{
+      auto result=generatedStatement(Stmt::Let,function.span,invocation);result->name=resultName;result->type=substituteType(function.result,{});guarded.push_back(std::move(result));
+    }
+    ordinal=0;
+    for(const auto &condition:post){
+      auto helper=makeHelper("post"+std::to_string(++ordinal));helper.effects.clear();helper.result=Type::Bool;
+      if(function.result!=Type::Unit)helper.params.push_back({condition.result,substituteType(function.result,{}),condition.binding});
+      helper.body={generatedStatement(Stmt::Return,condition.predicate->span,condition.predicate)};
+      auto invocation=call(helper,function.result!=Type::Unit,resultName);invocation->span=condition.predicate->span;
+      guarded.push_back(contractAssertion(invocation));p.functions.push_back(std::move(helper));
+    }
+    guarded.push_back(generatedStatement(Stmt::Return,function.span,function.result==Type::Unit?E{}:generatedExpression(Expr::Name,function.span,resultName)));
+    p.functions.push_back(std::move(implementation));function.body=std::move(guarded);
+    function.sourceRequires=pre.size();function.sourceEnsures=post.size();
+  }
+  E cloneContractObservation(E source){
+    auto value=cloneSourceExpression(source);
+    std::function<void(E)> expression;
+    std::function<void(const std::vector<S>&)> statements;
+    statements=[&](const std::vector<S> &body){
+      for(auto statement:body){
+        expression(statement->expr);statements(statement->body);statements(statement->alternative);
+        if(statement->kind!=Stmt::Match)for(auto arm:statement->arms)statements(arm->body);
+      }
+    };
+    expression=[&](E node){
+      if(!node)return;
+      if(node->kind==Expr::Lambda){node->number=lambdaCounter++;statements(node->lambda->body);}
+      for(auto child:node->args)expression(child);
+      for(auto arm:node->arms)statements(arm->body);
+    };
+    expression(value);return value;
+  }
+  void lowerLoopContract(const S &loop,const std::vector<E> &invariants,E ranking){
+    if(invariants.empty()&&!ranking)return;
+    if(invariants.empty()||!ranking)throw Error("E_CONTRACT_SYNTAX","annotated while requires invariants and one decreases clause",loop->span);
+    std::vector<S> prefix,tail;
+    for(auto predicate:invariants){
+      predicate->contractPure=true;
+      prefix.push_back(contractAssertion(predicate));tail.push_back(contractAssertion(cloneContractObservation(predicate)));
+    }
+    auto name=freshContractName("nex_source_contract_rank_"+std::to_string(++contractLoopCounter));
+    auto zero=generatedExpression(Expr::Integer,loop->span);zero->number=0;
+    auto previous=generatedStatement(Stmt::Var,loop->span,zero);previous->name=name;previous->type=Type::I64;prefix.push_back(previous);
+    ranking->contractPure=true;
+    auto save=generatedStatement(Stmt::Assign,loop->span,ranking);save->name=name;
+    auto saved=generatedExpression(Expr::Name,loop->span,name);
+    auto nonnegative=contractAssertion(generatedExpression(Expr::Binary,ranking->span,">=",{saved,zero}));
+    auto strict=contractAssertion(generatedExpression(Expr::Binary,ranking->span,"<",{cloneContractObservation(ranking),generatedExpression(Expr::Name,loop->span,name)}));
+    tail.push_back(strict);
+    // A distinct lexical block keeps body-local shadows out of observations.
+    // Its normal continuation exists in checked CFG even for an early-returning
+    // body; actual return/throw/finally outcomes bypass the trailing checks.
+    auto truth=generatedExpression(Expr::Boolean,loop->span);truth->number=1;
+    auto body=generatedStatement(Stmt::If,loop->span,truth);body->body=std::move(loop->body);
+    loop->body={save,nonnegative,body};loop->body.insert(loop->body.end(),tail.begin(),tail.end());
+    loopPrefixes.emplace(loop.get(),std::move(prefix));
+  }
   void editorName(std::string kind,const std::string &name,Span span,std::optional<Span> target={}){
     if(!captureNames)return;
     if(p.editorNames.size()>=200000)throw Error("E_ANALYSIS_LIMIT","editor names exceed 200000 entries",span);
@@ -435,7 +549,11 @@ class Parser {
     expect("{"); std::vector<S> body;
     while(!accept("}")) {
       if(peek().kind==Token::End)throw Error("E_PARSE","unterminated block",peek().span);
-      body.push_back(statement());
+      auto item=statement();
+      if(auto prefix=loopPrefixes.find(item.get());prefix!=loopPrefixes.end()){
+        body.insert(body.end(),prefix->second.begin(),prefix->second.end());loopPrefixes.erase(prefix);
+      }
+      body.push_back(std::move(item));
     }
     return body;
   }
@@ -487,20 +605,30 @@ class Parser {
       s->kind=Stmt::If; s->expr=expression(); s->body=block();
       if(accept("else")) { if(peek().text=="if")s->alternative={statement()}; else s->alternative=block(); }
     } else if(accept("while")) {
-      s->kind=Stmt::While; s->expr=expression(); s->body=block();
+      s->kind=Stmt::While;s->expr=expression();std::vector<E> invariants;E ranking;
+      if(sourceContracts){
+        while(accept("invariant")){
+          if(invariants.size()>=64)throw Error("E_CONTRACT_LIMIT","while exceeds64 invariants",peek().span);
+          invariants.push_back(contractClause());
+        }
+        if(accept("decreases"))ranking=contractClause();
+      }
+      s->body=block();if(sourceContracts)lowerLoopContract(s,invariants,ranking);
     } else if(peek().kind==Token::Id && peek(1).text=="=") {
       s->kind=Stmt::Assign; s->name=take().text; take(); s->expr=expression();expect(";");
     } else {s->kind=Stmt::Expression;s->expr=expression();if(s->expr->kind==Expr::Match&&s->expr->statementMatch){s->kind=Stmt::Match;s->arms=s->expr->arms;}else expect(";");}
     s->sourceRange=syntaxRange(s->span.begin);return s;
   }
 public:
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed) {
+    sourceContracts=contracts;
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
     if(exceptions)p.sourceLanguage=SourceLanguage::SourceExceptions025Prototype;
     try{Lexer lex(p.source,p.path);
       do {tokens.push_back(lex.next());if(maxTokens&&tokens.size()>maxTokens)throw Error("E_DEBUG_LIMIT","expression exceeds its token budget",tokens.back().span);}while(tokens.back().kind!=Token::End);
     }catch(Error &error){annotate(error);throw;}
+    if(sourceContracts)for(const auto &token:tokens)if(token.kind==Token::Id)generatedNames.insert(token.text);
   }
   E expressionOnly()try{auto value=expression();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after expression",peek().span);return value;}catch(Error &error){annotate(error);throw;}
   S statementOnly()try{auto value=statement();if(peek().kind!=Token::End)throw Error("E_PARSE","unexpected token after statement",peek().span);return value;}catch(Error &error){annotate(error);throw;}
@@ -575,13 +703,34 @@ public:
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->");auto resultBegin=peek().span.begin;f.result=type();
       f.resultTypeSource={resultBegin,peek().span.begin,true};
-      f.effects=effects();
+      f.effects=effects();lambdaCounter=0;
+      std::vector<E> pre;std::vector<Postcondition> post;
+      if(sourceContracts)while(peek().text=="requires"||peek().text=="ensures"){
+        auto clause=take();
+        if(external)throw Error("E_CONTRACT_SYNTAX","contracts require an ordinary source function body",clause.span);
+        if(clause.text=="requires"){
+          if(pre.size()>=64)throw Error("E_CONTRACT_LIMIT","function exceeds64 preconditions",clause.span);
+          pre.push_back(contractClause());
+        }else{
+          if(post.size()>=64)throw Error("E_CONTRACT_LIMIT","function exceeds64 postconditions",clause.span);
+          Postcondition condition;expect("(");
+          if(f.result!=Type::Unit){
+            auto binding=name();condition.result=binding.text;condition.binding=binding.span;expect("=>");
+            for(const auto &parameter:f.params)if(parameter.name==condition.result)
+              throw Error("E_CONTRACT_SYNTAX","postcondition result binding shadows a parameter",binding.span);
+          }
+          condition.predicate=expression();expect(")");
+          if(condition.predicate->sourceRange.end-condition.predicate->sourceRange.begin>4096)
+            throw Error("E_CONTRACT_LIMIT","source contract clause exceeds4096 bytes",condition.predicate->span);
+          post.push_back(std::move(condition));
+        }
+      }
       if(external){
         expect("=");expect("foreign");expect("(");
         auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
         ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifestSpan=peek().span;binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
-      }else{lambdaCounter=0;f.body=block();}
-      f.span.end=tokens.at(i-1).span.end;p.functions.push_back(std::move(f));clearParameters();
+      }else{f.body=block();}
+      f.span.end=tokens.at(i-1).span.end;lowerFunctionContracts(f,pre,post);p.functions.push_back(std::move(f));clearParameters();
     }
     return std::move(p);
   }catch(Error &error){annotate(error);throw;}
@@ -818,6 +967,15 @@ class Checker {
     return Type::Bool;
   }
   Type expr(E e,Type expected={}) {
+    if(e->contractPure){
+      auto outer=f;auto context=*f;context.effects.clear();context.dependencies.clear();context.result=Type::Bool;
+      auto handlers=exceptionHandlers,catches=exceptionCatches;auto typed=std::move(typedHandlers);
+      exceptionHandlers=exceptionCatches=0;typedHandlers.clear();f=&context;e->contractPure=false;
+      try{
+        auto result=expr(e,expected);outer->dependencies.insert(context.dependencies.begin(),context.dependencies.end());
+        f=outer;exceptionHandlers=handlers;exceptionCatches=catches;typedHandlers=std::move(typed);e->contractPure=true;return result;
+      }catch(...){f=outer;exceptionHandlers=handlers;exceptionCatches=catches;typedHandlers=std::move(typed);e->contractPure=true;throw;}
+    }
     switch(e->kind) {
     case Expr::FunctionRef:reference(e,expected);break;
     case Expr::Lambda:lambda(e);break;
@@ -1070,7 +1228,7 @@ class Checker {
       case Stmt::Match:returns=matching(s->expr,{},true);s->type=s->expr->args[0]->type;break;
       case Stmt::While:same(expr(s->expr,Type::Bool),Type::Bool,s->span);block(s->body);break;
       case Stmt::Finally:{
-        if(p.sourceLanguage!=SourceLanguage::ExceptionHandlers026&&p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","finally requires language0.26",s->span);
+        if(p.sourceLanguage!=SourceLanguage::ExceptionHandlers026&&!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","finally requires language0.26",s->span);
         bool protectedReturns=block(s->body),finalizerReturns=block(s->alternative);
         s->type=Type::Unit;returns=protectedReturns||finalizerReturns;break;
       }
@@ -1085,7 +1243,7 @@ class Checker {
         s->type=Type::Str;returns=a&&b;break;
       }
       case Stmt::TypedTry:{
-        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
+        if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
         if(s->alternative.empty())throw Error("E_INTERNAL","typed try has no clauses",s->span);
         auto previous=typedHandlers.size();auto previousUniversal=exceptionHandlers;
         for(auto clause:s->alternative){
@@ -1106,7 +1264,7 @@ class Checker {
         s->type=Type::Unit;returns=a&&handlersReturn;break;
       }
       case Stmt::TypedThrow:{
-        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed throw requires language0.27",s->span);
+        if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed throw requires language0.27",s->span);
         s->type=expr(s->expr);typedPayload(s->type,s->span,s->errorTypeKey);
         if(!allowsEffect("throw")&&std::find(typedHandlers.begin(),typedHandlers.end(),s->type)==typedHandlers.end())
           throw Error("E_EFFECT","uncaught typed throw requires effect throw or a total matching handler",s->span);
@@ -1224,6 +1382,7 @@ llvm::json::Value exprJSON(E e) {
   llvm::json::Array args;for(auto a:e->args)args.push_back(exprJSON(a));
   llvm::json::Object result{{"kind",int64_t(e->kind)},{"operator",e->text},{"value",e->number},{"type",typeName(e->type)},{"args",std::move(args)}};
   if(!e->traitContract.empty()){result["trait_contract"]=e->traitContract;result["implementation"]=e->implementation;llvm::json::Array types;for(const auto &type:e->traitArguments)types.push_back(typeName(type));result["trait_arguments"]=std::move(types);}
+  if(e->contractPure)result["contract_pure"]=true;
   if(e->kind==Expr::Lambda)result["lambda"]=canonical(*e->lambda);
   if(e->kind==Expr::Match){llvm::json::Array arms;for(auto arm:e->arms)arms.push_back(llvm::json::Object{{"pattern",canonicalPattern(arm->pattern)},{"guard",int64_t(arm->guard)},{"value",int64_t(arm->value)},{"body",blockJSON(arm->body)}});result["arms"]=std::move(arms);result["statement"]=e->statementMatch;}return result;
 }
@@ -1248,11 +1407,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||language==SourceLanguage::TypedErrors027,language==SourceLanguage::TypedErrors027).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),language==SourceLanguage::Contracts028).run();
   p.sourceLanguage=language;return p;
 }
 Program parseSourceExceptionsPrototype(std::string source,std::string path){
@@ -1292,6 +1451,10 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
   llvm::json::Object result{{"format","nex.function/13"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  if(!f.sourceContractOrigin.empty()||f.sourceRequires||f.sourceEnsures){
+    result["format"]="nex.function/14";
+    result["source_contract"]=llvm::json::Object{{"origin",f.sourceContractOrigin},{"requires",f.sourceRequires},{"ensures",f.sourceEnsures}};
+  }
   result["type_parameter_kinds"]=canonicalKinds(f.typeParameters,f.typeArities);if(f.traitSignature)result["trait_owner"]=f.traitOwner;
   if(f.foreign)result["foreign"]=llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}};
   if(f.closure){llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});result["closure_owner"]=f.closureOwner;result["captures"]=std::move(captures);}return result;
@@ -1325,7 +1488,7 @@ std::string revision(const Program &p) {
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
   llvm::json::Object traits,implementations;for(const auto &value:p.traits)traits[value.name]=canonical(value);for(const auto &value:p.implementations)implementations[value.name]=canonical(value);
-  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
+  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::Contracts028?"nex.program/16":p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
   auto result=llvm::json::Object{
@@ -1837,6 +2000,7 @@ llvm::json::Value describe() {
     auto &http=*result.getObject("structured_tasks_runtime")->getObject("http_request_host_prototype");http["execution_task_abi"]=7;http["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};
     auto &wasm=*result.getObject("wasm_features");wasm["source027_scalar_public"]=true;
   }
+  result["source_contracts_development"]=llvm::json::Object{{"status","explicit_cpp_028_candidate"},{"public_enabled",false},{"source_language","0.28"},{"ordinary_language","0.27"},{"program_format","nex.program/16"},{"retained_027_format","nex.program/15"},{"named_source_functions",true},{"generic_templates",true},{"loop_invariants",true},{"loop_ranking",true},{"predicates","pure_source_expressions"},{"maximum_clauses",64},{"maximum_clause_utf8_bytes",4096},{"release_assertions",true},{"normal_finally_before_postconditions",true},{"source_errors_and_control_skip_postconditions",true},{"proof_support_extended",false},{"history_migration","explicit preflightGraphMigration/applyGraphMigration"},{"test","tests/source_contracts.py"},{"migration_test","tests/source_contract_migration.py"},{"guide","docs/source-contracts.md"},{"full_regression_accepted",false},{"installed_SDK_accepted",false},{"platform_acceptance_complete",false}};
   return result;
 }
 }

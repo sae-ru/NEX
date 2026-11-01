@@ -33,6 +33,7 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
     bound[parameters[i]]=arguments[i];}return bound;
 }
 }
+E cloneSourceExpression(E source){return cloneExpression(source,{});}
 bool containsFile(const Program &program,const Type &type){
   std::set<std::string> seen;
   std::function<bool(const Type&)> visit=[&](const Type &value){

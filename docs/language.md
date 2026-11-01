@@ -926,3 +926,11 @@ task HTTP profiling/debugging remain pending. Read server.md for limits and
 scope. Retained older task-language server targets remain unsupported until
 explicit history-preserving migration to0.24.
 
+
+## Explicit028 source-contract development
+
+The version-selected C++ frontend develops source-level pre/post and loop
+contracts under language028/nex.program/16. Ordinary source loading remains027;
+retained027 identities and explicit guarded migration are separate. Read the
+[candidate semantics](source-contracts.md) and [candidate grammar](source-contracts-028.ebnf).
+This stage is not ordinary CLI or installed028 SDK acceptance.

@@ -38,7 +38,7 @@ Key add(Entities &entities,std::string kind,std::string symbol,std::string modul
 }
 Entities describeEntities(const Program &p){
   Entities result;
-  for(const auto &f:p.functions)add(result,"function",f.name,f.owner,f.unit,canonical(f),p.definition(f),!f.templateName.empty()||f.closure||f.traitSignature);
+  for(const auto &f:p.functions)add(result,"function",f.name,f.owner,f.unit,canonical(f),p.definition(f),!f.templateName.empty()||f.closure||f.traitSignature||!f.sourceContractOrigin.empty());
   for(const auto &s:p.structures)add(result,"type",s.name,s.owner,s.unit,canonical(s),p.definition(s),!s.templateName.empty());
   for(const auto &value:p.traits)add(result,"trait",value.name,value.owner,value.unit,canonical(value),p.definition(value));
   for(const auto &value:p.implementations)add(result,"impl",value.name,value.owner,value.unit,canonical(value),p.definition(value));

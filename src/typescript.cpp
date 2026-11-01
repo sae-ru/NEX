@@ -75,7 +75,7 @@ class Generator {
     needed(f.result);for(const auto &param:f.params)needed(param.type);for(const auto &capture:f.captures)needed(capture.type);
     std::function<void(E)> expression=[&](E e){if(e){needed(e->type);for(auto a:e->args)expression(a);}};
     std::function<void(const std::vector<S>&)> block=[&](const auto &body){for(auto s:body){needed(s->type);expression(s->expr);
-      if(p.sourceLanguage==SourceLanguage::TypedErrors027&&(s->kind==Stmt::TypedThrow||(s->kind==Stmt::CatchClause&&s->type!=Type::Unknown))){
+      if(isTypedSourceErrorLanguage(p.sourceLanguage)&&(s->kind==Stmt::TypedThrow||(s->kind==Stmt::CatchClause&&s->type!=Type::Unknown))){
         sourceContracts.emplace(s->errorTypeKey,payloadShape(s->type));
         if(sourceContracts.size()>4096)throw Error("E_LIMIT","TypeScript source-error contract count exceeds4096",s->span);
       }
@@ -187,13 +187,13 @@ class Generator {
       if(taskMode)statement("yield* task.checkpoint("+site(s)+");");
       switch(s->kind){
       case Stmt::TypedThrow:{
-        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed raise requires language0.27",s->span);
+        if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed raise requires language0.27",s->span);
         auto shape=payloadShape(s->type);
         statement("sourceException.raiseTyped("+quote(s->errorTypeKey)+", "+quote(typeName(s->type))+", "+expr(s->expr)+", "+quote(shape.first)+", "+quote(shape.second)+", "+site(s)+");");
         break;
       }
       case Stmt::TypedTry:{
-        if(p.sourceLanguage!=SourceLanguage::TypedErrors027)throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
+        if(!isTypedSourceErrorLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","typed handlers require language0.27",s->span);
         auto done="handler_done_"+std::to_string(++unique),error="source_error_"+std::to_string(++unique),payload="source_payload_"+std::to_string(++unique);
         statement(done+": {");++depth;statement("try {");++depth;block(s->body);--depth;statement("} catch ("+error+") {");++depth;
         statement("const "+payload+" = sourceException.details("+error+");");
@@ -296,7 +296,7 @@ public:
       for(size_t i=0;i<f.captures.size();++i){if(i)signature+=", ";signature+=declare(f.captures[i].name)+": "+type(f.captures[i].type);}
       for(size_t i=0;i<f.params.size();++i){if(i||!f.captures.empty())signature+=", ";signature+=declare(f.params[i].name)+": "+type(f.params[i].type);}
       write(signature+"): "+(taskMode?"task.Step<"+type(f.result)+">":type(f.result))+" {\n");depth=1;
-      if(taskMode){statement(std::string(p.sourceLanguage==SourceLanguage::TypedErrors027?"task.enterTyped([":"task.enter([")+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
+      if(taskMode){statement(std::string(isTypedSourceErrorLanguage(p.sourceLanguage)?"task.enterTyped([":"task.enter([")+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       else if(parallelEnabled){statement("nex.parallelEnter(["+quote(f.span.file)+", "+std::to_string(f.span.line)+", "+std::to_string(f.span.column)+"]);");statement("try {");++depth;}
       bool propagation=propagatesResult(f);
       if(propagation&&!taskMode){statement("return nex.resultScope<"+type(*f.result.element)+">((): "+type(f.result)+" => {");++depth;}
@@ -313,7 +313,7 @@ public:
       if(privateSource)included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"private_location_hash",hash(name+":"+f.span.file+":"+std::to_string(f.span.begin)+":"+std::to_string(f.span.end))}});
       else included.push_back(llvm::json::Object{{"name",name},{"file",f.unit},{"source_line",int64_t(f.span.line)},{"generated_start",int64_t(start)},{"generated_end",int64_t(line-1)},{"hash",hash(json(canonical(f),false))},{"operations",operationSites(p,f)}});
     }
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027){
+    if(isTypedSourceErrorLanguage(p.sourceLanguage)){
       if(entries.contains("sourceErrorContracts"))throw Error("E_ENTRY","sourceErrorContracts is reserved for the compiler's checked type contracts");
       write("export const sourceErrorContracts: ReadonlyArray<sourceException.TransferContract> = sourceException.checkedTransferContracts([\n");
       for(const auto &[key,shape]:sourceContracts)write("  {key: "+quote(key)+", kind: "+quote(shape.first)+", nominal: "+quote(shape.second)+"},\n");
@@ -322,7 +322,7 @@ public:
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
-    if(p.sourceLanguage==SourceLanguage::TypedErrors027)return {out.str(),llvm::json::Object{{"schema","nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};
+    if(isTypedSourceErrorLanguage(p.sourceLanguage))return {out.str(),llvm::json::Object{{"schema",p.sourceLanguage==SourceLanguage::Contracts028?"nex.development-typescript/028-1":"nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};
     auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
     if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
     return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
@@ -347,10 +347,10 @@ WebModule emitTypeScript(const Program &p,const std::map<std::string,std::string
 }
 WebModule emitTypeScriptDelivery(const Program &p,const std::map<std::string,std::string> &entries){
   auto module=emitTypeScript(p,entries);
-  if(p.sourceLanguage!=SourceLanguage::TypedErrors027)return module;
+  if(!isTypedSourceErrorLanguage(p.sourceLanguage))return module;
   const auto *old=module.mapping.getAsObject();
-  if(!old||old->getString("schema")!="nex.development-typescript/027-3"||
-     old->getString("language")!="0.27"||!old->getArray("functions")||
+  if(!old||old->getString("schema")!=(p.sourceLanguage==SourceLanguage::Contracts028?"nex.development-typescript/028-1":"nex.development-typescript/027-3")||
+     old->getString("language")!=programLanguage(p)||!old->getArray("functions")||
      !old->getArray("statements")||!old->getInteger("source_transfer_contracts"))
     throw Error("E_INTERNAL","checked027 delivery requires its matching generated source map");
   module.mapping=llvm::json::Object{{"schema","nex.typescript-map/2"},{"language",programLanguage(p)},
