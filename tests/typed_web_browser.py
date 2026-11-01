@@ -1,7 +1,7 @@
 """Opt-in actual production typed Workers in Chromium/Firefox/WebKit."""
 from pathlib import Path
 import argparse,json,os,socket,subprocess,time
-parser=argparse.ArgumentParser();parser.add_argument('project',type=Path);parser.add_argument('--variant',choices=['async','pure'],default='async');parser.add_argument('--browsers-path',type=Path);parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1])
+parser=argparse.ArgumentParser();parser.add_argument('project',type=Path);parser.add_argument('--source-contracts',action='store_true');parser.add_argument('--variant',choices=['async','pure'],default='async');parser.add_argument('--browsers-path',type=Path);parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1])
 a=parser.parse_args();project=a.project.resolve();W=a.source_root.resolve();O=project
 spec=(W/'tests/workers-browser.spec.js').read_text()
 if a.variant=='async':spec+='''
@@ -34,6 +34,19 @@ for(const mode of ['uncaught','rethrow','callable','legacy'])test('typed worker 
  await page.getByRole('button',{name:'Compute',exact:true}).click();await expect(page.getByRole('status')).toHaveText('9007199254741000 Worker 🧠');
 });
 '''
+if a.source_contracts:spec+=r'''
+for(const mode of ['pre','post'])test('source contract '+mode+' traps without leaking a result',async({page})=>{
+ await page.addInitScript(()=>{window.__nex_contract_messages=[];const NativeWorker=window.Worker;
+  window.Worker=new Proxy(NativeWorker,{construct(target,args){const worker=Reflect.construct(target,args);worker.addEventListener('message',event=>window.__nex_contract_messages.push(event.data));return worker;}});
+ });
+ await page.goto('/');await page.getByRole('button',{name:mode==='pre'?'Contract pre':'Contract post',exact:true}).click();
+ await expect(page.getByRole('status')).toHaveText('E_ASSERT');
+ const messages=await page.evaluate(()=>window.__nex_contract_messages);expect(messages).toHaveLength(1);
+ expect(Object.keys(messages[0]).sort()).toEqual(['body','code','message','protocol','ticket']);
+ expect(messages[0].code).toBe('E_ASSERT');expect(messages[0].body).toBe('');expect(JSON.stringify(messages[0])).not.toContain('PRIVATE_TYPED');
+ await page.getByRole('button',{name:'Compute',exact:true}).click();await expect(page.getByRole('status')).toHaveText('9007199254741000 Worker 🧠');
+});
+'''
 (project/'tests/typed-browser.spec.js').write_text(spec, newline="\n")
 with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 config=project/'playwright.typed.config.js';config.write_text('''import {defineConfig,devices} from '@playwright/test';
@@ -46,6 +59,6 @@ export default defineConfig({testDir:'./tests',testMatch:'typed-browser.spec.js'
 env=dict(os.environ)
 if a.browsers_path:env['PLAYWRIGHT_BROWSERS_PATH']=str(a.browsers_path.resolve())
 start=time.monotonic();r=subprocess.run([str(project/'node_modules/.bin/playwright'),'test','--config',str(config)],cwd=project,env=env,text=True,capture_output=True,timeout=600);(O/'browsers.stdout').write_text(r.stdout, newline="\n");(O/'browsers.stderr').write_text(r.stderr, newline="\n")
-results=json.loads((project/'typed-browser-results.json').read_text());stats=results['stats'];good=r.returncode==0 and stats['expected']==(33 if a.variant=='async' else 30) and stats['unexpected']==0 and stats['flaky']==0 and stats['skipped']==0
-(O/'browser-report.json').write_text(json.dumps({'ok':good,'variant':a.variant,'actual_module_workers':True,'engines':['chromium','firefox','webkit'],'stats':stats,'exit':r.returncode,'seconds':round(time.monotonic()-start,3),'results':str(project/'typed-browser-results.json')},indent=2)+'\n', newline="\n")
+results=json.loads((project/'typed-browser-results.json').read_text());stats=results['stats'];good=r.returncode==0 and stats['expected']==((33 if a.variant=='async' else 30)+(6 if a.source_contracts else 0)) and stats['unexpected']==0 and stats['flaky']==0 and stats['skipped']==0
+(O/'browser-report.json').write_text(json.dumps({'ok':good,'variant':a.variant,'actual_module_workers':True,'source_contract_cases':a.source_contracts,'engines':['chromium','firefox','webkit'],'stats':stats,'exit':r.returncode,'seconds':round(time.monotonic()-start,3),'results':str(project/'typed-browser-results.json')},indent=2)+'\n', newline="\n")
 print(json.dumps({'ok':good,'variant':a.variant,'stats':stats,'report':str(O/'browser-report.json')}));assert good,(r.stdout[-4000:],r.stderr[-1000:])

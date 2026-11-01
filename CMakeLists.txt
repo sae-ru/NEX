@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.157.0 LANGUAGES C CXX)
+project(NEX VERSION 0.158.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1560,3 +1560,23 @@ target_include_directories(nex_source_contract_host PRIVATE runtime tests)
 target_link_libraries(nex_source_contract_host PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 set_target_properties(nex_source_contract_host PROPERTIES ENABLE_EXPORTS ON)
 install(FILES tests/source_contract_host.cpp DESTINATION share/nex/tests)
+
+add_test(NAME source_contract_projects COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_projects.py $<TARGET_FILE:nex_task_stream_project_probe>
+  --compiler $<TARGET_FILE:nex> --source-language 0.28)
+set_tests_properties(source_contract_projects PROPERTIES TIMEOUT 2400)
+
+target_sources(nex_source_contracts_probe PRIVATE src/web.cpp src/task_process.cpp)
+add_test(NAME source_contract_cohorts COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_cohorts.py $<TARGET_FILE:nex_task_stream_project_probe>
+  $<TARGET_FILE:nex_source_contracts_probe>)
+set_tests_properties(source_contract_cohorts PROPERTIES TIMEOUT 900)
+install(FILES tests/source_contract_cohorts.py DESTINATION share/nex/tests)
+add_test(NAME source_contract_debugging COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_error_debugging.py $<TARGET_FILE:nex_task_stream_project_probe>
+  $<TARGET_FILE:nex> --source-language 0.28)
+set_tests_properties(source_contract_debugging PROPERTIES TIMEOUT 1800 SKIP_RETURN_CODE 77)
+add_test(NAME source_contract_web_delivery COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/typed_web_delivery.py $<TARGET_FILE:nex_task_stream_project_probe>
+  $<TARGET_FILE:nex_typed_source_typescript_probe> $<TARGET_FILE:nex> --source-language 0.28)
+set_tests_properties(source_contract_web_delivery PROPERTIES TIMEOUT 1800)

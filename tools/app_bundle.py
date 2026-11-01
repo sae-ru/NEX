@@ -282,7 +282,7 @@ def task_package_inputs(request, binary, owned_inputs):
                 if write_provider:
                     expected = expected | {'task_file_writes'} | ({'component_file_writes'} if shared else set())
                     if (provider.get('descriptor_abi') != (0x4e45585400000007 if typed_provider else 0x4e45585400000006 if source_provider else 0x4e45585400000005 if stream_provider else 0x4e45585400000004) or
-                            provider.get('language') not in (('0.27',) if typed_provider else ('0.25', '0.26') if source_provider else ('0.24',) if stream_provider else ('0.23',)) or
+                            provider.get('language') not in (('0.27', '0.28') if typed_provider else ('0.25', '0.26') if source_provider else ('0.24',) if stream_provider else ('0.23',)) or
                             provider.get('language') != request['language'] or
                             type(provider.get('task_file_writes')) is not bool):
                         raise ValueError('invalid raw task write descriptor/language contract')

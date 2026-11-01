@@ -163,6 +163,11 @@ for name,text,error,stdout in cases:
  if error:assert actual['code']==error,(name,actual)
  else:assert actual['value']=='42',(name,actual)
  if name in ['pre-location','post-location']:assert actual['line']==3,(name,'node',actual)
+ if name.startswith('task'):
+  tested=json.loads(run(name+'-CPP-web-test',[probe,'typescript-run',f,d/'CPP-test']).stdout)
+  assert tested['exit_code']==(1 if error else 0) and tested['stdout']==stdout,(name,tested)
+  if error:assert error in tested['stderr'],(name,tested)
+  else:assert not tested['stderr'],(name,tested)
  programs.append(d/'program.ts')
  records.append({'name':name,'source_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),'native_optimizations':['O0','O2'],'AST':True,'TaskIR':True,'Node':True,'passed':True});save()
 for name,text,code in rejects:

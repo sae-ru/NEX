@@ -4,6 +4,7 @@
 #include "nex/task_frontend.h"
 #include "nex/task_reference.h"
 #include "nex/task_native.h"
+#include "llvm/Support/Error.h"
 #include "nex_host.h"
 #include "nex_value.h"
 #ifndef _WIN32
@@ -27,13 +28,32 @@ int main(int argc,char **argv){
     }
     if(argc<3)throw std::runtime_error("expected reference source, or emit source output triple layout optimized");
     auto path=std::filesystem::absolute(argv[2]);
-    auto p=loadVersionedProgram(path.string(),path.parent_path().string(),std::string(argv[1])=="retained"?SourceLanguage::TypedErrors027:SourceLanguage::Contracts028);
+    const auto requested=std::string(argv[1]);
+    if(requested=="cohort-import"&&argc!=7)throw Error("E_OPTION","cohort-import needs source, output, library, project root and provider record");
+    auto root=requested=="cohort-import"?std::filesystem::absolute(argv[5]):path.parent_path();
+    auto p=loadVersionedProgram(path.string(),root.string(),std::string(argv[1])=="retained"?SourceLanguage::TypedErrors027:SourceLanguage::Contracts028);
     std::string entry=p.function("main").name;auto mode=std::string(argv[1]);
     if(mode=="check"||mode=="retained"){
       llvm::json::Array functions;for(const auto &function:p.functions)functions.push_back(canonical(function));
       auto snapshot=sourceBundle(p);auto roundtrip=loadVersionedBundle(snapshot,path.parent_path().string(),programLanguage(p));
       if(revision(roundtrip)!=revision(p))throw Error("E_TEST","source contract archive failed roundtrip");
       std::cout<<json(llvm::json::Object{{"ok",true},{"language",programLanguage(p)},{"revision",revision(p)},{"functions",std::move(functions)}})<<'\n';return 0;
+    }
+    if(mode=="cohort-import"){
+      auto value=llvm::json::parse(readFile(argv[6]));if(!value){llvm::consumeError(value.takeError());throw Error("E_TEST","invalid provider fixture");}
+      auto provider=parseNativeTaskProvider(*value);
+      NativeLibraryInput library;library.path=argv[4];library.digest=hash(readFile(library.path));library.abi=provider.cohort;
+      library.taskProviderPath=argv[6];library.taskProviderDigest=hash(readFile(library.taskProviderPath));
+      BuildOptions options;options.entry=entry;options.projectLibraryABI=true;options.staticTaskABI=true;
+      options.taskLinkageMode=NativeTaskLinkageMode::Static;options.taskComponent="app";
+      for(const auto &[name,exported]:provider.exports){library.contracts[name]=exported.contract;options.taskImportedFunctions.insert(name);}
+      options.libraries.push_back(library);auto result=build(p,argv[3],options);
+      std::cout<<json(llvm::json::Object{{"artifact",result.executable},{"language",programLanguage(p)},{"library_abi",result.libraryABI}})<<'\n';return 0;
+    }
+    if(mode=="typescript-run"){
+      if(argc!=4)throw Error("E_OPTION","typescript-run needs output directory");
+      auto result=runTypeScriptTest(emitTypeScript(p,{{"entry",entry}}),argv[3]);
+      std::cout<<json(llvm::json::Object{{"exit_code",result.code},{"stdout",result.output},{"stderr",result.errors}})<<'\n';return 0;
     }
     if(mode=="typescript"){
       if(argc!=4)throw Error("E_OPTION","typescript needs output directory");

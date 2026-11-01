@@ -7,9 +7,10 @@ parser=argparse.ArgumentParser()
 parser.add_argument('probe',type=Path)
 parser.add_argument('nex',type=Path)
 parser.add_argument('--output',type=Path)
+parser.add_argument('--source-language',choices=['0.27','0.28'],default='0.27')
 parser.add_argument('--resources',type=Path)
 parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1])
-args=parser.parse_args()
+args=parser.parse_args();language=args.source_language
 args.probe=args.probe.resolve();args.nex=args.nex.resolve();args.source_root=args.source_root.resolve()
 if args.resources:args.resources=args.resources.resolve(strict=True)
 if platform.system() not in ('Darwin','Linux','Windows'):
@@ -73,10 +74,12 @@ def run_case(scenario,mode,directory):
   app=app.replace('fn main()->unit !{task,io,throw}','server fn main()->unit !{task,fs,io,throw}').replace('catch(e:leaf::Problem<i64>)','catch(e:file)').replace('let answer:i64=e.value;','let answer:i64=42;').replace('  assert(e.note=="λ\\u0000🙂");','  assert(file_is_open(e));assert(file_close(e));').replace('  assert(e.note=="λ\u0000🙂");','  assert(file_is_open(e));assert(file_close(e));')
   watches=[{'expression':'e==e','value':True},{'expression':'e','file_identity':True}]
   effectful='file_is_open(e)'
+ if language=='0.28':
+  leaf=leaf.replace('!{task,throw}{','!{task,throw} requires(value==42) ensures(result=>false){').replace('!{task,fs,throw}{','!{task,fs,throw} requires(value==42) ensures(result=>false){')
  (root/'files').mkdir();(root/'files/input').write_bytes(b'abc')
  for name,text in [('leaf',leaf),('middle',middle),('app',app)]:
   d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
- (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
+ (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'app/main.nex'})+'\n', newline="\n")
  source=a.mode=='source';leaf_shared=a.mode=='shared';middle_shared=a.mode in ['shared','mixed']
  architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug','task_limits':{'steps':1000000,'timeout_ms':60000,'workers':2}}},'components':{
   'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['later']},
@@ -86,10 +89,10 @@ def run_case(scenario,mode,directory):
   for name in ['leaf','middle']:
    architecture['components'][name].pop('entry_function');architecture['components'][name].pop('exports')
  (root/'nex.build.json').write_text(json.dumps(architecture,indent=2)+'\n', newline="\n")
- request={'action':'debug','root':str(root),'source_language':'0.27','compiler':str(compiler),'adapter':'nex-dap'}
+ request={'action':'debug','root':str(root),'source_language':language,'compiler':str(compiler),'adapter':'nex-dap'}
  (O/'debug.request.json').write_text(json.dumps(request)+'\n', newline="\n")
  env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'NEX_FILES_ROOT':str(root/'files'),'PYTHONDONTWRITEBYTECODE':'1'}
- started=time.monotonic();report={'ok':False,'scope':'explicit C++027 native debugger','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'mode':a.mode,'scenario':a.scenario,'resources':str(resources),'watches':watches,'frame_expression':frame_expression,'has_guard':guard,'out_of_scope_expression':out_of_scope,'effectful_expression':effectful,'environment':{'NEX_FILES_ROOT':str(root/'files')}}
+ started=time.monotonic();report={'ok':False,'scope':'explicit C++'+language+' native debugger','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'mode':a.mode,'scenario':a.scenario,'resources':str(resources),'watches':watches,'frame_expression':frame_expression,'has_guard':guard,'out_of_scope_expression':out_of_scope,'effectful_expression':effectful,'environment':{'NEX_FILES_ROOT':str(root/'files')}}
  def save():(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  save()
  r=subprocess.run([str(args.probe),str(O/'debug.request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=600)
@@ -133,7 +136,7 @@ def run_dap(directory):
  backend=shutil.which('lldb-dap') or subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
  os.environ['NEX_RESOURCE_DIR']=str(args.resources or args.source_root);os.environ['PYTHONDONTWRITEBYTECODE']='1';os.environ.update(base.get('environment',{}))
  adapter=Recorded([sys.executable,manifest['dap_adapter'],'--backend',backend],O)
- report={'ok':False,'mode':base['mode'],'scenario':base.get('scenario','record'),'real_NEX_DAP':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'scope':'explicit C++027 native debugger','observations':[]};started=time.monotonic();hidden=[]
+ report={'ok':False,'mode':base['mode'],'scenario':base.get('scenario','record'),'real_NEX_DAP':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'scope':'explicit C++'+language+' native debugger','observations':[]};started=time.monotonic();hidden=[]
  def save():(O/'dap-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
  def reject(command,arguments):
   identity=adapter.send(command,arguments);value=adapter.wait(lambda m:m.get('type')=='response' and m.get('request_seq')==identity)
@@ -141,7 +144,7 @@ def run_dap(directory):
  def reject_effect(frame):
   value=reject('evaluate',{'expression':base.get('effectful_expression','task_yield()'),'frameId':frame,'context':'watch'})
   message=value['message'];raw=message[message.index('error: ')+7:];diagnostic=json.JSONDecoder().raw_decode(raw)[0]
-  assert diagnostic['code']=='E_EFFECT' and diagnostic['frontend']['language']=='0.27',diagnostic
+  assert diagnostic['code']=='E_EFFECT' and diagnostic['frontend']['language']==language,diagnostic
   report.setdefault('watch_diagnostics',[]).append(diagnostic);report['effectful_watch_rejected']=True
  specs=base.get('watches',[{'expression':'e.value','value':'42'},{'expression':'e.note','value':'λ\0🙂'}])
  def observe(frame,where):
@@ -150,7 +153,7 @@ def run_dap(directory):
    if spec.get('file_identity'):assert isinstance(wire,dict) and set(wire)=={'file'} and isinstance(wire['file'],str) and wire['file'].isdigit() and int(wire['file'])>0,value
    else:assert wire==spec['value'] and type(wire)==type(spec['value']),value
    if base['mode']=='source':
-    assert value['schema']=='nex.task-expression/1' and value['language']=='0.27' and value['revision']==manifest['revision'] and 'source_identity' not in value,value
+    assert value['schema']=='nex.task-expression/1' and value['language']==language and value['revision']==manifest['revision'] and 'source_identity' not in value,value
     identity={'combined_source_revision':value['revision'],'language':value['language']}
    else:identity=value['source_identity']
    if where=='guard caller' and base['mode']!='source':
@@ -220,9 +223,10 @@ def run_synchronous(directory):
   catch(code,message){assert(false);}
  }
  '''
- (root/'main.nex').write_text(source, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'})+'\n', newline="\n")
+ if language=='0.28':source=source.replace('fn fail(value:i64)->i64 !{throw}{','fn fail(value:i64)->i64 !{throw} requires(value==42) ensures(result=>false){')
+ (root/'main.nex').write_text(source, newline="\n");(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n', newline="\n")
  (root/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},'components':{'app':{'kind':'executable','root':'.','entry':'main.nex'}}})+'\n', newline="\n")
- compiler=args.nex;request={'action':'debug','root':str(root),'source_language':'0.27','compiler':str(compiler),'adapter':'nex-dap'};(O/'request.json').write_text(json.dumps(request)+'\n', newline="\n")
+ compiler=args.nex;request={'action':'debug','root':str(root),'source_language':language,'compiler':str(compiler),'adapter':'nex-dap'};(O/'request.json').write_text(json.dumps(request)+'\n', newline="\n")
  env={**os.environ,'NEX_RESOURCE_DIR':str(args.resources or args.source_root),'PYTHONDONTWRITEBYTECODE':'1'}
  r=subprocess.run([str(args.probe),str(O/'request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=300);(O/'build.stdout').write_text(r.stdout, newline="\n");(O/'build.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0,(r.stdout,r.stderr)
  session=json.loads(r.stdout)['observation'];m=json.loads(Path(session['manifest']).read_text());assert m['schema']=='nex.debug/1',m['schema']

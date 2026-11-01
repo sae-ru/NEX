@@ -2,9 +2,9 @@
 from pathlib import Path
 import argparse,json,os,subprocess,time,hashlib,tempfile,shutil,copy
 
-p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--compiler',type=Path);p.add_argument('--output',type=Path);p.add_argument('--sync-only',action='store_true');p.add_argument('--mode',action='append',choices=['source','static','shared','mixed']);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--compiler',type=Path);p.add_argument('--output',type=Path);p.add_argument('--sync-only',action='store_true');p.add_argument('--source-language',choices=['0.27','0.28'],default='0.27');p.add_argument('--mode',action='append',choices=['source','static','shared','mixed']);a=p.parse_args();language=a.source_language
 O=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-typed-error-projects-'));O.mkdir(exist_ok=a.output is None);started=time.monotonic()
-report={'ok':False,'language':'0.27','public027_enabled':False,'cases':[],'commands':[]}
+report={'ok':False,'language':language,'public027_enabled':False,'cases':[],'commands':[]}
 LEAF=r'''module leaf;
 pub struct Problem<T>{value:T;}
 pub fn pure(value:i64)->i64 !{throw}{throw(Problem<i64>(value));}
@@ -96,10 +96,25 @@ fn main()->unit !{io,throw}{
  assert(middle::next(41)==42);print(42);
 }
 '''
+
+if language=='0.28':
+ def contracts(source):
+  source=source.replace('pub fn pure(value:i64)->i64 !{throw}{','pub fn pure(value:i64)->i64 !{throw} requires(value==42) ensures(result=>false){')
+  source=source.replace('pub fn next(value:i64)->i64{','pub fn next(value:i64)->i64 requires(value>=0) ensures(result=>result==value+1){')
+  source=source.replace('pub fn next(value:i64)->i64 !{task}{','pub fn next(value:i64)->i64 !{task} requires(value>=0) ensures(result=>result==value+1){')
+  source=source.replace('pub fn callback(value:i64)->unit !{task,throw}{','pub fn callback(value:i64)->unit !{task,throw} requires(value==42) ensures(false){')
+  source=source.replace('pub server fn owned_file()->unit !{task,fs,throw}{','pub server fn owned_file()->unit !{task,fs,throw} requires(true) ensures(false){')
+  return source
+ LEAF,MIDDLE,SYNC_LEAF,SYNC_MIDDLE=map(contracts,[LEAF,MIDDLE,SYNC_LEAF,SYNC_MIDDLE])
+ generic='fn contract_identity<T>(value:T)->T requires(value==value) ensures(result=>result==value){return value;}\n'
+ observation='assert(contract_identity(["owned","🙂"])==["owned","🙂"]);'
+ APP=APP.replace('server fn main()',generic+'server fn main()').replace('!{task,fs,io,throw}{','!{task,fs,io,throw}{'+observation)
+ SYNC_APP=SYNC_APP.replace('fn main()',generic+'fn main()').replace('!{io,throw}{','!{io,throw}{'+observation)
+
 def save():
  report['seconds']=round(time.monotonic()-started,3);(O/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
 def request(root,label,action,expected=0,**extra):
- data={'root':str(root),'source_language':'0.27','action':action,'component':'app',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n', newline="\n")
+ data={'root':str(root),'source_language':language,'action':action,'component':'app',**extra};file=O/(label+'.request.json');file.write_text(json.dumps(data)+'\n', newline="\n")
  r=subprocess.run([str(Path(a.probe).resolve()),str(file)],text=True,capture_output=True,timeout=600,env={**os.environ,'NEX_FILES_ROOT':str(root/'files')})
  (O/(label+'.stdout')).write_text(r.stdout, newline="\n");(O/(label+'.stderr')).write_text(r.stderr, newline="\n")
  report['commands'].append({'label':label,'action':action,'exit_code':r.returncode});save()
@@ -110,7 +125,7 @@ try:
   root=O/mode;root.mkdir();(root/'files').mkdir();(root/'files/input').write_bytes(b'abc')
   for name,text in [('leaf',LEAF),('middle',MIDDLE),('app',APP)]:
    d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
-  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
+  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'app/main.nex'})+'\n', newline="\n")
   leaf_shared=mode=='shared';middle_shared=mode in ['shared','mixed'];source=mode=='source'
   manifest={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'},'release':{'profile':'release'},'measured':{'profile':'profile'}},'components':{
    'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['pure','text','later','next','callback','owned_file']},
@@ -128,7 +143,7 @@ try:
    (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n")
   for profile in ['debug','release']:
    label=mode+'-'+profile;plan=request(root,label+'-plan','plan',configuration=profile)
-   assert plan['language']=='0.27' and not plan['graph_store_opened']
+   assert plan['language']==language and not plan['graph_store_opened']
    if not source:
     expected='nex.project-static-task-linkage/5' if mode=='static' else 'nex.project-task-linkage/14'
     for c in plan['components']:
@@ -140,14 +155,25 @@ try:
     if 'artifact' not in artifact:continue
     provider=Path(artifact['artifact']).parent/'task-provider.json'
     if provider.exists():
-     record=json.loads(provider.read_text());assert record['schema']=='nex.native-task-provider/14' and record['language']=='0.27' and record['descriptor_abi']==0x4e45585400000007
+     record=json.loads(provider.read_text());assert record['schema']=='nex.native-task-provider/14' and record['language']==language and record['descriptor_abi']==0x4e45585400000007
    assert not (root/'.nex/graph.db').exists()
    report['cases'].append({'mode':mode,'profile':profile,'passed':True,'stdout':'42\n'});save()
+  if language=='0.28':
+   leaf=root/'leaf/main.nex';original=leaf.read_text()
+   for failure,clause in [('pre','requires(false) ensures(result=>true)'),('post','requires(true) ensures(result=>false)')]:
+    leaf.write_text(original.replace('requires(value>=0) ensures(result=>result==value+1)',clause),newline='\n')
+    failed=request(root,mode+'-'+failure+'-contract','run')['observation']
+    assert failed['exit_code']==70 and not failed['stdout'] and 'E_ASSERT' in failed['stderr'] and 'NEX_SOURCE_EXCEPTION' not in failed['stderr'],failed
+    report['cases'].append({'mode':mode,'contract_trap':failure,'passed':True});save()
+   leaf.write_text(original,newline='\n')
+   restored=request(root,mode+'-restored-contract','run')['observation']
+   assert restored['exit_code']==0 and restored['stdout']=='42\n' and not restored['stderr']
   if mode=='mixed':
    captured=request(root,'capture','capture');capture=O/'capture.json';capture.write_text(json.dumps(captured,ensure_ascii=False)+'\n', newline="\n")
    assert request(root,'validate-capture','validate',capture=str(capture))['ok']
    for tag,edit in [
     ('old-language',lambda c:c.update(language='0.26')),
+    ('peer-language',lambda c:c.update(language='0.27' if language=='0.28' else '0.28')),
     ('wrong-abi',lambda c:c['expectations']['debug'][0]['task_linkage'].update(execution_abi=6)),
     ('retagged-schema',lambda c:c['expectations']['debug'][0]['task_linkage'].update(schema='nex.project-task-linkage/11')),
    ]:
@@ -168,15 +194,20 @@ try:
    report['cases'].append({'mode':mode,'profile_memory_zero':True,'passed':True});save()
    if a.compiler:
     packaged=request(root,'package','package',package_directory=str(O/'package'),compiler=str(a.compiler.resolve()))
-    assert packaged['ok'] and packaged['language']=='0.27'
+    assert packaged['ok'] and packaged['language']==language
     moved=O/'moved λ package';(O/'package').rename(moved);cache=root/'.nex';hidden=root/'.nex-hidden';cache.rename(hidden)
+    unavailable=[]
+    for name in ['leaf','middle','app']:
+     original=root/name;hidden_source=O/('hidden-package-source-'+name);original.rename(hidden_source);unavailable.append((original,hidden_source))
     try:
      environment={k:v for k,v in os.environ.items() if k not in ['NEX_RESOURCE_DIR','NEX_CLANG','NEX_NODE','NEX_NPM']}
      environment['NEX_FILES_ROOT']=str(root/'files')
      r=subprocess.run([str(moved/'apps/app/bin/app'),'--nex-task-workers','4'],text=True,capture_output=True,env=environment,timeout=60)
      (O/'moved.stdout').write_text(r.stdout, newline="\n");(O/'moved.stderr').write_text(r.stderr, newline="\n")
      assert r.returncode==0 and r.stdout=='42\n' and not r.stderr,(r.returncode,r.stdout,r.stderr)
-    finally:hidden.rename(cache)
+    finally:
+     for original,hidden_source in reversed(unavailable):hidden_source.rename(original)
+     hidden.rename(cache)
     report['cases'].append({'mode':mode,'relocated_package_source_absent':True,'workers':4,'passed':True});save()
    # All earlier source/receipt bytes are retained in the captured frontier.
    # Rebuild only the root entry to test the public uncaught-error boundary.
@@ -190,7 +221,7 @@ try:
   root=O/('sync-'+mode);root.mkdir();(root/'files').mkdir()
   for name,text in [('leaf',SYNC_LEAF),('middle',SYNC_MIDDLE),('app',SYNC_APP)]:
    d=root/name;d.mkdir();(d/'main.nex').write_text(text, newline="\n")
-  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})+'\n', newline="\n")
+  (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'app/main.nex'})+'\n', newline="\n")
   source=mode=='source';leaf_shared=mode=='shared';middle_shared=mode in ['shared','mixed']
   components={
    'leaf':{'kind':'source' if source else 'shared_library' if leaf_shared else 'static_library','root':'leaf','entry':'leaf/main.nex','entry_function':'later','exports':['pure','text','later','next','callback']},
@@ -202,7 +233,7 @@ try:
   (root/'nex.build.json').write_text(json.dumps(manifest,indent=2)+'\n', newline="\n")
   for profile in ['debug','release']:
    label='sync-'+mode+'-'+profile;plan=request(root,label+'-plan','plan',configuration=profile)
-   assert plan['language']=='0.27' and not plan['graph_store_opened']
+   assert plan['language']==language and not plan['graph_store_opened']
    assert all('task_linkage' not in c for c in plan['components'])
    built=request(root,label+'-run','run',configuration=profile)['observation']
    assert built['exit_code']==0 and built['stdout']=='42\n' and not built['stderr'],built

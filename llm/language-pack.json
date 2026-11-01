@@ -3655,6 +3655,28 @@
     "guide": "docs/source-contracts.md",
     "full_regression_accepted": false,
     "installed_SDK_accepted": false,
-    "platform_acceptance_complete": false
+    "platform_acceptance_complete": false,
+    "project_delivery": {
+      "status": "explicit_cpp_project_delivery_candidate",
+      "selection": "ProjectBuildOptions::sourceLanguage=Contracts028",
+      "language": "0.28",
+      "typed_task_ABI": 7,
+      "provider_schemas": [
+        14,
+        15,
+        16
+      ],
+      "native_cohort_language_bound": true,
+      "linkage": [
+        "source",
+        "static",
+        "shared",
+        "mixed"
+      ],
+      "test": "tests/typed_error_projects.py --source-language 0.28",
+      "ordinary_CLI_028": false,
+      "full_regression_accepted": false,
+      "installed_SDK_accepted": false
+    }
   }
 }

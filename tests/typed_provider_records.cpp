@@ -17,8 +17,8 @@ void rejected(const llvm::json::Object &record,const std::function<void(llvm::js
 }
 int main(){try{
  llvm::json::Array records;
- for(auto language:{SourceLanguage::SourceExceptions025,SourceLanguage::ExceptionHandlers026,SourceLanguage::TypedErrors027}){
-  const bool typed=language==SourceLanguage::TypedErrors027;
+ for(auto language:{SourceLanguage::SourceExceptions025,SourceLanguage::ExceptionHandlers026,SourceLanguage::TypedErrors027,SourceLanguage::Contracts028}){
+  const bool typed=isTypedSourceErrorLanguage(language);
   auto p=parseVersioned(std::string("module provider;\npub struct Problem<T>{value:T;}\npub fn fail()->i64 !{throw}{")+
       (typed?"throw(Problem<i64>(42));":"throw(\"CODE\",\"legacy\");")+
       "}pub fn delayed()->i64 !{task,throw}{task_yield();return fail();}","provider.nex",language);check(p);

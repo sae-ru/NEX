@@ -1,0 +1,113 @@
+{
+  "schema": "nex.source-contract-delivery-evidence/1",
+  "scope": "macOS ARM64 explicit C++ language0.28 project and browser candidate",
+  "toolchain": "0.158.0",
+  "ordinary_language": "0.27",
+  "candidate_language": "0.28",
+  "public028_enabled": false,
+  "task_ABI": 7,
+  "base_commit": "59bdf236314d6a07afdc56d3cbfa9e1e409009f4",
+  "source_overlay_sha256": {
+    "CMakeLists.txt": "86acf4dcf5db2341a28856708cec707c0e814b34131aa25b361f2015a8835053",
+    "debug/lldb_nex.py": "d2ff0e5d0623bf1e755adc4cb4c8a623804a39ae04327d812d51a9300bea5202",
+    "include/nex/language.h": "a3aba90e502e765613b08d38ecdb781b7cfdcf698836a8155c3c0e452da771a1",
+    "llm/language-pack.json": "70e72baa2d565d2f797bb1894b539513352ef01ee9f2806b26f097427f418bed",
+    "src/backend.cpp": "e96566927cb6e0ad9b911af5777fa33640f2df30b7834bcf256142d4be61d4bb",
+    "src/language.cpp": "4b90fd98d3aa3726b3279af4e5b7178fa249abd7c5a22d48ba6d1274d16781bc",
+    "src/native_images.cpp": "94aa61dbf6658754d3db8c5ba0f8573d068fb070520a30a202eb03675f539d59",
+    "src/web.cpp": "a538e8266e79eca926b62f228b2d593eef3fef48f9b23415131b449fc39c44e9",
+    "tests/source_contract_cohorts.py": "bf6b7d2e3a025544b1e17155d1b6a219e5761aaf663d589c26f120abec8c0297",
+    "tests/source_contracts.cpp": "a4dc147727118cd9f94887fc71be360a46cdde4c6dcdca02d67c2efd4a8094e9",
+    "tests/source_contracts.py": "57c9d4146f61769ee5d22fce730aa8161800e4206e4b5ac15bb90689e75d81b9",
+    "tests/task_stream_project_probe.cpp": "22e3e6a4e234a429bb0c3e5e3bddb3e17a63cdaafeb7f1091171d7050ce8a8e0",
+    "tests/typed_error_debugging.py": "54adbf37ade757e2bb2065e7be909059e6c1fb210292da71fb0094a9185b8220",
+    "tests/typed_error_projects.py": "5dd6f48e39314f8a5b448aa74215ba67d09c50bf14d96cd4d76850cf74667953",
+    "tests/typed_provider_records.cpp": "df0e9217ddfcaf7f117ce69006e94f23930061e41345196cbb4523e15b3e0783",
+    "tests/typed_source_typescript.cpp": "68a9f546900fb81d1f9ee83dea9ff93965902fc145a753ecd376100ec71e6c83",
+    "tests/typed_web_browser.py": "ed7fc7068f124b5d2be9a8483a98f1b5d02380b869c00891b956c1271517c3a4",
+    "tests/typed_web_delivery.py": "3dda21bd969309e3a2e901512dca48b53e4bcb284ee6c70249de5122b5711585",
+    "tools/app_bundle.py": "94eea498bf02aea24d670c2f2ab4047ef363f8c793719ec5ccfe2c08e70665a4"
+  },
+  "compiler_sha256": "e018dd482e840c07d51cdd27eca763b0ab3bb3b5db8ec8da46f7a2186c00a885",
+  "report_sha256": {
+    "contracts-v1/report.json": "699bb3993bb7005d72bcfdda4f7ae8970fe3665af3d1ec07ec6b4d66bfb2f4c6",
+    "projects-v2/report.json": "9e62ca26a930687e11f71c0e1eb3fe9f605d01ae5815b1d32023c4ff85a081b3",
+    "cohorts-v1/report.json": "aeff9a1588ee12ea1cca0545d774d22aec7d29825ac7bdef031bf729a7a7f05e",
+    "debug-v1/report.json": "ab04100eaadf7ac511a07f5ab8d00de05310e96b8bf4fa2d78a29674d70011e7",
+    "web-v2/report.json": "a53752eceba7637c4805f1876fb3e8e042348557290c10b974c101ba46a210ab",
+    "browsers-v1/report.json": "8c606644dda799f84f5993b4f0b1c78d15622fa0eb8bc36ae8c91ffae414653f"
+  },
+  "checks": {
+    "source_contracts": {
+      "execution_scenarios": 29,
+      "refused_programs": 16,
+      "native_executions": 64,
+      "AST_TaskIR_Node_agreement": true,
+      "strict_TypeScript": true,
+      "actual_Cpp_TypeScript_task_runner_cases": 3
+    },
+    "project_cases": 28,
+    "project_linkages": [
+      "source",
+      "static",
+      "shared",
+      "mixed"
+    ],
+    "native_profiles": [
+      "debug",
+      "release"
+    ],
+    "mixed_capture_replay": true,
+    "mixed_profile_visible_managed_live": 0,
+    "mixed_relocated_package_original_source_and_cache_absent": true,
+    "provider_record_checks": 136,
+    "source_cohort": {
+      "distinct027_and028": true,
+      "retagged027_archive_refused": true,
+      "matching028_archive_executed": true
+    },
+    "debugger_cases": 8,
+    "web_delivery": {
+      "variants": [
+        "async",
+        "pure"
+      ],
+      "Node_cases_per_variant": 6,
+      "production_builds": true,
+      "engine_agreement_and_retained026_cases": 3,
+      "boundary_capture_package_cases": 14
+    },
+    "actual_browsers": {
+      "engines": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "async_cases": 39,
+      "pure_cases": 36,
+      "total": 75,
+      "skipped": 0,
+      "flaky": 0,
+      "unexpected": 0,
+      "pre_and_post_failure_and_recovery": true,
+      "production_dist_unchanged": true,
+      "playwright": "1.64.1"
+    }
+  },
+  "full_regression_accepted": false,
+  "installed_SDK_accepted": false,
+  "platform_acceptance_complete": false,
+  "retained_failures": [
+    "Initial test-host link omitted web/task_process dependencies; repaired before successful all-target build.",
+    "Initial package test rejected028 in a retained027-only typed-provider whitelist; repaired and rerun with original sources/cache absent.",
+    "Initial web harness expected the027 development-map schema; corrected to the actual028 schema and rerun."
+  ],
+  "pending": [
+    "Matching full294 regression",
+    "Ordinary028 CLI/default, explicit history migration and shipped examples",
+    "Source-free installed SDK acceptance",
+    "Current Windows/Linux/device qualification",
+    "Every remaining original PLAN requirement"
+  ],
+  "recorded_utc": "2026-11-01T22:52:04.720606+00:00"
+}

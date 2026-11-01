@@ -21,6 +21,10 @@ inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TypedError
 inline bool isTypedSourceErrorLanguage(SourceLanguage language){
   return language==SourceLanguage::TypedErrors027||language==SourceLanguage::Contracts028;
 }
+// A shared typed packet ABI still retains the exact source version in records.
+inline bool isTypedSourceErrorVersion(llvm::StringRef language){
+  return language=="0.27"||language=="0.28";
+}
 inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
   return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language);
 }

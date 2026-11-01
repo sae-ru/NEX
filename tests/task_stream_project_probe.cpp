@@ -15,7 +15,8 @@ int main(int argc,char **argv){try{
   else if(*retained=="0.24")sourceLanguage=SourceLanguage::TaskStreams024;
   else if(*retained=="0.26")sourceLanguage=SourceLanguage::ExceptionHandlers026;
   else if(*retained=="0.27")sourceLanguage=SourceLanguage::TypedErrors027;
-  else throw Error("E_LANGUAGE_VERSION","project probe accepts explicit retained023/024/026 or candidate027");
+  else if(*retained=="0.28")sourceLanguage=SourceLanguage::Contracts028;
+  else throw Error("E_LANGUAGE_VERSION","project probe accepts explicit retained023/024/026/027 or candidate028");
  }
  const auto action=text("action","plan"),root=text("root"),manifest=text("manifest",(std::filesystem::path(root)/"nex.build.json").string());
  llvm::json::Value output=nullptr;

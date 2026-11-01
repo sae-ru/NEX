@@ -6,9 +6,12 @@
 using namespace nex;
 int main(int argc,char **argv){try{
   if(argc<3)throw std::runtime_error("expected mode source [output]");
-  auto file=std::filesystem::absolute(argv[2]);std::string mode=argv[1];bool project=mode.starts_with("project-");
-  auto p=project?loadVersionedProgram(file.string(),file.parent_path().string(),SourceLanguage::TypedErrors027)
-      :parseVersioned(readFile(file.string()),file.string(),SourceLanguage::TypedErrors027);
+  auto file=std::filesystem::absolute(argv[2]);std::string mode=argv[1];
+  const bool contracts=mode.starts_with("contracts-");if(contracts)mode.erase(0,10);
+  const auto language=contracts?SourceLanguage::Contracts028:SourceLanguage::TypedErrors027;
+  bool project=mode.starts_with("project-");
+  auto p=project?loadVersionedProgram(file.string(),file.parent_path().string(),language)
+      :parseVersioned(readFile(file.string()),file.string(),language);
   if(!project)check(p);
   std::string entry;
   for(const auto &f:p.functions)if(f.name=="main"||f.localName=="main"){entry=f.name;break;}

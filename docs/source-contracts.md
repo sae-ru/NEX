@@ -85,3 +85,26 @@ rejected-source and genuine027 history checks. Full regression, source-free SDK,
 debug/profile/operation editing, project/provider/browser integration and
 Windows/Linux/device acceptance remain separate gates. Generated calls and
 assertions affect source profiles and execution budgets; no zero-cost claim is made.
+
+## Version-selected project delivery candidate0.158
+
+ProjectBuildOptions::sourceLanguage=Contracts028 selects the same028 checker for
+all source/static/shared/mixed components. The source version remains explicit
+in manifests, provider records, capture and replay. ABI7 typed packets remain
+unchanged;027 record shapes stay intact. The028 native cohort also binds its
+source version, so an older library cannot be relabelled as a028 dependency.
+Static/dynamic images, profiling, debug source unions and archive-restored
+source keep their existing ownership and exact-input checks. TypeScript task
+test execution selects the checked typed scheduler for both027 and028.
+
+The [scoped macOS delivery receipt](evidence/source-contract-delivery-0.158.0.json)
+records28 component/capture/profile/package cases,8 actual LLDB/NEX-DAP or DWARF
+cases and136 provider-record checks. Production async and pure Workers passed75
+cases across Chromium, Firefox and WebKit, including pre/post failure boundaries
+and subsequent recovery, with no skipped or flaky tests. The packaged mixed
+native application also ran with its original source and build cache absent.
+
+This is an explicit C++ delivery candidate. It introduces no ordinary CLI flag
+or default language change. Matching full294 regression, source-free installed
+SDK acceptance and current Windows/Linux/device acceptance remain required
+independently.

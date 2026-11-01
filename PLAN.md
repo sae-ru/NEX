@@ -1,3 +1,16 @@
+# Source-contract project delivery candidate0.158 / ordinary language0.27
+
+Version-selected028 source/static/shared/mixed components retain exact source
+language through provider records, native cohorts, debug unions and capture.
+ABI7 and retained027 formats remain separate from the028 cohort identity.
+TypeScript task-test execution selects the typed scheduler for028. Scoped checks
+passed:28 component/capture/profile/package cases,8 debugger cases,136 provider
+record checks and75 production-browser cases across Chromium/Firefox/WebKit.
+The [delivery receipt](docs/evidence/source-contract-delivery-0.158.0.json) pins
+this explicit C++ candidate. Matching full294 and installed SDK acceptance remain
+pending; public028 CLI and every original PLAN requirement remain. The preceding
+157 source/full290 stays frozen separately at59bdf23.
+
 # Source-contract028 development - toolchain0.157 / ordinary language0.27
 
 Explicit version-selected028 syntax adds requires/ensures to ordinary named

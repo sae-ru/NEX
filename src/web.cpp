@@ -168,7 +168,7 @@ ProcessResult runTypeScriptTest(const WebModule &module,const std::string &direc
   if(limits)taskOptions=", {steps: "+std::to_string(limits->steps)+", timeoutMs: "+std::to_string(limits->timeoutMs)+", workers: "+std::to_string(limits->workers)+"}";
   auto folder=fs::absolute(directory);writeWebModule(module,folder.string());
   writeFile((folder/"package.json").string(),"{\"type\":\"module\"}\n");
-  const bool typed=module.mapping.getAsObject()&&module.mapping.getAsObject()->getString("language")=="0.27";
+  const bool typed=module.mapping.getAsObject()&&isTypedSourceErrorVersion(module.mapping.getAsObject()->getString("language").value_or(""));
   const std::string sourceRunner=typed?"import { sourceErrorContracts } from './program.ts';\nawait task.runTypedSourceErrors(task.call(() => entry()), sourceErrorContracts":
     "import * as sourceException from './nex-source-exception-runtime.ts';\nawait task.runSourceErrors(task.call(() => entry()), error => sourceException.details(error) !== undefined";
   writeFile((folder/"test.ts").string(),module.asynchronous?
