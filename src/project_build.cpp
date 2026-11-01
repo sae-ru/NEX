@@ -627,7 +627,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
       if(!item.options.toolchain.empty())captureMetadata(item.options.toolchain);
     }
     std::map<std::string,std::string> helpers;
-    for(const auto &name:{"tools/foreign_bundle.py","tools/app_bundle.py","tools/sdk_bundle.py"})helpers[name]=hash(readFile(resourceFile(name)));
+    for(const auto &name:{"tools/foreign_bundle.py","tools/app_bundle.py","tools/sdk_bundle.py","tools/windows_pe.py","tools/windows_files.py"})helpers[name]=hash(readFile(resourceFile(name)));
     if(!options.package.notices.empty()){
       auto notice=fs::absolute(options.package.notices);captureMetadata(notice);
       auto parsedNotices=llvm::json::parse(readFile(notice.string()));

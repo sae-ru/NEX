@@ -60,7 +60,8 @@ class Toolchain(harness.ToolchainCase):
                       'logical_debugging','http_task_handlers','foreign','binary_only','runtime_load_unload'):
             self.assertIs(shared[field],False)
         self.assertTrue(reads['http_task_handlers'])
-        for field in ('typescript', 'windows', 'wasm'):
+        self.assertTrue(reads['windows'])
+        for field in ('typescript', 'wasm'):
             self.assertFalse(reads[field])
         profiled=descriptor['task_provider_profiling']
         self.assertEqual(profiled,pack['task_provider_profiling'])
@@ -81,8 +82,9 @@ class Toolchain(harness.ToolchainCase):
         else:
             self.assertEqual(profiled['supported_actions'],[]);self.assertIs(profiled['reviewed_capture_replay'],False)
         for field in ('authority_transport','callable_transport','logical_debugging','combined_debug_profile',
-                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','windows','wasm'):
+                      'http_task_handlers','foreign','binary_only','runtime_load_unload','tracy','reference','typescript','wasm'):
             self.assertIs(profiled[field],False)
+        self.assertTrue(profiled['windows'])
         debugging=descriptor['task_provider_debugging']
         self.assertEqual(debugging,pack['task_provider_debugging'])
         self.assertEqual((debugging['language'],debugging['configuration']),(harness.CURRENT_LANGUAGE,'debug'))
@@ -99,9 +101,10 @@ class Toolchain(harness.ToolchainCase):
         if debugging['public_enabled']:self.assertEqual(debugging['supported_actions'],['plan','build','debug','package'])
         else:self.assertEqual(debugging['supported_actions'],[])
         self.assertTrue(debugging['ordinary_pure_helper_logical_frames'])
+        self.assertTrue(debugging['windows'])
         for field in ('combined_debug_profile','runtime_load_unload',
                       'authority_transport','callable_transport','foreign','binary_only','http_task_handlers',
-                      'reference','typescript','windows','wasm','language_migration_required'):
+                      'reference','typescript','wasm','language_migration_required'):
             self.assertIs(debugging[field],False)
 
     def test_ordered_cpu_mapping_capability_and_reserved_declaration_agree(self):

@@ -130,7 +130,7 @@ def debug_task_package_inputs(request, binary, owned_inputs):
         'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
         'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
     task = request.get('task_inputs')
-    if (set(request) != expected_fields or request['kind'] != 'executable' or request['profile'] != 'debug' or
+    if (set(request)-{'static_link_inputs'} != expected_fields or request['kind'] != 'executable' or request['profile'] != 'debug' or
             request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
             not isinstance(task, dict) or set(task) != {'schema', 'files'} or task['schema'] != 'nex.application-task-inputs/3' or
             not isinstance(task['files'], list) or not 14 <= len(task['files']) <= 16391):
@@ -149,7 +149,7 @@ def debug_task_package_inputs(request, binary, owned_inputs):
     result = []; total = 0
     for row, (kind, relative) in zip(task['files'], expected):
         if (not isinstance(row, dict) or set(row) != {'kind', 'relative', 'path', 'hash', 'sha256', 'bytes', 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
-                row['kind'] != kind or row['relative'] != relative or row['path'] != str(binary.parent/relative) or
+                row['kind'] != kind or row['relative'] != relative or Path(row['path']) != binary.parent/relative or
                 any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
                 type(row['bytes']) is not int or not 0 <= row['bytes'] <= 512*1024**2):
             raise ValueError('invalid debug raw completed input identity')
@@ -188,7 +188,7 @@ def task_package_inputs(request, binary, owned_inputs):
         'runtime_notices_sha256', 'sdk_root', 'toolchain', 'language', 'revision',
         'foreign_directory', 'foreign_files', 'foreign_projection', 'build_key', 'target',
         'compiler_target', 'compiler_build', 'profile', 'kind', 'host_compatible', 'task_inputs'}
-    if (set(request) != expected_fields or request['kind'] != 'executable' or (request['profile'] != 'profile' if profile else request['profile'] == 'profile') or
+    if (set(request)-{'static_link_inputs'} != expected_fields or request['kind'] != 'executable' or (request['profile'] != 'profile' if profile else request['profile'] == 'profile') or
             request['foreign_directory'] or request['foreign_files'] or request['foreign_projection'] or
             not isinstance(task, dict) or set(task) != {'schema', 'files'} or
             task['schema'] != ('nex.application-task-inputs/2' if profile else 'nex.application-task-inputs/1') or
@@ -216,7 +216,7 @@ def task_package_inputs(request, binary, owned_inputs):
     for row, (kind, source, image) in zip(task['files'], expected):
         if (not isinstance(row, dict) or set(row) != {'kind', 'path', 'hash', 'sha256', 'bytes',
                 'component', 'image', 'image_key', 'image_sha256', 'image_uuid'} or
-                row['kind'] != kind or row['path'] != str(source) or
+                row['kind'] != kind or Path(row['path']) != source or
                 any(not isinstance(row[k], str) or not re.fullmatch('[0-9a-f]{64}', row[k]) for k in ('hash', 'sha256')) or
                 type(row['bytes']) is not int or not 1 <= row['bytes'] <= (64 if profile else 16)*1024**2 or
                 source.is_symlink() or source.resolve(strict=True) != source or
@@ -229,7 +229,7 @@ def task_package_inputs(request, binary, owned_inputs):
             if any(row[k] is not None for k in ('component', 'image', 'image_key', 'image_sha256', 'image_uuid')):
                 raise ValueError('nonprovider task input cannot claim image identity')
         else:
-            if (row['image'] != str(image) or not isinstance(row['component'], str) or
+            if (Path(row['image']) != image or not isinstance(row['component'], str) or
                     not re.fullmatch('[A-Za-z_][A-Za-z_0-9]{0,63}', row['component'])):
                 raise ValueError('task provider image association differs')
             provider = json.loads(source.read_text(), object_pairs_hook=unique_task_fields)
@@ -501,6 +501,26 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                        'packager_patchelf': run([patchelf, '--version']).strip()}
         collector.debug_input_binary = str(binary)
         task_provenance = copy_task_provenance(task_inputs, stage, application, collector, request['schema'] == 'nex.application-request/3', request['schema'] == 'nex.application-request/4')
+        static_inputs=[]
+        records=request.get('static_link_inputs',[])
+        if not isinstance(records,list) or len(records)>3:
+            raise ValueError('invalid static link input inventory')
+        collector.linked_components=set()
+        for record in records:
+            if not isinstance(record,dict) or set(record)!={'path','sha256','bytes'}:
+                raise ValueError('invalid static link input fields')
+            source=Path(record['path'])
+            if source.is_symlink() or not source.is_absolute() or source.suffix!='.a' or not source.is_file() or not 0<=record['bytes']<=256*1024**2:
+                raise ValueError('invalid static link input path/size')
+            source=source.resolve(strict=True)
+            if source.stat().st_size!=record['bytes'] or sha256(source)!=record['sha256']:
+                raise ValueError('static link input changed after compilation')
+            if sdk_inventory and sdk in source.parents:
+                retained=sdk_inventory.get(source.relative_to(sdk).as_posix())
+                if not retained or retained.get('sha256')!=record['sha256'] or not retained.get('component'):
+                    raise ValueError('SDK static library integrity/provenance mismatch')
+            component=collector.component(source);collector.linked_components.add(component)
+            static_inputs.append({'name':source.name,'sha256':record['sha256'],'bytes':record['bytes'],'component':component})
         used_components = collector.copy_notices('licenses')
         foreign, foreign_components, foreign_system = copy_foreign(request, stage)
         used_components += foreign_components
@@ -527,7 +547,7 @@ def assemble(request, output, notices=None, dpkg_notices=False, patchelf='patche
                   'execution_verified': False, 'entry': entry,
                   **{key: request[key] for key in ('toolchain', 'language', 'revision', 'build_key',
                       'compiler_build', 'profile', 'kind', 'compiler_target', 'host_compatible', 'binary_sha256')},
-                  'components': used_components, 'system_libraries': sorted(collector.system_libraries | foreign_system),
+                  'components': used_components, 'static_link_inputs':static_inputs, 'system_libraries': sorted(collector.system_libraries | foreign_system),
                   **details, 'files': collector.inventory()}
         if task_provenance:
             report['task_debug_provenance' if request['schema'] == 'nex.application-request/4' else 'task_profile_provenance' if request['schema'] == 'nex.application-request/3' else 'task_provenance'] = task_provenance

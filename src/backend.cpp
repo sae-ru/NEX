@@ -9,6 +9,7 @@
 #include "nex_source_error.h"
 #include "nex/task_provider_debug.h"
 #include "nex/native_images.h"
+#include "nex/native_file.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
 #include "nex/operations.h"
@@ -1357,7 +1358,7 @@ void atomicWrite(const std::filesystem::path &path,const std::string &text){
   if(auto ec=llvm::sys::fs::openFileForWrite(temporary.string(),fd,llvm::sys::fs::CD_CreateNew))throw Error("E_FILE",ec.message());
   try{
     {llvm::raw_fd_ostream output(fd,true);output<<text;output.close();if(output.has_error())throw Error("E_FILE","cannot write "+path.string());}
-    std::error_code renamed;std::filesystem::rename(temporary,path,renamed);
+    auto renamed=replaceNativeFile(temporary,path);
 #ifdef _WIN32
     // A concurrent builder may have published the same immutable bytes while
     // Clang is reading them without FILE_SHARE_DELETE. Reuse only an exact
@@ -2773,6 +2774,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(taskProviders){abiRecord["task_provider"]=nativeTaskProviderJSON(result.taskProvider);abiRecord["task_provider_hash"]=result.taskProviderDigest;}
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Value(std::move(abiRecord)))+"\n");
   auto buildRecord=llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema",taskProviders?"nex.native-completion/4":"nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}};
+  buildRecord["static_link_inputs"]=nativeStaticLinkInputs(toolchain,!options.deferredLink&&storage,!options.deferredLink&&foreign,!options.deferredLink&&server);
   if(supportsTaskFileStreams(p)){
     buildRecord["task_file_streams"]=taskFiles.streams;
     (*buildRecord.getObject("runtime_requirements"))["task_file_streams"]=taskFiles.streams;

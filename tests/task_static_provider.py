@@ -5,9 +5,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import unittest
 import support as harness
 
@@ -135,13 +137,23 @@ class StaticTaskProviders(harness.ToolchainCase):
         self.save()
 
     def symbols(self, path):
-        result = self.process(['nm','-g',path])
+        result = self.process([shutil.which('llvm-nm') or 'nm','-g',path])
         self.assertEqual(result.returncode,0,result.stderr)
         symbols = {}
         for line in result.stdout.splitlines():
             words = line.split()
             if len(words)>=2 and len(words[-2])==1:
-                symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+                name=words[-1]
+                if sys.platform=='darwin' and name.startswith('_'):name=name[1:]
+                symbols.setdefault(name,set()).add(words[-2])
+        if os.name=='nt' and Path(path).suffix.lower()=='.dll':
+            # COFF import libraries emit local T jump thunks. The PE import
+            # directory identifies those dependent calls; they are not kernel
+            # implementations compiled into the provider image.
+            imports=self.process([shutil.which('llvm-readobj') or 'llvm-readobj','--coff-imports',path])
+            self.assertEqual(imports.returncode,0,imports.stderr)
+            for name in re.findall(r'^\s*Symbol: (\S+) \(\d+\)\s*$',imports.stdout,re.M):
+                symbols[name]={'U'}
         return symbols
 
     def provider(self, artifact, component):

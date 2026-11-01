@@ -131,7 +131,7 @@ fn main()->unit !{task,throw}{try{original();}finally{task_yield();}}
         self.assertEqual(p.returncode,0,p.stderr);web=json.loads(p.stdout)
         self.assertEqual(web['code'],'ORIGINAL');self.assertEqual(web['message'],'λ\0🙂');self.assertEqual(web['site'][1],2)
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual LLDB logical task frame')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual LLDB logical task frame')
     def test_live_finalizer_watch_uses_outer_scope_after_return_and_yield(self):
         debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
         if not debugger:self.skipTest('LLDB is unavailable')

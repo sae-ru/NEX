@@ -1,0 +1,42 @@
+{
+  "schema": "nex.windows-cache-sharing/1",
+  "requires_WSL": false,
+  "language": "0.27",
+  "toolchain": "0.152.1",
+  "compiler_sha256": "672077caf4a468850ea3d67f97879c07e47bd5b39d53f5df87dc3adec4493d01",
+  "old_compiler_sha256": "05aab8e2d11eba0f6e2ea836ac1064ba4b54734263b5a8a7d86ffd8df72f1ab2",
+  "old_deterministic_regression": {
+    "path": "build\\local\\windows-cache-sharing-old.log",
+    "sha256": "3f8cc2d4b44451c164a75f9eb27e6e8e7ca84637642ec18e748724285be862aa",
+    "exit_code": 1,
+    "error": "E_FILE for nex_external_resource.h while a real DELETE-access publisher handle remains open"
+  },
+  "new_deterministic_regression": {
+    "path": "build\\local\\windows-cache-sharing-new.log",
+    "sha256": "0e4183894df57c7024479b32cff05adc0a93c7eb47bb38aaf691cfa9b52d9d36",
+    "exit_code": 0
+  },
+  "all_target_build": {
+    "path": "build\\local\\windows-build29b.log",
+    "sha256": "3cff3e152fde6a58aee7a9ea18465d0aeb220ba8fff43c083f0d8df636e449c6",
+    "exit_code": 0
+  },
+  "focused_regression": {
+    "path": "build\\local\\windows-fixes29.xml",
+    "sha256": "fd4793ef91669abeb365fa4d01cdedf392d92f5b42772821fa26284a72e7d90c",
+    "passed": [
+      "native_images",
+      "frontend_io",
+      "foreign_packaging",
+      "incremental",
+      "web_workers"
+    ],
+    "failed": 0
+  },
+  "interrupted_full_run": {
+    "path": "build\\windows-final26\\interrupted.json",
+    "sha256": "df9734011630415df5f16f03a98c3e8e471634cd0d7e88135f8aa457bce9dbcc"
+  },
+  "full_windows_regression_accepted": false,
+  "fix": "FILE_SHARE_DELETE for compiler reads; atomic FileRenameInfoEx for cache publication; no language/ABI change"
+}

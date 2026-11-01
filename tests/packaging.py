@@ -1,6 +1,7 @@
 """Relocated native applications, provenance failures and retained runtime behavior."""
 from host_fixture import stop_server, run_native
 from host_fixture import python_executable
+from host_fixture import deployed_environment
 import hashlib
 import json
 import os
@@ -23,13 +24,6 @@ import support as harness
 APP = 'bin/app.exe' if os.name == 'nt' else 'bin/app'
 NEX = 'bin/nex.exe' if os.name == 'nt' else 'bin/nex'
 
-def deployed_environment(**extra):
-    result={'PATH':os.path.join(os.environ.get('SystemRoot','C:/Windows'),'System32') if os.name=='nt' else '/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent',**extra}
-    if os.name=='nt':
-        for key in ('SystemRoot','WINDIR','SystemDrive'):
-            if key in os.environ:result[key]=os.environ[key]
-    return result
-
 def loader_environment():
     return {k:v for k,v in os.environ.items() if k not in ('LD_LIBRARY_PATH','LD_PRELOAD')}
 
@@ -47,6 +41,7 @@ class Packaging(harness.ToolchainCase):
             path = Path(pending.pop()).resolve()
             if path in found:continue
             found.add(path)
+            if os.name=='nt' and path.suffix.lower()=='.dll' and Path(str(path)+'.a').is_file():pending.append(Path(str(path)+'.a'))
             if platform.system() == 'Darwin':
                 listing = subprocess.check_output(['/usr/bin/otool', '-L', path], text=True)
                 for line in listing.splitlines()[1:]:
@@ -284,7 +279,7 @@ server fn main() -> unit !{db,io} {
         notice = sdk / 'notice.txt';notice.write_text('Retained SDK fixture notice.\n', newline="\n")
         resources = sdk / 'share/nex';resources.mkdir(parents=True)
         manifest = {'schema': 'nex.sdk-bundle/1', 'ok': True,
-            'files': {library.relative_to(sdk).as_posix(): {'sha256': hashlib.sha256(library.read_bytes()).hexdigest(), 'component': 'sqlite-fixture'}},
+            'files': {p.relative_to(sdk).as_posix(): {'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'component': 'sqlite-fixture'} for p in self.library_inputs([library]) if p.is_relative_to(sdk)},
             'components': [{'name': 'sqlite-fixture', 'version': 'fixture', 'url': 'https://sqlite.org',
                 'license_files': [{'path': 'notice.txt', 'sha256': hashlib.sha256(notice.read_bytes()).hexdigest()}]}]}
         (resources / 'sdk-bundle.json').write_text(json.dumps(manifest), newline="\n")

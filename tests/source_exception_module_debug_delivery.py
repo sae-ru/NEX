@@ -26,7 +26,7 @@ def verify(source,artifacts,compiler,emitter):
    adapter=Recorded([sys.executable,str(source/'debug/nex_dap.py'),'--backend',backend],d)
    try:
     adapter.request('initialize',{'clientID':'private-module-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
-    launch=adapter.send('launch',{'program':str(d/'program'),'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':['--nex-task-workers','2'],'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(d/'debug.json'))+' --compiler '+json.dumps(str(compiler))]});adapter.event('initialized')
+    launch=adapter.send('launch',{'program':str(d/('program.exe' if os.name=='nt' else 'program')),'stdio':[None,None,str(d/'dap-inferior.stderr')],'cwd':str(d),'stopOnEntry':False,'nexTaskDebug':True,'args':['--nex-task-workers','2'],'initCommands':['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(d/'debug.json'))+' --compiler '+json.dumps(str(compiler))]});adapter.event('initialized')
     for file,line in [(leaf,leaf_line),(app,catch_line)]:
      response=adapter.request('setBreakpoints',{'source':{'path':str(file)},'breakpoints':[{'line':line}]});assert all(v['verified'] for v in response['breakpoints'])
     adapter.request('configurationDone');adapter.response(launch);assert adapter.event('stopped')['allThreadsStopped']
@@ -43,7 +43,10 @@ def verify(source,artifacts,compiler,emitter):
    finally:
     try:adapter.close()
     finally:(target/(label+'.json')).write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
-   raw=json.dumps({'trace':trace,'pending':adapter.pending});assert 'NEX_PRIVATE_MODULE_DEBUG_CLEANUP' in raw and '\\"ok\\":true' in raw
+   messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
+   output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
+   cleanup=json.loads(next(line.split(' ',1)[1] for line in (d/'dap-inferior.stderr').read_text(encoding='utf-8').splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')))
+   assert cleanup['ok'] is True and cleanup['live_frames']==0,output
    report['DAP'].append({'topology':topology,'optimization':optimization,'all_stop':True,'source_machine_stack':True,'caller_watch':True,'stale_reference_rejected':True,'checked_catch_after_unwind':True,'next_after_unwind':True,'protocol_sha256':hashlib.sha256((target/(label+'.json')).read_bytes()).hexdigest(),'passed':True});save()
  for topology in ['shared','mixed']:
   original=root/topology/'O2';d=target/('relocated-'+topology);d.mkdir();context=json.loads((original/'debug.json').read_text());plan=json.loads((artifacts/('debug-calls-'+topology+'-plan.stdout')).read_text());paths=[Path(row['path']) for row in context['task_debug']['images']]+[Path(context['task_debug']['runtime_image']['path'])];paths=list(dict.fromkeys(paths))
@@ -55,7 +58,7 @@ def verify(source,artifacts,compiler,emitter):
   try:
    for file in paths:
     temporary=file.with_name(file.name+'.hidden');assert not temporary.exists();file.rename(temporary);hidden.append((file,temporary))
-   argv=[shutil.which('lldb'),'--no-lldbinit','--batch',d/'program']
+   argv=[shutil.which('lldb'),'--no-lldbinit','--batch',d/('program.exe' if os.name=='nt' else 'program')]
    for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(artifacts/'module_lldb_session.py')),'nex-private-test-session '+str(config)]:argv+=['-o',command]
    result=run('relocated-'+topology,argv);observed=json.loads((d/'lldb-report.json').read_text());assert observed['ok'] and observed['exit']==42 and observed['source_absent_during_watch'] and len(observed['observations'])==2
   finally:
@@ -73,7 +76,7 @@ def verify(source,artifacts,compiler,emitter):
   elif name=='registry':changed['task_debug']['registries'][0]['code_count']+=1
   else:changed['module_plan_hash']='0'*64
   file=target/(name+'.json');file.write_text(json.dumps(changed,ensure_ascii=False,indent=2)+'\n', newline="\n");result=run('reject-'+name,[compiler,'inspect-private-task',capture,'--manifest',file,'--expression','v','--json'],allowed=(1,));error=json.loads(result.stdout);assert error['code']=='E_DEBUG_BUILD',error;report['rejections'].append({'name':name,'code':error['code'],'passed':True});save()
- context=root/'context.json';original_arch=json.loads((root/'mixed/architecture.json').read_text());probe=emitter.parent/'nex_source_exception_modules_probe'
+ context=root/'context.json';original_arch=json.loads((root/'mixed/architecture.json').read_text());probe=emitter.parent/('nex_source_exception_modules_probe.exe' if os.name=='nt' else 'nex_source_exception_modules_probe')
  for name,change in [('missing-timeout',lambda a:a.pop('debug_timeout_ms')),('zero-timeout',lambda a:a.update(debug_timeout_ms=0)),('too-large-timeout',lambda a:a.update(debug_timeout_ms=3600001)),('profile-instrumentation',lambda a:a.update(instrumentation='profile')),('old-schema',lambda a:a.update(schema='nex.private-task-architecture/5'))]:
   value=copy.deepcopy(original_arch);change(value);file=target/(name+'.json');file.write_text(json.dumps(value), newline="\n");result=run('reject-'+name,[probe,'plan',context,file],allowed=(1,));assert 'E_EXCEPTION_MODULE' in result.stderr;report['rejections'].append({'name':name,'code':'E_EXCEPTION_MODULE','passed':True});save()
  report.update(ok=True,DAP_comparisons=len(report['DAP']),relocated_debug_sessions=len(report['relocations']));save();return report

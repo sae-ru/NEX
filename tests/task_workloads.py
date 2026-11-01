@@ -1,3 +1,4 @@
+from host_fixture import temporary_environment
 from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants
 """Pinned workload tasks, synthetic server state, budgets and captured replay."""
 import copy,hashlib,json,os,shutil,signal,subprocess,time
@@ -72,7 +73,7 @@ server fn handle(request:http::Request)->http::Response!{db}{
         checked=self.task('check');ambient=self.outer/'ambient';ambient.mkdir()
         sentinel='USER_WORKLOAD_CREDENTIAL_MUST_NOT_BE_CAPTURED'
         run=self.task('run','--directory',self.outer/'original-run','--task-hash',checked['task_hash'],env={
-            'TMPDIR':str(ambient),'NEX_TEST_WORKLOAD_TOKEN':sentinel})
+            **temporary_environment(ambient),'NEX_TEST_WORKLOAD_TOKEN':sentinel})
         self.assertTrue(run['ok']);receipt=Path(run['output']);full=json.loads(receipt.read_text())
         self.assertEqual(len(full['checks']),2);self.assertEqual(list(ambient.iterdir()),[])
         for row in full['checks']:
@@ -162,7 +163,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
         measure['foreign_hash']=self.cli('foreign',self.host)['hash'];measure['budget']={'max_calls':{'workload::service::handle':'1'}}
         self.add(task,measure);self.add(task,{'id':'later','program':'app','kind':'effects','target':'source','configuration':'measured',
             'symbols':['workload::service::handle'],'allowed_effects':['ffi']})
-        ambient=self.outer/'ambient';ambient.mkdir();self.env['TMPDIR']=str(ambient)
+        ambient=self.outer/'ambient';ambient.mkdir();self.env.update(temporary_environment(ambient))
         for mode in ['timeout','interrupt']:
             children.unlink(missing_ok=True);self.marker.unlink(missing_ok=True)
             measure['timeout_seconds']=30 if mode=='timeout' else 90;self.save(task)

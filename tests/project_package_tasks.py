@@ -45,8 +45,8 @@ class ProjectPackageTasks(harness.ToolchainCase):
         app=package/'apps/app';metadata=json.loads((app/'application.json').read_text());self.assertEqual(sum('owned_image_kind' in r for r in metadata['files'].values()),2)
         self.assertTrue((app/'THIRD_PARTY_NOTICES.txt').is_file());self.assertFalse(list((directory/'inputs').rglob('__pycache__')))
         moved=self.base/'moved package % 🧠';shutil.copytree(package,moved,symlinks=True);shutil.rmtree(self.root)
-        files=self.base/'files';files.mkdir();p=subprocess.run([str(moved/'apps/app/bin/app')],cwd='/',
-            env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent','NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'},capture_output=True,text=True,timeout=30)
+        files=self.base/'files';files.mkdir();p=subprocess.run([str(moved/'apps/app'/native_packaging.APP)],cwd='/',
+            env=native_packaging.deployed_environment(NEX_FILES_ROOT=str(files),NEX_FILES_WRITE='1'),capture_output=True,text=True,timeout=30)
         self.assertEqual((p.returncode,p.stdout),(0,'42 🧠\n'),p.stderr);self.assertEqual((files/'executed').read_text(),'once')
         replay=self.cli('task',directory/'receipt.json','--kind','replay','--directory',self.base/'replayed',cwd=self.base,timeout=600)
         self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],result['programs'])
@@ -80,6 +80,9 @@ server fn handle(request:http::Request)->http::Response{return http::json_respon
         self.assertEqual([(c['component'],c['kind']) for c in report['components']],[('service','server')]);self.assertFalse(report['application_execution'])
         app=json.loads((package/'apps/service/application.json').read_text());self.assertEqual(app['kind'],'http_server');self.assertFalse(app['execution_verified'])
         self.assertIn('task-fixture-inputs',[c['name'] for c in app['components']]);self.assertTrue((directory/'inputs/package-notices/package/licenses/0.txt').is_file())
+        if os.name=='nt':
+            self.assertEqual({v['name'] for v in app['static_link_inputs']},{'libsqlite3.a','libssl.a','libcrypto.a'})
+            self.assertTrue(all(v['component']=='task-fixture-inputs' for v in app['static_link_inputs']))
         shutil.rmtree(self.root)
         replay=self.cli('task',directory/'receipt.json','--kind','replay','--directory',self.base/'server-replayed',cwd=self.base,timeout=600)
         self.assertTrue(replay['ok']);self.assertEqual(replay['checks'][0]['notices_hash'],pin['inputs_hash'])

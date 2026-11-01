@@ -67,7 +67,14 @@ The [local Windows compiler](docs/windows-host.md) builds and runs x64 `.exe`
 applications directly on Windows, including CPU/tasks/files and SQLite.
 The earlier [target-only receipt](docs/windows-native-acceptance.md) preserves
 its separate WSL producer, Windows execution and CUDA driver prerequisite results.
-Full Windows-hosted SDK acceptance, CUDA from NEX, Metal, Apple NPU, general GPU compilation,
+The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) has shared NEX/SDL
+sources and native build scripts for Windows, macOS and Linux. Its Windows
+GPU and relocated standalone package checks passed; macOS/Linux execution remains pending.
+The native Windows compiler passed all 274 CTest groups.
+NEX CUDA U8 Add/Affine passed 35 physical-device cases on RTX 3090;
+[the current Windows record](docs/evidence/windows-native-2026-11-01.json)
+keeps that scope separate from full regression and SDK acceptance.
+Full Windows-hosted SDK acceptance, Metal, Apple NPU, general GPU compilation,
 complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
 
 ## Build and use
@@ -100,7 +107,7 @@ nex init /path/to/my-app
 [Architecture](docs/architecture.md) · [Web](docs/web.md) ·
 [Project builds](docs/project-build.md) · [Errors](docs/exceptions.md) ·
 [Debugging](docs/debugging.md) · [Profiling](docs/profiling.md) ·
-[Quality criteria](docs/quality.md) · [Windows handoff](docs/windows-handoff.md)
+[Quality criteria](docs/quality.md) · [Windows handoff](docs/windows-handoff-current.md)
 
 For agents, start with [llms.txt](llms.txt), [AGENTS.md](AGENTS.md),
 [BOOTSTRAP](llm/BOOTSTRAP.md) and the [coding contract](llm/SYSTEM_PROMPT.md).

@@ -57,8 +57,9 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
     if profiling:names += EXTRA_RUNTIME
     if debugging:names += debug_support.EXTRA_RUNTIME
     for name in names:
-        obj=cache/(name+'.o');obj.parent.mkdir(parents=True,exist_ok=True);stamp=obj.with_suffix('.recipe.json');recipe={'compiler':compiler_digest,'flags':flags,'headers':headers,'source':hashlib.sha256((runtime/name).read_bytes()).hexdigest()}
-        if not (obj.exists() and stamp.exists() and json.loads(stamp.read_text())==recipe):run('compile-'+name.replace('/','_'),[compiler,*flags,'-c',runtime/name,'-o',obj]);stamp.write_text(json.dumps(recipe,sort_keys=True)+'\n', newline="\n")
+        compile_flags=[flag for flag in flags if not (os.name=='nt' and name=='nex_profile.cpp' and flag=='-DNEX_SHARED_PROFILE_RUNTIME')]
+        obj=cache/(name+'.o');obj.parent.mkdir(parents=True,exist_ok=True);stamp=obj.with_suffix('.recipe.json');recipe={'compiler':compiler_digest,'flags':compile_flags,'headers':headers,'source':hashlib.sha256((runtime/name).read_bytes()).hexdigest()}
+        if not (obj.exists() and stamp.exists() and json.loads(stamp.read_text())==recipe):run('compile-'+name.replace('/','_'),[compiler,*compile_flags,'-c',runtime/name,'-o',obj]);stamp.write_text(json.dumps(recipe,sort_keys=True)+'\n', newline="\n")
         objects.append(obj)
     def default_context(directory,text):
         directory.mkdir();(directory/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.24','entry':'server.nex'}), newline="\n");file=directory/'server.nex';file.write_text(text, newline="\n");library=directory/'http.nex';library.write_text((source/'lib/http.nex').read_text(), newline="\n");result=directory/'source-context.json';result.write_text(json.dumps({'schema':'nex.private-task-source/2','file':str(file),'source':text,'entry_unit':'server.nex','units':[{'unit':'@std/http.nex','file':str(library),'source':library.read_text()},{'unit':'server.nex','file':str(file),'source':text}]},ensure_ascii=False)+'\n', newline="\n");return result
@@ -105,14 +106,27 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
             if tls:argv+=['--cert',out/'cert.pem','--key',out/'key.pem']
             if profiling:env['NEX_PROFILE_OUTPUT']=str(directory/'profile.json')
             first_request=len(report['requests'])
-            process=subprocess.Popen(list(map(str,argv)),cwd=directory,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE);lines=queue.Queue();reader=threading.Thread(target=lambda:lines.put(process.stdout.readline()),daemon=True);reader.start();line=''
+            process=subprocess.Popen(list(map(str,argv)),cwd=directory,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            lines=queue.Queue();stdout_chunks=[];stderr_chunks=[]
+            def drain_stdout():
+                first=True
+                for chunk in process.stdout:
+                    if first:lines.put(chunk);first=False
+                    else:stdout_chunks.append(chunk)
+                if first:lines.put('')
+            reader=threading.Thread(target=drain_stdout,daemon=True)
+            error_reader=threading.Thread(target=lambda:stderr_chunks.append(process.stderr.read()),daemon=True)
+            reader.start();error_reader.start();line=''
             try:
                 line=lines.get(timeout=20);match=re.fullmatch(r'NEX server (https?)://127\.0\.0\.1:([0-9]+)\n',line);assert match and match[1]==('https' if tls else 'http'),line;yield int(match[2]),files,events
             finally:
                 if process.poll() is None:stop_server(process)
-                try:stdout,stderr=process.communicate(timeout=20)
-                except subprocess.TimeoutExpired:process.kill();stdout,stderr=process.communicate();raise
-                reader.join(timeout=2);(directory/'stdout').write_text(line+stdout, newline="\n");(directory/'stderr').write_text(stderr, newline="\n");assert process.returncode==0,(argv,process.returncode,stderr)
+                try:process.wait(timeout=20)
+                except subprocess.TimeoutExpired:process.kill();process.wait(timeout=20);raise
+                reader.join(timeout=2);error_reader.join(timeout=2)
+                assert not reader.is_alive() and not error_reader.is_alive(),'server output readers did not join'
+                stdout=''.join(stdout_chunks);stderr=''.join(stderr_chunks)
+                (directory/'stdout').write_text(line+stdout, newline="\n");(directory/'stderr').write_text(stderr, newline="\n");assert process.returncode==0,(argv,process.returncode,stderr)
                 observed=events.read_text() if events.exists() else '';assert observed.count('F')==observed.count('X'),observed
                 row={'launch':launch,'argv':list(map(str,argv)),'TLS':tls,'exit':process.returncode,'factories':observed.count('F'),'finalizers':observed.count('X'),'stderr':stderr,'selected_sources_absent':True,'passed':True}
                 if profiling:row.update(profile_file=str(directory/'profile.json'),completed_requests=len(report['requests'])-first_request)
@@ -144,7 +158,7 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
                 assert meta['descriptor_abi']==0x4e45585400002502
             else:
                 run(label+'-emit',[emitter,'emit-context',ctx,e,triple,layout,str(optimization=='2').lower(),'http']);meta=json.loads((e/'metadata.json').read_text());assert meta['descriptor_abi']==(0x4e45585400002502 if foreign else 0x4e45585400002501);ir=(e/'program.ll').read_text();assert not re.search(r'^define[^\n]*@main\(',ir,re.M) and '@nex_task_application_execute' not in ir
-                bridge=e/'bridge.cpp';bridge.write_text('#include "nex_task_application.h"\nextern "C" const nexrt::TaskCodeDescriptor *'+meta['descriptor_symbol']+'();\nextern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits(){static const nexrt::TaskExecutionLimits limits{100000000,5000,4};return &limits;}\nextern "C" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){return nexrt::executeConfiguredSourceExceptionTaskHttpRequest(*'+meta['descriptor_symbol']+'(),value,workers);}\n', newline="\n");binary=e/'server';run(label+'-link',[compiler,*flags,'-O'+optimization,e/'program.ll',bridge,*objects,ssl_library,crypto,a.sqlite_library,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',binary])
+                bridge=e/'bridge.cpp';bridge.write_text('#include "nex_task_application.h"\nextern "C" const nexrt::TaskCodeDescriptor *'+meta['descriptor_symbol']+'();\nextern "C" const nexrt::TaskExecutionLimits *nex_server_task_limits(){static const nexrt::TaskExecutionLimits limits{100000000,5000,4};return &limits;}\nextern "C" nexrt::Handle *nex_server_task_dispatch(nexrt::Handle *value,unsigned workers){return nexrt::executeConfiguredSourceExceptionTaskHttpRequest(*'+meta['descriptor_symbol']+'(),value,workers);}\n', newline="\n");binary=e/('server.exe' if os.name=='nt' else 'server');run(label+'-link',[compiler,*flags,'-O'+optimization,e/'program.ll',bridge,*objects,ssl_library,crypto,a.sqlite_library,'-pthread',*(['-ldl'] if platform.system()!='Darwin' else []),'-o',binary])
             for tls in [False,True]:
                 first=len(report['requests'])
                 with server(binary,foreign,tls) as (port,files,events):

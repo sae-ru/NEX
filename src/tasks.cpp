@@ -352,7 +352,7 @@ std::map<std::string,std::string> resources(){
       auto key=i->path().lexically_relative(root).generic_string();files.emplace(key,readFile(i->path().string()));
     }
   }
-  for(const auto &name:{"tools/app_bundle.py","tools/sdk_bundle.py","tools/foreign_bundle.py","tools/server_workload.py"}){
+  for(const auto &name:{"tools/app_bundle.py","tools/sdk_bundle.py","tools/foreign_bundle.py","tools/server_workload.py","tools/windows_pe.py","tools/windows_files.py"}){
     auto path=root/name;if(fs::is_symlink(path)||!fs::is_regular_file(path))throw Error("E_TASK_RESOURCE","missing trusted package resource");
     auto data=readFile(path.string());bytes+=data.size();if(bytes>64*1048576||files.size()>=4096)invalid("compiler resource snapshot limit exceeded");files.emplace(name,std::move(data));
   }

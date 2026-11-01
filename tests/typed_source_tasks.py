@@ -110,7 +110,7 @@ producer=out/'module.c';producer.write_text(module.replace('EXPORTS',','.join(ex
 run('resource-module',[compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(runtime),producer,'-o',bundle/'module'])
 (bundle/'NOTICE').write_text('NEX typed error authority conformance fixture\n', newline="\n")
 sha=lambda file:hashlib.sha256(file.read_bytes()).hexdigest()
-manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64'}[platform.machine()]),'entry':'module','files':[{'path':name,'sha256':sha(bundle/name)} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()},'notices':['NOTICE']}
+manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+({'arm64':'arm64','aarch64':'arm64','x86_64':'x86_64','amd64':'x86_64'}[platform.machine().lower()]),'entry':'module','files':[{'path':name,'sha256':sha(bundle/name)} for name in ['module','NOTICE']],'exports':{name:hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest() for name,value in signatures.items()},'notices':['NOTICE']}
 (bundle/'manifest.json').write_text(json.dumps(manifest)+'\n', newline="\n");pin=sha(bundle/'manifest.json')
 (out/'host.json').write_text(json.dumps({'schema':'nex.foreign-host/1','module_limit':2,'resource_limit':4,'resource_bytes':32,'libraries':{'host':{'directory':str(bundle),'manifest_sha256':pin,'exports':list(signatures)}}})+'\n', newline="\n")
 resource_cases=[
@@ -138,7 +138,7 @@ for name,text in cases:
  if name.startswith(('authority-runtime-','native-resource-runtime-')):assert expected['code']=='E_TASK_SCOPE',(name,expected)
  for opt in ['0','2']:
   o=d/('O'+opt);o.mkdir();run(name+'-emit'+opt,[probe,'emit',source,o,triple,layout,str(opt=='2').lower()]);lib=o/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
-  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run(name+'-link'+opt,[compiler,'-O'+opt,*flags,o/'program.ll','-o',lib])
+  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared','-fPIC'];run(name+'-link'+opt,[compiler,'-O'+opt,*flags,o/'program.ll',*(probe_dll_inputs(host_binary,o) if os.name=='nt' else []),'-o',lib])
   for workers in [1,4]:
    r=run(name+'-run'+opt+'-'+str(workers),[host_binary,lib,'workers',str(workers)],allowed=(0,42,70))
    if expected['kind']=='return':assert r.returncode==42 and r.stdout==expected['output'] and not r.stderr,(name,workers,r.returncode,r.stdout,r.stderr)

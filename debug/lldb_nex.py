@@ -29,6 +29,14 @@ MAX_TEXT = 4096
 _contexts = {}
 
 
+def _file_spec_path(spec):
+    # SBFileSpec.__str__ is a display description with a PATH_MAX buffer on
+    # Windows. Directory/name accessors retain the full authenticated path.
+    if isinstance(spec,(str,os.PathLike)):
+        return os.fspath(spec)
+    return str(Path(spec.GetDirectory() or '')/(spec.GetFilename() or ''))
+
+
 def _open_readonly_file(path, maximum):
     # Captured debugger helpers are self-contained, including inside a capsule.
     if os.name!='nt':
@@ -1118,7 +1126,7 @@ def _require_frame_image(target, frame, program):
     if not actual.IsValid() or not executable.IsValid():
         raise ValueError("selected frame image does not match the loaded NEX manifest")
     context = _contexts.get(program, {})
-    selected = str(Path(str(actual.GetFileSpec())).resolve())
+    selected = str(Path(_file_spec_path(actual.GetFileSpec())).resolve())
     expected = executable
     if actual == executable:
         if selected != program:
@@ -1135,7 +1143,7 @@ def _require_frame_image(target, frame, program):
         if target.GetNumModules() > 10000:
             raise ValueError("native image module list exceeds limit")
         candidates = [target.GetModuleAtIndex(i) for i in range(target.GetNumModules())
-                      if str(Path(str(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == selected]
+                      if str(Path(_file_spec_path(target.GetModuleAtIndex(i).GetFileSpec())).resolve()) == selected]
         if (not candidates or not expected.GetUUIDString() or
                 any(m != expected or m.GetUUIDString() != expected.GetUUIDString() for m in candidates)):
             raise ValueError("native image identity is ambiguous or differs from the retained image")
@@ -1167,7 +1175,7 @@ def _require_frame_image(target, frame, program):
 
 def _stopped(debugger, compiler=True):
     target = debugger.GetSelectedTarget()
-    context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
+    context = _contexts.get(str(Path(_file_spec_path(target.GetExecutable())).resolve()))
     if context and context.get('schema') in ('nex.debug/2', 'nex.debug/3', 'nex.private-task-debug/1','nex.private-task-debug/2') and context.get('_task_selected'):
         return _task_stopped(debugger, compiler, frame_index=context.get('_task_frame_index', 0))
     target = debugger.GetSelectedTarget()
@@ -1178,7 +1186,7 @@ def _stopped(debugger, compiler=True):
     frame = thread.GetSelectedFrame()
     if not frame.IsValid():
         raise ValueError("no selected frame")
-    program = str(Path(str(target.GetExecutable())).resolve())
+    program = str(Path(_file_spec_path(target.GetExecutable())).resolve())
     context = _contexts.get(program)
     if not context or (compiler and not context.get("_compiler")):
         raise ValueError("load matching debug views with an explicit trusted --compiler path")
@@ -1390,7 +1398,7 @@ def values(debugger, command, result, internal_dict):
         frame = process.GetSelectedThread().GetSelectedFrame()
         if not frame.IsValid():
             raise ValueError("no selected frame")
-        program = str(Path(str(target.GetExecutable())).resolve())
+        program = str(Path(_file_spec_path(target.GetExecutable())).resolve())
         context = _contexts.get(program, {})
         if context:
             _require_frame_image(target, frame, program)
@@ -1405,7 +1413,7 @@ def values(debugger, command, result, internal_dict):
         logical = next((f["name"] for f in context.get("functions", []) if f["native_symbol"] == native), None)
         result.PutCString(json.dumps({"schema": "nex.debug-values/1", "revision": context.get("revision"),
                                      "function": logical, "native_symbol": native,
-                                     "file": str(location.GetFileSpec()), "line": location.GetLine(),
+                                     "file": _file_spec_path(location.GetFileSpec()), "line": location.GetLine(),
                                      "variables": entries, "truncated": variables.GetSize() > 256}, ensure_ascii=False))
     except Exception as error:
         result.SetError(str(error))
@@ -1760,7 +1768,7 @@ class _TaskCatalog:
         if self.process.GetState() != lldb.eStateStopped:
             raise ValueError('task inspection requires an all-stop process')
         self.stop_id = self.process.GetStopID()
-        self.program = str(Path(str(self.target.GetExecutable())).resolve())
+        self.program = str(Path(_file_spec_path(self.target.GetExecutable())).resolve())
         self.context = _contexts.get(self.program)
         if not self.context or self.context.get('schema') not in ('nex.debug/2', 'nex.debug/3', 'nex.private-task-debug/1','nex.private-task-debug/2'):
             raise ValueError('load a matching task debug manifest')
@@ -1773,7 +1781,7 @@ class _TaskCatalog:
             self.context['_task_plan'] = None
         self.codes = self.context.get('_task_codes') or _task_manifest(self.context)
         self.image = self.target.FindModule(self.target.GetExecutable())
-        if not self.image.IsValid() or str(Path(str(self.image.GetFileSpec())).resolve()) != self.program:
+        if not self.image.IsValid() or str(Path(_file_spec_path(self.image.GetFileSpec())).resolve()) != self.program:
             raise ValueError('task executable image differs')
         identity = self.context['task_debug']
         file_stat = os.stat(self.program, follow_symlinks=False)
@@ -1836,7 +1844,7 @@ class _TaskCatalog:
         modules = {}
         for index in range(self.target.GetNumModules()):
             module = self.target.GetModuleAtIndex(index)
-            modules.setdefault(str(Path(str(module.GetFileSpec())).resolve()), []).append(module)
+            modules.setdefault(str(Path(_file_spec_path(module.GetFileSpec())).resolve()), []).append(module)
         self.owner_images = {}
         stamps, inventory = [], self.context.get('_owned_images', {})
         expected_paths = set()
@@ -1855,6 +1863,16 @@ class _TaskCatalog:
                     if not retained or any(retained.get(key) != record[key] for key in ('sha256', 'uuid')):
                         raise ValueError('provider image is absent from retained closure')
                 candidates = modules.get(path, [])
+                if sys.platform=='win32':
+                    # The Windows plugin may enumerate aliases of the same PE
+                    # mapping. Authenticate physical UUID/base pairs; distinct
+                    # loaded mappings remain ambiguous and are rejected.
+                    physical={}
+                    for candidate in candidates:
+                        base=candidate.GetObjectFileHeaderAddress().GetLoadAddress(self.target)
+                        if base!=lldb.LLDB_INVALID_ADDRESS:
+                            physical.setdefault((candidate.GetUUIDString(),base),candidate)
+                    candidates=list(physical.values())
                 if len(candidates) != 1:
                     raise ValueError('provider module identity is missing or ambiguous')
                 module = candidates[0]
@@ -2050,7 +2068,7 @@ class _TaskCatalog:
 
 def _task_context(debugger):
     target = debugger.GetSelectedTarget()
-    context = _contexts.get(str(Path(str(target.GetExecutable())).resolve()))
+    context = _contexts.get(str(Path(_file_spec_path(target.GetExecutable())).resolve()))
     if not context or context.get('schema') not in ('nex.debug/2', 'nex.debug/3', 'nex.private-task-debug/1','nex.private-task-debug/2'):
         raise ValueError('load a task debug manifest')
     if not context.get('_task_marker'):
@@ -2177,7 +2195,7 @@ def _task_optional(value):
 def _task_completion_marker(frame,bp_loc,internal_dict):
     try:
         debugger=frame.GetThread().GetProcess().GetTarget().GetDebugger()
-        target=debugger.GetSelectedTarget();context=_contexts.get(str(Path(str(target.GetExecutable())).resolve()))
+        target=debugger.GetSelectedTarget();context=_contexts.get(str(Path(_file_spec_path(target.GetExecutable())).resolve()))
         if not context or not context.get('_task_plan'):return False
         view=_TaskCatalog(debugger);view.image_address(frame.GetPC(),1,view.runtime_image)
         argument=frame.FindVariable('stop',lldb.eDynamicDontRunTarget);stop=None

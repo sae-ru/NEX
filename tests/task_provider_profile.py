@@ -71,7 +71,7 @@ COUNTS={'profile_app::main':1,'profile_app::local':1,'profile_mid::work':1,
     'profile_unused::unused':0,'profile_unused::identity<str>':0,'profile_leaf::read':0}
 
 
-@unittest.skipUnless(platform.system() in ('Darwin','Linux'),'provider task profiles require native Mach-O/ELF')
+@unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'provider task profiles require a supported native host')
 class TaskProviderProfiles(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -496,7 +496,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
                 'input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'})
             self.assertTrue(row['path'].startswith('provenance/task/%03d-'%index))
             basename=Path(row['path']).name.split('-',1)[1]
-            original=app_folder/('images' if row['kind'].startswith('owned_') else '')/basename
+            original=app_folder/('images' if row['kind'].startswith('owned_') and os.name!='nt' else '')/basename
             raw=(package/row['path']).read_bytes()
             self.assertEqual(raw,original.read_bytes());self.assertEqual(len(raw),row['bytes'])
             self.assertEqual(hashlib.sha256(raw).hexdigest(),row['input_sha256'])
@@ -517,7 +517,7 @@ server fn main()->unit!{task,fs,io}{let outcome:result<str>=leaf::read("text");
         for name in ('pure','unused','leaf','mid','app','other','.nex'):shutil.rmtree(self.root/name)
         for name in ('nex.json','nex.build.json','task.json'):(self.root/name).unlink()
         rawpath=self.root/'packaged-raw.json'
-        self.loaded({'artifact':str(package/'bin/app')},OUTPUT,
+        self.loaded({'artifact':str(package/('bin/app.exe' if os.name=='nt' else 'bin/app'))},OUTPUT,
             {'NEX_RESOURCE_DIR':'/absent','NEX_PROFILE_OUTPUT':str(rawpath)},images=images)
         raw=json.loads(rawpath.read_text());self.assertEqual(raw['schema'],'nex.profile-runtime/3')
         functions={row['name']:row for row in raw['functions']}

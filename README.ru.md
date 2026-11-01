@@ -66,7 +66,14 @@ production UI/Workers в Chromium, Firefox и WebKit. Области прове�
 `.exe` непосредственно в Windows, включая CPU/tasks/files и SQLite.
 Предыдущая [приёмка target-кода](docs/windows-native-acceptance.md) сохраняет
 раздельные результаты WSL producer, Windows execution и CUDA driver prerequisite.
-Полная приёмка Windows-hosted SDK, CUDA из NEX, Metal, Apple NPU, общая GPU-компиляция,
+У [SDL-примера «Крестики-нолики»](examples/tic-tac-toe/README.md) общие исходники
+NEX/SDL и нативные скрипты сборки для Windows, macOS и Linux. GPU и перенос
+автономного пакета проверены в Windows; исполнение на macOS/Linux ещё не проверено.
+Нативный Windows-компилятор прошёл **274/274 групп CTest**.
+CUDA U8 Add/Affine из NEX прошла 35 аппаратных сценариев на RTX 3090;
+[текущий Windows-отчёт](docs/evidence/windows-native-2026-11-01.json)
+отделяет этот результат от полной регрессии и приёмки SDK.
+Полная приёмка Windows-hosted SDK, Metal, Apple NPU, общая GPU-компиляция,
 полная мобильная/UI-поставка и остальные пункты [PLAN](PLAN.md) ещё открыты.
 
 ## Сборка и использование
@@ -98,7 +105,7 @@ nex init /path/to/my-app
 [Архитектура](docs/architecture.md) · [Веб](docs/web.md) ·
 [Сборка проектов](docs/project-build.md) · [Ошибки](docs/exceptions.md) ·
 [Отладка](docs/debugging.md) · [Профилирование](docs/profiling.md) ·
-[Критерии качества](docs/quality.md) · [Передача работы на Windows](docs/windows-handoff.md)
+[Критерии качества](docs/quality.md) · [Передача работы на Windows](docs/windows-handoff-current.md)
 
 Для агентов предусмотрены [llms.txt](llms.txt), [AGENTS.md](AGENTS.md),
 [BOOTSTRAP](llm/BOOTSTRAP.md) и [контракт программирования](llm/SYSTEM_PROMPT.md).

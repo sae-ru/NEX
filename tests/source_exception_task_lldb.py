@@ -36,7 +36,7 @@ int main(int argc,const char *const *argv){
 '''
 
 LLDB_DRIVER = r'''
-import base64,json,time,traceback
+import base64,json,time,traceback,os
 from pathlib import Path
 import lldb
 def session(debugger,command,result,internal_dict):
@@ -107,6 +107,7 @@ def session(debugger,command,result,internal_dict):
                 original=Path(name);temporary=original.with_suffix('.hidden');assert not temporary.exists();original.rename(temporary);hidden.append((original,temporary))
             report['source_absent_during_watch']=all(not original.exists() for original,_ in hidden)
             report['hidden_sources']=config['source_files']
+        if os.name=='nt':run('settings set target.error-path '+json.dumps(str(Path(config['directory'])/'inferior.stderr'),ensure_ascii=False))
         arm();run('run --nex-task-workers 2 --nex-task-steps '+str(config['limit'])+(' --nex-task-timeout-ms 800' if config.get('deadline') else ''))
         process=target.GetProcess()
         while process.GetState()==lldb.eStateStopped:
@@ -152,6 +153,12 @@ def session(debugger,command,result,internal_dict):
             request('continue')
         assert process.GetState()==lldb.eStateExited,(process.GetState(),process.GetExitDescription())
         assert all(counts[line]==len(wants) for line,wants in plans.items()),counts
+        for read in (process.GetSTDOUT,process.GetSTDERR):
+            while True:
+                chunk=read(1048576)
+                if not chunk:break
+                result.PutCString(chunk)
+        if os.name=='nt':result.PutCString((Path(config['directory'])/'inferior.stderr').read_text(encoding='utf-8'))
         report.update(ok=True,exit=process.GetExitStatus(),counts=counts,all_stop=True)
     except Exception:
         report['failure']=traceback.format_exc();result.SetError(report['failure'])
@@ -264,8 +271,10 @@ def main():
         finally:
             try:adapter.close()
             finally:(directory/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
-        raw=json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False)
-        assert 'NEX_PRIVATE_LLDB_CLEANUP' in raw and '\\"ok\\":true' in raw,raw[-2000:]
+        messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
+        output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
+        cleanup=json.loads(next(line.split(' ',1)[1] for line in output.splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
+        assert cleanup=={'ok':True,'live_frames':0,'managed_live':0},output
         report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
     save();debugger=shutil.which('lldb');assert debugger,'actual LLDB required'
     run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])

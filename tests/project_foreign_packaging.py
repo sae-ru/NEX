@@ -1,3 +1,4 @@
+from host_fixture import python_executable
 """Actual archive/shared project packages retain pins and per-app authority."""
 import hashlib
 import json
@@ -123,15 +124,15 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         moved = self.root/'moved package % 🧠'
         package.rename(moved)
         for name, expected in (('first','42\n'),('second','7\n')):
-            p = subprocess.run([str(moved/'apps'/name/'bin/app')], cwd='/', capture_output=True,
-                text=True, timeout=30, env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent',**self.env})
+            p = subprocess.run([str(moved/'apps'/name/fixture.packaging_harness.APP)], cwd='/', capture_output=True,
+                text=True, timeout=30, env=fixture.packaging_harness.deployed_environment(**self.env))
             self.assertEqual((p.returncode,p.stdout), (0,expected), p.stderr)
-        server = self.launch(str(moved/'apps/server/bin/app'),auth,env={'NEX_RESOURCE_DIR':'/absent'})
+        server = self.launch(str(moved/Path('apps/server')/fixture.packaging_harness.APP),auth,env={'NEX_RESOURCE_DIR':'/absent'})
         try:
             self.assertEqual(self.request('/api/answer',token=token)[:2], (200,42))
         finally:
             self.stop(server)
-        server = self.launch(str(moved/'apps/foreign_server/bin/app'),auth,env={'NEX_RESOURCE_DIR':'/absent',**self.env})
+        server = self.launch(str(moved/Path('apps/foreign_server')/fixture.packaging_harness.APP),auth,env={'NEX_RESOURCE_DIR':'/absent',**self.env})
         try:
             self.assertEqual(self.request('/api/answer',token=token)[:2], (200,42))
         finally:
@@ -164,8 +165,8 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertEqual(self.events(),'')
         app=self.root/'package/apps/first'
         profile=self.root/'profile.json'
-        p=subprocess.run([str(app/'bin/app')],capture_output=True,text=True,timeout=30,
-            env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent','NEX_TRACY':'0','NEX_PROFILE_OUTPUT':str(profile),**self.env})
+        p=subprocess.run([str(app/fixture.packaging_harness.APP)],capture_output=True,text=True,timeout=30,
+            env=fixture.packaging_harness.deployed_environment(NEX_TRACY='0',NEX_PROFILE_OUTPUT=str(profile),**self.env))
         self.assertEqual((p.returncode,p.stdout),(0,'42\n'),p.stderr)
         raw=json.loads(profile.read_text())
         self.assertEqual(raw['build']['build_key'],result['components'][0]['build_key'])
@@ -176,7 +177,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         bundle=app/'foreign'/host['libraries']['test']['directory']
         manifest=json.loads((bundle/'manifest.json').read_text())
         (bundle/manifest['entry']).write_bytes(b'changed')
-        p=subprocess.run([str(app/'bin/app')],capture_output=True,text=True,timeout=30,env={**os.environ,**self.env,'NEX_TRACY':'0'})
+        p=subprocess.run([str(app/fixture.packaging_harness.APP)],capture_output=True,text=True,timeout=30,env={**os.environ,**self.env,'NEX_TRACY':'0'})
         self.assertEqual(p.returncode,70)
         self.assertIn('E_FFI_HASH',p.stderr)
         self.assertEqual(self.events(),'')
@@ -192,12 +193,9 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         driver=self.cli('doctor')['native_compiler']
         marker=self.root/'driver-ran'
         wrapper=self.root/'compiler'
-        wrapper.write_text('#!/bin/sh\nif [ ! -e '+shlex.quote(str(marker))+' ]; then\n'+
-            'touch '+shlex.quote(str(marker))+'\nln -sf '+shlex.quote(replacement.name)+' '+shlex.quote(str(source))+'\nfi\n'+
-            'exec '+shlex.quote(driver)+' "$@"\n', newline="\n")
-        wrapper.chmod(0o700)
+        wrapper=python_executable(wrapper,'#!/usr/bin/env python3\nimport os,sys\nfrom pathlib import Path\nmarker=Path('+repr(str(marker))+')\nif not marker.exists():\n marker.write_text("executed")\n source=Path('+repr(str(source))+')\n staged=source.with_name(source.name+".retarget")\n staged.symlink_to('+repr(replacement.name)+')\n os.replace(staged,source)\nos.execv('+repr(driver)+',['+repr(driver)+',*sys.argv[1:]])\n',driver)
         tools=self.root/'toolchain.json'
-        tools.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.cli('doctor')['host'],'compiler':str(wrapper)}), newline="\n")
+        tools.write_text(json.dumps({**harness.host_toolchain_defaults(self.cli('doctor')),'compiler':str(wrapper)}), newline="\n")
         self.manifest['configurations']['release']['toolchain']='toolchain.json'
         (self.root/'nex.build.json').write_text(json.dumps(self.manifest), newline="\n")
         denied=self.package('--component','first',ok=False)

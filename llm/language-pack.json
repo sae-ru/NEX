@@ -1300,8 +1300,8 @@
       "file_or_foreign_tasks": true,
       "file_tasks": true,
       "foreign_tasks": true,
-      "source_provider_images": false,
-      "debugging": false,
+      "source_provider_images": true,
+      "debugging": true,
       "profiling": true,
       "actual_Windows_OS_execution_verified": true,
       "verified_windows_architectures": ["x86_64"],
@@ -1469,7 +1469,7 @@
     "total_process_ram_bound": false,
     "typescript": false,
     "wasm": false,
-    "windows": false,
+    "windows": true,
     "writes": true
   },
   "task_profile_collector": {
@@ -1545,7 +1545,7 @@
     "tracy": false,
     "typescript": false,
     "wasm": false,
-    "windows": false
+    "windows": true
   },
   "task_debugging": {
     "catalog_abi": 1,
@@ -1790,7 +1790,7 @@
     "tracy": false,
     "reference": false,
     "typescript": false,
-    "windows": false,
+    "windows": true,
     "wasm": false,
     "acceptance_pending": [
       "matching delivery regression and installed SDK acceptance",
@@ -1851,7 +1851,7 @@
     "http_task_handlers": false,
     "reference": false,
     "typescript": false,
-    "windows": false,
+    "windows": true,
     "wasm": false,
     "language_migration_required": false,
     "acceptance_pending": [

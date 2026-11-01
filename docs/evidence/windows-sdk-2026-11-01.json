@@ -1,0 +1,80 @@
+{
+  "schema": "nex.windows-sdk-scoped-final/1",
+  "checked_utc": "2026-11-01T12:45:42.673163+00:00",
+  "ok": true,
+  "requires_WSL": false,
+  "compiler_sha256": "672077caf4a468850ea3d67f97879c07e47bd5b39d53f5df87dc3adec4493d01",
+  "actual_cmake_install": true,
+  "full_sdk_acceptance": false,
+  "sdk": "F:\\sae\\NEX\\build\\SDK Windows 31 переезд % 🧠",
+  "relocated_sdk": {
+    "path": "build/local/windows-sdk-relocated31.json",
+    "sha256": "bf00bfb718a26fcb90476054928f8575c939602a33272c37103b3ac0826c055a"
+  },
+  "installed_cuda_helpers": {
+    "path": "build/local/windows-sdk31-cuda.json",
+    "sha256": "c045d65bb3b89f13ae580152401882983e97dacc21b8d6045c965e1de305e827"
+  },
+  "helper_sha256": {
+    "context_probe.cpp": "8649bd150840d103f8e06bcd0c574eea8e7081ee820a086ae246de34117378fe",
+    "main.nex.in": "6d6eb91b9eaa746a32dd09b26fcb2ec95ca4ffb2a1a7ba1270ac08377581af9f",
+    "memcheck.py": "dc5858c059984344bb77b9c7a3e4ed0b62b1023cdd5cd5a58b78daa2934d0606",
+    "module.cpp": "1b6a29227e35b7fc906163690c435fb55de0d4912fe537cf7bdd2c9d398aec40",
+    "prepare.py": "38833e0d6c9fb83475deb82dbd009a1caeb91208083ba17a813dc2d764d463bc",
+    "README.md": "f49ae8be738ace93f5a569c2731dc591a6e2b0a2e92d5a207ad253c5a1c24951",
+    "verify.py": "2f9bddb9770ac8cf0564a412952be7be02e2ec515281936b1fdb4a5fb1150648"
+  },
+  "installed_provider_and_helper_code_matches_source": true,
+  "README_trailing_blank_line_only_difference": true,
+  "hardware": {
+    "path": "build/cuda-sdk31-hardware/report.json",
+    "sha256": "5487650c2147302a9e526c00c9241240dd4219a78a03ae624901952eb9b24eb2",
+    "passed": 35,
+    "full_hardware_corpus": true,
+    "module_sha256": "8f809f4b8e0d79fbc85f9cdff8116f9ddccde046f3a1adf129082f847fe6758e",
+    "manifest_sha256": "fd2f1136465df07dff6e8110d8d432d31f208fd102ed0965ac064cfe08c0e753"
+  },
+  "memcheck": {
+    "path": "build/cuda-sdk31-memcheck/report.json",
+    "sha256": "1668b3a2d677abcf4e938a7b2404d95c78fe61921234375a036c0f179a053ca7",
+    "native_cases": 35,
+    "context_probe": true,
+    "zero_memory_errors_and_leaks": true,
+    "connection_transport": "windows-named-pipes",
+    "deadline_timeout_ms": 2000,
+    "sanitizer_sha256": "216c1608ba381e46062714d5f1c88c2a8d3c5b4cbf9b49902e51da4e06d12933"
+  },
+  "game": {
+    "path": "build/game-sdl-sdk31-evidence/report.json",
+    "sha256": "e96da25cbb75e943b598cce69b01f8d02e769e7d8703af58297b9024bc289630"
+  },
+  "environment": {
+    "PATH": "C:\\WINDOWS/System32",
+    "NEX_PYTHON": "C:/Python314/python.exe"
+  },
+  "external_prerequisites": [
+    "Windows GPU driver and graphics session",
+    "Python for development helpers",
+    "CMake/Ninja for SDL provider source build",
+    "Node for TypeScript checks",
+    "CUDA headers for provider compilation",
+    "NVIDIA Compute Sanitizer for memcheck",
+    "separate native LLDB for debugger workflows"
+  ],
+  "scope": [
+    "relocated Unicode-percent SDK",
+    "minimal PATH",
+    "native tests",
+    "native exe",
+    "static archive",
+    "wasm compilation",
+    "standalone package execution",
+    "installed default compiler detection",
+    "installed full CUDA corpus and memcheck",
+    "all four game batch launchers"
+  ],
+  "not_accepted": [
+    "complete maintained 40-phase SDK qualification",
+    "game runtime on macOS/Linux"
+  ]
+}

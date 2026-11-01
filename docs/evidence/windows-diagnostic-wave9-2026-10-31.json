@@ -1,0 +1,25 @@
+{
+  "schema": "nex.windows-native-diagnostic/1",
+  "environment": "native Windows x64; no WSL",
+  "counts": {
+    "passed": 226,
+    "failed_including_dependencies": 47,
+    "skipped": 1
+  },
+  "total_groups": 274,
+  "elapsed_seconds": 4715.3,
+  "full_windows_regression_accepted": false,
+  "harness_changed_during_run": true,
+  "compiler_sha256": "f31a34f0c50bc17f71d5f8a673d6d38fc525c3e8e19bd1645ace509f0c405b1f",
+  "artifacts": {
+    "windows-wave9-full-ctest.log": "599ee703066a7802a5da225bc826ba119bbe6d1f4238297b9be2b58d13876310",
+    "windows-wave9-full-junit.xml": "134b5ee5d701a8293803f4fee3fae744a2ca09d9a179767a76e2357d223a05fe",
+    "windows-wave9-full-last.log": "3926176b6ea9412ed390e007a6356cf054ab95eb7abe9a24c02b06d141d5d6e8"
+  },
+  "junit_details": {
+    "passed": 226,
+    "failed": 45,
+    "not_run_failed_dependencies": 2,
+    "skipped": 1
+  }
+}

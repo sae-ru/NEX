@@ -43,8 +43,8 @@ class ForeignPackaging(harness.ToolchainCase):
     def closure(self, inventoried=False, counter=False):
         bundle = self.program(SOURCE, {'echo': 'echo', 'unused': 'echo'})
         driver = self.cli('doctor')['native_compiler']
-        dependencies = bundle / 'deps' if inventoried else self.root / 'original dependencies'
-        dependencies.mkdir()
+        dependencies = bundle if inventoried and os.name=='nt' else bundle / 'deps' if inventoried else self.root / 'original dependencies'
+        dependencies.mkdir(exist_ok=dependencies==bundle)
         suffix = '.dll' if os.name == 'nt' else '.dylib' if platform.system() == 'Darwin' else '.so'
         leaf, helper = [dependencies / ('lib' + name + suffix) for name in ('leaf', 'helper')]
         leaf_source = self.root / 'leaf.c'
@@ -215,6 +215,8 @@ class ForeignPackaging(harness.ToolchainCase):
             if platform.system() == 'Darwin':
                 self.assertGreaterEqual(tuple(map(int, report['minimum_macos'].split('.'))),
                                         tuple(map(int, module['minimum_macos'].split('.'))))
+            elif os.name=='nt':
+                self.assertEqual(report['architecture'], module['architecture'])
             else:
                 for key in ('required_glibc_symbols', 'required_glibcxx_symbols'):
                     self.assertGreaterEqual(set(report[key]), set(module[key]))
@@ -235,7 +237,7 @@ class ForeignPackaging(harness.ToolchainCase):
         link = self.root / 'entry-link'
         link.symlink_to(moved / packaging_harness.APP)
         executed = subprocess.run([str(link)], cwd='/', capture_output=True, text=True, timeout=20,
-                                  env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': '/absent', 'NEX_FOREIGN_CONFIG': '/not-an-authority'})
+                                  env=packaging_harness.deployed_environment(NEX_FOREIGN_CONFIG='/not-an-authority'))
         self.assertEqual((executed.returncode, executed.stdout), (0, '42\n'), executed.stderr)
         self.assertEqual(self.events(), '')
         # A changed host cannot make the compiled derived pin accept another one.
@@ -342,7 +344,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         regular = self.host.with_name('regular-host.json')
         self.host.rename(regular)
         self.host.symlink_to(regular)
-        with self.assertRaisesRegex(RuntimeError, 'symbolic link|Too many levels'):
+        with self.assertRaisesRegex(RuntimeError, 'symbolic link|Too many levels|reparse point'):
             self.prepare(self.root / 'symlink-denied')
         self.host.unlink()
         nonregular(self.host, 0o600)
@@ -354,7 +356,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertTrue(self.prepare(self.root / 'exact-limit')['assembly_passed'])
         with self.host.open('ab') as stream:
             stream.write(b' ')
-        with self.assertRaisesRegex(RuntimeError, 'byte limit'):
+        with self.assertRaisesRegex(RuntimeError, 'byte limit|size limit'):
             self.prepare(self.root / 'oversized-denied')
         self.assertEqual(self.events(), '')
 
@@ -386,7 +388,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         self.assertEqual(pack['documents']['foreign_package_schema'], descriptor['preparation_schema'])
 
     def module_identity(self, distinct):
-        first, dependencies = self.closure(counter=True)
+        first, dependencies = self.closure(inventoried=os.name=='nt',counter=True)
         second = self.root / 'second-bundle'
         shutil.copytree(first, second)
         first_pin = self.pin
@@ -427,9 +429,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
         for library in libraries.values():
             bundle = output / 'foreign/bundles' / library['manifest_sha256']
             self.assertEqual((bundle / library['source_identity_file']).read_text(), library['source_manifest_sha256'] + '\n')
-        shutil.rmtree(first)
-        shutil.rmtree(second)
-        shutil.rmtree(dependencies)
+        for directory in dict.fromkeys((first,second,dependencies)):shutil.rmtree(directory)
         self.file.unlink()
         shutil.rmtree(self.root / '.nex')
         result = subprocess.run([str(output / packaging_harness.APP)], cwd='/', capture_output=True, text=True, timeout=20,

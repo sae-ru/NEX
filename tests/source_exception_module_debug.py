@@ -85,7 +85,7 @@ def main():
   report.update(ok=True,native_only=True,LLDB_comparisons=0);save();print(json.dumps({'ok':True,'native_comparisons':report['native_comparisons']}));return
  def identity(file):return run('identity-'+file.parent.name+'-'+file.name,[emitter,'identity',file]).stdout.strip().replace('-','').lower()
  for c in report['cases']:
-  name=c['name'];case=CASES[name];directory=out/name;e=directory/c['topology']/('O'+c['optimization']);arch=directory/c['topology']/'architecture.json';plan=json.loads((out/(name+'-'+c['topology']+'-plan.stdout')).read_text());label=name+'-'+c['topology']+'-O'+c['optimization'];binary=e/'program'
+  name=c['name'];case=CASES[name];directory=out/name;e=directory/c['topology']/('O'+c['optimization']);arch=directory/c['topology']/'architecture.json';plan=json.loads((out/(name+'-'+c['topology']+'-plan.stdout')).read_text());label=name+'-'+c['topology']+'-O'+c['optimization'];binary=e/('program.exe' if os.name=='nt' else 'program')
   cleanup_text=(out/(label+'-execute.stderr')).read_text();cleanup=json.loads(next(line.split(' ',1)[1] for line in cleanup_text.splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')));assert cleanup['ok'] and cleanup['live_frames']==0 and cleanup['registries']==len(plan['components'])
   if platform.system()=='Darwin':
    for file in [binary,*[e/('libimage-'+image+state['suffix']) for image in plan['images'] if image!=plan['application']],*([e/('libnex-private-runtime'+state['suffix'])] if plan['runtime_linkage']=='shared' else [])]:run(label+'-dsym-'+file.name,['dsymutil',file])

@@ -307,7 +307,7 @@ class Bundle:
     def copy_notices(self, directory="share/nex/licenses/sdk", *, output=None):
         output = self.output if output is None else output
         installed_components = []
-        used = {item['component'] for item in self.origins.values()}
+        used = {item['component'] for item in self.origins.values()} | getattr(self,'linked_components',set())
         for component in self.components['components']:
             if component['name'] not in used:
                 continue

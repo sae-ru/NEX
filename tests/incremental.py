@@ -311,6 +311,31 @@ pub fn value(n: i64) -> str {
         self.assertIn('define', Path(restored['llvm']).read_text())
         self.assert_behavior(restored, '6\n15\n')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows rename-handle sharing')
+    def test_runtime_snapshot_remains_readable_until_publisher_closes_rename_handle(self):
+        import ctypes
+        from ctypes import wintypes
+        first, _ = self.build()
+        metadata = json.loads(Path(first['metadata']).read_text())
+        captured = Path(metadata['runtime_source_projection']) / 'nex_external_resource.h'
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                      ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        kernel.CreateFileW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel.CloseHandle.restype = wintypes.BOOL
+        # A publisher retains DELETE access briefly after the new name becomes
+        # visible. Readers must share deletion even when they only read bytes.
+        handle = kernel.CreateFileW(str(captured), 0x10000, 7, None, 3, 0x80, None)
+        self.assertNotEqual(handle, wintypes.HANDLE(-1).value, ctypes.get_last_error())
+        try:
+            self.left.write_text(self.left.read_text().replace('n + 1;', 'n + 2;'), newline="\n")
+            changed, _ = self.build()
+            self.assertEqual((changed['compiled_modules'], changed['reused_modules']), (1, 2))
+            self.assert_behavior(changed, '7\n15\n')
+        finally:
+            self.assertTrue(kernel.CloseHandle(handle))
+
     def test_concurrent_builds_share_verified_units_with_unicode_paths(self):
         common_dir = self.root / 'lib Юникод%'
         common_dir.mkdir()

@@ -68,7 +68,7 @@ def reader_module():
         else:sys.modules['lldb']=previous
 
 
-@unittest.skipUnless(platform.system() in ('Darwin','Linux'),'provider debugger requires actual Mach-O/ELF LLDB')
+@unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'provider debugger requires a supported native LLDB host')
 class TaskProviderDebugging(harness.ToolchainCase):
     def setUp(self):
         super().setUp();retained=os.environ.get('NEX_TASK_PROVIDER_DEBUG_OUTPUT')
@@ -137,8 +137,8 @@ class TaskProviderDebugging(harness.ToolchainCase):
         debugger=shutil.which('lldb');self.assertTrue(debugger,'actual LLDB with Python is required')
         manifest=json.loads(Path(session['manifest']).read_text())
         argv=[debugger,'--no-lldbinit','--batch',session['launch']['program']]
-        for command in ['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter']),
-            'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(harness.NEX),*commands]:argv+=['-o',command]
+        for command in ['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter'],ensure_ascii=False),
+            'nex-load-debug '+json.dumps(session['manifest'],ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False),*commands]:argv+=['-o',command]
         run=self.process(argv,env=env,timeout=180)
         (self.root/(label+'.stdout')).write_text(run.stdout, newline="\n");(self.root/(label+'.stderr')).write_text(run.stderr, newline="\n")
         self.assertEqual(run.returncode,0,run.stdout+run.stderr)
@@ -162,6 +162,31 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertEqual(expression['value'],'42');self.assertEqual(expression['source_identity'],frame['source_identity'])
         self.assertIn('exited with status = 0',run.stdout)
 
+    @unittest.skipUnless(os.name=='nt','Windows long-path debugger contract')
+    def test_windows_long_paths_preserve_real_cli_dap_provider_identity(self):
+        source=self.root;entries=list(source.iterdir())
+        directory=source/('long native project 🧠 '+90*'x');directory.mkdir()
+        for entry in entries:
+            if entry.is_dir():shutil.copytree(entry,directory/entry.name)
+            else:shutil.copy2(entry,directory/entry.name)
+        self.root=directory;self.file=directory/'app/main.nex';self.mixed()
+        _,session,_,manifest=self.prepare()
+        self.assertGreater(max(len(row['path']) for row in manifest['owned_images']),260)
+        observed,rows=self.lldb(session,['nex-task-break function debug_leaf::work','run',
+            'nex-task-stack','nex-eval input+1','breakpoint disable','continue'])
+        self.assertEqual(next(row['value'] for row in rows if row.get('schema')=='nex.task-expression/2'),'42')
+        self.assertIn('exited with status = 0',observed.stdout)
+        def body(adapter):
+            tasks=adapter.request('threads');selected=tasks['nex']['selected'];self.assertTrue(selected)
+            stack=adapter.request('stackTrace',{'threadId':selected})
+            self.assertEqual(stack['stackFrames'][0]['name'],'debug_leaf::work')
+            watch=adapter.request('evaluate',{'expression':'input+1','frameId':stack['stackFrames'][0]['id'],'context':'watch'})
+            self.assertEqual(watch['nex']['value'],'42')
+            adapter.request('setFunctionBreakpoints',{'breakpoints':[]})
+            adapter.request('continue',{'threadId':selected})
+            self.assertEqual(adapter.event('exited')['exitCode'],0)
+        self.dap(session,'debug_leaf::work',body)
+
     def dap(self,session,breakpoint,body):
         from debugging import DAP
         manifest=json.loads(Path(session['manifest']).read_text());backend=shutil.which('lldb-dap')
@@ -176,8 +201,8 @@ class TaskProviderDebugging(harness.ToolchainCase):
             adapter.request('initialize',{'clientID':'nex-provider-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
             launch=adapter.send('launch',{'program':session['launch']['program'],'cwd':str(self.root),'stopOnEntry':False,
                 'nexTaskDebug':True,'initCommands':['settings set target.disable-aslr false',
-                    'command script import '+json.dumps(manifest['formatter']),
-                    'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(harness.NEX)]})
+                    'command script import '+json.dumps(manifest['formatter'],ensure_ascii=False),
+                    'nex-load-debug '+json.dumps(session['manifest'],ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False)]})
             adapter.event('initialized');points=adapter.request('setFunctionBreakpoints',{'breakpoints':[{'name':breakpoint}]})
             self.assertTrue(points['breakpoints'][0]['verified']);adapter.request('configurationDone');adapter.response(launch)
             stopped=adapter.event('stopped');self.assertTrue(stopped['allThreadsStopped']);self.assertNotIn('threadId',stopped)
@@ -224,7 +249,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         owner=next(image for image in view['images'] if image['component']=='unused')
         # A retained step is compiler-private; its actual owner image must
         # contain its local code symbol, without exporting the step as an API.
-        symbols=self.process(['nm','-a',owner['path']])
+        symbols=self.process([shutil.which('llvm-nm') or 'nm','-a',owner['path']])
         self.assertEqual(symbols.returncode,0,symbols.stderr)
         owned=[line.split() for line in symbols.stdout.splitlines()
                if len(line.split())>=2 and line.split()[-2] in ('t','T','w','W')

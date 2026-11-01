@@ -1,3 +1,31 @@
+# Native Windows acceptance — 2026-11-01
+
+Toolchain **0.152.1**, language **0.27**, task ABI **7**. The native Windows x64
+compiler and applications run without WSL. All **274 CTest groups passed**, with
+zero failed/skipped outer groups, on unchanged pinned compiler/resources/harness.
+The same run passed all **35 CUDA hardware cases** on RTX 3090. All-target build
+also passed. Inner Python reporting contains 1018 cases and 48 explicit skips;
+platform-only and non-live methods are itemized in the [final evidence](docs/evidence/windows-native-2026-11-01.json).
+
+The [relocated Windows SDK](docs/evidence/windows-sdk-2026-11-01.json) passed native
+EXE/static/Wasm/package checks and installed CUDA helper discovery, all 35 hardware
+cases and 35 native cases plus a context probe under NVIDIA memcheck. The latter
+uses local Named Pipes, zero memory errors/leaks and the original 2000 ms deadline.
+This is scoped SDK verification; the maintained complete 40-phase distribution
+qualification remains pending on Windows.
+
+The [portable Tic-Tac-Toe example](examples/tic-tac-toe/README.md) includes NEX rules,
+SDL3 GUI/GPU, `.bat`/`.sh` build/test/run/package scripts and license notices.
+All four Windows batch launchers, native/reference/TypeScript, real GPU readback,
+a five-move game and a relocated source-absent standalone package passed from the
+installed SDK. macOS/Linux execution of these shared sources remains unverified.
+
+Continue from [the current Windows handoff](docs/windows-handoff-current.md).
+It records exact pins, local SDK paths, reproduction commands and remaining scopes.
+This delivery uses branch `codex/windows-native-acceptance`; Git history identifies
+the publication commit. The historical Mac and earlier failed Windows receipts
+below remain separate evidence.
+
 # Logical debugger resume delivery — 0.152.1 / language 0.27
 
 The [matching Mac SDK receipt](docs/releases/0.152.1.json) records 285/285 groups

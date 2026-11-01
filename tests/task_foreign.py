@@ -36,6 +36,8 @@ class TaskForeign(harness.ToolchainCase):
         task=self.cli('task',self.file,'--kind','init',env=self.env)
         for check in task['checks']:
             if check['kind']=='test':check['foreign_hash']=self.catalogue_report['hash']
+            # Replayed release builds use a fresh captured-resource root and a cold cache.
+            if os.name=='nt' and check['kind']=='build':check['timeout_seconds']=300
         self.save(task)
         return task
 
@@ -43,7 +45,7 @@ class TaskForeign(harness.ToolchainCase):
         self.taskfile.write_text(json.dumps(task), newline="\n")
 
     def task(self,kind='run',*args,**kwargs):
-        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=240,**kwargs)
+        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=900 if os.name=='nt' else 240,**kwargs)
 
     def add(self,task,check):
         check.update(program='app')
@@ -73,7 +75,7 @@ class TaskForeign(harness.ToolchainCase):
     def test_reviewed_execution_and_replay_after_sources_and_original_bundle_are_deleted(self):
         task=self.scaffold()
         self.add(task,{'id':'observe','kind':'run','target':'native','entry':'taskffi::main','expect':{'stdout':'42\n','exit_code':0}})
-        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
+        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','timeout_seconds':180 if os.name=='nt' else 60,'scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
         self.save(task);checked=self.task('check')
         self.assertEqual(checked['foreign_catalogue']['hash'],self.catalogue_report['hash']);self.assertEqual(self.events(),'')
         result=self.task('run','--task-hash',checked['task_hash'])
@@ -86,7 +88,7 @@ class TaskForeign(harness.ToolchainCase):
         self.assertIn('inputs/foreign/bundles/'+self.pin+'/module',index['files'])
         for label in ('reference','native'):
             command=json.loads((folder/('artifacts/observe/commands/'+label+'.json')).read_text())['command']
-            self.assertIn('--foreign',command);self.assertIn(str(captured/'host.json'),command)
+            self.assertIn('--foreign',command);self.assertEqual(Path(command[command.index('--foreign')+1]).resolve(),(captured/'host.json').resolve())
         command=json.loads((folder/'artifacts/build-native/commands/build.json').read_text())['command']
         self.assertNotIn('--foreign',command)
         approved=self.root/'current-operator';approved.mkdir();shutil.copytree(self.root/'bundle',approved/'bundle')
@@ -95,7 +97,7 @@ class TaskForeign(harness.ToolchainCase):
         shutil.rmtree(self.root/'bundle');self.marker.unlink()
         self.assertEqual(self.cli('task',receipt,'--kind','replay',ok=False,env=self.env)['code'],'E_TASK_FOREIGN')
         self.assertEqual(self.events(),'')
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
         self.assertTrue(replay['ok']);self.assertEqual(replay['task_hash'],checked['task_hash'])
         self.assertEqual(replay['foreign_catalogue'],result['foreign_catalogue']);self.assertNotEqual(replay['output'],result['output'])
 
@@ -131,7 +133,7 @@ class TaskForeign(harness.ToolchainCase):
             for directory,dirs,files in os.walk(harness.REPO/name):
                 dirs[:]=[n for n in dirs if n not in excluded]
                 resources+=sum((Path(directory)/name).is_file() for name in files)
-        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py'))
+        resources+=sum((harness.REPO/name).is_file() for name in ('tools/app_bundle.py','tools/sdk_bundle.py','tools/foreign_bundle.py','tools/server_workload.py','tools/windows_pe.py','tools/windows_files.py'))
         # Task + program, two catalogue files, and three original bundle members.
         remaining=8192-resources-7
         original=json.loads((self.root/'bundle/manifest.json').read_text());index=0
@@ -156,7 +158,7 @@ class TaskForeign(harness.ToolchainCase):
         result=self.task();receipt=Path(result['output'])
         manifest=json.loads((receipt.parent/'inputs/manifest.json').read_text())
         self.assertEqual(len(manifest['files']),8192)
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
         self.assertTrue(replay['ok'])
 
     def test_capture_tampering_is_rejected_even_when_the_receipt_is_rehashed(self):
@@ -165,7 +167,8 @@ class TaskForeign(harness.ToolchainCase):
         policy['libraries']['test']['exports']=['echo'];captured.write_text(json.dumps(policy), newline="\n")
         def digest(path):
             target=self.root/'hash-fixture';shutil.copyfile(path,target);target.chmod(0o755)
-            config=self.root/'hash-config.json';config.write_text(json.dumps({'schema':'nex.toolchain/1','target':self.cli('doctor')['host'],'compiler':str(target)}), newline="\n")
+            description=harness.host_toolchain_defaults(self.cli('doctor'));description['compiler']=str(target)
+            config=self.root/'hash-config.json';config.write_text(json.dumps(description), newline="\n")
             return self.cli('toolchain',config)['inputs']['files'][str(target.resolve())]['hash']
         manifest=folder/'inputs/manifest.json';index=json.loads(manifest.read_text())
         index['files']['inputs/foreign/host.json']={'hash':digest(captured),'bytes':captured.stat().st_size}
@@ -322,7 +325,7 @@ server fn main()->unit!{ffi,io}{print(l::invoke());}server test fn checks()->uni
     def project_wait_task(self,mode,timeout):
         configuration='profile' if mode=='profile' else 'debug'
         scaffold=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration',configuration)
-        task=copy.deepcopy(scaffold);task['checks']=[c for c in scaffold['checks'] if c['kind']=='build'];task['requirements']=[r for r in scaffold['requirements'] if r['checks']==['build-native']]
+        task=copy.deepcopy(scaffold);task['checks']=[{**c,'timeout_seconds':300} for c in scaffold['checks'] if c['kind']=='build'];task['requirements']=[r for r in scaffold['requirements'] if r['checks']==['build-native']]
         check={'id':'wait','kind':mode,'target':'native','configuration':configuration,'timeout_seconds':timeout}
         if mode=='test':check['tests']=next(c['tests'] for c in scaffold['checks'] if c['kind']=='test')
         elif mode=='run':check.update(entry='taskffi::main',expect={'stdout':'42\n','exit_code':0})

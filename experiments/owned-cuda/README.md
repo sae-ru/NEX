@@ -60,3 +60,47 @@ On 2026-10-31, the full 35-case matrix passed on a native Windows RTX 3090. The
 receipt belongs to its exact pinned compiler and module; it is not acceptance
 of unrelated Windows regressions or another provider build. Full Windows CTest
 and all-target build results are recorded separately.
+
+## NVIDIA Compute Sanitizer
+
+Replay the exact retained executables from a successful full hardware receipt:
+
+```powershell
+python experiments/owned-cuda/memcheck.py `
+  --hardware-report build/my-cuda-verification/report.json `
+  --output build/my-cuda-memcheck `
+  --sanitizer "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.1/compute-sanitizer/compute-sanitizer.exe"
+```
+
+The runner verifies executable/provider hashes, all 35 native cases, zero CUDA
+memory errors/leaks, allocation/free balance, and the physical context probe.
+The Windows runner selects local Named Pipes with
+`NV_COMPUTE_SANITIZER_LOCAL_CONNECTION_OVERRIDE=named-pipes`, avoiding a TCP
+debugging channel and its Windows Firewall prompt. This is an NVIDIA-supported
+[local connection option](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html#environment-variables).
+The deadline case retains its ordinary 2000 ms budget and still requires all
+32 kernels to be queued with pending work and physically drained before the
+error exit. `--deadline-ms` is available for explicitly recorded instrumented
+budgets; it does not alter the original hardware acceptance case.
+The installed sanitizer is an external prerequisite, not part of the SDK.
+
+## Installed Windows SDK
+
+CMake installs these sources and helpers in `share/nex/tools/owned-cuda`, next
+to the owned-opencl corpus used by the common verifier. From PowerShell:
+
+```powershell
+$Sdk='F:/path/to/nex-sdk'
+python "$Sdk/share/nex/tools/owned-cuda/prepare.py" --output F:/work/my-cuda
+python "$Sdk/share/nex/tools/owned-cuda/verify.py" `
+  --compiler "$Sdk/bin/nex.exe" --project F:/work/my-cuda `
+  --output F:/work/my-cuda-hardware
+python "$Sdk/share/nex/tools/owned-cuda/memcheck.py" `
+  --hardware-report F:/work/my-cuda-hardware/report.json `
+  --output F:/work/my-cuda-memcheck
+```
+
+Use new output directories. Installed preparation discovers its SDK compiler;
+`--compiler` overrides it explicitly. Python, matching CUDA headers and a Windows
+NVIDIA driver remain prerequisites. Compute Sanitizer is required for memcheck.
+The examples and scripts compile and execute native Windows PE programs.

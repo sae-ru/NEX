@@ -1,5 +1,6 @@
 #include "nex_task_protocol.h"
 #include "nex/native_images.h"
+#include "nex/native_file.h"
 #include "nex/task_frontend.h"
 #include "nex/native_toolchain.h"
 #include "nex/operations.h"
@@ -17,6 +18,11 @@
 #include <cstdlib>
 #include <filesystem>
 #include <set>
+#include <cstddef>
+#include <cstring>
+#ifdef _WIN32
+#include "nex_platform.h"
+#endif
 
 namespace nex {
 namespace {
@@ -52,7 +58,8 @@ void copyCaptured(const fs::path &from,const fs::path &to){
   fs::permissions(staged.path,permissions);
   // The sibling stage is on the destination filesystem. Rename keeps existing
   // processes on their old inode while future loads see the complete new file.
-  fs::rename(staged.path,to);
+  if(auto error=replaceNativeFile(staged.path,to))
+    fail("cannot atomically replace captured image while preserving existing readers: "+error.message());
 }
 struct Captured {
   const NativeImageInput *input;
@@ -162,7 +169,11 @@ void link(const NativeToolchain &tools,const fs::path &projection,const fs::path
   if(!tools.linker.empty())args.push_back("--ld-path="+tools.linker);
   if(windows){
     args.insert(args.end(),{"-static","-Wl,--build-id","-Wl,--no-insert-timestamp","-Wl,--export-all-symbols"});
-    if(shared)args.insert(args.end(),{"-shared","-Xlinker","--out-implib","-Xlinker",output.string()+".a"});
+    if(shared){
+      // The OpenSSL assembly alias is private to its static archive. Exporting
+      // it from the common NEX DLL conflicts with a server's own crypto link.
+      args.insert(args.end(),{"-shared","-Wl,--exclude-symbols,CRYPTO_memcmp","-Xlinker","--out-implib","-Xlinker",output.string()+".a"});
+    }
     else {
       args.push_back("-Wl,--stack,8388608");
       auto bin=fs::path(tools.compiler).parent_path();
@@ -431,6 +442,7 @@ NativeImageResults buildNativeImages(const std::string &directory,const std::vec
     if(taskDebugging){linkRecord["schema"]="nex.native-image-inputs/4";linkRecord["task_debug_catalogs"]=Array(debugCatalogInventory);linkRecord["task_debug_sources"]=Array(debugSourceInventory);}
     auto meta=Object(stage.build);meta["key"]=key;meta["kind"]=server?"http_server":input.kind;meta["deferred_link"]=false;meta["compilation"]=built.compilation;meta["notices"]=built.notices;meta["completion_schema"]=sharedTasks?"nex.native-completion/5":"nex.native-completion/3";meta["completion_inputs"]=Array(completion);
     meta["stage_runtime_requirements"]=JSON(*stage.build.get("runtime_requirements"));meta["runtime_requirements"]=Object(requirements);
+    meta["static_link_inputs"]=nativeStaticLinkInputs(tools,storage,foreign,server);
     meta["runtime_source_projection"]=projection.string();meta["runtime_inputs"]=JSON(*runtimeSeed.get("inputs"));meta["runtime_components"]=JSON(*runtimeSeed.get("components"));meta["shared_runtime_key"]=runtimeKey;
     if(taskProfiling){meta["completion_schema"]="nex.native-completion/6";meta["completion_mode"]=shared?"shared-image":"shared-application";meta["task_profile_catalog"]=nativeTaskProfileInfo(rootCatalog).catalogHash;}
     if(taskDebugging){meta["completion_schema"]="nex.native-completion/7";meta["completion_mode"]=shared?"shared-image":"shared-application";meta["task_debug_metadata_hash"]=nativeTaskDebugMetadataHash(rootDebug,rootSources);meta["task_debug_abi"]=2;meta["task_debug_catalog"]=nativeTaskDebugInfo(rootDebug,rootSources).catalogHash;meta["task_debug_sources"]=nativeTaskDebugInfo(rootDebug,rootSources).sourceUnionHash;}

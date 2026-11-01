@@ -1,4 +1,4 @@
-from host_fixture import run_native, probe_dll_inputs
+from host_fixture import run_native, probe_dll_inputs, deployed_environment
 """Public CLI migration of all genuine SDK1335 stream and mixed FFI revisions."""
 import argparse,copy,json,os,re,sqlite3,subprocess,tempfile,time
 from collections import Counter
@@ -105,7 +105,7 @@ try:
     path=project/n;other=path.with_name(path.name+'.hidden');path.rename(other);hidden.append((path,other))
    native_marker=root/(label+'-native.events')
    try:
-    native=run(label+'-source-absent-native',[binary,*(['--nex-foreign',host] if host else [])],env={'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(project/'native'),'NEX_FILES_WRITE':'1','NEX_TYPED_RESOURCE_MARKER':str(native_marker)},expected=row['expected_value']);assert native.stdout==native.stderr==''
+    native=run(label+'-source-absent-native',[binary,*(['--nex-foreign',host] if host else [])],env=deployed_environment(NEX_FILES_ROOT=str(project/'native'),NEX_FILES_WRITE='1',NEX_TYPED_RESOURCE_MARKER=str(native_marker)),expected=row['expected_value']);assert native.stdout==native.stderr==''
    finally:
     for path,other in hidden:other.rename(path)
    if host:

@@ -5,6 +5,31 @@ from functools import lru_cache
 from pathlib import Path
 
 
+def deployed_environment(**extra):
+    result={'PATH':os.path.join(os.environ.get('SystemRoot','C:/Windows'),'System32') if os.name=='nt' else '/usr/bin:/bin','NEX_RESOURCE_DIR':'/absent'}
+    if os.name=='nt':
+        for key in ('SystemRoot','WINDIR','SystemDrive','TEMP','TMP','USERPROFILE','LOCALAPPDATA'):
+            if key in os.environ:result[key]=os.environ[key]
+    result.update(extra)
+    return result
+
+
+def shared_read(path):
+    """Keep a physical file open while permitting an atomic Windows replacement."""
+    if os.name!='nt':return open(path,'rb')
+    import ctypes as C
+    from ctypes import wintypes as W
+    import msvcrt
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.CreateFileW.argtypes=[W.LPCWSTR,W.DWORD,W.DWORD,C.c_void_p,W.DWORD,W.DWORD,W.HANDLE]
+    kernel.CreateFileW.restype=W.HANDLE;kernel.CloseHandle.argtypes=[W.HANDLE]
+    handle=kernel.CreateFileW(os.fspath(path),0x80000000,7,None,3,0x80,None)
+    if handle==C.c_void_p(-1).value:raise C.WinError(C.get_last_error())
+    try:fd=msvcrt.open_osfhandle(handle,os.O_RDONLY|os.O_BINARY)
+    except BaseException:kernel.CloseHandle(handle);raise
+    return os.fdopen(fd,'rb')
+
+
 def python_executable(path, source, compiler):
     """Run the same Python fixture through a real executable on Windows."""
     if os.name != 'nt':
@@ -51,6 +76,11 @@ def python_executable(path, source, compiler):
         target=Path(compiler).parent/name;alias=path.parent/name
         if target.is_file() and not alias.exists():alias.symlink_to(target)
     return path
+
+
+def temporary_environment(directory):
+    value=str(directory)
+    return {name:value for name in ('TEMP','TMP','TMPDIR','TEMPDIR')}
 
 
 def exit_code(value):
@@ -161,6 +191,16 @@ def run_native(arguments, *args, **kwargs):
                 command[output_index]=str(staged);link_capture=(staged,requested)
             command=[str(Path(value).with_name(Path(value).name+'.a'))
                      if index!=output_index and value.lower().endswith('.dll') and Path(value+'.a').is_file() else value for index,value in enumerate(command)]
+            search=[]
+            for index,value in enumerate(command):
+                if value=='-L' and index+1<len(command):search.append(Path(command[index+1]))
+                elif value.startswith('-L') and len(value)>2:search.append(Path(value[2:]))
+            for index,value in enumerate(command):
+                if not value.startswith('-l') or len(value)<=2:continue
+                for directory in search:
+                    if (directory/('lib'+value[2:]+'.a')).is_file():break
+                    archive=directory/('lib'+value[2:]+'.dll.a')
+                    if archive.is_file():command[index]=str(archive);break
             for value in ('-static','-Wl,--stack,8388608','-lntdll','-lbcrypt','-ladvapi32',
                           '-lcrypt32','-lws2_32','-lsecur32','-ldbghelp','-ldwmapi'):
                 if value not in command:command.append(value)
@@ -169,6 +209,7 @@ def run_native(arguments, *args, **kwargs):
                 command+=['-Wl,--export-all-symbols','-Xlinker','--out-implib','-Xlinker',
                           str(output.parent/('lib'+output.stem+'.dll.a'))]
             if '-shared' in command:
+                if '-Wl,--exclude-symbols,CRYPTO_memcmp' not in command:command.append('-Wl,--exclude-symbols,CRYPTO_memcmp')
                 if any(value.endswith('entry.def') for value in command):command.append('-Wl,--export-all-symbols')
                 index=command.index('-o')+1;output=Path(command[index])
                 command+=['-Xlinker','--out-implib','-Xlinker',str(output)+'.a']
@@ -220,6 +261,58 @@ def host_cpp(source):
         header=(Path(__file__).resolve().parent/'host_dlfcn.h').as_posix()
         source=source.replace('#include <dlfcn.h>','#include "'+header+'"')
     return source
+
+
+def native_task_definitions(listing, image, compiler):
+    """Count physical code definitions, excluding PE import jump thunks."""
+    import platform
+    import re
+    import subprocess
+    names=re.findall(r'^([^ ]+__task_step) ',listing,re.M)
+    if os.name=='nt':
+        tool=Path(compiler).parent/'llvm-readobj.exe'
+        result=subprocess.run([str(tool),'--coff-imports',str(image)],capture_output=True,text=True,timeout=60)
+        if result.returncode:raise RuntimeError(result.stdout+result.stderr)
+        imports=set(re.findall(r'^\s*Symbol: (\S+) \(\d+\)\s*$',result.stdout,re.M))
+        return [name for name in names if name not in imports]
+    return [name[1:] if name.startswith('_') else name for name in names] if platform.system()=='Darwin' else names
+
+
+def needed_windows_dlls(archives, compiler):
+    """Retain each real import descriptor without whole-archiving null sentinels."""
+    import re
+    import subprocess
+    result=[]
+    for archive in archives:
+        read=subprocess.run([str(Path(compiler).parent/'llvm-nm.exe'),'--defined-only','--format=posix',str(archive)],capture_output=True,text=True,timeout=60)
+        if read.returncode:raise RuntimeError(read.stdout+read.stderr)
+        names=sorted(re.findall(r'^(__imp_\S+) [A-Z] ',read.stdout,re.M))
+        if not names:raise ValueError('expected real imports in the DLL archive: '+str(archive))
+        names=sorted(names,key=lambda name:('__task_code_address' not in name,name))
+        result+=['-Xlinker','--undefined='+names[0],str(archive)]
+    return result
+
+
+def shared_profile_objects(objects, flags, compiler, runtime, run):
+    """Use the production PE host-identity bridge only in the shared runtime."""
+    if os.name!='nt':return objects
+    import hashlib
+    import json
+    result=[]
+    for obj in objects:
+        if obj.name!='nex_profile.cpp.o':result.append(obj);continue
+        target=obj.with_name('nex_profile.windows-shared.cpp.o')
+        options=[*flags,'-DNEX_SHARED_WINDOWS_RUNTIME']
+        if '-DNEX_SHARED_PROFILE_RUNTIME' not in options:options.append('-DNEX_SHARED_PROFILE_RUNTIME')
+        recipe={'compiler':hashlib.sha256(Path(compiler).read_bytes()).hexdigest(),
+                'source':hashlib.sha256((runtime/'nex_profile.cpp').read_bytes()).hexdigest(),
+                'flags':options,'headers':{str(p.relative_to(runtime)):hashlib.sha256(p.read_bytes()).hexdigest() for p in runtime.rglob('*') if p.is_file() and p.suffix in ('.h','.hpp')}}
+        stamp=target.with_suffix('.recipe.json')
+        if not target.is_file() or not stamp.is_file() or json.loads(stamp.read_bytes())!=recipe:
+            run('compile-shared-profile-identity',[compiler,*options,'-c',runtime/'nex_profile.cpp','-o',target])
+            stamp.write_text(json.dumps(recipe,sort_keys=True),encoding='utf-8')
+        result.append(target)
+    return result
 
 
 def probe_dll_inputs(probe, directory):

@@ -23,7 +23,7 @@ def main():
     if os.name!='nt':parser.error('use native Windows Python')
     compiler=args.compiler.resolve(strict=True);project=args.project.resolve(strict=True);out=args.output.resolve()
     out.mkdir(parents=True,exist_ok=False)
-    shared=runpy.run_path(str(ROOT/'experiments/owned-opencl/verify.py'))
+    shared=runpy.run_path(str(Path(__file__).resolve().parents[1]/'owned-opencl/verify.py'))
     cases=dict(shared['CASES'])
     # The arithmetic and lifetime corpus is shared with the independently
     # accepted owned-device implementation. Its old receipts are not reused.

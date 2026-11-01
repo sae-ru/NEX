@@ -167,9 +167,9 @@ int main(int argc,const char *const *argv){auto before=nexrt::liveObjects.load()
  if 'owned-file-resource' in selected:
   original=out/'owned-file-resource/shared-fixed/O2';moved=out/'relocated-application';moved.mkdir()
   for file in original.iterdir():
-   if file.is_file() and (file.name=='program' or file.name.endswith(suffix)):copy_link_image(file,moved/file.name);shutil.copymode(file,moved/file.name)
+   if file.is_file() and (file.name in ('program','program.exe') or file.name.endswith(suffix)):copy_link_image(file,moved/file.name);shutil.copymode(file,moved/file.name)
   shutil.copytree(bundle,moved/'bundle');copy_link_image(catalog,moved/'host.json');files=moved/'files';files.mkdir();(files/'input').write_text('abcdef', newline="\n");events=files/'events';hidden=original.with_name(original.name+'.hidden');original.rename(hidden)
-  try:result=run('relocated-shared-execute',[moved/'program','--nex-foreign',moved/'host.json'],{**os.environ,'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'missing-sdk'),'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)},allowed=(42,))
+  try:result=run('relocated-shared-execute',[moved/'program','--nex-foreign',moved/'host.json'],{**os.environ,'PATH':str(Path(os.environ['SystemRoot'])/'System32') if os.name=='nt' else '/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'missing-sdk'),'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)},allowed=(42,))
   finally:hidden.rename(original)
   cleanup=next(json.loads(line.split(' ',1)[1]) for line in result.stderr.splitlines() if line.startswith('NEX_PRIVATE_MODULE_CLEANUP '));assert cleanup=={'ok':True,'managed_live':0,'runtime_finish':True,'file_delta':0,'runtime_images':1};observed=events.read_text();assert observed.count('F')==observed.count('X')==1;report['relocated'].append({'original_images_absent':True,'common_runtime_images':1,'foreign_bundle_copied':True,'exit':42,'passed':True})
  report.update(ok=True,source_programs=len(selected),native_comparisons=len(report['cases']),modes=['static','shared-fixed'],optimizations=['O0','O2'],common_runtime_count=1,actual_compiled_native=True);save();print(json.dumps({'ok':True,'programs':len(selected),'native_comparisons':len(report['cases']),'report':str(out/'report.json')}))

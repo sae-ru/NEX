@@ -1,0 +1,21 @@
+{
+  "schema": "nex.windows-provider-debug-evidence/1",
+  "date": "2026-11-01",
+  "ok": true,
+  "scope": "All seven actual Windows provider debugging tests: source/static/shared/mixed, pure helper frames, CLI/DAP control, stale selection, channel/File inspection, checked negative manifests, source-deleted relocated package and replay",
+  "cases": 7,
+  "compiler": "build/windows-wave19-cohort/nex.exe",
+  "compiler_sha256": "3f948a38fae7a045377106c84157afff8d25d196f63b76c91bbb6b0adc4bbd73",
+  "requires_WSL": false,
+  "full_windows_regression_accepted": false,
+  "evidence": [
+    {
+      "path": "build/local/windows-provider-debug19d.log",
+      "sha256": "fdc3ef04e1949de4633c37b6bc124efd5daca0cb68e40a00fbbef8a9b2c54748"
+    },
+    {
+      "path": "build/deps/windows-debugger23-source-d/clang64/nex-debugger-build.json",
+      "sha256": "14f70b48d73fe54bb425bb580d904c99a4cf09048753e8eedb047a6a6a0a7f42"
+    }
+  ]
+}

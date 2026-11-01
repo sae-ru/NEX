@@ -1,5 +1,5 @@
 """Fixed startup-linked task images: real ownership, runtime and retained delivery."""
-from host_fixture import run_native
+from host_fixture import run_native, shared_read
 import copy
 import ctypes
 import hashlib
@@ -11,12 +11,13 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 import support as harness
 import task_static_provider as fixture
 
 
-@unittest.skipUnless(platform.system() in ('Darwin', 'Linux'), 'fixed task images require Mach-O/ELF')
+@unittest.skipUnless(platform.system() in ('Darwin', 'Linux', 'Windows'), 'fixed task images require a supported native host')
 class SharedTaskProviders(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -78,6 +79,14 @@ class SharedTaskProviders(harness.ToolchainCase):
     functions = fixture.StaticTaskProviders.functions
     symbols = fixture.StaticTaskProviders.symbols
 
+    def windows_runtime_addresses(self,artifacts,symbol):
+        setup='import ctypes,sys;sys.path.insert(0,'+repr(str(Path(__file__).resolve().parent))+');from windows_loader_fixture import import_address;'
+        body=setup+'first=ctypes.CDLL(sys.argv[1]);second=ctypes.CDLL(sys.argv[2]);assert import_address(first,sys.argv[3])==import_address(second,sys.argv[3])'
+        # PE lookup is local to the DLL. Inspect the actual imported source-site
+        # runtime entry instead of ELF's recursive dlsym dependency lookup.
+        result=self.process([sys.executable,'-c',body,artifacts['leaf']['artifact'],artifacts['mid']['artifact'],symbol+'_at'])
+        self.assertEqual(result.returncode,0,result.stderr)
+
     def simple(self,provider,application,exports=()):
         (self.root/'leaf/value.nex').write_text('module provider_leaf;'+provider, newline="\n")
         self.file.write_text('module provider_app;import "../leaf/value.nex" as leaf;'+application, newline="\n")
@@ -122,6 +131,15 @@ class SharedTaskProviders(harness.ToolchainCase):
         self.assertEqual(sum(row['kind']=='runtime' for row in images),1)
         self.assertEqual(len({Path(row['path']).name for row in images}),len(images))
         expected={Path(row['path']).name for row in images}
+        if os.name=='nt':
+            from windows_loader_fixture import run
+            observed,loaded=run([artifact['artifact']],cwd=self.root.anchor,env=self.environment(env))
+            self.assertEqual((observed.returncode,observed.stdout),(0,expected_output),observed.stderr)
+            for name in expected:
+                self.assertEqual(sum(path.name.casefold()==name.casefold() for path in loaded),1,(name,loaded))
+            runtime_names={path.name for path in loaded if path.name.startswith('libnex_runtime_')}
+            self.assertEqual(runtime_names,{Path(row['path']).name for row in images if row['kind']=='runtime'})
+            return observed
         setting={'DYLD_PRINT_LIBRARIES':'1'} if platform.system()=='Darwin' else {'LD_DEBUG':'libs'}
         observed=self.process([artifact['artifact']],cwd='/',env={**(env or {}),**setting})
         self.assertEqual((observed.returncode,observed.stdout),(0,expected_output),observed.stderr)
@@ -164,8 +182,10 @@ class SharedTaskProviders(harness.ToolchainCase):
                                'nex_release','nex_retain','nex_task_frame_call_at'):
                     self.assertFalse(symbols.get(symbol,set()) & {'T','W'},symbol)
                 self.assertFalse(any(types & {'T','W'} for symbol,types in symbols.items() if symbol.endswith('__task_step')))
-            first=ctypes.CDLL(artifacts['leaf']['artifact']);second=ctypes.CDLL(artifacts['mid']['artifact'])
-            self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
+            if os.name=='nt':self.windows_runtime_addresses(artifacts,'nex_release')
+            else:
+                first=ctypes.CDLL(artifacts['leaf']['artifact']);second=ctypes.CDLL(artifacts['mid']['artifact'])
+                self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
             watched={Path(row['artifact']) for row in artifacts.values()}
             for artifact in artifacts.values():
@@ -178,16 +198,17 @@ class SharedTaskProviders(harness.ToolchainCase):
             leaf_owned,_=self.functions(artifacts['leaf'])
             runtime=Path(next(row['path'] for row in leaf_owned['owned_images'] if row['kind']=='runtime'))
             permissions=runtime.stat().st_mode & 0o777
-            with runtime.open('rb') as previous_inode:
+            with shared_read(runtime) as previous_inode:
                 old_inode=os.fstat(previous_inode.fileno()).st_ino
                 old_bytes=previous_inode.read()
-                runtime.chmod(0o700 if permissions!=0o700 else 0o755)
+                runtime.chmod(permissions^0o222 if os.name=='nt' else 0o700 if permissions!=0o700 else 0o755)
                 self.assertTrue(all(row['cached'] for row in self.project(configuration=mode)['artifacts']))
                 self.assertNotEqual(runtime.stat().st_ino,old_inode,'image repair truncated the loaded inode')
                 self.assertEqual(runtime.stat().st_mode & 0o777,permissions)
                 previous_inode.seek(0)
                 self.assertEqual(previous_inode.read(),old_bytes,'image repair changed an existing mapping input')
-            self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
+            if os.name=='nt':self.windows_runtime_addresses(artifacts,'nex_retain')
+            else:self.assertEqual(ctypes.cast(first.nex_retain,ctypes.c_void_p).value,ctypes.cast(second.nex_retain,ctypes.c_void_p).value)
             self.loaded(artifacts['app'],fixture.OUTPUT)
 
 
@@ -446,7 +467,7 @@ server fn main()->unit!{task,fs,io}{
                 'input_image_key','input_image_sha256','input_uuid','output_image','output_image_sha256'})
             self.assertTrue(row['path'].startswith('provenance/task/%03d-'%index))
             basename=Path(row['path']).name.split('-',1)[1]
-            original=app_folder/('images' if row['kind']=='owned_provider' else '')/basename
+            original=app_folder/('images' if row['kind']=='owned_provider' and os.name!='nt' else '')/basename
             raw=(package/'apps/app'/row['path']).read_bytes()
             self.assertEqual(raw,original.read_bytes());self.assertEqual(len(raw),row['bytes'])
             self.assertEqual(hashlib.sha256(raw).hexdigest(),row['input_sha256'])
@@ -462,11 +483,14 @@ server fn main()->unit!{task,fs,io}{
                 self.assertEqual((source['image']['key'],source['image']['sha256'],source['image']['uuid']),
                     (row['input_image_key'],row['input_image_sha256'],row['input_uuid']))
         moved=self.root/'moved closure';moved.mkdir()
-        shutil.copy2(app_folder/'app',moved/'app');shutil.copytree(app_folder/'images',moved/'images')
+        shutil.copy2(app_folder/('app.exe' if os.name=='nt' else 'app'),moved/('app.exe' if os.name=='nt' else 'app'))
+        if os.name=='nt':
+            for image in app_folder.glob('*.dll'):shutil.copy2(image,moved/image.name)
+        else:shutil.copytree(app_folder/'images',moved/'images')
         owned_images=json.loads((app_folder/'compilation.json').read_text())['owned_images']
         for name in ('leaf','mid','app','other','.nex'):shutil.rmtree(self.root/name)
         for name in ('nex.json','nex.build.json','task.json'):(self.root/name).unlink()
-        for path in (package/'apps/app/bin/app',moved/'app'):
+        for path in (package/('apps/app/bin/app.exe' if os.name=='nt' else 'apps/app/bin/app'),moved/('app.exe' if os.name=='nt' else 'app')):
             self.loaded({'artifact':str(path)},fixture.OUTPUT,{'NEX_RESOURCE_DIR':'/absent'},images=owned_images)
         replay=self.cli('task',receipt,'--kind','replay','--directory',self.root/'replay',timeout=900)
         self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],accepted['programs'])

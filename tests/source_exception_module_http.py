@@ -1,5 +1,6 @@
-from host_fixture import copy_link_image
+from host_fixture import copy_link_image, native_task_definitions, needed_windows_dlls, shared_profile_objects
 """Ordinary HTTP execution across actual private static/shared code images."""
+import os
 import hashlib
 import copy
 import json
@@ -113,7 +114,14 @@ static void images(unsigned &runtime,unsigned &code){
 #endif
 }
 int main(int argc,char **argv){bool addresses=true;CHECKS
- auto before=nexrt::liveObjects.load();auto descriptors=files();auto result=nex_private_http_main(argc,argv);nex_runtime_finish();unsigned runtime=0,code=0;images(runtime,code);
+ auto before=nexrt::liveObjects.load();auto descriptors=files();
+#ifdef _WIN32
+ auto initialFiles=nex_test::files();std::fprintf(stderr,"NEX_PRIVATE_HANDLES_BEFORE ");for(auto h:initialFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));for(auto h:initialFiles)if(GetFileType(reinterpret_cast<HANDLE>(h))==FILE_TYPE_DISK){wchar_t p[32768];auto n=GetFinalPathNameByHandleW(reinterpret_cast<HANDLE>(h),p,32768,0);if(n&&n<32768)std::fprintf(stderr,"DISK[%llu]=%s ",(unsigned long long)h,nexrt::platform::utf8(std::wstring(p,n)).c_str());}std::fprintf(stderr,"\n");
+#endif
+ auto result=nex_private_http_main(argc,argv);nex_runtime_finish();unsigned runtime=0,code=0;images(runtime,code);
+#ifdef _WIN32
+ auto finalFiles=nex_test::files();std::fprintf(stderr,"NEX_PRIVATE_HANDLES_AFTER ");for(auto h:finalFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));std::fprintf(stderr,"\n");
+#endif
  bool clean=addresses&&nexrt::liveObjects.load()==before&&files()==descriptors&&runtime==EXPECT_RUNTIME&&code==EXPECT_CODE;
  std::fprintf(stderr,"NEX_PRIVATE_HTTP_CLEANUP {\"ok\":%s,\"managed_live\":%llu,\"runtime_finish\":true,\"file_delta\":%ld,\"runtime_images\":%u,\"code_images\":%u}\n",clean?"true":"false",(unsigned long long)(nexrt::liveObjects.load()-before),files()-descriptors,runtime,code);return clean?result:71;
 }
@@ -156,6 +164,7 @@ def build(state, name, directory, ctx, out, optimization):
     runtime_objects = [v for v in state['objects'] if v.name != 'http_main.cpp.o']
     label = name + '-O' + optimization
     if shared:
+        if profiled:runtime_objects=shared_profile_objects(runtime_objects,state['flags'],compiler,state['runtime'],run)
         runtime = state['cache'] / runtime_name
         if not state.get('module_http_runtime_built'):
             run('http-runtime-shared', [compiler, '-dynamiclib' if mac else '-shared', *runtime_objects, state['ssl'], state['crypto'], state['sqlite'], '-pthread', *(['-Wl,-install_name,@rpath/' + runtime.name] if mac else ['-ldl', '-Wl,-soname,' + runtime.name]), '-o', runtime])
@@ -204,7 +213,7 @@ def build(state, name, directory, ctx, out, optimization):
         for component in row['static_components']:
             archive = out / ('lib' + component + '.a')
             args += ['-Wl,-force_load,' + str(archive)] if mac else ['-Wl,--whole-archive,' + str(archive) + ',--no-whole-archive']
-        args += (['-Wl,-needed_library,' + str(out / filename(dependency)) for dependency in row['dependencies']] if mac else ['-Wl,--no-as-needed', *[out / filename(dependency) for dependency in row['dependencies']]])
+        args += (needed_windows_dlls([out/(filename(dependency)+'.a') for dependency in row['dependencies']],compiler) if os.name=='nt' else ['-Wl,-needed_library,' + str(out / filename(dependency)) for dependency in row['dependencies']] if mac else ['-Wl,--no-as-needed', *[out / filename(dependency) for dependency in row['dependencies']]])
         args += ['-L' + str(out), '-lnex-private-runtime-http'] if shared else [*runtime_objects, state['ssl'], state['crypto'], state['sqlite'], '-pthread', *([] if mac else ['-ldl'])]
         if shared and image == 'app':args += [state['ssl'], state['crypto'], state['sqlite'], '-pthread', *([] if mac else ['-ldl'])]
         if image != 'app':args += ['-Wl,-install_name,@rpath/' + filename(image)] if mac else ['-Wl,-soname,' + filename(image)]
@@ -212,7 +221,7 @@ def build(state, name, directory, ctx, out, optimization):
         binary = out / filename(image)
         run(label + '-link-' + image, [*args, '-o', binary])
         inventory = run(label + '-symbols-' + image, [compiler.parent / 'llvm-nm', '--defined-only', '--format=posix', binary]).stdout
-        actual = [v.lstrip('_') for v in re.findall(r'^([^ ]+__task_step) ', inventory, re.M)]
+        actual = native_task_definitions(inventory,binary,compiler)
         expected = {symbol for component in records if plan['component_images'][component] == image for symbol in symbols[component]}
         assert len(actual) == len(row['definitions']) and set(actual) == expected, (image, actual, expected)
         physical[image] = actual
@@ -223,9 +232,9 @@ def build(state, name, directory, ctx, out, optimization):
             'module_records': {key: hashlib.sha256((out / key / 'module-record.json').read_bytes()).hexdigest() for key in records},
             'source_hashes': {row['unit']: hashlib.sha256(row['source'].encode()).hexdigest() for row in json.loads(ctx.read_text())['units']}, 'passed': True}
     report.setdefault('module_images', []).append(case)
-    state.setdefault('module_http_cases', {})[str(out / 'server')] = case
+    state.setdefault('module_http_cases', {})[str(out / ('server.exe' if os.name=='nt' else 'server'))] = case
     state['save']()
-    return {'descriptor_abi': 0x4e45585400002502, 'operations': metadata['operations']}, out / 'server'
+    return {'descriptor_abi': 0x4e45585400002502, 'operations': metadata['operations']}, out / ('server.exe' if os.name=='nt' else 'server')
 
 
 def observe(binary, row):
@@ -315,7 +324,7 @@ def reuse_and_relocate(state):
         module = e / 'changed-app'
         run(name + '-reuse-emit', [probe, 'emit', changed, arch, 'app', module, state['triple'], state['layout'], 'false'])
         run(name + '-reuse-object', [compiler, '-c', '-fPIC', '-O0', module / 'module.ll', '-o', module / 'module.o'])
-        providers = [e / key / 'module-record.json' for key in ['std', 'leaf', 'mid']] + list(e.glob('lib*.a')) + list(e.glob('lib*.so')) + list(e.glob('lib*.dylib'))
+        providers = [e / key / 'module-record.json' for key in ['std', 'leaf', 'mid']] + list(e.glob('lib*.a')) + list(e.glob('lib*.so')) + list(e.glob('lib*.dylib')) + list(e.glob('lib*.dll'))
         hashes = {str(path.relative_to(e)): digest(path) for path in providers}
         argv = next(row['argv'] for row in report['commands'] if row['label'] == name + '-O0-link-app')
         argv = [str(module / 'module.o') if value == str(e / 'app/module.o') else value for value in argv]
@@ -329,7 +338,7 @@ def reuse_and_relocate(state):
             (module/'host.cpp').write_text(old.replace(host_identity(original),host_identity(plan),1), newline="\n")
             run(name+'-reuse-profile-host',[compiler,*state['flags'],'-c',module/'host.cpp','-o',module/'host.o'])
             argv=[str(module/'host.o') if value==str(e/'host.o') else value for value in argv]
-        server = e / 'server';saved = e / 'original-server';server.rename(saved)
+        server = e / ('server.exe' if os.name=='nt' else 'server');saved = e / 'original-server';server.rename(saved)
         plan_raw = (e / 'plan.json').read_bytes()
         try:
             root.write_text(entry['source'], newline="\n");(e / 'plan.json').write_text(json.dumps(plan), newline="\n")
@@ -353,11 +362,11 @@ def reuse_and_relocate(state):
         target = out / ('relocated-' + name);target.mkdir()
         copy_link_image(directory / 'source-context.json', target / 'source-context.json')
         e = target / 'O2';e.mkdir()
-        for file in [original / 'server', original / 'plan.json', *original.glob('lib*.so'), *original.glob('lib*.dylib')]:shutil.copy2(file, e / file.name)
+        for file in [original / ('server.exe' if os.name=='nt' else 'server'), original / 'plan.json', *original.glob('lib*.so'), *original.glob('lib*.dylib'), *original.glob('lib*.dll')]:shutil.copy2(file, e / file.name)
         hashes = {file.name: digest(file) for file in e.iterdir() if file.name != 'plan.json'}
         hidden = directory / 'O2.hidden';original.rename(hidden)
         try:
-            with state['server'](e / 'server', True, tls=True) as (port, files, events):
+            with state['server'](e / ('server.exe' if os.name=='nt' else 'server'), True, tls=True) as (port, files, events):
                 response = state['request'](port, '/api/recover', tls=True)
                 assert response['status'] == 200 and response['body'] == 'alice:HOST:λ\0🙂:A🌍\0β'
                 response = state['request'](port, '/api/generic-error', tls=True)

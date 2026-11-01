@@ -41,7 +41,10 @@ def main():
     parser.add_argument('--gpgv',type=Path,default=Path('C:/Program Files/Git/usr/bin/gpgv.exe'))
     parser.add_argument('--prefix',type=Path,default=ROOT/'build/deps/windows-host')
     parser.add_argument('--lock-output',type=Path,default=ROOT/'tools/windows/host-dependencies.lock.json')
-    parser.add_argument('--debugger-only',action='store_true',help='install an isolated matching LLDB and its native dependencies')
+    mode=parser.add_mutually_exclusive_group()
+    mode.add_argument('--debugger-only',action='store_true',help='install an isolated matching LLDB and its native dependencies')
+    mode.add_argument('--debugger-build-sdk',action='store_true',help='install the separate native SDK used to build the LLDB backport')
+    parser.add_argument('--debugger-version',default='22.1.8-1',help='isolated LLDB package version; compiler/MLIR remain on the pinned cohort')
     args=parser.parse_args();cache=ROOT/'build/deps/host-packages';cache.mkdir(parents=True,exist_ok=True)
     home=cache/'gpgv-home';home.mkdir(exist_ok=True)
     subprocess.run([str(args.gpgv.with_name('gpg.exe')),'--homedir',str(home),'--batch','--yes',
@@ -85,8 +88,20 @@ def main():
                 'signature_sha256':sha(signature),'signer_fingerprints':[f.decode() for f in fingerprints],
                 'dependencies':package.get('depend',[])}
 
-    if args.debugger_only:COHORT['lldb']='22.1.8-1'
-    pending={PREFIX+'lldb'} if args.debugger_only else {PREFIX+name for name in (*COHORT,'openssl','sqlite3','z3','ninja')}
+    if args.debugger_only or args.debugger_build_sdk:
+        if args.debugger_version!='22.1.8-1':
+            if index[PREFIX+'lldb']['VERSION']!=[args.debugger_version]:raise RuntimeError('requested LLDB version is absent from the supplied database')
+            COHORT.clear()
+        if args.debugger_only:COHORT['lldb']=args.debugger_version
+    if args.debugger_build_sdk:
+        expected_version=args.debugger_version.rsplit('-',1)[0]
+        for name in ('llvm','llvm-libs','clang','clang-libs','clang-tools-extra'):
+            if index[PREFIX+name]['VERSION'][0].rsplit('-',1)[0]!=expected_version:
+                raise RuntimeError('debugger build SDK version differs: '+name)
+        pending={PREFIX+name for name in ('llvm','llvm-libs','llvm-tools','clang','clang-libs',
+            'clang-tools-extra','compiler-rt','lld','libc++','libunwind','openssl','sqlite3','z3','ninja','swig')}
+    else:
+        pending={PREFIX+'lldb'} if args.debugger_only else {PREFIX+name for name in (*COHORT,'openssl','sqlite3','z3','ninja')}
     while pending:
         names=sorted(pending-records.keys());pending=set()
         if not names:break

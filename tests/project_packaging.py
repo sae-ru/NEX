@@ -85,7 +85,7 @@ server fn main()->unit!{db,io}{assert(is_ok(store_put("key",b::answer())));print
         self.assertEqual(failed['code'],'E_PROJECT_PACKAGE');self.assertIn('provenance',failed['message']);self.assertFalse((self.root/'package').exists());self.assertFalse(database.exists())
         notices=helper.notice(helper.library_inputs([library]));self.package('--component','app','--notices',notices,env=env)
         self.assertFalse(database.exists());shutil.rmtree(library.parent);shutil.rmtree(self.root/'.nex')
-        p=subprocess.run([str(self.root/'package/apps/app/bin/app')],env={'PATH':'/usr/bin:/bin',**env},capture_output=True,text=True,timeout=20)
+        p=subprocess.run([str(self.root/('package/apps/app/bin/app.exe' if os.name=='nt' else 'package/apps/app/bin/app'))],env={'PATH':'/usr/bin:/bin',**env},capture_output=True,text=True,timeout=20)
         self.assertEqual((p.returncode,p.stdout),(0,'42 🧠\n'),p.stderr)
 
 if __name__=='__main__':unittest.main()

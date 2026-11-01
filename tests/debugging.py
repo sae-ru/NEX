@@ -202,7 +202,10 @@ class DAP:
             if self.process.poll() is None:
                 self.send("disconnect", {"terminateDebuggee": True})
                 self.process.stdin.close()
-                self.process.wait(timeout=5)
+                # The adapter has its own 5s disconnect grace, 2s backend join
+                # and bounded reader joins. Let it finish that cleanup before
+                # killing it, or a Windows child can retain the stderr file.
+                self.process.wait(timeout=15)
         finally:
             if self.process.poll() is None:
                 self.process.kill()

@@ -1,5 +1,5 @@
 """Execute checked private mixed images and verify actual code/data ownership."""
-from host_fixture import run_native, copy_link_image
+from host_fixture import run_native, copy_link_image, native_task_definitions, needed_windows_dlls, shared_profile_objects
 import argparse
 import hashlib
 import json
@@ -134,13 +134,15 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         obj = cache / (name + ".o")
         obj.parent.mkdir(parents=True, exist_ok=True)
         stamp = obj.with_suffix(".recipe.json")
-        recipe = {"compiler": compiler_hash, "source": hashlib.sha256((runtime / name).read_bytes()).hexdigest(), "headers": headers, "flags": flags}
+        compile_flags=[flag for flag in flags if not (os.name=='nt' and name=='nex_profile.cpp' and flag=='-DNEX_SHARED_PROFILE_RUNTIME')]
+        recipe = {"compiler": compiler_hash, "source": hashlib.sha256((runtime / name).read_bytes()).hexdigest(), "headers": headers, "flags": compile_flags}
         if not (obj.is_file() and stamp.is_file() and json.loads(stamp.read_text()) == recipe):
-            run("compile-" + name.replace('/','_'), [compiler, *flags, "-c", runtime / name, "-o", obj])
+            run("compile-" + name.replace('/','_'), [compiler, *compile_flags, "-c", runtime / name, "-o", obj])
             stamp.write_text(json.dumps(recipe, sort_keys=True) + "\n", newline="\n")
         objects.append(obj)
     shared_runtime = cache / ("libnex-private-runtime" + suffix)
-    run("runtime-shared", [compiler, "-dynamiclib" if mac else "-shared", *objects, crypto, "-pthread", *(["-Wl,-install_name,@rpath/" + shared_runtime.name] if mac else ["-ldl", "-Wl,-soname," + shared_runtime.name]), "-o", shared_runtime])
+    shared_objects=shared_profile_objects(objects,flags,compiler,runtime,run) if profiled else objects
+    run("runtime-shared", [compiler, "-dynamiclib" if mac else "-shared", *shared_objects, crypto, "-pthread", *(["-Wl,-install_name,@rpath/" + shared_runtime.name] if mac else ["-ldl", "-Wl,-soname," + shared_runtime.name]), "-o", shared_runtime])
 
     def materialize(directory, case, pin):
         directory.mkdir()
@@ -230,12 +232,14 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             statics += ["-Wl,-force_load," + str(archive)] if mac else ["-Wl,--whole-archive," + str(archive) + ",--no-whole-archive"]
         libraries = (["-Wl,-needed_library," + str(directory / image_file(name, plan)) for name in row["dependencies"]]
                      if mac else ["-Wl,--no-as-needed", "-L" + str(directory), *["-limage-" + name for name in row["dependencies"]]])
+        if os.name=='nt':
+            libraries=needed_windows_dlls([directory/(image_file(name,plan)+'.a') for name in row['dependencies']],compiler)
         shared = plan["runtime_linkage"] == "shared"
         output = directory / image_file(image, plan)
         args = [compiler, *([] if image == "app" else ["-dynamiclib" if mac else "-shared"]), own, *([host] if host else []), *statics, *libraries]
         if image == "app":
             args += ["-Wl,-export_dynamic" if mac else "-Wl,--export-dynamic"]
-        if shared and mac:
+        if shared and (mac or os.name=='nt'):
             args += ["-L" + str(directory)]
         args += ["-lnex-private-runtime"] if shared else [*objects, crypto, "-pthread", *([] if mac else ["-ldl"])]
         if image != "app":
@@ -346,7 +350,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     binary = link_image(label, e, image, plan, records, e / "host.o" if image == "app" else None)
                     images[image] = {"file": binary.name, "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
                     text = run(label + "-symbols-" + image, [compiler.parent / "llvm-nm", "--defined-only", "--format=posix", binary]).stdout
-                    symbols[image] = [v.lstrip("_") for v in re.findall(r'^([^ ]+__task_step) ', text, re.M)]
+                    symbols[image] = native_task_definitions(text,binary,compiler)
                     expected_symbols = {v for component, row in records.items() if row["machine_image"] == image for v in compiled_symbols[component]}
                     assert len(symbols[image]) == len(plan["images"][image]["definitions"]) and set(symbols[image]) == expected_symbols, (name, image, symbols[image], expected_symbols)
                     for function in plan["images"][image]["definitions"]:
@@ -369,7 +373,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                         saved = path.with_name(path.name + ".hidden")
                         path.rename(saved)
                         hidden.append((path, saved))
-                    executed = run(label + "-execute", [e / "program", "--nex-task-workers", "4", "--nex-task-steps", str(budget), *(["--nex-foreign", catalog] if case.get("foreign") else [])], env, (42, 70))
+                    executed = run(label + "-execute", [e / ("program.exe" if os.name=="nt" else "program"), "--nex-task-workers", "4", "--nex-task-steps", str(budget), *(["--nex-foreign", catalog] if case.get("foreign") else [])], env, (42, 70))
                 finally:
                     for path, saved in hidden:
                         if saved.exists():
@@ -463,7 +467,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             run("incremental-" + topology + "-object", [compiler, "-c", "-fPIC", code, "-o", module / "module.o"])
             # Use a new application filename while retaining the exact old
             # provider archives/shared images and the host's image expectations.
-            original_binary = old / "program"
+            original_binary = old / ("program.exe" if os.name=="nt" else "program")
             saved_binary = old / "original-program"
             original_binary.rename(saved_binary)
             try:
@@ -492,7 +496,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             moved = out / ("relocated-" + topology)
             moved.mkdir()
             for file in original.iterdir():
-                if file.is_file() and (file.name == "program" or file.name.endswith(suffix)):
+                if file.is_file() and (file.name == ("program.exe" if os.name=="nt" else "program") or file.name.endswith(suffix)):
                     shutil.copy2(file, moved / file.name)
             shutil.copytree(bundle, moved / "bundle")
             copy_link_image(catalog, moved / "host.json")
@@ -506,7 +510,7 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
                     saved = path.with_name(path.name + ".hidden")
                     path.rename(saved)
                     hidden.append((path, saved))
-                result = run("relocated-" + topology + "-execute", [moved / "program", "--nex-foreign", moved / "host.json"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}, allowed=(42,))
+                result = run("relocated-" + topology + "-execute", [moved / ("program.exe" if os.name=="nt" else "program"), "--nex-foreign", moved / "host.json"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1", "NEX_PRIVATE_HOST_EVENTS": str(events)}, allowed=(42,))
             finally:
                 for path, saved in reversed(hidden):
                     if saved.exists():

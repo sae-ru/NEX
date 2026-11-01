@@ -131,6 +131,10 @@ os.execv(REAL,[REAL,*sys.argv[1:]])
         include=self.root/'include';include.mkdir()
         header=include/'sqlite3.h';shutil.copyfile(Path(self.doctor['native_sqlite_include'])/'sqlite3.h',header)
         sdk=self.root/'identity-sdk';sdk.mkdir()
+        if os.name=='nt':
+            original_sdk=Path(self.doctor['native_sysroot'])
+            for name in ('include/_mingw.h','include/_mingw_mac.h','lib/crt2.o','lib/libucrtbase.a','lib/libmingw32.a','lib/libmingwex.a','lib/libc++.a','lib/libc++abi.a','lib/libunwind.a'):
+                target=sdk/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(original_sdk/name,target)
         settings=sdk/'SDKSettings.json';settings.write_text('{"Version":"27.0"}', newline="\n")
         original=self.configure()
         ssl=original['manifest']['openssl']

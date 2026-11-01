@@ -3,6 +3,8 @@
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/SHA256.h"
+#include "llvm/ADT/StringExtras.h"
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -245,6 +247,21 @@ NativeToolchain configureNative(const BuildOptions &options) {
     {"debug_packager",result.debugPackager},{"debug_packager_hash",result.debugPackager.empty()?"":hash(readFile(result.debugPackager))},
     {"sqlite_include",result.sqliteInclude},{"sqlite_library",result.sqliteLibrary},{"openssl_include",result.opensslInclude},{"openssl_ssl",result.opensslSSL},{"openssl_crypto",result.opensslCrypto},
     {"windows_runtime",result.windowsRuntime},{"windows_notices",result.windowsNotices},{"windows_notices_hash",result.windowsNotices.empty()?"":hash(readFile(result.windowsNotices))}},false);
+  return result;
+}
+llvm::json::Array nativeStaticLinkInputs(const NativeToolchain &tools,bool storage,bool foreign,bool server){
+  llvm::json::Array result;if(!llvm::Triple(tools.target).isOSWindows())return result;
+  std::set<std::filesystem::path> paths;
+  if(storage)paths.insert(tools.sqliteLibrary);
+  if(foreign||server)paths.insert(tools.opensslCrypto);
+  if(server)paths.insert(tools.opensslSSL);
+  for(const auto &input:paths){
+    auto path=std::filesystem::canonical(input);
+    if(path.extension()!=".a")continue;
+    if(!std::filesystem::is_regular_file(path)||std::filesystem::file_size(path)>256ULL*1048576)throw Error("E_TOOLCHAIN","missing/oversized static link input: "+path.string());
+    auto bytes=readFile(path.string());auto digest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(bytes.data()),bytes.size()));
+    result.push_back(llvm::json::Object{{"path",path.string()},{"sha256",llvm::toHex(digest,true)},{"bytes",int64_t(bytes.size())}});
+  }
   return result;
 }
 NativeToolchainSnapshot inspectNativeToolchain(const BuildOptions &options) {

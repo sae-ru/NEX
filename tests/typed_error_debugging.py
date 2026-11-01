@@ -11,7 +11,8 @@ parser.add_argument('--resources',type=Path)
 parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1])
 args=parser.parse_args()
 args.probe=args.probe.resolve();args.nex=args.nex.resolve();args.source_root=args.source_root.resolve()
-if platform.system() not in ('Darwin','Linux'):
+if args.resources:args.resources=args.resources.resolve(strict=True)
+if platform.system() not in ('Darwin','Linux','Windows'):
  print('Typed native debugger platform acceptance remains pending on '+platform.system());sys.exit(77)
 output=args.output.resolve() if args.output else Path(tempfile.mkdtemp(prefix='nex-typed-debug-'))
 output.mkdir(parents=True,exist_ok=args.output is None)

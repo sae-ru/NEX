@@ -4,3 +4,7 @@
 # Keep the pinned upstream client byte-identical, including its whitespace.
 runtime/third_party/tracy/public/** -whitespace
 docs/licenses/Z3-LICENSE.txt -whitespace
+
+# Keep the exact upstream SDL license and pinned unified-diff context bytes.
+examples/tic-tac-toe/vendor/SDL-LICENSE.txt -whitespace
+tools/windows/lldb23-windows-backport.patch -whitespace

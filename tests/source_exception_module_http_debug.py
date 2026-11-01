@@ -9,6 +9,19 @@ import base64,http.client,json,os,re,signal,socket,ssl,threading,time,traceback
 from pathlib import Path
 import lldb
 
+def stop_server_process(pid):
+ if os.name!='nt':os.kill(pid,signal.SIGTERM);return
+ import ctypes as C
+ from ctypes import wintypes as W
+ kernel=C.WinDLL('kernel32',use_last_error=True)
+ kernel.OpenEventW.argtypes=[W.DWORD,W.BOOL,W.LPCWSTR];kernel.OpenEventW.restype=W.HANDLE
+ kernel.SetEvent.argtypes=[W.HANDLE];kernel.CloseHandle.argtypes=[W.HANDLE]
+ event=kernel.OpenEventW(2,False,'Local\\NEX.Server.Stop.'+str(pid))
+ if not event:raise C.WinError(C.get_last_error())
+ try:
+  if not kernel.SetEvent(event):raise C.WinError(C.get_last_error())
+ finally:kernel.CloseHandle(event)
+
 def session(debugger,command,result,internal_dict):
  config=json.loads(Path(command.strip()).read_text());report={'ok':False,'observations':[],'responses':[],'commands':[],'captures':[]}
  target=debugger.GetSelectedTarget();process=None;clients=[];stdout='';stderr='';hidden=[];shutdown_lock=threading.Lock();shutdown_sent=False
@@ -57,7 +70,7 @@ def session(debugger,command,result,internal_dict):
     if not shutdown_sent and len(report['responses'])==len(config['requests']) and all(r.get('done') for r in report['responses']):
      shutdown_sent=True;pid=target.GetProcess().GetProcessID()
      if pid:
-      try:os.kill(pid,signal.SIGTERM)
+      try:stop_server_process(pid)
       except ProcessLookupError:pass
  try:
   for name in config['source_files']:
@@ -151,7 +164,7 @@ def main():
  if native_only:
   report.update(ok=True,private_module_HTTP_debugging=True,HTTP_requests=len(report['requests']),HTTP_server_launches=len(report['servers']),LLDB_sessions=0);state['save']();return
  for image in report['module_images']:
-  name=image['program'];directory=out/name;e=directory/('O'+image['optimization']);binary=e/'server';plan=json.loads((e/'plan.json').read_text());foreign=name.startswith('host-');label=name+'-O'+image['optimization']
+  name=image['program'];directory=out/name;e=directory/('O'+image['optimization']);binary=e/('server.exe' if os.name=='nt' else 'server');plan=json.loads((e/'plan.json').read_text());foreign=name.startswith('host-');label=name+'-O'+image['optimization']
   if platform.system()=='Darwin':
    for file in [e/v['file'] for v in image['images'].values()]+([e/('libnex-private-runtime-http'+('.dylib' if platform.system()=='Darwin' else '.so'))] if plan['runtime_linkage']=='shared' else []):run(label+'-dsym-'+file.name,['dsymutil',file])
   unlinked=json.loads(run(label+'-debug-context',[state['module_probe'],'debug-context',directory/'source-context.json',directory/'architecture.json']).stdout)

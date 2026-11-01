@@ -21,6 +21,9 @@
 #include <cstdlib>
 #include <functional>
 #include "nex_value.h"
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #include "llvm/Support/Error.h"
 
 namespace nex {
@@ -57,6 +60,23 @@ const std::set<std::string> &streamFileBuiltins(){
   static const std::set<std::string> names={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};return names;
 }
 std::string readFile(const std::string &path) {
+#ifdef _WIN32
+  std::wstring native;
+  try{native=nexrt::platform::wide(path);}
+  catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
+  // An atomic publisher can still hold DELETE access after the new name is
+  // visible. Full sharing also keeps an existing reader valid across rename.
+  nexrt::host_windows::Handle in(CreateFileW(native.c_str(),GENERIC_READ,
+      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr));
+  if(in.value==INVALID_HANDLE_VALUE)throw Error("E_FILE","cannot read "+path+"; Windows error "+std::to_string(GetLastError()));
+  std::array<char,64*1024> buffer;std::string text;
+  for(;;){
+    DWORD count=0;auto ok=ReadFile(in.value,buffer.data(),DWORD(buffer.size()),&count,nullptr);
+    if(!ok){auto error=GetLastError();if(error==ERROR_BROKEN_PIPE)return text;
+      if(error!=ERROR_MORE_DATA)throw Error("E_FILE","cannot read "+path+"; Windows error "+std::to_string(error));}
+    text.append(buffer.data(),count);if(!count)return text;
+  }
+#else
   std::unique_ptr<std::FILE,decltype(&std::fclose)> in(std::fopen(path.c_str(),"rb"),&std::fclose);
   if (!in) throw Error("E_FILE", "cannot read " + path);
   // Read raw bytes without requiring a seekable file or trusting its reported
@@ -71,6 +91,7 @@ std::string readFile(const std::string &path) {
     if(std::feof(in.get()))return text;
     if(!count)throw Error("E_FILE","cannot read "+path);
   }
+#endif
 }
 void writeFile(const std::string &path, const std::string &text) {
   auto parent = std::filesystem::path(path).parent_path();
@@ -1806,6 +1827,10 @@ llvm::json::Value describe() {
       contract["plan_schema"]=std::string(name)=="task_providers"?"nex.project-static-task-linkage/5":"nex.project-task-linkage/"+std::to_string(schema);
       contract["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};
     }
+    auto &windowsTasks=*result.getObject("structured_tasks_runtime")->getObject("windows_cpu_tasks");
+    windowsTasks["source_provider_images"]=true;windowsTasks["debugging"]=true;
+    for(const auto *name:{"task_file_reads","task_profiling","task_provider_profiling","task_provider_debugging"})
+      (*result.getObject(name))["windows"]=true;
     for(const auto *name:{"task_file_streams","task_file_streams_prototype"})(*result.getObject(name))["execution_ABI"]=7;
     for(const auto *name:{"task_profiling","task_debugging"})(*result.getObject(name))["execution_task_abi"]=7;
     auto &http=*result.getObject("structured_tasks_runtime")->getObject("http_request_host_prototype");http["execution_task_abi"]=7;http["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};

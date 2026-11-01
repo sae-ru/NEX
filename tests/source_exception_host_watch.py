@@ -38,7 +38,7 @@ def main():
         r=subprocess.run(list(map(str,argv)),cwd=directory,text=True,capture_output=True,env=env,timeout=180);(root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode==0,(label,r.returncode,r.stdout[-3000:],r.stderr[-2000:]);return r
     save()
     for optimization in ['0','2']:
-        label='host-watch-O'+optimization;e=directory/('O'+optimization);binary=e/'program'
+        label='host-watch-O'+optimization;e=directory/('O'+optimization);binary=e/('program.exe' if os.name=='nt' else 'program')
         if platform.system()=='Darwin':run(label+'-symbols',['dsymutil',binary])
         context=json.loads((e/'debug-context.json').read_text());assert context['descriptor_abi']==report['private_host_abi'] and context['archived'] is False and 'revision' not in context
         identity=run(label+'-identity',[emitter,'identity',binary]).stdout.strip().replace('-','').lower()

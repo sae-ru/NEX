@@ -1,5 +1,5 @@
 """Private module registry preparation and debugger image binding."""
-import hashlib,json,platform
+import hashlib,json,platform,os
 
 FLAGS=['-DNEX_TASK_DEBUG_ENABLED']
 EXTRA_RUNTIME=['nex_task_debug.cpp']
@@ -8,7 +8,7 @@ def registry_key(name):return 'private_'+hashlib.sha256(name.encode()).hexdigest
 
 def host_identity(plan,pulse=True):
  names=[row['debugging']['registry_accessor'] for row in plan['components'].values()]
- code=['#include "nex_task_debug.h"','#include <dlfcn.h>','#include <cstdio>']
+ code=['#include "nex_task_debug.h"','#include "host_dlfcn.h"','#include <cstdio>']
  code+=['static const nexrt::TaskDebugCodeRegistry *private_debug_registry(const char *name){using Accessor=const nexrt::TaskDebugCodeRegistry *(*)();auto fn=reinterpret_cast<Accessor>(dlsym(RTLD_DEFAULT,name));return fn?fn():nullptr;}']
  code+=['extern "C" void nex_task_debug_prepare_application_v1(){const nexrt::TaskDebugCodeRegistry *registries[]={'+','.join('private_debug_registry('+json.dumps(n)+')' for n in names)+'};nex_task_debug_prepare_registries(registries,'+str(len(names))+');}']
  code+=['static bool nex_private_module_debug_clean(){auto &c=nex_task_debug_catalog_v2.base;bool clean=!c.live_frames&&!c.dropped_tasks&&!c.dropped_frames&&!c.invalid_transitions;auto *tasks=reinterpret_cast<const nexrt::TaskDebugTaskRecord*>(c.tasks_address);for(size_t i=0;i<c.task_count;++i)clean&=bool(tasks[i].flags&nexrt::taskDebugTerminal)&&!tasks[i].frame_count;std::fprintf(stderr,"NEX_PRIVATE_MODULE_DEBUG_CLEANUP {\\"ok\\":%s,\\"live_frames\\":%llu,\\"tasks\\":%llu,\\"registries\\":%llu}\\n",clean?"true":"false",(unsigned long long)c.live_frames,(unsigned long long)c.task_count,(unsigned long long)nex_task_debug_catalog_v2.registry_count);return clean;}']
@@ -17,8 +17,8 @@ def host_identity(plan,pulse=True):
  return '\n'.join(code)+'\n'
 
 def bind_images(context,plan,directory,identity):
- suffix='.dylib' if platform.system()=='Darwin' else '.so'
- http=context['module_architecture']['host']=='http';root=directory/('server' if http else 'program');images=[]
+ suffix='.dll' if os.name=='nt' else '.dylib' if platform.system()=='Darwin' else '.so'
+ http=context['module_architecture']['host']=='http';root=directory/(('server.exe' if http else 'program.exe') if os.name=='nt' else ('server' if http else 'program'));images=[]
  for name in plan['images']:
   file=root if name==plan['application'] else directory/('libimage-'+name+suffix)
   images.append({'component':context['image_plan']['component_keys'][name],'path':str(file),'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'uuid':identity(file),'kind':'application' if name==plan['application'] else 'shared-image'})

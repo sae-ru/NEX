@@ -1,0 +1,37 @@
+{
+  "schema": "nex.cuda-local-ipc/1",
+  "checked_utc": "2026-11-01T10:19:50.573344+00:00",
+  "scope": "Windows Compute Sanitizer local control channel; separate from complete Windows compiler regression",
+  "requires_WSL": false,
+  "connection_transport": "windows-named-pipes",
+  "firewall_rules_modified": false,
+  "probes": [
+    {
+      "path": "build\\cuda-named-pipe-check30\\report.json",
+      "sha256": "38ba035b859210b67a5a9cecb79abff51f2ddef74fe0996ed956adfcce14e061",
+      "mode": "windows-named-pipes",
+      "samples": 21,
+      "observed_network_endpoints": [],
+      "probe_sha256": "5349c6cb46f322803bd45ac9f5040c7a09311bba0b98c91e859ca94e81e0cbc1"
+    },
+    {
+      "path": "build\\cuda-plain-network-check30\\report.json",
+      "sha256": "ad5ca72ed4cb098cd23064cbf61b950257f326d4a9e1672b02faf9baf09f660e",
+      "mode": "ordinary CUDA without sanitizer",
+      "samples": 12,
+      "observed_network_endpoints": [],
+      "probe_sha256": "5349c6cb46f322803bd45ac9f5040c7a09311bba0b98c91e859ca94e81e0cbc1"
+    }
+  ],
+  "native_memcheck": {
+    "path": "build\\cuda-named-pipes-memcheck30\\report.json",
+    "sha256": "24dd221b8e2c48846a682220e1914940dbce1ad47851053dccbeb37b80643ff1",
+    "compiler_sha256": "05aab8e2d11eba0f6e2ea836ac1064ba4b54734263b5a8a7d86ffd8df72f1ab2",
+    "native_cases": 35,
+    "context_probe": true,
+    "deadline_timeout_ms": 2000,
+    "all_cases_passed": true
+  },
+  "runner_sha256": "dc5858c059984344bb77b9c7a3e4ed0b62b1023cdd5cd5a58b78daa2934d0606",
+  "vendor_documentation": "https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html#environment-variables"
+}

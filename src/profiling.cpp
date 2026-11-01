@@ -1,5 +1,8 @@
 #include "nex/profiling.h"
 #include "nex/task_process.h"
+#ifdef _WIN32
+#include "nex_host_windows.h"
+#endif
 #include "nex/task_limits.h"
 #include "nex/native_toolchain.h"
 #include "nex/incremental.h"
@@ -116,10 +119,22 @@ bool cleanupProfileDirectory(const std::filesystem::path &directory)noexcept{
     namespace fs=std::filesystem;std::error_code ec;
     auto status=fs::symlink_status(directory,ec);if(ec==std::errc::no_such_file_or_directory)return true;
     if(ec||!fs::is_directory(status))return false;
+#ifdef _WIN32
+    nexrt::host_windows::privateAccess(directory,FILE_ALL_ACCESS);
+#endif
     fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);if(ec)return false;
     for(fs::recursive_directory_iterator it(directory,ec),end;!ec&&it!=end;it.increment(ec)){
       auto item=it->symlink_status(ec);if(ec)return false;
+#ifdef _WIN32
+      // The killed image cannot restore its protected owner-only snapshot ACL.
+      // Work only on physical entries inside this owned profile directory.
+      if(!fs::is_symlink(item)){
+        nexrt::host_windows::privateAccess(it->path(),FILE_ALL_ACCESS);
+        fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);
+      }
+#else
       if(fs::is_directory(item))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add|fs::perm_options::nofollow,ec);
+#endif
       if(ec)return false;
     }
     if(ec)return false;fs::remove_all(directory,ec);return !ec;

@@ -88,7 +88,10 @@ class ToolchainCase(unittest.TestCase):
             print('Preserved failed fixture: '+str(target),file=sys.stderr)
         self.temp.cleanup()
 
-    def cli(self, *args, ok=True, machine=True, cwd=None, env=None, timeout=60):
+    # Cold native C++ runtime compilation on Windows can exceed 60 s under
+    # parallel CTest load. Source task deadlines and explicit call budgets stay
+    # independent of this parent-process watchdog.
+    def cli(self, *args, ok=True, machine=True, cwd=None, env=None, timeout=(180 if os.name == "nt" else 60)):
         command = [NEX, *map(str, args)]
         if machine:
             command.append("--json")

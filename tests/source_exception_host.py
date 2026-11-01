@@ -64,7 +64,12 @@ MODULE=r'''
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+static void event(char ch){const char *p=getenv("NEX_PRIVATE_HOST_EVENTS");if(p){int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,p,-1,0,0);if(n<=0)abort();wchar_t *path=malloc(n*sizeof(wchar_t));if(!path)abort();if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,p,-1,path,n))abort();HANDLE f=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,0,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,0);free(path);if(f==INVALID_HANDLE_VALUE)abort();DWORD written=0;if(!WriteFile(f,&ch,1,&written,0)||written!=1)abort();CloseHandle(f);}}
+#else
 static void event(char ch){const char *p=getenv("NEX_PRIVATE_HOST_EVENTS");if(p){int f=open(p,O_CREAT|O_WRONLY|O_APPEND,0600);if(f>=0){(void)write(f,&ch,1);close(f);}}}
+#endif
 static void destroy(void *p){free(p);event('X');}
 static nex_ffi_status factory(const nex_ffi_api_v1 *a,nex_ffi_call c,void *u,void **out){(void)a;(void)c;int64_t *p=malloc(sizeof(*p));if(!p)return NEX_FFI_LIMIT;*p=*(int64_t*)u;*out=p;event('F');return NEX_FFI_OK;}
 #define TRY(x) do{nex_ffi_status s=(x);if(s)return s;}while(0)

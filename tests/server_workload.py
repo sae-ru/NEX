@@ -1,3 +1,4 @@
+from host_fixture import temporary_environment
 from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants
 """Strict workload data and real supervised native server observations."""
 from host_fixture import python_executable
@@ -97,7 +98,7 @@ class Launcher(harness.ToolchainCase):
         self.assertEqual(p.returncode,0,p.stderr);self.assertEqual(json.loads(p.stdout)['total_requests'],16)
         self.assertEqual({p.name for p in self.root.iterdir()},{'workload.json'})
         result=self.root/'never-created.json'
-        p=subprocess.run([sys.executable,str(HELPER),'--workload',str(data),'--result',str(result),'--','/usr/bin/true'],capture_output=True,text=True,env=environment,timeout=5)
+        p=subprocess.run([sys.executable,str(HELPER),'--workload',str(data),'--result',str(result),'--',str(Path(sys.executable).resolve())],capture_output=True,text=True,env=environment,timeout=5)
         self.assertNotEqual(p.returncode,0);self.assertEqual(json.loads(p.stderr)['code'],'E_SERVER_WORKLOAD_AUTH');self.assertFalse(result.exists())
         self.assertFalse((self.root/'.nex').exists())
 
@@ -200,7 +201,7 @@ class PublicProject(harness.ToolchainCase):
         output=self.root/'must-not-accept.json';ambient=self.root/'ambient';ambient.mkdir()
         process=subprocess.Popen([harness.NEX,'project','--kind','profile','--component','server','--workload',str(self.workload),
             '--profile-output',str(output),'--events','0','--timeout','60','--json','--','--auth',str(self.root/'auth.json'),
-            '--database',str(self.root/'state.sqlite')],cwd=self.root,env={**os.environ,'NEX_TEST_WORKLOAD_TOKEN':token,'TMPDIR':str(ambient)},
+            '--database',str(self.root/'state.sqlite')],cwd=self.root,env={**os.environ,'NEX_TEST_WORKLOAD_TOKEN':token,**temporary_environment(ambient)},
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         try:
             deadline=time.monotonic()+120;started=False
@@ -247,7 +248,7 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
         token=self.cli('token','--auth',self.root/'auth.json','--user','bench')['token'];self.env['NEX_TEST_WORKLOAD_TOKEN']=token
         original_graph=harness.database_rows(self.root/'.nex/graph.db')
         self.cli('project','--kind','build',timeout=240)
-        ambient=self.root/'ambient';ambient.mkdir();self.env['TMPDIR']=str(ambient)
+        ambient=self.root/'ambient';ambient.mkdir();self.env.update(temporary_environment(ambient))
         command=[harness.NEX,'project','--kind','profile','--workload',str(workload),'--foreign',str(self.host),'--json']
         runtime=['--','--auth',str(self.root/'auth.json'),'--database',str(self.root/'state.sqlite')]
         for mode in ['timeout','interrupt']:

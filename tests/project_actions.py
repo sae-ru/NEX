@@ -124,7 +124,7 @@ client test fn browser_values()->unit{assert(initial()==42);}
         self.assertEqual(session['schema'],'nex.debug-session/1');self.assertEqual(session['adapter'],'nex-dap')
         app=next(a for a in result['artifacts'] if a['component']=='app');self.assertEqual(session['launch']['program'],app['artifact']);self.assertEqual(session['build_key'],app['build_key'])
         manifest=json.loads(Path(session['manifest']).read_text());self.assertEqual(len(manifest['owned_images']),2)
-        self.assertTrue(session['launch']['sourceMap']);self.assertTrue(Path(session['adapter_command'][1]).is_file());self.assertFalse((self.root/'.nex/graph.db').exists())
+        self.assertTrue(session['launch']['sourceMap']);self.assertTrue(Path(session['adapter_command'][-1]).is_file());self.assertFalse((self.root/'.nex/graph.db').exists())
     @unittest.skipUnless(LIVE,'opt-in real debugger/HTTP preview')
     def test_live_project_debugger_and_built_web_preview(self):
         original=self.root;self.root=self.root.with_name('project "quoted" \\ % 🧠');original.rename(self.root)

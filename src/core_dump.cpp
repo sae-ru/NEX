@@ -168,7 +168,7 @@ JSON inspectCore(const CoreOptions &options){
       auto relative=old.extension()==".dll"?old.filename():fs::path("images")/old.filename();auto path=folder/relative;
       auto base=old.extension()==".dll"?old.parent_path():old.parent_path().parent_path();if(originalImageBase.empty())originalImageBase=base;
       std::error_code directoryError;
-      if(!old.is_absolute()||old.lexically_normal()!=old||old.parent_path().filename()!="images"||base.filename()!=folder.filename()||base!=originalImageBase||
+      if(!old.is_absolute()||old.lexically_normal()!=old||(old.extension()!=".dll"&&old.parent_path().filename()!="images")||base.filename()!=folder.filename()||base!=originalImageBase||
          (!relocated&&!fs::equivalent(base,folder,directoryError))||!expectedImages.contains(relative.generic_string())||!seenImages.insert(relative.generic_string()).second)
         throw Error("E_CORE_BUILD","owned image path/order differs from completion inputs");
       Input input(path,512*1048576);auto bytes=input.text();auto sha=input.sha();

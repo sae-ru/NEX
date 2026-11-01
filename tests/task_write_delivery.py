@@ -117,7 +117,7 @@ server test fn writes()->unit !{task,fs,throw}{assert(unwrap(solve()));}
   denied_native=process(mode+'-denied-native',[images['app']['artifact']],env=denied_env,expected=70);assert 'E_RESULT' in denied_native.stderr and {p.name:p.read_bytes() for p in data.iterdir()}==prior
   deployment=root/(mode+'-package');package=cli(mode+'-package','project','--kind','package','--component','app','--directory',deployment,*package_flags,cwd=project,env=env);assert not package['application_execution']
   criteria=cli(mode+'-task-init','task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=project,env=env)
-  criteria['checks']=[{'id':'write','program':'app','kind':'run','target':'native','configuration':'release','entry':'writer_app::main','expect':{'stdout':'42\n','exit_code':0},'timeout_seconds':30}]
+  criteria['checks']=[{'id':'write','program':'app','kind':'run','target':'native','configuration':'release','entry':'writer_app::main','expect':{'stdout':'42\n','exit_code':0},'timeout_seconds':180 if os.name=='nt' else 30}]
   criteria['requirements']=[{'id':'write','text':'Write through reviewed ABI7 binary providers with explicit external authority','targets':['native'],'checks':['write'],'bindings':[{'program':'app','kind':'function','symbol':'writer_app::main'}]}]
   task=project/'task.json';write(task,criteria);checked=cli(mode+'-task-check','task',task,'--kind','check',cwd=project,env=env)
   executed=cli(mode+'-task-run','task',task,'--kind','run','--task-hash',checked['task_hash'],'--directory',root/(mode+'-capture'),cwd=project,env=env);assert executed['ok'];receipt=Path(executed['output'])

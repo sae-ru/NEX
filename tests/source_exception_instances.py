@@ -330,7 +330,7 @@ def extra_checks(state):
                 code.write_text((module / "module.ll").read_text().replace("@main(", "@nex_private_modules_entry("), newline="\n")
                 run(label + "-object", [state["compiler"], "-c", "-fPIC", code, "-o", module / "module.o"])
                 saved = old / "original-program"
-                (old / "program").rename(saved)
+                (old / ("program.exe" if os.name=="nt" else "program")).rename(saved)
                 try:
                     binary = state["link_image"](label, old, "app", plan, {}, old / "host.o", module / "module.o")
                     result = run(label + "-execute", [binary], allowed=(42,))
@@ -339,7 +339,7 @@ def extra_checks(state):
                     binary.rename(old / ("program-" + change))
                 finally:
                     if saved.exists():
-                        saved.rename(old / "program")
+                        saved.rename(old / ("program.exe" if os.name=="nt" else "program"))
                 assert sha(provider) == before
                 report["incremental"].append({"change": change, "topology": topology, "provider_record_identical": True, "provider_artifact_sha256": before, "provider_artifact_unchanged": True, "consumer_record_changed": True, "binding_witness_changed": change == "method-binding", "native_exit": 42, "passed": True})
     if (out / "associated-file-future").is_dir():
@@ -350,7 +350,7 @@ def extra_checks(state):
             moved.mkdir()
             images = {}
             for file in original.iterdir():
-                if file.is_file() and (file.name == "program" or file.name.endswith(state["suffix"])):
+                if file.is_file() and (file.name == ("program.exe" if os.name=="nt" else "program") or file.name.endswith(state["suffix"])):
                     shutil.copy2(file, moved / file.name)
                     images[file.name] = sha(file)
             files = moved / "files"
@@ -362,7 +362,7 @@ def extra_checks(state):
                     saved = path.with_name(path.name + ".hidden")
                     path.rename(saved)
                     hidden.append((path, saved))
-                result = run("relocated-file-" + topology, [moved / "program"], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1"}, allowed=(42,))
+                result = run("relocated-file-" + topology, [moved / ("program.exe" if os.name=="nt" else "program")], {**os.environ, "PATH": "/usr/bin:/bin", "NEX_RESOURCE_DIR": str(out / "missing-sdk"), "NEX_FILES_ROOT": str(files), "NEX_FILES_WRITE": "1"}, allowed=(42,))
             finally:
                 for path, saved in reversed(hidden):
                     if saved.exists():

@@ -362,3 +362,21 @@ byte of retained MachO/146MBMLIR/24MBJSON through both actual frontend libraries
 Those concurrent-host observations include output/verification cost and do not
 establish the final full096build speed. Full100/SDK/platform/editor/history and
 independent native10000gates remain separate pending acceptance.
+
+## Concurrent cache publication on Windows
+
+Captured runtime/source/object files are published from sibling temporary files.
+Windows uses `FileRenameInfoEx` with POSIX replacement semantics; open readers
+retain their original file while a later open sees the complete replacement.
+The compiler reads with `FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE`.
+A publisher may still hold DELETE access after the new name becomes visible;
+ordinary CRT `fopen` can reject that open despite the complete file being present.
+The [Windows rename description](https://devblogs.microsoft.com/oldnewthing/20211022-00/?p=105822)
+explains this sharing interval.
+
+The incremental regression holds a real DELETE-access handle to a captured
+runtime header and builds another revision while it remains open. The old
+Windows compiler deterministically reports `E_FILE`; the corrected compiler
+must compile and run the new revision with the expected module reuse. Existing
+concurrent-builder, corrupt-cache repair and physical-image tests remain required.
+No source language, graph schema or task ABI version changes are involved.

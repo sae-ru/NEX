@@ -300,7 +300,10 @@ set_target_properties(nex PROPERTIES BUILD_RPATH "${LLVM_LIBRARY_DIRS};${NEX_Z3_
 install(TARGETS nex RUNTIME DESTINATION bin)
 install(DIRECTORY docs llm runtime examples lib web debug mobile DESTINATION share/nex
   PATTERN node_modules EXCLUDE PATTERN test-results EXCLUDE PATTERN playwright-report EXCLUDE
-  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE)
+  PATTERN .nex EXCLUDE PATTERN generated EXCLUDE PATTERN __pycache__ EXCLUDE
+  PATTERN .build EXCLUDE PATTERN windows-tic-tac-toe/dist EXCLUDE
+  PATTERN windows-tic-tac-toe/src/gui.nex EXCLUDE
+  PATTERN tic-tac-toe/dist EXCLUDE PATTERN tic-tac-toe/src/gui.nex EXCLUDE)
 install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.md THIRD_PARTY.md DESTINATION share/nex)
 install(FILES tests/sqlite_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
@@ -315,6 +318,8 @@ install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-opencl
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-cuda/ DESTINATION share/nex/tools/owned-cuda
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/cix-p1/include/ DESTINATION share/nex/tools/owned-opencl/include)
 install(FILES tools/sdk_task_file_migration.py DESTINATION share/nex/tools)

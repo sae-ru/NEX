@@ -1,3 +1,4 @@
+from host_fixture import interrupt_task
 """Task intent, candidate snapshots, acceptance evidence and owned process cleanup."""
 from host_fixture import python_executable
 import copy
@@ -266,7 +267,7 @@ test fn examples() -> unit { assert(increment(2) == 3); }
         inputs = json.loads((receipt.parent / 'inputs/manifest.json').read_text())
         self.assertEqual(inputs['task_hash'], checked['task_hash'])
         self.assertIn('inputs/programs/app.json', inputs['files'])
-        self.assertTrue((receipt.parent / 'artifacts/build-native/app').is_file())
+        self.assertTrue((receipt.parent / ('artifacts/build-native/app.exe' if os.name=='nt' else 'artifacts/build-native/app')).is_file())
         history = self.task('history')
         self.assertEqual(history['runs'][0]['status'], 'passed')
         self.assertEqual(history['runs'][0]['run_id'], saved['run_id'])
@@ -415,7 +416,7 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
         folder = Path(result['output']).parent / 'artifacts'
         self.assertTrue((folder / 'build-web/dist/index.html').is_file())
         self.assertTrue((folder / 'build-web/dist/THIRD_PARTY_NOTICES.txt').is_file())
-        self.assertTrue((folder / 'service-build-server/app').is_file())
+        self.assertTrue((folder / ('service-build-server/app.exe' if os.name=='nt' else 'service-build-server/app')).is_file())
         self.assertTrue((folder / 'library/libnex.a').is_file())
         openapi = json.loads((folder / 'api/generated/openapi.json').read_text())
         self.assertIn('/api/echo', openapi['paths'])
@@ -499,12 +500,12 @@ server test fn echo_test() -> unit { assert(unwrap(echo(api::Context("alice", "r
             while not marker.exists() and child.poll() is None and time.monotonic() < deadline:
                 time.sleep(.03)
             self.assertTrue(marker.exists())
-            child.send_signal(signal.SIGTERM)
+            interrupt_task(child) if os.name=='nt' else child.send_signal(signal.SIGTERM)
             stdout, stderr = child.communicate(timeout=15)
-            self.assertEqual(child.returncode, 143, stdout + stderr)
+            self.assertEqual(child.returncode, 130 if os.name=='nt' else 143, stdout + stderr)
             report = json.loads(stdout)
             self.assertEqual(report['status'], 'interrupted')
-            self.assertEqual(report['signal'], 15)
+            self.assertEqual(report['signal'], 2 if os.name=='nt' else 15)
             self.assertEqual(report['checks'][0]['status'], 'interrupted')
             self.assert_stopped(marker)
         finally:

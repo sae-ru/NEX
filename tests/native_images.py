@@ -6,8 +6,9 @@ LIVE='--live' in sys.argv
 if LIVE:sys.argv.remove('--live')
 PROBE=str(Path(sys.argv.pop(2)).resolve())
 import support as harness
+from host_fixture import deployed_environment
 
-@unittest.skipUnless(platform.system() in ('Darwin','Linux'),'native shared images require Mach-O/ELF')
+@unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'native shared images require a supported native host')
 class NativeImages(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
@@ -58,8 +59,9 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
     def execute(self,artifact,*,profile=None,code=0):
         data=self.root/'data';data.mkdir(exist_ok=True)
         env={'PATH':'/usr/bin:/bin','NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1','NEX_TRACY':'0'}
+        if os.name=='nt':env=deployed_environment(NEX_FILES_ROOT=str(data),NEX_FILES_WRITE='1',NEX_TRACY='0')
         if profile:env['NEX_PROFILE_OUTPUT']=str(profile)
-        p=subprocess.run([str(artifact)],cwd='/',capture_output=True,text=True,env=env,timeout=30)
+        p=subprocess.run([str(artifact)],cwd=self.root.anchor,capture_output=True,text=True,env=env,timeout=30)
         self.assertEqual(p.returncode,code,p.stdout+p.stderr)
         return p
     def two_dsos_static_frontier_one_runtime_and_moved_execution(self,profile):
@@ -77,15 +79,26 @@ server fn main()->unit!{fs,io}{var i:i64=0;while(i<64){check_values();i=i+1;}
         self.assertEqual(len(contexts['app']['static_libraries']),1)
         images=contexts['app']['owned_images'];self.assertEqual(len(images),3)
         self.assertEqual(sum(i['kind']=='runtime' for i in images),1)
-        first=ctypes.CDLL(artifacts['producer']['artifact']);second=ctypes.CDLL(artifacts['consumer']['artifact'])
-        self.assertEqual(ctypes.cast(first.nex_release,ctypes.c_void_p).value,ctypes.cast(second.nex_release,ctypes.c_void_p).value)
+        # Let a real loader process compare the live addresses, then exit so
+        # Windows can remove the original images during source-free relocation.
+        lookup='lambda library:ctypes.cast(library.nex_release,ctypes.c_void_p).value'
+        setup='import ctypes,sys;'
+        if os.name=='nt':
+            setup+='sys.path.insert(0,'+repr(str(Path(__file__).resolve().parent))+');from windows_loader_fixture import import_address;'
+            lookup='lambda library:import_address(library,"nex_release_at")'
+        check=subprocess.run([sys.executable,'-c',setup+'first=ctypes.CDLL(sys.argv[1]);second=ctypes.CDLL(sys.argv[2]);address='+lookup+';assert address(first)==address(second)',artifacts['producer']['artifact'],artifacts['consumer']['artifact']],capture_output=True,text=True,timeout=30)
+        self.assertEqual(check.returncode,0,check.stderr)
         executable=Path(artifacts['app']['artifact']);moved=self.root/'moved % 🧠';moved.mkdir()
-        shutil.copy2(executable,moved/'app');shutil.copytree(executable.parent/'images',moved/'images')
+        application='app.exe' if os.name=='nt' else 'app'
+        shutil.copy2(executable,moved/application)
+        if os.name=='nt':
+            for image in images:shutil.copy2(image['path'],moved/Path(image['path']).name)
+        else:shutil.copytree(executable.parent/'images',moved/'images')
         # The loader receives only the copied application and its first-party
         # closure; source and compiler are unnecessary for execution.
         shutil.rmtree(self.root/'app');shutil.rmtree(self.root/'producer');shutil.rmtree(self.root/'consumer');shutil.rmtree(self.root/'model')
         shutil.rmtree(executable.parent.parent)
-        self.assertEqual(self.execute(moved/'app').stdout,'NEX_IMAGES_OK\n')
+        self.assertEqual(self.execute(moved/application).stdout,'NEX_IMAGES_OK\n')
     def test_real_two_dsos_static_frontier_one_runtime_and_moved_execution(self):
         self.two_dsos_static_frontier_one_runtime_and_moved_execution('debug')
     def test_release_two_dsos_static_frontier_one_runtime_and_moved_execution(self):

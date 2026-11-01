@@ -1,5 +1,6 @@
 """Synchronous and resumable finally agreement, ownership and retained identities."""
 from sqlite_fixture import connection as sqlite_connection
+from host_fixture import run_native
 import hashlib
 import json
 import os
@@ -152,7 +153,7 @@ fn main()->unit{}
         self.source('module bounded;fn compute(flag:bool)->i64{'+body+'}fn main()->unit{assert(compute(false)==1);}')
         self.assertEqual(self.cli('build',ok=False,timeout=120)['code'],'E_FINALLY_LIMIT')
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual native LLDB scope check')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual native LLDB scope check')
     def test_native_finally_return_uses_outer_lexical_debug_scope(self):
         debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
         if not debugger:self.skipTest('LLDB is not available')
@@ -226,11 +227,11 @@ fn main()->unit !{io}{
         (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
         self.assertEqual(self.cli('check',cwd=fresh)['revision'],migrated['revision'])
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual C11 provider requires a supported native host')
     def test_pending_return_and_partial_argument_release_physical_resource_before_catch_or_finalizer(self):
         self.physical_resource_outcomes(False)
 
-    @unittest.skipUnless(platform.system() in ('Darwin','Linux'),'actual C11 provider requires native POSIX tools')
+    @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual C11 provider requires a supported native host')
     def test_resumable_pending_outcomes_release_physical_resource(self):
         self.physical_resource_outcomes(True)
 
@@ -275,18 +276,18 @@ server fn main()->unit !{ffi,io}{
               for name,value in signatures.items()}
         (self.root/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin)
                                                              for name,pin in pins.items())+'\n', newline="\n")
-        bundle=self.root/'bundle';bundle.mkdir();marker=self.root/'events';module=bundle/'module.so'
-        compiler=Path(self.cli('doctor')['native_compiler']).with_name('clang')
+        bundle=self.root/'bundle';bundle.mkdir();marker=self.root/'events';module=bundle/('module.dll' if os.name=='nt' else 'module.so')
+        compiler=Path(self.cli('doctor')['native_compiler'])
         literal='"'+''.join(chr(b) if 32<=b<127 and b not in (34,92) else '\\%03o'%b
                             for b in str(marker).encode())+'"'
-        produced=subprocess.run([compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden',
+        produced=run_native([compiler,'-x','c','-std=c11','-shared','-fPIC','-fvisibility=hidden',
             '-I'+str(harness.REPO/'runtime'),'-I'+str(self.root),'-DNEX_RESOURCE_MARKER='+literal,
             harness.REPO/'examples/source-resource-producer.c','-o',module],capture_output=True,text=True,timeout=60)
         self.assertEqual(produced.returncode,0,produced.stderr)
         (bundle/'NOTICE').write_text('NEX finally conformance producer\n', newline="\n")
-        host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
-        manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so',
-                  'files':[{'path':n,'sha256':hashlib.sha256((bundle/n).read_bytes()).hexdigest()} for n in ('module.so','NOTICE')],
+        host_platform=('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
+        manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':module.name,
+                  'files':[{'path':n,'sha256':hashlib.sha256((bundle/n).read_bytes()).hexdigest()} for n in (module.name,'NOTICE')],
                   'exports':pins,'notices':['NOTICE']}
         (bundle/'manifest.json').write_text(json.dumps(manifest), newline="\n")
         pin=hashlib.sha256((bundle/'manifest.json').read_bytes()).hexdigest()
