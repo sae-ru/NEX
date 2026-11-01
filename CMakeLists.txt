@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.154.0 LANGUAGES C CXX)
+project(NEX VERSION 0.155.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -740,7 +740,10 @@ set_tests_properties(runtime_contracts PROPERTIES TIMEOUT 900)
 add_test(NAME runtime_loop_contracts COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_loop_contracts.py $<TARGET_FILE:nex>)
 set_tests_properties(runtime_loop_contracts PROPERTIES TIMEOUT 1200)
-install(FILES tests/runtime_contracts.py tests/runtime_loop_contracts.py DESTINATION share/nex/tests)
+add_test(NAME runtime_value_contracts COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime_value_contracts.py $<TARGET_FILE:nex>)
+set_tests_properties(runtime_value_contracts PROPERTIES TIMEOUT 1200)
+install(FILES tests/runtime_contracts.py tests/runtime_loop_contracts.py tests/runtime_value_contracts.py DESTINATION share/nex/tests)
 add_test(NAME tasks COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/tasks.py $<TARGET_FILE:nex>)
 add_test(NAME task_toolchains COMMAND ${Python3_EXECUTABLE}

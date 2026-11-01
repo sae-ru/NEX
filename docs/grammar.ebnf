@@ -243,3 +243,8 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Toolchain0.153 projects selected while invariants and rankings through ordinary
    scalar locals, pure private functions and assert; source grammar is unchanged. *)
+
+(* Toolchain0.155 projects concrete effectful/value roots with their original
+   lexical signatures. Pre/post predicates reuse the expression grammar under
+   ordinary checking with empty effects; no contract keyword, language/ABI
+   migration or canonical identity change. Loop rules retain their scalar scope. *)

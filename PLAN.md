@@ -1,3 +1,15 @@
+# Runtime value contract development — 0.155.0 / language 0.27
+
+Broaden executable contracts to concrete effectful/value signatures and ordinary
+pure source-expression predicates. Preserve exact lexical aliases and inner/outer
+callable effects, normal return/finally/Result boundaries, original history and
+owned cleanup. New receipt/session3 records original signature/effects; scalar1
+and loop2 remain compatible. Loop annotations retain scalar observations.
+All-target builds and targeted development checks passed after retained fixture
+repairs. Full287 regression, installed SDK,
+current Windows delivery and every unfinished item below remain required.
+The separate0.154 source remains frozen for its ongoing full/SDK checks.
+
 # Windows/runtime integration — 0.154.0 / language 0.27
 
 Combine native Windows acceptance bfe4486 with Mac runtime loop contracts7272ebc.

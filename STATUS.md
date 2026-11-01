@@ -1,3 +1,17 @@
+# Runtime value contract development — 0.155.0 / language 0.27
+
+The next source candidate extends executable contracts to concrete value/effectful
+roots and checked pure expressions. Original lexical signatures, aliases, realms
+and effects are retained; generated body calls preserve source-error and finally
+return boundaries. Candidate/session3 identifies this extended scope; scalar1 and
+loop2 remain separate. All-target builds passed. The existing scalar/loop groups
+passed; a 13-case value run and a separate real FFI case passed after test-fixture
+repairs. Original failed logs/fixtures remain retained locally. These are scoped
+development checks: full287 regression, matching SDK and platform acceptance
+remain pending. The shipped effectful example is explicitly unsupported by the
+separate scalar proof engine; runtime generation is not a proof.
+The frozen0.154 integration is undergoing independent full and SDK validation.
+
 # Windows/runtime integration — 0.154.0 / language 0.27
 
 Development combines Mac runtime loop contracts (7272ebc) and the five native

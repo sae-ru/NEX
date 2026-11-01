@@ -292,6 +292,27 @@ std::string runtimeScalarExpression(Program &p,const Function &f,const std::stri
     throw Error("E_CONTRACT_EXPRESSION","runtime "+phase+" must return "+typeName(expected),expression->span);
   return source;
 }
+std::string runtimeValueExpression(const Program &original,const Function &f,const std::string &text,
+                                 const std::map<std::string,Type> &locals,const std::string &phase,
+                                 bool &valueChecks){
+  auto expression=parseExpression(text,"<contract:"+f.name+":"+phase+">",4096);
+  try{(void)runtimePredicateText(expression,locals);}
+  catch(const Error &error){if(error.code!="E_CONTRACT_EXPRESSION")throw;valueChecks=true;}
+  // Resolve in the root's actual module. The expression checker deliberately
+  // removes the root's effects: neither direct nor indirect predicate calls
+  // inherit its IO, file, task, foreign or source-error authority.
+  // Each clause gets independent derived watch/generic metadata. In particular,
+  // separate predicate lambdas must not reuse a previous clause's lifted name.
+  auto p=original;bindExpression(p,f.name,expression);
+  if(checkExpression(p,f.name,expression,locals)!=Type::Bool)
+    throw Error("E_CONTRACT_EXPRESSION","runtime "+phase+" must return bool",expression->span);
+  // Emit lexical tokens, never raw predicate text. This preserves the complete
+  // checked expression grammar (including generic aliases and match/lambdas),
+  // while stripping comments that could swallow generated assertion syntax.
+  std::string source;
+  for(const auto &token:sourceTokens(text,expression->span.file))source+=token.text+" ";
+  return source;
+}
 struct RuntimeLoops {std::string body,helpers;Array coverage;};
 RuntimeLoops runtimeLoops(Program &checked,const Function &f,const Contract &spec,
                          llvm::StringRef source,size_t begin,size_t end,
@@ -380,6 +401,7 @@ RuntimeLoops runtimeLoops(Program &checked,const Function &f,const Contract &spe
 JSON runtimeContractCandidate(const Program &original,const JSON &contract,const std::string &root){
   auto parsed=contracts(original,contract);
   bool loopChecks=std::any_of(parsed.begin(),parsed.end(),[](const auto &item){return !item.second.loops.empty();});
+  bool valueChecks=false;
   auto bundle=sourceBundle(original);auto files=bundle.getAsObject()->getObject("files");
   // The evidence and dependency lock must never overwrite a source member.
   for(const auto &name:{"runtime-contracts.receipt.json","nex.lock.json","nex.json"})
@@ -401,10 +423,10 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     const auto f=original.function(symbol);
     auto scalar=[](Type type){return type==Type::I64||type==Type::Bool;};
     if(f.foreign||f.test||f.closure||f.traitSignature||!f.traitOwner.empty()||
-       !f.templateName.empty()||!f.typeParameters.empty()||!f.typeArguments.empty()||
-       !f.effects.empty()||(f.result!=Type::Unit&&!scalar(f.result))||
-       std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return !scalar(param.type);}))
-      throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary concrete pure i64/bool/unit source functions",f.span);
+       !f.templateName.empty()||!f.typeParameters.empty()||!f.typeArguments.empty())
+      throw Error("E_CONTRACT_RUNTIME","runtime contract roots must be ordinary concrete source functions",f.span);
+    valueChecks|=!f.effects.empty()||(f.result!=Type::Unit&&!scalar(f.result))||
+      std::any_of(f.params.begin(),f.params.end(),[&](const auto &param){return !scalar(param.type);});
     auto source=files->getString(f.unit);
     if(!source||f.span.begin>=f.span.end||f.span.end>source->size())
       throw Error("E_CONTRACT_RUNTIME","contract root has no exact editable source definition",f.span);
@@ -423,7 +445,7 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     auto checks=[&](const std::vector<std::string> &clauses,const std::string &phase){
       std::string out;size_t index=0;
       for(const auto &clause:clauses){
-        auto predicate=runtimeScalarExpression(checked,f,clause,locals,phase);
+        auto predicate=runtimeValueExpression(checked,f,clause,locals,phase,valueChecks);
         out+="  // NEX runtime "+phase+" "+f.name+" #"+std::to_string(++index)+"\n  assert("+predicate+");\n";
       }
       return out;
@@ -440,14 +462,26 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
     auto &names=identifiers.at(f.unit);
     for(unsigned suffix=1;names.contains(implementation)||globalNames.contains(implementation);++suffix)implementation=stem+"_"+std::to_string(suffix);
     names.insert(implementation);globalNames.insert(implementation);
-    std::string parameters,arguments;
+    std::string arguments;
     for(const auto &param:f.params){
-      if(!parameters.empty()){parameters+=", ";arguments+=", ";}
-      parameters+=param.name+": "+typeName(param.type);arguments+=param.name;
+      if(!arguments.empty())arguments+=", ";
+      arguments+=param.name;
     }
     auto projected=runtimeLoops(checked,f,spec,*source,f.span.begin+open+1,f.span.begin+close,names,globalNames);
-    implementations[f.unit]+="\n\n"+f.realm+" fn "+implementation+"("+parameters+") -> "+typeName(f.result)+" {"+projected.body+"}\n"+projected.helpers;
-    replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+typeName(f.result)+" = ";
+    // Keep the parsed signature's spelling, rather than printing resolved
+    // nominal types that may not be accessible through this module's aliases.
+    auto header=definition.substr(0,open);size_t declaration=0;
+    while(declaration<tokens.size()&&tokens[declaration].text!="fn")++declaration;
+    if(declaration+1>=tokens.size()||tokens[declaration+1].text!=f.localName)
+      throw Error("E_CONTRACT_RUNTIME","cannot identify the source function name",f.span);
+    const auto &nameToken=tokens[declaration+1];header.replace(nameToken.span.begin,nameToken.span.end-nameToken.span.begin,implementation);
+    if(!tokens.empty()&&tokens.front().text=="pub")header.erase(tokens.front().span.begin,tokens.front().span.end-tokens.front().span.begin);
+    const auto &resultRange=f.resultTypeSource;
+    if(!resultRange.valid||resultRange.begin<f.span.begin||resultRange.begin>=resultRange.end||resultRange.end>f.span.begin+open)
+      throw Error("E_CONTRACT_RUNTIME","contract root has no exact return type spelling",f.span);
+    auto resultType=source->substr(resultRange.begin,resultRange.end-resultRange.begin).str();
+    implementations[f.unit]+="\n\n"+header+"{"+projected.body+"}\n"+projected.helpers;
+    replacement+="  ";if(f.result!=Type::Unit)replacement+="let "+spec.result+": "+resultType+"\n = ";
     replacement+=implementation+"("+arguments+");\n";
     auto owner=f.name.substr(0,f.name.rfind("::"));
     auto implementationSymbol=owner+"::"+implementation;
@@ -475,6 +509,14 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
   auto candidate=loadBundle(bundle,root);
   for(auto &item:coverage){
     auto object=item.getAsObject();(*object)["content_hash"]=contentHash(candidate.function(required(*object,"symbol")));
+    if(valueChecks){
+      const auto &origin=original.function(required(*object,"symbol"));Array parameters,effects;
+      for(const auto &param:origin.params)parameters.push_back(Object{{"name",param.name},{"type",typeName(param.type)}});
+      for(const auto &effect:origin.effects)effects.push_back(effect);
+      (*object)["realm"]=origin.realm;(*object)["parameters"]=std::move(parameters);
+      (*object)["result_type"]=typeName(origin.result);(*object)["effects"]=std::move(effects);
+      if(!object->getArray("loops"))(*object)["loops"]=Array{};
+    }
     const auto &implementation=candidate.function(required(*object,"implementation_symbol"));
     if(implementation.exported||implementation.closure)throw Error("E_INTERNAL","runtime contract implementation must remain private and static");
     (*object)["implementation_content_hash"]=contentHash(implementation);
@@ -484,13 +526,15 @@ JSON runtimeContractCandidate(const Program &original,const JSON &contract,const
       (*loop)["head_helper_content_hash"]=contentHash(helper);
     }
   }
-  return Object{{"schema",loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
+  Object result{{"schema",valueChecks?"nex.runtime-contract-candidate/3":loopChecks?"nex.runtime-contract-candidate/2":"nex.runtime-contract-candidate/1"},{"language",languageVersion},
     {"origin_revision",revision(original)},{"origin_source_hash",sourcesHash(original)},
     {"revision",revision(candidate)},{"source_hash",sourcesHash(candidate)},
     {"contract_hash",hash(json(contract,false))},{"intent_hash",verificationIntentHash(contract)},
     {"failure_code","E_ASSERT"},{"loop_checks",loopChecks},{"proof_performed",false},
     {"functions",std::move(coverage)},{"bundle",sourceBundle(candidate)},
     {"origin_bundle",sourceBundle(original)},{"contracts",contract}};
+  if(valueChecks)result["predicate_scope"]="pure_source_expressions";
+  return result;
 }
 
 std::string verifierVersion(){return Z3_get_full_version();}

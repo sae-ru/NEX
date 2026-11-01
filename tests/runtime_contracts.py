@@ -21,8 +21,9 @@ class RuntimeContracts(harness.ToolchainCase):
         directory=self.root/name
         result=self.cli('contract','--kind','runtime','--contracts',path,'--directory',directory,ok=ok,timeout=120)
         if ok:
-            self.assertEqual(result['schema'],'nex.runtime-contract-session/1')
-            self.assertFalse(result['proof_performed']);self.assertFalse(result['loop_checks'])
+            self.assertIn(result['schema'],('nex.runtime-contract-session/1','nex.runtime-contract-session/3'))
+            self.assertFalse(result['proof_performed'])
+            self.assertEqual(result['loop_checks'],any(f['loops'] for f in contract['functions']))
             self.assertNotEqual(result['origin_revision'],result['revision'])
             self.assertEqual(self.cli('check',cwd=directory)['revision'],result['revision'])
         else:self.assertFalse(directory.exists())
@@ -193,9 +194,9 @@ server fn main()->i64{return guarded(2);}
             changed=copy.deepcopy(original);changed[field]='0'*64;variants.append((changed,'E_CONTRACT_STALE'))
         changed=copy.deepcopy(original);changed['functions'][0]['content_hash']='0'*64;variants.append((changed,'E_CONTRACT_STALE'))
         changed=copy.deepcopy(original);changed['unexpected']=True;variants.append((changed,'E_CONTRACT'))
-        for predicate in ('assert(true)','len("x")==1','x.field==0','[1][0]==1','1','missing==0','guarded==guarded','guarded!=guarded','effectful==effectful','true || guarded==guarded','1.0==1.0','[1]==[1]','fn()->bool{return true;}'):
+        for predicate in ('assert(true)','x.field==0','1','missing==0','effectful()==0','true || effectful()==0','fn()->bool{return true;}'):
             changed=copy.deepcopy(original);changed['functions'][0]['requires']=[predicate];variants.append((changed,None))
-        changed=copy.deepcopy(original);changed['functions'][0]['ensures']=['guarded==guarded'];variants.append((changed,'E_CONTRACT_EXPRESSION'))
+        changed=copy.deepcopy(original);changed['functions'][0]['ensures']=['effectful()==0'];variants.append((changed,'E_EFFECT'))
         state=harness.database_rows(self.root/'.nex/graph.db')
         for index,(contract,code) in enumerate(variants):
             with self.subTest(index=index):
@@ -212,7 +213,7 @@ test fn tested()->unit{}
 fn looped(n:i64)->i64{var i:i64=0;while i<n{i=i+1;}return i;}
 fn main()->i64{return looped(3);}
 """)
-        for symbol in ('heap','generic','effect','tested','looped'):
+        for symbol in ('generic','tested','looped'):
             with self.subTest(symbol=symbol):
                 _,result=self.generate(self.contract(symbol),'reject-'+symbol,ok=False)
                 self.assertEqual(result['code'],'E_CONTRACT_RUNTIME')

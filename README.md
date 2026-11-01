@@ -52,14 +52,15 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.154.0 / language 0.27**.
-Windows/runtime integration is under validation. Parent Mac0.153 and Windows0.152.1
+Current source: **toolchain 0.155.0 / language 0.27**.
+Value/effectful runtime contracts are under development; Windows/runtime integration
+0.154 is independently under validation. Parent Mac0.153 and Windows0.152.1
 receipts describe their exact earlier sources; this merged source requires fresh acceptance.
 The accepted 0.152.1 macOS ARM64 source build passed all 285 CTest groups. The development SDK
 passed 40 maintained phases in each moved/restored installation. An additional 126 production UI/Worker
 tests passed across Chromium, Firefox and WebKit. This is a development preview.
 Read the [logical debugger evidence](docs/evidence/lldb-resume-0.152.1.json) and
-[scalar runtime contract guide](docs/runtime-contracts.md) for their exact scopes.
+[runtime contract guide](docs/runtime-contracts.md) for their exact scopes.
 The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
 source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.152.1.json).
 

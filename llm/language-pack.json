@@ -495,7 +495,9 @@
     "runtime_contracts": "examples/runtime-contracts/main.nex",
     "runtime_contract": "examples/runtime-contracts/contracts.json",
     "runtime_loop_contracts": "examples/runtime-loop-contracts/main.nex",
-    "runtime_loop_contract": "examples/runtime-loop-contracts/contracts.json"
+    "runtime_loop_contract": "examples/runtime-loop-contracts/contracts.json",
+    "runtime_value_contracts": "examples/runtime-value-contracts/main.nex",
+    "runtime_value_contract": "examples/runtime-value-contracts/contracts.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -1306,7 +1308,9 @@
       "debugging": true,
       "profiling": true,
       "actual_Windows_OS_execution_verified": true,
-      "verified_windows_architectures": ["x86_64"],
+      "verified_windows_architectures": [
+        "x86_64"
+      ],
       "guide": "docs/windows.md"
     }
   },
@@ -3595,8 +3599,8 @@
     "receipt_schema": "nex.runtime-contract-candidate/1",
     "ordinary_source_revision": true,
     "original_preserved": true,
-    "roots": "ordinary concrete pure i64/bool/unit source functions",
-    "predicates": "scalar literals, visible i64/bool bindings and checked operators",
+    "roots": "ordinary concrete source functions with checked value signatures and declared effects",
+    "predicates": "checked pure source expressions over parameters and the completed result",
     "failure_code": "E_ASSERT",
     "normal_returns_after_finally": true,
     "recursive_calls": true,
@@ -3606,7 +3610,7 @@
     "installed_sdk_accepted": false,
     "pending": [
       "matching full regression and installed SDK acceptance",
-      "effectful and aggregate root contracts",
+      "generic root contracts",
       "source contract syntax"
     ],
     "session_schema": "nex.runtime-contract-session/1",
@@ -3616,6 +3620,11 @@
     "loop_session_schema": "nex.runtime-contract-session/2",
     "loop_annotations": "selected source while coordinates; nonempty invariants and i64 decreases",
     "loop_lowering": "ordinary_private_pure_head_function",
-    "unannotated_loops_instrumented": false
+    "unannotated_loops_instrumented": false,
+    "value_receipt_schema": "nex.runtime-contract-candidate/3",
+    "value_session_schema": "nex.runtime-contract-session/3",
+    "predicate_scope": "pure_source_expressions",
+    "root_effects_in_predicates": false,
+    "value_loop_bindings": "i64/bool only"
   }
 }
