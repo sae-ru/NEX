@@ -1,3 +1,14 @@
+# macOS development SDK delivery - 0.155.0 / language 0.27
+
+Source670e1fd passed287 CTest groups. Moved/restored SDKs each passed40 maintained
+phases plus48 contract/debugger scenarios on actual Python3.10.22 and3.14.9.
+The published archive corrects one guide sentence; all code/other payload bytes
+match the fully qualified archive, and both corrected copies passed independent
+source-denied checks. Exact receipts: docs/releases/0.155.0.json.
+This accepts the recorded Mac development scope. Original Windows/Linux, mobile,
+GPU/NPU, UI/Studio/converter, source contract syntax and all other unfinished
+requirements below remain open. Source0.156 generic contracts have separate gates.
+
 # SDL Metal/Retina example correction — 0.155.0 compiler
 
 Map the board to physical presentation pixels, retain readback surfaces through

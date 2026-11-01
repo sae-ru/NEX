@@ -1,0 +1,237 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope_with_documentation_delta",
+  "verified_at_utc": "2026-11-01T20:42:33.726925+00:00",
+  "toolchain": "0.155.0",
+  "language": "0.27",
+  "source_task_ABI": 7,
+  "source_commit": "670e1fd35d40d8f8247953de40decfcb2cb0aeeb",
+  "SDK_documentation_source_commit": "3bf622ee78efb32331de4e14fb6e2fc1e223525e",
+  "publication_changes": "Documentation and evidence only after the recorded SDK source; compiler/runtime sources unchanged.",
+  "input_compiler_sha256": "d8107f42132387a2034d6b23f72f31a6dbc3f4132ed9091fa69f9f17361e00d5",
+  "compiler_build": "9da45a7aaa57735edbee4f04068e55bbaf23fc9e3be15f760fa6b11338e3dbfe",
+  "descriptor_hash": "77d63b348615e51050bb86e2d943121654164925485af3c86e98d896400bfd89",
+  "license": "MIT",
+  "NEX_MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+  "compiler_full_regression": {
+    "accepted": true,
+    "groups": 287,
+    "CTest_group_failures": [],
+    "CTest_group_skips": [],
+    "reported_internal_unittest_skips": [
+      {
+        "group": "parallel_mapping",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_images",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_build",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "task_provider_debugging_native",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_actions",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_runtime",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "editor",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_pages",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "debug_image",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "core_dump",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "core_capsules",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "frontend_diagnostics",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "sdk_archives",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "packaging",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "incremental",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_targets",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_targets",
+        "reported_unittest_skips": 8
+      },
+      {
+        "group": "server_debug",
+        "reported_unittest_skips": 4
+      }
+    ],
+    "internal_skips_do_not_prove_other_platforms": true,
+    "seconds": 4819.446,
+    "report_sha256": "7a9626bf4a23ad19ad21098fa6b3e9f4cb30fd7926ce027f0df9d50bcafc776a",
+    "JUnit_sha256": "d5f900c5cf0012930269e2969350a4cf6fc1d56fe15c02968c38b26e359c07d7",
+    "source_manifest_sha256": "83b4194d7bd98bc76759a38cee923ac1064b3d707c9b21d7efac0cce83197433"
+  },
+  "SDK": {
+    "accepted": true,
+    "platform": "arm64-apple-darwin27.0.0",
+    "minimum_macos": "27.0",
+    "external_prerequisites": [
+      "Apple command line tools/SDK and system C++ runtime/linker",
+      "Python 3.10+",
+      "Node.js/npm for browser builds",
+      "host LLDB/lldb-dap for live debugging"
+    ],
+    "moved": {
+      "ok": true,
+      "python": "Python 3.10.22",
+      "python_sha256": "c21b8f194a501a60896bc83a39835b72a6c684302a40f7e72d8f0629ada47e5f",
+      "phases": 40,
+      "seconds": 4177.562,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "f7a143a5ac38959ec436ca36fe5c323bd1cf58ceed442ce7bdeebff4d5284843",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 6,
+      "original_source_read_controls": 5,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "resume_protocol_scenarios": 4
+    },
+    "restored": {
+      "ok": true,
+      "python": "Python 3.14.9",
+      "python_sha256": "51504e3c551bf50ebff1f4d88aa68ec1a1cb8c742f9b8bd3baccd6c3991141b7",
+      "phases": 40,
+      "seconds": 4138.208,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "f7a143a5ac38959ec436ca36fe5c323bd1cf58ceed442ce7bdeebff4d5284843",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 6,
+      "original_source_read_controls": 5,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "resume_protocol_scenarios": 4
+    },
+    "qualification_report_sha256": "14ac723119cef896b3e7a506ce016f559045d2ae4b7d6320f328ba0337033dee",
+    "full40_qualified_archive": {
+      "sha256": "8ea532d1a482cbf185c05d063e9c4fdfaf3541136f2dfd200689bf14f276c33e",
+      "bytes": 123661740,
+      "files_in_inventory": 3298,
+      "excluded_python_cache_files": []
+    },
+    "published_archive": {
+      "filename": "nex-sdk-0.155.0-macos-arm64-development.tar.gz",
+      "sha256": "5675a47be66a69d226abb575c60be2fee174ca351eb15ca0a8db32c637987695",
+      "bytes": 123661737,
+      "files_in_inventory": 3298,
+      "download_url": "https://github.com/sae-ru/NEX/releases/download/v0.155.0/nex-sdk-0.155.0-macos-arm64-development.tar.gz",
+      "release_tag": "v0.155.0",
+      "pre_release": true
+    },
+    "documentation_delta": {
+      "source_commit": "3bf622ee78efb32331de4e14fb6e2fc1e223525e",
+      "only_changed_payload_files": [
+        {
+          "path": "share/nex/docs/runtime-contracts.md",
+          "before": {
+            "sha256": "e2a00947a140439e2055a6ad42caee63d0a85630d78190e1cff1b18941a312a3",
+            "bytes": 11201,
+            "executable": false
+          },
+          "after": {
+            "sha256": "f0d73add63afbe759a0722d8890271e301bcf1e55e444a1c06698cb02e8b7f11",
+            "bytes": 11202,
+            "executable": false
+          }
+        }
+      ],
+      "all_other_payload_bytes_identical": true,
+      "manifest_inventory_and_provenance_updated": true,
+      "report_sha256": "3a6a1cdb93133e6c70678b0383842fc0672973bc911bce5df7471b9b69d3b4b0",
+      "moved_post_delta": {
+        "ok": true,
+        "python": "Python 3.10.22",
+        "negative_source_controls": 7,
+        "negative_write_controls": 2,
+        "guide_sha256": "f0d73add63afbe759a0722d8890271e301bcf1e55e444a1c06698cb02e8b7f11",
+        "scalar_projection_reference_native": true,
+        "generic_roots_refused_as_documented": true,
+        "compiler_sha256": "f7a143a5ac38959ec436ca36fe5c323bd1cf58ceed442ce7bdeebff4d5284843"
+      },
+      "restored_post_delta": {
+        "ok": true,
+        "python": "Python 3.14.9",
+        "negative_source_controls": 7,
+        "negative_write_controls": 2,
+        "guide_sha256": "f0d73add63afbe759a0722d8890271e301bcf1e55e444a1c06698cb02e8b7f11",
+        "scalar_projection_reference_native": true,
+        "generic_roots_refused_as_documented": true,
+        "compiler_sha256": "f7a143a5ac38959ec436ca36fe5c323bd1cf58ceed442ce7bdeebff4d5284843"
+      },
+      "scope": "The full40 workflows and48 extra cases per SDK executed on the original qualified archive. The published archive preserves all code bytes, corrects one guide, and passes independent source-denied guide/scalar/native/rejection checks."
+    },
+    "signing": "Ad hoc Mach-O signatures; no Developer ID notarization"
+  },
+  "runtime_contract_scope": {
+    "legacy_scalar_cases": 15,
+    "loop_cases": 15,
+    "value_effectful_cases": 14,
+    "receipt_families": [
+      1,
+      2,
+      3
+    ],
+    "generic_root_contracts": false,
+    "source_contract_syntax": false,
+    "Z3_scalar_scope_unchanged": true
+  },
+  "separate_evidence": {
+    "SDL_Metal_Retina": "../evidence/sdl-metal-retina-0.155.0.json",
+    "prior_Windows_source": "../evidence/windows-native-2026-11-01.json",
+    "prior_Windows_SDK_CUDA": "../evidence/windows-sdk-2026-11-01.json",
+    "earlier_production_browser_execution": "../evidence/sdk-browsers-0.152.1.json"
+  },
+  "known_scope_limits": [
+    "Current Windows/Linux regression and SDK acceptance remain separate; earlier receipts retain their source identities.",
+    "The SDK browser phase builds production assets; it does not replace a fresh three-browser execution cohort.",
+    "The original0.155 archive advertised Python3.9 incorrectly; this qualification used actual3.10.22 and3.14.9, with actual3.9 refusal checked.",
+    "Native GPU U8 Add/Affine uses explicit trusted providers. General GPU code generation, Metal compute, Apple NPU, full mobile/UI/Studio/converter and other original PLAN work remain incomplete."
+  ],
+  "goal_complete": false
+}

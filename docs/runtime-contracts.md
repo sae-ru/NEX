@@ -169,6 +169,9 @@ Native Windows/CUDA and other-platform acceptance remain separate.
 Toolchain0.153 develops loop projection. Matching full regression, SDK and platform
 acceptance for that extension remain separate from the accepted0.152.1 SDK.
 
-Toolchain0.155 develops value/effectful projection. Its full regression, matching
-installed SDK and platform acceptance remain pending until matching receipts are
-published. The frozen0.154 integration is validated separately.
+The [0.155 Mac delivery](releases/0.155.0.json) records full287 regression and
+40 maintained phases plus15 scalar,15 loop,14 value and4 debugger-protocol cases
+in each of two installed SDKs. The published archive has a documented guide-only
+correction; compiler and other payload bytes match the fully qualified archive.
+Other platforms, generic contract roots and source contract syntax retain their
+separate pending scopes.

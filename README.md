@@ -53,18 +53,23 @@ platform acceptance.
 ## Development status
 
 Current source: **toolchain 0.155.0 / language 0.27**.
-Value/effectful runtime contracts are under development; Windows/runtime integration
-0.154 is independently under validation. Parent Mac0.153 and Windows0.152.1
-receipts describe their exact earlier sources; this merged source requires fresh acceptance.
-The accepted 0.152.1 macOS ARM64 source build passed all 285 CTest groups. The development SDK
-passed 40 maintained phases in each moved/restored installation. An additional 126 production UI/Worker
-tests passed across Chromium, Firefox and WebKit. This is a development preview.
-Read the [logical debugger evidence](docs/evidence/lldb-resume-0.152.1.json) and
-[runtime contract guide](docs/runtime-contracts.md) for their exact scopes.
-The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
-source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.152.1.json).
 
-Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
+The [macOS development SDK](docs/releases/0.155.0.json) passed all **287 CTest groups**.
+Moved and archive-restored installations each passed 40 maintained phases and 48
+additional contract/debugger cases, on actual Python 3.10.22 and3.14.9 respectively.
+The published archive corrects one guide sentence after that qualification;
+all code and other payload bytes are identical, with both corrected copies
+checked independently. The delivery record preserves the exact archive chain.
+
+This is a development preview for macOS ARM64, minimum macOS 27.0.
+[Install it](docs/getting-started.en.md), or build from source for another host.
+Discover the selected compiler's capabilities with nex describe.
+Current Windows/Linux qualification, general GPU compilation, mobile/UI and
+the remaining [PLAN](PLAN.md) requirements have separate pending work.
+The earlier [126 production-browser tests](docs/evidence/sdk-browsers-0.152.1.json)
+retain their0.152.1 source scope; the0.155 SDK browser phase builds production assets.
+
+Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.155.0.json).
 Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
 The [local Windows compiler](docs/windows-host.md) builds and runs x64 `.exe`
 applications directly on Windows, including CPU/tasks/files and SQLite.

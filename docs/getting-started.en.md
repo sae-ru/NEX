@@ -3,13 +3,30 @@
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree
-uses toolchain 0.155.0 / language 0.27. Check [delivery evidence](releases/0.152.1.json)
+uses toolchain 0.155.0 / language 0.27. Check [delivery evidence](releases/0.155.0.json)
 for the exact accepted SDK, source commit, platform, archive hash and prerequisites.
 
 ## Install a matching SDK or build the compiler
 
-For this snapshot, use the source build below. A public binary download has not
-yet been published; the delivery record identifies the verified macOS archive.
+For macOS ARM64 on macOS27.0+, download the [0.155.0 development SDK](https://github.com/sae-ru/NEX/releases/tag/v0.155.0).
+It requires Apple command line tools/SDK and Python3.10+. Web builds use Node/npm;
+live debugging uses host LLDB. Verify the archive before adding it to PATH:
+
+```sh
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.155.0/nex-sdk-0.155.0-macos-arm64-development.tar.gz' -o 'nex-sdk-0.155.0-macos-arm64-development.tar.gz'
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.155.0/nex-sdk-0.155.0-macos-arm64-development.tar.gz.sha256' -o 'nex-sdk-0.155.0-macos-arm64-development.tar.gz.sha256'
+shasum -a 256 -c 'nex-sdk-0.155.0-macos-arm64-development.tar.gz.sha256'
+tar -xzf 'nex-sdk-0.155.0-macos-arm64-development.tar.gz'
+export PATH="$PWD/nex-sdk-0.155.0-macos-arm64-development/bin:$PATH"
+nex doctor --json
+nex describe --kind index --json
+```
+
+Published SHA256: `5675a47be66a69d226abb575c60be2fee174ca351eb15ca0a8db32c637987695`.
+
+For Windows/Linux or a different target, use the source build below and the
+matching platform guide. Accepted platforms and the documentation-only archive
+correction are recorded separately in the linked delivery record.
 
 An SDK contains `bin/nex` and `share/nex`; keep both together. Use an artifact
 for your actual OS/architecture and verify its published SHA256 before extracting
@@ -34,7 +51,7 @@ cmake --install build --prefix /absolute/path/to/nex-sdk
 Set `LLVM_DIR`, `MLIR_DIR`, `OPENSSL_ROOT_DIR` and `NEX_Z3_ROOT` to your selected
 installations when CMake cannot discover them. See [SDK delivery](sdk.md) and
 [Linux](linux.md) for the maintained recipes. Native Windows x64 hosting has separate [0.152.1 acceptance](windows-handoff-current.md);
-this 0.154 integration requires fresh platform acceptance. Use the Windows host
+this 0.155 source requires fresh Windows acceptance. Use the Windows host
 recipe and keep host and target C++ ABI/CRT dependencies separate.
 
 Add the chosen SDK's `bin` directory to PATH, then verify selection:

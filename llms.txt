@@ -19,7 +19,7 @@ end-to-end model-token savings remain unmeasured.
 - [Grammar](docs/grammar.ebnf)
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
-- [Versioned SDK evidence](docs/releases/0.152.1.json)
+- [Versioned SDK evidence](docs/releases/0.155.0.json)
 
 Use `nex describe --kind index --json`, then `--field PATH --json`.
 Use `nex context --symbol NAME --json` for bounded project context.
