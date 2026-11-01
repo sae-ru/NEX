@@ -1280,6 +1280,8 @@ class DAP:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    if sys.version_info < (3, 10):
+        parser.error('Python 3.10+ is required for NEX SDK tooling; got ' + sys.version.split()[0])
     parser.add_argument('sdk', type=Path, help='Installed SDK prefix containing bin/nex and share/nex')
     parser.add_argument('--output', required=True, type=Path, help='New or empty evidence directory')
     parser.add_argument('--live', action='store_true', help='Require actual LLDB and NEX DAP child launches')

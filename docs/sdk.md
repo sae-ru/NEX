@@ -93,13 +93,17 @@ The output directory must be new or empty. The script never replaces previous
 evidence and never imports files from the compiler's source checkout. It sets
 `NEX_RESOURCE_DIR` to this SDK, verifies the selected runtime and matching
 language-pack version, inventories every indexed text resource, and queries the
-installed guides, including the experimental Wasm guide. Python 3.9+, the SDK's development dependencies
+installed guides, including the experimental Wasm guide. Python 3.10+, the SDK's development dependencies
 (LLVM/MLIR, Clang, platform SDK, SQLite/OpenSSL, Z3 and Node.js) remain required. The maintained HTTPS check also uses the `openssl` CLI. On Linux, its application-packaging phase additionally requires `patchelf`, `readelf` and `ldd`; these are development/packaging tools rather than generated-application dependencies.
 The text-file phase checks explicit capability/read-only denial, native/reference
 Unicode/NUL agreement, source-deleted replay and a packaged file application
 executed with compiler resources unavailable. File access requires no SQLite or
 JSON runtime. Its report distinguishes assembly from actual execution.
 This is an installed-development-chain check, not a portable SDK bundle.
+
+Both SDK assembly and acceptance reject older Python versions before inspecting
+the selected SDK or creating output. The compiler and generated native programs
+do not require Python for ordinary execution.
 
 The0.114 candidate adds a twenty-sixth phase, `structured-task-profile`.
 It requires the matching native task profiler descriptor, exact source-call

@@ -13,6 +13,9 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
+
+PYTHON_REQUIREMENT = 'Python 3.10+'
 
 
 def run(arguments, **options):
@@ -280,7 +283,7 @@ class Bundle:
         return self.finish(configuration, doctor, {
             'platform': 'macos', 'minimum_macos': '.'.join(map(str, self.minimum_os)),
             'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
-                                       'Python 3.9+', 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
+                                       PYTHON_REQUIREMENT, 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
             'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.'})
 
     def relocate_macho(self):
@@ -468,7 +471,7 @@ class WindowsBundle(Bundle):
         self.external_tree(resource,self.output/'libexec/nex/wasm/lib/clang'/resource.name)
         return self.finish(configuration,doctor,{'platform':'windows','architecture':'x86_64',
             'requires_WSL':False,'requires_MSYS_runtime':False,
-            'external_prerequisites':['Windows system DLLs listed in system_libraries','native Python','Node.js/npm','native LLDB for debugger acceptance'],
+            'external_prerequisites':['Windows system DLLs listed in system_libraries','native '+PYTHON_REQUIREMENT,'Node.js/npm','native LLDB for debugger acceptance'],
             'signing':'unsigned; publisher signing not performed'})
 
 
@@ -632,7 +635,7 @@ class LinuxBundle(Bundle):
             'host_cxx_sdk': run(['g++', '--version']).splitlines()[0],
             'packager_patchelf': run([patchelf, '--version']).strip(),
             'external_prerequisites': ['matching glibc loader/runtime and GCC C/C++ development SDK (headers/CRT); system C++/GCC runtimes listed in system_libraries',
-                                       'Python 3.9+', 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
+                                       PYTHON_REQUIREMENT, 'openssl CLI for HTTPS acceptance', 'Node.js/npm for browser builds',
                                        'host LLDB/lldb-dap for live debugging'],
             'modifications': 'Copied ELF images use origin-relative RUNPATH; absolute DT_NEEDED paths normalized. Private C++/GCC runtimes are captured; GNU platform runtime remains external. Source installations unchanged.'})
 
@@ -667,6 +670,8 @@ class LinuxBundle(Bundle):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    if sys.version_info < (3, 10):
+        parser.error(PYTHON_REQUIREMENT + ' is required for NEX SDK tooling; got ' + sys.version.split()[0])
     parser.add_argument('--sdk', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--notices', type=Path, required=True,

@@ -1,5 +1,6 @@
 """Owned SDK fixtures exercise archive integrity and extraction boundaries."""
 import copy
+import contextlib
 import hashlib
 import importlib.util
 import io
@@ -14,6 +15,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
 
 sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('sdk_archive', Path(__file__).resolve().parents[1]/'tools/sdk_archive.py')
@@ -23,6 +25,34 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def test_sdk_commands_reject_old_python_before_touching_paths(self):
+        tools = Path(__file__).resolve().parents[1]/'tools'
+        spec = importlib.util.spec_from_file_location('python_floor_bundle', tools/'sdk_bundle.py')
+        bundle = importlib.util.module_from_spec(spec); spec.loader.exec_module(bundle)
+        with tempfile.TemporaryDirectory(prefix='nex Python floor % 🧠 ') as directory:
+            missing = Path(directory)/'missing SDK'
+            for module, arguments in ((bundle, ['--sdk', str(missing), '--notices', str(missing),
+                                                '--output', str(Path(directory)/'bundle')]),
+                                      (acceptance, [str(missing), '--output', str(Path(directory)/'acceptance')])):
+                with self.subTest(command=module.__name__):
+                    error = io.StringIO()
+                    with mock.patch.object(sys, 'argv', [module.__file__, *arguments]), \
+                         mock.patch.object(sys, 'version_info', (3, 9, 99)), \
+                         contextlib.redirect_stderr(error), self.assertRaises(SystemExit) as raised:
+                        module.main()
+                    self.assertEqual(raised.exception.code, 2)
+                    self.assertIn('Python 3.10+ is required', error.getvalue())
+                    self.assertNotIn('Traceback', error.getvalue())
+                    self.assertEqual(list(Path(directory).iterdir()), [])
+                    # This tests the dispatch boundary only; installed SDK execution
+                    # is qualified separately with real supported interpreters.
+                    for version in ((3, 10, 0), (3, 14, 9)):
+                        with mock.patch.object(sys, 'argv', [module.__file__, '--help']), \
+                             mock.patch.object(sys, 'version_info', version), \
+                             contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                            module.main()
+                        self.assertEqual(raised.exception.code, 0)
+
     def test_typed027_requires_its_own_phase_and_keeps_retained_ABIs(self):
         self.assertEqual(len(acceptance.acceptance_phases('0.136.1')),39)
         self.assertEqual(len(acceptance.acceptance_phases('0.150.0')),39)
