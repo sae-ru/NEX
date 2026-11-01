@@ -1,3 +1,14 @@
+# Scoped Mac GPU and generic profiling qualification - 0.156.0
+
+Compiler source 3a220f3 passed 21 actual OpenCL native/reference scenarios and six
+native source profiles on Apple M5 Max (47 physical kernel events). Generic
+Tagged<T> roots retain str/list<str>, pure T-annotated predicates, physical fence
+cleanup, cancellation/deadline and exact source-call counts. Visible managed
+shallow pools balanced on success, pre/post traps, body overflow and control exits.
+The receipt is docs/evidence/macos-opencl-0.156.0.json; compiler/runtime code is
+unchanged by this evidence publication. Full regression of 288 groups and installed SDK acceptance are separate gates. Integrated GPU timeline, general kernels, Metal compute, Apple
+NPU, current Windows/Linux delivery and every unfinished original item remain.
+
 # Generic runtime contract development - 0.156.0 / language 0.27
 
 Project source templates with parametric pure predicates, explicit phantom and

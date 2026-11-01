@@ -66,7 +66,10 @@ Read the [logical debugger evidence](docs/evidence/lldb-resume-0.152.1.json) and
 The selected compiler's `nex describe` is the capability authority. Accepted SDKs,
 source commits and hardware scopes are recorded in the [delivery record](docs/releases/0.152.1.json).
 
-Apple M5 Max OpenCL U8 Add/Affine has a [scoped physical-device receipt](docs/evidence/macos-opencl-0.151.1.json).
+Apple M5 Max OpenCL U8 Add/Affine passed [0.156 GPU checks](docs/evidence/macos-opencl-0.156.0.json):
+21 native/reference scenarios and six native source profiles, including generic
+contracts, physical pending cancellation/deadline and balanced visible managed pools.
+Matching full regression and installed SDK acceptance remain separate.
 Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
 The [local Windows compiler](docs/windows-host.md) builds and runs x64 `.exe`
 applications directly on Windows, including CPU/tasks/files and SQLite.

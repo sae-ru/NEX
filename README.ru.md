@@ -68,7 +68,10 @@ production UI/Workers в Chromium, Firefox и WebKit. Области прове�
 Фактические возможности сообщает выбранный `nex describe`. Принятые SDK,
 коммиты и области аппаратной проверки указаны в [состоянии поставки](docs/releases/0.152.1.json).
 
-Для Apple M5 Max есть [испытания OpenCL U8 Add/Affine на физическом GPU](docs/evidence/macos-opencl-0.151.1.json).
+На Apple M5 Max прошли [испытания OpenCL U8 Add/Affine в NEX 0.156](docs/evidence/macos-opencl-0.156.0.json):
+21 сценарий native/reference и шесть профилируемых запусков, включая generic-контракты,
+отмену/дедлайн при ожидающей GPU-команде и баланс видимых управляемых пулов.
+Полная регрессия и приёмка установленного SDK проверяются отдельно.
 Результаты ускорителей Linux CIX/RK сохраняют [версию 0.151.0](docs/evidence/accelerators-0.151.0.json).
 [Локальный компилятор Windows](docs/windows-host.md) собирает и запускает x64
 `.exe` непосредственно в Windows, включая CPU/tasks/files и SQLite.
