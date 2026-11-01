@@ -1,8 +1,10 @@
 """Actual CLI/DAP launch arguments and archived views of genuine owned resources."""
-from host_fixture import run_native, host_cpp
-from host_fixture import run_native
 from pathlib import Path
 import argparse,hashlib,json,os,platform,shutil,subprocess,sys,tempfile,time,traceback
+
+# CMake also installs this script under tools/, beside the sibling tests/.
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
+from host_fixture import run_native, host_cpp
 
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('compiler',type=Path);parser.add_argument('resources',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--require-live',action='store_true');args=parser.parse_args()

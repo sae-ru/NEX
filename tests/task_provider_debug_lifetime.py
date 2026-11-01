@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Actual startup-linked generated DSO/private physical fence; no production hook."""
-from host_fixture import run_native, host_cpp
-from host_fixture import run_native
 import hashlib,json,os,platform,shutil,subprocess,sys,tempfile,time
 from pathlib import Path
+
+# CMake also installs this script under tools/, beside the sibling tests/.
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
+from host_fixture import run_native, host_cpp
 
 def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
