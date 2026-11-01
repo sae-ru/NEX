@@ -1,3 +1,14 @@
+# SDL Metal/Retina example qualification — 0.155.0 compiler
+
+The SDL example now maps its logical board to the actual physical presentation
+rectangle, retains surfaces through RAII and exposes a bounded smoke-only size
+control. Native/reference/Node rules, eight physical Metal scenes, ten invalid
+size refusals and relocated read-only/source-denied package execution passed.
+The [scoped receipt](docs/evidence/sdl-metal-retina-0.155.0.json) pins the exact
+source overlay and unchanged compiler. The parent ce72e9f core/SDK gates run in
+their separate frozen worktree; this example result does not accept the full
+language, SDK, current Windows patch, Linux graphics or remaining PLAN work.
+
 # Runtime value contract development — 0.155.0 / language 0.27
 
 The next source candidate extends executable contracts to concrete value/effectful

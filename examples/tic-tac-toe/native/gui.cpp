@@ -6,6 +6,7 @@
 #include "signatures.h"
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cmath>
 #include <cctype>
 #include <cstdint>
@@ -168,7 +169,16 @@ struct Window {
   void create() {
     SDL_SetMainReady();checked(SDL_InitSubSystem(SDL_INIT_VIDEO));initialized=true;
     smoke=std::getenv("NEX_GAME_SMOKE")!=nullptr;
-    window=SDL_CreateWindow("Крестики-нолики — NEX",930,740,SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY|(smoke?SDL_WINDOW_HIDDEN:0));checked(window!=nullptr);
+    int width=930,height=740;
+    if(smoke)if(const char* value=std::getenv("NEX_GAME_SMOKE_SIZE")){
+      const std::string size(value);const auto separator=size.find('x');
+      if(size.size()>21||separator==std::string::npos)throw std::runtime_error("invalid controlled smoke window size");
+      auto w=std::from_chars(size.data(),size.data()+separator,width);
+      auto h=std::from_chars(size.data()+separator+1,size.data()+size.size(),height);
+      if(w.ec!=std::errc{}||h.ec!=std::errc{}||w.ptr!=size.data()+separator||h.ptr!=size.data()+size.size()||width<320||height<320||width>4096||height>4096)
+        throw std::runtime_error("controlled smoke window size must be 320..4096 per axis");
+    }
+    window=SDL_CreateWindow("Крестики-нолики — NEX",width,height,SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY|(smoke?SDL_WINDOW_HIDDEN:0));checked(window!=nullptr);
 #ifdef _WIN32
     const char* backend="direct3d11";
 #elif defined(__APPLE__)
@@ -224,14 +234,34 @@ struct Window {
     for(;;){SDL_Event input;if(SDL_WaitEventTimeout(&input,100)){int result=translate(input);if(result)return result;}host(api->poll(call));}
   }
   int64_t verify() {
-    render(false);SDL_Surface* raw=SDL_RenderReadPixels(renderer,nullptr);checked(raw!=nullptr);
-    SDL_Surface* pixels=SDL_ConvertSurface(raw,SDL_PIXELFORMAT_RGBA32);SDL_DestroySurface(raw);checked(pixels!=nullptr);
+    render(false);
+    SDL_FRect presentation{};checked(SDL_GetRenderLogicalPresentationRect(renderer,&presentation));
+    // ReadPixels uses physical viewport pixels. Logical coordinates differ on
+    // Retina/high-DPI displays and whenever letterboxing offsets the content.
+    const int left=int(std::ceil(presentation.x+bx*presentation.w/930.f));
+    const int top=int(std::ceil(presentation.y+by*presentation.h/740.f));
+    const int right=int(std::floor(presentation.x+(bx+side)*presentation.w/930.f));
+    const int bottom=int(std::floor(presentation.y+(by+side)*presentation.h/740.f));
+    if(right<=left||bottom<=top)throw std::runtime_error("GPU board has no physical readback area");
+    const SDL_Rect board{left,top,right-left,bottom-top};
+    int outputWidth=0,outputHeight=0;checked(SDL_GetRenderOutputSize(renderer,&outputWidth,&outputHeight));
+    if(smoke)std::printf("GPU_SMOKE_READBACK: %d %d %d %d %d %d\n",outputWidth,outputHeight,board.x,board.y,board.w,board.h);
+    using Surface=std::unique_ptr<SDL_Surface,decltype(&SDL_DestroySurface)>;
+    Surface raw(SDL_RenderReadPixels(renderer,&board),SDL_DestroySurface);checked(raw!=nullptr);
+    Surface pixels(SDL_ConvertSurface(raw.get(),SDL_PIXELFORMAT_RGBA32),SDL_DestroySurface);checked(pixels!=nullptr);raw.reset();
+    if(pixels->w!=board.w||pixels->h!=board.h)throw std::runtime_error("GPU readback clipped the board");
     int64_t accent=0;
-    // Count actual colored marks only inside the board, excluding text/HUD.
-    for(int y=int(by);y<int(by+side)&&y<pixels->h;++y)for(int x=int(bx);x<int(bx+side)&&x<pixels->w;++x){auto* p=static_cast<const uint8_t*>(pixels->pixels)+y*pixels->pitch+x*4;
+    // The returned surface contains only the board, excluding text/HUD/bars.
+    for(int y=0;y<pixels->h;++y)for(int x=0;x<pixels->w;++x){auto* p=static_cast<const uint8_t*>(pixels->pixels)+y*pixels->pitch+x*4;
       if((p[2]>150&&p[1]>150&&p[0]<180)||(p[0]>200&&p[1]>100&&p[2]<170)||(p[1]>200&&p[0]>100))++accent;}
-    if(const char* capture=std::getenv("NEX_GAME_CAPTURE"))checked(SDL_SaveBMP(pixels,capture));
-    SDL_DestroySurface(pixels);
+    if(const char* capture=std::getenv("NEX_GAME_CAPTURE")){
+      const int x=int(std::floor(presentation.x)),y=int(std::floor(presentation.y));
+      const SDL_Rect content{x,y,int(std::ceil(presentation.x+presentation.w))-x,int(std::ceil(presentation.y+presentation.h))-y};
+      Surface frame(SDL_RenderReadPixels(renderer,&content),SDL_DestroySurface);checked(frame!=nullptr);
+      if(frame->w!=content.w||frame->h!=content.h)throw std::runtime_error("GPU capture clipped logical content");
+      Surface rgba(SDL_ConvertSurface(frame.get(),SDL_PIXELFORMAT_RGBA32),SDL_DestroySurface);checked(rgba!=nullptr);
+      checked(SDL_SaveBMP(rgba.get(),capture));
+    }
     SDL_Event reset{};reset.type=SDL_EVENT_KEY_DOWN;reset.key.key=SDLK_R;
     if(translate(reset)!=10)throw std::runtime_error("reset key mapping failed");
     return accent;

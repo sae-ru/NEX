@@ -72,12 +72,15 @@ The earlier [target-only receipt](docs/windows-native-acceptance.md) preserves
 its separate WSL producer, Windows execution and CUDA driver prerequisite results.
 The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) has shared NEX/SDL
 sources and native build scripts for Windows, macOS and Linux. Its Windows
-GPU and relocated standalone package checks passed; macOS/Linux execution remains pending.
+GPU and relocated standalone package checks passed on its pinned earlier source.
+The [Retina readback correction](docs/evidence/sdl-metal-retina-0.155.0.json) passed
+scoped macOS ARM64 Metal and relocated-package checks. Current Windows rechecking
+and Linux graphical execution remain pending.
 The native Windows compiler passed all 274 CTest groups.
 NEX CUDA U8 Add/Affine passed 35 physical-device cases on RTX 3090;
 [the current Windows record](docs/evidence/windows-native-2026-11-01.json)
 keeps that scope separate from full regression and SDK acceptance.
-Full Windows-hosted SDK acceptance, Metal, Apple NPU, general GPU compilation,
+Full Windows-hosted SDK acceptance, Metal compute, Apple NPU, general GPU compilation,
 complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
 
 ## Build and use

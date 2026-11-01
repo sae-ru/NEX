@@ -87,7 +87,7 @@ Set-Location examples/tic-tac-toe
 SHA-256, сторонние notices включены. Не добавлять большой SDL архив в Git.
 Старый `examples/windows-tic-tac-toe` содержит перенаправления.
 Общие `.sh` собирают нативно на macOS/Linux с соответствующим SDK и драйвером;
-их выполнение здесь не проверялось. GUI выбирает D3D11/Metal/OpenGL, software
+в этой Windows-приёмке их выполнение не проверялось; Mac-дополнение находится ниже. GUI выбирает D3D11/Metal/OpenGL, software
 renderer отвергается. CUDA compute — отдельный пример, не часть рисования игры.
 
 ## Воспроизведение проверки
@@ -158,7 +158,7 @@ Defender/AppLocker и TDR не менялись. Старый точный `nex-
 
 - Полная maintained 40-phase квалификация Windows SDK; scoped SDK checks выше
   не переименовывать в complete acceptance. LLDB не встроен в SDK.
-- Физический запуск новой SDL-игры на macOS и Linux.
+- Linux-запуск SDL и повторная Windows-проверка текущей Retina-поправки; Mac-область описана ниже.
 - Windows ARM64 execution, отдельные legacy cross-SDK/OS-only fixtures и
   opt-in core/live методы из case accounting требуют своих окружений/квитанций.
 - General GPU lowering, matmul, NVCC/MSVC, Metal compute, NPU/mobile/UI и другие
@@ -169,3 +169,13 @@ Defender/AppLocker и TDR не менялись. Старый точный `nex-
 новый принятый full30 — отдельный результат с неизменёнными SHA.
 Не коммитить build, binaries, caches, `.nex`, пользовательские графы или секреты.
 Сохранять `.gitattributes` и точные исходные байты/историю.
+
+## Дополнение macOS после Windows-передачи
+
+Компилятор0.155 проверил отдельное исправление координат Metal readback для
+Retina/letterboxing: [точный отчёт](evidence/sdl-metal-retina-0.155.0.json).
+Восемь сцен включают исходный и перенесённый read-only пакет с запретом чтения
+проекта/SDK; число пикселей подтверждено независимым чтением BMP. Само изображение
+тестовой партии сохранилось. Это не новая Windows-приёмка: текущую поправку
+`examples/tic-tac-toe/native/gui.cpp` ещё нужно запустить на Windows и Linux.
+Результаты Windows выше остаются привязаны к их прежним исходникам/компилятору.

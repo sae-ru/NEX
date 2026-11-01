@@ -1,3 +1,13 @@
+# SDL Metal/Retina example correction — 0.155.0 compiler
+
+Map the board to physical presentation pixels, retain readback surfaces through
+RAII, and validate bounded smoke sizes. Eight native/relocated Metal scenes,
+independent bitmap counts, ten refusals and source/SDK-denied package checks
+passed. The exact source overlay and scope are recorded in
+`docs/evidence/sdl-metal-retina-0.155.0.json`. Parent ce72e9f full/SDK checks remain
+separate; current Windows/Linux graphics, general GPU/NPU/mobile/UI and every
+unfinished original requirement below remain open.
+
 # Runtime value contract development — 0.155.0 / language 0.27
 
 Broaden executable contracts to concrete effectful/value signatures and ordinary
