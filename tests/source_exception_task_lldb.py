@@ -40,7 +40,7 @@ import base64,json,time,traceback,os
 from pathlib import Path
 import lldb
 def session(debugger,command,result,internal_dict):
-    config=json.loads(Path(command.strip()).read_text());report={'ok':False,'observations':[],'steps':[]}
+    config=json.loads(Path(command.strip()).read_text(encoding='utf-8'));report={'ok':False,'observations':[],'steps':[]}
     target=debugger.GetSelectedTarget();debugger.SetAsync(False)
     def run(text):
         response=lldb.SBCommandReturnObject();debugger.GetCommandInterpreter().HandleCommand(text,response)
@@ -84,7 +84,7 @@ def session(debugger,command,result,internal_dict):
         if candidates:
             name,value=candidates[0];frame=json.loads(run('nex-frame '+name))
             assert frame['schema']=='nex.private-task-debug-frame/1' and frame['archived'] is False and 'revision' not in frame
-            file=Path(config['directory'])/('frame-'+str(len(report.get('captures',[])))+'.json');file.write_text(json.dumps(frame,ensure_ascii=False)+'\n')
+            file=Path(config['directory'])/('frame-'+str(len(report.get('captures',[])))+'.json');file.write_text(json.dumps(frame,ensure_ascii=False)+'\n',encoding='utf-8')
             report.setdefault('captures',[]).append({'file':str(file),'expression':name,'value':wire(value)})
         assert values==request('values',task_id=identity),'watch changed inferior state'
     def check(values,want):
@@ -166,13 +166,21 @@ def session(debugger,command,result,internal_dict):
         if config.get('watch') and 'hidden' in locals():
             for original,temporary in hidden:
                 if temporary.exists():temporary.rename(original)
-        Path(config['report']).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+        Path(config['report']).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if report['ok']:result.PutCString(json.dumps({'ok':True,'report':config['report']}))
 def __lldb_init_module(debugger,internal_dict):
     debugger.HandleCommand('command script add -f '+__name__+'.session nex-private-test-session')
 '''
 
 WATCH_CASES=[
+ ('watch-c-locale',r'''fn main()->i64 !{task,throw}{
+ let text:str="Я🌍\u0000";
+ try{task_yield();throw("LOCALE",text);}
+ catch(code,message){
+  assert(len(message)==3); // STOP:locale
+  return 42;
+ }
+}''',{'locale':[{'values':{'text':'Я🌍\0','code':'LOCALE','message':'Я🌍\0'}}]},1000000),
 ('watch-aggregates',r'''
 struct Box{label:str;nums:list<i64>;}
 fn recover()->i64{try{throw("PURE","abc");}catch(code,message){return len(message);}}
@@ -214,8 +222,9 @@ def main():
     emitter=str(Path(a.emitter).resolve());reference=str(Path(a.reference).resolve());compiler=str(Path(a.compiler).absolute())
     report={'ok':False,'cases':[],'dap_cases':[],'typescript_cases':[],'commands':[],'archived':False,'public_debug_CLI_support':False,'checked_expression_support':bool(a.watch_compiler),'security_checks_deferred_by_user':True,'ordinary_functional_only':True}
     def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
-    def run(label,command,allowed=(0,),cwd=out,timeout=240):
-        r=run_native(command,cwd=cwd,text=True,capture_output=True,timeout=timeout)
+    def run(label,command,allowed=(0,),cwd=out,timeout=240,env=None):
+        r=run_native(command,cwd=cwd,text=True,capture_output=True,timeout=timeout,
+                     env=None if env is None else {**os.environ,**env})
         (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
         report['commands'].append({'label':label,'argv':list(map(str,command)),'exit':r.returncode});save()
         assert r.returncode in allowed,(label,r.returncode,r.stdout[-1500:],r.stderr[-4000:]);return r
@@ -329,7 +338,8 @@ def main():
             options=e/'session.json';options.write_text(json.dumps({'source':str(file),'plans':plans,'limit':limit,'step':name=='lldb-exception-step','deadline':name=='lldb-stopped-deadline','report':str(e/'lldb-report.json'),'watch':bool(a.watch_compiler),'directory':str(e),'source_files':[str(directory/key) for key in text] if isinstance(text,dict) else [str(file)]},ensure_ascii=False,indent=2)+'\n', newline="\n")
             command=[debugger,'--no-lldbinit','--batch',binary]
             for line in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+(' --compiler '+json.dumps(str(Path(a.watch_compiler).resolve())) if a.watch_compiler else ''),'command script import '+json.dumps(str(driver)),'nex-private-test-session '+str(options)]:command += ['-o',line]
-            result=run(label+'-lldb',command,timeout=180)
+            locale_env={'LC_ALL':'C','LANG':'C','PYTHONUTF8':'0','PYTHONCOERCECLOCALE':'0'} if name=='watch-c-locale' else None
+            result=run(label+'-lldb',command,timeout=180,env=locale_env)
             observed=json.loads((e/'lldb-report.json').read_text());assert observed['ok'] and observed['all_stop'],observed
             expected_exit=(expected['value'] or 0)%256 if expected['kind']=='return' else 70
             if name=='lldb-stopped-deadline':expected_exit=70;assert 'E_TIMEOUT' in result.stdout and 'NEX_SOURCE_EXCEPTION ' not in result.stdout

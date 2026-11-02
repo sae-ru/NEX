@@ -48,6 +48,11 @@ Never retag an old graph or copy a private ABI into a public program.
 
 ## Rules that matter
 
+For a matching native C++ host, discover `native_entry_abi` and retrieve the
+library build's [physical entry description](../docs/native-entry-abi.md).
+Hidden error outputs, runtime scopes and task-executor arguments are part of the
+calling contract. Do not infer a prototype from `native_symbol` alone.
+
 Preserve checked arithmetic, left-to-right evaluation, short-circuiting,
 strict UTF-8/Unicode scalars, immutable aggregate semantics, effect declarations,
 realms and owned cleanup. `result<T>` errors, typed source errors, checked traps,

@@ -1,3 +1,14 @@
+# Integrated source development0.160
+
+Native entry ABI discovery, the independently pinned Linux debugger and current
+quality runners are combined here. The parent source289b078 passed Linux298;
+its Mac297/298 result retains the diagnosed DAP output-category fixture failure.
+The fixed fixture passed an exact original-binary replay and focused groups.
+The finite Q1–Q5 chain passed with current0.28 and actual9900/0/1 native calls.
+These parent/source receipts do not accept this combined tree or updated SDK.
+Fresh complete regression and installed delivery are required. Public SDK159
+and every remaining original PLAN requirement remain unchanged.
+
 # Quality-runner source follow-up for language0.28
 
 The opt-in checked-core helper accepts explicit0.28 while preserving its old
@@ -13,6 +24,36 @@ LLVM IR is not instrumented. The [source receipt](docs/evidence/quality-language
 keeps failed attempts and limits. Updated helpers' installed delivery and matching
 regression remain separate gates. Published archives remain unchanged;
 no original pending project requirement is removed.
+
+# Linux debugger and UTF-8 follow-up — source development 0.160
+
+The Linux recipe independently pins LLDB23.1.5 while compilation remains on
+LLVM/MLIR22.1.8. Four preserved Linux binaries passed their original debugger
+scenarios with the new debugger. The reader explicitly decodes UTF-8 manifests
+and relocation receipts. Actual Mac tests cover Unicode paths, invalid UTF-8
+and Unicode watch contents with a C locale. Linux retained-compiler checks
+passed three debugger groups and a separate complete watch group; an earlier
+`lost connection` failure is retained with its cause unresolved. See the
+[scoped record](docs/evidence/linux-debugger-0.160.0.json).
+
+The preceding Mac full298 run completed with296 passes and two timeouts during
+host sleep. Both groups passed a separate unchanged repeat; this does not accept
+the full run. Fresh full regression, current Linux/Windows delivery and portable
+SDK0.160 qualification remain open. The public0.159 archive remains unchanged.
+
+# Native entry ABI — source development 0.160
+
+Native library builds expose bounded `native_entry_abi` JSON from verified LLVM,
+including hidden source-error outputs, physical types/attributes, target/layout,
+runtime cohort and executor-only task boundaries. Four focused cases passed:
+Debug/Release each executed 1000 matching-runtime host calls and cleanup checks;
+cache/metadata repair, archived source and a real static task project were checked.
+Full regression and installed acceptance for this source development remain open;
+the accepted public 0.159 SDK archive remains unchanged. Language stays 0.28.
+
+The exact 0.159 SDK also has a scoped native iOS Simulator receipt: 1400 calls and
+cleanup checks across two target processes. This is standalone runtime execution;
+UIKit, physical devices and complete mobile delivery remain pending.
 
 # Platform cohort preparation after SDK 0.159
 

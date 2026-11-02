@@ -43,6 +43,12 @@ types/imports/callers for concrete uncertainties. Distinguish persistent store
 namespace/revision/local IDs from content hashes, compiled operation sites and
 captured-project identities. Local IDs cannot be copied between stores.
 
+For native library hosts, discover `native_entry_abi` and read the matching build's
+`native_entry_abi` object. It describes actual LLVM parameters, including the
+hidden source-error output. A context `native_symbol` alone is not a call
+prototype. Match the runtime cohort and ownership scope; task continuations
+require their executor. See the indexed native entry ABI guide.
+
 ## Work from a checked project
 
 State observable behavior, constraints and acceptance criteria. Inspect sources,

@@ -164,6 +164,9 @@ struct BuildResult {
   unsigned compiledFunctions = 0, reusedFunctions = 0;
   bool foreignCalls = false;
   std::string libraryABI;
+  // Exact physical entry signatures from verified LLVM, for --library builds.
+  // Serialized JSON avoids making the native build result a move-only object.
+  std::string nativeEntryABI;
   std::map<std::string,std::string> functionContracts;
   bool parallelCalls=false;
   NativeTaskProviderInfo taskProvider{};

@@ -1,5 +1,31 @@
 # Linux compiler and development chain
 
+The maintained environment uses an independently pinned **LLDB23.1.5 APT
+snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX
+compilation. Only `lldb`, `lldb-dap` and `lldb-server` are added ahead of the
+compiler directory in PATH. The exact package versions, repository key and
+observed archive hashes are recorded in
+[`tools/linux/debugger-packages.json`](../tools/linux/debugger-packages.json).
+APT validates downloads against its signed index; other Ubuntu packages still
+follow their repositories.
+
+LLDB22.1.8 repeated process-event handling when an additional listener consumed
+events. Three strict Linux debugger groups exposed missed stops or an all-stop
+refusal. Four preserved binaries passed the original scenarios with the fixed
+LLDB23 build and the same NEX reader/runtime. This is focused replay evidence;
+current full Linux and installed SDK qualification remain separate gates.
+Manifest and relocation JSON are explicitly decoded as UTF-8, including under
+a C locale. The image also selects a UTF-8 locale for its test tools.
+
+The [debugger follow-up record](evidence/linux-debugger-0.160.0.json) records
+three passing modular/public debugger groups and a passing separate watch run
+(24 LLDB comparisons, two DAP comparisons). The first four-group run also had
+one `lost connection` exit in the watch group. The exact binary then passed
+three diagnostic replays, and the complete watch group passed unchanged.
+That intermittent transport failure remains recorded; its cause is unresolved.
+These checks use the retained Linux0.159 compiler with the updated reader and
+tests. They do not qualify a current0.160 Linux compiler or SDK.
+
 Clang sanitizer builds require the matching `libclang-rt-22-dev` package, pinned
 to the same LLVM22.1.8 APT version as the compiler. The maintained development
 Dockerfile includes it. For an existing verified image, build the separate
@@ -25,6 +51,7 @@ See [application packages](packaging.md) for the smaller runtime requirements.
 
 The Linux environment builds NEX itself and native NEX programs with C++20,
 LLVM/MLIR/LLD 22.1.8, SQLite, OpenSSL 3, Z3 5.3.1 and Node.js 22.22.3.
+The debugger has its own LLDB23 package pin and does not select a new compiler.
 `tools/linux/Dockerfile` pins the Ubuntu 24.04 base image digest, LLVM package
 version, repository signing-key fingerprint, and Node/Z3 archive SHA-256 hashes.
 Other Ubuntu packages still follow its package repositories; this is not a

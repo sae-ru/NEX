@@ -31,7 +31,7 @@ and driver remain operator-selected external platform dependencies.
 | OpenSSL 3.6.3 (macOS); 3.0.13 Ubuntu package (Linux) | TLS and bearer digest comparison in native HTTP servers | Installed OpenSSL 3 library; [Apache-2.0](https://github.com/openssl/openssl/blob/master/LICENSE.txt) |
 | Tracy 0.14.1 client | Optional instrumentation in native profile output | BSD-3-Clause with embedded LZ4/concurrentqueue/SPSCQueue/rpmalloc notices; pinned source inventory in `runtime/third_party/tracy/manifest.json` |
 | Z3 5.3.1 | Linked scalar verifier in the development compiler; absent from generated applications | MIT; external official release, notice copied to `docs/licenses/Z3-LICENSE.txt`; configuration/provenance in `docs/verification.md` |
-| Apple LLDB (macOS); LLVM LLDB 22.1.8 (Linux) | Optional local debugger used for integration checks | Installed tool; [LLVM licensing and LLDB documentation](https://lldb.llvm.org/) |
+| Apple LLDB (macOS); LLVM LLDB 23.1.5 APT snapshot (Linux) | Optional debugger, independently pinned from the LLVM/MLIR22.1.8 compiler | Installed tool; [LLVM licensing and LLDB documentation](https://lldb.llvm.org/); exact Linux package inputs in `tools/linux/debugger-packages.json` |
 | Python 3.9.6 (macOS); 3.12.3 (Linux) | Integration-test runner | Installed interpreter; no Python runtime in generated programs |
 | React / React DOM 19.3.1; Scheduler 0.28.0 | Runtime of generated browser applications | MIT; copies of package license text are included in `web/THIRD_PARTY_NOTICES.txt` and generated `dist` |
 | TypeScript 7.0.2 | Checks generated browser source | Apache-2.0; npm development dependency |

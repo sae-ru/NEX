@@ -166,7 +166,7 @@ def _provider_artifact_layout(manifest, path):
     receipt_path = root/relocation['path']
     if receipt_path.is_symlink() or not 0 < receipt_path.stat().st_size <= 16*1024*1024:
         raise ValueError('invalid provider debug relocation receipt')
-    receipt = json.loads(receipt_path.read_text())
+    receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
     if (not isinstance(receipt, dict) or set(receipt) != {'schema', 'compiler_build', 'build_key',
             'original_directory', 'artifact_directory', 'metadata_rewritten', 'raw_files', 'images'} or
             receipt.get('schema') != 'nex.task-debug-relocation/1' or receipt.get('metadata_rewritten') is not False or
@@ -423,7 +423,7 @@ def _load_debug(debugger, command, result, private):
         path = Path(arguments[0])
         if path.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("debug manifest exceeds limit")
-        manifest = json.loads(path.read_text())
+        manifest = json.loads(path.read_text(encoding='utf-8'))
         # Relocation authority comes only from the trusted core reader after
         # capsule inventory/build validation, never a persisted debug field.
         manifest.pop('_capsule_recorded_program', None)

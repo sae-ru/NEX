@@ -1,3 +1,11 @@
+# Integrated source development0.160
+
+Combine native entry ABI discovery, debugger fixes and quality runners, then
+run fresh full regression and build a new immutable SDK with the updated helpers.
+Keep the original failed Mac/full-SDK gate and the passed parent Linux298 scope.
+Finite Q1–Q5 source acceptance does not replace matching installed delivery,
+quiet-host performance, multi-model token measurement or other original work.
+
 # Quality-runner source follow-up for language0.28
 
 Port the complete Q1–Q5 chain to actual compiler-selected0.28, retaining0.21
@@ -10,6 +18,33 @@ records the scope and intentional leak/race controls. Matching full regression,
 updated helpers' installed delivery and quiet-host performance/LLM measurement
 remain required; generated provider LLVM IR is not sanitizer-instrumented.
 Every original unfinished language/platform/device/UI/Studio/conversion item remains.
+
+# Linux debugger and UTF-8 follow-up — source development 0.160
+
+Pin the Linux debugger independently of the LLVM/MLIR22.1.8 compiler. LLDB23
+passed four exact preserved binaries. Explicit UTF-8 metadata decoding and
+actual C-locale/Unicode-path regressions passed on Mac; retained Linux0.159
+compiler checks passed three debugger groups and a separate full watch group.
+The first combined run's intermittent `lost connection` remains unresolved and
+preserved in the [scoped record](docs/evidence/linux-debugger-0.160.0.json).
+Fresh full/current Linux and portable SDK0.160 qualification are still required.
+No remaining original PLAN item is removed by this checkpoint.
+
+# Native entry ABI — source development 0.160
+
+Selected native library entries now describe their actual verified LLVM ABI in
+build JSON: hidden source-error output, physical types/order/attributes,
+target/layout, matching runtime and task-executor boundaries. Four focused
+cases passed, including 2000 native host calls and owned cleanup checks across
+Debug/Release, repaired metadata, archived sources and a real task-provider
+project. Full/current installed acceptance remains a separate gate. No source
+syntax, graph migration or language 0.28 change is introduced.
+
+The exact public 0.159 SDK separately passed 1400 native iOS Simulator calls and
+cleanup checks. Its scoped evidence is in docs/evidence/0.159.0-ios-native;
+UIKit, physical iPhones and complete mobile/UI delivery remain original open work.
+Every other unfinished item below, including general devices, Studio, conversion
+and measured LLM token savings, remains in scope.
 
 # Platform cohort preparation after SDK 0.159
 

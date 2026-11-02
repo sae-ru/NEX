@@ -1,0 +1,195 @@
+{
+  "schema": "nex.ios-native-library-evidence/1",
+  "status": "verified_native_simulator_runtime_scope",
+  "toolchain": "0.159.0",
+  "language": "0.28",
+  "compiler_source_commit": "3165aaf56866b0c3f341b63571e808cfb061aa3a",
+  "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+  "compiler_build": "5e3071ab3e2befd369abbbecbf26b4e1e283cd392b7aaac41c41107f97676890",
+  "descriptor_hash": "46a4518f286a8281480847ca17b3a6546f654fb387364a6ab7fbe8acf808b344",
+  "SDK_archive_sha256": "fe8dde075971f422b2311c27e131ca00b4c3cac24094cc6bd6857eab8b537374",
+  "target": "arm64-apple-ios17.0-simulator",
+  "source_revision": "1b83a688ec83638c275a3fbe6e7c15eb9dfbc34cdf7b0304059f65683ec09128",
+  "source_sha256": "53efa7e03dec4d8ad46a63d5e9482d89e8b825d5f06493972bbc63ba5ed84daf",
+  "simulator": {
+    "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+    "device_type": "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo",
+    "booted_by_this_probe": false
+  },
+  "execution_mode": "CoreSimulator standalone process on an owned unbooted device; exact iOS27.1 runtime, no UIKit app lifecycle",
+  "actual_process_runs": 2,
+  "distinct_source_cases": 7,
+  "total_native_calls": 1400,
+  "total_owned_cleanup_checks": 1400,
+  "profiles": [
+    {
+      "profile": "debug",
+      "actual_target_process_runs": 1,
+      "distinct_cases": 7,
+      "repeats_per_case": 100,
+      "native_calls": 700,
+      "owned_cleanup_checks": 700,
+      "cases": [
+        {
+          "argument": 0,
+          "name": "normal0",
+          "outcome": "value",
+          "value": 1
+        },
+        {
+          "argument": 41,
+          "name": "normal41",
+          "outcome": "value",
+          "value": 42
+        },
+        {
+          "argument": 7,
+          "name": "recovered",
+          "outcome": "value",
+          "value": 8
+        },
+        {
+          "argument": -1,
+          "line": 4,
+          "name": "pre",
+          "outcome": "E_ASSERT"
+        },
+        {
+          "argument": 9,
+          "line": 5,
+          "name": "post",
+          "outcome": "E_ASSERT"
+        },
+        {
+          "argument": 13,
+          "name": "escaped",
+          "outcome": "E_SOURCE_EXCEPTION",
+          "payload_first": "Я\u0000🧠",
+          "type_key": "220a996ad26749aa978661ac11e3778a283f3675243178b5da709a1fc6b1403d",
+          "typed_payload": true
+        },
+        {
+          "argument": 9223372036854775807,
+          "line": 10,
+          "name": "overflow",
+          "outcome": "E_OVERFLOW"
+        }
+      ],
+      "compiled_for_simulator": true,
+      "deployment": 170000,
+      "retained_local_stdout_sha256": "5e301af73ca02a731aaee94ad8f8441911d7d751be6dcf25cafc3e60fe960cd5"
+    },
+    {
+      "profile": "release",
+      "actual_target_process_runs": 1,
+      "distinct_cases": 7,
+      "repeats_per_case": 100,
+      "native_calls": 700,
+      "owned_cleanup_checks": 700,
+      "cases": [
+        {
+          "argument": 0,
+          "name": "normal0",
+          "outcome": "value",
+          "value": 1
+        },
+        {
+          "argument": 41,
+          "name": "normal41",
+          "outcome": "value",
+          "value": 42
+        },
+        {
+          "argument": 7,
+          "name": "recovered",
+          "outcome": "value",
+          "value": 8
+        },
+        {
+          "argument": -1,
+          "line": 4,
+          "name": "pre",
+          "outcome": "E_ASSERT"
+        },
+        {
+          "argument": 9,
+          "line": 5,
+          "name": "post",
+          "outcome": "E_ASSERT"
+        },
+        {
+          "argument": 13,
+          "name": "escaped",
+          "outcome": "E_SOURCE_EXCEPTION",
+          "payload_first": "Я\u0000🧠",
+          "type_key": "220a996ad26749aa978661ac11e3778a283f3675243178b5da709a1fc6b1403d",
+          "typed_payload": true
+        },
+        {
+          "argument": 9223372036854775807,
+          "line": 10,
+          "name": "overflow",
+          "outcome": "E_OVERFLOW"
+        }
+      ],
+      "compiled_for_simulator": true,
+      "deployment": 170000,
+      "retained_local_stdout_sha256": "4aadc896447fca0695a37339f78d12a2fb937b4b245330beed19515e59ed7e29"
+    }
+  ],
+  "private_native_signature": "define i64 @nex_13_ios_native159_4_step(i64 %0, ptr %1)",
+  "source_error_out_parameter_required": true,
+  "matching_runtime_RequestScope_and_unhandled_error_bridge": true,
+  "source_absent_archive_reuse": true,
+  "owned_simulator_deleted": true,
+  "initial_failures_preserved": [
+    {
+      "reason": "probe generator wrote an unescaped NUL instead of a NEX string escape",
+      "retained_local_probe": "ios-native159-v1"
+    },
+    {
+      "reason": "probe source used wrong typed-throw syntax; corrected to throw(value)",
+      "retained_local_probe": "ios-native159-v2"
+    },
+    {
+      "reason": "C++ host omitted private source-error out parameter; exact LLVM signature and crash report identified the mismatch",
+      "retained_local_probe": "ios-native159-v3"
+    }
+  ],
+  "physical_device_accepted": false,
+  "UIKit_UI_accepted": false,
+  "stable_Swift_JNI_or_public_C_ABI": false,
+  "general_mobile_delivery_accepted": false,
+  "goal_complete": false,
+  "physical_entry_source_path_absent_during_execution": true,
+  "selected_NEX_RESOURCE_DIR_unavailable": true,
+  "kernel_source_or_SDK_read_denial_tested": false,
+  "scope_limits": [
+    "CoreSimulator standalone process, not a booted UIKit application lifecycle.",
+    "The selected entry source path was absent and NEX_RESOURCE_DIR pointed to /unavailable-nex-resources; OS denial of every source/SDK path was not tested.",
+    "Native binaries link the matching NEX runtime statically and system iOS C++/libSystem libraries; no LLVM/Z3 runtime dependency.",
+    "Same-runtime private C++ host bridge, not a stable public C/Swift/JNI ABI or physical-device qualification."
+  ],
+  "original_probe_receipt_sha256": "a76939083f13e1edbbd80f3b482c5939eef2cedabe58be9c9f91906479f89861",
+  "artifacts": {
+    "main.nex": "53efa7e03dec4d8ad46a63d5e9482d89e8b825d5f06493972bbc63ba5ed84daf",
+    "host.cpp": "728e24e35159761decece617d437e084b6527cf483c0163654b2c8bee18a3f33"
+  },
+  "retained_local_artifact_digests": {
+    "report.json": "ffa0e831cbfb47506fc72be57628176d4336f5a88a48cd1ce5c185731bda4bdc",
+    "execute-debug.stdout": "5e301af73ca02a731aaee94ad8f8441911d7d751be6dcf25cafc3e60fe960cd5",
+    "execute-debug.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "execute-release.stdout": "4aadc896447fca0695a37339f78d12a2fb937b4b245330beed19515e59ed7e29",
+    "execute-release.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-debug.stdout": "c6af89a368eb268a862bc6fc90a1a6b90fd1f0c941113de3b2ef1a7b0ba7b5eb",
+    "platform-release.stdout": "7b9bca65b002e455205c53c7fa35a175f081d83eeb219b45108556cdfab741be",
+    "arch-debug.stdout": "c1669e1d8edca98769c37d494b76442a1d6e5ffffd7b4da1fb63aef8ebaf6f01",
+    "arch-release.stdout": "c1669e1d8edca98769c37d494b76442a1d6e5ffffd7b4da1fb63aef8ebaf6f01",
+    "libraries-debug.stdout": "bf24ee43075dbb25e91f97e3e628a32e64c15c53fd3257139291a2f07fb7554d",
+    "libraries-release.stdout": "e4a6fc31ec416d8e92fc5d0a6bc8c7f2174f193b101f437553261f205b993d29",
+    "context.stdout": "0bfde4ef3e6362d06388dcd5494975c479137caaf4ff9455af688233e4951845",
+    "reference-escaped.stdout": "533078a4164d6faf990d085e2704795a2ba952a7f8ce803a5492c3c872595e83",
+    "source-absent-reuse.stdout": "91905df31dadb648c875b810f118e8337e7354700dd8659c17897f45a8ddd013"
+  },
+  "raw_diagnostics_publication": "Raw process logs and initial generator/host failures remain retained locally; only the checked source, matching host and compact scope receipt are included here."
+}
