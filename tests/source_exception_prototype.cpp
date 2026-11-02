@@ -35,7 +35,7 @@ int main(){
   try{
     static_assert(int(SourceLanguage::TaskStreams024)==6&&int(SourceLanguage::SourceExceptions025Prototype)==7&&int(SourceLanguage::SourceExceptions025)==8);
     static_assert(int(Stmt::Match)==7&&int(Stmt::Try)==8&&int(Stmt::Throw)==9&&int(Expr::Propagate)==15);
-    require(std::string(languageVersion)=="0.27"&&currentSourceLanguage==SourceLanguage::TypedErrors027,"public027 default absent");
+    require(std::string(languageVersion)=="0.28"&&currentSourceLanguage==SourceLanguage::Contracts028,"public028 default absent");
     value(R"(fn main()->i64{try{throw("USER","message");}catch(code,message){assert(code=="USER"&&message=="message");return 42;}})");
     value(R"(fn main()->i64{try{throw("U\u0000SER","start\u0000end");}catch(code,message){assert(len(code)==5&&len(message)==9);assert(code=="U\u0000SER"&&message=="start\u0000end");return 42;}})");
     value(R"(fn leaf()->i64 !{throw}{throw("USER","leaf");}fn main()->i64{try{return leaf();}catch(code,message){return len(code)+len(message)+34;}})");
@@ -87,7 +87,7 @@ int main(){
       bool rejected=false;try{parseVersioned("module x;fn main()->i64{return 42;}","no-public025.nex",SourceLanguage::SourceExceptions025Prototype);}catch(const Error &e){rejected=e.code=="E_LANGUAGE_VERSION";}
       require(rejected,"prototype enabled public version selection");++cases;
     }
-    std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_language\":\"0.25\",\"retained_language\":\"0.24\",\"private_language\":\"0.25-prototype\",\"native_supported\":false,\"typescript_supported\":false,\"task_supported\":false}\n";
+    std::cout<<"{\"ok\":true,\"cases\":"<<cases<<",\"public_language\":\""<<languageVersion<<"\",\"retained_language\":\"0.24\",\"private_language\":\"0.25-prototype\",\"native_supported\":false,\"typescript_supported\":false,\"task_supported\":false}\n";
     return 0;
   }catch(const SourceException &error){std::cerr<<"unexpected source exception "<<error.code<<": "<<error.what()<<"\n";}
   catch(const Error &error){std::cerr<<"after "<<cases<<" cases: "<<error.code<<": "<<error.what()<<" at "<<error.span.line<<":"<<error.span.column<<"\n";}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genuine026 history, guarded027 publication and actual stored-code execution."""
+"""Genuine026 history, retained027 execution and guarded ordinary028 migration."""
 import os
 from host_fixture import run_native, probe_dll_inputs
 from sqlite_fixture import connection as sqlite_connection
@@ -13,8 +13,8 @@ meta=json.loads((root/'tests/fixtures/language-0.26-typed-origin.json').read_tex
 assert hashlib.sha256(sql).hexdigest()==meta['sql_sha256'] and meta['producer']['toolchain']=='0.139.0' and not meta['retagged_source']
 report={'ok':False,'public027_enabled':False,'cases':[],'commands':[]}
 def save(): (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
-def run(label,command,allowed=(0,)):
-    r=run_native(command,text=True,capture_output=True,timeout=180,env={**os.environ,'NEX_RESOURCE_DIR':str(root)})
+def run(label,command,allowed=(0,),cwd=None):
+    r=run_native(command,text=True,capture_output=True,timeout=180,env={**os.environ,'NEX_RESOURCE_DIR':str(root)},cwd=cwd)
     (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
     report['commands'].append({'name':label,'exit_code':r.returncode});save()
     assert r.returncode in allowed,(label,r.returncode,r.stdout[-3000:],r.stderr[-5000:]);return r
@@ -94,9 +94,45 @@ typed_result=call('typed-apply',typed,mode='apply',candidate=typed_candidate,exp
 assert typed_result['export_roundtrip']
 assert json.loads((export/'nex.json').read_text())['language']=='0.27' and (export/'main.nex').read_text()==text
 if a.ordinary_compiler:
-    r=subprocess.run([str(Path(a.ordinary_compiler).resolve()),'check','--json'],cwd=export,text=True,capture_output=True,timeout=30)
-    assert r.returncode==0 and json.loads(r.stdout)['revision']==typed_result['revision'],(r.returncode,r.stdout,r.stderr)
-    observed=run('ordinary-exported-native',[str(Path(a.ordinary_compiler).resolve()),'run',str(export/'main.nex'),'--json']);assert json.loads(observed.stdout)['stdout']=='42\n'
+    ordinary=str(Path(a.ordinary_compiler).resolve())
+    index=json.loads(run('ordinary-index',[ordinary,'describe','--kind','index','--json']).stdout)
+    assert index['language']=='0.28'
+    exported_bytes={p.name:p.read_bytes() for p in export.iterdir() if p.is_file()}
+    refused=json.loads(run('ordinary027-export-refused',[ordinary,'check','--json'],allowed=(1,),cwd=export).stdout)
+    assert refused['code']=='E_LANGUAGE_VERSION' and not (export/'.nex').exists()
+    assert exported_bytes=={p.name:p.read_bytes() for p in export.iterdir() if p.is_file()}
+    # Keep the original026->027 fixture and all its later native/Node checks.
+    # Promote a separate copy containing the actual exported027 sources and
+    # actual committed026/027 history; no version field is used as a migration.
+    current=out/'ordinary028';shutil.copytree(export,current);(current/'.nex').mkdir()
+    with sqlite_connection(typed/'.nex/graph.db') as source_db, sqlite_connection(current/'.nex/graph.db') as target_db:source_db.backup(target_db)
+    prior=snapshot(current/'.nex/graph.db');assert len(prior[1])==16
+    current_plan=json.loads(run('ordinary028-plan',[ordinary,'migrate','--kind','plan','--json'],cwd=current).stdout)
+    assert current_plan['origin_verified'] and current_plan['origin_language']=='0.27' and current_plan['target_language']=='0.28'
+    unchanged(current,prior)
+    reviewed_current=current_plan['candidate'];assert reviewed_current['target_language']=='0.28'
+    reviewed_path=out/'ordinary028-reviewed.json';reviewed_path.write_text(json.dumps(reviewed_current,ensure_ascii=False)+'\n',newline='\n')
+    migrated=json.loads(run('ordinary028-apply',[ordinary,'migrate','--candidate',str(reviewed_path),'--expected-revision',typed_result['revision'],'--json'],cwd=current).stdout)
+    assert migrated['language']=='0.28' and migrated['origin_verified'] and migrated['revision']!=typed_result['revision']
+    modern=snapshot(current/'.nex/graph.db');assert modern[0]==prior[0]
+    for table,rows in prior[1].items():
+        if table!='head':assert not (rows-modern[1][table]),table
+    for old_revision in [*meta['revisions'],typed_result['revision']]:
+        refused=json.loads(run('ordinary-old-revision-refused-'+old_revision[:8],[ordinary,'eval','--revision',old_revision,'--json'],allowed=(1,),cwd=current).stdout)
+        assert refused['code']=='E_LANGUAGE_VERSION'
+        unchanged(current,modern)
+    evaluated=json.loads(run('ordinary028-stored-reference',[ordinary,'eval','--revision','HEAD','--json'],cwd=current).stdout)
+    assert evaluated['stdout']=='42\n'
+    current_export=out/'exported028'
+    run('ordinary028-export',[ordinary,'export','--revision','HEAD','--directory',str(current_export),'--json'],cwd=current)
+    assert json.loads((current_export/'nex.json').read_text())['language']=='0.28' and (current_export/'main.nex').read_text()==text
+    checked=json.loads(run('ordinary028-export-check',[ordinary,'check','--json'],cwd=current_export).stdout)
+    assert checked['revision']==migrated['revision']
+    observed=run('ordinary028-exported-native',[ordinary,'run','--json'],cwd=current_export)
+    assert json.loads(observed.stdout)['stdout']=='42\n'
+    unchanged(current,modern)
+    assert exported_bytes=={p.name:p.read_bytes() for p in current.iterdir() if p.is_file()}
+    report['ordinary028']={'ok':True,'genuine026_to_retained027_to_current028':True,'history_tables':16,'old_source_and_history_rows_preserved':True,'old_revisions_refused_by_current_CLI':len(meta['revisions'])+1,'revision':migrated['revision'],'native_and_reference':True}
 typed_after=snapshot(typed/'.nex/graph.db');assert typed_after[0]==typed_before[0]
 for table,rows in typed_before[1].items():
     if table!='head':assert not (rows-typed_after[1][table]),table
@@ -144,6 +180,6 @@ for name,d,revision in [('same',simple,applied['revision']),('typed',typed,typed
             r=run(name+'-native'+optimization+'-'+str(workers),[binary,library,'workers',workers]);assert r.stdout=='42\n' and not r.stderr,(r.stdout,r.stderr);native+=1
         runner=emitted/'run.mjs';runner.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);\n", newline="\n")
         r=run(name+'-node'+optimization,[os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',runner]);assert r.stdout=='42\n';node+=1
-report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_CLI_tested=False,target_language='0.27',native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
+report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_CLI_tested=bool(a.ordinary_compiler),target_language='0.27',ordinary_target_language='0.28' if a.ordinary_compiler else None,native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
 print(json.dumps({k:report[k] for k in ['ok','history_tables','old_revisions','native_executions','Node_executions','graph_namespace_preserved']}))
 if not a.output:shutil.rmtree(out)

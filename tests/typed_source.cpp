@@ -13,7 +13,7 @@ namespace {
 unsigned cases=0;
 void require(bool yes,const std::string &message){if(!yes)throw std::runtime_error(message);}
 Program source(const std::string &text,SourceLanguage language=SourceLanguage::TypedErrors027){
-  auto p=parseVersioned("module typed;\n"+text,"typed.nex",language);check(p);return p;
+  auto p=parseVersioned("module typed;\n"+text,"typed.nex",language);check(p);require(p.sourceLanguage==language,"explicit retained parser changed its selected language");return p;
 }
 void value(const std::string &text,const std::string &output=""){
   auto before=nexrt::liveObjects.load();
@@ -28,8 +28,10 @@ void rejects(const std::string &text,const char *code){rejected(code,[&]{(void)s
 }
 int main(){try{
   static_assert(int(Stmt::Try)==8&&int(Stmt::Throw)==9&&int(Stmt::Finally)==10&&int(Stmt::TypedThrow)==11&&int(SourceLanguage::ExceptionHandlers026)==9);
-  require(currentSourceLanguage==SourceLanguage::TypedErrors027&&std::string(languageVersion)=="0.27","public027 selection differs from the advertised language");
-  {auto p=parse("module ordinary;fn main()->i64{try{throw(42);}catch(error:i64){return error;}}","ordinary.nex");check(p);require(p.sourceLanguage==SourceLanguage::TypedErrors027&&evaluate(p,"main").value.getAsInteger()==42,"ordinary027 parser did not enable checked typed handlers");++cases;}
+  require(currentSourceLanguage==SourceLanguage::Contracts028&&std::string(languageVersion)=="0.28","public028 selection differs from the advertised language");
+  {auto p=parse("module ordinary;fn main()->i64{try{throw(42);}catch(error:i64){return error;}}","ordinary.nex");check(p);require(p.sourceLanguage==SourceLanguage::Contracts028&&evaluate(p,"main").value.getAsInteger()==42,"ordinary028 parser did not retain checked typed handlers");++cases;}
+  {auto p=parse("module ordinary_contract;fn guarded(x:i64)->i64 requires(x==42) ensures(result=>result==x){try{throw(x);}catch(error:i64){return error;}}fn main()->i64{return guarded(42);}","ordinary-contract.nex");check(p);require(p.sourceLanguage==SourceLanguage::Contracts028&&evaluate(p,"main").value.getAsInteger()==42,"ordinary028 source clauses and typed handlers did not compose");++cases;}
+  rejected("E_PARSE",[&]{(void)source("fn main()->i64 ensures(result=>result==42){return 42;}",SourceLanguage::TypedErrors027);});
   rejected("E_PARSE",[&]{(void)source("fn main()->unit !{throw}{throw(42);}",SourceLanguage::ExceptionHandlers026);});
   value(R"(fn main()->i64{try{throw(42);}catch(error:i64){return error;}})");
   value(R"(fn make()->i64 !{io}{print("once");return 42;}fn main()->i64 !{io}{try{throw(make());}catch(error:i64){return error;}})","once\n");
@@ -111,5 +113,5 @@ int main(){try{
     std::filesystem::remove_all(directory);++cases;
   }
   require(nexrt::liveObjects.load()==0,"typed-source cases retained owned objects");
-  std::printf("{\"ok\":true,\"cases\":%u,\"public_language\":\"0.27\",\"source027_archivable\":true}\n",cases);return 0;
+  std::printf("{\"ok\":true,\"cases\":%u,\"public_language\":\"%s\",\"tested_retained_language\":\"0.27\",\"source027_archivable\":true}\n",cases,languageVersion);return 0;
 }catch(const std::exception &e){std::fprintf(stderr,"typed-source case%u: %s\n",cases,e.what());return 1;}}
