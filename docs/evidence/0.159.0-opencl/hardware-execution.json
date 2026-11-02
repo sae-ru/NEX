@@ -1,0 +1,1395 @@
+{
+  "schema": "nex.owned-opencl-hardware/1",
+  "ok": true,
+  "commands": [
+    {
+      "label": "small_cpu_oracle-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 0.842
+    },
+    {
+      "label": "small_cpu_oracle-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 37.923
+    },
+    {
+      "label": "small_cpu_oracle-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/0ed1c0dc1a4b4fd6d431c00fe55e974fef5e6a3234c2fd1ab07c9258352e160b/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 0.778
+    },
+    {
+      "label": "all_octets-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 0.82
+    },
+    {
+      "label": "all_octets-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 2.945
+    },
+    {
+      "label": "all_octets-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/2c885222a1b5847bf05b974f48b8bcf42dd659dd4bca244719d116e057701d92/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 0.64
+    },
+    {
+      "label": "persistent_session_scales-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 0.723
+    },
+    {
+      "label": "persistent_session_scales-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 2.825
+    },
+    {
+      "label": "persistent_session_scales-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/7cc79dad166ba992ed5209ea9d5ac00e35dd152c148900d7d467e3bc3751a886/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 0.909
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 0.755
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 2.888
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/fa0c96127b5f8a882154fe7bddb488bf0c2498fe0ed226efd3b6a304100b8792/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 0.483
+    },
+    {
+      "label": "maximum_262144_elements-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 0.749
+    },
+    {
+      "label": "maximum_262144_elements-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 2.827
+    },
+    {
+      "label": "maximum_262144_elements-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/77f6770e622c8f34a44032606808ffc2ef60122c6627a41b9222ebb4578f186f/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 0.889
+    },
+    {
+      "label": "overflow_only_last_of_262144-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 0.856
+    },
+    {
+      "label": "overflow_only_last_of_262144-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 2.81
+    },
+    {
+      "label": "overflow_only_last_of_262144-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/5daf97a95c3d077f44feb44f9c531ac2d60e91ae61dc8f4a29ad34ea640e89f2/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 0.67
+    },
+    {
+      "label": "hidden_session_after_scope_return-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 0.678
+    },
+    {
+      "label": "hidden_session_after_scope_return-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 2.19
+    },
+    {
+      "label": "hidden_session_after_scope_return-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/7e5cb74c96e29561d025d06296a08ecc22f62a6c72ebfc188ba6834adbbe5f91/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 0.592
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 0.838
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 2.033
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/151db84280530819bce20151bc36828517cd4573690374c964a1f6395d700530/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 0.723
+    },
+    {
+      "label": "sibling_channel_hidden_session-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 0.789
+    },
+    {
+      "label": "sibling_channel_hidden_session-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 2.03
+    },
+    {
+      "label": "sibling_channel_hidden_session-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/55820593a4e3130cdfe26ecaa908a1c41e5216a5bc47b2d072c1e0ded5b12621/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 0.64
+    },
+    {
+      "label": "cross_session_buffers_rejected-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 0.803
+    },
+    {
+      "label": "cross_session_buffers_rejected-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 2.026
+    },
+    {
+      "label": "cross_session_buffers_rejected-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/54f50514c5f743a3a36939f2af47be67b92edb35f50f757643a18a2355fdbf58/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 0.588
+    },
+    {
+      "label": "malformed_request_never_uploads-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 0.823
+    },
+    {
+      "label": "malformed_request_never_uploads-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 2.807
+    },
+    {
+      "label": "malformed_request_never_uploads-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/1bbf8ed31ee1e13bb11e94193320a875409289e87b6c5631953cf4246bb04462/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 0.746
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 0.828
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 2.874
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/ca4149a5b3e26ed254a79dc54d8cf2fdf5c36a64f2b8c40358d2357572759ecd/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 0.625
+    },
+    {
+      "label": "unsupported_matmul_fallback-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 0.761
+    },
+    {
+      "label": "unsupported_matmul_fallback-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 3.057
+    },
+    {
+      "label": "unsupported_matmul_fallback-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/214937542d60912afb61c12837f1fe7bfc532d897ee57d13776a0cc754b370e5/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 0.784
+    },
+    {
+      "label": "cancel_enqueued_GPU-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "5000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cancel_enqueued_GPU",
+      "exit_code": 1,
+      "seconds": 2.312
+    },
+    {
+      "label": "cancel_enqueued_GPU-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cancel_enqueued_GPU",
+      "exit_code": 0,
+      "seconds": 2.762
+    },
+    {
+      "label": "cancel_enqueued_GPU-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/bcadfd3c1a255ba18d958215711941613f9d08d599d1704d1ddc528f63de877a/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1",
+        "--nex-task-timeout-ms",
+        "5000"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/cancel_enqueued_GPU",
+      "exit_code": 70,
+      "seconds": 2.262
+    },
+    {
+      "label": "deadline_enqueued_GPU-reference",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "2000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/deadline_enqueued_GPU",
+      "exit_code": 1,
+      "seconds": 3.707
+    },
+    {
+      "label": "deadline_enqueued_GPU-build",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/moved SDK, % 🧠/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native",
+        "--json"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/deadline_enqueued_GPU",
+      "exit_code": 0,
+      "seconds": 2.813
+    },
+    {
+      "label": "deadline_enqueued_GPU-native",
+      "argv": [
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/6817f01d051f650f075e0972963505e438839b36994d92e06bd01b5f61781e0d/app",
+        "--nex-foreign",
+        "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/provider/foreign.json",
+        "--nex-task-workers",
+        "1",
+        "--nex-task-timeout-ms",
+        "2000"
+      ],
+      "cwd": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/deadline_enqueued_GPU",
+      "exit_code": 70,
+      "seconds": 3.654
+    }
+  ],
+  "cases": [
+    {
+      "name": "small_cpu_oracle",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            242,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            237,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/0ed1c0dc1a4b4fd6d431c00fe55e974fef5e6a3234c2fd1ab07c9258352e160b/app"
+    },
+    {
+      "name": "all_octets",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            244,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            251,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/2c885222a1b5847bf05b974f48b8bcf42dd659dd4bca244719d116e057701d92/app"
+    },
+    {
+      "name": "persistent_session_scales",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 15,
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            240,
+            0
+          ],
+          [
+            1,
+            1,
+            237,
+            0
+          ],
+          [
+            1,
+            2,
+            233,
+            0
+          ],
+          [
+            1,
+            127,
+            240,
+            0
+          ],
+          [
+            1,
+            255,
+            241,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 15,
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            249,
+            0
+          ],
+          [
+            1,
+            1,
+            189,
+            0
+          ],
+          [
+            1,
+            2,
+            189,
+            0
+          ],
+          [
+            1,
+            127,
+            189,
+            0
+          ],
+          [
+            1,
+            255,
+            189,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/7cc79dad166ba992ed5209ea9d5ac00e35dd152c148900d7d467e3bc3751a886/app"
+    },
+    {
+      "name": "overflow_is_not_fallback_and_session_recovers",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 5,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            245,
+            1
+          ],
+          [
+            1,
+            1,
+            237,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 5,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            237,
+            1
+          ],
+          [
+            1,
+            1,
+            237,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/fa0c96127b5f8a882154fe7bddb488bf0c2498fe0ed226efd3b6a304100b8792/app"
+    },
+    {
+      "name": "maximum_262144_elements",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            262144,
+            3,
+            552,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            262144,
+            3,
+            552,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/77f6770e622c8f34a44032606808ffc2ef60122c6627a41b9222ebb4578f186f/app"
+    },
+    {
+      "name": "overflow_only_last_of_262144",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 2,
+        "actual_kernel_events": [
+          [
+            262144,
+            1,
+            552,
+            1
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 2,
+        "actual_kernel_events": [
+          [
+            262144,
+            1,
+            558,
+            1
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/5daf97a95c3d077f44feb44f9c531ac2d60e91ae61dc8f4a29ad34ea640e89f2/app"
+    },
+    {
+      "name": "hidden_session_after_scope_return",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            237,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            240,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/7e5cb74c96e29561d025d06296a08ecc22f62a6c72ebfc188ba6834adbbe5f91/app"
+    },
+    {
+      "name": "closed_context_existing_buffer_still_reads",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            240,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            243,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/151db84280530819bce20151bc36828517cd4573690374c964a1f6395d700530/app"
+    },
+    {
+      "name": "sibling_channel_hidden_session",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            240,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            233,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/55820593a4e3130cdfe26ecaa908a1c41e5216a5bc47b2d072c1e0ded5b12621/app"
+    },
+    {
+      "name": "cross_session_buffers_rejected",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 2,
+        "buffers": 2,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 2,
+        "buffers": 2,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/54f50514c5f743a3a36939f2af47be67b92edb35f50f757643a18a2355fdbf58/app"
+    },
+    {
+      "name": "malformed_request_never_uploads",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/1bbf8ed31ee1e13bb11e94193320a875409289e87b6c5631953cf4246bb04462/app"
+    },
+    {
+      "name": "explicit_placement_and_cpu_fallback",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/ca4149a5b3e26ed254a79dc54d8cf2fdf5c36a64f2b8c40358d2357572759ecd/app"
+    },
+    {
+      "name": "unsupported_matmul_fallback",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/214937542d60912afb61c12837f1fe7bfc532d897ee57d13776a0cc754b370e5/app"
+    },
+    {
+      "name": "cancel_enqueued_GPU",
+      "native_reference": true,
+      "expected_error": "E_CANCELLED",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            246,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 1.514325583
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            243,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 1.507413292
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/bcadfd3c1a255ba18d958215711941613f9d08d599d1704d1ddc528f63de877a/app"
+    },
+    {
+      "name": "deadline_enqueued_GPU",
+      "native_reference": true,
+      "expected_error": "E_TIMEOUT",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            247,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 3.015209125
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            240,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 3.011454166
+      },
+      "executable": "/private/tmp/nex-sdk159-distribution-work/NEX SDK parallel, % 🧠 jaic1ufb/installed-opencl-v1/hardware/native/6817f01d051f650f075e0972963505e438839b36994d92e06bd01b5f61781e0d/app"
+    }
+  ],
+  "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+  "module_sha256": "7de8862811044df2406eac85096fd33796bb899a3efecad84ca94a3da25a3799",
+  "worker_sha256": "a26994db53a1cf9cf3a35ca523939a204d0843f786875d19dca097e17d32818d",
+  "manifest_sha256": "2eb1daad844dc594d82a56b4e4afe2e3e3e612975961044855d7e8ca4e8b3b6b",
+  "actual_GPU_execution": true,
+  "installed_SDK_accepted": false,
+  "full_objective_complete": false,
+  "seconds": 106.147,
+  "state": "passed",
+  "native_reference_cases": 15,
+  "full_hardware_suite": true,
+  "actual_kernel_events": 32
+}
