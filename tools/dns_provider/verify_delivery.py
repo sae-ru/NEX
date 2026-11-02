@@ -39,9 +39,9 @@ def main():
   if args.sdk:sdk=args.sdk.resolve(strict=True)
   else:
    if not args.compiler or not args.resources:parser.error('use --sdk, or both --compiler and --resources')
-   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin/nex');(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
+   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex'));(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
   report['source_projection']=not bool(args.sdk)
-  compiler=sdk/'bin/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(sdk/'share/nex'),'PYTHONDONTWRITEBYTECODE':'1'};env.pop('NEX_FOREIGN_CONFIG',None)
+  compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');env={**os.environ,'NEX_RESOURCE_DIR':str(sdk/'share/nex'),'PYTHONDONTWRITEBYTECODE':'1'};env.pop('NEX_FOREIGN_CONFIG',None)
   files=out/'files';files.mkdir();peers=conformance.DNS(files)
   good={'schema':'nex.dns-targets/1','resolvers':[{'address':'127.0.0.1','port':peers.port}],'authorities':[{'name':'public','domain':'example.test','subdomains':True}]};target=out/'targets.json'
   report['rejections']+=check_policy_rejections(out);write(target,good)
@@ -51,7 +51,7 @@ def main():
   shutil.copy2(project/'bundle/manifest.json',out/'original-provider-manifest.json')
   report.update(compiler_sha256=sha(compiler),language=prepared['language'],toolchain=prepared['toolchain'],provider_module_sha256=prepared['module_sha256'])
   source=project/'main.nex';prefix=source.read_text().split('server fn main()->unit',1)[0];program=prefix+'server fn main()->unit !{task,ffi,io}{assert(len(statistics_raw())==4);assert(unwrap(dns::lookup(make_client(),"public","service.example.test",1000))==["127.0.0.42","2001:db8::42"]);print(42);}\n';source.write_text(program)
-  host=project/'foreign.json';catalogue=json.loads(host.read_text());module=project/'bundle/module.so';module_bytes=module.read_bytes();policy=project/'bundle/targets.json';policy_bytes=policy.read_bytes()
+  host=project/'foreign.json';catalogue=json.loads(host.read_text());module=project/'bundle'/('module.dll' if os.name=='nt' else 'module.so');module_bytes=module.read_bytes();policy=project/'bundle/targets.json';policy_bytes=policy.read_bytes()
   for kind,code in [('no-grant','E_FFI_GRANT'),('no-export','E_FFI_GRANT'),('wrong-pin','E_FFI_HASH'),('wrong-signature','E_FFI_SIGNATURE'),('changed-module','E_FFI_HASH'),('changed-target-file','E_FFI_HASH')]:
    source.write_text(program);write(host,catalogue);module.write_bytes(module_bytes);policy.write_bytes(policy_bytes);selected=copy.deepcopy(catalogue)
    if kind=='no-export':selected['libraries']['dns']['exports']=[];write(host,selected)
@@ -72,7 +72,7 @@ def main():
   run('client-emission',[compiler,'emit','--kind','typescript','--entry','client_value','--directory',out/'client','--json'],cwd=project,env=env)
   for p in (out/'client').rglob('*'):
    if p.is_file():
-    text=p.read_text();assert not any(v in text for v in ('lookup_raw','statistics_raw','make_client',prepared['manifest_sha256'],'example.test','127.0.0.1','module.so')),p
+    text=p.read_text();assert not any(v in text for v in ('lookup_raw','statistics_raw','make_client',prepared['manifest_sha256'],'example.test','127.0.0.1','module.so','module.dll')),p
   rejected=prefix+'client fn forbidden()->result<list<str>> !{task,ffi}{return lookup_raw("public","service.example.test",64,1000);}\n';source.write_text(rejected)
   observed=run('client-realm-rejection',[compiler,'check','--json'],cwd=project,env=env,expected=1);assert observed['code']=='E_REALM',observed
   source.write_text(program)
@@ -99,7 +99,10 @@ def main():
   # Remove the original source, graph, provider image and operator catalogue;
   # execute only the relocated package with no compiler/resource environment.
   moved=out/'moved package % 🧠';package.rename(moved);shutil.rmtree(project);assert not project.exists()
-  result=run('source-deleted-package',[moved/'bin/app'],cwd=files,env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'absent-sdk'),'NEX_FOREIGN_CONFIG':str(out/'absent-host.json')},parsed=False)
+  standalone={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'absent-sdk'),'NEX_FOREIGN_CONFIG':str(out/'absent-host.json')}
+  if os.name=='nt':
+   standalone.update({key:os.environ[key] for key in ('SystemRoot','WINDIR','TEMP','TMP','USERPROFILE') if key in os.environ});standalone['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
+  result=run('source-deleted-package',[moved/'bin'/('app.exe' if os.name=='nt' else 'app')],cwd=files,env=standalone,parsed=False)
   assert result.stdout=='42\n' and peers.count()>=before+2,(result.stdout,result.stderr)
   actual=peers.events[before:];assert {v['qtype'] for v in actual}=={1,28} and all(v['name']=='service.example.test' for v in actual),actual
   licenses=list(moved.rglob('c-ares-LICENSE.txt'));assert licenses and all(sha(v)==prepared['cares_license_sha256'] for v in licenses)

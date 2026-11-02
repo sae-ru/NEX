@@ -29,8 +29,12 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--archive',type=Path,help='Use these exact verified release bytes without network')
     parser.add_argument('--jobs',type=int,default=4)
+    parser.add_argument('--cc',type=Path,help='Explicit matching C compiler; required on Windows')
+    parser.add_argument('--generator',help='CMake generator; Windows defaults to Ninja')
     args=parser.parse_args()
     if not 1<=args.jobs<=8:parser.error('jobs must be1..8')
+    cc=args.cc.resolve(strict=True) if args.cc else None
+    if platform.system()=='Windows' and cc is None:parser.error('Windows requires --cc with the matching LLVM-MinGW clang.exe')
     out=args.output.absolute()
     if out.exists() or out.is_symlink():parser.error('output must be a new directory')
     out.mkdir(parents=True);report={'schema':'nex.cares-dependency/1','ok':False,'version':VERSION,'archive_url':URL,'archive_sha256':SHA256,'commands':[],'network_used':args.archive is None,'upstream_tests_run':False,'PGP_signature_verified':False}
@@ -94,14 +98,18 @@ def main():
             target=source/row['document']['path'];effective[row['document']['path']]={'sha256':sha(target),'bytes':target.stat().st_size}
         (out/'effective-source-manifest.json').write_text(json.dumps({'schema':'nex.cares-effective-source/1','archive_sha256':SHA256,'local_source_patches':patches,'files':effective},indent=2)+'\n')
         prefix=out/'prefix';build=out/'build'
-        run('configure',['cmake','-S',source,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_INSTALL_PREFIX='+str(prefix),'-DCMAKE_INSTALL_LIBDIR=lib','-DCARES_STATIC=ON','-DCARES_SHARED=OFF','-DCARES_STATIC_PIC=ON','-DCARES_BUILD_TOOLS=OFF','-DCARES_BUILD_TESTS=OFF','-DCARES_INSTALL=ON'])
-        run('build',['cmake','--build',build,'-j',str(args.jobs)])
-        run('install',['cmake','--install',build])
+        configure=['cmake','-S',source,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_INSTALL_PREFIX='+prefix.as_posix(),'-DCMAKE_INSTALL_LIBDIR=lib','-DCARES_STATIC=ON','-DCARES_SHARED=OFF','-DCARES_STATIC_PIC=ON','-DCARES_BUILD_TOOLS=OFF','-DCARES_BUILD_TESTS=OFF','-DCARES_INSTALL=ON']
+        if cc:configure+=['-DCMAKE_C_COMPILER='+cc.as_posix()]
+        generator=args.generator or ('Ninja' if platform.system()=='Windows' else None)
+        if generator:configure+=['-G',generator]
+        run('configure',configure)
+        run('build',['cmake','--build',build,'--config','Release','-j',str(args.jobs)])
+        run('install',['cmake','--install',build,'--config','Release'])
         license=source/'LICENSE.md'
         if not license.is_file():license=source/'COPYING'
         if not license.is_file():raise ValueError('release has no complete project license')
         notices=prefix/'share/licenses/c-ares';notices.mkdir(parents=True,exist_ok=True);shutil.copyfile(license,notices/'LICENSE.txt')
-        record={'schema':'nex.cares-install/1','version':VERSION,'url':URL,'archive_sha256':SHA256,'license':'share/licenses/c-ares/LICENSE.txt','license_sha256':sha(notices/'LICENSE.txt'),'headers':{p.name:sha(p) for p in (prefix/'include').glob('ares*.h')},'static_library':'lib/libcares.a','static_library_sha256':sha(prefix/'lib/libcares.a'),'static_PIC':True,'upstream_source_manifest_sha256':sha(out/'source-manifest.json'),'effective_source_manifest_sha256':sha(out/'effective-source-manifest.json'),'local_source_patches':patches}
+        record={'schema':'nex.cares-install/1','version':VERSION,'url':URL,'archive_sha256':SHA256,'license':'share/licenses/c-ares/LICENSE.txt','license_sha256':sha(notices/'LICENSE.txt'),'headers':{p.name:sha(p) for p in (prefix/'include').glob('ares*.h')},'static_library':'lib/libcares.a','static_library_sha256':sha(prefix/'lib/libcares.a'),'static_PIC':True,'upstream_source_manifest_sha256':sha(out/'source-manifest.json'),'effective_source_manifest_sha256':sha(out/'effective-source-manifest.json'),'local_source_patches':patches,'build_configuration':{'system':platform.system(),'machine':platform.machine(),'C_compiler':str(cc) if cc else None,'configure':list(map(str,configure))}}
         (prefix/'share/cares-source.json').write_text(json.dumps(record,indent=2)+'\n')
         report.update(ok=True,prefix=str(prefix),source_files=len(files),source_bytes=total,static_library_sha256=record['static_library_sha256'],complete_license_sha256=record['license_sha256'])
     except BaseException as error:report['error']=repr(error);raise

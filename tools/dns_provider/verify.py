@@ -112,7 +112,7 @@ def source_for_selected_sdk(program, sdk):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--cares-prefix',type=Path,required=True);parser.add_argument('--output',type=Path)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--cares-prefix',type=Path,required=True);parser.add_argument('--output',type=Path);parser.add_argument('--case',action='append',default=[],help='Run selected diagnostic cases; does not satisfy full conformance')
     args=parser.parse_args();out=args.output.absolute() if args.output else Path(tempfile.mkdtemp(prefix='nex-dns-source-'));temporary=args.output is None
     if not temporary:out.mkdir(parents=True)
     cares=args.cares_prefix.resolve(strict=True)
@@ -129,8 +129,8 @@ def main():
         if args.sdk:sdk=args.sdk.resolve(strict=True)
         else:
             if not args.compiler or not args.resources:parser.error('use --sdk or --compiler and --resources')
-            sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin/nex');(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
-        compiler=sdk/'bin/nex';resources=sdk/'share/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1','NEX_TRACY':'0'};env.pop('NEX_FOREIGN_CONFIG',None)
+            sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex'));(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
+        compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1','NEX_TRACY':'0'};env.pop('NEX_FOREIGN_CONFIG',None)
         files=out/'files';files.mkdir();env.update(NEX_FILES_ROOT=str(files),NEX_FILES_WRITE='1');peer=DNS(files)
         config={'schema':'nex.dns-targets/1','resolvers':[{'address':'127.0.0.1','port':peer.port}],'authorities':[{'name':'public','domain':'example.test','subdomains':True},{'name':'exact','domain':'exact.example.test','subdomains':False},{'name':'all','domain':'*','subdomains':True}]}
         targets=out/'targets.json';write(targets,config);project=out/'project % 🧠'
@@ -140,9 +140,11 @@ def main():
         config['maximum_calls']=1;capacity_targets=out/'capacity.json';write(capacity_targets,config);capacity=out/'capacity-project'
         run('prepare-capacity',[sys.executable,'-B',ROOT/'tools/dns_provider/prepare.py','--sdk',sdk,'--targets',capacity_targets,'--cares-prefix',cares,'--output',capacity,'--diagnostics'],env=env,parsed=False)
         prefix=(project/'main.nex').read_text().split('server fn main()->unit',1)[0];capacity_prefix=(capacity/'main.nex').read_text().split('server fn main()->unit',1)[0]
-        ipv6=DNS(files,'::1');config['maximum_calls']=16;config['resolvers']=[{'address':'::1','port':ipv6.port}];ipv6_targets=out/'ipv6.json';write(ipv6_targets,config);ipv6_project=out/'ipv6-project'
-        run('prepare-ipv6',[sys.executable,'-B',ROOT/'tools/dns_provider/prepare.py','--sdk',sdk,'--targets',ipv6_targets,'--cares-prefix',cares,'--output',ipv6_project,'--diagnostics'],env=env,parsed=False)
-        ipv6_prefix=(ipv6_project/'main.nex').read_text().split('server fn main()->unit',1)[0]
+        if not args.case or any(name.startswith('ipv6-') for name in args.case):ipv6=DNS(files,'::1')
+        if ipv6:
+            config['maximum_calls']=16;config['resolvers']=[{'address':'::1','port':ipv6.port}];ipv6_targets=out/'ipv6.json';write(ipv6_targets,config);ipv6_project=out/'ipv6-project'
+            run('prepare-ipv6',[sys.executable,'-B',ROOT/'tools/dns_provider/prepare.py','--sdk',sdk,'--targets',ipv6_targets,'--cares-prefix',cares,'--output',ipv6_project,'--diagnostics'],env=env,parsed=False)
+            ipv6_prefix=(ipv6_project/'main.nex').read_text().split('server fn main()->unit',1)[0]
         good='["127.0.0.42","2001:db8::42"]'
         cases=[
             ('addresses','assert(unwrap(dns::lookup(make_client(),"public","service.example.test",1000))=='+good+');',None),
@@ -163,7 +165,10 @@ def main():
             ('parent-deadline','lookup_raw("public","held-parent-@LABEL@.example.test",64,30000);','E_TIMEOUT'),
             ('capacity','with_tasks(1,server fn(s:task_scope)->unit !{task,ffi,fs}{let child:task<result<list<str>>>=task_spawn(s,server fn()->result<list<str>> !{task,ffi}{return lookup_raw("public","held-capacity-@LABEL@.example.test",64,500);});while !is_ok(file_read_text("@GATE@.ready")){task_yield();}assert(error_code(lookup_raw("public","service.example.test",64,1000))=="E_DNS_BUSY");assert(error_code(task_wait(child))=="E_DNS_TIMEOUT");});assert(unwrap(lookup_raw("public","service.example.test",64,1000))=='+good+');assert(statistics_raw()[3]==1);',None),
         ]
+        required=[name for name,_,_ in cases];assert set(args.case)<=set(required),'unknown selected DNS case'
+        report.update(required_cases=required,selected_cases=args.case or required,full_conformance=not bool(args.case));save()
         for name,body,error in cases:
+            if args.case and name not in args.case:continue
             for mode in ('eval','debug','release'):
                 label=name+'-'+mode;selected=ipv6_project if name.startswith('ipv6-') else capacity if name=='capacity' else project;source_prefix=ipv6_prefix if name.startswith('ipv6-') else capacity_prefix if name=='capacity' else prefix;active_peer=ipv6 if name.startswith('ipv6-') else peer
                 # Gate names are the actual queried FQDN, so the server proves IO started.

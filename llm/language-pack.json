@@ -2912,13 +2912,20 @@
     "original_parent_cancel_deadline_preserved": true,
     "installed_SDK_accepted": false,
     "pending": [
+      "Windows native dependency/source/IPv6/full SDK acceptance",
       "matching current compiler/full/sanitizer/installed/moved SDK/package/platform acceptance",
       "DNS-to-TCP connection integration and TLS/HTTP clients",
       "Unicode-to-IDNA conversion, DNSSEC/DoT/DoH",
       "cache/reused-channel/reactor policy and finer copied-call reservations",
       "network debug/profile integration and asynchronous database drivers"
     ],
-    "delivery_conformance": "tools/dns_provider/verify_delivery.py"
+    "delivery_conformance": "tools/dns_provider/verify_delivery.py",
+    "platforms": [
+      "macos-arm64",
+      "linux-arm64",
+      "linux-x86_64",
+      "windows-x86_64"
+    ]
   },
   "http_client_provider": {
     "status": "development_pinned_task_FFI_HTTP_client",

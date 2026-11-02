@@ -3,8 +3,6 @@
 #include "operator_targets.h"
 #include "resolver.hpp"
 #include <ares.h>
-#include <arpa/inet.h>
-#include <poll.h>
 #include <algorithm>
 #include <array>
 #include <atomic>

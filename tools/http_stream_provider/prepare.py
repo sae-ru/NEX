@@ -17,7 +17,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"http_provider"))
 from dependency_contract import validate_http
 
 ROOT=Path(__file__).resolve().parents[2]
-RUNTIME=('nex_ffi.h','nex_ffi_module.h','nex_error.h','nex_resource.h','nex_resource_region.h','nex_resource_executor.h')
+RUNTIME=('nex_socket_platform.h','nex_ffi.h','nex_ffi_module.h','nex_error.h','nex_resource.h','nex_resource_region.h','nex_resource_executor.h')
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v):Path(p).write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
 def regular(path,maximum):

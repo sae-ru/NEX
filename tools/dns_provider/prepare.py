@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import ipaddress
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,7 @@ import stat
 import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
-RUNTIME_FILES=('nex_ffi.h','nex_ffi_module.h','nex_error.h','nex_resource.h',
+RUNTIME_FILES=('nex_socket_platform.h','nex_ffi.h','nex_ffi_module.h','nex_error.h','nex_resource.h',
                'nex_resource_region.h','nex_resource_executor.h')
 CARES_VERSION='1.34.9'
 CARES_MAC_PATCH_SHA256='908c595efdeba68c8abb40ef81c0fe3f36c07ef4c5b3c895dbf82bd99ddd0d24'
@@ -79,17 +80,21 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--targets',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--cares-prefix',type=Path);parser.add_argument('--cxx');parser.add_argument('--check-sdk',action='store_true');parser.add_argument('--diagnostics',action='store_true')
-    args=parser.parse_args();configuration=policy(args.targets);sdk=args.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin/nex';out=args.output.absolute()
+    args=parser.parse_args();configuration=policy(args.targets);sdk=args.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');out=args.output.absolute()
     if os.path.lexists(out):parser.error('output must be new')
-    if platform.system() not in ('Darwin','Linux') or platform.machine() not in ('arm64','aarch64','x86_64','AMD64'):parser.error('DNS provider needs64-bit macOS/Linux')
+    if platform.system() not in ('Darwin','Linux','Windows') or platform.machine() not in ('arm64','aarch64','x86_64','AMD64'):parser.error('DNS provider needs64-bit macOS/Linux/Windows')
     if not compiler.is_file() or not resources.is_dir():parser.error('SDK requires bin/nex and share/nex')
     if not args.check_sdk and args.cares_prefix is None:parser.error('select the static PIC c-ares prefix with --cares-prefix')
     for name in RUNTIME_FILES:
         if not (resources/'runtime'/name).is_file():parser.error('SDK lacks runtime header '+name)
     out.mkdir(parents=True);evidence=out/'evidence';evidence.mkdir();commands=[];environment={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
     def run(label,argv):
-        argv=list(map(str,argv));p=subprocess.run(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
-        (evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);commands.append({'label':label,'argv':argv,'exit_code':p.returncode})
+        argv=list(map(str,argv))
+        if label=='compile-module' and os.name=='nt':
+            spec=importlib.util.spec_from_file_location('_nex_dns_provider_sdk',ROOT/'tools/provider_sdk.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+            p=helper.native_compile(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
+        else:p=subprocess.run(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
+        (evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);commands.append({'label':label,'argv':argv,'exit_code':p.returncode,**({'executed_argv':p.args,'link_staging':p.nex_link_staging,'requested_output':p.nex_requested_output,'staging_retained':p.returncode!=0} if hasattr(p,'nex_link_staging') else {})})
         if p.returncode:raise RuntimeError(label+': '+p.stdout[-3000:]+p.stderr[-2500:])
         return p.stdout
     report={'schema':'nex.dns-provider-preparation/1','ok':False,'network_executed':False,'module_initialized':False,'native_provider_built':False,'commands':commands}
@@ -130,19 +135,20 @@ def main():
         header+=''.join('#define PIN_'+name.upper()+' '+json.dumps(value)+'\n' for name,value in signatures.items())
         header+='#define NEX_DNS_MAX_CALLS '+str(configuration['maximum_calls'])+'\n#define NEX_DNS_DIAGNOSTICS '+str(int(args.diagnostics))+'\ninline constexpr char operatorServers[]='+json.dumps(servers)+';\n'
         header+='inline const std::array<Authority,'+str(len(configuration['authorities']))+'> operatorAuthorities{{\n'+',\n'.join('{'+json.dumps(x['name'])+','+json.dumps(x['domain'])+','+str(x['subdomains']).lower()+'}' for x in configuration['authorities'])+'\n}};\n';(generated/'operator_targets.h').write_text(header)
-        bundle=out/'bundle';bundle.mkdir();cxx=args.cxx or doctor['native_compiler']
+        bundle=out/'bundle';bundle.mkdir();module=bundle/('module.dll' if os.name=='nt' else 'module.so');cxx=args.cxx or doctor['native_compiler']
         if not Path(cxx).is_file():raise RuntimeError('operator-selected C++20 compiler is missing')
-        command=[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-DCARES_STATICLIB','-I'+str(inputs/'runtime'),'-I'+str(inputs/'cares/include'),'-I'+str(generated),inputs/'module.cpp',inputs/'cares/libcares.a','-o',bundle/'module.so']
+        command=[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-DCARES_STATICLIB','-I'+str(inputs/'runtime'),'-I'+str(inputs/'cares/include'),'-I'+str(generated),inputs/'module.cpp',inputs/'cares/libcares.a','-o',module]
         if platform.system()=='Darwin':command+=['-lresolv','-Wl,-exported_symbol,_nex_ffi_module_entry']
+        elif os.name=='nt':command+=['-static','-lws2_32','-ladvapi32','-liphlpapi']
         else:command+=['-Wl,--exclude-libs,ALL']
         run('compile-module',command)
         for source,target in [(generated/'targets.json','targets.json'),(inputs/'cares/LICENSE.txt','c-ares-LICENSE.txt'),(inputs/'cares/SOURCE.json','c-ares-SOURCE.json')]:shutil.copy2(source,bundle/target)
         (bundle/'NOTICE').write_text('NEX DNS provider\nOriginal NEX runtime and adapter sources.\nc-ares1.34.9 is statically linked; its complete license, source identity and any recorded local source patches are included.\n')
-        names=['module.so','targets.json','NOTICE','c-ares-LICENSE.txt','c-ares-SOURCE.json']
-        manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':n,'sha256':sha(bundle/n)} for n in names],'exports':signatures,'notices':['NOTICE','c-ares-LICENSE.txt','c-ares-SOURCE.json']};write(bundle/'manifest.json',manifest)
+        names=[module.name,'targets.json','NOTICE','c-ares-LICENSE.txt','c-ares-SOURCE.json']
+        manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':module.name,'files':[{'path':n,'sha256':sha(bundle/n)} for n in names],'exports':signatures,'notices':['NOTICE','c-ares-LICENSE.txt','c-ares-SOURCE.json']};write(bundle/'manifest.json',manifest)
         pin=sha(bundle/'manifest.json');(out/'main.nex').write_text(template.replace('@PIN@',pin));write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'libraries':{'dns':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}})
         run('check-pinned',[compiler,'check','--json']);catalogue=json.loads(run('catalogue',[compiler,'foreign',out/'foreign.json','--json']));assert catalogue['module_initialization'] is False
-        report.update(ok=True,native_provider_built=True,manifest_sha256=pin,module_sha256=sha(bundle/'module.so'),operator_targets_sha256=sha(generated/'targets.json'),cares_static_library_sha256=record['static_library_sha256'],cares_license_sha256=record['license_sha256'],input_sha256={p.relative_to(inputs).as_posix():sha(p) for p in inputs.rglob('*') if p.is_file()})
+        report.update(ok=True,native_provider_built=True,manifest_sha256=pin,module_sha256=sha(module),operator_targets_sha256=sha(generated/'targets.json'),cares_static_library_sha256=record['static_library_sha256'],cares_license_sha256=record['license_sha256'],input_sha256={p.relative_to(inputs).as_posix():sha(p) for p in inputs.rglob('*') if p.is_file()})
     except BaseException as error:report['error']=repr(error);raise
     finally:write(evidence/'report.json',report)
 

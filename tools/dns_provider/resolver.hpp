@@ -1,8 +1,6 @@
 #pragma once
-#include "nex_error.h"
+#include "nex_socket_platform.h"
 #include <ares.h>
-#include <arpa/inet.h>
-#include <poll.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -11,14 +9,17 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace nex_dns {
 struct Library {
+  nexrt::socket_platform::Library sockets;
   Library(){if(ares_library_init(ARES_LIB_INIT_ALL)!=ARES_SUCCESS)throw std::bad_alloc();}
   ~Library(){ares_library_cleanup();}
+  Library(const Library&)=delete;Library&operator=(const Library&)=delete;
 };
-struct Socket {ares_socket_t fd=ARES_SOCKET_BAD;short events=0;};
+struct Socket {ares_socket_t fd=ARES_SOCKET_BAD;bool readable=false,writable=false;};
 struct Frame {
   std::array<Socket,16> sockets{};
   bool overflow=false,done=false;
@@ -32,7 +33,7 @@ void socketState(void *data,ares_socket_t fd,int readable,int writable)noexcept{
   if(!readable&&!writable){if(slot)*slot=Socket{};return;}
   if(!slot)for(auto &s:frame.sockets)if(s.fd==ARES_SOCKET_BAD){slot=&s;break;}
   if(!slot){frame.overflow=true;return;}
-  slot->fd=fd;slot->events=short((readable?POLLIN:0)|(writable?POLLOUT:0));
+  slot->fd=fd;slot->readable=readable;slot->writable=writable;
 }
 void answered(void *data,int status,int,ares_addrinfo *answer)noexcept{
   auto &frame=*static_cast<Frame*>(data);frame.status=status;frame.answer=answer;frame.done=true;
@@ -73,19 +74,40 @@ template<class Owner> std::vector<std::string> lookup(Owner &owner,const std::st
     pollParent();
     if(Clock::now()>=deadline)throw nexrt::DataError("E_DNS_TIMEOUT","DNS lookup deadline expired");
     if(frame.overflow)throw nexrt::DataError("E_DNS_LIMIT","DNS socket event inventory is full");
-    std::array<pollfd,16> descriptors{};size_t count=0;
-    for(const auto &s:frame.sockets)if(s.fd!=ARES_SOCKET_BAD)descriptors[count++]={s.fd,s.events,0};
     auto remaining=std::chrono::duration_cast<std::chrono::milliseconds>(deadline-Clock::now()).count();
     int wait=int(std::min<int64_t>(20,std::max<int64_t>(0,remaining)));
+    std::array<ares_fd_events_t,16> events{};size_t active=0;
+#ifdef _WIN32
+    // c-ares does not initialize Winsock. Library retains the matched startup;
+    // select keeps pointer-width handles and reports failed TCP connects too.
+    fd_set reads,writes,errors;FD_ZERO(&reads);FD_ZERO(&writes);FD_ZERO(&errors);size_t count=0;
+    for(const auto &s:frame.sockets)if(s.fd!=ARES_SOCKET_BAD){
+      if(s.readable)FD_SET(s.fd,&reads);if(s.writable)FD_SET(s.fd,&writes);FD_SET(s.fd,&errors);++count;
+    }
+    int ready=0;
+    if(count){timeval interval{wait/1000,(wait%1000)*1000};ready=::select(0,&reads,&writes,&errors,&interval);}
+    else std::this_thread::sleep_for(std::chrono::milliseconds(wait));
+    if(ready==SOCKET_ERROR){int error=::WSAGetLastError();if(error==WSAEINTR)continue;throw nexrt::DataError("E_DNS","DNS socket select failed: "+std::to_string(error));}
+    pollParent();
+    if(ready)for(const auto &s:frame.sockets)if(s.fd!=ARES_SOCKET_BAD){
+      unsigned flags=0;
+      if(FD_ISSET(s.fd,&reads)||FD_ISSET(s.fd,&errors))flags|=ARES_FD_EVENT_READ;
+      if(FD_ISSET(s.fd,&writes)||FD_ISSET(s.fd,&errors))flags|=ARES_FD_EVENT_WRITE;
+      if(flags)events[active++]={s.fd,flags};
+    }
+#else
+    std::array<pollfd,16> descriptors{};size_t count=0;
+    for(const auto &s:frame.sockets)if(s.fd!=ARES_SOCKET_BAD)descriptors[count++]={s.fd,short((s.readable?POLLIN:0)|(s.writable?POLLOUT:0)),0};
     int ready=::poll(descriptors.data(),nfds_t(count),wait);
     if(ready<0){if(errno==EINTR)continue;throw nexrt::DataError("E_DNS","DNS socket polling failed");}
-    pollParent();std::array<ares_fd_events_t,16> events{};size_t active=0;
+    pollParent();
     for(size_t i=0;i<count;++i)if(descriptors[i].revents){
       unsigned flags=0;auto observed=descriptors[i].revents;
       if(observed&(POLLIN|POLLERR|POLLHUP|POLLNVAL))flags|=ARES_FD_EVENT_READ;
       if(observed&POLLOUT)flags|=ARES_FD_EVENT_WRITE;
       events[active++]={descriptors[i].fd,flags};
     }
+#endif
     status=ares_process_fds(channel.value,events.data(),active,ARES_PROCESS_FLAG_NONE);
     if(status==ARES_ENOMEM)throw std::bad_alloc();
     if(status!=ARES_SUCCESS)throw nexrt::DataError("E_DNS","DNS event processing failed");
@@ -102,7 +124,7 @@ template<class Owner> std::vector<std::string> lookup(Owner &owner,const std::st
     char address[INET6_ADDRSTRLEN]{};const void *raw=nullptr;
     if(node->ai_family==AF_INET&&node->ai_addrlen>=sizeof(sockaddr_in))raw=&reinterpret_cast<const sockaddr_in*>(node->ai_addr)->sin_addr;
     else if(node->ai_family==AF_INET6&&node->ai_addrlen>=sizeof(sockaddr_in6))raw=&reinterpret_cast<const sockaddr_in6*>(node->ai_addr)->sin6_addr;
-    if(!raw||!inet_ntop(node->ai_family,raw,address,sizeof(address)))throw nexrt::DataError("E_DNS","resolver returned an invalid IP address");
+    if(!raw||!ares_inet_ntop(node->ai_family,raw,address,sizeof(address)))throw nexrt::DataError("E_DNS","resolver returned an invalid IP address");
     if(std::find(result.begin(),result.end(),address)==result.end()){
       if(result.size()==limit)throw nexrt::DataError("E_DNS_LIMIT","DNS answer count exceeds the declared limit");
       result.emplace_back(address);

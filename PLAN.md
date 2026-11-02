@@ -1,3 +1,14 @@
+# Windows DNS development0.162
+
+Add native Windows static c-ares preparation and a Winsock/select DNS provider,
+retaining exact operator resolver/authority policy, UDP/TCP fallback, task control,
+bounded answers, capacity and physical channel retirement. Source language0.28
+and task ABI7 remain unchanged. The Windows static dependency,45 selected
+source comparisons and source-deleted package passed; Mac DNS51 and HTTP90 plus
+15 HTTP/1 stream cases passed. Matching full/current compiler, positive Windows
+IPv6, sanitizer and complete SDK acceptance are still required.
+Every unfinished original roadmap item remains open.
+
 # Windows TCP development0.161
 
 Port the private TCP kernel and pinned source provider to real Winsock2 while

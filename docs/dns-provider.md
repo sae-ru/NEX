@@ -1,5 +1,22 @@
 # Public025 preparation candidate
 
+Development0.162 adds a Windows candidate using matched Winsock startup, bounded
+select-based c-ares events and native `module.dll` preparation. The dependency
+builder accepts `--cc PATH/clang.exe` and `--generator Ninja` for the matching
+LLVM-MinGW toolchain. It preserves the pinned c-ares1.34.9 release, source
+inventory and complete license; no dependency download is implicit with `--archive`.
+Provider linking uses the same private ASCII workspace as the TCP adapter and
+records the requested Unicode/percent output path.
+
+The full source conformance gate retains17 cases and51 reference/Debug/Release
+comparisons, including IPv6 UDP and TCP fallback. Repeated `--case NAME` selects
+explicitly partial diagnostic cases with `full_conformance:false`. Intentional
+IPv6 policy restrictions do not count as successful IPv6 execution. Matching
+Windows selected source and source-deleted package checks passed:45 comparisons,
+33 policy rejections and18 authority rejections. The [development record](evidence/windows-dns-development-2026-11-02.json)
+pins their compiler, provider and native dependency. Successful Windows IPv6,
+matching current compiler, portable SDK and full platform acceptance remain pending. Source language0.28 and task ABI7 are unchanged.
+
 The source preparer now accepts matching compiler/doctor/language-pack cohorts
 for public0.24 and0.25. It generates the selected cohort's project and computes
 its actual FFI signature hashes. It does not relabel an old project or pin.
