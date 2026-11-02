@@ -1,3 +1,28 @@
+# Windows network candidate — toolchain0.162
+
+The [Windows development record](evidence/windows-http-development-2026-11-03.json)
+pins87 selected HTTP comparisons,45 stream cases and four relocated packages.
+The original default90 HTTP source comparisons retain successful IPv6 as a
+separate requirement; intentional IPv6 policy denials do not satisfy it.
+
+The preparer supports native Windows DLLs using matched Winsock lifetime,
+pointer-width handles and non-inheriting sockets. Pinned curl8.23.0, nghttp2
+1.70.0 and c-ares1.34.9 retain their source identities, recorded patches and
+complete licenses. Windows uses the selected OpenSSL backend; Schannel, SSPI
+and native IDN are disabled in the dependency build.
+
+Selected Windows HTTP/HTTPS/HTTP2 source execution passed87 comparisons on the
+compatible0.160 compiler with source language0.28. Positive IPv6 remains
+unverified on the intentionally restricted stand. Source-deleted packages and
+response-stream transport checks have their own reports; complete matching
+compiler/full/installed SDK acceptance remains pending. The source language
+and task ABI7 do not change.
+
+For source-built package tests, configure CMake with
+`-DNEX_PACKAGE_NOTICES_FILE=/absolute/path/to/real-notices.json` for the actual
+selected native dependency licenses. Direct runners accept `--package-notices`.
+This does not replace the installed SDK's own inventory or qualify a portable SDK.
+
 # Public025 integration candidate
 
 Preparation accepts matching public0.24/0.25 compiler, doctor and language-pack

@@ -1,3 +1,11 @@
+# Windows HTTP/HTTPS/HTTP2 candidate0.162
+
+Port native dependency preparation, socket ownership and source/package/stream
+checks without changing language0.28 or task ABI7. Selected HTTP87 and Mac HTTP90
+passed. Positive Windows IPv6, current coherent compiler/full regression and
+complete installed/moved SDK acceptance remain required. Every original unfinished
+roadmap requirement remains open.
+
 # Windows DNS development0.162
 
 Add native Windows static c-ares preparation and a Winsock/select DNS provider,

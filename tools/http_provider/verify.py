@@ -90,9 +90,9 @@ def main():
             sdk = out / 'source-projection'
             (sdk / 'bin').mkdir(parents=True)
             (sdk / 'share').mkdir()
-            shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin/nex')
+            shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'))
             (sdk / 'share/nex').symlink_to(args.resources.resolve(strict=True), target_is_directory=True)
-        compiler = sdk / 'bin/nex'
+        compiler = sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex')
         resources = sdk / 'share/nex'
         env = {**os.environ, 'NEX_RESOURCE_DIR': str(resources), 'PYTHONDONTWRITEBYTECODE': '1',
                'NEX_TRACY': '0'}

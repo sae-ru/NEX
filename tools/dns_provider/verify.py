@@ -2,6 +2,7 @@
 """Actual AST/native DNS calls against owned loopback UDP/TCP name servers."""
 import argparse
 import hashlib
+import errno
 import json
 import os
 from pathlib import Path
@@ -24,8 +25,8 @@ class DNS:
         self.answer_ipv4=answer_ipv4;self.answer_ipv6=answer_ipv6
         self.files=files;self.events=[];self.lock=threading.Lock();self.stop=threading.Event();owner=self
         family=socket.AF_INET6 if ':' in address else socket.AF_INET
-        class UDP(socketserver.ThreadingUDPServer):daemon_threads=True;allow_reuse_address=True;address_family=family
-        class TCP(socketserver.ThreadingTCPServer):daemon_threads=True;allow_reuse_address=True;address_family=family
+        class UDP(socketserver.ThreadingUDPServer):daemon_threads=True;allow_reuse_address=False;address_family=family
+        class TCP(socketserver.ThreadingTCPServer):daemon_threads=True;allow_reuse_address=False;address_family=family
         class Datagram(socketserver.BaseRequestHandler):
             def handle(self):owner.reply(self.request[0],self.client_address,self.request[1],'udp')
         class Stream(socketserver.BaseRequestHandler):
@@ -48,7 +49,17 @@ class DNS:
                         if packet is None:return
                         owner.reply(packet,self.client_address,self.request,'tcp')
                 except OSError:pass
-        self.udp=UDP((address,0),Datagram);self.port=self.udp.server_address[1];self.tcp=TCP((address,self.port),Stream)
+        # TCP and UDP have separate ephemeral/excluded-port inventories on
+        # Windows. Reserve a valid TCP port first, then bind its UDP partner.
+        # Retry only a genuine address collision; policy denials still fail.
+        for attempt in range(8):
+            tcp=TCP((address,0),Stream)
+            try:udp=UDP((address,tcp.server_address[1]),Datagram)
+            except OSError as error:
+                tcp.server_close()
+                if (error.errno==errno.EADDRINUSE or getattr(error,'winerror',None)==10048) and attempt<7:continue
+                raise
+            self.tcp=tcp;self.udp=udp;self.port=tcp.server_address[1];break
         self.threads=[]
         for server in (self.udp,self.tcp):
             thread=threading.Thread(target=server.serve_forever,kwargs={'poll_interval':.02},daemon=True);thread.start();self.threads.append(thread)

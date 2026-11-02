@@ -73,9 +73,9 @@ def main():
             sdk = out / 'source-projection'
             (sdk / 'bin').mkdir(parents=True)
             (sdk / 'share').mkdir()
-            shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin/nex')
+            shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'))
             (sdk / 'share/nex').symlink_to(args.resources.resolve(strict=True), target_is_directory=True)
-        compiler = sdk / 'bin/nex'
+        compiler = sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex')
         env = {**os.environ, 'NEX_RESOURCE_DIR': str(sdk / 'share/nex'), 'PYTHONDONTWRITEBYTECODE': '1'}
         env.pop('NEX_FOREIGN_CONFIG', None)
         checked = run('operator-inputs', [sys.executable, '-B', HERE / 'check_inputs.py',
@@ -110,7 +110,7 @@ def main():
         source.write_text(program)
         host = project / 'foreign.json'
         catalogue = json.loads(host.read_text())
-        module, policy = project / 'bundle/module.so', project / 'bundle/targets.json'
+        module, policy = project / 'bundle' / ('module.dll' if os.name=='nt' else 'module.so'), project / 'bundle/targets.json'
         module_bytes, policy_bytes = module.read_bytes(), policy.read_bytes()
         for kind, code in [('no-grant', 'E_FFI_GRANT'), ('no-export', 'E_FFI_GRANT'),
                            ('wrong-pin', 'E_FFI_HASH'), ('wrong-signature', 'E_FFI_SIGNATURE'),
@@ -158,7 +158,7 @@ def main():
             if path.is_file():
                 text = path.read_text()
                 assert not any(value in text for value in ('send_raw', 'statistics_raw', 'make_client',
-                    prepared['manifest_sha256'], 'example.test', '127.0.0.1', 'module.so', 'BEGIN CERTIFICATE')), path
+                    prepared['manifest_sha256'], 'example.test', '127.0.0.1', 'module.so', 'module.dll', 'BEGIN CERTIFICATE')), path
         source.write_text(prefix + 'client fn forbidden()->result<httpc::Response> !{task,ffi}{return send_raw(httpc::request("backend","GET","http://api.example.test/",utf8_bytes(""),1000));}\n')
         rejected = run('client-realm-rejection', [compiler, 'check', '--json'], cwd=project, env=env, expected=1)
         assert rejected['code'] == 'E_REALM', rejected
@@ -198,9 +198,12 @@ def main():
         # The peer has already loaded its server key/certificate. Removing the
         # operator root proves the application uses its captured CA bytes.
         (peer.cert / 'root.pem').unlink()
-        observed = run('source-deleted-package', [moved / 'bin/app'], cwd=peer.files,
-            env={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': str(out / 'absent-sdk'),
-                 'NEX_FOREIGN_CONFIG': str(out / 'absent-host.json'), 'SSL_CERT_FILE': str(out / 'absent-ca.pem')}, parsed=False)
+        standalone={'PATH': '/usr/bin:/bin', 'NEX_RESOURCE_DIR': str(out / 'absent-sdk'),
+                    'NEX_FOREIGN_CONFIG': str(out / 'absent-host.json'), 'SSL_CERT_FILE': str(out / 'absent-ca.pem')}
+        if os.name=='nt':
+            standalone.update({key:os.environ[key] for key in ('SystemRoot','WINDIR','TEMP','TMP','USERPROFILE') if key in os.environ})
+            standalone['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
+        observed = run('source-deleted-package', [moved / 'bin' / ('app.exe' if os.name=='nt' else 'app')], cwd=peer.files,env=standalone, parsed=False)
         assert observed.stdout == '42\n' and peer.dns.count() >= before + 4, (observed.stdout, observed.stderr)
         original_source = json.loads((out / 'prepared-evidence/inputs/SOURCE.json').read_text())
         records = list(moved.rglob('SOURCE.json'))

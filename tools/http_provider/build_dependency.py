@@ -46,7 +46,7 @@ def extract(out,kind,archive):
    destination.chmod(0o755 if member.mode&0o111 else 0o644);files[relative]={'sha256':sha(destination),'bytes':destination.stat().st_size}
  manifest=out/(kind+'-upstream-source.json');write(manifest,{'archive':record,'files':files});return out/record['name'],manifest,files
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--cares-prefix',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--curl-archive',type=Path);parser.add_argument('--nghttp2-archive',type=Path);parser.add_argument('--jobs',type=int,default=4);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--cares-prefix',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--curl-archive',type=Path);parser.add_argument('--nghttp2-archive',type=Path);parser.add_argument('--jobs',type=int,default=4);parser.add_argument('--generator',help='CMake generator; Windows defaults to Ninja');args=parser.parse_args()
  if not 1<=args.jobs<=8:parser.error('jobs must be1..8')
  out=args.output.absolute()
  if os.path.lexists(out):parser.error('output must be new')
@@ -59,7 +59,7 @@ def main():
   if p.returncode:raise RuntimeError(label+' failed; inspect retained logs')
   return (out/(label+'.stdout')).read_text()
  try:
-  doctor=json.loads(run('doctor',[sdk/'bin/nex','doctor','--json']));compiler=Path(doctor['native_compiler']);cc=compiler.with_name('clang')
+  executable=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');doctor=json.loads(run('doctor',[executable,'doctor','--json']));compiler=Path(doctor['native_compiler']);cc=compiler.with_name('clang.exe' if os.name=='nt' else 'clang')
   if not cc.is_file():raise ValueError('selected SDK requires a matching clang C compiler')
   ssl={k:str(Path(doctor[k]).resolve(strict=True)) for k in ['native_openssl_include','native_openssl_ssl','native_openssl_crypto']};ssl_hashes={k:sha(v) for k,v in ssl.items() if k!='native_openssl_include'}
   care=json.loads((cares/'share/cares-source.json').read_text())
@@ -73,7 +73,7 @@ def main():
   for old,new in patch_document['replacements']:
    if text.count(old)!=1:raise ValueError('curl source patch does not apply exactly')
    text=text.replace(old,new,1)
-  target.write_text(text)
+  target.write_text(text,encoding='utf-8',newline='')
   if sha(target)!=patch_document['patched_sha256']:raise ValueError('curl patched source differs')
   effective=dict(curl_files);effective[patch_document['path']]={'sha256':sha(target),'bytes':target.stat().st_size};write(out/'curl-effective-source.json',{'archive':RELEASES['curl'],'local_patches':[{'sha256':sha(patchfile),'document':patch_document}],'files':effective})
   prefix=out/'prefix';(prefix/'lib').mkdir(parents=True);(prefix/'include').mkdir();(prefix/'share/licenses').mkdir(parents=True)
@@ -81,16 +81,19 @@ def main():
   for name,h in care['headers'].items():
    if Path(name).name!=name or sha(cares/'include'/name)!=h:raise ValueError('c-ares headers differ')
    shutil.copy2(cares/'include'/name,prefix/'include'/name)
-  common=['-DCMAKE_C_COMPILER='+str(cc),'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_POSITION_INDEPENDENT_CODE=ON','-DCMAKE_INSTALL_PREFIX='+str(prefix),'-DCMAKE_INSTALL_LIBDIR=lib','-DBUILD_SHARED_LIBS=OFF','-DBUILD_STATIC_LIBS=ON','-DBUILD_TESTING=OFF']
-  run('nghttp2-configure',['cmake','-S',ng,'-B',out/'nghttp2-build',*common,'-DENABLE_LIB_ONLY=ON','-DENABLE_DOC=OFF','-DENABLE_FAILMALLOC=OFF']);run('nghttp2-build',['cmake','--build',out/'nghttp2-build','-j',str(args.jobs)]);run('nghttp2-install',['cmake','--install',out/'nghttp2-build'])
-  flags=['-DBUILD_CURL_EXE=OFF','-DCURL_BUILD_EVERYTHING=OFF','-DENABLE_ARES=ON','-DCARES_INCLUDE_DIR='+str(prefix/'include'),'-DCARES_LIBRARY='+str(prefix/'lib/libcares.a'),'-DCARES_USE_STATIC_LIBS=ON','-DUSE_NGHTTP2=ON','-DNGHTTP2_INCLUDE_DIR='+str(prefix/'include'),'-DNGHTTP2_LIBRARY='+str(prefix/'lib/libnghttp2.a'),'-DNGHTTP2_USE_STATIC_LIBS=ON','-DCURL_USE_OPENSSL=ON','-DOPENSSL_INCLUDE_DIR='+ssl['native_openssl_include'],'-DOPENSSL_SSL_LIBRARY='+ssl['native_openssl_ssl'],'-DOPENSSL_CRYPTO_LIBRARY='+ssl['native_openssl_crypto'],'-DCURL_ZLIB=OFF','-DCURL_BROTLI=OFF','-DCURL_ZSTD=OFF','-DCURL_USE_LIBPSL=OFF','-DUSE_LIBIDN2=OFF','-DCURL_USE_LIBSSH2=OFF','-DCURL_USE_LIBSSH=OFF','-DCURL_USE_GSSAPI=OFF','-DCURL_USE_GSASL=OFF','-DCURL_USE_PKGCONFIG=OFF','-DCURL_USE_CMAKECONFIG=OFF','-DENABLE_UNIX_SOCKETS=OFF','-DCURL_CA_BUNDLE=none','-DCURL_CA_PATH=none','-DCURL_CA_FALLBACK=OFF']
-  for protocol in ['DICT','DOH','FILE','FTP','GOPHER','IMAP','LDAP','LDAPS','MQTT','POP3','RTSP','SMB','SMTP','TELNET','TFTP','WEBSOCKETS','NETRC','ALTSVC','HSTS']:flags+=['-DCURL_DISABLE_'+protocol+'=ON']
-  run('curl-configure',['cmake','-S',curl,'-B',out/'curl-build',*common,*flags]);run('curl-build',['cmake','--build',out/'curl-build','-j',str(args.jobs)]);run('curl-install',['cmake','--install',out/'curl-build'])
+  common=['-DCMAKE_C_COMPILER='+cc.as_posix(),'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_POSITION_INDEPENDENT_CODE=ON','-DCMAKE_INSTALL_PREFIX='+prefix.as_posix(),'-DCMAKE_INSTALL_LIBDIR=lib','-DBUILD_SHARED_LIBS=OFF','-DBUILD_STATIC_LIBS=ON','-DBUILD_TESTING=OFF']
+  generator=args.generator or ('Ninja' if os.name=='nt' else None)
+  if generator:common+=['-G',generator]
+  run('nghttp2-configure',['cmake','-S',ng,'-B',out/'nghttp2-build',*common,'-DENABLE_LIB_ONLY=ON','-DENABLE_DOC=OFF','-DENABLE_FAILMALLOC=OFF']);run('nghttp2-build',['cmake','--build',out/'nghttp2-build','--config','Release','-j',str(args.jobs)]);run('nghttp2-install',['cmake','--install',out/'nghttp2-build','--config','Release'])
+  flags=['-DBUILD_CURL_EXE=OFF','-DCURL_BUILD_EVERYTHING=OFF','-DENABLE_ARES=ON','-DCARES_INCLUDE_DIR='+(prefix/'include').as_posix(),'-DCARES_LIBRARY='+(prefix/'lib/libcares.a').as_posix(),'-DCARES_USE_STATIC_LIBS=ON','-DUSE_NGHTTP2=ON','-DNGHTTP2_INCLUDE_DIR='+(prefix/'include').as_posix(),'-DNGHTTP2_LIBRARY='+(prefix/'lib/libnghttp2.a').as_posix(),'-DNGHTTP2_USE_STATIC_LIBS=ON','-DCURL_USE_OPENSSL=ON','-DOPENSSL_INCLUDE_DIR='+Path(ssl['native_openssl_include']).as_posix(),'-DOPENSSL_SSL_LIBRARY='+Path(ssl['native_openssl_ssl']).as_posix(),'-DOPENSSL_CRYPTO_LIBRARY='+Path(ssl['native_openssl_crypto']).as_posix(),'-DCURL_ZLIB=OFF','-DCURL_BROTLI=OFF','-DCURL_ZSTD=OFF','-DCURL_USE_LIBPSL=OFF','-DUSE_LIBIDN2=OFF','-DCURL_USE_LIBSSH2=OFF','-DCURL_USE_LIBSSH=OFF','-DCURL_USE_GSSAPI=OFF','-DCURL_USE_GSASL=OFF','-DCURL_USE_PKGCONFIG=OFF','-DCURL_USE_CMAKECONFIG=OFF','-DENABLE_UNIX_SOCKETS=OFF','-DCURL_CA_BUNDLE=none','-DCURL_CA_PATH=none','-DCURL_CA_FALLBACK=OFF']
+  if os.name=='nt':flags+=['-DCURL_USE_SCHANNEL=OFF','-DCURL_WINDOWS_SSPI=OFF','-DUSE_WIN32_IDN=OFF']
+  for protocol in ['DICT','DOH','FILE','FTP','GOPHER','IMAP','LDAP','LDAPS','MQTT','POP3','RTSP','SMTP','TELNET','TFTP','WEBSOCKETS','NETRC','ALTSVC','HSTS']:flags+=['-DCURL_DISABLE_'+protocol+'=ON']
+  run('curl-configure',['cmake','-S',curl,'-B',out/'curl-build',*common,*flags]);run('curl-build',['cmake','--build',out/'curl-build','--config','Release','-j',str(args.jobs)]);run('curl-install',['cmake','--install',out/'curl-build','--config','Release'])
   for kind,source in [('curl',curl/'COPYING'),('nghttp2',ng/'COPYING'),('c-ares',cares/care['license'])]:
    folder=prefix/'share/licenses'/kind;folder.mkdir(exist_ok=True);shutil.copy2(source,folder/'LICENSE.txt')
   for k,h in ssl_hashes.items():
    if sha(ssl[k])!=h:raise ValueError('OpenSSL changed during build')
-  record={'schema':'nex.http-dependencies/1','curl':RELEASES['curl'],'nghttp2':RELEASES['nghttp2'],'cares':care,'curl_source_patches':[{'sha256':sha(patchfile),'document':patch_document}],'openssl':ssl,'openssl_library_sha256':ssl_hashes,'source_manifest_sha256':{'curl_upstream':sha(curl_manifest),'curl_effective':sha(out/'curl-effective-source.json'),'nghttp2':sha(ng_manifest)},'static_PIC':True,'libraries':{p.name:sha(p) for p in (prefix/'lib').glob('*.a')},'headers':{p.relative_to(prefix/'include').as_posix():sha(p) for p in (prefix/'include').rglob('*.h')},'licenses':{p.relative_to(prefix).as_posix():sha(p) for p in (prefix/'share/licenses').rglob('*') if p.is_file()},'automatic_decompression':False,'build_configuration':{'C_compiler':str(cc),'CFLAGS':env.get('CFLAGS',''),'LDFLAGS':env.get('LDFLAGS',''),'common_CMake':common,'curl_CMake':flags}};validate_http(record,platform.system());write(prefix/'share/http-source.json',record);report.update(ok=True,prefix=str(prefix),record_sha256=sha(prefix/'share/http-source.json'),compiler_sha256=sha(sdk/'bin/nex'),actual_compiler_toolchain=doctor['version'],language=doctor['language'])
+  record={'schema':'nex.http-dependencies/1','curl':RELEASES['curl'],'nghttp2':RELEASES['nghttp2'],'cares':care,'curl_source_patches':[{'sha256':sha(patchfile),'document':patch_document}],'openssl':ssl,'openssl_library_sha256':ssl_hashes,'source_manifest_sha256':{'curl_upstream':sha(curl_manifest),'curl_effective':sha(out/'curl-effective-source.json'),'nghttp2':sha(ng_manifest)},'static_PIC':True,'libraries':{p.name:sha(p) for p in (prefix/'lib').glob('*.a')},'headers':{p.relative_to(prefix/'include').as_posix():sha(p) for p in (prefix/'include').rglob('*.h')},'licenses':{p.relative_to(prefix).as_posix():sha(p) for p in (prefix/'share/licenses').rglob('*') if p.is_file()},'automatic_decompression':False,'build_configuration':{'C_compiler':str(cc),'CFLAGS':env.get('CFLAGS',''),'LDFLAGS':env.get('LDFLAGS',''),'common_CMake':common,'curl_CMake':flags,'host_system':platform.system(),'host_machine':platform.machine()}};validate_http(record,platform.system());write(prefix/'share/http-source.json',record);report.update(ok=True,prefix=str(prefix),record_sha256=sha(prefix/'share/http-source.json'),compiler_sha256=sha(executable),actual_compiler_toolchain=doctor['version'],language=doctor['language'])
  except BaseException as error:report['error']=repr(error);raise
  finally:save()
  print(json.dumps({k:report.get(k) for k in ['ok','prefix','record_sha256','error']}))

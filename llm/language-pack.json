@@ -3021,12 +3021,19 @@
     "public_URL_private_IP_filter": false,
     "installed_SDK_accepted": false,
     "pending": [
+      "matching Windows current compiler/full IPv6 and complete SDK acceptance",
       "matching0.135.7 compiler/full/installed/moved SDK acceptance",
       "OpenSSL/compiler/generated-IR sanitizer instrumentation and fuzzing",
       "untrusted-provider OS/process isolation and public-URL address-range profiles",
       "persistent streams/backpressure, shared connection pools/reactor and finer total memory quotas",
       "network debug/profile, automatic IDNA and asynchronous database drivers",
       "Windows/mobile and broader CPU/platform execution"
+    ],
+    "platforms": [
+      "macos-arm64",
+      "linux-arm64",
+      "linux-x86_64",
+      "windows-x86_64"
     ]
   },
   "http_response_streams": {
@@ -3106,6 +3113,7 @@
     "original_parent_cancel_deadline_preserved": true,
     "installed_SDK_accepted": false,
     "pending": [
+      "matching Windows current compiler/full IPv6 and complete SDK acceptance",
       "matching current ordinary compiler regression, complete installed/moved SDK and platform delivery",
       "persistent connection pools/reactor, streaming uploads and finer total memory quotas",
       "network debug/profile integration and asynchronous database drivers",
@@ -3127,7 +3135,13 @@
       "peak_readers_index": 13,
       "physical_provider_calls_including_cursor_waiters": true,
       "source_CPU_overlap_claimed_for_AST": false
-    }
+    },
+    "platforms": [
+      "macos-arm64",
+      "linux-arm64",
+      "linux-x86_64",
+      "windows-x86_64"
+    ]
   },
   "source_exception_prototype": {
     "status": "private_task_consumer_instances_experiment",

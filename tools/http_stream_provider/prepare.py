@@ -2,6 +2,7 @@
 """Prepare a pinned typed HTTP provider from explicit operator authority."""
 import argparse
 import hashlib
+import importlib.util
 import ipaddress
 import json
 import os
@@ -21,6 +22,9 @@ RUNTIME=('nex_socket_platform.h','nex_ffi.h','nex_ffi_module.h','nex_error.h','n
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v):Path(p).write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
 def regular(path,maximum):
+ if os.name=='nt':
+  spec=importlib.util.spec_from_file_location('_nex_http_stream_windows_files',ROOT/'tools/windows_files.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+  return helper.regular(path,maximum)
  fd=os.open(path,os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK)
  try:
   s=os.fstat(fd)
@@ -84,13 +88,18 @@ def policy(path):
  if any('https' in row['schemes'] for row in rules) and not ca:raise ValueError('HTTPS requires an explicit public CA bundle')
  return {'schema':'nex.http-targets/1','maximum_calls':maximum,'resolvers':resolvers,'authorities':rules,'ca_sha256':hashlib.sha256(ca).hexdigest() if ca else None},ca
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--targets',type=Path,required=True);parser.add_argument('--http-prefix',type=Path);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--check-sdk',action='store_true');parser.add_argument('--diagnostics',action='store_true');parser.add_argument('--cxx');args=parser.parse_args();configuration,ca=policy(args.targets);sdk=args.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin/nex';out=args.output.absolute()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--targets',type=Path,required=True);parser.add_argument('--http-prefix',type=Path);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--check-sdk',action='store_true');parser.add_argument('--diagnostics',action='store_true');parser.add_argument('--cxx');args=parser.parse_args();configuration,ca=policy(args.targets);sdk=args.sdk.resolve(strict=True);resources=sdk/'share/nex';compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');out=args.output.absolute()
  if os.path.lexists(out):parser.error('output must be new')
- if platform.system() not in ('Darwin','Linux') or struct.calcsize('P')!=8 or platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('HTTP provider currently requires64-bit macOS/Linux ARM64 or x86-64')
+ if platform.system() not in ('Darwin','Linux','Windows') or struct.calcsize('P')!=8 or platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('HTTP provider requires64-bit macOS/Linux/Windows ARM64 or x86-64')
  if not args.check_sdk and not args.http_prefix:parser.error('select the pinned HTTP dependency prefix')
  out.mkdir(parents=True);evidence=out/'evidence';evidence.mkdir();env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'};env.pop('NEX_FOREIGN_CONFIG',None);report={'schema':'nex.http-stream-provider-preparation/1','ok':False,'network_executed':False,'module_initialized':False,'native_provider_built':False,'commands':[]}
  def run(label,argv):
-  p=subprocess.run(list(map(str,argv)),cwd=out,env=env,capture_output=True,text=True,timeout=240);(evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit_code':p.returncode})
+  argv=list(map(str,argv))
+  if label=='compile-module' and os.name=='nt':
+   spec=importlib.util.spec_from_file_location('_nex_http_provider_sdk',ROOT/'tools/provider_sdk.py');helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+   p=helper.native_compile(argv,cwd=out,env=env,capture_output=True,text=True,timeout=240)
+  else:p=subprocess.run(argv,cwd=out,env=env,capture_output=True,text=True,timeout=240)
+  (evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit_code':p.returncode,**({'executed_argv':p.args,'link_staging':p.nex_link_staging,'requested_output':p.nex_requested_output,'staging_retained':p.returncode!=0} if hasattr(p,'nex_link_staging') else {})})
   if p.returncode:raise RuntimeError(label+': '+p.stdout[-2000:]+p.stderr[-2500:])
   return p.stdout
  try:
@@ -131,14 +140,15 @@ def main():
   for v in configuration['authorities']:
    rules.append('{'+','.join([json.dumps(v['name']),json.dumps(v['domain']),str(v['subdomains']).lower(),'{'+','.join(map(json.dumps,v['schemes']))+'}','{'+','.join(map(json.dumps,v['methods']))+'}','{'+','.join(map(str,v['ports']))+'}',str(v['cross_origin_redirects']).lower()])+'}')
   header+='inline const nex_http::Config operatorConfig{'+json.dumps(servers)+','+json.dumps(ca.decode('ascii'))+',{'+','.join(rules)+'}};\n';(generated/'operator_targets.h').write_text(header)
-  bundle=out/'bundle';bundle.mkdir();cxx=args.cxx or doctor['native_compiler'];command=[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-DCURL_STATICLIB','-DCARES_STATICLIB','-I'+str(inputs/'runtime'),'-I'+str(inputs/'include'),'-I'+str(generated),'-I'+str(Path(doctor['native_openssl_include']).resolve()),inputs/'module.cpp',inputs/'lib/libcurl.a',inputs/'lib/libnghttp2.a',inputs/'lib/libcares.a',Path(doctor['native_openssl_ssl']).resolve(),Path(doctor['native_openssl_crypto']).resolve(),'-o',bundle/'module.so']
+  bundle=out/'bundle';bundle.mkdir();module=bundle/('module.dll' if os.name=='nt' else 'module.so');cxx=args.cxx or doctor['native_compiler'];command=[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-DCURL_STATICLIB','-DCARES_STATICLIB','-DNGHTTP2_STATICLIB','-I'+str(inputs/'runtime'),'-I'+str(inputs/'include'),'-I'+str(generated),'-I'+str(Path(doctor['native_openssl_include']).resolve()),inputs/'module.cpp',inputs/'lib/libcurl.a',inputs/'lib/libnghttp2.a',inputs/'lib/libcares.a',Path(doctor['native_openssl_ssl']).resolve(),Path(doctor['native_openssl_crypto']).resolve(),'-o',module]
   if platform.system()=='Darwin':command+=['-lresolv','-framework','CoreFoundation','-framework','SystemConfiguration','-Wl,-exported_symbol,_nex_ffi_module_entry']
+  elif os.name=='nt':command+=['-static','-lws2_32','-liphlpapi','-ladvapi32','-lcrypt32','-lbcrypt']
   else:command+=['-Wl,--exclude-libs,ALL']
   run('compile-module',command);shutil.copy2(generated/'targets.json',bundle/'targets.json');shutil.copy2(inputs/'SOURCE.json',bundle/'SOURCE.json')
   for name in notices:shutil.copy2(inputs/'licenses'/name,bundle/name)
   (bundle/'NOTICE').write_text('NEX typed HTTP stream provider. curl, nghttp2 and c-ares are statically linked; their complete licenses, source identities and recorded patches are included. OpenSSL is a separately selected SDK dependency.\n')
-  names=['module.so','targets.json','NOTICE','SOURCE.json',*notices];manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':n,'sha256':sha(bundle/n)} for n in names],'exports':signatures,'notices':['NOTICE','SOURCE.json',*notices]};write(bundle/'manifest.json',manifest);pin=sha(bundle/'manifest.json');(out/'main.nex').write_text(template.replace('@PIN@',pin));write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':64,'resource_bytes':67108864,'libraries':{'http_stream':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}});run('check-pinned',[compiler,'check','--json']);catalogue=json.loads(run('catalogue',[compiler,'foreign',out/'foreign.json','--json']));assert catalogue['module_initialization'] is False
-  report.update(ok=True,native_provider_built=True,manifest_sha256=pin,module_sha256=sha(bundle/'module.so'),dependency_record_sha256=sha(inputs/'SOURCE.json'),operator_targets_sha256=sha(generated/'targets.json'),input_sha256={p.relative_to(inputs).as_posix():sha(p) for p in inputs.rglob('*') if p.is_file()})
+  names=[module.name,'targets.json','NOTICE','SOURCE.json',*notices];manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':module.name,'files':[{'path':n,'sha256':sha(bundle/n)} for n in names],'exports':signatures,'notices':['NOTICE','SOURCE.json',*notices]};write(bundle/'manifest.json',manifest);pin=sha(bundle/'manifest.json');(out/'main.nex').write_text(template.replace('@PIN@',pin));write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':64,'resource_bytes':67108864,'libraries':{'http_stream':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}});run('check-pinned',[compiler,'check','--json']);catalogue=json.loads(run('catalogue',[compiler,'foreign',out/'foreign.json','--json']));assert catalogue['module_initialization'] is False
+  report.update(ok=True,native_provider_built=True,manifest_sha256=pin,module_sha256=sha(module),dependency_record_sha256=sha(inputs/'SOURCE.json'),operator_targets_sha256=sha(generated/'targets.json'),input_sha256={p.relative_to(inputs).as_posix():sha(p) for p in inputs.rglob('*') if p.is_file()})
  except BaseException as error:report['error']=repr(error);raise
  finally:write(evidence/'report.json',report)
 if __name__=='__main__':main()

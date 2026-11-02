@@ -52,11 +52,11 @@ platform acceptance.
 
 ## Development status
 
-Source development 0.162 adds Windows DNS preparation, selected IPv4 execution
-and relocated packages ([scoped record](docs/evidence/windows-dns-development-2026-11-02.json));
-successful IPv6 and complete matching SDK acceptance remain pending.
-Source development 0.161 adds a Windows TCP provider candidate; matching Windows
-IPv4/IPv6 and complete SDK acceptance remain pending. Development 0.160 adds [native library entry ABI discovery](docs/native-entry-abi.md)
+Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
+response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)
+includes selected IPv4 execution and source-deleted packages on the compatible
+0.160 compiler; matching current compiler/full IPv6/SDK acceptance remains pending.
+Development 0.160 adds [native library entry ABI discovery](docs/native-entry-abi.md)
 for matching C++ hosts; the published SDK and accepted delivery below remain 0.159.
 That exact SDK also has scoped [native iOS Simulator execution](docs/evidence/0.159.0-ios-native/README.md):
 1400 calls and cleanup checks across Debug/Release. Complete mobile delivery remains open.

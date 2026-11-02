@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import selectors
+import queue
 import socket
 import socketserver
 import subprocess
@@ -18,7 +19,7 @@ class Fixtures:
  def __init__(self,out,doctor):
   self.out=Path(out);self.files=self.out/'gates';self.files.mkdir();self.events=[];self.lock=threading.Lock();self.stop=threading.Event();self.servers=[];self.node=None;self.dns=None;self.cert=self.out/'cert';self.cert.mkdir()
   try:
-   openssl=Path(doctor['native_openssl_crypto']).resolve().parent.parent/'bin/openssl'
+   openssl=Path(doctor['native_openssl_crypto']).resolve().parent.parent/'bin'/('openssl.exe' if os.name=='nt' else 'openssl')
    if not openssl.is_file():openssl=shutil.which('openssl')
    if not openssl:raise RuntimeError('OpenSSL certificate tool is required')
    commands=[['req','-x509','-newkey','rsa:2048','-noenc','-subj','/CN=NEX owned HTTP root','-keyout',self.cert/'root.key','-out',self.cert/'root.pem','-days','2','-addext','basicConstraints=critical,CA:TRUE'],['req','-new','-newkey','rsa:2048','-noenc','-subj','/CN=api.example.test','-keyout',self.cert/'server.key','-out',self.cert/'server.csr']]
@@ -78,10 +79,16 @@ class Fixtures:
    node=shutil.which('node')
    if not node:raise RuntimeError('Node with built-in HTTP2 is required')
    self.node_log=(self.out/'http2-server.stderr').open('w');self.node=subprocess.Popen([node,str(Path(__file__).parent/'http2_fixture.js'),str(self.cert/'server.key'),str(self.cert/'server.pem'),str(self.files)],stdout=subprocess.PIPE,stderr=self.node_log,text=True)
-   with selectors.DefaultSelector() as readiness:
-    readiness.register(self.node.stdout,selectors.EVENT_READ)
-    if not readiness.select(10):raise RuntimeError('owned HTTP2 server did not become ready')
-    self.https_port=json.loads(self.node.stdout.readline())['port']
+   if os.name=='nt':
+    ready=queue.Queue(maxsize=1);threading.Thread(target=lambda:ready.put(self.node.stdout.readline()),daemon=True).start()
+    try:line=ready.get(timeout=10)
+    except queue.Empty:raise RuntimeError('owned HTTP2 server did not become ready') from None
+    self.https_port=json.loads(line)['port']
+   else:
+    with selectors.DefaultSelector() as readiness:
+     readiness.register(self.node.stdout,selectors.EVENT_READ)
+     if not readiness.select(10):raise RuntimeError('owned HTTP2 server did not become ready')
+     self.https_port=json.loads(self.node.stdout.readline())['port']
   except BaseException:self.close();raise
  def start(self,server):
   self.servers.append(server);threading.Thread(target=server.serve_forever,kwargs={'poll_interval':.02},daemon=True).start();return server

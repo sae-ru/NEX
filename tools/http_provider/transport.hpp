@@ -3,8 +3,10 @@
 #include <curl/curl.h>
 #include <openssl/ssl.h>
 #include <charconv>
+#ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
+#endif
 
 namespace nex_http {
 using Clock=std::chrono::steady_clock;
@@ -55,8 +57,8 @@ struct URL {
    if(!get(handle,CURLUPART_ZONEID,0,true).empty())throw nexrt::DataError("VALIDATION","scoped IPv6 HTTP URLs are unavailable");
    host=lower(get(handle,CURLUPART_HOST));if(host.size()>1&&host.front()=='['&&host.back()==']')host=host.substr(1,host.size()-2);
    in_addr v4{};in6_addr v6{};char address[INET6_ADDRSTRLEN]{};
-   if(inet_pton(AF_INET,host.c_str(),&v4)==1){if(v4.s_addr==0||IN_MULTICAST(ntohl(v4.s_addr))||v4.s_addr==INADDR_BROADCAST)throw nexrt::DataError("VALIDATION","invalid HTTP target address");if(!inet_ntop(AF_INET,&v4,address,sizeof(address)))throw nexrt::DataError("VALIDATION","invalid IPv4 address");host=address;numeric=true;}
-   else if(inet_pton(AF_INET6,host.c_str(),&v6)==1){if(IN6_IS_ADDR_UNSPECIFIED(&v6)||IN6_IS_ADDR_MULTICAST(&v6))throw nexrt::DataError("VALIDATION","invalid HTTP target address");if(!inet_ntop(AF_INET6,&v6,address,sizeof(address)))throw nexrt::DataError("VALIDATION","invalid IPv6 address");host=address;numeric=true;}
+   if(nexrt::socket_platform::parseAddress(AF_INET,host.c_str(),&v4)==1){if(v4.s_addr==0||((ntohl(v4.s_addr)&0xf0000000U)==0xe0000000U)||v4.s_addr==INADDR_BROADCAST)throw nexrt::DataError("VALIDATION","invalid HTTP target address");if(!ares_inet_ntop(AF_INET,&v4,address,sizeof(address)))throw nexrt::DataError("VALIDATION","invalid IPv4 address");host=address;numeric=true;}
+   else if(nexrt::socket_platform::parseAddress(AF_INET6,host.c_str(),&v6)==1){if(IN6_IS_ADDR_UNSPECIFIED(&v6)||IN6_IS_ADDR_MULTICAST(&v6))throw nexrt::DataError("VALIDATION","invalid HTTP target address");if(!ares_inet_ntop(AF_INET6,&v6,address,sizeof(address)))throw nexrt::DataError("VALIDATION","invalid IPv6 address");host=address;numeric=true;}
    else host=nex_dns::hostname(host);
    auto hostname=numeric&&host.find(':')!=std::string::npos?"["+host+"]":host;
    if(curl_url_set(handle,CURLUPART_SCHEME,scheme.c_str(),0)!=CURLUE_OK||curl_url_set(handle,CURLUPART_HOST,hostname.c_str(),0)!=CURLUE_OK||curl_url_set(handle,CURLUPART_FRAGMENT,nullptr,0)!=CURLUE_OK)throw nexrt::DataError("VALIDATION","URL canonicalization failed");
@@ -81,7 +83,7 @@ struct Frame {
  Context &owner;Response response;size_t replyLimit,headerBytes=0;unsigned port;
  const std::vector<std::string> &addresses;std::array<curl_socket_t,16> sockets;Failure failure=Failure::None;
  Frame(Context &owner,size_t limit,unsigned port,const std::vector<std::string> &addresses):owner(owner),replyLimit(limit),port(port),addresses(addresses){sockets.fill(CURL_SOCKET_BAD);}
- void close(curl_socket_t fd)noexcept{for(auto &value:sockets)if(value==fd){value=CURL_SOCKET_BAD;::close(fd);owner.socketsClosed.fetch_add(1);owner.socketsLive.fetch_sub(1);return;}failure=Failure::Protocol;}
+ void close(curl_socket_t fd)noexcept{for(auto &value:sockets)if(value==fd){value=CURL_SOCKET_BAD;nexrt::socket_platform::close(fd);owner.socketsClosed.fetch_add(1);owner.socketsLive.fetch_sub(1);return;}failure=Failure::Protocol;}
  ~Frame(){for(auto fd:sockets)if(fd!=CURL_SOCKET_BAD)close(fd);}
 };
 inline curl_socket_t openSocket(void *opaque,curlsocktype purpose,struct curl_sockaddr *address)noexcept{
@@ -93,10 +95,14 @@ inline curl_socket_t openSocket(void *opaque,curlsocktype purpose,struct curl_so
  char text[INET6_ADDRSTRLEN]{};unsigned port=0;const void *raw=nullptr;
  if(address->family==AF_INET&&address->addrlen>=sizeof(sockaddr_in)){auto &a=*reinterpret_cast<const sockaddr_in*>(&address->addr);raw=&a.sin_addr;port=ntohs(a.sin_port);}
  else if(address->family==AF_INET6&&address->addrlen>=sizeof(sockaddr_in6)){auto &a=*reinterpret_cast<const sockaddr_in6*>(&address->addr);if(a.sin6_scope_id){f.failure=Failure::Address;return CURL_SOCKET_BAD;}raw=&a.sin6_addr;port=ntohs(a.sin6_port);}
- if(!raw||port!=f.port||!inet_ntop(address->family,raw,text,sizeof(text))||std::find(f.addresses.begin(),f.addresses.end(),text)==f.addresses.end()){f.failure=Failure::Address;return CURL_SOCKET_BAD;}
+ if(!raw||port!=f.port||!ares_inet_ntop(address->family,raw,text,sizeof(text))||std::find(f.addresses.begin(),f.addresses.end(),text)==f.addresses.end()){f.failure=Failure::Address;return CURL_SOCKET_BAD;}
  auto slot=std::find(f.sockets.begin(),f.sockets.end(),CURL_SOCKET_BAD);if(slot==f.sockets.end()){f.failure=Failure::Limit;return CURL_SOCKET_BAD;}
+#ifdef _WIN32
+ auto fd=::WSASocketW(address->family,address->socktype,address->protocol,nullptr,0,WSA_FLAG_OVERLAPPED|WSA_FLAG_NO_HANDLE_INHERIT);if(fd==INVALID_SOCKET)return CURL_SOCKET_BAD;
+#else
  auto fd=::socket(address->family,address->socktype,address->protocol);if(fd<0)return CURL_SOCKET_BAD;
  if(::fcntl(fd,F_SETFD,FD_CLOEXEC)<0){::close(fd);return CURL_SOCKET_BAD;}
+#endif
 #ifdef SO_NOSIGPIPE
  int enabled=1;if(setsockopt(fd,SOL_SOCKET,SO_NOSIGPIPE,&enabled,sizeof(enabled))!=0){::close(fd);return CURL_SOCKET_BAD;}
 #endif

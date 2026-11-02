@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import selectors
+import queue
 import subprocess
 import sys
 import threading
@@ -38,6 +39,7 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--case', action='append')
     parser.add_argument('--transport', choices=['http1', 'https1', 'https2'], default='http1')
+    parser.add_argument('--package-notices',type=Path)
     parser.add_argument('--package', action='store_true', help='Also execute a relocated standalone download application')
     args = parser.parse_args()
     if not args.sdk and not (args.compiler and args.resources):
@@ -52,7 +54,7 @@ def main():
         sdk = out / 'source-projection'
         (sdk / 'bin').mkdir(parents=True)
         (sdk / 'share').mkdir()
-        shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin/nex')
+        shutil.copy2(args.compiler.resolve(strict=True), sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'))
         (sdk / 'share/nex').symlink_to(args.resources.resolve(strict=True), target_is_directory=True)
     shutil.copy2(__file__, out / 'verify-input.py')
     started = time.monotonic()
@@ -159,8 +161,8 @@ def main():
         else:
             scheme = 'https'
             protocol = '2' if args.transport == 'https2' else '1.1'
-            doctor = json.loads(run('doctor', [sdk / 'bin/nex', 'doctor', '--json']).stdout)
-            openssl = Path(doctor['native_openssl_crypto']).resolve().parent.parent / 'bin/openssl'
+            doctor = json.loads(run('doctor', [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'doctor', '--json']).stdout)
+            openssl = Path(doctor['native_openssl_crypto']).resolve().parent.parent / 'bin' / ('openssl.exe' if os.name=='nt' else 'openssl')
             if not openssl.is_file():
                 openssl = shutil.which('openssl')
             assert openssl, 'OpenSSL certificate tool is required'
@@ -180,10 +182,16 @@ def main():
             node_log = (out / 'tls-peer.stderr').open('w')
             node = subprocess.Popen([node_executable, str(fixture), str(key), str(ca), str(out / 'peer-events.ndjson'), str(release)],
                                     stdout=subprocess.PIPE, stderr=node_log, text=True)
-            with selectors.DefaultSelector() as readiness:
-                readiness.register(node.stdout, selectors.EVENT_READ)
-                assert readiness.select(10), 'owned TLS peer did not become ready'
-                port = json.loads(node.stdout.readline())['port']
+            if os.name=='nt':
+                ready=queue.Queue(maxsize=1);threading.Thread(target=lambda:ready.put(node.stdout.readline()),daemon=True).start()
+                try:line=ready.get(timeout=10)
+                except queue.Empty:raise RuntimeError('owned TLS peer did not become ready') from None
+                port=json.loads(line)['port']
+            else:
+                with selectors.DefaultSelector() as readiness:
+                    readiness.register(node.stdout, selectors.EVENT_READ)
+                    assert readiness.select(10), 'owned TLS peer did not become ready'
+                    port = json.loads(node.stdout.readline())['port']
         target = out / 'targets.json'
         configuration = {'schema': 'nex.http-targets/1',
             'resolvers': [{'address': '127.0.0.1', 'port': 5353}],
@@ -199,7 +207,7 @@ def main():
         prepared = json.loads((project / 'evidence/report.json').read_text())
         assert prepared['ok'] and not prepared['network_executed'] and not prepared['module_initialized']
         report.update(actual_compiler_toolchain=prepared['toolchain'], language=prepared['language'])
-        context = json.loads(run('read-context', [sdk / 'bin/nex', 'context', '--symbol', 'std::http_stream::read', '--json'], project).stdout)
+        context = json.loads(run('read-context', [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'context', '--symbol', 'std::http_stream::read', '--json'], project).stdout)
         assert context['symbol'] == 'std::http_stream::read' and context['language'] == prepared['language']
         prefix = (project / 'main.nex').read_text().split('server fn main()->unit', 1)[0]
         prefix += ('fn source_request()->hs::Request{return hs::Request("test","GET",'
@@ -255,13 +263,13 @@ def main():
                     release.unlink(missing_ok=True)
                 (project / 'main.nex').write_text(program.replace('@MODE@', mode))
                 (out / (name + '-' + mode + '.nex')).write_text(program.replace('@MODE@', mode))
-                argv = [sdk / 'bin/nex', 'eval' if mode == 'eval' else 'run', '--foreign', project / 'foreign.json',
+                argv = [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'eval' if mode == 'eval' else 'run', '--foreign', project / 'foreign.json',
                         '--task-workers', '2' if name == 'concurrent-reads' else '1', '--task-steps', '50000000', '--task-timeout-ms', '30000', '--json']
                 if mode != 'eval':
                     argv += ['--profile', mode]
                 if name == 'concurrent-reads' and mode != 'eval':
                     built = json.loads(run('build-' + name + '-' + mode,
-                        [sdk / 'bin/nex', 'build', '--profile', mode, '--output', out / ('concurrent-' + mode),
+                        [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'build', '--profile', mode, '--output', out / ('concurrent-' + mode),
                          '--task-workers', '2', '--task-steps', '50000000', '--task-timeout-ms', '30000', '--json'], project).stdout)
                     executed = run(name + '-' + mode, [built['executable'], '--nex-foreign', project / 'foreign.json'], project)
                     result = {'ok': True, 'stdout': executed.stdout}
@@ -288,8 +296,14 @@ def main():
             components = [{'name': 'nex-http-stream-provider', 'version': prepared['toolchain'],
                 'url': 'https://github.com/sae-ru/NEX', 'roots': [str(project / 'bundle')],
                 'license_files': [str(project / 'bundle' / name) for name in notice_names]}]
-            if sys.platform == 'darwin' and not (sdk / 'share/nex/sdk-bundle.json').is_file():
-                doctor = json.loads(run('package-doctor', [sdk / 'bin/nex', 'doctor', '--json']).stdout)
+            if args.package_notices:
+                external=args.package_notices.resolve(strict=True);selected=json.loads(external.read_text());assert selected['schema']=='nex.sdk-notices/1'
+                for row in selected['components']:
+                    item=dict(row)
+                    for field in ('roots','license_files'):item[field]=[str((external.parent/p).resolve(strict=True)) for p in row[field]]
+                    components.append(item)
+            elif sys.platform == 'darwin' and not (sdk / 'share/nex/sdk-bundle.json').is_file():
+                doctor = json.loads(run('package-doctor', [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'doctor', '--json']).stdout)
                 crypto = Path(doctor['native_openssl_crypto']).resolve(strict=True)
                 license_path = crypto.parent.parent / 'LICENSE.txt'
                 assert license_path.is_file(), 'selected OpenSSL needs its complete license'
@@ -299,7 +313,7 @@ def main():
             notices = out / 'package-notices.json'
             notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': components}, indent=2) + '\n')
             package = out / 'package'
-            argv = [sdk / 'bin/nex', 'package', '--foreign', project / 'foreign.json',
+            argv = [sdk / 'bin' / ('nex.exe' if os.name=='nt' else 'nex'), 'package', '--foreign', project / 'foreign.json',
                     '--notices', notices, '--directory', package, '--json']
             if sys.platform.startswith('linux'):
                 argv += ['--dpkg-notices']
@@ -311,8 +325,10 @@ def main():
             shutil.rmtree(project)
             if ca:
                 ca.unlink()
-            independent = run('moved-package-download', [moved / 'bin/app'], files,
-                {'PATH': '/usr/bin:/bin', 'NEX_FILES_ROOT': str(files), 'NEX_FILES_WRITE': '1'})
+            standalone={'PATH': '/usr/bin:/bin', 'NEX_FILES_ROOT': str(files), 'NEX_FILES_WRITE': '1'}
+            if os.name=='nt':
+                standalone.update({key:os.environ[key] for key in ('SystemRoot','WINDIR','TEMP','TMP','USERPROFILE') if key in os.environ});standalone['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
+            independent = run('moved-package-download', [moved / 'bin' / ('app.exe' if os.name=='nt' else 'app')], files,standalone)
             assert independent.stdout == str(amount) + '\n'
             assert (files / 'download-package.bin').read_bytes() == payload * (amount // len(payload)) + payload[:amount % len(payload)]
             for name in ['curl-LICENSE.txt', 'nghttp2-LICENSE.txt', 'c-ares-LICENSE.txt']:
