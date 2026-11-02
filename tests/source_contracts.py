@@ -146,7 +146,7 @@ for name,text,error,stdout in cases:
  for opt in ['0','2']:
   e=d/('O'+opt);e.mkdir();run(name+'-emit'+opt,[probe,'emit',f,e,triple,layout,str(opt=='2').lower()])
   lib=e/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
-  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(probe,out)] if os.name=='nt' else ['-shared','-fPIC']
+  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(a.native_host,out)] if os.name=='nt' else ['-shared','-fPIC']
   run(name+'-compile'+opt,[a.compiler,'-O'+opt,*flags,e/'program.ll','-o',lib])
   for workers in ([1,4] if name.startswith('task') else [1]):
    actual=run(name+'-native'+opt+'-'+str(workers),[a.native_host,'run',lib,str(workers)],allowed=(70 if error else exit_code(42),))

@@ -77,7 +77,7 @@ for optimized in [False,True]:
  dest=out/('stored-O2' if optimized else 'stored-O0');dest.mkdir()
  emitted=call(dest.name,reviewed,mode='emit',revision=result['revision'],output=str(dest),triple=triple,layout=layout,optimized=optimized)
  lib=dest/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
- flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(runtime_probe,out)] if os.name=='nt' else ['-shared','-fPIC']
+ flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(a.native_host,out)] if os.name=='nt' else ['-shared','-fPIC']
  run(dest.name+'-compile',[a.compiler,'-O2' if optimized else '-O0',*flags,dest/'program.ll','-o',lib])
  actual=run(dest.name+'-execute',[a.native_host,'run',lib],allowed=(42,));assert actual.stdout=='caught\nfinally\n' and not actual.stderr
  assert snapshot(reviewed)==after_review

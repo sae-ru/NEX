@@ -1,5 +1,31 @@
 # Bounded task TCP provider
 
+The [Windows development record](evidence/windows-tcp-development-2026-11-02.json)
+records 32 selected kernel executions, 33 source comparisons and source-deleted
+package delivery. Three additional comparisons cover intentional IPv6 denial.
+Successful Windows IPv6 and complete SDK acceptance remain pending.
+
+Development0.161 adds native Windows preparation of a pinned `module.dll`,
+using the existing source language0.28 and C FFI contract. The complete matching
+Windows source/SDK acceptance remains pending, including IPv6. macOS/Linux
+retain their existing module format and behavior. The private kernel and source
+provider keep their separate acceptance scopes.
+
+Windows LLVM-MinGW22 provider linking uses a private ASCII Temp directory and
+copies the completed DLL to the requested Unicode/percent project path through
+wide file APIs. If the selected Temp path itself contains Unicode or percent,
+set `NEX_PROVIDER_BUILD_ROOT` to an existing absolute writable ASCII directory.
+Preparation records both requested and executed compiler arguments. Successful
+link workspaces are removed; failures retain their evidence.
+
+The source conformance runner accepts repeated `--case NAME` for diagnosis.
+Such reports explicitly use `full_conformance:false`; the SDK continues to
+require all36 source comparisons and the full source-deleted delivery checks.
+The diagnostic-only `--case ipv6-policy-denied` additionally checks ordinary
+`E_NETWORK` handling when an operator deliberately restricts IPv6. It is outside
+the default36 comparisons and does not replace successful IPv6 acceptance.
+
+
 Toolchain0.135.1 provides `std/tcp.nex` and an operator-prepared native module.
 It uses existing language0.24 server `task,ffi` calls. There is no new network
 builtin, effect, async/await syntax, source version or ABI migration. Discover

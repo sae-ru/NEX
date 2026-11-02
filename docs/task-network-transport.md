@@ -1,5 +1,30 @@
 # Private task TCP transport
 
+The [Windows development record](evidence/windows-tcp-development-2026-11-02.json)
+records 32 selected kernel executions, 33 source comparisons and source-deleted
+package delivery. Three additional comparisons cover intentional IPv6 denial.
+Successful Windows IPv6 and complete SDK acceptance remain pending.
+
+Development0.161 adds the Windows Winsock2 adapter to this private kernel.
+The source language stays0.28 and the source task ABI stays7. Windows uses
+pointer-width SOCKET handles, non-inheriting nonblocking sockets and matched
+Winsock initialization retained by each grant/exchange. The socket still closes
+before physical completion and cancellation/deadline/revocation checks retain
+priority. The adapter follows the Windows
+[select connect/error contract](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-select)
+and [Winsock initialization lifecycle](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup).
+
+The full default test still requires IPv4 and IPv6. `--case NAME` selects a
+functional diagnostic case and reports `full_suite:false`; selected passes do
+not establish the full gate. The current Windows stand intentionally restricts
+IPv6; its operator confirmed this policy. A minimal program without NEX also
+failed to connect to `::1` with WSAEACCES10013. Successful Windows IPv6 delivery
+therefore remains unverified. System networking policies have not been changed.
+A separate minimal probe measured closed-port IPv4 refusal at2047ms. The
+functional refusal fixture uses the existing normal5s transport deadline;
+held-peer/queued cancellation and deadline checks keep their original limits.
+
+
 Toolchain0.135.0 adds a trusted C++ host kernel for asynchronous TCP work in
 `TaskExternalPool`. Public source language remains0.24. No network builtin,
 effect, async/await syntax, continuation instruction or migration is enabled.

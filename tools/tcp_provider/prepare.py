@@ -2,6 +2,7 @@
 """Prepare a pinned TCP provider from operator targets; execute no network calls."""
 import argparse
 import hashlib
+import importlib.util
 import ipaddress
 import json
 import os
@@ -13,7 +14,7 @@ import stat
 import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
-RUNTIME_FILES=('nex_task_network.h','nex_task_network.cpp','nex_task_external.h',
+RUNTIME_FILES=('nex_socket_platform.h','nex_task_network.h','nex_task_network.cpp','nex_task_external.h',
  'nex_resource.h','nex_resource_region.h','nex_resource_executor.h','nex_error.h',
  'nex_ffi.h','nex_ffi_module.h')
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -25,17 +26,22 @@ def targets(path):
    if key in result:raise ValueError('duplicate target JSON field')
    result[key]=value
   return result
- descriptor=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
- try:
-  info=os.fstat(descriptor)
-  if not stat.S_ISREG(info.st_mode) or info.st_size>1048576:raise ValueError('targets must be a regular file of at most1MiB')
-  data=bytearray()
-  while True:
-   block=os.read(descriptor,min(65536,1048577-len(data)))
-   if not block:break
-   data.extend(block)
-   if len(data)>1048576:raise ValueError('target file grew beyond1MiB')
- finally:os.close(descriptor)
+ if os.name=='nt':
+  spec=importlib.util.spec_from_file_location('_nex_windows_files',ROOT/'tools/windows_files.py')
+  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+  data=module.regular(path,1048576)
+ else:
+  descriptor=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+  try:
+   info=os.fstat(descriptor)
+   if not stat.S_ISREG(info.st_mode) or info.st_size>1048576:raise ValueError('targets must be a regular file of at most1MiB')
+   data=bytearray()
+   while True:
+    block=os.read(descriptor,min(65536,1048577-len(data)))
+    if not block:break
+    data.extend(block)
+    if len(data)>1048576:raise ValueError('target file grew beyond1MiB')
+  finally:os.close(descriptor)
  value=json.loads(data.decode('utf-8'),object_pairs_hook=unique)
  if not isinstance(value,dict) or not {'schema','endpoints'}<=set(value)<={'schema','endpoints','maximum_connections'} or value['schema']!='nex.tcp-targets/1':raise ValueError('expected nex.tcp-targets/1')
  maximum=value.get('maximum_connections',16)
@@ -53,16 +59,21 @@ def targets(path):
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path,required=True);parser.add_argument('--targets',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
  parser.add_argument('--cxx');parser.add_argument('--check-sdk',action='store_true');parser.add_argument('--diagnostics',action='store_true',help='emit bounded socket-retirement counters to stderr when the module retires')
- args=parser.parse_args();configuration=targets(args.targets);sdk=args.sdk.resolve(strict=True);compiler=sdk/'bin/nex';resources=sdk/'share/nex';out=args.output.absolute()
+ args=parser.parse_args();configuration=targets(args.targets);sdk=args.sdk.resolve(strict=True);compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex';out=args.output.absolute()
  if os.path.lexists(out):parser.error('output must be new')
- if platform.system() not in ('Darwin','Linux') or platform.machine() not in ('arm64','aarch64','x86_64','AMD64'):parser.error('TCP provider preparation requires64-bit macOS/Linux')
+ if platform.system() not in ('Darwin','Linux','Windows') or platform.machine() not in ('arm64','aarch64','x86_64','AMD64'):parser.error('TCP provider preparation requires64-bit macOS/Linux/Windows')
  if not compiler.is_file() or not resources.is_dir():parser.error('SDK requires bin/nex and share/nex')
  for name in RUNTIME_FILES:
   if not (resources/'runtime'/name).is_file():parser.error('SDK lacks TCP host kernel resource '+name)
  out.mkdir(parents=True);evidence=out/'evidence';evidence.mkdir();commands=[];environment={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
  def run(label,argv):
-  argv=list(map(str,argv));p=subprocess.run(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
-  (evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);commands.append({'label':label,'argv':argv,'exit_code':p.returncode})
+  argv=list(map(str,argv))
+  if label=='compile-module' and os.name=='nt':
+   spec=importlib.util.spec_from_file_location('_nex_tcp_provider_sdk',ROOT/'tools/provider_sdk.py')
+   helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+   p=helper.native_compile(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
+  else:p=subprocess.run(argv,cwd=out,env=environment,capture_output=True,text=True,timeout=180)
+  (evidence/(label+'.stdout')).write_text(p.stdout);(evidence/(label+'.stderr')).write_text(p.stderr);commands.append({'label':label,'argv':argv,'exit_code':p.returncode,**({'executed_argv':p.args,'link_staging':p.nex_link_staging,'requested_output':p.nex_requested_output,'staging_retained':p.returncode!=0} if hasattr(p,'nex_link_staging') else {})})
   if p.returncode:raise RuntimeError(label+': '+p.stdout[-3000:]+p.stderr[-2000:])
   return p.stdout
  report={'schema':'nex.tcp-provider-preparation/1','ok':False,'network_executed':False,'module_initialized':False,'native_provider_built':False,'diagnostics':args.diagnostics,'commands':commands}
@@ -88,12 +99,12 @@ def main():
   if args.check_sdk:report['ok']=True;return
   cxx=args.cxx or doctor['native_compiler']
   if not isinstance(cxx,str) or not Path(cxx).is_file():raise RuntimeError('a real operator-selected C++20 compiler is required')
-  bundle=out/'bundle';bundle.mkdir()
-  run('compile-module',[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-I'+str(inputs/'runtime'),'-I'+str(generated),inputs/'module.cpp',inputs/'runtime/nex_task_network.cpp','-o',bundle/'module.so'])
+  bundle=out/'bundle';bundle.mkdir();module=bundle/('module.dll' if os.name=='nt' else 'module.so')
+  run('compile-module',[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-I'+str(inputs/'runtime'),'-I'+str(generated),inputs/'module.cpp',inputs/'runtime/nex_task_network.cpp','-o',module,*(['-static','-lws2_32'] if os.name=='nt' else [])])
   shutil.copy2(generated/'targets.json',bundle/'targets.json');(bundle/'NOTICE').write_text('NEX TCP provider\nOriginal NEX runtime and adapter sources.\nBuilt with the operator-selected platform C++ SDK.\n')
-  manifest={'schema':'nex.foreign-bundle/1','platform':('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':'module.so','files':[{'path':n,'sha256':sha(bundle/n)} for n in ['module.so','targets.json','NOTICE']],'exports':signatures,'notices':['NOTICE']}
+  manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':module.name,'files':[{'path':n,'sha256':sha(bundle/n)} for n in [module.name,'targets.json','NOTICE']],'exports':signatures,'notices':['NOTICE']}
   write(bundle/'manifest.json',manifest);pin=sha(bundle/'manifest.json');(out/'main.nex').write_text(template.replace('@PIN@',pin));write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'libraries':{'tcp':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}})
   run('check-pinned',[compiler,'check','--json']);catalogue=json.loads(run('catalogue',[compiler,'foreign',out/'foreign.json','--json']));assert catalogue['module_initialization'] is False
-  report.update(ok=True,native_provider_built=True,module_sha256=sha(bundle/'module.so'),manifest_sha256=pin,source_sha256=sha(out/'main.nex'),generated_header_sha256=sha(generated/'operator_targets.h'),cxx=cxx)
+  report.update(ok=True,native_provider_built=True,module_sha256=sha(module),manifest_sha256=pin,source_sha256=sha(out/'main.nex'),generated_header_sha256=sha(generated/'operator_targets.h'),cxx=cxx)
  finally:write(evidence/'report.json',report)
 if __name__=='__main__':main()

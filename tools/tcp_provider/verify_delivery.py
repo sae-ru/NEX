@@ -23,9 +23,9 @@ def main():
   if args.sdk:sdk=args.sdk.resolve(strict=True)
   else:
    if not args.compiler or not args.resources:parser.error('use --sdk, or both --compiler and --resources')
-   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin/nex');(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
+   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex'));(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
   report['source_projection']=not bool(args.sdk)
-  compiler=sdk/'bin/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(sdk/'share/nex'),'PYTHONDONTWRITEBYTECODE':'1'};env.pop('NEX_FOREIGN_CONFIG',None)
+  compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');env={**os.environ,'NEX_RESOURCE_DIR':str(sdk/'share/nex'),'PYTHONDONTWRITEBYTECODE':'1'};env.pop('NEX_FOREIGN_CONFIG',None)
   files=out/'files';files.mkdir();peers=conformance.Peers(files)
   good={'schema':'nex.tcp-targets/1','endpoints':[peers.endpoints[0]]};target=out/'targets.json';write(target,good)
   invalid=[('DNS',{'endpoints':[dict(peers.endpoints[0],address='localhost')]}),('scoped-IPv6',{'endpoints':[dict(peers.endpoints[0],address='fe80::1%en0')]}),('boolean-port',{'endpoints':[dict(peers.endpoints[0],port=True)]}),('zero-port',{'endpoints':[dict(peers.endpoints[0],port=0)]}),('large-port',{'endpoints':[dict(peers.endpoints[0],port=65536)]}),('duplicate-name',{'endpoints':[peers.endpoints[0],peers.endpoints[0]]}),('unknown-field',{'credential':'forbidden'}),('boolean-capacity',{'maximum_connections':True}),('zero-capacity',{'maximum_connections':0}),('large-capacity',{'maximum_connections':65}),('empty-endpoints',{'endpoints':[]}),('too-many-endpoints',{'endpoints':[dict(peers.endpoints[0],name='e'+str(i)) for i in range(17)]}),('Unicode-name',{'endpoints':[dict(peers.endpoints[0],name='Я')]}),('path-name',{'endpoints':[dict(peers.endpoints[0],name='../echo')]}),('empty-name',{'endpoints':[dict(peers.endpoints[0],name='')]}),('address-NUL',{'endpoints':[dict(peers.endpoints[0],address='127.0.0.1\0')]}),('endpoint-extra-field',{'endpoints':[dict(peers.endpoints[0],timeout=1)]})]
@@ -42,7 +42,10 @@ def main():
   write(target,good)
   for label,path in [('symlink',out/'targets-link.json'),('FIFO',out/'targets-pipe')]:
    if label=='symlink':path.symlink_to(target)
-   else:os.mkfifo(path)
+   else:
+    if os.name=='nt':
+     native=load('nex_tcp_windows_files',HERE.parent/'windows_files.py');native.nonregular_fixture(path);label='nonregular-socket'
+    else:os.mkfifo(path)
    try:prepare.targets(path)
    except (ValueError,OSError) as error:report['rejections'].append({'case':label,'error':type(error).__name__})
    else:raise AssertionError('nonregular target accepted: '+label)
@@ -52,7 +55,7 @@ def main():
   shutil.copy2(project/'bundle/manifest.json',out/'original-provider-manifest.json')
   report.update(compiler_sha256=sha(compiler),language=prepared['language'],toolchain=prepared['toolchain'],provider_module_sha256=prepared['module_sha256'])
   source=project/'main.nex';prefix=source.read_text().split('server fn main()->unit',1)[0];program=prefix+'server fn main()->unit !{task,ffi,io}{assert(len(statistics_raw())==4);assert(unwrap(tcp::execute(make_client(),tcp::request("echo",utf8_bytes("hello"),64,1000)))==utf8_bytes("hello"));print(42);}\n';source.write_text(program)
-  host=project/'foreign.json';catalogue=json.loads(host.read_text());module=project/'bundle/module.so';module_bytes=module.read_bytes();policy=project/'bundle/targets.json';policy_bytes=policy.read_bytes()
+  host=project/'foreign.json';catalogue=json.loads(host.read_text());module=project/'bundle'/('module.dll' if os.name=='nt' else 'module.so');module_bytes=module.read_bytes();policy=project/'bundle/targets.json';policy_bytes=policy.read_bytes()
   for kind,code in [('no-grant','E_FFI_GRANT'),('no-export','E_FFI_GRANT'),('wrong-pin','E_FFI_HASH'),('wrong-signature','E_FFI_SIGNATURE'),('changed-module','E_FFI_HASH'),('changed-target-file','E_FFI_HASH')]:
    source.write_text(program);write(host,catalogue);module.write_bytes(module_bytes);policy.write_bytes(policy_bytes);selected=copy.deepcopy(catalogue)
    if kind=='no-export':selected['libraries']['tcp']['exports']=[];write(host,selected)
@@ -100,7 +103,13 @@ def main():
   # Remove the original source, graph, provider image and operator catalogue;
   # execute only the relocated package with no compiler/resource environment.
   moved=out/'moved package % 🧠';package.rename(moved);shutil.rmtree(project);assert not project.exists()
-  result=run('source-deleted-package',[moved/'bin/app'],cwd=files,env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'absent-sdk'),'NEX_FOREIGN_CONFIG':str(out/'absent-host.json')},parsed=False)
+  standalone_env={'PATH':'/usr/bin:/bin','NEX_RESOURCE_DIR':str(out/'absent-sdk'),'NEX_FOREIGN_CONFIG':str(out/'absent-host.json')}
+  if os.name=='nt':
+   # A source-deleted package still needs the OS's writable private Temp root.
+   # Keep only Windows baseline variables; no SDK/compiler/dependency PATH.
+   standalone_env.update({key:os.environ[key] for key in ('SystemRoot','WINDIR','TEMP','TMP','USERPROFILE') if key in os.environ})
+   standalone_env['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
+  result=run('source-deleted-package',[moved/'bin'/('app.exe' if os.name=='nt' else 'app')],cwd=files,env=standalone_env,parsed=False)
   assert result.stdout=='42\n' and peers.count()==before+1,(result.stdout,result.stderr)
   report.update(ok=True,state='passed',client_server_pruning=True,source_deleted_package=True,relocated_package=True,package_execution_network_connections=1,target_rejections=22,authority_rejections=18)
  except BaseException as error:report.update(state='failed',error=repr(error));raise

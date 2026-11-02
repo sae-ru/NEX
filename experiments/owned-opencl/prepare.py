@@ -17,7 +17,7 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
  parser.add_argument('--opencl-library',type=Path);parser.add_argument('--index',type=int,default=0);parser.add_argument('--cxx',default=shutil.which('clang++') or shutil.which('g++'))
  parser.add_argument('--check-sdk',action='store_true',help='check actual source and FFI signatures without building or initializing a device')
- args=parser.parse_args();sdk=args.sdk.resolve(strict=True);out=args.output.absolute();compiler=sdk/'bin/nex';resources=sdk/'share/nex'
+ args=parser.parse_args();sdk=args.sdk.resolve(strict=True);out=args.output.absolute();compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex'
  if platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('owned OpenCL preparation requires a supported64-bit architecture')
  if platform.system() not in ('Darwin','Linux') and not (args.check_sdk and os.name=='nt'):parser.error('native OpenCL worker preparation currently supports macOS/Linux; --check-sdk also supports native Windows')
  if not 0<=args.index<64:parser.error('GPU index must be0..63')

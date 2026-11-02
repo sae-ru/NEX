@@ -42,7 +42,7 @@ cases=[
 runner="""import * as program from './program.ts';import * as nex from './nex-runtime.ts';const logs=[];console.log=x=>logs.push(String(x));let result;try{result={kind:'return',value:String(program.main())};}catch(error){if(!(error instanceof nex.NexError))throw error;result={kind:'trap',code:error.code};}process.stdout.write(JSON.stringify({...result,output:logs.join('\\n')+(logs.length?'\\n':'')})+'\\n');"""
 save();host=out/'host.ll';run('host',[a.compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',host]);text=host.read_text();triple=re.search(r'target triple = "(.*?)"',text)[1];layout=re.search(r'target datalayout = "(.*?)"',text)[1];programs=[]
 for name,body,symbol,pre,post,loop_count,error,stdout in cases:
- d=out/name;d.mkdir();source=d/'main.nex';original='module composition;\n'+body;source.write_text(original)
+ d=out/name;d.mkdir();source=d/'main.nex';original='module composition;\n'+body;source.write_text(original);original=source.read_bytes().decode('utf-8')
  contract=json.loads(run(name+'-template',[probe,'contract-template',source,'composition::'+symbol]).stdout)
  assert contract['language']=='0.28';rule=contract['functions'][0];assert len(rule['loops'])==loop_count
  rule['requires']=pre;rule['ensures']=post;rule['returns']='' if symbol in ['observe','fail'] else 'value'
@@ -52,7 +52,7 @@ for name,body,symbol,pre,post,loop_count,error,stdout in cases:
  assert projected['language']=='0.28' and projected['origin_bundle']['files']['main.nex']==original
  assert projected['revision']!=projected['origin_revision'] and not projected['proof_performed']
  candidate=d/'candidate';candidate.mkdir();bundle=projected['bundle'];assert bundle['entry']=='main.nex' and set(bundle['files'])=={'main.nex'}
- f=candidate/'main.nex';f.write_text(bundle['files']['main.nex'])
+ f=candidate/'main.nex';f.write_text(bundle['files']['main.nex'],encoding='utf-8',newline='')
  for mode in ['reference','ast','ir']:
   actual=json.loads(run(name+'-'+mode,[probe,mode,f]).stdout)
   assert actual['kind']==('trap' if error else 'return') and actual['output']==stdout,(name,mode,actual)
@@ -61,7 +61,7 @@ for name,body,symbol,pre,post,loop_count,error,stdout in cases:
  for opt in ['0','2']:
   e=d/('O'+opt);e.mkdir();run(name+'-emit'+opt,[probe,'emit',f,e,triple,layout,str(opt=='2').lower()])
   library=e/('program.dylib' if platform.system()=='Darwin' else 'program.dll' if os.name=='nt' else 'program.so')
-  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(probe,out)] if os.name=='nt' else ['-shared','-fPIC']
+  flags=['-dynamiclib','-undefined','dynamic_lookup'] if platform.system()=='Darwin' else ['-shared',*probe_dll_inputs(a.native_host,out)] if os.name=='nt' else ['-shared','-fPIC']
   run(name+'-compile'+opt,[a.compiler,'-O'+opt,*flags,e/'program.ll','-o',library])
   actual=run(name+'-native'+opt,[a.native_host,'run',library,'1'],allowed=(70 if error else exit_code(42),))
   assert actual.stdout==stdout
@@ -73,7 +73,7 @@ for name,body,symbol,pre,post,loop_count,error,stdout in cases:
  if error:assert actual['code']==error
  else:assert actual['value']=='42'
  programs.append(candidate/'program.ts')
- assert source.read_text()==original
+ assert source.read_bytes()==original.encode('utf-8')
  report['cases'].append({'name':name,'AST_TaskIR_Node_native_O0_O2':True,'original_preserved':True,'loop_annotations':loop_count,'passed':True});save()
  if name=='loop':
   # A review-bound JSON annotation must follow the original body through the

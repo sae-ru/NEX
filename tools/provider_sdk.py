@@ -34,6 +34,39 @@ def sdk_compiler(sdk):
     return native if os.name=='nt' and native.is_file() else root/'bin/nex'
 
 
+
+def native_compile(arguments, **kwargs):
+    """Compile a provider while preserving its requested Unicode output path.
+
+    The selected Windows LLVM-MinGW22 linker cannot open some Unicode/percent
+    output paths. Inputs stay in the recorded project; link in a private ASCII
+    workspace and copy the completed artifact with Python's wide file APIs.
+    """
+    command=list(map(str,arguments))
+    if os.name!='nt':
+        return subprocess.run(command,**kwargs)
+    index=command.index('-o')+1
+    requested=Path(command[index]).absolute()
+    directory=Path(os.environ.get('NEX_PROVIDER_BUILD_ROOT',tempfile.gettempdir()))
+    if not directory.is_absolute() or not str(directory).isascii() or '%' in str(directory) or not directory.is_dir():
+        raise RuntimeError('Windows provider linking requires an absolute ASCII directory; select NEX_PROVIDER_BUILD_ROOT')
+    staging=Path(tempfile.mkdtemp(prefix='nex-provider-',dir=directory))
+    artifact=staging/('provider'+requested.suffix)
+    command[index]=str(artifact)
+    try:
+        result=subprocess.run(command,**kwargs)
+        result.nex_link_staging=str(staging)
+        result.nex_requested_output=str(requested)
+        if result.returncode==0:
+            if not artifact.is_file():
+                raise RuntimeError('provider compiler did not produce its declared artifact: '+str(artifact))
+            shutil.copy2(artifact,requested)
+            shutil.rmtree(staging)
+        return result
+    except BaseException as error:
+        raise RuntimeError('provider compilation failed; retained native link workspace '+str(staging)) from error
+
+
 def check_sdk(sdk, source, libraries, symbols, kind=None):
     sdk=Path(sdk).resolve(strict=True);compiler=sdk_compiler(sdk);resources=sdk/'share/nex'
     if not compiler.is_file() or not resources.is_dir():

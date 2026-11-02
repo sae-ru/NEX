@@ -32,7 +32,7 @@ class Peers:
      with owner.lock:owner.events.append(event)
      try:
       if behavior=='reset':
-       self.request.setsockopt(socket.SOL_SOCKET,socket.SO_LINGER,struct.pack('ii',1,0))
+       self.request.setsockopt(socket.SOL_SOCKET,socket.SO_LINGER,struct.pack('HH' if os.name=='nt' else 'ii',1,0))
        # socketserver.shutdown_request sends FIN before close. Close here so
        # this fixture generates an actual abortive reset rather than valid EOF.
        self.request.close();return
@@ -77,7 +77,7 @@ def source_for_selected_sdk(program, sdk):
 
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--output',type=Path)
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--sdk',type=Path);parser.add_argument('--compiler',type=Path);parser.add_argument('--resources',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--case',action='append',help='run selected source cases; never counts as complete conformance')
  args=parser.parse_args();out=args.output.absolute() if args.output else Path(tempfile.mkdtemp(prefix='nex-tcp-source-'));temporary=args.output is None
  if not temporary:out.mkdir(parents=True)
  shutil.copy2(Path(__file__),out/'verify-input.py')
@@ -90,8 +90,8 @@ def main():
   if args.sdk:sdk=args.sdk.resolve(strict=True)
   else:
    if not args.compiler or not args.resources:parser.error('use --sdk, or both --compiler and --resources')
-   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin/nex');(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
-  compiler=sdk/'bin/nex';resources=sdk/'share/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1','NEX_TRACY':'0'};env.pop('NEX_FOREIGN_CONFIG',None)
+   sdk=out/'source-projection';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir();shutil.copy2(args.compiler.resolve(strict=True),sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex'));(sdk/'share/nex').symlink_to(args.resources.resolve(strict=True),target_is_directory=True)
+  compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex';env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1','NEX_TRACY':'0'};env.pop('NEX_FOREIGN_CONFIG',None)
   files=out/'files';files.mkdir();env['NEX_FILES_ROOT']=str(files);peers=Peers(files);targets=out/'targets.json';write(targets,{'schema':'nex.tcp-targets/1','endpoints':peers.endpoints});project=out/'project % 🧠'
   run('prepare',[sys.executable,'-B',ROOT/'tools/tcp_provider/prepare.py','--sdk',sdk,'--targets',targets,'--output',project,'--diagnostics'],env=env,parsed=False)
   prepared=json.loads((project/'evidence/report.json').read_text());assert prepared['ok'] and prepared['network_executed'] is False and prepared['module_initialized'] is False and peers.count()==0
@@ -116,6 +116,13 @@ def main():
    ('parent-deadline','exchange_raw("held",utf8_bytes("@LABEL@"),64,30000);','E_TIMEOUT'),
    ('capacity','with_tasks(1,server fn(s:task_scope)->unit !{task,ffi,fs}{let child:task<result<bytes>>=task_spawn(s,server fn()->result<bytes> !{task,ffi}{return exchange_raw("held",utf8_bytes("@LABEL@"),64,1000);});while !is_ok(file_read_text("@GATE@")){task_yield();}assert(error_code(exchange_raw("echo",utf8_bytes("must-not-connect"),64,1000))=="E_NETWORK_BUSY");assert(error_code(task_wait(child))=="E_NETWORK_TIMEOUT");});assert(unwrap(exchange_raw("echo",utf8_bytes("after-capacity"),64,1000))==utf8_bytes("after-capacity"));let stats:list<i64>=statistics_raw();assert(stats[0]==2);assert(stats[1]==2);assert(stats[2]==0);assert(stats[3]==1);',None),
   ]
+  required_cases=[name for name,_,_ in cases];report['required_cases']=required_cases;report['full_conformance']=not bool(args.case)
+  optional_policy_case=('ipv6-policy-denied','let denied:result<bytes>=tcp::execute(make_client(),tcp::request("ipv6",utf8_bytes("Я🧠"),64,1000));assert(error_code(denied)=="E_NETWORK");assert(statistics_raw()[2]==0);',None)
+  if args.case:
+   if 'ipv6-policy-denied' in args.case:cases.append(optional_policy_case)
+   if not set(args.case)<=set(required_cases+['ipv6-policy-denied']):raise ValueError('unknown TCP source case')
+   cases=[case for case in cases if case[0] in args.case]
+  report['selected_cases']=[name for name,_,_ in cases]
   for name,source,error in cases:
    for mode in ('eval','debug','release'):
     label=name+'-'+mode
@@ -134,7 +141,7 @@ def main():
     else:
      assert observed['ok'] and observed['stdout']==('ASYNC_PROGRESS\n42\n' if name=='progress' else '42\n'),(label,observed)
      assert observed['task_execution']['executor_workers']==1,observed
-    if name in ('invalid','denied'):assert peers.count()==before,(label,peers.events[before:])
+    if name in ('invalid','denied','ipv6-policy-denied'):assert peers.count()==before,(label,peers.events[before:])
     stderr=(out/(label+'.stderr')).read_text()+'\n'+observed.get('stderr','');retired=[json.loads(value) for value in re.findall(r'NEX_TCP_RETIRE (\{[^\n]+\})',stderr)]
     if name not in ('invalid',):assert retired and all(r['live']==0 and r['opened']==r['closed'] for r in retired),(label,stderr)
     report['cases'].append({'name':name,'mode':mode,'passed':True,'expected_error':error,'peer_connections':peers.count()-before,'retired':retired});save()

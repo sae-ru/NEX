@@ -4,7 +4,6 @@
 #include <chrono>
 #include <span>
 
-#ifndef _WIN32
 namespace nexrt {
 // Private trusted-host transport. Endpoint names are operator-selected and map
 // to exact numeric addresses/ports. No source metadata or worker TLS grants IO.
@@ -37,4 +36,3 @@ public:
   TaskExternalResult admit(TaskExternalResult,const TaskExternalControl &control=TaskExternalControl{})const;
 };
 }
-#endif

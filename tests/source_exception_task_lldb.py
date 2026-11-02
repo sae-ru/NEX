@@ -249,6 +249,7 @@ def main():
             adapter.request('initialize',{'clientID':'private-source-test','adapterID':'nex','linesStartAt1':True,'columnsStartAt1':True,'pathFormat':'path'})
             launch=adapter.send('launch',{'program':str(binary),'cwd':str(directory),'stopOnEntry':False,'nexTaskDebug':True,
                 'args':['--nex-task-workers','2'],'initCommands':['settings set target.disable-aslr false',
+                    *(['settings set target.error-path '+json.dumps(str(directory/'dap-inferior.stderr'))] if os.name=='nt' else []),
                     'command script import '+json.dumps(str(source/'debug/lldb_nex.py')),
                     'nex-load-private-task-debug '+json.dumps(str(manifest))+(' --compiler '+json.dumps(str(Path(a.watch_compiler).resolve())) if a.watch_compiler else '')]})
             adapter.event('initialized')
@@ -282,9 +283,10 @@ def main():
             finally:(directory/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
         messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
         output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
-        cleanup=json.loads(next(line.split(' ',1)[1] for line in inferior_output(messages.values()).splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
+        native_output=(directory/'dap-inferior.stderr').read_text(encoding='utf-8') if os.name=='nt' else inferior_output(messages.values())
+        cleanup=json.loads(next(line.split(' ',1)[1] for line in native_output.splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
         assert cleanup=={'ok':True,'live_frames':0,'managed_live':0},output
-        report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
+        report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'native_cleanup_capture':'stderr-file' if os.name=='nt' else 'DAP-output','protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
     save();debugger=shutil.which('lldb');assert debugger,'actual LLDB required'
     run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
     target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]

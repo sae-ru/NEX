@@ -1,3 +1,15 @@
+# Windows TCP development0.161
+
+Port the private TCP kernel and pinned source provider to real Winsock2 while
+retaining source language0.28/task ABI7, endpoint authority, cancellation,
+queue-time deadlines, quotas and physical socket retirement. The default full
+kernel test retains IPv4/IPv6; selected cases remain explicitly partial.
+Windows selected kernel/source IPv4 and source-deleted package checks passed;
+intentional IPv6 denial is handled in reference/Debug/Release with balanced sockets.
+Successful IPv6, complete installed SDK delivery, HTTP/DNS provider dependencies
+and every unfinished original requirement remain open.
+The accepted local Mac0.160 cohort and published0.159 SDK retain exact identities.
+
 # Integrated source development0.160
 
 Combine native entry ABI discovery, debugger fixes and quality runners, then
