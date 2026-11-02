@@ -59,7 +59,7 @@ for i,(revision,language) in enumerate(revisions):
 native=api('native',recovered,'build-native',revision=target,output=str(O/'native'));assert native['execution_abi']==0x4e45585400000007
 
 actual=run('native-run',[native['artifact']]);assert actual.stdout=='42\n' and not actual.stderr;passed('recovered027_native_ABI7_execution_without_original_source',stdout=actual.stdout)
-advertised=json.loads(run('describe',[compiler,'describe','--json']).stdout)['version'];assert advertised in ['0.26','0.27']
+advertised=json.loads(run('describe',[compiler,'describe','--json']).stdout)['version'];assert advertised in ['0.26','0.27','0.28']
 if advertised=='0.27':
  observed=cli('public027-evaluation',recovered,'eval','--revision','HEAD');assert observed['stdout']=='42\n';passed('advertised027_CLI_executes_recovered_HEAD')
 else:

@@ -13,7 +13,7 @@ def check_installed_source_handlers(cli, root, resources):
     def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
     feature=cli('describe','--field','source_exceptions')['value']
     language=feature.get('source_language')
-    require(language in ('0.26','0.27') and feature.get('handler_filters') is True,
+    require(language in ('0.26','0.27', '0.28') and feature.get('handler_filters') is True,
             'SDK lacks checked026 handler filters')
     fixture=resources/'tests/exception_handlers.py'
     tree=ast.parse(fixture.read_text())

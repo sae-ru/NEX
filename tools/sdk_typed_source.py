@@ -12,14 +12,15 @@ def check_installed_typed_source(cli, run, root, resources, compiler):
     root,resources,compiler=Path(root),Path(resources),Path(compiler)
     sha=lambda path:hashlib.sha256(Path(path).read_bytes()).hexdigest()
     descriptor=cli('describe','--field','source_exceptions')
-    require(descriptor.get('language')=='0.27' and descriptor['value'].get('typed_payloads') is True
+    language=descriptor.get('language');require(language in ('0.27','0.28'),'SDK needs a known typed source language')
+    require(descriptor.get('language')==language and descriptor['value'].get('typed_payloads') is True
             and descriptor['value'].get('finally') is True,'SDK lacks public027 typed source errors')
     destination=root/'typed-source-errors';destination.mkdir()
     test=resources/'tests/source_exceptions_public.py'
     run([sys.executable,'-B',test,compiler,'--output',destination/'execution'],timeout=900)
     execution_file=destination/'execution/report.json'
     execution=json.loads(execution_file.read_text())
-    require(execution.get('ok') is True and execution.get('language')=='0.27'
+    require(execution.get('ok') is True and execution.get('language')==language
             and execution.get('compiler_sha256')==sha(compiler),'SDK typed CLI used another compiler')
     typed=[row for row in execution['passed'] if row.get('ordinary_typed_CLI')]
     flags=('ordinary_typed_CLI','native_debug_release','typescript','checked_map',
@@ -28,7 +29,7 @@ def check_installed_typed_source(cli, run, root, resources, compiler):
             'SDK lacks actual typed CLI/native/TypeScript/Wasm execution and rejected programs')
     checked=json.loads((destination/'execution/typed-check.stdout').read_text())
     mapping=json.loads((destination/'execution/typed-typescript/nex-map.json').read_text())
-    require(mapping['schema']=='nex.typescript-map/2' and mapping['language']=='0.27'
+    require(mapping['schema']=='nex.typescript-map/2' and mapping['language']==language
             and mapping['revision']==checked['revision'],'installed typed map lost checked identity')
 
     metadata_file=resources/'tests/fixtures/language-0.26-typed-origin.json'
@@ -51,7 +52,7 @@ def check_installed_typed_source(cli, run, root, resources, compiler):
             and state(origin)==before,'SDK implicitly reinterpreted a026 project')
     plan=cli('migrate','--kind','plan',cwd=origin)
     require(plan.get('origin_verified') is True and plan.get('origin_language')=='0.26'
-            and plan.get('target_language')=='0.27' and state(origin)==before,
+            and plan.get('target_language')==language and state(origin)==before,
             'SDK migration plan changed its origin')
     source='''module installed_typed_migration;
 struct Failure{value:i64;}
@@ -70,7 +71,7 @@ fn main()->unit !{task,io}{
             'SDK accepted a stale migration HEAD or changed its graph')
     migrated=cli('migrate','--candidate',reviewed,'--expected-revision',metadata['head'],cwd=origin)
     after=state(origin)
-    require(migrated.get('language')=='0.27' and migrated['revision']!=metadata['head']
+    require(migrated.get('language')==language and migrated['revision']!=metadata['head']
             and before[0]==after[0] and set(before[1])==set(after[1])
             and all(not (rows-after[1][name]) for name,rows in before[1].items() if name!='head'),
             'SDK migration lost original schema, rows, namespace or local IDs')
@@ -88,10 +89,10 @@ fn main()->unit !{task,io}{
             'SDK recovered typed task execution differs')
     materialized=destination/'materialized'
     cli('export','--revision','HEAD','--directory',materialized,cwd=recovered)
-    require(json.loads((materialized/'nex.json').read_text())['language']=='0.27'
+    require(json.loads((materialized/'nex.json').read_text())['language']==language
             and cli('check',cwd=materialized)['revision']==migrated['revision'],
             'SDK explicit physical export lost its migrated identity')
-    return {'schema':'nex.installed-typed-source/1','ok':True,'language':'0.27',
+    return {'schema':'nex.installed-typed-source/1','ok':True,'language':language,
             'compiler_sha256':sha(compiler),'helper_sha256':sha(__file__),
             'test_source_sha256':sha(test),'origin_metadata_sha256':sha(metadata_file),
             'origin_sql_sha256':sha(sql_file),'execution_report_sha256':sha(execution_file),

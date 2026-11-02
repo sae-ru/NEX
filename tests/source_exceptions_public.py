@@ -20,7 +20,7 @@ out.mkdir(parents=True,exist_ok=True)
 project=out/'project'
 shutil.copytree(source/'examples/exceptions',project)
 compiler_hash=hashlib.sha256(Path(nex).read_bytes()).hexdigest()
-report={'ok':False,'language':'0.27','compiler_sha256':compiler_hash,'commands':[],'passed':[]}
+report={'ok':False,'language':None,'compiler_sha256':compiler_hash,'commands':[],'passed':[]}
 
 def save():
     (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
@@ -38,7 +38,8 @@ def command(label,arguments,expected=0):
 
 try:
     descriptor=command('descriptor',['describe','--field','source_exceptions'])
-    assert descriptor['language']=='0.27' and descriptor['value']['frontend']
+    language=descriptor['language'];assert language in ('0.27','0.28') and descriptor['value']['frontend'] and descriptor['value']['typed_payloads']
+    report['language']=language
     assert command('check',['check'])['ok']
     assert command('reference',['eval'])['value']==42
     for label,extra in [('native-debug',[]),('native-release',['--profile','release']),
@@ -51,7 +52,7 @@ try:
     maps=[json.loads(p.read_text()) for p in (out/'cache').rglob('nex-map.json')]
     assert len(maps)==9
     for mapping in maps:
-        assert mapping['schema']=='nex.typescript-map/2' and mapping['language']=='0.27'
+        assert mapping['schema']=='nex.typescript-map/2' and mapping['language']==language
         assert len(mapping['revision'])==64 and len(mapping['source_hash'])==64
         assert mapping['source_exceptions']=='nex.source-errors/2'
     assert sum(m['execution']=='task-generator' and m['task_source_exceptions'] for m in maps)==2
@@ -90,7 +91,7 @@ fn scalar()->i64{return 7*6;}
     folder=out/'typed-typescript'
     command('typed-emit',['emit','--kind','typescript','--directory',folder])
     mapping=json.loads((folder/'nex-map.json').read_text())
-    assert mapping['schema']=='nex.typescript-map/2' and mapping['language']=='0.27'
+    assert mapping['schema']=='nex.typescript-map/2' and mapping['language']==language
     assert mapping['revision']==checked['revision'] and mapping['source_exceptions']=='nex.source-errors/2'
     wasm=command('typed-scalar-wasm',['build','--target','wasm','--entry','scalar','--profile','release'])
     driver=out/'typed-wasm.mjs'

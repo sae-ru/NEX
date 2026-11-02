@@ -43,7 +43,7 @@ try:
  project=root/'project';(project/'handler').mkdir(parents=True);(project/'app').mkdir()
  (project/'handler/main.nex').write_text(HANDLER, newline="\n")
  (project/'app/main.nex').write_text('module hosted_app;import "../handler/main.nex" as h;server fn main()->unit !{task,io,throw}{print(h::reference());}\n', newline="\n")
- write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})
+ write(project/'nex.json',{'schema':'nex.project/1','language':'0.28','entry':'app/main.nex'})
  write(project/'nex.build.json',{'schema':'nex.project-build/1','default_configuration':'debug',
   'configurations':{'debug':{'profile':'debug','target':'native'}},'components':{
    'handler':{'kind':'static_library','root':'handler','entry':'handler/main.nex','entry_function':'handle','exports':['reference']},
@@ -56,7 +56,7 @@ try:
  artifacts={row['component']:row for row in built['artifacts']};assert set(artifacts)=={'handler','app'}
  app=artifacts['app'];metadata=json.loads(Path(app['metadata']).read_text());folder=Path(app['artifact']).parent
  handler=Path(artifacts['handler']['artifact']);provider_path=handler.parent/'task-provider.json';provider=json.loads(provider_path.read_text())
- assert provider['schema']=='nex.native-task-provider/14' and provider['language']=='0.27' and provider['descriptor_abi']==0x4e45585400000007
+ assert provider['schema']=='nex.native-task-provider/14' and provider['language']=='0.28' and provider['descriptor_abi']==0x4e45585400000007
  accessor=provider['exports']['hosted_http::handle']['accessor'];assert re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',accessor)
  runtime=Path(metadata['runtime_source_projection']);objects=[folder/Path(name).with_suffix('.o') for name in metadata['runtime_components']]
  assert 'nex_task_application.cpp' in metadata['runtime_components'] and all(p.is_file() for p in objects)

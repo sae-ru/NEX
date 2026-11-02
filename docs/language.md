@@ -1,15 +1,15 @@
-# NEX language specification 0.27
+# NEX language specification 0.28
 
-This specification describes language0.27 independently of any LLM provider.
+This specification describes language0.28 independently of any LLM provider.
 Discover the selected compiler with `nex describe --kind index --json`; retained
 SDKs may expose an earlier language. Toolchain and language versions are distinct.
 Current compiler/SDK/platform acceptance is reported separately from implemented
 source semantics. Future capabilities are in PLAN.md.
 
-Language027 uses checked program format `nex.program/15`. Retained026 keeps
-`nex.program/14`, its parser, revisions, local IDs and graph history. New physical
-projects declare `language: "0.27"` in nex.json. Updating that field alone does
-not migrate an existing graph; use the [explicit migration](typed-error-migration.md).
+Language028 uses checked program format `nex.program/16`. Retained027 keeps
+`nex.program/15` and its parser, revisions, local IDs and graph history. New
+physical projects declare `language: "0.28"` in nex.json. Updating that field
+alone does not migrate an existing graph; use the [explicit migration](source-contract-migration.md).
 Snapshots copy graph data without granting a language upgrade. Historical scoped
 milestones are preserved in [language-history.md](language-history.md).
 
@@ -927,10 +927,24 @@ scope. Retained older task-language server targets remain unsupported until
 explicit history-preserving migration to0.24.
 
 
-## Explicit028 source-contract development
+## Source contracts in language0.28
 
-The version-selected C++ frontend develops source-level pre/post and loop
-contracts under language028/nex.program/16. Ordinary source loading remains027;
-retained027 identities and explicit guarded migration are separate. Read the
-[candidate semantics](source-contracts.md) and [candidate grammar](source-contracts-028.ebnf).
-This stage is not ordinary CLI or installed028 SDK acceptance.
+Ordinary source functions accept pure `requires(expr)` and `ensures(value=>expr)`
+clauses after their effects. Unit postconditions omit the result binder.
+Requires run before the body; ensures run on the final normal result after
+normal finalizers. Escaping source errors, fatal traps, cancellation and deadlines
+skip postconditions. Result errors remain ordinary completed values. Checks stay
+in release code and false clauses trap with `E_ASSERT` at their source location.
+Generic clauses check parametrically under the original bounds and constructor
+kinds, including unused templates. Parameters remain immutable snapshots.
+
+A while loop may declare one or more `invariant(expr)` clauses followed by one
+`decreases(i64_expr)`. Entry and normal back-edge invariants, nonnegative iteration
+rankings and strict decrease are runtime checked. They observe the surrounding
+bindings, independently of body-local shadows. The four clause names remain
+ordinary identifiers outside these positions. Clauses do not extend the bounded
+proof engine automatically. See [the exact semantics](source-contracts.md) and
+the normative [grammar](grammar.ebnf).
+
+Source support is distinct from full regression, installed SDK and platform
+acceptance. The published0.156 SDK uses027 and does not accept these clauses.

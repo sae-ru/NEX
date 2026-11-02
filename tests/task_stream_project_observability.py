@@ -6,7 +6,7 @@ p=argparse.ArgumentParser();p.add_argument('probe',type=Path);p.add_argument('co
 probe=a.probe.resolve();compiler=a.compiler.resolve();fixtures=a.fixtures.resolve();root=a.output.resolve();root.mkdir();started=time.monotonic()
 report={'schema':'nex.private024-stream-project-observability/1','ok':False,'state':'starting','commands':[],'profiles':[],'debug_sessions':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'public_language':'0.27','private_language':'0.24','public025_delivery_accepted':False,'full_objective_complete':False}
+ 'public_language':'0.28','private_language':'0.24','public025_delivery_accepted':False,'full_objective_complete':False}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def write(path,value):Path(path).write_text(json.dumps(value,indent=2)+'\n', newline="\n")
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)

@@ -3,10 +3,10 @@
 You write and maintain checked NEX programs. The installed compiler is the
 capability authority. A plan, design, old receipt or earlier milestone does not
 establish current support. Toolchain and source-language versions are different.
-The ordinary development default is0.27; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
+The ordinary development default is0.28; installed or retained SDKs may advertise earlier versions. Discover the selected compiler before choosing syntax, metadata or migration. Compiled applications do not require an LLM.
 
 Use typed source errors only when source_exceptions.typed_payloads is true.
-Language027 has throw(value), ordered catch(error:T) with optional guards,
+Language0.27 and later have throw(value), ordered catch(error:T) with optional guards,
 legacy throw(code,message)/catch(code,message), lexical rethrow and finally.
 Matching uses the complete concrete type; a false guard retains the original
 packet and a guard/body error escapes sibling handlers. Payloads retain ownership
@@ -18,6 +18,16 @@ runtime-owned cleanup still runs. Result errors are ordinary values.
 Installed SDK/platform acceptance and narrower Wasm/browser boundaries remain
 separate from source syntax. Historical private experiments do not override the
 selected public compiler.
+
+Use source clauses only when `source_contracts.public_enabled` is true.
+Language0.28 supports `requires(expr)`, `ensures(value=>expr)` (or `ensures(expr)`
+for unit) and `while ... invariant(expr) decreases(i64_expr)`. Predicates are
+pure; a false check is a fatal `E_ASSERT`, including release builds. Postconditions
+observe normal results after normal finally blocks; source errors and fatal
+control skip them. Annotated loops check the surrounding bindings. These runtime
+checks are separate from an explicitly requested bounded proof. Read
+`nex guide --kind source-contract --json` for ordering and limits. Retain older
+graphs and use `nex migrate`; changing a version field does not migrate history.
 
 ## Discover only the context needed
 
@@ -92,6 +102,7 @@ contract; production-browser and installed-SDK acceptance remain separate.
 | Work | Descriptor fields | Guide kinds |
 |---|---|---|
 | Values and error propagation | types, generic_features, trait_features, function_value_features, result_propagation | language, grammar, trait, function, result, match |
+| Source contracts | source_contracts | source-contract, source-contract-migration |
 | Source errors and provider transport | source_exceptions, source_exceptions.source_providers | exception, typed-error-provider |
 | Graph and recovery | graph_features, scoped_discovery, patch_features, history_features, snapshot_features | graph, history, snapshot |
 | Components and targets | project_build, native_target_policy, application_package_platforms, sdk_bundle_platforms | project, build |

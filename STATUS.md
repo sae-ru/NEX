@@ -1,3 +1,19 @@
+# Language0.28 ordinary CLI integration — development0.159
+
+The working CLI selects028 and advertises source_contracts. Named/generic
+requires/ensures and annotated while checks now compose with typed ABI7 delivery,
+original-declaration and source-backed operation edits. Seven actual ordinary-CLI
+scenarios passed: native Debug/Release, reference/TypeScript/scalar Wasm, guarded
+edits, genuine027 migration and source-absent mixed-history recovery/export.
+The [CLI receipt](docs/evidence/source-contract-CLI-0.159.0.json) records the
+initial stale-example failure and compiler-refreshed028 bindings with unchanged
+source/function hashes and clause intents. Seventeen initial focused groups and
+all seven refreshed example/contract/task groups passed. The new required SDK
+contract phase ran from source; installed acceptance of all41 phases and final
+full296 remain pending.
+PublishedSDK156 and its acceptance remain unchanged. Current Windows/Linux/device,
+mobile/UI/Studio/converter and every remaining original PLAN requirement remain.
+
 # Public028 integration in progress — toolchain0.159 / ordinary language0.27
 
 The next working source composes explicit028 clauses with detached runtime

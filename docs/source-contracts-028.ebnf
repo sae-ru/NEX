@@ -1,4 +1,4 @@
-(* Explicit C++028 candidate, not the ordinary027 source grammar. *)
+(* Language028 contract excerpt. The complete normative grammar is grammar.ebnf. *)
 function = [ "pub" ], [ realm ], [ "test" ], "fn", identifier,
            [ type_parameters ], "(", [ parameters ], ")", "->", type,
            [ effects ], { precondition | postcondition }, block ;

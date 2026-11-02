@@ -55,7 +55,7 @@ class ResourceMigrationChecks(MigrationChecks):
   for name,raw in physical.items():assert (project/name).read_bytes()==raw,name
 
  def run(self):
-  descriptor=self.cli('describe','describe');self.current_language=descriptor['version'];assert self.current_language=='0.27'
+  descriptor=self.cli('describe','describe');self.current_language=descriptor['version'];assert self.current_language=='0.28'
   assert descriptor['source_resources']==json.loads((REPO/'llm/language-pack.json').read_text())['source_resources']
   for name in PINS:
    metadata,sql=self.fixture(name)

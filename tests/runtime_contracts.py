@@ -33,7 +33,7 @@ class RuntimeContracts(harness.ToolchainCase):
         folder=directory/('typescript-'+entry)
         self.cli('emit','--kind','typescript','--entry',entry,'--directory',folder,cwd=directory)
         mapping=json.loads((folder/'nex-map.json').read_text())
-        self.assertEqual(mapping['language'],'0.27')
+        self.assertEqual(mapping['language'],harness.CURRENT_LANGUAGE)
         self.assertIn(mapping['execution'],('synchronous','task-generator'))
         asynchronous=mapping['execution']=='task-generator'
         imports="import { entry } from './program.ts';\nimport { str, NexError } from './nex-runtime.ts';\n"

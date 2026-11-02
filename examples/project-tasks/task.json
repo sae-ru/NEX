@@ -29,7 +29,7 @@
       "configuration": "debug",
       "entry": "project_task::app::main",
       "expect": {
-        "stdout": "42 🧠\n",
+        "stdout": "42 \ud83e\udde0\n",
         "exit_code": 0
       },
       "program": "app"
@@ -57,12 +57,12 @@
       "timeout_seconds": 300
     }
   ],
-  "goal": "Build and test shared closure values, print exactly 42 🧠, and measure one make call under the declared architecture.",
+  "goal": "Build and test shared closure values, print exactly 42 \ud83e\udde0, and measure one make call under the declared architecture.",
   "id": "project-closure",
-  "language": "0.27",
+  "language": "0.28",
   "programs": [
     {
-      "baseline_revision": "d28334e741ed02cd4dac0e779af6cebf5b6c1978b4191f7ed9b443e50a3e2a2e",
+      "baseline_revision": "b2ec7201d0633e671f0f0f110a4cca54a1979ba3e454f285b12c5a9f13f92e38",
       "entry": "app/main.nex",
       "id": "app",
       "project": {

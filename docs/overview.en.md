@@ -1,5 +1,11 @@
 # Why NEX exists
 
+The0.159 development CLI also supports language0.28 source contracts: pure
+requires/ensures and loop invariant/decreases clauses, checked in release code.
+Existing027 graphs require an explicit history-preserving migration. Discover
+source_contracts in the selected compiler; the0.156 download uses027. Current
+full/installed/platform acceptance remains separate from implemented syntax.
+
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
 
 NEX means **Neural Execution Language**. The project explores a practical question:

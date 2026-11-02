@@ -1,0 +1,54 @@
+{
+  "schema": "nex.public028-CLI-evidence/1",
+  "scope": "ordinary0.159 CLI/lang028 on macOS ARM64; full regression and installed SDK pending",
+  "toolchain": "0.159.0",
+  "language": "0.28",
+  "base_commit": "074f78beda65c7ffdbcb444f5b406f8175cb19de",
+  "compiler_sha256": "c26890deed1e46369c5fc5aa1f9b22eb01161c3aa1364371677a64482ed469d2",
+  "task_ABI": 7,
+  "checks": {
+    "all_target_build": true,
+    "ordinary_CLI_scenarios": 7,
+    "native_profiles": [
+      "debug",
+      "release"
+    ],
+    "TypeScript_and_scalar_Wasm_execution": true,
+    "source_declaration_and_operation_edits": true,
+    "genuine027_migration_all16_tables_and_original_IDs": true,
+    "source_absent_mixed_history_snapshot_native_and_export": true,
+    "actual_new_SDK_phase_from_source": true,
+    "installed_SDK_claimed": false,
+    "required_SDK_phases": 41,
+    "first_focused_run": {
+      "groups": 18,
+      "passed": 17,
+      "failed": [
+        "runtime_contracts: stale027 current-example binding"
+      ]
+    },
+    "compiler_refreshed_example_contracts": 6,
+    "compiler_refreshed_example_tasks": 2,
+    "example_source_hashes_and_function_hashes_unchanged": true,
+    "example_clause_intents_unchanged": true,
+    "after_refresh_related_groups_passed": 7,
+    "genuine_fixture_bytes_unchanged": true,
+    "primary081_guard_passed": true
+  },
+  "report_sha256": {
+    "public-CLI-v1/report.json": "d89447d7e6001c9c6571787d0136ed8a68d511f742287505291bd2cf60cfbd4c",
+    "SDK-contract-phase-source-v1/report.json": "f1ca1c8d481615e0616db78d78667fdcc1bf9325adddae2bb9de7783c11b4129",
+    "public-examples-v2/report.json": "78b0c049ca816af0502d256b34e26516f153847a63b93dfcf2de1ac4a92d4327",
+    "public-focused-v1/report.json": "a0e77d93a05f0408fb47a036899ff929817a018d5125eb0df4a156b9b9014b1d",
+    "example-pin-refresh-v1/report.json": "4eb4925be0f53ad4144f619c45b2e80c342f623d9dcc409be93fd162e260c874"
+  },
+  "full_regression_accepted": false,
+  "installed_SDK_accepted": false,
+  "platform_acceptance_complete": false,
+  "pending": [
+    "Matching full296 and installed moved/restored source-free SDK qualification",
+    "Current Windows/Linux/device qualification",
+    "Every remaining original PLAN requirement"
+  ],
+  "recorded_utc": "2026-11-02T00:04:10.751697+00:00"
+}

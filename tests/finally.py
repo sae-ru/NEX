@@ -213,7 +213,7 @@ fn main()->unit !{io}{
         self.assertEqual(harness.database_rows(graph),before)
         plan=self.cli('migrate','--kind','plan')
         self.assertTrue(plan['origin_verified'] and plan['target_valid'])
-        self.assertEqual(plan['origin_language'],'0.26');self.assertEqual(plan['target_language'],'0.27')
+        self.assertEqual(plan['origin_language'],'0.26');self.assertEqual(plan['target_language'],'0.28')
         self.assertEqual(harness.database_rows(graph),before)
         migrated=self.cli('migrate','--expected-revision',metadata['revision'])
         self.assertNotEqual(migrated['revision'],metadata['revision'])
@@ -224,7 +224,7 @@ fn main()->unit !{io}{
         self.assertEqual(self.cli('eval','--revision',migrated['revision'])['value'],42)
         fresh=self.root/'fresh';fresh.mkdir()
         (fresh/'main.nex').write_text(metadata['source'], newline="\n")
-        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n")
+        (fresh/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'}), newline="\n")
         self.assertEqual(self.cli('check',cwd=fresh)['revision'],migrated['revision'])
 
     @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual C11 provider requires a supported native host')

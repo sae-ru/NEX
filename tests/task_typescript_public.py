@@ -29,7 +29,7 @@ def emit(path, folder, mode='emit', entry='main', code=None):
 
 def mapping(folder, result):
     data = json.loads((folder/'nex-map.json').read_text())
-    assert data['schema'] == ('nex.typescript-map/2' if result['language']=='0.27' else 'nex.typescript-map/1') and data['language'] == result['language']
+    assert data['schema'] == ('nex.typescript-map/2' if result['language']=='0.28' else 'nex.typescript-map/1') and data['language'] == result['language']
     assert data['revision'] == result['revision'] and data['source_hash'] == result['source_hash']
     assert data['execution'] == ('task-generator' if result['asynchronous'] else 'synchronous')
     sites = set(result['operation_sites'])
@@ -75,12 +75,12 @@ fixtures += [
 fixtures=[(name,re.sub(r'(fn(?: main\(\)|\([a-z]+:task_scope\))->(?:i64|str|result<i64>) !)\{task\}',
                        r'\1{task,throw}',body),expected,prefix,workers)
           for name,body,expected,prefix,workers in fixtures]
-(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope-spawn.nex'}), newline="\n")
+(out/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'scope-spawn.nex'}), newline="\n")
 
 try:
     for name, body, expected, prefix, _ in fixtures:
         path = out/(name+'.nex'); path.write_text('module public_typescript;\n'+body+'\nserver fn server_secret()->str{return "UNREACHABLE_SERVER_TASK_SECRET";}\n', newline="\n")
-        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.27'
+        folder = out/name; result = emit(path, folder); assert result['asynchronous'] and result['language'] == '0.28'
         data = mapping(folder, result); assert (folder/'nex-task-runtime.ts').is_file()
         assert 'yield' in (folder/'program.ts').read_text()
         (folder/'package.json').write_text('{"type":"module"}\n', newline="\n"); (folder/'run.mjs').write_text(runner, newline="\n")
@@ -146,7 +146,7 @@ try:
     # Pure019 UI and existing browser-worker contracts keep synchronous exports.
     for example in ['web', 'workers']:
         path = out/(example+'.nex'); text = (source/'examples'/example/'main.nex').read_text(); path.write_text(text, newline="\n")
-        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.27'
+        folder = out/(example+'-ui'); result = emit(path, folder, 'ui'); assert result['language'] == '0.28'
         assert 'function*' not in (folder/'src/program.ts').read_text()
         path = out/(example+'-task.nex')
         target = 'client fn initial() -> State {' if example == 'web' else 'client fn worker_compute(input: Input) -> Output {'

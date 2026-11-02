@@ -1,5 +1,10 @@
 # Start with NEX
 
+Source development at toolchain0.159 selects language0.28 and adds runtime
+source contracts. The download instructions below intentionally install the
+accepted0.156/language027 SDK; it does not accept028 clauses. Use the source-build
+instructions for development, and migrate existing graphs explicitly.
+
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree

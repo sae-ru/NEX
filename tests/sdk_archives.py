@@ -59,12 +59,12 @@ class DistributionWorkflow(unittest.TestCase):
         self.assertEqual(len(acceptance.acceptance_phases('0.151.0')),40)
         self.assertIn('typed-source-errors',acceptance.acceptance_phases('0.151.0'))
         for language,abi,families in [('0.24',5,(8,9,10)),('0.25',6,(11,12,13)),
-                                      ('0.26',6,(11,12,13)),('0.27',7,(14,15,16))]:
+                                      ('0.26',6,(11,12,13)),('0.27',7,(14,15,16)),('0.28',7,(14,15,16))]:
             self.assertEqual(acceptance.source_task_abi(language),abi)
             self.assertEqual([acceptance.task_provider_schema({'language':language},kind)
                               for kind in ('normal','profile','debug')],
                              ['nex.native-task-provider/'+str(n) for n in families])
-        for language in ('0.28','0.027',None):
+        for language in ('0.29','0.027',None):
             with self.assertRaises(RuntimeError):acceptance.source_task_abi(language)
             with self.assertRaises(RuntimeError):acceptance.task_provider_schema({'language':language},'normal')
         with self.assertRaisesRegex(RuntimeError,'actual027 typed source'):

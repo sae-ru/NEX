@@ -9,7 +9,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex stream project ');root=Pa
 probe=a.probe.resolve();compiler=a.compiler.resolve();reference=a.reference.resolve();start=time.monotonic()
 report={'schema':'nex.private024-stream-project/1','ok':False,'state':'starting','commands':[],'cases':[],
  'probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.27','private_language':'0.24',
+ 'reference_probe_sha256':hashlib.sha256(reference.read_bytes()).hexdigest(),'public_language':'0.28','private_language':'0.24',
  'retained024_enabled':True,'public025_delivery_accepted':False,'full_objective_complete':False}
 LEAF='''module leaf;
 pub struct Box<T>{value:T;}
@@ -53,7 +53,7 @@ def check_plan(plan,mode,profile,debug,language='0.24'):
  assert plan['ok'] and plan['language']==language and plan['source_checked'] and not plan['graph_store_opened']
  assert not plan['external_tools_invoked']
  rows={row['name']:row for row in plan['components']};assert set(rows)=={'leaf','app'}
- current=language=='0.27';abi=7 if current else 5;mask=7967 if current else 3871
+ current=language=='0.28';abi=7 if current else 5;mask=7967 if current else 3871
  schema='nex.project-task-linkage/'+(('16' if debug else '15' if profile=='profile' else '14') if current else ('10' if debug else '9' if profile=='profile' else '8')) if mode=='shared' or profile=='profile' or debug else 'nex.project-static-task-linkage/'+('5' if current else '3')
  for row in rows.values():
   linkage=row['task_linkage'];assert linkage['schema']==schema and linkage['execution_abi']==abi
@@ -62,7 +62,7 @@ def check_plan(plan,mode,profile,debug,language='0.24'):
  assert all(row['calling_mode']=='task-code/'+str(abi) for row in rows['app']['task_linkage']['imports'])
  return rows
 try:
- assert json.loads(run('describe',[compiler,'describe','--json']).stdout)['version']=='0.27'
+ assert json.loads(run('describe',[compiler,'describe','--json']).stdout)['version']=='0.28'
  for mode in ['static','shared']:
   for profile,debug in [('debug',False),('release',False),('profile',False),('debug',True)]:
    name=mode+'-'+profile+('-logical' if debug else '');case=root/name;case.mkdir();project=case/'project';project.mkdir()
@@ -76,12 +76,12 @@ try:
    write(project/'nex.build.json',architecture);base={'root':str(project),'configuration':profile,'task_debug':debug}
    files=case/'files';files.mkdir();(files/'input').write_bytes(b'abcdef');env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1'}
    current_project=case/'current025-project';shutil.copytree(project,current_project)
-   write(current_project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})
+   write(current_project/'nex.json',{'schema':'nex.project/1','language':'0.28','entry':'app/main.nex'})
    public_base={**base,'root':str(current_project),'public_api':True}
-   public=invoke(name+'-public-plan',{'action':'plan',**public_base});check_plan(public,mode,profile,debug,'0.27')
+   public=invoke(name+'-public-plan',{'action':'plan',**public_base});check_plan(public,mode,profile,debug,'0.28')
    public_capture=invoke(name+'-public-capture',{'action':'capture',**public_base});public_capture_file=case/'current025-capture.json';write(public_capture_file,public_capture)
-   assert public_capture['language']=='0.27' and not (current_project/'.nex').exists()
-   accepted=invoke(name+'-public-validate',{'action':'validate','capture':str(public_capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.27'
+   assert public_capture['language']=='0.28' and not (current_project/'.nex').exists()
+   accepted=invoke(name+'-public-validate',{'action':'validate','capture':str(public_capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.28'
    plan=invoke(name+'-plan',{'action':'plan',**base});rows=check_plan(plan,mode,profile,debug)
    assert not (project/'.nex').exists()
    capture=invoke(name+'-capture',{'action':'capture',**base});capture_file=case/'capture.json';write(capture_file,capture)

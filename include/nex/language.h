@@ -12,12 +12,12 @@
 namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload;struct Value; }
 
 namespace nex {
-inline constexpr const char *languageVersion = "0.27";
-inline constexpr const char *taskCandidateLanguageVersion = "0.27";
+inline constexpr const char *languageVersion = "0.28";
+inline constexpr const char *taskCandidateLanguageVersion = "0.28";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
 enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028 };
-inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::TypedErrors027;
+inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::Contracts028;
 inline bool isTypedSourceErrorLanguage(SourceLanguage language){
   return language==SourceLanguage::TypedErrors027||language==SourceLanguage::Contracts028;
 }

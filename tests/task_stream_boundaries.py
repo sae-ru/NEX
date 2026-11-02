@@ -5,16 +5,16 @@ p=argparse.ArgumentParser();p.add_argument('compiler',type=Path);p.add_argument(
 compiler=a.compiler.resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex stream boundaries ');root=Path(temporary.name).resolve()
-(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'main.nex'}), newline="\n");source=root/'main.nex';files=root/'files';files.mkdir();(files/'input').write_text('original', newline="\n")
+(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'}), newline="\n");source=root/'main.nex';files=root/'files';files.mkdir();(files/'input').write_text('original', newline="\n")
 env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','PYTHONDONTWRITEBYTECODE':'1'}
 commands=[]
 def cli(name,*args,expected=0):
  command=[str(compiler),*map(str,args),'--json'];r=subprocess.run(command,cwd=root,env=env,capture_output=True,text=True,timeout=180)
  (root/(name+'.stdout')).write_text(r.stdout, newline="\n");(root/(name+'.stderr')).write_text(r.stderr, newline="\n");commands.append({'name':name,'exit_code':r.returncode,'expected':expected});assert r.returncode==expected,(name,r.returncode,r.stdout,r.stderr);return json.loads(r.stdout)
 try:
- descriptor=cli('describe','describe');assert descriptor['version']=='0.27'
+ descriptor=cli('describe','describe');assert descriptor['version']=='0.28'
  feature=descriptor['task_file_streams_host'];assert feature['source_support'] is True and feature['public_enabled'] is True and feature['typed_one_shot_open'] is True
- assert cli('guide','guide','--kind','task-file-streams')['language']=='0.27'
+ assert cli('guide','guide','--kind','task-file-streams')['language']=='0.28'
  for name,body,code in [
   ('open_read','server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_read("input"));assert(file_close(f));}','E_TASK_UNIMPLEMENTED'),
   ('open_write','server fn main()->unit !{task,fs}{let f:file=unwrap(file_open_write("created"));assert(file_close(f));}','E_TASK_UNIMPLEMENTED'),

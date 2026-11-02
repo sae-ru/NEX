@@ -10,7 +10,7 @@ else:temporary=tempfile.TemporaryDirectory(prefix='nex task HTTP server 🧠 ');
 compiler=args.compiler.resolve();start=time.monotonic();checks=0;launches=0
 report={'schema':'nex.task-http-server/1','ok':False,'state':'starting','commands':[],'requests':[],
  'compiler':str(compiler),'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),
- 'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'language':'0.27',
+ 'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'language':'0.28',
  'images':[],'cancel_observations':[],'public_HTTP_task_target':True,'async_network_DB_claimed':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-start,3);(root/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
 def require(value,message):
@@ -96,7 +96,7 @@ def request(port,path,token=None,body=None,method='GET',timeout=5,tls=False):
  return status,value,head
 try:
  source=root/'server.nex';source.write_text(SOURCE, newline="\n");auth=root/'private-auth.json'
- (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'server.nex'})+'\n', newline="\n")
+ (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'server.nex'})+'\n', newline="\n")
  alice=cli('alice','token','--user','alice','--auth',auth)['token'];bob=cli('bob','token','--user','bob','--auth',auth)['token']
  files=root/'files';files.mkdir();(files/'input').write_text('input 🌍\0β', newline="\n")
  run('TLS-certificate',['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'private-key.pem','-out',root/'cert.pem','-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'])

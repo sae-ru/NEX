@@ -38,7 +38,7 @@ JSON storedOperations(sqlite3 *db,const Program &p,const std::string &symbol,con
   const Function *named=symbol.empty()?nullptr:&p.function(symbol);std::string ownerFilter;
   if(!selector.empty()){Query q(db,"SELECT function FROM operation_versions WHERE revision=? AND (id=? OR site=?)");q.bind(1,rev);q.bind(2,selector);q.bind(3,selector);if(!q.row())throw Error("E_OPERATION","operation ID/site is not in the selected revision");ownerFilter=q.text(0);}
   for(const auto &f:p.functions){
-    if(named&&named!=&f)continue;auto owner=functionId(db,f);if(!ownerFilter.empty()&&owner!=ownerFilter)continue;
+    if(named&&named!=&f&&f.sourceContractOrigin!=named->name)continue;auto owner=functionId(db,f);if(!ownerFilter.empty()&&owner!=ownerFilter)continue;
     auto ids=identities(db,rev,owner);auto tree=operationTree(p,f);
     if(ids.size()!=tree.size())throw Error("E_STORE","operation identities are missing; recheck the selected revision");
     {Query q(db,"SELECT path,hash,site FROM operation_versions WHERE revision=? AND function=?");q.bind(1,rev);q.bind(2,owner);std::map<std::string,std::pair<std::string,std::string>> stored;while(q.row())stored[q.text(0)]={q.text(1),q.text(2)};
@@ -51,11 +51,13 @@ JSON storedOperations(sqlite3 *db,const Program &p,const std::string &symbol,con
       if(!o.callee.empty())references.push_back(Object{{"role","callee"},{"id",functionId(db,p.function(o.callee))},{"symbol",o.callee}});
       auto definition=o.definition;auto bytes=json(definition,false).size();bool omitted=limit&&bytes>8192;if(omitted)definition=nullptr;
       const auto &source=p.units.contains(f.unit)?p.units.at(f.unit).source:p.source;
-      bool ranged=o.sourceRange.valid&&!o.fragment.empty()&&o.sourceRange.begin<o.sourceRange.end&&o.sourceRange.end<=source.size()&&o.sourceRange.begin>=f.span.begin&&o.sourceRange.end<=f.span.end;
-      JSON range=nullptr;if(ranged)range=Object{{"kind",o.fragment},{"byte_begin",int64_t(o.sourceRange.begin)},{"byte_end",int64_t(o.sourceRange.end)},{"editable",f.templateName.empty()&&!f.closure}};
+      const auto &physical=f.sourceContractOrigin.empty()?f:p.function(f.sourceContractOrigin);
+      bool ranged=o.sourceRange.valid&&!o.fragment.empty()&&o.sourceRange.begin<o.sourceRange.end&&o.sourceRange.end<=source.size()&&o.sourceRange.begin>=physical.span.begin&&o.sourceRange.end<=physical.span.end;
+      JSON range=nullptr;if(ranged)range=Object{{"kind",o.fragment},{"byte_begin",int64_t(o.sourceRange.begin)},{"byte_end",int64_t(o.sourceRange.end)},{"editable",f.templateName.empty()&&!f.closure&&physical.templateName.empty()&&!physical.closure}};
       Object value{{"id",ids.at(o.path)},{"site",o.site},{"function",f.name},{"function_id",owner},{"path",o.path},{"parent",o.parent.empty()?owner:ids.at(o.parent)},{"role",o.role},{"ordinal",int64_t(o.ordinal)},{"kind",o.kind},{"hash",o.content},{"definition",std::move(definition)},{"definition_bytes",int64_t(bytes)},{"definition_omitted",omitted},
         {"location",Object{{"file",f.unit},{"line",int64_t(o.span.line)},{"column",int64_t(o.span.column)},{"byte_begin",int64_t(o.span.begin)},{"byte_end",int64_t(o.span.end)}}},
         {"children",std::move(operands)},{"child_count",int64_t(children[o.path].size())},{"children_truncated",children[o.path].size()>100},{"references",std::move(references)},{"source_range",std::move(range)}};
+      if(!f.sourceContractOrigin.empty())value["source_owner"]=physical.name;
       if(context&&ranged){
         auto end=std::min(o.sourceRange.end,o.sourceRange.begin+size_t(4096));
         while(end>o.sourceRange.begin&&end<source.size()&&(static_cast<unsigned char>(source[end])&0xc0)==0x80)--end;

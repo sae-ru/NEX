@@ -47,7 +47,7 @@ class Public025Migration(harness.ToolchainCase):
         self.assertEqual(self.state(),before)
         result=self.cli('migrate','--expected-revision',metadata['head'])
         self.assertTrue(result['changed'] and result['origin_verified'])
-        self.assertFalse(result['candidate_used']);self.assertEqual(result['language'],'0.27')
+        self.assertFalse(result['candidate_used']);self.assertEqual(result['language'],'0.28')
         self.assertNotEqual(result['revision'],metadata['head'])
         after=self.state();self.preserved(before,after)
         self.assertEqual((self.root/'nex.json').read_bytes(),manifest);self.assertEqual(self.file.read_bytes(),source)

@@ -7,7 +7,7 @@ p=argparse.ArgumentParser();p.add_argument('--compiler',required=True,type=Path)
 compiler=a.compiler.resolve();resources=(a.resources or Path(__file__).resolve().parents[1]).resolve();temporary=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex public writes 🧠 ');root=Path(temporary.name).resolve()
-(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.27','entry':'scope.nex'}), newline="\n");(root/'scope.nex').write_text('module scope;fn main()->unit{}', newline="\n")
+(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'scope.nex'}), newline="\n");(root/'scope.nex').write_text('module scope;fn main()->unit{}', newline="\n")
 base={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
 for key in ('NEX_FILES_ROOT','NEX_FILES_WRITE','NEX_FILES_LIMIT','NEX_PROFILE_OUTPUT','NEX_TRACY'):base.pop(key,None)
 started=time.monotonic();report={'schema':'nex.public-task-write-delivery/1','ok':False,'state':'starting','compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'commands':[],'migrations':[],'projects':[],'actual_GPU_NPU_resources':False,'full_objective_complete':False}
@@ -41,8 +41,8 @@ def retained(before,after):
 def write(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n', newline="\n")
 def artifacts(result):return {row['component']:row for row in result['artifacts']}
 try:
- descriptor=cli('describe','describe');assert descriptor['version']=='0.27' and descriptor['task_file_writes']['public_enabled'] and descriptor['task_providers']['execution_task_abi']==7
- report['language']='0.27';report['toolchain']=cli('doctor','doctor')['version'];save()
+ descriptor=cli('describe','describe');assert descriptor['version']=='0.28' and descriptor['task_file_writes']['public_enabled'] and descriptor['task_providers']['execution_task_abi']==7
+ report['language']='0.28';report['toolchain']=cli('doctor','doctor')['version'];save()
  fixture=resources/'examples/task-write-migration/language-0.22-sdk131-task-writes.json'
  if not fixture.exists():fixture=resources/'tests/fixtures/language-0.22-sdk131-task-writes.json'
  metadata=json.loads(fixture.read_text());sql=fixture.with_suffix('.sql').read_bytes()
@@ -56,11 +56,11 @@ try:
    path=project/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text, newline="\n")
   manifest=project/'nex.json';write(manifest,{'schema':'nex.project/1','language':'0.22','entry':head['bundle']['entry']});physical=manifest.read_bytes();before=state(database)
   try:
-   current=json.loads(physical);current['language']='0.27';write(manifest,current)
+   current=json.loads(physical);current['language']='0.28';write(manifest,current)
    refused=cli('no-implicit-upgrade','check',cwd=project,expected=1);assert refused['code']=='E_LANGUAGE_VERSION' and state(database)==before
   finally:manifest.write_bytes(physical)
   migrated=cli('migrate','migrate','--revision',row['revision'],'--expected-revision',metadata['head'],cwd=project)
-  assert migrated['language']=='0.27' and migrated['origin_language']=='0.22' and migrated['origin_verified'] and not migrated['materialized'] and migrated['revision']!=row['revision']
+  assert migrated['language']=='0.28' and migrated['origin_language']=='0.22' and migrated['origin_verified'] and not migrated['materialized'] and migrated['revision']!=row['revision']
   after=state(database);retained(before,after);assert manifest.read_bytes()==physical and after['tables']['head']==[(1,migrated['revision'])]
   data=project/'external-files';data.mkdir();env={'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
   reference=cli('migrated-eval','eval','--revision',migrated['revision'],cwd=project,env=env)
@@ -94,7 +94,7 @@ server test fn writes()->unit !{task,fs,throw}{assert(unwrap(solve()));}
   project=root/mode;data=root/(mode+'-files');data.mkdir();env={'NEX_FILES_ROOT':str(data),'NEX_FILES_WRITE':'1'}
   for name,body in [('leaf',leaf),('mid',mid),('app',app)]:
    path=project/name;path.mkdir(parents=True);(path/('main.nex' if name=='app' else 'value.nex')).write_text(body, newline="\n")
-  write(project/'nex.json',{'schema':'nex.project/1','language':'0.27','entry':'app/main.nex'})
+  write(project/'nex.json',{'schema':'nex.project/1','language':'0.28','entry':'app/main.nex'})
   leaf_kind='shared_library' if mode=='shared' else 'static_library';mid_kind='static_library' if mode=='static' else 'shared_library'
   definition={'schema':'nex.project-build/1','default_configuration':'release','configurations':{'release':{'profile':'release','task_limits':{'steps':2000000,'timeout_ms':15000,'workers':2}}},'components':{
    'leaf':{'kind':leaf_kind,'root':'leaf','entry':'leaf/value.nex','entry_function':'save'},

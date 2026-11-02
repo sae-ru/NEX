@@ -33,3 +33,8 @@ Keep installed-SDK and actual platform acceptance separate from source support.
 For ordered CPU batches, query source_concurrency and retrieve the concurrency
 guide. Require the actual source operation and matching language; native worker
 execution and serial reference/TypeScript evaluation have distinct guarantees.
+
+For source contracts, query `source_contracts` before using028 clauses. Retrieve
+`source-contract` and `source-contract-migration` guides. Runtime assertions do
+not imply a proof or zero overhead. Preserve original history and physical source
+until an explicit guarded migration/export is reviewed and checked.

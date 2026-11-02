@@ -93,7 +93,7 @@ class Discovery(harness.ToolchainCase):
                 path.chmod(mode)
 
     def test_typed_provider_guide_matches_the_bounded_cpp_contract(self):
-        field='source_exceptions.typed_payload_development.source027_native_delivery'
+        field='source_exceptions.current_delivery.native'
         contract=self.cli('describe','--field',field)['value']
         self.assertTrue(contract['public_cli'])
         self.assertEqual(contract['execution_abi'],'0x4e45585400000007')
@@ -103,8 +103,8 @@ class Discovery(harness.ToolchainCase):
     def test_pack_guides_and_schema_are_installed_capability_contracts(self):
         full = self.cli('describe')
         pack = json.loads((harness.REPO / 'llm/language-pack.json').read_text())
-        browser = self.cli('describe', '--field', 'source_exceptions.typed_payload_development.source027_browser_delivery')['value']
-        self.assertEqual(browser, pack['source_exceptions']['typed_payload_development']['source027_browser_delivery'])
+        browser = self.cli('describe', '--field', 'source_exceptions.current_delivery.browser')['value']
+        self.assertEqual(browser, pack['source_exceptions']['current_delivery']['browser'])
         self.assertTrue(browser['public_CLI'])
         self.assertEqual(browser['typescript_map_schema'], 'nex.typescript-map/2')
         self.assertEqual(self.cli('guide', '--kind', browser['guide_kind'])['text'], (harness.REPO / browser['guide']).read_text())

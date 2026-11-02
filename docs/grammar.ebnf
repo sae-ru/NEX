@@ -1,6 +1,6 @@
-(* NEX language0.27. ASCII identifiers, decimal numbers, strict UTF-8 source.
-   This is the current source grammar. Retained026 parsing/AST identities stay
-   separate and allow only the legacy single catch and two-string throw.
+(* NEX language0.28. ASCII identifiers, decimal numbers, strict UTF-8 source.
+   This is the current source grammar. Retained027 parsing/AST identities stay
+   separate without source contracts; retained026 keeps its legacy handlers.
    Historical notes are preserved in grammar-history.ebnf. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | resource | endpoint | trait | implementation } ;
 resource      = [ "pub" ], "server", "resource", identifier, [ type_parameters ], ";" ;
@@ -11,7 +11,7 @@ structure     = [ "pub" ], "struct", identifier, [ type_parameters ], "{", { par
 enumeration   = [ "pub" ], "enum", identifier, [ type_parameters ], "{", variant, { variant }, "}" ;
 variant       = identifier, [ "(", [ parameters ], ")" ], ";" ;
 function      = [ "pub" ], [ realm ], [ "extern" ], [ "test" ], "fn", identifier, [ type_parameters ], "(", [ parameters ], ")",
-                "->", type, [ effects ], ( block | foreign_body ) ;
+                "->", type, [ effects ], ( { precondition | postcondition }, block | foreign_body ) ;
 foreign_body  = "=", "foreign", "(", string, ",", string, ",", string, ")", ";" ;
 realm         = "shared" | "client" | "server" ;
 parameters    = parameter, { ",", parameter } ;
@@ -36,7 +36,10 @@ declaration   = ( "let" | "var" ), identifier, ":", type, "=", expression, ";" ;
 assignment    = identifier, "=", expression, ";" ;
 return        = "return", [ expression ], ";" ;
 if            = "if", expression, block, [ "else", ( block | if ) ] ;
-while         = "while", expression, block ;
+precondition  = "requires", "(", expression, ")" ;
+postcondition = "ensures", "(", [ identifier, "=>" ], expression, ")" ;
+while         = "while", expression, [ invariant, { invariant }, "decreases", "(", expression, ")" ], block ;
+invariant     = "invariant", "(", expression, ")" ;
 match         = "match", expression, "{", match_arm, { match_arm }, "}" ;
 match_arm     = pattern, [ "if", expression ], "=>", block, [ "," ] ;
 match_expression = "match", expression, "{", expression_arm, { ",", expression_arm }, [ "," ], "}" ;
@@ -255,3 +258,10 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
 
 (* Explicit C++028 source-contract development has its separate candidate grammar
    in source-contracts-028.ebnf; the ordinary grammar above remains027. *)
+
+(* Language0.28 source contracts are contextual, not reserved names. Requires and
+   ensures apply only to ordinary named source functions, including generic
+   templates. Non-unit ensures requires a fresh result binder; unit ensures has
+   none. Pure bool predicates, pure i64 rankings, source-clause limits and realm
+   rules are semantic checks. An annotated while requires nonempty invariants
+   and one decreases clause. See source-contracts.md for exact edge ordering. *)

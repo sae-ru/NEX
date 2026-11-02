@@ -26,7 +26,7 @@ class PublicMigrationChecks(MigrationChecks):
   return project,database,database_state(database),physical
 
  def run(self):
-  descriptor=self.cli('describe','describe');self.current_language=descriptor['version'];assert self.current_language=='0.27' and descriptor['task_foreign_prototype']['public_enabled']
+  descriptor=self.cli('describe','describe');self.current_language=descriptor['version'];assert self.current_language=='0.28' and descriptor['task_foreign_prototype']['public_enabled']
   for name,pin in PINS.items():
    path=ROOT/'tests/fixtures'/('language-0.21-sdk128-task-foreign-'+name+'.json');metadata=json.loads(path.read_text());sql=path.with_suffix('.sql').read_bytes()
    assert metadata['schema']=='nex.language-021-task-foreign-migration-fixture/1' and metadata['language']=='0.21'

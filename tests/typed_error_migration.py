@@ -144,6 +144,6 @@ for name,d,revision in [('same',simple,applied['revision']),('typed',typed,typed
             r=run(name+'-native'+optimization+'-'+str(workers),[binary,library,'workers',workers]);assert r.stdout=='42\n' and not r.stderr,(r.stdout,r.stderr);native+=1
         runner=emitted/'run.mjs';runner.write_text("import {entry,sourceErrorContracts} from './program.ts';import * as task from './nex-task-runtime.ts';await task.runTypedSourceErrors(task.call(()=>entry()),sourceErrorContracts);\n", newline="\n")
         r=run(name+'-node'+optimization,[os.environ.get('NEX_NODE','node'),'--experimental-strip-types','--no-warnings',runner]);assert r.stdout=='42\n';node+=1
-report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_language='0.27',target_language='0.27',native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
+report.update(ok=True,history_tables=16,old_revisions=2,genuine_origin=meta['producer'],genuine_modular_origin=modular_meta['producer'],ordinary_CLI_tested=False,target_language='0.27',native_executions=native,Node_executions=node,graph_namespace_preserved=True,materialized_only_explicit_export=True);save()
 print(json.dumps({k:report[k] for k in ['ok','history_tables','old_revisions','native_executions','Node_executions','graph_namespace_preserved']}))
 if not a.output:shutil.rmtree(out)

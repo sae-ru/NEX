@@ -1,5 +1,5 @@
 {
-  "expected_revision": "388126670120db6683bfd0cc7fe1eab8746d76c4a494676f6e913104926ef408",
+  "expected_revision": "387d933ef8c7f1b9beece61c5b2dac24542c76ded2ca0fc591e9b3270f586370",
   "functions": [
     {
       "content_hash": "f78a0782476c87b2e607ebc62c6109150e6f06ec1a0c095fd3c55ae2f771fcc1",
@@ -15,7 +15,7 @@
       "symbol": "acceptance::increment"
     }
   ],
-  "language": "0.27",
+  "language": "0.28",
   "schema": "nex.verification-contracts/1",
   "source_hash": "08817f5e3da0caac761752577fb5ae50a2814eedf66a8e74a5ad6c1324b519cc"
 }

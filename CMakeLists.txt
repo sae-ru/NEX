@@ -313,7 +313,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -1589,3 +1589,8 @@ add_test(NAME source_contract_projection COMMAND ${Python3_EXECUTABLE} -B
   --native-host $<TARGET_FILE:nex_source_contract_host> --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX})
 set_tests_properties(source_contract_projection PROPERTIES TIMEOUT 1200)
 install(FILES tests/source_contract_projection.py DESTINATION share/nex/tests)
+
+add_test(NAME source_contract_CLI COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_cli.py $<TARGET_FILE:nex>)
+set_tests_properties(source_contract_CLI PROPERTIES TIMEOUT 1800)
+install(FILES tests/source_contract_cli.py DESTINATION share/nex/tests)

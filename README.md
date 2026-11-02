@@ -52,9 +52,9 @@ platform acceptance.
 
 ## Development status
 
-Current development source: **toolchain0.159.0 / ordinary language0.27**.
-The explicit C++ [language028 contract candidate](docs/source-contracts.md) is
-under development; it is not enabled in the ordinary CLI. The accepted download
+Current development source: **toolchain0.159.0 / ordinary language0.28**.
+The working CLI enables [language028 source contracts](docs/source-contracts.md).
+Matching full regression and installed028 SDK qualification remain in progress. The accepted download
 below retains its exact0.156 source and qualification.
 
 The [macOS development SDK](docs/releases/0.156.0.json) passed all **288 CTest groups**.
@@ -66,7 +66,7 @@ created before those workflows.
 Runtime contracts now cover ordinary concrete and generic source functions.
 Generic predicates check parametrically under the original bounds and constructor
 kinds; all specializations use the guarded template. Earlier receipt families
-remain compatible. Source language 0.27 and task ABI7 are unchanged.
+remain compatible. That0.156 SDK uses source language0.27 and task ABI7.
 
 This is a development preview for macOS ARM64, minimum macOS 27.0.
 [Install it](docs/getting-started.en.md), or build from source for another host.

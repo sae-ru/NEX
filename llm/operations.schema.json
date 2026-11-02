@@ -241,6 +241,10 @@
           },
           "source_truncated": {
             "type": "boolean"
+          },
+          "source_owner": {
+            "type": "string",
+            "description": "Original physical declaration for a lowered source contract helper; operation function/ID/site retain their actual semantic owner."
           }
         },
         "required": [

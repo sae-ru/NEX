@@ -1441,11 +1441,11 @@ void check(Program &p){
   }
 }
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}
-Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).typeOnly();}
-E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).expressionOnly();}
+Type parseType(std::string source){sourceUTF8(source,"<debug-type>","type");return Parser(std::move(source),"<debug-type>",0,"type",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(currentSourceLanguage),isTypedSourceErrorLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::Contracts028).typeOnly();}
+E parseExpression(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(currentSourceLanguage),isTypedSourceErrorLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::Contracts028).expressionOnly();}
 E parseSourceExceptionWatchPrototype(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"expression");return Parser(std::move(source),std::move(path),maxTokens,"expression",false,false,true,false,true).expressionOnly();}
-S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).statementOnly();}
-P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||currentSourceLanguage==SourceLanguage::TypedErrors027,currentSourceLanguage==SourceLanguage::TypedErrors027).patternOnly();}
+S parseStatement(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"statement");return Parser(std::move(source),std::move(path),maxTokens,"statement",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(currentSourceLanguage),isTypedSourceErrorLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::Contracts028).statementOnly();}
+P parsePattern(std::string source,std::string path,unsigned maxTokens){sourceUTF8(source,path,"pattern");return Parser(std::move(source),std::move(path),maxTokens,"pattern",false,false,true,false,isPublicSourceExceptionLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(currentSourceLanguage),isTypedSourceErrorLanguage(currentSourceLanguage),currentSourceLanguage==SourceLanguage::Contracts028).patternOnly();}
 llvm::json::Array canonicalKinds(const std::vector<std::string> &names,const std::vector<unsigned> &kinds){llvm::json::Array result;for(size_t i=0;i<names.size();++i)result.push_back(int64_t(i<kinds.size()?kinds[i]:0));return result;}
 llvm::json::Value canonical(const Function &f) {
   llvm::json::Array params,effects;
@@ -1958,7 +1958,7 @@ llvm::json::Value describe() {
     {"specification","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"llm_prompt","llm/SYSTEM_PROMPT.md"},{"web_guide","docs/web.md"},{"server_guide","docs/server.md"},{"api_guide","docs/api.md"},
     {"discovery_commands",llvm::json::Array{"nex guide --kind prompt --json","nex guide --kind language --json","nex guide --kind grammar --json","nex guide --kind protocol --json","nex guide --kind web --json","nex guide --kind server --json","nex guide --kind api --json","nex api FILE --json"}}};
 
-  if(currentSourceLanguage==SourceLanguage::TypedErrors027){
+  if(isTypedSourceErrorLanguage(currentSourceLanguage)){
     auto &errors=*result.getObject("source_exceptions");
     errors["status"]="public027_typed_source_development";
     errors["typed_payloads"]=true;errors["handler_filters"]=true;errors["finally"]=true;
@@ -2001,9 +2001,43 @@ llvm::json::Value describe() {
     for(const auto *name:{"task_profiling","task_debugging"})(*result.getObject(name))["execution_task_abi"]=7;
     auto &http=*result.getObject("structured_tasks_runtime")->getObject("http_request_host_prototype");http["execution_task_abi"]=7;http["retained_execution_task_abis"]=llvm::json::Array{3,4,5,6};
     auto &wasm=*result.getObject("wasm_features");wasm["source027_scalar_public"]=true;
+    llvm::json::Object native(delivery),browser(*typed.getObject("source027_browser_delivery"));
+    native["language"]=languageVersion;browser["language"]=languageVersion;
+    native["status"]="public_typed_native_project_development";browser["status"]="public_typed_checked_browser_development";
+    errors["current_delivery"]=llvm::json::Object{{"language",languageVersion},{"native",std::move(native)},{"browser",std::move(browser)},{"task_execution_ABI",7},{"checked_source_maps",true},{"graph_snapshots",true},{"ordinary_CLI",true},{"installed_SDK_accepted",false},{"platform_acceptance_complete",false}};
+    if(currentSourceLanguage==SourceLanguage::Contracts028){
+      errors["status"]="public028_typed_source_development";errors["public027_CLI_enabled"]=false;errors["public028_CLI_enabled"]=true;
+      typed["status"]="retained027_typed_source_features";
+      typed["source027_archive_scope"]="explicit retained027 APIs; ordinary028 CLI requires a history-preserving migration";
+      (*typed.getObject("source027_native_delivery"))["public_cli"]=false;
+      (*typed.getObject("source027_browser_delivery"))["public_CLI"]=false;
+      (*typed.getObject("source027_graph_snapshot_development"))["ordinary027_CLI"]=false;
+      errors["retained_typed_source_providers"]=llvm::json::Object(providers);
+      (*errors.getObject("retained_typed_source_providers"))["source_languages"]=llvm::json::Array{"0.27"};
+      (*errors.getObject("retained_typed_source_providers"))["ordinary_CLI"]=false;
+      providers["source_languages"]=llvm::json::Array{"0.28"};
+      wasm["source027_scalar_public"]=false;wasm["source028_scalar_public"]=true;
+      auto &current=*errors.getObject("current_delivery");
+      (*current.getObject("browser"))["development_map"]="nex.development-typescript/028-1";
+      (*current.getObject("browser"))["test"]="tests/typed_web_delivery.py --source-language 0.28";
+      (*current.getObject("native"))["project_test"]="tests/typed_error_projects.py --source-language 0.28";
+    }
   }
   result["source_contracts_development"]=llvm::json::Object{{"status","explicit_cpp_028_candidate"},{"public_enabled",false},{"source_language","0.28"},{"ordinary_language","0.27"},{"program_format","nex.program/16"},{"retained_027_format","nex.program/15"},{"named_source_functions",true},{"generic_templates",true},{"loop_invariants",true},{"loop_ranking",true},{"predicates","pure_source_expressions"},{"maximum_clauses",64},{"maximum_clause_utf8_bytes",4096},{"release_assertions",true},{"normal_finally_before_postconditions",true},{"source_errors_and_control_skip_postconditions",true},{"proof_support_extended",false},{"history_migration","explicit preflightGraphMigration/applyGraphMigration"},{"test","tests/source_contracts.py"},{"migration_test","tests/source_contract_migration.py"},{"guide","docs/source-contracts.md"},{"full_regression_accepted",false},{"installed_SDK_accepted",false},{"platform_acceptance_complete",false}};
   (*result.getObject("source_contracts_development"))["project_delivery"]=llvm::json::Object{{"status","explicit_cpp_project_delivery_candidate"},{"selection","ProjectBuildOptions::sourceLanguage=Contracts028"},{"language","0.28"},{"typed_task_ABI",7},{"provider_schemas",llvm::json::Array{14,15,16}},{"native_cohort_language_bound",true},{"linkage",llvm::json::Array{"source","static","shared","mixed"}},{"test","tests/typed_error_projects.py --source-language 0.28"},{"ordinary_CLI_028",false},{"full_regression_accepted",false},{"installed_SDK_accepted",false}};
+  if(currentSourceLanguage==SourceLanguage::Contracts028){
+    auto &contracts=*result.getObject("source_contracts_development");
+    contracts["status"]="public028_source_contract_development";contracts["public_enabled"]=true;
+    contracts["ordinary_language"]=languageVersion;contracts["guide_kind"]="source-contract";
+    contracts["history_migration"]="nex migrate with guarded retained origin and optional reviewed candidate";
+    contracts["migration_guide"]="docs/source-contract-migration.md";
+    contracts["detached_runtime_projection"]=true;contracts["projection_test"]="tests/source_contract_projection.py";
+    contracts["ordinary_CLI_test"]="tests/source_contract_cli.py";
+    contracts["declaration_and_operation_edits"]=true;contracts["operation_source_owner"]=true;
+    auto &delivery=*contracts.getObject("project_delivery");delivery["status"]="public028_project_delivery_development";
+    delivery["selection"]="ordinary CLI and ProjectBuildOptions";delivery["ordinary_CLI_028"]=true;
+    result["source_contracts"]=llvm::json::Object(contracts);
+  }
   return result;
 }
 }

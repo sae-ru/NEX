@@ -1,9 +1,10 @@
-# Source contracts: explicit language028 development
+# Source contracts in language0.28
 
-This is the development contract for the version-selected C++ frontend. Ordinary
-CLI projects still use language0.27. An installed0.156 compiler does not accept
-this syntax. Public028 CLI/project/SDK delivery and matching platform acceptance
-are required before advertising028 as the ordinary language.
+The0.159 working compiler enables this syntax in the ordinary CLI. Discover
+`source_contracts.public_enabled` and the selected language before using it.
+The published0.156 SDK remains027. Current full regression, installed028 SDK and
+platform acceptance are separate from this implemented source contract.
+Use [guarded migration](source-contract-migration.md) for existing027 histories.
 
 An ordinary named source function can declare ordered clauses after its effects:
 
@@ -74,7 +75,7 @@ physical declaration; source edits target the original declaration.
 Language028 uses nex.program/16. New contract declarations/helpers extend their
 function identity with nex.function/14; loop purity markers also participate
 in canonical identity. Retained027 keeps its parser and nex.program/15.
-The default compiler remains027 during this development stage. Explicit
+The ordinary working compiler selects028. Explicit
 preflightGraphMigration/applyGraphMigration can recheck an archived027 origin
 with target Contracts028 and an optional reviewed nex.migration-candidate/1.
 They retain old revisions, namespaces and local IDs; replacing a version field
@@ -104,8 +105,8 @@ cases across Chromium, Firefox and WebKit, including pre/post failure boundaries
 and subsequent recovery, with no skipped or flaky tests. The packaged mixed
 native application also ran with its original source and build cache absent.
 
-This is an explicit C++ delivery candidate. It introduces no ordinary CLI flag
-or default language change. Matching full294 regression, source-free installed
+This is an explicit C++ delivery candidate. Its version-selected integration is now used by the ordinary028 CLI. Matching
+full integrated regression, source-free installed
 SDK acceptance and current Windows/Linux/device acceptance remain required
 independently.
 
@@ -124,4 +125,4 @@ records9 cases, including14 native O0/O2 executions, AST/TaskIR/Node agreement,
 strict TypeScript, an explicit scalar-loop proof and cross-language refusal.
 All seven retained contract/verification/migration groups also passed. Full
 integrated regression and installed delivery remain required before ordinary028
-activation is accepted; this working compiler still defaults to027.
+activation is accepted as an SDK release; the working compiler selects028.

@@ -6,7 +6,7 @@ p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--compiler',
 root=Path(__file__).resolve().parents[1];probe=str(Path(a.probe).resolve())
 out=a.output.resolve() if a.output else Path(tempfile.mkdtemp(prefix='nex-source-contracts028-'));out.mkdir(parents=True,exist_ok=a.output is None)
 env={**os.environ,'NEX_RESOURCE_DIR':str(root),'PYTHONDONTWRITEBYTECODE':'1'};node=env.get('NEX_NODE','node')
-started=time.monotonic();records=[];report={'schema':'nex.source-contract-tests/1','ok':False,'language':'0.28','ordinary_CLI_language':'0.27','cases':records,'commands':[]}
+started=time.monotonic();records=[];report={'schema':'nex.source-contract-tests/1','ok':False,'language':'0.28','ordinary_CLI_tested':False,'cases':records,'commands':[]}
 def save():
  report['seconds']=round(time.monotonic()-started,3);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 def run(label,cmd,allowed=(0,),timeout=180):
