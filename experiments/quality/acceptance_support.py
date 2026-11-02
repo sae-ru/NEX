@@ -19,6 +19,24 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def checked_language(envelope, expected=None):
+    """Select a fresh corpus language from one bounded discovery response."""
+    if (not isinstance(envelope, dict) or envelope.get('schema') != 'nex.discovery/1'
+            or envelope.get('kind') != 'field' or envelope.get('field') != 'version'):
+        raise ValueError('quality runner requires version discovery')
+    language = envelope.get('value')
+    if language not in ('0.21', '0.28') or envelope.get('language') != language:
+        raise ValueError('unsupported or inconsistent quality corpus language: ' + str(language))
+    if expected is not None and language != expected:
+        raise ValueError('requested quality corpus language differs from compiler discovery')
+    if not isinstance(envelope.get('toolchain'), str) or not envelope['toolchain']:
+        raise ValueError('quality discovery lacks a toolchain identity')
+    for key in ('compiler_build', 'descriptor_hash'):
+        if not isinstance(envelope.get(key), str) or not re.fullmatch('[0-9a-f]{64}', envelope[key]):
+            raise ValueError('quality discovery lacks a valid ' + key)
+    return language
+
+
 def files(root):
     result = {}
     for path in sorted(root.rglob('*')):

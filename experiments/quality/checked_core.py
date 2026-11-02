@@ -5,7 +5,7 @@ from pathlib import Path
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--compiler',type=Path,required=True)
 parser.add_argument('--resources',type=Path)
-parser.add_argument('--language',choices=('0.18','0.24'),default='0.18',
+parser.add_argument('--language',choices=('0.18','0.24','0.28'),default='0.18',
                     help='Explicit corpus language; must match actual compiler discovery (legacy default: 0.18)')
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--count',type=int,default=10000000)

@@ -22,6 +22,8 @@ import threading
 import time
 import traceback
 
+from acceptance_support import checked_language
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -217,7 +219,7 @@ def main():
     try:
         save()
         actual = nex('describe-version', 'describe', '--field', 'version')
-        assert actual['value'] == args.language, actual
+        checked_language(actual, expected=args.language)
         report.update(toolchain=actual['toolchain'], language=actual['value'],
                       compiler_build=actual['compiler_build'])
         sums = generate(project, args.language)

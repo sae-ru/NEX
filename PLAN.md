@@ -1,3 +1,14 @@
+# Quality-runner source follow-up for language0.28
+
+Port the complete Q1–Q5 chain to actual compiler-selected0.28, retaining0.21
+corpora, original expectations and fresh history. Source runners now select the
+version explicitly, propagate it to Q5 and declare required task source-error
+effects. Short checked-core Mac/Linux agreement and actual Q1–Q4 public cases
+passed; [source evidence](docs/evidence/quality-language-0.28-source.json) records
+the scope. Full100x10000, physical sanitizer fences, matching full regression,
+installed delivery and quiet-host performance/LLM measurement remain required.
+Every original unfinished language/platform/device/UI/Studio/conversion item remains.
+
 # Platform cohort preparation after SDK 0.159
 
 Windows CPU/storage/TypeScript and CUDA preparation now select supported027/028

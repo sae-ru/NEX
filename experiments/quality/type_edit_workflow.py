@@ -21,6 +21,8 @@ import time
 import traceback
 import urllib.request
 
+from acceptance_support import checked_language
+
 
 MODEL = 'module model;pub struct Row{value:i64;}pub fn make()->Row{return Row(41);}\n'
 APP = '''module app;
@@ -280,10 +282,10 @@ test fn codec()->unit{assert(unwrap(sample()).value==EXPECTED);OLD_REJECT}
     try:
         save()
         actual = nex('describe', 'describe', '--field', 'version')
-        assert actual['value'] == '0.21', actual
+        language = checked_language(actual)
         report.update(toolchain=actual['toolchain'], language=actual['value'], compiler_build=actual['compiler_build'])
         report['cohort_note'] = 'Evidence is for these actual selected identities; no inference of126 or another source cohort.'
-        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.21','entry':'app/main.nex'})+'\n')
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'app/main.nex'})+'\n')
         (project/'model/value.nex').write_text(MODEL)
         (project/'app/main.nex').write_text(APP)
         original = nex('check-original', 'check')['revision']

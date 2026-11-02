@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import traceback
 
-from acceptance_support import Evidence, sha
+from acceptance_support import Evidence, checked_language, sha
 
 
 def fence(report, run, sanitizer):
@@ -64,7 +64,7 @@ def main():
     try:
         assert run.resources == run.compiler.parent.parent / 'share/nex', 'the complete pack requires an installed SDK'
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.21'
+        language = checked_language(actual)
         run.report.update(language=actual['value'], toolchain=actual['toolchain'], compiler_build=actual['compiler_build'])
         scripts = [('Q1', 'type_edit_workflow.py', 'nex.quality-type-edit-workflow/1'),
                    ('Q2', 'server_web_edit.py', 'nex.quality-server-web-edit/1'),
@@ -75,6 +75,8 @@ def main():
             script = tools / script_name
             output = run.output / name
             argv = [sys.executable, '-B', script, '--compiler', run.compiler, '--output', output]
+            if name == 'Q5':
+                argv += ['--language', language]
             if name == 'Q2' and args.browsers_path:
                 argv += ['--browsers-path', args.browsers_path.resolve(strict=True)]
             run.command(name, argv, run.output, timeout=7200 if name == 'Q5' else 900)
@@ -82,6 +84,7 @@ def main():
             result = json.loads(receipt.read_text())
             assert result['schema'] == schema and result['ok'] is True and result['state'] == 'passed'
             assert result['compiler_sha256'] == run.report['compiler_sha256']
+            assert result['language'] == language and result['toolchain'] == actual['toolchain']
             assert result['compiler_build'] == actual['compiler_build']
             assert result['resource_inventory'] == run.report['resource_inventory']
             assert result['runner_sha256'] == sha(script)

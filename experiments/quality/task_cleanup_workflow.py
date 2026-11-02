@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import traceback
 
-from acceptance_support import Evidence, sha
+from acceptance_support import Evidence, checked_language, sha
 
 
 CPU = '''module quality_cpu;
@@ -57,6 +57,26 @@ test fn failure()->unit{main();}
 '''
 
 
+def corpus_source(name, source, language):
+    if language == '0.21':
+        return source
+    if language != '0.28':
+        raise ValueError('unsupported task-cleanup corpus language')
+    # Source errors can leave a scope or a task_wait in0.28. Declare that
+    # propagation without intercepting fatal cancellation/limits or traps.
+    declarations = {
+        'cancel': ['fn solve()->i64!{task}', 'fn main()->unit!{io,task}',
+                   'test fn cancelled()->unit!{task}'],
+        'expected': ['fn solve()->i64!{task}', 'fn main()->unit!{io,task}',
+                     'test fn expected()->unit!{task}', 'fn(scope:task_scope)->i64!{task}'],
+        'unobserved': ['fn main()->unit!{task}', 'test fn child_failure()->unit!{task}'],
+    }
+    for declaration in declarations.get(name, []):
+        assert source.count(declaration) == 1, (name, declaration)
+        source = source.replace(declaration, declaration[:-1] + ',throw}', 1)
+    return source
+
+
 def profile_invariants(value, expected_schema):
     assert value['schema'] == expected_schema
     if expected_schema == 'nex.profile/2':
@@ -90,7 +110,7 @@ def main():
               'Q4 additionally requires matching controlled external-operation/DSO fence evidence.')
     try:
         actual = run.cli('describe', run.output, 'describe', '--field', 'version')
-        assert actual['value'] == '0.21'
+        language = checked_language(actual)
         run.report.update(language=actual['value'], toolchain=actual['toolchain'],
                           compiler_build=actual['compiler_build'])
         cases = [('cpu', CPU, '2029000\n', None), ('cancel', CANCEL, '42\n', None),
@@ -99,12 +119,13 @@ def main():
                  ('global-limit', GLOBAL_LIMIT, '', 'E_LIMIT')]
         run.report['cases'] = []
         for name, source, stdout, error in cases:
+            source = corpus_source(name, source, language)
             project = run.output / name
             project.mkdir()
             entry = project / 'main.nex'
             entry.write_text(source)
             (project / 'nex.json').write_text(json.dumps({
-                'schema': 'nex.project/1', 'language': '0.21', 'entry': 'main.nex'}) + '\n')
+                'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}) + '\n')
             checked = run.cli(name + '-check', project, 'check')
             row = {'name': name, 'revision': checked['revision'], 'source_sha256': sha(entry),
                    'expected_stdout': stdout, 'expected_error': error}

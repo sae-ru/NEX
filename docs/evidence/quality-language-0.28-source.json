@@ -1,0 +1,108 @@
+{
+  "schema": "nex.quality-current-language-source/1",
+  "source_parent": "d2ff487bfeefcf0f672014e3fbcbf9a6c674b01d",
+  "scope": "Source-only quality-runner update, tested against the immutable0.160 Mac SDK and current0.160 Linux source compiler. Existing archives keep their original helpers.",
+  "source_changes": {
+    "PLAN.md": "243c437fbaf0dedb29be444f7f2275df359920f712153c4af8475e90b07c8e83",
+    "STATUS.md": "ceab23ceaec9a19c9a03ccc9d8518cbbb99fde19e2e0e9f53e3f5d466633ca6e",
+    "docs/quality.md": "e29b7fd9e080025befd14c691586defbad5266bfa05cdf481fd08f4f375b6ac9",
+    "experiments/quality/README.md": "8d0a9ecf25fa7f45045c0e82cf69b91696552dd2801196008db25f4d3210e3d0",
+    "experiments/quality/acceptance_support.py": "89870a74bab624fc1a91d205e29d81929f4dae6801a6ceba10c0aaf68b07e38f",
+    "experiments/quality/checked_core.py": "d560222cc90cd1a8293defe3240d49933a160beafec59df7884e100b06f00bd8",
+    "experiments/quality/repair_workflow.py": "dd1fbcac2d0398947f397f8d051257919c06474408e4ccf8f5d9d5f0d04b0154",
+    "experiments/quality/run_acceptance.py": "fbefb384a386245717ccf7201cd1bae50f8664f8205c245734acb3bfc83a23c4",
+    "experiments/quality/scale_100x100.py": "c0fefc2622622e503282f78dc096b686577135caa6a5f54a56b3513ecb649e1e",
+    "experiments/quality/server_web_edit.py": "704b30f17ae2fa7e941287b63fed87747a3edef21ac01f12047dbc7b8a357738",
+    "experiments/quality/task_cleanup_workflow.py": "642ff21655e9fe28c79d01f6c9a556b357e96f2e419740c1e189dac5517ff5e7",
+    "experiments/quality/type_edit_workflow.py": "ac5aea43fc38ad8585d0eb57d6193c6deec3b7c9e01648c071d6da6d1a924f89"
+  },
+  "programming_language_version_changed": false,
+  "compiler_or_runtime_code_changed": false,
+  "accepted_quality_languages": [
+    "0.21",
+    "0.28"
+  ],
+  "checked_core_languages": [
+    "0.18",
+    "0.24",
+    "0.28"
+  ],
+  "historical_checked_core_default": "0.18",
+  "historical_scale_default": "0.21",
+  "generated_projects_are_fresh": true,
+  "historical_graphs_or_receipts_relabelled": false,
+  "typed_task_effects": "Only current0.28 scope/wait callers add throw; legacy0.21 templates and all original observable expectations remain. Pure CPU maps remain pure.",
+  "operational_core": {
+    "Mac": {
+      "report": "/Users/sae/projects/NEX/build/quality-current-language/core-operational-v1/report.json",
+      "sha256": "4ab660cd68ed0fefcdad201b82bd3a434502065458363d90c4ae5e3ce0849ddb",
+      "actual_python": "3.10.22",
+      "agreement_cases": 5,
+      "measurement_samples": 9,
+      "wrong_language_refused_before_build": true
+    },
+    "Linux_ARM64": {
+      "report": "/Users/sae/projects/NEX/build/quality-current-language/core-Linux-operational-v1/report.json",
+      "sha256": "243de05d2b185c015b4de4afa7c25a664ca07f6063aabf14d4c20c46fc8254da",
+      "agreement_cases": 5,
+      "measurement_samples": 9,
+      "C_wait4_RSS_launcher_verified": true
+    },
+    "algorithms_unchanged_sha256": {
+      "nex_text": "d914858c88690d62a98f5343b816be26e1be52ff20aee6dd5fbe4b44d88269c8",
+      "cpp_text": "4770b3875a2a3729eb8b34358dde51b13dad78e1eaaa39867f4ce2da559ec82e",
+      "python_text": "c09008ef1ef6693706daec1477d75d1b68ada7e2b00be2de7a8ad0d5b81489f3"
+    },
+    "performance_claim": false,
+    "short_kernel_iterations": 100,
+    "host_isolated": false
+  },
+  "actual_Q1_Q4_public_receipts": {
+    "Q1": {
+      "sha256": "be90447b168d2e8c4a9600a9194096a29ffb0ad48dc3e295f9afa5ff6f701922",
+      "schema": "nex.quality-type-edit-workflow/1",
+      "language": "0.28",
+      "toolchain": "0.160.0",
+      "local_path": "/private/tmp/nex-quality028-chain-x2wvkxcw/execution/Q1/report.json"
+    },
+    "Q2": {
+      "sha256": "2a49f64cc6a9279b9867d324ffc745003a9eb61e7d80fb2fcc2510eb18139cd6",
+      "schema": "nex.quality-server-web-edit/1",
+      "language": "0.28",
+      "toolchain": "0.160.0",
+      "local_path": "/private/tmp/nex-quality028-chain-x2wvkxcw/execution/Q2/report.json"
+    },
+    "Q3": {
+      "sha256": "193140e1147b64379de3d04c20f7630f462a6842b9e2f57f9c5a4d96f5a857a9",
+      "schema": "nex.quality-repair-workflow/1",
+      "language": "0.28",
+      "toolchain": "0.160.0",
+      "local_path": "/private/tmp/nex-quality028-chain-x2wvkxcw/execution/Q3/report.json"
+    },
+    "Q4_public": {
+      "path": "/private/tmp/nex-quality028-Q4-o9fb7rq5/execution/report.json",
+      "sha256": "5b9d5d969847e70eae9b062c7de777b9ebf696e5a1a26793ecddff5b47f99023",
+      "cases": 6,
+      "physical_fences_complete": false,
+      "driver_python": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+      "driver_scope": "Operational source-runner result; supported-Python full-chain run remains separately required."
+    }
+  },
+  "Q2_browser_checks": 30,
+  "failed_attempts_preserved": [
+    {
+      "report": "/Users/sae/projects/NEX/build/quality-current-language/chain-v1/report.json",
+      "cause": "Optional browser-cache path resolution correctly denied by the source-read policy; broker path selected for the next run."
+    },
+    {
+      "report": "/Users/sae/projects/NEX/build/quality-current-language/chain-v2/report.json",
+      "cause": "E_EFFECT: current source scope/wait callers need explicit throw; original expected outputs and cleanup checks retained."
+    }
+  ],
+  "full_Q1_Q5_currently_accepted": false,
+  "physical_sanitizer_fences_currently_accepted": false,
+  "installed_helpers_delivery_accepted": false,
+  "new_source_full_regression_accepted": false,
+  "cross_model_tokens_measured": false,
+  "goal_complete": false
+}

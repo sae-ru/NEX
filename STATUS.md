@@ -1,3 +1,16 @@
+# Quality-runner source follow-up for language0.28
+
+The opt-in checked-core helper accepts explicit0.28 while preserving its old
+algorithms and0.18 default. Short actual Mac/Linux runs passed backend agreement
+and resource-accounting checks; these are operational checks, not throughput
+results. Q1–Q5 source runners select a bounded0.21/0.28 compiler response and
+create fresh projects. Current task scope/wait callers explicitly declare throw.
+Actual Q1–Q3 and all six public Q4 cases passed against the immutable0.160 SDK.
+The [source receipt](docs/evidence/quality-language-0.28-source.json) keeps failed
+attempts and limits. Full Q1–Q5, physical sanitizer fences, installed delivery and
+matching regression remain separate gates. Published archives remain unchanged;
+no original pending project requirement is removed.
+
 # Platform cohort preparation after SDK 0.159
 
 Windows/CUDA platform preparation now discovers supported027/028 from consistent

@@ -1,6 +1,6 @@
-## Current observation and resource accounting
+## Historical0.24 observation and resource accounting
 
-The [current024 observation](../../docs/evidence/checked-core-0.134.4-current.json)
+The [recorded024 observation](../../docs/evidence/checked-core-0.134.4-current.json)
 records fresh native/reference/TypeScript checks and NEX/checked-C++/Python
 measurements on macOS ARM64 and a Linux ARM64 VM. Linux is below the initial90%
 throughput target for this algorithm; broader parity and token cost remain open.
@@ -20,13 +20,14 @@ The source checkout must contain both the Python helper and its C companion.
 Run the source-checkout helper against the actual installed current SDK:
 
 ```sh
-python3 experiments/quality/checked_core.py --language 0.24 \
+python3 experiments/quality/checked_core.py --language 0.28 \
   --compiler /path/to/current/sdk/bin/nex --output /new/current-comparison
 ```
 
 The requested language must match both actual describe and doctor responses.
 This generates and checks a fresh project/revision; it does not relabel the old
-0.18 report. Legacy0.18 remains the default for historical reproducibility.
+0.18 report. The explicit choices are0.18,0.24 and0.28. Legacy0.18 remains the
+default for historical reproducibility; use0.24 only with matching discovery.
 The NEX, checked C++ and Python algorithms are unchanged, and all output,
 source/compiler/executable hashes, measurements and host load are retained.
 Host isolation, general parity and model/token cost are not established by this
@@ -37,11 +38,13 @@ under the SDK tools directory. Existing SDK/CTest and Q1–Q5 gates are unchange
 
 This retained language0.18 opt-in probe builds actual NEX and C++ release applications and retains the
 NEX/C++/Python input sources, hashes, commands, every observed output, timing,
-per-process CPU time and maximum RSS. The retained default requires a matching language0.18 SDK; explicit `--language 0.24` supports the current corpus. It also requires
+per-process CPU time and maximum RSS. The retained default requires a matching
+language0.18 SDK; explicit `--language 0.28` selects the current corpus. The
+retained0.24 choice requires a matching0.24 compiler. It also requires
 Clang-compatible C++20 driver, Python3, Node22.18+ and a new output directory. It works through
 the matching compiler's actual doctor/describe commands; it does not import a source tree
 or a private root-workspace verifier. Its recorded0.94 observations do not certify
-the current0.20 SDK. Adapting this corpus requires an explicit recheck with fresh
+a later SDK. Adapting this corpus requires an explicit recheck with fresh
 language/revision pins; changing a version label alone is not a new measurement.
 The maintained runner has an actual macOS check; Linux validation and native
 Windows support remain pending.
@@ -74,7 +77,7 @@ benchmark. See [the exact receipt](../../docs/evidence/checked-core-0.94.0.json)
 Broader algorithms, operating systems, realistic application loads and repeated
 multi-model task/cost comparisons remain required by [quality.md](../../docs/quality.md).
 
-## Current0.20 scale acceptance runner
+## Version-selected scale acceptance runner
 
 `scale_100x100.py` repeats the historical100-module/10000-declaration corpus with
 fresh current-language source and revision pins. It checks cold/warm/one-edit
@@ -85,20 +88,28 @@ outside CTest and the ordinary SDK phase list. Preparation/generator validation
 does not establish that a current full scale run passed.
 
 ```sh
-python3 experiments/quality/scale_100x100.py \
+python3 experiments/quality/scale_100x100.py --language 0.28 \
   --compiler /path/to/sdk/bin/nex --output /new/scale100x100
 # Installed SDK copy:
-python3 /path/to/sdk/share/nex/tools/scale_100x100.py \
+python3 /path/to/sdk/share/nex/tools/scale_100x100.py --language 0.28 \
   --compiler /path/to/sdk/bin/nex --output /another/new/scale100x100
 ```
 
 The output directory must not exist. Development compilers may pass
 `--resources /path/to/matching/source`; installed-SDK evidence uses the actual
-installed resources. The default `--language 0.20` must match discovery. The
+installed resources. The retained default `--language 0.21` must match discovery;
+use the explicit0.28 selection for a current SDK. The
 retained018 checked-core probe above and all094–096 receipts remain unchanged.
 
 
 ## Finite current-language Q1–Q5 development-chain acceptance
+
+The updated source runners accept actual0.21 or0.28 discovery and create fresh
+projects with that version. The aggregate runner passes the same version to Q5
+and verifies every child report's language, toolchain and compiler identity.
+Existing SDK archives keep their recorded helper copies; this source update
+requires its own delivery qualification. Historical reports and graphs are not
+relabelled.
 
 The installed SDK includes `tools/run_acceptance.py` and its matching helpers.
 It executes the five scenarios from `docs/quality.md`: an atomic shared-type edit
@@ -109,7 +120,7 @@ a controlled generated-DSO physical-completion observer in plain, ASAN/UBSAN/LSA
 and TSAN modes. Sanitizers cover the common C++ runtime and driver; generated
 provider LLVM IR is not instrumented. Reports preserve commands, original failures,
 compiler/resource pins, outputs and timings. This is an opt-in acceptance run,
-separate from CTest and the31 SDK phases.
+separate from CTest and the selected SDK's maintained phase list.
 
 ```sh
 python3 /path/to/sdk/share/nex/tools/run_acceptance.py \
