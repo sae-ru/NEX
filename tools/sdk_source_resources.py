@@ -25,6 +25,7 @@ def c_string_literal(value):
                     else '\\%03o'%byte for byte in str(value).encode('utf-8'))+'"'
 
 def check_installed_source_resources(cli,run,last_command,root,resources,driver,*,compiler=None,live=False):
+ from sdk_acceptance import sdk_host
  root,resources=Path(root),Path(resources);out=root/'source-resources';out.mkdir()
  language=cli('describe','--kind','index')['language']
  feature=cli('describe','--field','source_resources')['value']
@@ -58,18 +59,18 @@ server fn main()->unit!{ffi,io}{BODY}
   signatures={name:cli('ffi','main.nex','--symbol',name,cwd=project) for name in ('create','read')}
   pins={name:_sha(json.dumps(value,sort_keys=True,separators=(',',':')).encode()) for name,value in signatures.items()}
   (project/'resource-signatures.h').write_text('\n'.join('#define PIN_'+name.upper()+' '+json.dumps(pin) for name,pin in pins.items())+'\n')
-  bundle=project/'bundle';bundle.mkdir();module=bundle/'module.so'
-  producer_compiler=Path(driver) if kind=='CPP20' else Path(driver).with_name('clang')
+  bundle=project/'bundle';bundle.mkdir();module=bundle/('module.dll' if sdk_host.WINDOWS else 'module.so')
+  producer_compiler=Path(driver) if kind=='CPP20' else Path(driver).with_name(sdk_host.executable_name('clang'))
   run([producer_compiler,'-x','c++' if kind=='CPP20' else 'c','-std=c++20' if kind=='CPP20' else '-std=c11','-shared','-fPIC','-fvisibility=hidden','-I'+str(resources/'runtime'),'-I'+str(project),'-DNEX_RESOURCE_MARKER='+c_string_literal(marker),resources/'examples/source-resource-producer.c','-o',module],cwd=project)
   (bundle/'NOTICE').write_text('NEX installed source resource conformance producer\n')
-  host_platform=('macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine().lower() in ('arm64','aarch64') else 'x86_64')
-  manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':'module.so','files':[{'path':name,'sha256':_sha((bundle/name).read_bytes())} for name in ('module.so','NOTICE')],'exports':pins,'notices':['NOTICE']}
+  host_platform=sdk_host.platform_name()
+  manifest={'schema':'nex.foreign-bundle/1','platform':host_platform,'entry':module.name,'files':[{'path':name,'sha256':_sha((bundle/name).read_bytes())} for name in (module.name,'NOTICE')],'exports':pins,'notices':['NOTICE']}
   _write(bundle/'manifest.json',manifest);pin=_sha((bundle/'manifest.json').read_bytes())
   host=project/'host.json';_write(host,{'schema':'nex.foreign-host/1','module_limit':1,'resource_limit':4,'resource_bytes':32,'libraries':{'owned':{'directory':str(bundle),'manifest_sha256':pin,'exports':['create','read']}}})
   source.write_text(base.replace('PIN',pin).replace('BODY',body))
   evaluated=cli('eval','--foreign',host,cwd=project)
   _require(evaluated['stdout']=='42\n' and marker.read_text()=='IFXFXD','reference alias/destruction/unload differs')
-  marker.unlink();built=cli('build','--profile','release','-o',project/'app',cwd=project)
+  marker.unlink();built=cli('build','--profile','release','-o',project/sdk_host.executable_name('app'),cwd=project)
   output=run([built['executable'],'--nex-foreign',host],cwd=project)
   _require(output=='42\n' and marker.read_text()=='IFXFXD','native alias/destruction/unload differs')
   failures=[('checked-trap','let owner:Session=create(42);let zero:i64=0;print(read(owner)/zero);','E_DIV_ZERO')]
@@ -106,7 +107,7 @@ server fn main()->unit!{ffi,io}{BODY}
   _require(data['sql_sha256']==_sha(sql)==pin and data['sdk']['compiler_sha256']=='fab2558b7c535c101fb73ec147186501ea0c21b38660fd086b97ee42f1d8981d','genuine020 fixture differs')
   project=out/('migration-'+name);(project/'.nex').mkdir(parents=True)
   database=project/'.nex/graph.db'
-  with sqlite3.connect(database) as db:db.executescript(sql.decode())
+  with sdk_host.connection(database) as db:db.executescript(sql.decode())
   selected=next(row for row in data['revisions'] if row['revision']==data['head'])
   for key,text in selected['bundle']['files'].items():
    path=project/key;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
@@ -140,7 +141,7 @@ server fn main()->unit!{ffi,io}{BODY}
   data=json.loads(fixture.read_text());sql=fixture.with_suffix('.sql').read_bytes()
   _require(_sha(sql)==pin==data['sql_sha256'] and data['sdk']['compiler_sha256']=='40fcbef8657a74f1f51339ed45876808f2d657ed93da8e22a7838c9234b70975','genuine021 installed fixture differs')
   project=out/('task-migration-'+name);(project/'.nex').mkdir(parents=True);database=project/'.nex/graph.db'
-  with sqlite3.connect(database) as db:db.executescript(sql.decode())
+  with sdk_host.connection(database) as db:db.executescript(sql.decode())
   selected=next(row for row in data['revisions'] if row['revision']==data['head'])
   _write(project/'nex.json',{'schema':'nex.project/1','language':'0.21','entry':selected['bundle']['entry']});manifest=(project/'nex.json').read_bytes();initial=_state(database);head=data['head']
   _require(len(initial['tables'])==16 and len(initial['tables']['revisions'])==3,'genuine021 installed history incomplete')

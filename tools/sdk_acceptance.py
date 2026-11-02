@@ -23,6 +23,13 @@ import urllib.error
 import urllib.request
 
 
+# Resolve the matching installed adapter when this module is imported by filename.
+import importlib.util as _host_import
+_host_spec = _host_import.spec_from_file_location('nex_sdk_host', Path(__file__).with_name('sdk_host.py'))
+sdk_host = _host_import.module_from_spec(_host_spec)
+_host_spec.loader.exec_module(sdk_host)
+
+
 # Distribution validators import the contract from their matching SDK. Keep
 # action registration checked against it so a missing phase cannot look green.
 ACCEPTANCE_PHASES = (
@@ -268,8 +275,8 @@ def task_debug_namespace(directory, completion_inputs, compiler_build, build_key
     catalog=json.loads(task_sdk_regular(directory,'task-debug-catalog.json').read_text())
     artifact=catalog.get('artifact_kind')
     require(artifact in ('code-archive','pic-stage','shared-image','application'),'provider debug artifact kind differs')
-    executable='app' if artifact=='application' else 'libnex.a' if artifact in ('pic-stage','code-archive') else \
-        'libnex_'+provider['component']+'_'+build_key+('.dylib' if platform.system()=='Darwin' else '.so')
+    executable=sdk_host.executable_name('app') if artifact=='application' else 'libnex.a' if artifact in ('pic-stage','code-archive') else \
+        sdk_host.shared_name('libnex_'+provider['component']+'_'+build_key)
     names=list(dict.fromkeys([executable,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',*inputs,'complete']))
     require(len(names)<=16391,'provider debug namespace exceeds bound')
     sources=json.loads(task_sdk_regular(directory,'task-debug-sources.json').read_text())
@@ -1319,7 +1326,7 @@ def main():
     sdk = args.sdk.resolve()
     root = args.output.resolve()
     resources = sdk / 'share/nex'
-    compiler = sdk / 'bin/nex'
+    compiler = sdk / 'bin' / sdk_host.executable_name('nex')
     if not compiler.is_file() or not (resources / 'llm/language-pack.json').is_file():
         parser.error('sdk must be an installed NEX SDK')
     if root == sdk or sdk in root.parents:
@@ -1365,8 +1372,14 @@ def main():
     def save():
         (root / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
 
-    def run(command, cwd=root, expected_success=True, timeout=180):
+    def run(command, cwd=root, expected_success=True, timeout=180, observe_images=False):
         command = list(map(str, command))
+        if sdk_host.WINDOWS:
+            program=Path(command[0])
+            if program.parent!=Path('.') and not program.is_file() and program.with_name(program.name+'.exe').is_file():
+                command[0]=str(program.with_name(program.name+'.exe'))
+        if sdk_host.WINDOWS and report.get('doctor') and command[0] in ('nm','openssl'):
+            command[0] = sdk_host.selected_tool(sdk, report['doctor'], command[0])
         project_package = (len(command) > 1 and command[0] == str(compiler) and
                            command[1] == 'project' and '--kind' in command and
                            command.index('--kind') + 1 < len(command) and
@@ -1394,23 +1407,42 @@ def main():
         report['commands'].append(row)
         save()
         with open(row['stdout'], 'wb') as out, open(row['stderr'], 'wb') as err:
-            process = subprocess.Popen(row['command'], cwd=cwd, env=environment,
-                                       stdout=out, stderr=err, start_new_session=True)
-            try:
-                code = process.wait(timeout=timeout)
-            except BaseException:
-                # Let NEX clean up task-owned children before escalating to SIGKILL.
+            if sdk_host.WINDOWS and observe_images:
+                result, loaded_paths = sdk_host.inspect_loaded(row['command'],
+                    cwd=cwd, env=environment, timeout=timeout)
+                out.write(result.stdout.encode('utf-8'));err.write(result.stderr.encode('utf-8'))
+                code = result.returncode
+                row['loaded_images'] = list(map(str, loaded_paths))
+                observation = {'schema':'nex.sdk-windows-loader/1',
+                    'load_events':result.windows_load_events,
+                    'application_mappings':result.windows_loaded_images,
+                    'final_mappings':result.windows_final_images}
+                trace = logs/('%03d-loader.json' % number)
+                trace.write_text(json.dumps(observation,indent=2)+'\n')
+                row['loader_trace'] = str(trace)
+                row['loader_trace_sha256'] = hashlib.sha256(trace.read_bytes()).hexdigest()
+            elif sdk_host.WINDOWS and sdk_host.compiler_command(row['command']):
+                result = sdk_host.compile_fixture(row['command'], cwd=cwd, env=environment,
+                    stdout=out, stderr=err, timeout=timeout)
+                code = result.returncode
+            else:
+                process = subprocess.Popen(row['command'], cwd=cwd, env=environment,
+                                           stdout=out, stderr=err, start_new_session=not sdk_host.WINDOWS)
                 try:
-                    os.killpg(process.pid, signal.SIGTERM)
-                    process.wait(timeout=10)
-                except ProcessLookupError:
-                    pass
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
-                    process.wait(timeout=10)
-                row['status'] = 'interrupted'
-                save()
-                raise
+                    code = process.wait(timeout=timeout)
+                except BaseException:
+                    # Let NEX clean up task-owned children before escalating.
+                    try:
+                        sdk_host.interrupt(process)
+                        process.wait(timeout=10)
+                    except ProcessLookupError:
+                        pass
+                    except subprocess.TimeoutExpired:
+                        sdk_host.kill(process)
+                        process.wait(timeout=10)
+                    row['status'] = 'interrupted'
+                    save()
+                    raise
         row.update(exit_code=code, status='passed' if (code == 0) == expected_success else 'failed')
         save()
         require(row['status'] == 'passed', 'unexpected command result; inspect ' + row['stderr'])
@@ -2385,7 +2417,7 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
             receipt = Path(accepted['output'])
             shutil.rmtree(directory)
             environment['NEX_RESOURCE_DIR'] = str(root/'absent-task-file-resources')
-            require(run([deployment/'apps/app/bin/app'],cwd=root)=='7\n','packaged read needs deleted project')
+            require(run([deployment/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=root)=='7\n','packaged read needs deleted project')
             environment['NEX_RESOURCE_DIR'] = str(resources)
             replay = cli('task',receipt,'--kind','replay','--directory',root/'task-file-read-replay',timeout=300)
             require(replay['ok'] and replay['programs']==accepted['programs'],'source-deleted task read replay differs')
@@ -2596,7 +2628,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_rea
         metadata = json.loads(Path(app['metadata']).read_text())
         require(records['leaf']['task_file_reads'] and not metadata['runtime_requirements']['task_file_reads'],
                 'uncalled provider read export inflated root file requirements')
-        require(run([app['artifact']],cwd='/')=='42\n','static provider standalone output differs')
+        require(run([app['artifact']],cwd=sdk_host.host_root(root))=='42\n','static provider standalone output differs')
         warm = cli('project','--kind','build','--component','app',cwd=directory,timeout=300)
         require(all(item['cached'] for item in warm['artifacts']),'static task provider warm cache missed')
         low = cli('project','--kind','run','--component','app','--','--nex-task-steps','500000',
@@ -2620,9 +2652,9 @@ server fn main()->unit!{task,fs,io}{
                 'provider-only read failed to request root grant transport')
         previous_grant = environment.pop('NEX_FILES_ROOT',None)
         try:
-            require(run([read_artifacts['app']['artifact']],cwd='/')=='CAPABILITY\n','missing provider grant is not typed CAPABILITY')
+            require(run([read_artifacts['app']['artifact']],cwd=sdk_host.host_root(root))=='CAPABILITY\n','missing provider grant is not typed CAPABILITY')
             environment['NEX_FILES_ROOT']=str(grant)
-            require(run([read_artifacts['app']['artifact']],cwd='/')=='42\n4\n','provider root file grant/UTF-8/NUL differs')
+            require(run([read_artifacts['app']['artifact']],cwd=sdk_host.host_root(root))=='42\n4\n','provider root file grant/UTF-8/NUL differs')
             criteria = cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
             criteria['checks'].append({'id':'observe','kind':'run','program':'app','target':'native','configuration':'release',
                 'expect':{'stdout':'42\n4\n','exit_code':0},'timeout_seconds':120})
@@ -2741,8 +2773,8 @@ server fn main()->unit!{task,fs,io}{
             shutil.rmtree(directory)
             prior_resources=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']='/absent'
             try:
-                require(run([standalone],cwd='/')=='42\n4\n' and
-                        run([package/'apps/app/bin/app'],cwd='/')=='42\n4\n',
+                require(run([standalone],cwd=sdk_host.host_root(root))=='42\n4\n' and
+                        run([package/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=sdk_host.host_root(root))=='42\n4\n',
                         'copied static task application/package needs compiler sources/resources')
             finally:
                 if prior_resources is None:environment.pop('NEX_RESOURCE_DIR',None)
@@ -2843,11 +2875,22 @@ pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);
                 'unused provider read code created root authority or was omitted from runtime support')
         loader_logs=[]
         def loaded_run(executable,expected_output):
+            if sdk_host.WINDOWS:
+                require(run([executable],cwd=sdk_host.host_root(root),observe_images=True)==expected_output,
+                    'loaded shared application result differs')
+                row=report['commands'][-1];loader_logs.append(row['loader_trace'])
+                loaded=[Path(path).name.casefold() for path in row['loaded_images']]
+                require(all(loaded.count(Path(image['path']).name.casefold())==1 for image in images),
+                    'Windows application did not retain each checked shared image exactly once')
+                require({name for name in loaded if name.startswith('libnex_runtime_')}==
+                    {Path(image['path']).name.casefold() for image in images if image['kind']=='runtime'},
+                    'Windows application retained a different/additional task runtime')
+                return
             old_loader={key:environment.pop(key,None) for key in ('DYLD_PRINT_LIBRARIES','DYLD_PRINT_TO_FILE','LD_DEBUG','LD_DEBUG_OUTPUT')}
             loader_key='DYLD_PRINT_LIBRARIES' if platform.system()=='Darwin' else 'LD_DEBUG'
             environment[loader_key]='1' if platform.system()=='Darwin' else 'libs'
             try:
-                require(run([executable],cwd='/')==expected_output,'loaded shared application result differs')
+                require(run([executable],cwd=sdk_host.host_root(root))==expected_output,'loaded shared application result differs')
                 loader_log=Path(report['commands'][-1]['stderr']);loader_logs.append(str(loader_log))
                 loaded=loader_log.read_text().splitlines()
                 if platform.system()=='Linux':loaded=[line.split('calling init:',1)[1].strip() for line in loaded if 'calling init:' in line]
@@ -2882,9 +2925,9 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
         grant=root/'shared-task-provider-files';grant.mkdir();(grant/'text').write_bytes('A🌍\0λ'.encode())
         previous_grant=environment.pop('NEX_FILES_ROOT',None)
         try:
-            require(run([read_artifacts['app']['artifact']],cwd='/')=='CAPABILITY\n','missing shared read grant was not typed')
+            require(run([read_artifacts['app']['artifact']],cwd=sdk_host.host_root(root))=='CAPABILITY\n','missing shared read grant was not typed')
             environment['NEX_FILES_ROOT']=str(grant)
-            require(run([read_artifacts['app']['artifact']],cwd='/')=='42\n4\n','shared root file grant/Unicode/NUL differs')
+            require(run([read_artifacts['app']['artifact']],cwd=sdk_host.host_root(root))=='42\n4\n','shared root file grant/Unicode/NUL differs')
             criteria=cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
             criteria['checks'].append({'id':'observe','kind':'run','program':'app','target':'native','configuration':'release',
                 'expect':{'stdout':'42\n4\n','exit_code':0},'timeout_seconds':120})
@@ -2948,7 +2991,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
                 own=json.loads(regular(receipt.parent,prefix+'task-provider.json',16*1024*1024).read_text())
                 actual_artifact=Path(captured_artifacts[component['component']]['artifact'])
                 require(actual_artifact.parent==original_directory and
-                        actual_artifact.name==('app' if component['component']=='app' else
+                        actual_artifact.name==(sdk_host.executable_name('app') if component['component']=='app' else
                             'libnex_'+component['component']+'_'+record['build_key']+actual_artifact.suffix) and
                         metadata['kind']==('executable' if component['component']=='app' else 'shared_library'),
                         'retained executable does not match the actual captured component artifact')
@@ -3004,13 +3047,13 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             app_folder=directory/'.nex/build'/package_meta['build_key']
             images=json.loads((app_folder/'compilation.json').read_text())['owned_images']
             copied=root/'shared-task-provider-copied';copied.mkdir()
-            shutil.copy2(app_folder/'app',copied/'app')
+            shutil.copy2(app_folder/sdk_host.executable_name('app'),copied/sdk_host.executable_name('app'))
             shutil.copytree(app_folder/'images',copied/'images')
             shutil.rmtree(directory)
             previous_resources=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']='/absent'
             try:
-                loaded_run(copied/'app','42\n4\n')
-                loaded_run(application_package/'bin/app','42\n4\n')
+                loaded_run(copied/sdk_host.executable_name('app'),'42\n4\n')
+                loaded_run(application_package/('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app'),'42\n4\n')
             finally:
                 if previous_resources is None:environment.pop('NEX_RESOURCE_DIR',None)
                 else:environment['NEX_RESOURCE_DIR']=previous_resources
@@ -3371,7 +3414,7 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
         original=directory/'.nex/build'/package_meta['build_key']
         images=json.loads((original/'compilation.json').read_text())['owned_images']
         require(sum(row['kind']=='runtime' for row in images)==1,'profile package closure has multiple runtimes')
-        copied=root/'task-provider-profile-copied';copied.mkdir();shutil.copy2(original/'app',copied/'app');shutil.copytree(original/'images',copied/'images')
+        copied=root/'task-provider-profile-copied';copied.mkdir();shutil.copy2(original/sdk_host.executable_name('app'),copied/sdk_host.executable_name('app'));shutil.copytree(original/'images',copied/'images')
         shutil.rmtree(directory);loader_logs=[];raw_reports=[]
         previous={key:environment.pop(key,None) for key in ('NEX_PROFILE_OUTPUT','NEX_PROFILE_EVENTS','NEX_TRACY','NEX_RESOURCE_DIR',
             'DYLD_PRINT_LIBRARIES','DYLD_PRINT_TO_FILE','LD_DEBUG','LD_DEBUG_OUTPUT')}
@@ -3379,16 +3422,26 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
             environment.update(NEX_PROFILE_EVENTS='0',NEX_TRACY='0',NEX_RESOURCE_DIR='/absent')
             loader_key='DYLD_PRINT_LIBRARIES' if platform.system()=='Darwin' else 'LD_DEBUG'
             environment[loader_key]='1' if platform.system()=='Darwin' else 'libs'
-            for label,executable in (('copied',copied/'app'),('package',application_package/'bin/app')):
+            for label,executable in (('copied',copied/sdk_host.executable_name('app')),('package',application_package/('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app'))):
                 raw_path=root/('task-provider-profile-'+label+'-runtime.json');environment['NEX_PROFILE_OUTPUT']=str(raw_path)
-                require(run([executable],cwd='/')==output,'source-deleted profile closure output differs')
-                loader=Path(report['commands'][-1]['stderr']);loader_logs.append(str(loader));lines=loader.read_text().splitlines()
-                if platform.system()=='Linux':lines=[line.split('calling init:',1)[1].strip() for line in lines if 'calling init:' in line]
-                require(all(sum(line.rstrip().endswith('/'+Path(image['path']).name) for line in lines)==1 for image in images),
-                        'source-deleted profile closure did not map each image exactly once')
-                runtime={Path(match).name for line in lines for match in re.findall(r'\S*libnex_runtime_[0-9a-f]{64}\.(?:dylib|so)',line)}
-                require(runtime=={Path(image['path']).name for image in images if image['kind']=='runtime'},
-                        'source-deleted provider profile mapped a different runtime')
+                require(run([executable],cwd=sdk_host.host_root(root),observe_images=sdk_host.WINDOWS)==output,
+                        'source-deleted profile closure output differs')
+                row=report['commands'][-1]
+                if sdk_host.WINDOWS:
+                    loader_logs.append(row['loader_trace'])
+                    names=[Path(path).name.casefold() for path in row['loaded_images']]
+                    require(all(names.count(Path(image['path']).name.casefold())==1 for image in images),
+                        'source-deleted Windows closure did not retain each image exactly once')
+                    runtime={name for name in names if name.startswith('libnex_runtime_')}
+                    expected_runtime={Path(image['path']).name.casefold() for image in images if image['kind']=='runtime'}
+                else:
+                    loader=Path(row['stderr']);loader_logs.append(str(loader));lines=loader.read_text().splitlines()
+                    if platform.system()=='Linux':lines=[line.split('calling init:',1)[1].strip() for line in lines if 'calling init:' in line]
+                    require(all(sum(line.rstrip().endswith('/'+Path(image['path']).name) for line in lines)==1 for image in images),
+                            'source-deleted profile closure did not map each image exactly once')
+                    runtime={Path(match).name for line in lines for match in re.findall(r'\S*libnex_runtime_[0-9a-f]{64}\.(?:dylib|so)',line)}
+                    expected_runtime={Path(image['path']).name for image in images if image['kind']=='runtime'}
+                require(runtime==expected_runtime,'source-deleted provider profile mapped a different runtime')
                 raw=json.loads(raw_path.read_text());functions={row['name']:row for row in raw['functions']}
                 require(raw['schema']=='nex.profile-runtime/3' and raw['build']['build_key']==package_meta['build_key'] and
                         len(functions)==len(raw['functions']) and set(functions)==set(expected) and
@@ -3432,7 +3485,7 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
         changes = cli('changes', cwd=original)
         source.unlink()
         def rows(project):
-            with sqlite3.connect(project / '.nex/graph.db') as database:
+            with sdk_host.connection(project / '.nex/graph.db') as database:
                 names = [name for name, in database.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
                 return {name: sorted(database.execute('SELECT * FROM "' + name.replace('"', '""') + '"').fetchall(), key=repr)
                         for name in names}
@@ -3694,9 +3747,9 @@ def __lldb_init_module(debugger,_):
         metadata=json.loads((resources/'examples/traits/legacy-0.15.json').read_text());sql=(resources/'examples/traits/legacy-0.15.sql').read_bytes()
         require(hashlib.sha256(sql).hexdigest()==metadata['sql_sha256'],'historical trait fixture hash differs')
         database=legacy/'.nex/graph.db'
-        with sqlite3.connect(database) as db:db.executescript(sql.decode())
+        with sdk_host.connection(database) as db:db.executescript(sql.decode())
         def rows():
-            with sqlite3.connect(database) as db:
+            with sdk_host.connection(database) as db:
                 names=[name for name, in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")]
                 return {name:set(db.execute('SELECT * FROM "'+name.replace('"','""')+'"').fetchall()) for name in names}
         before=rows();migrated=cli('migrate','--revision',metadata['revision'],cwd=legacy)
@@ -3871,7 +3924,7 @@ fn main()->unit !{io}{observe(40,"Я🧠",[1,2,3]);}
                     'installed SDK did not validate a newly exported core capsule')
             original_program = Path(session['launch']['program'])
             original_program.parent.rename(directory / 'retained-original-build')
-            moved = directory / 'moved capsule "quoted" \\ % `data` 🧠'
+            moved = directory / ('moved capsule % 🧠' if sdk_host.WINDOWS else 'moved capsule "quoted" \\ % `data` 🧠')
             capsule.rename(moved)
             require(not original_program.exists(), 'original core executable path still exists')
             capsule_report = cli('core', '--capsule', moved, '--expression', 'text + str(items[1])',
@@ -3922,7 +3975,7 @@ int main() {
         runtime = resources / 'runtime'
         driver = report['doctor']['native_compiler']
         obj = directory / 'producer.o'
-        executable = directory / 'host'
+        executable = directory / sdk_host.executable_name('host')
         run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', c, '-o', obj])
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), host, obj,
              runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
@@ -3956,7 +4009,7 @@ int main() {
                     'typed C model native/reference output differs')
         cli('test', '--target', 'web', cwd=typed)
         typed_obj = typed / 'producer.o'
-        typed_host = typed / 'host'
+        typed_host = typed / sdk_host.executable_name('host')
         run([driver, '-x', 'c', '-std=c11', '-I' + str(runtime), '-c', typed / 'producer.c', '-o', typed_obj])
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime), typed / 'host.cpp', typed_obj,
              runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
@@ -3984,20 +4037,20 @@ int main() {
             shutil.copyfile(resources / 'examples/ffi' / name, loaded / name)
         canonical = json.dumps(contract, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
         signature_pin = hashlib.sha256(canonical.encode()).hexdigest()
-        module = bundle / 'module'
+        module = bundle / ('module.dll' if sdk_host.WINDOWS else 'module')
         run([driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden',
              '-I' + str(runtime), '-DNEX_EXAMPLE_SIGNATURE_SHA256="' + signature_pin + '"',
              loaded / 'producer.c', loaded / 'module.c', '-o', module])
         shutil.copyfile(loaded / 'NOTICE', bundle / 'NOTICE')
         machine = {'aarch64': 'arm64', 'arm64': 'arm64', 'x86_64': 'x86_64', 'AMD64': 'x86_64'}[platform.machine()]
-        host_platform = ('macos' if platform.system() == 'Darwin' else 'linux') + '-' + machine
-        manifest = {'schema': 'nex.foreign-bundle/1', 'platform': host_platform, 'entry': 'module',
+        host_platform = sdk_host.platform_name()
+        manifest = {'schema': 'nex.foreign-bundle/1', 'platform': host_platform, 'entry': module.name,
             'files': [{'path': name, 'sha256': hashlib.sha256((bundle / name).read_bytes()).hexdigest()}
-                      for name in ('module', 'NOTICE')],
+                      for name in (module.name, 'NOTICE')],
             'exports': {'contract': signature_pin}, 'notices': ['NOTICE']}
         (bundle / 'manifest.json').write_text(json.dumps(manifest))
         manifest_pin = hashlib.sha256((bundle / 'manifest.json').read_bytes()).hexdigest()
-        module_host = loaded / 'host'
+        module_host = loaded / sdk_host.executable_name('host')
         run([driver, '-std=c++20', '-pthread', '-I' + str(runtime),
              '-I' + report['doctor']['native_openssl_include'], loaded / 'module_host.cpp',
              runtime / 'nex_ffi_loader.cpp', runtime / 'nex_ffi.cpp', runtime / 'nex_ffi_types.cpp', runtime / 'nex_ffi_resources.cpp', runtime / 'nex_external_resource.cpp', runtime / 'nex_resource_region.cpp', runtime / 'nex_resource_executor.cpp',
@@ -4190,13 +4243,13 @@ server fn main()->unit!{ffi,io}{print(encode_json(c::contract(unwrap(bytes([0,25
         try:
             environment.clear()
             environment.update(PATH='/usr/bin:/bin', NEX_RESOURCE_DIR=str(root / 'absent-packaged-resources'))
-            require(run([moved_package / 'bin/app'], cwd=moved_package) == expected_typed,
+            require(run([moved_package / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')], cwd=moved_package) == expected_typed,
                     'independent packaged nominal foreign application differs')
-            require(run([deployment/'apps/app/bin/app'],cwd=directory)==expected_typed,
+            require(run([deployment/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=directory)==expected_typed,
                     'independent project shared foreign application differs')
             replay_receipt=Path(task_replay['output'])
             row=json.loads(replay_receipt.read_text())['checks'][0]
-            require(run([replay_receipt.parent/row['package']/'apps/app/bin/app'],cwd=directory)==expected_typed,
+            require(run([replay_receipt.parent/row['package']/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=directory)==expected_typed,
                     'independent replayed project foreign application differs')
         finally:
             environment.clear()
@@ -4257,12 +4310,12 @@ server fn main()->unit!{io,fs}{
             require(cli('run', cwd=files)['stdout'] == expected_file, 'binary file native differs')
             packaged = cli('package', '--directory', root / 'binary-file-application', cwd=files)
             manifest = json.loads(Path(packaged['manifest']).read_text())
-            executable = Path(packaged['directory']) / 'bin/app'
+            executable = Path(packaged['directory']) / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')
             environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
             require(run([executable]) == expected_file and
                     (data / 'octets.bin').read_bytes() == bytes([0, 255, 128, 65]),
                     'independent binary file application changed octets')
-            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files']['bin/app']['sha256'],
+            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files'][('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')]['sha256'],
                     'binary file executable differs from package inventory')
         finally:
             environment['NEX_RESOURCE_DIR'] = unavailable
@@ -4408,11 +4461,11 @@ fn main()->unit!{io}{observe(unwrap(bytes([0,255,128,65])));}
             require(cli('run', '--revision', revision, cwd=directory)['stdout'] == expected_text,
                     'text-file revision did not survive source deletion')
             environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
-            executable = package / 'bin/app'
+            executable = package / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')
             require(run([executable]) == expected_text and
                     (data / 'nex-message.txt').read_bytes() == expected_text[:-1].encode(),
                     'packaged file program needs compiler resources or changed text bytes')
-            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files']['bin/app']['sha256'],
+            require(hashlib.sha256(executable.read_bytes()).hexdigest() == manifest['files'][('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')]['sha256'],
                     'executed file application differs from package inventory')
             environment['NEX_RESOURCE_DIR'] = saved['NEX_RESOURCE_DIR']
             denied = root / 'file-denial'
@@ -4460,13 +4513,13 @@ server fn main()->unit!{fs,io}{
             require(cli('run', '--revision', stream_revision, cwd=streams)['stdout'] == expected_stream,
                     'file resource replay needs original source')
             environment['NEX_RESOURCE_DIR'] = str(root / 'absent-resources')
-            require(run([stream_package / 'bin/app']) == expected_stream and
+            require(run([stream_package / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')]) == expected_stream and
                     (data / 'nex-stream.bin').read_bytes() == 'Я🧠'.encode(),
                     'packaged streaming resource program needs compiler resources')
             report['evidence']['file_resources'] = {'revision': stream_revision,
                 'language': report['doctor']['language'], 'native_profiles': ['debug', 'release'],
                 'alias_close': True, 'seek_and_eof': True, 'scoped_cleanup_iterations': 80,
-                'source_deleted_replay': True, 'standalone_without_resources': str(stream_package / 'bin/app')}
+                'source_deleted_replay': True, 'standalone_without_resources': str(stream_package / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app'))}
         finally:
             for key, value in saved.items():
                 if value is None:
@@ -4738,7 +4791,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                     require(request('bob') == (200, 'bob:separate'), 'bob persistence/isolation failed')
                 finally:
                     if process.poll() is None:
-                        process.terminate()
+                        sdk_host.request_server_stop(process)
                     try:
                         process.communicate(timeout=15)
                     except subprocess.TimeoutExpired:
@@ -4896,7 +4949,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
             client=DAP(prepared['command'],project,environment);executor=concurrent.futures.ThreadPoolExecutor(max_workers=1)
             try:
                 client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True,'supportsVariableType':True})
-                launch=dict(prepared['launch'],disableASLR=False,preRunCommands=[*prepared['launch'].get('preRunCommands',[]),'process handle -s false -n false -p true SIGTERM'])
+                launch=dict(prepared['launch'],disableASLR=False,preRunCommands=[*prepared['launch'].get('preRunCommands',[]),*([] if sdk_host.WINDOWS else ['process handle -s false -n false -p true SIGTERM'])])
                 pending=client.send('launch',launch);client.event('initialized')
                 client.request('setFunctionBreakpoints',{'breakpoints':[{'name':symbol}]})
                 client.request('configurationDone');client.response(pending);pid=client.event('process')['systemProcessId']
@@ -4914,7 +4967,7 @@ server fn handle(request:http::Request) -> http::Response !{db} {
                 watch=client.request('evaluate',{'expression':'body','frameId':frame['id'],'context':'watch'})
                 require(watch['nex']['value']=='payload' and 'debug_core' in frame['name'],'server provider watch differs')
                 client.request('continue',{'threadId':stop['threadId']});require(request.result(timeout=80)==(200,'Я🧠:payload'),'resumed server request differs')
-                os.kill(pid,signal.SIGTERM);require(client.event('exited')['exitCode']==0,'server debuggee failed graceful shutdown')
+                sdk_host.request_server_stop(pid);require(client.event('exited')['exitCode']==0,'server debuggee failed graceful shutdown')
                 evidence.update(live_worker_stop=True,source_deleted=True,request_completed=True,graceful_exit=True,watch='payload')
             finally:client.close();executor.shutdown(wait=True)
         require(not (project/'.nex/graph.db').exists(),'server debugger synchronized a graph Store')
@@ -5030,11 +5083,11 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 'application edit changed independent shared providers/runtime')
         moved_app = root/'moved shared app % 🧠'; moved_app.mkdir()
         executable = Path(edited_images['app']['artifact'])
-        shutil.copy2(executable, moved_app/'app'); shutil.copytree(executable.parent/'images', moved_app/'images')
+        shutil.copy2(executable, moved_app/sdk_host.executable_name('app')); shutil.copytree(executable.parent/'images', moved_app/'images')
         hidden = root/'retained-shared-project'
         shared_project.rename(hidden)
         try:
-            require(run([moved_app/'app'], cwd=moved_app) == '43 🧠\n', 'moved shared application needs its original project')
+            require(run([moved_app/sdk_host.executable_name('app')], cwd=moved_app) == '43 🧠\n', 'moved shared application needs its original project')
         finally:
             hidden.rename(shared_project)
         app_source.write_text(app_source.read_text().replace('render(3)', 'render(2)'))
@@ -5100,7 +5153,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         task_deployment=task_receipt.parent/task_package['package']
         require(not task_package['application_execution'] and (task_deployment/'apps/app/THIRD_PARTY_NOTICES.txt').is_file(), 'task package is missing build-only deployment evidence')
         shutil.rmtree(task_project)
-        packaged_task_stdout=run([task_deployment/'apps/app/bin/app'],cwd=root,timeout=30)
+        packaged_task_stdout=run([task_deployment/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=root,timeout=30)
         require(packaged_task_stdout=='42 🧠\n', 'task package failed after source deletion')
         task_replay=cli('task',task_receipt,'--kind','replay','--directory',root/'project-task-replay',cwd=root,timeout=600)
         require(task_replay['ok'] and task_replay['programs']==task_run['programs'], 'project task replay fell back to deleted source')
@@ -5128,12 +5181,12 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         package_selection = [] if args.browser else ['--component', 'app']
         architecture_deployment = cli('project', '--kind', 'package', '--configuration', 'release',
             '--directory', architecture_package, *package_selection, cwd=architecture, timeout=300)
-        require(run([architecture_package/'apps/app/bin/app']) == '22\n', 'source-architecture package differs')
+        require(run([architecture_package/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')]) == '22\n', 'source-architecture package differs')
         if args.browser:
             require((architecture_package/'web/browser/index.html').is_file() and
                     (architecture_package/'web/browser/THIRD_PARTY_NOTICES.txt').is_file(), 'project package lost browser assets/notices')
         shared_evidence = {'separate_shared_libraries': 2, 'one_runtime': True, 'consumer_did_not_recompile_providers': True,
-            'moved_application': str(moved_app/'app'), 'provider_reuse_after_app_edit': True,
+            'moved_application': str(moved_app/sdk_host.executable_name('app')), 'provider_reuse_after_app_edit': True,
             'profile_identity_checked': True, 'profile_cleanup_checked': True, 'actual_shared_core': False}
         shared_evidence.update(project_package=str(moved_deployment), relocated_project_package_executed=True,
             package_preserved_shared_edges=True, architecture_package=str(architecture_package), native_and_web_packaged=args.browser)

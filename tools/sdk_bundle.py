@@ -432,7 +432,8 @@ class WindowsBundle(Bundle):
             self.external(original,target);self.collect_pe(original,target)
             configuration['tools'][key]=target.relative_to(self.output).as_posix()
         native=Path(doctor['native_compiler'])
-        for name in ('clang.exe','clang-'+doctor['llvm'].split('.')[0]+'.exe','llvm-rc.exe','llvm-cvtres.exe'):
+        for name in ('clang.exe','clang-'+doctor['llvm'].split('.')[0]+'.exe','llvm-rc.exe','llvm-cvtres.exe',
+                     'llvm-nm.exe','llvm-readobj.exe'):
             original=native.parent/name;target=self.output/'libexec/nex/native/bin'/name
             self.external(original,target);self.collect_pe(original,target)
         # MinGW Clang locates libc++ headers relative to its executable, even
@@ -469,6 +470,14 @@ class WindowsBundle(Bundle):
             configuration['tools'][key]=target.relative_to(self.output).as_posix()
         resource=Path(run([wasm,'-print-resource-dir'],env=environment).strip())
         self.external_tree(resource,self.output/'libexec/nex/wasm/lib/clang'/resource.name)
+        # The installed HTTPS workflow needs an actual native OpenSSL CLI.
+        # Capture it with its own adjacent PE closure rather than host PATH.
+        openssl=wasm.parent/'openssl.exe'
+        if not openssl.is_file():
+            raise ValueError('Windows SDK assembly requires the declared native OpenSSL CLI')
+        openssl_target=self.output/'libexec/nex/host-tools/openssl.exe'
+        self.external(openssl,openssl_target)
+        self.collect_pe(openssl,openssl_target,openssl_target.parent)
         return self.finish(configuration,doctor,{'platform':'windows','architecture':'x86_64',
             'requires_WSL':False,'requires_MSYS_runtime':False,
             'external_prerequisites':['Windows system DLLs listed in system_libraries','native '+PYTHON_REQUIREMENT,'Node.js/npm','native LLDB for debugger acceptance'],

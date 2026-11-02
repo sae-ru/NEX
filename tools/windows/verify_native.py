@@ -98,6 +98,7 @@ def main():
                 env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as child:
             for line in child.stdout:
                 log.write(line)
+                log.flush()
                 sys.stdout.buffer.write(line)
                 sys.stdout.buffer.flush()
             code = child.wait()

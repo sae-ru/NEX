@@ -1,0 +1,41 @@
+{
+  "schema": "nex.windows-current-compiler/1",
+  "ok": true,
+  "compiler_source_commit": "f82919e4faa4e980ccf5fc59a85ff31023b25116",
+  "SDK_distribution_qualified": false,
+  "full_CTest_and_CUDA_still_separate": true,
+  "compiler_build": "2e4440678af7630f88c9774f080843b6554933365307ce705553b6308e18a5c6",
+  "version": "0.160.0",
+  "language": "0.28",
+  "compiler_sha256": "c2658811587d6f7c290be63562c099c6e2720a98435b73992f7328505be628db",
+  "launcher_sha256": "9b601192237cc1539b0a434e3abac868d9351f06f621f8356d9e08c1ae4b061e",
+  "application_sha256": "fa33e31adba8499bc75a87df1365b754840505d5b7c77d48789153bf971e9cf0",
+  "old_launcher_sha256": "4b302bdeb55c57030fbfd95bdeec492fbec207854896719bdc3d65d21ddf6084",
+  "original_checkout_commit_preserved": "bfe448651b46316dba55381314989287d007ecb7",
+  "original_checkout_diff": "M nex.cmd",
+  "token": {
+    "is_elevated": false,
+    "is_app_container": false,
+    "developer_mode": true
+  },
+  "goal_complete": false,
+  "date": "2026-11-02",
+  "scope": "Current compiler selection and ordinary unelevated Windows smoke. Full CTest, CUDA and portable SDK qualification are separate.",
+  "launcher": "F:/sae/NEX/nex.cmd",
+  "selection": "build/current-sdk",
+  "source_language_migrated": false,
+  "system_or_user_PATH_changed": false,
+  "checks": [
+    "doctor and bounded descriptor agree on SDK and launcher",
+    "checked source contracts",
+    "typed Unicode/NUL source exception",
+    "joined CPU task",
+    "Debug and Release run/test",
+    "launcher Release run/build",
+    "direct standalone PE execution"
+  ],
+  "observed_stdout": "42\n",
+  "commands": 13,
+  "source_implementation_changed": false,
+  "SDK_archive_sha256": "f567ca893674dea381b3a368ea29a6a547bed67ba184442eeff6ea4da6aef68e"
+}

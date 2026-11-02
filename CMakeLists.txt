@@ -313,7 +313,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
@@ -1511,37 +1511,7 @@ set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)
 
 install(FILES tests/source_exceptions_public.py DESTINATION share/nex/tests)
 
-# Standalone probes compile the same Windows file/ACL implementation as the
-# frontend and must resolve its NT, crypto and security imports as well.
-if(WIN32)
-  get_directory_property(NEX_WINDOWS_TARGETS BUILDSYSTEM_TARGETS)
-  foreach(NEX_WINDOWS_TARGET IN LISTS NEX_WINDOWS_TARGETS)
-    get_target_property(NEX_WINDOWS_SOURCES ${NEX_WINDOWS_TARGET} SOURCES)
-    if("runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES OR "${CMAKE_CURRENT_SOURCE_DIR}/runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES)
-      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ntdll bcrypt advapi32)
-    endif()
-    if(NEX_WINDOWS_TARGET MATCHES "^nex_.*_probe$" OR NEX_WINDOWS_TARGET STREQUAL "typed_resource_ffi" OR NEX_WINDOWS_TARGET STREQUAL "external_values")
-      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ws2_32)
-    endif()
-    if("runtime/third_party/tracy/public/TracyClient.cpp" IN_LIST NEX_WINDOWS_SOURCES)
-      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE secur32)
-    endif()
-    get_target_property(NEX_WINDOWS_TYPE ${NEX_WINDOWS_TARGET} TYPE)
-    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE")
-      # Match the ordinary Unix worker stack reservation so checked source
-      # depth/action limits run before the Windows default1MiB is exhausted.
-      target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--stack,8388608")
-      get_target_property(NEX_WINDOWS_EXPORTS ${NEX_WINDOWS_TARGET} ENABLE_EXPORTS)
-      if(NEX_WINDOWS_EXPORTS)
-        target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--export-all-symbols")
-      endif()
-    endif()
-    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE" AND NOT "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc" IN_LIST NEX_WINDOWS_SOURCES)
-      target_sources(${NEX_WINDOWS_TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
-    endif()
-  endforeach()
-endif()
-install(FILES tests/host_fixture.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)
+install(FILES tests/host_fixture.py tests/windows_loader_fixture.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)
 
 # Explicit028 candidate; public source/default and immutable027 releases remain separate.
 add_executable(nex_source_contracts_probe tests/source_contracts.cpp src/typescript.cpp)
@@ -1601,3 +1571,36 @@ add_test(NAME source_contract_CLI COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_contract_cli.py $<TARGET_FILE:nex>)
 set_tests_properties(source_contract_CLI PROPERTIES TIMEOUT 1800)
 install(FILES tests/source_contract_cli.py DESTINATION share/nex/tests)
+
+# Apply Windows defaults after all targets, including source-contract hosts,
+# have been declared. Later hosts need the same NT imports, exports and stack.
+# Standalone probes compile the same Windows file/ACL implementation as the
+# frontend and must resolve its NT, crypto and security imports as well.
+if(WIN32)
+  get_directory_property(NEX_WINDOWS_TARGETS BUILDSYSTEM_TARGETS)
+  foreach(NEX_WINDOWS_TARGET IN LISTS NEX_WINDOWS_TARGETS)
+    get_target_property(NEX_WINDOWS_SOURCES ${NEX_WINDOWS_TARGET} SOURCES)
+    if("runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES OR "${CMAKE_CURRENT_SOURCE_DIR}/runtime/nex_files.cpp" IN_LIST NEX_WINDOWS_SOURCES)
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ntdll bcrypt advapi32)
+    endif()
+    if(NEX_WINDOWS_TARGET MATCHES "^nex_.*_probe$" OR NEX_WINDOWS_TARGET STREQUAL "typed_resource_ffi" OR NEX_WINDOWS_TARGET STREQUAL "external_values")
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE ws2_32)
+    endif()
+    if("runtime/third_party/tracy/public/TracyClient.cpp" IN_LIST NEX_WINDOWS_SOURCES)
+      target_link_libraries(${NEX_WINDOWS_TARGET} PRIVATE secur32)
+    endif()
+    get_target_property(NEX_WINDOWS_TYPE ${NEX_WINDOWS_TARGET} TYPE)
+    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE")
+      # Match the ordinary Unix worker stack reservation so checked source
+      # depth/action limits run before the Windows default1MiB is exhausted.
+      target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--stack,8388608")
+      get_target_property(NEX_WINDOWS_EXPORTS ${NEX_WINDOWS_TARGET} ENABLE_EXPORTS)
+      if(NEX_WINDOWS_EXPORTS)
+        target_link_options(${NEX_WINDOWS_TARGET} PRIVATE "-Wl,--export-all-symbols")
+      endif()
+    endif()
+    if(NEX_WINDOWS_TYPE STREQUAL "EXECUTABLE" AND NOT "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc" IN_LIST NEX_WINDOWS_SOURCES)
+      target_sources(${NEX_WINDOWS_TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/nex-host.rc")
+    endif()
+  endforeach()
+endif()

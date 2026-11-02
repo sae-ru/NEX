@@ -14,6 +14,20 @@ The sections below preserve earlier workflow versions and their requirements;
 their old phase counts do not replace this 41-phase contract. Query the selected
 compiler's doctor/descriptor and require a completed report for its exact bytes.
 
+## Native Windows acceptance adapter in development
+
+The installed workflow selects native PE executable/DLL names, uses physical
+SQLite-handle cleanup, and observes DLL load/unload mappings through Windows
+debug events. Windows bundles include their selected native symbol tools and an
+OpenSSL CLI with its measured PE dependency closure. These changes retain all
+41 mandatory phases and preserve the Unix paths.
+
+This adapter is under test. In particular, the operator-pinned task TCP and HTTP
+client providers still require Windows ports and matching dependencies. Successful
+compiler selection, bundle assembly or individual phases do not establish complete
+Windows SDK delivery. The current compiler selection has a separate
+[Windows smoke receipt](evidence/windows-current-compiler-2026-11-02.json).
+
 # Development0.136.0 / language0.25 SDK candidate
 
 Current development0.151 selects language0.27. Its installed acceptance adds a

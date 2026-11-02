@@ -144,7 +144,7 @@ def main():
     parser.add_argument('sdk',type=Path)
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
-    sdk=args.sdk.resolve();compiler=sdk/'bin/nex';resources=sdk/'share/nex'
+    sdk=args.sdk.resolve();compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex'
     if not compiler.is_file() or not (resources/'web/nex-source-exception-runtime.ts').is_file():
         parser.error('a025 installed SDK with source-error resources is required')
     root=args.output.resolve();root.mkdir(parents=True,exist_ok=False)
