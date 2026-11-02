@@ -15,9 +15,32 @@ import re
 import runpy
 import shutil
 import subprocess
+import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools'))
+from compiler_cohort import COHORT_HELPER_SHA256, compiler_cohort, compiler_field, typed_task_abi
+
+
+def prepare_project(folder, source, language, *, resume=False):
+    """Never retag or rewrite an existing project while resuming evidence."""
+    folder.mkdir(exist_ok=resume)
+    manifest = folder / 'nex.json'
+    source_path = folder / 'main.nex'
+    expected = {'schema': 'nex.project/1', 'language': language, 'entry': 'main.nex'}
+    if manifest.exists():
+        if json.loads(manifest.read_text(encoding='utf-8')) != expected:
+            raise RuntimeError('project language/configuration changed; use a new output directory')
+    elif source_path.exists():
+        raise RuntimeError('existing project lacks its manifest; use a new output directory')
+    if source_path.exists() and source_path.read_text(encoding='utf-8') != source:
+        raise RuntimeError('source changed; use a new output directory')
+    if not manifest.exists():
+        manifest.write_text(json.dumps(expected) + '\n', encoding='utf-8', newline='\n')
+    if not source_path.exists():
+        source_path.write_text(source, encoding='utf-8', newline='\n')
+    return folder
 
 
 def linux_path(path):
@@ -66,6 +89,8 @@ def main():
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=args.resume)
     report = {'schema': 'nex.windows-native-acceptance/1', 'ok': False,
+              'helper_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+              'cohort_helper_sha256': COHORT_HELPER_SHA256,
               'section': args.section,
               'producer_environment': 'native Windows' if native_producer else 'WSL '+args.distro, 'execution_environment': 'native Windows',
               'requires_WSL':not native_producer,
@@ -80,6 +105,8 @@ def main():
         prior = json.loads((out / 'report.json').read_text(encoding='utf-8'))
         if 'producer_sha256' not in prior:
             parser.error('older receipt lacks the producer binary pin; use a new output directory')
+        if any(prior.get(key) != report[key] for key in ('helper_sha256', 'cohort_helper_sha256')):
+            parser.error('acceptance helpers changed or lack pins; use a new output directory')
         assert prior.get('section', 'cpu-files') == args.section
         prior.setdefault('section', 'cpu-files')
         resume_count = prior.get('resume_count', 0) + 1
@@ -129,13 +156,7 @@ def main():
         return json.loads(result.stdout)
 
     def project(name, source):
-        folder = out / name
-        folder.mkdir(exist_ok=args.resume)
-        if args.resume and (folder / 'main.nex').exists():
-            assert (folder / 'main.nex').read_text(encoding='utf-8') == source, 'source changed; use a new output directory'
-        (folder / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1', 'language': '0.27', 'entry': 'main.nex'}) + '\n', encoding='utf-8')
-        (folder / 'main.nex').write_text(source, encoding='utf-8')
-        return folder
+        return prepare_project(out / name, source, report['cohort']['language'], resume=args.resume)
 
     def run_case(folder, label, entry='main', stdout='', failure=None, env=None, flags=(), reference=True):
         completed = {row['profile']: row for row in report['cases'] if row.get('name') == label and row.get('status') == 'passed' and 'sha256' in row}
@@ -181,15 +202,19 @@ def main():
             assert report['producer_sha256'] == previous_producer_sha256, 'producer binary changed; use a new output directory'
         report['dirty_diff_sha256'] = hashlib.sha256(command('source-diff', ['git', '-C', ROOT, 'diff', '--binary']).stdout).hexdigest()
         report['doctor'] = cli(out, 'doctor')
-        assert report['doctor']['language'] == '0.27'
         assert report['doctor']['llvm'].startswith('22.1.')
         report['index'] = cli(out, 'describe', '--kind', 'index')
+        report['cohort'] = compiler_cohort(report['doctor'], report['index'])
         if previous_index:
             assert report['index'] == previous_index, 'producer identity changed; use a new output directory'
         report['features'] = {field: cli(out, 'describe', '--field', field) for field in (
             'source_concurrency', 'structured_tasks_runtime', 'source_exceptions',
             'source_exceptions.source_providers', 'foreign_boundary', 'device', 'compute',
             'runtime_contracts', 'windows_core_target')}
+        for field, envelope in report['features'].items():
+            compiler_field(report['cohort'], envelope, field)
+        report['source_task_ABI'] = typed_task_abi(report['cohort'],
+            report['features']['source_exceptions.source_providers'])
         notice = out / 'notices.txt'
         # Read the complete original notices with the producer, preserving bytes.
         if native_producer:

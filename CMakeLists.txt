@@ -314,6 +314,7 @@ install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pyca
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -715,6 +716,8 @@ add_test(NAME native_targets COMMAND ${Python3_EXECUTABLE}
 add_test(NAME windows_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_targets.py $<TARGET_FILE:nex>)
 set_tests_properties(windows_targets PROPERTIES TIMEOUT 1200)
+add_test(NAME platform_compiler_cohort COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_cohort.py $<TARGET_FILE:nex>)
 add_test(NAME ios_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ios_targets.py $<TARGET_FILE:nex>)
 add_test(NAME mobile_projects COMMAND ${Python3_EXECUTABLE}

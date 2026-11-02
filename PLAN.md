@@ -1,3 +1,14 @@
+# Platform cohort preparation after SDK 0.159
+
+Windows CPU/storage/TypeScript and CUDA preparation now select supported027/028
+from matching doctor/index identities. Feature envelopes and ABI7 are checked;
+resume preserves physical source/manifests and existing graphs. Linux smoke also
+accepts028. CUDA --source-only checks seven real FFI signatures without claiming
+Windows binaries or hardware execution. Four focused cases passed on actual
+Python3.10/3.14; full regression, installed helper and current Linux/Windows gates
+remain separate. The public159 immutable SDK below is unchanged. General device,
+mobile/UI/Studio/converter/LLM measurement and every unfinished original item remain.
+
 # macOS development SDK 0.159 / ordinary language 0.28
 
 The [delivery receipt](docs/releases/0.159.0.json) accepts exact source
@@ -1401,7 +1412,7 @@ cross-target packaging, общие ресурсы и стабильный FFI о
 - [x] Переводить поддерживаемые скалярные операции в условия корректности: checked i64, деление/остаток, порядок вычисления, короткое замыкание, assert, ациклические вызовы и индуктивные циклы. Память, эффекты и рекурсия остаются за границей этого доказательства.
 - [x] Различать доказательство, контрпример входа/индуктивного состояния, противоречивые предусловия, неизвестно, тайм-аут и неподдерживаемую конструкцию; сохранять SMT-запросы и полный отчёт.
 - [x] Добавлено явное runtime-исполнение скалярных pre/post-контрактов через отдельно проверенный source-проект; исходная история сохраняется, арифметика/assert остаются проверяемыми независимо от Z3. См. docs/runtime-contracts.md и приёмку 0.152.
-- [ ] Расширить runtime-контракты на effectful/aggregate roots, исполнение loop-контрактов и source-синтаксис; соответствующие модели доказательств остаются отдельной работой.
+- [x] Расширить runtime-контракты на поддержанные effectful/aggregate и generic source roots, исполнение loop-контрактов и исходный синтаксис0.28. Приёмка Mac0.159 закреплена в docs/releases/0.159.0.json; соответствующие модели доказательств и новая платформенная приёмка остаются отдельной работой.
 - [x] Документировать границы доверия: Z3 и перевод условий доверены; результат не доказывает компилятор/backend/runtime/память/внешние библиотеки и не заменяет испытания.
 - [ ] Установить правила совместимости формата графа, библиотек и инструментов.
 - [ ] Подготовить миграции, резервное копирование, документацию и воспроизводимые сборки.

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 from acceptance import linux_path
+from compiler_cohort import COHORT_HELPER_SHA256, compiler_cohort
 
 SYNC = """import {entry} from './program.ts';
 let stdout='';console.log=value=>{stdout+=String(value)+'\\n';};
@@ -35,6 +36,8 @@ def main():
            *[('core',name,code,'') for name,code in [('overflow_add','E_OVERFLOW'),('overflow_sub','E_OVERFLOW'),('overflow_mul','E_OVERFLOW'),('overflow_div','E_OVERFLOW'),('divide_zero','E_DIV_ZERO'),('bad_index','E_BOUNDS')]],
            ('tasks','main',None,'42\n42\n'),('typed','main',None,'Я\0🧠\nfinished\n'),('typed','cancel','E_CANCELLED','')]
     report={'schema':'nex.windows-typescript-acceptance/1','ok':False,
+            'helper_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            'cohort_helper_sha256':COHORT_HELPER_SHA256,
             'producer_environment':'native Windows' if native else 'WSL','requires_WSL':not native,'TypeScript_execution_environment':'native Windows Node',
             'cases':[],'commands':[]}
     if native:report['producer_sha256']=hashlib.sha256(Path(args.producer).read_bytes()).hexdigest()
@@ -47,8 +50,18 @@ def main():
         return result.stdout
     report['node_version']=run('node-version',['node','--version']).decode().strip()
     try:
+        def discover(*arguments):
+            if native:
+                return json.loads(run('discovery-'+arguments[0], [args.producer,*arguments,'--json'],cwd=out))
+            return json.loads(run('discovery-'+arguments[0], ['wsl.exe','-d',args.distro,'--cd',linux_path(out),'--',args.producer,*arguments,'--json']))
+        report['doctor']=discover('doctor')
+        report['index']=discover('describe','--kind','index')
+        report['cohort']=compiler_cohort(report['doctor'],report['index'])
         for module,entry,error,stdout in cases:
             label=module+'-'+entry;folder=out/label
+            manifest=json.loads((args.projects/module/'nex.json').read_text(encoding='utf-8'))
+            if manifest.get('language')!=report['cohort']['language']:
+                raise RuntimeError('project language differs from the selected compiler; regenerate acceptance projects without rewriting their history')
             if native:
                 metadata=json.loads(run(label+'-emit',[args.producer,'emit','--kind','typescript','--entry',entry,'--directory',folder,'--json'],cwd=(args.projects/module).resolve()))
             else:

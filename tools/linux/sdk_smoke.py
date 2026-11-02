@@ -16,6 +16,9 @@ import threading
 import urllib.error
 import urllib.request
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from compiler_cohort import COHORT_HELPER_SHA256, compiler_cohort
+
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -33,11 +36,13 @@ def main():
             value=json.loads(p.stdout);assert p.returncode==0,(args,p.stdout,p.stderr);return value
         try:
             descriptor=cli('describe');doctor=cli('doctor');assert 'linux' in doctor['host']
+            index=cli('describe','--kind','index')
+            cohort=compiler_cohort(doctor,index,languages=('0.23','0.24','0.25','0.26','0.27','0.28'))
             pack=json.loads((resources/'llm/language-pack.json').read_text())
             language=doctor['language']
-            assert language in ('0.23','0.24','0.25','0.26','0.27') and descriptor['version']==pack['language_version']==language
+            assert descriptor['version']==pack['language_version']==language
             assert cli('guide','--kind','linux')['text']
-            report.update(language=language,toolchain=doctor['version'],compiler_sha256=hashlib.sha256(nex.read_bytes()).hexdigest(),helper_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+            report.update(language=language,toolchain=doctor['version'],cohort=cohort,compiler_sha256=hashlib.sha256(nex.read_bytes()).hexdigest(),helper_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),cohort_helper_sha256=COHORT_HELPER_SHA256)
             indexed=[*pack['documents'].values(),*pack['examples'].values()]
             for name in indexed:
                 assert (resources/name).read_bytes()==(source/name).read_bytes(),name

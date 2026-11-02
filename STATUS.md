@@ -1,3 +1,12 @@
+# Platform cohort preparation after SDK 0.159
+
+Windows/CUDA platform preparation now discovers supported027/028 from consistent
+compiler identities; Linux smoke includes028. Resume refuses different source
+versions without rewriting existing stores. Four targeted cases passed on actual
+Python3.10/3.14, including CUDA source-only FFI signatures and mixed-identity
+refusal. Full regression, installed helper and actual current Windows/Linux/device
+qualification remain separate gates. The accepted159 SDK archive is unchanged.
+
 # macOS development SDK 0.159 / ordinary language 0.28
 
 The [delivery receipt](docs/releases/0.159.0.json) accepts exact source
