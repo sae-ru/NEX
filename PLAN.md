@@ -1,3 +1,19 @@
+# Native entry ABI — source development 0.160
+
+Selected native library entries now describe their actual verified LLVM ABI in
+build JSON: hidden source-error output, physical types/order/attributes,
+target/layout, matching runtime and task-executor boundaries. Four focused
+cases passed, including 2000 native host calls and owned cleanup checks across
+Debug/Release, repaired metadata, archived sources and a real task-provider
+project. Full/current installed acceptance remains a separate gate. No source
+syntax, graph migration or language 0.28 change is introduced.
+
+The exact public 0.159 SDK separately passed 1400 native iOS Simulator calls and
+cleanup checks. Its scoped evidence is in docs/evidence/0.159.0-ios-native;
+UIKit, physical iPhones and complete mobile/UI delivery remain original open work.
+Every other unfinished item below, including general devices, Studio, conversion
+and measured LLM token savings, remains in scope.
+
 # Platform cohort preparation after SDK 0.159
 
 Windows CPU/storage/TypeScript and CUDA preparation now select supported027/028

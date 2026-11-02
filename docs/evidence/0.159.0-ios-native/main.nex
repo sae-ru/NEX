@@ -1,0 +1,24 @@
+module ios_native159;
+struct Fault<T> {payload:T;}
+pub fn step(x:i64)->i64 !{throw}
+ requires(x>=0)
+ ensures(value=>x!=9 && x!=13 && value==x+1)
+{
+ let held:list<str>=["Я\u0000🧠","tail"];
+ try {
+  if x==7 || x==13 {throw(Fault<list<str>>(held));}
+  return x+1;
+ } catch(error:Fault<list<str>>) if x==7 {
+  assert(error.payload==held);return x+1;
+ } finally {
+  assert(x!=9223372036854775807);
+  assert(len(held)==2 && len(held[0])==3);
+ }
+}
+fn normal0()->i64 !{throw}{return step(0);}
+fn normal41()->i64 !{throw}{return step(41);}
+fn recovered()->i64 !{throw}{return step(7);}
+fn pre()->i64 !{throw}{return step(-1);}
+fn post()->i64 !{throw}{return step(9);}
+fn escaped()->i64 !{throw}{return step(13);}
+fn overflow()->i64 !{throw}{return step(9223372036854775807);}

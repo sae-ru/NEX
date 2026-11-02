@@ -51,6 +51,11 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 ## Состояние разработки
 
+В исходниках версии 0.160 добавляется [описание ABI входов нативной библиотеки](docs/native-entry-abi.md)
+для C++ хостов с соответствующим runtime; опубликованный SDK ниже остаётся 0.159.
+Для него также проверено [нативное исполнение в iOS Simulator](docs/evidence/0.159.0-ios-native/README.md):
+1400 вызовов и проверок очистки в Debug/Release. Полная поставка мобильных приложений ещё впереди.
+
 Текущий development SDK: **toolchain 0.159.0 / язык 0.28 / task ABI 7**.
 Обычный CLI принимает [контракты в исходниках](docs/source-contracts.md): чистые
 `requires` / `ensures` и проверки циклов `invariant` / `decreases`, включая

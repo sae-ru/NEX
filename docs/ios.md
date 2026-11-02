@@ -1,4 +1,18 @@
-# iOS static archives — toolchain 0.61
+# iOS native libraries
+
+The exact published0.159 SDK/language0.28 now has a scoped
+[native Simulator execution receipt](evidence/0.159.0-ios-native/README.md):
+Debug/Release standalone IOSSIMULATOR processes on iOS27.1 passed1400 native
+calls and1400 owned cleanup checks, including typed source errors, contracts
+and checked overflow. This does not qualify UIKit, physical devices or mobile
+application delivery. The original archive/build contract below dates to0.61.
+
+Source development0.160 adds [physical entry ABI discovery](native-entry-abi.md).
+Use it for a matching source build; with the published0.159 SDK inspect the
+actual LLVM signature. A native symbol alone does not describe hidden error
+outputs or the complete host calling contract.
+
+## Original static archive contract — toolchain 0.61
 
 A macOS NEX compiler can produce a native static library for:
 

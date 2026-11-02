@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.159.0 LANGUAGES C CXX)
+project(NEX VERSION 0.160.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -718,6 +718,10 @@ add_test(NAME windows_targets COMMAND ${Python3_EXECUTABLE}
 set_tests_properties(windows_targets PROPERTIES TIMEOUT 1200)
 add_test(NAME platform_compiler_cohort COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_cohort.py $<TARGET_FILE:nex>)
+add_test(NAME native_entry_abi COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_entry_abi.py $<TARGET_FILE:nex>)
+set_tests_properties(native_entry_abi PROPERTIES TIMEOUT 900)
+install(FILES tests/native_entry_abi.py DESTINATION share/nex/tests)
 add_test(NAME ios_targets COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ios_targets.py $<TARGET_FILE:nex>)
 add_test(NAME mobile_projects COMMAND ${Python3_EXECUTABLE}

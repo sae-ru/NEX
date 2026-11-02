@@ -52,6 +52,11 @@ platform acceptance.
 
 ## Development status
 
+Source development 0.160 adds [native library entry ABI discovery](docs/native-entry-abi.md)
+for matching C++ hosts; the published SDK and accepted delivery below remain 0.159.
+That exact SDK also has scoped [native iOS Simulator execution](docs/evidence/0.159.0-ios-native/README.md):
+1400 calls and cleanup checks across Debug/Release. Complete mobile delivery remains open.
+
 Current development SDK: **toolchain 0.159.0 / language 0.28 / task ABI 7**.
 The ordinary CLI accepts [source contracts](docs/source-contracts.md): pure
 `requires` / `ensures` clauses and loop `invariant` / `decreases` checks, including

@@ -400,7 +400,9 @@
     "runtime_contracts": "docs/runtime-contracts.md",
     "runtime_contract_receipt_schema": "llm/runtime-contracts.schema.json",
     "source_contracts": "docs/source-contracts.md",
-    "source_contract_migration": "docs/source-contract-migration.md"
+    "source_contract_migration": "docs/source-contract-migration.md",
+    "native_entry_abi": "docs/native-entry-abi.md",
+    "native_entry_abi_schema": "llm/native-entry-abi.schema.json"
   },
   "document_access": "nex guide --kind source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -3868,5 +3870,20 @@
     "source_language": "0.28",
     "status": "public028_source_contract_development",
     "test": "tests/source_contracts.py"
+  },
+  "native_entry_abi": {
+    "schema": "nex.native-entry-abi/1",
+    "schema_document": "llm/native-entry-abi.schema.json",
+    "guide": "docs/native-entry-abi.md",
+    "command": "nex build --library --entry NAME --json",
+    "result_field": "native_entry_abi",
+    "metadata_field": "native_entry_abi",
+    "signatures_from_verified_llvm": true,
+    "source_error_output_explicit": true,
+    "selected_roots_only": true,
+    "task_entries_require_executor": true,
+    "matching_runtime_required": true,
+    "stable_public_abi": false,
+    "guide_kind": "native-entry-abi"
   }
 }

@@ -1336,6 +1336,66 @@ public:
     out<<"  }"<<loc(main.span)<<"\n"<<globals.str()<<"}\n";return debug.str()+out.str();
   }
 };
+std::string nativeEntryABI(const Program &p,const BuildOptions &options,const BuildResult &result,
+                           const std::string &ir,bool tasks) {
+  llvm::LLVMContext context;llvm::SMDiagnostic diagnostic;
+  auto buffer=llvm::MemoryBuffer::getMemBufferCopy(ir,"native library entry ABI");
+  auto module=llvm::parseIR(buffer->getMemBufferRef(),diagnostic,context);
+  if(!module||llvm::verifyModule(*module,&llvm::errs()))throw Error("E_NATIVE_ABI","cannot inspect verified native library LLVM");
+  auto llvmType=[](llvm::Type *type){std::string text;llvm::raw_string_ostream out(text);type->print(out);return text;};
+  std::set<std::string> roots{p.function(options.entry).name};
+  for(const auto &name:options.libraryExports)roots.insert(p.function(name).name);
+  llvm::json::Array entries;
+  for(const auto &name:roots){
+    const auto &f=p.function(name);
+    const bool continuation=tasks&&(supportsSourceExceptionTasks(p)||f.effects.contains("task"));
+    auto symbol=nativeSymbol(name)+(continuation?"__task_step":"");
+    auto *function=module->getFunction(symbol);
+    if(!function)throw Error("E_NATIVE_ABI","selected native entry has no LLVM declaration: "+name,f.span);
+    if(!continuation&&function->arg_size()!=f.params.size()+unsigned(f.closure)+unsigned(f.effects.contains("throw")))
+      throw Error("E_NATIVE_ABI","physical native entry arguments differ from checked source: "+name,f.span);
+    llvm::json::Array parameters,effects;for(const auto &effect:f.effects)effects.push_back(effect);
+    unsigned index=0;
+    for(const auto &argument:function->args()){
+      llvm::json::Object parameter{{"index",index},{"llvm_type",llvmType(argument.getType())},
+        {"llvm_attributes",function->getAttributes().getParamAttrs(index).getAsString()}};
+      if(continuation)parameter["role"]="task_executor_argument";
+      else if(f.closure&&index==0)parameter["role"]="closure_environment";
+      else if(index-unsigned(f.closure)<f.params.size()){
+        const auto &source=f.params[index-unsigned(f.closure)];parameter["role"]="source_parameter";
+        parameter["source_name"]=source.name;parameter["source_type"]=typeName(source.type);
+        parameter["ownership"]=source.type.heap()?"same_runtime_handle_valid_for_call":"value";
+      }else{
+        if(!argument.getType()->isPointerTy())throw Error("E_NATIVE_ABI","source error output is not a pointer",f.span);
+        parameter["role"]="source_error_out";parameter["initialize"]="null_handle";
+        parameter["runtime_cpp_type"]="nexrt::Handle **";
+        parameter["on_non_null"]="nex_source_error_unhandled";
+      }
+      parameters.push_back(std::move(parameter));++index;
+    }
+    bool direct=!continuation&&!f.closure&&!function->isDeclaration()&&
+      function->getCallingConv()==llvm::CallingConv::C&&!function->isVarArg();
+    entries.push_back(llvm::json::Object{{"source_function",name},{"native_symbol",symbol},
+      {"source_result",typeName(f.result)},{"source_effects",std::move(effects)},
+      {"source_function_hash",hash(json(canonical(f),false))},{"defined",!function->isDeclaration()},
+      {"mode",continuation?"task_executor":f.closure?"closure":"synchronous"},
+      {"direct_host_call",direct},{"calling_convention",int64_t(function->getCallingConv())},
+      {"variadic",function->isVarArg()},{"llvm_function_type",llvmType(function->getFunctionType())},
+      {"llvm_function_attributes",function->getAttributes().getFnAttrs().getAsString()},
+      {"return",llvm::json::Object{{"llvm_type",llvmType(function->getReturnType())},
+        {"llvm_attributes",function->getAttributes().getRetAttrs().getAsString()},
+        {"ownership",continuation?"executor":f.result.heap()?"same_runtime_scope_managed_handle":f.result==Type::Unit?"none":"value"}}},
+      {"parameters",std::move(parameters)}});
+  }
+  return json(llvm::json::Object{{"schema","nex.native-entry-abi/1"},{"toolchain",NEX_VERSION},
+    {"language",programLanguage(p)},{"compiler_build",NEX_BUILD_ID},{"build_key",result.key},
+    {"library_abi",result.libraryABI},{"target",result.target},{"compiler_target",module->getTargetTriple().str()},
+    {"data_layout",module->getDataLayoutStr()},
+    {"llvm_sha256",llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(ir)),true)},
+    {"stable_public_abi",false},{"runtime_header","nex_host.h"},
+    {"synchronous_call_scope","nexrt::RequestScope"},{"cleanup_after_scopes","nex_runtime_finish"},
+    {"task_calls_require_executor",true},{"entries",std::move(entries)}},false);
+}
 std::string lower(const std::string &source,const std::string &sourcePath,const std::string &triple,const std::string &layout) {
   mlir::DialectRegistry registry;
   registry.insert<mlir::arith::ArithDialect,mlir::cf::ControlFlowDialect,mlir::func::FuncDialect,mlir::memref::MemRefDialect,mlir::LLVM::LLVMDialect>();
@@ -2566,7 +2626,17 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   };
   auto buildIntact=[&](){try{return readFile((folder/"complete").string())==completion();}catch(const std::exception &){return false;}};
   auto taskIntact=[&](){if(taskProviders&&options.taskDebug&&(!std::filesystem::is_regular_file(folder/"task-debug-catalog.json")||readFile((folder/"task-debug-catalog.json").string())!=debugCatalogText||!std::filesystem::is_regular_file(folder/"task-debug-sources.json")||readFile((folder/"task-debug-sources.json").string())!=debugSourcesText))return false;if(taskProviders&&profiling&&(!std::filesystem::is_regular_file(folder/"task-profile-catalog.json")||readFile((folder/"task-profile-catalog.json").string())!=profileCatalogText))return false;return !taskProviders||(std::filesystem::is_regular_file(result.taskProviderFile)&&readFile(result.taskProviderFile)==taskProviderText);};
-  if(buildIntact()&&taskIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact){verifyToolchain();result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=tasks?localNames.size():plan.units.size();return result;}
+  auto entryABIIntact=[&](){
+    if(!options.libraryEntry)return true;
+    try{
+      result.nativeEntryABI=nativeEntryABI(p,options,result,readFile(result.llvm),tasks);
+      auto metadata=llvm::json::parse(readFile((folder/"build.json").string()));
+      const auto *record=metadata?metadata->getAsObject():nullptr;
+      const auto *abi=record?record->get("native_entry_abi"):nullptr;
+      return abi&&json(*abi,false)==result.nativeEntryABI;
+    }catch(const Error &){return false;}
+  };
+  if(buildIntact()&&taskIntact()&&(result.notices.empty()||(std::filesystem::is_regular_file(result.notices)&&readFile(result.notices)==notices))&&debugIntact()&&nativeIntact&&entryABIIntact()){verifyToolchain();result.cached=true;result.reusedModules=sourceUnits.size();result.reusedFunctions=tasks?localNames.size():plan.units.size();return result;}
   std::filesystem::create_directories(folder);
   // Compile the exact captured runtime inputs, even if a development checkout changes meanwhile.
   auto runtimeProjection=std::filesystem::absolute(std::filesystem::path(directory)/"runtime-inputs"/hash(runtimeIdentity));
@@ -2613,6 +2683,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   }
   result.compiledModules=compiledSourceUnits.size();result.reusedModules=sourceUnits.size()-compiledSourceUnits.size();
   writeFile(result.llvm,unitArtifacts.empty()&&options.functionsOnly?lower(mlir,snapshot.path,compilerTarget,dataLayout):linkIR(unitArtifacts,snapshot.path));
+  if(options.libraryEntry)result.nativeEntryABI=nativeEntryABI(p,options,result,readFile(result.llvm),tasks);
   writeFile(result.compilation,json(llvm::json::Object{{"schema","nex.compilation/1"},{"granularity",tasks?"continuation_image":"function"},{"revision",revision(p)},{"build_key",key},
     {"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"compiled_functions",result.compiledFunctions},{"reused_functions",result.reusedFunctions},{"units",std::move(compiledUnits)},{"dependencies",std::move(plan.dependencies)},{"static_libraries",llvm::json::Array(libraryInputs)}})+"\n");
   if(taskProviders&&profiling){
@@ -2788,6 +2859,11 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   writeFile((folder/"library-abi.json").string(),json(llvm::json::Value(std::move(abiRecord)))+"\n");
   auto buildRecord=llvm::json::Object{{"schema","nex.build/1"},{"task_limits",taskLimitsJSON(options.taskLimits,tasks)},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug},{"task_debug_metadata_hash",taskDebugHash},{"task_limits_specified",options.taskLimitsSpecified},{"revision",revision(p)},{"key",key},{"compiler_build",NEX_BUILD_ID},{"profile",options.profile},{"target",target},{"host",host},{"host_compatible",toolchain.hostCompatible},{"toolchain_inputs",toolchain.identity},{"compiler_target",compilerTarget},{"data_layout",dataLayout},{"linker",toolchain.linker},{"kind",options.deferredLink?"object_archive":server?"http_server":options.libraryEntry?"static_library":"executable"},{"final_kind",server?"http_server":options.libraryEntry?"static_library":"executable"},{"position_independent",options.positionIndependent},{"deferred_link",options.deferredLink},{"entry",options.entry},{"foreign_catalogue",options.foreignCatalogue},{"compiler",compiler},{"compiler_identity",identity.output},{"llvm",LLVM_VERSION_STRING},{"source_projection",snapshot.path},{"runtime_source_projection",runtimeProjection.string()},{"toolchain_fingerprint",toolchainFingerprint},{"runtime_components",std::move(runtimeComponents)},{"runtime_inputs",std::move(runtimeInputs)},{"runtime_requirements",llvm::json::Object{{"wire",wire},{"storage",storage},{"files",files},{"foreign",foreign},{"profiling",profiling},{"parallel",parallel},{"tasks",tasks},{"task_file_reads",taskFileReads},{"task_file_writes",taskFileWrites},{"task_execution_abi",tasks?taskExecutionABI:0},{"task_debug",options.taskDebug}}},{"notices",result.notices},{"compilation",result.compilation},{"compiled_modules",result.compiledModules},{"reused_modules",result.reusedModules},{"completion_schema",taskProviders?"nex.native-completion/4":"nex.native-completion/2"},{"completion_inputs",llvm::json::Array(completionInputs)}};
   buildRecord["static_link_inputs"]=nativeStaticLinkInputs(toolchain,!options.deferredLink&&storage,!options.deferredLink&&foreign,!options.deferredLink&&server);
+  if(options.libraryEntry){
+    auto abi=llvm::json::parse(result.nativeEntryABI);
+    if(!abi)throw Error("E_NATIVE_ABI","invalid native entry ABI record");
+    buildRecord["native_entry_abi"]=std::move(*abi);
+  }
   if(supportsTaskFileStreams(p)){
     buildRecord["task_file_streams"]=taskFiles.streams;
     (*buildRecord.getObject("runtime_requirements"))["task_file_streams"]=taskFiles.streams;

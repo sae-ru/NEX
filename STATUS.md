@@ -1,3 +1,17 @@
+# Native entry ABI — source development 0.160
+
+Native library builds expose bounded `native_entry_abi` JSON from verified LLVM,
+including hidden source-error outputs, physical types/attributes, target/layout,
+runtime cohort and executor-only task boundaries. Four focused cases passed:
+Debug/Release each executed 1000 matching-runtime host calls and cleanup checks;
+cache/metadata repair, archived source and a real static task project were checked.
+Full regression and installed acceptance for this source development remain open;
+the accepted public 0.159 SDK archive remains unchanged. Language stays 0.28.
+
+The exact 0.159 SDK also has a scoped native iOS Simulator receipt: 1400 calls and
+cleanup checks across two target processes. This is standalone runtime execution;
+UIKit, physical devices and complete mobile delivery remain pending.
+
 # Platform cohort preparation after SDK 0.159
 
 Windows/CUDA platform preparation now discovers supported027/028 from consistent

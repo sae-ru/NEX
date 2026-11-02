@@ -18,6 +18,11 @@ Wasm has a narrower i64/bool/unit contract; reachable source errors, finally,
 heap values and effects remain unsupported there. Other platform restrictions
 remain explicit in the compiler descriptor and platform guides.
 
+Native library build metadata describes physical entry signatures in
+[`native_entry_abi`](native-entry-abi.md), including hidden source-error output
+arguments. This compiler-private host interface does not change source types,
+syntax, graph identities or language0.28.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external
