@@ -1,0 +1,236 @@
+{
+  "schema": "nex.debugger-followup/1",
+  "toolchain_source_development": "0.160.0",
+  "language": "0.28",
+  "source_parent": "953715afdc80c6a677a3427ae41240fb85964f86",
+  "tested_file_sha256": {
+    "debug/lldb_nex.py": "ddd91ea6ccb0328270eb02f1b0cb4817ed6850a21ff14aee61e1e0b485cb7183",
+    "tests/task_debugging.py": "bb5f09e1d856609392a36f7238f44e9417451213b418f121731f2ff1848194d0",
+    "tests/source_exception_task_lldb.py": "e02191d54520c397e824c8c7f5da7bd2dc0a0d64aa49059d223e542995909ef7",
+    "tests/source_exception_module_debug.py": "4f928348607edf16f75f6ad66d337010a9aa9e94d5418a4cc90cb9f39612e2bf",
+    "tests/source_exception_module_http_debug.py": "76b1c08b2fc4a3e53f5624041f83d235943644749e7f466763f960769704b82d"
+  },
+  "production_change": "Decode debug manifests and relocation receipts explicitly as UTF-8; resume/listener logic unchanged.",
+  "debugger": {
+    "version": "23.1.5 APT snapshot",
+    "upstream_commit": "a738f2737189bcc1de75c25e8cd1d4b466c9526e",
+    "package_manifest": "tools/linux/debugger-packages.json",
+    "package_manifest_sha256": "90ad76507eb447bf407a17026e359181862f7d0d87c09c2d5dc9ce8fcba102c3",
+    "maintained_image_id": "sha256:afb45b680072a4e550ffbebfb0277afe2b557ef10d647fce93f2442dddad1a4c",
+    "compiler_LLVM_MLIR_Clang_LLD": "22.1.8",
+    "selection": "Only debugger tools precede compiler in PATH."
+  },
+  "original_Linux_full": {
+    "source": "d2ff487bfeefcf0f672014e3fbcbf9a6c674b01d",
+    "toolchain": "0.159.0",
+    "groups": 297,
+    "passed": 294,
+    "failed": [
+      "source_exception_task_watch",
+      "source_exception_module_debug",
+      "source_exception_module_http_debug"
+    ],
+    "debugger": "22.1.8",
+    "accepted": false,
+    "failures_preserved": true
+  },
+  "original_binary_replays": {
+    "same_original_reader_runtime_and_machine_code": true,
+    "passed": [
+      "debug-loop-handler O0",
+      "debug-loop-handler O2",
+      "debug-calls-static O0",
+      "host-mixed O0 debug-overlap"
+    ],
+    "initial_module_replay": "C-locale implicit ASCII JSON decoding failed; UTF-8 locale replay passed. Production reader decoding is now explicit.",
+    "original_assertions_retained": true
+  },
+  "Linux_focused": {
+    "compiler_source": "d2ff487bfeefcf0f672014e3fbcbf9a6c674b01d",
+    "compiler_version": "0.159.0",
+    "compiler_sha256": "a82c024c96344e31a1e39cdd060e67471d1c7bb7c8289a57cf6d5ac66f597102",
+    "current_reader_and_tests": true,
+    "source_and_original_build_read_only": true,
+    "runtime_cache": "Independent writable CoW copies for modular test fixtures.",
+    "four_group_run": [
+      {
+        "name": "task_debugging_native",
+        "passed": true,
+        "seconds": 86.7269
+      },
+      {
+        "name": "source_exception_task_watch",
+        "passed": false,
+        "seconds": 29.3352
+      },
+      {
+        "name": "source_exception_module_debug",
+        "passed": true,
+        "seconds": 99.5025
+      },
+      {
+        "name": "source_exception_module_http_debug",
+        "passed": true,
+        "seconds": 142.345
+      }
+    ],
+    "watch_initial_failure": {
+      "case": "debug-control-limit O0",
+      "debugger_message": "lost connection",
+      "expected_inferior_exit": 70,
+      "observed_inferior_exit": -1,
+      "cause": "unresolved",
+      "preserved": true
+    },
+    "same_binary_diagnostic_replays": [
+      {
+        "run": 0,
+        "lldb_exit": 0,
+        "inferior_exit": 70,
+        "ok": true
+      },
+      {
+        "run": 1,
+        "lldb_exit": 0,
+        "inferior_exit": 70,
+        "ok": true
+      },
+      {
+        "run": 2,
+        "lldb_exit": 0,
+        "inferior_exit": 70,
+        "ok": true
+      }
+    ],
+    "separate_watch_run": {
+      "passed": true,
+      "criteria_unchanged": true,
+      "LLDB_comparisons": 24,
+      "DAP_comparisons": 2,
+      "source_programs": 12,
+      "all_stop_pauses": 36,
+      "logical_step_cases": 2,
+      "deadline_cases": 2,
+      "watches": 164,
+      "captures": 34,
+      "watch_rejections": 84,
+      "forced_C_locale_cases": [
+        {
+          "name": "watch-c-locale",
+          "optimization": "0",
+          "source_sha256": "1ae796a171a6dedfb7a623343026b277b99ffe82d5f2971dc98170d7a12f6a46",
+          "image_sha256": "237f5c0850fa1751b3fa0f386893727328d7100c1170570b8e177071536c6e9a",
+          "manifest_sha256": "8c96118da461f9446bcbde90949c93158f9e2e26dc6049e3e23a2ca56acb770e",
+          "LLDB_report_sha256": "ec188c3f80fe629081c14ef3fef880c213242efee89c770d8ed625a5846d5ced",
+          "pauses": 1,
+          "step_observations": 0,
+          "expected_exit": 42,
+          "watches": 5,
+          "captures": 1,
+          "watch_rejections": 2,
+          "passed": true
+        },
+        {
+          "name": "watch-c-locale",
+          "optimization": "2",
+          "source_sha256": "1ae796a171a6dedfb7a623343026b277b99ffe82d5f2971dc98170d7a12f6a46",
+          "image_sha256": "d2921c2d5b7af996c80c94e8f97f5a5bae818a0118cc8b9242e3f3531d7a586a",
+          "manifest_sha256": "909206929bb5c104b3f4077433215b329608f931ac3e185f3222b6a3847238af",
+          "LLDB_report_sha256": "575d02a0f40b894b1d0de767c75078ed1636297bb58dca550178f9d46664bc1c",
+          "pauses": 1,
+          "step_observations": 0,
+          "expected_exit": 42,
+          "watches": 5,
+          "captures": 1,
+          "watch_rejections": 2,
+          "passed": true
+        }
+      ]
+    }
+  },
+  "Mac_focused": {
+    "compiler_version": "0.160.0",
+    "compiler_sha256": "d4b4752945f33cc67bd644d3ab13779de76b5002e61f54aeebf831854b9c3530",
+    "groups": [
+      "task_debugging_native",
+      "source_exception_task_watch"
+    ],
+    "passed": true,
+    "coverage": [
+      "Actual LLDB and DAP task checks",
+      "Unicode manifest/formatter paths under a UTF-8 environment",
+      "Invalid UTF-8 manifest rejected",
+      "Unicode and NUL watch contents with LC_ALL=C, PYTHONUTF8=0, PYTHONCOERCECLOCALE=0"
+    ]
+  },
+  "preceding_Mac_full": {
+    "groups": 298,
+    "passed": 296,
+    "failed_timeouts": [
+      "task_native_steps",
+      "compiled_workers_native"
+    ],
+    "host_sleep_observed": true,
+    "unchanged_two_group_repeat_passed": true,
+    "full_accepted": false
+  },
+  "local_evidence": [
+    {
+      "path_relative_to_build": "platform-cohort-160/linux-arm64-v2/terminal-summary.json",
+      "sha256": "1afda4b0c89150ddd99f4ea59a5d5b46eb671d781ede192321a0e14191b0fcbd"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/lldb-resume-study-v1/lldb23-original-binary-results.json",
+      "sha256": "868662db012dc99d23e3ca331895fdd42a5b9f7a606d4f60869e8493dc520ef7"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/lldb-resume-study-v1/lldb23-utf8-original-binary-results.json",
+      "sha256": "98cf62d33c00aa07f0a04049914d58cdc8674a4202d7f1af501c0ab5fa150db7"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/linux-lldb23-groups-v2/report.json",
+      "sha256": "8d90bc6b0637bc21128b39ab4377ad0bc3444d8919c7555459c9c7bfb54755c7"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/linux-lldb23-groups-v2/groups.xml",
+      "sha256": "2a9be810ae87391c13c1aa95d35ab4b8b539065e55e14e49d7b7cdf668c0cc67"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/linux-lldb23-watch-v3/report.json",
+      "sha256": "21da17421193354db3f531ed887e8a0dca25a5bb32e8f9921e9662e447661b3c"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/linux-lldb23-watch-v3/watch/report.json",
+      "sha256": "8cb2627742b90efefd618697a70386e9d754777ce7658b7111b047f6f648551f"
+    },
+    {
+      "path_relative_to_build": "platform-cohort-160/lldb23-control-exit-replay-v1/results.json",
+      "sha256": "46e0e77f6c783b055a70135d159c3c77e3beff2e64f70d248b993554e13097dd"
+    },
+    {
+      "path_relative_to_build": "native-entry-abi-160/debugger-mac-groups-v2/report.json",
+      "sha256": "48e70473e0d4bd9ea119244d8a86657252a21eb492d23ee8d1b19f1b4fdc6a07"
+    },
+    {
+      "path_relative_to_build": "native-entry-abi-160/debugger-mac-groups-v2/groups.xml",
+      "sha256": "5e9763bb851542447dac49d4d0b24c229fe52d6a0c5dacde6367ec7d1c76a5f8"
+    },
+    {
+      "path_relative_to_build": "native-entry-abi-160/full-v2/report.json",
+      "sha256": "8d79b1cfbec921f9f7473e9ed46a245355318bbe343d2991107f1cc67ed79f08"
+    },
+    {
+      "path_relative_to_build": "native-entry-abi-160/sleep-timeout-recheck-v1/report.json",
+      "sha256": "8da20571bc94e6416b51f04a4dccf18f90307b8f0a3c5f9d319cf66029d9e85f"
+    }
+  ],
+  "limits": [
+    "Focused retained-compiler Linux checks do not qualify current0.160 compiler or SDK.",
+    "The intermittent Linux debugger lost connection remains unresolved.",
+    "Fresh complete regression and moved/restored portable SDK qualification remain required.",
+    "Published0.159 archive unchanged; no new platform acceptance or overall project completion."
+  ],
+  "current_Linux_full_accepted": false,
+  "current_SDK_accepted": false,
+  "goal_complete": false
+}

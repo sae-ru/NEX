@@ -1,6 +1,7 @@
 FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 ARG TARGETARCH
 ARG LLVM_APT_VERSION=1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80
+ARG LLDB_APT_VERSION=1:23.1.5~++20261028083854+a738f2737189-1~exp1~20261028203912.92
 ARG PATCHELF_VERSION=0.18.0-1.1build1
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg xz-utils unzip \
@@ -8,11 +9,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && gpg --show-keys --with-colons /tmp/llvm.asc | awk -F: '$1 == "fpr" {print $10}' | grep -qx '6084F3CF814B57C1CF12EFD515CF4D18AF4F7421' \
     && gpg --dearmor -o /usr/share/keyrings/llvm.gpg /tmp/llvm.asc \
     && echo 'deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-22 main' > /etc/apt/sources.list.d/llvm.list \
+    && echo 'deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-23 main' > /etc/apt/sources.list.d/nex-lldb23.list \
     && apt-get update && apt-get install -y --no-install-recommends \
        clang-22="${LLVM_APT_VERSION}" llvm-22-dev="${LLVM_APT_VERSION}" \
        libmlir-22-dev="${LLVM_APT_VERSION}" mlir-22-tools="${LLVM_APT_VERSION}" \
-       lld-22="${LLVM_APT_VERSION}" lldb-22="${LLVM_APT_VERSION}" libclang-rt-22-dev="${LLVM_APT_VERSION}" \
+       lld-22="${LLVM_APT_VERSION}" libclang-rt-22-dev="${LLVM_APT_VERSION}" \
+       lldb-23="${LLDB_APT_VERSION}" python3-lldb-23="${LLDB_APT_VERSION}" \
+       liblldb-23="${LLDB_APT_VERSION}" libllvm23="${LLDB_APT_VERSION}" libclang-cpp23="${LLDB_APT_VERSION}" \
        cmake make g++ python3 libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
+    && mkdir -p /opt/nex-debugger/bin \
+    && ln -s /usr/lib/llvm-23/bin/lldb /opt/nex-debugger/bin/lldb \
+    && ln -s /usr/lib/llvm-23/bin/lldb-dap /opt/nex-debugger/bin/lldb-dap \
+    && ln -s /usr/lib/llvm-23/bin/lldb-server /opt/nex-debugger/bin/lldb-server \
     && rm -rf /var/lib/apt/lists/* /tmp/llvm.asc
 RUN case "$TARGETARCH" in \
       arm64) node_arch=arm64; node_hash=1c4a9933a5e45bc88f54f70b5f91232c127ec49f1a5989d23fb85824c7adf9b7; \
@@ -27,7 +35,9 @@ RUN case "$TARGETARCH" in \
     && echo "$z3_hash  /tmp/z3.zip" | sha256sum -c - \
     && unzip -q /tmp/z3.zip -d /opt && mv "/opt/${z3_name}" /opt/z3 \
     && rm /tmp/node.tar.xz /tmp/z3.zip
-ENV PATH="/usr/lib/llvm-22/bin:/opt/z3/bin:${PATH}"
+ENV PATH="/opt/nex-debugger/bin:/usr/lib/llvm-22/bin:/opt/z3/bin:${PATH}"
+ENV NEX_LLDB=/usr/lib/llvm-23/bin/lldb NEX_LLDB_DAP=/usr/lib/llvm-23/bin/lldb-dap
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV NEX_Z3_EXECUTABLE=/opt/z3/bin/z3
 COPY web/package.json web/package-lock.json /opt/nex-web-deps/
 RUN npm --prefix /opt/nex-web-deps ci --ignore-scripts --no-audit --no-fund --cache /opt/nex-npm-cache \

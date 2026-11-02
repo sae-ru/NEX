@@ -1,3 +1,14 @@
+# Linux debugger and UTF-8 follow-up — source development 0.160
+
+Pin the Linux debugger independently of the LLVM/MLIR22.1.8 compiler. LLDB23
+passed four exact preserved binaries. Explicit UTF-8 metadata decoding and
+actual C-locale/Unicode-path regressions passed on Mac; retained Linux0.159
+compiler checks passed three debugger groups and a separate full watch group.
+The first combined run's intermittent `lost connection` remains unresolved and
+preserved in the [scoped record](docs/evidence/linux-debugger-0.160.0.json).
+Fresh full/current Linux and portable SDK0.160 qualification are still required.
+No remaining original PLAN item is removed by this checkpoint.
+
 # Native entry ABI — source development 0.160
 
 Selected native library entries now describe their actual verified LLVM ABI in

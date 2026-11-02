@@ -202,18 +202,19 @@ class TaskDebugging(harness.ToolchainCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return json.loads(result.stdout)
 
-    def lldb(self, built, commands):
+    def lldb(self, built, commands, env=None):
         debugger = shutil.which('lldb')
         self.assertIsNotNone(debugger, 'this acceptance requires actual LLDB with Python')
         manifest = Path(built['debug_manifest'])
         data = json.loads(manifest.read_text())
         argv = [debugger, '--no-lldbinit', '--batch', built['executable']]
         for command in ['settings set target.disable-aslr false',
-                        'command script import ' + json.dumps(data['formatter']),
-                        'nex-load-debug ' + json.dumps(str(manifest)) + ' --compiler ' + json.dumps(harness.NEX),
+                        'command script import ' + json.dumps(data['formatter'],ensure_ascii=False),
+                        'nex-load-debug ' + json.dumps(str(manifest),ensure_ascii=False) + ' --compiler ' + json.dumps(harness.NEX,ensure_ascii=False),
                         *commands]:
             argv += ['-o', command]
-        run = subprocess.run(argv, cwd=self.root, capture_output=True, text=True, timeout=120)
+        run = subprocess.run(argv, cwd=self.root, capture_output=True, text=True, timeout=120,
+                             env=None if env is None else {**os.environ, **env})
         (self.root/'lldb.stdout').write_text(run.stdout, newline="\n")
         (self.root/'lldb.stderr').write_text(run.stderr, newline="\n")
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
@@ -222,6 +223,37 @@ class TaskDebugging(harness.ToolchainCase):
             if line.startswith('{'):
                 rows.append(json.loads(line))
         return run, rows
+
+    def test_utf8_manifest_and_paths_reject_invalid_bytes(self):
+        self.root = self.root/'данные 🌍'
+        self.root.mkdir()
+        self.file = self.root/'main.nex'
+        built = self.private('''module task_locale;
+fn main()->i64 !{task}{
+ let text:str="A🌍\\u0000λ";
+ task_yield();assert(len(text)==4);return 0;
+}
+''')
+        manifest = Path(built['debug_manifest'])
+        original = manifest.read_bytes()
+        self.assertTrue(any(byte>=128 for byte in original))
+        environment = {'LC_ALL':'C.UTF-8','LANG':'C.UTF-8','PYTHONUTF8':'1'}
+        run,rows = self.lldb(built,[encoded('function_breakpoints',
+            breakpoints=[{'name':'task_locale::main'}]),'run','nex-tasks','continue'],env=environment)
+        self.assertTrue(any(row.get('schema')=='nex.task-debug-tasks/1' for row in rows),run.stdout)
+        self.assertIn('exited with status = 0',run.stdout)
+        data = json.loads(original)
+        manifest.write_bytes(b'{"invalid":"\xff"}')
+        try:
+            command = [shutil.which('lldb'),'--no-lldbinit','--batch',built['executable'],
+                '-o','command script import '+json.dumps(data['formatter'],ensure_ascii=False),
+                '-o','nex-load-debug '+json.dumps(str(manifest),ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False)]
+            rejected = subprocess.run(command,capture_output=True,text=True,timeout=30,
+                                      env={**os.environ,**environment})
+            self.assertNotEqual(rejected.returncode,0,rejected.stdout+rejected.stderr)
+            self.assertIn('utf-8',rejected.stderr.lower())
+        finally:
+            manifest.write_bytes(original)
 
     def test_real_compiled_stack_owned_slots_pure_watch_and_yield_step(self):
         built = self.private('''module task_debug;
