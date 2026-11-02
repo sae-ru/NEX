@@ -1,74 +1,105 @@
 # Промпт для продолжения NEX в Codex на Windows
 
-Скопируйте блок ниже в новый чат, открытый в вашем локальном репозитории NEX.
+Скопируйте блок ниже в новый чат, открытый в локальном репозитории NEX на Windows.
 
 ---
 
 Продолжи разработку и нативную проверку NEX на этой Windows-машине.
 
-NEX — Neural Execution Language: точный смысл и небольшие контексты для разных
-LLM, проверяемые программы и нативное исполнение. Язык0.27, source task ABI7.
-Текущий main поставляет development toolchain0.156.0. GitHub: sae-ru/NEX,
-репозиторий public, лицензия MIT. Пользователь разрешил commit/push результатов.
-Сохраняй его локальные изменения; используй рабочую ветку с префиксом codex/.
+NEX — Neural Execution Language (язык нейронного исполнения). Главная идея:
+передавать максимум точного смысла небольшим числом необходимых токенов,
+сохраняя высокую производительность и безопасное исполнение. Семантический граф,
+ограниченный контекст, точечные патчи и проверяемые контракты помогают разработке.
+Универсальное превосходство над C++/Python и экономия токенов между разными LLM
+ещё требуют измерений. Скомпилированной программе LLM не нужна.
 
-Начни с git status, git fetch origin, git log -1 и проверки выбранного
-компилятора через nex doctor --json и nex describe --kind index --json.
-Прочитай AGENTS.md, README.md, docs/windows-host.md,
-docs/windows-handoff-current.md, docs/releases/0.156.0.json и llm/SYSTEM_PROMPT.md.
-Для изменений языка прочитай docs/language.md и docs/grammar.ebnf.
-PLAN.md содержит оставшуюся работу, а не список уже доступных возможностей.
+GitHub: sae-ru/NEX, public, MIT. Пользователь разрешил commit/push результатов.
+Сохраняй локальные изменения; работай в ветке codex/. Прочитай AGENTS.md,
+README.md, docs/windows-host.md, docs/windows-handoff-current.md,
+llm/SYSTEM_PROMPT.md и описание фактически выбранного SDK в docs/releases/.
+PLAN.md содержит также будущие возможности. Для изменения языка прочитай
+normative docs/language.md и docs/grammar.ebnf.
 
-Принятый Mac-снимок компилятора: 3a220f36fc978e57756d254267605b4505cfbb57.
-288 групп CTest прошли; перемещённый и восстановленный SDK прошли по 40 фаз
-и 48 дополнительных сценариев на Python 3.10.22 и 3.14.9. Публикуемый архив — тот же
-неизменный архив, который создан до этих полных проверок.
-Это Mac-приёмка, а не доказательство работы текущего исходника на Windows.
+Целевой исходник новой проверки: development0.159.0, обычный язык0.28, task ABI7.
+Проверенный коммит исправления корневого примера:
+cd00dee0da5a8bb5559bff9682d646634715ca6d (codex/sdk159-root-manifest).
+Его предки содержат исходники0.159 и аппаратный отчёт Mac6b84f25.
+Выбери актуальный origin/main либо явно нужную ветку после git status/fetch/log.
+Фактические версии и возможности получи через nex doctor --json,
+nex describe --kind index --json и nex describe --field FIELD --json.
+Полную приёмку Mac проверяй по квитанции релиза; сама версия исходника её не доказывает.
 
-Сохранённая Windows-приёмка относится к0.152.1: 274 группы, 35 аппаратных CUDA
-случаев на RTX3090, установленный SDK31 и Compute Sanitizer. Внутренние48 skips
-перечислены в квитанции; не считай их исполненными. Сейчас нужно проверить новый
-main0.156 на текущем Windows-хосте. Язык0.27/ABI7 сохраняются; новые типизированные
-ошибки, finally, runtime loop/value contracts и их тесты должны работать вместе.
-Runtime contracts используют квитанции1/2/3/4. Generic-корни проверяются
-параметрически по bounds/constructor kinds и работают для всех специализаций.
-Source contract syntax ещё не поддерживается. Не принимай Mac-результаты за
-новую Windows/CUDA-приёмку.
+Ранее принятая Windows-проверка относится к0.152.1/language0.27:
+274 группы CTest,35 аппаратных CUDA-случаев RTX3090, SDK31 и Compute Sanitizer.
+В ней48 внутренних platform-only skips; не считай их исполненными.
+Сохрани эту квитанцию. Для0.159/0.28 нужна новая Windows-матрица.
+Mac0.159 отдельно прошёл150 браузерных проверок и21 OpenCL native/reference
+сценарий на Apple M5 Max плюс6 профилей памяти,47 событий ядер.
+Это аппаратная проверка Mac, а новая Windows/CUDA-приёмка остаётся задачей.
 
-Практический порядок:
-1. Выбери рабочую ветку от актуального origin/main с сохранением локальных правок.
-2. Проверь локальные Windows LLVM/MLIR22.1.x, Z3, SQLite/OpenSSL, Python 3.10+,
-   Node/npm, CMake и Ninja. Используй закреплённые зависимости
-   tools/windows/host-dependencies.lock.json и docs/windows-host.md.
-   Host CLANG64/UCRT и target LLVM-MinGW — разные C++ ABI; не смешивай их библиотеки.
-3. Запусти tools/windows/configure-host.ps1. Собери весь build/windows-host:
+Порядок работы:
+
+1. Проверь закреплённые LLVM/MLIR22.1.x, Z3, SQLite/OpenSSL, Python3.10+,
+   Node/npm, CMake/Ninja и tools/windows/host-dependencies.lock.json.
+   Host CLANG64/UCRT и target LLVM-MinGW имеют разные C++ ABI.
+   Запусти tools/windows/configure-host.ps1, затем:
    cmake --build build/windows-host -j4
    ctest --test-dir build/windows-host --output-on-failure
-   Сохрани registry, команды, JUnit, stdout/stderr и хеши неизменного compiler/resources.
-   Число групп выводи из текущего registry; учитывай явные platform-only skips.
-4. При отказе сохраняй исходный код, промежуточный IR и диагностику. Исправляй причину,
-   не ослабляй проверку. Сравнивай reference/native/TypeScript в применимых границах.
-   Используй актуальные тесты runtime_contracts.py, runtime_loop_contracts.py,
-   runtime_value_contracts.py, runtime_generic_contracts.py и task_debugging.py.
-5. Проверь установленный, перемещённый и восстановленный Windows SDK. Требуется
-   текущая полная40-фазная цепочка, включая --browser и --live; прежний SDK31
-   не закрывает это требование. Исключи source-tree fallback физическим запретом
-   доступа и отрицательными controls; подтверждай неизменность SDK и provenance.
-6. Подготовь CUDA provider текущим выбранным Windows-компилятором. Повтори
-   native/reference U8 Add/Affine, явное GPU/CPU placement, fallback policy,
-   scoped resources, enqueue/cancel/deadline и освобождение после физического fence.
-   Запусти Compute Sanitizer на фактических нативных приложениях. Проверяй
-   реальные device/kernel records; не выдавай probe за полную поддержку CUDA.
-7. Проверь SDL Tic-Tac-Toe из examples: правила, реальную очередь событий,
-   самостоятельный пакет без compiler/source и GPU readback. Новое исправление
-   Retina/letterboxing использует физический SDL presentation rectangle;
-   проверь DPI/resize на Windows. Добавлять большую игру не требуется.
-8. При наличии Windows NPU/D3D12/других ускорителей сначала выясни hardware/API/driver
-   и текущую поддержку. Чётко фиксируй pending вместо подмены CPU-исполнением.
-9. Обнови точные компактные evidence, README EN/RU и этот handoff. Выполни commit/push
-   проверенной рабочей ветки. Обновляй main на основе завершённой матрицы, без force-push.
+   Сохрани registry, JUnit, команды, stdout/stderr, compiler/resource hashes.
+   Число текущих групп и допустимые platform-only skips возьми из реального registry.
 
-Результат: нативная Windows-цепочка без обязательного WSL, честная актуальная
-матрица compiler/SDK/CUDA/GUI, сохранённые отказы и оставшиеся задачи. Не закрывай
-весь проект по одному успешному примеру: общие GPU kernels, mobile/UI, Studio,
-конвертер, source contract syntax и остальные исходные требования ещё открыты.
+2. Подготовь текущие платформенные инструменты к выбранному языку.
+   tools/windows/acceptance.py фиксирует0.27 в проектных манифестах и doctor;
+   experiments/owned-cuda/prepare.py тоже принимает только0.27.
+   Сделай выбор языка по согласованным doctor/descriptor и явной поддержке0.28,
+   заново проверь NEX-источники и получи реальные FFI-подписи/пины провайдера.
+   Исторический tools/windows/summarize_host.py выдаёт квитанцию0.152.1/0.27:
+   сохрани её происхождение; новая квитанция должна брать версии и хеши из новой сборки.
+   Изменение строки версии в старом отчёте или графе не является новой проверкой.
+
+3. Проверь согласованную работу типов, эффектов, checked arithmetic, Unicode,
+   immutable aggregates, source errors, finally и structured tasks.
+   Language0.28 добавляет requires/ensures и invariant/decreases; ложная проверка
+   даёт fatal E_ASSERT даже в release. Отмена, дедлайн и source error пропускают
+   postconditions; runtime-owned cleanup остаётся обязательной.
+   Проверь runtime_contracts.py, runtime_loop_contracts.py,
+   runtime_value_contracts.py, runtime_generic_contracts.py,
+   source_contract_cli.py, source_contract_projection.py и task_debugging.py.
+   Сравни native/reference/TypeScript в соответствующих границах.
+   Старые027 графы мигрируй явно через nex migrate с сохранением истории и ID.
+   При отказе сохраняй исходник, промежуточный IR и диагностику, исправляй причину.
+
+4. Проверь установленный, перемещённый и восстановленный Windows SDK текущей
+   версии. Для0.159 требуется41 maintained phase с --browser и --live;
+   старый SDK31 эту цепочку не закрывает. Подтверди provenance и неизменность
+   SDK, запрет fallback к исходникам/внешним зависимостям и отрицательные controls.
+   Платформенную изоляцию и доступность отладчика проверяй фактически на Windows.
+   Контракты и сборка production-web должны работать из установленного комплекта.
+
+5. Подготовь CUDA provider текущим Windows-компилятором и выполни реальные
+   native/reference U8 Add/Affine, GPU/CPU placement и fallback policy.
+   Проверь owned/scoped resources, enqueue/cancel/deadline и освобождение после
+   физического fence. Добавь встроенные028 контракты вместе с внешней проекцией,
+   generic-корни и профили видимых managed pools. Запусти Compute Sanitizer на
+   фактических native-приложениях; запиши device/kernel records и точные хеши.
+   Успех готового U8-провайдера имеет свой scope; общая компиляция GPU-ядер остаётся отдельной задачей.
+
+6. Проверь настоящие production Workers/UI в Chromium, Firefox и WebKit по
+   закреплённому npm lock, включая typed errors, pre/post traps и последующий
+   успешный запрос. Отдельно проверь source/server code closure в emitted client.
+   Build production assets и исполнение в браузере должны иметь отдельные результаты.
+
+7. Проверь examples/tic-tac-toe: правила, события, самостоятельный пакет без
+   compiler/source, GPU readback и DPI/resize. Mac Retina/letterboxing использует
+   физический SDL presentation rectangle; нужна Windows-проверка этих границ.
+   Разработка большой игры не входит в задачу языка.
+
+8. Для доступных Windows NPU/D3D12/других ускорителей выясни модель, API, драйвер
+   и поддержку в текущем descriptor. Проверь реальные аппаратные пути и их scope.
+   Общие GPU/NPU, полноценный Windows SDK, mobile/UI, Studio, конвертер,
+   большие системы и измерения стоимости LLM сохраняются в исходном PLAN.
+
+9. Обнови компактные evidence, описания EN/RU и этот handoff. Выполни commit/push
+   проверенной ветки; main обновляй по завершённой матрице без force-push.
+   В результате нужны actual compiler/SDK/CUDA/GUI receipts, сохранённые отказы
+   и точный список оставшейся работы. Весь проект требует выполнения исходного PLAN.

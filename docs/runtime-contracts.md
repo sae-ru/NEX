@@ -1,8 +1,13 @@
 # Executable pre/post contracts
 
-Development toolchain 0.152 adds an explicit source projection; 0.155 extends it
-to effectful functions and owned values. It uses the
-existing `nex.verification-contracts/1` format and language 0.27. Discover it with
+Toolchain0.152 introduced explicit runtime source projection;0.155 extended it
+to effectful functions and owned values, and0.156 added generic roots. The
+ordinary0.159 CLI selects language0.28 and can compose detached contracts with
+[inline source clauses](source-contracts.md). SDK0.156 retains language0.27.
+The `nex.verification-contracts/1` format remains version-selected: generate the
+actual source/revision/content pins with the selected compiler. Retained
+contracts and histories keep their original language; use an explicit reviewed
+migration for older graphs. Discover the selected scope with
 `nex describe --field runtime_contracts --json` and read this guide with
 `nex guide --kind runtime-contract --json`.
 

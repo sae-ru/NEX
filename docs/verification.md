@@ -4,7 +4,7 @@ Toolchain 0.152 additionally offers explicit [runtime pre/post generation](runti
 `nex verify` itself retains the proof-only behavior described below. A contract
 file alone does not activate runtime checks. Historical notes retain their scope.
 
-Toolchain 0.11 links Z3 to check an explicit subset of existing NEX 0.5 semantics. The first contract format is a separate versioned JSON document. It is tied to the semantic revision, exact complete source bundle and function content hashes. It does not change source syntax, execution behavior or graph identity. No language migration is needed for this tooling addition.
+The initial0.11 verifier introduced a separate versioned JSON contract tied to the semantic revision, exact complete source bundle and function content hashes. The current0.159 CLI uses language0.28 and the same `nex.verification-contracts/1` metadata format for its advertised scalar proof subset. Generate current pins with the selected compiler. Language0.28 additionally provides [runtime source clauses](source-contracts.md); those checks do not implicitly request a proof. Older histories require their explicit language migration before current CLI execution.
 
 ```sh
 nex contract examples/verification/main.nex --symbol increment -o /tmp/increment.json
@@ -17,7 +17,7 @@ nex verify examples/verification/main.nex --contracts /tmp/increment.json --json
 ```json
 {
   "schema": "nex.verification-contracts/1",
-  "language": "0.11",
+  "language": "0.28",
   "expected_revision": "CURRENT_SEMANTIC_REVISION",
   "source_hash": "EXACT_SOURCE_BUNDLE_HASH",
   "functions": [{
@@ -61,11 +61,11 @@ Function statuses are `proven`, `counterexample`, `inconsistent_preconditions`, 
 
 Defaults are 2,000 ms per solver query, Z3 resource limit 1,000,000 and a 30-second run budget. Use `--solver-timeout MS` (1..60,000), `--resource-limit COUNT` (1..100,000,000) and `--timeout SECONDS` (1..300). Other bounds are 64 root contracts, 64 clauses per list, 4,096 bytes per predicate, 64 loop annotations per function, 4,096 obligations per function, 256 active symbolic paths, 50,000 symbolic steps and 8 MiB per emitted query. Limits are reported explicitly and exhaustion is not success. These are work/output limits, not an OS memory sandbox for the solver.
 
-The proof trusts Z3 and this verifier's translation/VC rules. It does not prove the parser/checker, reference interpreter, MLIR/LLVM/TypeScript backends, runtime memory ownership, external libraries, compiler implementation or platform SDKs correct. Runtime checked arithmetic/assertions and native/interpreter/TypeScript tests remain necessary. Contract predicates are verification metadata; they are not automatically inserted as runtime pre/postcondition checks. Source-level contract syntax, general memory/resource proofs, recursive summaries and richer data models remain open work. Toolchain 0.12 links approved pre/postcondition intent to external task acceptance checks; see [tasks.md](tasks.md) for candidate rebinding, reviewed intent hashes and their limits.
+The proof trusts Z3 and this verifier's translation/VC rules. It does not prove the parser/checker, reference interpreter, MLIR/LLVM/TypeScript backends, runtime memory ownership, external libraries, compiler implementation or platform SDKs correct. Runtime checked arithmetic/assertions and native/interpreter/TypeScript tests remain necessary. Contract predicates are verification metadata; they are not automatically inserted as runtime pre/postcondition checks. Language0.28 source clauses provide runtime checks separately from this bounded proof subset. General memory/resource proofs, recursive summaries and richer proof data models remain open work. Toolchain 0.12 links approved pre/postcondition intent to external task acceptance checks; see [tasks.md](tasks.md) for candidate rebinding, reviewed intent hashes and their limits.
 
 ## Solver dependency
 
-The compiler needs Z3 development headers/library; generated native/browser applications do not link or execute Z3. Set `-DNEX_Z3_ROOT=/path/to/z3` for a prefix containing `include/z3++.h` and `lib/libz3` or the official distribution's `bin/libz3`. `nex doctor --json` reports the loaded solver version. This host was configured with the official Z3 5.3.1 ARM64 macOS release; its archive SHA256 is `0de02438052952153aab5d1361be4d61b6d226337440356c054d403c959da86b`. Z3 is an external MIT-licensed dependency; its headers/library and configured shared-library location remain prerequisites of this local SDK, as do LLVM/MLIR and other development dependencies. Portable solver/toolchain packaging remains open.
+The compiler needs Z3 development headers/library; generated native/browser applications do not link or execute Z3. Set `-DNEX_Z3_ROOT=/path/to/z3` for a prefix containing `include/z3++.h` and `lib/libz3` or the official distribution's `bin/libz3`. `nex doctor --json` reports the loaded solver version. This host was configured with the official Z3 5.3.1 ARM64 macOS release; its archive SHA256 is `0de02438052952153aab5d1361be4d61b6d226337440356c054d403c959da86b`. Z3 is MIT-licensed. Source builds need the matching headers/library and selected shared-library location, alongside LLVM/MLIR and other development dependencies. The accepted macOS development SDK packages its pinned solver and toolchain; `nex doctor --json` reports the actual installed paths/version. Other platform distribution acceptance remains separate.
 
 Language 0.9 match expressions/statements are reported unsupported by the scalar verifier. This status does not weaken runtime checks or count as a proof; test their behavior across backends.
 
