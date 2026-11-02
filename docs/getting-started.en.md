@@ -1,33 +1,32 @@
 # Start with NEX
 
-Source development at toolchain0.159 selects language0.28 and adds runtime
-source contracts. The download instructions below intentionally install the
-accepted0.156/language027 SDK; it does not accept028 clauses. Use the source-build
-instructions for development, and migrate existing graphs explicitly.
+The development SDK below uses toolchain 0.159.0 / language 0.28 / task ABI 7.
+It includes source-level runtime contracts. Existing older graphs require
+explicit history-preserving migration before current-language execution.
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
 Toolchain versions and source-language versions are different. This source tree
-uses toolchain 0.156.0 / language 0.27. Check [delivery evidence](releases/0.156.0.json)
+uses toolchain 0.159.0 / language 0.28. Check [delivery evidence](releases/0.159.0.json)
 for the exact accepted SDK, source commit, platform, archive hash and prerequisites.
 
 ## Install a matching SDK or build the compiler
 
-For macOS ARM64 on macOS27.0+, download the [0.156.0 development SDK](https://github.com/sae-ru/NEX/releases/tag/v0.156.0).
+For macOS ARM64 on macOS27.0+, download the [0.159.0 development SDK](https://github.com/sae-ru/NEX/releases/tag/v0.159.0).
 It requires Apple command line tools/SDK and Python3.10+. Web builds use Node/npm;
 live debugging uses host LLDB. Verify the archive before adding it to PATH:
 
 ```sh
-curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.156.0/nex-sdk-0.156.0-macos-arm64-development.tar.gz' -o 'nex-sdk-0.156.0-macos-arm64-development.tar.gz'
-curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.156.0/nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256' -o 'nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256'
-shasum -a 256 -c 'nex-sdk-0.156.0-macos-arm64-development.tar.gz.sha256'
-tar -xzf 'nex-sdk-0.156.0-macos-arm64-development.tar.gz'
-export PATH="$PWD/nex-sdk-0.156.0-macos-arm64-development/bin:$PATH"
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.159.0/nex-sdk-0.159.0-macos-arm64-development.tar.gz' -o 'nex-sdk-0.159.0-macos-arm64-development.tar.gz'
+curl -fL 'https://github.com/sae-ru/NEX/releases/download/v0.159.0/nex-sdk-0.159.0-macos-arm64-development.tar.gz.sha256' -o 'nex-sdk-0.159.0-macos-arm64-development.tar.gz.sha256'
+shasum -a 256 -c 'nex-sdk-0.159.0-macos-arm64-development.tar.gz.sha256'
+tar -xzf 'nex-sdk-0.159.0-macos-arm64-development.tar.gz'
+export PATH="$PWD/nex-sdk-0.159.0-macos-arm64-development/bin:$PATH"
 nex doctor --json
 nex describe --kind index --json
 ```
 
-Published SHA256: `7e145b75e8fe7b195f485699411d68ad9d9c1aa7690ddcf91201dee8cfda7a04`.
+Published SHA256: `fe8dde075971f422b2311c27e131ca00b4c3cac24094cc6bd6857eab8b537374`.
 
 For Windows/Linux or a different target, use the source build below and the
 matching platform guide. Exact accepted platforms and source/archive hashes
@@ -56,7 +55,7 @@ cmake --install build --prefix /absolute/path/to/nex-sdk
 Set `LLVM_DIR`, `MLIR_DIR`, `OPENSSL_ROOT_DIR` and `NEX_Z3_ROOT` to your selected
 installations when CMake cannot discover them. See [SDK delivery](sdk.md) and
 [Linux](linux.md) for the maintained recipes. Native Windows x64 hosting has separate [0.152.1 acceptance](windows-handoff-current.md);
-this 0.156 source requires fresh Windows acceptance. Use the Windows host
+this 0.159 source requires fresh Windows acceptance. Use the Windows host
 recipe and keep host and target C++ ABI/CRT dependencies separate.
 
 Add the chosen SDK's `bin` directory to PATH, then verify selection:

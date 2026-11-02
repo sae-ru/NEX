@@ -1,3 +1,22 @@
+# macOS development SDK 0.159 / ordinary language 0.28
+
+The [delivery receipt](docs/releases/0.159.0.json) accepts exact source
+3165aaf56866b0c3f341b63571e808cfb061aa3a in its Mac development scope:
+296 CTest groups, moved/restored SDK41 with 57 additional cases each,
+150 production-browser checks, 18 installed CLI scenarios and physical Apple
+M5 Max OpenCL (21 native/reference cases plus six profiles, 47 kernel events).
+The immutable archive was created before both installed workflows. Source
+contracts are enabled in the ordinary 0.28 CLI; 0.27 history migrates explicitly.
+The root-example version and retained-vs-current test failures were corrected
+with diagnostics preserved; compiler/runtime implementation bytes stayed fixed.
+
+Current Windows/Linux regression and SDK delivery, CUDA/NPU/device expansion,
+general GPU code generation, Metal compute, mobile/native UI, Studio, converter,
+cross-model accepted-task token measurement and every other unfinished original
+requirement below remain open. The [Windows prompt](docs/WINDOWS-CODEX-PROMPT.md)
+continues platform work. This SDK checkpoint does not complete the whole project.
+Earlier entries below retain their historical source and acceptance scopes.
+
 # Language0.28 ordinary CLI integration — development0.159
 
 The working CLI selects028 and advertises source_contracts. Named/generic

@@ -2,8 +2,9 @@
 
 The0.159 working compiler enables this syntax in the ordinary CLI. Discover
 `source_contracts.public_enabled` and the selected language before using it.
-The published0.156 SDK remains027. Current full regression, installed028 SDK and
-platform acceptance are separate from this implemented source contract.
+The [0.159 Mac development SDK](releases/0.159.0.json) accepts language 0.28
+and has completed full regression and installed qualification. Other platforms
+retain separate acceptance requirements.
 Use [guarded migration](source-contract-migration.md) for existing027 histories.
 
 An ordinary named source function can declare ordered clauses after its effects:
@@ -81,10 +82,10 @@ with target Contracts028 and an optional reviewed nex.migration-candidate/1.
 They retain old revisions, namespaces and local IDs; replacing a version field
 does not migrate a graph. Physical export remains separate.
 
-The implementation is undergoing observable native/reference/TaskIR/TypeScript,
-rejected-source and genuine027 history checks. Full regression, source-free SDK,
-debug/profile/operation editing, project/provider/browser integration and
-Windows/Linux/device acceptance remain separate gates. Generated calls and
+Observable native/reference/TaskIR/TypeScript, rejected-source and genuine027
+history checks are included in the versioned Mac acceptance. The delivery receipt
+also records source-free SDK, debugger, project/provider and browser checks.
+Current Windows/Linux and broader device acceptance remain separate gates. Generated calls and
 assertions affect source profiles and execution budgets; no zero-cost claim is made.
 
 ## Version-selected project delivery candidate0.158

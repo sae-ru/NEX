@@ -1,3 +1,19 @@
+# Current SDK delivery: 0.159.0 / language 0.28 / task ABI 7
+
+The [Mac ARM64 development SDK](releases/0.159.0.json) passed 296 CTest groups
+and two complete installed workflows of **41 phases**, including the mandatory
+`source-contracts` phase. Moved/restored SDKs also passed 57 additional runtime
+contract/debugger cases each, with actual Python 3.10.22 / 3.14.9. The immutable
+archive was created before both runs; original source/dependency roots and the
+opposite SDK were denied and installed prefixes were read-only. The same archive
+passed 150 production-browser checks and recorded CLI/OpenCL checks.
+
+Use the [English](getting-started.en.md) or [Russian](getting-started.ru.md)
+installation guide. Current Windows/Linux qualification remains separate.
+The sections below preserve earlier workflow versions and their requirements;
+their old phase counts do not replace this 41-phase contract. Query the selected
+compiler's doctor/descriptor and require a completed report for its exact bytes.
+
 # Development0.136.0 / language0.25 SDK candidate
 
 Current development0.151 selects language0.27. Its installed acceptance adds a

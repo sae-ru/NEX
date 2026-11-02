@@ -1,10 +1,9 @@
 # Why NEX exists
 
-The0.159 development CLI also supports language0.28 source contracts: pure
-requires/ensures and loop invariant/decreases clauses, checked in release code.
-Existing027 graphs require an explicit history-preserving migration. Discover
-source_contracts in the selected compiler; the0.156 download uses027. Current
-full/installed/platform acceptance remains separate from implemented syntax.
+Toolchain 0.159.0 / language 0.28 exposes source contracts in the ordinary CLI.
+Pure function and loop clauses remain checked in release code. Existing 0.27
+histories need explicit migration. The [Mac development SDK receipt](releases/0.159.0.json)
+records current acceptance; other platforms keep separate, versioned evidence.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
 
@@ -56,7 +55,7 @@ client, server and shared code. An effect declaration describes a permitted kind
 of operation; filesystem/device authority still requires actual operator grants.
 Browser output includes reachable client/shared code under the checked boundary.
 
-Ordinary expected failures can use `result<T>` and `?`. Language0.27 also supports
+Ordinary expected failures can use `result<T>` and `?`. Since language 0.27, NEX supports
 owned typed `throw(value)`, ordered typed/legacy catches, filters and `finally`,
 including task suspension. Checked traps, cancellation and execution limits are
 separate outcomes. They do not become catchable source errors; user finalizers
@@ -90,7 +89,7 @@ steps per invocation and five repetitions. Median wall seconds were:
 
 The host was not isolated. The C++ comparison does not implement NEX task
 cancellation/limit machinery. These observations are scoped to one algorithm
-and older versions; they are not current 0.152.1 benchmarks or universal language
+and older versions; they are not current 0.159.0 benchmarks or universal language
 comparisons. The Linux observation missed that experiment's 90% C++ throughput goal.
 
 A separate [0.96 build-cache experiment](evidence/native-scale-0.96.0.json) used
@@ -106,16 +105,19 @@ objective is a target, not an achieved result.
 
 ## Hardware and delivery
 
-The [Mac OpenCL receipt](evidence/macos-opencl-0.151.1.json) covers one Apple M5 Max:
-U8 Add/Affine, 31 scenarios, 64 executions and 48 physical kernel events, including
-owned buffers transported in typed errors. [Linux accelerator evidence](evidence/accelerators-0.151.0.json)
-covers specific CIX/RK providers with its own version. Neither is automatic GPU
-compilation for arbitrary NEX functions.
+The [current Mac OpenCL receipt](evidence/macos-opencl-0.159.0.json) covers one
+Apple M5 Max: U8 Add/Affine, 21 native/reference scenarios, six source profiles
+and 47 physical kernel events. Installed source clauses and detached contracts
+compose with typed owned resources. [Linux accelerator evidence](evidence/accelerators-0.151.0.json)
+retains its CIX/RK and version scope. General GPU code generation remains pending.
 
-Current SDK acceptance is recorded separately in the [delivery record](releases/0.152.1.json).
-Native Windows/CUDA, Metal, Apple NPU, broader device operations, mobile/native UI,
-general algebraic effects, remaining network/DB integrations, project conversion
-and NEX Studio remain active work in [PLAN](../PLAN.md).
+The [0.159 SDK record](releases/0.159.0.json) includes 296 CTest groups and two
+installed 41-phase workflows plus 57 extra cases each. The same archive passed
+150 actual production-browser checks. Earlier Windows 0.152.1 receipts establish
+their own native/CUDA scope; current Windows/Linux qualification, Metal compute,
+Apple NPU, broader device operations, mobile/native UI, general algebraic effects,
+remaining network/DB integrations, project conversion and NEX Studio remain in
+[PLAN](../PLAN.md). Complete accepted-task token savings remain to be measured.
 
 Read the [normative specification](language.md), [grammar](grammar.ebnf),
 [architecture](architecture.md) and [model-independent workflow](../llm/LEARNING.md).

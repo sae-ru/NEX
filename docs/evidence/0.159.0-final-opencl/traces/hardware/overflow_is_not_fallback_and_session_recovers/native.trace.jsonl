@@ -1,0 +1,17 @@
+{"cpu_fallback":false,"device":"Apple M5 Max","device_type":4,"event":"session_created","ordinal":0,"persistent":true,"session":1,"steady_ns":1921951772821041,"worker_pid":45443}
+{"buffer":1,"bytes":1,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1921951773791375}
+{"buffer":2,"bytes":1,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1921951774194666}
+{"completion_pending":true,"controlled_user_event":false,"event":"kernel_queued","execution_status":3,"physical_enqueue_verified":true,"sequence":4,"session":1,"steady_ns":1921951774636958}
+{"buffer":1,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1921951779093333,"via_session_drain":false,"worker_live_buffers":1}
+{"buffer":2,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1921951779218375,"via_session_drain":false,"worker_live_buffers":0}
+{"buffer":3,"bytes":1,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1921951779376083}
+{"buffer":4,"bytes":1,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1921951779669166}
+{"completion_pending":true,"controlled_user_event":false,"event":"kernel_queued","execution_status":3,"physical_enqueue_verified":true,"sequence":9,"session":1,"steady_ns":1921951779958166}
+{"buffer":5,"command_type":4592,"cpu_fallback":false,"elements":1,"event":"kernel_completed","kernel_ns":187,"physical_completion_verified":true,"scale":1,"session":1,"steady_ns":1921951780444666}
+{"buffer":5,"bytes":1,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1921951780510333}
+{"buffer":3,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1921951780635458,"via_session_drain":false,"worker_live_buffers":2}
+{"buffer":4,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1921951780698791,"via_session_drain":false,"worker_live_buffers":1}
+{"buffer":5,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1921951782917125,"via_session_drain":false,"worker_live_buffers":0}
+{"event":"worker_exited","exit_code":0,"session":1,"signal":0,"steady_ns":1921951786954750,"wait_status":0,"worker_pid":45443}
+{"event":"session_destroyed","physical_completion_verified":true,"session":1,"steady_ns":1921951787082916}
+{"bounded_capture":true,"bytes":117,"event":"worker_diagnostics","hex":"4e45584750555f4f50454e203020340a4e45584750555f4b45524e454c203120312032323820310a4e45584750555f4b45524e454c203120312031383720300a4e45584750555f445241494e203020310a636f6e74726f6c6c656420776f726b6572207374646f757420646961676e6f737469630a","received_bytes":117,"session":1,"steady_ns":1921951787216291}

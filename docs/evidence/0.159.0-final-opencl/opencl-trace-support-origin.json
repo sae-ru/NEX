@@ -1,0 +1,9 @@
+{
+  "source": "/Users/sae/projects/NEX/build/runtime-generic-contracts-156/macos-opencl/verify-generic-control-v1.py",
+  "source_sha256": "587022159fc753c663c9384ef56c82344574507a441baa4efc8cf5be25914972",
+  "functions": [
+    "trace_receipt",
+    "pending_trace"
+  ],
+  "scope": "Reuse validator code only; all source028 inputs and GPU executions are new. No historical output retagged."
+}

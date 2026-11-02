@@ -1,0 +1,207 @@
+{
+  "schema": "nex.installed-CLI-composition-evidence/1",
+  "ok": true,
+  "toolchain": "0.159.0",
+  "language": "0.28",
+  "source_commit": "3165aaf56866b0c3f341b63571e808cfb061aa3a",
+  "archive_sha256": "fe8dde075971f422b2311c27e131ca00b4c3cac24094cc6bd6857eab8b537374",
+  "scope": "New ordinary CLI execution under exact source-denied, mutually-denied, read-only SDK policies used by canonical41-phase workflows. Identical maintained semantic cases; no C++ probe used.",
+  "scenarios": 18,
+  "native_executions": 28,
+  "explicit_scalar_loop_proofs": 2,
+  "ordinary_CLI_only": true,
+  "SDKs": {
+    "moved": {
+      "ok": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "policy_sha256": "5089dc27af72fc40a16ee1bcf1cb92da246ee497cc518e84128090967245787b",
+      "cases": [
+        {
+          "name": "loop",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 1,
+          "original_source_preserved": true
+        },
+        {
+          "name": "explicit_scalar_loop_proof",
+          "passed": true
+        },
+        {
+          "name": "wrong_language_contract_refused_atomically",
+          "passed": true
+        },
+        {
+          "name": "pre",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "post",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "generic",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "finally",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "escaping",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "loop-shadow",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 1,
+          "original_source_preserved": true
+        }
+      ],
+      "native_executions": 14,
+      "report_sha256": "066c5518fc01514533b0fff6d627014a9eb4f36150e74a95b398c722b7215ce9"
+    },
+    "restored": {
+      "ok": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "policy_sha256": "ca13ecbc3f09b08edf19c66a00d6f2eb9f0c9e2d5c61161c8168697609af9bb7",
+      "cases": [
+        {
+          "name": "loop",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 1,
+          "original_source_preserved": true
+        },
+        {
+          "name": "explicit_scalar_loop_proof",
+          "passed": true
+        },
+        {
+          "name": "wrong_language_contract_refused_atomically",
+          "passed": true
+        },
+        {
+          "name": "pre",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "post",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "generic",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "finally",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "escaping",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 0,
+          "original_source_preserved": true
+        },
+        {
+          "name": "loop-shadow",
+          "passed": true,
+          "native_profiles": [
+            "debug",
+            "release"
+          ],
+          "reference_and_TypeScript": true,
+          "loop_annotations": 1,
+          "original_source_preserved": true
+        }
+      ],
+      "native_executions": 14,
+      "report_sha256": "e84f1ebd02dbe274b8b572ccc651cf8aa350b39abb646c0f1021df90409f79b4"
+    }
+  },
+  "raw_report": {
+    "local_evidence": "build/public-source-contracts-159/installed-composition-v3/report.json",
+    "sha256": "33c4d446c6c642b6a6fd84cace8bdf0148871adbf5110012f2d1766f65ef8fa0"
+  }
+}

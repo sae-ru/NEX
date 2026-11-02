@@ -1,0 +1,164 @@
+{
+  "schema": "nex.browser-delivery-evidence/1",
+  "status": "verified_macos_development_scope",
+  "toolchain": "0.159.0",
+  "language": "0.28",
+  "source_commit": "3165aaf56866b0c3f341b63571e808cfb061aa3a",
+  "archive_sha256": "fe8dde075971f422b2311c27e131ca00b4c3cac24094cc6bd6857eab8b537374",
+  "input_compiler_sha256": "c26890deed1e46369c5fc5aa1f9b22eb01161c3aa1364371677a64482ed469d2",
+  "actual_passed_tests": 150,
+  "unexpected": 0,
+  "skipped": 0,
+  "flaky": 0,
+  "retries": 0,
+  "cases": [
+    {
+      "SDK": "moved",
+      "variant": "async",
+      "engine": "chromium",
+      "passed": 13
+    },
+    {
+      "SDK": "moved",
+      "variant": "async",
+      "engine": "firefox",
+      "passed": 13
+    },
+    {
+      "SDK": "moved",
+      "variant": "async",
+      "engine": "webkit",
+      "passed": 13
+    },
+    {
+      "SDK": "restored",
+      "variant": "async",
+      "engine": "chromium",
+      "passed": 13
+    },
+    {
+      "SDK": "restored",
+      "variant": "async",
+      "engine": "firefox",
+      "passed": 13
+    },
+    {
+      "SDK": "restored",
+      "variant": "async",
+      "engine": "webkit",
+      "passed": 13
+    },
+    {
+      "SDK": "moved",
+      "variant": "pure",
+      "engine": "chromium",
+      "passed": 12
+    },
+    {
+      "SDK": "moved",
+      "variant": "pure",
+      "engine": "firefox",
+      "passed": 12
+    },
+    {
+      "SDK": "moved",
+      "variant": "pure",
+      "engine": "webkit",
+      "passed": 12
+    },
+    {
+      "SDK": "restored",
+      "variant": "pure",
+      "engine": "chromium",
+      "passed": 12
+    },
+    {
+      "SDK": "restored",
+      "variant": "pure",
+      "engine": "firefox",
+      "passed": 12
+    },
+    {
+      "SDK": "restored",
+      "variant": "pure",
+      "engine": "webkit",
+      "passed": 12
+    }
+  ],
+  "SDKs": {
+    "moved": {
+      "ok": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "compiler_build": "5e3071ab3e2befd369abbbecbf26b4e1e283cd392b7aaac41c41107f97676890",
+      "kernel_read_controls": 5,
+      "kernel_write_controls": 2,
+      "opposite_SDK_read_denied": true,
+      "both_SDK_writes_denied": true,
+      "policy_sha256": "5089dc27af72fc40a16ee1bcf1cb92da246ee497cc518e84128090967245787b",
+      "workers_fixture_sha256": "d4f7f773ed9162f82d937dc9107368abf5d7b1cdd85b2987a33b703b6a8e308d",
+      "browser_script_sha256": "ed7fc7068f124b5d2be9a8483a98f1b5d02380b869c00891b956c1271517c3a4",
+      "versions": [
+        {
+          "name": "chromium",
+          "version": "156.0.8078.4",
+          "executable_sha256": "c8509aee32abd6977968e9999769980b7a420dea05402d90042d9e5b41db15ef"
+        },
+        {
+          "name": "firefox",
+          "version": "157.0",
+          "executable_sha256": "65f70a725a576763c36634d63407fad91d898d522f25a5ca9caf748b3e3be005"
+        },
+        {
+          "name": "webkit",
+          "version": "27.2",
+          "executable_sha256": "a85baad3d8c07173ac387a59b41500c382b21ed692afe0964d29aac247ccc63b"
+        }
+      ]
+    },
+    "restored": {
+      "ok": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "compiler_build": "5e3071ab3e2befd369abbbecbf26b4e1e283cd392b7aaac41c41107f97676890",
+      "kernel_read_controls": 5,
+      "kernel_write_controls": 2,
+      "opposite_SDK_read_denied": true,
+      "both_SDK_writes_denied": true,
+      "policy_sha256": "ca13ecbc3f09b08edf19c66a00d6f2eb9f0c9e2d5c61161c8168697609af9bb7",
+      "workers_fixture_sha256": "d4f7f773ed9162f82d937dc9107368abf5d7b1cdd85b2987a33b703b6a8e308d",
+      "browser_script_sha256": "ed7fc7068f124b5d2be9a8483a98f1b5d02380b869c00891b956c1271517c3a4",
+      "versions": [
+        {
+          "name": "chromium",
+          "version": "156.0.8078.4",
+          "executable_sha256": "c8509aee32abd6977968e9999769980b7a420dea05402d90042d9e5b41db15ef"
+        },
+        {
+          "name": "firefox",
+          "version": "157.0",
+          "executable_sha256": "65f70a725a576763c36634d63407fad91d898d522f25a5ca9caf748b3e3be005"
+        },
+        {
+          "name": "webkit",
+          "version": "27.2",
+          "executable_sha256": "a85baad3d8c07173ac387a59b41500c382b21ed692afe0964d29aac247ccc63b"
+        }
+      ]
+    }
+  },
+  "scope": "Actual ordinary028 installed CLI creates production web assets; relocated and restored SDKs are read-only and original source/dependency trees and opposite SDK denied. External same-host Playwright broker hosts actual three browsers. Historical158 input source reused unchanged; all current builds and browser executions new.",
+  "source_contracts": true,
+  "production_dist_unchanged": true,
+  "compiler_test_driver_and_preview_under_kernel_policy": true,
+  "browser_processes_outside_SDK_kernel_policy": true,
+  "same_machine_loopback_Playwright_server": true,
+  "browser_sandbox_disable_flags_added": false,
+  "playwright_version": "1.64.1",
+  "raw_report": {
+    "local_evidence": "build/public-source-contracts-159/browser-acceptance-v3/report.json",
+    "sha256": "0d87ba79212b3d8b11dc4d1b534bae35e5c735020ff75b36c4ba877d49b32fd5"
+  },
+  "limits": [
+    "Headless engines on one Mac; not every released browser, OS, device or assistive technology.",
+    "These typed UI/Worker fixtures do not complete all fullstack/accessibility/mobile PLAN work."
+  ]
+}

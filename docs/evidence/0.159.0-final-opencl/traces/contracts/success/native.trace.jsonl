@@ -1,0 +1,12 @@
+{"cpu_fallback":false,"device":"Apple M5 Max","device_type":4,"event":"session_created","ordinal":0,"persistent":true,"session":1,"steady_ns":1922576730121958,"worker_pid":59857}
+{"buffer":1,"bytes":2,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1922576731270375}
+{"buffer":2,"bytes":2,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1922576731752000}
+{"completion_pending":true,"controlled_user_event":false,"event":"kernel_queued","execution_status":3,"physical_enqueue_verified":true,"sequence":4,"session":1,"steady_ns":1922576732206833}
+{"buffer":3,"command_type":4592,"cpu_fallback":false,"elements":2,"event":"kernel_completed","kernel_ns":266,"physical_completion_verified":true,"scale":1,"session":1,"steady_ns":1922576736090500}
+{"buffer":3,"bytes":2,"dtype":1,"event":"buffer_created","session":1,"steady_ns":1922576736204791}
+{"buffer":1,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1922576736428458,"via_session_drain":false,"worker_live_buffers":2}
+{"buffer":2,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1922576736564125,"via_session_drain":false,"worker_live_buffers":1}
+{"buffer":3,"event":"buffer_released","physical_completion_verified":true,"session":1,"steady_ns":1922576738808125,"via_session_drain":false,"worker_live_buffers":0}
+{"event":"worker_exited","exit_code":0,"session":1,"signal":0,"steady_ns":1922576743058458,"wait_status":0,"worker_pid":59857}
+{"event":"session_destroyed","physical_completion_verified":true,"session":1,"steady_ns":1922576743189166}
+{"bounded_capture":true,"bytes":93,"event":"worker_diagnostics","hex":"4e45584750555f4f50454e203020340a4e45584750555f4b45524e454c203220312032363620300a4e45584750555f445241494e203020310a636f6e74726f6c6c656420776f726b6572207374646f757420646961676e6f737469630a","received_bytes":93,"session":1,"steady_ns":1922576743280375}

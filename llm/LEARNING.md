@@ -36,6 +36,12 @@ intentionally rejected source with expected diagnostic codes. Start with:
 - [Typed source error, guard and finally](../examples/learn/typed-errors/main.nex).
 - [Ordered CPU mapping](../examples/learn/cpu-map/main.nex).
 
+Language 0.28 also supports pure `requires` / `ensures` and loop
+`invariant` / `decreases` clauses. Discover `source_contracts` and read the
+[contract guide](../docs/source-contracts.md). Checks are runtime assertions in
+release too; bounded Z3 proof is a separate explicit operation. Keep inline
+contracts and detached guarded projections consistent with original declarations.
+
 Rejected examples under `llm/rejected/` are counterexamples, not valid templates.
 Larger examples and conformance tests retain their own version/prototype scopes.
 Never retag an old graph or copy a private ABI into a public program.

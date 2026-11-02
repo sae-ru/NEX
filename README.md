@@ -52,50 +52,40 @@ platform acceptance.
 
 ## Development status
 
-Current development source: **toolchain0.159.0 / ordinary language0.28**.
-The working CLI enables [language028 source contracts](docs/source-contracts.md).
-Matching full regression and installed028 SDK qualification remain in progress. The accepted download
-below retains its exact0.156 source and qualification.
+Current development SDK: **toolchain 0.159.0 / language 0.28 / task ABI 7**.
+The ordinary CLI accepts [source contracts](docs/source-contracts.md): pure
+`requires` / `ensures` clauses and loop `invariant` / `decreases` checks, including
+generic functions. Checks remain active in release builds. Existing 0.27 graph
+histories need an [explicit migration](docs/source-contract-migration.md).
 
-The [macOS development SDK](docs/releases/0.156.0.json) passed all **288 CTest groups**.
-Moved and archive-restored installations each passed **40 maintained phases**
-and **57 additional contract/debugger cases**, on actual Python 3.10.22 and
-3.14.9 respectively. The published archive is the exact immutable archive
-created before those workflows.
+The [macOS ARM64 delivery record](docs/releases/0.159.0.json) pins the exact
+accepted source, compiler and immutable archive. It records **296 CTest groups**,
+**41 maintained SDK phases plus 57 additional cases per installation**, using
+actual Python 3.10.22 and 3.14.9 on moved and archive-restored installations.
+Original source/dependency roots and the opposite SDK were denied; both SDK
+prefixes remained read-only. Internal platform-only skips retain their own scope.
 
-Runtime contracts now cover ordinary concrete and generic source functions.
-Generic predicates check parametrically under the original bounds and constructor
-kinds; all specializations use the guarded template. Earlier receipt families
-remain compatible. That0.156 SDK uses source language0.27 and task ABI7.
+The same archive passed [150 production-browser checks](docs/evidence/sdk-browsers-0.159.0.json)
+in Chromium, Firefox and WebKit, and [18 CLI composition scenarios](docs/evidence/sdk-composition-0.159.0.json)
+with 28 native debug/release executions and two explicit bounded scalar/loop proofs.
+On Apple M5 Max, [OpenCL U8 Add/Affine](docs/evidence/macos-opencl-0.159.0.json)
+passed 21 native/reference scenarios and six native source profiles, with 47
+physical kernel events. These include source and detached contracts, generic
+roots, pending cancellation/deadline and balanced visible managed pools.
 
 This is a development preview for macOS ARM64, minimum macOS 27.0.
-[Install it](docs/getting-started.en.md), or build from source for another host.
-Discover actual capabilities with nex describe. Current Windows/Linux acceptance,
-general GPU compilation, mobile/UI and remaining PLAN work have separate gates.
-The earlier [126 production-browser tests](docs/evidence/sdk-browsers-0.152.1.json)
-retain their 0.152.1 source scope; the 0.156 SDK browser phase builds production assets.
+[Install it](docs/getting-started.en.md). Windows and Linux have source-build
+recipes and earlier platform receipts; this release needs fresh acceptance there.
+The Windows 0.152.1 receipt records 274 CTest groups, 35 RTX 3090 CUDA cases and
+its own SDK checks. Linux CIX/RK accelerator evidence retains its
+[0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
 
-Apple M5 Max OpenCL U8 Add/Affine passed [0.156 GPU checks](docs/evidence/macos-opencl-0.156.0.json):
-21 native/reference scenarios and six native source profiles, including generic
-contracts, physical pending cancellation/deadline and balanced visible managed pools.
-Matching full regression and installed SDK acceptance remain separate.
-Linux CIX/RK accelerator tests retain their [0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
-The [local Windows compiler](docs/windows-host.md) builds and runs x64 `.exe`
-applications directly on Windows, including CPU/tasks/files and SQLite.
-The earlier [target-only receipt](docs/windows-native-acceptance.md) preserves
-its separate WSL producer, Windows execution and CUDA driver prerequisite results.
-The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) has shared NEX/SDL
-sources and native build scripts for Windows, macOS and Linux. Its Windows
-GPU and relocated standalone package checks passed on its pinned earlier source.
-The [Retina readback correction](docs/evidence/sdl-metal-retina-0.155.0.json) passed
-scoped macOS ARM64 Metal and relocated-package checks. Current Windows rechecking
-and Linux graphical execution remain pending.
-The native Windows compiler passed all 274 CTest groups.
-NEX CUDA U8 Add/Affine passed 35 physical-device cases on RTX 3090;
-[the current Windows record](docs/evidence/windows-native-2026-11-01.json)
-keeps that scope separate from full regression and SDK acceptance.
-Full Windows-hosted SDK acceptance, Metal compute, Apple NPU, general GPU compilation,
-complete mobile/UI delivery and other [PLAN](PLAN.md) work remain open.
+The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) shares NEX rules and
+SDL integration across native build scripts. Its earlier Windows GPU/package
+and [Mac Metal/Retina](docs/evidence/sdl-metal-retina-0.155.0.json) checks retain
+their source identities. Current Windows/Linux execution, general GPU code
+generation, Metal compute, Apple NPU, complete mobile/UI delivery, NEX Studio,
+project conversion and other [PLAN](PLAN.md) work remain open.
 
 ## Build and use
 

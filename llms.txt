@@ -1,14 +1,14 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Development toolchain0.159 selects ordinary source language0.28 with runtime
-function/loop contracts. Full current SDK/platform acceptance remains pending;
-accepted SDK downloads retain their0.156/language027 scope.
-Executables run without
-an LLM. Precise semantics and small retrieved contexts are design goals;
+Toolchain 0.159.0 selects ordinary source language 0.28 with runtime
+function/loop contracts. The Mac development SDK has versioned acceptance;
+current Windows/Linux and broader hardware delivery retain separate gates.
+Executables run without an LLM. Precise semantics and small retrieved contexts are design goals;
 end-to-end model-token savings remain unmeasured.
 
 ## Start
+
 - [English introduction](README.md)
 - [Русское описание](README.ru.md)
 - [Model-independent learning entry](llm/LEARNING.md)
@@ -17,14 +17,16 @@ end-to-end model-token savings remain unmeasured.
 - [Coding contract](llm/SYSTEM_PROMPT.md)
 
 ## Authority
+
 - [Specification](docs/language.md)
 - [Grammar](docs/grammar.ebnf)
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
-- [Versioned SDK evidence](docs/releases/0.156.0.json)
+- [Versioned SDK evidence](docs/releases/0.159.0.json)
 
 Use `nex describe --kind index --json`, then `--field PATH --json`.
 Use `nex context --symbol NAME --json` for bounded project context.
 The selected compiler and actual tests govern support. PLAN and historical
-experiments are not implemented capability lists. Native Windows/CUDA, Metal,
-Apple NPU and general GPU compilation remain open platform work.
+experiments are not implemented capability lists. Windows/CUDA has earlier
+versioned evidence; current platform qualification, Metal compute, Apple NPU
+and general GPU compilation remain open work.

@@ -1,8 +1,10 @@
 # Current installation / Актуальная установка
 
-For toolchain0.151.1/language0.27 use the [current English guide](getting-started.en.md)
-or [русскую инструкцию](getting-started.ru.md) and [delivery record](releases/0.151.1.json).
-The pinned0.124 snapshot and older milestones below retain their historical scope.
+For toolchain 0.159.0 / language 0.28 use the [current English guide](getting-started.en.md)
+or [русскую инструкцию](getting-started.ru.md) and [delivery record](releases/0.159.0.json).
+The pinned 0.124 snapshot and older milestones below retain their historical scope.
+For a new project use the linked current guides; the following old installation
+commands reproduce that earlier snapshot.
 
 # DNS client development candidate
 

@@ -1,0 +1,347 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope",
+  "verified_at_utc": "2026-11-02T03:21:16.678706+00:00",
+  "toolchain": "0.159.0",
+  "language": "0.28",
+  "source_task_ABI": 7,
+  "source_commit": "3165aaf56866b0c3f341b63571e808cfb061aa3a",
+  "SDK_source_commit": "3165aaf56866b0c3f341b63571e808cfb061aa3a",
+  "publication_changes": "Documentation and evidence only after the qualified source; immutable SDK payload unchanged.",
+  "input_compiler_sha256": "c26890deed1e46369c5fc5aa1f9b22eb01161c3aa1364371677a64482ed469d2",
+  "installed_compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+  "compiler_build": "5e3071ab3e2befd369abbbecbf26b4e1e283cd392b7aaac41c41107f97676890",
+  "descriptor_hash": "46a4518f286a8281480847ca17b3a6546f654fb387364a6ab7fbe8acf808b344",
+  "license": "MIT",
+  "NEX_MIT_notice_sha256": "3e609ea0cdf472612ddda1023fb1ecdee13ebc2eb18e011af6eb11a4d6538200",
+  "compiler_full_regression": {
+    "accepted": true,
+    "groups": 296,
+    "CTest_group_failures": [],
+    "CTest_group_skips": [],
+    "reported_internal_unittest_skips": [
+      {
+        "group": "parallel_mapping",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_images",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_build",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "task_provider_debugging_native",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "project_actions",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_runtime",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "editor",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "native_pages",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "debug_image",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "core_dump",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "core_capsules",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "frontend_diagnostics",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "sdk_archives",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "packaging",
+        "reported_unittest_skips": 2
+      },
+      {
+        "group": "incremental",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "native_targets",
+        "reported_unittest_skips": 1
+      },
+      {
+        "group": "windows_targets",
+        "reported_unittest_skips": 8
+      },
+      {
+        "group": "server_debug",
+        "reported_unittest_skips": 4
+      }
+    ],
+    "internal_skips_do_not_prove_other_platforms": true,
+    "seconds": 4423.902,
+    "report_sha256": "4d67b09d446b4b9616c1dc0a0c0acbcadd01693981a766820ddc44318c9f0ddc",
+    "JUnit_sha256": "dfc03a5ba3d98b0284b1470d86fee08b560cbe314718976417d1c3223a488c3f",
+    "source_manifest_sha256": "db64f4f2da7581e5f3d3b6b1e10147b90cec06d059b12c787c036331adaf4e1e",
+    "public_evidence": "../evidence/compiler-acceptance-0.159.0.json"
+  },
+  "SDK": {
+    "accepted": true,
+    "platform": "arm64-apple-darwin27.0.0",
+    "minimum_macos": "27.0",
+    "external_prerequisites": [
+      "Apple command line tools/SDK and system C++ runtime/linker",
+      "Python 3.10+",
+      "Node.js/npm for browser builds",
+      "host LLDB/lldb-dap for live debugging"
+    ],
+    "moved": {
+      "ok": true,
+      "python": "Python 3.10.22",
+      "python_sha256": "c21b8f194a501a60896bc83a39835b72a6c684302a40f7e72d8f0629ada47e5f",
+      "phases": 41,
+      "seconds": 3618.619,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 5,
+      "original_source_read_controls": 4,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "runtime_generic_contract_scenarios": 9,
+      "resume_protocol_scenarios": 4,
+      "phase_names": [
+        "discovery",
+        "editor-tools",
+        "new-project",
+        "reviewed-failure",
+        "graph-repair-import",
+        "backend-agreement",
+        "source-exceptions",
+        "typed-source-errors",
+        "source-contracts",
+        "graph-snapshot-recovery",
+        "project-version-boundaries",
+        "frontend-diagnostics",
+        "graph-queries",
+        "string-ranges",
+        "binary-values",
+        "compute-contract",
+        "model-contract",
+        "native-indexed-pages",
+        "core-reports",
+        "wasm-compute",
+        "foreign-boundary",
+        "source-resources",
+        "text-files",
+        "profile",
+        "structured-task-file-reads",
+        "structured-task-file-writes",
+        "structured-task-file-streams",
+        "structured-task-http",
+        "structured-task-tcp",
+        "structured-task-profile",
+        "structured-task-debug",
+        "static-task-providers",
+        "shared-task-providers",
+        "task-provider-profiling",
+        "task-provider-debugging",
+        "archive-debug-replay-export",
+        "scalar-proof",
+        "traits",
+        "authenticated-storage",
+        "browser",
+        "project-build"
+      ],
+      "report_sha256": "6eec1406a3273dd3d611fae5d6a30a58d67e9fcf5a2ef47063e3ca9fc1d64f80"
+    },
+    "restored": {
+      "ok": true,
+      "python": "Python 3.14.9",
+      "python_sha256": "51504e3c551bf50ebff1f4d88aa68ec1a1cb8c742f9b8bd3baccd6c3991141b7",
+      "phases": 41,
+      "seconds": 3617.972,
+      "live_debugger": true,
+      "browser_build": true,
+      "compiler_sha256": "c27d34662a6982c884a1696c31bc4f970ec367e25c167f2d43721f3857d78edd",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 5,
+      "original_source_read_controls": 4,
+      "opposite_SDK_read_denied": true,
+      "negative_write_controls": 2,
+      "runtime_contract_scenarios": 15,
+      "runtime_loop_contract_scenarios": 15,
+      "runtime_value_contract_scenarios": 14,
+      "runtime_generic_contract_scenarios": 9,
+      "resume_protocol_scenarios": 4,
+      "phase_names": [
+        "discovery",
+        "editor-tools",
+        "new-project",
+        "reviewed-failure",
+        "graph-repair-import",
+        "backend-agreement",
+        "source-exceptions",
+        "typed-source-errors",
+        "source-contracts",
+        "graph-snapshot-recovery",
+        "project-version-boundaries",
+        "frontend-diagnostics",
+        "graph-queries",
+        "string-ranges",
+        "binary-values",
+        "compute-contract",
+        "model-contract",
+        "native-indexed-pages",
+        "core-reports",
+        "wasm-compute",
+        "foreign-boundary",
+        "source-resources",
+        "text-files",
+        "profile",
+        "structured-task-file-reads",
+        "structured-task-file-writes",
+        "structured-task-file-streams",
+        "structured-task-http",
+        "structured-task-tcp",
+        "structured-task-profile",
+        "structured-task-debug",
+        "static-task-providers",
+        "shared-task-providers",
+        "task-provider-profiling",
+        "task-provider-debugging",
+        "archive-debug-replay-export",
+        "scalar-proof",
+        "traits",
+        "authenticated-storage",
+        "browser",
+        "project-build"
+      ],
+      "report_sha256": "9a1f9dc8037009c763b58ae1c29385994ddb128b9fe1df6cb8c928cbfb38b38f"
+    },
+    "qualification_report_sha256": "8f120d0c853e9ea2c00c7a32c17054a80321b275792c7db71c86bbbe3e47870b",
+    "published_archive": {
+      "sha256": "fe8dde075971f422b2311c27e131ca00b4c3cac24094cc6bd6857eab8b537374",
+      "bytes": 123929957,
+      "files_in_inventory": 3417,
+      "filename": "nex-sdk-0.159.0-macos-arm64-development.tar.gz",
+      "download_url": "https://github.com/sae-ru/NEX/releases/download/v0.159.0/nex-sdk-0.159.0-macos-arm64-development.tar.gz",
+      "release_tag": "v0.159.0",
+      "pre_release": true
+    },
+    "archive_created_before_both_full_workflows": true,
+    "post_qualification_payload_changes": false,
+    "signing": "Ad hoc Mach-O signatures; no Developer ID notarization"
+  },
+  "runtime_contract_scope": {
+    "legacy_scalar_cases": 15,
+    "loop_cases": 15,
+    "value_effectful_cases": 14,
+    "generic_cases": 9,
+    "extra_resume_protocol_cases": 4,
+    "extra_cases_per_SDK": 57,
+    "receipt_families": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "generic_root_scope": "source_template_all_instantiations",
+    "source_contract_syntax": true,
+    "source_program_schema": "nex.program/16",
+    "Z3_proof_is_explicit_and_bounded": true
+  },
+  "production_browsers": {
+    "actual_passed_tests": 150,
+    "engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "prefixes": [
+      "moved",
+      "restored"
+    ],
+    "evidence": "../evidence/sdk-browsers-0.159.0.json"
+  },
+  "CLI_contract_composition": {
+    "scenarios": 18,
+    "native_executions": 28,
+    "explicit_scalar_loop_proofs": 2,
+    "evidence": "../evidence/sdk-composition-0.159.0.json"
+  },
+  "physical_GPU_scope": {
+    "device": "Apple M5 Max",
+    "API": "OpenCL",
+    "operations": [
+      "U8 Add",
+      "U8 Affine"
+    ],
+    "native_reference_cases": 21,
+    "native_host_source_profiles": 6,
+    "physical_kernel_events": 47,
+    "all_visible_managed_shallow_pools_balanced": true,
+    "integrated_GPU_timeline": false
+  },
+  "separate_evidence": {
+    "OpenCL_and_native_source_profiles": "../evidence/macos-opencl-0.159.0.json",
+    "SDL_Metal_Retina": "../evidence/sdl-metal-retina-0.155.0.json",
+    "prior_Windows_source": "../evidence/windows-native-2026-11-01.json",
+    "prior_Windows_SDK_CUDA": "../evidence/windows-sdk-2026-11-01.json",
+    "previous_delivery": "0.156.0.json"
+  },
+  "retained_failures": {
+    "original_full4_failures": [
+      "language_server",
+      "source_exception_prototype",
+      "typed_source_frontend_reference",
+      "typed_error_history_migration"
+    ],
+    "resolved_with_current_root_manifest_and_retained_vs_current_test_corrections": true,
+    "source_test_transition": {
+      "local_evidence": "build/public-source-contracts-159/source-tests-transition-v4.json",
+      "sha256": "d882d691cea7d8e9f60593fe3553fa38aff6857e86a0c5fd8f6ccaafed06eff7"
+    },
+    "resolution": {
+      "local_evidence": "build/public-source-contracts-159/failure-resolution-v4.json",
+      "sha256": "292a07b0bfc00f38e8d08bd0dfd22401afec6cfb3bcb0e85102136addae3eb2d"
+    },
+    "supplement_controller_startup_race": {
+      "local_evidence": "build/public-source-contracts-159/final-SDK-supplements-v4/report.json",
+      "sha256": "b80333e74a4ad9f997a393225eed99dc2341ab2717d520a3b8e3c6b1485e7b7e"
+    },
+    "supplement_resolution": {
+      "local_evidence": "build/public-source-contracts-159/final-SDK-supplements-v5/report.json",
+      "sha256": "e9d098221b903396ab77426f52ef1784df7f408dab1aa92d1e7b6d5f0ccae690"
+    }
+  },
+  "known_scope_limits": [
+    "Current Windows/Linux regression and SDK acceptance remain separate; earlier receipts retain their source identities.",
+    "Browsers run in a separate local Playwright process; compiler, test driver and preview retain the kernel policy.",
+    "Visible managed pools exclude aliases, dynamic/coroutine/scheduler backing, external allocator totals and whole-process RAM.",
+    "General GPU generation, Metal compute, Apple NPU, complete mobile/UI/Studio/converter and other original PLAN work remain incomplete.",
+    "Cross-model accepted-task token savings remain unmeasured."
+  ],
+  "goal_complete": false
+}
