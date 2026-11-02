@@ -168,6 +168,28 @@ class Transport(harness.ToolchainCase):
             if read_end is not None:os.close(read_end)
             if not writer.closed:writer.close()
 
+    def test_disconnect_write_to_closed_backend_pipe_preserves_normal_eof(self):
+        read_end,write_end=os.pipe()
+        writer=os.fdopen(write_end,'wb');output=io.BytesIO()
+        try:
+            os.close(read_end)
+            with adapter.backend_pipe_shutdown():
+                adapter.write_packet(writer,{'seq':1,'type':'request','command':'disconnect',
+                                             'arguments':{'terminateDebuggee':True}})
+            adapter.close_backend_pipes(SimpleNamespace(stdin=writer,stdout=output))
+            self.assertTrue(writer.closed);self.assertTrue(output.closed)
+        finally:
+            if not writer.closed:writer.close()
+
+    def test_backend_shutdown_keeps_unrelated_invalid_argument(self):
+        class FailedInput:
+            def close(self):raise OSError(errno.EINVAL,'fixture invalid argument')
+        output=io.BytesIO()
+        with self.assertRaises(OSError) as error:
+            adapter.close_backend_pipes(SimpleNamespace(stdin=FailedInput(),stdout=output))
+        self.assertEqual(error.exception.errno,errno.EINVAL)
+        self.assertTrue(output.closed)
+
     def test_backend_cleanup_keeps_other_io_failures_and_closes_output(self):
         class FailedInput:
             def close(self):raise OSError(errno.EIO,'fixture close failed')

@@ -6,6 +6,7 @@ native scopes. Computed values have independent, paged, read-only references.
 """
 import argparse
 import base64
+from contextlib import contextmanager
 import errno
 import json
 import os
@@ -573,11 +574,9 @@ class Bridge:
         self.emit(message)
 
 
-def close_backend_pipes(backend):
-    # A failed disconnect flush may leave buffered bytes. Closing that writer
-    # flushes again after the backend has already closed its read end. This
-    # expected cleanup EPIPE must neither turn normal EOF into failure nor mask
-    # the original protocol error. Always close the backend output as well.
+@contextmanager
+def backend_pipe_shutdown():
+    """Retain unexpected I/O errors while an exiting backend closes its pipe."""
     if os.name=='nt':
         import ctypes as C
         crt=C.CDLL('ucrtbase.dll',winmode=0x800)
@@ -585,16 +584,23 @@ def close_backend_pipes(backend):
         set_error=crt._set_doserrno;set_error.argtypes=[C.c_ulong];set_error.restype=C.c_int
         set_error(0)
     try:
-        try:
+        yield
+    except BrokenPipeError:
+        pass
+    except OSError as error:
+        # UCRT can report a disconnected pipe as EINVAL/ERROR_NO_DATA.
+        # Check this operation's native error; unrelated EINVAL still fails.
+        if os.name!='nt' or error.errno!=errno.EINVAL:raise
+        native=C.c_ulong()
+        if get_error(C.byref(native)) or native.value not in (109,232):raise
+
+
+def close_backend_pipes(backend):
+    # A failed disconnect flush can leave buffered bytes for close() to retry.
+    # Always close output, including when input cleanup raises another error.
+    try:
+        with backend_pipe_shutdown():
             backend.stdin.close()
-        except BrokenPipeError:
-            pass
-        except OSError as error:
-            # UCRT reports a closed Windows pipe as EINVAL/ERROR_NO_DATA.
-            # Observe this operation's native error; retain unrelated EINVAL.
-            if os.name!='nt' or error.errno!=errno.EINVAL:raise
-            native=C.c_ulong()
-            if get_error(C.byref(native)) or native.value not in (109,232):raise
     finally:
         backend.stdout.close()
 
@@ -651,13 +657,14 @@ def main():
         try:
             if backend.poll() is None:
                 try:
-                    write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
+                    with backend_pipe_shutdown():
+                        write_packet(backend.stdin, {'seq': bridge.max_client_sequence + 1, 'type': 'request', 'command': 'disconnect', 'arguments': {'terminateDebuggee': True}})
                     deadline = time.monotonic() + 5
                     while backend.poll() is None and time.monotonic() < deadline:
                         try:events.get(timeout=.1)
                         except queue.Empty:pass
                     if backend.poll() is None:raise subprocess.TimeoutExpired(args.backend,5)
-                except (BrokenPipeError, subprocess.TimeoutExpired):
+                except subprocess.TimeoutExpired:
                     backend.terminate()
                     try:backend.wait(timeout=2)
                     except subprocess.TimeoutExpired:backend.kill();backend.wait(timeout=2)

@@ -35,7 +35,7 @@ three passing modular/public debugger groups and a passing separate watch run
 (24 LLDB comparisons, two DAP comparisons). The first four-group run also had
 one `lost connection` exit in the watch group. The exact binary then passed
 three diagnostic replays, and the complete watch group passed unchanged.
-That intermittent transport failure remains recorded; its cause is unresolved.
+The original intermittent failure remains recorded. Subsequent ARM64 core analysis found a `lldb-server` SIGSEGV when `ConfigureVectorLengthZA` indexed an empty optional SME register collection. The [pinned inventory patch](../tools/linux/lldb23-za-registers.json) leaves unadvertised registers untouched. A deterministic test fails with the original dependency and passes nine register configurations after the repair. Replay and complete current Linux/SDK qualification retain separate evidence; the earlier successful replays alone did not establish a fix.
 These checks use the retained Linux0.159 compiler with the updated reader and
 tests. They do not qualify a current0.160 Linux compiler or SDK.
 

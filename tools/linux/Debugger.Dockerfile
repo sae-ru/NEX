@@ -39,6 +39,23 @@ RUN cmake --build /opt/lldb-build --target install-liblldb install-lldb \
     install-lldb-dap install-lldb-server install-lldb-argdumper -j 4 \
     && cp -a /usr/lib/llvm-23/lib/clang /opt/nex-debugger-patched/lib/clang
 
+
+# Preserve the pinned base debugger build cache, then repair the independently
+# reproduced ARM64 optional-register inventory crash before deployment.
+COPY tools/linux/lldb23-za-registers.patch /tmp/lldb23-za-registers.patch
+COPY tools/linux/lldb23-za-registers-test.cpp tools/linux/check_lldb_registers.py /tmp/nex-lldb-registers/
+RUN cd /opt/lldb-src \
+    && echo '6a3bdf7cab9e7dc64d37081871851f705c22ed03067c02ff62eaa4057dc938eb  /tmp/lldb23-za-registers.patch' | sha256sum -c - \
+    && echo 'c0c6d57ccd69fc4f0b37ddac64bbf2fa4e039077c505ae6915c01376f5888a16  lldb/source/Plugins/Process/Utility/RegisterInfoPOSIX_arm64.cpp' | sha256sum -c - \
+    && patch -p1 < /tmp/lldb23-za-registers.patch \
+    && echo 'c672b3ec6a24a1d5f621279426eb662a571c46e0dc83d55c0097b2c97b5ee4ee  lldb/source/Plugins/Process/Utility/RegisterInfoPOSIX_arm64.cpp' | sha256sum -c - \
+    && cmake --build /opt/lldb-build --target lldb lldb-dap lldb-server -j 4 \
+    && python3 -B /tmp/nex-lldb-registers/check_lldb_registers.py \
+       --build /opt/lldb-build --test-source /tmp/nex-lldb-registers/lldb23-za-registers-test.cpp \
+       --output /tmp/nex-lldb-register-evidence \
+    && cmake --build /opt/lldb-build --target install-liblldb install-lldb \
+       install-lldb-dap install-lldb-server install-lldb-argdumper -j 4
+
 FROM ${TOOLCHAIN_IMAGE}
 # Deploy the matching debugger cohort and its resources. Replacing only DAP
 # against the APT liblldb failed the unchanged pre-launch breakpoint check.
