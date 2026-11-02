@@ -1,0 +1,45 @@
+{
+  "schema": "nex.dap-inferior-stream-regression/1",
+  "source_parent": "7472595",
+  "compiler_source": "289b07873a468a18e04328a273defc77220ff5e3",
+  "original_Mac_full": {
+    "groups": 298,
+    "passed": 297,
+    "failed": [
+      "source_exception_module_debug"
+    ],
+    "accepted": false
+  },
+  "cause": "The cleanup line was present and valid. An important-category warning lacked a newline; concatenating it with inferior stdout hid the line prefix.",
+  "fix": "Keep stdout and stderr chunks separate from debugger console/warning messages when reading inferior cleanup. Original cleanup assertions retained.",
+  "original_capture_replay": {
+    "report": "/Users/sae/projects/NEX/build/native-entry-abi-160/DAP-output-regression-v1/captured-protocol-replay.json",
+    "sha256": "ca41866769ce71f84e397f35d497905da569cdd5082b2cf3072bf90d3c29c7e8"
+  },
+  "real_original_binary_delivery_replay": {
+    "report": "/Users/sae/projects/NEX/build/native-entry-abi-160/DAP-output-regression-v2/replay-report.json",
+    "sha256": "accdb4731ce23aac8d97f407746dd5ca7ed59db9a4a83ea374a2c613244087b1",
+    "DAP_cases": 6,
+    "relocations": 2,
+    "rejections": 10,
+    "machine_code_recompiled": false,
+    "original_evidence_bytes_and_links_restored": true
+  },
+  "unit_regression": "Chunked stdout, separate stderr, unterminated important warning and console-only false marker.",
+  "test_source_sha256": {
+    "tests/debugging.py": "aa8fbca9cc0632abb668582d373fd4ec04d734f4f3a483240c9d08d16d6d8b4c",
+    "tests/source_exception_module_debug_delivery.py": "8fbb1a0a7a0615f0dc5a58d5c32cf2548ed474977342f9e88754b47de5174633",
+    "tests/source_exception_task_lldb.py": "336dbe0cce5cc73e94809143ce6aa120736d75c404a01869e07e4cb4aa985460"
+  },
+  "preceding_SDK": {
+    "canonical_phases_per_installation": 41,
+    "additional_cases_per_installation": 61,
+    "native_host_calls_per_installation": 2000,
+    "all_execution_commands_passed": true,
+    "overall_accepted": false,
+    "reason": "Original Mac full gate failed; current quality helpers also need fresh installed delivery."
+  },
+  "fresh_full_regression_accepted": false,
+  "installed_delivery_accepted": false,
+  "goal_complete": false
+}

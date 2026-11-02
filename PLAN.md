@@ -3,10 +3,12 @@
 Port the complete Q1–Q5 chain to actual compiler-selected0.28, retaining0.21
 corpora, original expectations and fresh history. Source runners now select the
 version explicitly, propagate it to Q5 and declare required task source-error
-effects. Short checked-core Mac/Linux agreement and actual Q1–Q4 public cases
-passed; [source evidence](docs/evidence/quality-language-0.28-source.json) records
-the scope. Full100x10000, physical sanitizer fences, matching full regression,
-installed delivery and quiet-host performance/LLM measurement remain required.
+effects. Short checked-core Mac/Linux agreement and the finite Q1–Q5 chain passed,
+including100x10000 with9900/0/1 LLVM calls, source-deleted replay and three physical
+fence modes. [Source evidence](docs/evidence/quality-language-0.28-source.json)
+records the scope and intentional leak/race controls. Matching full regression,
+updated helpers' installed delivery and quiet-host performance/LLM measurement
+remain required; generated provider LLVM IR is not sanitizer-instrumented.
 Every original unfinished language/platform/device/UI/Studio/conversion item remains.
 
 # Platform cohort preparation after SDK 0.159

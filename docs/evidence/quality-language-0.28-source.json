@@ -3,8 +3,8 @@
   "source_parent": "d2ff487bfeefcf0f672014e3fbcbf9a6c674b01d",
   "scope": "Source-only quality-runner update, tested against the immutable0.160 Mac SDK and current0.160 Linux source compiler. Existing archives keep their original helpers.",
   "source_changes": {
-    "PLAN.md": "243c437fbaf0dedb29be444f7f2275df359920f712153c4af8475e90b07c8e83",
-    "STATUS.md": "ceab23ceaec9a19c9a03ccc9d8518cbbb99fde19e2e0e9f53e3f5d466633ca6e",
+    "PLAN.md": "a83313c7c94b915e12c8ca7959ad1609b6e50a4f08b4f8159cafeb5c7fe26c90",
+    "STATUS.md": "befde7baab7ed4ac2e5b1629dc0275a0e4e711ede07e1f133b2bee6bcf6ea936",
     "docs/quality.md": "e29b7fd9e080025befd14c691586defbad5266bfa05cdf481fd08f4f375b6ac9",
     "experiments/quality/README.md": "8d0a9ecf25fa7f45045c0e82cf69b91696552dd2801196008db25f4d3210e3d0",
     "experiments/quality/acceptance_support.py": "89870a74bab624fc1a91d205e29d81929f4dae6801a6ceba10c0aaf68b07e38f",
@@ -14,7 +14,10 @@
     "experiments/quality/scale_100x100.py": "c0fefc2622622e503282f78dc096b686577135caa6a5f54a56b3513ecb649e1e",
     "experiments/quality/server_web_edit.py": "704b30f17ae2fa7e941287b63fed87747a3edef21ac01f12047dbc7b8a357738",
     "experiments/quality/task_cleanup_workflow.py": "642ff21655e9fe28c79d01f6c9a556b357e96f2e419740c1e189dac5517ff5e7",
-    "experiments/quality/type_edit_workflow.py": "ac5aea43fc38ad8585d0eb57d6193c6deec3b7c9e01648c071d6da6d1a924f89"
+    "experiments/quality/type_edit_workflow.py": "ac5aea43fc38ad8585d0eb57d6193c6deec3b7c9e01648c071d6da6d1a924f89",
+    "tests/debugging.py": "aa8fbca9cc0632abb668582d373fd4ec04d734f4f3a483240c9d08d16d6d8b4c",
+    "tests/source_exception_module_debug_delivery.py": "8fbb1a0a7a0615f0dc5a58d5c32cf2548ed474977342f9e88754b47de5174633",
+    "tests/source_exception_task_lldb.py": "336dbe0cce5cc73e94809143ce6aa120736d75c404a01869e07e4cb4aa985460"
   },
   "programming_language_version_changed": false,
   "compiler_or_runtime_code_changed": false,
@@ -99,10 +102,92 @@
       "cause": "E_EFFECT: current source scope/wait callers need explicit throw; original expected outputs and cleanup checks retained."
     }
   ],
-  "full_Q1_Q5_currently_accepted": false,
-  "physical_sanitizer_fences_currently_accepted": false,
+  "full_Q1_Q5_currently_accepted": true,
+  "physical_sanitizer_fences_currently_accepted": true,
   "installed_helpers_delivery_accepted": false,
   "new_source_full_regression_accepted": false,
   "cross_model_tokens_measured": false,
-  "goal_complete": false
+  "goal_complete": false,
+  "tested_quality_runner_commit": "7472595bddef1a3278652a4a09d85d7ee51e4012",
+  "generated_provider_LLVM_IR_instrumented": false,
+  "complete_chain": {
+    "report": "/private/tmp/nex-quality028-chain-htgbir79/execution/report.json",
+    "sha256": "3dc622d24b46e189c2fa1f070b3e10a7b07c6797bdfdfaa63203c75f01a0ec0e",
+    "runner_sha256": "fbefb384a386245717ccf7201cd1bae50f8664f8205c245734acb3bfc83a23c4",
+    "compiler_sha256": "e58c0e11ef50506685528387746d711d30d6f2eab7ae8e9f6df609e8b5f9aed5",
+    "compiler_build": "31133329d57c3fd1af61cf86b7b9a9b76342423623d87131ba911d69bcf956dc",
+    "language": "0.28",
+    "scenarios": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5"
+    ],
+    "Q5": {
+      "report": "/private/tmp/nex-quality028-chain-htgbir79/execution/Q5/report.json",
+      "sha256": "d7e8eaaf36d06b852f7179d189d15182374157ed177e762562e19dc5aacfcc9d",
+      "modules": 100,
+      "declarations": 10000,
+      "actual_llvm_calls": [
+        9900,
+        0,
+        1
+      ],
+      "all10000_ids_preserved": true,
+      "source_deleted_replay": true
+    },
+    "physical_fences": [
+      {
+        "report": "/private/tmp/nex-quality028-chain-htgbir79/execution/physical-plain/report.json",
+        "sha256": "0dcf04eda7210c7a0987f2f6acf3de3f5c30f27d6cf8d51f7ba3891169aae5fc",
+        "instrumentation": "plain",
+        "cases": 4,
+        "passed": true
+      },
+      {
+        "report": "/private/tmp/nex-quality028-chain-htgbir79/execution/physical-asan-ubsan-lsan/report.json",
+        "sha256": "cd77a9a8832f9df9f3af1f850e870ca2298d363d2d79d2a94e49547f4ed394dd",
+        "instrumentation": "asan-ubsan-lsan",
+        "cases": 4,
+        "passed": true
+      },
+      {
+        "report": "/private/tmp/nex-quality028-chain-htgbir79/execution/physical-tsan/report.json",
+        "sha256": "2fb14457baf87d03122d0538e74d6a1cdc07be1981e8dcdf751d1d41ce8dbd13",
+        "instrumentation": "tsan",
+        "cases": 4,
+        "passed": true
+      }
+    ]
+  },
+  "sanitizer_controls": {
+    "report": "/Users/sae/projects/NEX/build/quality-current-language/sanitizer-controls-v1/report.json",
+    "sha256": "80fed459edce5f082e6a42ed89d7795541ee0f8644b1f1d017e695bd9856ad5f",
+    "cases": [
+      {
+        "name": "clean",
+        "requested": "address,undefined",
+        "exit_code": 0,
+        "expected_diagnostic": null,
+        "passed": true
+      },
+      {
+        "name": "leak",
+        "requested": "address,undefined",
+        "exit_code": 86,
+        "expected_diagnostic": "LeakSanitizer",
+        "passed": true
+      },
+      {
+        "name": "race",
+        "requested": "thread",
+        "exit_code": -6,
+        "expected_diagnostic": "ThreadSanitizer: data race",
+        "passed": true
+      }
+    ],
+    "same_packaged_compiler": true,
+    "generated_provider_LLVM_IR_instrumented": false
+  }
 }

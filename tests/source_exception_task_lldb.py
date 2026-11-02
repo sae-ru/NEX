@@ -224,7 +224,7 @@ def main():
         previous=list(sys.argv)
         try:
             sys.argv=[sys.argv[0],emitter]
-            from debugging import DAP
+            from debugging import DAP,inferior_output
         finally:sys.argv=previous
         backend=shutil.which('lldb-dap')
         if not backend and platform.system()=='Darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
@@ -273,7 +273,7 @@ def main():
             finally:(directory/'dap-protocol.json').write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
         messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
         output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
-        cleanup=json.loads(next(line.split(' ',1)[1] for line in output.splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
+        cleanup=json.loads(next(line.split(' ',1)[1] for line in inferior_output(messages.values()).splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
         assert cleanup=={'ok':True,'live_frames':0,'managed_live':0},output
         report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
     save();debugger=shutil.which('lldb');assert debugger,'actual LLDB required'

@@ -5,10 +5,13 @@ algorithms and0.18 default. Short actual Mac/Linux runs passed backend agreement
 and resource-accounting checks; these are operational checks, not throughput
 results. Q1–Q5 source runners select a bounded0.21/0.28 compiler response and
 create fresh projects. Current task scope/wait callers explicitly declare throw.
-Actual Q1–Q3 and all six public Q4 cases passed against the immutable0.160 SDK.
-The [source receipt](docs/evidence/quality-language-0.28-source.json) keeps failed
-attempts and limits. Full Q1–Q5, physical sanitizer fences, installed delivery and
-matching regression remain separate gates. Published archives remain unchanged;
+The full finite Q1–Q5 chain passed against the immutable0.160 SDK:100 modules,
+10000 declarations, actual native cold/warm/edit calls9900/0/1, preserved IDs and
+source-deleted replay. Three physical fence modes passed; packaged LeakSanitizer
+and ThreadSanitizer detected their intentional control faults. Generated provider
+LLVM IR is not instrumented. The [source receipt](docs/evidence/quality-language-0.28-source.json)
+keeps failed attempts and limits. Updated helpers' installed delivery and matching
+regression remain separate gates. Published archives remain unchanged;
 no original pending project requirement is removed.
 
 # Platform cohort preparation after SDK 0.159

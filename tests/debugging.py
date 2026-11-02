@@ -16,11 +16,32 @@ if LIVE:
 import support as harness
 
 
+def inferior_output(messages):
+    """Assemble inferior streams without adapter console/warning messages."""
+    ordered = sorted(messages, key=lambda item: item['seq'])
+    return '\n'.join(''.join(item.get('body', {}).get('output', '') for item in ordered
+        if item.get('event') == 'output' and item.get('body', {}).get('category') == category)
+        for category in ('stdout', 'stderr'))
+
+
 class Debugging(harness.ToolchainCase):
     def setUp(self):
         super().setUp()
         for file in (harness.REPO / "examples/debugging").glob("*.nex"):
             shutil.copyfile(file, self.root / file.name)
+
+    def test_inferior_output_keeps_chunked_stdio_apart_from_unterminated_warnings(self):
+        cleanup = 'NEX_PRIVATE_MODULE_DEBUG_CLEANUP {"ok":true,"live_frames":0}\r\n'
+        messages = [
+            {'seq': 107, 'event': 'output', 'body': {'category': 'important',
+                'output': 'warning: runtime was compiled with optimization'}},
+            {'seq': 135, 'event': 'output', 'body': {'category': 'stdout', 'output': cleanup[:19]}},
+            {'seq': 136, 'event': 'output', 'body': {'category': 'stderr', 'output': 'separate stderr\n'}},
+            {'seq': 137, 'event': 'output', 'body': {'category': 'stdout', 'output': cleanup[19:]}},
+        ]
+        self.assertEqual(inferior_output(reversed(messages)), cleanup + '\nseparate stderr\n')
+        console_only = [{'seq': 1, 'event': 'output', 'body': {'category': 'console', 'output': cleanup}}]
+        self.assertNotIn('NEX_PRIVATE_MODULE_DEBUG_CLEANUP', inferior_output(console_only))
 
     @unittest.skipUnless(sys.platform == 'darwin', 'Darwin LLDB image-path workaround')
     def test_backslash_debug_cache_preserves_identity_and_reuses_owned_directory(self):

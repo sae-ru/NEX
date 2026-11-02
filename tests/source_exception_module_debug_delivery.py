@@ -10,7 +10,7 @@ def verify(source,artifacts,compiler,emitter):
   result=subprocess.run(list(map(str,argv)),cwd=artifacts,env=env,text=True,capture_output=True,timeout=240);(target/(label+'.stdout')).write_text(result.stdout, newline="\n");(target/(label+'.stderr')).write_text(result.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':result.returncode});save();assert result.returncode in allowed,(label,result.stdout[-2000:],result.stderr[-3000:]);return result
  previous=list(sys.argv)
  try:
-  sys.argv=[sys.argv[0],str(emitter)];from debugging import DAP
+  sys.argv=[sys.argv[0],str(emitter)];from debugging import DAP,inferior_output
  finally:sys.argv=previous
  backend=shutil.which('lldb-dap')
  if not backend and platform.system()=='Darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
@@ -45,7 +45,7 @@ def verify(source,artifacts,compiler,emitter):
     finally:(target/(label+'.json')).write_text(json.dumps({'trace':trace,'pending':adapter.pending},ensure_ascii=False,indent=2)+'\n', newline="\n")
    messages={item['seq']:item for item in [*[row['received'] for row in trace if 'received' in row],*adapter.pending] if 'seq' in item}
    output=''.join(item.get('body',{}).get('output','') for _,item in sorted(messages.items()) if item.get('event')=='output')
-   cleanup_text=(d/'dap-inferior.stderr').read_text(encoding='utf-8') if os.name=='nt' else output
+   cleanup_text=(d/'dap-inferior.stderr').read_text(encoding='utf-8') if os.name=='nt' else inferior_output(messages.values())
    cleanup=json.loads(next(line.split(' ',1)[1] for line in cleanup_text.splitlines() if line.startswith('NEX_PRIVATE_MODULE_DEBUG_CLEANUP ')))
    assert cleanup['ok'] is True and cleanup['live_frames']==0,output
    report['DAP'].append({'topology':topology,'optimization':optimization,'all_stop':True,'source_machine_stack':True,'caller_watch':True,'stale_reference_rejected':True,'checked_catch_after_unwind':True,'next_after_unwind':True,'protocol_sha256':hashlib.sha256((target/(label+'.json')).read_bytes()).hexdigest(),'passed':True});save()
