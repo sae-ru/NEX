@@ -248,6 +248,12 @@ prevents secondary listeners from reapplying primary process-state actions.
 The retained Linux22.1.8 run has three real debugger failures; a focused replay
 of the same four binaries with LLDB23 passed. That replay is not full SDK
 acceptance. See [Linux tooling](linux.md) for the exact package pin and scope.
+The optional Linux live-test overlay additionally patches indexed DAP paging:
+the unpatched23 adapter expands an entire value before slicing the requested
+range. It keeps the original NEX page bounds and uses a matching debugger
+library, Python/Clang resources, CLI and server built from the pinned source.
+The [patch inputs](../tools/linux/lldb23-indexed-pages.json) distinguish
+this dependency repair from complete current platform/SDK acceptance.
 
 Debug manifests and relocation receipts are UTF-8 files. The reader decodes
 them explicitly, independently of the host locale, and rejects invalid bytes.

@@ -2,6 +2,8 @@
 !tools/
 !tools/linux/
 !tools/linux/Dockerfile
+!tools/linux/Debugger.Dockerfile
+!tools/linux/lldb23-indexed-pages.patch
 !web/
 !web/package.json
 !web/package-lock.json

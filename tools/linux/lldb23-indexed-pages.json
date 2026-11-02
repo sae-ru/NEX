@@ -1,0 +1,18 @@
+{
+  "schema": "nex.linux-lldb-indexed-pages/1",
+  "source_commit": "a738f2737189bcc1de75c25e8cd1d4b466c9526e",
+  "source_url": "https://github.com/llvm/llvm-project/archive/a738f2737189bcc1de75c25e8cd1d4b466c9526e.tar.gz",
+  "source_archive_sha256": "5407c03d902d188a67638aa10ceec05d94950e83d0dfaab4ad3769dd1b0ad048",
+  "source_file": "lldb/tools/lldb-dap/Variables.cpp",
+  "original_sha256": "22d2c4fd44ef498df98364972ef704efc252c45dc5d45ba581230d56c4a46421",
+  "patched_sha256": "960a03ea8b6a64b09ef5bdefd2a9af5d50da38022f548de8ca05ec648a9ee562",
+  "patch": "lldb23-indexed-pages.patch",
+  "patch_sha256": "447806a73c12274b26a6bb8306a12e7d1a57a0759052f5ae0c66f582e74e6653",
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "problem": "ExpandableValueStore eagerly materializes all children and counts duplicate names before applying start/count. The installed Linux0.160 native_pages live test timed out requesting two children from a32768-element list; its bytes root has4194304 children.",
+  "change": "Fetch only the requested range for arrays and synthetic indexed values classified as in CreateVariable. Clamp the range without overflow; indexed children have unique numeric names. Preserve the general named/duplicate-name and synthetic [raw] debugging paths.",
+  "deployment": "Debugger.Dockerfile installs the matching liblldb, Python/Clang resources, CLI, DAP, server and argdumper built from this pinned source against APT LLVM23 libraries. Source/object files and LLVM23 development tools remain in its build stage. Replacing only DAP against the APT liblldb failed the unchanged pre-launch breakpoint check; the complete debugger build passed the preserved original test binary without changing its bytes or modification times. NEX compilation remains LLVM/MLIR22.1.8.",
+  "regression": "tests/native_pages.py --live retains32768/4194304 children, two final elements,1000-child default/huge-request caps, filters, end/invalid ranges, watch consistency, exit and stale-reference rejection. Required full source/live/installed-SDK acceptance is separate from dependency build success.",
+  "platform_scope": "Linux live-debugger overlay; Windows and Apple debugger delivery are unchanged.",
+  "current_full_SDK_accepted": false
+}

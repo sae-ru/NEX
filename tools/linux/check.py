@@ -76,6 +76,14 @@ def main():
     if not args.skip_image_build:
         with (output/'image.log').open('w') as log:
             subprocess.run(['docker','build','--platform','linux/'+args.arch,'--progress','plain','-f',str(source/'tools/linux/Dockerfile'),'-t',image,str(source)],stdout=log,stderr=subprocess.STDOUT,check=True)
+        if args.live:
+            base_image=image
+            image+='-paged-debugger'
+            with (output/'debugger-image.log').open('w') as log:
+                subprocess.run(['docker','build','--platform','linux/'+args.arch,'--progress','plain',
+                    '--build-arg','TOOLCHAIN_IMAGE='+base_image,
+                    '-f',str(source/'tools/linux/Debugger.Dockerfile'),'-t',image,str(source)],
+                    stdout=log,stderr=subprocess.STDOUT,check=True)
     inspected=json.loads(subprocess.check_output(['docker','image','inspect',image]))[0]
     if inspected['Architecture']!=args.arch:raise RuntimeError('toolchain image architecture differs from selection')
     server=json.loads(subprocess.check_output(['docker','version','--format','{{json .Server}}']))

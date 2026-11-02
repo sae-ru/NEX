@@ -9,6 +9,19 @@ observed archive hashes are recorded in
 APT validates downloads against its signed index; other Ubuntu packages still
 follow their repositories.
 
+Live verification also builds the optional
+[`Debugger.Dockerfile`](../tools/linux/Debugger.Dockerfile) overlay. Its local
+[indexed paging patch](../tools/linux/lldb23-indexed-pages.json) makes LLDB DAP
+fetch the requested indexed range directly. The unpatched23 adapter first
+materializes every child; the Linux0.160 installed live test timed out fetching
+two elements from a32768-element list. Its bytes root contains4194304 elements.
+The existing page sizes and timeouts are retained. The overlay deploys a matching
+LLDB library, Python bindings, CLI, DAP and server built from the pinned source;
+replacing DAP alone against the APT library failed the unchanged pre-launch
+breakpoint check. The compiler remains22.1.8. The preserved original test binary
+passed with the complete debugger build. This dependency repair still needs
+complete current source/live/SDK qualification.
+
 LLDB22.1.8 repeated process-event handling when an additional listener consumed
 events. Three strict Linux debugger groups exposed missed stops or an all-stop
 refusal. Four preserved binaries passed the original scenarios with the fixed
@@ -130,8 +143,19 @@ live-debugger or complete installed-SDK acceptance.
 For actual LLDB/DAP checks on a Linux CPU with native ptrace support:
 
 ```sh
-python3 tools/linux/check.py --arch arm64 --live --skip-image-build
+python3 tools/linux/check.py --arch arm64 --live
 ```
+
+The first run builds both the base toolchain and the paged-debugger overlay.
+To reuse an already built overlay, select its exact tag explicitly:
+
+```sh
+python3 tools/linux/check.py --arch arm64 --live --skip-image-build \
+  --image nex-linux-toolchain:arm64-paged-debugger
+```
+
+The report records the actual immutable image ID. `--skip-image-build` uses
+the selected image as supplied; it does not add the paging patch to an old image.
 
 This grants `SYS_PTRACE` and disables the container's syscall filter for that
 test run, retaining its isolated PID namespace, read-only sources and disabled

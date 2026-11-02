@@ -1,0 +1,51 @@
+--- a/lldb/tools/lldb-dap/Variables.cpp
++++ b/lldb/tools/lldb-dap/Variables.cpp
+@@ -21,6 +21,7 @@
+ #include "llvm/ADT/StringExtras.h"
+ #include "llvm/ADT/StringMap.h"
+ #include "llvm/Support/ErrorHandling.h"
++#include <algorithm>
+ #include <cstdint>
+ #include <optional>
+ #include <vector>
+@@ -332,6 +333,40 @@
+ 
+   llvm::Expected<std::vector<protocol::Variable>>
+   GetVariables(const protocol::VariablesArguments &args) override {
++    // Fetch indexed pages directly. Materializing every child before slicing
++    // defeats supportsVariablePaging for large arrays and synthetic vectors.
++    // Match CreateVariable's indexed classification; indexed names are unique.
++    // Keep the existing [raw] synthetic-debugging behavior on the general path.
++    bool indexed = m_value.GetType().IsArrayType();
++    if (!indexed && m_value.IsSynthetic()) {
++      lldb::SBValue first_child = m_value.GetChildAtIndex(0);
++      indexed = first_child &&
++                llvm::StringRef(first_child.GetName()) == "[0]";
++    }
++    if (indexed && !m_storage.config.enableSyntheticChildDebugging) {
++      std::vector<protocol::Variable> variables;
++      if (args.filter == VariablesArguments::eVariablesFilterNamed)
++        return variables;
++      const uint64_t total = m_value.GetNumChildren();
++      if (args.start >= total)
++        return variables;
++      const uint64_t remaining = total - args.start;
++      const uint64_t count = args.count == 0
++                                 ? remaining
++                                 : std::min(args.count, remaining);
++      const bool format_hex = args.format ? args.format->hex : false;
++      for (uint64_t index = args.start, end = args.start + count; index < end;
++           ++index) {
++        lldb::SBValue child = m_value.GetChildAtIndex(index);
++        if (!child.IsValid())
++          break;
++        variables.emplace_back(CreateVariable(child, format_hex,
++                                               /*is_name_duplicated=*/false,
++                                               std::nullopt));
++      }
++      return variables;
++    }
++
+     std::map<lldb::user_id_t, std::string> name_overrides;
+     lldb::SBValueList list;
+     for (auto inner : m_value)
