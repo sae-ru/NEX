@@ -1,4 +1,5 @@
 """Owned SDK fixtures exercise archive integrity and extraction boundaries."""
+import ast
 import copy
 import contextlib
 import hashlib
@@ -95,6 +96,95 @@ while True:
         client=self.client('bad-shutdown');client.request('initialize')
         with self.assertRaisesRegex(RuntimeError,'shutdown: exit 7'):client.close()
         self.assert_closed(client)
+
+
+class CommandTimeoutEvidence(unittest.TestCase):
+    def runner(self, root):
+        # Compile the actual nested logger without starting its native HTTP
+        # builder. Its process transport is a real controlled stdio peer.
+        source = Path(__file__).with_name('source_exception_http.py')
+        tree = ast.parse(source.read_text(), filename=str(source))
+        functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == 'run']
+        self.assertEqual(len(functions), 1)
+        report, saved = {'commands': []}, []
+        namespace = {'run_native': subprocess.run, 'subprocess': subprocess, 'out': root,
+                     'report': report, 'save': lambda: saved.append(copy.deepcopy(report))}
+        exec(compile(ast.Module(body=functions, type_ignores=[]), str(source), 'exec'), namespace)
+        return namespace['run'], report, saved
+
+    def test_real_timed_out_peer_retains_partial_streams_and_primary_timeout(self):
+        with tempfile.TemporaryDirectory(prefix='nex HTTP command evidence ') as temporary:
+            root = Path(temporary); run, report, saved = self.runner(root)
+            command = [sys.executable, '-u', '-B', '-c',
+                       'import os,time;os.write(1,b"partial LLDB \\xd0\\xaf\\n");'
+                       'os.write(2,b"partial diagnostic \\xe2\\x82");time.sleep(60)']
+            with self.assertRaises(subprocess.TimeoutExpired) as caught: run('peer', command, timeout=2)
+            self.assertEqual(caught.exception.timeout, 2)
+            self.assertEqual((root/'peer.stdout').read_text(encoding='utf-8'), 'partial LLDB Я\n')
+            self.assertEqual((root/'peer.stderr').read_text(encoding='utf-8'), 'partial diagnostic \ufffd')
+            self.assertEqual(report['commands'][0]['exit'], None)
+            self.assertTrue(report['commands'][0]['timed_out'])
+            self.assertEqual(report['commands'][0]['timeout_seconds'], 2)
+            self.assertEqual(saved, [report])
+
+    def test_real_failed_peer_still_fails_and_retains_its_output(self):
+        with tempfile.TemporaryDirectory(prefix='nex HTTP command failure ') as temporary:
+            root = Path(temporary); run, report, saved = self.runner(root)
+            command = [sys.executable, '-B', '-c', 'import sys;sys.stderr.write("peer failed");sys.exit(7)']
+            with self.assertRaises(AssertionError): run('peer', command)
+            self.assertEqual((root/'peer.stderr').read_text(), 'peer failed')
+            self.assertEqual(report['commands'][0]['exit'], 7)
+            self.assertEqual(saved, [report])
+
+
+class FailedFixtureOwnership(unittest.TestCase):
+    def exercise(self, outcome):
+        spec = importlib.util.spec_from_file_location(
+            'failure_fixture_support', Path(__file__).with_name('support.py'))
+        support = importlib.util.module_from_spec(spec)
+        with mock.patch.object(sys, 'argv', [__file__, sys.executable]):
+            spec.loader.exec_module(support)
+        observed = {}
+
+        class NestedProject(support.ToolchainCase):
+            __module__ = 'fixture_failure_peer'
+            __qualname__ = 'NestedProject'
+            def runTest(self):
+                parent = self.root; observed['original_parent'] = parent
+                self.root = parent/'project % 🧠'; self.root.mkdir()
+                (self.root/'main.nex').write_text('fixture only', encoding='utf-8')
+                moved = parent/'moved replay'; moved.mkdir()
+                (moved/'receipt.json').write_text('{"preserve":"replay"}', encoding='utf-8')
+                (parent/'sibling.json').write_text('external package evidence', encoding='utf-8')
+                shutil.rmtree(self.root)
+                if outcome == 'failure': self.fail('primary assertion remains visible')
+                if outcome == 'error': raise RuntimeError('primary exception remains visible')
+
+        with tempfile.TemporaryDirectory(prefix='nex fixture ownership ') as temporary:
+            destination = Path(temporary)/'retained'; result = unittest.TestResult()
+            with mock.patch.dict(os.environ, {'NEX_TEST_FAILURE_ROOT': str(destination)}), \
+                 contextlib.redirect_stderr(io.StringIO()):
+                unittest.TestSuite([NestedProject()]).run(result)
+            self.assertFalse(observed['original_parent'].exists())
+            if outcome == 'passed':
+                self.assertTrue(result.wasSuccessful()); self.assertFalse(destination.exists())
+                return
+            self.assertEqual(len(result.failures), 1 if outcome == 'failure' else 0)
+            self.assertEqual(len(result.errors), 1 if outcome == 'error' else 0)
+            primary = (result.failures if outcome == 'failure' else result.errors)[0][1]
+            self.assertIn('primary assertion' if outcome == 'failure' else 'primary exception', primary)
+            roots = list(destination.iterdir()); self.assertEqual(len(roots), 1)
+            self.assertEqual((roots[0]/'moved replay/receipt.json').read_text(), '{"preserve":"replay"}')
+            self.assertEqual((roots[0]/'sibling.json').read_text(), 'external package evidence')
+
+    def test_assertion_after_deleted_nested_root_keeps_parent_and_primary_failure(self):
+        self.exercise('failure')
+
+    def test_exception_after_deleted_nested_root_keeps_parent_and_primary_error(self):
+        self.exercise('error')
+
+    def test_passing_fixture_still_removes_parent_without_retaining_files(self):
+        self.exercise('passed')
 
 
 class LinuxVerifierBudgets(unittest.TestCase):

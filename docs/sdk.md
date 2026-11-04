@@ -677,6 +677,15 @@ The Linux verifier keeps its600-second limit for individual inspection tools.
 The complete maintained workflow uses the18000-second aggregate limit, including
 all41 phases in0.162; native task deadlines and DAP response limits are unchanged.
 
+Failed source-test fixtures retain their owned temporary parent, including moved
+replay inputs and sibling packages, when a test removes its nested project root.
+The Windows oversized-core fixture sets a sparse logical EOF directly; it does
+not extend the file through the CRT's zero-writing truncate path. The concurrent
+storage host reports worker exception codes and still exits unsuccessfully;
+its transaction counts and the runtime's1000-ms busy timeout remain unchanged.
+Timed-out source HTTP/debugger commands save their partial stdout/stderr before
+reraising the original process timeout, including interrupted UTF-8 diagnostics.
+
 
 ### Read-only standard-library replay acceptance
 

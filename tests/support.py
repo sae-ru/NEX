@@ -81,10 +81,13 @@ class ToolchainCase(unittest.TestCase):
         rows+=list(getattr(getattr(self,'_outcome',None),'errors',[]))
         failed=any(error is not None and (test is self or getattr(test,'test_case',None) is self)
                    for test,error in rows)
-        if destination and failed:
-            target=Path(destination)/(self.id()+'-'+self.root.name.replace(' ','_'))
+        # Subclasses can replace or deliberately delete self.root. Retain the
+        # owned temporary parent, including moved replay inputs and siblings.
+        fixture=Path(self.temp.name)
+        if destination and failed and fixture.exists():
+            target=Path(destination)/(self.id()+'-'+fixture.name.replace(' ','_'))
             target.parent.mkdir(parents=True,exist_ok=True)
-            shutil.move(str(self.root),str(target))
+            shutil.move(str(fixture),str(target))
             print('Preserved failed fixture: '+str(target),file=sys.stderr)
         self.temp.cleanup()
 

@@ -215,7 +215,7 @@ class CoreCapsules(harness.ToolchainCase):
         self.assertEqual(self.read(capsule, ok=False)['code'], 'E_CORE_CAPSULE')
         core.unlink()
         with core.open('wb') as stream:
-            sparse_file(stream);stream.truncate(32*1024**3+1)
+            sparse_file(stream, size=32*1024**3+1)
         self.assertEqual(self.read(capsule, ok=False, timeout=10)['code'], 'E_CORE_CAPSULE')
 
     @unittest.skipUnless(LIVE, 'use --live for actual native core capsule relocation')

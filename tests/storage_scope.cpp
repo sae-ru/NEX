@@ -1,6 +1,9 @@
 #include "nex_host.h"
 #include "nex_io.h"
 #include <cassert>
+#include <exception>
+#include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 extern "C" nexrt::Handle *nex_7_storage_6_mutate(nexrt::Handle*);
@@ -33,8 +36,22 @@ int main(int argc,char **argv){
   }
   assert(count(argv[1],"alice")==1);
   std::vector<std::thread> workers;
-  for(int i=0;i<8;++i)workers.emplace_back([&]{for(int n=0;n<12;++n)request(argv[1],"alice",0);});
+  std::mutex errorsMutex;
+  std::vector<std::exception_ptr> errors;
+  for(int i=0;i<8;++i)workers.emplace_back([&]{
+    try{for(int n=0;n<12;++n)request(argv[1],"alice",0);}
+    catch(...){std::lock_guard lock(errorsMutex);errors.push_back(std::current_exception());}
+  });
   for(auto &worker:workers)worker.join();
+  if(!errors.empty()){
+    for(const auto &error:errors){
+      try{std::rethrow_exception(error);}
+      catch(const nexrt::DataError &value){std::cerr<<"worker database error ["<<value.code<<"]: "<<value.what()<<'\n';}
+      catch(const std::exception &value){std::cerr<<"worker exception: "<<value.what()<<'\n';}
+      catch(...){std::cerr<<"unknown worker exception\n";}
+    }
+    nex_runtime_finish();return 1;
+  }
   assert(count(argv[1],"alice")==97);assert(count(argv[1],"bob")==1);
   nex_runtime_finish();
 }
