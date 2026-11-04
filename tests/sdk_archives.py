@@ -136,6 +136,19 @@ class CommandTimeoutEvidence(unittest.TestCase):
             self.assertEqual(report['commands'][0]['exit'], 7)
             self.assertEqual(saved, [report])
 
+    def test_real_successful_peer_keeps_UTF8_text_and_universal_newlines(self):
+        with tempfile.TemporaryDirectory(prefix='nex HTTP text peer ') as temporary:
+            root = Path(temporary); run, report, saved = self.runner(root)
+            command = [sys.executable, '-B', '-c',
+                       'import os;os.write(1,b"value \\xc3\\xa9\\r\\nnext\\r");'
+                       'os.write(2,b"note \\xce\\xa9\\r\\n")']
+            result = run('peer', command)
+            self.assertEqual(result.stdout, 'value é\nnext\n')
+            self.assertEqual(result.stderr, 'note Ω\n')
+            self.assertEqual((root/'peer.stdout').read_bytes(), 'value é\nnext\n'.encode())
+            self.assertEqual(report['commands'][0]['exit'], 0)
+            self.assertEqual(saved, [report])
+
 
 class FailedFixtureOwnership(unittest.TestCase):
     def exercise(self, outcome):

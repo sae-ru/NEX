@@ -46,14 +46,19 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
     report={'ok':False,'commands':[],'images':[],'references':[],'requests':[],'servers':[],'disconnects':[],'signature_rejections':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_language':'0.24','private_identity':'0.25-prototype','public_source_support':False,'HTTP':True,'HTTPS':True,'new_publication_claimed':False,'full_objective_complete':False}
     def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,argv,env=None,allowed=(0,),timeout=300):
+        def captured(value,errors='strict'):
+            value=value.decode('utf-8',errors) if isinstance(value,bytes) else value or ''
+            return value.replace('\r\n','\n').replace('\r','\n')
         try:
-            r=run_native(list(map(str,argv)),cwd=out,text=True,capture_output=True,env=env,timeout=timeout)
+            # Windows text-mode reader threads can lose interrupted UTF-8.
+            # Capture bytes first, then preserve the ordinary text interface.
+            r=run_native(list(map(str,argv)),cwd=out,text=False,capture_output=True,env=env,timeout=timeout)
         except subprocess.TimeoutExpired as error:
-            def captured(value):return value.decode('utf-8','replace') if isinstance(value,bytes) else value or ''
-            (out/(label+'.stdout')).write_text(captured(error.stdout),encoding='utf-8',newline="\n")
-            (out/(label+'.stderr')).write_text(captured(error.stderr),encoding='utf-8',newline="\n")
+            (out/(label+'.stdout')).write_text(captured(error.stdout,'replace'),encoding='utf-8',newline="\n")
+            (out/(label+'.stderr')).write_text(captured(error.stderr,'replace'),encoding='utf-8',newline="\n")
             report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':None,'timed_out':True,'timeout_seconds':timeout});save()
             raise
+        r.stdout=captured(r.stdout);r.stderr=captured(r.stderr)
         (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode in allowed,(label,r.returncode,r.stdout[-1800:],r.stderr[-3000:]);return r
     save();run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll']);target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-fPIC','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_FOREIGN_ENABLED','-DNEX_SOURCE_EXCEPTION_HTTP','-I'+str(runtime),'-I'+include]

@@ -683,8 +683,10 @@ The Windows oversized-core fixture sets a sparse logical EOF directly; it does
 not extend the file through the CRT's zero-writing truncate path. The concurrent
 storage host reports worker exception codes and still exits unsuccessfully;
 its transaction counts and the runtime's1000-ms busy timeout remain unchanged.
-Timed-out source HTTP/debugger commands save their partial stdout/stderr before
-reraising the original process timeout, including interrupted UTF-8 diagnostics.
+Source HTTP/debugger commands capture pipe bytes before decoding UTF-8 text.
+Timeouts save partial stdout/stderr before reraising the original process error;
+interrupted UTF-8 tails remain diagnostic text, and normal text/newline behavior
+is unchanged.
 
 
 ### Read-only standard-library replay acceptance
