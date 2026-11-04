@@ -1,0 +1,76 @@
+{
+  "schema": "nex.windows-complete-debugger-development-evidence/1",
+  "date": "2026-11-05",
+  "scope": "Complete rebuilt debugger and selected current source regressions; development evidence, not a release or source-free SDK qualification.",
+  "platform": "Windows 11 x86-64",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "resource_source_commit": "3e31528901544a9405275995d072432e6f29823a",
+  "resource_files": 1936,
+  "compiler_sha256": "b48919184d17e9aae68cfaecb566a98ed65760f322e265dccffdacb48b4f75b0",
+  "debugger": {
+    "identity": "llvmorg-23.1.4+nex-windows-11a168ad734d-pages-447806a73c12",
+    "windows_patch_sha256": "11a168ad734dec8164d2913ca9b5cd1dfea8ee457de927aa967cd6203241265b",
+    "files": {
+      "lldb.exe": "449830814b9f5522ceaaa65ffc715d22362a09f4f6f04efbed3f17208329dad3",
+      "lldb-dap.exe": "63d3efc1ee2e9480e81f4f8e8520cb1af2e0f1234e48062a33d26abe0e696560",
+      "lldb-server.exe": "7a97fbfc76d652b4c9d588004f7bea5cc23d0699688b147159016a32efade033",
+      "liblldb.dll": "bb143ee3918a2af3200e699b6f1a5abe7dc9f1110b8a2e0a4eb18874e54ba577"
+    },
+    "all_components_rebuilt": true,
+    "selected_explicit_lldb_and_dap_in_source_fixtures": true,
+    "PATH_contains_distinct_LLDB22": true,
+    "Python_controller": "3.14.3"
+  },
+  "validation": {
+    "CTest_groups": [
+      "task_debugging_native",
+      "source_contract_debugging",
+      "source_exception_module_debug",
+      "source_exception_module_http_debug",
+      "source_exceptions_projects_debug",
+      "core_capsules",
+      "project_tasks",
+      "dap_transport"
+    ],
+    "CTest_passed": 8,
+    "CTest_failed": 0,
+    "independent_C_launch_breakpoint_value_and_exit_passed": true,
+    "live_LLDB_and_DAP_passed": true,
+    "private_job_commands": 15,
+    "nonzero_root_exits": 0,
+    "job_timeouts": 0,
+    "fatal_diagnostics_in_captured_streams": 0,
+    "job_active_processes_after_each": 0,
+    "source_and_debugger_hashes_unchanged_after_all_commands": true,
+    "seconds": 3237.6733031000476,
+    "raw_inventory_files": 119,
+    "raw_inventory_sha256": "19e8cf636f5db8e438c1ecc6976fd5bea4df2c2b75dd9fa9bcceac0bef8317cb"
+  },
+  "retained_failed_attempts": [
+    "Initial debugger-first PATH mixed LLVM DLL versions and failed compiler startup. Compiler LLVM22 remains first in PATH.",
+    "A test-harness node_modules link violated strict resource integrity and was removed from the next fresh source copy. Integrity checks remain active.",
+    "Fixtures selected the unrelated PATH LLDB22 despite explicit NEX_LLDB23. The shared debugger_tool helper now honors both explicit debugger selections.",
+    "A controller-environment preflight did not check the actual child environment. The passing preflight runs in that child environment."
+  ],
+  "separate_macOS_source_regression": {
+    "source_commit": "cc0c26a684e8951295760b810ef7a072745b90bf",
+    "groups": 298,
+    "failed": 0,
+    "skipped": 0,
+    "current_tool_selection_fixture_changes_included": false,
+    "compiler_sha256": "793f7ab2adb2480362bc0a9ae00601f9d879d675bdf645d12ed2820b2fb8c568",
+    "JUnit_sha256": "c1f7f6a13e6011dca4f49b0ecdd55e357cb8d832a2bf51904e2bc52948ea9049"
+  },
+  "limits": [
+    "External compiler build and dependency roots remained accessible.",
+    "Fresh complete Windows restricted-policy cohort and moved/restored read-only source-denied SDK acceptance remain pending.",
+    "The host intentionally restricts IPv6; successful positive IPv6 conformance is not claimed.",
+    "This does not promote main, the published SDK or the local current-sdk."
+  ],
+  "kernel_process_ownership_record": "windows-job-observer-2026-11-05.json",
+  "all309_core_source_files_unchanged": true,
+  "full_debugger_regression_accepted": false,
+  "whole_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}

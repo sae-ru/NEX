@@ -280,3 +280,8 @@ continues to describe its original debugger.
 
 Debug manifests and relocation receipts are UTF-8 files. The reader decodes
 them explicitly, independently of the host locale, and rejects invalid bytes.
+
+The [complete Windows debugger development record](evidence/windows-debugger-development-2026-11-05.json)
+pins the rebuilt LLDB components, eight selected source regression groups and
+live LLDB/DAP checks. These checks retain access to build dependencies; complete
+Windows cohort and source-denied SDK qualification remain pending.
