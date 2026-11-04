@@ -1,6 +1,6 @@
 {
   "schema": "nex.debugger-repair-development/1",
-  "recorded_utc": "2026-11-02T21:54:41.209194+00:00",
+  "recorded_utc": "2026-11-04T05:56:06.049777+00:00",
   "source_parent": "5844dd5a529da81868b63cdd4d758f45e5d844aa",
   "language": "0.28",
   "goal_complete": false,
@@ -50,13 +50,57 @@
     "fix": "Scope existing broken-pipe/native ERROR_BROKEN_PIPE or ERROR_NO_DATA handling to disconnect flush as well as buffered-writer close; unrelated EINVAL and other I/O errors still fail",
     "Mac_actual_Python310_cases_passed": 17,
     "Mac_actual_Python314_cases_passed": 17,
-    "Windows_fixed_adapter_execution_pending": true,
-    "full_current_Windows_regression_accepted": false
+    "Windows_fixed_adapter_execution_pending": false,
+    "full_current_Windows_regression_accepted": false,
+    "Windows_fixed_compiler": "0.162.0",
+    "Windows_fixed_compiler_sha256": "7383743b467d807f6862ce10fc064efc6c04ee285bb75478caf890a24f6eb06c",
+    "Windows_fixed_cases_passed": 17,
+    "Windows_additional_native_backend_exits_passed": 100
   },
   "Mac_current_full5844": {
     "accepted": false,
-    "completed": false,
-    "observed_failure": "source_exception_module_http_debug:LLDB debug-next timeout300s; exact snapshot retained; separate investigation required"
+    "completed": true,
+    "observed_failure": "source_exception_module_http_debug:LLDB debug-next timeout300s; exact snapshot retained; separate investigation required",
+    "result": {
+      "passed": 297,
+      "failed": 1
+    },
+    "exact_original_image_natural16_replays_passed": true,
+    "original_timeout_cause_resolved": false
   },
-  "current_SDK_accepted": false
+  "current_SDK_accepted": false,
+  "implementation_commit": "d9e7ec0db1b856374f480434157825d7581816ce",
+  "Mac_fixed_full_d9": {
+    "groups": 298,
+    "passed": 298,
+    "failed": [],
+    "skipped": [],
+    "compiler_sha256": "facd61660100313d26c0818d981dfccfa74615e631efd7ac958387c64274ec4a",
+    "full_source_accepted": true,
+    "SDK_accepted": false
+  },
+  "Windows_current162_profile": {
+    "compiler_source_commit": "5844dd5a529da81868b63cdd4d758f45e5d844aa",
+    "compiler_sha256": "7383743b467d807f6862ce10fc064efc6c04ee285bb75478caf890a24f6eb06c",
+    "standard_registry_groups": 298,
+    "selected_groups": 294,
+    "passed_groups": 292,
+    "failed_groups": [
+      "owned_device_contract",
+      "dap_transport"
+    ],
+    "IPv6_intentionally_restricted": true,
+    "system_network_policy_changed": false,
+    "full_regression_accepted": false,
+    "selected_kernel_cases": 16,
+    "selected_kernel_checks": 87,
+    "TCP_source_comparisons": 33,
+    "DNS_source_comparisons": 45,
+    "HTTP_source_comparisons": 87,
+    "IPv6_policy_denial_passed": true,
+    "CUDA_physical_cases_passed": 35,
+    "device_fixture_failure": "Test linked bin/nex while native Windows preparer requires bin/nex.exe; fixture corrected without changing --check-sdk assertions",
+    "Mac_device_contract_cases_after_fixture_fix": 5,
+    "complete_profile_after_both_repairs_pending": true
+  }
 }

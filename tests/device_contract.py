@@ -40,7 +40,7 @@ class DeviceContract(unittest.TestCase):
   log_help=subprocess.run([sys.executable,'-B',str(ROOT/'experiments/owned-opencl/logs.py'),'--help'],capture_output=True,text=True,timeout=30)
   self.assertEqual(log_help.returncode,0,log_help.stderr);self.assertIn('--old-limit-red',log_help.stdout)
   sdk=self.root/'SDK';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir()
-  (sdk/'bin/nex').symlink_to(COMPILER);(sdk/'share/nex').symlink_to(ROOT)
+  (sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex')).symlink_to(COMPILER);(sdk/'share/nex').symlink_to(ROOT)
   output=self.root/'prepared'
   result=subprocess.run([sys.executable,'-B',str(ROOT/'experiments/owned-opencl/prepare.py'),'--sdk',str(sdk),'--output',str(output),'--check-sdk'],cwd=self.root,env=self.env,capture_output=True,text=True,timeout=180)
   self.assertEqual(result.returncode,0,(result.stdout,result.stderr));report=json.loads((output/'preparation/report.json').read_text())
