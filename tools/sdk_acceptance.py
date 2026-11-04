@@ -3,6 +3,7 @@
 import argparse
 import base64
 import concurrent.futures
+import errno
 import hashlib
 import json
 import os
@@ -1286,6 +1287,9 @@ class DAP:
         self.messages = queue.Queue()
         self.pending = []
         self.sequence = 0
+        self.last_request = None
+        self.waiting_for = None
+        self.shutdown_error = None
 
         def read():
             try:
@@ -1318,11 +1322,21 @@ class DAP:
 
     def send(self, command, arguments=None):
         self.sequence += 1
+        self.last_request = (self.sequence, command)
         body = json.dumps({'seq': self.sequence, 'type': 'request',
                            'command': command, 'arguments': arguments or {}}).encode()
         self.process.stdin.write(('Content-Length: %d\r\n\r\n' % len(body)).encode() + body)
         self.process.stdin.flush()
         return self.sequence
+
+    def wait_error(self, detail):
+        expected = self.waiting_for
+        if expected is None and self.last_request:
+            expected = 'message after request %s #%d' % (self.last_request[1], self.last_request[0])
+        status = self.process.poll()
+        return RuntimeError('DAP %s while waiting for %s; adapter PID %d %s; stderr: %s' %
+                            (detail, expected or 'message', self.process.pid,
+                             'running' if status is None else 'exit ' + str(status), self.log.name))
 
     def wait(self, predicate, timeout=30):
         deadline = time.monotonic() + timeout
@@ -1330,13 +1344,24 @@ class DAP:
             for index, message in enumerate(self.pending):
                 if predicate(message):
                     return self.pending.pop(index)
-            message = self.messages.get(timeout=max(.01, deadline - time.monotonic()))
-            require(message is not None and not isinstance(message, Exception),
-                    'DAP stream stopped: ' + str(message))
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise self.wait_error('timeout after %g seconds' % timeout)
+            try:
+                message = self.messages.get(timeout=remaining)
+            except queue.Empty:
+                raise self.wait_error('timeout after %g seconds' % timeout) from None
+            if message is None or isinstance(message, Exception):
+                raise self.wait_error('stream stopped: ' + str(message))
             self.pending.append(message)
 
     def response(self, sequence):
-        value = self.wait(lambda m: m.get('type') == 'response' and m.get('request_seq') == sequence)
+        previous = self.waiting_for
+        self.waiting_for = 'response #%d' % sequence
+        try:
+            value = self.wait(lambda m: m.get('type') == 'response' and m.get('request_seq') == sequence)
+        finally:
+            self.waiting_for = previous
         require(value.get('success'), 'DAP request failed: ' + str(value))
         return value.get('body', {})
 
@@ -1344,26 +1369,74 @@ class DAP:
         return self.response(self.send(command, arguments))
 
     def event(self, name):
-        return self.wait(lambda m: m.get('type') == 'event' and m.get('event') == name).get('body', {})
+        previous = self.waiting_for
+        self.waiting_for = 'event ' + name
+        try:
+            return self.wait(lambda m: m.get('type') == 'event' and m.get('event') == name).get('body', {})
+        finally:
+            self.waiting_for = previous
 
     def close(self):
+        primary_error = sys.exc_info()[1]
+        input_errors = []
+        cleanup_errors = []
+
+        def close_input():
+            if not self.process.stdin.closed:
+                try:
+                    self.process.stdin.close()
+                except OSError as error:
+                    input_errors.append(error)
+
         try:
             if self.process.poll() is None:
                 try:
                     self.send('disconnect', {'terminateDebuggee': True})
-                    self.process.stdin.close()
+                except OSError as error:
+                    # Windows can report EINVAL, rather than EPIPE, when the
+                    # peer has already closed its input. Still reap it normally.
+                    input_errors.append(error)
+                close_input()
+                try:
                     self.process.wait(timeout=5)
-                except (Exception, KeyboardInterrupt):
+                except subprocess.TimeoutExpired:
                     self.process.kill()
                     self.process.wait(timeout=5)
+        except BaseException:
+            if self.process.poll() is None:
+                self.process.kill()
+                self.process.wait(timeout=5)
+            raise
         finally:
-            self.process.stdin.close()
-            self.reader.join(timeout=5)
-            self.process.stdout.close()
-            self.log.close()
-        require(not self.reader.is_alive(), 'DAP output reader failed to stop')
-        require(self.process.returncode == 0,
-                'DAP adapter failed during shutdown: exit ' + str(self.process.returncode))
+            close_input()
+            try:
+                self.reader.join(timeout=5)
+            finally:
+                try:
+                    self.process.stdout.close()
+                except OSError as error:
+                    cleanup_errors.append('stdout close: ' + str(error))
+                finally:
+                    self.log.close()
+        for error in input_errors:
+            if error.errno not in (errno.EPIPE, errno.EINVAL) or not self.process.stdin.closed:
+                cleanup_errors.append('stdin close: ' + str(error))
+        if self.reader.is_alive():
+            self.shutdown_error = 'DAP output reader failed to stop'
+        elif self.process.returncode != 0:
+            self.shutdown_error = 'DAP adapter failed during shutdown: exit ' + str(self.process.returncode)
+        elif cleanup_errors:
+            self.shutdown_error = '; '.join(cleanup_errors)
+        if self.shutdown_error:
+            if primary_error is None:
+                raise RuntimeError(self.shutdown_error)
+            # Keep the failed request as the primary error on Python 3.10 too.
+            # Cleanup diagnostics belong in its log, never in place of it.
+            with open(self.log.name, 'ab') as log:
+                log.write(('\nDAP cleanup: ' + self.shutdown_error + '\n').encode('utf-8'))
+            if hasattr(primary_error, 'add_note'):
+                primary_error.add_note(self.shutdown_error)
+            return
         DAP.successful_shutdowns += 1
 
 

@@ -25,6 +25,78 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class SDKClientLifecycle(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix='nex DAP peer ')
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.peer = self.root/'peer.py'
+        self.peer.write_text('''import json,sys
+mode=sys.argv[1];stream=sys.stdin.buffer;crlf=bytes([13,10])
+while True:
+ headers={}
+ while True:
+  line=stream.readline()
+  if not line:sys.exit(0)
+  if line==crlf:break
+  key,value=line.decode().split(':',1);headers[key.lower()]=value.strip()
+ request=json.loads(stream.read(int(headers['content-length'])))
+ if request['command']=='disconnect':sys.exit(0 if mode=='clean' else 7)
+ if request['command']=='launch':
+  if mode=='eof':sys.exit(9)
+  continue
+ body=json.dumps({'type':'response','request_seq':request['seq'],'command':request['command'],'success':True}).encode()
+ sys.stdout.buffer.write(('Content-Length: %d'%len(body)).encode()+crlf+crlf+body);sys.stdout.buffer.flush()
+''',encoding='utf-8')
+
+    def client(self, mode):
+        return acceptance.DAP([sys.executable,'-u','-B',str(self.peer),mode],self.root,
+                              dict(os.environ,PYTHONDONTWRITEBYTECODE='1'))
+
+    def assert_closed(self, client):
+        self.assertIsNotNone(client.process.poll())
+        self.assertFalse(client.reader.is_alive())
+        self.assertTrue(client.process.stdin.closed)
+        self.assertTrue(client.process.stdout.closed)
+        self.assertTrue(client.log.closed)
+
+    def test_real_peer_graceful_shutdown_releases_owned_process_and_reader(self):
+        before=acceptance.DAP.successful_shutdowns;client=self.client('clean')
+        try:client.request('initialize')
+        finally:client.close()
+        self.assert_closed(client)
+        self.assertEqual(client.process.returncode,0)
+        self.assertEqual(acceptance.DAP.successful_shutdowns,before+1)
+
+    def test_timeout_keeps_request_failure_when_shutdown_also_fails(self):
+        before=acceptance.DAP.successful_shutdowns;client=self.client('bad-shutdown')
+        with self.assertRaisesRegex(RuntimeError,'DAP timeout.*request launch') as caught:
+            try:
+                client.request('initialize');client.send('launch')
+                client.wait(lambda message:message.get('event')=='initialized',timeout=.1)
+            finally:client.close()
+        self.assertIn('adapter PID',str(caught.exception))
+        self.assertIn(str(self.root/'dap-stderr.log'),str(caught.exception))
+        self.assertEqual(client.shutdown_error,'DAP adapter failed during shutdown: exit 7')
+        self.assertIn(client.shutdown_error,(self.root/'dap-stderr.log').read_text())
+        self.assertEqual(acceptance.DAP.successful_shutdowns,before)
+        self.assert_closed(client)
+
+    def test_EOF_keeps_expected_event_and_original_failure_on_cleanup(self):
+        client=self.client('eof')
+        with self.assertRaisesRegex(RuntimeError,'DAP stream stopped.*event initialized'):
+            try:
+                client.request('initialize');client.send('launch');client.event('initialized')
+            finally:client.close()
+        self.assertEqual(client.process.returncode,9)
+        self.assert_closed(client)
+
+    def test_shutdown_failure_without_prior_error_remains_a_failure(self):
+        client=self.client('bad-shutdown');client.request('initialize')
+        with self.assertRaisesRegex(RuntimeError,'shutdown: exit 7'):client.close()
+        self.assert_closed(client)
+
+
 class DistributionWorkflow(unittest.TestCase):
     def tcp_report(self, profile='full'):
         # Synthetic receipt shapes exercise the validator, not platform execution.

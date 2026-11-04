@@ -29,6 +29,11 @@ compiler selection, bundle assembly or individual phases do not establish comple
 Windows SDK delivery. The current compiler selection has a separate
 [Windows smoke receipt](evidence/windows-current-compiler-2026-11-02.json).
 
+DAP timeout diagnostics identify the expected event or response, adapter PID,
+exit state and `dap-stderr.log`. Secondary shutdown failures are recorded in that
+log while the original request failure is preserved. Request deadlines and
+successful-shutdown checks remain active.
+
 Direct C11/C++20 acceptance fixtures use the relocated SDK's selected target
 and sysroot for both the selected C++ driver and its sibling `clang` C driver.
 This includes the source-resource producers; system headers must come from the
