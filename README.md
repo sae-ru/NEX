@@ -52,6 +52,12 @@ platform acceptance.
 
 ## Development status
 
+The scoped [Linux ARM64 development SDK record](docs/evidence/linux-portable-sdk-development-2026-11-05.json)
+pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,
+41 after archive restoration, and 41 in a separate external-debugger environment.
+The first two runs have no external LLVM/MLIR/Z3. Newer resources and older-glibc
+physical stands require their own qualification; the published release below remains 0.159.
+
 Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
 response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)
 includes selected IPv4 execution and source-deleted packages on the compatible

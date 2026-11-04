@@ -10,6 +10,10 @@ passed 150 production-browser checks and recorded CLI/OpenCL checks.
 
 Use the [English](getting-started.en.md) or [Russian](getting-started.ru.md)
 installation guide. Current Windows/Linux qualification remains separate.
+The [Linux ARM64 development record](evidence/linux-portable-sdk-development-2026-11-05.json)
+pins a different 0.162 archive and resource snapshot: clean moved/restored
+41-phase runs plus a separate 41-phase live-debugger run. It retains its exact
+source identities and does not promote newer resources or older-glibc stands.
 The sections below preserve earlier workflow versions and their requirements;
 their old phase counts do not replace this 41-phase contract. Query the selected
 compiler's doctor/descriptor and require a completed report for its exact bytes.
