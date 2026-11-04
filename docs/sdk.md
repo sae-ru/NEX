@@ -678,6 +678,19 @@ inference or general GPU/NPU execution.
 
 ### C/C++ producer paths in relocated SDKs
 
+On Windows the native driver and sysroot occupy separate SDK paths. Ordinary
+NEX builds select both through the SDK descriptor. Direct C/C++ host builds use
+`doctor.native_compiler` with `--target=<doctor.host>` and
+`--sysroot=<doctor.native_sysroot>`, together with the selected link dependencies.
+The acceptance helper supplies these defaults for its selected native driver.
+A regression compiles a private header available only inside the moved sysroot,
+links C11 and C++20 code, deletes their sources and runs the resulting program.
+
+Deployed-program checks retain the required Windows OS environment, including
+`SystemRoot`, existing `TEMP`/`TMP` and a System32-only `PATH`. SDK and developer
+search paths remain absent. This also gives the foreign loader its normal
+writable OS temporary directory after the original project has been removed.
+
 The installed source-resource and debugger gates encode marker paths as UTF-8
 bytes in fixed-width C octal escapes. JSON string encoding is not a C literal
 encoder: non-BMP characters become surrogate pairs which Clang rejects, and

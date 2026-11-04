@@ -94,6 +94,31 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.assertTrue(any(call[0] == 'archiver' for call in calls))
         self.assertTrue(all(Path(call[1]).is_relative_to(moved) for call in calls))
 
+    def test_moved_direct_C11_and_CPP20_fixtures_use_the_selected_sysroot(self):
+        self.stage()
+        moved=self.root/'fixture SDK % 🧠';self.prefix.rename(moved);self.prefix=moved
+        doctor=self.staged('doctor')
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('selected_sdk_fixture',harness.REPO/'tools/sdk_host.py')
+        helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+        include=Path(doctor['native_sysroot'])/'include' if os.name=='nt' else self.root/'fixture-include'
+        include.mkdir(exist_ok=True)
+        # This header is absent from the driver's original installation. A
+        # Windows compile that ignores the moved sysroot must fail to find it.
+        (include/'nex_selected_fixture.h').write_text('#define NEX_SELECTED_FIXTURE_VALUE 38\n',newline='\n')
+        c=self.root/'fixture.c';cpp=self.root/'fixture.cpp';obj=self.root/'fixture.o'
+        exe=self.root/('fixture.exe' if os.name=='nt' else 'fixture')
+        c.write_text('#include <string.h>\n#include <nex_selected_fixture.h>\nint fixture(void){return NEX_SELECTED_FIXTURE_VALUE+(int)strlen("NEX!");}\n',newline='\n')
+        cpp.write_text('#include <array>\n#include <iostream>\nextern "C" int fixture(void);\nint main(){std::array<int,1> value{fixture()};if(value[0]!=42)return 1;std::cout<<value[0]<<"\\n";}\n',newline='\n')
+        includes=[] if os.name=='nt' else ['-I'+str(include)]
+        for command in [[doctor['native_compiler'],'-x','c','-std=c11',*includes,'-c',c,'-o',obj],
+                        [doctor['native_compiler'],'-std=c++20',cpp,obj,'-o',exe]]:
+            result=helper.compile_fixture(command,doctor=doctor,cwd=self.root,capture_output=True,text=True,timeout=180)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        for path in [c,cpp,obj]:path.unlink()
+        result=subprocess.run([exe],cwd=self.root,env=helper.deployed_environment(NEX_RESOURCE_DIR=str(self.root/'absent')),capture_output=True,text=True,timeout=30)
+        self.assertEqual((result.returncode,result.stdout),(0,'42\n'),result.stderr)
+
     def test_invalid_descriptor_never_falls_back_to_build_machine_paths(self):
         self.stage()
         self.source('module bad_sdk; fn main() -> i64 { return 0; }')

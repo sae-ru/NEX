@@ -44,15 +44,33 @@ def fixture(name):
         _fixture_cache[name] = module
     return _fixture_cache[name]
 
+def deployed_environment(**extra):
+    return fixture('host_fixture').deployed_environment(**extra)
+
 def compiler_command(arguments):
     values = list(map(str, arguments))
     return ('-o' in values and (any(value.startswith('-std=') for value in values) or
         any(value.lower().endswith(('.c','.cpp','.o','.obj','.ll')) for value in values[1:])))
 
-def compile_fixture(arguments, **kwargs):
+def compile_fixture(arguments, *, doctor=None, **kwargs):
     command=list(map(str,arguments))
+    if WINDOWS and doctor and Path(command[0]) == Path(doctor.get('native_compiler', '')):
+        # A portable SDK keeps its sysroot separately from the relocated driver.
+        # Direct C/C++ fixtures need the same selected target/headers as NEX builds.
+        target = doctor.get('host')
+        sysroot = doctor.get('native_sysroot')
+        if not target or not sysroot:
+            raise ValueError('Windows native fixture requires the selected target and sysroot')
+        for option, value, aliases in (('--target', target, ('-target', '--target')),
+                                       ('--sysroot', sysroot, ('--sysroot', '-isysroot'))):
+            if not any(arg in aliases or arg.startswith(option + '=') for arg in command[1:]):
+                command.insert(1, option + '=' + str(value))
+        if isinstance(arguments, list):
+            arguments[:] = command
     requested=Path(command[command.index('-o')+1]) if '-o' in command else None
-    result=fixture('host_fixture').run_native(arguments, **kwargs)
+    result=fixture('host_fixture').run_native(command, **kwargs)
+    if isinstance(arguments, list):
+        arguments[:] = command
     if WINDOWS and result.returncode==0 and requested is not None:
         # MinGW appends .exe to an extension-free -o. Keep the fixture's exact
         # requested filename for its subsequent inventory/hash checks. It is

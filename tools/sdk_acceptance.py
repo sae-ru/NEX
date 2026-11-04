@@ -1484,7 +1484,7 @@ def main():
                 row['loader_trace'] = str(trace)
                 row['loader_trace_sha256'] = hashlib.sha256(trace.read_bytes()).hexdigest()
             elif sdk_host.WINDOWS and sdk_host.compiler_command(row['command']):
-                result = sdk_host.compile_fixture(row['command'], cwd=cwd, env=environment,
+                result = sdk_host.compile_fixture(row['command'], doctor=report['doctor'], cwd=cwd, env=environment,
                     stdout=out, stderr=err, timeout=timeout)
                 code = result.returncode
             else:
@@ -2565,7 +2565,7 @@ fn main()->unit!{io,task}{
         raw_path = root/'standalone-task-profile-runtime.json'
         try:
             environment.update(NEX_PROFILE_OUTPUT=str(raw_path),NEX_PROFILE_EVENTS='0',NEX_TRACY='0',
-                NEX_RESOURCE_DIR=str(root/'absent-task-profile-resources'),PATH='/usr/bin:/bin')
+                NEX_RESOURCE_DIR=str(root/'absent-task-profile-resources'),PATH=sdk_host.deployed_environment()['PATH'])
             require(run([standalone,'--nex-task-workers','1'],cwd=root)=='42\n',
                     'copied task profile executable needs its original source/SDK')
         finally:
@@ -4307,7 +4307,7 @@ server fn main()->unit!{ffi,io}{print(encode_json(c::contract(unwrap(bytes([0,25
         saved_environment = dict(environment)
         try:
             environment.clear()
-            environment.update(PATH='/usr/bin:/bin', NEX_RESOURCE_DIR=str(root / 'absent-packaged-resources'))
+            environment.update(sdk_host.deployed_environment(NEX_RESOURCE_DIR=str(root / 'absent-packaged-resources')))
             require(run([moved_package / ('bin/app'+'.exe' if sdk_host.WINDOWS else 'bin/app')], cwd=moved_package) == expected_typed,
                     'independent packaged nominal foreign application differs')
             require(run([deployment/('apps/app/bin/app'+'.exe' if sdk_host.WINDOWS else 'apps/app/bin/app')],cwd=directory)==expected_typed,
