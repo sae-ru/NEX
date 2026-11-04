@@ -30,6 +30,43 @@ sdk_host = _host_import.module_from_spec(_host_spec)
 _host_spec.loader.exec_module(sdk_host)
 
 
+NETWORK_PROFILES = ('full', 'windows-ipv6-denied')
+TCP_SOURCE_CASES = ('binary', 'ipv6', 'boundary', 'denied', 'invalid', 'overflow',
+                    'reset', 'own-timeout', 'progress', 'cancel', 'parent-deadline', 'capacity')
+
+
+def tcp_source_cases(network_profile):
+    require(network_profile in NETWORK_PROFILES, 'unknown SDK networking profile')
+    return (TCP_SOURCE_CASES if network_profile == 'full' else
+            tuple(name for name in TCP_SOURCE_CASES if name != 'ipv6') + ('ipv6-policy-denied',))
+
+
+def network_scope(network_profile):
+    require(network_profile in NETWORK_PROFILES, 'unknown SDK networking profile')
+    return {'TCP_IPv4': 'executed',
+            'TCP_IPv6': 'executed' if network_profile == 'full' else 'policy-denied',
+            'positive_TCP_IPv6_accepted': network_profile == 'full'}
+
+
+def validate_network_profile(report, expected_network_profile='full'):
+    require(expected_network_profile in NETWORK_PROFILES, 'unknown expected SDK networking profile')
+    profile = report.get('network_profile', 'full')
+    require(profile == expected_network_profile, 'SDK networking profile differs from explicitly expected profile')
+    # Historical full receipts did not declare a networking profile. Their
+    # unchanged TCP evidence contract still requires actual positive IPv6.
+    if 'network_profile' in report or 'network_scope' in report:
+        scope = report.get('network_scope')
+        require(isinstance(scope, dict) and scope == network_scope(profile) and
+                type(scope.get('positive_TCP_IPv6_accepted')) is bool, 'SDK networking scope declaration differs')
+    if profile != 'full':
+        version = report.get('version', '').split('.')
+        require(len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and
+                tuple(map(int, version)) >= (0, 162, 0) and
+                report.get('host') == report.get('doctor', {}).get('host') == 'x86_64-w64-windows-gnu',
+                'restricted SDK networking profile requires matching current native Windows host')
+    return profile
+
+
 # Distribution validators import the contract from their matching SDK. Keep
 # action registration checked against it so a missing phase cannot look green.
 ACCEPTANCE_PHASES = (
@@ -870,7 +907,8 @@ def validate_task_http_evidence(report):
             'SDK task HTTP authenticated identity or Unicode/NUL echo differs')
 
 
-def validate_task_tcp_evidence(report):
+def validate_task_tcp_evidence(report, *, expected_network_profile='full'):
+    profile = validate_network_profile(report, expected_network_profile)
     tcp=report.get('evidence',{}).get('structured_task_tcp',{})
     require(isinstance(tcp,dict),'SDK TCP evidence is missing')
     resources=report.get('resource_hashes',{})
@@ -886,17 +924,35 @@ def validate_task_tcp_evidence(report):
                 observed.get('verification_source_sha256')==digest,
                 'SDK TCP evidence helper identity differs')
     source=tcp['source'];delivery=tcp['delivery']
-    names={'binary','ipv6','boundary','denied','invalid','overflow','reset','own-timeout','progress','cancel','parent-deadline','capacity'}
+    names=set(tcp_source_cases(profile))
     cases=source.get('cases',[])
     require(type(source.get('case_count')) is int and source['case_count']==36 and isinstance(cases,list) and len(cases)==36 and
             all(isinstance(row,dict) and row.get('passed') is True for row in cases) and
             {(row.get('name'),row.get('mode')) for row in cases}=={(name,mode) for name in names for mode in ('eval','debug','release')} and
             all(row.get('expected_error')=={'cancel':'E_CANCELLED','parent-deadline':'E_TIMEOUT'}.get(row['name']) for row in cases),
             'SDK TCP evidence lacks complete actual source cases')
+    if 'network_profile' in report:
+        require(source.get('required_cases') == list(TCP_SOURCE_CASES) and
+                source.get('selected_cases') == list(tcp_source_cases(profile)) and
+                source.get('full_conformance') is (profile == 'full'),
+                'SDK TCP source selection differs from its declared networking profile')
+    if profile != 'full':
+        for row in cases:
+            if row['name'] != 'ipv6-policy-denied':
+                continue
+            control = row.get('policy_control', {})
+            require(isinstance(control, dict) and control.get('schema') == 'nex.windows-ipv6-denial/1' and
+                    control.get('native_socket') is True and control.get('system') == 'nt' and
+                    control.get('family') == 'AF_INET6' and control.get('address') == '::1' and
+                    type(control.get('port')) is int and 0 < control['port'] <= 65535 and
+                    type(control.get('winerror')) is int and control['winerror'] == 10013 and
+                    type(control.get('errno')) is int and control['errno'] == 13 and
+                    control.get('network_policy_changed') is False,
+                    'SDK TCP policy denial lacks actual matching native Windows socket control')
     require(all(isinstance(row.get('retired'),list) and row['retired'] and all(
                 type(r.get('opened')) is int and r['opened']>=0 and r.get('closed')==r['opened'] and r.get('live')==0
                 for r in row['retired']) for row in cases if row['name']!='invalid') and
-            all(row.get('peer_connections')==0 for row in cases if row['name'] in ('invalid','denied')),
+            all(row.get('peer_connections')==0 for row in cases if row['name'] in ('invalid','denied','ipv6-policy-denied')),
             'SDK TCP physical retirement or rejected connection evidence differs')
     require(all(delivery.get(key) is True for key in ('client_server_pruning','source_deleted_package','relocated_package')) and
             type(delivery.get('package_execution_network_connections')) is int and delivery['package_execution_network_connections']==1 and
@@ -911,9 +967,10 @@ def validate_task_tcp_evidence(report):
             'SDK TCP rejected execution outcomes differ')
 
 
-def validate_completed_report(report):
+def validate_completed_report(report, *, expected_network_profile='full'):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
+    validate_network_profile(report, expected_network_profile)
     phases = report.get('phases', [])
     require(tuple(phase.get('name') for phase in phases) == acceptance_phases(report.get('doctor',{}).get('version') or report.get('version','0.0.0')) and
             all(phase.get('status') == 'passed' for phase in phases),
@@ -938,7 +995,7 @@ def validate_completed_report(report):
                 'SDK required phase declaration differs from public task HTTP workflow')
         validate_task_http_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,135,1):
-        validate_task_tcp_evidence(report)
+        validate_task_tcp_evidence(report, expected_network_profile=expected_network_profile)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,134,0):
         streams=report.get('evidence',{}).get('structured_task_file_streams',{})
         delivery=streams.get('delivery',{});history=streams.get('histories',{})
@@ -1318,11 +1375,15 @@ def main():
     parser.add_argument('--output', required=True, type=Path, help='New or empty evidence directory')
     parser.add_argument('--live', action='store_true', help='Require actual LLDB and NEX DAP child launches')
     parser.add_argument('--browser', action='store_true', help='Require a real locked TypeScript/Vite release build')
+    parser.add_argument('--network-profile', choices=NETWORK_PROFILES, default='full',
+                        help='full requires positive IPv6; windows-ipv6-denied requires actual Windows denial and does not establish positive IPv6 acceptance')
     parser.add_argument('--package-notices', type=Path,
                         help='Additional operator nex.sdk-notices/1 provenance for private application/module runtime dependencies')
     parser.add_argument('--forbid-source', action='append', type=Path, default=[],
                         help='Require this source mount path to be absent (repeatable)')
     args = parser.parse_args()
+    if args.network_profile != 'full' and not sdk_host.WINDOWS:
+        parser.error('--network-profile windows-ipv6-denied requires native Windows execution')
     sdk = args.sdk.resolve()
     root = args.output.resolve()
     resources = sdk / 'share/nex'
@@ -1349,7 +1410,8 @@ def main():
     report = {'schema': 'nex.sdk-acceptance/1', 'ok': False, 'sdk': str(sdk),
               'language': bootstrap['language'], 'version': bootstrap['toolchain'],
               'output': str(root), 'bootstrap': bootstrap, 'required_phases': list(acceptance_phases(bootstrap['toolchain'])),
-              'phases': [], 'commands': [], 'evidence': {}}
+              'phases': [], 'commands': [], 'evidence': {},
+              'network_profile': args.network_profile, 'network_scope': network_scope(args.network_profile)}
     started = time.monotonic()
 
     def notice_components(path):
@@ -1742,6 +1804,7 @@ test fn examples() -> unit {
         report.update(doctor=doctor, compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest(),
                       version=doctor['version'], language=doctor['language'], host=doctor['host'],
                       resource_hashes=inventory)
+        validate_network_profile(report, args.network_profile)
 
     def editor_tools():
         node = os.environ.get('NEX_NODE') or shutil.which('node')
@@ -5320,11 +5383,13 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         for key,script in [('source','verify.py'),('delivery','verify_delivery.py')]:
             tool=resources/'tools/tcp_provider'/script;destination=root/('TCP-'+key)
             command=[sys.executable,'-B',tool,'--sdk',sdk,'--output',destination]
+            if key == 'source' and args.network_profile != 'full':
+                command += [part for name in tcp_source_cases(args.network_profile) for part in ('--case', name)]
             if key=='delivery' and args.package_notices:command+=['--package-notices',args.package_notices.resolve()]
             run(command,timeout=1800)
             evidence[key]=json.loads((destination/'report.json').read_text())
         report['evidence']['structured_task_tcp']=evidence
-        validate_task_tcp_evidence(report)
+        validate_task_tcp_evidence(report, expected_network_profile=args.network_profile)
 
     try:
         actions = [('discovery', discover), ('editor-tools', editor_tools), ('new-project', new_project),
@@ -5361,7 +5426,7 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
             phase(name, action)
         report['evidence']['dap_shutdown_checks'] = DAP.successful_shutdowns
         report['ok'] = True
-        validate_completed_report(report)
+        validate_completed_report(report, expected_network_profile=args.network_profile)
     except BaseException as error:
         report['ok'] = False
         report['error'] = type(error).__name__ + ': ' + str(error)
@@ -5373,7 +5438,9 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         save()
     print(json.dumps({'ok': True, 'report': str(root / 'report.json'), 'host': report['doctor']['host'],
                       'version': report['doctor']['version'], 'live_debugger': args.live,
-                      'browser_build': args.browser, 'seconds': report['seconds']}, indent=2), flush=True)
+                      'browser_build': args.browser, 'network_profile': args.network_profile,
+                      'positive_TCP_IPv6_accepted': args.network_profile == 'full',
+                      'seconds': report['seconds']}, indent=2), flush=True)
 
 
 if __name__ == '__main__':

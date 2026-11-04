@@ -22,11 +22,47 @@ debug events. Windows bundles include their selected native symbol tools and an
 OpenSSL CLI with its measured PE dependency closure. These changes retain all
 41 mandatory phases and preserve the Unix paths.
 
-This adapter is under test. In particular, the operator-pinned task TCP and HTTP
-client providers still require Windows ports and matching dependencies. Successful
+This adapter is under test. Development 0.162 includes operator-pinned Windows
+TCP, DNS and HTTP client provider candidates with selected execution evidence.
+Their complete matching SDK qualification remains in progress. Successful
 compiler selection, bundle assembly or individual phases do not establish complete
 Windows SDK delivery. The current compiler selection has a separate
 [Windows smoke receipt](evidence/windows-current-compiler-2026-11-02.json).
+
+### Explicit profile for a Windows host that intentionally denies IPv6
+
+The default `--network-profile full` retains all 41 current SDK phases and
+requires successful IPv6 TCP execution in the reference interpreter and native
+Debug/Release programs. A networking policy that blocks IPv6 must not be changed
+or treated as a successful IPv6 execution to obtain a green receipt.
+
+On native x86-64 Windows with toolchain 0.162+, an operator can explicitly select:
+
+```powershell
+python C:\NEX\share\nex\tools\sdk_acceptance.py C:\NEX --output C:\NEX-check --browser --live --network-profile windows-ipv6-denied
+```
+
+This profile keeps all 41 phases and the TCP delivery checks. It executes every
+other TCP source case in all three modes: 33 comparisons, plus three explicit
+IPv6-denial comparisons. Before each denial comparison, a real native Python
+socket must receive Windows error 10013 against the same listening `::1` peer;
+NEX must return `E_NETWORK`, accept no peer connection and retire its resources.
+A successful connection, refusal, timeout or another error fails this profile.
+No policy detection automatically selects the profile, and the tooling changes
+no network settings.
+
+Reports carry `network_profile` and `network_scope`, with
+`positive_TCP_IPv6_accepted: false` for the denial profile. The normal
+`validate_completed_report(report)` rejects such a receipt. A distribution
+validator must deliberately pass
+`expected_network_profile='windows-ipv6-denied'` to validate that scope; relabelling
+or stripping the profile cannot replace the missing positive IPv6 evidence.
+Older full receipts keep their original contract.
+
+The profile is a development adapter, not a completed Windows SDK qualification.
+Installed workflow success still requires separate matching build, archive,
+relocation and filesystem-isolation evidence. Full positive IPv6 acceptance
+remains pending on a Windows host where IPv6 is permitted.
 
 # Development0.136.0 / language0.25 SDK candidate
 

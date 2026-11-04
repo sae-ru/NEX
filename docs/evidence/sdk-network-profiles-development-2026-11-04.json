@@ -1,0 +1,37 @@
+{
+  "schema": "nex.sdk-network-profile-development/1",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "language_or_runtime_ABI_changed": false,
+  "default_profile": "full",
+  "full_profile_positive_TCP_IPv6_required": true,
+  "explicit_profile": "windows-ipv6-denied",
+  "explicit_profile_supported_host": "x86_64-w64-windows-gnu",
+  "SDK_phases_preserved": 41,
+  "explicit_profile_other_TCP_source_comparisons": 33,
+  "explicit_profile_TCP_denial_comparisons": 3,
+  "denial_requires_native_socket_error": 10013,
+  "network_settings_changed_by_tools": false,
+  "default_validator_rejects_limited_profile": true,
+  "canonical_previous_full_Mac_receipts_still_validate": 2,
+  "local_validation": {
+    "Python_3_10_22": {
+      "SDK_archive_and_validation_tests": 57,
+      "passed": 56,
+      "skipped": ["actual ELF loader context; macOS host"]
+    },
+    "Python_3_14_9": {
+      "SDK_archive_and_validation_tests": 57,
+      "passed": 56,
+      "skipped": ["actual ELF loader context; macOS host"]
+    },
+    "real_successful_IPv6_socket_rejected_as_policy_denial": true,
+    "actual_LLVM_22_1_8_wasm_linker_selected": true
+  },
+  "native_Windows_new_profile_executed": false,
+  "matching_full_source_regression_pending": true,
+  "moved_restored_readonly_source_denied_Windows_SDK_qualified": false,
+  "full_positive_IPv6_Windows_acceptance_pending": true,
+  "scope": "Development adapter and local validation only. Exact matching Windows compiler, installed workflow and portable SDK qualification remain separate gates."
+}

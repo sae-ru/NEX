@@ -19,11 +19,16 @@ Preparation records both requested and executed compiler arguments. Successful
 link workspaces are removed; failures retain their evidence.
 
 The source conformance runner accepts repeated `--case NAME` for diagnosis.
-Such reports explicitly use `full_conformance:false`; the SDK continues to
-require all36 source comparisons and the full source-deleted delivery checks.
-The diagnostic-only `--case ipv6-policy-denied` additionally checks ordinary
-`E_NETWORK` handling when an operator deliberately restricts IPv6. It is outside
-the default36 comparisons and does not replace successful IPv6 acceptance.
+Such reports explicitly use `full_conformance:false`; the default SDK profile
+continues to require all36 source comparisons and the full source-deleted
+delivery checks. `--case ipv6-policy-denied` checks ordinary `E_NETWORK` handling
+only after a real native socket receives Windows error10013 against the same
+listening peer. A successful connection or another error fails that check.
+This optional case is outside the default36 comparisons and does not establish
+successful IPv6 acceptance. The explicit
+[SDK Windows denial profile](sdk.md#explicit-profile-for-a-windows-host-that-intentionally-denies-ipv6)
+requires all33 other source comparisons plus all three denial comparisons,
+retains every SDK phase and delivery check, and cannot validate as the full profile.
 
 
 Toolchain0.135.1 provides `std/tcp.nex` and an operator-prepared native module.

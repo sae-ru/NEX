@@ -9,6 +9,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess
 from pathlib import Path
 import sys
@@ -25,6 +26,109 @@ acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acce
 
 
 class DistributionWorkflow(unittest.TestCase):
+    def tcp_report(self, profile='full'):
+        # Synthetic receipt shapes exercise the validator, not platform execution.
+        report={'schema':'nex.sdk-acceptance/1','ok':True,'version':'0.162.0','language':'0.28',
+                'host':'x86_64-w64-windows-gnu','doctor':{'version':'0.162.0','host':'x86_64-w64-windows-gnu'},
+                'network_profile':profile,'network_scope':acceptance.network_scope(profile),
+                'compiler_sha256':'f'*64,'resource_hashes':{'tools/tcp_provider/verify.py':'a'*64,
+                                                         'tools/tcp_provider/verify_delivery.py':'b'*64}}
+        source={'schema':'nex.task-tcp-source-conformance/1','verification_source_sha256':'a'*64,
+                'required_cases':list(acceptance.TCP_SOURCE_CASES),
+                'selected_cases':list(acceptance.tcp_source_cases(profile)),
+                'full_conformance':profile=='full','case_count':36,'cases':[]}
+        for name in acceptance.tcp_source_cases(profile):
+            for mode in ('eval','debug','release'):
+                row={'name':name,'mode':mode,'passed':True,
+                     'expected_error':{'cancel':'E_CANCELLED','parent-deadline':'E_TIMEOUT'}.get(name),
+                     'peer_connections':0 if name in ('invalid','denied','ipv6-policy-denied') else 1,
+                     'retired':[{'opened':1,'closed':1,'live':0}]}
+                if name=='ipv6-policy-denied':
+                    row['policy_control']={'schema':'nex.windows-ipv6-denial/1','native_socket':True,'system':'nt',
+                        'family':'AF_INET6','address':'::1','port':12345,'winerror':10013,'errno':13,
+                        'network_policy_changed':False}
+                source['cases'].append(row)
+        delivery={'schema':'nex.tcp-provider-delivery/1','verification_source_sha256':'b'*64,
+                  'client_server_pruning':True,'source_deleted_package':True,'relocated_package':True,
+                  'package_execution_network_connections':1,'target_rejections':22,'authority_rejections':18,
+                  'rejections':[{'case':'target-'+str(i)} for i in range(22)]}
+        codes={'no-grant':'E_FFI_GRANT','no-export':'E_FFI_GRANT','wrong-pin':'E_FFI_HASH',
+               'wrong-signature':'E_FFI_SIGNATURE','changed-module':'E_FFI_HASH','changed-target-file':'E_FFI_HASH'}
+        delivery['rejections'] += [{'case':name,'mode':mode,'network_connections':0,'code':code}
+                                  for name,code in codes.items() for mode in ('eval','debug','release')]
+        for proof in (source,delivery):
+            proof.update(ok=True,state='passed',language=report['language'],toolchain=report['version'],
+                         compiler_sha256=report['compiler_sha256'],source_projection=False)
+        report['evidence']={'structured_task_tcp':{'source':source,'delivery':delivery}}
+        return report
+
+    def test_network_profiles_keep_full_TCP_and_require_explicit_limited_validation(self):
+        full=self.tcp_report();acceptance.validate_task_tcp_evidence(full)
+        limited=self.tcp_report('windows-ipv6-denied')
+        with self.assertRaisesRegex(RuntimeError,'explicitly expected profile'):
+            acceptance.validate_task_tcp_evidence(limited)
+        with self.assertRaisesRegex(RuntimeError,'explicitly expected profile'):
+            acceptance.validate_completed_report(limited)
+        acceptance.validate_task_tcp_evidence(limited,expected_network_profile='windows-ipv6-denied')
+        self.assertEqual(len(acceptance.acceptance_phases('0.162.0')),41)
+        self.assertEqual(set(acceptance.tcp_source_cases('full'))-{'ipv6'},
+                         set(acceptance.tcp_source_cases('windows-ipv6-denied'))-{'ipv6-policy-denied'})
+        for field in ('network_profile','network_scope'):
+            forged=copy.deepcopy(limited)
+            if field=='network_profile':
+                del forged['network_profile'];del forged['network_scope']
+            else:
+                forged['network_profile']='full';forged['network_scope']=acceptance.network_scope('full')
+            with self.subTest(forgery=field),self.assertRaises(RuntimeError):
+                acceptance.validate_task_tcp_evidence(forged)
+
+    def test_limited_network_profile_rejects_missing_cases_false_controls_and_scope_claims(self):
+        original=self.tcp_report('windows-ipv6-denied')
+        mutations=[lambda d:d.update(host='arm64-apple-darwin'),
+                   lambda d:d.update(version='0.159.0'),
+                   lambda d:d['network_scope'].update(positive_TCP_IPv6_accepted=True),
+                   lambda d:d['network_scope'].update(positive_TCP_IPv6_accepted=0),
+                   lambda d:d['evidence']['structured_task_tcp']['source']['cases'].pop(),
+                   lambda d:d['evidence']['structured_task_tcp']['source'].update(full_conformance=True),
+                   lambda d:d['evidence']['structured_task_tcp']['source'].update(selected_cases=['ipv6-policy-denied'])]
+        for mutate in mutations:
+            changed=copy.deepcopy(original);mutate(changed)
+            with self.subTest(mutation=mutate),self.assertRaises(RuntimeError):
+                acceptance.validate_task_tcp_evidence(changed,expected_network_profile='windows-ipv6-denied')
+        for key,value in [('native_socket',False),('system','posix'),('family','AF_INET'),('address','127.0.0.1'),
+                          ('port',True),('winerror',10061),('errno',110),('network_policy_changed',True)]:
+            changed=copy.deepcopy(original)
+            row=next(r for r in changed['evidence']['structured_task_tcp']['source']['cases'] if r['name']=='ipv6-policy-denied')
+            row['policy_control'][key]=value
+            with self.subTest(control=key),self.assertRaisesRegex(RuntimeError,'native Windows socket control'):
+                acceptance.validate_task_tcp_evidence(changed,expected_network_profile='windows-ipv6-denied')
+
+    def test_native_IPv6_control_never_confuses_a_successful_connection_with_policy_denial(self):
+        spec=importlib.util.spec_from_file_location('tcp_source_policy_probe',
+            Path(__file__).resolve().parents[1]/'tools/tcp_provider/verify.py')
+        tcp=importlib.util.module_from_spec(spec);spec.loader.exec_module(tcp)
+        with socket.socket(socket.AF_INET6) as server:
+            server.bind(('::1',0));server.listen(1)
+            endpoint={'address':'::1','port':server.getsockname()[1]}
+            # Both host policies have an observable expected result. No mock
+            # socket or environment flag can manufacture the runtime control.
+            try:control=tcp.prove_ipv6_policy_denial(endpoint)
+            except RuntimeError as error:self.assertIn('connection succeeded',str(error))
+            else:
+                self.assertEqual(os.name,'nt');self.assertEqual(control['winerror'],10013)
+
+    def test_limited_network_CLI_rejects_other_hosts_before_touching_SDK(self):
+        with tempfile.TemporaryDirectory(prefix='nex SDK network profile ') as directory:
+            error=io.StringIO()
+            with mock.patch.object(acceptance.sdk_host,'WINDOWS',False), \
+                 mock.patch.object(sys,'argv',[acceptance.__file__,str(Path(directory)/'absent'),
+                    '--output',str(Path(directory)/'evidence'),'--network-profile','windows-ipv6-denied']), \
+                 contextlib.redirect_stderr(error),self.assertRaises(SystemExit) as raised:
+                acceptance.main()
+            self.assertEqual(raised.exception.code,2)
+            self.assertIn('requires native Windows execution',error.getvalue())
+            self.assertEqual(list(Path(directory).iterdir()),[])
+
     def test_sdk_commands_reject_old_python_before_touching_paths(self):
         tools = Path(__file__).resolve().parents[1]/'tools'
         spec = importlib.util.spec_from_file_location('python_floor_bundle', tools/'sdk_bundle.py')

@@ -19,6 +19,21 @@ import time
 ROOT=Path(__file__).resolve().parents[2]
 def digest(data):return hashlib.sha256(data).hexdigest()
 def write(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+
+def prove_ipv6_policy_denial(endpoint):
+ """Require an OS denial against the same listening peer used by NEX."""
+ try:
+  with socket.socket(socket.AF_INET6) as control:
+   control.settimeout(3)
+   control.connect((endpoint['address'],endpoint['port']))
+ except OSError as error:
+  if os.name!='nt' or getattr(error,'winerror',None)!=10013 or error.errno!=13:
+   raise RuntimeError('IPv6 policy profile requires native Windows error10013, not another socket failure') from error
+  return {'schema':'nex.windows-ipv6-denial/1','native_socket':True,'system':os.name,
+          'family':'AF_INET6','address':endpoint['address'],'port':endpoint['port'],
+          'winerror':error.winerror,'errno':error.errno,'network_policy_changed':False}
+ raise RuntimeError('IPv6 connection succeeded; intentional-denial profile is not applicable')
+
 class Peers:
  def __init__(self,files):
   self.files=files;self.stopped=threading.Event();self.lock=threading.Lock();self.events=[];self.gates={};self.servers=[];self.threads=[];self.endpoints=[]
@@ -126,6 +141,7 @@ def main():
   for name,source,error in cases:
    for mode in ('eval','debug','release'):
     label=name+'-'+mode
+    policy_control=prove_ipv6_policy_denial(next(endpoint for endpoint in peers.endpoints if endpoint['name']=='ipv6')) if name=='ipv6-policy-denied' else None
     # Start from the original case for every mode; labels identify real peer gates.
     case_project=capacity_project if name=='capacity' else project;case_prefix=capacity_prefix if name=='capacity' else prefix;case_host=case_project/'foreign.json'
     original=next(text for key,text,code in cases if key==name);body=original.replace('@LABEL@',label).replace('@GATE@',digest(label.encode())+'.ready');(case_project/'main.nex').write_text(source_for_selected_sdk(case_prefix+'server fn main()->unit !{task,ffi,fs,io}{'+body+('print(42);' if not error else '')+'}\n', sdk))
@@ -144,7 +160,9 @@ def main():
     if name in ('invalid','denied','ipv6-policy-denied'):assert peers.count()==before,(label,peers.events[before:])
     stderr=(out/(label+'.stderr')).read_text()+'\n'+observed.get('stderr','');retired=[json.loads(value) for value in re.findall(r'NEX_TCP_RETIRE (\{[^\n]+\})',stderr)]
     if name not in ('invalid',):assert retired and all(r['live']==0 and r['opened']==r['closed'] for r in retired),(label,stderr)
-    report['cases'].append({'name':name,'mode':mode,'passed':True,'expected_error':error,'peer_connections':peers.count()-before,'retired':retired});save()
+    row={'name':name,'mode':mode,'passed':True,'expected_error':error,'peer_connections':peers.count()-before,'retired':retired}
+    if policy_control is not None:row['policy_control']=policy_control
+    report['cases'].append(row);save()
   report.update(ok=True,state='passed',case_count=len(report['cases']),original_source_or_ABI_changed=False)
  except BaseException as error:report.update(state='failed',error=repr(error));raise
  finally:
