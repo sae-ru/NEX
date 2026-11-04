@@ -4,9 +4,9 @@ adds one settings command itself; clients must not duplicate DAP args through
 target.run-args. This fixes foreign catalogue and other native runtime flags,
 including quoted/Unicode paths, without changing source language021.
 
-# Native debugging — NEX language 0.20
+# Native debugging — NEX language 0.28
 
-Current source language is0.20. Logical task debugging has a separate narrow
+Current source language is0.28. Logical task debugging has a separate narrow
 native path; discover `task_debugging` and read [its current contract](task-debugging.md).
 Complete current SDK, regression and platform acceptance have separate receipts.
 
@@ -26,6 +26,12 @@ acceptance now checks the adapter's actual exit status so an aborted adapter
 cannot pass merely because earlier breakpoint/watch requests succeeded.
 This changes no source syntax, effects, ownership semantics or language version.
 The matching installed SDK/editor/live debugger gates remain required.
+
+Controlled Windows diagnostic runs can use the calibrated
+[private Job Object observer](windows-job-observer.md). It assigns the root at
+creation and confines timeout cleanup to that kernel job. Its process ownership
+checks and the recorded four HTTP/task sessions do not establish full debugger
+or SDK acceptance. Earlier external parent-PID observer cleanup claims are invalid.
 
 ## Stop and inspect
 
