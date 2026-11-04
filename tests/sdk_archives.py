@@ -26,6 +26,59 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class StreamHostPlatformEvidence(unittest.TestCase):
+    def report(self):
+        contract=acceptance._stream_host_contract()
+        fields=('ok','typed_open_no_raw_file_ids','original_grants','physical_quota_retention',
+                'single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots',
+                'large_file_streaming','protocol_rejections')
+        pins={'tools/task_file_stream_host_acceptance.cpp','tests/host_test.h',
+              *('runtime/'+name for name in (*contract.HEADERS,*contract.SOURCES))}
+        host={'schema':'nex.installed-task-stream-host/1',**{name:True for name in fields},
+              'cases':26,'case_names':list(contract.cases_for_platform('Windows')),
+              'source_support':False,'actual_partial_write':False,'host_platform':'Windows',
+              'portable_corpus_complete':False,'pending_cases':[contract.PARTIAL_WRITE_CASE],
+              'probe_sha256':'a'*64,'installed_sources':{name:'b'*64 for name in pins}}
+        return {'host':'x86_64-w64-windows-gnu','doctor':{'host':'x86_64-w64-windows-gnu'},
+                'evidence':{'structured_task_file_writes':{'private_stream_host':host}}}
+
+    def test_Windows_records_pending_partial_write_without_claiming_27_executions(self):
+        report=self.report();acceptance.validate_installed_stream_host(report,(0,162,0))
+        host=report['evidence']['structured_task_file_writes']['private_stream_host']
+        for key,value in [('actual_partial_write',True),('portable_corpus_complete',True),
+                          ('pending_cases',[]),('cases',27),('case_names',host['case_names'][:-1])]:
+            damaged=copy.deepcopy(report)
+            damaged['evidence']['structured_task_file_writes']['private_stream_host'][key]=value
+            with self.subTest(field=key),self.assertRaises(RuntimeError):
+                acceptance.validate_installed_stream_host(damaged,(0,162,0))
+
+    def test_Windows_scope_cannot_replace_other_platform_or_historical_proofs(self):
+        report=self.report()
+        with self.assertRaises(RuntimeError):acceptance.validate_installed_stream_host(report,(0,161,0))
+        for host in ('aarch64-unknown-linux-gnu','arm64-apple-darwin27.0.0'):
+            damaged=copy.deepcopy(report);damaged['host']=host;damaged['doctor']['host']=host
+            with self.subTest(host=host),self.assertRaises(RuntimeError):
+                acceptance.validate_installed_stream_host(damaged,(0,162,0))
+        report['doctor']['host']='aarch64-unknown-linux-gnu'
+        with self.assertRaises(RuntimeError):acceptance.validate_installed_stream_host(report,(0,162,0))
+
+    def test_physical_output_requires_exact_platform_cases_and_rejects_missing_or_duplicate_execution(self):
+        contract=acceptance._stream_host_contract()
+        def output(names):
+            return '\n'.join(['PASS '+name for name in names]+[json.dumps({'ok':True,
+                'host_stream_cases':len(names),'public_source_support':False,'maximum_chunk_bytes':1048576,
+                'one_shot_typed_open':True,'physical_drain':True})])
+        names=contract.cases_for_platform('Windows')
+        self.assertEqual(contract.parse_host_output(output(names),'Windows')[0],list(names))
+        for damaged in (names[:-1],names+(names[0],),contract.CASES):
+            with self.subTest(cases=len(damaged)),self.assertRaises(RuntimeError):
+                contract.parse_host_output(output(damaged),'Windows')
+        for system in ('Darwin','Linux'):
+            with self.subTest(system=system),self.assertRaises(RuntimeError):
+                contract.parse_host_output(output(names),system)
+            contract.parse_host_output(output(contract.CASES),system)
+
+
 class ServerDebugEvidence(unittest.TestCase):
     def report(self, *, available=True, live=False):
         server = {'descriptor': True, 'actual_shared_provider': True,

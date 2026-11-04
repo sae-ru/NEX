@@ -873,15 +873,27 @@ def validate_installed_stream_host(report, version):
     host=writes.get('private_stream_host',{}) if isinstance(writes,dict) else {}
     pins=host.get('installed_sources',{}) if isinstance(host,dict) else {}
     names=host.get('case_names',[]) if isinstance(host,dict) else []
+    require(isinstance(host,dict),'SDK acceptance lacks actual installed private stream host evidence')
+    windows=version >= (0,162,0) and report.get('host')=='x86_64-w64-windows-gnu'
+    expected=contract.cases_for_platform('Windows') if windows else CASES
+    if windows:
+        require(report.get('doctor',{}).get('host')==report['host'] and host.get('host_platform')=='Windows' and
+                host.get('portable_corpus_complete') is False and host.get('actual_partial_write') is False and
+                host.get('pending_cases')==[contract.PARTIAL_WRITE_CASE],
+                'Windows stream host must retain its pending physical partial-write proof')
+    else:
+        require(host.get('actual_partial_write') is True and
+                host.get('portable_corpus_complete',True) is True and not host.get('pending_cases'),
+                'SDK acceptance lacks actual installed private stream host physical partial-write proof')
     required={'tools/task_file_stream_host_acceptance.cpp',*('runtime/'+n for n in (*HEADERS,*SOURCES))}
     if version >= (0,154,0):
         required.add('tests/host_test.h')
     require(isinstance(host,dict) and host.get('schema')=='nex.installed-task-stream-host/1' and
-            all(host.get(key) is True for key in ('ok','actual_partial_write','typed_open_no_raw_file_ids','original_grants',
+            all(host.get(key) is True for key in ('ok','typed_open_no_raw_file_ids','original_grants',
                 'physical_quota_retention','single_CPU_worker_progress','cancel_physical_drain','immutable_input_snapshots',
                 'large_file_streaming','protocol_rejections')) and host.get('source_support') is False and
-            type(host.get('cases')) is int and host['cases']==27 and isinstance(names,list) and len(names)==27 and
-            all(isinstance(n,str) for n in names) and set(names)==set(CASES) and
+            type(host.get('cases')) is int and host['cases']==len(expected) and isinstance(names,list) and len(names)==len(expected) and
+            all(isinstance(n,str) for n in names) and set(names)==set(expected) and
             isinstance(host.get('probe_sha256'),str) and re.fullmatch('[0-9a-f]{64}',host['probe_sha256']) and
             isinstance(pins,dict) and set(pins)==required and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in pins.values()),
             'SDK acceptance lacks actual installed private stream host evidence')

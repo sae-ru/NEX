@@ -368,6 +368,14 @@ absence; `editor_preparation` and all live execution fields remain false.
 `--live` requires the backend and successful preparation and cannot accept this
 refusal. Build failures and other editor errors still fail either workflow.
 
+The installed native stream-host fixture executes 27 physical scenarios on
+macOS/Linux and 26 on Windows. Its POSIX child-only `RLIMIT_FSIZE` partial-write
+scenario is excluded from the Windows C++ fixture. The Windows 0.162 receipt
+therefore records `actual_partial_write: false`, `portable_corpus_complete:
+false` and that exact pending case. Every other scenario remains required.
+This scoped Windows receipt cannot satisfy a macOS/Linux or historical full
+27-case gate, and does not establish physical partial-write handling on Windows.
+
 `--browser` additionally performs all three real locked TypeScript/Vite release builds
 and checks emitted assets/maps for their server sentinels. Without this flag only
 TypeScript semantic tests and project generation run; browser production
