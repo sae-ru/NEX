@@ -5,7 +5,7 @@
   "source_url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.4/llvm-project-23.1.4.src.tar.xz",
   "source_sha256": "819ecf7351f1a66f76b2d701d8942faaf5faeb324cb90c9d5b090de142434bb2",
   "patch": "lldb23-windows-backport.patch",
-  "patch_sha256": "3e99a029bbb70f2e08a33669f10b2d19efec966f307ec46fcf5ad90c16ce6bba",
+  "patch_sha256": "11a168ad734dec8164d2913ca9b5cd1dfea8ee457de927aa967cd6203241265b",
   "source_files": [
     {
       "path": "lldb/include/lldb/Host/common/NativeProcessProtocol.h",
@@ -45,12 +45,12 @@
     {
       "path": "lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.cpp",
       "original_sha256": "9106509110d7ab509d62ae583981c529d9eeaa3b85944692881fcbf40d321f74",
-      "patched_sha256": "caf05948dc8f70356be4c15767ee27e1dfb5bbb066f3eb3e4181a891b1997f9e"
+      "patched_sha256": "f236325fbfcf027d5e66d5d3c3d91665453e6250847396a1c22799ba8ce17de5"
     },
     {
       "path": "lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h",
       "original_sha256": "4bc56e8f4f43aec0ada1dc02be88223e72e6b80e3977b2cd6293d39e95155a88",
-      "patched_sha256": "eb764dc664bc12f5b68812c592a9b6075733a4adbaeeceda2b3b854c3194fd4d"
+      "patched_sha256": "d3fdd23baf560bceae7d5cb0636a726fdc2805a3e5271fb2721cbdda3970a532"
     },
     {
       "path": "lldb/source/Plugins/Process/Windows/Common/NativeThreadWindows.cpp",
@@ -106,7 +106,8 @@
     "Use explicit IPv4 loopback for TCPSocket::CreatePair on this host; no Windows network policy changes.",
     "Port the queued-events predecessor active-exception mutex, shared lifetime and predicate initialization from DebuggerThread.cpp at upstream commit814524c0dd2a93726e0d71a15532a0eba5eb1340. Already-continued events must clear the active exception so Resume releases the deferred-stop gate.",
     "Local fix: reconcile the event cache with EnumProcessModulesEx and a32768-character GetModuleFileNameExW buffer. Toolhelp32 paths truncate at MAX_PATH, and parallel loader speculation can otherwise hide the winning mapping. Preserve valid loader spelling for known physical bases. Source-evidence: source-c traces omit the actual runtime and long-e DAP launches exit42 without hitting an unresolved DLL breakpoint.",
-    "Reuse the separately hash-pinned lazy indexed DAP paging patch on the byte-identical LLVM23.1.4 Variables.cpp. Fetch only the requested range instead of expanding every synthetic child before slicing. Native page/runtime acceptance remains separate."
+    "Reuse the separately hash-pinned lazy indexed DAP paging patch on the byte-identical LLVM23.1.4 Variables.cpp. Fetch only the requested range instead of expanding every synthetic child before slicing. Native page/runtime acceptance remains separate.",
+    "Local Windows exit lifetime fix: serialize the complete OnExitProcess callback with NativeProcessWindows destruction. Two captured first/second-chance AV stacks show SynchronouslyNotifyProcessStateChanged using process state during main-loop destruction. A private relink passed32 cached HTTP/task sessions without AV and with all critical processes0; one owned conhost exceeded its observer deadline. Full debugger/source-deletion regression remains pending."
   ],
   "configuration": {
     "LLDB_PYTHON_HOME": "..",

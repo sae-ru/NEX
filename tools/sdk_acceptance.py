@@ -1528,10 +1528,13 @@ class DAP:
         for error in input_errors:
             if error.errno not in (errno.EPIPE, errno.EINVAL) or not self.process.stdin.closed:
                 cleanup_errors.append('stdin close: ' + str(error))
+        fatal = sdk_host.debugger_crash_diagnostic(['lldb-dap'], Path(self.log.name).read_bytes())
         if self.reader.is_alive():
             self.shutdown_error = 'DAP output reader failed to stop'
         elif self.process.returncode != 0:
             self.shutdown_error = 'DAP adapter failed during shutdown: exit ' + str(self.process.returncode)
+        elif fatal:
+            self.shutdown_error = 'DAP adapter reported a fatal debugger diagnostic: ' + fatal
         elif cleanup_errors:
             self.shutdown_error = '; '.join(cleanup_errors)
         if self.shutdown_error:

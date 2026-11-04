@@ -535,7 +535,18 @@
  }
  
  Status NativeProcessWindows::GetLoadedModuleFileSpec(const char *module_path,
-@@ -455,6 +479,7 @@
+@@ -447,6 +471,10 @@
+ }
+ 
+ void NativeProcessWindows::OnExitProcess(uint32_t exit_code) {
++  // The main-loop exit callback can destroy this process immediately after
++  // SetExitStatus notifies its delegate. Keep the object alive until all
++  // notification/tracer work on the debugger thread has returned.
++  std::lock_guard<std::recursive_mutex> exit_guard(m_exit_notification_mutex);
+   Log *log = GetLog(WindowsLog::Process);
+   LLDB_LOG(log, "Process {0} exited with code {1}", GetID(), exit_code);
+ 
+@@ -455,6 +483,7 @@
    StopStdioForwarding();
  
    ProcessDebugger::OnExitProcess(exit_code);
@@ -543,7 +554,7 @@
  
    // No signal involved.  It is just an exit event.
    WaitStatus wait_status(WaitStatus::Exit, exit_code);
-@@ -488,6 +513,9 @@
+@@ -488,6 +517,9 @@
  
    if (got_info) {
      FileSpec exe = info.GetExecutableFile();
@@ -553,7 +564,7 @@
      if (exe) {
        FileSystem::Instance().Resolve(exe);
        m_loaded_modules[exe] = image_base;
-@@ -499,6 +527,59 @@
+@@ -499,6 +531,59 @@
    m_threads.push_back(std::make_unique<NativeThreadWindows>(
        *this, m_session_data->m_debugger->GetMainThread()));
  }
@@ -613,7 +624,7 @@
  
  ExceptionResult
  NativeProcessWindows::HandleSingleStepException(const ExceptionRecord &record) {
-@@ -523,10 +604,19 @@
+@@ -523,10 +608,19 @@
      }
    }
  #endif
@@ -636,7 +647,7 @@
    return ExceptionResult::MaskException;
  }
  
-@@ -545,7 +635,7 @@
+@@ -545,7 +639,7 @@
        StopThread(thread_id, StopReason::eStopReasonBreakpoint);
        // The current PC is AFTER the BP opcode, on all architectures.
        reg_ctx.SetPC(reg_ctx.GetPC() - GetSoftwareBreakpointPCOffset());
@@ -645,7 +656,7 @@
        return ExceptionResult::MaskException;
      }
  
-@@ -572,10 +662,13 @@
+@@ -572,10 +666,13 @@
                      exception_addr)
                  .str();
          StopThread(thread_id, StopReason::eStopReasonWatchpoint, desc);
@@ -660,7 +671,7 @@
    }
  
    if (!m_initial_stop_seen) {
-@@ -623,7 +716,7 @@
+@@ -623,7 +720,7 @@
      SetCurrentThreadID(thread_id);
      if (NativeThreadWindows *injected = GetThreadByID(thread_id))
        injected->SetStopReason(signal_info, "interrupt");
@@ -669,7 +680,7 @@
      return ExceptionResult::BreakInDebugger;
    }
  
-@@ -640,7 +733,7 @@
+@@ -640,7 +737,7 @@
                               record.GetExceptionValue(), exception_addr)
                           .str();
    StopThread(thread_id, StopReason::eStopReasonException, std::move(desc));
@@ -678,7 +689,7 @@
    return ExceptionResult::MaskException;
  }
  
-@@ -666,7 +759,7 @@
+@@ -666,7 +763,7 @@
    StopThread(record.GetThreadID(), StopReason::eStopReasonException,
               std::move(desc));
  
@@ -687,7 +698,7 @@
    return ExceptionResult::BreakInDebugger;
  }
  
-@@ -699,6 +792,8 @@
+@@ -699,6 +796,8 @@
  
  void NativeProcessWindows::OnCreateThread(const HostThread &new_thread) {
    llvm::sys::ScopedLock lock(m_mutex);
@@ -696,7 +707,7 @@
  
    auto thread = std::make_unique<NativeThreadWindows>(*this, new_thread);
    thread->GetRegisterContext().ClearAllHardwareWatchpoints();
-@@ -708,8 +803,7 @@
+@@ -708,8 +807,7 @@
                            wp.m_hardware);
    }
  
@@ -706,7 +717,7 @@
      if (Status error = thread->DoStop(); error.Fail()) {
        Log *log = GetLog(WindowsLog::Thread);
        LLDB_LOG(log, "failed to suspend newly-created thread {0}: {1}",
-@@ -725,6 +819,7 @@
+@@ -725,6 +823,7 @@
  
  void NativeProcessWindows::OnExitThread(lldb::tid_t thread_id,
                                          uint32_t exit_code) {
@@ -714,6 +725,18 @@
    std::lock_guard<std::recursive_mutex> guard(m_threads_mutex);
    llvm::erase_if(m_threads, [thread_id](const auto &t) {
      return t->GetID() == thread_id;
+@@ -877,7 +976,10 @@
+   return std::move(process_up);
+ }
+ 
+-NativeProcessWindows::~NativeProcessWindows() { StopStdioForwarding(); }
++NativeProcessWindows::~NativeProcessWindows() {
++  std::lock_guard<std::recursive_mutex> exit_guard(m_exit_notification_mutex);
++  StopStdioForwarding();
++}
+ 
+ void NativeProcessWindows::StartStdioForwarding() {
+   if (!m_pty || !m_pty->IsConnected())
 --- a/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h
 +++ b/lldb/source/Plugins/Process/Windows/Common/NativeProcessWindows.h
 @@ -139,6 +139,8 @@
@@ -758,7 +781,18 @@
    bool m_client_supports_libraries_read = false;
  
    /// PseudoConsole for the lldb-server stdio-forwarding path.
-@@ -255,6 +276,10 @@
+@@ -205,6 +226,10 @@
+ 
+   /// Tear down the read thread and disconnect m_stdio_communication.
+   void StopStdioForwarding();
++
++  /// Serialize asynchronous exit notification with main-loop destruction.
++  /// Separate from state/process locks so the notification can query either.
++  std::recursive_mutex m_exit_notification_mutex;
+ };
+ 
+ //------------------------------------------------------------------
+@@ -255,6 +280,10 @@
      return m_process.OnDebuggerError(error, type);
    }
  

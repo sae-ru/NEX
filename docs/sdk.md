@@ -376,6 +376,8 @@ Captured fatal diagnostics from direct LLDB, LLDB-DAP or lldb-server commands
 fail the installed workflow and private HTTP debugger checks even if the parent
 returns zero. Both runners retain the original exit code and captured stderr;
 ordinary command errors keep their existing expected-result checks.
+The installed DAP client applies the same rule during shutdown, preserving an
+earlier request error and logging the fatal shutdown diagnostic alongside it.
 
 The installed native stream-host fixture executes 27 physical scenarios on
 macOS/Linux and 26 on Windows. Its POSIX child-only `RLIMIT_FSIZE` partial-write

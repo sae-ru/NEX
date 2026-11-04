@@ -246,7 +246,10 @@ while True:
   if line==crlf:break
   key,value=line.decode().split(':',1);headers[key.lower()]=value.strip()
  request=json.loads(stream.read(int(headers['content-length'])))
- if request['command']=='disconnect':sys.exit(0 if mode=='clean' else 7)
+ if request['command']=='disconnect':
+  if mode.startswith('fatal'):
+   sys.stderr.write('PLEASE submit a bug report\\nException Code: 0xC0000005\\n');sys.exit(0)
+  sys.exit(0 if mode=='clean' else 7)
  if request['command']=='launch':
   if mode=='eof':sys.exit(9)
   continue
@@ -300,6 +303,28 @@ while True:
         client=self.client('bad-shutdown');client.request('initialize')
         with self.assertRaisesRegex(RuntimeError,'shutdown: exit 7'):client.close()
         self.assert_closed(client)
+
+    def test_fatal_child_report_fails_even_when_the_adapter_exits_zero(self):
+        before=acceptance.DAP.successful_shutdowns;client=self.client('fatal')
+        client.request('initialize')
+        with self.assertRaisesRegex(RuntimeError,'fatal debugger diagnostic'):client.close()
+        self.assert_closed(client)
+        self.assertEqual(client.process.returncode,0)
+        self.assertEqual(acceptance.DAP.successful_shutdowns,before)
+        self.assertIn('Exception Code: 0xC0000005',(self.root/'dap-stderr.log').read_text())
+
+    def test_primary_request_error_survives_a_zero_exit_with_fatal_stderr(self):
+        before=acceptance.DAP.successful_shutdowns;client=self.client('fatal-timeout')
+        with self.assertRaisesRegex(RuntimeError,'DAP timeout.*request launch'):
+            try:
+                client.request('initialize');client.send('launch')
+                client.wait(lambda message:message.get('event')=='initialized',timeout=.1)
+            finally:client.close()
+        self.assert_closed(client)
+        self.assertEqual(client.process.returncode,0)
+        self.assertEqual(acceptance.DAP.successful_shutdowns,before)
+        self.assertIn('fatal debugger diagnostic',client.shutdown_error)
+        self.assertIn('DAP cleanup:',(self.root/'dap-stderr.log').read_text())
 
 
 class CommandTimeoutEvidence(unittest.TestCase):
