@@ -22,14 +22,17 @@
   "private_candidate_crash_diagnostics": 0,
   "private_candidate_critical_process_nonzero_exits": 0,
   "strict_candidate_observer_passed": false,
-  "owned_console_observer_deadlines": 1,
   "source_deletion_retested": false,
   "original_debugger_and_NEX_SDK_preserved": true,
   "pending": [
-    "Investigate the single lingering owned conhost and repeat owned-lifetime checks.",
+    "Replace the diagnostic observer with kernel Job Object ownership, calibrate it against an unrelated process and repeat exact owned-lifetime qualification.",
     "Build the complete debugger with the tracked recipe and new version identity; the private relink changes only its server.",
     "Repeat maintained source-deleted native, task, module, HTTP and DAP regression.",
     "Complete matching Windows SDK acceptance while preserving intentional IPv6 policy."
   ],
-  "scope": "No universal debugger, Windows SDK or full-project completion claim."
+  "scope": "No universal debugger, Windows SDK or full-project completion claim.",
+  "observer_deadlines": 1,
+  "owned_process_lifetime_verified": false,
+  "observer_ownership_result": "Invalid: the external diagnostic observer classified an older unrelated process as a descendant using a recycled parent PID. The affected application was restarted and the observer was quarantined. This is not a production NEX process-controller change.",
+  "critical_exit_scope": "Observed matching debugger/target/compiler exits only; no process ownership or complete cleanup acceptance is claimed."
 }
