@@ -255,5 +255,16 @@ library, Python/Clang resources, CLI and server built from the pinned source.
 The [patch inputs](../tools/linux/lldb23-indexed-pages.json) distinguish
 this dependency repair from complete current platform/SDK acceptance.
 
+The Windows 23.1.4 build recipe now applies the same hash-pinned indexed
+paging patch to its byte-identical `Variables.cpp`. An installed 0.162 SDK
+reproduced a timeout on both Python 3.10 and 3.14 when requesting the final two
+bytes of a 4 MiB value with the previous Windows debugger. With the separately
+built matching debugger, the same compiler and unchanged page bounds returned
+those two children, completed the remaining pages and watches, and shut down
+cleanly on both runtimes. The [Windows paging record](evidence/windows-indexed-pages-development-2026-11-04.json)
+pins the original and repaired debugger cohorts. Full moved/restored SDK
+qualification remains a separate gate; the earlier Windows full-run receipt
+continues to describe its original debugger.
+
 Debug manifests and relocation receipts are UTF-8 files. The reader decodes
 them explicitly, independently of the host locale, and rejects invalid bytes.

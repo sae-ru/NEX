@@ -1,0 +1,101 @@
+{
+  "schema": "nex.windows-indexed-pages-development/1",
+  "date": "2026-11-04",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "task_abi": 7,
+  "compiler_implementation_commit": "4b76368825fe15119a200b5003bdd547aff7cfbb",
+  "installed_resource_commit": "317b587e7fc2e6d60c4242217f42bc0e15561255",
+  "compiler_sha256": "7383743b467d807f6862ce10fc064efc6c04ee285bb75478caf890a24f6eb06c",
+  "compiler_and_installed_SDK_changed_for_replay": false,
+  "host": "native Windows x86_64",
+  "execution_context": {
+    "is_elevated": false,
+    "is_app_container": false,
+    "developer_mode": true
+  },
+  "original_failure": {
+    "phase": "native-indexed-pages",
+    "list_children": 32768,
+    "bytes_children": 4194304,
+    "requested_start": 4194302,
+    "requested_count": 2,
+    "report_sha256": "a11adc20e4adea5309056050fe0a45fdc88a8c3393be8bf98dc0cfaaf54b0da4",
+    "reproduced_on_both_python_runtimes": true,
+    "original_debugger_files": {
+      "lldb.exe": "70ab8d40c423f0df7400ee7827f35d466655b8a220188de2b3ae1e6079f89774",
+      "lldb-dap.exe": "d8c611b2ff39e830a4b5e201d2a793f572388cce2043f7f922d97944f6ab6bff",
+      "lldb-server.exe": "e2aef59067a7108414414c09a5d55d6c19ea2ba058cb80179c5f8329e0388310",
+      "liblldb.dll": "90c3a42bbb9e69f349b8d47bc27a25560670d8270fd2173c952307240109869b"
+    }
+  },
+  "repair": {
+    "recipe": "tools/windows/build_debugger.py",
+    "recipe_sha256": "a04a59350024014015c5674ed19dc23a2a857d9bef06040eb3f0a0d189a8fabb",
+    "manifest": "tools/windows/lldb23-windows-backport.json",
+    "manifest_sha256": "384ac4353f90050b7596c5d496f773ec865cd993de32e9d39abfb1da9a80d80f",
+    "indexed_pages": {
+      "patch_sha256": "447806a73c12274b26a6bb8306a12e7d1a57a0759052f5ae0c66f582e74e6653",
+      "source_file": "lldb/tools/lldb-dap/Variables.cpp",
+      "original_sha256": "22d2c4fd44ef498df98364972ef704efc252c45dc5d45ba581230d56c4a46421",
+      "patched_sha256": "960a03ea8b6a64b09ef5bdefd2a9af5d50da38022f548de8ca05ec648a9ee562",
+      "patch": "../linux/lldb23-indexed-pages.patch"
+    },
+    "debugger_build_report_sha256": "a3ea101a0d1c66d6f93ce53be20ac8cd48d9b3124da5cc3cd20791db484a7cd7",
+    "matching_debugger_files": {
+      "lldb.exe": "9e88c7adc55037d54d71bd4d015226a8ced62c7533ee212d264c4e0a602a6f88",
+      "lldb-dap.exe": "9274aba8c1587672bef25df90235ce7ef1ec7964e4626a4718a6ccccf97a9544",
+      "lldb-server.exe": "c9777a1727577e823eaa6371a348275d554a5bf8865c65bd05a5f319976cac36",
+      "liblldb.dll": "beffebdc73e8a7f448189c30bd81f862b4db70eafdd2fd9729123e246e4d671d"
+    },
+    "original_debugger_preserved": true,
+    "LLVM_MLIR_compiler_version_unchanged": "22.1.8",
+    "request_timeouts_and_page_limits_unchanged": true
+  },
+  "runtimes": {
+    "python310": {
+      "python": "3.10.11",
+      "original_timeout_seconds": 30.016,
+      "repaired_two_child_response_seconds": 0.031,
+      "repaired_scenario_seconds": 19.063,
+      "correct_list_and_bytes_tails": true,
+      "default_and_large_request_pages_capped_at_1000": true,
+      "named_filter_empty": true,
+      "watch_after_paging_297": true,
+      "native_exit_0": true,
+      "adapter_shutdown_0": true,
+      "original_report_sha256": "474e677b40b282d52f31a7304d8b9ad88acfac5a121552a59298b624c7550643",
+      "repaired_report_sha256": "0cbb8f885a6ffcc4f89ae8ef4fc3957745777c9185c951fcd5e5a360bbba3946"
+    },
+    "python314": {
+      "python": "3.14.3",
+      "original_timeout_seconds": 30.014,
+      "repaired_two_child_response_seconds": 0.022,
+      "repaired_scenario_seconds": 9.728,
+      "correct_list_and_bytes_tails": true,
+      "default_and_large_request_pages_capped_at_1000": true,
+      "named_filter_empty": true,
+      "watch_after_paging_297": true,
+      "native_exit_0": true,
+      "adapter_shutdown_0": true,
+      "original_report_sha256": "d86776713a809dd8c1d9d0c2b0f564a0e4965dc43ba2bb1ac333e19472451446",
+      "repaired_report_sha256": "76e9590ab9d9bb97dedaf661e80b5778f04b9751d2bbc6c5dd5820f54145d00a"
+    }
+  },
+  "additional_local_controls": {
+    "exact_upstream_source_patched": true,
+    "verified_already_patched_reuse": true,
+    "unknown_source_rejected_without_mutation": true,
+    "unknown_patch_rejected_without_mutation": true,
+    "report_sha256": "c771002134eedb4953fbc1d3d679923369debbf450b5384b85916a51277eec8b"
+  },
+  "scope": {
+    "native_paging_replay_accepted": true,
+    "full_debugger_regression_accepted": false,
+    "full_installed_SDK_accepted": false,
+    "moved_restored_filesystem_isolation_accepted": false,
+    "positive_IPv6_accepted": false,
+    "network_settings_changed": false,
+    "goal_complete": false
+  }
+}

@@ -105,7 +105,8 @@
     "Keep extended DOS/UNC prefix normalization local because LLVM23 predates Host/windows/PathUtils.h.",
     "Use explicit IPv4 loopback for TCPSocket::CreatePair on this host; no Windows network policy changes.",
     "Port the queued-events predecessor active-exception mutex, shared lifetime and predicate initialization from DebuggerThread.cpp at upstream commit814524c0dd2a93726e0d71a15532a0eba5eb1340. Already-continued events must clear the active exception so Resume releases the deferred-stop gate.",
-    "Local fix: reconcile the event cache with EnumProcessModulesEx and a32768-character GetModuleFileNameExW buffer. Toolhelp32 paths truncate at MAX_PATH, and parallel loader speculation can otherwise hide the winning mapping. Preserve valid loader spelling for known physical bases. Source-evidence: source-c traces omit the actual runtime and long-e DAP launches exit42 without hitting an unresolved DLL breakpoint."
+    "Local fix: reconcile the event cache with EnumProcessModulesEx and a32768-character GetModuleFileNameExW buffer. Toolhelp32 paths truncate at MAX_PATH, and parallel loader speculation can otherwise hide the winning mapping. Preserve valid loader spelling for known physical bases. Source-evidence: source-c traces omit the actual runtime and long-e DAP launches exit42 without hitting an unresolved DLL breakpoint.",
+    "Reuse the separately hash-pinned lazy indexed DAP paging patch on the byte-identical LLVM23.1.4 Variables.cpp. Fetch only the requested range instead of expanding every synthetic child before slicing. Native page/runtime acceptance remains separate."
   ],
   "configuration": {
     "LLDB_PYTHON_HOME": "..",
@@ -115,5 +116,12 @@
     "LLDB_ENABLE_SWIG": true
   },
   "scope": "Independent native Windows debugger; NEX compiler and generated code remain on LLVM/MLIR22.1.8. Runtime regression acceptance is recorded separately.",
-  "full_debugger_regression_accepted": false
+  "full_debugger_regression_accepted": false,
+  "indexed_pages": {
+    "patch_sha256": "447806a73c12274b26a6bb8306a12e7d1a57a0759052f5ae0c66f582e74e6653",
+    "source_file": "lldb/tools/lldb-dap/Variables.cpp",
+    "original_sha256": "22d2c4fd44ef498df98364972ef704efc252c45dc5d45ba581230d56c4a46421",
+    "patched_sha256": "960a03ea8b6a64b09ef5bdefd2a9af5d50da38022f548de8ca05ec648a9ee562",
+    "patch": "../linux/lldb23-indexed-pages.patch"
+  }
 }

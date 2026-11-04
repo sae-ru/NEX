@@ -21,6 +21,24 @@ def sha(path):
     return digest.hexdigest()
 
 
+def prepare_indexed_pages(source, record):
+    """Reuse the hash-pinned lazy paging fix on the matching Windows source."""
+    patch = (HERE / record['patch']).resolve(strict=True)
+    target = source / record['source_file']
+    if sha(patch) != record['patch_sha256']:
+        raise ValueError('indexed paging patch checksum differs')
+    before = sha(target)
+    if before == record['patched_sha256']:
+        return dict(record, applied=False, source_sha256=before)
+    if before != record['original_sha256']:
+        raise ValueError('indexed paging source checksum differs')
+    subprocess.run(['git', 'apply', '--check', str(patch)], cwd=source, check=True)
+    subprocess.run(['git', 'apply', str(patch)], cwd=source, check=True)
+    if sha(target) != record['patched_sha256']:
+        raise ValueError('patched indexed paging source checksum differs')
+    return dict(record, applied=True, source_sha256=sha(target))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, default=ROOT / 'build/deps/llvm-project-23.1.4.src.tar.xz')
@@ -39,7 +57,6 @@ def main():
     if sha(args.archive) != manifest['source_sha256'] or sha(patch) != manifest['patch_sha256']:
         raise ValueError('LLVM source archive/backport patch checksum differs')
     source, sdk, runtime = (p.resolve() for p in (args.source, args.sdk, args.runtime))
-    source_relative = source.relative_to(ROOT)
     output = args.output.resolve()
     if output.exists():
         raise ValueError('choose a new output prefix; the existing debugger is retained')
@@ -54,11 +71,11 @@ def main():
             selected = [m for m in archive if '/lldb/' in m.name or '/cmake/' in m.name
                         or m.name.endswith('/LICENSE.TXT')]
             archive.extractall(source.parent, members=selected, filter='data')
-        subprocess.run(['git', 'apply', '--directory=' + source_relative.as_posix(), str(patch)],
-                       cwd=ROOT, check=True)
+        subprocess.run(['git', 'apply', str(patch)], cwd=source, check=True)
     for record in manifest['source_files']:
         if sha(source / record['path']) != record['patched_sha256']:
             raise ValueError('patched source checksum differs: ' + record['path'])
+    indexed_pages = prepare_indexed_pages(source, manifest['indexed_pages'])
     environment = dict(os.environ)
     environment['PATH'] = str(sdk / 'bin') + os.pathsep + str(runtime / 'bin') + os.pathsep + environment.get('PATH', '')
     build = args.build.resolve()
@@ -76,7 +93,8 @@ def main():
         '-DLLDB_ENABLE_LZ4=OFF', '-DLLVM_LINK_LLVM_DYLIB=ON', '-DLLVM_APPEND_VC_REV=OFF',
         '-DLLDB_PYTHON_HOME:STRING=..',
         '-DLLVM_FORCE_VC_REPOSITORY=https://github.com/llvm/llvm-project',
-        '-DLLVM_FORCE_VC_REVISION=llvmorg-' + manifest['version'] + '+nex-windows-' + manifest['patch_sha256'][:12]]
+        '-DLLVM_FORCE_VC_REVISION=llvmorg-' + manifest['version'] + '+nex-windows-' + manifest['patch_sha256'][:12]
+        + '-pages-' + indexed_pages['patch_sha256'][:12]]
     command += ['-DCMAKE_EXE_LINKER_FLAGS:STRING="' + compiled_resource.as_posix() + '"']
     values = {'CMAKE_C_COMPILER': sdk / 'bin/clang.exe', 'CMAKE_CXX_COMPILER': sdk / 'bin/clang++.exe',
         'CMAKE_MAKE_PROGRAM': sdk / 'bin/ninja.exe', 'LLVM_DIR': sdk / 'lib/cmake/llvm',
@@ -100,6 +118,7 @@ def main():
         raise RuntimeError('LLDB/Python startup failed:\n' + startup.stdout + startup.stderr)
     receipt = {'schema': 'nex.windows-lldb-build/1', 'build_passed': True,
         'full_debugger_regression_accepted': False, 'source_manifest_sha256': sha(HERE / 'lldb23-windows-backport.json'),
+        'indexed_pages': indexed_pages,
         'commands': [compile_resource, *commands], 'startup': startup.stdout, 'runtime_source': str(runtime),
         'build_recipe_sha256': sha(Path(__file__)), 'process_manifest_sha256': sha(process_manifest),
         'dependency_locks': {name: sha(HERE / name) for name in (
