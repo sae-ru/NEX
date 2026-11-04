@@ -30,8 +30,8 @@ def digest(path):
 def verify(sdk, output):
     """Runs from the installed SDK in the clean container, with no source mount."""
     report = {'ok': False, 'sdk': str(sdk), 'commands': []}
-    def run(arguments, **options):
-        result = subprocess.run(list(map(str, arguments)), capture_output=True, text=True, timeout=600, **options)
+    def run(arguments, *, timeout=600, **options):
+        result = subprocess.run(list(map(str, arguments)), capture_output=True, text=True, timeout=timeout, **options)
         report['commands'].append({'arguments': list(map(str, arguments)), 'exit_code': result.returncode,
                                     'stdout': result.stdout, 'stderr': result.stderr})
         if result.returncode:
@@ -70,7 +70,10 @@ def verify(sdk, output):
             dependencies(sdk / 'libexec/nex/llvm/bin' / name)
         command = ['python3', sdk / 'share/nex/tools/sdk_acceptance.py', sdk,
                    '--output', output / 'workflow', '--forbid-source', '/src', '--browser']
-        run(command)
+        # The maintained workflow contains independently bounded phases. Use
+        # the same overall budget as the macOS SDK verifier, rather than a
+        # single tool command's ten-minute limit for the entire workflow.
+        run(command, timeout=18000)
         accepted = json.loads((output / 'workflow/report.json').read_text())
         sdk_acceptance.validate_completed_report(accepted)
         server = Path(accepted['evidence']['authenticated_storage']['executable'])

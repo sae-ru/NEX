@@ -667,11 +667,15 @@ The source/runtime implementation is unchanged from the188 HTTP cohort. This
 delivery update installs/indexes its extended helper and strengthens SDK receipt
 validation. It adds no source syntax, language migration, dependency or notice.
 
-The maintained macOS distribution wrapper gives each moved/restored full SDK
+The maintained macOS and Linux distribution wrappers give each moved/restored full SDK
 workflow a bounded18000-second budget. Its summary counts the phases in the
 actually validated receipt, including37 for0.134.4, rather than the historical
 34-phase base tuple. Individual SDK operations retain their own shorter limits;
 this wrapper does not relax any receipt or isolation check.
+
+The Linux verifier keeps its600-second limit for individual inspection tools.
+The complete maintained workflow uses the18000-second aggregate limit, including
+all41 phases in0.162; native task deadlines and DAP response limits are unchanged.
 
 
 ### Read-only standard-library replay acceptance

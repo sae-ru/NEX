@@ -97,6 +97,70 @@ while True:
         self.assert_closed(client)
 
 
+class LinuxVerifierBudgets(unittest.TestCase):
+    """Real short-lived peers test orchestration budgets, not SDK acceptance."""
+
+    def exercise(self, workflow_exit=0, slow_tool=False):
+        spec = importlib.util.spec_from_file_location(
+            'linux_bundle_budget_fixture', Path(__file__).resolve().parents[1]/'tools/linux/bundle.py')
+        bundle = importlib.util.module_from_spec(spec); spec.loader.exec_module(bundle)
+        real_run, real_exists = subprocess.run, Path.exists
+        with tempfile.TemporaryDirectory(prefix='nex Linux verifier budget ') as temporary:
+            root = Path(temporary); sdk = root/'SDK'; output = root/'evidence'; output.mkdir()
+            (sdk/'bin').mkdir(parents=True); (sdk/'bin/nex').write_text('controlled fixture')
+            (sdk/'share/nex').mkdir(parents=True)
+            (sdk/'share/nex/sdk-bundle.json').write_text(json.dumps({'files': {}}))
+            server = root/'server'; server.write_text('controlled fixture')
+            accepted = {'compiler_sha256': archive.digest(sdk/'bin/nex'), 'seconds': 1,
+                        'evidence': {'authenticated_storage': {'executable': str(server)}}}
+            peer = root/'peer.py'; marker = root/'completed'
+            peer.write_text('import json,pathlib,sys,time\n'
+                            'time.sleep(float(sys.argv[1]))\n'
+                            'pathlib.Path(sys.argv[2]).write_text("finished")\n'
+                            'if int(sys.argv[3]):sys.stderr.write("controlled workflow failure");sys.exit(int(sys.argv[3]))\n'
+                            'p=pathlib.Path(sys.argv[4]);p.parent.mkdir(parents=True,exist_ok=True)\n'
+                            'p.write_text(sys.argv[5])\n')
+
+            def controlled_run(arguments, **options):
+                # Scale orchestration seconds to milliseconds, so the real
+                # one-second peer outlives a tool budget without a ten-minute test.
+                options['timeout'] /= 1000
+                if arguments[0] == 'python3' or (slow_tool and arguments[:2] == ['ldconfig', '-p']):
+                    return real_run([sys.executable, '-B', str(peer), '1', str(marker),
+                                     str(workflow_exit), str(output/'workflow/report.json'),
+                                     json.dumps(accepted)], **options)
+                return subprocess.CompletedProcess(arguments, 0, '', '')
+
+            def fixture_exists(path):
+                return False if str(path) in ('/src', '/opt/z3', '/usr/lib/llvm-22') else real_exists(path)
+
+            with mock.patch.object(bundle.subprocess, 'run', side_effect=controlled_run), \
+                 mock.patch.object(bundle.shutil, 'which', return_value=None), \
+                 mock.patch.object(Path, 'exists', fixture_exists), \
+                 mock.patch.object(bundle.sdk_acceptance, 'validate_completed_report') as validate:
+                if slow_tool:
+                    with self.assertRaises(subprocess.TimeoutExpired): bundle.verify(sdk, output)
+                    self.assertFalse(marker.exists()); validate.assert_not_called()
+                elif workflow_exit:
+                    with self.assertRaisesRegex(RuntimeError, 'controlled workflow failure'):
+                        bundle.verify(sdk, output)
+                    self.assertTrue(marker.exists()); validate.assert_not_called()
+                else:
+                    self.assertTrue(bundle.verify(sdk, output)['ok'])
+                    self.assertTrue(marker.exists()); validate.assert_called_once_with(accepted)
+            report = json.loads((output/'verification.json').read_text())
+            self.assertEqual(report['ok'], not slow_tool and workflow_exit == 0)
+
+    def test_complete_workflow_outlives_individual_tool_budget(self):
+        self.exercise()
+
+    def test_individual_tool_remains_bounded(self):
+        self.exercise(slow_tool=True)
+
+    def test_workflow_failure_is_not_accepted_with_longer_aggregate_budget(self):
+        self.exercise(workflow_exit=7)
+
+
 class DistributionWorkflow(unittest.TestCase):
     def tcp_report(self, profile='full'):
         # Synthetic receipt shapes exercise the validator, not platform execution.
