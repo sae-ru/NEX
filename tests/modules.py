@@ -1,4 +1,5 @@
 """Module visibility, hermetic revisions, dependency locks and relocation."""
+from host_fixture import debugger_tool
 from sqlite_fixture import connection as sqlite_connection
 import copy
 import json
@@ -79,7 +80,7 @@ class Modules(harness.ToolchainCase):
         self.assertIn("pub fn create", context["source"])
         self.assertEqual(context["callees"][0]["name"], "example::model::normalize")
         self.assertEqual(context["structures"][0]["name"], "example::model::Item")
-        if shutil.which("lldb"):
+        if debugger_tool('lldb'):
             session = self.cli("debug")
             manifest = json.loads(Path(session["manifest"]).read_text())
             imported = next(s for s in manifest["sources"]

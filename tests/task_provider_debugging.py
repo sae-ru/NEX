@@ -1,4 +1,5 @@
 """Actual checked task-provider images, all-stop LLDB and NEX-DAP source views."""
+from host_fixture import debugger_tool
 import base64
 import copy
 import importlib.util
@@ -134,7 +135,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         return result,session,path,manifest
 
     def lldb(self,session,commands,label='lldb',env=None):
-        debugger=shutil.which('lldb');self.assertTrue(debugger,'actual LLDB with Python is required')
+        debugger=debugger_tool('lldb');self.assertTrue(debugger,'actual LLDB with Python is required')
         manifest=json.loads(Path(session['manifest']).read_text())
         argv=[debugger,'--no-lldbinit','--batch',session['launch']['program']]
         for command in ['settings set target.disable-aslr false','command script import '+json.dumps(manifest['formatter'],ensure_ascii=False),
@@ -189,7 +190,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
 
     def dap(self,session,breakpoint,body):
         from debugging import DAP
-        manifest=json.loads(Path(session['manifest']).read_text());backend=shutil.which('lldb-dap')
+        manifest=json.loads(Path(session['manifest']).read_text());backend=debugger_tool('lldb-dap')
         if not backend and sys.platform=='darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
         self.assertTrue(backend,'actual lldb-dap is required');trace=[]
         class Recorded(DAP):

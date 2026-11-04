@@ -1,4 +1,5 @@
 """Actual ABI5 provider profiles and LLDB/DAP File-bearing source frames."""
+from host_fixture import debugger_tool
 import argparse,base64,hashlib,json,os,shutil,subprocess,sys,time
 from pathlib import Path
 
@@ -21,7 +22,7 @@ def dap_session(name,session,files,mode):
  directory=root/name;directory.mkdir();manifest=json.loads(Path(session['manifest']).read_text())
  assert manifest['schema']=='nex.debug/3' and manifest['language']=='0.24'
  assert {row['language'] for row in manifest['task_debug']['source_union']['components']}=={'0.24'}
- backend=shutil.which('lldb-dap')
+ backend=debugger_tool('lldb-dap')
  if not backend and sys.platform=='darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
  assert backend,'actual LLDB DAP is required';trace=[]
  class Recorded(DAP):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ordinary027 concrete source providers with real static/shared/mixed images."""
+from host_fixture import debugger_tool
 from sqlite_fixture import connection as sqlite_connection
 import argparse
 import hashlib
@@ -95,7 +96,7 @@ def debug(project,mode):
     description=cli(project,mode+'-debug',['project','--kind','debug','--component','app','--adapter','nex-dap'])
     session=description['observation'];manifest=json.loads(Path(session['manifest']).read_text())
     assert manifest['schema']=='nex.debug/3' and manifest['language']=='0.28'
-    debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
+    debugger=debugger_tool('lldb')
     assert debugger,'actual LLDB is required for source-provider debugger tests'
     commands=['settings set target.disable-aslr false',
               'command script import '+json.dumps(manifest['formatter']),

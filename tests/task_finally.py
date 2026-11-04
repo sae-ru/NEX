@@ -1,4 +1,5 @@
 """Actual AST/TaskIR/native/TypeScript finalization across suspension."""
+from host_fixture import debugger_tool
 import json
 import os
 import platform
@@ -133,7 +134,7 @@ fn main()->unit !{task,throw}{try{original();}finally{task_yield();}}
 
     @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual LLDB logical task frame')
     def test_live_finalizer_watch_uses_outer_scope_after_return_and_yield(self):
-        debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
+        debugger=debugger_tool('lldb')
         if not debugger:self.skipTest('LLDB is unavailable')
         self.source('''module finally_task_debug;
 fn answer()->i64 !{task}{

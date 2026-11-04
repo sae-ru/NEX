@@ -1,5 +1,5 @@
 """DWARF, artifact integrity, and opt-in real LLDB/DAP interaction checks."""
-from host_fixture import private_permissions
+from host_fixture import private_permissions, debugger_tool
 import json
 from pathlib import Path
 import queue
@@ -353,7 +353,7 @@ def __lldb_init_module(debugger, context):
             self.assertEqual(values['cut'],'"'+'a'*4093+'…"')
 
         def test_dap_breakpoint_stack_variables_children_and_resume(self):
-            adapter = shutil.which("lldb-dap")
+            adapter = debugger_tool('lldb-dap')
             if not adapter and sys.platform == "darwin":
                 adapter = subprocess.check_output(["xcrun", "--find", "lldb-dap"], text=True).strip()
             self.assertTrue(adapter, "lldb-dap is needed for --live")

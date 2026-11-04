@@ -1,5 +1,6 @@
 """Real host filesystem fixtures and permission inspection, with no POSIX emulation."""
 import os
+import shutil
 import stat
 from functools import lru_cache
 from pathlib import Path
@@ -85,6 +86,16 @@ def temporary_environment(directory):
 
 def exit_code(value):
     return int(value or 0)&(0xffffffff if os.name=='nt' else 0xff)
+
+
+def debugger_tool(name):
+    """Use the operator-selected debugger, including an invalid explicit path.
+
+    A compiler toolchain and a separate LLDB can share PATH. Falling back from
+    an explicit selection would test a different debugger and hide a bad setup.
+    """
+    variable = {'lldb': 'NEX_LLDB', 'lldb-dap': 'NEX_LLDB_DAP'}[name]
+    return os.environ.get(variable) or shutil.which(name)
 
 
 def debugger_crash_diagnostic(arguments, stderr):

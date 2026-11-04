@@ -1,6 +1,6 @@
 """Synchronous and resumable finally agreement, ownership and retained identities."""
 from sqlite_fixture import connection as sqlite_connection
-from host_fixture import run_native
+from host_fixture import run_native, debugger_tool
 import hashlib
 import json
 import os
@@ -155,7 +155,7 @@ fn main()->unit{}
 
     @unittest.skipUnless(platform.system() in ('Darwin','Linux','Windows'),'actual native LLDB scope check')
     def test_native_finally_return_uses_outer_lexical_debug_scope(self):
-        debugger=os.environ.get('NEX_LLDB') or shutil.which('lldb')
+        debugger=debugger_tool('lldb')
         if not debugger:self.skipTest('LLDB is not available')
         self.source('''module finally_debug;
 fn main()->unit !{io}{

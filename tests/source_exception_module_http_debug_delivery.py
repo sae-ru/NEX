@@ -2,7 +2,7 @@
 import hashlib,http.client,json,os,platform,shutil,signal,socket,ssl,subprocess,sys,threading,time,traceback
 from pathlib import Path
 from types import SimpleNamespace
-from host_fixture import control_event
+from host_fixture import control_event, debugger_tool
 
 def verify(state):
  source=state['source'];out=state['out'];compiler=state['debug_compiler'];target=out/'debug-delivery';target.mkdir();report={'ok':False,'DAP':[]}
@@ -11,7 +11,7 @@ def verify(state):
  try:
   sys.argv=[sys.argv[0],str(state['emitter'])];from debugging import DAP
  finally:sys.argv=previous
- backend=shutil.which('lldb-dap')
+ backend=debugger_tool('lldb-dap')
  if not backend and platform.system()=='Darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
  assert backend
  for image in state['report']['module_images']:

@@ -33,6 +33,12 @@ creation and confines timeout cleanup to that kernel job. Its process ownership
 checks and the recorded four HTTP/task sessions do not establish full debugger
 or SDK acceptance. Earlier external parent-PID observer cleanup claims are invalid.
 
+Source regressions honor `NEX_LLDB` and `NEX_LLDB_DAP` before searching PATH,
+as the compiler CLI does. Set both when testing a separate debugger installation.
+An explicit invalid path remains an error. This matters when the compiler's
+LLVM 22 toolchain also supplies an LLDB executable while the selected native
+debugger uses a separately maintained LLVM version.
+
 ## Stop and inspect
 
 ```sh

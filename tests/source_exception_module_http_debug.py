@@ -1,4 +1,5 @@
 """Real modular HTTP logical debugging, request identity and joined completion."""
+from host_fixture import debugger_tool
 import hashlib,json,os,platform,shutil,sys
 from pathlib import Path
 import source_exception_module_http as modules
@@ -183,7 +184,7 @@ def main():
    if tag=='overlap':options['overlap']=True;options['requests'].append({'path':'/api/echo','user':'bob','body':'background','status':200,'background':True})
    if tag=='TLS':
     options.update(TLS=True,certificate=str(out/'cert.pem'));arguments+=['--cert',str(out/'cert.pem'),'--key',str(out/'key.pem')]
-   config=live/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n', newline="\n");argv=[shutil.which('lldb'),'--no-lldbinit','--batch',binary]
+   config=live/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n', newline="\n");argv=[debugger_tool('lldb'),'--no-lldbinit','--batch',binary]
    for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(file))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(driver)),'nex-private-http-test-session '+str(config)]:argv+=['-o',command]
    env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(live/'events')};result=run(label+'-debug-'+tag,argv,env);observed=json.loads((live/'report.json').read_text());assert observed['ok'] and observed['source_files_absent']
    observe(binary,observed);assert observed['cleanup']['ok']

@@ -3,6 +3,7 @@
 The builder selects debug instrumentation without enabling the public CLI guard.
 No LLDB expression command, inferior function, or Value retain is used here.
 """
+from host_fixture import debugger_tool
 import base64
 import copy
 import importlib.util
@@ -184,7 +185,7 @@ class TaskDebugging(harness.ToolchainCase):
         with self.assertRaises(ValueError):view.stack(0,tuple(unavailable))
 
     def test_real_lldb_registers_both_logical_and_ordinary_commands(self):
-        debugger = shutil.which('lldb')
+        debugger = debugger_tool('lldb')
         self.assertIsNotNone(debugger)
         run = subprocess.run([debugger,'--no-lldbinit','--batch','-o',
             'command script import ' + json.dumps(str(harness.REPO/'debug/lldb_nex.py')),
@@ -203,7 +204,7 @@ class TaskDebugging(harness.ToolchainCase):
         return json.loads(result.stdout)
 
     def lldb(self, built, commands, env=None):
-        debugger = shutil.which('lldb')
+        debugger = debugger_tool('lldb')
         self.assertIsNotNone(debugger, 'this acceptance requires actual LLDB with Python')
         manifest = Path(built['debug_manifest'])
         data = json.loads(manifest.read_text())
@@ -245,7 +246,7 @@ fn main()->i64 !{task}{
         data = json.loads(original)
         manifest.write_bytes(b'{"invalid":"\xff"}')
         try:
-            command = [shutil.which('lldb'),'--no-lldbinit','--batch',built['executable'],
+            command = [debugger_tool('lldb'),'--no-lldbinit','--batch',built['executable'],
                 '-o','command script import '+json.dumps(data['formatter'],ensure_ascii=False),
                 '-o','nex-load-debug '+json.dumps(str(manifest),ensure_ascii=False)+' --compiler '+json.dumps(harness.NEX,ensure_ascii=False)]
             rejected = subprocess.run(command,capture_output=True,text=True,timeout=30,
@@ -351,7 +352,7 @@ fn child(input:i64)->i64 !{task}{
 fn main()->unit !{task,io,throw}{print(child(41));}
 ''')
         manifest=json.loads(Path(built['debug_manifest']).read_text())
-        backend=shutil.which('lldb-dap')
+        backend=debugger_tool('lldb-dap')
         if not backend and sys.platform=='darwin':
             backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
         self.assertTrue(backend,'this acceptance requires actual lldb-dap')

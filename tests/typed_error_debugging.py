@@ -1,4 +1,5 @@
 """Explicit027 native typed catch values through real LLDB and NEX-DAP."""
+from host_fixture import debugger_tool
 from pathlib import Path
 from types import SimpleNamespace
 import argparse,hashlib,json,os,platform,shutil,subprocess,sys,tempfile,time
@@ -105,7 +106,7 @@ def run_case(scenario,mode,directory):
   'nex-load-debug '+json.dumps(str(manifest_path))+' --compiler '+json.dumps(str(compiler)),
   'nex-task-break line '+json.dumps(file)+' '+str(line),'run','nex-task-stack','nex-task-values','nex-frame '+frame_expression,
   *['nex-eval '+w['expression'] for w in watches],'breakpoint disable','continue']
- argv=[os.environ.get('NEX_LLDB') or shutil.which('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
+ argv=[debugger_tool('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
  for command in commands:argv+=['-o',command]
  (O/'lldb-command.json').write_text(json.dumps(argv,ensure_ascii=False,indent=2)+'\n', newline="\n")
  r=subprocess.run(argv,cwd=root,env=env,text=True,capture_output=True,timeout=180)
@@ -133,7 +134,7 @@ def run_dap(directory):
   def send(self,command,arguments=None):trace.append({'request':command,'arguments':arguments});return super().send(command,arguments)
   def wait(self,predicate,timeout=30):
    result=super().wait(predicate,timeout);trace.append({'response_or_event':result});return result
- backend=shutil.which('lldb-dap') or subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
+ backend=debugger_tool('lldb-dap') or subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
  os.environ['NEX_RESOURCE_DIR']=str(args.resources or args.source_root);os.environ['PYTHONDONTWRITEBYTECODE']='1';os.environ.update(base.get('environment',{}))
  adapter=Recorded([sys.executable,manifest['dap_adapter'],'--backend',backend],O)
  report={'ok':False,'mode':base['mode'],'scenario':base.get('scenario','record'),'real_NEX_DAP':True,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'scope':'explicit C++'+language+' native debugger','observations':[]};started=time.monotonic();hidden=[]
@@ -231,7 +232,7 @@ def run_synchronous(directory):
  r=subprocess.run([str(args.probe),str(O/'request.json')],cwd=root,env=env,text=True,capture_output=True,timeout=300);(O/'build.stdout').write_text(r.stdout, newline="\n");(O/'build.stderr').write_text(r.stderr, newline="\n");assert r.returncode==0,(r.stdout,r.stderr)
  session=json.loads(r.stdout)['observation'];m=json.loads(Path(session['manifest']).read_text());assert m['schema']=='nex.debug/1',m['schema']
  file=m['sources'][0]['debug_path'];line=next(i for i,l in enumerate(source.splitlines(),1) if 'let answer:' in l)
- argv=[os.environ.get('NEX_LLDB') or shutil.which('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
+ argv=[debugger_tool('lldb'),'--no-lldbinit','--batch',session['launch']['program']]
  for command in ['settings set target.disable-aslr false','command script import '+json.dumps(m['formatter']),
   'nex-load-debug '+json.dumps(session['manifest'])+' --compiler '+json.dumps(str(compiler)),
   'breakpoint set --file '+json.dumps(file)+' --line '+str(line),'run','nex-frame e','nex-eval e.value','nex-eval e.note','breakpoint disable','continue']:

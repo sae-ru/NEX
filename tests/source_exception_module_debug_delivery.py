@@ -1,4 +1,5 @@
 """Actual DAP, unchanged-image relocation and rejected private debug records."""
+from host_fixture import debugger_tool
 import argparse,copy,hashlib,json,os,platform,shutil,subprocess,sys
 from pathlib import Path
 from source_exception_module_debug_support import bind_images
@@ -12,7 +13,7 @@ def verify(source,artifacts,compiler,emitter):
  try:
   sys.argv=[sys.argv[0],str(emitter)];from debugging import DAP,inferior_output
  finally:sys.argv=previous
- backend=shutil.which('lldb-dap')
+ backend=debugger_tool('lldb-dap')
  if not backend and platform.system()=='Darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
  assert backend
  root=artifacts/'debug-calls';leaf=root/'leaf/main.nex';app=root/'app/main.nex';leaf_line=next(i for i,t in enumerate(leaf.read_text().splitlines(),1) if '// STOP:leaf' in t);catch_line=next(i for i,t in enumerate(app.read_text().splitlines(),1) if '// STOP:catch' in t)
@@ -59,7 +60,7 @@ def verify(source,artifacts,compiler,emitter):
   try:
    for file in paths:
     temporary=file.with_name(file.name+'.hidden');assert not temporary.exists();file.rename(temporary);hidden.append((file,temporary))
-   argv=[shutil.which('lldb'),'--no-lldbinit','--batch',d/('program.exe' if os.name=='nt' else 'program')]
+   argv=[debugger_tool('lldb'),'--no-lldbinit','--batch',d/('program.exe' if os.name=='nt' else 'program')]
    for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(manifest))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(artifacts/'module_lldb_session.py')),'nex-private-test-session '+str(config)]:argv+=['-o',command]
    result=run('relocated-'+topology,argv);observed=json.loads((d/'lldb-report.json').read_text());assert observed['ok'] and observed['exit']==42 and observed['source_absent_during_watch'] and len(observed['observations'])==2
   finally:

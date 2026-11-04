@@ -1,4 +1,5 @@
 """Observable language, native/interpreter, graph and LLM protocol checks."""
+from host_fixture import debugger_tool
 from sqlite_fixture import connection as sqlite_connection
 import json
 import os
@@ -303,7 +304,7 @@ test fn branches() -> unit {
         self.assertEqual(self.cli("check", "--imaginary", ok=False)["code"], "E_OPTION")
         self.assertEqual(self.cli("no-such-command", ok=False)["code"], "E_COMMAND")
 
-    @unittest.skipUnless(shutil.which("lldb"), "LLDB is not installed")
+    @unittest.skipUnless(debugger_tool('lldb'), "LLDB is not installed")
     def test_debug_symbols_resolve_nex_source(self):
         self.source("module debug; fn main() -> i64 { return 0; }")
         self.cli("check")

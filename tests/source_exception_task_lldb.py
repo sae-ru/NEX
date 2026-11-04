@@ -1,4 +1,4 @@
-from host_fixture import run_native, probe_dll_inputs
+from host_fixture import run_native, probe_dll_inputs, debugger_tool
 """Actual all-stop LLDB/DAP over unarchived compiled private source exceptions."""
 import os
 import argparse, ast, hashlib, json, os, platform, re, shutil, subprocess, sys, tempfile
@@ -235,7 +235,7 @@ def main():
             sys.argv=[sys.argv[0],emitter]
             from debugging import DAP,inferior_output
         finally:sys.argv=previous
-        backend=shutil.which('lldb-dap')
+        backend=debugger_tool('lldb-dap')
         if not backend and platform.system()=='Darwin':backend=subprocess.check_output(['xcrun','--find','lldb-dap'],text=True).strip()
         assert backend,'actual lldb-dap required'
         trace=[]
@@ -287,7 +287,7 @@ def main():
         cleanup=json.loads(next(line.split(' ',1)[1] for line in native_output.splitlines() if line.startswith('NEX_PRIVATE_LLDB_CLEANUP ')))
         assert cleanup=={'ok':True,'live_frames':0,'managed_live':0},output
         report['dap_cases'].append({'name':'debug-call-rethrow','optimization':optimization,'all_threads_stopped':True,'caller_and_catch_values':True,'stale_reference_rejected':True,'next_after_unwind':True,'checked_watches':bool(a.watch_compiler),'native_cleanup_capture':'stderr-file' if os.name=='nt' else 'DAP-output','protocol_sha256':hashlib.sha256((directory/'dap-protocol.json').read_bytes()).hexdigest(),'passed':True});save()
-    save();debugger=shutil.which('lldb');assert debugger,'actual LLDB required'
+    save();debugger=debugger_tool('lldb');assert debugger,'actual LLDB required'
     run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll'])
     target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-DNEX_PROFILE_ENABLED','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_TASK_DEBUG_ENABLED','-I'+str(runtime)]

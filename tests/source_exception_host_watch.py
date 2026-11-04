@@ -1,11 +1,12 @@
 """Actual private ABI2502 LLDB watch/capture after file/resource unwinding."""
+from host_fixture import debugger_tool
 import argparse,ast,hashlib,json,os,platform,shutil,subprocess
 from pathlib import Path
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('emitter');p.add_argument('compiler');p.add_argument('artifacts');a=p.parse_args()
     source=Path(__file__).resolve().parents[1];root=Path(a.artifacts).resolve();directory=root/'host-debug-unwind';file=directory/'main.nex'
-    emitter=Path(a.emitter).resolve();compiler=Path(a.compiler).resolve();debugger=shutil.which('lldb');assert debugger
+    emitter=Path(a.emitter).resolve();compiler=Path(a.compiler).resolve();debugger=debugger_tool('lldb');assert debugger
     tree=ast.parse((source/'tests/source_exception_task_lldb.py').read_text());assignment=next(n for n in tree.body if isinstance(n,ast.Assign) and any(getattr(t,'id','')=='LLDB_DRIVER' for t in n.targets));driver=ast.literal_eval(assignment.value)
     needle="str(config['limit'])+(' --nex-task-timeout-ms"
     assert driver.count(needle)==1

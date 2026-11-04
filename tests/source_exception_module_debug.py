@@ -1,4 +1,5 @@
 """Private logical source debugging over actual fixed modular images."""
+from host_fixture import debugger_tool
 import ast,copy,hashlib,json,os,platform,shutil,sys
 from pathlib import Path
 import source_exception_frontiers as frontiers
@@ -77,7 +78,7 @@ def make_driver(source):
 
 
 def main():
- source=Path(__file__).resolve().parents[1];state=frontiers.main(CASES,6,'NEX_EXCEPTION_MODULE_DEBUG_OUTPUT',False,'debug');out=state['output'];report=state['report'];run=state['run'];save=state['save'];probe=state['probe'];emitter=Path(sys.argv[3]).resolve();watch_compiler=Path(state['debug_compiler']).resolve();debugger=shutil.which('lldb');assert debugger
+ source=Path(__file__).resolve().parents[1];state=frontiers.main(CASES,6,'NEX_EXCEPTION_MODULE_DEBUG_OUTPUT',False,'debug');out=state['output'];report=state['report'];run=state['run'];save=state['save'];probe=state['probe'];emitter=Path(sys.argv[3]).resolve();watch_compiler=Path(state['debug_compiler']).resolve();debugger=debugger_tool('lldb');assert debugger
  driver=out/'module_lldb_session.py';driver.write_text(make_driver(source), newline="\n");report['debug_sessions']=[];report['captures']=[]
  if state['debug_native_only']:
   for c in report['cases']:
