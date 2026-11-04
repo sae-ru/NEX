@@ -26,6 +26,70 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class ServerDebugEvidence(unittest.TestCase):
+    def report(self, *, available=True, live=False):
+        server = {'descriptor': True, 'actual_shared_provider': True,
+                  'editor_preparation': available, 'backend_available': available,
+                  **{name: live for name in ('live_worker_stop', 'source_deleted',
+                                             'request_completed', 'graceful_exit')}}
+        report = {'resource_hashes': {'editor/vscode/session.js': 'a'*64},
+                  'evidence': {'live_debugger': live, 'server_debug': server}, 'commands': []}
+        if not available:
+            server['editor_backend_refusal'] = {
+                'schema': 'nex.sdk-editor-backend-refusal/1', 'exit_code': 1,
+                'message': acceptance.EDITOR_BACKEND_UNAVAILABLE,
+                'backend_command': 'lldb-dap', 'backend_present': False, 'python_present': True,
+                'editor_source_sha256': 'a'*64, 'stdout_empty': True,
+                'stderr': '/evidence/editor.stderr', 'stderr_sha256': 'b'*64}
+            report['commands'].append({'stderr': '/evidence/editor.stderr', 'status': 'passed', 'exit_code': 1})
+        return report
+
+    def test_existing_successful_editor_and_live_receipts_remain_required(self):
+        for live in (False, True):
+            report = self.report(live=live)
+            del report['evidence']['server_debug']['backend_available']
+            acceptance.validate_server_debug_evidence(report)
+        report['evidence']['server_debug']['live_worker_stop'] = False
+        with self.assertRaisesRegex(RuntimeError, 'actual source-deleted HTTP'):
+            acceptance.validate_server_debug_evidence(report)
+
+    def test_explicit_offline_refusal_requires_current_report_opt_in(self):
+        report = self.report(available=False)
+        with self.assertRaisesRegex(RuntimeError, 'server/editor debug preparation'):
+            acceptance.validate_server_debug_evidence(report)
+        acceptance.validate_server_debug_evidence(report, allow_offline_refusal=True)
+        report['evidence']['live_debugger'] = True
+        with self.assertRaisesRegex(RuntimeError, 'server/editor debug preparation'):
+            acceptance.validate_server_debug_evidence(report, allow_offline_refusal=True)
+
+    def test_refusal_cannot_hide_an_unrelated_command_failure_or_missing_prerequisite(self):
+        report = self.report(available=False)
+        mutations = (
+            lambda r: r['evidence']['server_debug']['editor_backend_refusal'].update(message='build failed'),
+            lambda r: r['evidence']['server_debug']['editor_backend_refusal'].update(python_present=False),
+            lambda r: r['evidence']['server_debug']['editor_backend_refusal'].update(backend_present=True),
+            lambda r: r['evidence']['server_debug']['editor_backend_refusal'].update(editor_source_sha256='c'*64),
+            lambda r: r['evidence']['server_debug']['editor_backend_refusal'].update(stdout_empty=False),
+            lambda r: r['commands'][0].update(exit_code=7),
+            lambda r: r['commands'][0].update(status='failed'),
+            lambda r: r['commands'].append(copy.deepcopy(r['commands'][0])),
+        )
+        for mutate in mutations:
+            damaged = copy.deepcopy(report); mutate(damaged)
+            with self.subTest(mutation=mutate), self.assertRaises(RuntimeError):
+                acceptance.validate_server_debug_evidence(damaged, allow_offline_refusal=True)
+
+    def test_offline_receipt_cannot_claim_live_execution_or_successful_editor_preparation(self):
+        report = self.report(available=False)
+        for name in ('live_worker_stop', 'source_deleted', 'request_completed', 'graceful_exit', 'editor_preparation'):
+            damaged = copy.deepcopy(report); damaged['evidence']['server_debug'][name] = True
+            with self.subTest(field=name), self.assertRaises(RuntimeError):
+                acceptance.validate_server_debug_evidence(damaged, allow_offline_refusal=True)
+        del report['evidence']['server_debug']['editor_backend_refusal']
+        with self.assertRaisesRegex(RuntimeError, 'actual unavailable-backend'):
+            acceptance.validate_server_debug_evidence(report, allow_offline_refusal=True)
+
+
 class SDKClientLifecycle(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix='nex DAP peer ')

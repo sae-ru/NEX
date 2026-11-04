@@ -359,6 +359,15 @@ resumes to clean exit and evaluates that exact snapshot offline. Without
 `--live`, the report records `live_debugger: false`; creating a manifest does
 not establish debugger execution. The host must permit child debugging.
 
+Server debug preparation still builds and checks the actual shared provider and
+invokes the editor's production preparation code. Starting with 0.162, a host
+without `lldb-dap` can complete the non-live workflow only when that editor
+reports its exact missing-backend error. The receipt records the real command,
+exit status, diagnostic and editor resource hashes, Python presence and backend
+absence; `editor_preparation` and all live execution fields remain false.
+`--live` requires the backend and successful preparation and cannot accept this
+refusal. Build failures and other editor errors still fail either workflow.
+
 `--browser` additionally performs all three real locked TypeScript/Vite release builds
 and checks emitted assets/maps for their server sentinels. Without this flag only
 TypeScript semantic tests and project generation run; browser production

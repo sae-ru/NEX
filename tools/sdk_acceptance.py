@@ -116,6 +116,48 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+EDITOR_BACKEND_UNAVAILABLE = 'NEX requires its matching native SDK, Python and an available lldb-dap backend.'
+
+
+def validate_server_debug_evidence(report, *, allow_offline_refusal=False):
+    evidence = report.get('evidence', {})
+    server = evidence.get('server_debug', {})
+    require(server.get('descriptor') is True and server.get('actual_shared_provider') is True,
+            'SDK acceptance lacks checked server debug preparation')
+    if server.get('editor_preparation') is True:
+        require(server.get('backend_available', True) is True and not server.get('editor_backend_refusal'),
+                'SDK editor preparation contradicts its backend availability')
+    else:
+        refusal = server.get('editor_backend_refusal', {})
+        require(allow_offline_refusal and evidence.get('live_debugger') is False and
+                server.get('editor_preparation') is False and server.get('backend_available') is False,
+                'SDK acceptance lacks checked server/editor debug preparation')
+        require(all(server.get(key) is False for key in
+                    ('live_worker_stop', 'source_deleted', 'request_completed', 'graceful_exit')),
+                'Unavailable debugger cannot claim live server execution')
+        script = report.get('resource_hashes', {}).get('editor/vscode/session.js')
+        require(isinstance(script, str) and re.fullmatch('[0-9a-f]{64}', script) and
+                refusal.get('schema') == 'nex.sdk-editor-backend-refusal/1' and
+                refusal.get('exit_code') == 1 and type(refusal.get('exit_code')) is int and
+                refusal.get('message') == EDITOR_BACKEND_UNAVAILABLE and
+                refusal.get('backend_present') is False and refusal.get('python_present') is True and
+                isinstance(refusal.get('backend_command'), str) and refusal['backend_command'] and
+                '\0' not in refusal['backend_command'] and
+                refusal.get('editor_source_sha256') == script and
+                refusal.get('stdout_empty') is True and isinstance(refusal.get('stderr'), str) and
+                isinstance(refusal.get('stderr_sha256'), str) and
+                re.fullmatch('[0-9a-f]{64}', refusal['stderr_sha256']),
+                'SDK acceptance lacks an actual unavailable-backend editor refusal')
+        commands = [row for row in report.get('commands', []) if row.get('stderr') == refusal['stderr']]
+        require(len(commands) == 1 and commands[0].get('status') == 'passed' and
+                commands[0].get('exit_code') == 1 and type(commands[0].get('exit_code')) is int,
+                'SDK editor refusal does not match its observed command')
+    if evidence.get('live_debugger'):
+        require(all(server.get(key) is True for key in
+                    ('live_worker_stop', 'source_deleted', 'request_completed', 'graceful_exit')),
+                'SDK acceptance lacks actual source-deleted HTTP worker debugging')
+
+
 def task_provider_schema(record, kind):
     """Keep retained record families distinct; never guess for an unknown language."""
     # Families2/3/4 predate the required source-language member. Absence
@@ -1269,12 +1311,7 @@ def validate_completed_report(report, *, expected_network_profile='full'):
                 'source_deleted_replay', 'module_inputs_deleted', 'environment_without_sdk', 'nominal_contract_agreement')),
                 'SDK acceptance lacks complete installed foreign project packaging evidence')
     if len(version) == 3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int, version)) >= (0, 85, 0):
-        server=report.get('evidence',{}).get('server_debug',{})
-        require(server.get('descriptor') is True and server.get('actual_shared_provider') is True and server.get('editor_preparation') is True,
-                'SDK acceptance lacks checked server/editor debug preparation')
-        if report.get('evidence',{}).get('live_debugger'):
-            require(all(server.get(key) is True for key in ('live_worker_stop','source_deleted','request_completed','graceful_exit')),
-                    'SDK acceptance lacks actual source-deleted HTTP worker debugging')
+        validate_server_debug_evidence(report, allow_offline_refusal=tuple(map(int, version)) >= (0, 162, 0))
 
 
 class DAP:
@@ -5072,13 +5109,35 @@ server fn handle(request:http::Request) -> http::Response !{db} {
         node=os.environ.get('NEX_NODE') or shutil.which('node');require(node,'server editor preparation requires Node')
         code=('const {prepareSession}=require(process.argv[1]);prepareSession(JSON.parse(process.argv[2]),{compiler:process.argv[3]})'
               '.then(value=>process.stdout.write(JSON.stringify(value))).catch(error=>{console.error(error.message);process.exitCode=1;});')
-        prepared=json.loads(run([node,'-e',code,resources/'editor/vscode/session.js',json.dumps({'type':'nex','request':'launch','cwd':str(project),
-            'project':{'manifest':'nex.build.json','component':'service','configuration':'debug'},'args':list(map(str,runtime))}),compiler],cwd=project,timeout=300))
-        require(prepared['buildKey']==artifact['build_key'] and prepared['launch']['program']==artifact['artifact'] and
-                prepared['launch']['args']==list(map(str,runtime)) and any(Path(pair[1]).resolve()==(project/'core/main.nex').resolve() for pair in prepared['originalSourceMappings']),
-                'server editor preparation lost artifact, runtime arguments or original provider mappings')
-        evidence={'descriptor':True,'actual_shared_provider':True,'editor_preparation':True,'live_worker_stop':False,'source_deleted':False,
+        adapter=session.get('nex_adapter',{})
+        require(adapter.get('schema')=='nex.dap-adapter/1' and type(adapter.get('available')) is bool,
+                'server debug preparation lacks a checked adapter descriptor')
+        available=adapter['available'];require(available or not args.live,'live SDK acceptance requires its LLDB backend')
+        output=run([node,'-e',code,resources/'editor/vscode/session.js',json.dumps({'type':'nex','request':'launch','cwd':str(project),
+            'project':{'manifest':'nex.build.json','component':'service','configuration':'debug'},'args':list(map(str,runtime))}),compiler],
+            cwd=project,timeout=300,expected_success=available)
+        evidence={'descriptor':True,'actual_shared_provider':True,'editor_preparation':available,'backend_available':available,'live_worker_stop':False,'source_deleted':False,
             'request_completed':False,'graceful_exit':False,'manifest':session['manifest']}
+        if available:
+            prepared=json.loads(output)
+            require(prepared['buildKey']==artifact['build_key'] and prepared['launch']['program']==artifact['artifact'] and
+                    prepared['launch']['args']==list(map(str,runtime)) and any(Path(pair[1]).resolve()==(project/'core/main.nex').resolve() for pair in prepared['originalSourceMappings']),
+                    'server editor preparation lost artifact, runtime arguments or original provider mappings')
+        else:
+            command=adapter.get('command',[])
+            require(isinstance(command,list) and command.count('--backend')==1 and command.index('--backend')+1<len(command),
+                    'unavailable adapter lacks its selected backend command')
+            backend=command[command.index('--backend')+1]
+            present=lambda program:bool(shutil.which(program,path=environment.get('PATH'))) or Path(program).is_file()
+            require(command and present(command[0]) and not present(backend),
+                    'offline editor refusal requires real Python and an absent LLDB backend')
+            row=report['commands'][-1];stderr=Path(row['stderr']).read_text()
+            require(not output and stderr.strip()==EDITOR_BACKEND_UNAVAILABLE and row['exit_code']==1,
+                    'editor did not report its actual unavailable backend')
+            evidence['editor_backend_refusal']={'schema':'nex.sdk-editor-backend-refusal/1','exit_code':row['exit_code'],
+                'message':stderr.strip(),'backend_command':backend,'backend_present':False,'python_present':True,
+                'stdout_empty':True,'stderr':row['stderr'],'stderr_sha256':hashlib.sha256(Path(row['stderr']).read_bytes()).hexdigest(),
+                'editor_source_sha256':hashlib.sha256((resources/'editor/vscode/session.js').read_bytes()).hexdigest()}
         if args.live:
             manifest=json.loads(Path(session['manifest']).read_text())
             symbol=next(f['native_symbol'] for f in manifest['functions'] if f['name']=='debug_core::render')
