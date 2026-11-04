@@ -29,6 +29,11 @@ compiler selection, bundle assembly or individual phases do not establish comple
 Windows SDK delivery. The current compiler selection has a separate
 [Windows smoke receipt](evidence/windows-current-compiler-2026-11-02.json).
 
+Direct C11/C++20 acceptance fixtures use the relocated SDK's selected target
+and sysroot for both the selected C++ driver and its sibling `clang` C driver.
+This includes the source-resource producers; system headers must come from the
+selected SDK rather than the original compiler installation.
+
 ### Explicit profile for a Windows host that intentionally denies IPv6
 
 The default `--network-profile full` retains all 41 current SDK phases and

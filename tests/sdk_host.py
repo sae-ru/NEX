@@ -110,8 +110,15 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         exe=self.root/('fixture.exe' if os.name=='nt' else 'fixture')
         c.write_text('#include <string.h>\n#include <nex_selected_fixture.h>\nint fixture(void){return NEX_SELECTED_FIXTURE_VALUE+(int)strlen("NEX!");}\n',newline='\n')
         cpp.write_text('#include <array>\n#include <iostream>\nextern "C" int fixture(void);\nint main(){std::array<int,1> value{fixture()};if(value[0]!=42)return 1;std::cout<<value[0]<<"\\n";}\n',newline='\n')
+        # The resource producer uses the sibling C driver, while most other
+        # fixtures select clang++ with -x c. Exercise both actual driver paths.
+        real_c=Path(self.cli('doctor')['native_compiler']).with_name(helper.executable_name('clang'))
+        c_driver=python_executable(Path(doctor['native_compiler']).with_name(helper.executable_name('clang')),
+            '#!/usr/bin/env python3\nimport os,sys\nos.execv(REAL,[REAL,*sys.argv[1:]])\n'.replace('REAL',repr(str(real_c))),
+            harness.native_fixture_compiler())
         includes=[] if os.name=='nt' else ['-I'+str(include)]
-        for command in [[doctor['native_compiler'],'-x','c','-std=c11',*includes,'-c',c,'-o',obj],
+        for command in [[c_driver,'-std=c11',*includes,'-c',c,'-o',obj],
+                        [doctor['native_compiler'],'-x','c','-std=c11',*includes,'-c',c,'-o',obj],
                         [doctor['native_compiler'],'-std=c++20',cpp,obj,'-o',exe]]:
             result=helper.compile_fixture(command,doctor=doctor,cwd=self.root,capture_output=True,text=True,timeout=180)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)

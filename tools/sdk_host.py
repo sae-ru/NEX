@@ -54,7 +54,9 @@ def compiler_command(arguments):
 
 def compile_fixture(arguments, *, doctor=None, **kwargs):
     command=list(map(str,arguments))
-    if WINDOWS and doctor and Path(command[0]) == Path(doctor.get('native_compiler', '')):
+    selected=Path(doctor['native_compiler']) if doctor and doctor.get('native_compiler') else None
+    selected_drivers={selected, selected.with_name(executable_name('clang'))} if selected else set()
+    if WINDOWS and doctor and Path(command[0]) in selected_drivers:
         # A portable SDK keeps its sysroot separately from the relocated driver.
         # Direct C/C++ fixtures need the same selected target/headers as NEX builds.
         target = doctor.get('host')
