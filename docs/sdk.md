@@ -33,6 +33,9 @@ Direct C11/C++20 acceptance fixtures use the relocated SDK's selected target
 and sysroot for both the selected C++ driver and its sibling `clang` C driver.
 This includes the source-resource producers; system headers must come from the
 selected SDK rather than the original compiler installation.
+The standalone source-resource debugger and dependent-resource checks use the
+same selected driver and sysroot; their child processes do not rely on an
+ambient C/C++ compiler on `PATH`.
 
 ### Explicit profile for a Windows host that intentionally denies IPv6
 

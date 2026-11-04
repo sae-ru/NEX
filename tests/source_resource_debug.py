@@ -4,7 +4,6 @@ import argparse,hashlib,json,os,platform,shutil,subprocess,sys,tempfile,time,tra
 
 # CMake also installs this script under tools/, beside the sibling tests/.
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
-from host_fixture import run_native, host_cpp
 
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('compiler',type=Path);parser.add_argument('resources',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--require-live',action='store_true');args=parser.parse_args()
@@ -15,12 +14,15 @@ def main():
  language=json.loads(subprocess.check_output([str(COMPILER),'describe','--kind','index','--json'],text=True))['language']
  PROJECT=OUT/'project';PROJECT.mkdir();(PROJECT/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'})+'\n', newline="\n")
  ENV={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','NEX_RESOURCE_DIR':str(RESOURCE)}
+ sys.path.insert(0,str(RESOURCE/'tools'))
+ from sdk_host import compile_fixture
+ doctor=None
  report={'schema':'nex.resource-debug-tests/1','ok':False,'commands':[]};started=time.monotonic()
  def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
  def save():(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n', newline="\n")
  def run(label,args,parse=False):
   row={'label':label,'command':list(map(str,args))};report['commands'].append(row);save()
-  p=run_native(row['command'],cwd=PROJECT,env=ENV,capture_output=True,text=True,timeout=180)
+  p=compile_fixture(row['command'],doctor=doctor,cwd=PROJECT,env=ENV,capture_output=True,text=True,timeout=180)
   (OUT/(label+'.stdout')).write_text(p.stdout, newline="\n");(OUT/(label+'.stderr')).write_text(p.stderr, newline="\n");row['exit']=p.returncode;save()
   assert p.returncode==0,(label,p.stdout[-4000:],p.stderr[-4000:])
   return json.loads(p.stdout) if parse else p.stdout

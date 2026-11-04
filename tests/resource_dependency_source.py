@@ -1,5 +1,4 @@
 """Real C11/C++20 dependent resources through public native and AST commands."""
-from host_fixture import run_native
 import argparse
 import hashlib
 import json
@@ -76,12 +75,15 @@ def main():
  else:temporary=tempfile.TemporaryDirectory(prefix='nex dependent resources ');out=Path(temporary.name)
  env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'};started=time.monotonic()
  language=json.loads(subprocess.check_output([str(compiler),'describe','--kind','index','--json'],text=True))['language']
+ doctor=json.loads(subprocess.check_output([str(compiler),'doctor','--json'],env=env,text=True))
+ sys.path.insert(0,str(ROOT/'tools'))
+ from sdk_host import compile_fixture
  report={'schema':'nex.dependent-resource-source/1','ok':False,'commands':[],'checks':[],
   'compiler_sha256':sha(compiler),'language':language,'actual_GPU_NPU_resources':False}
  def save():report['seconds']=round(time.monotonic()-started,3);write(out/'report.json',report)
  def run(label,argv,expected=0,marker=None,cwd=out):
   row={'label':label,'argv':list(map(str,argv)),'cwd':str(cwd)};report['commands'].append(row);save()
-  p=run_native(row['argv'],cwd=cwd,env={**env,'NEX_DEPENDENCY_MARKER':str(marker or out/(label+'.events'))},capture_output=True,text=True,timeout=240)
+  p=compile_fixture(row['argv'],doctor=doctor,cwd=cwd,env={**env,'NEX_DEPENDENCY_MARKER':str(marker or out/(label+'.events'))},capture_output=True,text=True,timeout=240)
   (out/(label+'.stdout')).write_text(p.stdout, newline="\n");(out/(label+'.stderr')).write_text(p.stderr, newline="\n");row['exit_code']=p.returncode;save()
   assert p.returncode==expected,(label,p.returncode,p.stdout[-2500:],p.stderr[-2500:]);return p
  def source(pin,body):
@@ -100,7 +102,9 @@ def main():
    directory=out/dialect;directory.mkdir();header=directory/'dependent-signatures.h'
    header.write_text('\n'.join('#define PIN_'+name.upper()+' "'+digest(sig)+'"' for name,sig in signatures.items())+'\n', newline="\n")
    image=directory/'module.so'
-   driver=os.environ.get('NEX_DEPENDENCY_CC' if dialect=='C11' else 'NEX_DEPENDENCY_CXX',shutil.which(driver))
+   selected=Path(doctor['native_compiler'])
+   if dialect=='C11':selected=selected.with_name('clang.exe' if os.name=='nt' else 'clang')
+   driver=os.environ.get('NEX_DEPENDENCY_CC' if dialect=='C11' else 'NEX_DEPENDENCY_CXX',str(selected))
    run(dialect+'-compile',[driver,'-x','c' if dialect=='C11' else 'c++','-std='+standard,'-shared','-fPIC','-pthread','-I'+str(ROOT/'runtime'),'-I'+str(directory),ROOT/'tests/dependent_resource_module.c','-o',image])
    (directory/'NOTICE').write_text('NEX dependent resource conformance producer\n', newline="\n")
    manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('aarch64','arm64') else 'x86_64'),
