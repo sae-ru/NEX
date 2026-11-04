@@ -1,6 +1,8 @@
 """Native server capabilities, durable UTF-8 data and transaction isolation."""
 from sqlite_fixture import connection as sqlite_connection
 import os
+import json
+import sys
 from pathlib import Path
 import shutil
 import sqlite3
@@ -119,12 +121,31 @@ server fn mutate(mode: str) -> result<str> !{db} {
         built = self.cli("build", "--library", "--entry", "mutate", "--profile", "release")
         doctor = self.cli("doctor")
         target = self.root / "storage-scope-test"
+        library_flags = (['-Xlinker','-rpath','-Xlinker',str(Path(doctor['native_sqlite_library']).parent)]
+                         if sys.platform in ('darwin','linux') else [])
         compiled = subprocess.run([doctor['native_compiler'], '-std=c++20', '-pthread', '-I', str(harness.REPO / 'runtime'),
                                    str(harness.REPO / 'tests/storage_scope.cpp'), built['executable'], doctor['native_sqlite_library'],
-                                   '-o', str(target)], capture_output=True, text=True)
+                                   *library_flags, '-o', str(target)], capture_output=True, text=True)
         self.assertEqual(compiled.returncode, 0, compiled.stderr)
         result = subprocess.run([str(target), str(self.root / 'concurrent.sqlite')], capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        proof=json.loads(result.stdout)
+        self.assertEqual(proof['schema'],'nex.storage-contention/1');self.assertIs(proof['ok'],True)
+        for key in ('attempts','committed','busy_admissions','final_alice','final_bob','managed_values'):
+            self.assertIs(type(proof[key]),int)
+        self.assertEqual(proof['attempts'],96);self.assertGreater(proof['committed'],0)
+        self.assertGreaterEqual(proof['busy_admissions'],0)
+        self.assertEqual(proof['committed']+proof['busy_admissions'],96)
+        self.assertIs(proof['forced_busy_admission'],True);self.assertIs(proof['automatic_retries'],False)
+        self.assertEqual(proof['managed_values'],0);self.assertEqual(proof['final_alice'],2+proof['committed'])
+        self.assertEqual(proof['final_bob'],1)
+        # Read the real durable data independently of the C++ host's counters.
+        with sqlite_connection(self.root/'concurrent.sqlite') as database:
+            rows=database.execute('SELECT owner,key,value FROM nex_kv ORDER BY owner,key').fetchall()
+        self.assertEqual([(owner,key,json.loads(value))for owner,key,value in rows],
+                         [('alice','counter',str(proof['final_alice'])),('bob','counter','1')])
+        print(json.dumps({'storage_contention':proof,'durable_counters':
+                          {owner:json.loads(value)for owner,key,value in rows}},sort_keys=True))
 
 
 if __name__ == '__main__':

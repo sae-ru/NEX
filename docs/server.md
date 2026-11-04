@@ -140,6 +140,13 @@ constructor retains eager transaction start for other hosts. A 2xx response comm
 
 Outside an HTTP request, server-realm source may use storage from the interpreter/native CLI by setting a filesystem `NEX_DATABASE` path and optional `NEX_STORAGE_OWNER` (default `local`). In-memory/URI database modes are rejected for this durable capability. Each standalone operation is then individually atomic; a sequence of CLI calls is not one transaction. Missing configuration returns `CAPABILITY`. `read_env(name) !{io}` is also server-only and returns a result. Runtime configuration is not compiled into browser assets. Request budgets are cooperative checks, not a process or memory sandbox for arbitrary hostile native code.
 
+Writer admission has a bounded wait and does not promise a fair queue. Concurrent
+callers must handle `STORE_BUSY` rather than assume every attempt commits. Native
+conformance accounts for each contending attempt as either a committed mutation
+or a busy rejection before source execution, then checks the durable counter
+against successful commits. A separately held writer forces the rejection path;
+no mutation is retried automatically and the one-second SQLite timeout is unchanged.
+
 ## Native runtime archives
 
 `nex build FILE --library --entry NAME` creates a native static archive containing the selected function's reachable closure and only the runtime components it needs. No C main wrapper is generated. A trusted C++ host can use the matching installed `runtime/nex_host.h`, the symbol reported by `nex context`, and request scopes to contain traps. Heap arguments/results use opaque handle pointers; immutable values may be read by trusted host helpers. Release owned handles or let their request scope reclaim them. This is an internal/version-matched host ABI, not source-level unsafe FFI syntax or a stable ABI promise across versions. Storage consumers additionally link the configured SQLite library. Target selection and target-specific dependencies use `--target TRIPLE` or `--toolchain FILE` from the native build guide; the host embedding the archive must match its architecture/runtime ABI.
