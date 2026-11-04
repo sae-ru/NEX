@@ -362,7 +362,7 @@ def system_dependencies(program, owned_names=()):
     return sorted(set(libraries))
 
 
-def owned_image_paths(manifest, build):
+def owned_image_paths(manifest, build, recorded_program):
     paths = completion_inputs(build)
     shared = build.get('completion_schema') in ('nex.native-completion/3', 'nex.native-completion/5') or (build.get('completion_schema') == 'nex.native-completion/6' and build.get('completion_mode') in ('shared-image', 'shared-application'))
     if not shared:
@@ -376,12 +376,18 @@ def owned_image_paths(manifest, build):
     if any(not isinstance(r, dict) or not isinstance(r.get('path'), str) for r in records):
         raise ValueError('invalid capsule owned image records')
     paths = [Path(r['path']) for r in records]
-    base=Path(manifest['program']).parent
-    if (any(not p.is_absolute() or os.path.normpath(str(p)) != str(p) or
-            p.parent != (base if p.suffix=='.dll' else base/'images') or base.name != build['key'] for p in paths) or
-            [p.relative_to(base).as_posix() for p in paths] != names):
+    bases = (Path(manifest['program']).parent, Path(recorded_program).parent)
+    if (any(not base.is_absolute() or base.name != build['key'] for base in bases) or
+            any(not p.is_absolute() or os.path.normpath(str(p)) != str(p) for p in paths)):
         raise ValueError('capsule owned image paths/order differ')
-    return names
+    # The program can name a directory alias while image records retain the
+    # original physical build root. Reading must not resolve either old path:
+    # both may be gone, and an alias may have been retargeted since export.
+    for base in bases:
+        if (all(p.parent == (base if p.suffix == '.dll' else base/'images') for p in paths) and
+                [p.relative_to(base).as_posix() for p in paths] == names):
+            return names
+    raise ValueError('capsule owned image paths/order differ')
 
 
 def native_dependencies(folder, images):
@@ -454,7 +460,12 @@ def export(request):
     copy(Path(request['core']), 'process.core', CORE_LIMIT)
     if inventory['process.core']['sha256'] != request['core_sha256']:
         raise ValueError('core changed after retained-build inspection')
-    images = owned_image_paths(manifest, build)
+    images = owned_image_paths(manifest, build, recorded_program)
+    for name, image in zip(images, manifest.get('owned_images', [])):
+        expected = Path(recorded_program).parent/name
+        if (Path(image['path']).resolve(strict=True) != expected or
+                (original.parent/name).resolve(strict=True) != expected):
+            raise ValueError('owned image alias does not resolve to its captured retained path')
     dependencies = native_dependencies(work/prefix, images)
     receipt = {'schema': 'nex.core-capsule/1', 'identity': bound, 'host': host(),
                'recorded_program': recorded_program, 'original_program': manifest['program'], 'build_directory': prefix,
@@ -510,7 +521,7 @@ def prepare(request):
     build, build_record = files.json_record(root/prefix/'build.json')
     if inventory.get(prefix+'/build.json') != build_record:
         raise ValueError('capsule native build metadata differs')
-    images = owned_image_paths(manifest, build)
+    images = owned_image_paths(manifest, build, recorded)
     if bool(images) != shared_scope:
         raise ValueError('capsule owned image dependency scope differs')
     recorded_images = receipt.get('recorded_images', {})

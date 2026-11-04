@@ -1,6 +1,8 @@
 """Data integrity, relocation and read-only actual native core capsules."""
 from host_fixture import nonregular, sparse_file
+import copy
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -28,6 +30,44 @@ def digest(path):
 
 
 class CoreCapsules(harness.ToolchainCase):
+    def owned_image_fixture(self):
+        installed=Path(harness.NEX).parent.parent/'share/nex/tools/core_capsule.py'
+        path=installed if installed.is_file() else harness.REPO/'tools/core_capsule.py'
+        spec=importlib.util.spec_from_file_location('capsule_path_contract',path)
+        helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+        key='a'*64
+        names=[('' if os.name=='nt' else 'images/')+'libnex_'+name+'_'+digit*64+('.dll' if os.name=='nt' else '.so')
+               for name,digit in [('alpha','1'),('beta','2')]]
+        build={'key':key,'completion_schema':'nex.native-completion/3','completion_inputs':[
+            {'kind':kind,'path':path} for kind,path in [('abi','library-abi.json'),
+                ('link_inputs','image-inputs.json'),('objects','objects.a'),*[('owned_image',n) for n in names]]]}
+        logical=self.root/'alias'/key;physical=self.root/'original'/key
+        manifest={'program':str(logical/helper.APP_NAME),'owned_images':[{'path':str(physical/name)} for name in names]}
+        return helper,manifest,build,physical/helper.APP_NAME,names
+
+    def test_owned_image_paths_bind_the_alias_and_recorded_root_without_filesystem_access(self):
+        helper,manifest,build,recorded,names=self.owned_image_fixture()
+        self.assertFalse(recorded.exists());self.assertFalse(Path(manifest['program']).exists())
+        self.assertEqual(helper.owned_image_paths(manifest,build,str(recorded)),names)
+        logical=Path(manifest['program']).parent
+        for row,name in zip(manifest['owned_images'],names):row['path']=str(logical/name)
+        self.assertEqual(helper.owned_image_paths(manifest,build,str(recorded)),names)
+
+    def test_owned_image_paths_reject_other_same_key_roots_mixed_roots_order_and_escapes(self):
+        helper,manifest,build,recorded,names=self.owned_image_fixture()
+        variants=[]
+        other=copy.deepcopy(manifest)
+        for row,name in zip(other['owned_images'],names):row['path']=str(self.root/'unrelated'/build['key']/name)
+        variants.append(other)
+        mixed=copy.deepcopy(manifest);mixed['owned_images'][0]['path']=str(Path(manifest['program']).parent/names[0]);variants.append(mixed)
+        reordered=copy.deepcopy(manifest);reordered['owned_images'].reverse();variants.append(reordered)
+        escaped=copy.deepcopy(manifest);escaped['owned_images'][0]['path']=str(recorded.parent/'..'/build['key']/names[0]);variants.append(escaped)
+        for changed in variants:
+            with self.subTest(paths=changed['owned_images']),self.assertRaisesRegex(ValueError,'paths/order differ'):
+                helper.owned_image_paths(changed,build,str(recorded))
+        with self.assertRaisesRegex(ValueError,'paths/order differ'):
+            helper.owned_image_paths(manifest,build,str(recorded.parent.parent/('b'*64)/helper.APP_NAME))
+
     def prepared(self, source=SOURCE):
         self.source(source)
         session = self.cli('debug', '--kind', 'nex-dap')

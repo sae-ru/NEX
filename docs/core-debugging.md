@@ -75,7 +75,11 @@ ordinary core-report schema with an additional checked `capsule` binding.
 The inventory records every file's bytes and SHA256, compiler/language/runtime
 identities, original executable path, resolved historical image path, build key
 and host. The recorded mapping survives removal or retargeting of an original
-directory alias. Missing/extra files,
+directory alias. Shared-image records may retain the physical build root while
+`program` names the validated alias. Export checks that both resolve to the same
+captured image paths; later reads use the recorded paths without consulting the
+removed or retargeted alias. Image order and completion identities remain checked.
+Missing/extra files,
 symlinks, special files, duplicate JSON fields, escaping paths and mismatching
 identities are rejected. Limits are4096 files/directories,32 path components,
 4096 UTF-8 bytes per relative path,512MiB per build file,32GiB per core and33GiB
