@@ -1,6 +1,6 @@
 """Ordinary private exception HTTP/HTTPS execution; no security campaign."""
 from host_fixture import stop_server
-from host_fixture import run_native
+from host_fixture import run_native, debugger_crash_diagnostic
 import os
 import argparse,concurrent.futures,contextlib,hashlib,http.client,json,os,platform,queue,re,signal,socket,ssl,subprocess,tempfile,threading,time
 from pathlib import Path
@@ -59,7 +59,13 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
             report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':None,'timed_out':True,'timeout_seconds':timeout});save()
             raise
         r.stdout=captured(r.stdout);r.stderr=captured(r.stderr)
-        (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'label':label,'argv':list(map(str,argv)),'exit':r.returncode});save();assert r.returncode in allowed,(label,r.returncode,r.stdout[-1800:],r.stderr[-3000:]);return r
+        (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
+        row={'label':label,'argv':list(map(str,argv)),'exit':r.returncode}
+        fatal=debugger_crash_diagnostic(argv,r.stderr)
+        if fatal:row['fatal_debugger_diagnostic']=fatal
+        report['commands'].append(row);save()
+        assert not fatal and r.returncode in allowed,(label,r.returncode,r.stdout[-1800:],r.stderr[-3000:])
+        return r
     save();run('target',[compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',out/'target.ll']);target=(out/'target.ll').read_text();triple=re.search(r'target triple = "([^"]+)"',target)[1];layout=re.search(r'target datalayout = "([^"]+)"',target)[1]
     flags=['-std=c++20','-O1','-g','-fPIC','-DNEX_STRUCTURED_WORKERS','-DNEX_ASYNC_TASKS','-DNEX_FOREIGN_ENABLED','-DNEX_SOURCE_EXCEPTION_HTTP','-I'+str(runtime),'-I'+include]
     assert not (profiling and debugging)

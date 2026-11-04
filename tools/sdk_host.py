@@ -47,6 +47,9 @@ def fixture(name):
 def deployed_environment(**extra):
     return fixture('host_fixture').deployed_environment(**extra)
 
+def debugger_crash_diagnostic(command, stderr):
+    return fixture('host_fixture').debugger_crash_diagnostic(command, stderr)
+
 def compiler_command(arguments):
     values = list(map(str, arguments))
     return ('-o' in values and (any(value.startswith('-std=') for value in values) or

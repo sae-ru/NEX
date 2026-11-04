@@ -372,6 +372,11 @@ path. Each unavailable-backend refusal has its own actual Node command; a shared
 project cannot reuse the server's refusal as evidence. Project receipts retain
 the checked native binary dependencies even when editor preparation is unavailable.
 
+Captured fatal diagnostics from direct LLDB, LLDB-DAP or lldb-server commands
+fail the installed workflow and private HTTP debugger checks even if the parent
+returns zero. Both runners retain the original exit code and captured stderr;
+ordinary command errors keep their existing expected-result checks.
+
 The installed native stream-host fixture executes 27 physical scenarios on
 macOS/Linux and 26 on Windows. Its POSIX child-only `RLIMIT_FSIZE` partial-write
 scenario is excluded from the Windows C++ fixture. The Windows 0.162 receipt

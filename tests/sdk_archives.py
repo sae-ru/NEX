@@ -26,6 +26,52 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class DebuggerFatalDiagnostics(unittest.TestCase):
+    def test_zero_parent_with_actual_fatal_stderr_fails_both_recording_runners(self):
+        # Reproduce the observed Windows contract: parent0, completed stdout,
+        # and a child's fatal report on inherited stderr. Keep the raw logs.
+        from types import SimpleNamespace
+        data=b'lldb-server exiting...\nPLEASE submit a bug report to  and include the crash backtrace.\nException Code: 0xC0000005\n'
+        peer=[sys.executable,'-c','import sys;sys.stdout.write("completed\\n");sys.stderr.buffer.write('+repr(data)+')']
+        for installed in (False,True):
+            with self.subTest(installed=installed),tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);logs=root/'logs';logs.mkdir();report={'commands':[]}
+                source=Path(__file__).resolve().parents[1]/('tools/sdk_acceptance.py' if installed else 'tests/source_exception_http.py')
+                tree=ast.parse(source.read_text());run=next(node for node in ast.walk(tree) if isinstance(node,ast.FunctionDef) and node.name=='run')
+                def save():
+                    (root/'report.json').write_text(json.dumps(report))
+                def launch(command,**kwargs):
+                    return subprocess.Popen(peer,**kwargs)
+                context={'Path':Path,'root':root,'out':root,'logs':logs,'report':report,'save':save,
+                    'sdk_host':acceptance.sdk_host,'require':acceptance.require,
+                    'debugger_crash_diagnostic':acceptance.sdk_host.debugger_crash_diagnostic,
+                    'environment':os.environ.copy(),'compiler':root/'nex','resources':root/'resources',
+                    'extra_notices':[],'subprocess':SimpleNamespace(Popen=launch,TimeoutExpired=subprocess.TimeoutExpired),
+                    'run_native':lambda command,**kwargs:subprocess.run(peer,**kwargs)}
+                exec(compile(ast.Module(body=[run],type_ignores=[]),str(source),'exec'),context)
+                with self.assertRaises((AssertionError,RuntimeError)):
+                    if installed:context['run'](['lldb'],timeout=10)
+                    else:context['run']('zero-parent',['lldb'],timeout=10)
+                row=json.loads((root/'report.json').read_text())['commands'][-1]
+                self.assertEqual(row['exit_code' if installed else 'exit'],0)
+                self.assertEqual(row['fatal_debugger_diagnostic'],'PLEASE submit a bug report')
+                self.assertEqual((Path(row['stderr']) if installed else root/'zero-parent.stderr').read_bytes(),data)
+                if installed:self.assertEqual(row['status'],'failed')
+
+    def test_bytes_text_and_native_debugger_names_preserve_fatal_reports(self):
+        for command in (['/usr/bin/lldb'],[r'F:\private\lldb.exe'],['lldb-dap'],['lldb-server.exe']):
+            for data in (b'\xffException Code: 0xC0000005\n','LLVM ERROR: failure\n'):
+                with self.subTest(command=command,data=data):
+                    self.assertIsNotNone(acceptance.sdk_host.debugger_crash_diagnostic(command,data))
+
+    def test_ordinary_errors_and_non_debugger_program_output_are_not_fatal_reports(self):
+        check=acceptance.sdk_host.debugger_crash_diagnostic
+        self.assertIsNone(check(['lldb'],'error: invalid command'))
+        self.assertIsNone(check(['lldb'],None))
+        self.assertIsNone(check(['nex'],'PLEASE submit a bug report'))
+        self.assertIsNone(check([],b'LLVM ERROR: failure'))
+
+
 class StreamHostPlatformEvidence(unittest.TestCase):
     def report(self):
         contract=acceptance._stream_host_contract()
@@ -266,6 +312,7 @@ class CommandTimeoutEvidence(unittest.TestCase):
         self.assertEqual(len(functions), 1)
         report, saved = {'commands': []}, []
         namespace = {'run_native': subprocess.run, 'subprocess': subprocess, 'out': root,
+                     'debugger_crash_diagnostic': acceptance.sdk_host.debugger_crash_diagnostic,
                      'report': report, 'save': lambda: saved.append(copy.deepcopy(report))}
         exec(compile(ast.Module(body=functions, type_ignores=[]), str(source), 'exec'), namespace)
         return namespace['run'], report, saved

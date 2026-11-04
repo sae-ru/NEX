@@ -1686,6 +1686,9 @@ def main():
                     save()
                     raise
         row.update(exit_code=code, status='passed' if (code == 0) == expected_success else 'failed')
+        fatal = sdk_host.debugger_crash_diagnostic(command, Path(row['stderr']).read_bytes())
+        if fatal:
+            row.update(status='failed', fatal_debugger_diagnostic=fatal)
         save()
         require(row['status'] == 'passed', 'unexpected command result; inspect ' + row['stderr'])
         return Path(row['stdout']).read_text()

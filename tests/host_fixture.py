@@ -87,6 +87,21 @@ def exit_code(value):
     return int(value or 0)&(0xffffffff if os.name=='nt' else 0xff)
 
 
+def debugger_crash_diagnostic(arguments, stderr):
+    """A debugger child's fatal report can outlive a successful batch command."""
+    if not arguments:
+        return None
+    program = str(arguments[0]).replace('\\', '/').rsplit('/', 1)[-1].lower()
+    if program not in ('lldb', 'lldb.exe', 'lldb-dap', 'lldb-dap.exe',
+                       'lldb-server', 'lldb-server.exe'):
+        return None
+    data = stderr if isinstance(stderr, bytes) else (stderr or '').encode('utf-8')
+    for marker in (b'PLEASE submit a bug report', b'Exception Code: 0x', b'LLVM ERROR:'):
+        if marker in data:
+            return marker.decode('ascii')
+    return None
+
+
 def sparse_file(stream, *, size=None):
     if size is not None and (type(size) is not int or not 0 <= size < 2**63):
         raise ValueError('sparse fixture size must be a nonnegative signed64 integer')
