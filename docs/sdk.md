@@ -367,6 +367,10 @@ exit status, diagnostic and editor resource hashes, Python presence and backend
 absence; `editor_preparation` and all live execution fields remain false.
 `--live` requires the backend and successful preparation and cannot accept this
 refusal. Build failures and other editor errors still fail either workflow.
+Server and ordinary shared-library projects use the same checked preparation
+path. Each unavailable-backend refusal has its own actual Node command; a shared
+project cannot reuse the server's refusal as evidence. Project receipts retain
+the checked native binary dependencies even when editor preparation is unavailable.
 
 The installed native stream-host fixture executes 27 physical scenarios on
 macOS/Linux and 26 on Windows. Its POSIX child-only `RLIMIT_FSIZE` partial-write

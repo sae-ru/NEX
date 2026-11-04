@@ -143,6 +143,47 @@ class ServerDebugEvidence(unittest.TestCase):
             acceptance.validate_server_debug_evidence(report, allow_offline_refusal=True)
 
 
+class ProjectEditorEvidence(unittest.TestCase):
+    def report(self, *, available):
+        report=ServerDebugEvidence().report(available=available)
+        server=report['evidence']['server_debug'];record={key:copy.deepcopy(server[key])for key in
+            ('editor_preparation','backend_available','editor_backend_refusal')if key in server}
+        if not available:
+            record['editor_backend_refusal']['stderr']='/evidence/project-editor.stderr'
+            report['commands'].append({'stderr':'/evidence/project-editor.stderr','status':'passed','exit_code':1})
+        report['evidence']['editor']={'project_session_preparation':available,
+            'project_actual_binary_dependencies':True,'project_session':record}
+        return report
+
+    def test_legacy_success_stays_valid_and_new_result_cannot_contradict_its_flags(self):
+        report=self.report(available=True)
+        acceptance.validate_project_editor_evidence(report)
+        legacy=copy.deepcopy(report);del legacy['evidence']['editor']['project_session']
+        acceptance.validate_project_editor_evidence(legacy)
+        report['evidence']['editor']['project_session_preparation']=False
+        with self.assertRaises(RuntimeError):acceptance.validate_project_editor_evidence(report)
+
+    def test_actual_offline_refusal_stays_distinct_from_successful_preparation_or_live_debugging(self):
+        report=self.report(available=False)
+        acceptance.validate_project_editor_evidence(report)
+        for mutate in (
+            lambda r:r['evidence'].update(live_debugger=True),
+            lambda r:r['evidence']['editor'].update(project_actual_binary_dependencies=False),
+            lambda r:r['evidence']['editor'].pop('project_session'),
+            lambda r:r['commands'][-1].update(exit_code=7),
+            lambda r:r['evidence']['editor']['project_session'].pop('editor_backend_refusal')):
+            damaged=copy.deepcopy(report);mutate(damaged)
+            with self.subTest(mutation=mutate),self.assertRaises(RuntimeError):
+                acceptance.validate_project_editor_evidence(damaged)
+
+    def test_shared_project_cannot_reuse_the_server_editor_refusal(self):
+        report=self.report(available=False)
+        report['evidence']['editor']['project_session']['editor_backend_refusal']=copy.deepcopy(
+            report['evidence']['server_debug']['editor_backend_refusal'])
+        with self.assertRaisesRegex(RuntimeError,'cannot reuse the server'):
+            acceptance.validate_project_editor_evidence(report)
+
+
 class SDKClientLifecycle(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix='nex DAP peer ')
