@@ -1,0 +1,133 @@
+{
+  "schema": "nex.windows-minidump-capsules-development/1",
+  "date": "2026-11-04",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "task_abi": 7,
+  "compiler_implementation_commit": "4b76368825fe15119a200b5003bdd547aff7cfbb",
+  "original_installed_resource_commit": "afd33064c460b4bf37c3554f99a01753fc5246e5",
+  "compiler_sha256": "7383743b467d807f6862ce10fc064efc6c04ee285bb75478caf890a24f6eb06c",
+  "original_formatter_sha256": "ddd91ea6ccb0328270eb02f1b0cb4817ed6850a21ff14aee61e1e0b485cb7183",
+  "candidate_formatter_sha256": "1cfd2c22b40fb701fe5952f57de9f62be2345fdd37fa6fa6ccdcbd50b7ed6412",
+  "original_SDK_unchanged": true,
+  "repair": {
+    "reader": "debug/lldb_nex.py",
+    "change": "Read the recorded module name/base and exact CodeView UUID from the minidump itself; LLDB memory-region names can follow capsule remapping. Keep retained-image, compiler, source and formatter checks.",
+    "layouts": [
+      "LLVM ElfBuildId",
+      "Windows PDB70 GUID and optional age",
+      "ELF PDB70 raw GUID and optional age"
+    ],
+    "metadata_limits": {
+      "read_bytes": 33554432,
+      "seconds": 2,
+      "streams": 4096,
+      "modules": 65536,
+      "UTF16_name_bytes": 32768
+    },
+    "current_language_or_task_ABI_changed": false
+  },
+  "original_failure": {
+    "phase": "core-reports",
+    "code": "E_CORE_READ",
+    "message": "core recorded frame image does not match the loaded NEX manifest",
+    "report_sha256": "94e3eba1357928c78e1048d2cd6c41503d4e7b39448aa48416cd2a7c9cdf7c91",
+    "native_indexed_pages_already_passed": true
+  },
+  "trusted_formatter_boundary": {
+    "older_build_with_candidate_formatter_rejected": true,
+    "code": "E_CORE_BUILD",
+    "report_sha256": "e49f9b95bdb3a24e63cd05f038f824b669ddd4a091c330769ba4fc1cc2dd2080",
+    "fresh_control_program_captured_with_exact_candidate_formatter": true,
+    "original_legacy_dump_read_with_changed_formatter_claimed": false
+  },
+  "native_fresh_core": {
+    "report_sha256": "c7f4c3beb90ec3a0862a0d048f99282376d37de9facd2bb0eef789006f0bcfad",
+    "core_sha256": "d02da4db3f4336c3d344714d63cde2cbd1df73b32a86025303d60e32504451cb",
+    "runtimes": {
+      "py310": {
+        "version": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+        "source_capsule_helpers_selected_by": "NEX_PYTHON",
+        "fresh_core_read": true,
+        "capsule_export_and_move": true,
+        "original_source_build_graph_paths_absent_during_read": true,
+        "watch": "\u042f\ud83e\udde02",
+        "original_test_fixture_restored": true
+      },
+      "py314": {
+        "version": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+        "source_capsule_helpers_selected_by": "NEX_PYTHON",
+        "fresh_core_read": true,
+        "capsule_export_and_move": true,
+        "original_source_build_graph_paths_absent_during_read": true,
+        "watch": "\u042f\ud83e\udde02",
+        "original_test_fixture_restored": true
+      }
+    },
+    "wrong_UUID_rejected": true,
+    "wrong_recorded_path_same_UUID_rejected": true,
+    "core_graph_manifest_bytes_unchanged": true,
+    "inferior_execution": false
+  },
+  "native_shared_DLL": {
+    "report_sha256": "6404e6b4f1a314109a7dafeb13f72da4a6d4cc55ba2f1a7150d63d2cea948065",
+    "test": "NativeImages.test_live_library_frame_watch_and_moved_core_without_original_images",
+    "case_sha256": "6ece73424701638eb27e924ad53517f6441d70c164da191b1f1d65f2a6a29c0a",
+    "native_staging_probe_sha256": "f19f6c5b7d29b91f26999f013b7e333f46f8360bc5361ee99d1078aa3b03fbe2",
+    "watch_and_callback_42": true,
+    "wrong_owned_UUID_rejected": true,
+    "directory_alias_export": true,
+    "read_after_source_alias_and_images_deleted": true,
+    "returned_capsule_scope": "captured_first_party_and_matching_host_system"
+  },
+  "data_regressions": {
+    "tests_each_actual_Windows_runtime": 17,
+    "Mac_Python_3_10_22_and_3_14_9_tests_each": 17,
+    "new_minidump_test_methods": 6,
+    "report_sha256": "53765c2c55339cc977a31708e7f295d84d0e0a80d5fa453934bcbf80c827c901",
+    "genuine_sparse_logical_bytes": 34359738369,
+    "sparse_creation_seconds": 0.0004,
+    "fixture_change": "Use native sparse EOF instead of Windows CRT truncate zero filling; actual oversized-input rejection remains exercised.",
+    "child_IO_bytes": {
+      "py314": {
+        "read": 2414969,
+        "write": 52762
+      },
+      "py310": {
+        "read": 3592904,
+        "write": 51675
+      }
+    },
+    "test_source_sha256": "f0a6dce28e530bc1bd61d67044c4bb973911ba546de80066b9817493e1764f6a",
+    "host_fixture_sha256": "28649a6fbabb5d1db47f083b7e999150b5ff46bfd86919ce048bc21d434edefd",
+    "exact_UUID_prefix_and_suffix_rejected": true
+  },
+  "Mac_focused_CTest_groups": [
+    "core_dump",
+    "core_capsules",
+    "string_debug_provider",
+    "dap_transport",
+    "native_images"
+  ],
+  "scope": {
+    "fresh_native_minidump_and_DLL_capsules_accepted": true,
+    "entire_current_source_full_regression_accepted": false,
+    "full_moved_restored_SDK_accepted": false,
+    "filesystem_isolation_accepted": false,
+    "network_settings_changed": false,
+    "goal_complete": false
+  },
+  "primary_LLDB_source": {
+    "version": "23.1.4",
+    "region_name_origin": "ProcessMinidump::BuildMemoryRegions can call SetName(module_sp->GetFileSpec().GetPath()); this can name the loaded relocated module.",
+    "source": "https://github.com/llvm/llvm-project/blob/llvmorg-23.1.4/lldb/source/Plugins/Process/minidump/ProcessMinidump.cpp",
+    "source_inspection_sha256": "348ac3383e226ad0b72ce5c7cea7c85b18a82ebaf7eee23a63662c3b579c3276"
+  },
+  "Mac_live_shared_capsule_case": {
+    "ok": true,
+    "same_current_test_case_as_Windows": true,
+    "seconds": 53.194,
+    "log_sha256": "d17bfe6cbc910bbbe9d89f530a554ca5506033abd89aeb3f3e37ae192c7f2c2d"
+  },
+  "compiler_and_stdlib_source_files_unchanged": 309
+}

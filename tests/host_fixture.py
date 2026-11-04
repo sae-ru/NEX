@@ -87,8 +87,12 @@ def exit_code(value):
     return int(value or 0)&(0xffffffff if os.name=='nt' else 0xff)
 
 
-def sparse_file(stream):
-    if os.name!='nt':return
+def sparse_file(stream, *, size=None):
+    if size is not None and (type(size) is not int or not 0 <= size < 2**63):
+        raise ValueError('sparse fixture size must be a nonnegative signed64 integer')
+    if os.name!='nt':
+        if size is not None:stream.truncate(size)
+        return
     import ctypes as C
     from ctypes import wintypes as W
     import msvcrt
@@ -96,7 +100,18 @@ def sparse_file(stream):
     kernel.DeviceIoControl.argtypes=[W.HANDLE,W.DWORD,C.c_void_p,W.DWORD,C.c_void_p,W.DWORD,C.POINTER(W.DWORD),C.c_void_p]
     kernel.DeviceIoControl.restype=W.BOOL
     count=W.DWORD()
-    if not kernel.DeviceIoControl(msvcrt.get_osfhandle(stream.fileno()),0x900c4,None,0,None,0,C.byref(count),None):raise C.WinError(C.get_last_error())
+    handle=msvcrt.get_osfhandle(stream.fileno())
+    if not kernel.DeviceIoControl(handle,0x900c4,None,0,None,0,C.byref(count),None):raise C.WinError(C.get_last_error())
+    if size is not None:
+        # The Windows CRT's truncate implementation writes zeroes across the
+        # extension even after FSCTL_SET_SPARSE. Set the logical EOF directly
+        # so a genuine oversized-input fixture does not write tens of GiB.
+        stream.flush()
+        kernel.SetFileInformationByHandle.argtypes=[W.HANDLE,C.c_int,C.c_void_p,W.DWORD]
+        kernel.SetFileInformationByHandle.restype=W.BOOL
+        end=C.c_longlong(size)
+        if not kernel.SetFileInformationByHandle(handle,6,C.byref(end),C.sizeof(end)):
+            raise C.WinError(C.get_last_error())
 
 
 def control_event(process, kind):

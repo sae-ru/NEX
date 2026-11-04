@@ -6,9 +6,10 @@ by the generated manifest; previews deliberately bound recursion and item count.
 """
 import json
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import shlex
 import posixpath
+import ntpath
 import subprocess
 import base64
 import time
@@ -1120,6 +1121,102 @@ def _elf_core_mapping(path, pc):
         os.close(fd)
 
 
+def _minidump_core_mapping(path, image_base, image_uuid, *, pdb70_elf=False):
+    """Read the dump's own module name/base/UUID, never a remapped LLDB region."""
+    if not isinstance(image_uuid, str):
+        raise ValueError('invalid retained minidump image identity')
+    image_uuid = image_uuid.replace('-', '').lower()
+    if (type(image_base) is not int or not 0 < image_base < 2**64 or
+            not re.fullmatch(r'(?:[0-9a-f]{2}){1,64}', image_uuid)):
+        raise ValueError('invalid retained minidump image identity')
+    fd = _open_readonly_file(path, 32*1024**3)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or not 32 <= info.st_size <= 32*1024**3:
+            raise ValueError('core image requires a bounded regular minidump')
+        deadline, consumed = time.monotonic()+2, 0
+
+        def read(offset, count):
+            nonlocal consumed
+            consumed += count
+            if (offset < 0 or count < 0 or offset+count > info.st_size or
+                    consumed > 32*1024**2 or time.monotonic() > deadline):
+                raise ValueError('core image minidump metadata exceeds bounds')
+            if os.name == 'nt':
+                os.lseek(fd, offset, os.SEEK_SET); data = os.read(fd, count)
+            else:
+                data = os.pread(fd, count, offset)
+            if len(data) != count:
+                raise ValueError('core image minidump metadata is truncated')
+            return data
+
+        signature, version, count, directory, _, _, _ = struct.unpack('<4sIIIIIQ', read(0, 32))
+        if signature != b'MDMP' or version & 0xffff != 0xa793 or not 1 <= count <= 4096 or directory < 32:
+            raise ValueError('core image minidump header is invalid')
+        streams = read(directory, count*12)
+        modules = [struct.unpack_from('<III', streams, i*12)[1:]
+                   for i in range(count) if struct.unpack_from('<I', streams, i*12)[0] == 4]
+        if len(modules) != 1:
+            raise ValueError('core image requires one minidump module list')
+        size, offset = modules[0]
+        if offset < 32 or size < 4:
+            raise ValueError('core image minidump module list is invalid')
+        number = struct.unpack('<I', read(offset, 4))[0]
+        if not 1 <= number <= 65536 or size != 4+number*108:
+            raise ValueError('core image minidump modules exceed bounds')
+        entries = read(offset+4, number*108)
+        matches = []
+        for index in range(number):
+            if index % 1024 == 0 and time.monotonic() > deadline:
+                raise ValueError('core image minidump metadata deadline exceeded')
+            base, extent, _, _, name_at = struct.unpack_from('<QIIII', entries, index*108)
+            if not base or not extent or base+extent > 2**64:
+                raise ValueError('core image minidump module range is invalid')
+            if base != image_base:
+                continue
+            # LLDB's saver can record only the PE header's extent when sections
+            # have alignment gaps. Bind the authenticated loaded module's base
+            # and UUID rather than treating this extent as a complete PC range.
+            cv_size, cv_at = struct.unpack_from('<II', entries, index*108+76)
+            if cv_at < 32 or not 5 <= cv_size <= 65536:
+                raise ValueError('core image minidump CodeView record is invalid')
+            cv = read(cv_at, cv_size)
+            if cv[:4] == b'LEpB' and 1 <= len(cv)-4 <= 64:
+                recorded_uuid = cv[4:].hex()
+            elif cv[:4] == b'RSDS' and len(cv) >= 24:
+                # Match LLDB UUID(CvRecordPdb70): GUID fields and nonzero age
+                # use display byte order; age zero leaves a 16-byte UUID.
+                age = struct.unpack_from('<I', cv, 20)[0]
+                if pdb70_elf:
+                    recorded_uuid = cv[4:24 if age else 20].hex()
+                else:
+                    guid = cv[4:8][::-1]+cv[8:10][::-1]+cv[10:12][::-1]+cv[12:20]
+                    recorded_uuid = guid.hex()+(('%08x' % age) if age else '')
+            else:
+                raise ValueError('unsupported core image minidump CodeView identity')
+            if recorded_uuid != image_uuid:
+                raise ValueError('core image minidump UUID differs from the retained image')
+            if name_at < 32:
+                raise ValueError('core image minidump name offset is invalid')
+            length = struct.unpack('<I', read(name_at, 4))[0]
+            if not 0 < length <= 32768 or length % 2:
+                raise ValueError('core image minidump name exceeds bounds')
+            name = read(name_at+4, length).decode('utf-16-le', 'strict')
+            if '\0' in name:
+                raise ValueError('core image minidump module name is invalid')
+            if PureWindowsPath(name).is_absolute():
+                matches.append(ntpath.normpath(name))
+            elif PurePosixPath(name).is_absolute():
+                matches.append(posixpath.normpath(name))
+            else:
+                raise ValueError('core image minidump module name is invalid')
+        if len(matches) != 1:
+            raise ValueError('core image has no unique recorded module base')
+        return matches[0]
+    finally:
+        os.close(fd)
+
+
 def _require_frame_image(target, frame, program):
     actual = frame.GetModule()
     executable = target.FindModule(target.GetExecutable())
@@ -1158,14 +1255,16 @@ def _require_frame_image(target, frame, program):
                     context.get('_capsule_recorded_images', {}).get(selected, selected))
         if not isinstance(recorded, str) or not Path(recorded).is_absolute():
             raise ValueError("invalid recorded owned image mapping")
+        if not hasattr(process, 'GetCoreFile'):
+            raise ValueError("core image requires LLDB core-file metadata access")
         if process.GetPluginName() == 'elf-core':
-            if not hasattr(process, 'GetCoreFile'):
-                raise ValueError("core image requires LLDB core-file metadata access")
             name = _elf_core_mapping(str(process.GetCoreFile()), frame.GetPC())
         else:
-            region = lldb.SBMemoryRegionInfo()
-            error = process.GetMemoryRegionInfo(frame.GetPC(), region)
-            name = region.GetName() if error.Success() else None
+            base = actual.GetObjectFileHeaderAddress().GetLoadAddress(target)
+            if base == lldb.LLDB_INVALID_ADDRESS or frame.GetPC() < base:
+                raise ValueError('core image has no valid retained module load base')
+            name = _minidump_core_mapping(_file_spec_path(process.GetCoreFile()), base,
+                                          expected.GetUUIDString(), pdb70_elf=sys.platform.startswith('linux'))
         relocated = '_capsule_recorded_program' in context
         named = os.path.normpath(name) if name and relocated else str(Path(name).resolve()) if name else None
         expected_name = os.path.normpath(recorded) if relocated else str(Path(recorded).resolve())

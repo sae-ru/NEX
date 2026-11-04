@@ -3,11 +3,12 @@
 This development command reads a native core with its matching retained build:
 `nex core PROCESS.core --manifest BUILD/debug.json --json`.
 An optional `--expression TEXT` uses the existing pure, bounded watch evaluator.
-It does not run, attach to or resume an application. The integrated0.72 pipeline
-has separate regression/installed-SDK evidence. Candidate0.75 extends it to
-captured project shared images; full/SDK/Linux validation of that extension is
-pending. Focused macOS tests cover actual library stops, closure watches, wrong
-UUIDs, alias export and source/image-deleted capsule reads.
+It does not run, attach to or resume an application. Development0.162 has
+[scoped Windows minidump evidence](evidence/windows-minidump-capsules-development-2026-11-04.json)
+for relocated capsules, including captured project DLLs, closure watches,
+wrong UUID rejection and source/image-deleted reads. Full installed-SDK and
+platform receipts retain their own compiler, helper and archive identities;
+these focused checks do not replace the remaining delivery gates.
 
 The report records core bytes/SHA-256, executable bytes/hash, actual module UUID,
 stop reason, bounded thread/stack summaries and the selected NEX frame. A frame
@@ -22,10 +23,20 @@ content-addressed directory intact; arbitrary directory renaming is rejected.
 LLDB can resolve a core PC through another supplied executable; checking
 SBModule equality alone does not establish the recorded image.
 
+For minidumps, the reader obtains the original name, load base and CodeView
+UUID directly from the dump's module-list stream. An LLDB memory-region name
+can describe the relocated image instead of the recorded one. The reader binds
+the authenticated frame module's base and UUID; it does not treat LLDB's saved
+PE header extent as the whole executable range. LLVM build IDs and PDB70
+GUID/age records are checked, with bounded stream/module counts, reads, UTF-16
+names and elapsed time. Missing or ambiguous identities fail the read.
+
 The matching compiler build, language/runtime protocols, source bundle/revision,
 trusted installed formatter and retained native build completion are checked before
 LLDB starts. Core memory remains untrusted process data. Hashes detect changes
 relative to these retained artifacts; they do not authenticate their publisher.
+Keep the matching SDK/resources with older retained builds: a newly changed
+formatter does not become trusted merely because its compiler binary is unchanged.
 The report keeps source-line/column candidates explicit. It does not claim a
 unique optimized operation when the available debug information is ambiguous.
 

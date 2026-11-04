@@ -222,7 +222,9 @@ def __lldb_init_module(debugger,internal_dict):
   with open(REPORT,'w') as output:json.dump({'watch':watch,'callback':callback,'wrong_uuid_rejected':True},output)
  finally:
   if process.GetState() not in (lldb.eStateExited,lldb.eStateInvalid):process.Kill()
-'''.replace('PROJECTION',repr(projection)).replace('LINE',str(line)).replace('ENV',repr(['NEX_FILES_ROOT='+str(data),'NEX_FILES_WRITE=1','NEX_TRACY=0','PATH=/usr/bin:/bin'])).replace('CWD',repr(str(self.root))).replace('BAD',repr(str(bad_manifest))).replace('COMPILER',repr(harness.NEX)).replace('MANIFEST',repr(str(manifest))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))), newline="\n")
+'''.replace('PROJECTION',repr(projection)).replace('LINE',str(line)).replace('ENV',repr([
+    key+'='+value for key,value in deployed_environment(NEX_FILES_ROOT=str(data),NEX_FILES_WRITE='1',NEX_TRACY='0').items()
+])).replace('CWD',repr(str(self.root))).replace('BAD',repr(str(bad_manifest))).replace('COMPILER',repr(harness.NEX)).replace('MANIFEST',repr(str(manifest))).replace('CORE',repr(str(core))).replace('REPORT',repr(str(report))), newline="\n")
         args=[os.environ.get('NEX_LLDB','lldb'),app['artifact'],'--no-lldbinit','--batch',
               '-o','settings set target.disable-aslr false',
               '-o','command script import '+json.dumps(str(manifest.parent/'debugger/lldb_nex.py'),ensure_ascii=False),
@@ -236,7 +238,7 @@ def __lldb_init_module(debugger,internal_dict):
         capsule=self.root/'capsule'
         alias_parent=self.root/'alias';alias_parent.mkdir();alias=alias_parent/manifest.parent.name
         alias.symlink_to(manifest.parent,target_is_directory=True)
-        aliased=copy.deepcopy(meta);aliased['program']=str(alias/'app');manifest.write_text(json.dumps(aliased), newline="\n")
+        aliased=copy.deepcopy(meta);aliased['program']=str(alias/('app.exe' if os.name=='nt' else 'app'));manifest.write_text(json.dumps(aliased), newline="\n")
         exported=self.cli('core',core,'--manifest',alias/'debug.json','--export',capsule,'--expression','held',timeout=180)
         self.assertTrue(exported['read_after_export'])
         receipt=(capsule/'capsule.json').read_bytes()

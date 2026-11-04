@@ -115,8 +115,127 @@ class CoreImageMetadata(unittest.TestCase):
         fifo=self.core.with_name('fifo');nonregular(fifo)
         with self.assertRaises(ValueError):provider._elf_core_mapping(str(fifo),0x1234)
         with self.core.open('wb') as stream:
-            sparse_file(stream);stream.truncate(32*1024**3+1)
+            sparse_file(stream,size=32*1024**3+1)
         with self.assertRaises(ValueError):provider._elf_core_mapping(str(self.core),0x1234)
+
+
+class MinidumpImageMetadata(unittest.TestCase):
+    BASE = 0x7ff633350000
+    UUID = '11066e4ee008172f4c4c44205044422e00000001'
+    NAME = 'F:\\absent\\build\\'+'a'*64+'\\app.exe'
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='nex minidump metadata ')
+        self.addCleanup(self.temp.cleanup)
+        self.core = Path(self.temp.name)/'process.core'
+
+    def fixture(self, records=None, duplicate_stream=False):
+        records = records if records is not None else [(self.BASE, self.NAME, b'LEpB'+bytes.fromhex(self.UUID))]
+        count = 2 if duplicate_stream else 1
+        offset = 32+count*12
+        size = 4+len(records)*108
+        payload = bytearray()
+        entries = bytearray()
+        for base, name, cv in records:
+            name_at = offset+size+len(payload)
+            raw = name.encode('utf-16-le')
+            payload.extend(struct.pack('<I', len(raw))+raw)
+            cv_at = offset+size+len(payload)
+            payload.extend(cv)
+            record = bytearray(108)
+            # Reproduce LLDB's PE header-only SizeOfImage; image identity is
+            # bound by the actual module's load base and exact CodeView UUID.
+            struct.pack_into('<QIIII', record, 0, base, 0x600, 0, 0, name_at)
+            struct.pack_into('<II', record, 76, len(cv), cv_at)
+            entries.extend(record)
+        header = struct.pack('<4sIIIIIQ', b'MDMP', 0xa793, count, 32, 0, 0, 0)
+        directory = struct.pack('<III', 4, size, offset)*count
+        self.core.write_bytes(header+directory+struct.pack('<I',len(records))+entries+payload)
+
+    def mapping(self, base=None, identity=None):
+        return provider._minidump_core_mapping(str(self.core), self.BASE if base is None else base,
+                                               self.UUID if identity is None else identity)
+
+    def test_original_unicode_path_is_read_without_original_or_relocated_images(self):
+        name = self.NAME.replace('absent', 'absent % 🧠')
+        self.fixture([(self.BASE, name, b'LEpB'+bytes.fromhex(self.UUID))])
+        before = self.core.read_bytes()
+        self.assertEqual(self.mapping(identity=self.UUID.upper()), name)
+        self.assertEqual(self.core.read_bytes(), before)
+        posix = '/absent/build/'+'a'*64+'/app'
+        self.fixture([(self.BASE, posix, b'LEpB'+bytes.fromhex(self.UUID))])
+        self.assertEqual(self.mapping(), posix)
+
+    def test_pdb70_guid_byte_order_and_zero_or_nonzero_age_match_lldb(self):
+        guid = bytes.fromhex('00112233445566778899aabbccddeeff')
+        wire = guid[:4][::-1]+guid[4:6][::-1]+guid[6:8][::-1]+guid[8:]
+        for age in [0, 1, 0x12345678]:
+            with self.subTest(age=age):
+                self.fixture([(self.BASE, self.NAME, b'RSDS'+wire+struct.pack('<I',age)+b'ignored.pdb\0')])
+                expected = guid.hex()+('%08x' % age if age else '')
+                self.assertEqual(self.mapping(identity=expected), self.NAME)
+                raw_identity = wire.hex()+(struct.pack('<I',age).hex() if age else '')
+                self.assertEqual(provider._minidump_core_mapping(str(self.core),self.BASE,raw_identity,
+                                                               pdb70_elf=True),self.NAME)
+
+    def test_wrong_uuid_missing_base_duplicate_bases_and_invalid_identities_rejected(self):
+        self.fixture()
+        with self.assertRaisesRegex(ValueError,'UUID differs'):self.mapping(identity='0'*40)
+        with self.assertRaisesRegex(ValueError,'unique recorded module base'):self.mapping(base=self.BASE+0x1000)
+        for identity in [self.UUID[:32], self.UUID+'00']:
+            with self.subTest(recorded_uuid=identity),self.assertRaisesRegex(ValueError,'UUID differs'):
+                self.fixture([(self.BASE,self.NAME,b'LEpB'+bytes.fromhex(identity))]);self.mapping()
+        for base, identity in [(True,self.UUID),(0,self.UUID),(2**64,self.UUID),(self.BASE,''),
+                               (self.BASE,'x'*40),(self.BASE,'a'),(self.BASE,False)]:
+            with self.subTest(base=base,identity=identity),self.assertRaises(ValueError):
+                provider._minidump_core_mapping(str(self.core),base,identity)
+        self.fixture([(self.BASE,self.NAME,b'LEpB'+bytes.fromhex(self.UUID))]*2)
+        with self.assertRaisesRegex(ValueError,'unique recorded module base'):self.mapping()
+        self.fixture(duplicate_stream=True)
+        with self.assertRaisesRegex(ValueError,'one minidump module list'):self.mapping()
+
+    def test_truncated_and_unbounded_header_module_codeview_and_name_records_rejected(self):
+        self.fixture();valid=self.core.read_bytes()
+        invalid=[b'x',valid[:31],valid[:43],valid[:100],valid[:-1]]
+        for at,fmt,value in [(0,'I',0),(4,'I',0),(8,'I',4097),(12,'I',2**32-1),
+                             (36,'I',5),(40,'I',2**32-1),(44,'I',65537),
+                             (48,'Q',0),(56,'I',0),(68,'I',2**32-1),
+                             (124,'I',65537),(128,'I',2**32-1)]:
+            changed=bytearray(valid);struct.pack_into('<'+fmt,changed,at,value);invalid.append(changed)
+        for raw in invalid:
+            with self.subTest(length=len(raw)),self.assertRaises(ValueError):
+                self.core.write_bytes(raw);self.mapping()
+        for cv in [b'OTHER',b'LEpB',b'LEpB'+b'a'*65,b'RSDS'+bytes(19)]:
+            with self.subTest(cv=cv),self.assertRaises(ValueError):
+                self.fixture([(self.BASE,self.NAME,cv)]);self.mapping()
+
+    def test_invalid_utf16_nul_relative_and_oversized_names_rejected(self):
+        for name in ['relative.exe',self.NAME+'\0','F:\\'+'a'*16385]:
+            with self.subTest(name=name[:80]),self.assertRaises(ValueError):
+                self.fixture([(self.BASE,name,b'LEpB'+bytes.fromhex(self.UUID))]);self.mapping()
+        self.fixture();valid=self.core.read_bytes();name_at=struct.unpack_from('<I',valid,68)[0]
+        for length in [0,1,32770,2**32-1]:
+            changed=bytearray(valid);struct.pack_into('<I',changed,name_at,length)
+            with self.subTest(length=length),self.assertRaises(ValueError):
+                self.core.write_bytes(changed);self.mapping()
+        changed=bytearray(valid);changed[name_at+4:name_at+6]=b'\x00\xd8';self.core.write_bytes(changed)
+        with self.assertRaises(UnicodeDecodeError):self.mapping()
+
+    def test_nonregular_symlink_oversized_and_metadata_deadline_are_rejected(self):
+        self.fixture()
+        link=self.core.with_name('link');link.symlink_to(self.core)
+        with self.assertRaises((OSError,ValueError)):
+            provider._minidump_core_mapping(str(link),self.BASE,self.UUID)
+        original=provider.time.monotonic;counter=iter([0,3])
+        try:
+            provider.time.monotonic=lambda:next(counter)
+            with self.assertRaisesRegex(ValueError,'bounds'):self.mapping()
+        finally:provider.time.monotonic=original
+        fifo=self.core.with_name('fifo');nonregular(fifo)
+        with self.assertRaises(ValueError):provider._minidump_core_mapping(str(fifo),self.BASE,self.UUID)
+        with self.core.open('wb') as stream:
+            sparse_file(stream,size=32*1024**3+1)
+        with self.assertRaises(ValueError):self.mapping()
 
 
 if __name__=='__main__':unittest.main()
