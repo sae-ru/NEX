@@ -895,8 +895,9 @@ files in opaque immutable captures are rejected at runtime before callbacks star
 Results retain input order; ordinary checked failures select the lowest failing
 index after the group joins. Global cancellation, budget/deadline exhaustion and
 memory failure take precedence. A `result` error is a value, not a group trap.
-Native macOS/Linux uses bounded joined CPU threads, nested groups reuse their
-worker, and hosted groups inherit request control. The reference and synchronous
+Native macOS/Linux 64-bit and Windows x86-64 GNU/UCRT use bounded joined CPU
+threads. Nested groups reuse their worker, and hosted groups inherit request
+control. The reference and synchronous
 TypeScript implementations evaluate serially and provide no parallelism claim.
 See [the full contract](concurrency-design.md) for limits, scheduling, resources,
 validation status and remaining browser/async/accelerator work. `parallel_map`

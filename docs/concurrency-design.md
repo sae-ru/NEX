@@ -1,4 +1,16 @@
-# Current source language0.24 (development0.134.0)
+# Current CPU mapping scope — language 0.28, development 0.162
+
+The native backend supports macOS/Linux 64-bit and Windows x86-64 GNU/UCRT.
+The [Windows CPU record](evidence/windows-cpu-development-2026-11-04.json)
+records 11 scenarios, including live debugging, with four overlapping workers,
+16 completed callbacks, balanced managed pools and a worker breakpoint/watch
+following source deletion. Reference and TypeScript remain sequential oracles.
+Matching current SDK delivery and other platforms retain separate acceptance;
+Windows ARM64 execution, browser-worker integration and GPU/NPU mapping remain
+pending. Query `source_concurrency` on the selected compiler before using it.
+No source syntax, arithmetic, resource ownership or task ABI changes here.
+
+# Retained source language0.24 integration notes (development0.134.0)
 
 Ordinary source/project commands select024. Server task/fs whole-file and opened
 File operations are enabled; genuine File owners can cross checked structured
@@ -57,9 +69,10 @@ failures; no deterministic timing or identical execution-counter claim is made.
 
 ## Native execution
 
-The current native target accepts macOS/Linux 64-bit ABIs. Actual execution and
-acceptance belong to their recorded compiler/source/hardware receipts; another
-OS or cross-build is not a device execution claim. Other CPU targets are pending.
+The current native target accepts macOS/Linux 64-bit and Windows x86-64
+GNU/UCRT ABIs. Actual execution and acceptance belong to their recorded
+compiler/source/hardware receipts; a cross-build is not a device execution
+claim. Windows ARM64 execution and other CPU targets remain pending.
 The group requests1..16 threads and accepts at most65,536 items. It starts at
 most min(workers, items) operating-system threads, holds them until construction
 succeeds and joins every thread on normal/error/partial-construction paths.

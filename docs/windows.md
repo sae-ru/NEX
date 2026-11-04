@@ -6,10 +6,22 @@ No WSL process is used by that path. Portable SDK delivery remains pending.
 
 The Windows development adapter now enables synchronous whole-file/stream IO
 and ordinary task/fs operations through the handle-relative Windows runtime.
-The current language remains0.27 and current task ABI7; retained0.25/ABI6 keeps
+The current language remains0.28 and current task ABI7; retained0.25/ABI6 keeps
 its historical identity. Native x64 Windows/NTFS checks, WSL-producer/native
 execution recipes and remaining SDK/CUDA boundaries are recorded in
 [Windows acceptance](windows-native-acceptance.md).
+
+Development0.162 also executes ordered `parallel_map`, source/static/shared
+providers, task debugging/profiling and HTTP hosting on Windows x86-64 GNU/UCRT.
+The [CPU execution record](evidence/windows-cpu-development-2026-11-04.json)
+contains native/reference/TypeScript agreement, four physical worker threads,
+profile cleanup and a live worker breakpoint/watch after source deletion.
+Its accompanying platform audit binds the existing file/provider/HTTP paths to
+selected Windows regression groups. These scoped receipts do not establish
+complete SDK delivery, Windows ARM64 execution or positive IPv6 acceptance on
+a host whose operator deliberately denies IPv6. Host networking is unchanged.
+
+## Retained0.136.1 target notes
 
 Toolchain0.136.1 adds ordinary compiled structured CPU tasks for both configured
 GNU/UCRT64 targets, using the existing source language0.25 and task descriptor
@@ -18,10 +30,10 @@ tasks and source exception transport use the common runtime. Compiled step,
 deadline and worker ceilings still apply; `--nex-task-*` can only lower them.
 This platform adapter adds no syntax or language migration.
 
-Windows task foreign operations, source provider images, task
-debugging/profiling and HTTP hosting remain unavailable. Ordinary foreign-ABI
-run/test/debug/profile commands still return `E_TARGET_RUN`; the compiler does
-not launch Wine. Cross-builds, opt-in x64 Wine compatibility and execution on an
+At that stage, Windows task foreign operations, source provider images, task
+debugging/profiling and HTTP hosting were unavailable. Cross-target foreign-ABI
+run/test/debug/profile commands returned `E_TARGET_RUN`; the compiler did not
+launch Wine. Cross-builds, opt-in x64 Wine compatibility and execution on an
 actual Windows OS are distinct evidence. The historical0.136.1 scope below
 does not replace the current x64 receipt; actual ARM64 Windows execution
 remains unverified.

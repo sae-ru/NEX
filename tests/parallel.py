@@ -11,6 +11,9 @@ class Parallel(harness.ToolchainCase):
         self.cli('check');self.cli('test',timeout=240);self.cli('test','--target','web',timeout=240)
 
     def test_ordered_mapping_uses_actual_native_worker_threads_and_cleans_profile(self):
+        capability=self.cli('describe','--field','source_concurrency')['value']
+        platform={'win32':'Windows x86-64 GNU/UCRT','darwin':'macOS 64-bit','linux':'Linux 64-bit'}.get(sys.platform)
+        if platform is not None:self.assertIn(platform,capability['native_platforms'])
         self.source('''module cpu_workers;
 fn work(n:i64)->i64{var i:i64=0;var total:i64=0;while i<2000{total=total+n+i;i=i+1;}return total;}
 fn values()->list<i64>{return parallel_map([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],work,4);}

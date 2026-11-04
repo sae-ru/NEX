@@ -1996,6 +1996,12 @@ llvm::json::Value describe() {
     }
     auto &windowsTasks=*result.getObject("structured_tasks_runtime")->getObject("windows_cpu_tasks");
     windowsTasks["source_provider_images"]=true;windowsTasks["debugging"]=true;
+    // Keep platform lists consistent with the enabled Windows runtime paths.
+    // Physical execution receipts remain distinct from SDK delivery acceptance.
+    for(const auto *name:{"source_concurrency","task_file_reads","task_profiling","task_debugging","task_providers","task_shared_providers","task_provider_profiling","task_provider_debugging","task_file_writes_host"})
+      (*result.getObject(name))["native_platforms"]=llvm::json::Array{"macOS 64-bit","Linux 64-bit","Windows x86-64 GNU/UCRT"};
+    (*result.getObject("task_file_streams_host"))["platforms"]=llvm::json::Array{"macOS","Linux","Windows x86-64 GNU/UCRT"};
+    (*result.getObject("structured_tasks_runtime")->getObject("http_server"))["platforms"]=llvm::json::Array{"macOS","Linux","Windows x86-64 GNU/UCRT"};
     for(const auto *name:{"task_file_reads","task_profiling","task_provider_profiling","task_provider_debugging"})
       (*result.getObject(name))["windows"]=true;
     for(const auto *name:{"task_file_streams","task_file_streams_prototype"})(*result.getObject(name))["execution_ABI"]=7;

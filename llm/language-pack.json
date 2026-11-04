@@ -19,7 +19,8 @@
     "native_execution": "bounded joined CPU threads",
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "operation": "parallel_map",
     "pending": [
@@ -1102,7 +1103,8 @@
       "minimum_language": "0.24",
       "platforms": [
         "macOS",
-        "Linux"
+        "Linux",
+        "Windows x86-64 GNU/UCRT"
       ],
       "probe": "task_http_server",
       "profiles": [
@@ -1455,7 +1457,8 @@
     "migration": "explicit019-to020 checked recheck; original rows/IDs/schema retained",
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "operations": [
       "file_read_text(str) -> result<str>",
@@ -1532,7 +1535,8 @@
     "memory_scope": "managed shallow handles and Data objects; not total heap/RAM",
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "reference": false,
     "report_schema": "nex.profile/2",
@@ -1607,7 +1611,8 @@
     "manifest_schema": "nex.debug/2",
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "nex_dap": true,
     "pending": [
@@ -1652,7 +1657,8 @@
     "source_required": true,
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "static_linkage": true,
     "supported_actions": [
@@ -1710,7 +1716,8 @@
     "source_required": true,
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "linkage": "fixed OS startup load closure",
     "mixed_static_shared": true,
@@ -1763,7 +1770,8 @@
     "source_required": true,
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "static_linkage": true,
     "fixed_shared_linkage": true,
@@ -1872,7 +1880,8 @@
     ],
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "linkage_modes": [
       "static",
@@ -2253,7 +2262,8 @@
     "maximum_path_bytes": 4096,
     "native_platforms": [
       "macOS 64-bit",
-      "Linux 64-bit"
+      "Linux 64-bit",
+      "Windows x86-64 GNU/UCRT"
     ],
     "pending": [
       "matching full regression, installed SDK and platform acceptance",
@@ -2423,7 +2433,8 @@
     "physical_drain": true,
     "platforms": [
       "macOS",
-      "Linux"
+      "Linux",
+      "Windows x86-64 GNU/UCRT"
     ],
     "post_IO_rollback": false,
     "public_enabled": true,

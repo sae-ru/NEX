@@ -1,0 +1,360 @@
+{
+  "build": {
+    "build_key": "0abdb6c0d08134ac38a86a35f3f00d1bd51c4923487d1f47cb2ae2db62a90a8b",
+    "compiler_build": "ee477bf0df6782120ee748c7f3cd337abf37ba8b0340db44dd5ba5fa21e76b5c",
+    "entry": "cpu_workers::main",
+    "language": "0.28",
+    "revision": "0095c33e9bc5e2341a121434ea862c981ac774aecc2bf8ad580fee9e49cf1017",
+    "schema": "nex.profile-build/1",
+    "source_hash": "1b9481599b361cf1056cafa8471400116fd2bbcff5193e8516d5f5df38f2f969",
+    "task_limits": null,
+    "toolchain": "0.162.0"
+  },
+  "build_key": "0abdb6c0d08134ac38a86a35f3f00d1bd51c4923487d1f47cb2ae2db62a90a8b",
+  "clock": "steady_wall_nanoseconds",
+  "dropped_allocations": 0,
+  "dropped_events": 0,
+  "dropped_frames": 0,
+  "dropped_functions": 0,
+  "duration_ns": 3888500,
+  "exit_code": 0,
+  "functions": [
+    {
+      "aborted": 0,
+      "allocated_shallow_bytes": 0,
+      "allocations": 0,
+      "calls": 1,
+      "completed": 1,
+      "content_hash": "a12130d862c7b896ba922b23938015213f4e2372dac65b32409c9f9b4dcc4bb1",
+      "debug_path": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-anchors\\a72e18065b7daffec43c7c154f625defdfd6d0b95c2924a497c1e51796121495\\source.nex",
+      "file": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-cache\\591747b92c841a44f11bf14b4421968c5d03f5b94c5049ccb73ef9170cbd3024\\source.nex",
+      "inclusive_ns": 3637400,
+      "line": 4,
+      "max_ns": 3637400,
+      "name": "cpu_workers::main",
+      "node_id": "44bb771a7f06b0d4692988a5e3b71115",
+      "self_ns": 26700,
+      "source_file": "main.nex"
+    },
+    {
+      "aborted": 0,
+      "allocated_shallow_bytes": 560,
+      "allocations": 7,
+      "calls": 1,
+      "completed": 1,
+      "content_hash": "10692a51d25a2a4411379e6e47949df9dbf75f8856929a616c536df9b3480bda",
+      "debug_path": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-anchors\\a72e18065b7daffec43c7c154f625defdfd6d0b95c2924a497c1e51796121495\\source.nex",
+      "file": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-cache\\591747b92c841a44f11bf14b4421968c5d03f5b94c5049ccb73ef9170cbd3024\\source.nex",
+      "inclusive_ns": 3610700,
+      "line": 3,
+      "max_ns": 3610700,
+      "name": "cpu_workers::values",
+      "node_id": "3d70cc30cd698a084a20111ec0e32ad4",
+      "self_ns": 3610700,
+      "source_file": "main.nex"
+    },
+    {
+      "aborted": 0,
+      "allocated_shallow_bytes": 0,
+      "allocations": 0,
+      "calls": 16,
+      "completed": 16,
+      "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd",
+      "debug_path": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-anchors\\a72e18065b7daffec43c7c154f625defdfd6d0b95c2924a497c1e51796121495\\source.nex",
+      "file": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\source-cache\\591747b92c841a44f11bf14b4421968c5d03f5b94c5049ccb73ef9170cbd3024\\source.nex",
+      "inclusive_ns": 11851200,
+      "line": 2,
+      "max_ns": 1174000,
+      "name": "cpu_workers::work",
+      "node_id": "c68d95c875c9fce05a12fc3d21b5aac9",
+      "self_ns": 11851200,
+      "source_file": "main.nex"
+    }
+  ],
+  "hardware": {
+    "cpu": "alderlake",
+    "hardware_threads": 12,
+    "target": "x86_64-w64-windows-gnu"
+  },
+  "language": "0.28",
+  "limits": {
+    "events": 100000,
+    "functions": 16384,
+    "live_allocations": 1000000,
+    "stack_frames_per_thread": 4096,
+    "timeout_seconds": 30
+  },
+  "measurement": {
+    "coverage": "reachable native NEX functions and managed runtime allocations",
+    "memory": "managed handle/object shallow sizes; excludes dynamic buffers, shared_ptr control blocks and allocator overhead",
+    "time": "instrumented elapsed wall time, including instrumentation"
+  },
+  "memory": [
+    {
+      "allocations": 19,
+      "frees": 19,
+      "live": 0,
+      "live_shallow_bytes": 0,
+      "peak_live": 6,
+      "peak_shallow_bytes": 288,
+      "pool": "NEX handles"
+    },
+    {
+      "allocations": 4,
+      "frees": 4,
+      "live": 0,
+      "live_shallow_bytes": 0,
+      "peak_live": 4,
+      "peak_shallow_bytes": 416,
+      "pool": "NEX objects (shallow)"
+    }
+  ],
+  "ok": true,
+  "output": "F:\\NEX-CPU-parallel162-v1\\tmp\\nex test 2cv6z2tn\\.nex/build\\0abdb6c0d08134ac38a86a35f3f00d1bd51c4923487d1f47cb2ae2db62a90a8b\\profiles\\run-649995749-1753556660.json",
+  "profile": "profile",
+  "revision": "0095c33e9bc5e2341a121434ea862c981ac774aecc2bf8ad580fee9e49cf1017",
+  "scenario": "actual ordered CPU workers",
+  "schema": "nex.profile/1",
+  "started_unix_ms": 1793792528893,
+  "stderr": "",
+  "stdout": "2029000\n",
+  "toolchain": "0.162.0",
+  "traceEvents": [
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 477.5,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 450.60000000000002
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 618.79999999999995,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 4,
+      "ts": 527.79999999999995
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 1070.4000000000001,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 3,
+      "ts": 476.80000000000001
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 622.29999999999995,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 943.29999999999995
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 1154,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 5,
+      "ts": 568.29999999999995
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 612,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 4,
+      "ts": 1151
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 628.29999999999995,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 1569.0999999999999
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 611.39999999999998,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 4,
+      "ts": 1766
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 1174,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 3,
+      "ts": 1552.2
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 597.89999999999998,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 2200.9000000000001
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 1113.4000000000001,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 5,
+      "ts": 1726.0999999999999
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 835.79999999999995,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 4,
+      "ts": 2379.9000000000001
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 625.60000000000002,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 2,
+      "ts": 2802.1999999999998
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 590.60000000000002,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 5,
+      "ts": 2847.6999999999998
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 772.10000000000002,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 3,
+      "ts": 2737.0999999999999
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "932dbd3f94771151eb7bab71fcd78abdb67d28e2b4df540749ea225d2dc5eecd"
+      },
+      "cat": "nex.function",
+      "dur": 347.10000000000002,
+      "name": "cpu_workers::work",
+      "ph": "X",
+      "pid": 1,
+      "tid": 4,
+      "ts": 3219.8000000000002
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "10692a51d25a2a4411379e6e47949df9dbf75f8856929a616c536df9b3480bda"
+      },
+      "cat": "nex.function",
+      "dur": 3610.6999999999998,
+      "name": "cpu_workers::values",
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 10.300000000000001
+    },
+    {
+      "args": {
+        "aborted": false,
+        "content_hash": "a12130d862c7b896ba922b23938015213f4e2372dac65b32409c9f9b4dcc4bb1"
+      },
+      "cat": "nex.function",
+      "dur": 3637.4000000000001,
+      "name": "cpu_workers::main",
+      "ph": "X",
+      "pid": 1,
+      "tid": 1,
+      "ts": 8.5999999999999996
+    }
+  ],
+  "tracy": false,
+  "untracked_frees": 0
+}
