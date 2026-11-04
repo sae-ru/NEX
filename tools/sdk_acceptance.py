@@ -2039,8 +2039,10 @@ console.log(JSON.stringify({exact_bigint:true,checked_overflow:true,input_reject
             environment['NEX_RESOURCE_DIR'] = str(root / 'absent-wasm-resources')
             # Node treats literal backslashes in physical POSIX module paths as
             # separators. Execute byte-identical independent assets in an owned
-            # ordinary /tmp path, including when the SDK work root has one.
-            with tempfile.TemporaryDirectory(prefix='nex-sdk-wasm-', dir='/tmp') as temporary:
+            # ordinary /tmp path on POSIX, including when the SDK work root
+            # has one. Windows uses its configured writable temporary directory.
+            temporary_root = None if os.name == 'nt' else '/tmp'
+            with tempfile.TemporaryDirectory(prefix='nex-sdk-wasm-', dir=temporary_root) as temporary:
                 independent = Path(temporary) / 'runtime'
                 shutil.copytree(exported, independent)
                 for path in exported.rglob('*'):
