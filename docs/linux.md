@@ -1,5 +1,12 @@
 # Linux compiler and development chain
 
+The [physical Astra x86-64 component record](evidence/astra-source-development-2026-11-05.json)
+pins development0.162 source `f4db4dd`: all targets built on system glibc2.28 with
+the existing private LLVM/MLIR22.1.8 toolchain. Native Debug/Release and reference
+passed a typed-error/contract smoke; TypeScript passed one pure source test.
+This is a finite source check. Full regression, eight unconfigured HTTP/DNS
+groups, newer source26b4251 and complete current SDK delivery remain separate.
+
 The maintained environment uses an independently pinned **LLDB23.1.5 APT
 snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX
 compilation. Only `lldb`, `lldb-dap` and `lldb-server` are added ahead of the
