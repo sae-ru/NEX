@@ -378,6 +378,11 @@ if(NEX_PACKAGE_NOTICES_FILE)
   list(APPEND NEX_TEST_PACKAGE_NOTICES_ARGS --package-notices "${NEX_PACKAGE_NOTICES_FILE}")
 endif()
 enable_testing()
+if(WIN32)
+  add_test(NAME windows_workload_ownership COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_workload_ownership.py)
+  set_tests_properties(windows_workload_ownership PROPERTIES TIMEOUT 30)
+endif()
 add_test(NAME llm_cost_ledger COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_cost_ledger.py)
 set_tests_properties(llm_cost_ledger PROPERTIES TIMEOUT 30)
 add_test(NAME ctest_report_validation COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/ctest_report_validation.py)
@@ -1529,7 +1534,7 @@ set_tests_properties(public_task_resource_source PROPERTIES RUN_SERIAL TRUE)
 
 install(FILES tests/source_exceptions_public.py DESTINATION share/nex/tests)
 
-install(FILES tests/host_fixture.py tests/windows_loader_fixture.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)
+install(FILES tests/host_fixture.py tests/windows_loader_fixture.py tests/windows_workload_ownership.py tests/host_test.h tests/host_dlfcn.h tests/host_images.h tests/host_file_observers.h tests/native_tool_forwarder.cpp DESTINATION share/nex/tests)
 
 # Explicit028 candidate; public source/default and immutable027 releases remain separate.
 add_executable(nex_source_contracts_probe tests/source_contracts.cpp src/typescript.cpp)

@@ -1,5 +1,5 @@
 from host_fixture import temporary_environment
-from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants
+from host_fixture import interrupt_task, windows_workload_descendant, windows_live_descendants, workload_process_ids
 """Strict workload data and real supervised native server observations."""
 from host_fixture import python_executable
 import copy,hashlib,importlib.util,json,os,signal,subprocess,sys,time,unittest
@@ -257,10 +257,10 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::text_
                 env={**os.environ,**self.env},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
             try:
                 deadline=time.monotonic()+30
-                while not children.exists() and process.poll() is None and time.monotonic()<deadline:time.sleep(.02)
+                while (not children.exists() or len(children.read_text().split())!=(5 if os.name=='nt' else 3)) and process.poll() is None and time.monotonic()<deadline:time.sleep(.02)
                 if not children.exists():
                     out,err=process.communicate(timeout=10);self.fail(out+err+'; events='+repr(self.marker.read_bytes() if self.marker.exists() else b''))
-                parent,group,child=map(int,children.read_text().split());self.assertNotEqual(parent,group)
+                parent,group,child=workload_process_ids(children);self.assertNotEqual(parent,group)
                 self.assertNotEqual(child,group)
                 if mode=='interrupt':interrupt_task(process)
                 out,err=process.communicate(timeout=15)

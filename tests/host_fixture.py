@@ -438,9 +438,61 @@ def private_permissions(path, mode):
         kernel.CloseHandle(file)
 
 
+_WINDOWS_WORKLOAD_JOB = None
+
+
+def _windows_workload_job():
+    """Hold an unnamed ownership Job for this test process and future peers.
+
+    No limits or kill-on-close policy are set: this must not mask the native
+    supervisor's cleanup. The handle is used only to authenticate fixture peers.
+    """
+    global _WINDOWS_WORKLOAD_JOB
+    if _WINDOWS_WORKLOAD_JOB is not None:return _WINDOWS_WORKLOAD_JOB
+    if os.name!='nt':raise RuntimeError('native Windows workload Job required')
+    import atexit
+    import ctypes as C
+    from ctypes import wintypes as W
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.CreateJobObjectW.argtypes=[C.c_void_p,W.LPCWSTR];kernel.CreateJobObjectW.restype=W.HANDLE
+    kernel.GetCurrentProcess.argtypes=[];kernel.GetCurrentProcess.restype=W.HANDLE
+    kernel.AssignProcessToJobObject.argtypes=[W.HANDLE,W.HANDLE];kernel.AssignProcessToJobObject.restype=W.BOOL
+    kernel.CloseHandle.argtypes=[W.HANDLE];kernel.CloseHandle.restype=W.BOOL
+    job=kernel.CreateJobObjectW(None,None)
+    if not job:raise C.WinError(C.get_last_error())
+    if not kernel.AssignProcessToJobObject(job,kernel.GetCurrentProcess()):
+        error=C.get_last_error();kernel.CloseHandle(job);raise C.WinError(error)
+    _WINDOWS_WORKLOAD_JOB=job
+    atexit.register(lambda:kernel.CloseHandle(job))
+    return job
+
+
+def _windows_workload_record(record):
+    """Three fixture PIDs followed by the server/child creation FILETIMEs."""
+    raw=Path(record).read_bytes()
+    fields=raw.split()
+    if (len(raw)>256 or len(fields)!=5 or
+            any(not field.isdigit() or len(field)>20 for field in fields)):
+        raise ValueError('invalid identity-bearing Windows fixture process record')
+    values=tuple(map(int,fields))
+    if (any(not 0<pid<=0xffffffff for pid in values[:3]) or
+            len(set(values[:3]))!=3 or
+            any(not 0<birth<=0xffffffffffffffff for birth in values[3:])):
+        raise ValueError('invalid Windows fixture PID or creation time')
+    return values
+
+
+def workload_process_ids(record):
+    if os.name=='nt':return _windows_workload_record(record)[:3]
+    values=tuple(map(int,Path(record).read_text().split()))
+    if len(values)!=3:raise ValueError('invalid fixture process record')
+    return values
+
+
 def windows_workload_descendant(root, compiler, environment, finite=False):
     'Create a genuine native heartbeat child inside the supervisor Job.'
     import subprocess
+    _windows_workload_job()
     root=Path(root);source=root/'workload-descendant.c';image=root/'workload-descendant.exe'
     source.write_text(r'''#include <windows.h>
 int main(void){wchar_t path[32768];if(!GetEnvironmentVariableW(L"NEX_SOURCE_FFI_MARKER",path,32768))return 2;
@@ -449,36 +501,71 @@ for(;;){HANDLE file=CreateFileW(path,FILE_APPEND_DATA,FILE_SHARE_READ|FILE_SHARE
     result=run_native([compiler,'-x','c','-std=c11',source,'-o',image],capture_output=True,text=True,timeout=120)
     if result.returncode:raise RuntimeError(result.stdout+result.stderr)
     environment['NEX_WORKLOAD_CHILD_EXE']=str(image)
-    code=r'''mark('C');BOOL in_job=FALSE;if(!IsProcessInJob(GetCurrentProcess(),0,&in_job)||!in_job)return NEX_FFI_INTERNAL;
-wchar_t child_path[32768],file_path[32768],pending[32768];if(!GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILD_EXE",child_path,32768)||!GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILDREN",file_path,32768))return NEX_FFI_ARGUMENT;
-if(GetFileAttributesW(file_path)==INVALID_FILE_ATTRIBUTES){if(wcslen(file_path)>32700)return NEX_FFI_ARGUMENT;wcscpy(pending,file_path);wcscat(pending,L".pending");HANDLE file=CreateFileW(pending,GENERIC_WRITE,0,0,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,0);if(file==INVALID_HANDLE_VALUE)return NEX_FFI_INTERNAL;
-STARTUPINFOW startup={0};startup.cb=sizeof(startup);PROCESS_INFORMATION process={0};if(!CreateProcessW(child_path,0,0,0,FALSE,CREATE_NO_WINDOW,0,0,&startup,&process)){CloseHandle(file);return NEX_FFI_INTERNAL;}DWORD child=process.dwProcessId;CloseHandle(process.hThread);CloseHandle(process.hProcess);
-DWORD parent=0;HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);PROCESSENTRY32W row={0};row.dwSize=sizeof(row);if(snapshot!=INVALID_HANDLE_VALUE){if(Process32FirstW(snapshot,&row))do{if(row.th32ProcessID==GetCurrentProcessId()){parent=row.th32ParentProcessID;break;}}while(Process32NextW(snapshot,&row));CloseHandle(snapshot);}if(!parent){CloseHandle(file);return NEX_FFI_INTERNAL;}
-char line[128];int count=snprintf(line,sizeof(line),"%lu %lu %lu\n",(unsigned long)GetCurrentProcessId(),(unsigned long)parent,(unsigned long)child);DWORD size=0;BOOL written=WriteFile(file,line,(DWORD)count,&size,0);CloseHandle(file);if(!written||size!=(DWORD)count||!MoveFileExW(pending,file_path,MOVEFILE_WRITE_THROUGH))return NEX_FFI_INTERNAL;}
+    code=r'''mark('C');
+HANDLE nex_fixture_file=INVALID_HANDLE_VALUE;PROCESS_INFORMATION nex_fixture_process={0};
+#define NEX_WORKLOAD_NATIVE_FAIL(stage,status) do {DWORD error=GetLastError();fprintf(stderr,"NEX_WORKLOAD_NATIVE_FAILURE %s Win32=%lu\n",stage,(unsigned long)error);fflush(stderr);if(nex_fixture_file!=INVALID_HANDLE_VALUE)CloseHandle(nex_fixture_file);if(nex_fixture_process.hThread)CloseHandle(nex_fixture_process.hThread);if(nex_fixture_process.hProcess)CloseHandle(nex_fixture_process.hProcess);return status;}while(0)
+BOOL in_job=FALSE;if(!IsProcessInJob(GetCurrentProcess(),0,&in_job))NEX_WORKLOAD_NATIVE_FAIL("IsProcessInJob",NEX_FFI_INTERNAL);
+if(!in_job){SetLastError(ERROR_INVALID_DATA);NEX_WORKLOAD_NATIVE_FAIL("missing supervisor Job",NEX_FFI_INTERNAL);}
+wchar_t child_path[32768],file_path[32768],pending[32768];DWORD child_length=GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILD_EXE",child_path,32768),file_length=GetEnvironmentVariableW(L"NEX_WORKLOAD_CHILDREN",file_path,32768);
+if(!child_length||child_length>=32768||!file_length||file_length>32700)NEX_WORKLOAD_NATIVE_FAIL("workload environment",NEX_FFI_ARGUMENT);
+if(GetFileAttributesW(file_path)==INVALID_FILE_ATTRIBUTES){
+wcscpy(pending,file_path);wcscat(pending,L".pending");nex_fixture_file=CreateFileW(pending,GENERIC_WRITE,0,0,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,0);
+if(nex_fixture_file==INVALID_HANDLE_VALUE)NEX_WORKLOAD_NATIVE_FAIL("CreateFileW pending",NEX_FFI_INTERNAL);
+STARTUPINFOW startup={0};startup.cb=sizeof(startup);
+if(!CreateProcessW(child_path,0,0,0,FALSE,CREATE_NO_WINDOW,0,0,&startup,&nex_fixture_process))NEX_WORKLOAD_NATIVE_FAIL("CreateProcessW heartbeat",NEX_FFI_INTERNAL);
+FILETIME server_created,child_created,exited,kernel_time,user_time;
+if(!GetProcessTimes(GetCurrentProcess(),&server_created,&exited,&kernel_time,&user_time))NEX_WORKLOAD_NATIVE_FAIL("GetProcessTimes server",NEX_FFI_INTERNAL);
+if(!GetProcessTimes(nex_fixture_process.hProcess,&child_created,&exited,&kernel_time,&user_time))NEX_WORKLOAD_NATIVE_FAIL("GetProcessTimes heartbeat",NEX_FFI_INTERNAL);
+DWORD parent=0;HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+if(snapshot==INVALID_HANDLE_VALUE)NEX_WORKLOAD_NATIVE_FAIL("CreateToolhelp32Snapshot parent diagnostic",NEX_FFI_INTERNAL);
+PROCESSENTRY32W row={0};row.dwSize=sizeof(row);if(Process32FirstW(snapshot,&row))do{if(row.th32ProcessID==GetCurrentProcessId()){parent=row.th32ParentProcessID;break;}}while(Process32NextW(snapshot,&row));CloseHandle(snapshot);
+if(!parent){SetLastError(ERROR_NOT_FOUND);NEX_WORKLOAD_NATIVE_FAIL("parent PID diagnostic",NEX_FFI_INTERNAL);}
+unsigned long long server_birth=((unsigned long long)server_created.dwHighDateTime<<32)|server_created.dwLowDateTime,child_birth=((unsigned long long)child_created.dwHighDateTime<<32)|child_created.dwLowDateTime;
+char line[128];int count=snprintf(line,sizeof(line),"%lu %lu %lu %llu %llu\n",(unsigned long)GetCurrentProcessId(),(unsigned long)parent,(unsigned long)nex_fixture_process.dwProcessId,server_birth,child_birth);
+if(count<=0||count>=(int)sizeof(line)){SetLastError(ERROR_BUFFER_OVERFLOW);NEX_WORKLOAD_NATIVE_FAIL("process record size",NEX_FFI_INTERNAL);}
+DWORD size=0;if(!WriteFile(nex_fixture_file,line,(DWORD)count,&size,0))NEX_WORKLOAD_NATIVE_FAIL("WriteFile process record",NEX_FFI_INTERNAL);
+if(size!=(DWORD)count){SetLastError(ERROR_WRITE_FAULT);NEX_WORKLOAD_NATIVE_FAIL("short process record",NEX_FFI_INTERNAL);}
+CloseHandle(nex_fixture_file);nex_fixture_file=INVALID_HANDLE_VALUE;
+if(!MoveFileExW(pending,file_path,MOVEFILE_WRITE_THROUGH))NEX_WORKLOAD_NATIVE_FAIL("MoveFileExW process record",NEX_FFI_INTERNAL);
+CloseHandle(nex_fixture_process.hThread);CloseHandle(nex_fixture_process.hProcess);nex_fixture_process.hThread=0;nex_fixture_process.hProcess=0;}
+#undef NEX_WORKLOAD_NATIVE_FAIL
 '''
     return code+(r'if(getenv("NEX_WORKLOAD_INTERRUPT")){for(;;)Sleep(1000);}Sleep(250);' if finite else 'for(;;)Sleep(1000);')
 
 
 def windows_live_descendants(record, terminate=False):
+    # A recorded PID is only a lookup hint. Authenticate the held handle's
+    # membership in this test's unnamed Job and its recorded creation time.
+    # The diagnostic parent PID never grants ownership or termination rights.
+    if _WINDOWS_WORKLOAD_JOB is None:raise RuntimeError('workload ownership Job was not established')
     import ctypes as C
     from ctypes import wintypes as W
     kernel=C.WinDLL('kernel32',use_last_error=True)
     kernel.OpenProcess.argtypes=[W.DWORD,W.BOOL,W.DWORD];kernel.OpenProcess.restype=W.HANDLE
+    kernel.IsProcessInJob.argtypes=[W.HANDLE,W.HANDLE,C.POINTER(W.BOOL)];kernel.IsProcessInJob.restype=W.BOOL
+    kernel.GetProcessTimes.argtypes=[W.HANDLE,*([C.POINTER(W.FILETIME)]*4)];kernel.GetProcessTimes.restype=W.BOOL
     kernel.WaitForSingleObject.argtypes=[W.HANDLE,W.DWORD];kernel.WaitForSingleObject.restype=W.DWORD
     kernel.TerminateProcess.argtypes=[W.HANDLE,W.UINT];kernel.TerminateProcess.restype=W.BOOL
     kernel.CloseHandle.argtypes=[W.HANDLE]
-    values=list(map(int,Path(record).read_text().split()));live=[]
-    if len(values)!=3:raise ValueError('invalid fixture process record')
-    for pid in (values[0],values[2]):
-        handle=kernel.OpenProcess(0x100000|(1 if terminate else 0),False,pid)
+    values=_windows_workload_record(record);live=[]
+    for pid,birth in ((values[0],values[3]),(values[2],values[4])):
+        handle=kernel.OpenProcess(0x101000|(1 if terminate else 0),False,pid)
         if not handle:
             if C.get_last_error()==87:continue
             raise C.WinError(C.get_last_error())
         try:
-            if kernel.WaitForSingleObject(handle,0)==0x102:
+            member=W.BOOL()
+            if not kernel.IsProcessInJob(handle,_WINDOWS_WORKLOAD_JOB,C.byref(member)):raise C.WinError(C.get_last_error())
+            if not member.value:continue
+            created,exited,kernel_time,user_time=(W.FILETIME()for _ in range(4))
+            if not kernel.GetProcessTimes(handle,C.byref(created),C.byref(exited),C.byref(kernel_time),C.byref(user_time)):raise C.WinError(C.get_last_error())
+            if ((created.dwHighDateTime<<32)|created.dwLowDateTime)!=birth:continue
+            state=kernel.WaitForSingleObject(handle,0)
+            if state not in (0,0x102):raise C.WinError(C.get_last_error())
+            if state==0x102:
                 live.append(pid)
                 if terminate:
                     if not kernel.TerminateProcess(handle,137):raise C.WinError(C.get_last_error())
-                    kernel.WaitForSingleObject(handle,2000)
+                    if kernel.WaitForSingleObject(handle,2000)!=0:raise RuntimeError('owned workload process did not retire')
         finally:kernel.CloseHandle(handle)
     return live
