@@ -46,7 +46,7 @@ def main():
     root = args.output.absolute()
     root.mkdir(parents=False, exist_ok=False)
     environment = {**os.environ, 'NEX_RESOURCE_DIR': str(resources),
-                   'PATH': str(sdk / 'bin') + ':' + os.environ.get('PATH', '')}
+                   'PATH': str(sdk / 'bin') + os.pathsep + os.environ.get('PATH', '')}
 
     def run(arguments):
         result = subprocess.run(list(map(str, arguments)), cwd=root, env=environment,
