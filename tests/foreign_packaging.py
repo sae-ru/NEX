@@ -56,7 +56,9 @@ class ForeignPackaging(harness.ToolchainCase):
             if platform.system() == 'Darwin':
                 arguments += ['-Wl,-install_name,' + str(output)]
             elif os.name != 'nt':
-                arguments += ['-Wl,-soname,' + output.name, '-Wl,-rpath,' + str(dependencies)]
+                # The selected driver is C++ but these fixtures are C. Keep
+                # actual dependencies, without its unused private C++ runtime.
+                arguments += ['-Wl,-soname,' + output.name, '-Wl,-rpath,' + str(dependencies), '-Wl,--as-needed']
             result = run_native(arguments, capture_output=True, text=True, timeout=60)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         compile(leaf_source, leaf)
@@ -69,7 +71,7 @@ class ForeignPackaging(harness.ToolchainCase):
         producer.write_text(c, newline="\n")
         arguments = [driver, '-x', 'c', '-std=c11', '-shared', '-fPIC', '-fvisibility=hidden', '-I' + str(harness.REPO / 'runtime'), str(producer), '-x', 'none', str(helper), '-o', str(bundle / 'module')]
         if platform.system() not in ('Darwin','Windows'):
-            arguments += ['-Wl,-rpath,' + str(dependencies)]
+            arguments += ['-Wl,-rpath,' + str(dependencies), '-Wl,--as-needed']
         result = run_native(arguments, capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         manifest = json.loads((bundle / 'manifest.json').read_text())

@@ -117,14 +117,27 @@ server test fn writes()->unit !{task,fs,throw}{assert(unwrap(solve()));}
   denied_native=process(mode+'-denied-native',[images['app']['artifact']],env=denied_env,expected=70);assert 'E_RESULT' in denied_native.stderr and {p.name:p.read_bytes() for p in data.iterdir()}==prior
   deployment=root/(mode+'-package');package=cli(mode+'-package','project','--kind','package','--component','app','--directory',deployment,*package_flags,cwd=project,env=env);assert not package['application_execution']
   criteria=cli(mode+'-task-init','task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=project,env=env)
-  criteria['checks']=[{'id':'write','program':'app','kind':'run','target':'native','configuration':'release','entry':'writer_app::main','expect':{'stdout':'42\n','exit_code':0},'timeout_seconds':180 if os.name=='nt' else 30}]
-  criteria['requirements']=[{'id':'write','text':'Write through reviewed ABI7 binary providers with explicit external authority','targets':['native'],'checks':['write'],'bindings':[{'program':'app','kind':'function','symbol':'writer_app::main'}]}]
+  # Replay has an empty native cache. Give its cold compilation an explicit
+  # reviewed check; preserve the existing write-execution and source task limits.
+  write_timeout=180 if os.name=='nt' else 30
+  criteria['checks']=[
+   {'id':'build-native','program':'app','kind':'build','target':'native','configuration':'release','timeout_seconds':300},
+   {'id':'write','program':'app','kind':'run','target':'native','configuration':'release','entry':'writer_app::main','expect':{'stdout':'42\n','exit_code':0},'timeout_seconds':write_timeout}]
+  criteria['requirements']=[
+   {'id':'build-native','text':'Build the reviewed project from captured inputs, including a cold replay workspace','targets':['native'],'checks':['build-native'],'bindings':[{'program':'app','kind':'function','symbol':'writer_app::main'}]},
+   {'id':'write','text':'Write through reviewed ABI7 binary providers with explicit external authority','targets':['native'],'checks':['write'],'bindings':[{'program':'app','kind':'function','symbol':'writer_app::main'}]}]
   task=project/'task.json';write(task,criteria);checked=cli(mode+'-task-check','task',task,'--kind','check',cwd=project,env=env)
   executed=cli(mode+'-task-run','task',task,'--kind','run','--task-hash',checked['task_hash'],'--directory',root/(mode+'-capture'),cwd=project,env=env);assert executed['ok'];receipt=Path(executed['output'])
   shutil.rmtree(project)
   moved=process(mode+'-detached-package',[deployment/'apps/app/bin/app'],env={**env,'NEX_RESOURCE_DIR':str(root/'absent-resources')});assert moved.stdout=='42\n' and not moved.stderr
   replayed=cli(mode+'-source-deleted-replay','task',receipt,'--kind','replay','--directory',root/(mode+'-replay'),env=env);assert replayed['ok'] and replayed['task_hash']==checked['task_hash']
-  report['projects'].append({'mode':mode,'actual_binary_edges':True,'native_reference':True,'write_grant_denied':True,'source_deleted_package':True,'source_deleted_replay':True,'receipt':str(receipt)});save()
+  for result,directory in [(executed,receipt.parent),(replayed,root/(mode+'-replay'))]:
+   assert [(row['id'],row['status'])for row in result['checks']]==[('build-native','passed'),('write','passed')]
+   build=json.loads((directory/'artifacts/build-native/commands/build.json').read_text())
+   write_build=json.loads((directory/'artifacts/write/commands/native-build.json').read_text())
+   assert build['timeout_seconds']<=300 and not build['timed_out'] and build['exit_code']==0
+   assert write_build['timeout_seconds']<=write_timeout and not write_build['timed_out'] and write_build['exit_code']==0
+  report['projects'].append({'mode':mode,'actual_binary_edges':True,'native_reference':True,'write_grant_denied':True,'source_deleted_package':True,'source_deleted_replay':True,'receipt':str(receipt),'cold_build_check_seconds':300,'write_check_seconds':write_timeout,'both_checks_passed_original_and_replay':True});save()
  browser=root/'browser';shutil.copytree(resources/'examples/web',browser)
  source=browser/'main.nex';source.write_text(source.read_text()+'\nserver fn hidden_writer()->result<bool> !{task,fs}{return file_write_text("PRIVATE_SERVER_TARGET","private");}\n', newline="\n")
  generated=root/'browser-output';cli('browser-pruning','web',source,'--directory',generated,cwd=browser)

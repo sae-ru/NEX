@@ -1,0 +1,62 @@
+{
+  "schema": "nex.Astra-source-notice-wiring-and-cold-task-replay/1",
+  "ok": true,
+  "date": "2026-11-05",
+  "base_source_commit": "b7bf5e284cb39275875410eba1355cd043f806eb",
+  "source_files": 1941,
+  "compiler_sha256": "77b5b6f1b32bf1ad94f12737c7dafde2748a124c1f7f88fe3b14aedc1b8a2473",
+  "platform": "Physical Astra x86-64, glibc2.28, existing LLVM/MLIR/Clang22.1.8",
+  "CMake_wiring": {
+    "selected_and_empty_configurations_registered_groups_each": 298,
+    "five_delivery_commands_forward_selected_catalogue": true,
+    "space_unicode_percent_path_preserved": true,
+    "missing_and_directory_catalogues_rejected": true,
+    "nonpackaging_stream_command_unchanged": true,
+    "configure_only_new_compiler_not_built": true,
+    "overlay_sha256": "d71ea5f7ca7592bdfe31c99cd9005a1266de9faa8bc925bb1e38212a73ba190f"
+  },
+  "write_delivery": {
+    "genuine022_migrations": 3,
+    "all16_tables_schema_rows_ids_preserved": true,
+    "binary_project_modes": [
+      "static",
+      "shared",
+      "mixed"
+    ],
+    "source_deleted_packages_and_replay_passed_all3": true,
+    "both_build_and_write_checks_required_original_and_replay": true,
+    "cold_build_check_seconds": 300,
+    "write_check_seconds_unchanged": 30,
+    "compiled_source_task_limits_unchanged": true,
+    "timings": {
+      "static": {
+        "cold_build_seconds": 31.062663797,
+        "cold_build_limit_seconds": 300,
+        "write_cached_build_seconds": 0.549950079,
+        "unchanged_write_check_limit_seconds": 30
+      },
+      "shared": {
+        "cold_build_seconds": 32.849976664,
+        "cold_build_limit_seconds": 300,
+        "write_cached_build_seconds": 0.803747025,
+        "unchanged_write_check_limit_seconds": 30
+      },
+      "mixed": {
+        "cold_build_seconds": 32.029208577,
+        "cold_build_limit_seconds": 300,
+        "write_cached_build_seconds": 0.742829457,
+        "unchanged_write_check_limit_seconds": 30
+      }
+    },
+    "script_sha256": "c82ebc19b1c933e6cd33fe30418855bb0a09a52202eee5fdb3b4b8c9e8d0fd2b",
+    "original_30second_cold_build_timeout_retained": true,
+    "original_source_compiler_runtime_and_license_pins_unchanged": true,
+    "commands": 58,
+    "seconds": 310.1923949411139
+  },
+  "raw_files": 508,
+  "raw_bytes": 4086045,
+  "raw_inventory_sha256": "f33aebab2cfba81d49b31a06891cbd82449db36204efa229c8a565f78d0a96f9",
+  "full_source_or_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}

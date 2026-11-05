@@ -362,6 +362,17 @@ install(FILES tools/app_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/foreign_bundle.py DESTINATION share/nex/tools)
 install(FILES tools/application_acceptance.py DESTINATION share/nex/tools)
 install(DIRECTORY editor DESTINATION share/nex PATTERN node_modules EXCLUDE PATTERN "*.vsix" EXCLUDE)
+# Source-built packages may use private native dependencies. Pass the selected
+# operator provenance to every delivery workflow that accepts this catalogue;
+# installed SDKs carry their own verified inventory.
+set(NEX_PACKAGE_NOTICES_FILE "" CACHE FILEPATH "Operator-selected native dependency notices for source package tests")
+set(NEX_TEST_PACKAGE_NOTICES_ARGS)
+if(NEX_PACKAGE_NOTICES_FILE)
+  if(NOT EXISTS "${NEX_PACKAGE_NOTICES_FILE}" OR IS_DIRECTORY "${NEX_PACKAGE_NOTICES_FILE}")
+    message(FATAL_ERROR "NEX_PACKAGE_NOTICES_FILE must name the actual dependency notice inventory")
+  endif()
+  list(APPEND NEX_TEST_PACKAGE_NOTICES_ARGS --package-notices "${NEX_PACKAGE_NOTICES_FILE}")
+endif()
 enable_testing()
 add_test(NAME owned_device_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/device_contract.py $<TARGET_FILE:nex>)
 set_tests_properties(owned_device_contract PROPERTIES TIMEOUT 300)
@@ -879,7 +890,7 @@ target_compile_definitions(nex_task_write_provider_probe PRIVATE ${NEX_NATIVE_DE
 add_test(NAME task_write_provider_boundary COMMAND nex_task_write_provider_probe boundary)
 add_test(NAME task_write_provider COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_provider.py $<TARGET_FILE:nex_task_write_provider_probe>)
 set_tests_properties(task_write_provider PROPERTIES TIMEOUT 1800)
-add_test(NAME public_task_write_delivery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME public_task_write_delivery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/task_write_delivery.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR} ${NEX_TEST_PACKAGE_NOTICES_ARGS})
 set_tests_properties(public_task_write_delivery PROPERTIES TIMEOUT 2400)
 install(FILES tests/task_write_delivery.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/language-0.22-sdk131-task-writes.json tests/fixtures/language-0.22-sdk131-task-writes.sql DESTINATION share/nex/examples/task-write-migration)
@@ -1121,17 +1132,6 @@ foreach(NEX_LOCAL_TARGET IN LISTS NEX_LOCAL_TARGETS)
     endforeach()
   endif()
 endforeach()
-
-# Source-built Windows packages need the selected native dependencies' real
-# notices; installed SDKs carry their own verified inventory.
-set(NEX_PACKAGE_NOTICES_FILE "" CACHE FILEPATH "Operator-selected native dependency notices for source package tests")
-set(NEX_TEST_PACKAGE_NOTICES_ARGS)
-if(NEX_PACKAGE_NOTICES_FILE)
-  if(NOT EXISTS "${NEX_PACKAGE_NOTICES_FILE}" OR IS_DIRECTORY "${NEX_PACKAGE_NOTICES_FILE}")
-    message(FATAL_ERROR "NEX_PACKAGE_NOTICES_FILE must name the actual dependency notice inventory")
-  endif()
-  list(APPEND NEX_TEST_PACKAGE_NOTICES_ARGS --package-notices "${NEX_PACKAGE_NOTICES_FILE}")
-endif()
 
 # Private asynchronous TCP kernel. Public source network operations remain gated.
 add_test(NAME dns_policy COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/dns_policy.py)
