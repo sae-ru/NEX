@@ -39,6 +39,17 @@ observed archive hashes are recorded in
 APT validates downloads against its signed index; other Ubuntu packages still
 follow their repositories.
 
+On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
+selected its cross sysroot when manually linking fixtures against native host
+libraries. Its C++ entrypoint now explicitly uses `--no-default-config`,
+`--target=x86_64-unknown-linux-gnu`, `--sysroot=/`, `--gcc-toolchain=/usr` and
+`--ld-path=/usr/bin/ld`. The real Clang binary and original symlink are retained;
+the wrapper has its own byte identity. With this [private native-driver
+configuration](evidence/fedora-native-driver-config-2026-11-06.json), the original
+CMake `source_exception_modules` group passed without rewriting its registry
+or increasing its timeout. This preserves the private fixture cohort and leaves
+full Fedora/current SDK acceptance open.
+
 Live verification also builds the optional
 [`Debugger.Dockerfile`](../tools/linux/Debugger.Dockerfile) overlay. Its local
 [indexed paging patch](../tools/linux/lldb23-indexed-pages.json) makes LLDB DAP

@@ -1,3 +1,16 @@
+# Workload fixture ownership — source development 0.162 / language 0.28
+
+Windows test cleanup now authenticates the held process handle against the
+test's exact unnamed Job and its recorded creation FILETIME. PID-only records
+cannot authorize termination. The Job has no kill-on-close policy, so production
+supervision remains independently observable. The [scoped record](docs/evidence/windows-workload-ownership-2026-11-06.json)
+includes all nine server-workload cases, all four task-workload cases, actual
+outside-Job/stale-birth controls and both corresponding Fedora POSIX cases.
+Original timeouts are unchanged. Failed setup/combined invocations are retained;
+the cause of the initial server fixture startup delay is still unresolved.
+Current full regression and installed SDK qualification remain open. These
+checks do not complete the original PLAN or update the published 0.159 archive.
+
 # Integrated source development0.160
 
 Native entry ABI discovery, the independently pinned Linux debugger and current

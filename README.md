@@ -75,12 +75,23 @@ tests passed with explicit Clang 22 selection. An explicit [native-host Clang 22
 configuration](docs/evidence/fedora-native-clang22-host-2026-11-06.json) also passed
 the existing private module fixture: 12 scenarios and 48 native comparisons.
 Its historical fixture cohort is preserved. Full Fedora acceptance remains open.
+The [original CMake module group](docs/evidence/fedora-native-driver-config-2026-11-06.json)
+subsequently passed with those native flags in the private C++ entrypoint;
+the original Conda alias and distro compilers were preserved.
 
 The [Windows debugger path correction](docs/evidence/windows-debugger-extended-path-2026-11-06.json)
 passed all nine provider-debugger tests, including actual CLI/DAP long paths,
 relocated packages and rejected identity substitutions. Extended path aliases
 require OS file-identity agreement; UUID, byte and mapping checks remain active.
 This does not accept the full Windows suite or a newly packaged SDK.
+
+The [Windows workload-fixture ownership checks](docs/evidence/windows-workload-ownership-2026-11-06.json)
+passed all nine server-workload cases, all four task-workload cases and a real
+kernel ownership control. Cleanup requires the held process handle to match
+both the test's exact Job and the recorded creation time. Original timeout and
+interrupt scenarios remain active; earlier failed invocations are retained.
+Both corresponding POSIX cases also passed on Fedora. Full platform and new
+SDK acceptance remain separate.
 
 The scoped [Linux ARM64 development SDK record](docs/evidence/linux-portable-sdk-development-2026-11-05.json)
 pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,
