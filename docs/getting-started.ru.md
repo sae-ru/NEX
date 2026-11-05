@@ -107,7 +107,10 @@ nex snapshot --directory ../my-app-snapshot --json
 можно выбрать свою лицензию.
 
 Перед переносом хранилища или сменой языка прочитайте [snapshots](snapshots.md),
-[history](history.md) и [migration](typed-error-migration.md).
+[history](history.md) и [руководство миграции на текущий язык](source-contract-migration.md).
+Для графов до 0.18 поле `origin_verified: false` означает, что историческая
+семантическая идентичность не подтверждена. Даже при `target_valid: true`
+сначала проверьте архивный исходник и перенос отдельной копии, сохранив оригинал.
 
 ## Как подключить LLM
 

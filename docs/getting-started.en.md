@@ -105,7 +105,8 @@ nex snapshot --directory ../my-app-snapshot --json
 When redistributing NEX runtime code, retain its [MIT notice](../LICENSE) and
 applicable third-party notices. Your application source can have its own license.
 
-Read [snapshots](snapshots.md), [history](history.md) and [migration](typed-error-migration.md)
+Read [snapshots](snapshots.md), [history](history.md) and the
+[current-language migration guide](source-contract-migration.md)
 before moving an existing store or upgrading language versions.
 
 ## Use an LLM
