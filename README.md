@@ -71,6 +71,14 @@ The matching [macOS source regression](docs/evidence/macos-source-development-20
 after the Linux explicit-loader discovery fix passed all 298 CTest groups.
 This source result does not update the accepted SDK archive or published release.
 
+A newer [macOS development SDK receipt](docs/evidence/macos-current-resources-sdk-development-2026-11-05.json)
+pins archive `536ee172` with `d19cffa` resources and the same tested compiler
+implementation. It passed 41 installed phases and 61 additional cases on each
+of two installations, with actual Python 3.10/3.14, denied source/dependency and
+opposite-SDK reads, read-only SDK prefixes, and 4000 C++ host calls with cleanup
+checks. Its initial test-runner failures remain recorded. This archive has no
+new accelerator acceptance; the published release remains 0.159.
+
 Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
 response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)
 includes selected IPv4 execution and source-deleted packages on the compatible
