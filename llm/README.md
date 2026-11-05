@@ -56,22 +56,34 @@ initial document bytes. It does not establish lower total model-token cost,
 higher success rates or parity with C++/Python. Measure complete context, tool
 responses, generations, retries, time and correctness on the same defined tasks;
 see [quality criteria](../docs/quality.md).
-# Validate actual language-pack artifacts
+# Validate current language-pack artifacts
 
-The source-checkout developer gate below checks compiler responses, accepted
-debug frames, actual LLDB captures, project captures/packages, Wasm metadata and
-all six025 provider variants against their JSON Schemas. `--retained-nex` also
-builds/runs an024 application and rejects retagging its ABI5 provider as025.
+The source-checkout developer gate below checks a fresh project's actual
+manifest, three analysis projections, operations and task contract against the
+current JSON Schemas. It also rejects invalid language-version values. Use the
+actual current compiler; initialization selects its declared entry and language.
+This gate performs no native build, application execution or model calls.
+
 Use Python with `jsonschema>=4.23`; this is a developer dependency, not an NEX
 application or installed compiler dependency. Normal CTest uses standard Python.
 
 ```sh
-python3 tests/schema_artifacts.py /absolute/path/to/nex \
-  --output /new/schema-evidence \
-  --retained-nex /absolute/path/to/024-sdk/bin/nex
+python3 tests/current_schema_contracts.py /absolute/path/to/current-sdk/bin/nex \
+  --output /new/current-schema-evidence
 ```
 
-The compiler still enforces byte budgets, graph identity, provenance and semantic
+Language0.28 is admitted by the current authoring/analysis/graph/debug/project,
+ABI7 provider, runtime-contract and browser-delivery schemas. The diagnostic
+schema describes the uncaught source-error packet explicitly, and migration
+candidates admit target0.28. These data contracts do not upgrade old graphs,
+change a runtime ABI or update a previously archived SDK. Source implementation,
+artifact-schema checks and installed delivery retain separate evidence.
+
+The broader `tests/schema_artifacts.py` script retains its historical025/ABI6
+scenario selection and optional `--retained-nex`024 replay. It is not the current
+028 developer gate. Its complete current-platform/schema matrix still needs
+updating; archived provider formats remain separate.
+
+The compiler enforces byte budgets, graph identity, provenance and semantic
 constraints beyond JSON Schema. A valid JSON document does not authorize an
 effect or make a captured frame match a different build.
-

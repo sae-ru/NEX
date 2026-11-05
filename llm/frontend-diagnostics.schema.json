@@ -260,6 +260,7 @@
             "0.25",
             "0.26",
             "0.27",
+            "0.28",
             "0.25-prototype"
           ]
         },
@@ -461,6 +462,23 @@
               "stdout"
             ]
           }
+        },
+        "source_exception": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "message"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "description": "Uncaught source-error legacy text boundary, including valid Unicode and escaped NUL; distinct from checked traps and frontend diagnostics."
         }
       },
       "required": [
@@ -485,6 +503,20 @@
               "revision",
               "source_hash"
             ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "source_exception"
+            ]
+          },
+          "then": {
+            "properties": {
+              "code": {
+                "const": "E_SOURCE_EXCEPTION"
+              }
+            }
           }
         }
       ]

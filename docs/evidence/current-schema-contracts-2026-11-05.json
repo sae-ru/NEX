@@ -1,0 +1,123 @@
+{
+  "schema": "nex.current-schema-contracts-development/1",
+  "scope": "Source-data correction for actual toolchain0.162/language0.28 outputs. Compiler/checker/interpreter/backends, grammar, graph formats and provider ABIs are unchanged. Existing SDK archives retain their original schema resources.",
+  "source_parent": "df3c6615de89a7d002582682a99bbb89a5668f00",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "compiler_build": "f7b9e286df7f361ef8e8be22f7a52fead47c204f0af35f687a2a09d91efe299e",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "compiler_sha256": "e121346f6e05b204b4ad315b9fe6ad15adaafb4cb3c3151787311592c11c2cb2",
+  "changes": {
+    "schema_files": 26,
+    "language_constraints_admit_current028": true,
+    "migration_target028_admitted": true,
+    "uncaught_source_error_diagnostic_packet_strictly_described": true,
+    "historical_native_provider_files_unchanged": [
+      "native-task-provider.schema.json",
+      "native-shared-task-provider.schema.json",
+      "native-profiled-task-provider.schema.json",
+      "native-debug-task-provider.schema.json",
+      "native-write-task-provider.schema.json",
+      "native-stream-task-provider.schema.json",
+      "native-source-error-task-provider.schema.json"
+    ],
+    "authoring_regression_gate": "tests/current_schema_contracts.py",
+    "LLM_workflow": "llm/README.md"
+  },
+  "regression": {
+    "original_schemas_reject_actual_current_artifacts": 6,
+    "corrected_current_authoring_artifacts_passed": 6,
+    "rejected_invalid_version_controls": 18,
+    "actual_authoring_cases": [
+      "project",
+      "editor-analysis",
+      "editor-references",
+      "editor-identifiers",
+      "operations",
+      "task"
+    ],
+    "jsonschema": "4.23.0",
+    "schema_documents_meta_valid": 85,
+    "actual_Python_versions": [
+      "3.10.22",
+      "3.14.9"
+    ],
+    "per_Python": {
+      "Python3.10": {
+        "report_sha256": "935a132f4758cb34f9f86e3b11b3eb243b95a876e1630d2152bd86f620e931c0",
+        "positive_artifacts": 6,
+        "rejected_invalid_language_controls": 18,
+        "compiler_build": "f7b9e286df7f361ef8e8be22f7a52fead47c204f0af35f687a2a09d91efe299e"
+      },
+      "Python3.14": {
+        "report_sha256": "559f1f178f375b997b9dd51391273adcc39b6f643c66f423e33ee7dc9306c5c7",
+        "positive_artifacts": 6,
+        "rejected_invalid_language_controls": 18,
+        "compiler_build": "f7b9e286df7f361ef8e8be22f7a52fead47c204f0af35f687a2a09d91efe299e"
+      }
+    },
+    "rejected_invalid_version_controls_total": 36
+  },
+  "broader_actual_artifact_replay": {
+    "current_Mac_SDK_archive_sha256": "e1126696c622f148e47cac25689dfdf45906d5c4d2b763a043ded5a821789140",
+    "actual_unique_samples": 216,
+    "schema_families_passed": 36,
+    "extra_negative_controls": [
+      "wrong-outer-code",
+      "numeric-source-code",
+      "unknown-source-payload",
+      "missing-source-message",
+      "future-migration-language"
+    ],
+    "completed_current_commands_and_phases_only": true,
+    "old_SDK_or_compiler_execution": false
+  },
+  "schema_sha256": {
+    "llm/debug-frame-v2.schema.json": "86d0020ef932b3ac5512487ae0fc0276b7583d9cf29afe380ddc62d49a391312",
+    "llm/debug-frame.schema.json": "c41b867b5d10a69c8c59bcf0bc0d0ce9be42055441be1f757a5045def406ffca",
+    "llm/editor-analysis.schema.json": "074001bb52740e9cd3b25c2c7f1d72199f93334c54642bafc47a5235331744f1",
+    "llm/editor-identifiers.schema.json": "27b4ee445bcb6f3a8ab84bbba48df9f60ef7704cdad1cc86fd2770840fec6df3",
+    "llm/editor-references.schema.json": "f84c3774aae01f9f60d04f5a8b5c025503d50a701009d061841fdedb8cfde253",
+    "llm/frontend-diagnostics.schema.json": "4f3d3533e660171788050ab4b616b2b9830efe4c49a53cdaecb2aeda538cfd8c",
+    "llm/graph-identity.schema.json": "3f890f0bd71cc88c50582afd6f1ac65504295d88688514898dbf14261f3dd72c",
+    "llm/graph-query.schema.json": "99445088b306eada543eda5d225120f5d185851e3babc487ca08d46d28da1b56",
+    "llm/migration-candidate.schema.json": "2f1acd835b13521ca75bcacaaab7d863e2c93dac7f72e1ca4c6911b18c624ff0",
+    "llm/native-diagnostics.schema.json": "233854007a5774a0b103eb0819b4d2518621b9b033753411a4e68e5420557b13",
+    "llm/native-typed-error-task-provider.schema.json": "bdfd331b3af5d37f6f8beb32862f96a5e930167452a2be26ed8795e521bfaa0f",
+    "llm/operations.schema.json": "21293ddf3316c6dfa1be3e8fdf01d8943243b292e89072d2769d9e82051c5a39",
+    "llm/project-capture.schema.json": "6ace459093ac17720e3ddbd71e16fa57dce862fa40be69b3585dd9eaab633af6",
+    "llm/project-package.schema.json": "641927acba6a9443186d0b61a6faa47903ef477c7f60ed20c8a8fcd154b13cd5",
+    "llm/project.schema.json": "33c3308a72771f9c812a7f1c5ff27fcee39d76f5911bc892fde04a3c867c14b8",
+    "llm/provider-task-debug-expression.schema.json": "54199752c3d14eaf84f93019b6db4239df5c99ecd8ceb30e2c5228c9a9ea00fc",
+    "llm/provider-task-debug-frame.schema.json": "1323127b72bb9ac72b7085cbc75b03db3af5e40c6018571544c9e88964976909",
+    "llm/provider-task-debug-view.schema.json": "a7827df04d89cfeb7c1ad98955c30725700b3f596c32722c73dfd3e26bb2bf3a",
+    "llm/runtime-contracts.schema.json": "9ecc0b5b49c10af47b92dfcf0e9cc0d30b8ffb8ce6871d6e223385f2e88a2cf5",
+    "llm/task-debug-expression.schema.json": "ce6cb4646f77ca996837572550864ea30e2107bf9ec55e1d4bcb31549e338167",
+    "llm/task-debug-frame.schema.json": "b1c6a0efafd46602006ba4d1bb1b080b05d5e67de193bad9b2a3606be3dba976",
+    "llm/task-debug-source-union.schema.json": "7549ec07a974ca69cc5ae92ea935ddae9255f055f892cadc1cbdb34120f287c7",
+    "llm/task.schema.json": "18d2e6f083c6856349fd33e9a12e9af63ccbaaa52f8537c4e96be50ad0413bcb",
+    "llm/typed-web-delivery.schema.json": "88b58981514a122116c1b7d9d8c5aabaef234fb4e15891f45e474db0ec66e70a",
+    "llm/verification.schema.json": "91d670630b398ed1c0cd52b80d28e464b6b84402b1e57c1a5ab0584772b32565",
+    "llm/wasm-module.schema.json": "5ec7061e5ba9c0f6d1279c88b79f1bb38113449771ae2e010ed27598a1b6b96b"
+  },
+  "source_regression_gate_sha256": "4900c6bdd53da77439b0a0c966a6fe3d20e89272faff778bb528dfd8efdf1fd6",
+  "original_failed_schema_gate_and_broad_replay_retained": true,
+  "full_current_schema_variant_matrix_accepted": false,
+  "installed_SDK_with_corrected_schemas_accepted": false,
+  "main_or_release_promoted": false,
+  "goal_complete": false,
+  "current_provider_replay": {
+    "actual_unique_records_passed": 51,
+    "variants_passed": {
+      "nex.native-task-provider/15:shared-fixed": 11,
+      "nex.native-task-provider/14:static": 6,
+      "nex.native-task-provider/14:shared-fixed": 22,
+      "nex.native-task-provider/16:shared-fixed": 12
+    },
+    "variants_not_yet_captured": [
+      "nex.native-task-provider/15:static",
+      "nex.native-task-provider/16:static"
+    ],
+    "all_variants_accepted": false
+  }
+}

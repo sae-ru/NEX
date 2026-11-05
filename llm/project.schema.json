@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.local/schemas/project-1.json",
   "title": "Current NEX project manifest",
-  "description": "Public025 integration-candidate authoring schema. Old graphs require explicit migration; no automatic source/version relabeling.",
+  "description": "Authoring schema for the advertised source languages. Old graphs require explicit migration; a manifest edit does not upgrade history.",
   "type": "object",
   "additionalProperties": true,
   "properties": {
@@ -13,7 +13,8 @@
       "enum": [
         "0.25",
         "0.26",
-        "0.27"
+        "0.27",
+        "0.28"
       ]
     },
     "entry": {

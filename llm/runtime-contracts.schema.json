@@ -85,7 +85,10 @@
           "const": "nex.runtime-contract-candidate/1"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -210,7 +213,10 @@
           "const": "nex.runtime-contract-session/1"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -376,7 +382,10 @@
           "const": "nex.runtime-contract-candidate/2"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -521,7 +530,10 @@
           "const": "nex.runtime-contract-session/2"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -669,7 +681,10 @@
           "const": "nex.runtime-contract-candidate/3"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -868,7 +883,10 @@
           "const": "nex.runtime-contract-session/3"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -1098,7 +1116,10 @@
           "const": "nex.runtime-contract-candidate/4"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
@@ -1310,7 +1331,10 @@
           "const": "nex.runtime-contract-session/4"
         },
         "language": {
-          "const": "0.27"
+          "enum": [
+            "0.27",
+            "0.28"
+          ]
         },
         "origin_revision": {
           "$ref": "#/$defs/digest"
