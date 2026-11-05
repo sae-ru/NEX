@@ -1,5 +1,5 @@
 """Real pinned module closures, recursive relocation and independent execution."""
-from host_fixture import nonregular, run_native
+from host_fixture import nonregular, run_native, temporary_environment
 from sqlite_fixture import connection as sqlite_connection
 import hashlib
 import json
@@ -163,6 +163,20 @@ class ForeignPackaging(harness.ToolchainCase):
             self.prepare(self.root / 'missing-notice')
         self.assertFalse((self.root / 'missing-notice').exists())
         self.assertEqual(self.events(), '')
+        temporary = self.root / 'diagnostic-scratch'
+        temporary.mkdir()
+        output = self.root / 'missing-notice-package'
+        rejected = self.cli('package', '--foreign', self.host, '--notices', self.notices,
+                            '--directory', output, ok=False,
+                            env={**self.env, **temporary_environment(temporary)}, timeout=180)
+        self.assertEqual(rejected['code'], 'E_PACKAGE')
+        prefix = 'application packaging failed; inputs retained at '
+        self.assertTrue(rejected['message'].startswith(prefix), rejected)
+        retained = Path(rejected['message'][len(prefix):].split('\n', 1)[0])
+        self.assertEqual(retained.parent.resolve(), temporary.resolve())
+        self.assertTrue((retained / 'selection.json').is_file())
+        self.assertFalse(output.exists())
+        self.assertEqual(self.events(), '')
         # Restore provenance, then remove a required transitive image.
         self.notices.write_text(json.dumps({'schema': 'nex.sdk-notices/1', 'components': [
             {'name': 'fixture', 'version': '1', 'url': 'https://example.invalid/fixture',
@@ -300,17 +314,22 @@ server fn handle(request:http::Request)->http::Response!{ffi}{return http::json_
     def test_package_rejects_wrong_source_pin_and_wrong_signature_before_initialization(self):
         self.closure()
         self.application_notices()
+        temporary = self.root / 'package-scratch'
+        temporary.mkdir()
+        environment = {**self.env, **temporary_environment(temporary)}
         for original, replacement, error in [(self.pin, 'f' * 64, 'E_FFI_PACKAGE'),
                                               ('echo(x:i64)->i64', 'echo(x:i64)->f64', 'E_FFI_PACKAGE')]:
-            source = SOURCE.replace('@PIN@', self.pin).replace(original, replacement)
-            self.source(source)
-            # Keep main valid when probing a different external result type.
-            output = self.root / ('rejected-' + error)
-            result = self.cli('package', '--foreign', self.host, '--notices', self.notices,
-                              '--directory', output, env=self.env, ok=False, timeout=180)
-            self.assertEqual(result['code'], error, result)
-            self.assertFalse(output.exists())
-            self.assertEqual(self.events(), '')
+            with self.subTest(replacement=replacement):
+                source = SOURCE.replace('@PIN@', self.pin).replace(original, replacement)
+                self.source(source)
+                # Keep main valid when probing a different external result type.
+                output = self.root / ('rejected-' + error)
+                result = self.cli('package', '--foreign', self.host, '--notices', self.notices,
+                                  '--directory', output, env=environment, ok=False, timeout=180)
+                self.assertEqual(result['code'], error, result)
+                self.assertFalse(output.exists())
+                self.assertEqual(self.events(), '')
+                self.assertEqual(list(temporary.iterdir()), [], 'rejected source retained package preparations')
 
     def test_imported_callable_projection_edits_only_the_exact_manifest_token(self):
         self.closure()

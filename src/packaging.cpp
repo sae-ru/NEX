@@ -336,7 +336,14 @@ llvm::json::Value packageApplication(const Program &program,BuildOptions buildOp
     requireNativeHost(buildOptions);
     auto prepared=prepareForeignPackage(options,exports,folder.string());
     std::set<std::string> selectedFunctions;for(const auto *f:bindings)selectedFunctions.insert(f->name);
-    auto projected=projectForeignProgram(program,selectedFunctions,prepared,root);auto derived=std::move(projected.program);
+    auto projected=[&](){
+      try{return projectForeignProgram(program,selectedFunctions,prepared,root);}
+      catch(...){
+        // Source-binding rejection has no published diagnostic workspace.
+        // Preparation-tool failures above retain their reported inputs.
+        std::error_code ignored;fs::remove_all(folder,ignored);throw;
+      }
+    }();auto derived=std::move(projected.program);
     projection=std::move(projected.report);foreignFiles=std::move(prepared.files);
     store.save(program,"",false);store.save(derived,"",false);candidate=std::move(derived);
     buildOptions.foreignCatalogue="../foreign/host.json";
