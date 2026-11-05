@@ -1,0 +1,40 @@
+{
+  "schema": "nex.Mac-image-discovery-source-full298/1",
+  "ok": true,
+  "source_commit": "26b4251e4ca9684588a7ace5ab317c082999b7b0",
+  "compiler_sha256": "c434079ecc0afa84030dcbb876efd1ff3f9125399df0151a2366a6531df331ac",
+  "source_files": 1940,
+  "groups": 298,
+  "failed": [],
+  "skipped": [],
+  "seconds": 3999.604,
+  "source_and_primary_guards_passed": true,
+  "scratch_removed": true,
+  "raw": {
+    "report.json": {
+      "sha256": "d7d80441bd017272fba7c4d43d47acc6a5b5738fa4aff00381272022d9c41055",
+      "bytes": 8343
+    },
+    "source-manifest.json": {
+      "sha256": "c3ef0ffe49e3ad10b9e68a0e2d576bd540cf84e453b37cb8d3f70d355c76a71c",
+      "bytes": 312546
+    },
+    "registry.json": {
+      "sha256": "fc08c6c55a822c8799505de196450101558c3fbae218dd6c0bc8c26aec358e75",
+      "bytes": 229413
+    },
+    "full.xml": {
+      "sha256": "7cdc6cadc578e545f9d5f758798f8aa8a191a2e8a5ffcc5b2ea5ee52e2bd7f59",
+      "bytes": 316809
+    },
+    "full.log": {
+      "sha256": "bad44cbf9b248c4adff9e276cb0815ec611db427d1eb75c8f518f8caedaf96c0",
+      "bytes": 37617
+    }
+  },
+  "full_SDK_accepted": false,
+  "whole_original_PLAN_complete": false,
+  "date": "2026-11-05",
+  "platform": "macOS ARM64",
+  "scope": "Source build and full matching regression after Linux explicit-loader image discovery fix; installed current-resource SDK acceptance remains separate."
+}
