@@ -5,10 +5,16 @@ network requests and does not run a model, an acceptance command or a price
 lookup. Actual multi-model experiments and the quality targets in
 [quality.md](../../docs/quality.md) remain open.
 
+From a source checkout:
+
 ```sh
 python3 experiments/quality/llm_cost.py /path/to/campaign/ledger.json \
   --output /path/to/new-summary.json
-# Once delivered in a matching SDK:
+```
+
+From a matching installed SDK:
+
+```sh
 python3 /path/to/sdk/share/nex/tools/llm_cost.py /path/to/campaign/ledger.json
 ```
 

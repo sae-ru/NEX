@@ -354,6 +354,8 @@ install(FILES experiments/quality/scale_100x100.py
 install(FILES tests/task_provider_debug_lifetime.py DESTINATION share/nex/tools RENAME quality_task_fence.py)
 install(FILES tests/task_provider_debug_lifetime.cpp DESTINATION share/nex/tools RENAME quality_task_fence.cpp)
 install(FILES experiments/quality/llm_cost.py DESTINATION share/nex/tools)
+install(FILES experiments/quality/README.md experiments/quality/llm_cost.md
+  DESTINATION share/nex/experiments/quality COMPONENT Documentation)
 install(FILES tests/fixtures/language-0.19-sdk115-history.json tests/fixtures/language-0.19-sdk115-history.sql tests/fixtures/language-0.19-sdk115-tasks.json tests/fixtures/language-0.19-sdk115-tasks.sql tests/fixtures/language-0.19-sdk115-fs-helper.json tests/fixtures/language-0.19-sdk115-fs-helper.sql DESTINATION share/nex/examples/task-migration)
 install(FILES tools/mobile_project.py DESTINATION share/nex/tools)
 install(FILES tools/core_capsule.py DESTINATION share/nex/tools)
