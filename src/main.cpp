@@ -5,6 +5,7 @@
 #include "nex/discovery.h"
 #include "nex/wasm.h"
 #include "nex/frontend_diagnostics.h"
+#include "nex/executable_path.h"
 #include "nex/editor.h"
 #include "nex/native_diagnostics.h"
 #include "nex/native_toolchain.h"
@@ -55,7 +56,7 @@ struct Options {
   std::string get(const std::string &name,const std::string &fallback="")const{auto i=values.find(name);return i==values.end()?fallback:i->second;}
 };
 Options options(int argc,char **argv) {
-  Options o;o.command=argc>1?argv[1]:"help";o.compiler=llvm::sys::fs::getMainExecutable(argv[0],reinterpret_cast<void*>(&options));
+  Options o;o.command=argc>1?argv[1]:"help";o.compiler=executablePath(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices","--task-debug"};
   const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--task-steps","--task-timeout-ms","--task-workers","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit"};
   for(int i=2;i<argc;++i){

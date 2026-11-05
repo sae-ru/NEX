@@ -2,6 +2,7 @@
 #include "nex/task_lifetime.h"
 #include "nex/language.h"
 #include "nex/frontend_diagnostics.h"
+#include "nex/executable_path.h"
 #include "nex/traits.h"
 #include "llvm/Support/BLAKE3.h"
 #include "llvm/ADT/APFloat.h"
@@ -116,7 +117,7 @@ std::string resourceFile(const std::string &relative) {
   std::vector<std::filesystem::path> roots;
   if(auto explicitRoot=std::getenv("NEX_RESOURCE_DIR"))roots.emplace_back(explicitRoot);
   else {
-    auto executable=llvm::sys::fs::getMainExecutable(nullptr,nullptr);
+    auto executable=executablePath();
     if(!executable.empty())roots.push_back(std::filesystem::path(executable).parent_path().parent_path()/"share/nex");
     roots.emplace_back(NEX_RESOURCE_ROOT);
   }

@@ -1,4 +1,5 @@
 #include "nex/native_toolchain.h"
+#include "nex/executable_path.h"
 #include "llvm/TargetParser/Host.h"
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Support/Program.h"
@@ -41,7 +42,7 @@ NativeToolchain hostDefaults() {
   if(host.isOSDarwin())result.debugPackager=(fs::path(NEX_LLVM_TOOLS)/"dsymutil").string();
   result.sqliteInclude=NEX_SQLITE_INCLUDE;result.sqliteLibrary=NEX_SQLITE_LIBRARY;
   result.opensslInclude=NEX_OPENSSL_INCLUDE;result.opensslSSL=NEX_OPENSSL_SSL;result.opensslCrypto=NEX_OPENSSL_CRYPTO;
-  auto executable=llvm::sys::fs::getMainExecutable(nullptr,nullptr);
+  auto executable=executablePath();
   if(executable.empty())return result;
   auto root=fs::weakly_canonical(fs::path(executable).parent_path().parent_path());
   auto manifest=root/"share/nex/sdk-host.json";

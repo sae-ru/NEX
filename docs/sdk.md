@@ -285,6 +285,11 @@ paths relative to the actual executable's installation prefix. Paths must resolv
 inside that prefix. A present but invalid/incomplete descriptor fails with E_SDK;
 it does not fall back to paths from the compiler's build machine.
 `NEX_RESOURCE_DIR` selects language/runtime text resources separately.
+On Linux, explicit invocation through a dynamic loader still discovers the
+compiler image's own prefix for resources, `sdk-host.json` and compiler paths
+passed to helpers. The loader's prefix does not select a different SDK. This
+does not supply missing GNU runtime libraries, target headers/CRT or establish
+compatibility with an older distribution; those require separate qualification.
 `NEX_CLANG` and explicit `--toolchain` configurations retain their normal override
 precedence; `doctor` now reports the effective compiler, archive/debug tools and
 dependency paths. An explicit native toolchain can select `archiver` and

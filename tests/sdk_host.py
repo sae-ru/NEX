@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import struct
+import sys
 import unittest
 
 import support as harness
@@ -160,6 +162,75 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.staged('build', '--library', '--toolchain', config)
         calls = [json.loads(line) for line in self.log.read_text().splitlines()]
         self.assertTrue(any(call[0] == 'archiver' and call[1] == str(override) for call in calls))
+
+    @unittest.skipUnless(sys.platform == 'linux', 'ELF interpreter invocation is Linux-specific')
+    def test_explicit_loader_keeps_the_compiler_resources_tools_and_child_identity(self):
+        self.stage()
+        moved = self.root/'moved SDK % 🧠'
+        self.prefix.rename(moved)
+        self.prefix = moved
+        self.descriptor = moved/'share/nex/sdk-host.json'
+        # Read PT_INTERP from the actual compiler, without guessing a libc path
+        # or requiring patchelf/readelf in the test environment.
+        elf = Path(harness.NEX).read_bytes()
+        self.assertEqual(elf[:6], b'\x7fELF\x02\x01')
+        offset = struct.unpack_from('<Q', elf, 32)[0]
+        size, count = struct.unpack_from('<HH', elf, 54)
+        interpreters = []
+        for index in range(count):
+            header = offset + index * size
+            if struct.unpack_from('<I', elf, header)[0] == 3:
+                start = struct.unpack_from('<Q', elf, header + 8)[0]
+                length = struct.unpack_from('<Q', elf, header + 32)[0]
+                interpreters.append(Path(os.fsdecode(elf[start:start+length-1])))
+        self.assertEqual(len(interpreters), 1)
+        # Give the loader a conflicting SDK. Looking at /proc/self/exe would
+        # choose this descriptor rather than the compiler's own installation.
+        other = self.root/'other SDK'
+        loader = other/'lib/ld.so'
+        loader.parent.mkdir(parents=True)
+        shutil.copy2(interpreters[0], loader)
+        wrong = other/'share/nex'
+        wrong.mkdir(parents=True)
+        (wrong/'sdk-host.json').write_text('{"schema":"wrong-loader-SDK"}\n')
+        resources = self.prefix/'share/nex'
+        (resources/'runtime').mkdir()
+        shutil.copy2(harness.REPO/'runtime/runtime.cpp', resources/'runtime/runtime.cpp')
+        helper = resources/'editor/lsp/server.py'
+        helper.parent.mkdir(parents=True)
+        helper.write_text('import json,sys\nprint(json.dumps({"compiler":sys.argv[sys.argv.index("--compiler")+1]}))\n')
+        environment = {key:value for key,value in os.environ.items()
+                       if key not in ('NEX_RESOURCE_DIR', 'NEX_CLANG')}
+        compiler = self.prefix/'bin/nex'
+        alias = self.root/'compiler alias'
+        alias.symlink_to(compiler)
+        for prefix in ([compiler], [loader, compiler], [loader, alias],
+                       [loader, compiler.relative_to(self.root)]):
+            with self.subTest(prefix=prefix):
+                result = subprocess.run([*map(str,prefix), 'doctor', '--json'],
+                    cwd=self.root, env=environment, capture_output=True, text=True, timeout=60)
+                self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+                doctor = json.loads(result.stdout)
+                self.assertEqual(Path(doctor['sdk_manifest']), self.descriptor)
+                self.assertEqual(Path(doctor['runtime']), resources/'runtime/runtime.cpp')
+                self.assertEqual(Path(doctor['native_compiler']),
+                                 self.prefix/self.config['tools']['compiler'])
+                result = subprocess.run([*map(str,prefix), 'lsp'], cwd=self.root,
+                    env=environment, capture_output=True, text=True, timeout=60)
+                self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+                self.assertEqual(Path(json.loads(result.stdout)['compiler']), compiler)
+        # Explicit text-resource selection keeps its existing strict behavior.
+        result = subprocess.run([loader, compiler, 'doctor', '--json'], cwd=self.root,
+            env={**environment, 'NEX_RESOURCE_DIR': str(self.root/'missing resources')},
+            capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout)['code'], 'E_RESOURCE')
+        # A bad descriptor at the real compiler's prefix still fails closed.
+        self.descriptor.write_text('{"schema":"invalid-own-SDK"}\n')
+        result = subprocess.run([loader, compiler, 'doctor', '--json'], cwd=self.root,
+            env=environment, capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout)['code'], 'E_SDK')
 
 
 if __name__ == '__main__':
