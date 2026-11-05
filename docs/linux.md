@@ -20,6 +20,16 @@ runtime now explicitly compiles and links its owned resource executor with
 archive reuse, two shared libraries, Debug/Release, profiling and relocation on
 glibc2.28. It does not reclassify the failed full source gate.
 
+For private native dependencies, `nex package --notices OPERATOR_CATALOGUE
+--directory OUTPUT` requires their actual provenance and full license texts.
+A [scoped Astra package check](evidence/astra-gnu-package-development-2026-11-05.json)
+declared the installed conda-forge GNU runtime16.2.0 components, copied their
+libraries and notices, and ran a moved release application with its original
+entry/graph paths absent and `LD_LIBRARY_PATH` unset. Both GNU libraries resolved
+inside the moved package; omission of provenance still failed. Canonical path
+validation retains the original assertion that incorrectly compared the textual
+`bin/../lib` path. This minimal package result does not replace full SDK acceptance.
+
 The maintained environment uses an independently pinned **LLDB23.1.5 APT
 snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX
 compilation. Only `lldb`, `lldb-dap` and `lldb-server` are added ahead of the
