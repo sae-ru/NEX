@@ -1,7 +1,8 @@
-# Migrate a027 graph to language0.28
+# Graph migration to language0.28
 
-The working0.159 compiler selects028. Discover it with `nex describe --kind index
---json`. The published0.156 SDK still selects027. Retained027 source is checked
+This guide targets a compiler advertising ordinary language0.28. Discover the
+selected compiler with `nex describe --kind index --json`; retained SDKs can
+select an earlier language. Retained027 source is checked
 under its original parser and `nex.program/15` identity before any028 candidate
 is accepted. New028 programs use `nex.program/16`; unchanged text therefore gets
 a different semantic revision. The task packet representation remains ABI7,
@@ -19,6 +20,13 @@ and `target_valid`. Save the returned `candidate` object when source repairs or
 new contract clauses are desired. Edit only its `sources`, retaining the origin,
 source hash and target guards. A false/non-bool predicate or stale HEAD is refused
 before a new graph revision is written.
+
+For origins before0.18, the compiler does not retain their historical semantic
+serializers. A plan can report `origin_verified: false` and `target_valid: true`:
+the source is valid for the target, while its old semantic revision has not been
+independently verified. Review the archived source and its trusted backup, and
+exercise migration on a separate copy before updating an original store. Keep
+the original graph; changing only a language field cannot establish its history.
 
 Apply the checked candidate against the exact reviewed HEAD:
 
