@@ -1,0 +1,40 @@
+{
+  "schema": "nex.CTest-fixture-report-tool-validation/1",
+  "date": "2026-11-05",
+  "portable_validation_ok": true,
+  "base_commit": "7bdc7b1ed816f755d085ad9e54fc8e3691a8c61e",
+  "source_file_sha256": {
+    "CMakeLists.txt": "0b06d7bff5477aac0b8fef969f43893c34c1c4bb5fd9ae42a0318fe7aadc00f7",
+    "tools/ctest_report.py": "44c31f7ad808a5142f0932bb10af0924fb485ba00e00bf4054dece4c0b287f1f",
+    "tools/windows/verify_native.py": "3005cadb56754c299ab27834f0f15378f58478c6c03a70f6576d7ddd126715e0",
+    "tests/ctest_report_validation.py": "c26cf25bdc0976de0937c44e313131ee3320ee9dda0b7977b19bc4ed2596755e",
+    "docs/ctest-results.md": "4066dfaeaeaa48b4c09c88e41c23437fff5a3b1ffabee07fd815001714e3ebf6",
+    "README.md": "f36d76dff34f5aa4cfadea367a3d5d811f43fb35f48c0a40eea41efd3d11d412",
+    "README.ru.md": "39e2f7e6c9b0d83bb705348c36f5dcc9a9ebba7e3ec17c4bfcf1371ad9cba180"
+  },
+  "actual_Python_versions": [
+    "3.10.22",
+    "3.14.9"
+  ],
+  "unit_methods_each": 12,
+  "saved_real_Windows_selected_group_reports": 2,
+  "saved_real_Windows_required_preparation_group_each": "source_exception_modules",
+  "saved_failed_Mac_full298_remains_failed": {
+    "passed": 289,
+    "failed": 9,
+    "skipped": 0,
+    "ctest_exit_code": 8
+  },
+  "native_Windows_runner_integration_implemented": true,
+  "native_Windows_execution_pending_stand_availability": true,
+  "full_project_CMake_build_and_CTest_pending_current_other_worktree_gate": true,
+  "compiler_runtime_stdlib_and_language_unchanged": true,
+  "main_release_or_currentSDK_promoted": false,
+  "whole_original_PLAN_complete": false,
+  "actual_replay_source_sha256": "44c31f7ad808a5142f0932bb10af0924fb485ba00e00bf4054dece4c0b287f1f",
+  "actual_report_replay_sha256": {
+    "source_exception_frontiers-actual-report.json": "1a46fbee9a529ee0a0fc86b083f832dc4eaf8c43c8e7ef1c83f874e9364e312d",
+    "source_exception_instances-actual-report.json": "7d4050d317cd6b3cbbaeafb29d4c5fcbc17b804c7eaaa8f5eca3ed5eb803bd0e",
+    "Mac-sleep-failed-full298-validation.json": "be4ab26d83f89066afb55ff8ef11b2e83a68933e61a3834bd8b0fdd904a56c8b"
+  }
+}

@@ -137,6 +137,9 @@ ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 ```
 
+For saved CTest results, use the [registry/JUnit checker](docs/ctest-results.md).
+It includes required fixture groups and rejects incomplete or skipped runs.
+
 Keep `bin/nex` and `share/nex` together. Ordinary CMake installation uses the
 build machine's dependencies; [portable SDK packaging](docs/sdk.md) is a separate
 verified workflow.

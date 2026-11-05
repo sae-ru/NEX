@@ -8,11 +8,12 @@ import re
 import shutil
 import subprocess
 import sys
-import xml.etree.ElementTree as ET
 
 from local_smoke import context
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools'))
+from ctest_report import fixture_closure, inspect_files
 
 
 def sha(path):
@@ -120,25 +121,26 @@ def main():
                 'task_shared_provider_native|task_provider_debugging_native|task_provider_profile_native|'
                 'typed_error_debugging|source_finally_foundation|source_task_finally|'
                 'source_exceptions_projects|source_exceptions_projects_debug)$']
-        declared=json.loads(subprocess.check_output([str(ctest),'--test-dir',str(cohort),'--show-only=json-v1'],cwd=ROOT,env=environment))
+        registry_path = output / 'ctest-registry.json'
+        registry_path.write_bytes(subprocess.check_output(
+            [str(ctest), '--test-dir', str(cohort), '--show-only=json-v1'], cwd=ROOT, env=environment))
+        declared = json.loads(registry_path.read_bytes())
         expected_names={test['name'] for test in declared['tests']}
         if not expected_names:raise RuntimeError('the cohort declares no tests')
+        selected = ([name for name in expected_names if re.search(command[-1], name)]
+                    if args.mode == 'focused' else None)
+        roots, closure = fixture_closure(declared, selected)
         report['declared_test_count']=len(expected_names)
+        report['selected_test_names'] = sorted(roots)
+        report['required_fixture_test_names'] = sorted(closure - roots)
         code = run('ctest', command)
         if not (output / 'ctest.xml').is_file():
             raise RuntimeError('CTest did not publish a completed JUnit report; full regression is not accepted')
-        rows = {'passed': [], 'failed': [], 'skipped': []}
-        for case in ET.parse(output / 'ctest.xml').getroot().findall('.//testcase'):
-            skipped = case.find('skipped')
-            unavailable = skipped is not None and skipped.get('message') in (
-                'Unable to find executable', 'Fixture dependency failed')
-            state = 'failed' if (case.find('failure') is not None or case.find('error') is not None
-                or unavailable) else 'skipped' if skipped is not None else 'failed' if case.get('status')=='notrun' else 'passed'
-            rows[state].append(case.get('name'))
-        observed=set(rows['passed']+rows['failed']+rows['skipped'])
-        if not observed or (args.mode=='full' and observed!=expected_names):
-            raise RuntimeError('the completed test inventory differs from the full cohort')
+        verification = inspect_files(registry_path, output / 'ctest.xml',
+                                     ctest_exit_code=code, selected=selected)
+        rows = verification['results']
         report['ctest'] = rows
+        report['ctest_verification'] = verification
         report['ctest_xml_sha256'] = sha(output / 'ctest.xml')
         cuda_ok = True
         if args.cuda:
@@ -160,7 +162,7 @@ def main():
         if harness_pins() != initial_harness:
             raise RuntimeError('test harness/resources changed during this run')
         report['inputs_unchanged'] = True
-        report['ok'] = code == 0 and not rows['failed'] and cuda_ok
+        report['ok'] = verification['ok'] and cuda_ok
         report['full_windows_regression_accepted'] = report['ok'] and args.mode == 'full'
         report['state'] = 'complete'
     except BaseException as error:
