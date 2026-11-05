@@ -4,7 +4,7 @@ NEX uses one versioned specification, grammar and compiler interface for Codex,
 Hermes and other LLMs. Start with [BOOTSTRAP.md](BOOTSTRAP.md), then use the
 compact [coding contract](SYSTEM_PROMPT.md).
 [Learning entry](LEARNING.md) links the public bilingual guides and labelled examples. Detailed guides are retrieved for
-the feature being changed. Current development language is0.27; installed
+the feature being changed. Current development language is0.28; installed
 compiler capabilities and matching acceptance evidence govern actual support.
 
 ## First use
@@ -23,15 +23,23 @@ compiler capabilities and matching acceptance evidence govern actual support.
 
 `language-pack.json` indexes documents, schemas, examples and capability contracts.
 The installed SDK also includes source/runtime resources and acceptance tools.
+The labelled `corpus.json` retains its language0.27/toolchain0.152.1 validation
+record; it does not qualify a newer compiler. Follow the selected compiler's
+capabilities and recheck examples when moving to another version.
 No model-specific syntax or separate private grammar is required. A natural
 language request still needs observable acceptance criteria; the compiler cannot
 prove that a test suite completely captures the user's intent.
 
 ## Current boundaries
 
-Language0.27 enables typed source errors, ordered handlers, filters and finally,
-including task suspension in reference/native/TypeScript. Native task providers
-use ABI7; the explicit development emitter retains its separate cohort2702.
+Language0.28 includes typed source errors, ordered handlers, filters and finally,
+including task suspension in reference/native/TypeScript. It also supports pure
+[`requires` / `ensures` and loop `invariant` / `decreases`](../docs/source-contracts.md),
+with runtime checks active in release builds. Bounded Z3 proof is a separate
+request. Existing0.27 graph histories require an
+[explicit migration](../docs/source-contract-migration.md).
+Native task providers use ABI7; the retained explicit0.27 development emitter
+has its separate cohort2702.
 Server task/fs/ffi resource transport, physical grants, owner transfer and cleanup
 retain their checked rules. General algebraic effects, remaining network/DB task
 integration, universal GPU/NPU APIs, native UI/mobile completion and broader
