@@ -56,10 +56,31 @@ The newer [`dde59c9` Linux ARM64 source build](docs/evidence/linux-current-sourc
 passed all 300 CTest groups without failures or skips. Its development archive
 also passed [current CIX CPU/GPU/NPU checks](docs/evidence/cix-current028-device-development-2026-11-05.json):
 36 GPU and 26 NPU calls through trusted adapters, including suspended typed-error
-handlers. A subsequent [macOS artifact-schema gate](docs/evidence/current-artifact-schemas-2026-11-05.json)
+handlers. The same archive passed [current RK3588 device checks](docs/evidence/rk-current028-device-development-2026-11-05.json):
+96 GPU and 36 NPU calls without CPU fallback. A subsequent [macOS artifact-schema gate](docs/evidence/current-artifact-schemas-2026-11-05.json)
 passed 14 selected tests and corrected the schema for actual project debug-session
 execution metadata. These source and device results retain separate resource
 identities; a newly packaged SDK still needs its own installed acceptance.
+
+The [Astra manual-host link record](docs/evidence/astra-native-host-link-2026-11-06.json)
+covers the direct libdl dependency required by older glibc. The corrected
+frontier group and all 16 existing instance-case selectors passed, including
+64 native comparisons. These private fixtures retain their original cohort;
+the earlier failed or disk-limited runs remain separate.
+
+On Fedora x86-64, the [ELF lifetime-host checks](docs/evidence/fedora-elf-lifetime-hosts-2026-11-06.json)
+passed all three selected CTest groups after making the identity probes PIC/PIE.
+Controls with Clang 23 and GCC 16 used the same runtime libraries; eight Wasm
+tests passed with explicit Clang 22 selection. An explicit [native-host Clang 22
+configuration](docs/evidence/fedora-native-clang22-host-2026-11-06.json) also passed
+the existing private module fixture: 12 scenarios and 48 native comparisons.
+Its historical fixture cohort is preserved. Full Fedora acceptance remains open.
+
+The [Windows debugger path correction](docs/evidence/windows-debugger-extended-path-2026-11-06.json)
+passed all nine provider-debugger tests, including actual CLI/DAP long paths,
+relocated packages and rejected identity substitutions. Extended path aliases
+require OS file-identity agreement; UUID, byte and mapping checks remain active.
+This does not accept the full Windows suite or a newly packaged SDK.
 
 The scoped [Linux ARM64 development SDK record](docs/evidence/linux-portable-sdk-development-2026-11-05.json)
 pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,

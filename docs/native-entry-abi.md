@@ -61,6 +61,12 @@ convention, target and lifetime requirements. Automatic public bindings remain
 planned work. See [project linking](project-build.md), [iOS archives](ios.md) and
 the [machine-readable schema](../llm/native-entry-abi.schema.json).
 
+Linux physical-image identity probes compile their C++ hosts with `-fPIC -pie`.
+On ELF x86-64, a non-PIC function reference can identify an executable's PLT
+entry instead of the shared library's code; see [dladdr(3)](https://man7.org/linux/man-pages/man3/dladdr.3.html).
+This preserves the probes' actual runtime-image assertions. It does not make
+`dladdr` a security boundary or establish a new public ABI requirement.
+
 По-русски: поле `native_entry_abi` описывает реальную сигнатуру выбранной функции
 в нативной библиотеке. Оно явно показывает скрытый параметр ошибки, порядок
 аргументов и совместимый runtime. Одного имени из `nex context` для вызова

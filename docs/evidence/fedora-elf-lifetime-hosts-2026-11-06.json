@@ -1,0 +1,47 @@
+{
+  "schema": "nex.Fedora-ELF-lifetime-host-PIC-development/1",
+  "ok": true,
+  "date": "2026-11-06",
+  "toolchain": "0.162.0",
+  "ordinary_default_language": "0.28",
+  "source_base_commit": "255f8f632102afea4648eb3a58079918e4f51cb2",
+  "source_files": 1969,
+  "compiler_sha256": "b0acbe09b5f8ce2e448b6e63aee86e3398165bc55076ebcdc2385d808e45d8fe",
+  "platform": "Fedora45 Server x86_64 VM; native host Clang23.1.4/GCC16.2.1, NEX LLVM/MLIR backend22.1.8. No physical GPU/NPU acceptance.",
+  "change": "Build the three Linux physical-image lifetime-test hosts with -fPIC -pie so dladdr/dlsym observe the actual runtime code rather than an executable PLT entry. Existing identity/cleanup assertions remain active.",
+  "fixture_patch_sha256": {
+    "task_shared_provider_lifetime.py": "fe13bfc1f921c373f987a6869950cc08f404831964e5f2bfea7b5751ca7bd768",
+    "task_provider_profile_lifetime.py": "8cf5ca63cceefd955bf6bf09ed0a104ba30a2c49605ca8f5324b1d30325ffbfe",
+    "task_provider_debug_lifetime.py": "2d1e0691f511ced042611de7446c1240b2bf8b730ba355b61d28a0d79152048d"
+  },
+  "passed_CTest_groups": [
+    "task_provider_profile_lifetime_native",
+    "task_provider_debug_lifetime_native",
+    "task_shared_provider_lifetime_native"
+  ],
+  "CTest_seconds": 63.07173204599894,
+  "retained_same_DSO_controls": [
+    {
+      "host_compiler": "Clang23",
+      "cases": 4,
+      "runtime_mappings": 1,
+      "live_objects": 0
+    },
+    {
+      "host_compiler": "GCC16",
+      "cases": 4,
+      "runtime_mappings": 1,
+      "live_objects": 0
+    }
+  ],
+  "baseline_failed_runtime_lookup_is_executable_PLT": true,
+  "baseline_runtime_mappings": 1,
+  "explicit_Clang22_Wasm_tests_passed": 8,
+  "source_or_native_compiler_implementation_changed": false,
+  "full_source_or_SDK_accepted": false,
+  "original_full300_and_diagnostic_failures_reclassified": false,
+  "raw_files": 45,
+  "raw_bytes": 362726,
+  "raw_inventory_sha256": "b0f8524e193246c2d32297f78323865914666da95c37eb616208cc6e9b94c195",
+  "sealed_utc": "2026-11-05T21:51:58.445849+00:00"
+}

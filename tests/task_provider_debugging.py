@@ -188,6 +188,26 @@ class TaskProviderDebugging(harness.ToolchainCase):
             self.assertEqual(adapter.event('exited')['exitCode'],0)
         self.dap(session,'debug_leaf::work',body)
 
+    @unittest.skipUnless(os.name=='nt','Windows physical path identity')
+    def test_windows_debugger_namespace_alias_requires_the_same_physical_file(self):
+        reader=reader_module()
+        ordinary=self.root/'runtime.dll';ordinary.write_bytes(b'ordinary image')
+        extended='\\\\?\\'+str(ordinary)
+        spec=SimpleNamespace(GetDirectory=lambda:str(Path(extended).parent),
+                             GetFilename=lambda:ordinary.name)
+        self.assertEqual(reader._file_spec_path(spec),str(ordinary))
+        # Extended-length names preserve trailing dots. The DOS spelling
+        # resolves to runtime.dll, but the debugger's image is another file.
+        distinct=extended+'.';Path(distinct).write_bytes(b'distinct image')
+        try:
+            self.assertFalse(os.path.samefile(distinct,str(ordinary)+'.'))
+            self.assertEqual(reader._file_spec_path(distinct),distinct)
+        finally:
+            # Ordinary rmtree would normalize away this trailing dot.
+            Path(distinct).unlink()
+        missing='\\\\?\\'+str(self.root/'missing.dll')
+        self.assertEqual(reader._file_spec_path(missing),missing)
+
     def dap(self,session,breakpoint,body):
         from debugging import DAP
         manifest=json.loads(Path(session['manifest']).read_text());backend=debugger_tool('lldb-dap')

@@ -243,7 +243,9 @@ int main(int argc,const char *const *argv){bool addresses=true;CHECKS
             args += ["-Wl,-export_dynamic" if mac else "-Wl,--export-dynamic"]
         if shared and (mac or os.name=='nt'):
             args += ["-L" + str(directory)]
-        args += ["-lnex-private-runtime"] if shared else [*objects, crypto, "-pthread", *([] if mac else ["-ldl"])]
+        args += ["-lnex-private-runtime"] if shared else [*objects, crypto, "-pthread"]
+        if not mac:
+            args += ["-ldl"]
         if image != "app":
             args += ["-Wl,-install_name,@rpath/" + output.name] if mac else ["-Wl,-soname," + output.name]
         if shared:

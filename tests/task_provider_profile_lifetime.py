@@ -73,7 +73,8 @@ def main():
         # Provider startup dependencies then reuse that already mapped identity.
         directories=[str(runtime.parent),str(mid.parent),str(leaf.parent)]
         for directory in dict.fromkeys(directories):args+=['-Xlinker','-rpath','-Xlinker',directory]
-        if platform.system()=='Linux':args+=['-ldl']
+        # Keep dladdr/dlsym identity checks on the actual shared runtime code.
+        if platform.system()=='Linux':args+=['-ldl','-fPIC','-pie']
         args+=['-Xlinker','-export_dynamic' if platform.system()=='Darwin' else '--export-dynamic','-o',binary];command(args)
         env['NEX_PROFILE_OUTPUT']=str(root/'private-profile.json');env['NEX_PROFILE_EVENTS']='0';env['NEX_TRACY']='0'
         result=json.loads(command([binary,mid.name,leaf.name,runtime],cwd=Path('/')))

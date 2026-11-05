@@ -74,7 +74,8 @@ def main():
         # Provider startup dependencies then reuse that already mapped identity.
         directories=[str(runtime.parent),str(mid.parent),str(leaf.parent)]
         for directory in dict.fromkeys(directories):args+=['-Xlinker','-rpath','-Xlinker',directory]
-        if platform.system()=='Linux':args+=['-ldl']
+        # Keep dladdr/dlsym identity checks on the actual shared runtime code.
+        if platform.system()=='Linux':args+=['-ldl','-fPIC','-pie']
         args+=['-Xlinker','-export_dynamic' if platform.system()=='Darwin' else '--export-dynamic','-o',binary];command(args)
         result=json.loads(command([binary,mid.name,leaf.name,runtime],cwd=Path('/')))
         if result.get('catalog_abi')!=2 or result.get('registry_abi')!=1:raise RuntimeError('private debugger catalog identity differs')

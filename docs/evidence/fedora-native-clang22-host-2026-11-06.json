@@ -1,0 +1,48 @@
+{
+  "schema": "nex.Fedora-native-Clang22-host-configuration-development/1",
+  "ok": true,
+  "date": "2026-11-06",
+  "toolchain": "0.162.0",
+  "selected_public_compiler_language": "0.28",
+  "source_base_commit": "255f8f632102afea4648eb3a58079918e4f51cb2",
+  "source_files": 1969,
+  "source_overlay": "Previously tested Fedora Z3-header discovery and old-glibc manual-host libdl dependency.",
+  "compiler_sha256": "b0acbe09b5f8ce2e448b6e63aee86e3398165bc55076ebcdc2385d808e45d8fe",
+  "host_driver_version": "clang version 22.1.8 (https://github.com/conda-forge/clangdev-feedstock fb53dd81989499cc67dae1f1f8965d8e5db7af47)\nTarget: x86_64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /var/tmp/nex-fedora55-llvm22-v1/bin\n",
+  "explicit_native_host_flags": [
+    "--no-default-config",
+    "--target=x86_64-unknown-linux-gnu",
+    "--sysroot=/",
+    "--gcc-toolchain=/usr",
+    "--ld-path=/usr/bin/ld"
+  ],
+  "driver_sha256": "3d2928da7a26c80a03c1f12dae7755b52b7bb377571d5dd3c32816250979d0a3",
+  "wrapper_sha256": "8818dfc61f3852e92be2592a9a6d995360fef672815a08a521386429f2af726e",
+  "passed_CTest_groups": [
+    "source_exception_modules"
+  ],
+  "original_CTest_timeout_seconds": 2400,
+  "fixture_scope": "Existing private_exception_modules historical-cohort compatibility fixtures; current build probes, no older NEX CLI/SDK execution.",
+  "private_fixture_public_source_support": false,
+  "source_programs": 12,
+  "native_comparisons": 48,
+  "modes": [
+    "static",
+    "shared-fixed"
+  ],
+  "optimizations": [
+    "O0",
+    "O2"
+  ],
+  "rejected_cases": 14,
+  "incremental_cases": 2,
+  "relocated_cases": 1,
+  "source_prefix_and_system_defaults_modified": false,
+  "full_source_or_SDK_accepted": false,
+  "original_failure_reports_reclassified": false,
+  "elapsed_seconds": 72.11816608899971,
+  "raw_files": 38,
+  "raw_bytes": 596191,
+  "raw_inventory_sha256": "e8959743fd551e76ecdcf53195a4aba2af4b836882ce5ccdc285b48e5b23eeb7",
+  "sealed_utc": "2026-11-05T22:17:06.886885+00:00"
+}

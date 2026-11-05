@@ -1,0 +1,67 @@
+{
+  "schema": "nex.Windows-debugger-extended-path-development/1",
+  "ok": true,
+  "date": "2026-11-06",
+  "toolchain": "0.162.0",
+  "ordinary_default_language": "0.28",
+  "source_base_commit": "dde59c930419e06683c6ff7c6b6d42477dd066d8",
+  "source_base_files": 1966,
+  "source_overlay_sha256": {
+    "debug/lldb_nex.py": "b107e7cb48e6be50be3d4e8a500499b0cdf1888f3cf75a1f92878fce5199b2b8",
+    "tests/task_provider_debugging.py": "a94280f15b4693fd9d11291977e2f6162d0b949251f4ff924fb53f8e6b813cca"
+  },
+  "compiler_sha256": "fb9bfd6c8e3442075aaf146e1628ac3335a667a246e150c01b1e2cac30470678",
+  "observer_sha256": "f9561cdfa39573a07b1fe72cd0e07dda4658ebfafd8a2143f0ebc4d96102bf43",
+  "observer_current_source_ownership_CTest_passed": true,
+  "original_CLI_longpath_case_reproduced_failure": true,
+  "diagnostic_confirmed_single_expected_runtime_UUID_and_mapping": true,
+  "diagnostic_path_difference": "The loaded runtime uses the extended-length Win32 prefix; the retained manifest uses its ordinary DOS path.",
+  "fix": "Normalize a debugger-reported extended DOS/UNC spelling only when the OS confirms both names identify the same existing file. UUID, content hash, retained closure and physical mapping ambiguity checks remain active.",
+  "passed_tests": [
+    "test_windows_debugger_namespace_alias_requires_the_same_physical_file",
+    "test_windows_long_paths_preserve_real_cli_dap_provider_identity"
+  ],
+  "actual_CLI_and_DAP_watch_value": "42",
+  "actual_NTFS_distinct_trailing_dot_and_missing_file_controls": true,
+  "focused_seconds": 59.80828140000813,
+  "earlier_fixture_cleanup_error_retained": true,
+  "original_failures_reclassified": false,
+  "whole_provider_CTest_group_accepted": true,
+  "full_Windows_or_SDK_accepted": false,
+  "sealed_utc": "2026-11-05T22:16:12.134257+00:00",
+  "reference": "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file",
+  "focused_evidence": {
+    "raw_files": 112,
+    "raw_bytes": 792903,
+    "raw_inventory_sha256": "201aa65c91d771c847a1eed9a97a73fbd19935c30b841462e69d9522ae1ec336"
+  },
+  "full_group_evidence": {
+    "schema": "nex.Windows-debugger-extended-path-full-group-development/1",
+    "ok": true,
+    "date": "2026-11-06",
+    "toolchain": "0.162.0",
+    "language": "0.28",
+    "source_base_commit": "dde59c930419e06683c6ff7c6b6d42477dd066d8",
+    "source_base_files": 1966,
+    "overlay_sha256": {
+      "debug/lldb_nex.py": "b107e7cb48e6be50be3d4e8a500499b0cdf1888f3cf75a1f92878fce5199b2b8",
+      "tests/task_provider_debugging.py": "a94280f15b4693fd9d11291977e2f6162d0b949251f4ff924fb53f8e6b813cca"
+    },
+    "compiler_sha256": "fb9bfd6c8e3442075aaf146e1628ac3335a667a246e150c01b1e2cac30470678",
+    "observer_sha256": "f9561cdfa39573a07b1fe72cd0e07dda4658ebfafd8a2143f0ebc4d96102bf43",
+    "passed_CTest_groups": [
+      "task_provider_debugging_native"
+    ],
+    "unittest_cases": 9,
+    "failed_or_skipped_cases": 0,
+    "original_CTest_timeout_seconds": 1200,
+    "original_negative_identity_checks_preserved": true,
+    "elapsed_seconds": 394.36154840001836,
+    "full_Windows_or_SDK_accepted": false,
+    "original_failure_reports_reclassified": false,
+    "raw_files": 15,
+    "raw_bytes": 556243,
+    "raw_inventory_sha256": "f5d8cf79083329d455e122edc0b492c8fcac2b9ad11208a2e970840fb10b836f",
+    "sealed_utc": "2026-11-05T22:16:12.134257+00:00"
+  }
+}

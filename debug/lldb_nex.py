@@ -34,8 +34,26 @@ def _file_spec_path(spec):
     # SBFileSpec.__str__ is a display description with a PATH_MAX buffer on
     # Windows. Directory/name accessors retain the full authenticated path.
     if isinstance(spec,(str,os.PathLike)):
-        return os.fspath(spec)
-    return str(Path(spec.GetDirectory() or '')/(spec.GetFilename() or ''))
+        path = os.fspath(spec)
+    else:
+        path = str(Path(spec.GetDirectory() or '')/(spec.GetFilename() or ''))
+    if sys.platform == 'win32' and path.startswith('\\\\?\\'):
+        # LLDB can report a loaded PE through the extended-length namespace.
+        # Only collapse a DOS/UNC spelling when both names identify the same
+        # existing file. Stripping the prefix alone changes trailing-dot/space
+        # semantics and must not authenticate a different physical image.
+        ordinary = None
+        if path[4:8].upper() == 'UNC\\':
+            ordinary = '\\\\' + path[8:]
+        elif re.match(r'^[A-Za-z]:\\', path[4:]):
+            ordinary = path[4:]
+        if ordinary is not None:
+            try:
+                if os.path.samefile(path, ordinary):
+                    return ordinary
+            except (OSError, ValueError):
+                pass
+    return path
 
 
 def _open_readonly_file(path, maximum):

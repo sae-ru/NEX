@@ -72,7 +72,9 @@ def main():
         # Provider startup dependencies then reuse that already mapped identity.
         directories=[str(runtime.parent),str(mid.parent),str(leaf.parent)]
         for directory in dict.fromkeys(directories):args+=['-Xlinker','-rpath','-Xlinker',directory]
-        if platform.system()=='Linux':args+=['-ldl']
+        # Inspect the runtime's code address, not a canonical executable PLT
+        # entry returned for non-PIC function references on ELF x86-64.
+        if platform.system()=='Linux':args+=['-ldl','-fPIC','-pie']
         args+=['-o',binary];command(args)
         result=json.loads(command([binary,mid.name,leaf.name,runtime],cwd=Path('/')))
         if not result.get('ok') or result.get('execution_abi')!=7 or result.get('cases')!=4 or result.get('runtime_mappings')!=1 or result.get('live_objects')!=0:raise RuntimeError('private mapped driver invariants failed')
