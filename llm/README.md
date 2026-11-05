@@ -79,10 +79,32 @@ candidates admit target0.28. These data contracts do not upgrade old graphs,
 change a runtime ABI or update a previously archived SDK. Source implementation,
 artifact-schema checks and installed delivery retain separate evidence.
 
-The broader `tests/schema_artifacts.py` script retains its historical025/ABI6
-scenario selection and optional `--retained-nex`024 replay. It is not the current
-028 developer gate. Its complete current-platform/schema matrix still needs
-updating; archived provider formats remain separate.
+The broader `tests/schema_artifacts.py` gate exercises the current language0.28
+compiler and ABI7. It generates real graph, editor, diagnostic, native debug,
+verification, Wasm and project artifacts in 14 selected tests. All 85 schema
+documents are checked for valid definitions; the selected scenarios must produce
+the 23 required artifact families. This does not claim runtime coverage of every
+schema document.
+
+```sh
+python3 tests/schema_artifacts.py /absolute/path/to/current-sdk/bin/nex \
+  --output /new/current-artifact-evidence
+```
+
+This gate compiles and executes native programs and uses LLDB. The full mode
+also needs a matching LLVM22.1 `wasm-ld`; select it with `NEX_WASM_LD` when it is
+not reported by `nex doctor`. Missing tools and skipped tests fail the gate.
+`--only-providers` runs the narrower provider scenario: plain, profiled and
+debug providers, each with static and shared linkage. Both modes require these
+six actual provider variants, two actual project LLDB sessions and rejection of
+malformed provider/debug-session records. The optional `--retained-nex` argument
+adds a separate historical0.24 replay; ordinary current runs do not use an older
+compiler. Retained ABI2–6 schema documents must remain byte-for-byte unchanged
+during either run.
+
+The [macOS source artifact record](../docs/evidence/current-artifact-schemas-2026-11-05.json)
+pins the tested compiler, driver and schema inputs. Installed SDK and other
+platform acceptance need their own runs with matching resources.
 
 The compiler enforces byte budgets, graph identity, provenance and semantic
 constraints beyond JSON Schema. A valid JSON document does not authorize an

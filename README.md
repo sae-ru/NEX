@@ -52,6 +52,15 @@ platform acceptance.
 
 ## Development status
 
+The newer [`dde59c9` Linux ARM64 source build](docs/evidence/linux-current-source-2026-11-05.json)
+passed all 300 CTest groups without failures or skips. Its development archive
+also passed [current CIX CPU/GPU/NPU checks](docs/evidence/cix-current028-device-development-2026-11-05.json):
+36 GPU and 26 NPU calls through trusted adapters, including suspended typed-error
+handlers. A subsequent [macOS artifact-schema gate](docs/evidence/current-artifact-schemas-2026-11-05.json)
+passed 14 selected tests and corrected the schema for actual project debug-session
+execution metadata. These source and device results retain separate resource
+identities; a newly packaged SDK still needs its own installed acceptance.
+
 The scoped [Linux ARM64 development SDK record](docs/evidence/linux-portable-sdk-development-2026-11-05.json)
 pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,
 41 after archive restoration, and 41 in a separate external-debugger environment.

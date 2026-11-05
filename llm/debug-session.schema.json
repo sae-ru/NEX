@@ -105,42 +105,7 @@
               "const": true
             },
             "task_execution": {
-              "type": "object",
-              "properties": {
-                "configured": {
-                  "$ref": "#/$defs/task_limits"
-                },
-                "effective": {
-                  "$ref": "#/$defs/task_limits"
-                },
-                "backend": {
-                  "const": "native"
-                },
-                "executor_workers": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 16
-                },
-                "step_model": {
-                  "const": "native resume and runtime polls"
-                },
-                "cooperative_deadline": {
-                  "const": true
-                },
-                "identical_step_thresholds": {
-                  "const": false
-                }
-              },
-              "required": [
-                "configured",
-                "effective",
-                "backend",
-                "executor_workers",
-                "step_model",
-                "cooperative_deadline",
-                "identical_step_thresholds"
-              ],
-              "additionalProperties": false
+              "$ref": "#/$defs/native_task_execution"
             }
           },
           "required": [
@@ -164,42 +129,7 @@
               "const": true
             },
             "task_execution": {
-              "type": "object",
-              "properties": {
-                "configured": {
-                  "$ref": "#/$defs/task_limits"
-                },
-                "effective": {
-                  "$ref": "#/$defs/task_limits"
-                },
-                "backend": {
-                  "const": "native"
-                },
-                "executor_workers": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 16
-                },
-                "step_model": {
-                  "const": "native resume and runtime polls"
-                },
-                "cooperative_deadline": {
-                  "const": true
-                },
-                "identical_step_thresholds": {
-                  "const": false
-                }
-              },
-              "required": [
-                "configured",
-                "effective",
-                "backend",
-                "executor_workers",
-                "step_model",
-                "cooperative_deadline",
-                "identical_step_thresholds"
-              ],
-              "additionalProperties": false
+              "$ref": "#/$defs/native_task_execution"
             },
             "registry_abi": {
               "const": 1
@@ -230,6 +160,9 @@
           "additionalProperties": false
         }
       ]
+    },
+    "task_execution": {
+      "$ref": "#/$defs/native_task_execution"
     }
   },
   "$defs": {
@@ -329,6 +262,44 @@
         "timeout_ms",
         "workers"
       ]
+    },
+    "native_task_execution": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "$ref": "#/$defs/task_limits"
+        },
+        "effective": {
+          "$ref": "#/$defs/task_limits"
+        },
+        "backend": {
+          "const": "native"
+        },
+        "executor_workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "step_model": {
+          "const": "native resume and runtime polls"
+        },
+        "cooperative_deadline": {
+          "const": true
+        },
+        "identical_step_thresholds": {
+          "const": false
+        }
+      },
+      "required": [
+        "configured",
+        "effective",
+        "backend",
+        "executor_workers",
+        "step_model",
+        "cooperative_deadline",
+        "identical_step_thresholds"
+      ],
+      "additionalProperties": false
     }
   },
   "description": "A fresh compiler response selects the checked executable/server and matching captured adapter. Paths are absolute compiler metadata, not authority from a saved receipt. Preparing this descriptor does not start the application, read runtime credentials or create its database. Runtime args are UTF-8 without NUL,4 KiB per member and64 KiB total. Project/server debugging preserves declared binary edges and request limits.",
