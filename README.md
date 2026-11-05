@@ -61,8 +61,10 @@ physical stands require their own qualification; the published release below rem
 The same archive passed [scoped physical ARM64 CPU checks](docs/evidence/arm64-private-runtime-development-2026-11-05.json)
 on CIX and RK: native Debug/Release, reference agreement and standalone execution
 with the configured source entry absent. These use existing compatible private
-runtimes and native toolchains. Full current stand SDK and accelerator acceptance
-remain separate gates.
+runtimes and native toolchains. Its CIX adapter also passed 36 actual GPU and
+26 NPU calls without CPU fallback, including device values carried through
+suspended typed-error handlers. Full current stand SDK and broader accelerator
+acceptance remain separate gates.
 
 Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
 response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)

@@ -40,7 +40,66 @@
       "preinstalled_native_toolchain_explicit": true,
       "full_original_source_or_SDK_filesystem_denial": false,
       "native_tests_each_profile": 1,
-      "CPU_commands": 16
+      "CPU_commands": 16,
+      "accelerators": {
+        "ok": true,
+        "scope": "Bounded trusted CIX FFI adapter, with operator-selected existing drivers/runtime/native toolchain. Not a generic GPU/NPU backend or full SDK acceptance.",
+        "provider_source_commit": "f4db4dd089001b97c84f20561b9e1df30561f46c",
+        "driver_sha256": "e45ff4dfbb5a570960657c77cbda37684fa1bb3a1b65a109e88aa126901ef833",
+        "actual_compiler_sha256": "08f438ca7c6a4abb374bf7e6327e643242bdbabbe68ceb7092ae01847ce23361",
+        "compiler_wrapper_sha256": "5aede0f1d75a482c8150a704a78dd53913d3508c6855a16812e0fffc18978ea9",
+        "native_task_ABI": 7,
+        "commands": 20,
+        "all_commands_exit_zero": true,
+        "seconds": 555.781,
+        "GPU_calls": 36,
+        "GPU_exact_values": 30732,
+        "NPU_calls": 26,
+        "NPU_exact_values": 156,
+        "NPU_exclusive_profiles": 26,
+        "NPU_placed_provider": "ZhouyiExecutionProvider",
+        "CPU_fallback": false,
+        "managed_memory_balanced": true,
+        "reference_Debug_Release_profile_archive_replay_standalone_passed": true,
+        "actual_typed_device_payload_through_suspended_guard_catch_finally": true,
+        "original_source_and_SDK_prefix_denied": false,
+        "raw_files": 90,
+        "raw_bytes": 189069,
+        "raw_inventory_sha256": "3eb6dea952ba75e43d2bc3a0a93abd68bbdd067f4f6d16b808fc6fa881883b0c",
+        "raw_report_sha256": "544ab5d5b5486f112da550a8c1fa16856e58449c44796e4ca3cf735d1ff4d530",
+        "cases": [
+          {
+            "label": "cix",
+            "ok": true,
+            "reference_debug_release_tests_profile_replay_standalone": true,
+            "managed_memory_balanced": true,
+            "revision": "fca14131b7fa92f2d6364eb69ed5af8d309859a00eb4e09ff83df8cf2eb48987",
+            "source_sha256": "1ff96a4c6a19142b3720b5e4f69eb334ad86f4ad61469d57fcd90c1043f73cb1",
+            "GPU_calls": 30,
+            "NPU_calls": 20,
+            "GPU_success_values": 30720,
+            "NPU_values": 120,
+            "CPU_fallback": false
+          },
+          {
+            "label": "cix-typed",
+            "ok": true,
+            "typed_payload_from_actual_device": true,
+            "suspended_guard_catch_finally": true,
+            "actual_native_ABI": 7,
+            "reference_debug_release_profile_replay_standalone": true,
+            "managed_memory_balanced": true,
+            "revision": "f17dc0344cd5dd150c92dcb0193d6955adc47bded083ee568bed4752e8ec3844",
+            "source_sha256": "43bab72ffbb922782ef15739ec3b6d90029b1d570821b3307605509027521447",
+            "GPU_calls": 6,
+            "NPU_calls": 6,
+            "GPU_success_values": 12,
+            "NPU_values": 36,
+            "CPU_fallback": false
+          }
+        ],
+        "initial_harness_path_type_failure_before_device_execution_retained": true
+      }
     },
     "rk": {
       "ok": true,
@@ -73,14 +132,14 @@
     }
   },
   "example": "examples/windows/main.nex; portable immutable-list/Unicode-scalar/integer example, compiled for Linux ARM64",
-  "expected_stdout": "42\nNEX \u2014 Windows\n",
+  "expected_stdout": "42\nNEX — Windows\n",
   "inventory": "All1958 pinned SDK files were checked again after CPU execution; existing SDK/runtime file hashes still matched.",
   "RK_storage": "Disk-backed /var/tmp was selected after /tmp tmpfs capacity preflight failed; no mount or system configuration changed.",
   "limits": [
     "The archive resources4c924 precede current3e315/831 fixture/documentation updates.",
     "This is component execution with preinstalled runtime/toolchain dependencies, not a self-contained current stand SDK.",
     "Standalone checks temporarily removed the configured entry path and selected a missing resource override; complete source-root and SDK-prefix filesystem denial was not enabled.",
-    "Current GPU/NPU, full SDK relocation/read-only acceptance and current-resource delivery remain separate gates."
+    "Current RK accelerator execution, full SDK relocation/read-only acceptance and current-resource delivery remain separate gates. The CIX result covers only the explicit trusted value-FFI adapter; general GPU code generation and owned NPU/model execution remain open."
   ],
   "published_main_or_current_SDK_promoted": false,
   "full_current_SDK_accepted": false,
