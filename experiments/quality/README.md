@@ -1,5 +1,9 @@
 ## Historical0.24 observation and resource accounting
 
+For recorded model experiments, use the [offline task-cost ledger](llm_cost.md).
+It accounts for all attempts and flags missing usage; the maintained tests use
+synthetic controls. Actual multi-model measurement remains required.
+
 The [recorded024 observation](../../docs/evidence/checked-core-0.134.4-current.json)
 records fresh native/reference/TypeScript checks and NEX/checked-C++/Python
 measurements on macOS ARM64 and a Linux ARM64 VM. Linux is below the initial90%
@@ -24,10 +28,10 @@ python3 experiments/quality/checked_core.py --language 0.28 \
   --compiler /path/to/current/sdk/bin/nex --output /new/current-comparison
 ```
 
-The requested language must match both actual describe and doctor responses.
-This generates and checks a fresh project/revision; it does not relabel the old
-0.18 report. The explicit choices are0.18,0.24 and0.28. Legacy0.18 remains the
-default for historical reproducibility; use0.24 only with matching discovery.
+The default is current language0.28 and must match both actual describe and
+doctor responses. This generates and checks a fresh project/revision; it does
+not relabel the old0.18 report. Explicit0.18/0.24 choices remain for reproducing
+archived observations with their matching SDKs. New development runs use0.28.
 The NEX, checked C++ and Python algorithms are unchanged, and all output,
 source/compiler/executable hashes, measurements and host load are retained.
 Host isolation, general parity and model/token cost are not established by this
@@ -36,10 +40,10 @@ under the SDK tools directory. Existing SDK/CTest and Q1–Q5 gates are unchange
 
 # Checked integer core comparison
 
-This retained language0.18 opt-in probe builds actual NEX and C++ release applications and retains the
+This opt-in probe builds actual NEX and C++ release applications and retains the
 NEX/C++/Python input sources, hashes, commands, every observed output, timing,
-per-process CPU time and maximum RSS. The retained default requires a matching
-language0.18 SDK; explicit `--language 0.28` selects the current corpus. The
+per-process CPU time and maximum RSS. The default requires a matching
+language0.28 SDK. The retained algorithm was first measured with0.18; the
 retained0.24 choice requires a matching0.24 compiler. It also requires
 Clang-compatible C++20 driver, Python3, Node22.18+ and a new output directory. It works through
 the matching compiler's actual doctor/describe commands; it does not import a source tree
@@ -97,8 +101,7 @@ python3 /path/to/sdk/share/nex/tools/scale_100x100.py --language 0.28 \
 
 The output directory must not exist. Development compilers may pass
 `--resources /path/to/matching/source`; installed-SDK evidence uses the actual
-installed resources. The retained default `--language 0.21` must match discovery;
-use the explicit0.28 selection for a current SDK. The
+installed resources. The default `--language 0.28` must match discovery. The
 retained018 checked-core probe above and all094–096 receipts remain unchanged.
 
 

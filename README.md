@@ -71,6 +71,12 @@ The matching [macOS source regression](docs/evidence/macos-source-development-20
 after the Linux explicit-loader discovery fix passed all 298 CTest groups.
 This source result does not update the accepted SDK archive or published release.
 
+The subsequent [package-cleanup source regression](docs/evidence/macos-package-cleanup-source-2026-11-05.json)
+also passed all 298 groups, with no failed or skipped groups. It covers cleanup
+after rejected foreign-package bindings. The earlier run interrupted by sleep
+remains recorded separately; existing SDK archives and the published release retain
+their own source identities.
+
 A newer [macOS development SDK receipt](docs/evidence/macos-current-resources-sdk-development-2026-11-05.json)
 pins archive `536ee172` with `d19cffa` resources and the same tested compiler
 implementation. It passed 41 installed phases and 61 additional cases on each
