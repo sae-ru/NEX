@@ -4,8 +4,14 @@ The [physical Astra x86-64 component record](evidence/astra-source-development-2
 pins development0.162 source `f4db4dd`: all targets built on system glibc2.28 with
 the existing private LLVM/MLIR22.1.8 toolchain. Native Debug/Release and reference
 passed a typed-error/contract smoke; TypeScript passed one pure source test.
-This is a finite source check. Full regression, eight unconfigured HTTP/DNS
-groups, newer source26b4251 and complete current SDK delivery remain separate.
+This is a finite source check. A separate
+[full source gate](evidence/astra-full-source-development-failed-2026-11-05.json)
+on `b7bf5e2` (including implementation26b4251) built the pinned network dependencies
+and registered all298 groups, but CTest failed. Diagnostics include private GNU
+runtime notice provenance, other test failures and exhausted temporary storage;
+the final JUnit file was absent. Temporary artifacts were archived and the own
+test directories removed after verification. Full regression and complete
+current SDK delivery remain pending.
 
 The maintained environment uses an independently pinned **LLDB23.1.5 APT
 snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX

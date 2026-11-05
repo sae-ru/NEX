@@ -1,0 +1,38 @@
+{
+  "schema": "nex.Astra-full-source-development-failed/1",
+  "date": "2026-11-05",
+  "accepted": false,
+  "source_commit": "b7bf5e284cb39275875410eba1355cd043f806eb",
+  "source_files": 1941,
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "platform": "Physical Astra Linux x86-64, system glibc2.28",
+  "existing_LLVM_MLIR_Clang": "22.1.8",
+  "existing_LLDB": "22.1.8; current maintained23 qualification is separate",
+  "pinned_network_dependencies_built": true,
+  "all_targets_build_passed": true,
+  "registered_CTest_groups": 298,
+  "actual_CTest_exit": 8,
+  "actual_CTest_seconds": 4975.765,
+  "final_JUnit_file_present": false,
+  "missing_report_not_waived": true,
+  "observed_issues": [
+    "Missing explicit component/license provenance for the selected private libstdc++ runtime",
+    "Other source/debugger/test failures require their own diagnosis; they are not all attributed to disk capacity",
+    "Root filesystem reached zero available space and subsequent temporary-file/report operations failed"
+  ],
+  "source1941_previous1939_and_old_toolchain_hashes_preserved": true,
+  "temporary_artifacts": {
+    "regular_bytes": 7578439704,
+    "entries": 46175,
+    "compressed_archive_bytes": 1882170110,
+    "archive_sha256": "fc423f7e458ae4424bc06059de533e965e4ad8f2eb0d082a02474efd2c07f976",
+    "all_archived_payloads_and_entries_verified": true,
+    "only_own_test_tmp_and_failure_trees_removed": true,
+    "disk_available_after_cleanup_bytes": 5782609920,
+    "build_source_dependencies_and_existing_SDKs_preserved": true
+  },
+  "raw_diagnostic_inventory_sha256": "e2926e339874ddecfcd6744a6aeea6d8f0c1237f1d68accccadb916d6bac0ede",
+  "full_source_or_current_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}
