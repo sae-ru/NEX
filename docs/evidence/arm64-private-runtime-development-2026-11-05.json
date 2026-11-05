@@ -1,0 +1,88 @@
+{
+  "schema": "nex.physical-linux-arm64-development-component/1",
+  "date": "2026-11-05",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "archive": {
+    "name": "nex-sdk-0.162.0-linux-arm64-development.tar.gz",
+    "sha256": "91ac62648b4da861acedd3a80fcd254a75df3ba18da7cdda2da4b99057fe0586",
+    "compiler_sha256": "08f438ca7c6a4abb374bf7e6327e643242bdbabbe68ceb7092ae01847ce23361",
+    "compiler_source_commit": "d0e332985fa4f851777a4958539182149cfc1639",
+    "resource_source_commit": "4c92464d7e0e231f1fd08e6cdc06e0b5729d7ffe"
+  },
+  "platform": "Physical ARM64 CIX and RK Linux stands",
+  "runtime": "Existing operator-selected private glibc2.39 and C++ runtime; system libraries were preserved. Existing LLVM/Clang22.1.8 native toolchains were selected explicitly.",
+  "targets": {
+    "cix": {
+      "ok": true,
+      "system_glibc": "glibc 2.36",
+      "private_CXX_maximum": "3.4.33",
+      "source_sha256": "5cb7b554ad393161f8e389c5db8804d16a100cfe0dead86cd8111518499f90b3",
+      "profiles": {
+        "debug": {
+          "native_reference_equal": true,
+          "tests_passed": true,
+          "artifact_sha256": "6457a846b6fe0473ce4e48594ad9d967a81b88368b737ef4245b471a974e5f4c",
+          "standalone_without_resource_dir": true
+        },
+        "release": {
+          "native_reference_equal": true,
+          "tests_passed": true,
+          "artifact_sha256": "31c302e72ee20ffcc54f4878528330262d777ed89003b9803907240b1a2f6de1",
+          "standalone_without_resource_dir": true
+        }
+      },
+      "raw_files": 45,
+      "raw_bytes": 43478,
+      "raw_inventory_sha256": "d801d0c4aa7bd9556f7c9213386b3d2b48a71dd743ec8f5ad132952da24cf846",
+      "configured_source_entry_absent_standalone_passed": true,
+      "missing_resource_directory_override_standalone_passed": true,
+      "preinstalled_native_toolchain_explicit": true,
+      "full_original_source_or_SDK_filesystem_denial": false,
+      "native_tests_each_profile": 1,
+      "CPU_commands": 16
+    },
+    "rk": {
+      "ok": true,
+      "system_glibc": "glibc 2.35",
+      "private_CXX_maximum": "3.4.33",
+      "source_sha256": "5cb7b554ad393161f8e389c5db8804d16a100cfe0dead86cd8111518499f90b3",
+      "profiles": {
+        "debug": {
+          "native_reference_equal": true,
+          "tests_passed": true,
+          "artifact_sha256": "a3c13840f6a645b0f49ee5d390be5a59b3c6a1222fcdf4e8513320139a7d1187",
+          "standalone_without_resource_dir": true
+        },
+        "release": {
+          "native_reference_equal": true,
+          "tests_passed": true,
+          "artifact_sha256": "71e0b3c036cf8461c81364537feacef7a12b296aaea670c2c760c32061cc265c",
+          "standalone_without_resource_dir": true
+        }
+      },
+      "raw_files": 45,
+      "raw_bytes": 43873,
+      "raw_inventory_sha256": "31a4fc5c03655e7fc36c2265f7fd8a3ac8b5a6d7526c08079163b8082c8a6a56",
+      "configured_source_entry_absent_standalone_passed": true,
+      "missing_resource_directory_override_standalone_passed": true,
+      "preinstalled_native_toolchain_explicit": true,
+      "full_original_source_or_SDK_filesystem_denial": false,
+      "native_tests_each_profile": 1,
+      "CPU_commands": 16
+    }
+  },
+  "example": "examples/windows/main.nex; portable immutable-list/Unicode-scalar/integer example, compiled for Linux ARM64",
+  "expected_stdout": "42\nNEX \u2014 Windows\n",
+  "inventory": "All1958 pinned SDK files were checked again after CPU execution; existing SDK/runtime file hashes still matched.",
+  "RK_storage": "Disk-backed /var/tmp was selected after /tmp tmpfs capacity preflight failed; no mount or system configuration changed.",
+  "limits": [
+    "The archive resources4c924 precede current3e315/831 fixture/documentation updates.",
+    "This is component execution with preinstalled runtime/toolchain dependencies, not a self-contained current stand SDK.",
+    "Standalone checks temporarily removed the configured entry path and selected a missing resource override; complete source-root and SDK-prefix filesystem denial was not enabled.",
+    "Current GPU/NPU, full SDK relocation/read-only acceptance and current-resource delivery remain separate gates."
+  ],
+  "published_main_or_current_SDK_promoted": false,
+  "full_current_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}

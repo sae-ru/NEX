@@ -72,5 +72,18 @@
   "all309_core_source_files_unchanged": true,
   "full_debugger_regression_accepted": false,
   "whole_SDK_accepted": false,
-  "whole_original_PLAN_complete": false
+  "whole_original_PLAN_complete": false,
+  "latest_separate_macOS_source_regression": {
+    "source_commit": "831b991f3976d2f25b7e2caf0b5a82b227997e4a",
+    "source_files": 1938,
+    "groups": 298,
+    "failed": 0,
+    "skipped": 0,
+    "current_tool_selection_fixture_changes_included": true,
+    "compiler_sha256": "793f7ab2adb2480362bc0a9ae00601f9d879d675bdf645d12ed2820b2fb8c568",
+    "JUnit_sha256": "73970837f8c891665f29dcc7d58bb2c79c7440d42ad1f784bab369345e970b8d",
+    "source_manifest_sha256": "96d49a45159a158ab39a32209396a8fd352701481adf9f0bdab7b7fc815f523f",
+    "CTest_seconds": 4003.0,
+    "source_only_not_installed_SDK_acceptance": true
+  }
 }

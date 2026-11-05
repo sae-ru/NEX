@@ -58,6 +58,12 @@ pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,
 The first two runs have no external LLVM/MLIR/Z3. Newer resources and older-glibc
 physical stands require their own qualification; the published release below remains 0.159.
 
+The same archive passed [scoped physical ARM64 CPU checks](docs/evidence/arm64-private-runtime-development-2026-11-05.json)
+on CIX and RK: native Debug/Release, reference agreement and standalone execution
+with the configured source entry absent. These use existing compatible private
+runtimes and native toolchains. Full current stand SDK and accelerator acceptance
+remain separate gates.
+
 Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
 response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)
 includes selected IPv4 execution and source-deleted packages on the compatible
