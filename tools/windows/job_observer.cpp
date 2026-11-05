@@ -3,8 +3,10 @@
 #define _WIN32_WINNT 0x0A00
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <sddl.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -74,13 +76,38 @@ struct Record {
 struct Attributes {
   std::vector<unsigned char> storage;
   LPPROC_THREAD_ATTRIBUTE_LIST value = nullptr;
-  Attributes() {
-    SIZE_T size = 0; InitializeProcThreadAttributeList(nullptr, 2, 0, &size);
+  explicit Attributes(DWORD count) {
+    SIZE_T size = 0; InitializeProcThreadAttributeList(nullptr, count, 0, &size);
     checked(size != 0, "attribute size"); storage.resize(size);
     value = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(storage.data());
-    if (!InitializeProcThreadAttributeList(value, 2, 0, &size)) { value = nullptr; checked(FALSE, "attribute init"); }
+    if (!InitializeProcThreadAttributeList(value, count, 0, &size)) { value = nullptr; checked(FALSE, "attribute init"); }
   }
   ~Attributes() { if (value) DeleteProcThreadAttributeList(value); }
+};
+struct Sid {
+  PSID value = nullptr;
+  explicit Sid(const std::wstring &text, DWORD kind) {
+    checked(ConvertStringSidToSidW(text.c_str(), &value), "parse AppContainer SID");
+    SID_IDENTIFIER_AUTHORITY authority = SECURITY_APP_PACKAGE_AUTHORITY;
+    if (!IsValidSid(value) || *GetSidSubAuthorityCount(value) < 2 ||
+        std::memcmp(GetSidIdentifierAuthority(value), &authority, sizeof(authority)) ||
+        *GetSidSubAuthority(value, 0) != kind) {
+      LocalFree(value); value = nullptr;
+      throw std::runtime_error("expected package/capability SID from the AppPackage authority");
+    }
+  }
+  Sid(const Sid &) = delete;
+  Sid &operator=(const Sid &) = delete;
+  Sid(Sid &&other) noexcept : value(other.value) { other.value = nullptr; }
+  ~Sid() { if (value) LocalFree(value); }
+  std::string text() const {
+    LPWSTR name = nullptr; checked(ConvertSidToStringSidW(value, &name), "format AppContainer SID");
+    auto result = utf8(name); LocalFree(name); return result;
+  }
+};
+struct Launch {
+  std::wstring directory, package;
+  std::vector<std::wstring> capabilities;
 };
 struct Probe {
   Handle job, port, root, outside;
@@ -95,6 +122,9 @@ struct Probe {
   DWORD outside_pid = 0;
   DWORD active = 0, total = 0, root_exit = STILL_ACTIVE;
   std::string error;
+  bool app_requested = false, app_verified = false;
+  std::string app_sid, directory;
+  std::vector<std::string> app_capabilities;
 
   ~Probe() {
     // Only the handle returned by our CreateProcess can reach this fallback.
@@ -164,7 +194,22 @@ struct Probe {
       try { check_outside(outside_after); } catch (...) {}
     }
   }
-  void run(const std::wstring &prefix, uint64_t timeout, DWORD canary, bool reject, int argc, wchar_t **argv, int first) {
+  void run(const std::wstring &prefix, uint64_t timeout, DWORD canary, bool reject, const Launch &launch, int argc, wchar_t **argv, int first) {
+    app_requested = !launch.package.empty(); directory = utf8(launch.directory);
+    std::vector<Sid> sids;
+    std::vector<SID_AND_ATTRIBUTES> capabilities;
+    if (app_requested) {
+      sids.emplace_back(launch.package, SECURITY_APP_PACKAGE_BASE_RID);
+      app_sid = sids.front().text();
+      sids.reserve(1 + launch.capabilities.size());
+      for (const auto &text : launch.capabilities) {
+        sids.emplace_back(text, SECURITY_CAPABILITY_BASE_RID);
+        auto canonical = sids.back().text();
+        checked(std::find(app_capabilities.begin(), app_capabilities.end(), canonical) == app_capabilities.end(), "duplicate capability");
+        app_capabilities.push_back(canonical);
+      }
+      for (size_t i = 1; i < sids.size(); ++i) capabilities.push_back({sids[i].value, SE_GROUP_ENABLED});
+    }
     job.reset(CreateJobObjectW(nullptr, nullptr)); checked(job.valid(), "create private job");
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
     limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -181,9 +226,17 @@ struct Probe {
     checked(output.valid() && diagnostics.valid() && input.valid(), "capture streams");
     HANDLE inherited[] = {input.value, output.value, diagnostics.value};
     HANDLE jobs[] = {reject ? INVALID_HANDLE_VALUE : job.value};
-    Attributes attributes;
+    Attributes attributes(app_requested ? 3 : 2);
     checked(UpdateProcThreadAttribute(attributes.value, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherited, sizeof(inherited), nullptr, nullptr), "stdio handle list");
     checked(UpdateProcThreadAttribute(attributes.value, 0, PROC_THREAD_ATTRIBUTE_JOB_LIST, jobs, sizeof(jobs), nullptr, nullptr), "job attribute");
+    SECURITY_CAPABILITIES security{};
+    if (app_requested) {
+      security.AppContainerSid = sids.front().value;
+      security.Capabilities = capabilities.empty() ? nullptr : capabilities.data();
+      security.CapabilityCount = DWORD(capabilities.size());
+      checked(UpdateProcThreadAttribute(attributes.value, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
+          &security, sizeof(security), nullptr, nullptr), "AppContainer attribute");
+    }
     STARTUPINFOEXW startup{}; startup.StartupInfo.cb = sizeof(startup); startup.lpAttributeList = attributes.value;
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
     startup.StartupInfo.hStdInput = input.value; startup.StartupInfo.hStdOutput = output.value; startup.StartupInfo.hStdError = diagnostics.value;
@@ -193,10 +246,33 @@ struct Probe {
     PROCESS_INFORMATION pi{};
     checked(CreateProcessW(argv[first], command.data(), nullptr, nullptr, TRUE,
         EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED | CREATE_NO_WINDOW,
-        nullptr, nullptr, &startup.StartupInfo, &pi), "CreateProcess with job assignment");
+        nullptr, launch.directory.empty() ? nullptr : launch.directory.c_str(), &startup.StartupInfo, &pi), "CreateProcess with job assignment");
     root.reset(pi.hProcess); Handle thread(pi.hThread); root_pid = pi.dwProcessId; created_root = true;
     BOOL member = FALSE; checked(IsProcessInJob(root.value, job.value, &member), "new root job membership");
     checked(member, "new root not assigned"); member_verified = true; capture(root_pid);
+    if (app_requested) {
+      Handle token; checked(OpenProcessToken(root.value, TOKEN_QUERY, &token.value), "AppContainer root token");
+      DWORD is_app = 0, bytes = 0;
+      checked(GetTokenInformation(token.value, TokenIsAppContainer, &is_app, sizeof(is_app), &bytes), "AppContainer root flag");
+      checked(is_app == 1, "root lacks AppContainer token");
+      GetTokenInformation(token.value, TokenAppContainerSid, nullptr, 0, &bytes);
+      checked(bytes >= sizeof(TOKEN_APPCONTAINER_INFORMATION), "AppContainer root SID size");
+      std::vector<unsigned char> info(bytes);
+      checked(GetTokenInformation(token.value, TokenAppContainerSid, info.data(), bytes, &bytes), "AppContainer root SID");
+      checked(EqualSid(reinterpret_cast<TOKEN_APPCONTAINER_INFORMATION *>(info.data())->TokenAppContainer, sids.front().value), "AppContainer root SID mismatch");
+      GetTokenInformation(token.value, TokenCapabilities, nullptr, 0, &bytes);
+      checked(bytes >= sizeof(DWORD), "AppContainer capability size"); info.resize(bytes);
+      checked(GetTokenInformation(token.value, TokenCapabilities, info.data(), bytes, &bytes), "AppContainer root capabilities");
+      auto *groups = reinterpret_cast<TOKEN_GROUPS *>(info.data());
+      checked(groups->GroupCount == capabilities.size(), "AppContainer capability count mismatch");
+      for (const auto &capability : capabilities) {
+        bool found = false;
+        for (DWORD i = 0; i < groups->GroupCount; ++i)
+          if (EqualSid(capability.Sid, groups->Groups[i].Sid) && (groups->Groups[i].Attributes & SE_GROUP_ENABLED)) found = true;
+        checked(found, "AppContainer root capability mismatch");
+      }
+      app_verified = true;
+    }
     checked(ResumeThread(thread.value) != DWORD(-1), "resume assigned root"); resumed = true;
     uint64_t started = GetTickCount64(), retirement = 0;
     for (;;) {
@@ -235,6 +311,12 @@ struct Probe {
     out << ",\"root_job_verified_before_resume\":" << (member_verified ? "true" : "false")
         << ",\"root_resumed\":" << (resumed ? "true" : "false")
         << ",\"assignment_at_creation\":true,\"stdio_handles_only\":true,\"parent_PID_ownership_used\":false"
+        << ",\"appcontainer_requested\":" << (app_requested ? "true" : "false")
+        << ",\"appcontainer_verified_before_resume\":" << (app_verified ? "true" : "false")
+        << ",\"appcontainer_sid\":" << json(app_sid) << ",\"working_directory\":" << json(directory)
+        << ",\"appcontainer_capabilities\":[";
+    for (size_t i = 0; i < app_capabilities.size(); ++i) { if (i) out << ','; out << json(app_capabilities[i]); }
+    out << ']'
         << ",\"timed_out\":" << (timed_out ? "true" : "false")
         << ",\"private_job_termination_requested\":" << (job_terminated ? "true" : "false")
         << ",\"active_job_processes\":" << active << ",\"total_job_processes\":" << total
@@ -257,16 +339,33 @@ struct Probe {
   }
 };
 int wmain(int argc, wchar_t **argv) {
+  if (argc == 2 && std::wstring(argv[1]) == L"--describe") {
+    std::cout << "{\"schema\":\"nex.windows-job-observer-capabilities/1\","
+                 "\"kernel_job_assignment_at_creation\":true,\"appcontainer_at_creation\":true,"
+                 "\"root_token_verified_before_resume\":true,\"explicit_working_directory\":true}\n";
+    return 0;
+  }
   if (argc < 6) return 126;
   std::wstring prefix = argv[1];
   wchar_t *end = nullptr; uint64_t timeout = wcstoull(argv[2], &end, 10);
   if (!end || *end || timeout < 1 || timeout > 3600000) return 126;
   DWORD canary = wcstoul(argv[3], &end, 10); if (!end || *end) return 126;
-  int first = 4; bool reject = std::wstring(argv[first]) == L"--reject-assignment";
-  if (reject) ++first;
+  int first = 4; bool reject = false; Launch launch;
+  while (first < argc && std::wstring(argv[first]) != L"--") {
+    std::wstring flag = argv[first++];
+    if (flag == L"--reject-assignment" && !reject) { reject = true; continue; }
+    if (first >= argc) return 126;
+    if (std::wstring(argv[first]).empty()) return 126;
+    if (flag == L"--directory" && launch.directory.empty()) launch.directory = argv[first++];
+    else if (flag == L"--appcontainer-sid" && launch.package.empty()) launch.package = argv[first++];
+    else if (flag == L"--capability" && launch.capabilities.size() < 64) launch.capabilities.emplace_back(argv[first++]);
+    else return 126;
+  }
+  if ((!launch.directory.empty() && !std::filesystem::path(launch.directory).is_absolute()) ||
+      (launch.package.empty() && !launch.capabilities.empty())) return 126;
   if (first >= argc || std::wstring(argv[first++]) != L"--" || first >= argc) return 126;
   Probe probe;
-  try { probe.run(prefix, timeout, canary, reject, argc, argv, first); }
+  try { probe.run(prefix, timeout, canary, reject, launch, argc, argv, first); }
   catch (const std::exception &e) { probe.error = e.what(); probe.retire_on_error(); }
   try { probe.write(prefix); }
   catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 125; }

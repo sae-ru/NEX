@@ -57,6 +57,16 @@ unchanged; timeout returns 124 and observer failure is an error. Callers still
 validate application behavior and fatal debugger stderr. Kernel job membership
 is a process-ownership boundary, not a filesystem or network sandbox.
 
+For controlled filesystem isolation, the helper also accepts explicit
+`--directory`, `--appcontainer-sid` and repeated `--capability` options before
+`--`. The AppContainer and private job are applied atomically at process
+creation. The suspended root's real token, exact package SID and declared
+capabilities are verified before resume. A failed creation or token check is
+an error; there is no ordinary-process fallback. Use the
+[owned-profile qualification broker](windows-appcontainer-qualification.md)
+to create, copy and remove the temporary profile after the entire job retires.
+`--describe` reports the required helper capabilities.
+
 The earlier external Toolhelp lineage observer was quarantined after a false
 ownership classification affected an unrelated application. Its ownership and
 cleanup conclusions are invalid; original diagnostic reports remain preserved.
@@ -64,3 +74,5 @@ cleanup conclusions are invalid; original diagnostic reports remain preserved.
 The [scoped calibration record](evidence/windows-job-observer-2026-11-05.json)
 pins the helper source, native CTest, both Python controllers and four cached
 HTTP/task sessions. Full source-deleted debugger and SDK acceptance remain open.
+That earlier receipt pins the helper before AppContainer support; the newer
+AppContainer calibration has a separate source and binary identity.

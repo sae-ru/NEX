@@ -12,17 +12,33 @@ import subprocess
 import time
 
 
-def observe(command, root, environment, *, observer, timeout=180):
+def observe(command, root, environment, *, observer, timeout=180,
+            directory=None, appcontainer_sid=None, capabilities=()):
     if os.name != 'nt':
         raise RuntimeError('job observation requires native Windows')
     if not command or not Path(command[0]).is_absolute():
         raise ValueError('an absolute program path is required')
     if not 0 < timeout <= 3600:
         raise ValueError('observer timeout must be in (0, 3600] seconds')
+    capabilities=list(capabilities)
+    if len(capabilities)>64 or any(not isinstance(sid,str) or not sid for sid in capabilities):
+        raise ValueError('at most64 nonempty capability SIDs are supported')
+    if appcontainer_sid is not None and (not isinstance(appcontainer_sid,str) or not appcontainer_sid):
+        raise ValueError('an explicitly selected AppContainer SID must be nonempty')
+    if capabilities and appcontainer_sid is None:
+        raise ValueError('capabilities require an explicit AppContainer SID')
+    if directory is not None:
+        directory=Path(directory)
+        if not directory.is_absolute():raise ValueError('an absolute working directory is required')
+        directory=directory.resolve(strict=True)
     helper = Path(observer).resolve(strict=True)
     root = Path(root).resolve(); root.mkdir(parents=True, exist_ok=False)
     prefix = root/'owned'
-    argv = [str(helper), str(prefix), str(max(1, int(timeout*1000))), '0', '--', *map(str, command)]
+    options=[]
+    if directory is not None:options+=['--directory',str(directory)]
+    if appcontainer_sid is not None:options+=['--appcontainer-sid',appcontainer_sid]
+    for sid in capabilities:options+=['--capability',sid]
+    argv = [str(helper), str(prefix), str(max(1, int(timeout*1000))), '0', *options,'--', *map(str, command)]
     started = time.monotonic()
     try:
         completed = subprocess.run(argv, cwd=root, env=environment, stdin=subprocess.DEVNULL,
@@ -40,6 +56,18 @@ def observe(command, root, environment, *, observer, timeout=180):
     if not receipt.is_file():
         raise RuntimeError('job observer did not publish its report: '+str(root))
     value = json.loads(receipt.read_text(encoding='utf-8'))
+    if value.get('error'):
+        raise RuntimeError('job observer failed: '+str(value['error'])+'; inspect '+str(receipt))
+    if appcontainer_sid is not None:
+        if (value.get('appcontainer_requested') is not True or
+                value.get('appcontainer_verified_before_resume') is not True or
+                value.get('appcontainer_sid') != appcontainer_sid or
+                sorted(value.get('appcontainer_capabilities',[])) != sorted(capabilities)):
+            raise RuntimeError('job observer did not verify the requested AppContainer before resume')
+    elif value.get('appcontainer_requested',False) is not False:
+        raise RuntimeError('job observer unexpectedly selected an AppContainer')
+    if directory is not None and Path(value.get('working_directory',''))!=directory:
+        raise RuntimeError('job observer did not use the requested working directory')
     required = ('probe_completed', 'created_root', 'root_job_verified_before_resume',
                 'root_resumed', 'assignment_at_creation', 'stdio_handles_only',
                 'final_job_accounting_observed')
@@ -79,6 +107,10 @@ def observe(command, root, environment, *, observer, timeout=180):
         'kernel_job_membership_verified':True, 'active_job_processes':0,
         'all_child_exit_codes_claimed':False,
         'total_job_processes':value['total_job_processes'], 'captured_job_processes':len(processes),
+        'appcontainer_sid':value.get('appcontainer_sid',''),
+        'appcontainer_verified_before_resume':value.get('appcontainer_verified_before_resume',False),
+        'appcontainer_capabilities':value.get('appcontainer_capabilities',[]),
+        'working_directory':value.get('working_directory',''),
         'crash_diagnostic':b'PLEASE submit a bug report' in stderr or b'Exception Code:' in stderr,
         'inferior_reported_zero':b'exited with status = 0' in stdout,
         'job_receipt':str(receipt)}
@@ -89,10 +121,14 @@ def main():
     parser.add_argument('--observer', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=float, default=180)
+    parser.add_argument('--directory',type=Path)
+    parser.add_argument('--appcontainer-sid')
+    parser.add_argument('--capability',action='append',default=[])
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
-    value = observe(command, args.output, os.environ.copy(), observer=args.observer, timeout=args.timeout)
+    value = observe(command, args.output, os.environ.copy(), observer=args.observer, timeout=args.timeout,
+                    directory=args.directory,appcontainer_sid=args.appcontainer_sid,capabilities=args.capability)
     (args.output/'report.json').write_text(json.dumps(value,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(value))
     raise SystemExit(124 if value['timed_out'] else value['parent_exit_code'])
