@@ -1,0 +1,49 @@
+{
+  "schema": "nex.synthetic-llm-cost-tool/1",
+  "date": "2026-11-05",
+  "scope": "Offline arithmetic and integrity checks for imported campaign ledgers. No model/API calls or actual token-savings benchmark.",
+  "focused_ok": true,
+  "actual_Python_tests": [
+    {
+      "runtime": "Python 3.10.22",
+      "tests": 17,
+      "exit_code": 0
+    },
+    {
+      "runtime": "Python 3.14.9",
+      "tests": 17,
+      "exit_code": 0
+    }
+  ],
+  "actual_CTest_groups": 1,
+  "CMake_registration_passed": true,
+  "native_source_regression_or_installed_SDK_accepted": false,
+  "combined_CMake_build_full300_and_installed_delivery_pending": true,
+  "default_quality_runner_language": "0.28",
+  "no_old_SDK_run_performed": true,
+  "synthetic_data_only": true,
+  "failure_costs_included": true,
+  "cached_input_is_subset_not_extra_tokens": true,
+  "unknown_usage_or_missing_matrix_prevents_complete_comparison": true,
+  "exact_rational_ratios_and_decimal_costs": true,
+  "artifact_hashes_and_acceptance_binding_checked": true,
+  "provider_usage_billing_fairness_and_acceptance_semantics_authenticated": false,
+  "actual_models_called": false,
+  "actual_LLM_token_savings_measured": false,
+  "initial_test_import_failure_preserved": true,
+  "all309_compiler_runtime_stdlib_files_match_W543": true,
+  "source_file_sha256": {
+    "CMakeLists.txt": "19777eeca5389c4411b84d29f5eb7173f3e90c65653d2f50abacdf67699c0274",
+    "experiments/quality/llm_cost.py": "90ab15d277222820d4d43fc743a5e63b89d8b8eaad8d39fe4670210ac4b937f8",
+    "experiments/quality/llm_cost.md": "d698c97ac18aa022be6d765159735f0a6f7e65f027e61b3b06ab1772027dbc5e",
+    "experiments/quality/README.md": "3c7e27f4ade90deaeb23b2997756c9f8a2a6577f759fdd901706be0d68831878",
+    "experiments/quality/checked_core.py": "9717935b6cef6645a05ed3c4e808f9f5085a4bc5b33d939d45ca4310481d9e4b",
+    "experiments/quality/scale_100x100.py": "7b42af9a6c57a6079109fdfa1820198b860f3945116342a6c9831f6b10ac1076",
+    "tests/llm_cost_ledger.py": "118079a067c37e451ace0e5206a089a88cef7466022b9e1e3d770efec7ae5c23",
+    "docs/quality.md": "b5dc17a4d37506ff9feaaa74663e6d373dbcaafd85f5b859e739c6cf408c1f9a"
+  },
+  "raw_files": 21,
+  "raw_bytes": 255989,
+  "raw_inventory_sha256": "7ff8717b89635521ac2a67043b4c8b30afc521e04a712831884d44719d2c4379",
+  "whole_original_PLAN_complete": false
+}
