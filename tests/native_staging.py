@@ -143,15 +143,21 @@ server fn handle(request:http::Request)->http::Response{return http::text_respon
             flags=['-dynamiclib'] if darwin else ['-shared','-Xlinker','-z','-Xlinker','defs']
             self.link_output(link_driver+flags+list(inputs)+['-Xlinker','-install_name' if darwin else '-soname','-Xlinker',('@rpath/' if darwin else '')+output.name,*rpath('@loader_path' if darwin else '$ORIGIN'),'-g'],output)
         projection=Path(meta['runtime_source_projection']);runtime_objects=[]
+        # Even a task-free source closure retains the owned resource executor.
+        # Match its production compile/link dependency on older GNU runtimes,
+        # where pthread symbols are not provided by libc itself.
+        owned_executor='nex_resource_executor.cpp' in meta['runtime_components']
         for index,component in enumerate(meta['runtime_components']):
             self.assertNotEqual(component,'http_main.cpp')
             obj=objects/('runtime-'+str(index)+'.o')
             arguments=driver+['-std=c++20','-c',projection/component,'-I',projection,'-g','-O0','-fPIC','-o',obj]
             if profiling:
-                arguments+=['-D'+flag for flag in ('NEX_PROFILE_ENABLED','NEX_SHARED_PROFILE_RUNTIME','TRACY_ENABLE','TRACY_ON_DEMAND','TRACY_DELAYED_INIT','TRACY_MANUAL_LIFETIME','TRACY_ONLY_LOCALHOST','TRACY_NO_BROADCAST','TRACY_NO_CODE_TRANSFER','TRACY_NO_CALLSTACK','TRACY_NO_SYSTEM_TRACING','TRACY_NO_SAMPLING','TRACY_NO_CRASH_HANDLER','TRACY_NO_FRAME_IMAGE')]+['-pthread']
+                arguments+=['-D'+flag for flag in ('NEX_PROFILE_ENABLED','NEX_SHARED_PROFILE_RUNTIME','TRACY_ENABLE','TRACY_ON_DEMAND','TRACY_DELAYED_INIT','TRACY_MANUAL_LIFETIME','TRACY_ONLY_LOCALHOST','TRACY_NO_BROADCAST','TRACY_NO_CODE_TRANSFER','TRACY_NO_CALLSTACK','TRACY_NO_SYSTEM_TRACING','TRACY_NO_SAMPLING','TRACY_NO_CRASH_HANDLER','TRACY_NO_FRAME_IMAGE')]
+            if profiling or component=='nex_resource_executor.cpp':arguments+=['-pthread']
             self.run_tool(arguments)
             runtime_objects.append(obj)
-        shared(runtime,runtime_objects+(['-pthread']+([] if darwin else ['-ldl']) if profiling else []))
+        shared(runtime,runtime_objects+(['-pthread'] if profiling or owned_executor else [])+
+               (['-ldl'] if profiling and not darwin else []))
         for name in ('producer','consumer'):
             shared(libraries[name],[*from_archive(built[name]['artifact'],name),*([libraries['producer']] if name=='consumer' else []),runtime])
         first=ctypes.CDLL(str(libraries['producer']));second=ctypes.CDLL(str(libraries['consumer']))

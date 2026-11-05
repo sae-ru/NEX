@@ -13,6 +13,13 @@ the final JUnit file was absent. Temporary artifacts were archived and the own
 test directories removed after verification. Full regression and complete
 current SDK delivery remain pending.
 
+The [separate native-staging fixture repair](evidence/astra-native-staging-development-2026-11-05.json)
+passed all five cases on that same Astra compiler/probe. The hand-linked test
+runtime now explicitly compiles and links its owned resource executor with
+`pthread`, matching the compiler's existing dependency. This exercises real
+archive reuse, two shared libraries, Debug/Release, profiling and relocation on
+glibc2.28. It does not reclassify the failed full source gate.
+
 The maintained environment uses an independently pinned **LLDB23.1.5 APT
 snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX
 compilation. Only `lldb`, `lldb-dap` and `lldb-server` are added ahead of the
