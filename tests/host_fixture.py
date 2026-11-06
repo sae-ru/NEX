@@ -177,7 +177,7 @@ def copy_link_image(source, destination):
         shutil.copyfile(str(source)+'.a',str(destination)+'.a')
     return result
 
-def run_native(arguments, *args, **kwargs):
+def run_native(arguments, *args, image_identity=False, **kwargs):
     """Compile native fixtures with shared host headers and the real OS link closure."""
     import subprocess
     command=list(map(str,arguments));rename=None;link_stage=None;link_capture=None
@@ -204,6 +204,15 @@ def run_native(arguments, *args, **kwargs):
     compiling=any(value in command for value in ('-shared','-c','-emit-llvm')) or any(value.startswith('-std=') for value in command) or ('-o' in command and any(value.lower().endswith(('.o','.obj','.a','.ll','.c','.cpp')) for value in command[1:]))
     if compiling:
         command+=['-I'+str(Path(__file__).resolve().parent)]
+    if image_identity and os.name!='nt':
+        import sys
+        linking=compiling and '-o' in command and not any(value in command for value in ('-c','-E','-S'))
+        explicit=any(value=='--build-id' or value.startswith('--build-id=') or
+                     (value.startswith('-Wl,') and any(part=='--build-id' or part.startswith('--build-id=')
+                                                      for part in value.split(',')[1:]))
+                     for value in command)
+        if sys.platform.startswith('linux') and linking and not explicit:
+            command.append('-Wl,--build-id=sha1')
     if os.name=='nt' and compiling:
         command=[value.replace('--build-id=sha1','--build-id') for value in command if value!='-ldl' and not value.startswith(('-Wl,-soname,','-Wl,-rpath,','-Wl,-z,'))]
         host_exports='-Wl,--export-dynamic' in command

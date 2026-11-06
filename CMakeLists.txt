@@ -23,7 +23,8 @@ find_package(SQLite3 3.37 REQUIRED)
 if(NOT OPENSSL_ROOT_DIR AND EXISTS "/opt/homebrew/opt/openssl@3")
   set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
 endif()
-find_package(OpenSSL 3 REQUIRED)
+# OpenSSL4 TLS environment handling and package closure are not qualified yet.
+find_package(OpenSSL 3...<4 REQUIRED)
 # Source-only native acceptance executables must also run after SDK paths
 # disappear. Prefer the genuine Windows archives for their private test hosts.
 set(NEX_PRIVATE_CRYPTO_LIBRARY "${OPENSSL_CRYPTO_LIBRARY}")
@@ -1243,6 +1244,13 @@ add_test(NAME source_exception_task_ir_agreement COMMAND ${Python3_EXECUTABLE} -
 set_tests_properties(source_exception_task_ir_agreement PROPERTIES TIMEOUT 1200)
 add_executable(nex_source_exception_task_native_emit_probe tests/source_exception_task_native.cpp)
 target_link_libraries(nex_source_exception_task_native_emit_probe PRIVATE nex_native_backend)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_test(NAME native_fixture_image_identity COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_fixture_image_identity.py
+    --compiler ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+    --identity-probe $<TARGET_FILE:nex_source_exception_task_native_emit_probe>)
+  set_tests_properties(native_fixture_image_identity PROPERTIES TIMEOUT 120)
+endif()
 add_test(NAME source_exception_host COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_exception_host.py
   $<TARGET_FILE:nex_source_exception_task_native_emit_probe>

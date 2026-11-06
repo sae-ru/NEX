@@ -52,7 +52,8 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
         try:
             # Windows text-mode reader threads can lose interrupted UTF-8.
             # Capture bytes first, then preserve the ordinary text interface.
-            r=run_native(list(map(str,argv)),cwd=out,text=False,capture_output=True,env=env,timeout=timeout)
+            r=run_native(list(map(str,argv)),cwd=out,text=False,capture_output=True,env=env,timeout=timeout,
+                         image_identity=debugging)
         except subprocess.TimeoutExpired as error:
             (out/(label+'.stdout')).write_text(captured(error.stdout,'replace'),encoding='utf-8',newline="\n")
             (out/(label+'.stderr')).write_text(captured(error.stderr,'replace'),encoding='utf-8',newline="\n")
@@ -60,7 +61,7 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
             raise
         r.stdout=captured(r.stdout);r.stderr=captured(r.stderr)
         (out/(label+'.stdout')).write_text(r.stdout, newline="\n");(out/(label+'.stderr')).write_text(r.stderr, newline="\n")
-        row={'label':label,'argv':list(map(str,argv)),'exit':r.returncode}
+        row={'label':label,'argv':list(map(str,r.args)),'exit':r.returncode}
         fatal=debugger_crash_diagnostic(argv,r.stderr)
         if fatal:row['fatal_debugger_diagnostic']=fatal
         report['commands'].append(row);save()

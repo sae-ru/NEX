@@ -106,10 +106,11 @@ def main(cases=None, architecture_version=2, output_env="NEX_EXCEPTION_FRONTIERS
         (out / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", newline="\n")
 
     def run(label, argv, env=None, allowed=(0,), timeout=300):
-        result = run_native(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout)
+        result = run_native(list(map(str, argv)), cwd=out, env=env, text=True, capture_output=True, timeout=timeout,
+                            image_identity=instrumentation == 'debug')
         for channel in ["stdout", "stderr"]:
             (out / (label + "." + channel)).write_text(getattr(result, channel), newline="\n")
-        report["commands"].append({"label": label, "argv": list(map(str, argv)), "exit": result.returncode})
+        report["commands"].append({"label": label, "argv": list(map(str, result.args)), "exit": result.returncode})
         save()
         assert result.returncode in allowed, (label, result.returncode, result.stdout[-1200:], result.stderr[-3000:])
         return result

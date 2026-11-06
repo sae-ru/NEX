@@ -82,8 +82,11 @@ passed all 300 groups. Current scoped [CIX](docs/evidence/cix-current028-device-
 and [RK3588](docs/evidence/rk-current028-device-development-2026-11-05.json) receipts
 record physical GPU/NPU calls without CPU fallback. Each keeps its source and
 archive identity. The [Fedora45 full attempt](docs/evidence/fedora-current-full-2026-11-06.json)
-passed 289/300 groups and remains failed; OpenSSL4, environment, timeout and
-private debugger-fixture issues remain visible.
+passed 289/300 groups and remains failed. Separate [follow-up checks](docs/evidence/fedora-current-followups-2026-11-06.json)
+passed its three environment/timeout groups and three debugger groups, plus six
+ELF identity controls. Five original network/package groups remain open. CMake
+now requires OpenSSL 3.x; configuration with private 3.5.9 passed and system
+4.0.3 was refused. This does not accept a complete Fedora build or SDK.
 
 The qualified 0.162 archive is recorded here; this source commit does not upload
 a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)

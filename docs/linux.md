@@ -50,6 +50,20 @@ CMake `source_exception_modules` group passed without rewriting its registry
 or increasing its timeout. This preserves the private fixture cohort and leaves
 full Fedora/current SDK acceptance open.
 
+The [subsequent scoped checks](evidence/fedora-current-followups-2026-11-06.json)
+passed three original environment/timeout groups and three original debugger
+groups. Debug fixtures explicitly request an ELF build ID when image identity
+is required, instead of relying on compiler defaults. Six real executable,
+shared-image and object controls retain intentional missing-ID rejection and
+explicit linker identities. The helper's default remains unchanged.
+
+The build requires OpenSSL **3.x** and rejects OpenSSL 4 during configuration.
+Actual Fedora configuration passed with separately extracted, signature-checked
+OpenSSL 3.5.9 RPMs and refused system 4.0.3. No system packages or compiler
+defaults were changed. That configure-only result has no new compiler and lacks
+the optional HTTP cohort. Five original network/package groups and full Fedora
+SDK acceptance remain open; the original failed full run is retained.
+
 Live verification also builds the optional
 [`Debugger.Dockerfile`](../tools/linux/Debugger.Dockerfile) overlay. Its local
 [indexed paging patch](../tools/linux/lldb23-indexed-pages.json) makes LLDB DAP
