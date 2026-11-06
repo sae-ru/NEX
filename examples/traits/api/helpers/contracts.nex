@@ -1,7 +1,0 @@
-module traits::api::contracts;
-
-pub trait Readable {
-  type Item: wire;
-  fn get(value: Self) -> Readable::Item<Self>;
-  server fn audit(value: Self) -> str !{io};
-}

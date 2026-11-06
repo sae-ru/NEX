@@ -1,6 +1,0 @@
-module native_diagnostics;
-
-fn divide(denominator:i64)->i64{return 42/denominator;}
-
-// Intentionally exits with E_DIV_ZERO. Inspect native_diagnostics in run --json.
-fn main()->unit!{io}{print("before failure");print(divide(0));}

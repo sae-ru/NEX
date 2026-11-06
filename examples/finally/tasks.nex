@@ -1,6 +1,0 @@
-module task_finally_example;
-fn answer()->i64 !{task}{
-  try { task_yield(); return 40; }
-  finally { task_yield(); return 42; }
-}
-fn main()->unit !{task,io}{ print(answer()); }

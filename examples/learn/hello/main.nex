@@ -1,4 +1,0 @@
-module hello;
-fn answer(x: i64) -> i64 { return x * 2; }
-fn main() -> unit !{io} { print(answer(21)); }
-test fn answer_is_42() -> unit { assert(answer(21) == 42); }

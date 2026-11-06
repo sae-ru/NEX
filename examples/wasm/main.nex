@@ -1,4 +1,0 @@
-module scalar_compute;
-pub fn compute(x:i64,y:i64)->i64{return x*y;}
-test fn product()->unit{assert(compute(6,7)==42);}
-fn main()->unit{}

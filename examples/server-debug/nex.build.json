@@ -1,8 +1,0 @@
-{
-  "schema":"nex.project-build/1", "default_configuration":"debug",
-  "configurations":{"debug":{"profile":"debug"}},
-  "components":{
-    "core":{"kind":"shared_library","root":"core","entry":"core/main.nex","entry_function":"render"},
-    "service":{"kind":"server","root":"service","entry":"service/main.nex","dependencies":{"core":"dynamic"}}
-  }
-}

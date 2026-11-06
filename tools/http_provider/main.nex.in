@@ -1,8 +1,0 @@
-module http_example;
-import "std/http_client.nex" as httpc;
-server extern fn send_raw(value:httpc::Request)->result<httpc::Response> !{ffi}=foreign("http","send","@PIN@");
-server extern fn statistics_raw()->list<i64> !{ffi}=foreign("http","statistics","@PIN@");
-server fn send_checked(value:httpc::Request)->result<httpc::Response> !{task,ffi}{return send_raw(value);}
-server fn make_client()->httpc::Client{return httpc::client_context(send_checked);}
-client fn client_value()->i64{return 42;}
-server fn main()->unit !{task,ffi,io}{let response:httpc::Response=unwrap(httpc::execute(make_client(),httpc::request("@AUTHORITY@","@METHOD@","@URL@",utf8_bytes(""),1000)));print(response.status);print(encode_base64(response.body));}

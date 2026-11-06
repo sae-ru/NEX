@@ -1,4 +1,0 @@
-module std::api;
-
-// Supplied by the authenticated native host, never decoded from the request body.
-pub struct Context { user: str; request_id: str; }

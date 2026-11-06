@@ -1,7 +1,0 @@
-module project_task::app;
-import "../core/value.nex" as core;
-fn main()->unit!{io}{print(core::decorate(str(core::make(40)(2))));}
-test fn correct()->unit{
- assert(core::make(40)(2)==42);
- assert(core::decorate("42")=="42 🧠");
-}

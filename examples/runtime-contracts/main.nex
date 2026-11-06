@@ -1,5 +1,0 @@
-module runtime_contracts;
-
-pub fn increment(x: i64) -> i64 { return x + 1; }
-fn main() -> unit !{io} { print(increment(4)); }
-test fn normal_input() -> unit { assert(increment(4) == 5); }

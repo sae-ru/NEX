@@ -1,3 +1,0 @@
-// Counterexample: expected E_EFFECT; print requires a declared io effect.
-module rejected_effect;
-fn main() -> unit { print(42); }

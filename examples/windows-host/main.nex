@@ -1,7 +1,0 @@
-module windows_host_hello;
-fn answer()->i64{return 6*7;}
-fn main()->unit !{io}{
-  print("NEX: локальная Windows 🧠");
-  print(answer());
-}
-test fn answer_is_42()->unit{assert(answer()==42);}

@@ -1,5 +1,0 @@
-module write_library;
-pub server fn save(text:str,data:bytes)->result<bool> !{task,fs}{
- let done:bool=file_write_text("message.txt",text)?;
- return file_write_bytes("message.bin",data);
-}

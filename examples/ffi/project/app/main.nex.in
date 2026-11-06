@@ -1,6 +1,0 @@
-module ffi_project;
-import "../core/main.nex" as core;
-
-server fn main() -> unit !{ffi,io} {
-  print(encode_json(core::contract(unwrap(bytes([0,255,128,1])))));
-}

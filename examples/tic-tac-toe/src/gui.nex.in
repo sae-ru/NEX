@@ -1,7 +1,0 @@
-module gui;
-pub server resource Window;
-pub server extern fn open()->result<Window> !{ffi}=foreign("gui","open","@PIN@");
-pub server extern fn event(window:Window)->i64 !{ffi}=foreign("gui","event","@PIN@");
-pub server extern fn draw(window:Window,cells:bytes,turn:i64,winner:i64,line:i64,x:i64,o:i64,draws:i64)->bool !{ffi}=foreign("gui","draw","@PIN@");
-pub server extern fn adapter(window:Window)->str !{ffi}=foreign("gui","adapter","@PIN@");
-pub server extern fn verify_gpu(window:Window)->i64 !{ffi}=foreign("gui","verify_gpu","@PIN@");

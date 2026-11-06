@@ -1,4 +1,0 @@
-module project::app;
-import "../core/value.nex" as core;
-fn main()->unit!{io} {print(core::calculate(5));}
-test fn shared_model()->unit {assert(core::calculate(5)==22);}

@@ -1,5 +1,0 @@
-module write_application;import "../leaf/value.nex" as leaf;
-server fn main()->unit !{task,fs,io}{
- assert(unwrap(leaf::save("NEX complete",unwrap(bytes([0,78,69,88,255])))));
- print("Saved");
-}

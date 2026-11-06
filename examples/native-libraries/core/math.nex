@@ -1,7 +1,0 @@
-module native_library::math;
-
-pub fn calculate(value:i64)->i64 { return value*3+7; }
-pub fn decorate(value:str)->str { return value+" 🧠"; }
-pub fn make(offset:i64)->(fn(i64)->i64) {
-  return fn(value:i64)->i64 { return value+offset; };
-}
