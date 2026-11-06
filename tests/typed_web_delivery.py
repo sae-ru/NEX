@@ -5,7 +5,7 @@ import argparse,base64,copy,hashlib,json,os,shutil,subprocess,tempfile,time
 
 parser=argparse.ArgumentParser();parser.add_argument('project_probe',type=Path);parser.add_argument('reference_probe',type=Path);parser.add_argument('nex',type=Path)
 parser.add_argument('--source-language',choices=['0.27','0.28'],default='0.27');parser.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1]);parser.add_argument('--resources',type=Path);parser.add_argument('--output',type=Path)
-args=parser.parse_args();language=args.source_language;W=args.source_root.resolve();output=args.output.resolve() if args.output else Path(tempfile.mkdtemp(prefix='nex-typed-web-'))
+args=parser.parse_args();language=args.source_language;W=args.source_root.resolve();output=(args.output if args.output else Path(tempfile.mkdtemp(prefix='nex-typed-web-'))).resolve()
 output.mkdir(parents=True,exist_ok=args.output is None)
 args.project_probe=args.project_probe.resolve();args.reference_probe=args.reference_probe.resolve();args.nex=args.nex.resolve()
 env={**os.environ,'NEX_RESOURCE_DIR':str(args.resources.resolve() if args.resources else W),'PYTHONDONTWRITEBYTECODE':'1','NEX_NODE':os.environ.get('NEX_NODE','node'),'NEX_NPM':os.environ.get('NEX_NPM','npm')}
