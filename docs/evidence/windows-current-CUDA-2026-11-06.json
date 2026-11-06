@@ -1,0 +1,90 @@
+{
+  "schema": "nex.Windows-current-source-targeted-CUDA-qualification/1",
+  "ok": true,
+  "source_commit": "972d6d38efabfd8f52060b2579a2fa6b938c8262",
+  "source_files": 1981,
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "compiler_sha256": "11899830cca33c88b8b2cf816c717f1451db14edde7bea6dfe5532e270cb25d3",
+  "compiler_build": "1283d8598c45b71f1e05adfe630fc148658d16a53daa8b1c9b6b08f70e031df5",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "scoped_native_CTest_groups": [
+    "compute_contract",
+    "native_entry_abi",
+    "sdk_host",
+    "server_workload",
+    "source_contracts",
+    "task_http_client_delivery",
+    "task_provider_debugging_native",
+    "task_workloads",
+    "typed_source_tasks",
+    "windows_file_fixture",
+    "windows_runtime",
+    "windows_targets",
+    "windows_workload_ownership"
+  ],
+  "scoped_group_count": 13,
+  "CTest_invocations": [
+    {
+      "invocation": "v1/focused-1",
+      "actual_exit_code": 0,
+      "passed": [
+        "windows_workload_ownership",
+        "windows_file_fixture",
+        "compute_contract",
+        "windows_runtime",
+        "windows_targets",
+        "native_entry_abi",
+        "sdk_host"
+      ],
+      "failed": [],
+      "JUnit_sha256": "d8f42733c437da1672439f1b8e3d0f496286472b3a3ab4db26597e3160c4b4bd"
+    },
+    {
+      "invocation": "v1/focused-2",
+      "actual_exit_code": 8,
+      "passed": [
+        "task_provider_debugging_native",
+        "server_workload",
+        "task_workloads",
+        "typed_source_tasks",
+        "source_contracts"
+      ],
+      "failed": [
+        "task_http_client_delivery"
+      ],
+      "JUnit_sha256": "0d96a2f1687c73f9dff40faf24084ea700a78811fcd566b075e3e9864d455dbb"
+    },
+    {
+      "invocation": "v2/focused-1",
+      "actual_exit_code": 0,
+      "passed": [
+        "task_http_client_delivery"
+      ],
+      "failed": [],
+      "JUnit_sha256": "f3d821ec99fdb9ff0a50b1e5a4edadc5edaefdfde4b260a3206ad1638d13f9c8"
+    }
+  ],
+  "operator_package_notice_inventory_sha256": "0ee42c0f6dbc715488ea95b4519acba7a6d822f5279f1147373db7d73e7f4d8c",
+  "CMake_notice_configuration_added_without_compiler_change": true,
+  "CUDA_native_cases": 35,
+  "actual_GPU_execution": true,
+  "full_owned_CUDA_adapter_corpus": true,
+  "Compute_Sanitizer_native_cases": 35,
+  "Compute_Sanitizer_trusted_context_probe": true,
+  "Compute_Sanitizer_total_cases": 36,
+  "hardware_report_sha256": "12f20ca7df05b6968c943431861575279544db30e2fd7dd0f63ba6aa8cc615a0",
+  "memcheck_report_sha256": "c762561181a8147714d28af597c7ab9f5f10c1d84e35af872478a404b96dd379",
+  "raw_files": 101,
+  "raw_bytes": 4218868,
+  "raw_receipt_sha256": "b34c3d8ae1d2657c25a2677383f999621671c63fca89f6a7cc7385c3e1a295a1",
+  "original_project_SDKs_ACLs_network_settings_unchanged": true,
+  "failed_invocations_preserved": [
+    "v1 HTTP source-package fixture omitted existing operator notice inventory;12 groups passed and invocation remains failed.",
+    "v2 original HTTP group passed after the notice parameter was supplied. CUDA verifier stopped before execution because observer logs occupied its output directory.",
+    "v3 uses disjoint observer/result directories and reuses the validated provider preparation; GPU35 and memcheck36 passed."
+  ],
+  "full302_CTest_or_positive_IPv6_accepted": false,
+  "portable_moved_or_full_Windows_SDK_accepted": false,
+  "general_CUDA_codegen_or_universal_binary_safety_proven": false
+}

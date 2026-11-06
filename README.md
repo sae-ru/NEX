@@ -68,6 +68,9 @@ mutations. The record describes sanitizer scope and the limits of its numerical
 measurement; it does not establish universal binary safety or measured LLM savings.
 
 Windows has a [fresh complete source build and ordinary-install smoke check](docs/evidence/windows-source-0.162.0-2026-11-06.json).
+The [current Windows native/CUDA record](docs/evidence/windows-current-CUDA-2026-11-06.json)
+covers 13 selected groups, 35 actual GPU cases and 36 Compute Sanitizer cases
+on that fresh compiler. Complete portable SDK delivery remains separate.
 The [native-file fixture correction](docs/evidence/windows-native-file-fixture-2026-11-06.json)
 preserves actual AF_UNIX rejection tests on long Unicode paths. A separate exact
 union of pinned current-engine invocations covers 298 of 302 groups; four positive
