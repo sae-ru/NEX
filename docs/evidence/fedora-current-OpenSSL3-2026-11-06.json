@@ -1,0 +1,70 @@
+{
+  "schema": "nex.Fedora-current-OpenSSL3-scoped-network-followup/1",
+  "ok": true,
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "platform": "Fedora45 x86_64 VM",
+  "source_commit": "5cf9c6dc9879cd8146464017e070a7b0f4901442",
+  "source_files": 1988,
+  "compiler_sha256": "39c30c2e08aea9c4970881555656470f3b578922a83fec1a02c0217e6e9a862a",
+  "compiler_build": "025b82e06dde4ff000cdf41c3c483ae4f6806d40f15f5b01200eb330211bdc5c",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "registered_current_groups": 301,
+  "native_inputs_same_as_current_main": 473,
+  "all_current_targets_built": true,
+  "dependencies": {
+    "OpenSSL": "3.5.9-1.fc45",
+    "OpenSSL_library_sha256": {
+      "native_openssl_ssl": "b403808b41dc94160cfa4ccce5346eb24b3802b5630a17d8ec37c68f2e27e8a4",
+      "native_openssl_crypto": "a10387fd055e5bf3cf7b2d1703c61c68434732c923c1bf343b3df36f24990521"
+    },
+    "OpenSSL_runtime_and_devel_RPMs_signature_verified": true,
+    "matching_ENGINE_and_ENGINEERR_RPM_signature_verified": true,
+    "ENGINE_headers_source_RPM": "openssl3-3.5.9-1.fc45.src.rpm",
+    "complete_header_actual_compilation_passed": true,
+    "OpenSSL_complete_receipt_sha256": "cdbd63d3c57ea57f1b45e7b86c5a226fd60c9ca76734c435860d1b40fbbbceda",
+    "curl": "8.23.0",
+    "nghttp2": "1.70.0",
+    "c_ares": "1.34.9",
+    "static_HTTP_dependency_record_sha256": "385d6af06f8dfa0840fe5703fff2d23373db4f616fb6bf5701eb8c89871d7c0a",
+    "curl_source_PGP_verification_claimed": false,
+    "zlib_notice_and_runtime_same_signed_source_RPM": "zlib-ng-2.3.3-6.fc45.src.rpm",
+    "zlib_notice_receipt_sha256": "76037c588115dc9afd61fb4c4c78c296c12c3d6cd68a9d6af8448974659ff243"
+  },
+  "DNS_TCP_observation": {
+    "completed_groups_before_disk_interruption": [
+      {
+        "name": "task_dns_delivery",
+        "seconds": 127.39,
+        "status": "Passed"
+      },
+      {
+        "name": "task_tcp_delivery",
+        "seconds": 127.86,
+        "status": "Passed"
+      }
+    ],
+    "raw_stdout_sha256": "6420c8714493d0e447df96e9a6524ac95edae101401be116317aa342117700b3",
+    "overall_invocation_remains_interrupted": true,
+    "JUnit_written": false
+  },
+  "HTTP_recovery": {
+    "passed_groups": [
+      "task_http_client_source",
+      "task_http_client_delivery",
+      "http_stream_delivery_functional"
+    ],
+    "failed_groups": [],
+    "skipped_groups": [],
+    "original_limits_unchanged": true,
+    "same_compiler_and_dependencies": true,
+    "JUnit_sha256": "649407217c893b4bf7c886ff437fd85df72237fc095dbb3fd91f773666624132",
+    "ambient_keylog_rejection_control_retained": true
+  },
+  "system_packages_Clang23_GCC16_Python315_or_OpenSSL4_modified": false,
+  "raw_files": 22,
+  "raw_bytes": 1536355,
+  "raw_receipt_sha256": "9bc1ff0a2259383b66d3384bc7198c457d5ebb5f12e311fb00642b1a3453cd78",
+  "old_full300_attempt_reclassified": false,
+  "full301_or_portable_SDK_accepted": false
+}

@@ -64,6 +64,21 @@ defaults were changed. That configure-only result has no new compiler and lacks
 the optional HTTP cohort. Five original network/package groups and full Fedora
 SDK acceptance remain open; the original failed full run is retained.
 
+The [coherent OpenSSL 3 follow-up](evidence/fedora-current-OpenSSL3-2026-11-06.json)
+built all current targets and registered 301 groups. DNS/TCP delivery completed
+before a disk-headroom interruption; all three original HTTP groups then passed
+with the same compiler and dependency cohort. These are scoped results, with
+full current Fedora regression and portable SDK delivery still pending.
+
+This Fedora setup uses matching `openssl3-libs`, `openssl3-devel` and
+`openssl3-devel-engine` RPMs from the same source-package version. The last
+package supplies `engine.h` and `engineerr.h`: omitting it allowed the private
+3.x configuration's header-presence check to find system 4.x headers. The complete
+private header set passed actual compilation. Explicit package notices include
+the selected OpenSSL, SQLite and zlib-ng runtime files and their actual licenses;
+the zlib-ng notice came from a signature-checked RPM of the same source version.
+System OpenSSL 4 and compiler defaults were retained.
+
 Live verification also builds the optional
 [`Debugger.Dockerfile`](../tools/linux/Debugger.Dockerfile) overlay. Its local
 [indexed paging patch](../tools/linux/lldb23-indexed-pages.json) makes LLDB DAP

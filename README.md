@@ -66,6 +66,9 @@ and all Q1–Q5 workflows. A 100-module/10,000-declaration project made 9900, 0 
 All 85 shipped format schemas were checked against actual artifacts and rejected
 mutations. The record describes sanitizer scope and the limits of its numerical
 measurement; it does not establish universal binary safety or measured LLM savings.
+The [current primary-source follow-up](docs/evidence/macos-current-primary-source-2026-11-06.json)
+records all 300 groups across the original invocation and verified recovery;
+its original failed run remains recorded.
 
 Windows has a [fresh complete source build and ordinary-install smoke check](docs/evidence/windows-source-0.162.0-2026-11-06.json).
 The [current Windows native/CUDA record](docs/evidence/windows-current-CUDA-2026-11-06.json)

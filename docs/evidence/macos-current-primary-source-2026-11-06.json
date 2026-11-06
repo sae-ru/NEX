@@ -1,0 +1,109 @@
+{
+  "schema": "nex.macOS-current-primary-source-followup/1",
+  "ok": true,
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "platform": "macOS ARM64",
+  "qualified_current_source_commit": "456fef1a2c4beef65047789723b7c8800640ea35",
+  "source_files": 1988,
+  "compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756",
+  "compiler_build": "f7b9e286df7f361ef8e8be22f7a52fead47c204f0af35f687a2a09d91efe299e",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "native_inputs_unchanged_from_qualified_SDK_source": 473,
+  "original_full_invocation": {
+    "source_commit": "d44cf7588b93246f2c50682f5e4db18fb0d73010",
+    "registered_groups": 300,
+    "passed_groups": 284,
+    "failed_groups": [
+      "task_typescript_steps",
+      "task_typescript_public",
+      "sdk_archives",
+      "verification",
+      "web_workers",
+      "task_file_reads_typescript",
+      "task_external_typescript",
+      "source_exception_typescript",
+      "source_exception_tasks_typescript",
+      "source_exception_task_watch",
+      "source_exception_instances",
+      "typed_source_typescript",
+      "typed_source_tasks",
+      "source_contracts",
+      "source_contract_web_delivery",
+      "source_contract_projection"
+    ],
+    "skipped_groups": [],
+    "remains_failed": true,
+    "raw_receipt_sha256": "3bc1bdb09d654dfd169e27b857bf157bec461a11a945f8de879df6eefa7faaa2"
+  },
+  "followup": {
+    "selected_original_failed_groups": [
+      "task_typescript_steps",
+      "task_typescript_public",
+      "sdk_archives",
+      "verification",
+      "web_workers",
+      "task_file_reads_typescript",
+      "task_external_typescript",
+      "source_exception_typescript",
+      "source_exception_tasks_typescript",
+      "source_exception_task_watch",
+      "source_exception_instances",
+      "typed_source_typescript",
+      "typed_source_tasks",
+      "source_contracts",
+      "source_contract_web_delivery",
+      "source_contract_projection"
+    ],
+    "required_fixture_groups": [
+      "source_exception_modules"
+    ],
+    "passed_groups": [
+      "task_typescript_steps",
+      "task_typescript_public",
+      "sdk_archives",
+      "verification",
+      "web_workers",
+      "task_file_reads_typescript",
+      "task_external_typescript",
+      "source_exception_typescript",
+      "source_exception_tasks_typescript",
+      "source_exception_task_watch",
+      "source_exception_modules",
+      "source_exception_instances",
+      "typed_source_typescript",
+      "typed_source_tasks",
+      "source_contracts",
+      "source_contract_web_delivery",
+      "source_contract_projection"
+    ],
+    "failed_groups": [],
+    "skipped_groups": [],
+    "source_fixes": [
+      "Optional native image identity no longer requires an unavailable caller closure in isolated process-logger controls.",
+      "Shipped proof examples are copied without ignored local graph/cache state; actual old checkout graphs remain unchanged.",
+      "Default web fixture output uses the same canonical producer root as explicit output and CLI cwd; all complete-plan comparisons are retained."
+    ],
+    "environment_fix": "Use actual pinned TypeScript7.0.2 and populated locked offline npm cache.",
+    "original_limits_unchanged": true,
+    "all_target_build_rechecked": true,
+    "raw_receipt_sha256": "60d3d3efca7ad0a489e52259e77249beb6adf5670f5e90ef80414fa18bc9cfd3"
+  },
+  "exact_union": {
+    "unique_registered_groups": 300,
+    "covered_successful_groups": 300,
+    "single_full_invocation_claimed_successful": false,
+    "original_registry_and_group_properties_preserved": true
+  },
+  "history": {
+    "original47_revisions_retained": true,
+    "selected_graph_revisions": 48,
+    "all16_table_schemas_and_original_local_IDs_preserved": true,
+    "legacy_origin016_verified": false
+  },
+  "SDK_archive_repacked_or_uploaded": false,
+  "universal_binary_safety_general_GPU_or_multi_LLM_cost_accepted": false,
+  "reference_qualified_source_commit": "4fb860eea3b6d9ce8f5e6f2dbaf0a1db8bb17ce5",
+  "reference_native_source_manifest_sha256": "02dbb7867aa2cdf4b082496247fef67da3666cbbacceca9c0b9fa31bb4c97cea",
+  "all473_actual_native_source_hashes_compared_equal": true
+}
