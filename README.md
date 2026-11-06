@@ -52,6 +52,13 @@ platform acceptance.
 
 ## Development status
 
+The latest [macOS source regression](docs/evidence/macos-workload-source-2026-11-06.json)
+passed all 300 CTest groups after the Windows workload fixture correction, with
+no failed or skipped groups. The [bounded Windows partition](docs/evidence/windows-bounded-partition-2026-11-06.json)
+passed 72 previously unrun roots in six batches with the original per-test
+budgets. This Windows result uses a pinned source plus the current scoped test
+overlay; full platform and newly packaged SDK acceptance remain separate.
+
 The newer [`dde59c9` Linux ARM64 source build](docs/evidence/linux-current-source-2026-11-05.json)
 passed all 300 CTest groups without failures or skips. Its development archive
 also passed [current CIX CPU/GPU/NPU checks](docs/evidence/cix-current028-device-development-2026-11-05.json):

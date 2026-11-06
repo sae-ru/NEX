@@ -8,6 +8,7 @@ import subprocess
 import struct
 import sys
 import unittest
+from unittest.mock import patch
 
 import support as harness
 
@@ -62,11 +63,27 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         self.descriptor.write_text(json.dumps(self.config), newline="\n")
 
     def staged(self, *args, ok=True, env=None):
+        # stage() wraps the operator-selected compiler. Once staged, exercise
+        # this SDK's own descriptor instead of an inherited source-build override.
+        environment = {key: value for key, value in os.environ.items()
+                       if key != 'NEX_CLANG'}
         result = subprocess.run([str(self.prefix / 'bin/nex'), *map(str, args), '--json'],
-                                cwd=self.root, env={**os.environ, 'NEX_RESOURCE_DIR': str(harness.REPO), **(env or {})},
+                                cwd=self.root, env={**environment, 'NEX_RESOURCE_DIR': str(harness.REPO), **(env or {})},
                                 capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode == 0, ok, result.stdout + result.stderr)
         return json.loads(result.stdout)
+
+    def test_staged_descriptor_ignores_inherited_source_compiler_override(self):
+        self.stage()
+        outside = self.root / 'unmanaged compiler'
+        canary = b'not a staged tool\n'
+        outside.write_bytes(canary)
+        with patch.dict(os.environ, {'NEX_CLANG': str(outside)}):
+            doctor = self.staged('doctor')
+        self.assertEqual(doctor['native_compiler'],
+                         str(self.prefix / self.config['tools']['compiler']))
+        self.assertEqual(outside.read_bytes(), canary)
+        self.assertFalse(self.log.exists())
 
     def test_moved_sdk_builds_runs_and_archives_with_selected_tools(self):
         self.stage()
@@ -115,7 +132,10 @@ os.execv(REAL, [REAL, *sys.argv[1:]])
         # The resource producer uses the sibling C driver, while most other
         # fixtures select clang++ with -x c. Exercise both actual driver paths.
         real_c=Path(self.cli('doctor')['native_compiler']).with_name(helper.executable_name('clang'))
-        c_driver=python_executable(Path(doctor['native_compiler']).with_name(helper.executable_name('clang')),
+        selected_cxx = Path(doctor['native_compiler'])
+        self.assertEqual(selected_cxx, self.prefix / self.config['tools']['compiler'])
+        self.assertTrue(selected_cxx.resolve().is_relative_to(self.root))
+        c_driver=python_executable(selected_cxx.with_name(helper.executable_name('clang')),
             '#!/usr/bin/env python3\nimport os,sys\nos.execv(REAL,[REAL,*sys.argv[1:]])\n'.replace('REAL',repr(str(real_c))),
             harness.native_fixture_compiler())
         includes=[] if os.name=='nt' else ['-I'+str(include)]

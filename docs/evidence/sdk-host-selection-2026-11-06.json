@@ -1,0 +1,43 @@
+{
+  "schema": "nex.SDK-host-fixture-selection-development/1",
+  "ok": true,
+  "date": "2026-11-06",
+  "language": "0.28",
+  "toolchain": "0.162.0",
+  "host": "Fedora x86-64",
+  "Python": "3.15",
+  "native_compiler": "Clang 23.1.4",
+  "LLVM_MLIR_backend": "22.1.8",
+  "source_base_commit": "f8a4cf5a3fb594534dd47d0fa0235c7474c145fd",
+  "source_base_files": 1977,
+  "source_only_changed_fixture": "tests/sdk_host.py",
+  "changed_fixture_sha256": "0737d1e461df3997cd5d179c289607634d33088ad05501a34a1a6a04a20dfcf3",
+  "compiler_sha256": "2522507a604cf66749a75406af66f7d887c343b97b99febcf9e5b2fe1ffcce3a",
+  "compiler_implementation_changed": false,
+  "installed_SDK_resources_changed": false,
+  "problem": "An inherited source-build NEX_CLANG override replaced the staged SDK compiler in test discovery, causing relocation assertions to fail and deriving the C fixture path outside the staged SDK.",
+  "correction": "Stage wraps the explicitly selected source compiler; staged test invocations clear the inherited override, preserving their own SDK descriptor. Explicit per-invocation overrides remain available. C fixture creation first requires the selected C++ driver to equal the private staged tool and resolve inside the owned temporary fixture.",
+  "regression": {
+    "actual_original_behavior_control_exit": 1,
+    "original_behavior_failed_expected_selection_assertion": true,
+    "fixed_complete_sdk_host_group_exit": 0,
+    "actual_fixed_cases": 6,
+    "system_Clang_RPM_integrity_exit": 0,
+    "system_Clang_RPM_integrity_stdout": "",
+    "system_Clang_files_modified": false,
+    "original_case_limits_changed": false
+  },
+  "retained_failures": {
+    "original_full300_interrupted_after_global_override_failure": true,
+    "first_external_runner_failed_before_test_due_to_missing_sqlite_fixture_import": true,
+    "runner_corrected_to_import_unchanged_support_from_its_original_source_root": true,
+    "failed_runs_reclassified": false
+  },
+  "raw_evidence": {
+    "files": 23,
+    "bytes": 303797,
+    "receipt_sha256": "8990e9e3bcd28eade4ea540b3ac314d2632fa2e80374145e1b6c82d980957e12"
+  },
+  "full300_or_portable_SDK_accepted_by_this_receipt": false,
+  "scope": "Focused source test-fixture correction and real negative control only. The fresh full300 run, matching Mac/Windows fixture execution and installed SDK acceptance retain separate scopes."
+}
