@@ -382,6 +382,10 @@ if(WIN32)
   add_test(NAME windows_workload_ownership COMMAND ${Python3_EXECUTABLE} -B
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_workload_ownership.py)
   set_tests_properties(windows_workload_ownership PROPERTIES TIMEOUT 30)
+  add_test(NAME windows_file_fixture COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_file_fixture.py
+    --module ${CMAKE_CURRENT_SOURCE_DIR}/tools/windows_files.py)
+  set_tests_properties(windows_file_fixture PROPERTIES TIMEOUT 60)
 endif()
 add_test(NAME llm_cost_ledger COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_cost_ledger.py)
 set_tests_properties(llm_cost_ledger PROPERTIES TIMEOUT 30)

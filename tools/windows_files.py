@@ -39,6 +39,33 @@ def regular(path, maximum):
 
 def nonregular_fixture(path):
     """Create a real NTFS AF_UNIX socket name for rejection verification."""
+    import subprocess
+    import sys
+    target=os.path.abspath(os.fspath(path))
+    name=os.path.basename(target)
+    raw=os.fsencode(name)
+    if not raw or b'\0'in raw or len(raw)>=108:
+        raise ValueError('AF_UNIX fixture name exceeds native limit')
+    if os.path.lexists(target):
+        raise FileExistsError('AF_UNIX fixture destination already exists: '+target)
+    # sockaddr_un limits the supplied name, not its containing directory.
+    # Bind in a child so a long parent path never requires changing the
+    # caller's process-wide working directory, including concurrent callers.
+    code=('import importlib.util,os,sys;'
+          'spec=importlib.util.spec_from_file_location("nex_socket_fixture",sys.argv[1]);'
+          'module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);'
+          'module._bind_nonregular_name(os.fsencode(sys.argv[2]))')
+    result=subprocess.run([sys.executable,'-I','-B','-X','utf8','-c',code,
+                           os.path.abspath(__file__),name],cwd=os.path.dirname(target),
+                          capture_output=True,text=True,encoding='utf-8',timeout=30)
+    if result.returncode:
+        raise OSError('native AF_UNIX fixture child failed: '+result.stderr[-2000:])
+
+
+def _bind_nonregular_name(raw):
+    """Bind the caller-validated relative name in the isolated child."""
+    if not raw or b'\0'in raw or len(raw)>=108:
+        raise ValueError('AF_UNIX fixture name exceeds native limit')
     sockets=C.WinDLL('ws2_32',use_last_error=True)
     sockets.WSAStartup.argtypes=[W.WORD,C.c_void_p];sockets.WSAStartup.restype=C.c_int
     sockets.socket.argtypes=[C.c_int,C.c_int,C.c_int];sockets.socket.restype=C.c_size_t
@@ -46,8 +73,6 @@ def nonregular_fixture(path):
     sockets.closesocket.argtypes=[C.c_size_t];sockets.closesocket.restype=C.c_int
     sockets.WSAGetLastError.restype=C.c_int
     class Address(C.Structure):_fields_=[('family',C.c_ushort),('path',C.c_char*108)]
-    raw=os.fsencode(os.path.abspath(path))
-    if len(raw)>=108:raise ValueError('AF_UNIX fixture path exceeds native limit')
     state=C.create_string_buffer(512)
     if sockets.WSAStartup(0x202,state):raise OSError('native Winsock startup failed')
     handle=C.c_size_t(-1).value
