@@ -43,7 +43,7 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
     source=Path(__file__).resolve().parents[1];runtime=source/'runtime';out=Path(a.output or tempfile.mkdtemp(prefix='nex-private-http-')).resolve();out.mkdir(parents=True,exist_ok=True)
     emitter=Path(a.emitter).resolve();reference=Path(a.reference).resolve();compiler=Path(a.compiler).absolute();cache=Path(a.runtime_cache).resolve() if a.runtime_cache else out;cache.mkdir(parents=True,exist_ok=True)
     openssl=Path('/opt/homebrew/opt/openssl@3');include=a.openssl_include or (str(openssl/'include') if platform.system()=='Darwin' else '/usr/include');crypto=a.crypto_library or (str(openssl/'lib/libcrypto.dylib') if platform.system()=='Darwin' else '-lcrypto');ssl_library=a.ssl_library or (str(openssl/'lib/libssl.dylib') if platform.system()=='Darwin' else '-lssl')
-    report={'ok':False,'commands':[],'images':[],'references':[],'requests':[],'servers':[],'disconnects':[],'signature_rejections':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_language':'0.24','private_identity':'0.25-prototype','public_source_support':False,'HTTP':True,'HTTPS':True,'new_publication_claimed':False,'full_objective_complete':False}
+    report={'ok':False,'commands':[],'images':[],'references':[],'requests':[],'servers':[],'disconnects':[],'signature_rejections':[],'ordinary_functional_only':True,'security_checks_deferred_by_user':True,'public_language':'0.24','private_identity':'0.25-prototype','public_source_support':False,'HTTP':True,'HTTPS':True,'new_publication_claimed':False,'full_objective_complete':False,'native_image_identity_required':debugging}
     def save():(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n', newline="\n")
     def run(label,argv,env=None,allowed=(0,),timeout=300):
         def captured(value,errors='strict'):
@@ -52,8 +52,8 @@ def main(native_builder=None,context_factory=None,output_env='NEX_EXCEPTION_HTTP
         try:
             # Windows text-mode reader threads can lose interrupted UTF-8.
             # Capture bytes first, then preserve the ordinary text interface.
-            r=run_native(list(map(str,argv)),cwd=out,text=False,capture_output=True,env=env,timeout=timeout,
-                         image_identity=debugging)
+            identity={'image_identity':True} if report.get('native_image_identity_required',False) else {}
+            r=run_native(list(map(str,argv)),cwd=out,text=False,capture_output=True,env=env,timeout=timeout,**identity)
         except subprocess.TimeoutExpired as error:
             (out/(label+'.stdout')).write_text(captured(error.stdout,'replace'),encoding='utf-8',newline="\n")
             (out/(label+'.stderr')).write_text(captured(error.stderr,'replace'),encoding='utf-8',newline="\n")

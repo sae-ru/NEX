@@ -15,7 +15,10 @@ class Verification(harness.ToolchainCase):
         for example, filename in [('verification', 'contracts.json'), ('tasks', 'proof.json')]:
             with self.subTest(example=example):
                 project = self.root / example
-                shutil.copytree(harness.REPO / 'examples' / example, project)
+                # Check the shipped sources/snapshots independently of a developer's
+                # ignored local graph, cached build or previous proof runs.
+                shutil.copytree(harness.REPO / 'examples' / example, project,
+                                ignore=shutil.ignore_patterns('.nex'))
                 checked = self.cli('check', cwd=project)
                 snapshot = json.loads((project / filename).read_text())
                 self.assertEqual(snapshot['language'], language)
