@@ -1,17 +1,5 @@
-# Historical NEX backup snapshots / Исторические резервные снимки NEX
+# Archived NEX branch history
 
-This archive branch consolidates 293 old backup branch tips. `refs.json` preserves
-each original name and commit. Every mapped commit remains reachable through this
-archive commit's parents. These snapshots were not merged into the active language.
+This branch preserves 322 retired public branch tips. `refs.json` maps each original name to its commit. Every mapped commit remains reachable from this archive. It is historical material; current development is on `main`. Restore an individual branch with `git branch NAME COMMIT`.
 
-Fetch the archive, then create a local branch at a selected commit from `refs.json`:
-
-```sh
-git fetch origin codex/archive-history-20261106
-git switch -c restored-snapshot COMMIT_FROM_REFS_JSON
-```
-
-В `refs.json` сохранены исходные имена и хеши 293 старых резервных веток.
-Все снимки доступны через родителей архивного коммита. Для восстановления
-используйте команды выше, подставив выбранный хеш. Архив не является рабочей
-версией языка; он сохраняет историю при очистке списка веток.
+Эта ветка сохраняет 322 прежние публичные ветки. `refs.json` содержит исходные имена и коммиты; каждый коммит достижим из архива. Актуальная разработка находится в `main`. Для восстановления отдельной ветки используйте `git branch NAME COMMIT`.
