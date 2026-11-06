@@ -102,11 +102,15 @@ ELF-идентичности. Открыты пять исходных сете�
 
 Начните с [актуальной инструкции](docs/getting-started.ru.md). Для сборки из
 исходников нужны C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 и
-Python 3.10+. Для веба/TypeScript нужны также Node.js 22.18+ и npm с lock-файлом проекта.
+Python 3.10+. Полный CTest включает веб/TypeScript: для него нужны также
+Node.js 22.18+, npm и закреплённые lock-файлом зависимости.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j 4
+npm --prefix web ci --cache "$PWD/build/npm-cache" --ignore-scripts --no-audit --no-fund
+NEX_TSC="$PWD/web/node_modules/typescript/bin/tsc" \
+NEX_NPM_CACHE="$PWD/build/npm-cache" \
 ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 ```

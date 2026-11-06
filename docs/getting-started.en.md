@@ -19,11 +19,26 @@ cd NEX
 git rev-parse HEAD
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j 4
+npm --prefix web ci --cache "$PWD/build/npm-cache" --ignore-scripts --no-audit --no-fund
+NEX_TSC="$PWD/web/node_modules/typescript/bin/tsc" \
+NEX_NPM_CACHE="$PWD/build/npm-cache" \
 ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
 nex doctor --json
 nex describe --kind index --json
+```
+
+The full source test suite includes TypeScript checks, even when your own
+application has no browser client. `npm ci` installs the exact lock-file versions;
+`NEX_TSC` and `NEX_NPM_CACHE` select that compiler and populated cache for tests.
+Run the shell commands above from the repository root. For PowerShell, set these
+variables before CTest:
+
+```powershell
+$env:NEX_TSC = (Resolve-Path web/node_modules/typescript/bin/tsc).Path
+$env:NEX_NPM_CACHE = (Resolve-Path build/npm-cache).Path
+ctest --test-dir build --output-on-failure
 ```
 
 Set `LLVM_DIR`, `MLIR_DIR`, `OPENSSL_ROOT_DIR` and `NEX_Z3_ROOT` when CMake cannot

@@ -101,12 +101,15 @@ cross-model token/cost measurement remain [planned work](PLAN.md).
 
 Start with the [current installation guide](docs/getting-started.en.md). A source
 build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 and
-Python 3.10+. Web/TypeScript workflows additionally use Node.js 22.18+ and npm with
-the repository's lock file.
+Python 3.10+. The full CTest suite includes Web/TypeScript workflows and also
+requires Node.js 22.18+, npm and the repository's locked web dependencies.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j 4
+npm --prefix web ci --cache "$PWD/build/npm-cache" --ignore-scripts --no-audit --no-fund
+NEX_TSC="$PWD/web/node_modules/typescript/bin/tsc" \
+NEX_NPM_CACHE="$PWD/build/npm-cache" \
 ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 ```
