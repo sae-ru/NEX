@@ -1,0 +1,20 @@
+{
+  "schema": "nex.Windows-current-source-build/1",
+  "ok": true,
+  "source_commit": "972d6d38efabfd8f52060b2579a2fa6b938c8262",
+  "source_files": 1981,
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "compiler_sha256": "11899830cca33c88b8b2cf816c717f1451db14edde7bea6dfe5532e270cb25d3",
+  "compiler_build": "1283d8598c45b71f1e05adfe630fc148658d16a53daa8b1c9b6b08f70e031df5",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "all_target_build": true,
+  "ordinary_install_and_local_smoke": true,
+  "registered_CTest_groups": 302,
+  "registered_is_not_passed": true,
+  "original_project_unchanged": true,
+  "raw_files": 46,
+  "raw_bytes": 1400982,
+  "raw_receipt_sha256": "1b66a9485dd4b73165ac27115e46021829a2d43666caea06441e1ccdce6e0a76",
+  "full_current_CTest_moved_SDK_GPU_or_IPv6_accepted_by_this_record": false
+}

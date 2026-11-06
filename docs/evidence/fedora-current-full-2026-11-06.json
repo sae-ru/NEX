@@ -1,0 +1,46 @@
+{
+  "schema": "nex.Fedora-current-full-source-attempt/1",
+  "ok": false,
+  "state": "failed",
+  "source_base_commit": "f8a4cf5a3fb594534dd47d0fa0235c7474c145fd",
+  "source_base_files": 1977,
+  "source_test_overlay": "tests/sdk_host.py",
+  "source_test_overlay_sha256": "0737d1e461df3997cd5d179c289607634d33088ad05501a34a1a6a04a20dfcf3",
+  "compiler_sha256": "2522507a604cf66749a75406af66f7d887c343b97b99febcf9e5b2fe1ffcce3a",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "platform": "Fedora45 x86_64 VM",
+  "host_tools": {
+    "Clang": "23.1.4",
+    "GCC": "16.2.1",
+    "Python": "3.15",
+    "OpenSSL": "4.0.3"
+  },
+  "registered_groups": 300,
+  "passed_groups": 289,
+  "failed_groups": [
+    "llm_cost_ledger",
+    "task_foreign",
+    "web_workers",
+    "task_dns_delivery",
+    "task_tcp_delivery",
+    "task_http_client_source",
+    "task_http_client_delivery",
+    "http_stream_delivery_functional",
+    "source_exception_host",
+    "source_exception_module_debug",
+    "source_exception_module_http_debug"
+  ],
+  "skipped_groups": [],
+  "failed_invocation_reclassified": false,
+  "observations": [
+    "Source/package recipes target OpenSSL3; OpenSSL4 dependency provenance and HTTPS environment behavior are not accepted.",
+    "Test-only global PYTHONPATH leaked tests/numbers.py into a child ledger CLI. Clean-environment recovery remains separately recorded.",
+    "Two groups timed out; three private Clang22 debugger images lacked build IDs."
+  ],
+  "system_compiler_defaults_changed": false,
+  "raw_files": 22,
+  "raw_bytes": 538802,
+  "raw_receipt_sha256": "60f7075d4b46011836c575cdcdb4aee5aae80e746bc705407373ca6dcab64f84",
+  "full_platform_portable_SDK_GPU_or_NPU_accepted": false
+}

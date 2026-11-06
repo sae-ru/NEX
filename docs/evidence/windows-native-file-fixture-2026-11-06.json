@@ -1,0 +1,28 @@
+{
+  "schema": "nex.Windows-native-file-fixture/1",
+  "ok": true,
+  "source_base_commit": "f107b0e37ae53cd9f91976a4b42418fbb374df4e",
+  "fix_commit": "972d6d38efabfd8f52060b2579a2fa6b938c8262",
+  "compiler_sha256": "fb9bfd6c8e3442075aaf146e1628ac3335a667a246e150c01b1e2cac30470678",
+  "scope": "Prior current0.162 engine with all473 native inputs equal to latest, full candidate source plus pinned Windows-only fixture correction.",
+  "fix_source_sha256": {
+    "CMakeLists.txt": "d6aac77e251e509f9803d7095d73bf602466ae258b48331f0517bdb570a4f8eb",
+    "tools/windows_files.py": "7e22b25840e636d2b3a24de0d162dacca9010e07ae4cd1530efa5821b87bea17",
+    "tests/windows_file_fixture.py": "74fbd97c5d17723d4cfaf81e7db266d79816c3840102d94285c159fe10ccbcc6"
+  },
+  "actual_native_AF_UNIX_object": true,
+  "same_long_Unicode_parent_preserved": true,
+  "native_nonregular_reader_rejections_retained": true,
+  "real_regression_cases": 3,
+  "SDK_host_cases": 6,
+  "full_original_HTTP_delivery_group_passed": true,
+  "operator_input_rejections": 57,
+  "authority_rejections": 18,
+  "source_deleted_relocated_package": true,
+  "timeout_limits_or_network_settings_changed": false,
+  "failed_previous_invocations_preserved": true,
+  "raw_files": 30,
+  "raw_bytes": 960161,
+  "raw_receipt_sha256": "f919992a9dbbd31385e41681ad0ddfdb918034621a322316a575a107fe31cf28",
+  "full_latest_Windows_or_SDK_acceptance": false
+}

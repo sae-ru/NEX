@@ -1,0 +1,204 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope",
+  "verified_at_utc": "2026-11-06T03:43:06.218382+00:00",
+  "toolchain": "0.162.0",
+  "language": "0.28",
+  "source_task_ABI": 7,
+  "license": "MIT",
+  "SDK_source_commit": "4fb860eea3b6d9ce8f5e6f2dbaf0a1db8bb17ce5",
+  "SDK_source_files": 1975,
+  "publication_source_parent_commit": "972d6d38efabfd8f52060b2579a2fa6b938c8262",
+  "source_and_archive_identity_note": "Archive is the tested4fb860e resource snapshot. Later commits add Windows-only file fixtures, source-only SDK tests and documentation; all473 C/C++/header inputs are unchanged. The archive is not rewritten by publication.",
+  "archive": {
+    "name": "nex-sdk-0.162.0-macos-arm64-development.tar.gz",
+    "sha256": "c1393c94709d3e3290d39b1a60da7ad78e28705bfa6cea539e74ff7e40bc6208",
+    "bytes": 124244022,
+    "files_in_inventory": 3580,
+    "public_binary_upload_performed_by_this_commit": false
+  },
+  "previous_published_binary_release": "v0.159.0",
+  "packaged_compiler_sha256": "976d3f2dceb19c05c3d1849aeaa75245638a6f289b317b3c25b9436d922495b1",
+  "compiler_build": "f7b9e286df7f361ef8e8be22f7a52fead47c204f0af35f687a2a09d91efe299e",
+  "descriptor_hash": "85ea1224b63ac164fd3d137d5538f0c505020af6e8c9539320508d845f8ae43b",
+  "platform": "arm64-apple-darwin27.0.0",
+  "minimum_macos": "27.0",
+  "external_prerequisites": [
+    "Apple command line tools and SDK",
+    "Python3.10+; actual3.10.22/3.14.9 qualified",
+    "Node.js/npm for web builds",
+    "Compatible host LLDB for live debugging"
+  ],
+  "source_regression": {
+    "groups": 300,
+    "failed": [],
+    "skipped_groups": [],
+    "evidence": "../evidence/macos-workload-source-2026-11-06.json",
+    "internal_platform_only_skips_do_not_accept_other_OSes": true
+  },
+  "installed_acceptance": {
+    "canonical_phases_per_installation": 41,
+    "extra_cases_per_installation": 90,
+    "actual_python_versions": [
+      "3.10.22",
+      "3.14.9"
+    ],
+    "canonical_phases_total": 82,
+    "extra_cases_total": 180,
+    "native_CXX_host_calls": 4000,
+    "owned_cleanup_checks": 4000,
+    "source_dependency_opposite_SDK_read_denials": 10,
+    "SDK_write_denials": 4,
+    "moved_and_archive_restored_inventories_unchanged": true,
+    "both_prefixes_readonly": true,
+    "external_network_blocked": false
+  },
+  "composition": {
+    "scenarios": 18,
+    "native_executions": 28,
+    "explicit_bounded_scalar_loop_proofs": 2
+  },
+  "OpenCL": {
+    "native_reference_cases": 21,
+    "source_profiles": 6,
+    "physical_kernel_events": 47,
+    "devices": [
+      "Apple M5 Max"
+    ],
+    "general_GPU_codegen_Metal_compute_or_Apple_NPU_accepted": false
+  },
+  "browsers": {
+    "production_checks": 150,
+    "engines": [
+      "Chromium",
+      "Firefox",
+      "WebKit"
+    ],
+    "failed": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "same_host_external_browser_broker": true,
+    "extra_browser_sandbox_disable_flags": false,
+    "other_OSes_or_physical_mobile_devices_accepted": false
+  },
+  "quality": {
+    "complete_scenarios": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5"
+    ],
+    "modules": 100,
+    "declarations": 10000,
+    "actual_LLVM_calls_cold_warm_single_function_edit": [
+      9900,
+      0,
+      1
+    ],
+    "all10000_IDs_preserved": true,
+    "source_deleted_replay": true,
+    "physical_completion_fences": 3
+  },
+  "sanitizer_controls": {
+    "packaged_Clang_clean_control_passed": true,
+    "intentional_leak_overflow_race_detected": true,
+    "scope": "Standalone instrumented C++ controls and separate physical completion fences; generated provider LLVM IR is not instrumented.",
+    "universal_binary_safety_proven": false
+  },
+  "checked_core_measurement": {
+    "recurrence_steps_per_sample": 100000000,
+    "agreement_cases": 5,
+    "samples_per_language": 5,
+    "median_wall_seconds": {
+      "nex": 0.2957748749759048,
+      "cpp_checked": 0.27829512511380017,
+      "python": 7.366666791960597
+    },
+    "NEX_over_checked_CXX_wall_ratio": 1.0628101187721375,
+    "isolated_host": false,
+    "universal_CXX_parity_or_LLM_cost_established": false
+  },
+  "authoring_formats": {
+    "shipped_schema_documents": 85,
+    "actual_artifacts": 12,
+    "rejected_mutations": 36,
+    "schemas_exact_and_meta_valid": true,
+    "models_called": false
+  },
+  "source_only_SDK_host_followup": {
+    "cases_per_actual_Python": 6,
+    "passed_per_Python": 5,
+    "Linux_only_skip_per_Python": 1,
+    "fixture_sha256": "0737d1e461df3997cd5d179c289607634d33088ad05501a34a1a6a04a20dfcf3",
+    "receipt_sha256": "00fb3028d5e73ed0b2ec7bda345f30946ac8aa1679216880874d2bb35d863fb6",
+    "installed_archive_modified": false
+  },
+  "terminal_evidence": {
+    "mac-workload-sdk-acceptance-v4": {
+      "report_sha256": "d07271e0e877283bfd609342293ade9a6895aec16137e707360a46c8b420f363",
+      "receipt_sha256": "d4ef0c8d1e02192db52e3ec0d1217247f2866826b24fac7154b051d6b352f232",
+      "raw_inventory_sha256": "b3e832e1967a1733dc97cef7ed1f22e9712d4653631a01a8a77c8bd8595300c0",
+      "raw_files": 79,
+      "raw_bytes": 3764750
+    },
+    "mac-workload-sdk-post-v4": {
+      "report_sha256": "f72f55db7c93f1e91c93f0d52838b74d7111b6d1229ffdce3176f6777e885ab3",
+      "receipt_sha256": "4ca801ad5e8854296dcfcfa76f64d172433b993cf7847faaafe1f9ea70098973",
+      "raw_inventory_sha256": "8976f36a853e3d71fe423d4f544037fb4aefe1229171b57a25dbab60df5e8754",
+      "raw_files": 48,
+      "raw_bytes": 153610
+    },
+    "mac-workload-sdk-browsers-v4": {
+      "report_sha256": "b94a1b32983dc47f40a7d35670d4cd241f75b97cd8c660d8f544dcb526491016",
+      "receipt_sha256": "58cf2db117449b3f2df02bea2812496dd9be25fc045229f37dfa995a2f95d87b",
+      "raw_inventory_sha256": "bfa651c144fcd0e6d0c84bf904bf726e7a3065e51ab09b8cda7d916c2d0dc05c",
+      "raw_files": 64,
+      "raw_bytes": 1879499
+    },
+    "mac-workload-sdk-quality-v4": {
+      "report_sha256": "5c1e8be476cf9ad572f2c3a0ab1897c329ee69955b518e6151f18bc4f59370bd",
+      "receipt_sha256": "4721825d1b0400444156b2054dd9f792bb8ac4c1d8ee5cc9f2431266816c2e68",
+      "raw_inventory_sha256": "2534abc633be15f7c0ad8a74c720ad078e0734ee445dd08d004fc7606ae06e0b",
+      "raw_files": 31,
+      "raw_bytes": 1958688
+    },
+    "mac-workload-sdk-sanitizers-v4": {
+      "report_sha256": "6ca11407990f49cfad7b347cf58e903964b7ac582bfc3a19db63d75bb9a745e2",
+      "receipt_sha256": "8ba2466451876e900842da0fa57fb2e973ee35f2e8434feb219b46c1876bca6d",
+      "raw_inventory_sha256": "d02b41165c58d8cd38f079a14ff7df98a6ff4e31920f49a076c71e3e79c9779a",
+      "raw_files": 24,
+      "raw_bytes": 34893
+    },
+    "mac-workload-sdk-benchmark-v5": {
+      "report_sha256": "c9c7aba6b6e3e7c89ef57bc3d25e227b469e0939296410dfa661d3fdaf275831",
+      "receipt_sha256": "b31b386952cbb6d5c6afe86f2eedd604d1325d2b245a69c744fd575d521f735d",
+      "raw_inventory_sha256": "1de3d9f3e98a02825e6b84fcf995e829a24d05db6d3d265d3a3b47922755cf7c",
+      "raw_files": 100,
+      "raw_bytes": 229272
+    },
+    "mac-workload-sdk-authoring-schemas-v5": {
+      "report_sha256": "1c1ac4db79f2c690f73bf7a3ce9c5db147e69bea7381ce111819abaf46fffeff",
+      "receipt_sha256": "0611299c07912fae2c79f2bff32a126f3265b319388e607739f9800e56b4d7b6",
+      "raw_inventory_sha256": "4996e2ceb4148f2816f7df571dc4613a353cbb8cb1cd5db7bb203acf348d6a51",
+      "raw_files": 36,
+      "raw_bytes": 55794
+    }
+  },
+  "raw_files": 382,
+  "raw_bytes": 8076506,
+  "failed_attempts_preserved": [
+    "Incomplete external Python3.10 stdlib failed before NEX; complete private3.10.22 runtime qualified under the same policy.",
+    "Benchmark execution passed, but the v4 verifier requested identity fields from nex.language/1. Separate v5 verification binds the existing results to actual describe --kind index; no benchmark repetition.",
+    "Dependent authoring/source stages stopped before tests; a source-followup report-creation race also stopped before tests. Subsequent separate stages passed."
+  ],
+  "primary_source_graph47_all16_tables_preserved": true,
+  "full_original_PLAN_complete": false,
+  "pending": [
+    "Matching complete Windows/Linux SDK delivery and positive Windows IPv6 profile",
+    "Fedora45 OpenSSL4/package closure and remaining full-suite failures",
+    "General GPU/NPU code generation, Metal compute and Apple NPU",
+    "Complete Android/iOS/native UI, NEX Studio and project conversion",
+    "End-to-end accepted-task token/cost measurements across real LLMs"
+  ]
+}

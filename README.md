@@ -52,130 +52,44 @@ platform acceptance.
 
 ## Development status
 
-The latest [macOS source regression](docs/evidence/macos-workload-source-2026-11-06.json)
-passed all 300 CTest groups after the Windows workload fixture correction, with
-no failed or skipped groups. The [bounded Windows partition](docs/evidence/windows-bounded-partition-2026-11-06.json)
-passed 72 previously unrun roots in six batches with the original per-test
-budgets. This Windows result uses a pinned source plus the current scoped test
-overlay; full platform and newly packaged SDK acceptance remain separate.
+Current source: **toolchain 0.162.0 / language 0.28 / task ABI 7**.
+The [macOS ARM64 SDK record](docs/releases/0.162.0.json) pins the exact immutable
+archive and its qualified resource snapshot. The matching source passed all
+300 CTest groups. Moved and archive-restored SDKs each passed 41 maintained
+phases and 90 additional cases using actual Python 3.10/3.14, denied source and
+dependency reads, read-only SDKs, and 4000 total C++ host calls with cleanup checks.
 
-The newer [`dde59c9` Linux ARM64 source build](docs/evidence/linux-current-source-2026-11-05.json)
-passed all 300 CTest groups without failures or skips. Its development archive
-also passed [current CIX CPU/GPU/NPU checks](docs/evidence/cix-current028-device-development-2026-11-05.json):
-36 GPU and 26 NPU calls through trusted adapters, including suspended typed-error
-handlers. The same archive passed [current RK3588 device checks](docs/evidence/rk-current028-device-development-2026-11-05.json):
-96 GPU and 36 NPU calls without CPU fallback. A subsequent [macOS artifact-schema gate](docs/evidence/current-artifact-schemas-2026-11-05.json)
-passed 14 selected tests and corrected the schema for actual project debug-session
-execution metadata. These source and device results retain separate resource
-identities; a newly packaged SDK still needs its own installed acceptance.
+That archive also passed 150 production-browser checks, 18 CLI composition
+scenarios, 21 native/reference OpenCL scenarios with 47 physical kernel events,
+and all Q1–Q5 workflows. A 100-module/10,000-declaration project made 9900, 0 and
+1 actual LLVM calls for its cold, unchanged and single-function-edited builds.
+All 85 shipped format schemas were checked against actual artifacts and rejected
+mutations. The record describes sanitizer scope and the limits of its numerical
+measurement; it does not establish universal binary safety or measured LLM savings.
 
-The [Astra manual-host link record](docs/evidence/astra-native-host-link-2026-11-06.json)
-covers the direct libdl dependency required by older glibc. The corrected
-frontier group and all 16 existing instance-case selectors passed, including
-64 native comparisons. These private fixtures retain their original cohort;
-the earlier failed or disk-limited runs remain separate.
+Windows has a [fresh complete source build and ordinary-install smoke check](docs/evidence/windows-source-0.162.0-2026-11-06.json).
+The [native-file fixture correction](docs/evidence/windows-native-file-fixture-2026-11-06.json)
+preserves actual AF_UNIX rejection tests on long Unicode paths. A separate exact
+union of pinned current-engine invocations covers 298 of 302 groups; four positive
+IPv6 groups remain unverified under the operator's intentional IPv6 restriction.
+This union does not accept a complete latest Windows SDK.
 
-On Fedora x86-64, the [ELF lifetime-host checks](docs/evidence/fedora-elf-lifetime-hosts-2026-11-06.json)
-passed all three selected CTest groups after making the identity probes PIC/PIE.
-Controls with Clang 23 and GCC 16 used the same runtime libraries; eight Wasm
-tests passed with explicit Clang 22 selection. An explicit [native-host Clang 22
-configuration](docs/evidence/fedora-native-clang22-host-2026-11-06.json) also passed
-the existing private module fixture: 12 scenarios and 48 native comparisons.
-Its historical fixture cohort is preserved. Full Fedora acceptance remains open.
-The [original CMake module group](docs/evidence/fedora-native-driver-config-2026-11-06.json)
-subsequently passed with those native flags in the private C++ entrypoint;
-the original Conda alias and distro compilers were preserved.
+The [Linux ARM64 source receipt](docs/evidence/linux-current-source-2026-11-05.json)
+passed all 300 groups. Current scoped [CIX](docs/evidence/cix-current028-device-development-2026-11-05.json)
+and [RK3588](docs/evidence/rk-current028-device-development-2026-11-05.json) receipts
+record physical GPU/NPU calls without CPU fallback. Each keeps its source and
+archive identity. The [Fedora45 full attempt](docs/evidence/fedora-current-full-2026-11-06.json)
+passed 289/300 groups and remains failed; OpenSSL4, environment, timeout and
+private debugger-fixture issues remain visible.
 
-The [Windows debugger path correction](docs/evidence/windows-debugger-extended-path-2026-11-06.json)
-passed all nine provider-debugger tests, including actual CLI/DAP long paths,
-relocated packages and rejected identity substitutions. Extended path aliases
-require OS file-identity agreement; UUID, byte and mapping checks remain active.
-This does not accept the full Windows suite or a newly packaged SDK.
+The qualified 0.162 archive is recorded here; this source commit does not upload
+a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)
+retains its own evidence. Use the [current source-build guide](docs/getting-started.en.md).
 
-The [Windows workload-fixture ownership checks](docs/evidence/windows-workload-ownership-2026-11-06.json)
-passed all nine server-workload cases, all four task-workload cases and a real
-kernel ownership control. Cleanup requires the held process handle to match
-both the test's exact Job and the recorded creation time. Original timeout and
-interrupt scenarios remain active; earlier failed invocations are retained.
-Both corresponding POSIX cases also passed on Fedora. Full platform and new
-SDK acceptance remain separate.
-
-The scoped [Linux ARM64 development SDK record](docs/evidence/linux-portable-sdk-development-2026-11-05.json)
-pins a 0.162 archive with resource snapshot `4c924`: 41 phases after relocation,
-41 after archive restoration, and 41 in a separate external-debugger environment.
-The first two runs have no external LLVM/MLIR/Z3. Newer resources and older-glibc
-physical stands require their own qualification; the published release below remains 0.159.
-
-The same archive passed [scoped physical ARM64 CPU checks](docs/evidence/arm64-private-runtime-development-2026-11-05.json)
-on CIX and RK: native Debug/Release, reference agreement and standalone execution
-with the configured source entry absent. These use existing compatible private
-runtimes and native toolchains. Trusted adapters passed 36 GPU and 26 NPU calls
-on CIX, and 96 GPU and 36 NPU calls on RK3588, without CPU fallback. These include
-actual device values carried through suspended typed-error handlers.
-Full current stand SDK and broader accelerator
-acceptance remain separate gates.
-
-The matching [macOS source regression](docs/evidence/macos-source-development-2026-11-05.json)
-after the Linux explicit-loader discovery fix passed all 298 CTest groups.
-This source result does not update the accepted SDK archive or published release.
-
-The subsequent [package-cleanup source regression](docs/evidence/macos-package-cleanup-source-2026-11-05.json)
-also passed all 298 groups, with no failed or skipped groups. It covers cleanup
-after rejected foreign-package bindings. The earlier run interrupted by sleep
-remains recorded separately; existing SDK archives and the published release retain
-their own source identities.
-
-A newer [macOS development SDK receipt](docs/evidence/macos-current-resources-sdk-development-2026-11-05.json)
-pins archive `536ee172` with `d19cffa` resources and the same tested compiler
-implementation. It passed 41 installed phases and 61 additional cases on each
-of two installations, with actual Python 3.10/3.14, denied source/dependency and
-opposite-SDK reads, read-only SDK prefixes, and 4000 C++ host calls with cleanup
-checks. Its initial test-runner failures remain recorded. This archive has no
-new accelerator acceptance; the published release remains 0.159.
-
-Source development 0.162 adds Windows TCP/DNS/HTTP/HTTPS/HTTP2 provider and
-response-stream candidates. The [scoped Windows record](docs/evidence/windows-http-development-2026-11-03.json)
-includes selected IPv4 execution and source-deleted packages on the compatible
-0.160 compiler; matching current compiler/full IPv6/SDK acceptance remains pending.
-Development 0.160 adds [native library entry ABI discovery](docs/native-entry-abi.md)
-for matching C++ hosts; the published SDK and accepted delivery below remain 0.159.
-That exact SDK also has scoped [native iOS Simulator execution](docs/evidence/0.159.0-ios-native/README.md):
-1400 calls and cleanup checks across Debug/Release. Complete mobile delivery remains open.
-
-Current development SDK: **toolchain 0.159.0 / language 0.28 / task ABI 7**.
-The ordinary CLI accepts [source contracts](docs/source-contracts.md): pure
-`requires` / `ensures` clauses and loop `invariant` / `decreases` checks, including
-generic functions. Checks remain active in release builds. Existing 0.27 graph
-histories need an [explicit migration](docs/source-contract-migration.md).
-
-The [macOS ARM64 delivery record](docs/releases/0.159.0.json) pins the exact
-accepted source, compiler and immutable archive. It records **296 CTest groups**,
-**41 maintained SDK phases plus 57 additional cases per installation**, using
-actual Python 3.10.22 and 3.14.9 on moved and archive-restored installations.
-Original source/dependency roots and the opposite SDK were denied; both SDK
-prefixes remained read-only. Internal platform-only skips retain their own scope.
-
-The same archive passed [150 production-browser checks](docs/evidence/sdk-browsers-0.159.0.json)
-in Chromium, Firefox and WebKit, and [18 CLI composition scenarios](docs/evidence/sdk-composition-0.159.0.json)
-with 28 native debug/release executions and two explicit bounded scalar/loop proofs.
-On Apple M5 Max, [OpenCL U8 Add/Affine](docs/evidence/macos-opencl-0.159.0.json)
-passed 21 native/reference scenarios and six native source profiles, with 47
-physical kernel events. These include source and detached contracts, generic
-roots, pending cancellation/deadline and balanced visible managed pools.
-
-This is a development preview for macOS ARM64, minimum macOS 27.0.
-[Install it](docs/getting-started.en.md). Windows and Linux have source-build
-recipes and earlier platform receipts; this release needs fresh acceptance there.
-The Windows 0.152.1 receipt records 274 CTest groups, 35 RTX 3090 CUDA cases and
-its own SDK checks. Linux CIX/RK accelerator evidence retains its
-[0.151.0 scope](docs/evidence/accelerators-0.151.0.json).
-
-The [SDL Tic-Tac-Toe example](examples/tic-tac-toe/README.md) shares NEX rules and
-SDL integration across native build scripts. Its earlier Windows GPU/package
-and [Mac Metal/Retina](docs/evidence/sdl-metal-retina-0.155.0.json) checks retain
-their source identities. Current Windows/Linux execution, general GPU code
-generation, Metal compute, Apple NPU, complete mobile/UI delivery, NEX Studio,
-project conversion and other [PLAN](PLAN.md) work remain open.
+This is a development preview for macOS ARM64, minimum macOS 27.0. Matching
+Windows/Linux SDK delivery, general GPU/NPU code generation, Metal compute,
+Apple NPU, complete mobile/native UI, NEX Studio, project conversion and real
+cross-model token/cost measurement remain [planned work](PLAN.md).
 
 ## Build and use
 

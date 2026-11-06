@@ -1,8 +1,8 @@
 # Why NEX exists
 
-Toolchain 0.159.0 / language 0.28 exposes source contracts in the ordinary CLI.
+Toolchain 0.162.0 / language 0.28 exposes source contracts in the ordinary CLI.
 Pure function and loop clauses remain checked in release code. Existing 0.27
-histories need explicit migration. The [Mac development SDK receipt](releases/0.159.0.json)
+histories need explicit migration. The [Mac development SDK receipt](releases/0.162.0.json)
 records current acceptance; other platforms keep separate, versioned evidence.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
@@ -89,7 +89,7 @@ steps per invocation and five repetitions. Median wall seconds were:
 
 The host was not isolated. The C++ comparison does not implement NEX task
 cancellation/limit machinery. These observations are scoped to one algorithm
-and older versions; they are not current 0.159.0 benchmarks or universal language
+and older versions; they are not current 0.162.0 benchmarks or universal language
 comparisons. The Linux observation missed that experiment's 90% C++ throughput goal.
 
 A separate [0.96 build-cache experiment](evidence/native-scale-0.96.0.json) used
@@ -103,16 +103,23 @@ A cross-model study of complete accepted tasks is still pending. The
 responses, retries, time and correctness. The project's 30% token-reduction
 objective is a target, not an achieved result.
 
+The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
+for 100 million steps and five samples per language. Median wall times on this
+Mac were 0.295775 s for NEX, 0.278295 s for checked C++ and 7.366667 s for Python.
+The host was not isolated; this is one workload. Its current 100-module,
+10,000-declaration workflow also confirmed actual LLVM calls of 9900/0/1 for
+cold/unchanged/single-function-edit builds. Neither result measures LLM savings.
+
 ## Hardware and delivery
 
-The [current Mac OpenCL receipt](evidence/macos-opencl-0.159.0.json) covers one
+The [current Mac SDK/OpenCL receipt](releases/0.162.0.json) covers one
 Apple M5 Max: U8 Add/Affine, 21 native/reference scenarios, six source profiles
 and 47 physical kernel events. Installed source clauses and detached contracts
 compose with typed owned resources. [Linux accelerator evidence](evidence/accelerators-0.151.0.json)
 retains its CIX/RK and version scope. General GPU code generation remains pending.
 
-The [0.159 SDK record](releases/0.159.0.json) includes 296 CTest groups and two
-installed 41-phase workflows plus 57 extra cases each. The same archive passed
+The [0.162 SDK record](releases/0.162.0.json) includes 300 CTest groups and two
+installed 41-phase workflows plus 90 extra cases each. The same archive passed
 150 actual production-browser checks. Earlier Windows 0.152.1 receipts establish
 their own native/CUDA scope; current Windows/Linux qualification, Metal compute,
 Apple NPU, broader device operations, mobile/native UI, general algebraic effects,

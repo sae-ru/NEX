@@ -1,22 +1,19 @@
-# Current SDK delivery: 0.159.0 / language 0.28 / task ABI 7
+# Qualified SDK: 0.162.0 / language 0.28 / task ABI 7
 
-The [Mac ARM64 development SDK](releases/0.159.0.json) passed 296 CTest groups
-and two complete installed workflows of **41 phases**, including the mandatory
-`source-contracts` phase. Moved/restored SDKs also passed 57 additional runtime
-contract/debugger cases each, with actual Python 3.10.22 / 3.14.9. The immutable
-archive was created before both runs; original source/dependency roots and the
-opposite SDK were denied and installed prefixes were read-only. The same archive
-passed 150 production-browser checks and recorded CLI/OpenCL checks.
+The [Mac ARM64 SDK record](releases/0.162.0.json) pins the immutable archive:
+300 source CTest groups; 41 maintained phases and 90 additional cases on each
+moved/restored installation; actual Python3.10/3.14; 4000 C++ host calls and
+cleanup checks. It also records browsers, CLI composition, physical OpenCL,
+Q1–Q5, packaged-Clang sanitizer controls, numerical measurements and all85 schemas.
+Source/dependency/opposite-SDK reads were denied; SDK prefixes stayed read-only.
 
-Use the [English](getting-started.en.md) or [Russian](getting-started.ru.md)
-installation guide. Current Windows/Linux qualification remains separate.
-The [Linux ARM64 development record](evidence/linux-portable-sdk-development-2026-11-05.json)
-pins a different 0.162 archive and resource snapshot: clean moved/restored
-41-phase runs plus a separate 41-phase live-debugger run. It retains its exact
-source identities and does not promote newer resources or older-glibc stands.
-The sections below preserve earlier workflow versions and their requirements;
-their old phase counts do not replace this 41-phase contract. Query the selected
-compiler's doctor/descriptor and require a completed report for its exact bytes.
+The archive remains its tested4fb860e resource snapshot. Current repository
+documentation and later Windows/source-test corrections have separate identities;
+the archive is not silently repacked. This commit publishes source and receipts;
+the previously published binary release remains0.159. Use the current
+[English](getting-started.en.md) or [Russian](getting-started.ru.md) source-build guide.
+Complete matching Windows/Linux SDK delivery remains separate. Earlier workflow
+versions below preserve their original scope; query the actual compiler before use.
 
 ## Native Windows acceptance adapter in development
 

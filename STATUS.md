@@ -1,3 +1,24 @@
+# Qualified macOS SDK0.162 / source language0.28
+
+The [current delivery record](docs/releases/0.162.0.json) accepts the immutable
+Mac ARM64 archive with300 matching source groups,82 installed phases,180 extra
+cases,4000 C++ host calls/cleanup checks,150 browsers,18 CLI scenarios,21 OpenCL
+native/reference cases and47 physical kernels. Q1–Q5 passed with actual9900/0/1
+LLVM calls, preserved10000 IDs and source-deleted replay. All85 schema documents,
+12 actual artifacts and36 rejected mutations passed. Packaged-Clang controls
+detected intentional leak, overflow and race faults; generated provider IR is not
+instrumented. The non-isolated numerical comparison retains its single-workload scope.
+
+Current source is0.162/lang0.28. Archive resources remain4fb860e; subsequent Windows
+fixtures, source-only SDK tests and documentation keep their own source identities.
+This source publication does not upload a binary release; published0.159 remains
+historical. Fresh Windows source built/installed and passed local smoke; complete
+current Windows/Linux SDK and positive Windows IPv6 remain separate. Fedora45's
+full289/300 attempt remains failed. Mobile/UI/Studio/conversion/generalGPU/NPU,
+real multi-LLM costs and the remaining original PLAN are still open.
+
+Earlier entries below are historical and do not override this record.
+
 # Workload fixture ownership — source development 0.162 / language 0.28
 
 Windows test cleanup now authenticates the held process handle against the
