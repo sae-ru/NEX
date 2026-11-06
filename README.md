@@ -87,9 +87,11 @@ record physical GPU/NPU calls without CPU fallback. Each keeps its source and
 archive identity. The [Fedora45 full attempt](docs/evidence/fedora-current-full-2026-11-06.json)
 passed 289/300 groups and remains failed. Separate [follow-up checks](docs/evidence/fedora-current-followups-2026-11-06.json)
 passed its three environment/timeout groups and three debugger groups, plus six
-ELF identity controls. Five original network/package groups remain open. CMake
-now requires OpenSSL 3.x; configuration with private 3.5.9 passed and system
-4.0.3 was refused. This does not accept a complete Fedora build or SDK.
+ELF identity controls. A [coherent OpenSSL 3 follow-up](docs/evidence/fedora-current-OpenSSL3-2026-11-06.json)
+built all current targets; DNS/TCP delivery completed before a disk interruption,
+and all three HTTP groups then passed with that same compiler and dependency
+cohort. CMake requires OpenSSL 3.x and refused system 4.0.3. A complete current
+Fedora regression and portable SDK delivery remain pending.
 
 The qualified 0.162 archive is recorded here; this source commit does not upload
 a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)

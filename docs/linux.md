@@ -61,8 +61,9 @@ The build requires OpenSSL **3.x** and rejects OpenSSL 4 during configuration.
 Actual Fedora configuration passed with separately extracted, signature-checked
 OpenSSL 3.5.9 RPMs and refused system 4.0.3. No system packages or compiler
 defaults were changed. That configure-only result has no new compiler and lacks
-the optional HTTP cohort. Five original network/package groups and full Fedora
-SDK acceptance remain open; the original failed full run is retained.
+the optional HTTP cohort. The following coherent build supplies the network
+results; the original failed full run is retained, and full Fedora regression
+and SDK acceptance remain pending.
 
 The [coherent OpenSSL 3 follow-up](evidence/fedora-current-OpenSSL3-2026-11-06.json)
 built all current targets and registered 301 groups. DNS/TCP delivery completed
