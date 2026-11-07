@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.162.0 / language 0.28 / task ABI 7**.
+Current source uses **toolchain 0.162.1 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
@@ -12,6 +12,11 @@ Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x**, SQLite 3.37+, OpenSSL **3*
 Z3 development files and Python 3.10+. Web/TypeScript needs Node.js 22.18+ and npm.
 Native execution needs the target platform's compiler/SDK; live debugging needs
 compatible LLDB tools. Keep the repository's `web/package-lock.json`.
+
+On Unix, the complete source suite also requires LLVM22.1 `ld.lld` and `llvm-ar`
+for the [ELF library selection tests](native-runtime-search.md). If ELF LLD has a
+separate prefix, add `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` to the CMake
+configure command below. This option is independent of `NEX_WASM_LD`.
 
 ```sh
 git clone --branch main https://github.com/sae-ru/NEX.git

@@ -50,9 +50,12 @@ fn main()->unit !{io,task,throw}{
 ```
 
 Query `structured_tasks_runtime.windows_cpu_tasks` for the actual compiler's
-contract. Its `file_tasks` field is true and `foreign_tasks` remains false;
-the legacy combined `file_or_foreign_tasks` flag remains false because that
-combined contract is not enabled. The configured `windows_targets` suite cross-builds debug/release for
+contract. The current `file_tasks`, `foreign_tasks` and combined
+`file_or_foreign_tasks` fields are true. Current native Windows integration also
+reports source provider images, task debugging and task profiling as enabled;
+actual Windows OS execution is verified for x86-64. These current fields are
+separate from the retained0.136.1 scope above. The configured `windows_targets`
+suite cross-builds debug/release for
 x64 and ARM64, checks current ABI7/PE imports and rebuilds from archived source after
 the original is deleted. Set `NEX_WINDOWS_WINE_IMAGE` to a prepared local amd64
 image exposing `/usr/lib/wine/wine64` to opt into actual x64 Wine compatibility
@@ -158,9 +161,11 @@ and defaults to `local`, matching the existing standalone adapter. Both accept
 Unicode; an explicitly empty/invalid principal is rejected. No default database
 path is granted. Keys/values, transactions and
 principal isolation use the existing runtime contract. See
-`examples/windows/storage.nex`. HTTP hosting remains unavailable on this target.
+`examples/windows/storage.nex`. HTTP hosting was unavailable in the retained0.65
+scope; current Windows development hosting is described above.
 
-Local `run`, `test`, `debug` and `profile` reject this foreign ABI with
+When cross-compiling from a non-Windows host, local `run`, `test`, `debug` and
+`profile` reject this foreign ABI with
 `E_TARGET_RUN`; NEX starts no emulator. Cross-build success establishes code
 generation/linkage. PE inspection, Wine compatibility and actual Windows/device
 execution are distinct checks. Keep their results separate in evidence.

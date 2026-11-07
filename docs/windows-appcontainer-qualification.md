@@ -19,6 +19,16 @@ Python 3.14.3 peer runtime, six AppContainer cases per broker, six deleted
 profiles and unchanged source-canary contents/ACLs. This is a Python-runtime
 qualification pilot; no NEX compiler or HTTP request ran inside those profiles.
 
+The [workflow follow-up](evidence/windows-appcontainer-workflow-2026-11-08.json)
+records the newer host-tool build, both registered CTest groups, and actual
+Python3.10/3.14: seven AppContainer cases, three invalid-budget refusals and two
+old-helper compatibility/refusal controls per broker. All six profiles and
+their parent directories were removed. Separate generated Python parent/client
+pairs completed same-profile IPv4 loopback with empty and explicit network
+capabilities; those two profiles were also removed. No loopback exemption or
+other network setting changed. This is measured Python behavior on that host;
+NEX execution and complete SDK filesystem isolation remain unverified.
+
 ## Build and calibrate
 
 From a source checkout, select a complete native LLVM-MinGW toolchain and a
@@ -44,6 +54,19 @@ Successful temporary evidence is removed; retain raw reports in a new directory
 with `appcontainer_test.py --observer ABSOLUTE_EXE --runtime ABSOLUTE_RUNTIME
 --output NEW_DIRECTORY`. An optional `--source-canary ABSOLUTE_FILE` checks read
 denial without changing that file or its ACL.
+
+`Profile.run` defaults to180 seconds and accepts an explicit outer workflow
+budget up to10800 seconds. A budget above one hour requires the selected native
+observer to advertise that ceiling before any program or observation output is
+created. The maintained calibration uses a short-lived healthy peer at the
+three-hour ceiling, rejects invalid budgets, and optionally checks a calibrated
+one-hour helper with `--legacy-observer ABSOLUTE_EXE`. Individual commands and
+tests inside a workflow retain their own deadlines. The
+[host-tool calibration](evidence/windows-appcontainer-workflow-2026-11-08.json)
+uses short-lived peers; it does not claim three hours of endurance or complete
+SDK acceptance. Immutable SDK resource snapshots keep their original identity.
+For the registered CTest case, select the optional old helper with
+`-DNEX_WINDOWS_APPCONTAINER_LEGACY_OBSERVER=ABSOLUTE_EXE`.
 
 The calibration checks actual AppContainer child and grandchild tokens, read
 denial for the outside file and opposite profile, read-only copied runtime

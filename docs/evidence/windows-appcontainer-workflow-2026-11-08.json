@@ -1,0 +1,86 @@
+{
+  "schema": "nex.Windows-AppContainer-external-workflow-development/1",
+  "date": "2026-11-08",
+  "source_toolchain_context": "0.162.1",
+  "source_language_unchanged": "0.28",
+  "scope": "External Windows qualification tools; no NEX compiler, grammar, task ABI or immutable SDK resource snapshot change.",
+  "host_tool": {
+    "source_archive_sha256": "2c2c0dd76df6be3eba7198b97d91a04449176b19953422fef0d04ca0c2affd70",
+    "helper_sha256": "af324457d221764b8fc8c11bdebf22c201a71f17b7d6a09fe8bad60dbffa5824",
+    "legacy_helper_sha256": "f9561cdfa39573a07b1fe72cd0e07dda4658ebfafd8a2143f0ebc4d96102bf43",
+    "all_host_targets_built": true,
+    "single_registered_CTest_groups_passed": [
+      "windows_job_object_ownership",
+      "windows_appcontainer_ownership"
+    ],
+    "actual_broker_Python": [
+      "3.10.11",
+      "3.14.3"
+    ],
+    "native_cases_each": {
+      "ownership": 5,
+      "budget_admission_or_rejection": 6,
+      "wrapper": 4,
+      "wrapper_budget_rejection": 3
+    },
+    "AppContainer_cases_each": {
+      "ownership_and_capabilities": 7,
+      "invalid_budget_before_launch": 3,
+      "legacy_short_compatible_and_long_rejected_before_launch": 2
+    },
+    "all_passed": true,
+    "default_seconds": 180,
+    "maximum_explicit_outer_seconds": 10800,
+    "long_budget_admission_used_short_lived_peers": true,
+    "three_hour_endurance_claimed": false,
+    "inner_command_test_and_runtime_deadlines_changed": false,
+    "owned_profiles_and_parents_deleted": 6,
+    "compact_runtime_source_files_preserved": 836
+  },
+  "local_IPv4_pilot": {
+    "helper_sha256": "26641e1787e10caf0a6f361ce7dfaefd616cf96e8090f5fd710c3da0283c228c",
+    "ordinary_parent_child_roundtrip": true,
+    "cases": [
+      {
+        "capability_SIDs": [],
+        "parent_and_child_actual_AppContainer": true,
+        "same_profile_parent_child_127_0_0_1_roundtrip": true,
+        "private_job_retired": true
+      },
+      {
+        "capability_SIDs": [
+          "S-1-15-3-1",
+          "S-1-15-3-2",
+          "S-1-15-3-3"
+        ],
+        "parent_and_child_actual_AppContainer": true,
+        "same_profile_parent_child_127_0_0_1_roundtrip": true,
+        "private_job_retired": true
+      }
+    ],
+    "owned_profiles_and_parents_deleted": 2,
+    "loopback_exemptions_firewall_IPv6_accounts_or_original_source_ACLs_changed": false,
+    "external_network_connection_attempted": false,
+    "scope_limit": "Same-profile generated Python IPv4 parent/client pairs on this host. No NEX compiler or HTTP request ran inside these profiles; cross-profile or general external network policy is not established."
+  },
+  "raw_archives": {
+    "host_tool": {
+      "archive_sha256": "1ccae93bb78ce1a1fc734234f6d47267a22d6bf38031c0c2488f472915a912a3",
+      "archive_bytes": 232861,
+      "raw_files": 48,
+      "raw_bytes": 998016,
+      "report_sha256": "a9c257b2bf60e04a3eae9ae829a77d328cad92a9407c1631d5d2e38462bc6aa1",
+      "all_known_profile_paths_and_parents_absent": true
+    },
+    "loopback_pilot": {
+      "archive_sha256": "57a562701a835928d6b5d53b5e797c502359ee9d2e5b20b2a6dba350460b51dc",
+      "archive_bytes": 8418,
+      "raw_files": 25,
+      "raw_bytes": 24825,
+      "report_sha256": "da97db1148f7bc259c31089f8a32b02f90a6106189cd549ca46f2ee2027f6de1",
+      "all_known_profile_paths_and_parents_absent": true
+    }
+  },
+  "NEX_execution_or_full_SDK_isolation_accepted": false,
+  "whole_original_PLAN_complete": false
+}

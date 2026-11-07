@@ -28,10 +28,15 @@ add_test(NAME windows_job_object_ownership COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_LIST_DIR}/job_observer_test.py --observer $<TARGET_FILE:nex_windows_job_observer>)
 set_tests_properties(windows_job_object_ownership PROPERTIES TIMEOUT 90)
 set(NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT "" CACHE PATH "Explicit compact ordinary Python runtime for real AppContainer calibration (standard-user broker required)")
+set(NEX_WINDOWS_APPCONTAINER_LEGACY_OBSERVER "" CACHE FILEPATH "Optional calibrated one-hour observer for AppContainer compatibility checks")
 if(NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT)
+  set(NEX_WINDOWS_APPCONTAINER_LEGACY_ARGS)
+  if(NEX_WINDOWS_APPCONTAINER_LEGACY_OBSERVER)
+    list(APPEND NEX_WINDOWS_APPCONTAINER_LEGACY_ARGS --legacy-observer "${NEX_WINDOWS_APPCONTAINER_LEGACY_OBSERVER}")
+  endif()
   add_test(NAME windows_appcontainer_ownership COMMAND ${Python3_EXECUTABLE} -B
     ${CMAKE_CURRENT_LIST_DIR}/appcontainer_test.py --observer $<TARGET_FILE:nex_windows_job_observer>
-    --runtime ${NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT})
+    --runtime ${NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT} ${NEX_WINDOWS_APPCONTAINER_LEGACY_ARGS})
   set_tests_properties(windows_appcontainer_ownership PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
 endif()
 if(NEX_WINDOWS_JOB_OBSERVER_ONLY)

@@ -129,11 +129,8 @@ std::vector<std::string> strings(const Object &o,const char *key){
 void rpaths(std::vector<std::string> &args,bool darwin,const NativeToolchain &tools,bool storage,bool foreign,bool server){
   if(llvm::Triple(tools.target).isOSWindows())return;
   for(const auto &path:darwin?std::vector<std::string>{"@loader_path","@loader_path/images"}:std::vector<std::string>{"$ORIGIN","$ORIGIN/images"})args.insert(args.end(),{"-Xlinker","-rpath","-Xlinker",path});
-  std::set<std::string> paths;
-  if(storage)paths.insert(fs::path(tools.sqliteLibrary).parent_path().string());
-  if(foreign||server)paths.insert(fs::path(tools.opensslCrypto).parent_path().string());
-  if(server)paths.insert(fs::path(tools.opensslSSL).parent_path().string());
-  for(const auto &path:paths){if(!darwin&&path.find(':')!=std::string::npos)fail("ELF image library path contains ':'");args.insert(args.end(),{"-Xlinker","-rpath","-Xlinker",path});}
+  for(const auto &path:nativeRuntimeSearchPaths(tools,storage,foreign,server))
+    args.insert(args.end(),{"-Xlinker","-rpath","-Xlinker",path});
 }
 void archive(std::vector<std::string> &args,const fs::path &path,bool darwin){
   if(darwin)args.insert(args.end(),{"-Xlinker","-force_load","-Xlinker",path.string()});

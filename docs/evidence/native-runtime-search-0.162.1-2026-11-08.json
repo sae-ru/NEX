@@ -1,0 +1,138 @@
+{
+  "schema": "nex.native-runtime-search-development-evidence/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "task_ABI": 7,
+  "base_commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+  "source_snapshot_is_uncommitted_candidate": true,
+  "language_or_graph_format_changed": false,
+  "core_paths_compared": [
+    "src/",
+    "include/",
+    "runtime/"
+  ],
+  "unchanged_core_files_since_Mac_Linux_gate": 296,
+  "root_CMake_unchanged_since_gate": true,
+  "Mac": {
+    "source_files": 1994,
+    "source_manifest_sha256": "d4921abf38826d3db2addb9a7d1303a92e009bbab85fd59a87518dbd374ac519",
+    "compiler_sha256": "e1ad79ab880e356f656882054f9834c24216b0840c644fed4956e6a1a7e47834",
+    "compiler_build": "4ac21f36885bc5d408350af641998929d2215b02cc7c1691d437fcd2154b1389",
+    "all_targets_built": true,
+    "single_full_CTest": {
+      "passed": 301,
+      "failed": 0,
+      "skipped": 0,
+      "junit_sha256": "93ee644c571c08b51dc9e851da51be1828f47853b1fd227594af70b56d1de08a"
+    },
+    "post_gate_doc_test_followup": {
+      "native_compiler_unchanged": true,
+      "selected_groups": [
+        "public_task_stream_histories",
+        "sdk_host"
+      ],
+      "all_passed": true,
+      "full301_relabelled": false
+    }
+  },
+  "Linux_ARM64": {
+    "environment": "pinned Ubuntu Docker image; separate private OpenSSL copies selected after the system SQLite directory in lexical order",
+    "image_sha256": "67a3d650f5f0d1434c0129aa21920f2dac74dfd4d33efbdcbcdb10169127fd57",
+    "source_manifest_sha256": "d4921abf38826d3db2addb9a7d1303a92e009bbab85fd59a87518dbd374ac519",
+    "compiler_sha256": "2e4ed09cc652417dea9c867a8693d9e2f433998a40a5b9d8fcb6479f450962b1",
+    "all_targets_built": true,
+    "real_ELF_metadata_and_loader_control_passed": true,
+    "actual_source_deleted_NEX_shared_archive_HTTP_package_passed": true,
+    "original_full": {
+      "passed": 299,
+      "failed": [
+        "task_dns_delivery",
+        "task_tcp_delivery",
+        "task_http_client_delivery",
+        "http_stream_delivery_functional"
+      ],
+      "skipped": [],
+      "remains_failed": true
+    },
+    "recovery": {
+      "cause": "Explicit license provenance missing for privately copied OpenSSL in the test configuration",
+      "source_compiler_dependencies_unchanged": true,
+      "only_argument_change": "--package-notices with actual installed Ubuntu OpenSSL copyright and Apache2.0 texts",
+      "all_changed_groups": [
+        "http_stream_delivery_functional",
+        "public_task_write_delivery",
+        "task_dns_delivery",
+        "task_http_client_delivery",
+        "task_tcp_delivery"
+      ],
+      "all_changed_groups_passed": true,
+      "other_command_vectors_unchanged": 298,
+      "junit_sha256": "68845d79e3dc2546f20b5d437749d7796e558db5edd4de5e6258f65aaf29b704"
+    },
+    "exact_union_groups": 303,
+    "single_new_full_invocation": false,
+    "ordinary_installed_smoke_passed": true,
+    "portable_SDK_accepted": false
+  },
+  "Windows_x86_64": {
+    "source_files": 1994,
+    "source_manifest_sha256": "c1aa36739334063423935bdebfd14bd7a6bdf53df3c56cbbbe9496dc5e9df91c",
+    "compiler_sha256": "c474b375c49164b0763eec8f3db0b767fa23dbe3dcd506e1daa44e1356df4416",
+    "all_targets_built": true,
+    "ordinary_install_doctor_passed": true,
+    "registered_groups": 302,
+    "registered_is_not_passed": true,
+    "SDK_archive_sha256": "1e072983ba650dbd4797b8e47ab0abdfb1b4e8f42c4d45d7c16ba34a935cc1f2",
+    "SDK_archive_bytes": 263877662,
+    "selected_history_pairs": {
+      "moved_Store_Python310": 6,
+      "restored_Python314": 6,
+      "C11_and_CXX20_selected_target_and_sysroot_verified": true,
+      "native_reference_agreement": true,
+      "all16_graph_tables_rows_and_IDs_preserved": true,
+      "old_compiler_executed": false
+    },
+    "complete41_accepted": false,
+    "positive_IPv6_accepted": false,
+    "full_current_CTest_accepted": false
+  },
+  "external_Windows_workflow_observer": {
+    "helper_sha256": "26641e1787e10caf0a6f361ce7dfaefd616cf96e8090f5fd710c3da0283c228c",
+    "default_seconds": 180,
+    "explicit_maximum_seconds": 10800,
+    "individual_test_deadlines_changed": false,
+    "NEX_compiler_core_changed_by_observer_followup": false,
+    "actual_broker_Python": [
+      "3.10.11",
+      "3.14.3"
+    ],
+    "cases_each": {
+      "native_ownership": 5,
+      "native_budget_admission_rejection": 6,
+      "wrapper": 4,
+      "wrapper_budget_rejection": 3,
+      "AppContainer": 6
+    },
+    "all_passed": true,
+    "profiles_deleted": true,
+    "original_source_ACLs_accounts_or_network_policy_changed": false,
+    "scope": "External workflow tooling; not a new SDK resource snapshot"
+  },
+  "raw_report_sha256": {
+    "mac_full": "079de798b927f7c89f3d51812042ee045d4d4814c68c193a42fb5b40c1a87a09",
+    "mac_followup": "4137b8dc63066a93ab51ebdcc48b7c2555747b0660c5a3e4a55ed84b024194d8",
+    "linux_original_native": "c91573cc4588735674649c40b0c1bde5c77a8e1ba12bf65c48a602d82fee1991",
+    "linux_recovery": "d6f0b44487765e3156eac15bab6415398054ca49a24aa85e4ed65ab71f54a9df",
+    "windows_build": "e08fa20f7854ed4bb54577fbc8711b9d60ea710d59e674d2451103d944d2efa8",
+    "windows_histories": "5994c410e5cc475e5241d4825d33384832eadc7cd1cb974351404b4bd7273035",
+    "observer_calibration": "fda5dfc22469d6a15d9043275d4bbae9fc8142bf521a05e1a7a85e98b6299274"
+  },
+  "retained_operational_failures": [
+    "Original Linux Docker client EOF, then full299/4 before explicit notices",
+    "Windows history controller postcheck used C++20 instead of actual CXX20 after successful moved6",
+    "Observer CTest succeeded but JUnit successful output was truncated1024bytes",
+    "Isolated embeddedPython310 lacked the explicit source import directory; bootstrap corrected without modifying Python or tool source"
+  ],
+  "new_SDK_release_or_whole_PLAN_accepted": false
+}

@@ -17,6 +17,9 @@ NativeToolchain configureNative(const BuildOptions &options);
 NativeToolchain configureWasm();
 // Completed Windows links retain hashes for statically linked vendor notices.
 llvm::json::Array nativeStaticLinkInputs(const NativeToolchain &tools,bool storage,bool foreign,bool server);
+// Keep configured ELF runtime libraries ahead of conflicting SONAME aliases in
+// other selected directories. Reject configurations with no consistent order.
+std::vector<std::string> nativeRuntimeSearchPaths(const NativeToolchain &tools,bool storage,bool foreign,bool server);
 struct NativeToolchainSnapshot {
   std::string hash, target;
   bool hostCompatible = true;

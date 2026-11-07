@@ -194,7 +194,7 @@ class Profile:
         if not self.created or self.deleted:raise RuntimeError('profile is not active')
         if not self.safe_to_cleanup:raise RuntimeError('a profile operation is still active')
         if not command or not Path(command[0]).is_absolute():raise ValueError('absolute command required')
-        if not 0<timeout<=3600:raise ValueError('invalid job timeout')
+        if not 0<timeout<=10800:raise ValueError('job timeout must be in (0, 10800] seconds')
         observer=Path(observer).resolve(strict=True)
         described=subprocess.run([str(observer),'--describe'],capture_output=True,text=True,timeout=10)
         if described.returncode!=0:raise RuntimeError('selected observer does not support AppContainer creation')
@@ -205,6 +205,10 @@ class Profile:
                 features.get('root_token_verified_before_resume')is not True or
                 features.get('explicit_working_directory')is not True):
             raise RuntimeError('selected observer lacks the required verified AppContainer contract')
+        if timeout>3600:
+            maximum=features.get('maximum_timeout_ms')
+            if type(maximum)is not int or maximum<int(timeout*1000):
+                raise ValueError('selected observer does not advertise the requested workflow budget')
         output=Path(output).resolve()
         if output.exists():raise ValueError('observation output must be new')
         if output==self.path or self.path in output.parents:

@@ -1,3 +1,15 @@
+# Development0.162.1 — selected ELF runtime search
+
+The current working source adds one SONAME-aware directory planner for both
+native link paths, with explicit missing-alias/conflict diagnostics and no
+language0.28/ABI7 or graph-format change. The [development record](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json)
+records Mac full301 and Linux native/package execution plus exact union303.
+The failed Linux299/4 invocation remains failed; all5 groups affected by the
+notice-argument correction passed on unchanged source/compiler/dependencies.
+Windows all-target build, ordinary installation and12 moved/restored C11/CXX20
+history pairs passed. Complete matching SDK delivery and current physical
+platform acceptance remain pending. Historical0.162.0 receipts keep their scope.
+
 # Qualified macOS SDK0.162 / source language0.28
 
 The [current delivery record](docs/releases/0.162.0.json) accepts the immutable
@@ -9,7 +21,7 @@ LLVM calls, preserved10000 IDs and source-deleted replay. All85 schema documents
 detected intentional leak, overflow and race faults; generated provider IR is not
 instrumented. The non-isolated numerical comparison retains its single-workload scope.
 
-Current source is0.162/lang0.28. Archive resources remain4fb860e; subsequent Windows
+The qualified SDK source is0.162.0/lang0.28. Archive resources remain4fb860e; subsequent Windows
 fixtures, source-only SDK tests and documentation keep their own source identities.
 This source publication does not upload a binary release; published0.159 remains
 historical. Fresh Windows source built/installed and passed local smoke; complete
@@ -4359,4 +4371,3 @@ explicit022 AST regressions complement the unchanged legacy request test;
 FFI context probes cover skipped data-only acquisition and mandatory owned
 acquisition. Public021, public022 migration and installed/platform/device
 acceptance are unchanged. Matching full build/regression/sanitizers are pending.
-

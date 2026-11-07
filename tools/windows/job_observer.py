@@ -18,8 +18,8 @@ def observe(command, root, environment, *, observer, timeout=180,
         raise RuntimeError('job observation requires native Windows')
     if not command or not Path(command[0]).is_absolute():
         raise ValueError('an absolute program path is required')
-    if not 0 < timeout <= 3600:
-        raise ValueError('observer timeout must be in (0, 3600] seconds')
+    if not 0 < timeout <= 10800:
+        raise ValueError('observer timeout must be in (0, 10800] seconds')
     capabilities=list(capabilities)
     if len(capabilities)>64 or any(not isinstance(sid,str) or not sid for sid in capabilities):
         raise ValueError('at most64 nonempty capability SIDs are supported')
@@ -32,6 +32,17 @@ def observe(command, root, environment, *, observer, timeout=180,
         if not directory.is_absolute():raise ValueError('an absolute working directory is required')
         directory=directory.resolve(strict=True)
     helper = Path(observer).resolve(strict=True)
+    if timeout > 3600:
+        # Long whole-workflow budgets require an explicitly advertised native
+        # capability; an old helper must reject before creating the program.
+        description = subprocess.run([str(helper), '--describe'], env=environment,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=10, creationflags=subprocess.CREATE_NO_WINDOW)
+        features = json.loads(description.stdout.decode('utf-8')) if description.returncode == 0 else {}
+        maximum = features.get('maximum_timeout_ms')
+        if (features.get('schema') != 'nex.windows-job-observer-capabilities/1' or
+                type(maximum) is not int or maximum < int(timeout*1000)):
+            raise ValueError('selected observer does not advertise the requested workflow budget')
     root = Path(root).resolve(); root.mkdir(parents=True, exist_ok=False)
     prefix = root/'owned'
     options=[]

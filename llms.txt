@@ -1,8 +1,10 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Toolchain 0.162.0 selects ordinary source language 0.28 with runtime
-function/loop contracts. The Mac development SDK has versioned acceptance;
+Current source development 0.162.1 selects ordinary source language 0.28 with
+runtime function/loop contracts. The qualified Mac 0.162.0 archive keeps its exact
+versioned acceptance. The 0.162.1 source evidence is separate; matching SDK delivery
+is pending. The
 current Windows/Linux and broader hardware delivery retain separate gates.
 Executables run without an LLM. Precise semantics and small retrieved contexts are design goals;
 end-to-end model-token savings remain unmeasured.
@@ -23,6 +25,7 @@ end-to-end model-token savings remain unmeasured.
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
 - [Versioned SDK evidence](docs/releases/0.162.0.json)
+- [Current source development evidence](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json)
 
 Use `nex describe --kind index --json`, then `--field PATH --json`.
 Use `nex context --symbol NAME --json` for bounded project context.

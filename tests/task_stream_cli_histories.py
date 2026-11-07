@@ -1,6 +1,6 @@
 from host_fixture import run_native, probe_dll_inputs, deployed_environment
 """Public CLI migration of all genuine SDK1335 stream and mixed FFI revisions."""
-import argparse,copy,json,os,re,sqlite3,subprocess,tempfile,time
+import argparse,copy,importlib.util,json,os,re,sqlite3,subprocess,tempfile,time
 from collections import Counter
 from contextlib import closing
 from pathlib import Path
@@ -8,6 +8,8 @@ from task_stream_ffi_fixture import build_provider,sha,write
 
 p=argparse.ArgumentParser();p.add_argument('compiler',type=Path);p.add_argument('--resources',type=Path);p.add_argument('--retained-sdk',type=Path);p.add_argument('--output',type=Path);p.add_argument('--case',action='append',dest='selected');a=p.parse_args()
 compiler=a.compiler.resolve();resources=(a.resources or Path(__file__).resolve().parents[1]).resolve();temporary=None
+spec=importlib.util.spec_from_file_location('nex_stream_history_sdk_host',resources/'tools/sdk_host.py')
+sdk_host=importlib.util.module_from_spec(spec);spec.loader.exec_module(sdk_host);doctor=None
 if a.output:root=a.output.resolve();root.mkdir()
 else:temporary=tempfile.TemporaryDirectory(prefix='nex public025 histories ');root=Path(temporary.name).resolve()
 if a.retained_sdk:a.retained_sdk=a.retained_sdk.resolve(strict=True)
@@ -16,7 +18,12 @@ if not (fixtures/'language-0.23-sdk1335-stream-generic-modules.json').is_file():
 started=time.monotonic();report={'schema':'nex.public025-stream-cli-histories/1','ok':False,'state':'starting','commands':[],'cases':[],'rejections':[],'providers':{},'compiler_sha256':sha(compiler),'language':'0.28','installed_SDK_accepted':False,'full_objective_complete':False}
 def save():report['seconds']=round(time.monotonic()-started,3);write(root/'report.json',report)
 def run(label,argv,cwd=None,env=None,expected=0):
- report['state']=label;save();r=run_native(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300)
+ report['state']=label;save()
+ # Relocated Windows drivers keep headers/libraries in the selected SDK
+ # sysroot. Use the same actual doctor and fixture adapter as installed checks.
+ runner=sdk_host.compile_fixture if os.name=='nt' and sdk_host.compiler_command(argv) else run_native
+ selected={'doctor':doctor}if runner is sdk_host.compile_fixture else{}
+ r=runner(argv,cwd=cwd or root,env=env or os.environ,capture_output=True,text=True,timeout=300,**selected)
  (root/(label+'.stdout')).write_text(r.stdout, newline="\n");(root/(label+'.stderr')).write_text(r.stderr, newline="\n");report['commands'].append({'name':label,'argv':list(map(str,argv)),'cwd':str(cwd or root),'exit_code':r.returncode,'expected':expected});save();assert r.returncode==expected,(label,r.returncode,r.stdout[-2500:],r.stderr[-2500:]);return r
 def cli(label,project,argv,env=None,expected=0,exe=compiler):return json.loads(run(label,[exe,*argv,'--json'],project,env,expected).stdout)
 def state(project):
@@ -51,6 +58,7 @@ def reviewed_delivery_sources(sources):
  return target
 try:
  descriptor=cli('describe',root,['describe']);assert descriptor['version']=='0.28' and descriptor['task_file_streams']['public_enabled'] and descriptor['task_file_streams']['native_source_lowering']
+ doctor=cli('doctor',root,['doctor'])
  # Completion of this current migration matrix is evidence produced below;
  # do not require or silently change a compiler-wide delivery acceptance flag.
  report['descriptor_history_migration_complete']=descriptor['task_file_streams']['public_history_migration_complete']

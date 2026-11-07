@@ -1,3 +1,15 @@
+# Selected ELF runtime search — development0.162.1
+
+Share SONAME-aware runtime-directory planning between standalone and component
+links. Preserve explicitly selected runtime images; reject missing aliases and
+conflicting search requirements. Static archives add no runtime directory.
+Language0.28/ABI7 and all original unfinished requirements remain unchanged.
+Mac full301 and Linux native/package checks plus exact union303 are recorded in
+the [development evidence](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json).
+Complete matching installed/platform acceptance remains a separate gate.
+Existing0.162.0 archives and stand runs keep
+their immutable source identities; this correction does not relabel them.
+
 # Windows HTTP/HTTPS/HTTP2 candidate0.162
 
 Port native dependency preparation, socket ownership and source/package/stream

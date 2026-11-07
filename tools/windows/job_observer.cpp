@@ -342,13 +342,14 @@ int wmain(int argc, wchar_t **argv) {
   if (argc == 2 && std::wstring(argv[1]) == L"--describe") {
     std::cout << "{\"schema\":\"nex.windows-job-observer-capabilities/1\","
                  "\"kernel_job_assignment_at_creation\":true,\"appcontainer_at_creation\":true,"
-                 "\"root_token_verified_before_resume\":true,\"explicit_working_directory\":true}\n";
+                 "\"root_token_verified_before_resume\":true,\"explicit_working_directory\":true,"
+                 "\"maximum_timeout_ms\":10800000}\n";
     return 0;
   }
   if (argc < 6) return 126;
   std::wstring prefix = argv[1];
   wchar_t *end = nullptr; uint64_t timeout = wcstoull(argv[2], &end, 10);
-  if (!end || *end || timeout < 1 || timeout > 3600000) return 126;
+  if (!end || *end || timeout < 1 || timeout > 10800000) return 126;
   DWORD canary = wcstoul(argv[3], &end, 10); if (!end || *end) return 126;
   int first = 4; bool reject = false; Launch launch;
   while (first < argc && std::wstring(argv[first]) != L"--") {

@@ -131,6 +131,28 @@ if mode=='fail-root':sys.exit(7)
             if observer.poll() is None:observer.terminate();observer.wait(timeout=5)
             for pid,handle in held:kernel.CloseHandle(handle)
     assert len(report['cases'])==5
+    # Exercise admission of a long workflow without waiting for that budget.
+    # Peer lifetimes and every original timeout/canary check stay unchanged.
+    features=json.loads(subprocess.check_output([str(helper),'--describe'],env=env,timeout=10))
+    assert features['maximum_timeout_ms']==10800000
+    report['workflow_budget_cases']=[]
+    for budget in [3600001,10800000]:
+        label='workflow-budget-'+str(budget);prefix=cases/label;peer_marker=cases/(label+'.peer')
+        command=[helper,prefix,str(budget),str(canary.pid),'--',PYTHON,'-u','-B',peer,'healthy',peer_marker]
+        completed=subprocess.run(list(map(str,command)),env=env,capture_output=True,timeout=20)
+        result=json.loads(Path(str(prefix)+'.json').read_text(encoding='utf-8'))
+        assert completed.returncode==0 and result['root_exit_code']==0 and not result['timed_out']
+        assert result['root_job_verified_before_resume'] and result['final_job_accounting_observed'] and result['active_job_processes']==0
+        assert all(row['kernel_membership_verified'] and row['exited'] for row in result['processes'])
+        assert result['outside_canary_alive_after'] and canary.poll()is None
+        report['workflow_budget_cases'].append({'budget_ms':budget,'passed':True,'observation':result})
+    for budget in ['0','10800001','-1','18446744073709551615']:
+        prefix=cases/('rejected-budget-'+budget);peer_marker=prefix.with_suffix('.peer')
+        command=[helper,prefix,budget,str(canary.pid),'--',PYTHON,'-u','-B',peer,'write-marker',peer_marker]
+        completed=subprocess.run(list(map(str,command)),env=env,capture_output=True,timeout=10)
+        assert completed.returncode==126 and not peer_marker.exists()and not Path(str(prefix)+'.json').exists()
+        assert canary.poll()is None
+        report['workflow_budget_cases'].append({'rejected_budget_ms':budget,'program_not_created':True,'passed':True})
     # Exercise the maintained wrapper through this actual Python interpreter,
     # preserving both a normal and a nonzero root result and a job timeout.
     from job_observer import observe
@@ -138,7 +160,8 @@ if mode=='fail-root':sys.exit(7)
     for label, mode, expected, budget in [
             ('wrapper-zero', 'healthy', 0, 10),
             ('wrapper-seven', 'fail-root', 7, 10),
-            ('wrapper-timeout', 'orphan', 0, 1.5)]:
+            ('wrapper-timeout', 'orphan', 0, 1.5),
+            ('wrapper-workflow-budget', 'healthy', 0, 7200)]:
         result = observe([str(PYTHON), '-u', '-B', str(peer), mode,
                           str(cases/(label+'.peer'))], ROOT/label, env,
                          observer=helper, timeout=budget)
@@ -148,6 +171,14 @@ if mode=='fail-root':sys.exit(7)
         assert result['active_job_processes'] == 0, result
         assert canary.poll() is None
         report['wrapper_cases'].append(dict(label=label, passed=True, observation=result))
+    report['wrapper_budget_rejections']=[]
+    for rejected in [0,10800.001,float('nan')]:
+        destination=ROOT/('wrapper-reject-'+str(rejected))
+        try:observe([str(PYTHON),'-u','-B',str(peer),'write-marker',str(destination)+'.peer'],destination,env,observer=helper,timeout=rejected)
+        except ValueError:pass
+        else:raise AssertionError('out-of-range wrapper budget accepted')
+        assert not destination.exists()and not Path(str(destination)+'.peer').exists()and canary.poll()is None
+        report['wrapper_budget_rejections'].append({'budget':repr(rejected),'program_not_created':True,'passed':True})
     marker.with_suffix('.stop').write_text('stop');assert canary.wait(timeout=5)==0
     report.update(ok=True,state='passed',outside_canary_cooperative_exit=canary.returncode)
 except BaseException as error:
@@ -160,6 +191,8 @@ finally:
             # Popen owns this exact separately-created canary handle.
             canary.terminate();canary.wait(timeout=5)
     save()
-print(json.dumps({**{key:report.get(key)for key in ['ok','state','error','seconds']},'evidence':str(ROOT),'cases':report['cases']}))
+print(json.dumps({**{key:report.get(key)for key in ['ok','state','error','seconds']},'evidence':str(ROOT),
+    'cases':report['cases'],'workflow_budget_cases':report.get('workflow_budget_cases',[]),
+    'wrapper_cases':report.get('wrapper_cases',[]),'wrapper_budget_rejections':report.get('wrapper_budget_rejections',[])}))
 if report['ok']and not args.output:shutil.rmtree(ROOT)
 raise SystemExit(0 if report['ok']else 1)

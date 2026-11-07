@@ -52,7 +52,14 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.162.0 / language 0.28 / task ABI 7**.
+Current source: **toolchain 0.162.1 / language 0.28 / task ABI 7**, in development.
+The [ELF runtime search correction](docs/native-runtime-search.md) passed a
+301-group macOS source run and Linux native/package checks. Linux covers all
+303 groups across a retained failed run and its verified notice-argument recovery.
+The [development record](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json)
+also records the fresh Windows build and 12 moved/restored C11/C++20 history
+pairs. Complete matching SDK delivery remains pending.
+The qualified 0.162.0 SDK below retains its exact source and archive identity.
 The [macOS ARM64 SDK record](docs/releases/0.162.0.json) pins the exact immutable
 archive and its qualified resource snapshot. The matching source passed all
 300 CTest groups. Moved and archive-restored SDKs each passed 41 maintained
@@ -108,6 +115,8 @@ Start with the [current installation guide](docs/getting-started.en.md). A sourc
 build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 and
 Python 3.10+. The full CTest suite includes Web/TypeScript workflows and also
 requires Node.js 22.18+, npm and the repository's locked web dependencies.
+On Unix, the ELF fixture tests also require LLVM22.1 `ld.lld` and `llvm-ar`;
+use `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` when LLD has a separate prefix.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release

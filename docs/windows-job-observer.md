@@ -51,6 +51,15 @@ python tools/windows/job_observer.py `
   --output build/owned-debug-run --timeout 180 -- C:/debugger/bin/lldb.exe --version
 ```
 
+The explicit timeout is bounded to three hours (10800 seconds); the default
+remains 180 seconds. This outer limit accommodates a complete SDK workflow in
+one private job. It does not extend the deadlines of commands, tests or runtime
+tasks inside that workflow. Native `--describe` advertises `maximum_timeout_ms`;
+for a budget above one hour the Python wrapper requires that capability before
+launching the program. Older one-hour helpers remain usable for shorter budgets.
+The calibration admits long budgets using short-lived real peers and rejects
+out-of-range budgets before any program starts.
+
 The program path must be absolute and the output directory new. Raw program
 streams, helper streams and kernel receipt remain available. Exit codes stay
 unchanged; timeout returns 124 and observer failure is an error. Callers still

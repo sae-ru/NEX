@@ -23,6 +23,10 @@ Native library build metadata describes physical entry signatures in
 arguments. This compiler-private host interface does not change source types,
 syntax, graph identities or language0.28.
 
+Toolchain0.162.1 develops [selected ELF runtime search ordering](native-runtime-search.md).
+It changes native dependency resolution and diagnostics, without changing source
+syntax, effects, value semantics, canonical identities or graph migration rules.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external

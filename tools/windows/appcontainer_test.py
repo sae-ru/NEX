@@ -17,6 +17,8 @@ parser.add_argument('--observer',required=True,type=Path)
 parser.add_argument('--runtime',type=Path,help='Compact ordinary Windows Python runtime to copy (at most64MiB)')
 parser.add_argument('--output',type=Path,help='New retained evidence directory; successful temporary evidence is otherwise removed')
 parser.add_argument('--source-canary',type=Path,help='Existing readable file to test denial; observed only, never modified')
+parser.add_argument('--legacy-observer',type=Path,
+                    help='Optional previously calibrated one-hour helper: verify short-job compatibility and reject long budgets before launch')
 parser.add_argument('--expect-packaged-broker-refusal',action='store_true',
                     help='Verify refusal of a real packaged broker before creating any profile')
 args=parser.parse_args()
@@ -114,15 +116,17 @@ try:
         environment={**os.environ,'TEMP':str(profile.work),'TMP':str(profile.work),
                      'LOCALAPPDATA':str(profile.work),'PYTHONDONTWRITEBYTECODE':'1','PYTHONUTF8':'1'}
         canaries=json.dumps([str(outside_file),str(source_canary),str(opposite/'canary.txt')])
-        for label,expected,budget in [('healthy',0,20),('nonzero',7,20),('orphan',0,1.5)]:
+        for label,mode,expected,budget in [('healthy','healthy',0,20),
+                ('nonzero','nonzero',7,20),('orphan','orphan',0,1.5),
+                ('workflow-budget','healthy',0,10800)]:
             report['state']=label;save()
-            observed=profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),label,canaries],
+            observed=profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),mode,canaries],
                 root/label,environment,observer=observer,timeout=budget)
             assert observed['parent_exit_code']==expected and observed['timed_out']==(label=='orphan')
             assert observed['appcontainer_verified_before_resume']and observed['appcontainer_sid']==profile.sid
             assert observed['active_job_processes']==0 and outside.poll()is None
             profile.verify_copies();other.verify_copies()
-            if label=='healthy':
+            if label in ('healthy','workflow-budget'):
                 value=json.loads((root/label/'stdout').read_text(encoding='utf-8'))
                 assert value['ok']and value['grandchild']['AppContainer']
             if label=='orphan':
@@ -131,6 +135,36 @@ try:
                 captured=next(p for p in observed['children']if p['pid']==child['pid'])
                 assert captured['exited']and captured['exit_code']==238
             report['cases'].append({'name':label,'ok':True,'observation':observed});save()
+        report['workflow_budget_rejections']=[]
+        for budget in [0,10800.001,float('nan')]:
+            output=root/('invalid-budget-'+repr(budget))
+            try:
+                profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),'healthy',canaries],
+                    output,environment,observer=observer,timeout=budget)
+            except ValueError:pass
+            else:raise AssertionError('invalid AppContainer workflow budget accepted')
+            assert not output.exists()and profile.safe_to_cleanup and outside.poll()is None
+            report['workflow_budget_rejections'].append({'budget':repr(budget),'program_not_created':True,'ok':True})
+        if args.legacy_observer:
+            legacy=args.legacy_observer.resolve(strict=True)
+            report['legacy_observer_sha256']=sha(legacy)
+            report['legacy_budget_cases']=[]
+            observed=profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),'healthy',canaries],
+                root/'legacy-short',environment,observer=legacy,timeout=20)
+            assert observed['parent_exit_code']==0 and not observed['timed_out']and observed['active_job_processes']==0
+            value=json.loads((root/'legacy-short/stdout').read_text(encoding='utf-8'))
+            assert value['ok']and value['grandchild']['AppContainer']
+            report['legacy_budget_cases'].append({'name':'short-job-compatible','ok':True,'observation':observed})
+            output=root/'legacy-long-rejected'
+            try:
+                profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),'healthy',canaries],
+                    output,environment,observer=legacy,timeout=7200)
+            except ValueError as error:
+                assert 'does not advertise the requested workflow budget'in str(error)
+            else:raise AssertionError('legacy helper accepted a long workflow')
+            assert not output.exists()and profile.safe_to_cleanup and outside.poll()is None
+            report['legacy_budget_cases'].append({'name':'long-job-rejected-before-launch','ok':True,'program_not_created':True})
+        profile.verify_copies();other.verify_copies();save()
     finally:
         profile.close();other.close()
     # A declared capability must be present in the suspended root token too.
@@ -178,6 +212,9 @@ finally:
         if 'source_canary_sha256'in report:
             report['source_canary_content_unchanged']=sha(source_canary)==report['source_canary_sha256']
         save()
-print(json.dumps({k:report.get(k)for k in ['ok','state','error','seconds','cleanup_errors']}))
+print(json.dumps({**{k:report.get(k)for k in ['ok','state','error','seconds','cleanup_errors',
+    'controller_python','profiles_deleted','profiles','source_canary_content_unchanged','outside_canary_cooperative_exit']},
+    'cases':report['cases'],'workflow_budget_rejections':report.get('workflow_budget_rejections',[]),
+    'legacy_budget_cases':report.get('legacy_budget_cases',[])}))
 if report['ok']and not args.output:shutil.rmtree(root)
 raise SystemExit(0 if report['ok']else 1)

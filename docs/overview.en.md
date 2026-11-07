@@ -1,9 +1,12 @@
 # Why NEX exists
 
-Toolchain 0.162.0 / language 0.28 exposes source contracts in the ordinary CLI.
+Current source is toolchain 0.162.1 / language 0.28, in development. It exposes
+source contracts in the ordinary CLI.
 Pure function and loop clauses remain checked in release code. Existing 0.27
 histories need explicit migration. The [Mac development SDK receipt](releases/0.162.0.json)
-records current acceptance; other platforms keep separate, versioned evidence.
+records its exact 0.162.0 archive. The [0.162.1 development evidence](evidence/native-runtime-search-0.162.1-2026-11-08.json)
+keeps newer source checks separate; complete matching SDK delivery is pending.
+Other platforms retain their own versioned evidence.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
 

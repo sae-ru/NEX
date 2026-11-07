@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.162.0 LANGUAGES C CXX)
+project(NEX VERSION 0.162.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -83,7 +83,7 @@ endif()
 target_compile_definitions(nex_frontend PRIVATE NEX_RESOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(nex_frontend PRIVATE -Wall -Wextra -Wpedantic)
 add_library(nex_native_backend STATIC src/backend.cpp src/private_task_modules.cpp src/native_toolchain.cpp
-  src/native_image_identity.cpp src/incremental.cpp src/task_debug_manifest.cpp)
+  src/native_image_identity.cpp src/incremental.cpp src/task_debug_manifest.cpp src/native_runtime_paths.cpp)
 target_link_libraries(nex_native_backend PUBLIC nex_frontend MLIR)
 if(WIN32)
   # The CLANG64 MLIR DLL exports the C facade, not the C++ backend API.
@@ -149,6 +149,25 @@ add_test(NAME task_stream_project COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRE
 set_tests_properties(task_stream_project PROPERTIES TIMEOUT 3600)
 add_executable(nex_native_staging_probe tests/native_staging.cpp)
 target_link_libraries(nex_native_staging_probe PRIVATE nex_native_backend)
+if(UNIX)
+  # Some LLVM installations package ELF LLD separately from Clang and Wasm LLD.
+  # Keep the test registered when it is absent: a full suite must provision it.
+  find_program(NEX_ELF_TEST_LD NAMES ld.lld HINTS "${LLVM_TOOLS_BINARY_DIR}")
+  add_executable(nex_native_runtime_paths_probe tests/native_runtime_paths.cpp)
+  target_link_libraries(nex_native_runtime_paths_probe PRIVATE nex_native_backend)
+  add_test(NAME native_runtime_paths COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_runtime_paths.py
+    $<TARGET_FILE:nex_native_runtime_paths_probe> ${LLVM_TOOLS_BINARY_DIR}/clang
+    ${NEX_ELF_TEST_LD} ${LLVM_TOOLS_BINARY_DIR}/llvm-ar)
+  set_tests_properties(native_runtime_paths PROPERTIES TIMEOUT 120)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_test(NAME native_runtime_loader COMMAND ${Python3_EXECUTABLE} -B
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/native_runtime_paths.py
+      $<TARGET_FILE:nex_native_runtime_paths_probe> ${LLVM_TOOLS_BINARY_DIR}/clang
+      ${NEX_ELF_TEST_LD} ${LLVM_TOOLS_BINARY_DIR}/llvm-ar --loader)
+    set_tests_properties(native_runtime_loader PROPERTIES TIMEOUT 120)
+  endif()
+endif()
 add_executable(nex_task_native_emit_probe tests/task_native_emit.cpp)
 target_link_libraries(nex_task_native_emit_probe PRIVATE nex_native_backend)
 add_executable(nex_task_typescript_emit_probe tests/task_typescript_emit.cpp src/typescript.cpp)

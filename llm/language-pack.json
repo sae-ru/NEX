@@ -1,6 +1,18 @@
 {
   "schema": "nex.language-pack/1",
   "language_version": "0.28",
+  "native_runtime_search": {
+    "status": "development",
+    "platform": "ELF/Linux",
+    "selected_libraries": ["sqlite", "openssl_ssl", "openssl_crypto"],
+    "ordering": "selected SONAME aliases precede overlapping selected directories",
+    "conflicting_requirements": "E_TARGET_LIBRARY",
+    "missing_or_mismatched_selected_alias": "E_TARGET_LIBRARY",
+    "static_archive_directories": false,
+    "dynamic_inputs": "direct ELF images",
+    "language_migration_required": false,
+    "guide": "docs/native-runtime-search.md"
+  },
   "source_concurrency": {
     "browser_workers": false,
     "callback_call_depth": 256,
