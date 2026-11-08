@@ -374,6 +374,9 @@ class WindowsBundle(Bundle):
         modules = prefix / 'lib/ossl-modules'
         if any(not path.is_file() for path in files) or not modules.is_dir():
             raise ValueError('selected Windows OpenSSL prefix needs its CLI, both DLLs and provider modules')
+        configuration = prefix / 'etc/ssl/openssl.cnf'
+        if not configuration.is_file() or not configuration.stat().st_size:
+            raise ValueError('selected Windows OpenSSL prefix needs etc/ssl/openssl.cnf; install OpenSSL install_ssldirs')
         # This explicit cohort overrides identical-basename DLLs in the LLVM
         # dependency roots. No process PATH or working-directory search occurs.
         self.pe_selected_imports = {path.name.lower(): path for path in files[1:]}
@@ -509,8 +512,7 @@ class WindowsBundle(Bundle):
                 self.external_tree(openssl_prefix/'lib/ossl-modules',root/'lib/ossl-modules')
                 for module in sorted((openssl_prefix/'lib/ossl-modules').glob('*.dll')):
                     self.collect_pe(module,root/'lib/ossl-modules'/module.name,binaries)
-                if (openssl_prefix/'etc/ssl').is_dir():
-                    self.external_tree(openssl_prefix/'etc/ssl',root/'etc/ssl')
+                self.external_tree(openssl_prefix/'etc/ssl',root/'etc/ssl')
         return self.finish(configuration,doctor,{'platform':'windows','architecture':'x86_64',
             'requires_WSL':False,'requires_MSYS_runtime':False,
             'external_prerequisites':['Windows system DLLs listed in system_libraries','native '+PYTHON_REQUIREMENT,'Node.js/npm','native LLDB for debugger acceptance'],

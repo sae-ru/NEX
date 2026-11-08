@@ -28,7 +28,7 @@ case "$mode" in
       TESTS='test_conf test_provider test_x509 test_evp test_ssl_test_ctx test_store'
     ;;
   install)
-    mingw32-make -j1 SHELL=/usr/bin/sh install_sw DESTDIR="$install_root"
+    mingw32-make -j1 SHELL=/usr/bin/sh install_sw install_ssldirs DESTDIR="$install_root"
     ;;
   *) echo 'unknown build mode' >&2; exit 2 ;;
 esac

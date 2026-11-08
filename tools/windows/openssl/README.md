@@ -35,9 +35,11 @@ are retained with the development receipt.
 Build using `mingw32-make -j4 SHELL=/usr/bin/sh`. Run the six upstream recipes
 `test_conf test_provider test_x509 test_evp test_ssl_test_ctx test_store` with
 `VERBOSE=1 test TESTS=...`; preserve their actual statuses and full logs.
-Use `install_sw DESTDIR=/absolute/private/install-root` to install privately.
+Use `install_sw install_ssldirs DESTDIR=/absolute/private/install-root` to install privately.
 Retain matching headers, static/import libraries, both DLLs, CLI and provider
-modules together. Copy the OpenSSL license, original pathtools notice, both NEX
+modules together, including `etc/ssl/openssl.cnf`. The CLI needs this configuration
+when creating HTTPS test certificates after relocation; `install_sw` alone does
+not install it. Copy the OpenSSL license, original pathtools notice, both NEX
 patches and exact source/build provenance into `share/licenses/openssl`.
 Stack protection and configuration/provider loading remain enabled.
 

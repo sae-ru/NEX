@@ -26,6 +26,67 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class WindowsOpenSSLPrefix(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.prefix = Path(self.directory.name)/'selected OpenSSL'
+        self.doctor = {}
+        for field, relative in [('native_openssl_include', 'include'),
+                                ('native_openssl_ssl', 'lib/libssl.a'),
+                                ('native_openssl_crypto', 'lib/libcrypto.a')]:
+            path = self.prefix/relative
+            if field.endswith('include'):
+                path.mkdir(parents=True)
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'fixture static library')
+            self.doctor[field] = str(path)
+        for name in ['openssl.exe', 'libssl-3-x64.dll', 'libcrypto-3-x64.dll']:
+            path = self.prefix/'bin'/name
+            path.parent.mkdir(exist_ok=True)
+            path.write_bytes(b'fixture executable')
+        (self.prefix/'lib/ossl-modules').mkdir()
+        spec = importlib.util.spec_from_file_location('openssl_prefix_bundle',
+            Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
+        bundle = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bundle)
+        self.bundle = bundle.WindowsBundle.__new__(bundle.WindowsBundle)
+        self.configuration = self.prefix/'etc/ssl/openssl.cnf'
+
+    def configure(self):
+        self.configuration.parent.mkdir(parents=True, exist_ok=True)
+        self.configuration.write_text('[req]\ndistinguished_name = req_dn\n[req_dn]\n')
+
+    def test_missing_configuration_is_rejected_before_selecting_DLLs(self):
+        with self.assertRaisesRegex(ValueError, 'install_ssldirs'):
+            self.bundle.select_openssl_prefix(self.prefix, self.doctor)
+        self.assertFalse(hasattr(self.bundle, 'pe_selected_imports'))
+
+    def test_empty_configuration_is_rejected(self):
+        self.configure()
+        self.configuration.write_bytes(b'')
+        with self.assertRaisesRegex(ValueError, 'openssl.cnf'):
+            self.bundle.select_openssl_prefix(self.prefix, self.doctor)
+
+    def test_complete_cohort_selects_its_own_DLLs(self):
+        self.configure()
+        self.assertEqual(self.bundle.select_openssl_prefix(self.prefix, self.doctor),
+                         self.prefix.resolve())
+        self.assertEqual(self.bundle.pe_selected_imports,
+                         {name: self.prefix.resolve()/'bin'/name for name in
+                          ['libssl-3-x64.dll', 'libcrypto-3-x64.dll']})
+
+    def test_configuration_does_not_permit_a_different_native_library(self):
+        self.configure()
+        different = self.prefix/'lib/different-crypto.a'
+        different.write_bytes(b'different library')
+        self.doctor['native_openssl_crypto'] = str(different)
+        with self.assertRaisesRegex(ValueError, 'must match'):
+            self.bundle.select_openssl_prefix(self.prefix, self.doctor)
+        self.assertFalse(hasattr(self.bundle, 'pe_selected_imports'))
+
+
 class DebuggerFatalDiagnostics(unittest.TestCase):
     def test_zero_parent_with_actual_fatal_stderr_fails_both_recording_runners(self):
         # Reproduce the observed Windows contract: parent0, completed stdout,
