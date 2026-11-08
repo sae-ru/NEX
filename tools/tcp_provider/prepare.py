@@ -100,7 +100,12 @@ def main():
   cxx=args.cxx or doctor['native_compiler']
   if not isinstance(cxx,str) or not Path(cxx).is_file():raise RuntimeError('a real operator-selected C++20 compiler is required')
   bundle=out/'bundle';bundle.mkdir();module=bundle/('module.dll' if os.name=='nt' else 'module.so')
-  run('compile-module',[cxx,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-I'+str(inputs/'runtime'),'-I'+str(generated),inputs/'module.cpp',inputs/'runtime/nex_task_network.cpp','-o',module,*(['-static','-lws2_32'] if os.name=='nt' else [])])
+  command=[cxx]
+  if os.name=='nt':
+   sysroot=doctor.get('native_sysroot','')
+   if not isinstance(sysroot,str) or not sysroot or not Path(sysroot).is_dir():raise RuntimeError('Windows TCP preparation requires the selected SDK sysroot')
+   command.append('--sysroot='+sysroot)
+  run('compile-module',[*command,'-std=c++20','-O2','-pthread','-shared','-fPIC','-fvisibility=hidden','-I'+str(inputs/'runtime'),'-I'+str(generated),inputs/'module.cpp',inputs/'runtime/nex_task_network.cpp','-o',module,*(['-static','-lws2_32'] if os.name=='nt' else [])])
   shutil.copy2(generated/'targets.json',bundle/'targets.json');(bundle/'NOTICE').write_text('NEX TCP provider\nOriginal NEX runtime and adapter sources.\nBuilt with the operator-selected platform C++ SDK.\n')
   manifest={'schema':'nex.foreign-bundle/1','platform':('windows' if os.name=='nt' else 'macos' if platform.system()=='Darwin' else 'linux')+'-'+('arm64' if platform.machine() in ('arm64','aarch64') else 'x86_64'),'entry':module.name,'files':[{'path':n,'sha256':sha(bundle/n)} for n in [module.name,'targets.json','NOTICE']],'exports':signatures,'notices':['NOTICE']}
   write(bundle/'manifest.json',manifest);pin=sha(bundle/'manifest.json');(out/'main.nex').write_text(template.replace('@PIN@',pin));write(out/'foreign.json',{'schema':'nex.foreign-host/1','module_limit':1,'libraries':{'tcp':{'directory':'./bundle','manifest_sha256':pin,'exports':list(signatures)}}})
