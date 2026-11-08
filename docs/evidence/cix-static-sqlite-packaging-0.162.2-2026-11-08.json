@@ -1,0 +1,50 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "scope": "Packaging test fixtures with operator-selected genuine static PIC SQLite on Linux ARM64",
+  "base_source_commit": "2fe5e17c924001e7b58980dca26485275ab97d34",
+  "candidate_test_file": "tests/packaging.py",
+  "candidate_test_sha256": "99451065e854b1db942b30b11589f6e718dbf8708dba31bd85db7c47326cfece",
+  "native_compiler_sha256": "1781841ef76cac2b40cd5c693707257535eb744ee28caa94604fec830b9cd66f",
+  "passed_groups": [
+    "packaging",
+    "foreign_packaging",
+    "project_packaging",
+    "project_foreign_packaging",
+    "project_package_tasks"
+  ],
+  "commands": [
+    {
+      "group": "packaging",
+      "exit_code": 0,
+      "seconds": 128.71804432710633
+    },
+    {
+      "group": "foreign_packaging",
+      "exit_code": 0,
+      "seconds": 804.490947331069
+    },
+    {
+      "group": "project_packaging",
+      "exit_code": 0,
+      "seconds": 58.914492062991485
+    },
+    {
+      "group": "project_foreign_packaging",
+      "exit_code": 0,
+      "seconds": 482.46362025802955
+    },
+    {
+      "group": "project_package_tasks",
+      "exit_code": 0,
+      "seconds": 193.9242708887905
+    }
+  ],
+  "correction": "Archives remain link/notice inputs. Runtime-removal fixtures export the selected genuine PIC SQLite archive as a shared image and validate its actual ELF closure. Shared-library paths retain existing closure checks.",
+  "production_compiler_runtime_or_dependencies_changed": false,
+  "original_full303_failure_preserved": true,
+  "complete_current_source_regression_accepted": false,
+  "portable_SDK_accepted": false,
+  "tests_skipped_or_assertions_weakened": false
+}

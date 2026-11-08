@@ -13,6 +13,7 @@ import shutil
 import signal
 import ssl
 import subprocess
+import tempfile
 import threading
 import unittest
 import urllib.error
@@ -42,6 +43,10 @@ class Packaging(harness.ToolchainCase):
             if path in found:continue
             found.add(path)
             if os.name=='nt' and path.suffix.lower()=='.dll' and Path(str(path)+'.a').is_file():pending.append(Path(str(path)+'.a'))
+            # Archives are link inputs, not runtime images. Keep their notice
+            # roots, and inspect dynamic dependencies on the actual images.
+            with path.open('rb')as source:
+                if source.read(8)==b'!<arch>\n':continue
             if platform.system() == 'Darwin':
                 listing = subprocess.check_output(['/usr/bin/otool', '-L', path], text=True)
                 for line in listing.splitlines()[1:]:
@@ -52,7 +57,6 @@ class Packaging(harness.ToolchainCase):
                 import sys
                 sys.path.insert(0,str(harness.REPO/'tools'))
                 from windows_pe import inspect,system_directory
-                if path.read_bytes().startswith(b'!<arch>\n'):continue
                 for name in inspect(path)['imports']:
                     if name.startswith(('api-ms-win-','ext-ms-win-')) or (system_directory()/name).is_file():continue
                     dependency=path.parent/name
@@ -145,7 +149,24 @@ class Packaging(harness.ToolchainCase):
             result=run_native([doctor['native_compiler'],'-shared','-Wl,--whole-archive',original,'-Wl,--no-whole-archive','-Wl,--export-all-symbols','-o',library],capture_output=True,text=True,timeout=120)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         else:
-            library=self.copy_elf_fixture_closure(original,prefix)
+            with original.open('rb')as source:
+                archive=source.read(8)==b'!<arch>\n'
+            if archive:
+                # These tests deliberately remove a runtime library. Export
+                # the selected genuine PIC SQLite archive as a fixture image,
+                # just as the Windows branch does, rather than treating the
+                # archive itself as a dynamic object or skipping the test.
+                with tempfile.TemporaryDirectory(prefix='sqlite-archive-input-',dir=self.root)as temporary:
+                    shared=Path(temporary)/'libnex_fixture_sqlite3.so'
+                    command=[doctor['native_compiler'],'-shared','-Wl,--whole-archive',original,
+                             '-Wl,--no-whole-archive','-pthread','-ldl','-lm',
+                             '-Wl,-soname,'+shared.name,'-o',shared]
+                    result=subprocess.run(list(map(str,command)),capture_output=True,text=True,
+                                          timeout=120,env=loader_environment())
+                    self.assertEqual(result.returncode,0,'selected SQLite archive must support the shared fixture: '+result.stdout+result.stderr)
+                    library=self.copy_elf_fixture_closure(shared,prefix)
+            else:
+                library=self.copy_elf_fixture_closure(original,prefix)
         config = self.root / 'toolchain.json'
         config.write_text(json.dumps({**harness.host_toolchain_defaults(doctor),
             'sqlite': {'include': doctor['native_sqlite_include'], 'library': str(library)+('.a' if os.name=='nt' else '')}}), newline="\n")
