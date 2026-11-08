@@ -26,6 +26,46 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class RetainedHostPaths(unittest.TestCase):
+    def test_native_and_portable_spellings_bind_the_same_existing_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()/'retained SDK % 🧠'
+            path = root/'.nex/build'/('a'*64)/acceptance.sdk_host.executable_name('app')
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'actual retained bytes')
+            check = acceptance.sdk_host.same_existing_path
+            self.assertTrue(check(str(path), path))
+            self.assertTrue(check(path.as_posix(), path))
+            self.assertTrue(check(str(path.parent), path.parent))
+            if os.name == 'nt':
+                mixed = str(root) + '/.nex/build/' + path.parent.name + '\\' + path.name
+                self.assertNotEqual(mixed, str(path))
+                self.assertTrue(check(mixed, path))
+
+    def test_matching_bytes_or_physical_identity_do_not_waive_namespace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            expected = root/'original';expected.write_bytes(b'same bytes')
+            copy = root/'copy';copy.write_bytes(expected.read_bytes())
+            alias = root/'outside hardlink';os.link(expected, alias)
+            self.assertTrue(alias.samefile(expected))
+            for recorded in (str(copy),str(alias),expected.name,'',None,42,str(expected)+'\0'):
+                with self.subTest(recorded=recorded):
+                    self.assertFalse(acceptance.sdk_host.same_existing_path(recorded,expected))
+            missing = root/'missing'
+            self.assertFalse(acceptance.sdk_host.same_existing_path(str(missing),missing))
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX backslashes are literal filename characters')
+    def test_posix_backslashes_are_not_normalized_to_separators(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            literal = root/'nested\\image';literal.write_bytes(b'literal name')
+            separated = root/'nested/image';separated.parent.mkdir();separated.write_bytes(b'literal name')
+            check = acceptance.sdk_host.same_existing_path
+            self.assertTrue(check(str(literal),literal))
+            self.assertFalse(check(str(literal),separated))
+
+
 class WindowsOpenSSLPrefix(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -1600,7 +1640,8 @@ THE SOFTWARE.
             root=Path(temporary).resolve();receipt=root/'receipt';receipt.mkdir()
             def fixture(label,digit):
                 key=digit*64;original=root/label/'.nex/build'/key;original.mkdir(parents=True)
-                artifact={'component':'app','kind':'executable','build_key':key,'artifact':str(original/'app')}
+                app=acceptance.sdk_host.executable_name('app')
+                artifact={'component':'app','kind':'executable','build_key':key,'artifact':str(original/app)}
                 component={'component':'app','kind':'executable',
                     'retained_build':'artifacts/measure-provider/components/app/retained-build/retained.json'}
                 provider={'schema':'nex.native-task-provider/3','component':'app','mode':'static',
@@ -1610,7 +1651,7 @@ THE SOFTWARE.
                     'libraries/0.a','libraries/0.task-provider.json','libraries/0.task-profile-catalog.json']
                 metadata={'key':key,'compiler_build':'f'*64,'completion_schema':'nex.native-completion/6',
                     'task_provider':provider,'task_provider_hash':digit*64}
-                names=['app','program.mlir','program.ll','compilation.json','build.json','source-bundle.json',
+                names=[app,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',
                     *inputs,'complete','debug.json']
                 payload={name:(label+':'+name).encode() for name in names}
                 leaf={**provider,'component':'leaf'}
@@ -1627,7 +1668,7 @@ THE SOFTWARE.
                 for name in names:
                     copied=receipt/'artifacts/measure-provider/components/app/retained-build'/name
                     copied.parent.mkdir(parents=True,exist_ok=True);copied.write_bytes(payload[name]);(original/name).parent.mkdir(parents=True,exist_ok=True);(original/name).write_bytes(payload[name])
-                    row={'original':str(original/name),'retained':copied.relative_to(receipt).as_posix(),
+                    row={'original':str(original)+'/'+name,'retained':copied.relative_to(receipt).as_posix(),
                         'hash':digit*64,'bytes':len(payload[name])};record['files'].append(row)
                     check['artifacts'][copied.relative_to(receipt/'artifacts/measure-provider').as_posix()]={'hash':row['hash'],'bytes':row['bytes']}
                 path=receipt/component['retained_build'];path.write_text(json.dumps(record), newline="\n")

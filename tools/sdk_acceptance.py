@@ -460,7 +460,7 @@ def retained_task_debug_build(receipt_root,check,artifact,component,compiler_bui
     rows={};total=0;proof=[]
     for row,relative in zip(record['files'],names):
         require(isinstance(row,dict) and set(row)=={'original','retained','hash','bytes'} and
-                row.get('original')==str(original/relative) and row.get('retained')==prefix+relative and
+                sdk_host.same_existing_path(row.get('original'),original/relative) and row.get('retained')==prefix+relative and
                 type(row.get('bytes')) is int and 0<=row['bytes']<=512*1024*1024 and
                 isinstance(row.get('hash'),str) and re.fullmatch('[0-9a-f]{64}',row['hash']),
                 'provider debug retained mapping order/path differs')
@@ -485,9 +485,10 @@ def relocated_task_debug(package_root,package_meta,project_root,completion_input
     require(receipt.get('schema')=='nex.task-debug-relocation/1' and receipt.get('metadata_rewritten') is False and
             receipt.get('build_key')==fresh.get('build_key')==key and
             receipt.get('compiler_build')==package_meta.get('compiler_build')==fresh.get('compiler_build') and
-            receipt.get('artifact_directory')==str(directory)==fresh.get('artifact_directory') and
+            sdk_host.same_existing_path(receipt.get('artifact_directory'),directory) and
+            sdk_host.same_existing_path(fresh.get('artifact_directory'),directory) and
             directory==package_root/'debugger/retained-build' and
-            receipt.get('original_directory')==str(project_root/'.nex/build'/key),
+            sdk_host.same_existing_path(receipt.get('original_directory'),project_root/'.nex/build'/key),
             'packaged provider debug relocation context differs')
     metadata,provider,names=task_debug_namespace(directory,completion_inputs,package_meta['compiler_build'],key)
     rows=receipt.get('raw_files')
@@ -540,7 +541,8 @@ def relocated_task_debug(package_root,package_meta,project_root,completion_input
             require(all(row[key] is None for key in ('component','input_image_key','input_image_sha256','input_uuid','output_image_sha256')),
                     'packaged nonimage debug input claims an image')
         else:
-            physical=next((mapping for mapping in mappings if mapping['output']['path']==str(package_root/row['output_image'])),None)
+            physical=next((mapping for mapping in mappings if sdk_host.same_existing_path(
+                mapping['output']['path'],package_root/row['output_image'])),None)
             require(physical is not None and row['component']==physical['input']['component'] and
                     all(row[field]==physical['input'][key] for field,key in (('input_image_key','key'),('input_image_sha256','sha256'),('input_uuid','uuid'))) and
                     row['output_image_sha256']==physical['output']['sha256'],
@@ -580,7 +582,7 @@ def retained_task_profile_build(receipt_root, check, artifact, component, compil
     executable=Path(artifact['artifact']);original=Path(record['original_directory'])
     require(executable.is_absolute() and executable.parent==original and original.resolve(strict=True)==original and original.name==record['build_key'] and
             re.fullmatch('[0-9a-f]{64}',record['build_key']) and
-            executable.name==('app' if component['kind']=='executable' else 'libnex.a' if component['kind']=='static_library'
+            executable.name==(sdk_host.executable_name('app') if component['kind']=='executable' else 'libnex.a' if component['kind']=='static_library'
                 else 'libnex_'+name+'_'+record['build_key']+executable.suffix),
             'profile retained artifact does not match measured component')
     metadata=json.loads(task_sdk_regular(receipt_root,prefix+'build.json',8*1024*1024).read_text())
@@ -594,7 +596,7 @@ def retained_task_profile_build(receipt_root, check, artifact, component, compil
     mapped={};total=0;independent=[]
     for expected,row in zip(names,record['files']):
         require(isinstance(row,dict) and set(row)=={'original','retained','hash','bytes'} and
-                row['original']==str(original/expected) and row['retained']==prefix+expected and
+                sdk_host.same_existing_path(row['original'],original/expected) and row['retained']==prefix+expected and
                 type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
                 isinstance(row['hash'],str) and re.fullmatch('[0-9a-f]{64}',row['hash']),
                 'profile retained row/path/order differs')
@@ -2959,7 +2961,7 @@ server fn main()->unit!{task,fs,io}{
                         'invalid retained completion record')
                 original_directory = directory/'.nex/build'/record['build_key']
                 require(re.fullmatch('[0-9a-f]{64}',record['build_key']) and
-                        record['original_directory']==str(original_directory),'retained original directory differs')
+                        sdk_host.same_existing_path(record['original_directory'],original_directory),'retained original directory differs')
                 metadata = json.loads(regular(receipt.parent,prefix+'build.json',8*1024*1024).read_text())
                 require(metadata['completion_schema']=='nex.native-completion/4' and
                         metadata['key']==record['build_key'] and metadata['compiler_build']==identity['compiler_build'],
@@ -2969,7 +2971,7 @@ server fn main()->unit!{task,fs,io}{
                         [part for index in range((len(inputs)-2)//2) for part in
                          ('libraries/%d.a'%index,'libraries/%d.task-provider.json'%index)],
                         'retained completion4 inputs are not the exact bounded ordered pin list')
-                executable_name = 'libnex.a' if metadata['kind']=='static_library' else 'app'
+                executable_name = 'libnex.a' if metadata['kind']=='static_library' else sdk_host.executable_name('app')
                 require(metadata['kind'] in ('static_library','executable'),'unsupported retained build kind')
                 names = [executable_name,'program.mlir','program.ll','compilation.json','build.json','source-bundle.json',
                          *inputs,'complete','debug.json']
@@ -2978,7 +2980,7 @@ server fn main()->unit!{task,fs,io}{
                 mapped = {}
                 for name,row in zip(names,record['files']):
                     require(set(row)=={'original','retained','hash','bytes'} and
-                            row['original']==str(original_directory/name) and row['retained']==prefix+name and
+                            sdk_host.same_existing_path(row['original'],original_directory/name) and row['retained']==prefix+name and
                             type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
                             re.fullmatch('[0-9a-f]{64}',row['hash']),
                             'retained completion map path/type differs')
@@ -3251,7 +3253,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
                 require(len(names)==len(set(names))==len(record['files']),'retained shared map count differs')
                 mapped={}
                 for name,row in zip(names,record['files']):
-                    require(set(row)=={'original','retained','hash','bytes'} and row['original']==str(original_directory/name) and
+                    require(set(row)=={'original','retained','hash','bytes'} and sdk_host.same_existing_path(row['original'],original_directory/name) and
                             row['retained']==prefix+name and type(row['bytes']) is int and 0<=row['bytes']<=64*1024*1024 and
                             re.fullmatch('[0-9a-f]{64}',row['hash']),'invalid retained shared map row')
                     original=regular(directory,original_directory.relative_to(directory).as_posix()+'/'+name).read_bytes()

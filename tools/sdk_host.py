@@ -14,6 +14,24 @@ WINDOWS = os.name == 'nt'
 def executable_name(name):
     return name + '.exe' if WINDOWS else name
 
+def same_existing_path(recorded, expected):
+    """Match a host path's namespace and physical identity, not its spelling.
+
+    Windows producers may combine native separators with portable suffixes.
+    Path equality handles those spellings; samefile also checks the actual
+    filesystem, including directories with case-sensitive name lookup. Neither
+    an outside hard link nor an unresolved historical path satisfies this check.
+    Portable relative inventory names are validated separately by their callers.
+    """
+    if type(recorded) is not str or '\0' in recorded:
+        return False
+    try:
+        actual, expected = Path(recorded), Path(expected)
+        return (actual.is_absolute() and expected.is_absolute() and
+                actual == expected and actual.samefile(expected))
+    except (OSError, ValueError):
+        return False
+
 def shared_name(name):
     return name + ('.dll' if WINDOWS else '.dylib' if platform.system() == 'Darwin' else '.so')
 
