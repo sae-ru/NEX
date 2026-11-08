@@ -47,8 +47,12 @@ breakpoint/local42/exit controls. On the same plain C17 image, LLDB22 rewound
 an exited process to a queued running state; 23 preserved its terminal state.
 The [prerequisite record](evidence/cix-debugger23-prerequisites-0.162.2-2026-11-08.json)
 retains that comparison. An unchanged NEX channel-wait repetition still crashed
-stock 23.1.6 liblldb; full NEX debugger and SDK acceptance remain open. Compiler
-LLVM/MLIR22.1.8 and system packages are unchanged.
+stock23.1.6 liblldb. Exact build-ID-matched symbols localized the frontend crash
+to stopped-frame rendering and register reads on the default event thread.
+The working [resume helper](debugging.md#logical-task-resume) now keeps synchronous
+stop processing with LLDB's primary listener. Its scoped cross-platform checks
+and matching full regression/SDK delivery remain distinct; the earlier crash
+receipt is retained. Compiler LLVM/MLIR22.1.8 and system packages are unchanged.
 
 On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
 selected its cross sysroot when manually linking fixtures against native host

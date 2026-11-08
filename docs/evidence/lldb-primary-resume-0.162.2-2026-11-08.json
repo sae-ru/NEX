@@ -1,0 +1,37 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "ok": true,
+  "sealed_utc": "2026-11-08T20:33:55.937743+00:00",
+  "helper_sha256": "cc92cb8e4f7919fec6fa4cb0957ec9a02a421fe544e2892fd88b9919b2ef0f5c",
+  "tests_sha256": "fd5df8a97089b0d87f2429948e0c362abd7c8c4cdf617a81dbd775c7bd675c4b",
+  "platforms": [
+    "Windows",
+    "CIX",
+    "Mac"
+  ],
+  "complete_current_group_cases_per_platform": 15,
+  "original_observable_methods_unchanged": 13,
+  "retired_secondary_queue_simulations": 4,
+  "new_actual_runtime_methods": 2,
+  "all_three_controllers_retired": true,
+  "actual_source_and_compiler_revalidated": true,
+  "raw_files": 31,
+  "raw_bytes": 1417670,
+  "raw_archive_sha256": "d2e1459ed0df375450d7f089f16ef351473422b275553efd5c7b4e884980bdde",
+  "raw_archive_bytes": 231050,
+  "matching_full_regression_and_SDK_accepted": false,
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "scope": "Complete updated task_debugging_native group on three native hosts; separate from matching complete source/SDK qualification",
+  "working_base_commit": "29fcecb12b95971b2abe967eab208f8be42035cf",
+  "compiler_sha256": {
+    "macOS_ARM64": "1be696c6c4d8347d38e0b4bf1fdd912bc642715344ba284fa7957904ad223711",
+    "Windows_x86_64": "977058a8090bbfe6bf53b1e13bf53cf20a2f85a819bd01fd7ce523da466fb2d3",
+    "Debian12_ARM64": "1781841ef76cac2b40cd5c693707257535eb744ee28caa94604fec830b9cd66f"
+  },
+  "original_failed_windows_tests_preserved": true,
+  "prior_async_secondary_listener_and_wrong_subject_core_attempts_preserved": true,
+  "unqualified_terminal_driver_controls_not_counted_as_product_regression_or_pass": true,
+  "whole_original_PLAN_complete": false
+}

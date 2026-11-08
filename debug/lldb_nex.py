@@ -2450,44 +2450,26 @@ def _task_function_source_identity(function):
 
 
 def _task_resume(debugger, process):
-    if debugger.GetAsync():
-        return process.Continue()
-    # Keep the normal synchronous command result without LLDB's unbounded
-    # ResumeSynchronous event wait observed during rapid process exit.
-    stop_id = process.GetStopID()
-    listener = lldb.SBListener('nex-task-resume-' + str(process.GetUniqueID()))
-    broadcaster = process.GetBroadcaster()
-    mask = lldb.SBProcess.eBroadcastBitStateChanged
-    if listener.StartListeningForEvents(broadcaster, mask) != mask:
+    # Synchronous Continue owns stop processing through LLDB's primary listener.
+    # A secondary notification can precede default-thread frame rendering.
+    state = process.GetState()
+    if state not in (lldb.eStateStopped, lldb.eStateSuspended):
         error = lldb.SBError()
-        error.SetErrorString('cannot subscribe to process state changes')
+        error.SetErrorString('cannot resume a process that is not stopped (state ' + str(state) + ')')
         return error
-    debugger.SetAsync(True)
+    asynchronous = debugger.GetAsync()
     try:
         error = process.Continue()
-        if error.Fail():
-            return error
-        while True:
-            event = lldb.SBEvent()
-            received = listener.WaitForEvent(1, event)
-            state = process.GetState()
-            if state in (lldb.eStateExited, lldb.eStateCrashed):
-                return error
-            if state in (lldb.eStateInvalid, lldb.eStateUnloaded, lldb.eStateDetached):
-                error.SetErrorString('process became unavailable while resuming (state ' + str(state) + ')')
-                return error
-            if (received and lldb.SBProcess.GetProcessFromEvent(event).GetUniqueID() == process.GetUniqueID()
-                    and not lldb.SBProcess.GetRestartedFromEvent(event)
-                    and lldb.SBProcess.GetStateFromEvent(event) in (lldb.eStateStopped, lldb.eStateSuspended)
-                    and state in (lldb.eStateStopped, lldb.eStateSuspended)
-                    and process.GetStopID() != stop_id):
-                return error
     except KeyboardInterrupt:
         process.Stop()
         raise
-    finally:
-        listener.StopListeningForEvents(broadcaster, mask)
-        debugger.SetAsync(False)
+    if not asynchronous and error.Success() and process.GetState() == lldb.eStateExited:
+        selected = debugger.GetSelectedTarget().GetProcess()
+        if selected.GetUniqueID() == process.GetUniqueID():
+            # SBProcess's synchronous resume has no CLI output stream.
+            # Ask LLDB to report its actual terminal state after the hijack ends.
+            debugger.HandleCommand('process status')
+    return error
 
 
 def _task_request(debugger, request):

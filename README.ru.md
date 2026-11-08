@@ -66,6 +66,9 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 [десять настоящих AppContainer-случаев и TCP в трёх режимах](docs/evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json),
 затем [35 физических CUDA- и 36 Compute Sanitizer-проверок](docs/evidence/windows-SDK-CUDA-0.162.2-2026-11-08.json).
 Эти квитанции закрепляют новый архив; полная приёмка его SDK ещё не завершена.
+[Исправление продолжения задач в отладчике](docs/evidence/lldb-primary-resume-0.162.2-2026-11-08.json)
+прошло обновлённую группу из15 проверок на macOS ARM64, Windows x86-64 и
+Debian ARM64. Полная регрессия и поставка SDK с этой правкой проверяются отдельно.
 [Исходный тест GCC](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 сохраняет свою узкую область. Две поправки Python учитывают измеренную холодную
 сборку runtime в worker-тестах и передают выбранный SDK sysroot компилятору

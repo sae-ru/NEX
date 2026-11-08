@@ -56,6 +56,12 @@ progress. It does not pin the task to the currently stopped OS thread. Source
 point visits distinguish repeated loop iterations even on the same line.
 Continue/new stop invalidates references from the preceding stop.
 
+The current development helper keeps synchronous resume under LLDB's primary
+event ownership; it does not return early from a secondary stop notification.
+An already asynchronous caller stays asynchronous. Successful synchronous exit
+is reported through LLDB's actual process status. See the
+[resume contract and debugger prerequisites](debugging.md#logical-task-resume).
+
 The matching NEX DAP bridge uses logical tasks for `threads`, `stackTrace`,
 `scopes`, `variables`, `evaluate`, `next`, `stepIn` and `stepOut` when its fresh
 launch descriptor selects task mode. Raw `lldb-dap` task launches are rejected.

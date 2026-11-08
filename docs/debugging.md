@@ -237,21 +237,42 @@ projections and matching compiler as ordinary frames.
 
 ## Logical task resume
 
-Toolchain 0.152.1 changes synchronous `nex-task` continue/step
-commands to subscribe to process state events before resuming asynchronously.
-The command still waits for a fresh stop or process exit and restores the
-caller's debugger mode. Restarted internal stops and events for other processes
-do not complete the request. A confirmed terminal process state completes the
-wait even if its exit event is absent. Interrupting the wait requests a process stop.
-An already asynchronous caller retains its asynchronous behavior; DAP's explicit
-`defer_continue` path keeps its existing event ownership.
+The current0.162.2 development helper delegates synchronous task continue/step
+to `SBProcess.Continue` with the caller's debugger mode unchanged. LLDB owns the
+primary stop-processing path. An ARM64 frontend crash was reproduced while the
+default event thread rendered a stopped frame. A secondary notification does
+not wait for that rendering to finish, so the helper no longer uses a second
+state-event queue to decide when another synchronous resume is allowed.
+It rejects a process that is not stopped before calling the backend, including
+an already terminated process.
 
-This avoids the unbounded LLDB synchronous-resume wait observed during rapid
+After a successful synchronous exit, it asks LLDB's `process status` command
+to display the actual terminal state of the same selected process. The SB API
+otherwise has no CLI output stream for this status. Asynchronous callers keep
+their mode and immediate-return behavior. DAP's explicit `defer_continue` path
+retains its existing event ownership. If embedded Python raises
+`KeyboardInterrupt`, the helper requests a process stop and propagates the
+exception. This does not alter source stepping, task deadlines or source-error
+semantics. Matching full regression and installed SDK delivery are separate gates.
+The [scoped0.162.2 receipt](evidence/lldb-primary-resume-0.162.2-2026-11-08.json)
+records the complete updated15-case task-debugger group on macOS ARM64,
+native Windows x86-64 and Debian12 ARM64. Thirteen existing observable cases are
+unchanged; two actual runtime tests replace four simulations of the old helper's
+secondary event queue. Raw logs and exact helper/test/compiler hashes are retained.
+
+Historically, toolchain0.152.1 changed synchronous `nex-task` continue/step
+commands to subscribe to process state events before resuming asynchronously.
+That helper waited for a fresh stop or process exit and restored the
+caller's debugger mode. Restarted internal stops and events for other processes
+did not complete the request. A confirmed terminal process state completed the
+wait even if its exit event was absent.
+
+That workaround avoided the LLDB synchronous-resume wait observed during rapid
 modular HTTP server shutdown on macOS. The original timeout and experimental
 replays are retained in the [matching evidence](evidence/lldb-resume-0.152.1.json).
 The [0.152.1 receipt](releases/0.152.1.json) records full Mac regression and matching
 moved/restored SDK delivery; other hosts retain separate acceptance gates.
-The listener uses the standard
+The historical listener used the standard
 [LLDB process event API](https://lldb.llvm.org/python_api/lldb.SBProcess.html).
 
 The current Linux recipe selects LLDB23.1.5 independently of LLVM/MLIR22.1.8.
