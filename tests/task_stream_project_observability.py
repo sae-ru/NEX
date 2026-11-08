@@ -58,7 +58,13 @@ try:
  for mode in ['static','shared']:
   for debug in [False,True]:
    case=next(row for row in data['cases'] if row['mode']==mode and row['profile']==('debug' if debug else 'profile') and row['task_debug']==debug)
-   directory=fixtures/case['name'];capture=json.loads(Path(case['capture']).read_text());container=directory/'capture-root';source=container/capture['project_root'];files=directory/'files'
+   directory=fixtures/case['name'];container=directory/'capture-root';files=directory/'files'
+   # A capture records logical paths; the materializer chooses their physical
+   # layout, including the compact Windows namespace. Use its actual result.
+   restored=json.loads((fixtures/(case['name']+'-restore.stdout')).read_bytes())
+   source=Path(restored['root']).resolve(strict=True)
+   assert restored['ok'] and restored['language']=='0.24' and source.is_relative_to(container.resolve(strict=True))
+   assert sha(case['capture'])==case['capture_sha256']
    request={'root':str(source),'configuration':'debug' if debug else 'profile','directory':str(directory/'replay-native')}
    name=mode+('-debug' if debug else '-profile')
    if debug:request.update(action='debug',adapter='nex-dap')
