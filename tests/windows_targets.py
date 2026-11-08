@@ -275,6 +275,7 @@ fn main()->unit !{task,throw,io}{assert(before()=="old"&&replaced()=="kept");
                     self.assertIn('nex_files.cpp',metadata['runtime_components'])
                     projection=Path(metadata['runtime_source_projection'])
                     self.assertEqual((projection/'nex_files_windows.h').read_bytes(),(harness.REPO/'runtime/nex_files_windows.h').read_bytes())
+                    self.assertEqual((projection/'nex_host_windows.h').read_bytes(),(harness.REPO/'runtime/nex_host_windows.h').read_bytes())
                     self.assertEqual(metadata['runtime_requirements']['tasks'],tasks)
                     self.assertIn(machine,self.command([TOOLS/'bin/llvm-readobj','--file-headers',built['executable']]))
                     self.retain(built,label+'-'+arch+'-'+profile)

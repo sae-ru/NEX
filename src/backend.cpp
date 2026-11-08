@@ -2295,16 +2295,21 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(parallel||tasks)headers.insert(headers.end(),{"nex_parallel.h","nex_parallel_value.h"});
   if(tasks){
     components.insert(components.end(),{"nex_task_frame.cpp","nex_task_application.cpp","nex_task_external.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp","nex_files.cpp"});
-    if(windows)headers.push_back("nex_files_windows.h");
     headers.insert(headers.end(),{"nex_tasks.h","nex_tasks_impl.h","nex_task_external.h","nex_task_values.h","nex_task_values_impl.h","nex_task_protocol.h","nex_task_frame.h","nex_task_application.h","nex_task_limits.h","nex_task_profile_site.h","nex_files.h","nex_task_file_read.h","nex_task_file_write.h","nex_task_file_stream.h","nex_task_file_source.h"});
     if(profiling){components.push_back("nex_task_profile.cpp");headers.push_back("nex_task_profile.h");}
     if(options.taskDebug){components.push_back("nex_task_debug.cpp");headers.insert(headers.end(),{"nex_task_debug.h","nex_task_debug_site.h"});}
   }
   if(wire){components.insert(components.end(),{"nex_json.cpp","wire_runtime.cpp"});headers.insert(headers.end(),{"nex_json.h","third_party/json.hpp"});}
   if(storage)components.insert(components.end(),{"nex_store.cpp","store_runtime.cpp"});
-  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});if(windows&&!tasks)headers.push_back("nex_files_windows.h");}
+  if(files){components.insert(components.end(),{"nex_files.cpp","files_runtime.cpp","nex_resource_region.cpp","nex_external_resource.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_files.h","nex_file_abi.h"});}
   if(foreign){components.insert(components.end(),{"foreign_runtime.cpp","nex_foreign.cpp","nex_ffi_loader.cpp","nex_ffi.cpp","nex_ffi_types.cpp","nex_ffi_resources.cpp","nex_external_resource.cpp","nex_resource_region.cpp","nex_resource_executor.cpp"});headers.insert(headers.end(),{"nex_foreign.h","nex_foreign_abi.h","nex_ffi_loader.h","nex_ffi_module.h","nex_ffi.h","nex_ffi_host.h","nex_ffi_types.h","nex_ffi_resources.h","nex_task_foreign.h"});}
-  if(windows){headers.push_back("nex_windows.manifest");if(foreign||server)headers.push_back("nex_host_windows.h");}
+  if(windows){
+    headers.push_back("nex_windows.manifest");
+    // File and task cohorts share the host ACL adapter, including providers
+    // whose captured cohort contains files without a direct source operation.
+    if(tasks||files||taskProviders)headers.push_back("nex_files_windows.h");
+    if(foreign||server||tasks||files||taskProviders)headers.push_back("nex_host_windows.h");
+  }
   if(server){components.push_back("http_main.cpp");headers.insert(headers.end(),{"third_party/httplib.h","nex_auth.h"});}
   {std::set<std::string> seen;std::erase_if(components,[&](const auto &component){return !seen.insert(component).second;});}
   std::map<std::string,std::string> runtimeFiles;

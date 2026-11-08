@@ -452,7 +452,7 @@ public:
   void finish(){if(!cleanup())throw Error("E_TASK_CLEANUP","cannot clean owned native temporary files");}
 };
 struct Runner {
-  Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;std::map<std::string,fs::path> projectRoots;
+  Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;std::map<std::string,fs::path> projectRoots{};
   fs::path workspace(const std::string &program){
     auto found=projectRoots.find(program);return found==projectRoots.end()?directory/"workspaces"/program:found->second;
   }

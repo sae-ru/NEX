@@ -262,7 +262,8 @@ std::string materializeProjectCapture(const JSON &capture,const std::string &dir
     auto output=layout.at(path),actual=fs::canonical(layout.at(target));if(!inside(actual,base))fail("capture link target escapes container");
     if(fs::exists(output)){if(fs::canonical(output)!=actual)fail("capture link collides with a different input");continue;}
     fs::create_directories(output.parent_path());auto parent=fs::canonical(output.parent_path());if(!inside(parent,base))fail("capture link parent escapes container");
-    fs::create_symlink(actual.lexically_relative(parent),output);
+    if(fs::is_directory(actual))fs::create_directory_symlink(actual.lexically_relative(parent),output);
+    else fs::create_symlink(actual.lexically_relative(parent),output);
   }
   verifyProjectCapture(capture,base.string(),language);return layout.at(s.root).string();
 }

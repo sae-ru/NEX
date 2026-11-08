@@ -156,6 +156,21 @@ client test fn correct()->unit{assert(initial()==42);}''', newline="\n")
         self.assertEqual(capture_file.read_bytes(),saved)
         self.assertEqual((Path(replay['output']).parent/'inputs/projects/app.json').read_bytes(),saved)
 
+
+    @unittest.skipUnless(os.name=='nt','Windows distinguishes directory and file symbolic links')
+    def test_directory_alias_project_runs_and_source_deleted_replays(self):
+        (self.root/'app').rename(self.root/'physical-app')
+        os.symlink(self.root/'physical-app',self.root/'app',target_is_directory=True)
+        task=self.scaffold();task.update(checks=[],requirements=[])
+        self.add(task,{'id':'run','kind':'run','target':'native','configuration':'debug','expect':{'stdout':'42 🧠\n','exit_code':0}},'app::main')
+        self.save_task(task);run=self.task('run','--directory',self.root.parent/'alias-run');self.assertTrue(run['ok'])
+        receipt=Path(run['output']);saved=(receipt.parent/'inputs/projects/app.json').read_bytes();capture=json.loads(saved)
+        self.assertTrue(any(k.endswith('/app') and v.endswith('/physical-app') for k,v in capture['links'].items()))
+        shutil.rmtree(self.root);shutil.rmtree(self.package)
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root.parent/'alias-replay',cwd=self.root.parent,timeout=600)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],run['programs'])
+        self.assertEqual((Path(replay['output']).parent/'inputs/projects/app.json').read_bytes(),saved)
+
     def test_project_capture_is_indexed_and_tampering_rejects_before_replay(self):
         task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.add(task,{'id':'effects','kind':'effects','target':'source','configuration':'debug','symbols':['app::main'],'allowed_effects':['io']},'app::main');self.save_task(task)
