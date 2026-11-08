@@ -56,8 +56,8 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 с оптимизированным GCC ARM64 и требует конфигурацию OpenSSL при упаковке явно
 выбранного Windows-комплекта. [Текущая запись разработки](docs/evidence/current-platforms-0.162.2-2026-11-08.json)
 фиксирует полный прогон 301 группы macOS, новые собранные SDK macOS и Windows,
-настоящий TCP-обмен Windows в reference/Debug/Release и физические GPU/NPU-вызовы
-CIX. Полная приёмка соответствующих SDK и регрессия Linux/Windows ещё идут.
+настоящий TCP-обмен Windows в reference/Debug/Release и физические вызовы CUDA Windows
+и GPU/NPU CIX. Полная приёмка соответствующих SDK и регрессия Linux/Windows ещё идут.
 [Исходный тест GCC](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 сохраняет свою узкую область. Две поправки Python учитывают измеренную холодную
 сборку runtime в worker-тестах и передают выбранный SDK sysroot компилятору

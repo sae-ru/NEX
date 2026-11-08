@@ -69,9 +69,33 @@
       "failure": "TCP provider compilation omitted the selected SDK sysroot. An independent probe compiled the same module with the explicit doctor sysroot.",
       "original_archive_unchanged": true
     },
-    "complete82_or_current_CUDA_or_full_regression_accepted": false,
     "positive_IPv6_accepted": false,
-    "intentional_IPv6_policy_unchanged": true
+    "intentional_IPv6_policy_unchanged": true,
+    "complete82_accepted": false,
+    "current_full_regression_accepted": false,
+    "CUDA": {
+      "ok": true,
+      "GPU": "NVIDIA GeForce RTX 3090",
+      "driver_version": "621.14",
+      "CUDA_headers_version": "12.1",
+      "compute_sanitizer_version": "2023.1.0",
+      "native_reference_cases": 35,
+      "physical_kernel_completion_events": 66,
+      "all_completion_events_verified_without_CPU_fallback": true,
+      "all_hardware_and_memcheck_ledgers_balanced": true,
+      "Compute_Sanitizer_cases": 36,
+      "Compute_Sanitizer_native_cases": 35,
+      "Compute_Sanitizer_context_probe": true,
+      "zero_error_and_leak_logs": 36,
+      "runtime_deadline_ms": 2000,
+      "generated_arbitrary_GPU_kernels_accepted": false,
+      "hardware_report_sha256": "9aa848baf6e149bea4a5e96a70e66665e8b7604f26c79d8082323bc237ee9fc3",
+      "memcheck_report_sha256": "807801c4f632ede1f04f03efe898d6a0e042af35ff13209815e33fe19d1bd33c",
+      "sealed_raw_archive_sha256": "61e848db81a0f09db64ce551c7f63c13b531922ceea4c67d952d2c5a3e2527e2",
+      "sealed_raw_archive_bytes": 225954,
+      "independently_verified_raw_files": 576,
+      "independently_verified_raw_bytes": 1908862
+    }
   },
   "CIX_ARM64": {
     "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
@@ -106,7 +130,8 @@
     "Mac_full301": "c522aac5831cfe75ac9e15c267915d93fb7416a9a654832a41187170e786c902",
     "Mac_assembly": "09864c5d4a1bc48e10f26730332f292d985582fb7f0a9e8b7194dcd93b4d877a",
     "Windows_assembly": "414d72d60f3754e7ae68797ecbff421d0359bb2445459bbd437afeb9b4adc8a5",
-    "CIX_device_receipt": "a8beb693bf5314aaff34413eb871fea71665604ceea2df3ff146eaf39c92b73b"
+    "CIX_device_receipt": "a8beb693bf5314aaff34413eb871fea71665604ceea2df3ff146eaf39c92b73b",
+    "Windows_CUDA": "d2464bb505ea5747271e5e983ddbb546c34591eabba692f245af23f0140d823d"
   },
   "new_binary_release_uploaded": false,
   "full_original_PLAN_complete": false,

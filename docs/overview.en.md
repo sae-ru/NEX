@@ -6,8 +6,9 @@ Pure function and loop clauses remain checked in release code. Existing 0.27
 histories need explicit migration. The [Mac development SDK receipt](releases/0.162.0.json)
 records its exact 0.162.0 archive. The [0.162.2 development evidence](evidence/current-platforms-0.162.2-2026-11-08.json)
 records all 301 macOS source groups, newly assembled SDKs and scoped Windows TCP
-and CIX device results. Complete matching SDK delivery and Linux/Windows
-regressions remain pending.
+and CIX device results. The same current Windows SDK passed 35 physical CUDA
+scenarios and 36 Compute Sanitizer cases with balanced resource ledgers.
+Complete matching SDK delivery and Linux/Windows regressions remain pending.
 Other platforms retain their own versioned evidence.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)

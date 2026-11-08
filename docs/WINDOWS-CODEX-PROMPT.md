@@ -28,12 +28,14 @@ docs/evidence/current-platforms-0.162.2-2026-11-08.json и PLAN.md. План в�
 commit. Точные версии каждой проверки и архива указаны в evidence.
 Используй актуальную реализацию, сохраняй результаты старых снимков отдельно.
 
-Измеренные результаты: полный Mac source301 прошёл. На Windows собраны все
+Измеренные результаты: полный Mac source 301 прошёл. На Windows собраны все
 цели, новый SDK перемещён/восстановлен и прошёл doctor. Реальный TCP binary
 обмен прошёл в reference/Debug/Release с закрытием всех соединений. Первый
-Windows SDK этого этапа прошёл28 фаз и упал на компиляции TCP-модуля без SDK
-sysroot; новый согласованный архив содержит исправление. Полные82 фазы SDK,
-новые CUDA35/memcheck36 и полная актуальная Windows-матрица пока не приняты.
+Windows SDK этого этапа прошёл 28 фаз и упал на компиляции TCP-модуля без SDK
+sysroot; новый согласованный архив содержит исправление. Тот же архив уже
+прошёл CUDA 35/memcheck 36 на RTX 3090: 66 физических завершений ядер, баланс ресурсов
+и 36 нулевых error/leak summaries подтверждены независимой сверкой сырых логов.
+Полные 82 фазы SDK и полная актуальная Windows-матрица пока не приняты.
 Перед новым запуском проверь, не работают ли уже владельцы этих проверок.
 Не запускай дубликат, пока его реальный процесс/handle жив.
 
@@ -45,7 +47,7 @@ sysroot; новый согласованный архив содержит ис�
    через context --symbol NAME --json. Сохраняй согласованные compiler_build и
    descriptor_hash. Не меняй строки версий старых графов/отчётов.
 
-2. Проверь C++20, LLVM/MLIR22.1.x, Z3, SQLite, OpenSSL3, CMake/Ninja, Python3.10+
+2. Проверь C++20, LLVM/MLIR 22.1.x, Z3, SQLite, OpenSSL 3, CMake/Ninja, Python 3.10+
    и закреплённые Node/npm зависимости. Host CLANG64 и target LLVM-MinGW имеют
    разные C++ ABI. Используй отдельный build-каталог и фактически выбранный
    согласованный OpenSSL cohort. tools/windows/openssl/README.md описывает
@@ -55,12 +57,12 @@ sysroot; новый согласованный архив содержит ис�
    проверку точного набора, включая обязательные fixtures.
 
 3. Проверь обычную установку, перемещённый и восстановленный SDK. Полная цепочка
-   tools/sdk_acceptance.py использует --live --browser и41 maintained phase на
+   tools/sdk_acceptance.py использует --live --browser и 41 maintained phase на
    каждую установку. На этом стенде IPv6 намеренно ограничен: профиль
-   --network-profile windows-ipv6-denied требует реального Windows отказа10013.
+   --network-profile windows-ipv6-denied требует реального Windows отказа 10013.
    Не меняй сетевую политику. Четыре положительные IPv6-группы
    task_dns_source/task_dns_delivery/task_tcp_source/task_tcp_delivery остаются
-   непроверенными;298 остальных групп не равны полному302. Число групп всегда
+   непроверенными; 298 остальных групп не равны полному 302. Число групп всегда
    проверяй по фактическому registry, а не по историческому отчёту.
    Подтверди фактическую область изоляции, неизменность SDK, source/dependency
    denial и реальные отрицательные controls. Обычный token не равен изоляции.
@@ -69,12 +71,14 @@ sysroot; новый согласованный архив содержит ис�
    UTF-8/Unicode scalars, immutable aggregates, эффекты и realms. Сравнивай
    observable native/reference/TypeScript behavior и rejected programs.
    result<T>, typed source errors, traps, cancellation и limits различаются.
-   Исходные requires/ensures/invariant/decreases языка0.28 проверяются и в
-   release. Истории0.27 мигрируются явно с сохранением ID и ревизий.
+   Исходные requires/ensures/invariant/decreases языка 0.28 проверяются и в
+   release. Истории 0.27 мигрируются явно с сохранением ID и ревизий.
 
-5. Подготовь текущий CUDA provider из experiments/owned-cuda (в установленном
-   SDK: share/nex/tools/owned-cuda). Запусти35 реальных hardware cases и
-   memcheck.py:35 native cases плюс context probe. Запиши модель GPU, драйвер,
+5. CUDA 35/memcheck 36 уже прошли для закреплённого архива из evidence. Сохраняй
+   эти результаты; повторяй при изменении соответствующих implementation/tool
+   inputs. Новую проверку готовь из experiments/owned-cuda (в установленном
+   SDK: share/nex/tools/owned-cuda). Запусти 35 реальных hardware cases и
+   memcheck.py: 35 native cases плюс context probe. Запиши модель GPU, драйвер,
    CUDA headers, фактические kernel/fence records, исходники и бинарные hashes.
    Проверяй cancellation/deadline, owned buffers и cleanup после физического
    завершения. CPU fallback не доказывает GPU execution. U8 Add/Affine provider
