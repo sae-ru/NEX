@@ -39,6 +39,17 @@ observed archive hashes are recorded in
 APT validates downloads against its signed index; other Ubuntu packages still
 follow their repositories.
 
+For native Debian 12 ARM64, the separate [Bookworm package pin](../tools/linux/debugger-bookworm-arm64.json)
+records signature-verified LLDB 23.1.6 packages compatible with glibc 2.36 and
+Python 3.11. This is independent of the Ubuntu package pin above. A private
+prefix passed actual version, embedded-Python/current-NEX-child and native
+breakpoint/local42/exit controls. On the same plain C17 image, LLDB22 rewound
+an exited process to a queued running state; 23 preserved its terminal state.
+The [prerequisite record](evidence/cix-debugger23-prerequisites-0.162.2-2026-11-08.json)
+retains that comparison. An unchanged NEX channel-wait repetition still crashed
+stock 23.1.6 liblldb; full NEX debugger and SDK acceptance remain open. Compiler
+LLVM/MLIR22.1.8 and system packages are unchanged.
+
 On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
 selected its cross sysroot when manually linking fixtures against native host
 libraries. Its C++ entrypoint now explicitly uses `--no-default-config`,

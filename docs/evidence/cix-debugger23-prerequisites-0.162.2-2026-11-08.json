@@ -1,0 +1,23 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "scope": "Debian12 ARM64 private LLDB23.1.6 prerequisite and independent event-replay control",
+  "package_manifest": "tools/linux/debugger-bookworm-arm64.json",
+  "package_manifest_sha256": "2976753bc451cc2a58bef294552b6c83a7ed5489e17732c54f1c479035448485",
+  "native_controls_passed": [
+    "LLDB and DAP version23.1.6",
+    "embedded Python and unchanged current NEX child",
+    "C17 native breakpoint,local42 and exit",
+    "same-binary secondary listener control preserves terminal state"
+  ],
+  "same_C17_program_sha256": "1207c2295716996fc46e45133c9734040e41dd0b55e97107263b704a7e4ac766",
+  "same_observer_sha256": "aa8e011816d3520575727e0fff7870dcdf6a3d694bdb3c6ac997d3137a23d0cf",
+  "LLDB22_terminal_state_rewound_after_secondary_running_event": true,
+  "LLDB23_terminal_state_preserved_after_same_secondary_running_event": true,
+  "system_packages_or_default_compiler_changed": false,
+  "NEX_helper_modified": false,
+  "full_NEX_debugger_accepted": false,
+  "original_NEX_repetition_frontend_SIGSEGV_preserved": true,
+  "full_portable_SDK_accepted": false
+}

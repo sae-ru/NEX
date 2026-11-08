@@ -1,0 +1,83 @@
+{
+  "schema": "nex.linux-native-debugger-prerequisites/1",
+  "distribution": "Debian12 Bookworm",
+  "architecture": "arm64",
+  "debugger_version": "23.1.6",
+  "apt_version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+  "repository": "https://apt.llvm.org/bookworm/",
+  "repository_signing_key_fingerprint": "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421",
+  "signed_InRelease_sha256": "2e046703afbeb6cd6d9fd16f209e87ef54a6ed68ac7327fcc8535c3a2ae2a53a",
+  "signed_Packages_gz_sha256": "77f7192766be1e9e9bb92addc8729e0d69fb3913b634df9a09eb870b59a48086",
+  "packages": [
+    {
+      "Package": "libclang-cpp23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "12484768",
+      "Installed-Size": "61027",
+      "SHA256": "681ceb255c090ce53ea44bd8e276e117e2ea5220e2a7bdeda5695236ea30158c",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb",
+      "Depends": "libc6 (>= 2.34), libgcc-s1 (>= 4.5), libllvm23 (= 1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97), libstdc++6 (>= 12)"
+    },
+    {
+      "Package": "liblldb-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "4402068",
+      "Installed-Size": "19952",
+      "SHA256": "f73ad9fd083b61b064b8b06a8ce4676e9b81c9e7c2d7b104299caa265bee81f4",
+      "Filename": "pool/main/l/llvm-toolchain-23/liblldb-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb",
+      "Depends": "libc6 (>= 2.34), libclang-cpp23 (>= 1:23.1.6~++20261103094256+2875c6073a7e), libcurl4 (>= 7.16.2), libedit2 (>= 3.1-20140620-0), libgcc-s1 (>= 3.0), libllvm23 (= 1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97), libncurses6 (>= 6), libpython3.11 (>= 3.11.0), libstdc++6 (>= 12), libtinfo6 (>= 6), libxml2 (>= 2.7.4), zlib1g (>= 1:1.1.4)"
+    },
+    {
+      "Package": "libllvm23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "27437672",
+      "Installed-Size": "142075",
+      "SHA256": "33bdd01519d257d54f54ef55f3c94af599ebeecb172bc322f9a12f7f5a27e667",
+      "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb",
+      "Depends": "libc6 (>= 2.36), libedit2 (>= 2.11-20080614-0), libffi8 (>= 3.4), libgcc-s1 (>= 4.2), libstdc++6 (>= 12), libxml2 (>= 2.7.4), libz3-4 (>= 4.8.12), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.2.0)"
+    },
+    {
+      "Package": "lldb-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "1565244",
+      "Installed-Size": "6179",
+      "SHA256": "3879b38aa1ea94ea14f95ca40efe22d361deecabafdc6e2d592900d8629eb4d6",
+      "Filename": "pool/main/l/llvm-toolchain-23/lldb-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb",
+      "Depends": "libc6 (>= 2.36), libclang-cpp23 (>= 1:23.1.6~++20261103094256+2875c6073a7e), libedit2 (>= 2.11-20080614-0), libgcc-s1 (>= 3.3), liblldb-23, libllvm23 (= 1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97), libncurses6 (>= 6), libstdc++6 (>= 12), libtinfo6 (>= 6), libxml2 (>= 2.6.27), libz3-4 (>= 4.8.12), libzstd1 (>= 1.5.2), zlib1g (>= 1:1.1.4), python3-lldb-23"
+    },
+    {
+      "Package": "python3-lldb-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "206988",
+      "Installed-Size": "1115",
+      "SHA256": "97cc29db7e4fbfe3acc41b70bfe9adc92fb1f1ffd3a7f42c5f238a200615ed04",
+      "Filename": "pool/main/l/llvm-toolchain-23/python3-lldb-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb",
+      "Depends": "python3 (<< 3.12), python3 (>= 3.11~), python3:any, liblldb-23 (= 1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97)"
+    }
+  ],
+  "source_event_guard": {
+    "url": "https://raw.githubusercontent.com/llvm/llvm-project/2875c6073a7e/lldb/source/Target/Process.cpp",
+    "sha256": "9eb46a476d39b8e22bbe3ce1dd3a244e31fb2a5c3cb4127ef3ff06bf3a5c4fd9",
+    "upstream_commit_prefix": "2875c6073a7e",
+    "bytes": 263696
+  },
+  "compiler_LLVM_MLIR_version": "22.1.8",
+  "compiler_selection_changed": false,
+  "deployment_scope": "Private prefix with explicit ELF loader library path; no global LD_LIBRARY_PATH or system package changes.",
+  "actual_native_controls": [
+    "LLDB and DAP version23.1.6",
+    "embedded Python and unchanged current NEX child",
+    "C17 native breakpoint,local42 and exit",
+    "same-binary secondary listener control preserves terminal state"
+  ],
+  "full_NEX_debugger_or_portable_SDK_accepted": false,
+  "known_remaining_scope": [
+    "An original NEX channel-wait repetition crashed the stock23.1.6 liblldb frontend.",
+    "Indexed DAP paging and ARM64 register inventory patches retain their separate pinned source recipes."
+  ]
+}
