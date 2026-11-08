@@ -1868,7 +1868,8 @@ THE SOFTWARE.
             def fixture(label,digit):
                 project=root/(label+'-cwd');key=digit*64;original=project/'.nex/build'/key;original.mkdir(parents=True)
                 package=root/(label+'-package');package.mkdir()
-                original_app=(label+' original app').encode();(original/'app').write_bytes(original_app)
+                executable=acceptance.sdk_host.executable_name('app');entry='bin/'+executable
+                original_app=(label+' original app').encode();(original/executable).write_bytes(original_app)
                 provider={'schema':'nex.native-task-provider/3','component':'app','mode':'static',
                     'profiling':{'schema':'nex.native-task-profile/1','catalog_hash':digit*64}}
                 catalog={'schema':'nex.task-profile-catalog/1','registry_abi':1,'owner_image':'app'}
@@ -1880,10 +1881,10 @@ THE SOFTWARE.
                 metadata={'key':key,'compiler_build':'f'*64,'profile':'profile','completion_schema':'nex.native-completion/6',
                     'completion_mode':'static-application','task_provider':provider,'task_provider_hash':pin('task-provider.json')}
                 (original/'build.json').write_text(json.dumps(metadata), newline="\n");(original/'complete').write_text(digit*64+'\n', newline="\n")
-                output=package/'bin/app';output.parent.mkdir();output.write_bytes((label+' relocated app').encode())
+                output=package/entry;output.parent.mkdir();output.write_bytes((label+' relocated app').encode())
                 output_sha=hashlib.sha256(output.read_bytes()).hexdigest()
-                meta={'build_key':key,'compiler_build':'f'*64,'entry':'bin/app',
-                    'files':{'bin/app':{'sha256':output_sha,'bytes':output.stat().st_size}}}
+                meta={'build_key':key,'compiler_build':'f'*64,'entry':entry,
+                    'files':{entry:{'sha256':output_sha,'bytes':output.stat().st_size}}}
                 rows=[]
                 for index,(kind,name) in enumerate([('application_provider','task-provider.json'),
                         ('application_profile_catalog','task-profile-catalog.json'),('build','build.json'),('complete','complete')]):
@@ -1894,7 +1895,7 @@ THE SOFTWARE.
                     rows.append({'kind':kind,'path':path,'input_hash':pin(name),'input_sha256':sha,'bytes':len(raw),
                         'component':'app' if associated else None,'input_image_key':key if associated else None,
                         'input_image_sha256':hashlib.sha256(original_app).hexdigest() if associated else None,
-                        'input_uuid':digit*32 if associated else None,'output_image':'bin/app' if associated else None,
+                        'input_uuid':digit*32 if associated else None,'output_image':entry if associated else None,
                         'output_image_sha256':output_sha if associated else None})
                 meta['task_profile_provenance']={'schema':'nex.application-task-profile-provenance/1',
                     'metadata_rewritten':False,'hash_algorithm':'BLAKE3','files':rows}

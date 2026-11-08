@@ -1,0 +1,33 @@
+{
+  "schema": "nex.CIX-full-twelve-FFI-methods/1",
+  "ok": true,
+  "sealed_utc": "2026-11-08T23:10:29.363169+00:00",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "source_base_commit": "12281c411b3b41e516c9e2c95df8104105b53016",
+  "source_delta": [
+    "tests/task_foreign.py"
+  ],
+  "test_file_matches_commit": "7f9e316b1492f9cb22784e580120d4075dfec83b",
+  "test_sha256": "b260955d13ca83f65c3a668db08109be42d4b3be5590e4a0c098c099c166c730",
+  "all_base_source_and_changed_test_and_compiler_rehashed": true,
+  "compiler_sha256": "1781841ef76cac2b40cd5c693707257535eb744ee28caa94604fec830b9cd66f",
+  "original_CTest_timeout_seconds": 1800,
+  "CTest_seconds": 1640.02,
+  "test_methods": 12,
+  "failed": 0,
+  "skipped": 0,
+  "intentional_five_second_timeout_and_interrupt_checks_unchanged": true,
+  "ten_other_test_bodies_unchanged": true,
+  "source_deleted_replay_and_exact_8192_input_limit_and_tampering_and_native_descendant_cleanup_passed": true,
+  "registry_sha256": "4c904754a1012a79b6501035b63131eb28bf3ec960de1f7d4e86484703a66f2a",
+  "junit_sha256": "36fd039a9183805298e7f0148eaac3e223c5266890fb1b9ee34bb8d9805207b7",
+  "controller_retired": true,
+  "raw_files": 11,
+  "raw_archive_sha256": "0c50832c0faa4a5f23ba87de3c3bd0f58d55b4d4bf0e0677f81f0494b530a1b1",
+  "raw_archive_bytes": 118154,
+  "every_raw_file_independently_verified": true,
+  "original_failed303_and_sixty_second_fixture_failures_preserved": true,
+  "complete_latest_source_or_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}

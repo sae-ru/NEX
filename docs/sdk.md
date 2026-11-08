@@ -758,6 +758,11 @@ with3.06ms of measured program execution. The original60-second failures remain
 recorded. This changes fixture budgets, not compiler defaults; the intentional
 five-second native timeout/interruption cases and their cleanup assertions are
 unchanged. Acceptance of the entire updated FFI group is recorded separately.
+The [complete ARM64 FFI group](evidence/cix-FFI-full12-0.162.2-2026-11-09.json)
+passed all12 methods without skips in1640 seconds under the original1800-second
+CTest limit, including source-deleted replay, exact8192-file capture, tampering,
+timeout/interruption and native descendant cleanup. This remains a scoped source
+result rather than complete Linux SDK acceptance.
 
 The Linux verifier keeps its600-second limit for individual inspection tools.
 The complete maintained workflow uses the18000-second aggregate limit, including

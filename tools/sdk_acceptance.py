@@ -725,10 +725,10 @@ def package_task_profile_provenance(package_root, package_meta, project_root):
                             owner.get('artifact_kind')=='shared-image' and physical.get('kind')=='library' and
                             all(owner.get('image',{}).get(k)==physical.get(k) for k in ('key','hash','sha256','uuid')),
                             'packaged profile provider differs from its own original loaded image')
-                identity=owner.get('image') if shared else {'key':key,'sha256':hashlib.sha256(original('app').read_bytes()).hexdigest(),
+                identity=owner.get('image') if shared else {'key':key,'sha256':hashlib.sha256(original(sdk_host.executable_name('app')).read_bytes()).hexdigest(),
                     'uuid':row['input_uuid']}
                 if application:
-                    require(identity.get('key')==key and identity.get('sha256')==hashlib.sha256(original('app').read_bytes()).hexdigest(),
+                    require(identity.get('key')==key and identity.get('sha256')==hashlib.sha256(original(sdk_host.executable_name('app')).read_bytes()).hexdigest(),
                             'packaged profile root image differs from own original bytes')
                 elif shared:
                     root_image=metadata['task_provider'].get('image',{})
