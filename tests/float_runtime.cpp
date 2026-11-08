@@ -70,6 +70,10 @@ void environmentCheck(int rounding){
   volatile double one=1.0,half=0x1p-53;
   require(nex_f64_add(one,half,17)==1.0,"tie rounding depends on caller environment");checkEnvironment();
   require(nex_as_f64(9007199254740993LL,17)==9007199254740992.0,"integer conversion rounding depends on caller");checkEnvironment();
+  // Exercise the inline helper as well as the public owned-value wrapper:
+  // optimized GCC must not defer the inexact conversion until after fesetenv.
+  volatile double fractional=1.9;int64_t direct=0;
+  require(nexrt::floatToInteger(fractional,direct)&&direct==1,"direct float conversion ignored truncation");checkEnvironment();
   auto integer=nex_as_i64(1.9,17);require(nexrt::unwrap(nexrt::readHandle(integer)).scalar==1,"float conversion ignored truncation");nex_release(integer);checkEnvironment();
   require(nexrt::formatFloat(one)=="1e0","format depends on caller environment");checkEnvironment();
   auto decoded=nexrt::decodeJSON("9007199254740993",schema);

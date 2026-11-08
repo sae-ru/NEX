@@ -70,7 +70,11 @@ inline bool floatToInteger(double value,int64_t &result){
   // The exclusive upper bound is exactly representable; double(INT64_MAX)
   // rounds up to it and therefore cannot be used as an inclusive bound.
   if(value < -0x1p63 || value >= 0x1p63)return false;
-  result=static_cast<int64_t>(value);return true;
+  // GCC can otherwise sink FCVTZS past FloatEnvironment's destructor and
+  // raise FE_INEXACT in the restored caller environment. Complete the
+  // conversion before restoring that environment, as for integerToFloat.
+  volatile int64_t converted=static_cast<int64_t>(value);
+  result=converted;return true;
 }
 inline std::string formatFloat(double value){
   FloatEnvironment environment;

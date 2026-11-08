@@ -1,0 +1,31 @@
+{
+  "schema": "nex.GCC-ARM64-floating-environment-development/1",
+  "ok": true,
+  "date": "2026-11-08",
+  "candidate_toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "platform": "physical CIX ARM64 Linux",
+  "host_compiler": "GCC12.2.0, original Release flags",
+  "baseline_source_commit": "1b7dcc3ada85e0365a1fb54236c325df0029d597",
+  "original_probe_sha256": "a095c28470c6798c9056387dfb6938518c65dcf47ddc3541e0ae9594802a4fc9",
+  "candidate_probe_sha256": "9d6c37a673bc9b0964678abb31fad1776ea73a4a178f2543e9420542a7af6812",
+  "candidate_source_sha256": {
+    "runtime/nex_float.h": "0f69f4425ffeba7af5bddacdf2b829bc4f497b71c204583d8f156a87dfd6f86a",
+    "tests/float_runtime.cpp": "26459ff0e033024e76ba33a460fb019f9b11a234c71efc83a3e6b452e3647cc3"
+  },
+  "original_failure": {
+    "operation": "f64 to i64",
+    "input": 1.9,
+    "expected_caller_flags": 1,
+    "actual_caller_flags": 17,
+    "cause": "GCC emitted FCVTZS after fesetenv restored the caller; FE_INEXACT leaked."
+  },
+  "correction": "Materialize the converted integer through a volatile local while FloatEnvironment is active.",
+  "native_self_test_passed": true,
+  "rounding_modes": 4,
+  "worker_threads": 3,
+  "original_source2016_and_binaries_preserved": true,
+  "full_new_compiler_or_SDK_accepted": false,
+  "scope": "Separately compiled runtime and regression probe, using the unchanged original GCC12 Release commands and dependency cohort. A fresh complete compiler/source regression and matching installed SDK are required."
+}

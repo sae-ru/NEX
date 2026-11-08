@@ -1,3 +1,21 @@
+# Development0.162.2 — preserve GCC floating environment
+
+On physical CIX ARM64 with optimized GCC12, float-to-integer conversion was
+executed after the saved caller environment had been restored. FCVTZS then
+leaked FE_INEXACT into that caller. Materializing the converted integer inside
+the guard fixes both the inline helper and the public owned-value wrapper.
+The [runtime record](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
+includes the original failure and the separately rebuilt passing probe with
+four rounding modes and three worker threads. Source language0.28, task ABI7
+and graph identities are unchanged; native artifacts need rebuilding.
+
+Windows SDK assembly also requires the selected OpenSSL cohort's openssl.cnf.
+The private build recipe installs it through upstream install_ssldirs. The
+source checks passed on Python3.10/3.14; a separate Windows CLI copy reproduced
+the missing-config failure and created/verified certificates after relocation
+with the upstream configuration. Combined full regression and matching SDK
+delivery are pending. Earlier receipts below retain their original versions.
+
 # Development0.162.1 — selected ELF runtime search
 
 The current working source adds one SONAME-aware directory planner for both

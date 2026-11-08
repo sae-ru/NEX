@@ -52,7 +52,12 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.162.1 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.162.2 / language 0.28 / task ABI 7**, in development.
+This follow-up preserves caller floating-point flags during optimized GCC ARM64
+float-to-integer conversion and requires the Windows OpenSSL runtime configuration
+when assembling an explicitly selected cohort. The [GCC runtime record](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
+covers a separately compiled regression probe; combined regression and matching
+SDK delivery remain pending.
 The [ELF runtime search correction](docs/native-runtime-search.md) passed a
 301-group macOS source run and Linux native/package checks. Linux covers all
 303 groups across a retained failed run and its verified notice-argument recovery.
