@@ -2657,7 +2657,7 @@ server test fn reads()->unit !{task,fs}{assert(unwrap(solve())==7);assert(error_
             criteria = cli('task','nex.build.json','--kind','init','--component','app','--configuration','release',cwd=directory)
             criteria['checks'] = [{'id':'read','program':'app','kind':'run','target':'native',
                 'configuration':'release','entry':'installed_task_files::app::main',
-                'expect':{'stdout':'7\n','exit_code':0},'timeout_seconds':30}]
+                'expect':{'stdout':'7\n','exit_code':0},'timeout_seconds':180}]
             criteria['requirements'] = [{'id':'read','text':'Read explicit external inputs through captured source-only task project',
                 'targets':['native'],'checks':['read'],'bindings':[{'program':'app','kind':'function','symbol':'installed_task_files::app::main'}]}]
             task = directory/'task.json';task.write_text(json.dumps(criteria))

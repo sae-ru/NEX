@@ -1,0 +1,43 @@
+{
+  "schema": "nex.Windows-SDK01621-scoped-CUDA/1",
+  "ok": true,
+  "compiler_source_commit": "627e85c342fbfa7c7e0289cb246e62dcd655af00",
+  "source_files": 2010,
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "9ac1db6a4ca0df5d57353f1e404583384d203d1f2ece02d5bc9fbdc0b89e98ef",
+  "compiler_build": "23e57852ca00ec5e0e21611a8de8be2483e6a7d660a5f9820ff3571afb16f329",
+  "SDK_archive_sha256": "5b9c90859919328cff2084c9463834a221fe93af96cf48ab4c15ba2590b385ad",
+  "device": "NVIDIA GeForce RTX 3090, 621.14, 24576 MiB, 3 %",
+  "CUDA_header_sha256": "f9e2356c93ef2bf0f3d7b22e024958b245dce118d1dd06e8535ab62409e8eb66",
+  "hardware_cases": 35,
+  "native_reference_pairs": 35,
+  "physical_kernel_launches_in_those_pairs": 194,
+  "CPU_fallback_accepted": false,
+  "trusted_two_context_host_probe": {
+    "ok": true,
+    "actual_CUDA_contexts": 2,
+    "source_reentry_rejected": true,
+    "nested_cleanup_restores_context": true,
+    "constructor_trap_rolls_back": true,
+    "physical_cleanup_verified": true
+  },
+  "Compute_Sanitizer": {
+    "native_cases": 35,
+    "context_probe": true,
+    "zero_error_and_leak_logs": 36,
+    "deadline_control_ms": 2000,
+    "connection_transport": "windows-named-pipes",
+    "sanitizer_sha256": "216c1608ba381e46062714d5f1c88c2a8d3c5b4cbf9b49902e51da4e06d12933",
+    "all_resource_ledgers_balanced": true
+  },
+  "hardware_report_sha256": "0191f08a22029c2ca789e48c68d811f578378b0ed0b4f6529b52f858a60b4aa5",
+  "memcheck_report_sha256": "df7399551ce435ce1d96cb35e22d1e624934fcd431dc670442fa900fb4ed203a",
+  "full_Windows_regression_accepted": false,
+  "whole_SDK_accepted": false,
+  "general_GPU_codegen_accepted": false,
+  "hardware_and_SDK_resources_unchanged": true,
+  "raw_archive_sha256": "16574ee128701858ef1b71e2d49f0c797147464f6cd9a27d642bb219a2953438",
+  "raw_independently_verified_on_Mac": true
+}

@@ -86,6 +86,78 @@ with --observer ABSOLUTE_HELPER --debug DEBUG_EXE --release RELEASE_EXE
 PRIVATE_HOST_JSON requires actual OS read denial for that selected file without
 changing its ACL. Opposite-profile and missing-grant controls always run.
 
+## Private code and writable data
+
+`Profile.code_root(parent)` creates a new private staging directory with the same
+AppContainer SID. Copy an immutable SDK there; keep project data and native Temp
+inside the AppContainer profile. The existing parent's ACL is never changed.
+Select an existing parent your account can create directories in and the
+AppContainer can traverse and enumerate. The qualified example used `C:/`.
+
+```python
+from pathlib import Path
+from appcontainer import Profile
+
+with Profile() as profile:
+    with profile.code_root(Path("C:/")) as code:
+        copied = code.copy_tree(selected_sdk)
+        environment = profile.native_environment({
+            **base_environment,
+            "NEX_RESOURCE_DIR": str(copied / "share/nex"),
+        })
+        result = profile.run(
+            [str(copied / "bin/nex.exe"), "doctor", "--json"],
+            new_evidence_directory, environment, observer=observer, timeout=60,
+        )
+        assert result["active_job_processes"] == 0
+        assert result["parent_exit_code"] == 0
+        code.verify_copies()
+```
+
+The selected SDK still needs its documented PATH and debugger prerequisites.
+A code root is a copy/cleanup object; execute through the owning `Profile`.
+The parent profile tracks these roots and closes them on retirement, including
+when a caller exits before closing a nested code context. Each owned tree has an
+explicit `max_cleanup_entries` bound (default200000, permitted1..1000000).
+Exceeding it retains the tree and reports the failure. A broker can explicitly
+raise that bound and retry after inspection.
+
+This layout addresses two measured Windows behaviors. An ordinary process could
+not load the matching native Clang DLL cohort from the Low-integrity profile
+copy; changing only that copy's label to Medium restored ordinary execution.
+Inside the AppContainer, Clang still failed in LLVM initialization because
+`GetLongPathNameW` could not enumerate private parent directories. A native probe
+returned Win32 error5 for the original profile path and success through a new
+private path. The final physical code root also survives NEX's canonical tool
+path resolution, with no compiler override or changed SDK bytes.
+
+Microsoft documents the [parent-directory permissions required by GetLongPathNameW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getlongpathnamew).
+The selected LLVM22.1.8 [argument initialization](https://github.com/llvm/llvm-project/blob/ca7933e47d3a3451d81e72ac174dcb5aa28b59d1/llvm/lib/Support/Windows/Process.inc#L182)
+uses that function before the driver handles ordinary options. The code root
+inherits its selected parent's integrity label; its protected ACL grants only
+SYSTEM, Administrators and the broker full access, plus the owning AppContainer
+read/execute. The qualified C:/ parent provided Medium integrity. Data/Temp keep
+their separate profile permissions. Original SDKs, sources, existing parent ACLs,
+network policy and process mitigations stay unchanged.
+
+Cleanup requires physical job retirement and the creating broker thread. It
+checks volume/file identities, opens objects without following reparse points,
+revokes the AppContainer grant, and prepares only broker-owned ordinary nodes.
+Reparse entries and shared hardlink names are removed without changing their
+target's ACL or attributes. Held cleanup handles are closed before deleting the
+owned tree. Unexpected root identities retain the tree for inspection.
+
+The current Windows0.162.1 compiler passed actual `check`, reference execution,
+native debug build, executable execution and native tests from an unchanged SDK
+copy using this API. Read controls denied the original project, original SDK and
+opposite profile, while code stayed read-only and own work stayed writable.
+Four standalone host CTest groups passed on actual Python3.10/3.14, including
+abrupt native exit, readonly/link cleanup, root replacement and bounded retries.
+These are offline core/host-tool scopes; complete SDK workflow, debugger,
+networking and device acceptance remain separate. The [private-code core receipt](evidence/windows-owned-code-root-0.162.1-2026-11-08.json)
+pins the host sources and exact SDK. The same compiler's [physical CUDA receipt](evidence/windows-CUDA-0.162.1-2026-11-08.json)
+records its separate device and Compute Sanitizer checks.
+
 ## Build and calibrate
 
 From a source checkout, select a complete native LLVM-MinGW toolchain and a

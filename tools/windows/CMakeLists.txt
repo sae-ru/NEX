@@ -45,6 +45,35 @@ if(NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT)
     --runtime ${NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT} ${NEX_WINDOWS_APPCONTAINER_LEGACY_ARGS})
   set_tests_properties(windows_appcontainer_ownership PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
 endif()
+# This fixture deliberately bypasses C++ destructors. Its standalone normal
+# runtime is separate from the optional ASan IO suite.
+if(NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT AND NOT NEX_WINDOWS_ASAN)
+  add_executable(nex_windows_appcontainer_abrupt appcontainer_abrupt.cpp)
+  target_include_directories(nex_windows_appcontainer_abrupt PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../runtime")
+  target_link_libraries(nex_windows_appcontainer_abrupt PRIVATE advapi32 bcrypt)
+  if(MINGW)
+    target_link_options(nex_windows_appcontainer_abrupt PRIVATE -static -municode)
+  endif()
+  add_test(NAME windows_appcontainer_owned_cleanup COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_LIST_DIR}/appcontainer_cleanup_test.py
+    --observer $<TARGET_FILE:nex_windows_job_observer>
+    --abrupt-probe $<TARGET_FILE:nex_windows_appcontainer_abrupt>)
+  set_tests_properties(windows_appcontainer_owned_cleanup PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+endif()
+set(NEX_WINDOWS_APPCONTAINER_CODE_PARENT "" CACHE PATH "Explicit existing staging parent, traversable/enumerable by AppContainer; existing ACLs are never changed")
+if(NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT AND NEX_WINDOWS_APPCONTAINER_CODE_PARENT AND NOT NEX_WINDOWS_ASAN)
+  add_executable(nex_windows_appcontainer_path appcontainer_path.cpp)
+  if(MINGW)
+    target_link_options(nex_windows_appcontainer_path PRIVATE -static -municode)
+  endif()
+  add_test(NAME windows_appcontainer_private_code_root COMMAND ${Python3_EXECUTABLE} -B
+    ${CMAKE_CURRENT_LIST_DIR}/code_root_test.py
+    --observer $<TARGET_FILE:nex_windows_job_observer>
+    --probe $<TARGET_FILE:nex_windows_appcontainer_path>
+    --runtime "${NEX_WINDOWS_APPCONTAINER_PYTHON_ROOT}"
+    --code-parent "${NEX_WINDOWS_APPCONTAINER_CODE_PARENT}")
+  set_tests_properties(windows_appcontainer_private_code_root PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+endif()
 if(NEX_WINDOWS_JOB_OBSERVER_ONLY)
   return()
 endif()

@@ -23,6 +23,21 @@ server fn main()->unit !{task,fs,io}{
  assert(unwrap(file_read(box.value,6))==utf8_bytes("abcdef"));
  assert(file_close(box.value));print(42);}
 '''
+# Windows copytree omits target_is_directory for a copied relative symlink.
+# This legacy fixture must preserve the actual reparse entry kind.
+def copy_namespace(source,destination):
+    """Preserve alias kind without following it to infer a Windows link type."""
+    source=Path(source);destination=Path(destination);destination.mkdir()
+    for item in source.iterdir():
+        target=destination/item.name;info=item.lstat()
+        if item.is_symlink():
+            directory=bool(info.st_file_attributes&0x10)if os.name=='nt'else item.is_dir()
+            os.symlink(os.readlink(item),target,target_is_directory=directory)
+        elif os.name=='nt'and info.st_file_attributes&0x400:
+            raise ValueError('unexpected non-symbolic reparse point in captured namespace')
+        elif item.is_dir():copy_namespace(item,target)
+        else:shutil.copy2(item,target)
+
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,v):Path(p).write_text(json.dumps(v,indent=2)+'\n', newline="\n")
 notices=a.notices.resolve(strict=True) if a.notices else None
@@ -92,7 +107,7 @@ try:
     if os.name=='nt':
      assert marker.is_file();saved_marker=marker.read_bytes();anchor=json.loads(saved_marker)['removed_prefix']
      legacy=case/'legacy-layout';target=legacy/PurePosixPath(anchor);target.parent.mkdir(parents=True)
-     shutil.copytree(namespace/'fs',target,symlinks=True)
+     copy_namespace(namespace/'fs',target)
      assert invoke('legacy-layout-verify',{**verify,'directory':str(legacy)})['ok']
      write(marker,{'schema':'nex.project-capture-layout/1','removed_prefix':anchor+'/changed'})
      assert invoke('current-layout-marker-mutation',verify,1)['code']=='E_PROJECT_CAPTURE'

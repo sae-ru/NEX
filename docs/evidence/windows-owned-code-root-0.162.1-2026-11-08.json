@@ -1,0 +1,131 @@
+{
+  "schema": "nex.Windows-AppContainer-private-code-core/1",
+  "ok": true,
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_source_commit": "627e85c342fbfa7c7e0289cb246e62dcd655af00",
+  "compiler_sha256": "9ac1db6a4ca0df5d57353f1e404583384d203d1f2ece02d5bc9fbdc0b89e98ef",
+  "compiler_build": "23e57852ca00ec5e0e21611a8de8be2483e6a7d660a5f9820ff3571afb16f329",
+  "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+  "SDK_archive_sha256": "5b9c90859919328cff2084c9463834a221fe93af96cf48ab4c15ba2590b385ad",
+  "host_tool_files": {
+    "tools/windows/appcontainer.py": "d677a38d6b42f7a59a32a7bd65eb30ce3bb016c95d8a88d67eee9b6edcb08814",
+    "tools/windows/CMakeLists.txt": "f7f2c2067c79ce1aa8ee1668b0347362c0b8fbe23ca9a269282793dad6d9c376",
+    "tools/windows/appcontainer_abrupt.cpp": "5d1ff5a9c38f3840c6a76111aa731ef224bdf72b768d0b5eb9a2df6a28637c52",
+    "tools/windows/appcontainer_cleanup_test.py": "de42bc1ac3c785466b1ff8acb5853d0165e5f662c06aafe9d08f0b5f61ca9d70",
+    "tools/windows/appcontainer_path.cpp": "1934deeca2fc0cdb9193b5494c1eec2553076da9765254f24a756b7bffc3a723",
+    "tools/windows/code_root_test.py": "cdae12023ec7b1e26cae4632c04d75f411aa44bdff0138f20664ac31d42b7a8c"
+  },
+  "actual_Pythons": [
+    "3.10.11",
+    "3.14.3"
+  ],
+  "CTest": {
+    "Python314": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_private_code_root",
+        "windows_job_object_ownership"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_private_code_root",
+        "windows_job_object_ownership"
+      ],
+      "observed_groups": [
+        "windows_job_object_ownership",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_private_code_root"
+      ],
+      "results": {
+        "passed": [
+          "windows_job_object_ownership",
+          "windows_appcontainer_ownership",
+          "windows_appcontainer_owned_cleanup",
+          "windows_appcontainer_private_code_root"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "dc2ad953c96b1a21f109ececae0420535d2b696c22ff8ecd3d3701b4ca303e71",
+      "junit_sha256": "63a38ac4443af24823c1373ba8ebc612d2205a4f1872cccd773a831998aedf23"
+    },
+    "Python310": {
+      "schema": "nex.ctest-verification/1",
+      "ok": true,
+      "ctest_exit_code": 0,
+      "selected_groups": [
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_private_code_root",
+        "windows_job_object_ownership"
+      ],
+      "required_fixture_groups": [],
+      "expected_groups": [
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_private_code_root",
+        "windows_job_object_ownership"
+      ],
+      "observed_groups": [
+        "windows_job_object_ownership",
+        "windows_appcontainer_ownership",
+        "windows_appcontainer_owned_cleanup",
+        "windows_appcontainer_private_code_root"
+      ],
+      "results": {
+        "passed": [
+          "windows_job_object_ownership",
+          "windows_appcontainer_ownership",
+          "windows_appcontainer_owned_cleanup",
+          "windows_appcontainer_private_code_root"
+        ],
+        "failed": [],
+        "skipped": []
+      },
+      "registry_sha256": "75acce152e4f6a64fa7340bc5f5ec51e67db1021a4f13358ce1f0450252d8df7",
+      "junit_sha256": "a9ee7803d6bbfc01c1a4922ea6075f0a3a90b43d4724913a413462c9f93a718c"
+    }
+  },
+  "core": {
+    "check": true,
+    "reference": true,
+    "native_debug_build": true,
+    "native_execution": true,
+    "native_test": true,
+    "read_access_controls": {
+      "outside_source_denied": true,
+      "outside_SDK_denied": true,
+      "opposite_profile_denied": true,
+      "own_SDK_readonly": true,
+      "own_work_writable": true
+    },
+    "compiler_overrides": [],
+    "SDK_resource_overlays": [],
+    "profiles_and_code_roots_removed": true
+  },
+  "GetLongPathName_control": {
+    "direct_profile_error": 5,
+    "private_alias_error": 0,
+    "both_aliased_Clang_drivers_exit_zero": true,
+    "final_SDK_code_root_is_physical": true
+  },
+  "whole_SDK_accepted": false,
+  "complete_workflows_debugger_network_and_devices_accepted_by_this_receipt": false,
+  "raw": {
+    "archive_sha256": "16574ee128701858ef1b71e2d49f0c797147464f6cd9a27d642bb219a2953438",
+    "files": 1841,
+    "uncompressed_bytes": 45918498,
+    "independently_verified_on_Mac": true,
+    "original_failed_attempts_retained": true
+  },
+  "base_compiler_sources_preserved": true
+}
