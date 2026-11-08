@@ -43,8 +43,10 @@ client test fn source_error_payload()->unit !{task,throw}{
         self.source(text)
         self.cli('test',self.file,'--target','web')
         self.file.write_text(text.replace('client fn','shared fn').replace('client test fn','shared test fn'), newline="\n")
-        self.cli('test',self.file)
-        self.cli('test',self.file,'--profile','release')
+        # Cold C++ runtime compilation exceeds 60 seconds on measured ARM hosts.
+        # This parent budget covers compilation; task execution keeps its limits.
+        self.cli('test',self.file,timeout=180)
+        self.cli('test',self.file,'--profile','release',timeout=180)
         self.file.write_text(text, newline="\n")
         output=self.root/'source-errors';self.cli('web',self.file,'--directory',output)
         driver=output/'src/check.ts'
