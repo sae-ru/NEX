@@ -54,6 +54,14 @@ stop processing with LLDB's primary listener. Its scoped cross-platform checks
 and matching full regression/SDK delivery remain distinct; the earlier crash
 receipt is retained. Compiler LLVM/MLIR22.1.8 and system packages are unchanged.
 
+With the private LLVM22 symbol tools and that primary-listener helper, the
+[current ARM64 source recovery](evidence/cix-nine-source-groups-0.162.2-2026-11-09.json)
+passed all nine original module/frontier/instance, profile, HTTP and debugger
+groups. The source files match commit12281c4; native probe hashes, original
+CTest limits and fixture dependencies were checked independently. The earlier
+failed303 invocation stays failed, and stock LLDB23 indexed paging and complete
+portable SDK delivery remain unqualified.
+
 On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
 selected its cross sysroot when manually linking fixtures against native host
 libraries. Its C++ entrypoint now explicitly uses `--no-default-config`,
