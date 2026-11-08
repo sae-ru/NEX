@@ -4,7 +4,11 @@
   "native_runtime_search": {
     "status": "development",
     "platform": "ELF/Linux",
-    "selected_libraries": ["sqlite", "openssl_ssl", "openssl_crypto"],
+    "selected_libraries": [
+      "sqlite",
+      "openssl_ssl",
+      "openssl_crypto"
+    ],
     "ordering": "selected SONAME aliases precede overlapping selected directories",
     "conflicting_requirements": "E_TARGET_LIBRARY",
     "missing_or_mismatched_selected_alias": "E_TARGET_LIBRARY",
@@ -3936,5 +3940,13 @@
     "matching_runtime_required": true,
     "stable_public_abi": false,
     "guide_kind": "native-entry-abi"
+  },
+  "project_capture_layout": {
+    "platform": "Windows",
+    "new_workspace_layout": "common-prefix relocation",
+    "archived_capture_unchanged": true,
+    "existing_unmarked_layout": true,
+    "child_working_directory_limit": "Windows process-creation MAX_PATH limit still applies",
+    "guide": "docs/project-tasks.md"
   }
 }

@@ -452,9 +452,9 @@ public:
   void finish(){if(!cleanup())throw Error("E_TASK_CLEANUP","cannot clean owned native temporary files");}
 };
 struct Runner {
-  Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;
+  Prepared &p;TaskOptions options;fs::path directory;Object report;bool interrupted=false;std::map<std::string,fs::path> projectRoots;
   fs::path workspace(const std::string &program){
-    auto root=directory/"workspaces"/program;auto found=p.projects.find(program);return found==p.projects.end()?root:root/text(object(found->second),"project_root");
+    auto found=projectRoots.find(program);return found==projectRoots.end()?directory/"workspaces"/program:found->second;
   }
   void verifyProject(const std::string &program){auto found=p.projects.find(program);if(found!=p.projects.end())validateProjectCapturePlans(found->second,(directory/"workspaces"/program).string());}
   void verifyNotices(const std::string &id){auto found=p.packageNotices.find(id);if(found!=p.packageNotices.end())verifyTaskPackageNotices(found->second,(directory/"inputs/package-notices"/id).string());}
@@ -789,7 +789,7 @@ struct Runner {
   JSON run(const std::string &replayOf=""){
     Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"workloads",workloadValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
     for(const auto &[id,candidate]:p.programs){
-      if(auto project=p.projects.find(id);project!=p.projects.end()){materializeProjectCapture(project->second,(directory/"workspaces"/id).string());verifyProject(id);}
+      if(auto project=p.projects.find(id);project!=p.projects.end()){projectRoots[id]=materializeProjectCapture(project->second,(directory/"workspaces"/id).string());verifyProject(id);}
       else writeFile((workspace(id)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry",candidate.program.entryUnit}})+"\n");
       Store local(workspace(id)/".nex");local.save(loadBundle(candidate.bundle,workspace(id).string()));
     }

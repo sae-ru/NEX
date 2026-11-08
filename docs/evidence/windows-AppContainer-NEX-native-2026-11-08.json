@@ -1,0 +1,123 @@
+{
+  "schema": "nex.windows-native-AppContainer-runtime-development-evidence/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "status": "experimental-native-runtime-and-maintained-host-tools-passed-integration-pending",
+  "compiler_sha256": "3f0160cff3dc83abd59397264233bbfa2c196fefb65732590f3b09a5fa7b3aff",
+  "base_source_commit": "cb708a59220d6a5a541c9b8c5a6da06b20d0d0b9",
+  "native_observer_sha256": "c5a9c32402ddec138c813f30dce9123150f0d811a2a1560fb47e5fe376d816d5",
+  "runtime_overlays": {
+    "nex_host_windows.h": {
+      "source_sha256": "84b45a69ff8cdf61683fc3e91e00b82fa4c34194a42eb01279a90eb062a0aea2",
+      "candidate_sha256": "7101907f2bf30e44428fe382c0a415eece86f03be1809940aa39097ead6ac854"
+    },
+    "nex_files_windows.h": {
+      "source_sha256": "0098a51290397a91c34c9d9dab54c663b900982ec223787b51ca2032ab36a6cd",
+      "candidate_sha256": "5f0805ef23845c98f2650363d068785ca59459934cc28858f814379f12471a74"
+    },
+    "nex_ffi_loader.cpp": {
+      "source_sha256": "aef1691d04b8acbb8fc40c1a52858e8d1072a3ba997d491412e829fbde757d60",
+      "candidate_sha256": "1c3f71ba1b84359b931b6db5001937fa407486689b4098c269bef36fed0c04e5"
+    }
+  },
+  "observed_defects": [
+    "Per-component canonicalization queried C:/Users, denied despite the final selected path being readable.",
+    "Private user-only ACLs excluded the restricted AppContainer principal; the stream adapter duplicated that ACL code.",
+    "Reopening read-only snapshot paths for cleanup failed; retained directory handles must close before nested deletion."
+  ],
+  "runtime_changes": [
+    "Resolve normal path components together, preserving physical link/.. semantics.",
+    "Use the effective user and current AppContainer SID only; ordinary tokens retain user-only ACLs.",
+    "Share private-file principal selection with the Windows stream adapter.",
+    "Retain directory cleanup authority before sealing, restore exact original ACLs by handle, close handles, then remove snapshots."
+  ],
+  "native_fixture": {
+    "provider_entry": "nested/one/module.dll",
+    "provider_binary_bytes_unchanged": true,
+    "provider_manifest_sha256": "8e72bfd78225b754ee3fd8c96d5152e20760de580de857e97885722a87cb59af",
+    "original_all16_graph_tables_preserved": true,
+    "new_fixture_graph_created_by_compiler": true,
+    "native_images": [
+      {
+        "profile": "debug",
+        "sha256": "1dcd5004d427f8af7bdb575d47649c41163f21744243d548bbfecb460e8a8d99"
+      },
+      {
+        "profile": "release",
+        "sha256": "9c8a028c618908992343e109713212aa2aea1ef5d91195799d9a243c94e2c70c"
+      }
+    ],
+    "ordinary_native_reference_agreement": true,
+    "AppContainer_cases": [
+      {
+        "name": "missing-foreign-grant",
+        "exit_code": 70,
+        "job_active_processes_after": 0,
+        "root_token_verified_before_resume": true
+      },
+      {
+        "name": "outside-foreign-catalogue-denied",
+        "exit_code": 70,
+        "job_active_processes_after": 0,
+        "root_token_verified_before_resume": true
+      },
+      {
+        "name": "opposite-profile-catalogue-denied",
+        "exit_code": 70,
+        "job_active_processes_after": 0,
+        "root_token_verified_before_resume": true
+      },
+      {
+        "name": "permitted-local-provider-debug",
+        "exit_code": 0,
+        "job_active_processes_after": 0,
+        "root_token_verified_before_resume": true
+      },
+      {
+        "name": "permitted-local-provider-release",
+        "exit_code": 0,
+        "job_active_processes_after": 0,
+        "root_token_verified_before_resume": true
+      }
+    ],
+    "native_Temp_empty_after_every_case": true,
+    "both_profiles_and_parents_deleted": true
+  },
+  "maintained_tools": {
+    "native_FFI_actual_Python": [
+      "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+      "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]"
+    ],
+    "native_FFI_cases_each": 5,
+    "native_FFI_all4_profiles_and_parents_deleted": true,
+    "existing_AppContainer_cases_plus_native_temp_each": 8,
+    "actual_brokers": [
+      "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+      "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]"
+    ],
+    "original836_peer_runtime_files_preserved": true,
+    "environment_all6_profiles_and_parents_deleted": true
+  },
+  "nested_snapshot_probe": {
+    "direct_write_denied": true,
+    "new_WRITE_DAC_open_denied_in_this_AppContainer": true,
+    "nested_directory_and_file_removed_before_profile_deletion": true,
+    "profile_and_parent_deleted": true
+  },
+  "failed_attempts_retained": {
+    "initial_runtime_failures": true,
+    "diagnostic_generic_exception_logging_private_only": true,
+    "one_native_snapshot_cleanup_failure": "Original failed report retained; exact five residual nodes were recovered after all native jobs retired, restoring ACLs only inside that owned profile; both profile parents absent.",
+    "nested_cpp_probe_first_attempt": "Recursive deletion occurred while child directory handles were still open; failed raw output retained."
+  },
+  "acceptance_limits": {
+    "installed_SDK_changed": false,
+    "full_SDK_inside_AppContainer_accepted": false,
+    "NEX_compiler_executed_inside_AppContainer": false,
+    "HTTP_executed_inside_AppContainer": false,
+    "network_capabilities_used": false,
+    "untrusted_native_code_service": false,
+    "general_platform_or_binary_safety_claim": false
+  }
+}

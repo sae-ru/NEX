@@ -1,7 +1,7 @@
 from host_fixture import python_executable
 """Task acceptance and replay must retain the declared physical architecture."""
 import copy,json,os,shutil,subprocess
-from pathlib import Path
+from pathlib import Path,PurePosixPath
 import unittest
 import support as harness
 
@@ -121,6 +121,41 @@ client test fn correct()->unit{assert(initial()==42);}''', newline="\n")
         artifact=next(a for a in result['build']['artifacts'] if a['component']=='app')
         child=subprocess.run([artifact['artifact']],cwd=self.root,env={**os.environ,**env},capture_output=True,text=True,timeout=30)
         self.assertEqual(child.returncode,0,child.stdout+child.stderr);self.assertEqual((self.root/'executed').read_text(),'once')
+
+    @unittest.skipUnless(os.name=='nt','Windows CreateProcessW working-directory boundary')
+    def test_long_project_capture_runs_and_replays_with_external_sources(self):
+        # The original program is valid; repeating its absolute ancestry below
+        # the acceptance run used to push the child CWD beyond MAX_PATH.
+        parent=self.root/'long source % 🧠'
+        while len(str(parent).encode('utf-16le'))//2<170:
+            parent=parent/('длинный-'+ 'x'*25)
+        project=parent/'project';(project/'app').mkdir(parents=True)
+        words=parent/'words';words.mkdir()
+        (words/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'text.nex'}),newline='\n')
+        (words/'text.nex').write_text('module words;pub fn text()->str{return "42 🧠";}',newline='\n')
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'app/main.nex','libraries':{'words':'../words'}}),newline='\n')
+        (project/'app/main.nex').write_text('module long_capture;import "words/text.nex" as w;fn main()->unit !{io}{print(w::text());}',newline='\n')
+        architecture={'schema':'nex.project-build/1','default_configuration':'debug','configurations':{'debug':{'profile':'debug'}},
+                      'components':{'app':{'kind':'executable','root':'app','entry':'app/main.nex'}}}
+        (project/'nex.build.json').write_text(json.dumps(architecture),newline='\n')
+        task=self.cli('task','nex.build.json','--kind','init','--component','app','--configuration','debug',cwd=project,timeout=120)
+        task.update(id='long-capture',title='Long-path project',goal='Run captured external sources and replay without the original files',checks=[],requirements=[])
+        self.add(task,{'id':'run','kind':'run','target':'native','configuration':'debug','expect':{'stdout':'42 🧠\n','exit_code':0}},'long_capture::main')
+        (project/'task.json').write_text(json.dumps(task),newline='\n')
+        result=self.cli('task','task.json','--kind','run','--directory',self.root.parent/'short-run',cwd=project,timeout=600)
+        self.assertTrue(result['ok']);receipt=Path(result['output']);workspace=receipt.parent/'workspaces/app'
+        capture_file=receipt.parent/'inputs/projects/app.json';saved=capture_file.read_bytes();capture=json.loads(saved)
+        legacy=workspace/capture['project_root'];self.assertGreater(len(str(legacy).encode('utf-16le'))//2,260)
+        marker=json.loads((workspace/'capture-layout.json').read_text())
+        actual=workspace/'fs'/PurePosixPath(capture['project_root']).relative_to(marker['removed_prefix'])
+        self.assertTrue(actual.is_dir());self.assertLess(len(str(actual).encode('utf-16le'))//2,260)
+        self.assertEqual(json.loads((actual/'nex.json').read_text())['libraries']['words'],'../words')
+        shutil.rmtree(project);shutil.rmtree(words)
+        replay=self.cli('task',receipt,'--kind','replay','--directory',self.root.parent/'short-replay',cwd=self.root.parent,timeout=600)
+        self.assertTrue(replay['ok']);self.assertEqual(replay['programs'],result['programs'])
+        self.assertEqual(capture_file.read_bytes(),saved)
+        self.assertEqual((Path(replay['output']).parent/'inputs/projects/app.json').read_bytes(),saved)
+
     def test_project_capture_is_indexed_and_tampering_rejects_before_replay(self):
         task=self.scaffold();task['checks']=[];task['requirements']=[]
         self.add(task,{'id':'effects','kind':'effects','target':'source','configuration':'debug','symbols':['app::main'],'allowed_effects':['io']},'app::main');self.save_task(task)

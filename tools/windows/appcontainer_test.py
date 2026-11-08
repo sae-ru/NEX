@@ -58,6 +58,13 @@ if mode=='grandchild':print(json.dumps(result));sys.exit(0)
 for rights in [0x40000000,0x40000,0x10000]:denied(sys.executable,rights)
 denied(sdk/'must-not-create.txt',0x40000000,4)
 Path('work-output.txt').write_text('owned work')
+if mode=='native-temp':
+ k.GetTempPathW.argtypes=[W.DWORD,W.LPWSTR];k.GetTempPathW.restype=W.DWORD
+ buffer=C.create_unicode_buffer(32768);count=k.GetTempPathW(len(buffer),buffer);assert 0<count<len(buffer)
+ native_temp=Path(buffer.value);assert native_temp.resolve(strict=True)==Path(sys.argv[3]).resolve(strict=True)
+ temporary=native_temp/'native-temp-control.txt';temporary.write_text('42');assert temporary.read_text()=='42';temporary.unlink()
+ result.update(ok=True,native_temp=str(native_temp),native_temp_file_removed=not temporary.exists())
+ print(json.dumps(result));sys.exit(0)
 if mode=='nonzero':print(json.dumps(result));sys.exit(7)
 if mode=='orphan':
  child=subprocess.Popen([sys.executable,'-I','-B',__file__,'sleeper',sys.argv[2]])
@@ -135,6 +142,14 @@ try:
                 captured=next(p for p in observed['children']if p['pid']==child['pid'])
                 assert captured['exited']and captured['exit_code']==238
             report['cases'].append({'name':label,'ok':True,'observation':observed});save()
+        native_environment=profile.native_environment(environment)
+        observed=profile.run([str(sdk/'python.exe'),'-I','-B',str(peer),'native-temp',canaries,str(profile.temp)],
+            root/'native-temp',native_environment,observer=observer,timeout=20)
+        assert observed['parent_exit_code']==0 and not observed['timed_out']and observed['active_job_processes']==0
+        native=json.loads((root/'native-temp/stdout').read_text(encoding='utf-8'))
+        assert native['ok']and native['native_temp_file_removed']and not list(profile.temp.iterdir())
+        profile.verify_copies();other.verify_copies()
+        report['cases'].append({'name':'native-Win32-temporary-directory','ok':True,'observation':observed,'native_temp':native['native_temp']});save()
         report['workflow_budget_rejections']=[]
         for budget in [0,10800.001,float('nan')]:
             output=root/('invalid-budget-'+repr(budget))

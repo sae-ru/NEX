@@ -59,6 +59,11 @@ The [ELF runtime search correction](docs/native-runtime-search.md) passed a
 The [development record](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json)
 also records the fresh Windows build and 12 moved/restored C11/C++20 history
 pairs. Complete matching SDK delivery remains pending.
+The Windows development follow-up includes [OpenSSL path corrections](tools/windows/openssl/README.md),
+[native AppContainer runtime work](docs/windows-appcontainer-qualification.md)
+and compact [project-task workspaces](docs/project-tasks.md#captured-inputs-and-replay).
+Their scoped receipts retain original failed attempts; the combined source still
+needs its fresh platform and complete SDK checks.
 The qualified 0.162.0 SDK below retains its exact source and archive identity.
 The [macOS ARM64 SDK record](docs/releases/0.162.0.json) pins the exact immutable
 archive and its qualified resource snapshot. The matching source passed all

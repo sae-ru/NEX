@@ -133,6 +133,9 @@ std::shared_ptr<Manifest> readManifest(const ForeignLibraryGrant &grant,const Po
 struct Image {
   fs::path directory;void *handle=nullptr;
 #ifdef _WIN32
+  std::vector<std::unique_ptr<host_windows::DirectoryPermissions>> cleanupDirectories;
+#endif
+#ifdef _WIN32
   std::optional<host_windows::Identity> identity;
 #endif
   std::shared_ptr<foreign_detail::ResourceRegistry> resourceTypes=std::make_shared<foreign_detail::ResourceRegistry>();
@@ -140,13 +143,19 @@ struct Image {
   ~Image(){if(handle)::dlclose(handle);if(!directory.empty()){
 #ifdef _WIN32
     if(host_windows::identity(directory)!=identity)return;
-    try{host_windows::privateAccess(directory,FILE_ALL_ACCESS);}catch(...){return;}
+    try{
+      for(auto it=cleanupDirectories.rbegin();it!=cleanupDirectories.rend();++it)(*it)->restore();
+      // Close child directory handles before recursive removal; otherwise a
+      // delete-pending child can keep its parent nonempty on Windows.
+      cleanupDirectories.clear();
+    }catch(...){return;}
 #endif
     std::error_code e;fs::permissions(directory,fs::perms::owner_all,fs::perm_options::add,e);
     for(fs::recursive_directory_iterator it(directory,e),end;!e&&it!=end;it.increment(e)){
 #ifdef _WIN32
-      try{host_windows::privateAccess(it->path(),FILE_ALL_ACCESS);}catch(...){continue;}
-      fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
+      // Restored parent FILE_DELETE_CHILD permits deletion of sealed files;
+      // do not reopen each read-only file with new WRITE_DAC authority.
+      if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
 #else
       if(it->is_directory(e))fs::permissions(it->path(),fs::perms::owner_all,fs::perm_options::add,e);
 #endif
@@ -201,8 +210,16 @@ std::shared_ptr<Image> loadImage(const Manifest &manifest,const Poll &poll){
   std::error_code ec;for(fs::recursive_directory_iterator it(image->directory,ec),end;!ec&&it!=end;it.increment(ec))if(it->is_directory())directories.push_back(it->path());
   if(ec)fail("E_FFI_IO","cannot inspect module snapshot directories");std::sort(directories.rbegin(),directories.rend());
 #ifdef _WIN32
-  for(const auto &dir:directories)host_windows::privateAccess(dir,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
-  host_windows::privateAccess(image->directory,FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+  // Directory count is bounded by the existing manifest/path limits. Retain
+  // handles before each seal, so partial initialization can also unwind.
+  for(const auto &dir:directories){
+    auto access=std::make_unique<host_windows::DirectoryPermissions>(dir);
+    image->cleanupDirectories.push_back(std::move(access));
+    image->cleanupDirectories.back()->seal(FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+  }
+  auto access=std::make_unique<host_windows::DirectoryPermissions>(image->directory);
+  image->cleanupDirectories.push_back(std::move(access));
+  image->cleanupDirectories.back()->seal(FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
 #else
   for(const auto &dir:directories)if(::chmod(dir.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot directory");if(::chmod(image->directory.c_str(),0500))fail("E_FFI_IO","cannot seal module snapshot root");
 #endif

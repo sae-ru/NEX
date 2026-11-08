@@ -124,6 +124,41 @@ Shape shape(const JSON &capture,SourceLanguage language){
   for(const auto &[key,value]:*c.getObject("function_owners")){if(key.str().size()>8192||(!value.getAsNull()&&!value.getAsString()))fail("invalid captured function owner");}
   return s;
 }
+
+// Serialized captures retain their original namespace and content identities.
+// Windows may materialize the entire namespace below a shorter common anchor;
+// an exact local marker distinguishes this layout from existing workspaces.
+struct Layout {
+  fs::path base,prefix="fs";
+  fs::path at(const std::string &key)const{
+    auto logical=fs::path(name(key));if(!inside(logical,prefix))fail("capture path is outside its layout anchor");
+    return (base/"fs"/logical.lexically_relative(prefix)).lexically_normal();
+  }
+  std::string key(const fs::path &relative)const{
+    name(relative.generic_string());
+    return name((prefix/relative.lexically_relative("fs")).lexically_normal().generic_string());
+  }
+};
+fs::path compactAnchor(const Shape &s){
+  fs::path common=s.root;
+  auto include=[&](const std::string &path){while(!inside(fs::path(path),common)){common=common.parent_path();if(common.empty())fail("capture has no common namespace anchor");}};
+  for(const auto &path:s.directories)include(path);
+  for(const auto &[path,_]:*s.files)include(path.str());
+  for(const auto &[path,target]:*s.links){include(path.str());include(target.getAsString()->str());}
+  return common;
+}
+JSON layoutMarker(const fs::path &anchor){return Object{{"schema","nex.project-capture-layout/1"},{"removed_prefix",anchor.generic_string()}};}
+Layout existingLayout(const Shape &s,const fs::path &base){
+  Layout layout{base};auto marker=base/"capture-layout.json";
+  if(fs::symlink_status(marker).type()!=fs::file_type::not_found){
+    if(fs::canonical(marker)!=marker)fail("capture layout marker must be a regular owned input");
+    auto expected=compactAnchor(s);
+    if(expected=="fs"||parse(read(marker,4096))!=layoutMarker(expected))fail("captured namespace layout changed");
+    layout.prefix=expected;
+  }
+  return layout;
+}
+
 }
 
 JSON captureProject(const std::string &directory,const std::string &manifest,const std::string &source,const std::string &component,const std::set<std::string> &configurations,const std::map<std::string,std::string> &overlays,const std::set<std::string> &debugConfigurations,SourceLanguage language){
@@ -214,30 +249,35 @@ JSON captureProject(const std::string &directory,const std::string &manifest,con
 std::string materializeProjectCapture(const JSON &capture,const std::string &directory,SourceLanguage language){
   auto s=shape(capture,language);fs::path base=fs::absolute(directory);
   if(fs::exists(base)||!fs::create_directories(base))fail("project capture needs a new container");fs::permissions(base,fs::perms::owner_all,fs::perm_options::replace);base=fs::canonical(base);
-  for(const auto &path:s.directories)fs::create_directories(base/path);
-  for(const auto &[path,value]:*s.files){auto output=base/path.str();fs::create_directories(output.parent_path());writeFile(output.string(),value.getAsString()->str());}
+  Layout layout{base};
+#ifdef _WIN32
+  layout.prefix=compactAnchor(s);
+  if(layout.prefix!="fs")writeFile((base/"capture-layout.json").string(),json(layoutMarker(layout.prefix))+"\n");
+#endif
+  for(const auto &path:s.directories)fs::create_directories(layout.at(path));
+  for(const auto &[path,value]:*s.files){auto output=layout.at(path.str());fs::create_directories(output.parent_path());writeFile(output.string(),value.getAsString()->str());}
   std::vector<std::pair<std::string,std::string>> links;for(const auto &[path,target]:*s.links)links.emplace_back(path.str(),target.getAsString()->str());
   std::sort(links.begin(),links.end(),[](const auto &a,const auto &b){auto depth=[](const auto &v){return std::count(v.begin(),v.end(),'/');};return std::make_pair(depth(a.first),a.first)<std::make_pair(depth(b.first),b.first);});
   for(const auto &[path,target]:links){
-    auto output=base/path,actual=fs::canonical(base/target);if(!inside(actual,base))fail("capture link target escapes container");
+    auto output=layout.at(path),actual=fs::canonical(layout.at(target));if(!inside(actual,base))fail("capture link target escapes container");
     if(fs::exists(output)){if(fs::canonical(output)!=actual)fail("capture link collides with a different input");continue;}
     fs::create_directories(output.parent_path());auto parent=fs::canonical(output.parent_path());if(!inside(parent,base))fail("capture link parent escapes container");
     fs::create_symlink(actual.lexically_relative(parent),output);
   }
-  verifyProjectCapture(capture,base.string(),language);return (base/s.root).string();
+  verifyProjectCapture(capture,base.string(),language);return layout.at(s.root).string();
 }
 void verifyProjectCapture(const JSON &capture,const std::string &directory,SourceLanguage language){
-  auto s=shape(capture,language);auto base=fs::canonical(directory);
-  for(const auto &path:s.directories){auto expected=base/path,actual=fs::canonical(expected);if(actual!=expected||!fs::is_directory(actual))fail("captured directory changed");}
-  for(const auto &[path,value]:*s.files){auto expected=base/path.str(),actual=fs::canonical(expected);if(actual!=expected||read(actual,64*1048576)!=value.getAsString()->str())fail("captured project input changed: "+path.str());}
-  for(const auto &[path,target]:*s.links){auto a=fs::canonical(base/path.str()),b=fs::canonical(base/target.getAsString()->str());if(!inside(a,base)||a!=b)fail("captured alias changed");}
+  auto s=shape(capture,language);auto base=fs::canonical(directory);auto layout=existingLayout(s,base);
+  for(const auto &path:s.directories){auto expected=layout.at(path),actual=fs::canonical(expected);if(actual!=expected||!fs::is_directory(actual))fail("captured directory changed");}
+  for(const auto &[path,value]:*s.files){auto expected=layout.at(path.str()),actual=fs::canonical(expected);if(actual!=expected||read(actual,64*1048576)!=value.getAsString()->str())fail("captured project input changed: "+path.str());}
+  for(const auto &[path,target]:*s.links){auto a=fs::canonical(layout.at(path.str())),b=fs::canonical(layout.at(target.getAsString()->str()));if(!inside(a,base)||a!=b)fail("captured alias changed");}
 }
 void validateProjectCaptureData(const JSON &capture,SourceLanguage language){shape(capture,language);}
 void validateProjectCapturePlans(const JSON &capture,const std::string &directory,SourceLanguage language){
-  auto s=shape(capture,language);verifyProjectCapture(capture,directory,language);auto base=fs::canonical(directory),root=fs::canonical(base/s.root);
+  auto s=shape(capture,language);verifyProjectCapture(capture,directory,language);auto base=fs::canonical(directory);auto layout=existingLayout(s,base);auto root=fs::canonical(layout.at(s.root));
   for(const auto &[configuration,expected]:*s.expectations){
     const auto &record=*s.toolchains->getObject(configuration);BuildOptions native;native.target=text(record,"target");
-    if(record.getBoolean("explicit").value_or(false))native.toolchain=(base/text(record,"file")).string();
+    if(record.getBoolean("explicit").value_or(false))native.toolchain=layout.at(text(record,"file")).string();
     auto toolchain=inspectNativeToolchain(native);
     if(toolchain.hash!=text(record,"hash")||toolchain.manifest!=*record.get("manifest")||toolchain.inputs!=*record.get("identity"))throw Error("E_TASK_TOOLCHAIN","captured/current project toolchain data differs");
     ProjectBuildOptions options;options.kind="plan";options.component=text(object(capture),"component");options.configuration=configuration.str();options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;options.sourceLanguage=language;
@@ -251,7 +291,7 @@ void validateProjectCapturePlans(const JSON &capture,const std::string &director
       if(bool(actualLinkage)!=bool(expectedLinkage)||(actualLinkage&&*actualLinkage!=*expectedLinkage))fail("captured task provider ownership/contracts changed");
       if(auto fingerprint=e.getString("native_toolchain_hash")){auto native=a.getObject("native_toolchain");if(!native||native->getString("hash")!=fingerprint)throw Error("E_TASK_TOOLCHAIN","captured project toolchain fingerprint changed");}
       auto program=loadVersionedProgram((root/text(a,"entry")).string(),root.string(),language);
-      for(const auto &[key,unit]:program.units){(void)key;auto actual=fs::canonical(unit.path);if(!inside(actual,base))fail("project source fell back outside the captured namespace");auto saved=s.files->getString(actual.lexically_relative(base).generic_string());if(!saved||*saved!=unit.source)fail("project source is not indexed in the capture");}
+      for(const auto &[key,unit]:program.units){(void)key;auto actual=fs::canonical(unit.path);if(!inside(actual,base))fail("project source fell back outside the captured namespace");auto saved=s.files->getString(layout.key(actual.lexically_relative(base)));if(!saved||*saved!=unit.source)fail("project source is not indexed in the capture");}
     }
   }
 }

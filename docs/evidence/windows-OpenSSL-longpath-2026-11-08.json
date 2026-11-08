@@ -1,0 +1,106 @@
+{
+  "schema": "nex.windows-openssl-longpath-development-evidence/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "status": "scoped-library-and-NEX-FFI-checks-passed-complete-SDK-pending",
+  "source_commit": "cb708a59220d6a5a541c9b8c5a6da06b20d0d0b9",
+  "original_failure": {
+    "entry": "ffi_example::external_wire",
+    "image_path_characters": 271,
+    "exit_code_hex": "0xC0000409",
+    "stderr_contains": "stack smashing detected",
+    "observed_stack": [
+      "__stack_chk_fail",
+      "single_path_relocation_lib",
+      "OpenSSL default path initialization",
+      "EVP SHA256 initialization",
+      "NEX ForeignLibraries binding"
+    ],
+    "original_image_preserved": true
+  },
+  "dependency": {
+    "version": "3.6.5",
+    "original_MSYS2_package": "3.6.5-1",
+    "source_sha256": "a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98",
+    "patches": {
+      "nex-long-path.patch": "0336989e3db015f4e9a1f7db71b6bdf7165d8ed9cca2b0870cfd10b3eee083fc",
+      "nex-x509-long-path-v2.patch": "4f47b86b8d0ccfba6993e908a981126bb82dc3a20083b1e279d7538a0cc95788"
+    },
+    "source_lock": "tools/windows/openssl/source.lock.json",
+    "prefix_archive": {
+      "sha256": "84ef853efe9aa58c389a84df62cdd8995ad17bf14b14b8085a9f910d52690553",
+      "bytes": 7328108,
+      "files": 164
+    },
+    "raw_receipt_archive": {
+      "sha256": "4f011ad5910b48d040a3902c842799e20accbad21d874e4e934b8625bdb0e531",
+      "bytes": 1457861,
+      "files": 111
+    },
+    "archive_upload_or_public_release_performed": false,
+    "config_provider_loading_and_stack_protection_retained": true
+  },
+  "library_checks": {
+    "static_shared_layout_cases_passed": 8,
+    "layouts": [
+      "short ASCII",
+      "UTF16 below260 but UTF8 above260",
+      "long ASCII",
+      "long Unicode"
+    ],
+    "observed": [
+      "known SHA256 vector",
+      "default TLS1.3 configuration loading",
+      "relocated legacy provider and MD4 vector"
+    ],
+    "negative_controls": [
+      "TLS1.2 configuration rejected by TLS1.3 expectation",
+      "old library long-path stack smash reproduced"
+    ],
+    "full_upstream_accepted": false,
+    "full_upstream_attempt": "private Job timed out; all57795 captured processes retired",
+    "upstream_recipe_union_passed": 6,
+    "original_six_recipe_invocation_passed": false,
+    "X509_recovery": "Only one CRLF/LF text comparator normalized; old signed/new native CLI outputs byte-identical; one-byte certificate content mutation rejected; original recipe restored"
+  },
+  "actual_NEX_replay": {
+    "compiler_sha256": "c474b375c49164b0763eec8f3db0b767fa23dbe3dcd506e1daa44e1356df4416",
+    "revision": "f6a99c8dcc495beb8fcc052bab1bb8bbfe607f3c507b82cefabd7f793d3254dd",
+    "entry": "ffi_example::external_wire",
+    "native": [
+      {
+        "profile": "debug",
+        "UTF16_units": 288,
+        "image_sha256": "2bab8b46215850842f353e4be6098a3d324ddc2b88282565843928cd88adef24",
+        "reference_stdout_agrees": true
+      },
+      {
+        "profile": "release",
+        "UTF16_units": 288,
+        "image_sha256": "3840040ebc424fb2dba271e452b0a338414250da84a5f52cc37715d471e9d876",
+        "reference_stdout_agrees": true
+      }
+    ],
+    "all16_graph_tables_preserved": true,
+    "physical_application_input_source_absent_before_build": true,
+    "normal_source_cache_outputs_created_from_graph": true,
+    "original_controller_last_guard_failure_retained": true,
+    "recovery_validation_reexecuted_or_recompiled_tests": false
+  },
+  "fresh_current_build": {
+    "compiler_sha256": "3f0160cff3dc83abd59397264233bbfa2c196fefb65732590f3b09a5fa7b3aff",
+    "all_targets_built": true,
+    "ordinary_install_and_doctor_passed": true,
+    "source_files": 1998,
+    "registered_groups": 302,
+    "full302_run_claimed": false,
+    "selected_dependency_prefix_private": true
+  },
+  "limits": [
+    "Complete matching Windows SDK acceptance is still pending.",
+    "Positive IPv6 remains unverified under the intentional operator restriction.",
+    "Arbitrary Windows namespace and UNC paths were not qualified.",
+    "No universal binary-safety guarantee is established."
+  ]
+}

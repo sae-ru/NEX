@@ -26,13 +26,16 @@ int main(int argc,char **argv){try{
   if(configurations.empty())configurations.insert(text("configuration","debug"));
   if(o.getBoolean("task_debug").value_or(false))debug=configurations;
   output=captureProject(root,manifest,readFile(manifest),text("component","app"),configurations,{},debug,sourceLanguage);
- }else if(action=="restore"||action=="validate"){
+ }else if(action=="restore"||action=="validate"||action=="verify"){
   auto value=llvm::json::parse(readFile(text("capture")));if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));
   validateProjectCaptureData(*value,sourceLanguage);
   if(action=="restore"){
    auto restored=materializeProjectCapture(*value,text("directory"),sourceLanguage);validateProjectCapturePlans(*value,text("directory"),sourceLanguage);
    output=Object{{"ok",true},{"root",restored},{"language",programLanguage(sourceLanguage)}};
-  }else output=Object{{"ok",true},{"language",programLanguage(sourceLanguage)}};
+  }else {
+   if(action=="verify")validateProjectCapturePlans(*value,text("directory"),sourceLanguage);
+   output=Object{{"ok",true},{"language",programLanguage(sourceLanguage)}};
+  }
  }else{
   ProjectBuildOptions options;options.kind=action;options.component=text("component","app");options.configuration=text("configuration","debug");
   options.compilerVersion=NEX_VERSION;options.compilerBuild=NEX_BUILD_ID;options.sourceLanguage=sourceLanguage;

@@ -37,6 +37,44 @@ int main(int argc,char **argv){
     unsigned passed=0,failed=0;
     auto test=[&](const char *name,auto body){try{body();++passed;std::cout<<"PASS "<<name<<std::endl;}catch(const std::exception &error){++failed;std::cerr<<"FAIL "<<name<<": "<<error.what()<<std::endl;}};
     test("private directory ACL",[&]{require(nexrt::host_windows::isPrivateDirectory(root),"directory must have protected current-user ACL");});
+    test("private file sealing retains read and rejects write",[&]{
+      auto path=root/L"sealed";nexrt::host_windows::writePrivateFile(path,"42");
+      nexrt::host_windows::privateAccess(path,FILE_GENERIC_READ);
+      require(nexrt::host_windows::readRegular(path,64)=="42","sealed file became unreadable");
+      int fd=nexrt::host_windows::openRegularDescriptor(path,O_WRONLY);
+      if(fd>=0)::_close(fd);
+      require(fd<0&&errno==EACCES,"sealed file admitted a new writer");
+      nexrt::host_windows::privateAccess(path,FILE_ALL_ACCESS);
+    });
+    test("canonical preserves physical link parent and missing-prefix refusal",[&]{
+      auto logical=root/L"logical",physical=root/L"physical";
+      fs::create_directories(logical);fs::create_directories(physical/L"child");
+      nexrt::host_windows::writePrivateFile(logical/L"target","logical");
+      nexrt::host_windows::writePrivateFile(physical/L"target","physical");
+      auto link=logical/L"alias";
+      require(CreateSymbolicLinkW(link.c_str(),(physical/L"child").c_str(),
+        SYMBOLIC_LINK_FLAG_DIRECTORY|SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE),"actual directory link");
+      auto selected=nexrt::host_windows::canonical(link/L".."/L"target");
+      require(selected==fs::canonical(physical/L"target")&&nexrt::host_windows::readRegular(selected,64)=="physical","link/.. lost physical provenance");
+      bool rejected=false;try{(void)nexrt::host_windows::canonical(logical/L"missing"/L".."/L"target");}
+      catch(const fs::filesystem_error&){rejected=true;}
+      require(rejected,"canonical skipped a missing physical prefix");
+    });
+    test("sealed snapshot cleanup retains directory authority",[&]{
+      auto snapshot=root/L"snapshot";require(nexrt::host_windows::createPrivateDirectory(snapshot),"snapshot directory");
+      fs::create_directory(snapshot/L"nested");auto member=snapshot/L"nested"/L"data";
+      nexrt::host_windows::writePrivateFile(member,"42");
+      {
+        nexrt::host_windows::DirectoryPermissions outer(snapshot),inner(snapshot/L"nested");
+        nexrt::host_windows::privateAccess(member,FILE_GENERIC_READ);
+        inner.seal(FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);outer.seal(FILE_GENERIC_READ|FILE_GENERIC_EXECUTE);
+        int fd=nexrt::host_windows::openRegularDescriptor(member,O_WRONLY);if(fd>=0)::_close(fd);
+        require(fd<0&&errno==EACCES&&nexrt::host_windows::readRegular(member,64)=="42","snapshot sealing differs");
+        outer.restore();inner.restore();
+      }
+      fs::remove_all(snapshot);
+      require(!fs::exists(snapshot),"held cleanup authority retained snapshot contents");
+    });
     test("host bytes and real reparse rejection",[&]{
       auto path=root/L"данные 🧠";std::string data("A\0Я",4);{std::ofstream file(path,std::ios::binary);file.write(data.data(),data.size());}
       require(nexrt::host_windows::readRegular(path,64)==data,"raw host bytes differ");

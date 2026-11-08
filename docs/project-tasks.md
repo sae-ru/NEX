@@ -75,6 +75,16 @@ captured semantic revisions, source bundles and toolchain fingerprints before
 execution and around commands. Workspace mutation fails the check. Replayed
 builds never silently substitute live original source or package files.
 
+On Windows, new workspaces remove a common ancestor prefix from the physical
+namespace to avoid repeating the original absolute path in the child process's
+working directory. The archived capture, file bytes, relative component/package
+relationships, source identities and history remain unchanged. A checked local
+`capture-layout.json` records the deterministic mapping; verification maps
+physical sources back to their archived keys. Existing workspaces without this
+marker retain their original layout. This reduces path inflation; the chosen run
+directory and the resulting child working directory must still fit Windows
+process-creation limits. It does not change global long-path settings or drives.
+
 `--revision HASH` or the existing `--candidates FILE` can select archived code.
 The reviewed architecture metadata remains explicit; captured source overlays do
 not rewrite the original working files. Archived dependencies receive a derived

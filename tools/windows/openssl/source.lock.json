@@ -1,0 +1,33 @@
+{
+  "schema": "nex.windows-openssl-source/1",
+  "version": "3.6.5",
+  "source": {
+    "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.5/openssl-3.6.5.tar.gz",
+    "sha256": "a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98"
+  },
+  "msys2_recipe": {
+    "url": "https://github.com/msys2/MINGW-packages/tree/master/mingw-w64-openssl",
+    "observed_package": "3.6.5-1",
+    "upstream_redistributed_files": [
+      "pathtools.c",
+      "pathtools.h",
+      "002-relocation.patch",
+      "004-arch-suffix.patch"
+    ]
+  },
+  "files": {
+    "nex-long-path.patch": "0336989e3db015f4e9a1f7db71b6bdf7165d8ed9cca2b0870cfd10b3eee083fc",
+    "nex-x509-long-path-v2.patch": "4f47b86b8d0ccfba6993e908a981126bb82dc3a20083b1e279d7538a0cc95788",
+    "002-relocation.patch": "3e9a8abb6ff5fb7bdb450742fb7bd85513a4abbe85594228620379bcac7c02ef",
+    "004-arch-suffix.patch": "6a686ef69c2b196fb1420389ccd0db84582fd288942560d5eba963c11ce8595a",
+    "pathtools.c": "ebf471173f5ee9c4416c10a78760cea8afaf1a4a6e653977321e8547ce7bf3c0",
+    "pathtools.h": "1585ef1b61cf53a2ca27049c11d49e0834683dfda798f03547761375df482a90"
+  },
+  "apply_order": [
+    "002-relocation.patch",
+    "004-arch-suffix.patch",
+    "nex-long-path.patch",
+    "nex-x509-long-path-v2.patch"
+  ],
+  "qualification": "Scoped source/runtime checks; full upstream and complete NEX SDK acceptance remain separate."
+}

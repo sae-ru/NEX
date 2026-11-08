@@ -40,7 +40,7 @@ class Profile:
             raise ValueError('capabilities must be explicit AppPackage capability SIDs')
         self.created=False;self.deleted=False;self.safe_to_cleanup=True
         self.owner_thread=threading.get_ident()
-        self.path=None;self.sid=None;self.runs=[];self.copies=[]
+        self.path=None;self.sid=None;self.temp=None;self.runs=[];self.copies=[]
         self.k=C.WinDLL('kernel32',use_last_error=True)
         self.a=C.WinDLL('advapi32',use_last_error=True)
         self.u=C.WinDLL('userenv',use_last_error=True)
@@ -123,6 +123,7 @@ class Profile:
                 raise RuntimeError('new AppContainer profile path does not match its moniker')
             self._acl(self.path,'0x1200a9')
             self.work=self.path/'work';self.work.mkdir();self._acl(self.work,'0x1301bf')
+            self.temp=self.path/'Temp';self.temp.mkdir(exist_ok=True);self._acl(self.temp,'0x1301bf')
             return self
         except BaseException:
             self.close();raise
@@ -188,6 +189,15 @@ class Profile:
         self.copies.append({'source':str(source),'directory':str(target),'files':inventory,
                             'directories':[p.as_posix()for p in directories],'bytes':total})
         return target
+
+    def native_environment(self,environment):
+        self._owner()
+        if not self.created or self.deleted or not self.temp.is_dir():
+            raise RuntimeError('native environment requires an active profile temporary directory')
+        # Win32 AppContainer temp lookup appends Packages/<profile>/AC/Temp
+        # to LOCALAPPDATA. Point it at the actual OS-selected base, not work.
+        return {**environment,'TEMP':str(self.temp),'TMP':str(self.temp),
+                'LOCALAPPDATA':str(self.path.parent.parent.parent)}
 
     def run(self,command,output,environment,*,observer,timeout=180):
         self._owner()

@@ -1,6 +1,6 @@
 """Private024 actual component plan/build/capture/replay/package contracts."""
 import argparse,hashlib,json,os,shutil,subprocess,sys,tempfile,time
-from pathlib import Path
+from pathlib import Path,PurePosixPath
 
 parser=argparse.ArgumentParser();parser.add_argument('probe',type=Path);parser.add_argument('compiler',type=Path);parser.add_argument('reference',type=Path);parser.add_argument('--output',type=Path);parser.add_argument('--complete-tooling',action='store_true');parser.add_argument('--notices',type=Path);a=parser.parse_args()
 temporary=None
@@ -82,6 +82,27 @@ try:
    public_capture=invoke(name+'-public-capture',{'action':'capture',**public_base});public_capture_file=case/'current025-capture.json';write(public_capture_file,public_capture)
    assert public_capture['language']=='0.28' and not (current_project/'.nex').exists()
    accepted=invoke(name+'-public-validate',{'action':'validate','capture':str(public_capture_file),'public_api':True});assert accepted['ok'] and accepted['language']=='0.28'
+
+   if mode=='static' and profile=='debug' and not debug:
+    namespace=case/'current-layout';original_capture=public_capture_file.read_bytes()
+    current=invoke('current-layout-restore',{'action':'restore','capture':str(public_capture_file),'directory':str(namespace),'public_api':True})
+    verify={'action':'verify','capture':str(public_capture_file),'directory':str(namespace),'public_api':True}
+    assert invoke('current-layout-verify',verify)['ok']
+    marker=namespace/'capture-layout.json';anchor='fs'
+    if os.name=='nt':
+     assert marker.is_file();saved_marker=marker.read_bytes();anchor=json.loads(saved_marker)['removed_prefix']
+     legacy=case/'legacy-layout';target=legacy/PurePosixPath(anchor);target.parent.mkdir(parents=True)
+     shutil.copytree(namespace/'fs',target,symlinks=True)
+     assert invoke('legacy-layout-verify',{**verify,'directory':str(legacy)})['ok']
+     write(marker,{'schema':'nex.project-capture-layout/1','removed_prefix':anchor+'/changed'})
+     assert invoke('current-layout-marker-mutation',verify,1)['code']=='E_PROJECT_CAPTURE'
+     marker.write_bytes(saved_marker)
+    source_key=next(p for p,v in public_capture['files'].items() if p.endswith('.nex') and v)
+    source=namespace/'fs'/PurePosixPath(source_key).relative_to(anchor);original=source.read_bytes()
+    source.write_bytes(original+b'\n')
+    assert invoke('current-layout-source-mutation',verify,1)['code']=='E_PROJECT_CAPTURE'
+    source.write_bytes(original);assert invoke('current-layout-restored-verify',verify)['ok']
+    assert public_capture_file.read_bytes()==original_capture
    plan=invoke(name+'-plan',{'action':'plan',**base});rows=check_plan(plan,mode,profile,debug)
    assert not (project/'.nex').exists()
    capture=invoke(name+'-capture',{'action':'capture',**base});capture_file=case/'capture.json';write(capture_file,capture)

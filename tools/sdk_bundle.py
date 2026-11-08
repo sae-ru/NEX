@@ -359,6 +359,26 @@ class Bundle:
 
 class WindowsBundle(Bundle):
     """Capture a checked PE dependency closure adjacent to its executable."""
+    def select_openssl_prefix(self, prefix, doctor):
+        if prefix is None:
+            return None
+        prefix = prefix.resolve(strict=True)
+        expected = {'native_openssl_include': prefix / 'include',
+                    'native_openssl_ssl': prefix / 'lib/libssl.a',
+                    'native_openssl_crypto': prefix / 'lib/libcrypto.a'}
+        for field, path in expected.items():
+            if Path(doctor[field]).resolve(strict=True) != path.resolve(strict=True):
+                raise ValueError('--windows-openssl-prefix must match the selected native headers and static libraries: ' + field)
+        files = [prefix / 'bin' / name for name in
+                 ('openssl.exe', 'libssl-3-x64.dll', 'libcrypto-3-x64.dll')]
+        modules = prefix / 'lib/ossl-modules'
+        if any(not path.is_file() for path in files) or not modules.is_dir():
+            raise ValueError('selected Windows OpenSSL prefix needs its CLI, both DLLs and provider modules')
+        # This explicit cohort overrides identical-basename DLLs in the LLVM
+        # dependency roots. No process PATH or working-directory search occurs.
+        self.pe_selected_imports = {path.name.lower(): path for path in files[1:]}
+        return prefix
+
     def dependency_target(self, source):
         return getattr(self,'pe_directory',self.output/'bin')/source.name
 
@@ -397,7 +417,9 @@ class WindowsBundle(Bundle):
             # selected candidate. Other roots may supply one identical image.
             adjacent=(source.parent/name)
             contexts=[root/name for root in getattr(self,'pe_contexts',{}).get(source,[]) if (root/name).is_file()]
-            if adjacent.is_file():dependency=adjacent.resolve(strict=True)
+            selected=getattr(self,'pe_selected_imports',{}).get(name)
+            if selected is not None:dependency=selected.resolve(strict=True)
+            elif adjacent.is_file():dependency=adjacent.resolve(strict=True)
             elif contexts:
                 if len({sha256(path) for path in contexts})!=1:raise ValueError('ambiguous declared PE context: '+name)
                 dependency=contexts[0].resolve(strict=True)
@@ -410,7 +432,7 @@ class WindowsBundle(Bundle):
             self.external(dependency,target);self.destinations[dependency]=target
             self.collect_pe(dependency,target,directory)
 
-    def assemble(self):
+    def assemble(self, openssl_prefix=None):
         environment={**os.environ,'NEX_RESOURCE_DIR':str(self.sdk/'share/nex')}
         for name in ('NEX_CLANG','NEX_WASM_CLANG'):environment.pop(name,None)
         source=self.sdk/'bin/nex.exe'
@@ -418,6 +440,7 @@ class WindowsBundle(Bundle):
         doctor=selected_wasm_linker(doctor,environment)
         if doctor.get('sdk_manifest') or doctor.get('native_windows_runtime')!='ucrt-static':
             raise ValueError('input must be an unbundled native Windows UCRT SDK')
+        openssl_prefix=self.select_openssl_prefix(openssl_prefix,doctor)
         shutil.copytree(self.sdk,self.output,symlinks=False)
         # Without an SDK manifest or a Wasm override, this compiler is the
         # build's NEX_CLANG from LLVM_TOOLS_BINARY_DIR. Its directory is the
@@ -472,12 +495,22 @@ class WindowsBundle(Bundle):
         self.external_tree(resource,self.output/'libexec/nex/wasm/lib/clang'/resource.name)
         # The installed HTTPS workflow needs an actual native OpenSSL CLI.
         # Capture it with its own adjacent PE closure rather than host PATH.
-        openssl=wasm.parent/'openssl.exe'
+        openssl=(openssl_prefix/'bin/openssl.exe')if openssl_prefix else wasm.parent/'openssl.exe'
         if not openssl.is_file():
             raise ValueError('Windows SDK assembly requires the declared native OpenSSL CLI')
         openssl_target=self.output/'libexec/nex/host-tools/openssl.exe'
         self.external(openssl,openssl_target)
         self.collect_pe(openssl,openssl_target,openssl_target.parent)
+        if openssl_prefix:
+            # Relocation is relative to each libcrypto image's own directory.
+            # Retain provider lookup for both the NEX host and the CLI closure.
+            for root,binaries in ((self.output,self.output/'bin'),
+                                  (self.output/'libexec/nex',self.output/'libexec/nex/host-tools')):
+                self.external_tree(openssl_prefix/'lib/ossl-modules',root/'lib/ossl-modules')
+                for module in sorted((openssl_prefix/'lib/ossl-modules').glob('*.dll')):
+                    self.collect_pe(module,root/'lib/ossl-modules'/module.name,binaries)
+                if (openssl_prefix/'etc/ssl').is_dir():
+                    self.external_tree(openssl_prefix/'etc/ssl',root/'etc/ssl')
         return self.finish(configuration,doctor,{'platform':'windows','architecture':'x86_64',
             'requires_WSL':False,'requires_MSYS_runtime':False,
             'external_prerequisites':['Windows system DLLs listed in system_libraries','native '+PYTHON_REQUIREMENT,'Node.js/npm','native LLDB for debugger acceptance'],
@@ -687,10 +720,14 @@ def main():
                         help='nex.sdk-notices/1 provenance and full local license text paths')
     parser.add_argument('--dpkg-notices', action='store_true', help='Supplement explicit notices from installed Debian/Ubuntu package metadata')
     parser.add_argument('--patchelf', default='patchelf', help='ELF rewriting tool for Linux packaging only')
+    parser.add_argument('--windows-openssl-prefix', type=Path,
+                        help='Explicit matching native OpenSSL headers/static libraries, host DLLs, CLI and providers')
     arguments = parser.parse_args()
     system = platform.system()
     if system not in ('Darwin', 'Linux', 'Windows'):
         parser.error('SDK bundling requires a supported native host')
+    if arguments.windows_openssl_prefix is not None and system != 'Windows':
+        parser.error('--windows-openssl-prefix is Windows-only')
     sdk, output = arguments.sdk.resolve(strict=True), arguments.output.resolve()
     if output.exists() or sdk in output.parents or output in sdk.parents:
         parser.error('--output must be new and separate from the input SDK')
@@ -701,7 +738,7 @@ def main():
         report = LinuxBundle(sdk, output, arguments.notices.resolve(strict=True), arguments.dpkg_notices).assemble(patchelf)
     elif system == 'Windows':
         if arguments.dpkg_notices:parser.error('--dpkg-notices is Linux-only')
-        report = WindowsBundle(sdk, output, arguments.notices.resolve(strict=True)).assemble()
+        report = WindowsBundle(sdk, output, arguments.notices.resolve(strict=True)).assemble(arguments.windows_openssl_prefix)
     else:
         if arguments.dpkg_notices:
             parser.error('--dpkg-notices is Linux-only')

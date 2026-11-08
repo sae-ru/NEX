@@ -46,6 +46,46 @@ capabilities; those two profiles were also removed. No loopback exemption or
 other network setting changed. This is measured Python behavior on that host;
 NEX execution and complete SDK filesystem isolation remain unverified.
 
+## Native NEX runtime follow-up
+
+The [native follow-up](evidence/windows-AppContainer-NEX-native-2026-11-08.json)
+records a separate runtime development overlay on the pinned0.162.1 compiler.
+Actual debug/release FFI tests passed in fresh AppContainers with both flat and
+nested module layouts. Missing grants, a private outside catalogue and the
+opposite profile were rejected. Temporary module snapshots were empty after
+every case, and all profiles and parents were deleted. The maintained native
+image tool passed five cases each under actual ordinary Python3.10/3.14;
+the extended calibration passed eight each and preserved all836 peer-runtime files.
+These results qualify the recorded overlays and test images. Complete SDK,
+compiler-in-container and HTTP-in-container acceptance remain pending.
+
+Windows requires both user and AppContainer principals for access. Private
+runtime files therefore retain the effective user SID and, when present, only
+that process's current AppContainer SID. Ordinary tokens keep user-only ACLs.
+This follows the [Windows dual-principal model](https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer).
+The stream adapter uses the same principal selection as host snapshots.
+
+Snapshot directories remain read-only during module execution. Cleanup retains
+handles before sealing, restores the saved ACLs with
+[SetSecurityInfo](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-setsecurityinfo),
+then closes child handles before recursive deletion. This preserves cleanup
+authority without requiring a new writable open of a sealed path.
+
+Use `profile.native_environment(base_environment)` for native children. It
+selects the newly created profile's Temp directory and the actual LocalAppData
+base. Replacing LOCALAPPDATA with the work directory caused Windows native temp
+lookup to append a second Packages/profile/AC/Temp path in the measured failure.
+No original folder ACL or global environment setting is changed.
+
+The maintained tool accepts self-contained native FFI test images that exercise
+the supplied catalogue and exit zero on success. It copies only pinned manifest
+members, verifies hashes and rejects reparse points; it does not copy unlisted
+provider files. From the source tree, run tools/windows/nex_appcontainer_test.py
+with --observer ABSOLUTE_HELPER --debug DEBUG_EXE --release RELEASE_EXE
+--foreign HOST_JSON --output NEW_DIRECTORY. An optional --outside-catalogue
+PRIVATE_HOST_JSON requires actual OS read denial for that selected file without
+changing its ACL. Opposite-profile and missing-grant controls always run.
+
 ## Build and calibrate
 
 From a source checkout, select a complete native LLVM-MinGW toolchain and a
@@ -109,7 +149,7 @@ from appcontainer import Profile
 
 with Profile() as profile:
     sdk = profile.copy_tree("F:/test-inputs/nex-sdk")
-    env = {**os.environ, "TEMP": str(profile.work), "TMP": str(profile.work)}
+    env = profile.native_environment(os.environ)
     result = profile.run(
         [str(sdk / "bin/nex.exe"), "doctor", "--json"],
         "F:/test-evidence/new-doctor-run", env,

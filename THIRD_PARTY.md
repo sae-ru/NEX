@@ -120,3 +120,15 @@ The CIX/ARM GPU and Zhouyi runtime/driver binaries are external installed
 prerequisites; they are not redistributed here. A module pin does not cover
 those external files. Driver packaging/redistribution requires its own inventory
 and permissions. See experiments/cix-p1/README.md for exact tested boundaries.
+
+## Windows OpenSSL relocation corrections (development0.162.1)
+
+`tools/windows/openssl/` pins OpenSSL3.6.5 and the MSYS2 relocation inputs used
+by the isolated Windows development build. OpenSSL remains an external
+Apache-2.0 prerequisite. The redistributed `pathtools.c`/`.h` retain Ray
+Donnelly's CC0 dedication in their headers; the MSYS2 patches retain their
+attribution. NEX's two long-path corrections use MIT. The source lock records
+exact hashes and upstream locations. The private build and SDK assembler retain
+the OpenSSL license, pathtools notice and correction provenance with the matching
+headers, libraries, CLI and providers. See the [recipe](tools/windows/openssl/README.md)
+for the measured scope and retained failed upstream attempts.

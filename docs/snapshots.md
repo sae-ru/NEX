@@ -93,7 +93,8 @@ this is not a filesystem sandbox against concurrent path replacement.
 `--timeout` is 1–3600 seconds, default 60. The cooperative deadline covers SQLite
 busy/locked retries, progress and incremental file copying; an operating-system
 I/O call may still block. No fixed graph byte limit or disk-space reservation is
-implied. The Windows x64 adapter uses protected current-user ACLs, real64-bit
+implied. The Windows x64 adapter uses protected effective-user ACLs, additionally granting
+only the current AppContainer SID when present, and real64-bit
 file identities and `FlushFileBuffers`. A local graph-schema4 snapshot/recovery,
 HEAD execution and explicit source export are checked in the
 [Windows-hosted compiler receipt](windows-host.md). Full Windows snapshot
@@ -103,3 +104,6 @@ Invalid options return `E_OPTION`; member/path problems `E_SNAPSHOT_FILE`;
 unsupported metadata/structure `E_SNAPSHOT_FORMAT`; digest or recovered-state
 mismatch `E_SNAPSHOT_INTEGRITY`; deadline expiry `E_SNAPSHOT_TIMEOUT`; other
 SQLite failures `E_SNAPSHOT`. Unknown graph schema returns `E_SCHEMA`.
+
+AppContainer graph/complete-SDK acceptance is separate from the scoped native
+[FFI runtime follow-up](evidence/windows-AppContainer-NEX-native-2026-11-08.json).

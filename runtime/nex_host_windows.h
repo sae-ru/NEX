@@ -37,8 +37,9 @@ inline int error(DWORD code){
   return -1;
 }
 struct PrivateSecurity {
-  SECURITY_DESCRIPTOR descriptor{};std::vector<unsigned char> token,acl;
-  explicit PrivateSecurity(DWORD access=FILE_ALL_ACCESS){
+  SECURITY_DESCRIPTOR descriptor{};std::vector<unsigned char> token,container,acl;
+  std::vector<PSID> principals;
+  explicit PrivateSecurity(DWORD access=FILE_ALL_ACCESS,DWORD inheritance=OBJECT_INHERIT_ACE|CONTAINER_INHERIT_ACE){
     HANDLE raw=nullptr;
     if(!OpenThreadToken(GetCurrentThread(),TOKEN_QUERY,TRUE,&raw)){
       if(GetLastError()!=ERROR_NO_TOKEN||!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&raw))throw DataError("E_FILE","cannot inspect current Windows principal");
@@ -47,10 +48,35 @@ struct PrivateSecurity {
     token.resize(count);
     if(!count||!GetTokenInformation(raw,TokenUser,token.data(),count,&count))throw DataError("E_FILE","cannot inspect current Windows principal");
     auto sid=reinterpret_cast<TOKEN_USER*>(token.data())->User.Sid;
-    auto bytes=DWORD(sizeof(ACL)+sizeof(ACCESS_ALLOWED_ACE)-sizeof(DWORD)+GetLengthSid(sid));acl.resize(bytes);
-    if(!InitializeAcl(reinterpret_cast<PACL>(acl.data()),bytes,ACL_REVISION)||
-       !AddAccessAllowedAceEx(reinterpret_cast<PACL>(acl.data()),ACL_REVISION,OBJECT_INHERIT_ACE|CONTAINER_INHERIT_ACE,access,sid)||
-       !InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||
+    principals.push_back(sid);
+    // TokenIsAppContainer and TokenAppContainerSid have Win32 ABI values29/31.
+    // Some supported SDK headers hide their declarations behind _WIN32_WINNT.
+    DWORD isContainer=0;
+    if(!GetTokenInformation(raw,static_cast<TOKEN_INFORMATION_CLASS>(29),&isContainer,sizeof(isContainer),&count))
+      throw DataError("E_FILE","cannot inspect Windows AppContainer principal");
+    if(isContainer){
+      struct ContainerInformation {PSID sid;};
+      count=0;GetTokenInformation(raw,static_cast<TOKEN_INFORMATION_CLASS>(31),nullptr,0,&count);
+      if(count<sizeof(ContainerInformation)||count>65536)
+        throw DataError("E_FILE","invalid Windows AppContainer principal size");
+      container.resize(count);
+      if(!GetTokenInformation(raw,static_cast<TOKEN_INFORMATION_CLASS>(31),container.data(),count,&count))
+        throw DataError("E_FILE","cannot inspect Windows AppContainer principal");
+      auto app=reinterpret_cast<ContainerInformation*>(container.data())->sid;
+      if(!app||!IsValidSid(app)||EqualSid(sid,app))
+        throw DataError("E_FILE","invalid Windows AppContainer principal");
+      principals.push_back(app);
+    }
+    DWORD bytes=sizeof(ACL);
+    for(auto principal:principals)bytes+=sizeof(ACCESS_ALLOWED_ACE)-sizeof(DWORD)+GetLengthSid(principal);
+    acl.resize(bytes);
+    if(!InitializeAcl(reinterpret_cast<PACL>(acl.data()),bytes,ACL_REVISION))
+      throw DataError("E_FILE","cannot create private Windows ACL");
+    for(auto principal:principals)
+      if(!AddAccessAllowedAceEx(reinterpret_cast<PACL>(acl.data()),ACL_REVISION,
+           inheritance,access,principal))
+        throw DataError("E_FILE","cannot create private Windows ACL");
+    if(!InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||
        !SetSecurityDescriptorOwner(&descriptor,sid,FALSE)||
        !SetSecurityDescriptorDacl(&descriptor,TRUE,reinterpret_cast<PACL>(acl.data()),FALSE)||
        !SetSecurityDescriptorControl(&descriptor,SE_DACL_PROTECTED,SE_DACL_PROTECTED))throw DataError("E_FILE","cannot create private Windows ACL");
@@ -74,10 +100,16 @@ inline bool isPrivateDirectory(const std::filesystem::path &path){
   PrivateSecurity current;auto user=reinterpret_cast<TOKEN_USER*>(current.token.data())->User.Sid;
   SECURITY_DESCRIPTOR_CONTROL control{};DWORD revision=0;
   if(!owner||!EqualSid(owner,user)||!acl||!GetSecurityDescriptorControl(descriptor,&control,&revision)||!(control&SE_DACL_PROTECTED))return false;
+  if(acl->AceCount!=current.principals.size())return false;
+  std::vector<bool> seen(current.principals.size(),false);
   for(DWORD i=0;i<acl->AceCount;++i){void *raw=nullptr;if(!GetAce(acl,i,&raw))return false;
     auto *ace=static_cast<ACCESS_ALLOWED_ACE*>(raw);
-    if(ace->Header.AceType!=ACCESS_ALLOWED_ACE_TYPE||!EqualSid(&ace->SidStart,user))return false;
-  }return acl->AceCount>0;
+    if(ace->Header.AceType!=ACCESS_ALLOWED_ACE_TYPE)return false;
+    auto found=std::find_if(current.principals.begin(),current.principals.end(),
+      [&](PSID sid){return EqualSid(&ace->SidStart,sid);});
+    if(found==current.principals.end()||seen[found-current.principals.begin()])return false;
+    seen[found-current.principals.begin()]=true;
+  }return !seen.empty()&&std::all_of(seen.begin(),seen.end(),[](bool value){return value;});
 }
 struct Identity {
   uint64_t volume=0;std::array<unsigned char,16> file{};bool directory=false;
@@ -110,6 +142,42 @@ inline void privateAccess(const std::filesystem::path &path,DWORD access){
     nullptr,nullptr,reinterpret_cast<PACL>(security.acl.data()),nullptr);
   if(code!=ERROR_SUCCESS)throw DataError("E_FILE","cannot set private snapshot ACL: "+std::to_string(code));
 }
+// Retain cleanup authority before sealing a snapshot directory. A restricted
+// process must not need to reopen a read-only path with WRITE_DAC afterwards.
+struct DirectoryPermissions {
+  Handle handle;
+  std::vector<unsigned char> original;
+  SECURITY_INFORMATION protection=DACL_SECURITY_INFORMATION;
+  explicit DirectoryPermissions(const std::filesystem::path &path):
+    handle(CreateFileW(path.c_str(),WRITE_DAC|READ_CONTROL|FILE_READ_ATTRIBUTES,
+      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,
+      FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS,nullptr)){
+    auto id=identity(handle.value);
+    if(!id||!id->directory)throw DataError("E_FILE","cannot retain private directory cleanup authority");
+    PSECURITY_DESCRIPTOR descriptor=nullptr;PACL acl=nullptr;
+    auto code=GetSecurityInfo(handle.value,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,
+      nullptr,nullptr,&acl,nullptr,&descriptor);
+    if(code!=ERROR_SUCCESS)throw DataError("E_FILE","cannot inspect private directory ACL");
+    struct Release{PSECURITY_DESCRIPTOR value;~Release(){LocalFree(value);}} release{descriptor};
+    SECURITY_DESCRIPTOR_CONTROL control{};DWORD revision=0;
+    if(!acl||acl->AclSize<sizeof(ACL)||!GetSecurityDescriptorControl(descriptor,&control,&revision))
+      throw DataError("E_FILE","invalid private directory ACL");
+    auto first=reinterpret_cast<const unsigned char*>(acl);
+    original.assign(first,first+acl->AclSize);
+    protection|=(control&SE_DACL_PROTECTED)?PROTECTED_DACL_SECURITY_INFORMATION:UNPROTECTED_DACL_SECURITY_INFORMATION;
+  }
+  void seal(DWORD access){
+    PrivateSecurity security(access);
+    auto code=SetSecurityInfo(handle.value,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION|PROTECTED_DACL_SECURITY_INFORMATION,
+      nullptr,nullptr,reinterpret_cast<PACL>(security.acl.data()),nullptr);
+    if(code!=ERROR_SUCCESS)throw DataError("E_FILE","cannot seal private directory ACL");
+  }
+  void restore(){
+    auto code=SetSecurityInfo(handle.value,SE_FILE_OBJECT,protection,
+      nullptr,nullptr,reinterpret_cast<PACL>(original.data()),nullptr);
+    if(code!=ERROR_SUCCESS)throw DataError("E_FILE","cannot restore private directory ACL");
+  }
+};
 inline void writePrivateFile(const std::filesystem::path &path,const std::string &bytes){
   PrivateSecurity security;
   SECURITY_ATTRIBUTES attributes{sizeof(attributes),&security.descriptor,FALSE};
@@ -130,12 +198,20 @@ inline std::filesystem::path canonical(const std::filesystem::path &path){
   // component, so a link/../configuration keeps its physical provenance.
   auto full=path.is_absolute()?path:std::filesystem::current_path()/path;
   auto result=full.root_path();
+  std::filesystem::path pending;
   for(const auto &part:full.relative_path()){
     if(part==L".")continue;
-    if(part==L".."){result=result.parent_path();continue;}
-    result=std::filesystem::canonical(result/part);
+    if(part==L".."){
+      // Resolve links before taking their physical parent. Normal components
+      // can be opened together without querying inaccessible ancestors.
+      if(!pending.empty()){
+        result=std::filesystem::canonical(result/pending);
+        pending.clear();
+      }
+      result=result.parent_path();
+    }else pending/=part;
   }
-  return result;
+  return std::filesystem::canonical(result/pending);
 }
 inline int openRegularDescriptor(const std::filesystem::path &path,int flags){
   bool writable=(flags&(_O_WRONLY|_O_RDWR))!=0;DWORD access=(writable?GENERIC_WRITE:GENERIC_READ)|FILE_READ_ATTRIBUTES;

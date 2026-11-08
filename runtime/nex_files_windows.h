@@ -1,6 +1,7 @@
 // Included once by nex_files.cpp for the Windows runtime implementation.
 #include "nex_files.h"
 #include "nex_platform.h"
+#include "nex_host_windows.h"
 #include "nex_external_resource.h"
 #include <algorithm>
 #include <array>
@@ -73,28 +74,12 @@ void kind(HANDLE file,bool directory){
   if((info.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT)||bool(info.FileAttributes&FILE_ATTRIBUTE_DIRECTORY)!=directory)
     throw DataError("VALIDATION","file path is not the required regular file or contains a reparse point");
 }
-struct PrivateSecurity {
-  SECURITY_DESCRIPTOR descriptor{};
-  std::vector<unsigned char> token,acl;
-  PrivateSecurity(){
-    HANDLE raw=nullptr;
-    if(!OpenThreadToken(GetCurrentThread(),TOKEN_QUERY,TRUE,&raw)){
-      if(GetLastError()!=ERROR_NO_TOKEN)ioError(GetLastError());
-      if(!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&raw))ioError(GetLastError());
-    }
-    Descriptor handle(raw);DWORD size=0;
-    GetTokenInformation(handle.get(),TokenUser,nullptr,0,&size);
-    if(!size||GetLastError()!=ERROR_INSUFFICIENT_BUFFER)ioError(GetLastError());
-    token.resize(size);if(!GetTokenInformation(handle.get(),TokenUser,token.data(),size,&size))ioError(GetLastError());
-    auto sid=reinterpret_cast<TOKEN_USER*>(token.data())->User.Sid;
-    auto bytes=DWORD(sizeof(ACL)+sizeof(ACCESS_ALLOWED_ACE)-sizeof(DWORD)+GetLengthSid(sid));acl.resize(bytes);
-    if(!InitializeAcl(reinterpret_cast<PACL>(acl.data()),bytes,ACL_REVISION)||
-       !AddAccessAllowedAceEx(reinterpret_cast<PACL>(acl.data()),ACL_REVISION,0,FILE_ALL_ACCESS,sid)||
-       !InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||
-       !SetSecurityDescriptorDacl(&descriptor,TRUE,reinterpret_cast<PACL>(acl.data()),FALSE)||
-       !SetSecurityDescriptorControl(&descriptor,SE_DACL_PROTECTED,SE_DACL_PROTECTED))ioError(GetLastError());
-  }
+// Use the same effective-user/AppContainer principal set as host snapshots.
+// File ACEs retain their original non-inheriting form.
+struct PrivateSecurity : host_windows::PrivateSecurity {
+  PrivateSecurity():host_windows::PrivateSecurity(FILE_ALL_ACCESS,0){}
 };
+
 Descriptor openRelative(HANDLE root,const std::string &name,ACCESS_MASK access,ULONG disposition,ULONG options,PSECURITY_DESCRIPTOR security=nullptr){
   auto text=platform::wide(name);if(text.size()>32767)throw DataError("VALIDATION","file component exceeds platform limit");
   UNICODE_STRING string{};string.Buffer=text.data();string.Length=USHORT(text.size()*sizeof(wchar_t));string.MaximumLength=string.Length;
