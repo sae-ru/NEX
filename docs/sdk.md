@@ -79,6 +79,10 @@ Copied PE closures use the declared image list and verify native file identity
 and SHA256 before copying. The native regression executes a moved two-DLL call
 after deleting the original DLLs/import libraries and rejects a changed hash
 before writing any copied image. Unix retains its `images/` tree layout.
+The [scoped helper receipt](evidence/windows-macos-SDK-provider-helpers-0.162.2-2026-11-09.json)
+records all four provider actions on Windows and macOS, actual PE controls and
+the95-method SDK suite on both hosts. It pins each host's exact helper snapshot
+and original SDK archive; complete matching SDK delivery remains separate.
 
 The [coherent Windows HTTP receipt](evidence/windows-coherent-http-0.162.2-2026-11-08.json)
 records 29 source cases in reference/Debug/Release, 18 delivery rejections,
