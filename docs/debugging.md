@@ -259,6 +259,10 @@ records the complete updated15-case task-debugger group on macOS ARM64,
 native Windows x86-64 and Debian12 ARM64. Thirteen existing observable cases are
 unchanged; two actual runtime tests replace four simulations of the old helper's
 secondary event queue. Raw logs and exact helper/test/compiler hashes are retained.
+The [matching macOS source snapshot](evidence/macos-primary-resume-full301-0.162.2-2026-11-09.json)
+also passed its all-target build and all301 CTest groups. Its source manifest,
+compiler and JUnit were independently rehashed after the controller retired;
+later SDK-helper corrections and installed delivery remain separate.
 
 Historically, toolchain0.152.1 changed synchronous `nex-task` continue/step
 commands to subscribe to process state events before resuming asynchronously.

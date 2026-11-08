@@ -73,7 +73,8 @@ including source-deleted packages and HTTP/1.1, HTTPS and HTTP/2 streams.
 Positive IPv6 and complete portable SDK acceptance remain separate.
 The [task-resume correction](docs/evidence/lldb-primary-resume-0.162.2-2026-11-08.json)
 passed the updated15-case debugger group on macOS ARM64, Windows x86-64 and
-Debian ARM64. Matching complete regression and SDK delivery remain separate.
+Debian ARM64. The matching [macOS source snapshot passed all 301 groups](docs/evidence/macos-primary-resume-full301-0.162.2-2026-11-09.json).
+Later SDK-helper changes and matching installed delivery retain separate gates.
 The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP
