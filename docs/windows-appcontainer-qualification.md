@@ -13,6 +13,23 @@ This restriction concerns the qualification broker, not NEX source semantics.
 Choose an ordinary Python executable explicitly; the tool never silently
 substitutes another interpreter.
 
+The [packaged-root follow-up](evidence/windows-packaged-root-refusal-2026-11-08.json)
+observed a Store Python root inside the private Job Object while its two-second
+native child belonged to no job. Ordinary Python 3.10/3.14 retained both actual
+processes. The current native observer queries the held, suspended root with
+`GetPackageFullName` and rejects package identities before resume. Unknown query
+results also fail admission. Its capability descriptor advertises
+`unpackaged_roots_only`; raw receipts record the identity check and refusal.
+Select ordinary interpreters throughout an SDK workflow, including `NEX_PYTHON`.
+This root admission check does not classify every future process a program could
+launch. The full SDK checks remain separate from this controlled-peer result.
+
+The follow-up built all host targets and passed both registered CTest groups,
+plus actual ordinary Python 3.10/3.14 suites. Each broker passed one actual Store
+root refusal, the original native controls, seven AppContainer cases, three
+budget refusals and two legacy-helper controls. All six profiles and their parent
+directories were removed; all 836 original compact-runtime files were preserved.
+
 The [scoped calibration receipt](evidence/windows-appcontainer-development-2026-11-05.json)
 records real ordinary Python 3.10.11 and 3.14.3 brokers with a distinct copied
 Python 3.14.3 peer runtime, six AppContainer cases per broker, six deleted
@@ -54,6 +71,11 @@ Successful temporary evidence is removed; retain raw reports in a new directory
 with `appcontainer_test.py --observer ABSOLUTE_EXE --runtime ABSOLUTE_RUNTIME
 --output NEW_DIRECTORY`. An optional `--source-canary ABSOLUTE_FILE` checks read
 denial without changing that file or its ACL.
+To include an actual Store-root refusal, set
+`-DNEX_WINDOWS_PACKAGED_PYTHON=ABSOLUTE_STORE_PYTHON` or pass
+`job_observer_test.py --packaged-python ABSOLUTE_STORE_PYTHON`. The generated
+marker must remain absent and the suspended root must retire before the test
+accepts the refusal. No Store or machine configuration is changed.
 
 `Profile.run` defaults to180 seconds and accepts an explicit outer workflow
 budget up to10800 seconds. A budget above one hour requires the selected native
@@ -132,6 +154,7 @@ the tool does not search for or delete unrelated profiles. This controlled
 qualification harness is not a general service for running hostile programs.
 
 Windows contracts: [AppContainer implementation](https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer),
+[process package identity](https://learn.microsoft.com/en-us/windows/win32/api/appmodel/nf-appmodel-getpackagefullname),
 [profile creation](https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-createappcontainerprofile),
 [process attributes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute),
 [profile deletion](https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteappcontainerprofile).

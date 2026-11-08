@@ -1,0 +1,69 @@
+{
+  "schema": "nex.Windows-packaged-root-refusal-development/1",
+  "date": "2026-11-08",
+  "toolchain_context": "0.162.1",
+  "language_unchanged": "0.28",
+  "scope": "External qualification helper, not a NEX language/runtime change or completed portable SDK acceptance.",
+  "diagnosis": {
+    "actual_Python": [
+      "3.10.11 ordinary",
+      "3.14.3 ordinary",
+      "3.10.11 Microsoft Store"
+    ],
+    "ordinary_roots_and_2second_native_children_in_exact_private_job": true,
+    "Store_root_in_private_job": true,
+    "Store_native_child_in_private_job": false,
+    "Store_native_child_in_any_job": false,
+    "peer_completed_cooperatively": true,
+    "original_failed_complete_SDK_reclassified": false
+  },
+  "fix": {
+    "helper_sha256": "c5a9c32402ddec138c813f30dce9123150f0d811a2a1560fb47e5fe376d816d5",
+    "source_archive_sha256": "df9905ec580bef34ca8606148e01498f47943e772acc1bd335e227c8211e11b6",
+    "root_package_identity_checked_with_held_process_before_resume": true,
+    "packaged_root_rejected_before_peer_code": true,
+    "rejected_root_retired_and_job_accounting_zero": true,
+    "outside_canary_alive": true,
+    "unknown_identity_query_rejected": true,
+    "unpackaged_roots_only_capability": true
+  },
+  "qualified": {
+    "all_host_targets_built": true,
+    "full_registered_CTest_groups": [
+      "windows_job_object_ownership",
+      "windows_appcontainer_ownership"
+    ],
+    "ordinary_broker_Python": [
+      "3.10.11",
+      "3.14.3"
+    ],
+    "cases_each": {
+      "native": 5,
+      "native_budget_controls": 6,
+      "wrapper": 4,
+      "wrapper_budget_rejections": 3,
+      "actual_Store_root_refusal": 1,
+      "AppContainer": 7,
+      "AppContainer_budget_rejections": 3,
+      "legacy_compatibility_controls": 2
+    },
+    "all_passed": true,
+    "owned_profiles_and_parents_deleted": 6,
+    "compact_runtime_files_preserved": 836,
+    "old_helper_ordinary_short_compatibility_retained": true
+  },
+  "raw": {
+    "archive_sha256": "9c72f120596d89e61fc607fe110ee80bfe50ca03de936f1da78104139401df94",
+    "archive_bytes": 250184,
+    "raw_files": 212,
+    "receipt_sha256": "be12b0fd4c09d0f2299ca868b3669ad80a16bee8816a0a9c62602c5b8aab158e",
+    "initial_seal_metadata_parse_failure_preserved": true,
+    "raw_archive_reverified_without_test_reexecution": true
+  },
+  "limits": [
+    "The admission check covers the held root, not arbitrary future package activations by admitted programs.",
+    "Controlled SDK qualification selects ordinary interpreters throughout, including its NEX_PYTHON helper.",
+    "Complete moved/restored SDK and actual NEX AppContainer execution remain pending."
+  ],
+  "whole_original_PLAN_complete": false
+}

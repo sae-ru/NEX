@@ -8,7 +8,9 @@ parser=argparse.ArgumentParser(description="Calibrate a native Windows job obser
 parser.add_argument('--observer',type=Path,required=True)
 parser.add_argument('--output',type=Path,help='New directory retaining all evidence; otherwise successful temporary evidence is removed.')
 parser.add_argument('--peer-python',type=Path,
-                    help='Ordinary Python executable for generated peers; defaults to this interpreter. Store app execution may reject assignment.')
+                    help='Unpackaged Python executable for generated peers; defaults to this interpreter.')
+parser.add_argument('--packaged-python',type=Path,
+                    help='Optional actual Store Python for a suspended packaged-root refusal control.')
 args=parser.parse_args()
 if os.name!='nt':parser.error('native Windows is required')
 ROOT=args.output.resolve() if args.output else Path(tempfile.mkdtemp(prefix='NEX job objects, % 🧠 '))
@@ -89,6 +91,7 @@ if mode=='fail-root':sys.exit(7)
             assert not result['probe_completed'] and result['error']
         else:
             assert result['probe_completed']and result['root_job_verified_before_resume']and result['root_resumed']
+            assert result['root_package_identity_checked_before_resume']and not result['root_packaged']
             assert result['root_exit_code']==(7 if label=='nonzero-root'else 0)
         if label=='healthy':
             ids=json.loads(peer_marker.with_suffix('.parent').read_text());peer_ids={ids['pid'],ids['child_pid']};observed_ids={row['pid']for row in result['processes']};assert peer_ids<=observed_ids and result['total_job_processes']==len(result['processes']);console=Path(os.environ['SystemRoot'])/'System32/conhost.exe';assert all(Path(row['image'])==console for row in result['processes']if row['pid']not in peer_ids)
@@ -131,10 +134,26 @@ if mode=='fail-root':sys.exit(7)
             if observer.poll() is None:observer.terminate();observer.wait(timeout=5)
             for pid,handle in held:kernel.CloseHandle(handle)
     assert len(report['cases'])==5
+    report['packaged_root_cases']=[]
+    if args.packaged_python:
+        prefix=cases/'packaged-root';peer_marker=cases/'packaged-root.peer'
+        command=[helper,prefix,'10000',str(canary.pid),'--',args.packaged_python.absolute(),
+                 '-u','-B',peer,'write-marker',peer_marker]
+        completed=subprocess.run(list(map(str,command)),env=env,capture_output=True,timeout=15)
+        result=json.loads(Path(str(prefix)+'.json').read_text(encoding='utf-8'))
+        assert completed.returncode==125 and result['created_root']
+        assert result['root_package_identity_checked_before_resume']and result['root_packaged']
+        assert result['root_package_full_name']and not result['root_resumed']
+        assert not result['probe_completed']and 'packaged root is unsupported'in result['error']
+        assert result['final_job_accounting_observed']and result['active_job_processes']==0
+        assert not peer_marker.exists()and result['outside_canary_alive_after']and canary.poll()is None
+        report['packaged_root_cases'].append({'passed':True,'observation':result,
+                                              'peer_code_not_executed':True})
     # Exercise admission of a long workflow without waiting for that budget.
     # Peer lifetimes and every original timeout/canary check stay unchanged.
     features=json.loads(subprocess.check_output([str(helper),'--describe'],env=env,timeout=10))
     assert features['maximum_timeout_ms']==10800000
+    assert features['unpackaged_roots_only']is True
     report['workflow_budget_cases']=[]
     for budget in [3600001,10800000]:
         label='workflow-budget-'+str(budget);prefix=cases/label;peer_marker=cases/(label+'.peer')
@@ -193,6 +212,7 @@ finally:
     save()
 print(json.dumps({**{key:report.get(key)for key in ['ok','state','error','seconds']},'evidence':str(ROOT),
     'cases':report['cases'],'workflow_budget_cases':report.get('workflow_budget_cases',[]),
+    'packaged_root_cases':report.get('packaged_root_cases',[]),
     'wrapper_cases':report.get('wrapper_cases',[]),'wrapper_budget_rejections':report.get('wrapper_budget_rejections',[])}))
 if report['ok']and not args.output:shutil.rmtree(ROOT)
 raise SystemExit(0 if report['ok']else 1)

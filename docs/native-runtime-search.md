@@ -67,10 +67,20 @@ correction passed on the unchanged source, compiler and dependency bytes; the
 other298 vectors were unchanged. This gives exact union303 while preserving
 the original failed invocation. Ordinary installed smoke also passed.
 
+The [Fedora 0.162.1 follow-up](evidence/fedora-0.162.1-native-packaging-2026-11-08.json)
+passed both ELF groups and the four previously failing packaging groups. After
+closed old native outputs were cleaned, the HTTP source group passed with the
+same compiler and dependencies. Ordinary installed smoke then passed native,
+reference and TypeScript execution, source-deleted graph/task replay, shared
+tasks, bounded scalar proof and authenticated storage across server restart.
+The interrupted invocation and controller setup failures remain recorded.
+All-target/full303 and portable Fedora SDK acceptance remain pending.
+
 The fresh Windows0.162.1 compiler built all targets and passed12 native/reference
 C11/CXX20 history pairs in moved Python3.10 and archive-restored Python3.14 SDKs.
 Those checks verify the fixture's selected target/sysroot and preserve all16
 graph tables. Complete matching SDK delivery and current physical-platform
-acceptance remain pending. The separate Windows workflow observer update changes
-only the explicit outer workflow ceiling; its calibration does not qualify NEX
-execution or replace SDK checks.
+acceptance remain pending. The separate
+[Windows workflow observer](windows-appcontainer-qualification.md) supports an
+explicit outer workflow ceiling and refuses packaged roots before execution.
+Its calibration does not qualify NEX execution or replace SDK checks.

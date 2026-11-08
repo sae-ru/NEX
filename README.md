@@ -99,6 +99,9 @@ built all current targets; DNS/TCP delivery completed before a disk interruption
 and all three HTTP groups then passed with that same compiler and dependency
 cohort. CMake requires OpenSSL 3.x and refused system 4.0.3. A complete current
 Fedora regression and portable SDK delivery remain pending.
+The [0.162.1 Fedora follow-up](docs/evidence/fedora-0.162.1-native-packaging-2026-11-08.json)
+passed the two ELF groups, four packaging groups, HTTP source group and ordinary
+installed SDK smoke with its pinned compiler; full303 remains pending.
 
 The qualified 0.162 archive is recorded here; this source commit does not upload
 a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)

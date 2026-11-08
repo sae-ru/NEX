@@ -1,0 +1,79 @@
+{
+  "schema": "nex.Fedora01621-scoped-source-and-installed-smoke/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.1",
+  "language": "0.28",
+  "source_files": 1995,
+  "source_manifest_sha256": "8ad054c219e4b2cb098ee6bb2c64ef3218c103de4e5dd615c0fcd6595f28b826",
+  "compiler_sha256": "0d2718d0283ec8b7303ee69797fb592dad79dcb6cd599f5de6085ee0544f67ba",
+  "installed_compiler_sha256": "1e620377ed0dfe5f5b04c8dbcbc2bab1b0db8fcbebb7a8f0caf60ff13646dabf",
+  "installed_binary_diff_only_exact_CMake_RUNPATH_rewrite": true,
+  "ELF_metadata_and_real_loader_groups_passed": 2,
+  "packaging_groups_observed_passed_in_retained_original_CTest_log": [
+    "project_foreign_packaging",
+    "foreign_packaging",
+    "project_package_tasks",
+    "packaging"
+  ],
+  "HTTP_source": {
+    "schema": "nex.ctest-verification/1",
+    "ok": true,
+    "ctest_exit_code": 0,
+    "selected_groups": [
+      "task_http_client_source"
+    ],
+    "required_fixture_groups": [],
+    "expected_groups": [
+      "task_http_client_source"
+    ],
+    "observed_groups": [
+      "task_http_client_source"
+    ],
+    "results": {
+      "passed": [
+        "task_http_client_source"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "registry_sha256": "7552996b5a63e75551731c993c0203cfcbdd95bd5f070845baca5714f927bad7",
+    "junit_sha256": "f83be16c76f93401484e980192aed10900c97640e2f100680b2d6605957a513f"
+  },
+  "ordinary_installed_smoke": {
+    "passed": true,
+    "backends": [
+      "native",
+      "reference interpreter",
+      "TypeScript"
+    ],
+    "source_deleted_graph_and_task_replay": true,
+    "shared_task_replay": true,
+    "standalone_native_application": true,
+    "bounded_scalar_proof": true,
+    "authenticated_storage_isolation_and_restart_persistence": true
+  },
+  "crypto_dependency": {
+    "version": "3.5.9",
+    "loaded_compat_library_byte_identical_to_selected_private_library": true,
+    "sha256": "a10387fd055e5bf3cf7b2d1703c61c68434732c923c1bf343b3df36f24990521",
+    "system_OpenSSL4_or_global_settings_changed": false
+  },
+  "retained_failures": [
+    "Original selected5 invocation interrupted at the owned disk floor after4 packaging groups passed",
+    "HTTP recoveryv1 controller read optional CTest command field as required",
+    "HTTP recoveryv2 passed HTTP and installed SDK, then invoked smoke without its --source option",
+    "Ordinary smokev3 controller incorrectly required installed ELF byte identity despite CMake RUNPATH rewriting"
+  ],
+  "same_source_compiler_dependencies_preserved": true,
+  "passed_tests_not_repeated_to_repair_controller_metadata": true,
+  "raw": {
+    "archive_sha256": "03a427a1628e20182ba0aa2eed33e18a368b50b02940e187dcf67e1404c6d6a1",
+    "archive_bytes": 465889,
+    "raw_files": 50,
+    "receipt_sha256": "4a747bd930fa8c82b164792f38b210626a6c0af78199325226485e3b25b79535"
+  },
+  "all_source_targets_built": false,
+  "full303_accepted": false,
+  "portable_SDK_accepted": false,
+  "whole_original_PLAN_complete": false
+}

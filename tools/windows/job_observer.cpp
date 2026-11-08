@@ -3,6 +3,7 @@
 #define _WIN32_WINNT 0x0A00
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <appmodel.h>
 #include <sddl.h>
 #include <algorithm>
 #include <cstdint>
@@ -116,6 +117,8 @@ struct Probe {
   std::vector<DWORD> inaccessible;
   DWORD root_pid = 0;
   bool created_root = false, member_verified = false, resumed = false;
+  bool package_checked = false, packaged_root = false;
+  std::string package_full_name;
   bool timed_out = false, job_terminated = false, complete = false;
   bool accounting_observed = false;
   bool outside_before = false, outside_after = false;
@@ -250,6 +253,23 @@ struct Probe {
     root.reset(pi.hProcess); Handle thread(pi.hThread); root_pid = pi.dwProcessId; created_root = true;
     BOOL member = FALSE; checked(IsProcessInJob(root.value, job.value, &member), "new root job membership");
     checked(member, "new root not assigned"); member_verified = true; capture(root_pid);
+    // A packaged desktop process can create native children outside this job.
+    // Reject its held, suspended root before any peer code can execute.
+    UINT32 package_length = 0;
+    LONG package_status = GetPackageFullName(root.value, &package_length, nullptr);
+    if (package_status == APPMODEL_ERROR_NO_PACKAGE) {
+      package_checked = true;
+    } else if (package_status == ERROR_INSUFFICIENT_BUFFER && package_length > 1 && package_length <= 32768) {
+      std::vector<wchar_t> name(package_length);
+      package_status = GetPackageFullName(root.value, &package_length, name.data());
+      if (package_status != ERROR_SUCCESS)
+        throw std::runtime_error("GetPackageFullName: Win32 " + std::to_string(package_status));
+      package_full_name = utf8(std::wstring(name.data()));
+      package_checked = packaged_root = true;
+      throw std::runtime_error("packaged root is unsupported for descendant ownership; select an unpackaged executable");
+    } else {
+      throw std::runtime_error("GetPackageFullName: Win32 " + std::to_string(package_status));
+    }
     if (app_requested) {
       Handle token; checked(OpenProcessToken(root.value, TOKEN_QUERY, &token.value), "AppContainer root token");
       DWORD is_app = 0, bytes = 0;
@@ -309,6 +329,9 @@ struct Probe {
         << ",\"root_pid\":" << root_pid << ",\"root_exit_code\":";
     if (created_root) out << root_exit; else out << "null";
     out << ",\"root_job_verified_before_resume\":" << (member_verified ? "true" : "false")
+        << ",\"root_package_identity_checked_before_resume\":" << (package_checked ? "true" : "false")
+        << ",\"root_packaged\":" << (packaged_root ? "true" : "false")
+        << ",\"root_package_full_name\":" << json(package_full_name)
         << ",\"root_resumed\":" << (resumed ? "true" : "false")
         << ",\"assignment_at_creation\":true,\"stdio_handles_only\":true,\"parent_PID_ownership_used\":false"
         << ",\"appcontainer_requested\":" << (app_requested ? "true" : "false")
@@ -343,6 +366,7 @@ int wmain(int argc, wchar_t **argv) {
     std::cout << "{\"schema\":\"nex.windows-job-observer-capabilities/1\","
                  "\"kernel_job_assignment_at_creation\":true,\"appcontainer_at_creation\":true,"
                  "\"root_token_verified_before_resume\":true,\"explicit_working_directory\":true,"
+                 "\"unpackaged_roots_only\":true,"
                  "\"maximum_timeout_ms\":10800000}\n";
     return 0;
   }
