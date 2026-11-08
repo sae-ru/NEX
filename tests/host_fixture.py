@@ -378,30 +378,13 @@ def nonregular(path, mode=0o600):
     if os.name != 'nt':
         os.mkfifo(path, mode)
         return
-    import ctypes as C
-    from ctypes import wintypes as W
-    sockets=C.WinDLL('ws2_32',use_last_error=True)
-    sockets.WSAStartup.argtypes=[W.WORD,C.c_void_p];sockets.WSAStartup.restype=C.c_int
-    sockets.socket.argtypes=[C.c_int,C.c_int,C.c_int];sockets.socket.restype=C.c_size_t
-    sockets.bind.argtypes=[C.c_size_t,C.c_void_p,C.c_int];sockets.bind.restype=C.c_int
-    sockets.closesocket.argtypes=[C.c_size_t];sockets.closesocket.restype=C.c_int
-    sockets.WSAGetLastError.restype=C.c_int
-    class Address(C.Structure):_fields_=[('family',C.c_ushort),('path',C.c_char*108)]
-    data=C.create_string_buffer(512)
-    if sockets.WSAStartup(0x202,data):raise OSError('native Winsock startup failed')
-    handle=C.c_size_t(-1).value
-    try:
-        raw=os.fsencode(os.path.abspath(path))
-        if len(raw)>=108:raise ValueError('native AF_UNIX fixture path exceeds108 bytes')
-        address=Address(1,raw);handle=sockets.socket(1,1,0)
-        if handle==C.c_size_t(-1).value:raise OSError(sockets.WSAGetLastError(),'native AF_UNIX socket failed')
-        # bind creates a genuine NTFS AF_UNIX reparse point. Closing the
-        # socket leaves its nonregular filesystem name for the rejection test.
-        if sockets.bind(handle,C.byref(address),C.sizeof(address)):
-            raise OSError(sockets.WSAGetLastError(),'native AF_UNIX bind failed')
-    finally:
-        if handle!=C.c_size_t(-1).value:sockets.closesocket(handle)
-        sockets.WSACleanup()
+    import importlib.util
+    # The socket's basename fits sockaddr_un even when its owned parent is
+    # long. Share the native child-bind fixture used by installed tools.
+    source=Path(__file__).resolve().parents[1]/'tools/windows_files.py'
+    spec=importlib.util.spec_from_file_location('nex_host_nonregular_fixture',source)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    module.nonregular_fixture(path)
 
 
 def private_permissions(path, mode):

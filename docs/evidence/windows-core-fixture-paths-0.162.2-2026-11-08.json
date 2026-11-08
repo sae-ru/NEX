@@ -1,0 +1,46 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "scope": "Native Windows core rejection fixtures under long owned parent paths",
+  "base_source_commit": "5c2bd897171bdf7903a909ee9999ec436d674762",
+  "compiler_sha256": "977058a8090bbfe6bf53b1e13bf53cf20a2f85a819bd01fd7ce523da466fb2d3",
+  "candidate_test_sha256": "6e8b4619ad082390dcfaf88fd442513bee17a2ca41c1fadc5dfde2130e7689f8",
+  "correction": "The host fixture delegates to the existing native relative-name AF_UNIX child binder. The original absolute sockaddr_un path exceeded108 bytes before any core rejection was exercised.",
+  "passed_groups": [
+    "core_capsules",
+    "core_dump",
+    "windows_file_fixture"
+  ],
+  "commands": [
+    {
+      "group": "core_capsules",
+      "exit_code": 0,
+      "seconds": 32.33445580000989,
+      "timed_out": false,
+      "crash_diagnostic": false,
+      "active_job_processes": 0
+    },
+    {
+      "group": "core_dump",
+      "exit_code": 0,
+      "seconds": 214.66666269977577,
+      "timed_out": false,
+      "crash_diagnostic": false,
+      "active_job_processes": 0
+    },
+    {
+      "group": "windows_file_fixture",
+      "exit_code": 0,
+      "seconds": 0.3994030999019742,
+      "timed_out": false,
+      "crash_diagnostic": false,
+      "active_job_processes": 0
+    }
+  ],
+  "native_source_or_compiler_changed": false,
+  "original_failed_group_preserved": true,
+  "original_platform_specific_skips_preserved": true,
+  "test_assertions_or_runtime_limits_weakened": false,
+  "complete_SDK_accepted": false
+}
