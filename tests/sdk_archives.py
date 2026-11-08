@@ -66,6 +66,81 @@ class RetainedHostPaths(unittest.TestCase):
             self.assertFalse(check(str(literal),separated))
 
 
+@unittest.skipUnless(sys.platform == 'linux', 'actual Linux link-library packaging')
+class LinuxLinkLibraries(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(prefix='NEX link library % 🧠 ')
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name).resolve()
+        self.inputs = self.root/'original inputs';self.inputs.mkdir()
+        self.output = self.root/'SDK';self.output.mkdir()
+        self.compiler = shutil.which('cc')
+        self.archiver = shutil.which('ar')
+        self.assertIsNotNone(self.compiler)
+        self.assertIsNotNone(self.archiver)
+        self.environment = {k:v for k,v in os.environ.items() if k not in ('LD_LIBRARY_PATH','LD_PRELOAD')}
+        spec = importlib.util.spec_from_file_location('linux_link_bundle',
+            Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
+        self.bundle_module = importlib.util.module_from_spec(spec);spec.loader.exec_module(self.bundle_module)
+        notice = self.root/'notices.json'
+        notice.write_text(json.dumps({'schema':'nex.sdk-notices/1','components':[
+            {'name':'NEX-owned-link-fixture','version':'1','url':'https://github.com/sae-ru/NEX',
+             'roots':[str(self.inputs)],'license_files':[str(Path(__file__).resolve().parents[1]/'LICENSE')]}]}))
+        self.bundle = self.bundle_module.LinuxBundle(self.root,self.output,notice)
+        self.bundle.environment = self.environment
+        self.source = self.inputs/'answer.c';self.source.write_text('int answer(void){return 42;}\n')
+        self.object = self.inputs/'answer object.o'
+        self.run_command([self.compiler,'-fPIC','-c',self.source,'-o',self.object])
+        self.main = self.root/'main.c'
+        self.main.write_text('#include <stdio.h>\nint answer(void);int main(void){printf("%d\\n",answer());return 0;}\n')
+
+    def run_command(self, command):
+        result = subprocess.run(list(map(str,command)),env=self.environment,capture_output=True,text=True,timeout=30)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        return result.stdout
+
+    def test_regular_archive_links_after_original_objects_and_archive_are_deleted(self):
+        original = self.inputs/'libanswer.a'
+        self.run_command([self.archiver,'crs',original,self.object])
+        raw = original.read_bytes()
+        copied = self.bundle.copy_link_library(original,self.archiver)
+        self.assertEqual(copied.read_bytes(),raw)
+        self.assertEqual(self.bundle.origins[copied.relative_to(self.output).as_posix()]['source_sha256'],
+                         hashlib.sha256(raw).hexdigest())
+        self.assertEqual(len(self.bundle.copy_notices('licenses')),1)
+        relative = copied.relative_to(self.output)
+        shutil.rmtree(self.inputs)
+        moved = self.root/'moved SDK % 🧠';self.output.rename(moved)
+        executable = moved/'bin/app';executable.parent.mkdir()
+        self.run_command([self.compiler,self.main,moved/relative,'-o',executable])
+        self.assertEqual(self.run_command([executable]),'42\n')
+
+    def test_shared_library_keeps_its_SONAME_alias_after_source_removal_and_move(self):
+        original = self.inputs/'libanswer.so.1.2'
+        self.run_command([self.compiler,'-shared',self.object,'-Wl,-soname,libanswer.so.1','-o',original])
+        copied = self.bundle.copy_link_library(original,self.archiver)
+        alias = copied.with_name('libanswer.so.1')
+        self.assertTrue(alias.is_symlink())
+        self.assertEqual(alias.resolve(),copied)
+        executable = self.output/'bin/app';executable.parent.mkdir()
+        self.run_command([self.compiler,self.main,copied,'-Wl,-rpath,$ORIGIN/../lib/nex/host','-o',executable])
+        shutil.rmtree(self.inputs)
+        moved = self.root/'moved shared SDK % 🧠';self.output.rename(moved)
+        self.assertEqual(self.run_command([moved/'bin/app']),'42\n')
+
+    def test_thin_and_malformed_archives_are_rejected_before_copy(self):
+        thin = self.inputs/'thin.a'
+        self.run_command([self.archiver,'crsT',thin,self.object])
+        self.assertEqual(thin.read_bytes()[:8],b'!<thin>\n')
+        with self.assertRaisesRegex(ValueError,'regular archive'):
+            self.bundle.copy_link_library(thin,self.archiver)
+        self.assertFalse((self.output/'lib/nex/host'/thin.name).exists())
+        malformed = self.inputs/'malformed.a';malformed.write_bytes(b'!<arch>\n'+b'garbage'*16)
+        with self.assertRaisesRegex(RuntimeError,'command failed'):
+            self.bundle.copy_link_library(malformed,self.archiver)
+        self.assertFalse((self.output/'lib/nex/host'/malformed.name).exists())
+
+
 class WindowsOpenSSLPrefix(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()

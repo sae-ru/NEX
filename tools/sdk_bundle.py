@@ -611,6 +611,32 @@ class LinuxBundle(Bundle):
             self.destinations[original] = target
             self.collect_elf(original, target, loader_context, visited)
 
+    def copy_link_library(self, source, archiver):
+        source = source.resolve(strict=True)
+        dynamic_image = elf_image(source)
+        if not dynamic_image:
+            with source.open('rb') as library:
+                magic = library.read(8)
+            # Thin archives retain references to external object files. Copying
+            # only their index would leave the installed SDK incomplete.
+            if magic != b'!<arch>\n':
+                raise ValueError('Linux SDK link library must be an ELF image or a regular archive: ' + str(source))
+            run([archiver, 't', source], env=self.environment, timeout=30)
+        target = self.output / 'lib/nex/host' / source.name
+        self.external(source, target)
+        self.destinations[source] = target
+        if dynamic_image:
+            self.collect_elf(source, target)
+            dynamic = run(['readelf', '-d', source])
+            soname = re.search(r'\(SONAME\).*?\[([^]]+)\]', dynamic)
+            if soname and soname[1] != target.name:
+                if '/' in soname[1] or soname[1] in ('.', '..'):
+                    raise ValueError('ELF SONAME must be a filename inside the bundle: ' + soname[1])
+                alias = target.parent / soname[1]
+                if not alias.exists():
+                    alias.symlink_to(target.name)
+        return target
+
     def assemble(self, patchelf):
         environment = dict(os.environ, NEX_RESOURCE_DIR=str(self.sdk / 'share/nex'))
         for name in ('NEX_CLANG', 'LD_LIBRARY_PATH', 'LD_PRELOAD'):
@@ -653,19 +679,7 @@ class LinuxBundle(Bundle):
         for source, destination in initial:
             self.collect_elf(source, destination)
         for key in ('native_sqlite_library', 'native_openssl_ssl', 'native_openssl_crypto'):
-            original = Path(doctor[key]).resolve()
-            target = self.output / 'lib/nex/host' / original.name
-            self.external(original, target)
-            self.destinations[original] = target
-            self.collect_elf(original, target)
-            dynamic = run(['readelf', '-d', original])
-            soname = re.search(r'\(SONAME\).*?\[([^]]+)\]', dynamic)
-            if soname and soname[1] != target.name:
-                if '/' in soname[1] or soname[1] in ('.', '..'):
-                    raise ValueError('ELF SONAME must be a filename inside the bundle: ' + soname[1])
-                alias = target.parent / soname[1]
-                if not alias.exists():
-                    alias.symlink_to(target.name)
+            self.copy_link_library(Path(doctor[key]), doctor['native_archiver'])
         configuration['sqlite'] = {'include': includes.relative_to(self.output).as_posix(),
                                    'library': str(self.destinations[Path(doctor['native_sqlite_library']).resolve()].relative_to(self.output))}
         configuration['openssl'] = {'include': includes.relative_to(self.output).as_posix(),

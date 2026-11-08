@@ -1,0 +1,43 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "ok": true,
+  "scope": "Three actual native Linux link-library packaging methods on each of Debian ARM64 and Fedora x86-64; not complete SDK acceptance",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "source_base_commit": "cbb8daf09646f519aa0f776036eaf1906063d648",
+  "source_delta": [
+    "tools/sdk_bundle.py",
+    "tests/sdk_archives.py",
+    "docs/sdk.md"
+  ],
+  "bundler_sha256": "40b2110557ff8465a716cc94db5ef99b94b6548b587a8c03140f76b7e6183216",
+  "tests_sha256": "166e0878b1976d91c84690e4d9ab280567b29365dfb235b6dde3f72a879c0716",
+  "platforms": {
+    "fedora": {
+      "python": "3.15.0 (3.15.0-1.fc45.x86_64, Oct  9 2026, 00:00:00) [GCC 16.2.1 20260819 (Red Hat 16.2.1-2)]",
+      "methods": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cix": {
+      "python": "3.11.2 (main, May 12 2026, 05:17:27) [GCC 12.2.0]",
+      "methods": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "regular_archive_bytes_and_origin_sha256_preserved": true,
+  "archive_links_after_original_archive_and_objects_deleted": true,
+  "shared_SONAME_alias_and_execution_after_move": true,
+  "thin_and_malformed_archives_rejected_before_copy": true,
+  "notice_provenance_checked": true,
+  "controllers_retired": true,
+  "independently_rehashed_raw_files": 16,
+  "raw_inventory_sha256": "9f0a6261dd0818820970ff17e7be76a299cc89db9961d550463bf33e48444f09",
+  "complete_SDK_accepted": false,
+  "whole_original_PLAN_complete": false,
+  "sealed_utc": "2026-11-08T21:17:59.193637+00:00"
+}

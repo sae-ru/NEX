@@ -15,6 +15,15 @@ the previously published binary release remains0.159. Use the current
 Complete matching Windows/Linux SDK delivery remains separate. Earlier workflow
 versions below preserve their original scope; query the actual compiler before use.
 
+Linux SDK assembly preserves selected SQLite/OpenSSL static archives byte for
+byte, validates them with the selected native archiver, and captures their full
+license provenance. Regular archives contain their object members; thin archives
+that refer to external objects are rejected. ELF shared libraries retain their
+dependency closure, SONAME aliases and origin-relative runtime paths. This
+[packaging correction](evidence/linux-static-link-libraries-0.162.2-2026-11-09.json)
+passed three actual link/move/refusal methods on both Debian ARM64 and Fedora
+x86-64; it does not itself qualify a portable Linux SDK.
+
 ## Native Windows acceptance adapter in development
 
 The installed workflow selects native PE executable/DLL names, uses physical
