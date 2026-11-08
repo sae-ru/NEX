@@ -1,0 +1,203 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "ok": true,
+  "sealed_utc": "2026-11-08T18:00:15.398420+00:00",
+  "platform": "macOS ARM64",
+  "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+  "source_files": 2017,
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "packaged_compiler_sha256": "eebf8ec0ed66bbb0c5d694900376d0dd391f92120dd0e2c13cb5006fa47a7b23",
+  "compiler_build": "6ecceb0fa930d3d8e20512c20ea1fe604248fc8e383f8629dda0b49ba8ce1bef",
+  "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+  "full_source_groups": 301,
+  "moved_restored_phases": 82,
+  "additional_cases": 180,
+  "native_host_calls": 4000,
+  "cleanup_checks": 4000,
+  "source_dependency_opposite_denials": 10,
+  "SDK_write_denials": 4,
+  "browser_tests": 150,
+  "CLI_composition_scenarios": 18,
+  "OpenCL_native_reference_cases": 21,
+  "OpenCL_kernel_events": 47,
+  "quality_scenarios": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "Q5"
+  ],
+  "actual_LLVM_calls": [
+    9900,
+    0,
+    1
+  ],
+  "schemas": 85,
+  "actual_authoring_artifacts": 12,
+  "rejected_mutations": 36,
+  "four_standalone_sanitizer_controls_passed": true,
+  "generated_provider_IR_instrumented": false,
+  "benchmark": {
+    "scope": "One maintained checked-i64 modular recurrence: five semantic comparison inputs, 100 million steps per measured launch, five rotating-order repeats per NEX/checked C++/Python. Process wall includes startup; C++ has checked arithmetic but no NEX runtime polling. Host isolation and universal throughput parity are not established.",
+    "agreement_cases": 5,
+    "total_recurrence_steps": 100000000,
+    "measurement_samples": 15,
+    "observed_NEX_over_checked_CXX_wall_ratio": 1.0690701823360043,
+    "measurements": {
+      "nex": {
+        "samples": [
+          {
+            "seconds": 0.29236337542533875,
+            "user_seconds": 0.289512,
+            "system_seconds": 0.0011849999999999999,
+            "maximum_rss_bytes": 2113536
+          },
+          {
+            "seconds": 0.29924620781093836,
+            "user_seconds": 0.296,
+            "system_seconds": 0.001524,
+            "maximum_rss_bytes": 2113536
+          },
+          {
+            "seconds": 0.2931557921692729,
+            "user_seconds": 0.289674,
+            "system_seconds": 0.001429,
+            "maximum_rss_bytes": 2113536
+          },
+          {
+            "seconds": 0.2923712912015617,
+            "user_seconds": 0.2892,
+            "system_seconds": 0.0013449999999999998,
+            "maximum_rss_bytes": 2113536
+          },
+          {
+            "seconds": 0.2933036247268319,
+            "user_seconds": 0.290361,
+            "system_seconds": 0.0011769999999999999,
+            "maximum_rss_bytes": 2113536
+          }
+        ],
+        "median_wall_seconds": 0.2931557921692729,
+        "median_user_seconds": 0.289674,
+        "maximum_rss_bytes": 2113536
+      },
+      "cpp_checked": {
+        "samples": [
+          {
+            "seconds": 0.2737318342551589,
+            "user_seconds": 0.270788,
+            "system_seconds": 0.001095,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.2738061249256134,
+            "user_seconds": 0.27025,
+            "system_seconds": 0.001441,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.2747655841521919,
+            "user_seconds": 0.271267,
+            "system_seconds": 0.0014299999999999998,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.2742156661115587,
+            "user_seconds": 0.270791,
+            "system_seconds": 0.0014579999999999999,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.2758744996972382,
+            "user_seconds": 0.272845,
+            "system_seconds": 0.001187,
+            "maximum_rss_bytes": 1851392
+          }
+        ],
+        "median_wall_seconds": 0.2742156661115587,
+        "median_user_seconds": 0.270791,
+        "maximum_rss_bytes": 1851392
+      },
+      "python": {
+        "samples": [
+          {
+            "seconds": 7.31166833313182,
+            "user_seconds": 7.296065,
+            "system_seconds": 0.007696,
+            "maximum_rss_bytes": 19431424
+          },
+          {
+            "seconds": 7.245612415950745,
+            "user_seconds": 7.230858,
+            "system_seconds": 0.007468,
+            "maximum_rss_bytes": 19496960
+          },
+          {
+            "seconds": 7.380789208691567,
+            "user_seconds": 7.365348,
+            "system_seconds": 0.008180999999999999,
+            "maximum_rss_bytes": 19529728
+          },
+          {
+            "seconds": 7.325599125120789,
+            "user_seconds": 7.297848,
+            "system_seconds": 0.008539999999999999,
+            "maximum_rss_bytes": 19513344
+          },
+          {
+            "seconds": 7.565461750142276,
+            "user_seconds": 7.547611,
+            "system_seconds": 0.008024,
+            "maximum_rss_bytes": 19398656
+          }
+        ],
+        "median_wall_seconds": 7.325599125120789,
+        "median_user_seconds": 7.297848,
+        "maximum_rss_bytes": 19529728
+      }
+    }
+  },
+  "raw_files": 1144,
+  "raw_bytes": 20962290,
+  "raw_inventory_sha256": "e35c1771dad9528cfd9b7a58d42f3e59eeaf802bf5d1362d460a29465a8bf6f1",
+  "raw_archive_sha256": "a2148921599d5b5b9f969e8081ff434d3e2ff979f3167404751e8cb74cd0e1a1",
+  "raw_archive_bytes": 4207439,
+  "both_SDK_inventories_and_archive_revalidated": true,
+  "all_controllers_retired": true,
+  "latest_Windows_and_CIX_source_fixes_included": false,
+  "new_release_uploaded_or_main_promoted": false,
+  "actual_LLM_token_savings_measured": false,
+  "general_GPU_Metal_or_Apple_NPU_claimed": false,
+  "whole_original_PLAN_complete": false,
+  "SDK_archive": {
+    "sha256": "85a8422f5348e0c9e53222f2ae106f55c10413835a102985ec995641f7b23b73",
+    "bytes": 124378367,
+    "files_in_inventory": 3603,
+    "excluded_python_cache_files": [],
+    "filename": "nex-sdk-0.162.2-macos-arm64-owned-code-root-development.tar.gz"
+  },
+  "receipt_sha256": "17b83020a3fdf307f2501cfdcee9bced833120d4d1415f9868ad91f5bc5a11b9",
+  "physical_fences": [
+    {
+      "sha256": "6acf7916d61886c1347f6f186a9df82ef33b15e6745052a30bfc19e2ea569193",
+      "instrumentation": "plain",
+      "cases": 4,
+      "passed": true
+    },
+    {
+      "sha256": "175280fc5d4ebba97ae4dd1516a02264ff21f53b6d6217872a32977b85d2ebad",
+      "instrumentation": "asan-ubsan-lsan",
+      "cases": 4,
+      "passed": true
+    },
+    {
+      "sha256": "e052fdfd7ba93824aae4db5161145817d992c73447b4014513902ed5d5058318",
+      "instrumentation": "tsan",
+      "cases": 4,
+      "passed": true
+    }
+  ],
+  "scope": "Exact macOS ARM64 development SDK built from78acb439; later Windows/tooling commits retain their own evidence. No new public binary release or latest cross-platform qualification."
+}

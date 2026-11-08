@@ -8,7 +8,10 @@ records its exact 0.162.0 archive. The [0.162.2 development evidence](evidence/c
 records all 301 macOS source groups, newly assembled SDKs and scoped Windows TCP
 and CIX device results. The same current Windows SDK passed 35 physical CUDA
 scenarios and 36 Compute Sanitizer cases with balanced resource ledgers.
-Complete matching SDK delivery and Linux/Windows regressions remain pending.
+The [exact 0.162.2 Mac SDK](evidence/macos-sdk-0.162.2-2026-11-08.json) has now passed
+its complete scoped acceptance. [Fedora passed all 303 groups](evidence/fedora-full303-0.162.2-2026-11-08.json)
+and ordinary installed smoke. Windows/CIX regressions and Windows/Linux portable
+SDK delivery remain pending.
 Other platforms retain their own versioned evidence.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
@@ -115,6 +118,11 @@ Mac were 0.295775 s for NEX, 0.278295 s for checked C++ and 7.366667 s for Pytho
 The host was not isolated; this is one workload. Its current 100-module,
 10,000-declaration workflow also confirmed actual LLVM calls of 9900/0/1 for
 cold/unchanged/single-function-edit builds. Neither result measures LLM savings.
+
+A [fresh 0.162.2 repetition](evidence/macos-sdk-0.162.2-2026-11-08.json) measured
+0.293156 s NEX, 0.274216 s checked C++ and 7.325599 s Python medians using 15 new
+samples. Its 100-module workflow again made 9900/0/1 actual LLVM calls. The same
+one-workload and unisolated-host limits apply.
 
 ## Hardware and delivery
 

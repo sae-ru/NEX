@@ -34,9 +34,10 @@ test fn answer_is_42() -> unit { assert(answer(21) == 42); }
   mapping and device providers cover their advertised, measured scopes.
 
 The repository includes [measurements and limitations](docs/overview.en.md#measurements).
-One historical checked-integer benchmark was close to its checked C++ baseline;
-it does not establish universal C++ parity. End-to-end token savings across LLMs
-have not yet been measured.
+A [fresh 0.162.2 checked-integer benchmark](docs/evidence/macos-sdk-0.162.2-2026-11-08.json)
+measured median wall times of 0.293156 s for NEX, 0.274216 s for checked C++ and
+7.325599 s for Python on one Mac. These are one-workload observations.
+End-to-end token savings across LLMs have not yet been measured.
 
 ## What you can build
 
@@ -58,8 +59,11 @@ float-to-integer conversion and requires the Windows OpenSSL runtime configurati
 when assembling an explicitly selected cohort. The [current development record](docs/evidence/current-platforms-0.162.2-2026-11-08.json)
 records the complete 301-group macOS source run, the newly assembled macOS and
 Windows SDKs, actual Windows TCP exchange in reference/Debug/Release, and physical
-Windows CUDA and CIX GPU/NPU calls. Complete matching SDK and Linux/Windows
-regression acceptance remain pending. The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
+Windows CUDA and CIX GPU/NPU calls. The [exact macOS development SDK](docs/evidence/macos-sdk-0.162.2-2026-11-08.json)
+now passed matching source, moved/restored, browser, OpenCL, workflow, schema and
+sanitizer-control gates. [Fedora passed all 303 groups](docs/evidence/fedora-full303-0.162.2-2026-11-08.json)
+and ordinary installed smoke. Windows/CIX regressions and Windows/Linux portable
+SDK acceptance remain pending. The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP
 provider compilation; language semantics and task deadlines are unchanged.
@@ -112,11 +116,11 @@ passed its three environment/timeout groups and three debugger groups, plus six
 ELF identity controls. A [coherent OpenSSL 3 follow-up](docs/evidence/fedora-current-OpenSSL3-2026-11-06.json)
 built all current targets; DNS/TCP delivery completed before a disk interruption,
 and all three HTTP groups then passed with that same compiler and dependency
-cohort. CMake requires OpenSSL 3.x and refused system 4.0.3. A complete current
-Fedora regression and portable SDK delivery remain pending.
+cohort. CMake requires OpenSSL 3.x and refused system 4.0.3. The later [current 0.162.2 run](docs/evidence/fedora-full303-0.162.2-2026-11-08.json)
+passed all 303 groups and ordinary installed smoke; portable SDK delivery remains pending.
 The [0.162.1 Fedora follow-up](docs/evidence/fedora-0.162.1-native-packaging-2026-11-08.json)
 passed the two ELF groups, four packaging groups, HTTP source group and ordinary
-installed SDK smoke with its pinned compiler; full303 remains pending.
+installed SDK smoke with its pinned compiler; the subsequent 0.162.2 full303 receipt is linked above.
 
 The qualified 0.162 archive is recorded here; this source commit does not upload
 a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)
