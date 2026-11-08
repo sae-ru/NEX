@@ -1683,12 +1683,18 @@ THE SOFTWARE.
         captured=acceptance.captured_task_build_artifacts(captured_command,linkages)
         self.assertEqual(captured['app']['build_key'],'b'*64)
         self.assertNotEqual(captured['app']['artifact'],original['app']['artifact'])
+        native=copy.deepcopy(captured_command)
+        for row in native['response']['artifacts']:row['artifact']=str(Path(row['artifact']))
+        selected=acceptance.captured_task_build_artifacts(native,linkages)
+        self.assertEqual(Path(selected['app']['artifact']),Path(captured['app']['artifact']))
         for mutate in (
             lambda c:c.update(exit_code=70),
             lambda c:c.update(timed_out=True),
             lambda c:c.update(interrupted=15),
             lambda c:c['response']['artifacts'].append(copy.deepcopy(c['response']['artifacts'][0])),
             lambda c:c['response']['artifacts'][0].update(build_key='c'*64),
+            lambda c:c['response']['artifacts'][0].update(artifact='relative/app'),
+            lambda c:c['response']['artifacts'][0].update(artifact=c['response']['artifacts'][0]['artifact']+'\0'),
             lambda c:c['response']['artifacts'][0].update(component='foreign'),
             lambda c:c['response']['plan']['components'][0]['task_linkage'].update(component='foreign')):
             damaged=copy.deepcopy(captured_command);mutate(damaged)

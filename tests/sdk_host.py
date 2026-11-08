@@ -1,5 +1,6 @@
 """Relative host-SDK selection, real native tools and rejected broken bundles."""
 from host_fixture import python_executable
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,44 @@ class HostSDK(harness.ToolchainCase):
         super().setUp()
         self.root = self.root.resolve()
         self.file = self.root / 'main.nex'
+
+    @unittest.skipUnless(os.name == 'nt', 'actual PE import thunks and definitions')
+    def test_PE_import_thunks_do_not_hide_actual_local_runtime_definitions(self):
+        spec = importlib.util.spec_from_file_location('sdk_symbol_host', harness.REPO/'tools/sdk_host.py')
+        host = importlib.util.module_from_spec(spec);spec.loader.exec_module(host)
+        doctor = self.cli('doctor')
+        sources = {
+            'kernel': 'extern "C" __declspec(dllexport) int nex_task_frame_call_at(){return 42;}',
+            # A plain external call uses the import library's real T jump thunk.
+            'provider': 'extern "C" int nex_task_frame_call_at(); extern "C" __declspec(dllexport) int provider_answer(){return nex_task_frame_call_at();}',
+            'local': 'extern "C" { __declspec(dllexport) void nex_task_frame_call_at(){} __declspec(dllexport) void nex_retain(){} __declspec(dllexport) void local__task_step(){} __declspec(dllexport) int main(){return 0;} }',
+        }
+        for name, source in sources.items():
+            file = self.root/(name+'.cpp');file.write_text(source, newline='\n')
+            command = [doctor['native_compiler'], '-std=c++20', '-shared', str(file),
+                       '-o', str(self.root/(name+'.dll'))]
+            # The native fixture retains the real import library as DLL.a,
+            # including when its linker staging directory is relocated.
+            if name == 'provider':command.append(str(self.root/'kernel.dll.a'))
+            result = host.compile_fixture(command, doctor=doctor, capture_output=True, text=True, timeout=120)
+            self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        def run(command):
+            command = list(map(str, command))
+            command[0] = host.selected_tool(self.root, doctor, command[0])
+            result = subprocess.run(command, cwd=self.root, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+            return result.stdout
+        provider = self.root/'provider.dll'
+        self.assertIn(['T', 'nex_task_frame_call_at'],
+                      [line.split()[-2:] for line in run(['nm', '-g', provider]).splitlines()])
+        symbols = host.global_symbols(provider, run)
+        self.assertEqual(symbols['nex_task_frame_call_at'], {'U'})
+        self.assertTrue(symbols['provider_answer'] & {'T', 'W'})
+        self.assertTrue(symbols['__main'] & {'T', 'W'})
+        self.assertFalse(symbols.get('main', set()) & {'T', 'W'})
+        local = host.global_symbols(self.root/'local.dll', run)
+        for name in ('nex_task_frame_call_at', 'nex_retain', 'local__task_step', 'main'):
+            self.assertTrue(local[name] & {'T', 'W'}, name)
 
     def stage(self):
         self.original = self.root / 'before relocation'

@@ -36,8 +36,10 @@ class TaskForeign(harness.ToolchainCase):
         task=self.cli('task',self.file,'--kind','init',env=self.env)
         for check in task['checks']:
             if check['kind']=='test':check['foreign_hash']=self.catalogue_report['hash']
-            # Replayed release builds use a fresh captured-resource root and a cold cache.
-            if os.name=='nt' and check['kind']=='build':check['timeout_seconds']=300
+            # Replayed builds use a fresh captured-resource root and a cold
+            # runtime cache. ARM64 release compilation also exceeds the
+            # generated 60-second default; this case tests capture, not speed.
+            if check['kind']=='build':check['timeout_seconds']=300
         self.save(task)
         return task
 
@@ -45,7 +47,7 @@ class TaskForeign(harness.ToolchainCase):
         self.taskfile.write_text(json.dumps(task), newline="\n")
 
     def task(self,kind='run',*args,**kwargs):
-        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=900 if os.name=='nt' else 240,**kwargs)
+        return self.cli('task',self.taskfile,'--kind',kind,'--foreign',self.host,*args,env=self.env,timeout=900,**kwargs)
 
     def add(self,task,check):
         check.update(program='app')
@@ -75,7 +77,7 @@ class TaskForeign(harness.ToolchainCase):
     def test_reviewed_execution_and_replay_after_sources_and_original_bundle_are_deleted(self):
         task=self.scaffold()
         self.add(task,{'id':'observe','kind':'run','target':'native','entry':'taskffi::main','expect':{'stdout':'42\n','exit_code':0}})
-        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','timeout_seconds':180 if os.name=='nt' else 60,'scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
+        self.add(task,{'id':'measure','kind':'profile','target':'native','entry':'taskffi::main','timeout_seconds':180,'scenario':'one external call','budget':{'max_calls':{'taskffi::echo':'1'}}})
         self.save(task);checked=self.task('check')
         self.assertEqual(checked['foreign_catalogue']['hash'],self.catalogue_report['hash']);self.assertEqual(self.events(),'')
         result=self.task('run','--task-hash',checked['task_hash'])
@@ -97,7 +99,7 @@ class TaskForeign(harness.ToolchainCase):
         shutil.rmtree(self.root/'bundle');self.marker.unlink()
         self.assertEqual(self.cli('task',receipt,'--kind','replay',ok=False,env=self.env)['code'],'E_TASK_FOREIGN')
         self.assertEqual(self.events(),'')
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900)
         self.assertTrue(replay['ok']);self.assertEqual(replay['task_hash'],checked['task_hash'])
         self.assertEqual(replay['foreign_catalogue'],result['foreign_catalogue']);self.assertNotEqual(replay['output'],result['output'])
 
@@ -158,7 +160,7 @@ class TaskForeign(harness.ToolchainCase):
         result=self.task();receipt=Path(result['output'])
         manifest=json.loads((receipt.parent/'inputs/manifest.json').read_text())
         self.assertEqual(len(manifest['files']),8192)
-        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900 if os.name=='nt' else 240)
+        replay=self.cli('task',receipt,'--kind','replay','--foreign',self.host,env=self.env,timeout=900)
         self.assertTrue(replay['ok'])
 
     def test_capture_tampering_is_rejected_even_when_the_receipt_is_rehashed(self):

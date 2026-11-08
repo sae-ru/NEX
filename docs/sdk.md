@@ -66,6 +66,16 @@ checks and source-deleted replay remain checked. Executable records use `app.exe
 on Windows. The earlier failed complete workflow is preserved; this correction
 requires a newly assembled SDK and fresh complete acceptance.
 
+Provider symbol checks use the selected `llvm-nm` and the actual PE import
+directory from `llvm-readobj`. A Windows import jump thunk is not a runtime
+implementation; actual local kernel/main/continuation definitions remain
+forbidden. Windows leading underscores are preserved; Mach-O removes its single
+ABI prefix. Captured command artifacts use native absolute paths, while retained
+inventory members keep their portable relative-path checks. PE closure DLLs are
+adjacent to the executable; Unix owned images use `images/`, as recorded by the
+compiler's completion metadata. These development helper corrections still need
+their matching newly assembled SDK acceptance.
+
 The [coherent Windows HTTP receipt](evidence/windows-coherent-http-0.162.2-2026-11-08.json)
 records 29 source cases in reference/Debug/Release, 18 delivery rejections,
 three complete 15-case stream groups and source-deleted HTTP/HTTPS2 packages.
@@ -735,6 +745,15 @@ workflow a bounded18000-second budget. Its summary counts the phases in the
 actually validated receipt, including37 for0.134.4, rather than the historical
 34-phase base tuple. Individual SDK operations retain their own shorter limits;
 this wrapper does not relax any receipt or isolation check.
+
+The positive FFI capture/replay source fixtures allow300 seconds for a cold
+build,180 for the profiling check and900 for their parent watchdog on all hosts.
+The [ARM64 measurement](evidence/cix-FFI-cold-compilation-0.162.2-2026-11-09.json)
+records90.5 seconds for release compilation and101.2 for the profile command,
+with3.06ms of measured program execution. The original60-second failures remain
+recorded. This changes fixture budgets, not compiler defaults; the intentional
+five-second native timeout/interruption cases and their cleanup assertions are
+unchanged. Acceptance of the entire updated FFI group is recorded separately.
 
 The Linux verifier keeps its600-second limit for individual inspection tools.
 The complete maintained workflow uses the18000-second aggregate limit, including

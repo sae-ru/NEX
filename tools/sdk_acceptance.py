@@ -367,8 +367,10 @@ def captured_task_build_artifacts(command, expected_linkages):
     for row in response['artifacts']:
         require(isinstance(row,dict) and row.get('component') in expected_linkages and row['component'] not in artifacts and
                 isinstance(row.get('build_key'),str) and re.fullmatch('[0-9a-f]{64}',row['build_key']) and
-                isinstance(row.get('artifact'),str) and '\0' not in row['artifact'] and '\\' not in row['artifact'],
+                isinstance(row.get('artifact'),str) and '\0' not in row['artifact'],
                 'captured task build artifact component/key differs')
+        # This is a native absolute command result, not a portable relative
+        # inventory member. Path must apply the actual host's separator rules.
         path=Path(row['artifact'])
         require(path.is_absolute() and path.parent.name==row['build_key'] and
                 row.get('kind') in ('executable','shared_library','static_library'),
@@ -640,7 +642,7 @@ def retained_task_profile_build(receipt_root, check, artifact, component, compil
                     image.get('runtime_key')==runtime.get('key') and image.get('runtime_hash')==runtime.get('hash'),
                     'retained own profile image/runtime identity differs')
         for image in links.get('images',[]):
-            path='images/'+Path(image['path']).name
+            path=sdk_host.owned_image_relative_path(image['path'])
             require(path in mapped and image.get('hash')==mapped[path][0]['hash'] and
                     image.get('sha256')==hashlib.sha256(mapped[path][1]).hexdigest(),'profile retained owned image pin differs')
         for field in ('task_providers','task_profile_catalogs'):
@@ -1625,7 +1627,7 @@ def main():
             program=Path(command[0])
             if program.parent!=Path('.') and not program.is_file() and program.with_name(program.name+'.exe').is_file():
                 command[0]=str(program.with_name(program.name+'.exe'))
-        if sdk_host.WINDOWS and report.get('doctor') and command[0] in ('nm','openssl'):
+        if sdk_host.WINDOWS and report.get('doctor') and command[0] in ('nm','llvm-readobj','openssl'):
             command[0] = sdk_host.selected_tool(sdk, report['doctor'], command[0])
         project_package = (len(command) > 1 and command[0] == str(compiler) and
                            command[1] == 'project' and '--kind' in command and
@@ -2865,11 +2867,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{task_yield();return file_rea
                     record['abi_offset']==40 and record['component']==name,
                     'provider sidecar identity/layout differs')
             archive_hashes[name]=hashlib.sha256(archive.read_bytes()).hexdigest()
-            symbols = {}
-            for line in run(['nm','-g',archive]).splitlines():
-                words = line.split()
-                if len(words)>=2 and len(words[-2])==1:
-                    symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+            symbols = sdk_host.global_symbols(archive,run)
             require(record['exports'] and all(symbols.get(export['accessor'],set()) & {'T','W'}
                     for export in record['exports'].values()),
                     'archive lacks defined descriptor accessor symbols')
@@ -3103,11 +3101,7 @@ pub server fn read(path:str)->result<str>!{task,fs}{return file_read_text(path);
                     record['image']['sha256']==image_sha256[name] and record['image']['key']==artifacts[name]['build_key'],
                     'actual shared image/provider identity differs')
             if name!='app':
-                symbols={}
-                for line in run(['nm','-g',artifact]).splitlines():
-                    words=line.split()
-                    if len(words)>=2 and len(words[-2])==1:
-                        symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+                symbols=sdk_host.global_symbols(artifact,run)
                 require(record['exports'] and all(symbols.get(export['accessor'],set()) & {'T','W'}
                         for export in record['exports'].values()),'shared image lacks a defined descriptor accessor')
                 require(not symbols.get('main',set()) & {'T','W'} and all(not symbols.get(name,set()) & {'T','W'}
@@ -3281,7 +3275,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
                         len(links['task_providers'])==sum(image['kind']=='library' for image in links['images']),
                         'retained loaded closure/provider cardinality differs')
                 for image in links['images']:
-                    name='images/'+Path(image['path']).name
+                    name=sdk_host.owned_image_relative_path(image['path'])
                     require(image['hash']==mapped[name][0]['hash'] and
                             image['sha256']==hashlib.sha256(mapped[name][1]).hexdigest(),'retained owned image pin differs')
                 for provider in links['task_providers']:
@@ -3593,10 +3587,7 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
         saved=checked(profiled['observation']);artifacts={row['component']:row for row in profiled['artifacts']}
         require(saved['build_key']==artifacts['app']['build_key'],'profile command measured another artifact')
         for name,registries in (('mid',('leaf','mid')),('unused',('unused',))):
-            symbols={}
-            for line in run(['nm','-g',artifacts[name]['artifact']]).splitlines():
-                words=line.split()
-                if len(words)>=2 and len(words[-2])==1:symbols.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+            symbols=sdk_host.global_symbols(artifacts[name]['artifact'],run)
             require(all(symbols.get('nex_task_profile_registry_'+component+'_v1',set()) & {'T','W'} for component in registries) and
                     all(not symbols.get(symbol,set()) & {'T','W'} for symbol in
                         ('nex_profile_enter','nex_profile_build_info','nex_task_profile_prepare_registries','nex_release')),
@@ -3612,7 +3603,9 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
                 for line in run(['nm',artifacts[name]['artifact']]).splitlines():
                     words=line.split()
                     if len(words)>=2 and len(words[-2])==1:
-                        definitions.setdefault(words[-1].lstrip('_'),set()).add(words[-2])
+                        symbol=words[-1]
+                        if platform.system()=='Darwin' and symbol.startswith('_'):symbol=symbol[1:]
+                        definitions.setdefault(symbol,set()).add(words[-2])
                 require(generic['function_hash']==checked_generic['function_hash'] and
                         generic['function_source_hash']==checked_generic['function_source_hash'] and
                         definitions.get(generic['native_symbol'],set()) & {'T','W','t','w'},

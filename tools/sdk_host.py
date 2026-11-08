@@ -4,6 +4,7 @@ import importlib.util
 import os
 import platform
 from pathlib import Path
+import re
 import signal
 import sqlite3
 import subprocess
@@ -34,6 +35,11 @@ def same_existing_path(recorded, expected):
 
 def shared_name(name):
     return name + ('.dll' if WINDOWS else '.dylib' if platform.system() == 'Darwin' else '.so')
+
+def owned_image_relative_path(image):
+    """Use the compiler's adjacent PE DLL / nested Unix image layout."""
+    image = Path(image)
+    return image.name if image.suffix == '.dll' else 'images/' + image.name
 
 def platform_name():
     machine = {'aarch64':'arm64','arm64':'arm64','AMD64':'x86_64','x86_64':'x86_64'}[platform.machine()]
@@ -136,9 +142,29 @@ def inspect_loaded(arguments, **kwargs):
 def selected_tool(sdk, doctor, name):
     if not WINDOWS:
         return name
-    if name == 'nm':
-        return str(Path(doctor['native_compiler']).parent/'llvm-nm.exe')
+    if name in ('nm', 'llvm-readobj'):
+        return str(Path(doctor['native_compiler']).parent/
+                   ('llvm-nm.exe' if name == 'nm' else 'llvm-readobj.exe'))
     if name == 'openssl':
         packaged = Path(sdk)/'libexec/nex/host-tools/openssl.exe'
         return str(packaged if packaged.is_file() else Path(doctor['wasm_compiler']).parent/'openssl.exe')
     return name
+
+def global_symbols(image, run):
+    """Distinguish global definitions from actual PE imports, including thunks."""
+    symbols = {}
+    for line in run(['nm', '-g', image]).splitlines():
+        words = line.split()
+        if len(words) >= 2 and len(words[-2]) == 1:
+            name = words[-1]
+            if platform.system() == 'Darwin' and name.startswith('_'):
+                name = name[1:]
+            symbols.setdefault(name, set()).add(words[-2])
+    if WINDOWS and Path(image).suffix.lower() == '.dll':
+        # A COFF import library can add a local T jump thunk. Only the actual
+        # PE import directory establishes that this name belongs to a dependency;
+        # ordinary T/W definitions must still fail provider ownership checks.
+        imports = run(['llvm-readobj', '--coff-imports', image])
+        for name in re.findall(r'^\s*Symbol: (\S+) \(\d+\)\s*$', imports, re.M):
+            symbols[name] = {'U'}
+    return symbols
