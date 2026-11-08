@@ -1,0 +1,114 @@
+{
+  "schema": "nex.current-platform-development-evidence/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "native_source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+  "Python_followup_source_commit": "3bdad7ab365c3d794d403031ad3ae2bfcec09b12",
+  "Python_followup_files": [
+    "tests/web_workers.py",
+    "tools/tcp_provider/prepare.py"
+  ],
+  "native_inputs_unchanged_by_Python_followups": true,
+  "language_semantics_or_task_deadlines_changed_by_Python_followups": false,
+  "Mac": {
+    "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+    "source_files": 2017,
+    "compiler_sha256": "1be696c6c4d8347d38e0b4bf1fdd912bc642715344ba284fa7957904ad223711",
+    "compiler_build": "6ecceb0fa930d3d8e20512c20ea1fe604248fc8e383f8629dda0b49ba8ce1bef",
+    "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+    "all_targets_built": true,
+    "single_full_CTest": {
+      "exit_code": 0,
+      "passed": 301,
+      "failed": 0,
+      "skipped": 0,
+      "registry_sha256": "ae3118e59b4cee2d65dffba0f6054658b0a5be87383fc16c41bbbbb2a33123af",
+      "junit_sha256": "43b0f9017ded80e9924be3d483e3c9624110c1599884307187ae7ce1abfd6183"
+    },
+    "sealed_raw_archive_sha256": "18f33ca8dd8be463fd5199fde97fa8ace152d105ebc3eb2ac7c978a07ceb3058",
+    "assembled_SDK": {
+      "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+      "archive_sha256": "85a8422f5348e0c9e53222f2ae106f55c10413835a102985ec995641f7b23b73",
+      "archive_bytes": 124378367,
+      "compiler_sha256": "eebf8ec0ed66bbb0c5d694900376d0dd391f92120dd0e2c13cb5006fa47a7b23",
+      "inventory_files": 3603,
+      "moved_and_archive_restored_doctor_passed": true,
+      "complete_acceptance": false
+    },
+    "complete_current_SDK_pending": true
+  },
+  "Windows_x86_64": {
+    "source_commit": "3bdad7ab365c3d794d403031ad3ae2bfcec09b12",
+    "source_files": 2017,
+    "compiler_sha256": "de0eedc14d3bedb57b908704fe1c2dec5d1fa390c5b8d878616ed2c016504b68",
+    "all_targets_rebuilt": true,
+    "compiler_unchanged_after_Python_followups": true,
+    "new_ordinary_install_only_changed_resource": "share/nex/tools/tcp_provider/prepare.py",
+    "assembled_SDK": {
+      "archive_sha256": "37ca8ebcf955c4b1b258a1db6434ea036b13a3c0b0f439c7bcac3ac0c8394ebe",
+      "archive_bytes": 264452361,
+      "inventory_files": 8802,
+      "moved_and_archive_restored_doctor_passed": true,
+      "complete_acceptance": false
+    },
+    "TCP_binary_exchange": {
+      "eval": true,
+      "Debug": true,
+      "Release": true,
+      "all_connections_retired": true,
+      "full_TCP_corpus": false,
+      "report_sha256": "44dd49194c1e1c5d38e5b717e70e9b65e6642d1ec936d25ca5ce6c5cf5791094",
+      "report_hash_encoding": "canonical JSON, sorted keys, UTF-8 with default ensure_ascii"
+    },
+    "retained_original_SDK_attempt": {
+      "passed_phases": 28,
+      "failed_phase": 29,
+      "archive_sha256": "5aab889d17e707fc7e2c8983544f1ce8096d955b3a0fe506e65924eb36f0066a",
+      "failure": "TCP provider compilation omitted the selected SDK sysroot. An independent probe compiled the same module with the explicit doctor sysroot.",
+      "original_archive_unchanged": true
+    },
+    "complete82_or_current_CUDA_or_full_regression_accepted": false,
+    "positive_IPv6_accepted": false,
+    "intentional_IPv6_policy_unchanged": true
+  },
+  "CIX_ARM64": {
+    "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+    "source_files": 2017,
+    "ordinary_installed_compiler_sha256": "de802213d742e8119dd6d90a61c37158f662fc2fe45cb92e844bcee76d0783b4",
+    "compiler_build": "6371956eab251589f6680c352f81a72f957d72efa17e10b5c02ab7e2d2946ef6",
+    "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+    "GPU_calls": 36,
+    "NPU_calls": 26,
+    "CPU_fallback": false,
+    "native_task_ABI": 7,
+    "typed_device_output_through_suspended_guard_catch_finally": true,
+    "managed_memory_balanced": true,
+    "sealed_raw_archive_sha256": "101d45d5da52c50a747b15f5ef5c052ca894563e28a1c60c4fd53d529cea9470",
+    "portable_or_complete_platform_SDK_accepted": false,
+    "general_GPU_or_NPU_compiler_backend_accepted": false,
+    "followup_source_commit": "2fe5e17c924001e7b58980dca26485275ab97d34",
+    "worker_eight_case_group_passed": true,
+    "private_LLDB_version": "22.1.8",
+    "private_dwarfdump_version": "22.1.8",
+    "remaining_debugging_group_passed": true,
+    "single_full303_passed": false
+  },
+  "Fedora_x86_64": {
+    "source_commit": "78acb4395573f003807b48e1bb5694bf9630f347",
+    "compiler_sha256": "db61e067aa33b5e1586258d422a1033d2f60ef496026e38221f086cf8d92b114",
+    "all_targets_and_four_focused_groups_passed": true,
+    "single_full303_passed": false,
+    "complete_portable_SDK_accepted": false
+  },
+  "raw_report_sha256": {
+    "Mac_full301": "c522aac5831cfe75ac9e15c267915d93fb7416a9a654832a41187170e786c902",
+    "Mac_assembly": "09864c5d4a1bc48e10f26730332f292d985582fb7f0a9e8b7194dcd93b4d877a",
+    "Windows_assembly": "414d72d60f3754e7ae68797ecbff421d0359bb2445459bbd437afeb9b4adc8a5",
+    "CIX_device_receipt": "a8beb693bf5314aaff34413eb871fea71665604ceea2df3ff146eaf39c92b73b"
+  },
+  "new_binary_release_uploaded": false,
+  "full_original_PLAN_complete": false,
+  "universal_binary_safety_or_LLM_savings_proven": false
+}

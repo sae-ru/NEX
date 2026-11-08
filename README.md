@@ -55,9 +55,14 @@ platform acceptance.
 Current source: **toolchain 0.162.2 / language 0.28 / task ABI 7**, in development.
 This follow-up preserves caller floating-point flags during optimized GCC ARM64
 float-to-integer conversion and requires the Windows OpenSSL runtime configuration
-when assembling an explicitly selected cohort. The [GCC runtime record](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
-covers a separately compiled regression probe; combined regression and matching
-SDK delivery remain pending.
+when assembling an explicitly selected cohort. The [current development record](docs/evidence/current-platforms-0.162.2-2026-11-08.json)
+records the complete 301-group macOS source run, the newly assembled macOS and
+Windows SDKs, actual Windows TCP exchange in reference/Debug/Release, and physical
+CIX GPU/NPU calls. Complete matching SDK and Linux/Windows regression acceptance
+remain pending. The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
+retains its narrower scope. Two Python follow-ups accommodate measured cold
+runtime compilation in worker tests and select the SDK sysroot for Windows TCP
+provider compilation; language semantics and task deadlines are unchanged.
 The [ELF runtime search correction](docs/native-runtime-search.md) passed a
 301-group macOS source run and Linux native/package checks. Linux covers all
 303 groups across a retained failed run and its verified notice-argument recovery.
