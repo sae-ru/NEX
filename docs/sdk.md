@@ -24,6 +24,12 @@ dependency closure, SONAME aliases and origin-relative runtime paths. This
 passed three actual link/move/refusal methods on both Debian ARM64 and Fedora
 x86-64; it does not itself qualify a portable Linux SDK.
 
+The [ARM64 SQLite loader fixture](evidence/cix-static-sqlite-ELF-fixture-0.162.2-2026-11-09.json)
+retains dynamic-loader coverage when the selected host SQLite is a PIC static
+archive: it links the real objects into an owned shared library, executes NEX
+storage operations and checks the loaded library path. The original archive,
+Unicode values, cache reuse and rejected invalid ELF directory remain checked.
+
 ## Native Windows acceptance adapter in development
 
 The installed workflow selects native PE executable/DLL names, uses physical

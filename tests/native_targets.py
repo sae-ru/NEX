@@ -74,9 +74,25 @@ server fn main() -> unit !{db,io} {
 
     @unittest.skipUnless(platform.system() == 'Linux', 'ELF runtime library selection')
     def test_selected_sqlite_is_actually_loaded_from_literal_elf_directory(self):
-        original=self.doctor['native_sqlite_library']
+        original=Path(self.doctor['native_sqlite_library'])
+        with original.open('rb') as selected:
+            static=selected.read(8)==b'!<arch>\n'
+        if static:
+            # A static host SDK still needs real dynamic-loader coverage. Link
+            # its genuine PIC SQLite objects into an owned shared fixture; no
+            # symbol stub or ambient replacement library can satisfy this test.
+            archive=original;before=archive.read_bytes()
+            original=self.root/'libnex_selected_sqlite.so.3'
+            linked=subprocess.run([self.doctor['native_compiler'],'-shared','-Wl,-z,defs',
+                '-Wl,-soname,'+original.name,'-Wl,--whole-archive',str(archive),
+                '-Wl,--no-whole-archive','-ldl','-lpthread','-lm','-o',str(original)],
+                capture_output=True,text=True,timeout=120)
+            self.assertEqual(linked.returncode,0,linked.stdout+linked.stderr)
+            self.assertEqual(archive.read_bytes(),before)
         dynamic=subprocess.check_output(['readelf','-d',original],text=True)
-        soname=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic).group(1)
+        identity=re.search(r'\(SONAME\).*?\[([^]]+)\]',dynamic)
+        self.assertIsNotNone(identity,dynamic)
+        soname=identity.group(1)
         directory=self.root/'selected, библиотека % 🧠';directory.mkdir()
         library=directory/soname;shutil.copy2(original,library)
         # This fixture is a complete selected SDK, including private ICU/C++
