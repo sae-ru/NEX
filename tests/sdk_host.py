@@ -1,5 +1,6 @@
 """Relative host-SDK selection, real native tools and rejected broken bundles."""
 from host_fixture import python_executable
+import hashlib
 import importlib.util
 import json
 import os
@@ -57,6 +58,22 @@ class HostSDK(harness.ToolchainCase):
         local = host.global_symbols(self.root/'local.dll', run)
         for name in ('nex_task_frame_call_at', 'nex_retain', 'local__task_step', 'main'):
             self.assertTrue(local[name] & {'T', 'W'}, name)
+        images = [{'path':str(self.root/(name+'.dll')),
+                   'sha256':hashlib.sha256((self.root/(name+'.dll')).read_bytes()).hexdigest()}
+                  for name in ('kernel', 'provider')]
+        refused = self.root/'refused closure';refused.mkdir()
+        with self.assertRaisesRegex(RuntimeError, 'checked closure'):
+            host.copy_owned_images(self.root, refused, [{**images[0], 'sha256':'0'*64}])
+        self.assertEqual(list(refused.iterdir()), [])
+        moved = self.root/'moved closure % 🧠';moved.mkdir()
+        host.copy_owned_images(self.root, moved, images)
+        self.assertEqual({p.name for p in moved.iterdir()}, {'kernel.dll', 'provider.dll'})
+        for name in ('kernel', 'provider'):
+            (self.root/(name+'.dll')).unlink();(self.root/(name+'.dll.a')).unlink()
+        peer = 'import ctypes,os,sys\nwith os.add_dll_directory(sys.argv[1]):\n lib=ctypes.CDLL(os.path.join(sys.argv[1],"provider.dll"));assert lib.provider_answer()==42\n'
+        result = subprocess.run([sys.executable, '-B', '-c', peer, str(moved)],
+                                cwd=moved, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
 
     def stage(self):
         self.original = self.root / 'before relocation'

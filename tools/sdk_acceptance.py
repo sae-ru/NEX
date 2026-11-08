@@ -3295,7 +3295,7 @@ server fn main()->unit!{task,fs,io}{let read:result<str>=leaf::read("text");
             images=json.loads((app_folder/'compilation.json').read_text())['owned_images']
             copied=root/'shared-task-provider-copied';copied.mkdir()
             shutil.copy2(app_folder/sdk_host.executable_name('app'),copied/sdk_host.executable_name('app'))
-            shutil.copytree(app_folder/'images',copied/'images')
+            sdk_host.copy_owned_images(app_folder,copied,images)
             shutil.rmtree(directory)
             previous_resources=environment.get('NEX_RESOURCE_DIR');environment['NEX_RESOURCE_DIR']='/absent'
             try:
@@ -3660,7 +3660,9 @@ pub server fn read()->result<str>!{task,fs}{return file_read_text("unused");}
         original=directory/'.nex/build'/package_meta['build_key']
         images=json.loads((original/'compilation.json').read_text())['owned_images']
         require(sum(row['kind']=='runtime' for row in images)==1,'profile package closure has multiple runtimes')
-        copied=root/'task-provider-profile-copied';copied.mkdir();shutil.copy2(original/sdk_host.executable_name('app'),copied/sdk_host.executable_name('app'));shutil.copytree(original/'images',copied/'images')
+        copied=root/'task-provider-profile-copied';copied.mkdir()
+        shutil.copy2(original/sdk_host.executable_name('app'),copied/sdk_host.executable_name('app'))
+        sdk_host.copy_owned_images(original,copied,images)
         shutil.rmtree(directory);loader_logs=[];raw_reports=[]
         previous={key:environment.pop(key,None) for key in ('NEX_PROFILE_OUTPUT','NEX_PROFILE_EVENTS','NEX_TRACY','NEX_RESOURCE_DIR',
             'DYLD_PRINT_LIBRARIES','DYLD_PRINT_TO_FILE','LD_DEBUG','LD_DEBUG_OUTPUT')}
@@ -5329,7 +5331,9 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
                 'application edit changed independent shared providers/runtime')
         moved_app = root/'moved shared app % 🧠'; moved_app.mkdir()
         executable = Path(edited_images['app']['artifact'])
-        shutil.copy2(executable, moved_app/sdk_host.executable_name('app')); shutil.copytree(executable.parent/'images', moved_app/'images')
+        shutil.copy2(executable, moved_app/sdk_host.executable_name('app'))
+        edited_compilation=json.loads(Path(edited_images['app']['compilation']).read_text())
+        sdk_host.copy_owned_images(executable.parent,moved_app,edited_compilation['owned_images'])
         hidden = root/'retained-shared-project'
         shared_project.rename(hidden)
         try:

@@ -75,6 +75,10 @@ inventory members keep their portable relative-path checks. PE closure DLLs are
 adjacent to the executable; Unix owned images use `images/`, as recorded by the
 compiler's completion metadata. These development helper corrections still need
 their matching newly assembled SDK acceptance.
+Copied PE closures use the declared image list and verify native file identity
+and SHA256 before copying. The native regression executes a moved two-DLL call
+after deleting the original DLLs/import libraries and rejects a changed hash
+before writing any copied image. Unix retains its `images/` tree layout.
 
 The [coherent Windows HTTP receipt](evidence/windows-coherent-http-0.162.2-2026-11-08.json)
 records 29 source cases in reference/Debug/Release, 18 delivery rejections,

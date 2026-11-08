@@ -1,11 +1,13 @@
 """Native host operations shared by the installed SDK acceptance workflow."""
 from contextlib import contextmanager
+import hashlib
 import importlib.util
 import os
 import platform
 from pathlib import Path
 import re
 import signal
+import shutil
 import sqlite3
 import subprocess
 from types import SimpleNamespace
@@ -40,6 +42,27 @@ def owned_image_relative_path(image):
     """Use the compiler's adjacent PE DLL / nested Unix image layout."""
     image = Path(image)
     return image.name if image.suffix == '.dll' else 'images/' + image.name
+
+def copy_owned_images(original, destination, images):
+    """Copy the compiler's checked closure using its native loader layout."""
+    if not isinstance(images, list) or not 1 <= len(images) <= 129:
+        raise RuntimeError('invalid copied native image closure')
+    planned = []
+    names = set()
+    for image in images:
+        path = Path(image['path'])
+        relative = Path(owned_image_relative_path(path))
+        if (relative in names or path.is_symlink() or
+                not same_existing_path(str(path), Path(original)/relative) or
+                hashlib.sha256(path.read_bytes()).hexdigest() != image['sha256']):
+            raise RuntimeError('copied native image differs from its checked closure')
+        names.add(relative)
+        planned.append((path, Path(destination)/relative))
+    if WINDOWS:
+        for source, target in planned:
+            shutil.copy2(source, target)
+    else:
+        shutil.copytree(Path(original)/'images', Path(destination)/'images')
 
 def platform_name():
     machine = {'aarch64':'arm64','arm64':'arm64','AMD64':'x86_64','x86_64':'x86_64'}[platform.machine()]
