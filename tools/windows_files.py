@@ -1,6 +1,7 @@
 """Read a bounded regular Windows file through its no-follow native handle."""
 import ctypes as C
 from ctypes import wintypes as W
+from contextlib import contextmanager
 import os
 
 
@@ -110,35 +111,71 @@ def open_regular_fd(path, maximum):
         if handle is not None:kernel.CloseHandle(handle)
 
 
-def create_private_fd(path):
-    """Create one new owner-only Windows file, without following an alias."""
-    import msvcrt
+@contextmanager
+def _private_attributes(inherit=False):
+    """Keep a protected effective-user/AppContainer descriptor alive for creation."""
     kernel=C.WinDLL('kernel32',use_last_error=True);security=C.WinDLL('advapi32',use_last_error=True)
     kernel.GetCurrentProcess.restype=W.HANDLE;kernel.GetCurrentThread.restype=W.HANDLE
     kernel.CloseHandle.argtypes=[W.HANDLE];kernel.CloseHandle.restype=W.BOOL
     kernel.LocalFree.argtypes=[C.c_void_p];kernel.LocalFree.restype=C.c_void_p
-    kernel.CreateFileW.argtypes=[W.LPCWSTR,W.DWORD,W.DWORD,C.c_void_p,W.DWORD,W.DWORD,W.HANDLE];kernel.CreateFileW.restype=W.HANDLE
     security.OpenThreadToken.argtypes=[W.HANDLE,W.DWORD,W.BOOL,C.POINTER(W.HANDLE)];security.OpenThreadToken.restype=W.BOOL
     security.OpenProcessToken.argtypes=[W.HANDLE,W.DWORD,C.POINTER(W.HANDLE)];security.OpenProcessToken.restype=W.BOOL
     security.GetTokenInformation.argtypes=[W.HANDLE,C.c_int,C.c_void_p,W.DWORD,C.POINTER(W.DWORD)];security.GetTokenInformation.restype=W.BOOL
     security.ConvertSidToStringSidW.argtypes=[C.c_void_p,C.POINTER(C.c_void_p)];security.ConvertSidToStringSidW.restype=W.BOOL
+    security.IsValidSid.argtypes=[C.c_void_p];security.IsValidSid.restype=W.BOOL
     security.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes=[W.LPCWSTR,W.DWORD,C.POINTER(C.c_void_p),C.POINTER(W.DWORD)];security.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype=W.BOOL
-    token=W.HANDLE();sid=C.c_void_p();descriptor=C.c_void_p();handle=None
+    token=W.HANDLE();descriptor=C.c_void_p()
     try:
         if not security.OpenThreadToken(kernel.GetCurrentThread(),8,True,C.byref(token)):
             if C.get_last_error()!=1008 or not security.OpenProcessToken(kernel.GetCurrentProcess(),8,C.byref(token)):raise C.WinError(C.get_last_error())
-        size=W.DWORD();security.GetTokenInformation(token,1,None,0,C.byref(size));user=C.create_string_buffer(size.value)
-        if not security.GetTokenInformation(token,1,user,size,C.byref(size)):raise C.WinError(C.get_last_error())
-        if not security.ConvertSidToStringSidW(C.c_void_p.from_buffer(user),C.byref(sid)):raise C.WinError(C.get_last_error())
-        owner=C.wstring_at(sid)
-        if not security.ConvertStringSecurityDescriptorToSecurityDescriptorW('O:'+owner+'D:P(A;;FA;;;'+owner+')',1,C.byref(descriptor),None):raise C.WinError(C.get_last_error())
+        def sid_text(kind):
+            size=W.DWORD();security.GetTokenInformation(token,kind,None,0,C.byref(size))
+            if not C.sizeof(C.c_void_p)<=size.value<=65536:
+                raise RuntimeError('invalid Windows token SID information size')
+            data=C.create_string_buffer(size.value)
+            if not security.GetTokenInformation(token,kind,data,size,C.byref(size)):raise C.WinError(C.get_last_error())
+            sid=C.c_void_p.from_buffer(data).value
+            if not sid or not security.IsValidSid(sid):raise RuntimeError('invalid Windows token SID')
+            text=C.c_void_p()
+            if not security.ConvertSidToStringSidW(sid,C.byref(text)):raise C.WinError(C.get_last_error())
+            try:return C.wstring_at(text)
+            finally:kernel.LocalFree(text)
+        owner=sid_text(1);principals=[owner]
+        flag=W.DWORD();size=W.DWORD()
+        if not security.GetTokenInformation(token,29,C.byref(flag),C.sizeof(flag),C.byref(size)):raise C.WinError(C.get_last_error())
+        if flag.value not in (0,1):raise RuntimeError('invalid Windows AppContainer token flag')
+        if flag.value:
+            container=sid_text(31)
+            if container==owner:raise RuntimeError('invalid Windows AppContainer principal')
+            principals.append(container)
+        flags='OICI' if inherit else ''
+        sddl='O:'+owner+'D:P'+''.join('(A;'+flags+';FA;;;'+principal+')'for principal in principals)
+        if not security.ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl,1,C.byref(descriptor),None):raise C.WinError(C.get_last_error())
         class Attributes(C.Structure):_fields_=[('size',W.DWORD),('descriptor',C.c_void_p),('inherit',W.BOOL)]
         attributes=Attributes(C.sizeof(Attributes),descriptor,False)
+        yield kernel,attributes
+    finally:
+        if descriptor:kernel.LocalFree(descriptor)
+        if token:kernel.CloseHandle(token)
+
+
+def create_private_directory(path):
+    """Atomically create a new directory for the effective private principals."""
+    with _private_attributes(inherit=True)as(kernel,attributes):
+        kernel.CreateDirectoryW.argtypes=[W.LPCWSTR,C.c_void_p];kernel.CreateDirectoryW.restype=W.BOOL
+        if not kernel.CreateDirectoryW(os.path.abspath(os.fspath(path)),C.byref(attributes)):
+            raise C.WinError(C.get_last_error())
+
+
+def create_private_fd(path):
+    """Create one new effective-user/AppContainer file without following an alias."""
+    import msvcrt
+    handle=None
+    with _private_attributes()as(kernel,attributes):
+        kernel.CreateFileW.argtypes=[W.LPCWSTR,W.DWORD,W.DWORD,C.c_void_p,W.DWORD,W.DWORD,W.HANDLE];kernel.CreateFileW.restype=W.HANDLE
         handle=kernel.CreateFileW(os.path.abspath(os.fspath(path)),0x40000000,0,C.byref(attributes),1,0x80,None)
         if handle==C.c_void_p(-1).value:handle=None;raise C.WinError(C.get_last_error())
+    try:
         result=msvcrt.open_osfhandle(handle,os.O_WRONLY|os.O_BINARY|os.O_NOINHERIT);handle=None;return result
     finally:
         if handle is not None:kernel.CloseHandle(handle)
-        if descriptor:kernel.LocalFree(descriptor)
-        if sid:kernel.LocalFree(sid)
-        if token:kernel.CloseHandle(token)

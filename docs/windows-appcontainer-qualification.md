@@ -158,6 +158,32 @@ networking and device acceptance remain separate. The [private-code core receipt
 pins the host sources and exact SDK. The same compiler's [physical CUDA receipt](evidence/windows-CUDA-0.162.1-2026-11-08.json)
 records its separate device and Compute Sanitizer checks.
 
+## Provider staging and private tool files
+
+The [0.162.2 provider-principal record](evidence/windows-provider-principals-0.162.2-2026-11-08.json)
+qualifies two candidate Python helpers against the unchanged native compiler.
+Python 3.14's Windows `mkdir0700` descriptor omitted the current AppContainer
+principal, so the linker could not create `provider.dll` in that private directory.
+The helper now creates the directory atomically with a protected DACL for the
+effective user and, when present, that token's current AppContainer SID. Private
+tool files use the same principal selection. Ordinary tokens retain user-only
+access; no inherited broad grant is added.
+
+Actual ordinary Python 3.10/3.14 and an AppContainer Python 3.14 peer created and
+read the private files, rejected existing destinations and retained non-inheriting
+file descriptors. Captured directory/file DACLs contained exactly one ordinary
+principal or the user/container pair. Actual TCP binary exchange then passed in
+reference, Debug and Release, with no live sockets remaining. Source, dependency
+and opposite-profile denial controls remained enforced; code copies stayed
+read-only. All new code roots, profiles, parents and temporary SDK copies were
+removed.
+
+This was an explicitly modified experimental SDK copy. Its final inventory check
+correctly rejected the old bundle manifest's hashes for the two changed helpers;
+the overall pilot remains failed. The scoped OS/TCP results do not accept a new
+coherent SDK. A fresh same-source installation, bundle and complete workflow
+qualification are still required.
+
 ## Build and calibrate
 
 From a source checkout, select a complete native LLVM-MinGW toolchain and a

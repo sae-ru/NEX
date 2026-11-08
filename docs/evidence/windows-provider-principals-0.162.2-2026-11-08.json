@@ -1,0 +1,50 @@
+{
+  "schema": "nex.Windows-private-provider-principals-development/1",
+  "date": "2026-11-08",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "base_source_commit": "3bdad7ab365c3d794d403031ad3ae2bfcec09b12",
+  "candidate_helper_sha256": {
+    "windows_files.py": "0197f6ef3bcda4e455053612f918e7fe51b57896dd988ec5514df602db7450c2",
+    "provider_sdk.py": "f2a15dde3e723fa72a5c161d566239aa2d1c4cf52472fafc0a70125249a72028"
+  },
+  "compiler_sha256": "de0eedc14d3bedb57b908704fe1c2dec5d1fa390c5b8d878616ed2c016504b68",
+  "base_SDK_archive_sha256": "37ca8ebcf955c4b1b258a1db6434ea036b13a3c0b0f439c7bcac3ac0c8394ebe",
+  "candidate_resource_overlays_explicit": true,
+  "original_failure": "Python3.14 private0700 staging directory omitted the AppContainer principal; ld.lld could not create provider.dll.",
+  "correction": "Atomically create a protected DACL for the effective user and, only when present, its current AppContainer SID. Private files share the same principal selection.",
+  "observed_contracts": {
+    "ordinary_Python310": "3.10.11",
+    "ordinary_Python314": "3.14.3",
+    "AppContainer_peer_Python": "3.14.3",
+    "ordinary_DACL_principals": 1,
+    "AppContainer_DACL_principals": 2,
+    "directory_and_file_DACLs_protected": true,
+    "existing_targets_rejected": true,
+    "noninheriting_CRT_file_descriptors": true,
+    "source_dependency_opposite_profile_denials": {
+      "outside_source_denied": true,
+      "outside_SDK_denied": true,
+      "opposite_profile_denied": true,
+      "own_SDK_readonly": true,
+      "own_work_writable": true
+    },
+    "TCP_binary_modes": [
+      "eval",
+      "debug",
+      "release"
+    ],
+    "all_TCP_connections_retired": true,
+    "native_authoring_build_run_and_test": true,
+    "readonly_private_code_copies_verified": true
+  },
+  "pilot_overall_ok": false,
+  "retained_final_failure": "Unmodified base SDK manifest rejected the two intentionally changed experimental helpers. Actual DACL/TCP results above passed before that check.",
+  "all_profiles_parents_code_roots_and_candidate_SDK_removed": true,
+  "outside_profile_ACLs_or_network_policy_changed": false,
+  "complete_coherent_SDK_accepted": false,
+  "new_binary_release_uploaded": false,
+  "whole_original_PLAN_complete": false,
+  "raw_report_sha256": "a77474ee70942177f7703ce60a7a893782136d4892a960d749dd539a60afeb1f"
+}

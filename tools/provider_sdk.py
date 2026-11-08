@@ -50,7 +50,19 @@ def native_compile(arguments, **kwargs):
     directory=Path(os.environ.get('NEX_PROVIDER_BUILD_ROOT',tempfile.gettempdir()))
     if not directory.is_absolute() or not str(directory).isascii() or '%' in str(directory) or not directory.is_dir():
         raise RuntimeError('Windows provider linking requires an absolute ASCII directory; select NEX_PROVIDER_BUILD_ROOT')
-    staging=Path(tempfile.mkdtemp(prefix='nex-provider-',dir=directory))
+    # Python's Windows mkdir0700 descriptor omits the AppContainer principal.
+    # Create the private descriptor atomically, using the same effective
+    # user/container pair as native runtime snapshots and private tool files.
+    import importlib.util
+    import uuid
+    spec=importlib.util.spec_from_file_location('_nex_provider_windows_files',Path(__file__).with_name('windows_files.py'))
+    files=importlib.util.module_from_spec(spec);spec.loader.exec_module(files)
+    for attempt in range(10):
+        staging=directory/('nex-provider-'+uuid.uuid4().hex)
+        try:files.create_private_directory(staging)
+        except FileExistsError:continue
+        break
+    else:raise RuntimeError('cannot create a unique private provider workspace')
     artifact=staging/('provider'+requested.suffix)
     command[index]=str(artifact)
     try:
