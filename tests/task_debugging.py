@@ -104,6 +104,31 @@ class TaskDebugging(harness.ToolchainCase):
             self.file=self.root/'main.nex'
         (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
 
+    def test_windows_source_maps_match_mixed_separators_and_deleted_originals(self):
+        reader=reader_module();reader.os=SimpleNamespace(name='nt')
+        anchor=r'F:\NEX SDK % 🧠\project\.nex/build\source-anchors\revision'
+        projection=r'F:\NEX SDK % 🧠\project\.nex/build\source-cache\unit'
+        original=r'F:\NEX SDK % 🧠\project\main.nex'
+        context={'source_map':[[anchor,projection]],
+                 'sources':[{'original':original,'projection':projection+r'\source.nex'}]}
+        recorded=anchor+r'\source.nex'
+        self.assertEqual(reader._task_source(context,recorded),
+                         projection.replace('\\','/')+'/source.nex')
+        for requested in [recorded,projection+r'\source.nex',
+                          projection.replace('\\','/')+'/source.nex',original]:
+            self.assertTrue(reader._task_source_matches(context,requested,recorded),requested)
+        self.assertFalse(reader._task_source_matches(context,projection+r'\other.nex',recorded))
+        sibling=anchor+'-other'+r'\source.nex'
+        self.assertEqual(reader._task_source(context,sibling),sibling.replace('\\','/'))
+        self.assertFalse(reader._task_source_matches(context,None,recorded))
+
+    def test_posix_source_maps_keep_literal_backslashes_and_longest_prefix(self):
+        reader=reader_module();reader.os=SimpleNamespace(name='posix')
+        context={'source_map':[['/frozen','/cache'],['/frozen/a\\b','/specific']]}
+        self.assertEqual(reader._task_source(context,'/frozen/a\\b/source.nex'),'/specific/source.nex')
+        self.assertEqual(reader._task_source(context,'/frozen/a/b/source.nex'),'/cache/a/b/source.nex')
+        self.assertFalse(reader._task_source_matches(context,'/specific/source.nex','/frozen/a/b/source.nex'))
+
     def test_resume_ignores_stale_restarted_and_other_process_stops(self):
         reader=reader_module()
         debugger,process,listener,error=resume_fixture(reader,[

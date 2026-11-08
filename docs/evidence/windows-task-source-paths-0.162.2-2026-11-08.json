@@ -1,0 +1,48 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "scope": "Logical source breakpoint mapping for mixed Windows separators and archived/deleted source",
+  "candidate_formatter_sha256": "d055030fa46c1963d7176d4f6751e0374dc883c160625778121de9ea101ffbe7",
+  "native_compiler_inputs_or_language_changed": false,
+  "Windows": {
+    "compiler_sha256": "de0eedc14d3bedb57b908704fe1c2dec5d1fa390c5b8d878616ed2c016504b68",
+    "SDK_archive_sha256": "37ca8ebcf955c4b1b258a1db6434ea036b13a3c0b0f439c7bcac3ac0c8394ebe",
+    "original_unverified_breakpoint_reproduced": true,
+    "actual_Python_versions": [
+      "3.10.11",
+      "3.14.3"
+    ],
+    "candidate_both_passed": [
+      "verified source breakpoint",
+      "logical child and caller stack",
+      "initialized locals",
+      "pure scalar and immutable aggregate watches",
+      "logical next on same activation",
+      "stale watch reference rejection",
+      "graceful exit"
+    ],
+    "existing_SDK_or_archive_modified": false,
+    "new_coherent_SDK_accepted": false
+  },
+  "Mac": {
+    "compiler_sha256": "1be696c6c4d8347d38e0b4bf1fdd912bc642715344ba284fa7957904ad223711",
+    "actual_task_debugging_tests": 17,
+    "whole_group_passed": true,
+    "original_budget_seconds": 900,
+    "seconds": 83.34217862505466,
+    "first_attempt_failed_before_inferior_launch": true,
+    "independent_plain_C_control_reproduced_sandbox_launch_denial": true,
+    "same_LLDB_and_both_temporary_paths_passed_with_debugger_access": true,
+    "original_failed_attempt_preserved": true
+  },
+  "source_map_unit_controls": [
+    "Windows mixed separators, spaces, percent and non-BMP Unicode",
+    "deleted original alias",
+    "different filename and sibling-prefix refusal",
+    "POSIX literal backslash preservation",
+    "longest mapped prefix"
+  ],
+  "CIX_intermittent_logical_stepping_fixed": false,
+  "complete_cross_platform_SDK_accepted": false
+}

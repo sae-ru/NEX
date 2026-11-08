@@ -2193,18 +2193,31 @@ def _task_context(debugger):
     return context
 
 
+def _task_source_key(source):
+    # Windows manifests can contain both separators in one path. Resolve the
+    # lexical source map without requiring archived/deleted sources to exist.
+    return source.replace('\\', '/') if os.name == 'nt' else source
+
+
 def _task_source(context, source):
+    source = _task_source_key(source)
     for origin, projection in sorted(context.get('source_map', []), key=lambda pair: len(pair[0]), reverse=True):
-        if source == origin or source.startswith(origin.rstrip('/') + '/'):
-            return projection.rstrip('/') + source[len(origin.rstrip('/')):]
+        origin = _task_source_key(origin).rstrip('/')
+        if source == origin or source.startswith(origin + '/'):
+            return _task_source_key(projection).rstrip('/') + source[len(origin):]
     return source
 
 
 def _task_source_matches(context, requested, recorded):
-    if requested in (recorded, _task_source(context, recorded)):
+    if not isinstance(requested, str):
+        return False
+    requested = _task_source_key(requested)
+    if requested in (_task_source_key(recorded), _task_source(context, recorded)):
         return True
     projection = _task_source(context, recorded)
-    return any(entry.get('original') == requested and entry.get('projection') == projection
+    return any(isinstance(entry.get('original'), str) and isinstance(entry.get('projection'), str)
+               and _task_source_key(entry['original']) == requested
+               and _task_source_key(entry['projection']) == projection
                for entry in context.get('sources', []))
 
 
