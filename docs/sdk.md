@@ -43,6 +43,20 @@ The standalone source-resource debugger and dependent-resource checks use the
 same selected driver and sysroot; their child processes do not rely on an
 ambient C/C++ compiler on `PATH`.
 
+Retained provider acceptance compares absolute paths using the host's path rules
+and the actual filesystem identity. This accepts mixed Windows separators without
+accepting another file or an outside hard link. Portable relative inventory names,
+ordered completion inputs, compiler-issued BLAKE3 pins, independent SHA256/byte
+checks and source-deleted replay remain checked. Executable records use `app.exe`
+on Windows. The earlier failed complete workflow is preserved; this correction
+requires a newly assembled SDK and fresh complete acceptance.
+
+The [coherent Windows HTTP receipt](evidence/windows-coherent-http-0.162.2-2026-11-08.json)
+records 29 source cases in reference/Debug/Release, 18 delivery rejections,
+three complete 15-case stream groups and source-deleted HTTP/HTTPS2 packages.
+It rehashes the original compiler, full source snapshot and selected dependency
+libraries. The receipt excludes positive IPv6 and complete portable SDK acceptance.
+
 ### Explicit profile for a Windows host that intentionally denies IPv6
 
 The default `--network-profile full` retains all 41 current SDK phases and

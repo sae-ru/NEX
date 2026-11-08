@@ -67,6 +67,10 @@ SDK acceptance remain pending. A later coherent Windows SDK passed
 [ten actual AppContainer cases and TCP in three modes](docs/evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json),
 then [35 physical CUDA and 36 Compute Sanitizer cases](docs/evidence/windows-SDK-CUDA-0.162.2-2026-11-08.json).
 Those receipts pin the new archive and do not accept its unfinished full SDK workflow.
+The [matching Windows HTTP dependency cohort](docs/evidence/windows-coherent-http-0.162.2-2026-11-08.json)
+passed 87 selected source comparisons and all five delivery/stream groups,
+including source-deleted packages and HTTP/1.1, HTTPS and HTTP/2 streams.
+Positive IPv6 and complete portable SDK acceptance remain separate.
 The [task-resume correction](docs/evidence/lldb-primary-resume-0.162.2-2026-11-08.json)
 passed the updated15-case debugger group on macOS ARM64, Windows x86-64 and
 Debian ARM64. Matching complete regression and SDK delivery remain separate.
