@@ -63,7 +63,11 @@ Windows CUDA and CIX GPU/NPU calls. The [exact macOS development SDK](docs/evide
 now passed matching source, moved/restored, browser, OpenCL, workflow, schema and
 sanitizer-control gates. [Fedora passed all 303 groups](docs/evidence/fedora-full303-0.162.2-2026-11-08.json)
 and ordinary installed smoke. Windows/CIX regressions and Windows/Linux portable
-SDK acceptance remain pending. The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
+SDK acceptance remain pending. A later coherent Windows SDK passed
+[ten actual AppContainer cases and TCP in three modes](docs/evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json),
+then [35 physical CUDA and 36 Compute Sanitizer cases](docs/evidence/windows-SDK-CUDA-0.162.2-2026-11-08.json).
+Those receipts pin the new archive and do not accept its unfinished full SDK workflow.
+The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP
 provider compilation; language semantics and task deadlines are unchanged.

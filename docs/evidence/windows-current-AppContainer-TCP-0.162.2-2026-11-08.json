@@ -1,0 +1,32 @@
+{
+  "schema": "nex.scoped-development-evidence/1",
+  "ok": true,
+  "source_commit": "05f01d69da0fe1f782d1f4558ba350738eef5d94",
+  "compiler_sha256": "977058a8090bbfe6bf53b1e13bf53cf20a2f85a819bd01fd7ce523da466fb2d3",
+  "SDK_archive_sha256": "1bda62f5148fe87a2d5303dd9e66eaca162db6994b920214439a53bc926a8f0f",
+  "actual_AppContainer_cases": 10,
+  "actual_Python": "3.14.3",
+  "actual_TCP_modes": [
+    "eval",
+    "debug",
+    "release"
+  ],
+  "all_TCP_resource_ledgers_balanced": true,
+  "original_source_and_SDK_and_archive_revalidated": true,
+  "no_resource_overlays": true,
+  "all_owned_children_reaped": true,
+  "private_code_and_profile_parent_absence_verified": true,
+  "outside_source_dependencies_opposite_profile_read_denied": true,
+  "own_SDK_readonly_and_work_writable": true,
+  "raw_files": 92,
+  "raw_inventory_sha256": "52edf8ecdcfec8ac88ffac78bbf1bf07f855b442db6b05a2cd36f083fd75f0a5",
+  "raw_archive_sha256": "9918a17e2c4ff321d610bed4096438ca0ba552c2b56a01c15bc1733392e90c33",
+  "raw_archive_bytes": 121045,
+  "controller_retired": true,
+  "complete82_or_full_SDK_accepted": false,
+  "whole_original_PLAN_complete": false,
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "scope": "Exact fresh coherent SDK in a newly owned private Medium code root and actual AppContainer; not complete portable SDK acceptance",
+  "prior_failed_archives_and_experimental_overlay_pilot_preserved": true
+}

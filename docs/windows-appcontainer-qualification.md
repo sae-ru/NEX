@@ -5,6 +5,26 @@ tests. It creates a fresh ephemeral Windows AppContainer profile, copies an SDK
 into it, and runs controlled programs through the native Job Object observer.
 It does not add a NEX language feature or automatically sandbox NEX applications.
 
+## Current coherent SDK follow-up
+
+The [0.162.2 coherent-SDK receipt](evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json)
+records ten actual AppContainer cases on the freshly assembled SDK from source
+`05f01d69da0fe1f782d1f4558ba350738eef5d94`, archive
+`1bda62f5148fe87a2d5303dd9e66eaca162db6994b920214439a53bc926a8f0f`.
+Native checking, reference execution, debug compilation/execution and tests ran
+with actual copied Python3.14.3. TCP binary exchange passed in reference, Debug
+and Release, with every socket ledger balanced. Source, dependency and opposite
+profile reads were denied; the selected SDK was read-only and its work area
+writable. This SDK used no resource overlays.
+
+The independent receipt rechecks all source files, the original SDK inventory
+and archive. All owned children retired, and private code/profile parent
+directories were absent after cleanup. This closes the recorded private-provider
+staging regression for that exact archive. Complete moved/restored SDK acceptance
+and a general application sandbox remain separate work.
+
+## Broker prerequisites and earlier qualification
+
 Use a non-elevated, unpackaged Python 3.10+ broker on native Windows and a
 separately built, calibrated observer. Microsoft Store Python is explicitly
 rejected before profile creation: its package identity changes profile layout
@@ -44,7 +64,8 @@ their parent directories were removed. Separate generated Python parent/client
 pairs completed same-profile IPv4 loopback with empty and explicit network
 capabilities; those two profiles were also removed. No loopback exemption or
 other network setting changed. This is measured Python behavior on that host;
-NEX execution and complete SDK filesystem isolation remain unverified.
+Those Python-only receipts do not verify NEX execution or complete SDK
+filesystem isolation; the coherent native follow-up above has its own scope.
 
 ## Native NEX runtime follow-up
 
