@@ -2,6 +2,7 @@
 import json,os,shutil,subprocess,unittest
 from pathlib import Path
 import support as harness
+import package_notices
 import packaging as native_packaging
 
 class ProjectPackageTasks(harness.ToolchainCase):
@@ -17,6 +18,13 @@ class ProjectPackageTasks(harness.ToolchainCase):
         task.update(checks=[{'id':'package','kind':'package','program':'app','configuration':'release','target':target,'timeout_seconds':300}],
           requirements=[{'id':'delivery','text':'Capture the reviewed application package without running it',
             'targets':[target],'checks':['package'],'bindings':[{'program':'app','kind':'function','symbol':symbol}]}])
+        if target!='web':
+            if not hasattr(self,'operator_notices'):
+                self.operator_notices=package_notices.retain(self.root/'operator-notices')
+            notices=self.operator_notices
+            if notices:
+                inspected=self.cli('task',notices,'--kind','notices')
+                task['checks'][0].update(notices=notices.relative_to(self.root).as_posix(),notices_hash=inspected['inputs_hash'])
         (self.root/'task.json').write_text(json.dumps(task), newline="\n");return task
     def run_task(self,directory):
         # A normal caller need not set Python's bytecode-cache policy. Package

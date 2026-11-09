@@ -18,6 +18,17 @@ in one unfiltered invocation, with unchanged deadlines and preserved primary
 source/graph. Matching SDK and remaining platform qualification remain pending;
 later Windows builder and experimental provider changes have separate records.
 
+The subsequent [source package/SDK checker correction](docs/evidence/source-package-notices-parent-prefix-0.164.0-2026-11-09.json)
+forwards explicit private-runtime notices through eight additional package
+fixtures. Nine groups passed across the retained initial run and targeted
+recovery; pure web package tasks retain their original no-native-notice path.
+The same correction updates the SDK checker from37 to43 dependent-resource
+checks for0.164, requiring six distinct C11/C++20 executions against the frozen
+304-byte parent-table prefix. The actual43-case installed report passed; its
+old aggregate checker rejected it. That failed immutable archive remains
+unaccepted. The corrected validator passed108 unit tests. Fresh matching full
+source and immutable SDK qualification remain required.
+
 The separate [generated-protocol corpus](docs/evidence/macos-generated-Metal-protocol-0.164.0-2026-11-09.json)
 now passed16 native/reference pairs over14 corrupt reply payloads, failed-session
 reuse refusal and direct protocol-trap forwarding. Three log/cache pairs kept

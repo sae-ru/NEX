@@ -12,6 +12,7 @@ import subprocess
 import sys
 import unittest
 import support as harness
+import package_notices
 
 
 LIMITS = {'steps': 1000000, 'timeout_ms': 10000, 'workers': 2}
@@ -119,7 +120,8 @@ class StaticTaskProviders(harness.ToolchainCase):
         return json.loads(result.stdout)
 
     def project(self, kind='build', component='app', configuration='debug', *args, **kwargs):
-        return self.cli('project','--kind',kind,'--component',component,'--configuration',configuration,*args,**kwargs)
+        notices=package_notices.flags() if kind=='package' and '--notices' not in args else []
+        return self.cli('project','--kind',kind,'--component',component,'--configuration',configuration,*notices,*args,**kwargs)
 
     def artifacts(self, result):
         return {row['component']:row for row in result['artifacts']}

@@ -16,6 +16,7 @@ REPORT_PROBE=None
 if '--report-probe' in sys.argv:
     at=sys.argv.index('--report-probe');REPORT_PROBE=str(Path(sys.argv[at+1]).resolve());del sys.argv[at:at+2]
 import support as harness
+import package_notices
 import task_shared_provider as shared
 
 
@@ -122,7 +123,8 @@ class TaskProviderProfiles(harness.ToolchainCase):
 
     def project(self,kind='build',component='app',configuration='measured',*args,**kwargs):
         selection=[] if component is None else ['--component',component]
-        return self.cli('project','--kind',kind,*selection,'--configuration',configuration,*args,**kwargs)
+        notices=package_notices.flags() if kind=='package' and '--notices' not in args else []
+        return self.cli('project','--kind',kind,*selection,'--configuration',configuration,*notices,*args,**kwargs)
 
     artifacts=shared.SharedTaskProviders.artifacts
     functions=shared.SharedTaskProviders.functions

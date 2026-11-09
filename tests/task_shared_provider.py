@@ -14,6 +14,7 @@ import subprocess
 import sys
 import unittest
 import support as harness
+import package_notices
 import task_static_provider as fixture
 
 
@@ -73,7 +74,8 @@ class SharedTaskProviders(harness.ToolchainCase):
 
     def project(self,kind='build',component='app',configuration='debug',*args,**kwargs):
         selection=[] if component is None else ['--component',component]
-        return self.cli('project','--kind',kind,*selection,'--configuration',configuration,*args,**kwargs)
+        notices=package_notices.flags() if kind=='package' and '--notices' not in args else []
+        return self.cli('project','--kind',kind,*selection,'--configuration',configuration,*notices,*args,**kwargs)
 
     artifacts = fixture.StaticTaskProviders.artifacts
     functions = fixture.StaticTaskProviders.functions

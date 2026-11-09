@@ -1132,6 +1132,38 @@ def validate_owned_metal_evidence(report):
             'SDK acceptance lacks complete Metal source-fixture evidence')
 
 
+def dependent_resource_source_check_count(toolchain):
+    parts = toolchain.split('.') if isinstance(toolchain, str) else []
+    require(len(parts) == 3 and all(p.isascii() and p.isdigit() for p in parts),
+            'invalid dependent resource toolchain version')
+    return 43 if tuple(map(int, parts)) >= (0, 164, 0) else 37
+
+
+def validate_dependent_resource_source_report(proof, *, compiler_sha256, toolchain, language):
+    count = dependent_resource_source_check_count(toolchain)
+    require(isinstance(proof, dict) and proof.get('schema') == 'nex.dependent-resource-source/1' and
+            proof.get('ok') is True and proof.get('source_parent_FFI') is True and
+            proof.get('compiler_sha256') == compiler_sha256 and
+            isinstance(proof.get('checks'), list) and len(proof['checks']) == count and
+            proof.get('actual_producers') == ['C11', 'CPP20'] and proof.get('actual_GPU_NPU_resources') is False,
+            'SDK acceptance lacks actual dependent resource source report')
+    if count == 43:
+        checks = proof['checks']
+        require(proof.get('language') == language and all(isinstance(row, dict) for row in checks),
+                'SDK acceptance dependent resource source identities differ')
+        parents = [row for row in checks if 'genuine_previous_parent_header' in row]
+        cases = ('hidden_parent_scope_return', 'transitive_hidden_parents', 'close_during_admitted_factory')
+        require(len(parents) == 6 and all(row.get('dialect') in ('C11', 'CPP20') and row.get('case') in cases and
+                row.get('genuine_previous_parent_header') == '638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe' and
+                type(row.get('previous_parent_table_bytes')) is int and row['previous_parent_table_bytes'] == 304 and
+                row.get('native_and_independent_AST') is True and row.get('child_before_parent_destruction') is True
+                for row in parents), 'SDK acceptance lacks genuine previous parent-table execution')
+        require({(row['dialect'], row['case']) for row in parents} ==
+                {(dialect, case) for dialect in ('C11', 'CPP20') for case in cases},
+                'SDK acceptance previous parent-table cases are missing or duplicated')
+    return count
+
+
 def validate_completed_report(report, *, expected_network_profile='full'):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -1265,16 +1297,14 @@ def validate_completed_report(report, *, expected_network_profile='full'):
                 'SDK acceptance lacks actual owned device preparation evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,131,0):
         dependent=report.get('evidence',{}).get('dependent_resource_ffi',{})
-        require(isinstance(dependent,dict) and type(dependent.get('source_checks')) is int and dependent['source_checks']==37 and
+        dependent_count=dependent_resource_source_check_count(report['version'])
+        require(isinstance(dependent,dict) and type(dependent.get('source_checks')) is int and dependent['source_checks']==dependent_count and
                 all(dependent.get(key) is True for key in ('ok','native_reference','genuine_previous_C_prefix',
                     'hidden_parent_scope_future_channel_closure','physical_parent_quota','cancel_deadline_borrow_fence','source_deleted_replay','client_exclusion')),
                 'SDK acceptance lacks installed dependent resource FFI evidence')
         proof=dependent.get('source_report',{})
-        require(isinstance(proof,dict) and proof.get('schema')=='nex.dependent-resource-source/1' and
-                proof.get('ok') is True and proof.get('source_parent_FFI') is True and proof.get('compiler_sha256')==report.get('compiler_sha256') and
-                isinstance(proof.get('checks'),list) and len(proof['checks'])==37 and
-                proof.get('actual_producers')==['C11','CPP20'] and proof.get('actual_GPU_NPU_resources') is False,
-                'SDK acceptance lacks actual dependent resource source report')
+        validate_dependent_resource_source_report(proof,compiler_sha256=report.get('compiler_sha256'),
+            toolchain=report['version'],language=report.get('language'))
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,130,0):
         require(report.get('version')==report.get('doctor',{}).get('version') and report.get('language')==('0.28' if tuple(map(int,version))>=(0,159,0) else '0.27' if tuple(map(int,version))>=(0,151,0) else '0.26' if tuple(map(int,version))>=(0,137,0) else '0.25' if tuple(map(int,version))>=(0,136,0) else '0.24' if tuple(map(int,version))>=(0,134,0) else '0.23' if tuple(map(int,version))>=(0,133,0) else '0.22'),
                 'SDK acceptance source task/FFI version identities differ')
@@ -5604,12 +5634,11 @@ test fn bridge_checks()->unit{assert(render(2)=="42 🧠");}
         destination=root/'dependent-resource-source'
         run([sys.executable,'-B',tool,'--compiler',compiler,'--output',destination],timeout=1800)
         dependent=json.loads((destination/'report.json').read_text())
-        require(dependent.get('ok') is True and dependent.get('compiler_sha256')==report['compiler_sha256'] and
-                dependent.get('actual_producers')==['C11','CPP20'] and len(dependent.get('checks',[]))==37,
-                'installed dependent resources differ from actual compiler/source checks')
+        count=validate_dependent_resource_source_report(dependent,compiler_sha256=report['compiler_sha256'],
+            toolchain=report['version'],language=report['language'])
         report['evidence']['dependent_resource_ffi']={key:True for key in ('ok','native_reference','genuine_previous_C_prefix',
             'hidden_parent_scope_future_channel_closure','physical_parent_quota','cancel_deadline_borrow_fence','source_deleted_replay','client_exclusion')}
-        report['evidence']['dependent_resource_ffi'].update(source_checks=37,source_report=dependent,
+        report['evidence']['dependent_resource_ffi'].update(source_checks=count,source_report=dependent,
             source_report_sha256=hashlib.sha256((destination/'report.json').read_bytes()).hexdigest())
 
     def source_exceptions():

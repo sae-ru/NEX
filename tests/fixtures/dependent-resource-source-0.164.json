@@ -1,0 +1,286 @@
+{
+  "schema": "nex.dependent-resource-source/1",
+  "ok": true,
+  "checks": [
+    {
+      "dialect": "C11",
+      "case": "closed_parent_rejected_before_factory",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "closed_parent_storage",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "shared_parent_two_children",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "duplicate_parent_aliases",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "close_during_admitted_factory",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "hidden_parent_scope_return",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "hidden_parent_future_result",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "hidden_parent_sibling_channel",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "transitive_hidden_parents",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "dependent_closure_return",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "C_argument_thread_and_stale_tokens",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "failed_factory_rolls_back",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "closed_parent_keeps_physical_quota",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "C11",
+      "case": "checked_exit",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "C11",
+      "case": "cancel_admitted_child",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "C11",
+      "case": "deadline_admitted_child",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "C11",
+      "source_deleted_replay": true,
+      "client_reachability": true
+    },
+    {
+      "dialect": "C11",
+      "genuine_previous_resource_header": "5fb36a07bbe06e7a51dd94047ddfbfc55989760995234ea2718de13d5d368c3f",
+      "previous_resource_table_bytes": 296,
+      "native_and_independent_AST": true,
+      "legacy_factory_borrow_close": true
+    },
+    {
+      "dialect": "C11",
+      "case": "hidden_parent_scope_return",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    },
+    {
+      "dialect": "C11",
+      "case": "transitive_hidden_parents",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    },
+    {
+      "dialect": "C11",
+      "case": "close_during_admitted_factory",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "closed_parent_rejected_before_factory",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "closed_parent_storage",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "shared_parent_two_children",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "duplicate_parent_aliases",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "close_during_admitted_factory",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "hidden_parent_scope_return",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "hidden_parent_future_result",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "hidden_parent_sibling_channel",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "transitive_hidden_parents",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "dependent_closure_return",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "C_argument_thread_and_stale_tokens",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "failed_factory_rolls_back",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "closed_parent_keeps_physical_quota",
+      "native_and_independent_AST": true,
+      "physical_scope_capacity_zero": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "checked_exit",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "cancel_admitted_child",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "deadline_admitted_child",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "throwing_factory",
+      "native_and_independent_AST": true,
+      "checked_cleanup": true
+    },
+    {
+      "dialect": "CPP20",
+      "source_deleted_replay": true,
+      "client_reachability": true
+    },
+    {
+      "dialect": "CPP20",
+      "genuine_previous_resource_header": "5fb36a07bbe06e7a51dd94047ddfbfc55989760995234ea2718de13d5d368c3f",
+      "previous_resource_table_bytes": 296,
+      "native_and_independent_AST": true,
+      "legacy_factory_borrow_close": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "hidden_parent_scope_return",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "transitive_hidden_parents",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    },
+    {
+      "dialect": "CPP20",
+      "case": "close_during_admitted_factory",
+      "genuine_previous_parent_header": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+      "previous_parent_table_bytes": 304,
+      "native_and_independent_AST": true,
+      "child_before_parent_destruction": true
+    }
+  ],
+  "compiler_sha256": "1a3574ef721f69dbeff08c4ed32d84aedf4be8fbc5cbf1e13b83d44eeb5601e9",
+  "language": "0.28",
+  "actual_GPU_NPU_resources": false,
+  "seconds": 345.83,
+  "state": "passed",
+  "actual_producers": [
+    "C11",
+    "CPP20"
+  ],
+  "source_parent_FFI": true
+}

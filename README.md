@@ -64,6 +64,9 @@ Metal pairs with36 physical GPU events. The exact runtime source has since
 passed [all 301 macOS groups](docs/evidence/macos-current-source-full301-0.164.0-2026-11-09.json)
 in one unfiltered invocation. Matching complete installed SDK and remaining
 platform qualification remain pending.
+The later [package/SDK checker correction](docs/evidence/source-package-notices-parent-prefix-0.164.0-2026-11-09.json)
+passed nine package groups and108 validator tests; its matching complete SDK
+qualification remains pending.
 The earlier0.163 candidate remains separately pinned below.
 The new candidate installs discoverable Metal provider tools and checks their
 actual source/FFI signatures and all27 hardware/reply fixtures without a driver.

@@ -1,0 +1,12 @@
+{
+  "source_commit": "168180219a93b5485d01bc6b555362ab117356a9",
+  "toolchain": "0.164.0",
+  "language": "0.28",
+  "compiler_sha256": "1a3574ef721f69dbeff08c4ed32d84aedf4be8fbc5cbf1e13b83d44eeb5601e9",
+  "SDK_archive_sha256": "b8f4d3035110e6b3d6e1d5879f6192716556c443b313d2ea46854ac4586105b1",
+  "original_report_sha256": "c8d6078b3292558ea2a1a801f25a0d77bf0f633e6e1e92c8aedddc3cb60acba6",
+  "fixture_sha256": "710e8d568a33e4466a8cd8558e5f3a8f7830b2583df8050997b12fdcc2b27a90",
+  "observed_checks": 43,
+  "commands_omitted_from_public_fixture": true,
+  "complete_SDK_accepted": false
+}

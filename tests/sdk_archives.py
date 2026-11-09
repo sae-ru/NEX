@@ -1625,6 +1625,30 @@ THE SOFTWARE.
         with self.assertRaisesRegex(RuntimeError,'public source task/FFI resource transport'):
             acceptance.validate_completed_report(current)
 
+    def test_sdk164_requires_six_distinct_genuine_parent_prefix_cases(self):
+        fixture=Path(__file__).parent/'fixtures/dependent-resource-source-0.164.json'
+        origin=json.loads(fixture.with_suffix('.origin.json').read_bytes())
+        self.assertEqual(hashlib.sha256(fixture.read_bytes()).hexdigest(),origin['fixture_sha256'])
+        proof=json.loads(fixture.read_bytes())
+        options=dict(compiler_sha256=origin['compiler_sha256'],toolchain='0.164.0',language='0.28')
+        self.assertEqual(acceptance.validate_dependent_resource_source_report(proof,**options),43)
+        self.assertEqual(acceptance.dependent_resource_source_check_count('0.163.0'),37)
+        parent=[i for i,row in enumerate(proof['checks']) if 'genuine_previous_parent_header' in row]
+        self.assertEqual(len(parent),6)
+        mutations=[]
+        missing=copy.deepcopy(proof);missing['checks'].pop(parent[-1]);mutations.append(missing)
+        duplicate=copy.deepcopy(proof);duplicate['checks'][parent[-1]]=copy.deepcopy(duplicate['checks'][parent[-2]]);mutations.append(duplicate)
+        stripped=copy.deepcopy(proof);stripped['checks']=[r for r in stripped['checks'] if 'genuine_previous_parent_header' not in r];mutations.append(stripped)
+        for field,value in [('genuine_previous_parent_header','0'*64),('previous_parent_table_bytes',296),
+                ('previous_parent_table_bytes',312),('previous_parent_table_bytes',True),('native_and_independent_AST',False),
+                ('child_before_parent_destruction',False),('dialect','C23'),('case','unknown')]:
+            damaged=copy.deepcopy(proof);damaged['checks'][parent[0]][field]=value;mutations.append(damaged)
+        for field,value in [('compiler_sha256','0'*64),('language','0.27'),('actual_producers',['C11']),('actual_GPU_NPU_resources',True)]:
+            damaged=copy.deepcopy(proof);damaged[field]=value;mutations.append(damaged)
+        for index,damaged in enumerate(mutations):
+            with self.subTest(mutation=index),self.assertRaises(RuntimeError):
+                acceptance.validate_dependent_resource_source_report(damaged,**options)
+
     def test_task_value_retirement_requires_actual_installed_cleanup_evidence(self):
         current=self.report();current['doctor']={'version':'0.128.0'}
         with self.assertRaisesRegex(RuntimeError,'task value retirement'):

@@ -1,4 +1,5 @@
 """Private024 actual component plan/build/capture/replay/package contracts."""
+import package_notices
 import argparse,hashlib,json,os,shutil,subprocess,sys,tempfile,time
 from pathlib import Path,PurePosixPath
 
@@ -137,10 +138,11 @@ try:
     replay=invoke(name+'-replay-build',{'action':'build','directory':str(case/'replay-native'),**replay_base},env=env);replay_binary=executable(replay)
     observed=run(name+'-replay-native',[replay_binary],env);assert observed.stdout=='42\n' and observed.stderr==''
     package_request={'action':'package','directory':str(case/'replay-native'),'package_directory':str(case/'package'),**replay_base}
+    if package_notices.selected():package_request['notices']=str(package_notices.selected())
     if notices:
      refused=invoke(name+'-package-no-notices',package_request,1,env=env)
      assert refused['code']=='E_PROJECT_PACKAGE' and 'no component/license provenance' in refused['message']
-     package_request['notices']=str(notices)
+     package_request['notices']=str(package_notices.retain(case/'combined-package-notices',notices))
     package=invoke(name+'-package',package_request,env=env)
     assert package['language']=='0.24' and not package['graph_store_opened']
     app_package=next(row for row in package['components'] if row['component']=='app')

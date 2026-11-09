@@ -47,6 +47,35 @@ Discover the compiler's actual contract with:
 nex describe --field native_runtime_search --json
 ```
 
+## Source package tests with private dependencies
+
+A source build can select a private C++ runtime as well as private SQLite or
+OpenSSL. The package collector requires actual component metadata and complete
+license texts for those files. A distribution's package database cannot supply
+provenance for a separate conda or vendor prefix.
+
+Select the catalogue explicitly when configuring source tests:
+
+```sh
+cmake -S . -B build -DNEX_PACKAGE_NOTICES_FILE=/absolute/path/notices.json
+cmake --build build -j 4
+ctest --test-dir build --output-on-failure
+```
+
+The `nex.sdk-notices/1` catalogue uses the ordinary package format. Declare only
+the actual dependency roots and their corresponding license texts. The selected
+file is forwarded to the application, static/shared component, provider
+debug/profile, typed-project and retained-project package checks. It is also
+available to the earlier project-protocol fixture. Direct fixture invocations
+accept `--package-notices /absolute/path/notices.json`.
+
+Package tasks copy complete license texts into their temporary project and pin
+the result of the real `nex task --kind notices` query. Source-deleted replay
+therefore uses captured, checked notice inputs. The fixture helper keeps the
+original dependency roots and refuses a changed selected catalogue. Explicit
+per-fixture catalogues and missing-provenance rejection cases keep their own
+scope; the selected runtime catalogue grants no additional library roots.
+
 The maintained metadata tests use actual LLVM-produced ELF32/ELF64 images in
 both byte orders. Their full-source-test prerequisite is LLVM22.1 Clang,
 `llvm-ar` and ELF `ld.lld`. If ELF LLD is installed separately from Clang,

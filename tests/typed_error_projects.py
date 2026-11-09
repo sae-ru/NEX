@@ -1,5 +1,6 @@
 """Explicit027 source/static/shared/mixed project delivery acceptance."""
 from pathlib import Path
+import package_notices
 import argparse,json,os,subprocess,time,hashlib,tempfile,shutil,copy
 
 p=argparse.ArgumentParser();p.add_argument('probe');p.add_argument('--compiler',type=Path);p.add_argument('--output',type=Path);p.add_argument('--sync-only',action='store_true');p.add_argument('--source-language',choices=['0.27','0.28'],default='0.27');p.add_argument('--mode',action='append',choices=['source','static','shared','mixed']);a=p.parse_args();language=a.source_language
@@ -193,7 +194,8 @@ try:
     record=json.loads((Path(artifact['artifact']).parent/'task-provider.json').read_text());assert record['schema']=='nex.native-task-provider/15' and record['descriptor_abi']==0x4e45585400000007
    report['cases'].append({'mode':mode,'profile_memory_zero':True,'passed':True});save()
    if a.compiler:
-    packaged=request(root,'package','package',package_directory=str(O/'package'),compiler=str(a.compiler.resolve()))
+    notices={'notices':str(package_notices.selected())} if package_notices.selected() else {}
+    packaged=request(root,'package','package',package_directory=str(O/'package'),compiler=str(a.compiler.resolve()),**notices)
     assert packaged['ok'] and packaged['language']==language
     moved=O/'moved λ package';(O/'package').rename(moved);cache=root/'.nex';hidden=root/'.nex-hidden';cache.rename(hidden)
     unavailable=[]

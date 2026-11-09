@@ -1,0 +1,83 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Explicit source package dependency notices and current SDK validation of six additional genuine 0.163 parent-prefix cases. Nine package groups passed across retained initial and targeted recovery runs; a fresh complete matching source/SDK remains required.",
+  "evidence": {
+    "schema": "nex.source-package-notices-and-SDK-parent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T19:02:14.302142+00:00",
+    "source_base_commit": "92246e00bcf78a120482f3c9c3534b1cb6154518",
+    "source_pins": {
+      "CMakeLists.txt": "02e2f9a6712c3c9f7c6142f70e6347a832122eef66268deb38b1b6d288981f06",
+      "tests/package_notices.py": "708234f70221bc5c5f0c64713c5182091f0a5bd547a75d1b44b9d32e8f9fe5de",
+      "tests/project_packaging.py": "d97c26127e170a1c3501ae51b8c0f1009f00fedabfb92a6a44fa4050c4f3aa6d",
+      "tests/project_package_tasks.py": "3e7173219e2c16a5fb8c9b069c33747887995c150a5240286277bb35d08f2d2c",
+      "tests/task_provider_debugging.py": "35b35cbdf3d45078364f3c51393a84f01236f49435a34d96f07732e04705c057",
+      "tests/task_provider_profile.py": "01979c8c10eb3f10d2f90803fc74c095d3e27cc9778587f03b05b207b1c2606a",
+      "tests/task_static_provider.py": "767f53802661a298223735496518c1b71bc196671662039a99bbaad024e15e08",
+      "tests/task_shared_provider.py": "cd218e79d2061cfa3887f709471f3eceb854e3f02ce1fd31ef4e191e9f6a5c95",
+      "tests/task_stream_project.py": "5730ef1600f6f417e503298c75fc2874d172aefbc6c699cdb81502676263896f",
+      "tests/typed_error_projects.py": "eeeef1ce7a78af560317cf5b591099615afdc95288bac3733b9b69dbea60554e",
+      "tools/sdk_acceptance.py": "c91feec0f608119d773ed53a70ebebc55d0d90d7fc11abcfa8ce19bc5e56fd77",
+      "tests/sdk_archives.py": "221bf2e4c6b26627534c6ae89cebb3ad86f2d88aeafea96ff03b3f00a48ccbcb",
+      "tests/fixtures/dependent-resource-source-0.164.json": "710e8d568a33e4466a8cd8558e5f3a8f7830b2583df8050997b12fdcc2b27a90",
+      "tests/fixtures/dependent-resource-source-0.164.origin.json": "9d59678492b387cc96abc6b2eb74368e4774b481614ab8c7cf02dc3c21778a45"
+    },
+    "compiler_sha256": "406e7bc3f95ce16959bb5e053ec4e7097df3017b67cdb51bfc48ebe1fd5a3a79",
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "all_targets_passed": true,
+    "source_package_group_union": 9,
+    "original_passed_groups": [
+      "task_stream_project",
+      "project_packaging",
+      "task_provider_profile_native",
+      "task_provider_debugging_native",
+      "task_static_provider_native",
+      "task_shared_provider_native",
+      "sdk_archives",
+      "typed_error_projects"
+    ],
+    "original_failed_group": "project_package_tasks",
+    "recovery_passed_groups": [
+      "project_package_tasks",
+      "sdk_archives"
+    ],
+    "initial_web_native_notice_E_OPTION_retained": true,
+    "pure_web_tasks_keep_no_native_notices": true,
+    "missing_unrelated_library_provenance_rejection_retained": true,
+    "actual_operator_notice_catalogue_forwarded": true,
+    "task_notice_query_and_source_deleted_replay_checked": true,
+    "updated_SDK_validator_unit_tests": 108,
+    "original_dependent_resource_SDK_helper_expected": 37,
+    "actual_passed_dependent_resource_checks": 43,
+    "additional_genuine_parent_prefix_cases": 6,
+    "prefix_producer_dialects": [
+      "C11",
+      "CPP20"
+    ],
+    "previous_parent_table_bytes": 304,
+    "retained_original_SDK_archive_sha256": "b8f4d3035110e6b3d6e1d5879f6192716556c443b313d2ea46854ac4586105b1",
+    "original_SDK_full_acceptance_failed": true,
+    "SDK_overlays": [],
+    "both_local_test_owners_and_old_SDK_owners_retired": true,
+    "primary_guard": {
+      "ok": true,
+      "commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+      "source_files": 1990,
+      "graph_revisions": 48,
+      "all_original47_revisions_and_local_IDs_preserved": true,
+      "origin016_verified": false,
+      "primary_compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756"
+    },
+    "matching_new_full_source_or_complete_SDK_accepted": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 87,
+    "raw_bytes": 3880782,
+    "archive_sha256": "acdc76e044a3dc2e0f431fa8634a894fe2e6ba899313f91870ed4669e939a610",
+    "archive_bytes": 813525
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}

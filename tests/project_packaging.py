@@ -2,6 +2,7 @@
 import hashlib,json,os,shutil,subprocess,unittest
 from pathlib import Path
 import support as harness
+import package_notices
 import packaging as native_packaging
 
 class ProjectPackages(harness.ToolchainCase):
@@ -31,7 +32,8 @@ client fn title()->str{return "Packaged NEX";}
         self.save()
     def save(self):(self.root/'nex.build.json').write_text(json.dumps(self.description), newline="\n")
     def package(self,*args,**kwargs):
-        return self.cli('project','--kind','package','--directory',self.root/'package',*args,timeout=300,**kwargs)
+        notices=[] if '--notices' in args else package_notices.flags()
+        return self.cli('project','--kind','package','--directory',self.root/'package',*notices,*args,timeout=300,**kwargs)
     def inventory(self,folder):
         report=json.loads((folder/'project.json').read_text())
         actual={p.relative_to(folder).as_posix() for p in folder.rglob('*') if p.is_file() or p.is_symlink()}

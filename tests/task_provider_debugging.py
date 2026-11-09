@@ -13,6 +13,7 @@ import sys
 from types import SimpleNamespace
 import unittest
 import support as harness
+import package_notices
 import task_shared_provider as shared
 
 LIMITS={'steps':1000000,'timeout_ms':60000,'workers':2}
@@ -411,7 +412,7 @@ class TaskProviderDebugging(harness.ToolchainCase):
         self.assertTrue((receipt.parent/app['debug_relocation']).is_file())
         # Packaging is a distinct checked action, with its own key/CWD/pins.
         self.cli('project','--kind','package','--component','app','--configuration','debug','--task-debug',
-            '--directory',self.root/'package',timeout=900)
+            '--directory',self.root/'package',*package_notices.flags(),timeout=900)
         package=self.root/'package/apps/app';packaged=json.loads((package/'application.json').read_text())
         self.assertIs(packaged['task_debug_provenance']['metadata_rewritten'],False)
         packaged_session=json.loads((package/packaged['debug_session']).read_text())
@@ -485,7 +486,7 @@ fn main()->unit!{task,io,throw}{print(child(41));}
         self.assertEqual(manifest.get('owned_images',[]),[])
         ordinary=self.cli('project','--kind','debug','--component','app','--adapter','nex-dap')['observation']
         self.assertEqual(json.loads(Path(ordinary['manifest']).read_text())['schema'],'nex.debug/2')
-        self.cli('project','--kind','package','--component','app','--task-debug','--directory',self.root/'package')
+        self.cli('project','--kind','package','--component','app','--task-debug','--directory',self.root/'package',*package_notices.flags())
         package=self.root/'package/apps/app';metadata=json.loads((package/'application.json').read_text())
         session=json.loads((package/metadata['debug_session']).read_text())
         if sys.platform=='darwin':
