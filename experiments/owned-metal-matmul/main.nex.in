@@ -1,0 +1,47 @@
+module owned_metal_matmul;
+import "std/compute.nex" as c;
+import "std/device.nex" as d;
+server resource ReadCursor;
+server extern fn open_raw(index:i64)->result<d::Session> !{ffi}=foreign("gpu","open","@PIN@");
+server extern fn upload_raw(session:d::Session,dtype:i64,data:bytes)->result<d::Buffer> !{ffi}=foreign("gpu","upload","@PIN@");
+server extern fn dispatch_raw(session:d::Session,a:d::Buffer,b:d::Buffer,mode:i64,scale:i64,m:i64,k:i64,n:i64)->result<d::Buffer> !{ffi}=foreign("gpu","dispatch","@PIN@");
+server extern fn download_raw(buffer:d::Buffer)->result<ReadCursor> !{ffi}=foreign("gpu","download","@PIN@");
+server extern fn read_next_raw(cursor:ReadCursor)->result<bytes> !{ffi}=foreign("gpu","read_next","@PIN@");
+server extern fn name_raw(session:d::Session)->str !{ffi}=foreign("gpu","name","@PIN@");
+server extern fn kernel_ns_raw(buffer:d::Buffer)->i64 !{ffi}=foreign("gpu","kernel_ns","@PIN@");
+server extern fn busy_raw(session:d::Session)->i64 !{ffi}=foreign("gpu","busy","@PIN@");
+server fn upload_provider(session:d::Session,dtype:c::DType,data:bytes)->result<d::Buffer> !{task,ffi}{
+ let code:i64=match dtype{c::DType::U8()=>1,c::DType::I8()=>2,c::DType::I32()=>3};return upload_raw(session,code,data);
+}
+server fn dispatch_provider(session:d::Session,op:c::Operation,inputs:list<d::Tensor>)->result<d::Buffer> !{task,ffi}{
+ if len(inputs)!=2{return err("E_COMPUTE_INPUTS","owned Metal requires two tensors");}
+ var mode:i64=1;var scale:i64=1;match op{c::Operation::Affine(value)=>{mode=2;scale=value;},c::Operation::Matmul()=>{mode=3;scale=0;},_=>{}}
+ var m:i64=0;var k:i64=0;var n:i64=0;if mode==3{if len(inputs[0].shape)!=2 || len(inputs[1].shape)!=2{return err("E_COMPUTE_SHAPE","matmul requires rank2 inputs");}m=inputs[0].shape[0];k=inputs[0].shape[1];n=inputs[1].shape[1];}
+ return dispatch_raw(session,inputs[0].buffer,inputs[1].buffer,mode,scale,m,k,n);
+}
+server fn download_provider(buffer:d::Buffer)->result<bytes> !{task,ffi}{
+ let cursor:ReadCursor=download_raw(buffer)?;var output:bytes=unwrap(bytes([]));var done:bool=false;
+ while !done{
+  let read:result<bytes>=read_next_raw(cursor);
+  if !is_ok(read){resource_close(cursor);return err(error_code(read),error_message(read));}
+  let chunk:bytes=read?;
+  if len(chunk)>262144 || len(output)>1048576-len(chunk){resource_close(cursor);return err("E_COMPUTE_RESPONSE","bounded read cursor exceeded tensor size");}
+  output=output+chunk;done=len(chunk)<262144;
+ }
+ resource_close(cursor);return ok(output);
+}
+server fn make_context()->result<d::Context> !{task,ffi}{
+ let session:d::Session=open_raw(@INDEX@)?;let name:str=name_raw(session);
+ let device:c::Device=c::Device(c::Kind::GPU(),"metal.gpu.@INDEX@","nex.metal.owned-matmul","3","pinned persistent Metal worker: "+name,
+ [c::Capability(c::OperationKind::Add(),c::DType::U8(),c::DType::U8()),c::Capability(c::OperationKind::Affine(),c::DType::U8(),c::DType::U8()),c::Capability(c::OperationKind::Matmul(),c::DType::I8(),c::DType::I32())]);
+ return d::context(session,device,upload_provider,dispatch_provider,download_provider);
+}
+client fn client_value()->i64{return 42;}
+server fn main()->unit !{task,ffi,io}{
+ let ctx:d::Context=unwrap(make_context());
+ let a:c::Tensor=unwrap(c::tensor(c::DType::U8(),[3],unwrap(bytes([1,20,50]))));
+ let b:c::Tensor=unwrap(c::tensor(c::DType::U8(),[3],unwrap(bytes([2,3,4]))));
+ let request:c::Request=c::request("owned-example",c::Operation::Affine(3),[a,b],c::Selection(c::Kind::GPU(),ctx.device.id),c::Fallback::Deny());
+ let actual:c::Response=unwrap(d::execute(ctx,request));assert(actual.output.data==unwrap(bytes([5,63,154])));
+ assert(!actual.fallback_used);print(encode_json(actual));
+}
