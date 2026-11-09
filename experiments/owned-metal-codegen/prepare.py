@@ -65,6 +65,8 @@ def main():
     descriptor = json.loads(run("describe", [compiler, "describe", "--json"]))
     if not descriptor.get("resource_regions", {}).get("dependency_graph", {}).get("C_table_parent_creation") or not descriptor.get("source_resources", {}).get("source_task_bridge"):
         raise RuntimeError("selected compiler lacks source-task FFI and dependent resources")
+    if descriptor.get("foreign_trap_reporting", {}).get("C_table_prefix") != "NEX_FFI_V1_TRAP_SIZE":
+        raise RuntimeError("selected compiler lacks the explicit fatal trap C API; select toolchain0.164 or later")
     stdlib = out / "stdlib"
     stdlib.mkdir()
     for name in ["compute.nex", "device.nex"]:
@@ -74,7 +76,7 @@ def main():
     (out / "main.nex").write_text(template.replace("@PIN@", "0" * 64))
     run("check-template", [compiler, "check", "--json"])
     signatures = {}
-    for name, local in [("open", "open_raw"), ("upload", "upload_raw"), ("map", "map_raw"), ("download", "download_raw"), ("read_next", "read_next_raw"), ("name", "name_raw"), ("kernel_ns", "kernel_ns_raw"), ("busy", "busy_raw")]:
+    for name, local in [("open", "open_raw"), ("upload", "upload_raw"), ("map", "map_raw"), ("download", "download_raw"), ("read_next", "read_next_raw"), ("name", "name_raw"), ("kernel_ns", "kernel_ns_raw"), ("busy", "busy_raw"), ("fatal", "fatal_raw")]:
         value = json.loads(run("signature-" + name, [compiler, "ffi", "--symbol", local, "--json"]))
         signatures[name] = hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     inputs = evidence / "inputs"
@@ -88,7 +90,7 @@ def main():
               "source_revision": generated["revision"], "root": generated["root"], "root_hash": generated["functions"][generated["root"]], "kernel_sha256": generated["kernel_sha256"],
               "input_layout": "columns", "parameter_types": generated["parameter_types"], "result_type": generated["result_type"], "source_input_pins": input_pins,
               "signature_sha256": signatures, "source_checked": True, "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
-              "direct_fatal_trap_forwarding_integrated": False, "installed_SDK_accepted": False, "commands": commands}
+              "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "commands": commands}
     if args.check_sdk:
         write(evidence / "report.json", report)
         print(json.dumps({"ok": True, "source_checked": True, "hardware_executed": False}))

@@ -10,6 +10,7 @@ server extern fn read_next_raw(cursor:ReadCursor)->result<bytes> !{ffi}=foreign(
 server extern fn name_raw(session:d::Session)->str !{ffi}=foreign("gpu","name","@PIN@");
 server extern fn kernel_ns_raw(buffer:d::Buffer)->i64 !{ffi}=foreign("gpu","kernel_ns","@PIN@");
 server extern fn busy_raw(session:d::Session)->i64 !{ffi}=foreign("gpu","busy","@PIN@");
+server extern fn fatal_raw(code:str,message:str)->unit !{ffi}=foreign("gpu","fatal","@PIN@");
 
 fn kernel_argument_count()->i64{return @ARGUMENTS@;}
 fn kernel_source_hash()->str{return "@ROOT_HASH@";}
@@ -42,9 +43,14 @@ server fn try_apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)-
  let buffer:d::Buffer=dispatched?;
  let read:result<bytes>=read_buffer(buffer);resource_close(buffer);return read;
 }
-// Explicit unwrap retains NEX's ordinary E_RESULT contract. Exact direct GPU
-// trap forwarding is a separate compiler/runtime integration, still pending.
-server fn apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->bytes !{task,ffi}{return unwrap(try_apply(session,columns,count,steps));}
+// try_apply settles GPU work and closes temporary resources before returning.
+// Escalate its explicit failure through the negotiated host trap API; unwrap
+// below sees only success. Source throw and ordinary unwrap remain unchanged.
+server fn apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->bytes !{task,ffi}{
+ let result:result<bytes>=try_apply(session,columns,count,steps);
+ if !is_ok(result){fatal_raw(error_code(result),error_message(result));}
+ return unwrap(result);
+}
 
 fn encode_i64s(values:list<i64>)->bytes{
  var output:bytes=unwrap(bytes([]));var i:i64=0;

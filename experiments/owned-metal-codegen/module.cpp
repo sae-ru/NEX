@@ -107,6 +107,11 @@ class Session {
    try{Data error(std::move(response.payload));code=error.getText();message=error.getText();error.done();if(code.empty()||code.size()>128||message.size()>2048)throw Error("E_DEVICE_PROTOCOL","worker error bounds differ");}
    catch(...){failedDrain(poll);throw;}
    if(code=="E_DEVICE_PROTOCOL"||code=="E_DEVICE_ABI"||code=="E_DEVICE_BUFFER")failedDrain(poll);
+   // The pinned worker sends Failure only after gpu->drain() succeeds;
+   // unknown settlement has its distinct Unsettled status above. Record the
+   // actual acknowledgement even when no output Buffer was published.
+   if(operation==Generated&&progressed)TRACE(JSON{{"event","kernel_failure_settled"},{"session",identity},{"sequence",id},
+    {"operation","generated_map"},{"code",code},{"physical_completion_verified",true}});
    throw Error(code,message);
   }
   return Data(std::move(response.payload));
@@ -257,7 +262,15 @@ static nex_ffi_status construct(const nex_ffi_api_v1 *api,nex_ffi_call call,Crea
 }
 static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user)noexcept{
  try{
-  if(api->struct_size<NEX_FFI_V1_RESOURCE_PARENTS_SIZE)return NEX_FFI_ARGUMENT;checked(api->poll(call));auto op=uint64_t(user);
+  if(api->struct_size<NEX_FFI_V1_TRAP_SIZE||!api->raise_trap)return NEX_FFI_ARGUMENT;checked(api->poll(call));auto op=uint64_t(user);
+  if(op==9){
+   if(count!=2)return NEX_FFI_ARGUMENT;uint64_t cn=0,mn=0,written=0;
+   checked(api->byte_size(call,args[0],&cn));checked(api->byte_size(call,args[1],&mn));
+   if(cn<3||cn>128||mn>2048)return NEX_FFI_LIMIT;
+   uint8_t code[128],message[2048];checked(api->copy_bytes(call,args[0],0,code,cn,&written));if(written!=cn)return NEX_FFI_INTERNAL;
+   checked(api->copy_bytes(call,args[1],0,message,mn,&written));if(written!=mn)return NEX_FFI_INTERNAL;
+   return api->raise_trap(call,code,cn,message,mn);
+  }
   if(op==1){if(count!=1)return NEX_FFI_ARGUMENT;auto ordinal=integer(api,call,args[0]);if(ordinal<0||ordinal>63)return failure(api,call,out,"E_COMPUTE_DEVICE","GPU index must be0..63");Creation in{Creation::SessionOpen};in.ordinal=uint32_t(ordinal);return construct(api,call,in,maximumElements+sizeof(Session),0,out);}
   if(op==2){if(count!=3)return NEX_FFI_ARGUMENT;auto *session=static_cast<Session*>(borrow(api,call,args[0],0));auto dtype=integer(api,call,args[1]);if(dtype!=1)return failure(api,call,out,"E_GPU_INPUT","generated input uses immutable byte columns");uint64_t size=0;checked(api->byte_size(call,args[2],&size));auto width=dtype==3?4u:1u;if(!size||size>uint64_t(maximumElements)*width||size>1044480||size%width)return failure(api,call,out,"E_COMPUTE_SIZE","buffer byte count exceeds exact dtype bounds");Creation in{Creation::BufferUpload};in.session=session;in.dtype=uint32_t(dtype);in.data.resize(size);uint64_t copied=0;checked(api->copy_bytes(call,args[2],0,in.data.data(),size,&copied));if(copied!=size)return NEX_FFI_INTERNAL;return construct(api,call,in,size+sizeof(Buffer),args[0],out);}
   if(op==3){
@@ -311,6 +324,7 @@ static const nex_ffi_export_v1 exports[]={
  {sizeof(nex_ffi_export_v1),0,"name",PIN_NAME,callback,(void*)5},
  {sizeof(nex_ffi_export_v1),0,"kernel_ns",PIN_KERNEL_NS,callback,(void*)6},
  {sizeof(nex_ffi_export_v1),0,"busy",PIN_BUSY,callback,(void*)7},
- {sizeof(nex_ffi_export_v1),0,"read_next",PIN_READ_NEXT,callback,(void*)8}
+ {sizeof(nex_ffi_export_v1),0,"read_next",PIN_READ_NEXT,callback,(void*)8},
+ {sizeof(nex_ffi_export_v1),0,"fatal",PIN_FATAL,callback,(void*)9}
 };
-extern "C" const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi,uint32_t size){static const nex_ffi_module_v1 m{NEX_FFI_MODULE_ABI_V1,sizeof(nex_ffi_module_v1),sizeof(exports)/sizeof(exports[0]),sizeof(nex_ffi_export_v1),exports};return abi==1&&size>=NEX_FFI_V1_RESOURCE_PARENTS_SIZE?&m:nullptr;}
+extern "C" const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi,uint32_t size){static const nex_ffi_module_v1 m{NEX_FFI_MODULE_ABI_V1,sizeof(nex_ffi_module_v1),sizeof(exports)/sizeof(exports[0]),sizeof(nex_ffi_export_v1),exports};return abi==1&&size>=NEX_FFI_V1_TRAP_SIZE?&m:nullptr;}

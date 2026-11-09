@@ -7,8 +7,9 @@ graph to MSL. A new pinned bundle contains the generated worker and typed host
 module. NEX reference and native task programs execute that physical GPU code
 through genuine `std/device` Session/Buffer resources.
 
-It is outside the frozen0.163 SDK candidate. Language0.28, taskABI7, source
-grammar and compiler core are unchanged. Public compiler CLI/discovery,
+It is outside the frozen0.163 SDK candidate and now requires the0.164 explicit
+fatal-trap C API. Language0.28, taskABI7 and source grammar are unchanged.
+Public compiler CLI/discovery,
 diagnostics/debug/profile, immutable SDK delivery and broader GPU/NPU remain
 separate work.
 
@@ -30,7 +31,7 @@ python3 -B experiments/owned-metal-codegen/prepare.py --sdk "$NEX_SDK" \
 `--check-sdk` performs source/signature preparation without native compilation,
 an Apple SDK or a GPU. Native preparation requires macOS, its SDK and C++20.
 Preparation does not initialize the driver. It creates a project with checked
-source wrappers and eight signatures obtained from the actual compiler.
+source wrappers and nine signatures obtained from the actual compiler.
 
 The generated project's `main.nex` contains these source-level helpers:
 
@@ -63,10 +64,13 @@ bytes; bool is0/1 and unit is0. Per-lane steps are1..65536 with a total bound
 `try_apply` returns `result<bytes>`. GPU overflow, division/assertion failures,
 invalid canonical input and step exhaustion retain their codes inside that
 explicit Result. Failed work does not become CPU fallback. The helper `apply`
-explicitly unwraps this Result using the current NEX **E_RESULT** contract.
-Transparent propagation of the original fatal GPU trap class needs a new
-compiler/runtime path and is not implemented by this prototype. No artificial
-CPU arithmetic is used to manufacture a matching trap.
+first completes `try_apply`, including physical GPU settlement and temporary
+resource close. On failure its pinned `fatal` callback submits the copied code
+and message through `NEX_FFI_V1_TRAP_SIZE` / `raise_trap`. This reports the original
+fatal code, bypasses source catches/finalizers and retains runtime cleanup.
+Host cancellation/deadline has priority. Ordinary `unwrap(try_apply(...))` keeps
+the existing **E_RESULT** contract. No artificial CPU arithmetic manufactures
+trap codes. The new C suffix requires matching core and SDK qualification.
 
 Input and output Buffers retain their genuine physical Session. An admitted
 ReadCursor retains its Buffer. Logical parent close denies new use while
@@ -83,8 +87,8 @@ Opaque resources from another provider image are rejected before native pointer
 use. Arbitrary vendor stdout is kept on a separate bounded diagnostic pipe.
 
 The scalar generator and this persistent resource path have separate
-verification scopes. Malformed-reply/log-stress acceptance for this new path,
-direct fatal forwarding and complete installed SDK remain pending.
+verification scopes. Malformed-reply/log-stress acceptance for this new path
+and complete installed SDK remain pending.
 `verify.py` covers the two-argument multiply/conditional-loop fixture from the development evidence;
 `numerics.py` prepares and compares22 numerical/limit fixtures. Actual device
 recovery/reset and ownership under unknown vendor completion remain pending.

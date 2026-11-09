@@ -37,7 +37,7 @@ def main():
     for name in ["NEX_OWNED_METAL_MAP_TEST_BAD_REPLY", "NEX_OWNED_METAL_MAP_TEST_GATE_MS"]:
         env.pop(name, None)
     report = {"schema": "nex.owned-generated-Metal-numerics/1", "ok": False, "cases": [], "commands": [], "compiler_sha256": sha(compiler),
-              "direct_fatal_trap_forwarding_integrated": False, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
+              "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
     start = time.monotonic()
 
     def save():

@@ -25,9 +25,10 @@ CASES = {
     "typed_source_error_after_GPU": ('''let s:d::Session=unwrap(make_context());try{let answer:bytes=apply(s,[encode_i64s([6]),encode_i64s([2])],1,512);assert(decode_i64s(answer)==[22]);throw(7);}catch(value:i64){assert(value==7);}resource_close(s);''', 1, 0, None),
 }
 ERROR_CASES = {
-    "cancel_enqueued_generated_GPU": ('''let s:d::Session=unwrap(make_context());with_tasks(1,server fn(scope:task_scope)->unit !{task,ffi,throw}{let child:task<unit>=task_spawn(scope,server fn()->unit !{task,ffi}{let answer:bytes=apply(s,[encode_i64s([6]),encode_i64s([2])],1,512);});while busy_raw(s)==0{task_yield();}assert(task_cancel(child));task_wait(child);});''', "E_CANCELLED", 1500, 5000),
-    "deadline_enqueued_generated_GPU": ('''let s:d::Session=unwrap(make_context());let answer:bytes=apply(s,[encode_i64s([6]),encode_i64s([2])],1,512);''', "E_TIMEOUT", 3000, 2000),
-    "explicit_unwrap_E_RESULT_skips_finally": ('''let s:d::Session=unwrap(make_context());try{let answer:bytes=apply(s,[encode_i64s([9223372036854775807]),encode_i64s([0])],1,512);}finally{print(99);}''', "E_RESULT", 0, 30000),
+    "cancel_enqueued_generated_GPU": ('''let s:d::Session=unwrap(make_context());with_tasks(1,server fn(scope:task_scope)->unit !{task,ffi,throw}{let child:task<unit>=task_spawn(scope,server fn()->unit !{task,ffi}{let answer:bytes=apply(s,[encode_i64s([6]),encode_i64s([2])],1,512);});while busy_raw(s)==0{task_yield();}assert(task_cancel(child));task_wait(child);});''', "E_CANCELLED", 1500, 5000, 0),
+    "deadline_enqueued_generated_GPU": ('''let s:d::Session=unwrap(make_context());let answer:bytes=apply(s,[encode_i64s([6]),encode_i64s([2])],1,512);''', "E_TIMEOUT", 3000, 2000, 0),
+    "explicit_unwrap_E_RESULT_skips_finally": ('''let s:d::Session=unwrap(make_context());try{let answer:bytes=unwrap(try_apply(s,[encode_i64s([9223372036854775807]),encode_i64s([0])],1,512));}finally{print(99);}''', "E_RESULT", 0, 30000, 1),
+    "direct_overflow_skips_catch_and_finally": ('''let s:d::Session=unwrap(make_context());try{let answer:bytes=apply(s,[encode_i64s([9223372036854775807]),encode_i64s([0])],1,512);}catch(code,message){print(98);}finally{print(99);}''', "E_OVERFLOW", 0, 30000, 1),
 }
 
 
@@ -56,20 +57,26 @@ def inspect_trace(path, kernels, errors, pending=False, cancelled=False):
                     values = tuple(map(int, line.split()[1:]))
                     assert len(values) == 7 and values[2] > 0 and values[5:] == (4, 1)
                     physical.append(values)
-        if x["event"] in ["kernel_completed", "buffer_released", "session_destroyed"]:
+        if x["event"] in ["kernel_completed", "kernel_failure_settled", "buffer_released", "session_destroyed"]:
             assert x["physical_completion_verified"]
         if x["event"] == "kernel_completed":
             assert x["operation"] == "generated_map" and x["Metal_command_buffer_status"] == 4 and x["completion_handlers"] == 1
     assert noise and len(physical) == kernels and sum(x[3] != 0 for x in physical) == errors, (path, physical, kernels, errors)
     queued = [x for x in rows if x["event"] == "kernel_queued"]
     assert len(queued) == kernels and all(x["physical_enqueue_verified"] for x in queued)
+    failed = [x for x in rows if x["event"] == "kernel_failure_settled"]
+    completed = [x for x in rows if x["event"] in ["kernel_completed", "kernel_failure_settled"]]
+    assert len(completed) == kernels and len(failed) == errors
+    codes = {1: "E_OVERFLOW", 2: "E_DIV_ZERO", 3: "E_ASSERT", 4: "E_GPU_STEP_LIMIT", 5: "E_GPU_INTERNAL", 6: "E_GPU_INPUT"}
+    assert sorted(x["code"] for x in failed) == sorted(codes[x[3]] for x in physical if x[3])
     for session in sessions:
         end = next(i for i, x in enumerate(rows) if x["event"] == "session_destroyed" and x["session"] == session["session"])
         assert all(i < end for i, x in enumerate(rows) if x["event"] == "buffer_released" and x["session"] == session["session"])
     delay = None
     if pending:
-        assert kernels == 1 and len(created) == 3 and queued[0]["controlled_shared_event"] and queued[0]["completion_pending"] and queued[0]["execution_status"] in (2, 3)
-        completed = [x for x in rows if x["event"] == "kernel_completed"]
+        # A failed generated function publishes no output Buffer. Both paths
+        # still need an actual post-drain acknowledgement and driver status4/1.
+        assert kernels == 1 and len(created) == 3 - errors and queued[0]["controlled_shared_event"] and queued[0]["completion_pending"] and queued[0]["execution_status"] in (2, 3)
         assert len(completed) == 1
         delay = (completed[0]["steady_ns"] - queued[0]["steady_ns"]) / 1e9
         assert delay >= 0.5
@@ -78,7 +85,8 @@ def inspect_trace(path, kernels, errors, pending=False, cancelled=False):
             busy = [x for x in rows if x["event"] == "kernel_busy_observed"]
             assert busy and queued[0]["steady_ns"] <= busy[0]["steady_ns"] < completed[0]["steady_ns"]
     return {"devices": sorted({x["device"] for x in sessions}), "sessions": len(sessions), "buffers": len(created), "closed_cursors": len(cursors),
-            "physical_GPU_events": physical, "all_buffers_released": True, "physical_settlement_before_parent_release": True, "pending_seconds": delay}
+            "physical_GPU_events": physical, "GPU_error_codes": [x["code"] for x in failed],
+            "all_buffers_released": True, "physical_settlement_before_parent_release": True, "pending_seconds": delay}
 
 
 def main():
@@ -97,7 +105,7 @@ def main():
         env.pop(name, None)
     report = {"schema": "nex.owned-generated-Metal-lifetimes/1", "ok": False, "commands": [], "cases": [], "compiler_sha256": sha(compiler),
               "worker_sha256": sha(project / "bundle/worker"), "module_sha256": sha(project / "bundle/module.so"), "manifest_sha256": sha(project / "bundle/manifest.json"),
-              "direct_fatal_trap_forwarding_integrated": False, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
+              "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
     started = time.monotonic()
 
     def save():
@@ -154,9 +162,9 @@ def main():
         for name, (body, kernels, errors, quota) in CASES.items():
             if not args.only or name in args.only:
                 check_case(name, body, kernels, errors, quota)
-        for name, (body, code, gate, timeout) in ERROR_CASES.items():
+        for name, (body, code, gate, timeout, errors) in ERROR_CASES.items():
             if not args.only or name in args.only:
-                check_case(name, body, 1, int(code == "E_RESULT"), code=code, gate=gate, timeout=timeout)
+                check_case(name, body, 1, errors, code=code, gate=gate, timeout=timeout)
         assert sha(compiler) == report["compiler_sha256"]
         report.update(ok=True, state="passed", native_reference_pairs=len(report["cases"]), full_suite=not args.only,
                       physical_GPU_kernel_events=sum(len(case[mode]["physical_GPU_events"]) for case in report["cases"] for mode in ["reference", "native"]))
