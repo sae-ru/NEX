@@ -1,0 +1,34 @@
+{
+  "schema": "nex.current-e63-macos-source-development-evidence/1",
+  "date": "2026-11-09",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+  "source_files": 2038,
+  "source_independently_equal_Git_archive": true,
+  "compiler_sha256": "d231b81d19f547f1023593c81b424f82d0a0dde25bd918091aac3195d81dcc7a",
+  "all_targets_built": true,
+  "passed_groups": 301,
+  "failed_groups": 0,
+  "skipped_groups": 0,
+  "full_CTest_seconds": 7726.6762615828775,
+  "source_owner_retired": true,
+  "new_SDK_archive": {
+    "sha256": "e2b6fadf9c86c2f6d99408b1656c0d305f0097395959611f25ffae638b98e850",
+    "bytes": 124402286,
+    "files_in_inventory": 3624,
+    "excluded_python_cache_files": []
+  },
+  "new_SDK_archive_filename": "nex-sdk-0.162.2-macos-arm64-owned-code-root-development.tar.gz",
+  "new_SDK_compiler_sha256": "3863a9634b3230a90e28dac0939f0c13637a5a58f9f78646351e2453ecc804a4",
+  "complete_matching_SDK_accepted": false,
+  "raw_evidence": {
+    "raw_files": 31,
+    "raw_bytes": 1620366,
+    "raw_archive_sha256": "7916f514d91286d72a5f0647c8f4555a591dc0d1c19bcabd4f9dc7b223358557",
+    "raw_archive_bytes": 280293
+  },
+  "public_binary_release_uploaded": false,
+  "whole_original_PLAN_complete": false
+}

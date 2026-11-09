@@ -1,0 +1,67 @@
+{
+  "schema": "nex.native-Bookworm-Z3-and-current-NEX-development-evidence/1",
+  "date": "2026-11-09",
+  "native_Z3": {
+    "ok": true,
+    "version": "5.3.1",
+    "source_commit": "ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+    "source_archive_sha256": "33558971c286653d47b03f97f9f973d0350629c827cacda2583608ba14d74ea6",
+    "source_files_rehashed": 3095,
+    "installed_files_rehashed": 23,
+    "private_libcxx_files_rehashed": 1851,
+    "signed_libcxx_packages_rehashed": 4,
+    "library_sha256": "b5cabb487997a26055e467582487a61434d0e24b8fc5bcfe90c6a35df0caf4b2",
+    "CLI_sha256": "cf187708262cb3163a9477de385a23cf956a070620435f21c6a726c249fea7bf",
+    "SONAME": "libz3.so.5.3",
+    "GLIBC_symbol_requirements": [
+      "GLIBC_2.17",
+      "GLIBC_2.29",
+      "GLIBC_2.33",
+      "GLIBC_2.34"
+    ],
+    "native_version_stdout": "Z3 version 5.3.1 - 64 bit\n",
+    "native_loader": "\tlinux-vdso.so.1 (0x0000ffffb7493000)\n\tlibc++.so.1 => /var/tmp/nex-current01622-cix-native-Z3-531-v3/libcxx/usr/lib/aarch64-linux-gnu/libc++.so.1 (0x0000ffffb59f0000)\n\tlibc++abi.so.1 => /var/tmp/nex-current01622-cix-native-Z3-531-v3/libcxx/usr/lib/aarch64-linux-gnu/libc++abi.so.1 (0x0000ffffb5980000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffb58d0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffffb5890000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffb56e0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffffb7456000)\n",
+    "build_steps": 892,
+    "actual_CXX20_format_stdout": "42\n",
+    "upstream_source_patches": [],
+    "native_system_glibc": "2.36",
+    "original_failures_retained": true,
+    "owner_retired": true,
+    "complete_NEX_or_portable_SDK_accepted": false
+  },
+  "native_Z3_raw_evidence": {
+    "raw_files": 44,
+    "raw_bytes": 1434759,
+    "raw_archive_sha256": "b0dc952a8386cf291b4dbe9f640bd09bcce1a08869a4cfc547517639136bacfd",
+    "raw_archive_bytes": 552616
+  },
+  "matching_NEX_existing_verification": {
+    "ok": true,
+    "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+    "source_files_rehashed": 2038,
+    "NEX_compiler_sha256": "7ba43bb65c3c9b10fba5a35262ef72050995e6bb270f96aba9585349cd865492",
+    "native_Z3_library_sha256": "b5cabb487997a26055e467582487a61434d0e24b8fc5bcfe90c6a35df0caf4b2",
+    "native_system_interpreter": true,
+    "native_Z3_version": "5.3.1.0",
+    "LLVM_MLIR_version": "22.1.8",
+    "existing_bounded_verification_methods_passed": 11,
+    "skipped": 0,
+    "verification_seconds": 49.50638158805668,
+    "source_or_test_limits_changed": false,
+    "actual_operator_notice_arguments_verified": 5,
+    "registered_groups": 303,
+    "current_full303_live": true,
+    "full303_or_portable_SDK_accepted": false,
+    "retained_original_failed_compiler_sha256": "73da44b25b8412918ec4e1b8e84003284f1205c20eac2cffd6b573eadfd11e8a",
+    "linker_dual_Z3_warning_retained": "libz3.so.4 needed by native LLVM22 may conflict with libz3.so.5.3; actual loader records both selected SONAMEs; complete cohort qualification remains pending."
+  },
+  "matching_NEX_raw_evidence": {
+    "raw_files": 17,
+    "raw_bytes": 969121,
+    "raw_archive_sha256": "8790c73d1886ed883e2bf719de92c46ae39ed2b9c68c32396e79908ebcf2a38f",
+    "raw_archive_bytes": 162234
+  },
+  "source_test_or_solver_limits_weakened": false,
+  "public_binary_release_uploaded": false,
+  "whole_original_PLAN_complete": false
+}

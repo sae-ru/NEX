@@ -76,6 +76,12 @@ passed the updated15-case debugger group on macOS ARM64, Windows x86-64 and
 Debian ARM64. The matching [macOS source snapshot passed all 301 groups](docs/evidence/macos-primary-resume-full301-0.162.2-2026-11-09.json).
 The [Fedora snapshot with that helper passed all 303 groups and installed smoke](docs/evidence/fedora-primary-resume-full303-0.162.2-2026-11-09.json).
 Later SDK-helper changes and matching installed delivery retain separate gates.
+The later [strict LLDB command-capture snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).
+Its new immutable SDK is assembled; matching moved/restored and subsequent
+installed qualification remain in progress. On native Debian ARM64,
+[Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
+with the original limits. Complete Debian regression and portable SDK delivery
+remain separate from that solver result.
 The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP

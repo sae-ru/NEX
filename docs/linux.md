@@ -3,10 +3,11 @@
 For a native Debian12 ARM64 baseline, see the [Bookworm compiler guide](linux-native-compiler.md)
 and its exact LLVM/MLIR22.1.8 package pin. All730 source targets built and the
 compiler launched with system glibc2.36. The system Z3 cohort passed ten of eleven
-bounded-verification methods; the unchanged5.3.1 solver is being rebuilt natively
-before complete regression. This source/dependency milestone does not qualify a
-portable SDK. The raw failed proof and omitted package-notice argument remain
-recorded in its development receipt.
+bounded-verification methods. The subsequent unmodified native
+[Z3 5.3.1 build and matching NEX passed all eleven](evidence/cix-native-Z3-5.3.1-2026-11-09.json)
+with unchanged limits. Complete303 and portable SDK qualification remain in
+progress. The raw failed proof, omitted package-notice argument and linker
+warning about the separate LLVM/NEX solver SONAMEs remain recorded.
 
 The [physical Astra x86-64 component record](evidence/astra-source-development-2026-11-05.json)
 pins development0.162 source `f4db4dd`: all targets built on system glibc2.28 with

@@ -25,16 +25,25 @@ fixture, queries, compiler identity and raw logs are retained in the receipt.
 
 The [Z3 source pin](../tools/linux/z3-bookworm-source.json) selects the same5.3.1
 release as the maintained Linux image, built from unmodified upstream sources
-on Bookworm. Its native build and the resulting complete NEX qualification are
-in progress. Do not infer SDK acceptance from this recipe or its dependency smoke.
+on Bookworm. Its [native build and matching NEX proof receipt](evidence/cix-native-Z3-5.3.1-2026-11-09.json)
+records all892 build steps,3095 independently rehashed source files,23 installed
+files and four rehashed signed libc++ packages. The native library requires at
+most GLIBC2.34 symbols on this glibc2.36 host. The resulting NEX passed all eleven
+original bounded-verification methods with their original limits; complete303
+and portable SDK qualification remain in progress.
+
+The linker reported both `libz3.so.4` from native LLVM and NEX's `libz3.so.5.3`.
+The receipt retains that warning and the actual loader selections. The eleven
+proof methods establish their stated scope; complete cohort qualification is
+still required.
 
 The upstream source uses `<format>`, which is absent from Bookworm GCC12's C++
 library. The original GNU build failed at that include. Select native Clang22
 and the four matching signed libc++22 runtime/development packages listed in the
 solver pin. Extract them into a separate `LIBCXX_PREFIX`; preserve the system
-GNU C++ SDK used to build NEX itself. A real `<format>` program already compiled
-and executed42 with this private selection. The complete solver build remains
-in progress; the original GNU and package-layout setup failures are retained.
+GNU C++ SDK used to build NEX itself. A real `<format>` program compiled and
+executed42 with this private selection before the successful solver build.
+The original GNU and package-layout setup failures are retained.
 
 Set `Z3_SOURCE`, `Z3_BUILD` and `Z3_PREFIX` to new absolute private paths. Download
 the exact source URL from the pin and verify its SHA256 before extraction.

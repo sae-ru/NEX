@@ -1,3 +1,22 @@
+# Current0.162.2 qualification — 2026-11-09
+
+Language0.28/taskABI7 are unchanged. The current strict-LLDB-command-capture
+[e63 source snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).
+Its new immutable archive is assembled; current moved/restored and subsequent
+SDK gates are running. Fedora12281 passed full303 and ordinary installed smoke
+with its separately pinned source/compiler.
+
+The [native Bookworm solver cohort](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
+built all892 Z3 steps and the matching NEX passed all11 original bounded-proof
+methods with unchanged limits. Full303 and the portable Linux SDK remain pending.
+The earlier4.8.12 proof failure and dual-SONAME linker warning are retained.
+Windows current SDK/regression and matching physical-device qualification remain
+separate gates. General devices, Metal/Apple NPU, mobile/UI, Studio, conversion,
+real multi-model costs and every unfinished original PLAN requirement remain open.
+
+Earlier entries below retain their own source/archive identities and do not
+accept later source or SDKs.
+
 # Development0.162.2 — preserve GCC floating environment
 
 On physical CIX ARM64 with optimized GCC12, float-to-integer conversion was
