@@ -1,0 +1,72 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Windows x86-64 LLDB23.1.4 build and unchanged native C++ PE replay; no NEX-language or complete SDK acceptance",
+  "evidence": {
+    "schema": "nex.Windows-LLDB-pseudo-console-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T17:00:11.776842+00:00",
+    "all_owners_and_jobs_retired": true,
+    "raw_bytes": 3439535,
+    "archive_bytes": 435152,
+    "archive_sha256": "c05b399fc623ff3be38d40dc35b78861a5a7024c5d1ea6e5a8579919448d84b9",
+    "raw_files": 60,
+    "builder_source_commit": "b56ea0373422b53514af4117d867ce4925f8e4e5",
+    "fixture_helper_source_commit": "168180219a93b5485d01bc6b555362ab117356a9",
+    "LLVM_version": "23.1.4",
+    "original_PE_sha256": "7481c15340e993aff8b479c3187218148854d651c4b3d354e81bc34d3d8fb72e",
+    "debugger_receipt_sha256": "aa4f1978433d9b5f01fcf187915fe264efc7d09bea3a1149e7ea507a8572c1ed",
+    "debugger_files": {
+      "lldb.exe": "7b40165daf47a6aca32282b1e41d5089a349faeb7edb3d005cb90c8611f68d71",
+      "lldb-dap.exe": "1be6180a24abb75781ce0b752f85edbc037891c41a941905476f5e2d8a08704d",
+      "lldb-server.exe": "cb03feec52594d00be3eeed382a5f28a20ed6b05030d1ba81c1ec0c8c1dd8e80",
+      "liblldb.dll": "4c474451df0a1468511a79aa5af97a79f03ad99dd2c0212fb6be62e5d57bf6f3"
+    },
+    "pipe_patch_sha256": "3e029317ea82468cba61c69f5a7186517101793a46932047e3363863e80cdbb3",
+    "stdio_patch_sha256": "67e19059199905f7153e7918d071bbef108f42980dc11bfbda91e03a09ef2375",
+    "cases": [
+      {
+        "scope": "ordinary",
+        "mode": "cli",
+        "passed": true,
+        "argument_value": 41,
+        "inferior_output": 42,
+        "inferior_exit": 0
+      },
+      {
+        "scope": "ordinary",
+        "mode": "dap",
+        "passed": true,
+        "argument_value": 41,
+        "inferior_output": 42,
+        "inferior_exit": 0
+      },
+      {
+        "scope": "AppContainer",
+        "mode": "cli",
+        "passed": true,
+        "argument_value": 41,
+        "inferior_output": 42,
+        "inferior_exit": 0
+      },
+      {
+        "scope": "AppContainer",
+        "mode": "dap",
+        "passed": true,
+        "argument_value": 41,
+        "inferior_output": 42,
+        "inferior_exit": 0
+      }
+    ],
+    "AppContainer_source_reads_denied": true,
+    "AppContainer_copied_code_writes_denied": true,
+    "temporary_profile_and_code_root_removed": true,
+    "original_PE_debugger_and_frozen_source_preserved": true,
+    "NEX_language_execution_claimed": false,
+    "full_NEX_debugger_regression_accepted": false,
+    "complete_portable_SDK_accepted": false,
+    "whole_original_goal_complete": false
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}

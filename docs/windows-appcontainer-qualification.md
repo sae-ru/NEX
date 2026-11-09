@@ -25,18 +25,15 @@ byte-verified. The [actual patched source compiled to a Windows x86-64 object](e
 using the prior Ninja compilation database, with the same compiler, headers and
 flags and new source/object/dependency outputs. The compiler exited normally
 without diagnostics; the old source and object remained unchanged. This verifies
-one translation unit. The new private linked build and native CLI/DAP regression
-remain pending. The queued replay uses the unchanged original PE, requiring an
-argument stop at41, actual inferior output42 and normal exit on the host and
-inside AppContainer, together with outside read and copied-code write denials.
-The existing qualified debugger remains unchanged.
+one translation unit. Later linked builds and actual PE replay are recorded
+below. The existing qualified debugger remains unchanged.
 
 The0.164 development build helper applies all pinned patches with command-local
 `core.autocrlf=false` / `core.eol=lf`. Git's Windows CRLF configuration otherwise
 changes the exact post-patch bytes and correctly trips the checksum gate.
 Operator Git settings stay unchanged; an existing CRLF tree is still rejected.
-Use a new source directory rather than relabelling that failed tree. Matching
-native Windows preparation/build/replay qualification remains separate.
+Use a new source directory rather than relabelling that failed tree. The
+following native record pins the later combined recipe and binaries.
 
 The first linked0.164 debugger passed the unchanged PE through CLI and DAP on
 the ordinary host. AppContainer launch still failed; both temporary profiles and
@@ -49,9 +46,14 @@ The same build option now also selects the separately pinned
 `lldb23-appcontainer-stdio.json` patch for that pseudo-console pipe. It queries
 the actual process token, uses `LOCAL` only inside AppContainer, and keeps host
 names, object ACLs and handle ownership unchanged. Token-query failures remain
-errors. Both patch hashes appear in the revision and receipt. The new combined
-linked build and original host/AppContainer PE replay remain separate gates;
-the direct API controls alone do not accept LLDB or the complete SDK.
+errors. Both patch hashes appear in the revision and receipt. The
+[combined linked build and original PE replay](evidence/windows-lldb-pseudo-console-0.164.0-2026-11-09.json)
+passed all four CLI/DAP cases on the host and in AppContainer: argument41,
+output42 and normal exit. Outside-source reads and copied-code writes were
+denied. All owned processes retired; the temporary code root and profile were
+removed. The original PE, debugger and frozen NEX source were preserved.
+This is an actual native C++ PE debugger control. Full NEX debugger regression
+and complete portable SDK qualification remain separate gates.
 
 ## Current coherent SDK follow-up
 
