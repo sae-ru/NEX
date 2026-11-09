@@ -1,0 +1,46 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Exact4490655 source: all targets, complete unfiltered303 groups and ordinary installed smoke on the Fedora x86-64 stand. Portable SDK and the new0.165 emitter are separate gates.",
+  "evidence": {
+    "schema": "nex.current164-terminal-independent-evidence/1",
+    "ok": true,
+    "stand": "Fedora",
+    "sealed_utc": "2026-11-09T23:17:36.395179+00:00",
+    "summary": {
+      "source_commit": "44906558146a8553b510fd30d2ab5790d60d63d9",
+      "source_files": 2122,
+      "toolchain": "0.164.0",
+      "language": "0.28",
+      "task_ABI": 7,
+      "compiler_sha256": "d67f29d2acfb4590c520700478de9807118d9295a83d733c959697f9bc0d7cf3",
+      "ordinary_compiler_sha256": "95d70383e5c2b46f825e2642bc88cbb12a2ef9b3c34d989a3c748751c7ec9cb8",
+      "registered_groups": 303,
+      "full303_accepted": true,
+      "complete_portable_SDK_accepted": false,
+      "individual_test_timeouts_changed": false,
+      "seconds": 12649.581078332994,
+      "actual_controller_retired": true,
+      "passed": 303,
+      "failed": 0,
+      "skipped": 0,
+      "ordinary_installed": true
+    },
+    "raw_files": 36,
+    "raw_bytes": 1206870,
+    "archive_sha256": "ae28df4539399075352e845cec68341463ed07d6ab2cdb919982580ed753e20b",
+    "archive_bytes": 217970,
+    "whole_original_goal_complete": false,
+    "primary_guard": {
+      "ok": true,
+      "commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+      "source_files": 1990,
+      "graph_revisions": 48,
+      "all_original47_revisions_and_local_IDs_preserved": true,
+      "origin016_verified": false,
+      "primary_compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756"
+    }
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}

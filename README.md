@@ -53,7 +53,16 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.164.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.165.0 / language 0.28 / task ABI 7**, in development.
+The new [scalar Metal backend](docs/gpu-codegen.md) adds
+`nex emit --kind metal` for reachable shared pure i64/bool/unit functions from
+the checked compiler AST. It supplies function source maps and a versioned JSON
+record without initializing a driver. Its [scoped acceptance](docs/evidence/macos-public-Metal-emission-0.165.0-2026-11-10.json)
+passed all targets, six CLI tests and20 reference/native/TypeScript/Metal cases
+with48 physical GPU dispatches across rows and columns. Full regression and
+matching installed SDK qualification remain pending for this new emitter.
+
+The preceding0.164 runtime retains its separately pinned results below.
 The append-only [fatal diagnostic C API](docs/ffi-design.md#explicit-fatal-diagnostics-0164)
 lets trusted providers report their original runtime error code and copied UTF-8
 message while retaining cleanup and existing host-control precedence. Existing
@@ -69,6 +78,8 @@ passed nine package groups and108 validator tests. That exact updated source
 then passed [all 301 macOS groups](docs/evidence/macos-package-notices-source-full301-0.164.0-2026-11-09.json)
 in one unfiltered run, with no failures or skips. Its matching complete SDK
 qualification remains pending.
+The same4490655 snapshot also passed [all303 Fedora groups and ordinary installed smoke](docs/evidence/fedora-package-notices-full303-0.164.0-2026-11-10.json),
+with no failures or skips. That result retains its0.164 identity.
 The latest source also passed a [native RK3588 CPU and TypeScript smoke check](docs/evidence/rk-current-CPU-TypeScript-0.164.0-2026-11-09.json):
 reference/Debug/Release output agreement and one generic Unicode test in native
 and Node execution. Full RK regression, GPU/NPU and portable delivery remain pending.

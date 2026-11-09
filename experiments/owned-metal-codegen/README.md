@@ -9,9 +9,11 @@ through genuine `std/device` Session/Buffer resources.
 
 It requires the0.164 explicit fatal-trap C API. Language0.28, taskABI7 and source
 grammar are unchanged. Complete installed SDK qualification remains pending.
-Public compiler CLI/discovery,
-diagnostics/debug/profile, immutable SDK delivery and broader GPU/NPU remain
-separate work.
+Development0.165 adds a [public C++ source emitter](../../docs/gpu-codegen.md)
+with discovery, diagnostics and function maps. This prototype still uses its
+separately pinned Python/typed-graph generator. Connecting the public emitter
+to owned dispatch, GPU debug/profile, immutable SDK delivery and broader GPU/NPU
+remain separate work.
 
 ## Prepare and call
 

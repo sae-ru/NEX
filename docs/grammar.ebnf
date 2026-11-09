@@ -2,7 +2,8 @@
    This is the current source grammar. Retained027 parsing/AST identities stay
    separate without source contracts; retained026 keeps its legacy handlers.
    Historical notes are preserved in grammar-history.ebnf.
-   Toolchain0.164 C API raise_trap adds no source production or keyword. *)
+   Toolchain0.164 C API raise_trap and0.165 scalar Metal emission add no
+   source production or keyword. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | resource | endpoint | trait | implementation } ;
 resource      = [ "pub" ], "server", "resource", identifier, [ type_parameters ], ";" ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",

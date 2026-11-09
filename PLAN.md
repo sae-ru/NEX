@@ -13,7 +13,10 @@ evidence and limits in STATUS.md.
 - [x] Forward original fatal-trap codes through the0.164 append-only host API; nine core groups and21 native/reference Metal pairs/36 GPU events passed. `try_apply` retains Results; ordinary unwrap keeps E_RESULT.
 - [ ] Qualify that new path through matching full current regression, immutable SDK and remaining platform gates.
 - [x] Match malformed-reply/log-stress checks to the generated provider's distinct protocol. The corrected provider passed34 frame/progress/error-packet/UTF-8/control pairs and all preceding corpora:74 native/reference pairs with130 physical GPU kernels. Matching installed delivery and unknown vendor recovery remain separate requirements.
-- [ ] Integrate public compiler CLI/discovery, source diagnostics, debugging and profiling.
+- [x] Add public checked-AST scalar emission, CLI/discovery, source diagnostics, function maps and a versioned JSON contract in development0.165; matching acceptance remains pending.
+- [x] Validate the public C++ emitter against reference/native Debug/Release/TypeScript and physical Metal:20 cases, both layouts,48 GPU dispatches and nine host rejections.
+- [ ] Complete its full current regression and matching installed SDK/platform qualification.
+- [ ] Connect public emission to owned dispatch and implement GPU debugging and profiling.
 - [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
 
 All remaining original language/platform/device/mobile/UI/Studio/conversion,

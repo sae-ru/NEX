@@ -64,6 +64,13 @@ payload metadata do not grant filesystem, foreign-module or device authority.
 Use actual grants and exact provider ABIs. GPU/NPU support must name the device,
 operation, backend and fallback policy that were physically verified.
 
+For scalar GPU source generation, query `gpu_codegen` and read
+`nex guide --kind gpu --json` from the selected compiler. Development0.165
+offers `nex emit --kind metal` directly from checked source. Its versioned
+record includes reachable identities and function line mappings; emission
+alone neither executes a GPU nor establishes installed SDK support. Keep
+unsupported types, effects, realms and control flow explicit.
+
 ## Using the material in a dataset
 
 Keep code, natural-language task, expected behavior, language version and

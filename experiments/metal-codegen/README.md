@@ -1,5 +1,16 @@
 # NEX scalar functions on Metal
 
+Development0.165 also has a [public C++ checked-AST emitter](../../docs/gpu-codegen.md)
+through `nex emit --kind metal`. This directory retains the earlier independent
+Python/typed-graph prototype and its original physical evidence. Public-emitter
+acceptance must name its own compiler and generated shader identities.
+Its [scoped acceptance](../../docs/evidence/macos-public-Metal-emission-0.165.0-2026-11-10.json)
+now covers20 reference/native Debug/Release/TypeScript/Metal cases, both layouts
+and48 physical GPU dispatches. `verify_public.py` accepts an explicit compiler,
+resource root, freshly built runner, Node and the pinned TypeScript compiler;
+its output directory must be new. Matching full regression and SDK delivery
+remain pending.
+
 This experimental backend generates GPU code from **ordinary checked NEX
 functions**. It does not ask the application author to rewrite each function
 as a Metal shader. The current language0.28 compiler checks the project first;
@@ -18,8 +29,9 @@ The prototype currently emits MSL directly from the canonical checked graph.
 It is separate from MLIR/LLVM native emission and the frozen0.163 SDK candidate.
 The separate [owned provider](../owned-metal-codegen/README.md) now executes
 these functions from actual NEX task programs with physical parent resources.
-Direct fatal-trap forwarding, public compiler discovery/CLI, debug/profile
-sites and installed delivery remain pending. Other GPU backends, F64, aggregates, captures, recursion,
+The owned path forwards fatal traps through the0.164 append-only C API.
+Public owned dispatch, debug/profile sites and installed delivery remain pending.
+Other GPU backends, F64, aggregates, captures, recursion,
 source errors/finally and general GPU/NPU execution remain pending. Unsupported
 reachable code fails generation; the generator does not substitute CPU results.
 

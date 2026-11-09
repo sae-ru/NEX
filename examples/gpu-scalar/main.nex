@@ -1,0 +1,8 @@
+module gpu_scalar;
+
+fn twice(x:i64)->i64{return x*2;}
+fn transform(x:i64,bias:i64)->i64 requires(x>=0&&bias>=0) ensures(r=>r>=x){
+  return twice(x)+bias;
+}
+fn main()->unit !{io}{print(transform(20,2));}
+test fn answer()->unit{assert(transform(20,2)==42);}

@@ -36,10 +36,13 @@ int main(int argc,char **argv){
   JSON report={{"schema","nex.generated-Metal-physical/1"},{"ok",false},{"CPU_substitute",false},
     {"installed_SDK_accepted",false},{"source_task_provider_integrated",false}};
   try{
-    require(argc==9,"expected shader input output errors count arguments steps device-index");
+    require(argc==9||argc==10,"expected shader input output errors count arguments steps device-index [rows|columns]");
     uint32_t count=number(argv[5],1,32768),arguments=number(argv[6],0,8),steps=number(argv[7],1,65536),index=number(argv[8],0,63);
+    std::string layout=argc==10?argv[9]:"rows";
+    require(layout=="rows"||layout=="columns","input layout must be rows or columns");
     require(uint64_t(count)*steps<=16777216,"kernel count times per-lane step bound exceeds16777216");
     __weak id<MTLBuffer> inputWitness=nil,outputWitness=nil,errorWitness=nil;
+    __weak id<MTLBuffer> columnWitness[8]={};
     std::vector<uint8_t> output(size_t(count)*8),errors(size_t(count)*4);
     std::atomic<unsigned> handlers{0};
     @autoreleasepool{
@@ -47,7 +50,7 @@ int main(int argc,char **argv){
       id<MTLDevice> device=devices[index];require(device&&device.registryID,"Metal device has no registry identity");
       report["device"]=text(device.name);report["registryID"]=device.registryID;
       NSData *shaderBytes=[NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[1]]];
-      require(shaderBytes&&shaderBytes.length>0&&shaderBytes.length<=4194304,"shader is absent or outside4MiB bound");
+      require(shaderBytes&&shaderBytes.length>0&&shaderBytes.length<=16777216,"shader is absent or outside16MiB bound");
       NSString *source=[[NSString alloc]initWithData:shaderBytes encoding:NSUTF8StringEncoding];require(source!=nil,"shader is not UTF-8");
       MTLCompileOptions *options=[[MTLCompileOptions alloc]init];options.mathMode=MTLMathModeSafe;options.mathFloatingPointFunctions=MTLMathFloatingPointFunctionsPrecise;options.languageVersion=MTLLanguageVersion3_1;
       NSError *error=nil;id<MTLLibrary> library=[device newLibraryWithSource:source options:options error:&error];
@@ -59,22 +62,37 @@ int main(int argc,char **argv){
       @autoreleasepool{
         NSData *inputBytes=[NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[2]]];
         size_t inputSize=size_t(count)*arguments*8;require(inputBytes&&inputBytes.length==inputSize,"input does not match scalar row shape");
-        id<MTLBuffer> input=[device newBufferWithLength:std::max<size_t>(8,inputSize) options:MTLResourceStorageModeShared];
+        id<MTLBuffer> input=nil,columns[8]={};
+        if(layout=="rows"){
+          input=[device newBufferWithLength:std::max<size_t>(8,inputSize) options:MTLResourceStorageModeShared];
+          require(input!=nil,"Metal input buffer unavailable");inputWitness=input;
+          if(inputSize)std::memcpy(input.contents,inputBytes.bytes,inputSize);
+        }else for(uint32_t column=0;column<arguments;++column){
+          columns[column]=[device newBufferWithLength:size_t(count)*8 options:MTLResourceStorageModeShared];
+          require(columns[column]!=nil,"Metal input column unavailable");columnWitness[column]=columns[column];
+          // Rearrange input bytes only; all result computation runs on Metal.
+          for(uint32_t lane=0;lane<count;++lane)std::memcpy(static_cast<uint8_t*>(columns[column].contents)+size_t(lane)*8,
+            static_cast<const uint8_t*>(inputBytes.bytes)+(size_t(lane)*arguments+column)*8,8);
+        }
         id<MTLBuffer> result=[device newBufferWithLength:output.size() options:MTLResourceStorageModeShared];
         id<MTLBuffer> status=[device newBufferWithLength:errors.size() options:MTLResourceStorageModeShared];
-        require(input&&result&&status,"Metal buffers unavailable");inputWitness=input;outputWitness=result;errorWitness=status;
-        if(inputSize)std::memcpy(input.contents,inputBytes.bytes,inputSize);
+        require(result&&status,"Metal result buffers unavailable");outputWitness=result;errorWitness=status;
         std::memset(result.contents,0xa5,output.size());std::memset(status.contents,0xa5,errors.size());
         MTLCommandBufferDescriptor *descriptor=[[MTLCommandBufferDescriptor alloc]init];descriptor.retainedReferences=YES;
         id<MTLCommandBuffer> command=[queue commandBufferWithDescriptor:descriptor];require(command!=nil,"Metal command missing");
         Settlement settlement{command};auto *counter=&handlers;
         [command addCompletedHandler:^(id<MTLCommandBuffer> completed){(void)completed;counter->fetch_add(1,std::memory_order_release);}];
         id<MTLComputeCommandEncoder> encoder=[command computeCommandEncoder];require(encoder!=nil,"Metal encoder missing");
-        [encoder setComputePipelineState:pipeline];[encoder setBuffer:input offset:0 atIndex:0];[encoder setBuffer:result offset:0 atIndex:1];[encoder setBuffer:status offset:0 atIndex:2];
-        uint32_t parameters[2]={count,steps};[encoder setBytes:parameters length:sizeof(parameters) atIndex:3];
+        [encoder setComputePipelineState:pipeline];
+        if(layout=="rows")[encoder setBuffer:input offset:0 atIndex:0];
+        else for(uint32_t column=0;column<arguments;++column)[encoder setBuffer:columns[column] offset:0 atIndex:column];
+        [encoder setBuffer:result offset:0 atIndex:layout=="rows"?1:8];
+        [encoder setBuffer:status offset:0 atIndex:layout=="rows"?2:9];
+        uint32_t parameters[2]={count,steps};[encoder setBytes:parameters length:sizeof(parameters) atIndex:layout=="rows"?3:10];
         NSUInteger width=std::min<NSUInteger>(pipeline.maxTotalThreadsPerThreadgroup,256);require(width>0,"Metal threadgroup missing");
         [encoder dispatchThreads:MTLSizeMake(count,1,1) threadsPerThreadgroup:MTLSizeMake(width,1,1)];[encoder endEncoding];
-        require(inputWitness&&outputWitness&&errorWitness,"buffers lost before physical submission");
+        require((layout!="rows"||inputWitness)&&outputWitness&&errorWitness,"buffers lost before physical submission");
+        for(uint32_t column=0;layout=="columns"&&column<arguments;++column)require(columnWitness[column]!=nil,"column lost before submission");
         [command commit];[command waitUntilCompleted];
         report["Metal_command_buffer_status"]=static_cast<unsigned>(command.status);
         require(command.status==MTLCommandBufferStatusCompleted,command.error?text(command.error.localizedDescription):"physical kernel did not complete");
@@ -86,13 +104,17 @@ int main(int argc,char **argv){
         std::memcpy(output.data(),result.contents,output.size());std::memcpy(errors.data(),status.contents,errors.size());
         report["physical_completion_before_readback"]=true;
         settlement.command=nil;command=nil;encoder=nil;input=nil;result=nil;status=nil;
+        for(auto &column:columns)column=nil;
       }
       queue=nil;pipeline=nil;function=nil;library=nil;device=nil;devices=nil;
     }
     require(!inputWitness&&!outputWitness&&!errorWitness,"Metal buffer remained retained after drained scope");
+    for(auto &column:columnWitness)require(column==nil,"Metal column remained retained after drained scope");
     write(argv[3],output.data(),output.size());write(argv[4],errors.data(),errors.size());
     report.update({{"ok",true},{"count",count},{"arguments",arguments},{"per_lane_step_bound",steps},
-      {"all_three_buffers_released_after_completion",true},{"physical_GPU_kernel_events",1}});
+      {"input_layout",layout},{"input_buffer_count",layout=="rows"?1:arguments},
+      {"all_three_buffers_released_after_completion",layout=="rows"},
+      {"all_buffers_released_after_completion",true},{"physical_GPU_kernel_events",1}});
     std::cout<<report.dump()<<'\n';return 0;
   }catch(const std::exception &error){report["error"]=error.what();std::cout<<report.dump()<<'\n';return 1;}
 }

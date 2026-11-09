@@ -98,9 +98,19 @@ def main():
             value = command(label, arguments, project)
             if label != 'check':
                 samples[label] = value
+        source = project/entry
+        source.write_text(source.read_text()+'\nfn schema_transform(x:i64)->i64{return x+1;}\n')
+        samples['metal-emission'] = command('metal-emission',
+            ['emit', '--kind', 'metal', '--entry', 'schema_transform'], project)
+        shader = output/'shader % 🧠.metal'
+        samples['metal-emission-file'] = command('metal-emission-file',
+            ['emit', '--kind', 'metal', '--entry', 'schema_transform', '-o', shader], project)
+        if sha(shader) != samples['metal-emission-file']['shader_sha256']:
+            raise RuntimeError('emitted shader differs from its recorded hash')
         for name, value in samples.items():
             (output/(name+'.sample.json')).write_text(json.dumps(value, ensure_ascii=False, indent=2)+'\n')
-            validator = Draft202012Validator(documents[name+'.schema.json'], registry=registry)
+            schema_name = 'metal-emission' if name == 'metal-emission-file' else name
+            validator = Draft202012Validator(documents[schema_name+'.schema.json'], registry=registry)
             errors = list(validator.iter_errors(value))
             if errors:
                 report['failures'].append({'artifact': name, 'errors': [
@@ -116,7 +126,38 @@ def main():
                                            'rejected': rejected})
                 if not rejected:
                     report['failures'].append({'artifact': name, 'invalid_language_accepted': language})
-        if len(report['positive']) != 6 or len(report['negative']) != 18 or report['failures']:
+        validator = Draft202012Validator(documents['metal-emission.schema.json'], registry=registry)
+        original = samples['metal-emission']
+        mutations = [
+            ('two_source_locations', {'path': str(shader)}),
+            ('invalid_layout', {'input_layout': 'automatic'}),
+            ('too_many_parameters', {'parameter_types': ['i64']*9}),
+            ('unit_parameter', {'parameter_types': ['unit']}),
+            ('unsupported_result', {'result_type': 'f64'}),
+            ('invalid_shader_hash', {'shader_sha256': 'bad'}),
+            ('empty_source', {'source_bytes': 0}),
+            ('driver_claim', {'driver_initialized': True}),
+            ('execution_claim', {'device_executed': True}),
+            ('unknown_property', {'unexpected': True}),
+            ('empty_functions', {'functions': {}})]
+        for label, replacement in mutations:
+            changed = copy.deepcopy(original)
+            changed.update(replacement)
+            rejected = not validator.is_valid(changed)
+            report['negative'].append({'artifact': 'metal-emission', 'mutation': label, 'rejected': rejected})
+            if not rejected:
+                report['failures'].append({'artifact': 'metal-emission', 'invalid_mutation_accepted': label})
+        for label in ['no_source_location', 'zero_generated_line']:
+            changed = copy.deepcopy(original)
+            if label == 'no_source_location':
+                changed.pop('source')
+            else:
+                changed['function_map'][0]['generated_first_line'] = 0
+            rejected = not validator.is_valid(changed)
+            report['negative'].append({'artifact': 'metal-emission', 'mutation': label, 'rejected': rejected})
+            if not rejected:
+                report['failures'].append({'artifact': 'metal-emission', 'invalid_mutation_accepted': label})
+        if len(report['positive']) != 8 or len(report['negative']) != 37 or report['failures']:
             raise RuntimeError('current artifact/schema contract failed; inspect report.json')
         if sha(compiler) != report['compiler_sha256'] or any(sha(schemas/name) != digest for name, digest in source_inputs.items()):
             raise RuntimeError('compiler or schema inputs changed during validation')

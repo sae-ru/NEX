@@ -1,3 +1,30 @@
+# Public checked scalar Metal emission — development0.165.0
+
+The C++ compiler now implements `nex emit --kind metal`, using its checked AST
+and only reachable shared pure scalar functions. It preserves checked integer
+operations, source evaluation order and lowered contracts, supplies function
+line mappings and a versioned JSON record, and initializes no device driver.
+`nex describe --field gpu_codegen --json` and `nex guide --kind gpu --json`
+describe the exact subset and rejected programs. Language0.28, graph identities,
+task ABI7 and C ABI major1 remain unchanged; no migration is needed.
+
+The [scoped acceptance](docs/evidence/macos-public-Metal-emission-0.165.0-2026-11-10.json)
+passed all native targets, six CLI tests,86 schema documents/eight actual
+artifacts/37 rejected mutations and20 reference/native Debug/Release/TypeScript/
+Metal cases. Both input layouts execute on Apple M5 Max:48 physical dispatches,
+including eight boundary dispatches, plus nine rejected host inputs. Full
+regression and matching installed SDK delivery remain pending. Earlier experimental
+Python/typed-graph and0.164 SDK results retain their original pins. Public owned
+dispatch, broader types/backends, GPU debugging/profiling and the remaining
+original roadmap are still required.
+
+The frozen4490655/0.164 source now passed [all303 Fedora groups and ordinary installed smoke](docs/evidence/fedora-package-notices-full303-0.164.0-2026-11-10.json),
+with no failures or skips. The separate frozen1681802 Windows snapshot passed
+[39 of40 debug/profile groups](docs/evidence/windows-combined-debugger-39plus1-0.164.0-2026-11-10.json)
+with the combined pipe/stdio LLDB. The historical modular HTTP fixture still
+times out during its first pure-static O0 recover session. Original results
+and individual budgets are preserved; complete Windows acceptance is pending.
+
 # Native Windows fixture paths — development0.164.0
 
 The current Windows restricted source run completed292 of296 groups; its four
