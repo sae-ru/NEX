@@ -175,6 +175,19 @@ children, stepping and resume/exit handling. In an LLDB DAP REPL, the command
 debugger. Without `--json` and with the default `--kind lldb`, it starts LLDB;
 arguments after `--` go to LLDB.
 
+On Windows, the NEX DAP bridge resolves manifest-listed native function names to
+their actual debug definitions in the executable or retained owned DLLs. A PE
+import jump-table symbol is not a function definition and cannot consume a
+breakpoint hit. The first function stop skips the normal prologue so parameters
+can be inspected immediately. LLDB resolves locations when a DLL loads and the
+editor receives the resulting breakpoint update. Positive decimal hit counts
+(`hitCondition`, at most 4294967296) and native LLDB conditions are retained when
+the same function entry is updated. An empty function-breakpoint list removes
+those entries. Unlisted C/C++ names remain owned by lldb-dap; manually created
+breakpoints are preserved. Logical task breakpoints use their separate source
+event protocol. The direct/raw LLDB adapter retains normal native resolution.
+The resolver uses LLDB's documented [scripted breakpoint API](https://lldb.llvm.org/use/tutorials/creating-custom-breakpoints.html).
+
 Darwin LLDB cannot track loaded images when an executable's physical path
 contains a literal backslash. For those project/build paths, `nex debug` uses
 an owned mode-0700 native build cache in a temporary location without backslashes.

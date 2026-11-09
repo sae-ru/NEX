@@ -1,0 +1,69 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "scoped-development-regression-passed-full-source-and-matching-SDK-pending",
+  "change": "Resolve native NEX Windows function breakpoints at debug definitions, excluding PE import thunks before hit counting. Preserve ordinary native breakpoint ownership.",
+  "compiler_sha256": "deb291f9b7e886eb74878838bc605dfddf9b859494abf9637176c512132f424d",
+  "base_source": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+  "candidate_source_files": 2038,
+  "candidate_delta_sha256": {
+    "debug/lldb_nex.py": "ec450fb4efa508d661ea51a4efd6202df33b25718bfe0e14e40886ffcd071fd3",
+    "debug/nex_dap.py": "ce8104c2442a830dce0b15528eb89a5d05fccba94e85fa059acfd0954634590c",
+    "tests/debugging.py": "e5bb44a105f71073f586a7b783a93d2b89b97872d043fe1181ebfad86f24412e",
+    "tests/dap_transport.py": "6451ce58709e4752f3a5629360db3de5ea10f3c3bc228fa8f5c997b528a73821"
+  },
+  "retained_original_failure": {
+    "first_stop": "EXE import thunk, without SBFunction or parameter body",
+    "second_stop": "actual owned DLL function, with body available",
+    "original_one_stop_acceptance_passed": false
+  },
+  "preserved_binary_replay": {
+    "same_executable_and_DLLs": true,
+    "original_source_SDK_and_graphs_modified": false,
+    "first_stop_in_function_definition": true,
+    "body_watch": "payload",
+    "HTTP_status": 200,
+    "HTTP_result": "Я🧠:payload",
+    "auth_files_or_tokens_exported": false
+  },
+  "source_regression": {
+    "transport_cases": 20,
+    "actual_PE_regression_methods": 1,
+    "actual_debuggee_runs": 2,
+    "checks": [
+      "exact second-call hitCondition without thunk hits",
+      "normal prologue argument watch",
+      "mixed raw native main and mapped NEX function breakpoint IDs",
+      "same function ID after condition update",
+      "false condition runs to completion without a stop",
+      "DLL-resolution event when initially unverified",
+      "empty-list removal",
+      "manual breakpoint preserved",
+      "original project source and manifests deleted before debugging",
+      "exact stdout and normal exit",
+      "no project graph Store created"
+    ]
+  },
+  "process_observation": {
+    "observer": "C5 native job, assignment before resume",
+    "all_observed_jobs_retired": true,
+    "timeouts": false,
+    "crash_diagnostic": false
+  },
+  "raw_evidence": {
+    "files": 34,
+    "archive_sha256": "dda7025f5670e48525737ad61d851e25ef58a99e03725974829d134976841775",
+    "archive_bytes": 231874
+  },
+  "limits": [
+    "Source development uses the unchanged pinned native engine with a complete resource snapshot plus four explicitly hashed source/test edits.",
+    "The preserved-binary replay is a debugger regression, not complete SDK acceptance.",
+    "Full updated source/platform regression and a newly assembled matching SDK are pending.",
+    "Direct/raw LLDB retains its ordinary native symbol resolution.",
+    "Positive Windows IPv6 remains a separate unavailable gate under the operator policy.",
+    "No release, main promotion or completion of the original PLAN is claimed."
+  ]
+}

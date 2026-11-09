@@ -13,6 +13,7 @@ import sys
 import threading
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 import support as harness
 
 spec=importlib.util.spec_from_file_location('nex_dap',harness.REPO/'debug/nex_dap.py')
@@ -83,6 +84,59 @@ class Transport(harness.ToolchainCase):
             bridge.client({'seq':sequence,'type':'request','command':command,'arguments':arguments})
             self.assertFalse(self.messages(self.output)[-1]['success'])
         self.assertEqual(self.messages(self.backend.stdin),[])
+
+    def test_native_function_breakpoints_keep_mixed_order_conditions_and_client_identity(self):
+        bridge=self.bridge();bridge.native_function_mode=True
+        rows=[{'name':'nex_core_render','condition':'x == 2','hitCondition':'3'},
+              {'name':'host_callback','condition':'host_value > 0'}, {'name':'nex_service_handle'}]
+        bridge.client({'seq':42,'type':'request','command':'setFunctionBreakpoints','arguments':{'breakpoints':rows}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent['command'],'evaluate')
+        self.assertEqual(json.loads(base64.b64decode(sent['arguments']['expression'].split(' ',1)[1])),{'breakpoints':rows})
+        resolved=[{'id':101,'verified':False},None,{'id':102,'verified':True}]
+        bridge.server({'seq':300,'type':'response','request_seq':42,'command':'evaluate','success':True,
+            'body':{'result':json.dumps({'schema':'nex.native-function-breakpoints/1','breakpoints':resolved})}})
+        sent=self.messages(self.backend.stdin)[-1]
+        self.assertEqual(sent,{'seq':42,'type':'request','command':'setFunctionBreakpoints',
+            'arguments':{'breakpoints':[rows[1]]}})
+        bridge.server({'seq':301,'type':'response','request_seq':42,'command':'setFunctionBreakpoints',
+            'success':True,'body':{'breakpoints':[{'id':103,'verified':True}]}})
+        response=self.messages(self.output)[-1]
+        self.assertEqual(response['request_seq'],42);self.assertEqual(response['command'],'setFunctionBreakpoints')
+        self.assertEqual(response['body']['breakpoints'],[resolved[0],{'id':103,'verified':True},resolved[2]])
+
+    def test_native_function_breakpoints_clear_both_owners_and_report_resolver_failure(self):
+        bridge=self.bridge();bridge.native_function_mode=True
+        bridge.client({'seq':1,'type':'request','command':'setFunctionBreakpoints','arguments':{'breakpoints':[]}})
+        bridge.server({'seq':90,'type':'response','request_seq':1,'command':'evaluate','success':True,
+            'body':{'result':'{"schema":"nex.native-function-breakpoints/1","breakpoints":[]}'}})
+        self.assertEqual(self.messages(self.backend.stdin)[-1]['arguments'],{'breakpoints':[]})
+        bridge.server({'seq':91,'type':'response','request_seq':1,'command':'setFunctionBreakpoints',
+            'success':True,'body':{'breakpoints':[]}})
+        self.assertEqual(self.messages(self.output)[-1]['body']['breakpoints'],[])
+        bridge.client({'seq':2,'type':'request','command':'setFunctionBreakpoints','arguments':{'breakpoints':[]}})
+        bridge.server({'seq':92,'type':'response','request_seq':2,'command':'evaluate','success':False,
+            'message':'NEX target not loaded'})
+        response=self.messages(self.output)[-1]
+        self.assertFalse(response['success']);self.assertIn('NEX target not loaded',response['message'])
+        self.assertEqual(self.messages(self.backend.stdin)[-1]['command'],'evaluate')
+
+    def test_native_function_resolver_is_scoped_to_Windows_NEX_launch_or_attach(self):
+        for platform,command,initialization,wanted in [
+                ('nt','launch',[],False), ('nt','launch',None,False),
+                ('nt','attach',['nex-load-debug "retained.json"'],True),
+                ('nt','launch',['command script import "host.py"'],False),
+                ('posix','launch',['nex-load-debug "retained.json"'],False)]:
+            with self.subTest(platform=platform,command=command,initialization=initialization):
+                bridge=self.bridge()
+                with patch.object(adapter,'os',SimpleNamespace(name=platform)):
+                    bridge.client({'seq':1,'type':'request','command':command,
+                        'arguments':{'initCommands':initialization}})
+                self.assertEqual(bridge.native_function_mode,wanted)
+                bridge.client({'seq':2,'type':'request','command':'setFunctionBreakpoints',
+                    'arguments':{'breakpoints':[{'name':'native_callback'}]}})
+                self.assertEqual(self.messages(self.backend.stdin)[-1]['command'],
+                    'evaluate' if wanted else 'setFunctionBreakpoints')
 
     def test_utf8_framing_and_rejected_ambiguous_or_oversized_packets(self):
         stream=io.BytesIO();value={'type':'event','event':'output','body':{'output':'\u0410\x00\U0001f98a'}}

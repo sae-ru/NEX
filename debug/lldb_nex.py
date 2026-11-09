@@ -448,6 +448,8 @@ def _load_debug(debugger, command, result, private):
         manifest.pop('_capsule_recorded_program', None)
         manifest.pop('_capsule_recorded_images', None)
         manifest.pop('_owned_images', None)
+        manifest.pop('_native_function_breakpoints', None)
+        manifest.pop('_native_function_target', None)
         schemas = ('nex.private-task-debug/1','nex.private-task-debug/2') if private else ('nex.debug/1', 'nex.debug/2', 'nex.debug/3')
         if manifest.get("schema") not in schemas or manifest.get("runtime_view") != "nex.runtime-view/3":
             raise ValueError("unsupported NEX debug manifest/runtime")
@@ -490,6 +492,9 @@ def _load_debug(debugger, command, result, private):
         previous = _contexts.get(program_key, {})
         for key in ('_task_marker','_task_completion_marker'):
             if previous.get(key):debugger.GetSelectedTarget().BreakpointDelete(previous[key])
+        if previous.get('_native_function_target') == debugger.GetSelectedTarget():
+            for breakpoint in previous.get('_native_function_breakpoints', {}).values():
+                debugger.GetSelectedTarget().BreakpointDelete(breakpoint['id'])
         _contexts[program_key] = manifest
         if manifest.get('schema') in ('nex.debug/2', 'nex.debug/3', 'nex.private-task-debug/1','nex.private-task-debug/2'):
             manifest['_task_breakpoints'] = {}
@@ -2614,6 +2619,123 @@ def task_request_encoded(debugger, command, result, internal_dict):
         result.SetError(str(error))
 
 
+class FunctionDefinitionResolver:
+    """Resolve retained NEX definitions, never PE import jump-table symbols.
+
+    A stop callback is too late: a thunk would already consume an ignore/hit
+    count. LLDB reruns this resolver when a module is loaded, so a DLL that is
+    absent at configuration time can still supply its real function location.
+    """
+    def __init__(self, breakpoint, arguments, internal_dict=None):
+        self.breakpoint = breakpoint
+        self.program = arguments.GetValueForKey('program').GetStringValue(32768)
+        self.symbol = arguments.GetValueForKey('symbol').GetStringValue(4096)
+
+    def __get_depth__(self):
+        return lldb.eSearchDepthModule
+
+    def __callback__(self, symbols):
+        module = symbols.GetModule()
+        context = _contexts.get(self.program)
+        if not context or not module.IsValid():
+            return True
+        path = str(Path(_file_spec_path(module.GetFileSpec())).resolve())
+        if path != self.program:
+            image = context.get('_owned_images', {}).get(path)
+            if (not image or module.GetUUIDString().replace('-', '').lower() != image['uuid'] or
+                    _image_hash(path) != image['sha256']):
+                return True
+        functions = module.FindFunctions(self.symbol, lldb.eFunctionNameTypeFull)
+        for index in range(functions.GetSize()):
+            function = functions.GetContextAtIndex(index).GetFunction()
+            if not function.IsValid():
+                continue
+            address = function.GetStartAddress()
+            # Match LLDB's ordinary function breakpoint prologue skipping. The
+            # first stop must expose arguments without a user-visible step.
+            prologue = function.GetPrologueByteSize()
+            if prologue and not address.OffsetAddress(prologue):
+                continue
+            self.breakpoint.AddLocation(address)
+        return True
+
+
+def _function_breakpoints(debugger, request):
+    target = debugger.GetSelectedTarget()
+    program = str(Path(_file_spec_path(target.GetExecutable())).resolve())
+    context = _contexts.get(program)
+    if not target.IsValid() or not context:
+        raise ValueError('function breakpoints require the loaded NEX target')
+    requested = request.get('breakpoints') if isinstance(request, dict) else None
+    if not isinstance(requested, list) or len(requested) > 1024:
+        raise ValueError('function breakpoints require at most 1024 entries')
+    known = {row['native_symbol'] for row in context['functions']}
+    prepared = []
+    for row in requested:
+        if not isinstance(row, dict) or not isinstance(row.get('name'), str):
+            raise ValueError('function breakpoint requires a name')
+        if row['name'] not in known:
+            prepared.append(None)
+            continue
+        condition, hit = row.get('condition', ''), row.get('hitCondition', '')
+        if not isinstance(condition, str) or len(condition.encode('utf-8')) > 8192 or '\0' in condition:
+            raise ValueError('invalid native function breakpoint condition')
+        if not isinstance(hit, str) or len(hit) > 64:
+            raise ValueError('invalid native function breakpoint hit condition')
+        ignore = 0
+        if hit:
+            if not re.fullmatch(r'[0-9]+', hit) or not 1 <= int(hit) <= 4294967296:
+                raise ValueError('native function breakpoint hit condition must be a positive integer up to 4294967296')
+            ignore = int(hit) - 1
+        prepared.append((row['name'], condition, hit, ignore))
+    if context.get('_native_function_target') != target:
+        context['_native_function_target'] = target
+        context['_native_function_breakpoints'] = {}
+    owned = context.setdefault('_native_function_breakpoints', {})
+    wanted = {row[0] for row in prepared if row is not None}
+    for name in list(owned):
+        if name not in wanted:
+            target.BreakpointDelete(owned.pop(name)['id'])
+    response = []
+    for row in prepared:
+        if row is None:
+            response.append(None)  # Leave ordinary native names to lldb-dap.
+            continue
+        name, condition, hit, ignore = row
+        previous = owned.get(name)
+        breakpoint = target.FindBreakpointByID(previous['id']) if previous else lldb.SBBreakpoint()
+        if not breakpoint.IsValid():
+            arguments = lldb.SBStructuredData()
+            error = arguments.SetFromJSON(json.dumps({'program': program, 'symbol': name}))
+            if error.Fail():
+                raise ValueError('cannot encode native function resolver arguments')
+            breakpoint = target.BreakpointCreateFromScript(__name__ + '.FunctionDefinitionResolver', arguments,
+                                                         lldb.SBFileSpecList(), lldb.SBFileSpecList())
+            if not breakpoint.IsValid():
+                raise ValueError('cannot create native NEX function breakpoint')
+            # lldb-dap reports loaded/resolved location changes only for its
+            # public "dap" breakpoint category, including delayed DLL loads.
+            breakpoint.AddName('dap')
+            previous = None
+        if previous is None or previous['condition'] != condition:
+            breakpoint.SetCondition(condition)
+        if previous is None or previous['hit'] != hit:
+            breakpoint.SetIgnoreCount(ignore)
+        owned[name] = {'id': breakpoint.GetID(), 'condition': condition, 'hit': hit}
+        response.append({'id': breakpoint.GetID(), 'verified': breakpoint.GetNumResolvedLocations() > 0})
+    return {'schema': 'nex.native-function-breakpoints/1', 'breakpoints': response}
+
+
+def function_breakpoints_encoded(debugger, command, result, internal_dict):
+    try:
+        if len(command) > 1048576:
+            raise ValueError('native function breakpoint request exceeds bound')
+        request = json.loads(base64.b64decode(command.strip(), validate=True).decode('utf-8'))
+        result.PutCString(json.dumps(_function_breakpoints(debugger, request), ensure_ascii=False))
+    except Exception as error:
+        result.SetError(str(error))
+
+
 def task_command(debugger, command, result, internal_dict):
     try:
         words = shlex.split(command)
@@ -2641,6 +2763,7 @@ def task_command(debugger, command, result, internal_dict):
 
 
 def __lldb_init_module(debugger, internal_dict):
+    debugger.HandleCommand('command script add -f ' + __name__ + '.function_breakpoints_encoded nex-function-breakpoints-encoded')
     debugger.HandleCommand('command script add -f ' + __name__ + '.task_request_encoded nex-task-request-encoded')
     debugger.HandleCommand('command script add -f ' + __name__ + '.task_command nex-task')
     for alias, command in (('nex-tasks', 'tasks'), ('nex-task-select', 'select'), ('nex-task-stack', 'stack'),

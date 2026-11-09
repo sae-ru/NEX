@@ -82,6 +82,10 @@ installed qualification remain in progress. On native Debian ARM64,
 [Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
 with the original limits. Complete Debian regression and portable SDK delivery
 remain separate from that solver result.
+The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
+passed a replay of the original EXE/DLL and actual shared-library hit-count,
+condition, replacement and delayed-resolution checks, plus 20 transport cases.
+The updated source and newly assembled matching SDK still require complete qualification.
 The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP

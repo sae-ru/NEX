@@ -156,6 +156,73 @@ fn main()->unit !{io}{observe(42);}
         self.assertEqual(self.cli("debug", "--revision", "HEAD", "--kind", "unknown", ok=False)["code"], "E_OPTION")
 
 
+    @unittest.skipUnless(LIVE and sys.platform == 'win32', 'opt-in actual PE DLL function breakpoints')
+    def test_pe_function_breakpoints_skip_imports_preserve_hits_conditions_and_native_entries(self):
+        project=self.root/'DLL function breakpoints % 🧠';project.mkdir()
+        for name in ('core','app'):(project/name).mkdir()
+        (project/'core/main.nex').write_text('module pe_core;pub fn render(x:i64)->i64{return x;}\n',encoding='utf-8')
+        (project/'app/main.nex').write_text('''module pe_app;
+import "../core/main.nex" as c;
+fn main()->unit!{io}{print(c::render(1));print(c::render(2));print(c::render(3));print(c::render(4));}
+''',encoding='utf-8')
+        (project/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,
+            'entry':'app/main.nex'}),encoding='utf-8')
+        (project/'nex.build.json').write_text(json.dumps({'schema':'nex.project-build/1','default_configuration':'debug',
+            'configurations':{'debug':{'profile':'debug'}},'components':{
+                'core':{'kind':'shared_library','root':'core','entry':'core/main.nex','entry_function':'render'},
+                'app':{'kind':'executable','root':'app','entry':'app/main.nex','dependencies':{'core':'dynamic'}}}}),encoding='utf-8')
+        session=self.cli('project','--kind','debug','--component','app','--adapter','nex-dap',cwd=project,
+                         timeout=300)['observation']
+        manifest=json.loads(Path(session['manifest']).read_text(encoding='utf-8'))
+        symbol=next(row['native_symbol'] for row in manifest['functions'] if row['name']=='pe_core::render')
+        for name in ('core','app'):shutil.rmtree(project/name)
+        for name in ('nex.json','nex.build.json'):(project/name).unlink()
+        for conditional in (False,True):
+            client=DAP(session['adapter_command'],project)
+            try:
+                client.request('initialize',{'adapterID':'nex','pathFormat':'path','linesStartAt1':True})
+                launch=client.send('launch',dict(session['nex_adapter']['launch'],disableASLR=False))
+                client.event('initialized')
+                mapped={'name':symbol,**({'condition':'0'} if conditional else {'hitCondition':'2'})}
+                rows=[mapped] if conditional else [{'name':'main','condition':'1'},mapped]
+                placed=client.request('setFunctionBreakpoints',{'breakpoints':rows})['breakpoints']
+                client.request('configurationDone');client.response(launch)
+                if not conditional:
+                    stop=client.event('stopped')
+                    self.assertIn(placed[0]['id'],stop['hitBreakpointIds'])
+                    if not placed[1]['verified']:
+                        resolved=client.wait(lambda message:message.get('event')=='breakpoint' and
+                            message.get('body',{}).get('breakpoint',{}).get('id')==placed[1]['id'] and
+                            message['body']['breakpoint'].get('verified') is True)
+                        self.assertEqual(resolved['body']['reason'],'changed')
+                    client.request('continue',{'threadId':stop['threadId']})
+                    for expected in ('2','3'):
+                        stop=client.event('stopped')
+                        self.assertEqual(stop['hitBreakpointIds'],[placed[1]['id']])
+                        frame=client.request('stackTrace',{'threadId':stop['threadId']})['stackFrames'][0]
+                        self.assertIn('pe_core::render',frame['name'])
+                        watched=client.request('evaluate',{'expression':'x','frameId':frame['id'],'context':'watch'})
+                        self.assertEqual(watched['nex']['value'],expected)
+                        if expected=='2':
+                            changed=client.request('setFunctionBreakpoints',{'breakpoints':[{'name':symbol,'condition':'1'}]})
+                            self.assertEqual(changed['breakpoints'][0]['id'],placed[1]['id'])
+                        else:
+                            manual=client.request('evaluate',{'context':'repl','expression':
+                                "`script print(lldb.debugger.GetSelectedTarget().BreakpointCreateByName('nex_manual_never_called').GetID())"})
+                            manual_id=int(manual['result'].strip())
+                            self.assertEqual(client.request('setFunctionBreakpoints',{'breakpoints':[]})['breakpoints'],[])
+                            retained=client.request('evaluate',{'context':'repl','expression':
+                                '`script print(int(lldb.debugger.GetSelectedTarget().FindBreakpointByID('+str(manual_id)+').IsValid()))'})
+                            self.assertEqual(retained['result'].strip(),'1')
+                        client.request('continue',{'threadId':stop['threadId']})
+                self.assertEqual(client.event('exited')['exitCode'],0)
+                client.event('terminated')
+                self.assertEqual(inferior_output(client.pending).replace('\r\n','\n').strip(),'1\n2\n3\n4')
+                self.assertFalse(any(row.get('event')=='stopped' for row in client.pending))
+            finally:client.close()
+        self.assertFalse((project/'.nex/graph.db').exists())
+
+
 class DAP:
     def __init__(self, executable, directory):
         self.log = (directory / "dap-stderr.txt").open("wb")
@@ -246,6 +313,7 @@ if LIVE:
         test_dwarf_types_parameters_scopes_and_semantic_agreement = None
         test_debug_artifact_cache_repairs_corrupt_inputs = None
         test_machine_debug_session_and_frozen_sources = None
+        test_pe_function_breakpoints_skip_imports_preserve_hits_conditions_and_native_entries = None
 
         def test_lldb_stop_step_shadow_mutation_and_archive(self):
             session = self.cli("debug")

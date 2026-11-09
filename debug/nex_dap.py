@@ -219,8 +219,49 @@ class Bridge:
         self.max_client_sequence = 0
         self.stopped_thread = None
         self.task_mode = False
+        self.native_function_mode = False
         self.next_frame = 1
         self.native_stopped_thread = None
+
+    def function_breakpoints(self, request):
+        payload = base64.b64encode(json.dumps(request.get('arguments', {}),
+                                            ensure_ascii=False).encode('utf-8')).decode('ascii')
+        self.pending[request['seq']] = {'request': request, 'kind': 'function_resolve', 'epoch': self.epoch}
+        write_packet(self.backend.stdin, {'seq': request['seq'], 'type': 'request', 'command': 'evaluate',
+            'arguments': {'context': 'repl', 'expression': '`nex-function-breakpoints-encoded ' + payload}})
+
+    def function_response(self, pending, message):
+        request = pending['request']
+        if not message.get('success'):
+            return self.response(request, error=message.get('message', message.get('body', {})))
+        try:
+            if pending['kind'] == 'function_resolve':
+                result = json.loads(message.get('body', {}).get('result', '').strip())
+                rows = result['breakpoints']
+                requested = request.get('arguments', {}).get('breakpoints', [])
+                if (result.get('schema') != 'nex.native-function-breakpoints/1' or
+                        not isinstance(rows, list) or len(rows) != len(requested) or
+                        any(row is not None and (not isinstance(row, dict) or type(row.get('id')) is not int or
+                            row['id'] <= 0 or type(row.get('verified')) is not bool) for row in rows)):
+                    raise ValueError('invalid native function breakpoint response')
+                forwarded = json.loads(json.dumps(request))
+                forwarded.setdefault('arguments', {})['breakpoints'] = [
+                    original for original, resolved in zip(requested, rows) if resolved is None]
+                # The backend retains ownership of ordinary native names,
+                # including their conditions, and clears its removed entries.
+                self.pending[request['seq']] = {'request': request, 'kind': 'function_native',
+                                                'epoch': self.epoch, 'resolved': rows}
+                return write_packet(self.backend.stdin, forwarded)
+            body = dict(message.get('body', {}))
+            native = body.get('breakpoints', [])
+            rows = pending['resolved']
+            if not isinstance(native, list) or len(native) != rows.count(None):
+                raise ValueError('native backend function breakpoint count differs')
+            native = iter(native)
+            body['breakpoints'] = [next(native) if row is None else row for row in rows]
+            return self.response(request, body)
+        except (KeyError, TypeError, ValueError) as error:
+            return self.response(request, error=str(error))
 
     def logical(self, request, command, arguments=None):
         arguments = dict(arguments or {})
@@ -413,8 +454,12 @@ class Bridge:
             return self.response(request, error='too many outstanding DAP requests')
         original = json.loads(json.dumps(request))
         command, args = request['command'], request.get('arguments', {})
-        if command == 'launch':
+        if command in ('launch', 'attach'):
             self.task_mode = args.pop('nexTaskDebug', False) is True
+            initialization = args.get('initCommands', [])
+            self.native_function_mode = os.name == 'nt' and isinstance(initialization, list) and any(
+                isinstance(value, str) and value.lstrip().startswith(('nex-load-debug ', 'nex-load-private-task-debug '))
+                for value in initialization)
         if self.task_mode:
             if command in ('setExpression', 'setVariable'):
                 return self.response(request, error='logical task values are read-only')
@@ -443,6 +488,8 @@ class Bridge:
                                                              'breakpoints': args.get('breakpoints', [])})
             if command == 'setFunctionBreakpoints':
                 return self.logical(original, 'function_breakpoints', {'breakpoints': args.get('breakpoints', [])})
+        if command == 'setFunctionBreakpoints' and self.native_function_mode:
+            return self.function_breakpoints(original)
         if command in ('setExpression', 'setVariable'):
             return self.response(request, error='NEX expression adapter does not mutate stopped values')
         reference = args.get('variablesReference')
@@ -511,6 +558,8 @@ class Bridge:
         if message.get('type') == 'response':
             pending = self.pending.pop(message.get('request_seq'), None)
             if pending is not None:
+                if pending['kind'] in ('function_resolve', 'function_native'):
+                    return self.function_response(pending, message)
                 if pending['kind'].startswith('task_'):
                     return self.logical_response(pending, message)
                 request = pending['request']
