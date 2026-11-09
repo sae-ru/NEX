@@ -94,11 +94,16 @@ def main():
             raise ValueError('patched source checksum differs: ' + record['path'])
     indexed_pages = prepare_indexed_pages(source, manifest['indexed_pages'])
     appcontainer_pipes = None
+    appcontainer_stdio = None
     if args.appcontainer_pipes:
         record = json.loads((HERE / 'lldb23-appcontainer-pipes.json').read_bytes())
         if record['base_manifest_sha256'] != sha(HERE / 'lldb23-windows-backport.json'):
             raise ValueError('AppContainer pipe base backport checksum differs')
         appcontainer_pipes = prepare_source_patch(source, record, 'AppContainer pipe')
+        record = json.loads((HERE / 'lldb23-appcontainer-stdio.json').read_bytes())
+        if record['base_manifest_sha256'] != sha(HERE / 'lldb23-windows-backport.json'):
+            raise ValueError('AppContainer stdio base backport checksum differs')
+        appcontainer_stdio = prepare_source_patch(source, record, 'AppContainer stdio')
     environment = dict(os.environ)
     environment['PATH'] = str(sdk / 'bin') + os.pathsep + str(runtime / 'bin') + os.pathsep + environment.get('PATH', '')
     build = args.build.resolve()
@@ -113,6 +118,7 @@ def main():
                 + '-pages-' + indexed_pages['patch_sha256'][:12])
     if appcontainer_pipes:
         revision += '-appcontainer-pipes-' + appcontainer_pipes['patch_sha256'][:12]
+        revision += '-stdio-' + appcontainer_stdio['patch_sha256'][:12]
     command = [str(args.cmake), '-G', 'Ninja', '-S', str(source / 'lldb'), '-B', str(build),
         '-DCMAKE_BUILD_TYPE=Release', '-DLLDB_INCLUDE_TESTS=OFF', '-DLLDB_ENABLE_PYTHON=ON',
         '-DLLDB_ENABLE_SWIG=ON', '-DLLDB_ENABLE_LUA=OFF', '-DLLDB_ENABLE_CURSES=OFF',
@@ -146,6 +152,7 @@ def main():
         'full_debugger_regression_accepted': False, 'source_manifest_sha256': sha(HERE / 'lldb23-windows-backport.json'),
         'indexed_pages': indexed_pages,
         'appcontainer_pipes': appcontainer_pipes,
+        'appcontainer_stdio': appcontainer_stdio,
         'commands': [compile_resource, *commands], 'startup': startup.stdout, 'runtime_source': str(runtime),
         'build_recipe_sha256': sha(Path(__file__)), 'process_manifest_sha256': sha(process_manifest),
         'dependency_locks': {name: sha(HERE / name) for name in (

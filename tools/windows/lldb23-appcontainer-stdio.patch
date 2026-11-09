@@ -1,0 +1,32 @@
+--- a/lldb/source/Host/windows/PseudoConsole.cpp
++++ b/lldb/source/Host/windows/PseudoConsole.cpp
+@@ -68,9 +68,27 @@
+ llvm::Error PseudoConsole::CreateOverlappedPipePair(HANDLE &out_read,
+                                                     HANDLE &out_write,
+                                                     bool inheritable) {
++  // AppContainer pipes must use the package-local namespace. Inspect the
++  // current token rather than an environment setting, and keep the ordinary
++  // host name and the existing handle/security attributes unchanged.
++  HANDLE token = nullptr;
++  if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token))
++    return llvm::errorCodeToError(
++        std::error_code(GetLastError(), std::system_category()));
++  DWORD app_container = 0;
++  DWORD bytes = 0;
++  BOOL inspected = GetTokenInformation(
++      token, static_cast<TOKEN_INFORMATION_CLASS>(29), &app_container,
++      sizeof(app_container), &bytes);
++  DWORD error = inspected ? ERROR_SUCCESS : GetLastError();
++  CloseHandle(token);
++  if (!inspected)
++    return llvm::errorCodeToError(
++        std::error_code(error, std::system_category()));
++
+   wchar_t pipe_name[MAX_PATH];
+-  swprintf(pipe_name, MAX_PATH, L"\\\\.\\pipe\\conpty-lldb-%d-%p",
+-           GetCurrentProcessId(), this);
++  swprintf(pipe_name, MAX_PATH, L"\\\\.\\pipe\\%lsconpty-lldb-%d-%p",
++           app_container ? L"LOCAL\\" : L"", GetCurrentProcessId(), this);
+   out_read =
+       CreateNamedPipeW(pipe_name, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
+                        PIPE_TYPE_BYTE | PIPE_WAIT, 1, 4096, 4096, 0, nullptr);

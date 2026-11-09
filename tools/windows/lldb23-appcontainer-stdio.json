@@ -1,0 +1,20 @@
+{
+  "schema": "nex.windows-lldb-AppContainer-stdio/1",
+  "version": "23.1.4",
+  "patch": "lldb23-appcontainer-stdio.patch",
+  "patch_sha256": "67e19059199905f7153e7918d071bbef108f42980dc11bfbda91e03a09ef2375",
+  "source_file": "lldb/source/Host/windows/PseudoConsole.cpp",
+  "original_sha256": "288ec0aa113362f8910966da61cfdbb9f33a84435ec73ed5476394d9cbcdd8b1",
+  "patched_sha256": "a3c3a8b06c490abfc21d4a238711a00b98a3085315c4964d29b37370415bf332",
+  "base_manifest_sha256": "c315044381372816cfc8fa8ec932fb4d208ed4f22255d5e8c6f50a6c39ba5731",
+  "scope": "Use per-package LOCAL names in PseudoConsole::CreateOverlappedPipePair only when the actual debugger token is an AppContainer. Preserve ordinary host names, default object ACLs, owned handles and all debugger regression assertions.",
+  "observed_controls": {
+    "same_PE_seven_CreateProcess_configurations_passed_in_AppContainer": true,
+    "global_pipe_creation_denied_with_error5": true,
+    "LOCAL_pipe_creation_and_open_passed": true,
+    "PipeWindows_patch_alone_did_not_accept_AppContainer_debugging": true
+  },
+  "patched_debugger_build_passed": false,
+  "patched_debugger_runtime_accepted": false,
+  "complete_SDK_accepted": false
+}

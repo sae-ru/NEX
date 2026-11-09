@@ -38,6 +38,21 @@ Operator Git settings stay unchanged; an existing CRLF tree is still rejected.
 Use a new source directory rather than relabelling that failed tree. Matching
 native Windows preparation/build/replay qualification remains separate.
 
+The first linked0.164 debugger passed the unchanged PE through CLI and DAP on
+the ordinary host. AppContainer launch still failed; both temporary profiles and
+code roots were removed. Seven direct native launch controls, including extended
+startup information and inherited standard handles, ran that same PE to exit0
+inside AppContainer. `PseudoConsole::CreateOverlappedPipePair` has a separate
+global named-pipe path that the earlier `PipeWindows.cpp` patch does not cover.
+
+The same build option now also selects the separately pinned
+`lldb23-appcontainer-stdio.json` patch for that pseudo-console pipe. It queries
+the actual process token, uses `LOCAL` only inside AppContainer, and keeps host
+names, object ACLs and handle ownership unchanged. Token-query failures remain
+errors. Both patch hashes appear in the revision and receipt. The new combined
+linked build and original host/AppContainer PE replay remain separate gates;
+the direct API controls alone do not accept LLDB or the complete SDK.
+
 ## Current coherent SDK follow-up
 
 The [0.162.2 coherent-SDK receipt](evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json)
