@@ -241,6 +241,23 @@
   "NEX_compiler_LLVM_MLIR": "22.1.8",
   "system_package_changes_required": false,
   "scope": "Matching native debugger dependency and original NEX live controls on Debian12 ARM64; full matching NEX regression and portable SDK delivery remain separate.",
-  "evidence": "../../docs/evidence/cix-native-lldb-23.1.6-2026-11-09.json",
-  "complete_NEX_SDK_accepted": false
+  "evidence": "../../docs/evidence/cix-native-lldb-runtime-23.1.6-2026-11-09.json",
+  "complete_NEX_SDK_accepted": false,
+  "runtime_library_search": {
+    "directories": [
+      "matching LLDB install lib",
+      "matching LLVM23 lib"
+    ],
+    "exclude_unversioned_development_alias_directories": true,
+    "preserve_NEX_selected_solver": true,
+    "required_loader_checks": [
+      "NEX",
+      "lldb",
+      "lldb-dap"
+    ],
+    "different_solver_SONAMEs": [
+      "NEX libz3.so",
+      "LLVM23 libz3.so.4"
+    ]
+  }
 }

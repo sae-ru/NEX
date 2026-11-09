@@ -67,6 +67,10 @@ test on the original stock-failure binary with its bytes and nanosecond mtime
 preserved. Its [receipt](evidence/cix-native-lldb-23.1.6-2026-11-09.json) independently
 rehashed9576 source files and418 installed debugger files. Complete matching NEX
 source regression and portable SDK delivery remain separate gates.
+The [runtime-path follow-up](evidence/cix-native-lldb-runtime-23.1.6-2026-11-09.json)
+also preserved NEX's selected Z3, passed all eleven existing bounded-verification
+methods and repeated the register, live-page, task-debugger and same-binary
+controls. Unversioned development aliases stay outside the runtime library path.
 
 The [Fedora primary-resume snapshot](evidence/fedora-primary-resume-full303-0.162.2-2026-11-09.json)
 passed all303 registered groups in one complete invocation and ordinary installed

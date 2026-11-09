@@ -10,7 +10,7 @@ On actual Debian12 ARM64, the complete native build, nine register profiles with
 105 checks, the original live indexed-page test and all fifteen task-debugger
 methods passed. The page test also passed on the original stock-failure binary
 without changing its bytes or nanosecond modification time. The
-[receipt](evidence/cix-native-lldb-23.1.6-2026-11-09.json) preserves the initial
+[receipt](evidence/cix-native-lldb-runtime-23.1.6-2026-11-09.json) preserves the initial
 stock timeout and dependency setup failures. Complete NEX source and portable
 SDK qualification remain separate gates.
 
@@ -36,7 +36,7 @@ Keep dependency environment settings scoped to debugger commands:
 
 ```sh
 lldb_env() {
-  env LD_LIBRARY_PATH="$LLDB_PREFIX/lib:$LLVM23_PREFIX/lib:$NEX_DEBUGGER_DEPS/usr/lib/aarch64-linux-gnu" \
+  env LD_LIBRARY_PATH="$LLDB_PREFIX/lib:$LLVM23_PREFIX/lib" \
       SWIG_LIB="$NEX_DEBUGGER_DEPS/usr/share/swig4.0" \
       PKG_CONFIG_SYSROOT_DIR="$NEX_DEBUGGER_DEPS" \
       PKG_CONFIG_LIBDIR="$NEX_DEBUGGER_DEPS/usr/lib/aarch64-linux-gnu/pkgconfig:$NEX_DEBUGGER_DEPS/usr/share/pkgconfig" \
@@ -86,6 +86,13 @@ The register checker requires exactly nine profiles and105 checks. Verify
 `lldb.__file__` under the new prefix before NEX tests. Deploy the complete matching
 CLI/DAP/server/liblldb/Python/Clang cohort. The earlier DAP-only replacement failed
 the original pre-launch breakpoint check.
+
+Keep unversioned development-library aliases outside the runtime library search
+path. In the first native NEX build attempt, the private `libz3.so` alias selected
+Bookworm's solver instead of NEX's explicitly selected solver. Limiting the
+runtime path to the matching debugger and LLVM23 library directories preserves
+NEX's `libz3.so` while LLVM23 resolves its separate versioned `libz3.so.4`.
+Check the actual `ldd` output for NEX, LLDB and DAP before running the suite.
 
 For NEX checks, select `NEX_LLDB` and `NEX_LLDB_DAP` explicitly and keep LLVM22
 symbol/compiler tools ahead of LLVM23 in the child PATH. Run the unchanged
