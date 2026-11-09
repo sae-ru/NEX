@@ -105,6 +105,11 @@ now executes I8×I8→I32 matrices, including a full 1 MiB result, using bounded
 that retain their buffers. Its [57 native/reference pairs and 88 physical GPU events](docs/evidence/macos-owned-metal-matmul-0.163.0-2026-11-09.json)
 cover arithmetic, lifetime, cancellation, malformed replies and cross-provider
 resource rejection. This checkout prototype is outside the frozen 0.163 SDK.
+A separate [scalar Metal backend](experiments/metal-codegen/README.md) now
+generates GPU code from ordinary checked NEX functions. Its
+[20 reference/native/Metal comparisons](docs/evidence/macos-scalar-Metal-codegen-0.163.0-2026-11-09.json)
+cover i64 arithmetic, branches, loops, helper calls and contracts. Owned-task
+integration, broader GPU types/backends and installed delivery remain pending.
 The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
 passed a replay of the original EXE/DLL and actual shared-library hit-count,
 condition, replacement and delayed-resolution checks, plus 20 transport cases.

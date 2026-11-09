@@ -1,0 +1,108 @@
+{
+  "schema": "nex.development-evidence/1",
+  "recorded_date": "2026-11-09",
+  "toolchain": "0.163.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "separate-checked-scalar-Metal-codegen-three-way-and-boundaries-passed-owned-task-integration-pending",
+  "component": "Experimental generation of Metal kernels from ordinary checked NEX scalar functions",
+  "source_commit": "ef01d202405ba6689c1fae9225bf6718598fa09f",
+  "source_base_commit": "1aa0f3c069b2f3949fc501923080f587e80eaef0",
+  "source_pins": {
+    "boundaries.py": "26fed7a326c88c10f8cb333b011f7147e2d51e65a590d8fc17d9a507fa9d8b53",
+    "README.md": "4071d042c6e96052ee8036055766d7fb25627679b277886d48ba4df55f791626",
+    "runner.mm": "6ae77d9af860ed1af958dbe1161230b9b86398ee60bf51f908599891d0e50582",
+    "verify.py": "e4137af6add835bac18146cc7a84277fee087272043f26c65dd65996bc300fc7",
+    "runtime.metal": "293b8ef29f00280881fc0c1f8e30b5c59db1e9e2f8f6cf5789dad86a0ea46513",
+    "codegen.py": "eb66229c4ec0d5d4833257cc6a5c25fb065e59b28efa662b227b666096875510"
+  },
+  "execution": {
+    "device": "Apple M5 Max",
+    "compiler_sha256": "d022c0b73b58acc249fc5fea63749b7f86170409825eda8eb908a581b138438c",
+    "runner_sha256": "1386df06cb1e7e69f1112dd95d5f64b13326b5e2046554d1f55f4ed4ca72a33d",
+    "three_way_source_cases": 20,
+    "normal_GPU_lanes": 1799,
+    "CPU_error_code_groups_checked_reference_and_native": 16,
+    "finite_loop_additional_three_way_lanes": 2,
+    "distinct_generated_function_instances_across_normal_cases": 29,
+    "normal_physical_GPU_kernels": 20,
+    "boundary_physical_GPU_kernels": 5,
+    "physical_GPU_kernels_total": 25,
+    "backend_rejections_of_compiler_accepted_programs": 14,
+    "runtime_shape_or_bound_rejections": 8,
+    "maximum_lanes_checked": 32768
+  },
+  "source_path": {
+    "input": "Selected compiler checks current source and exports a saved language0.28 nex.graph/2 at the exact check revision.",
+    "lowering": "Emit MSL from canonical typed function definitions, including the ordinary compiler contract helpers; no second source parser.",
+    "reachable_only": true,
+    "shared_pure_only": true,
+    "target_scalar_types": [
+      "i64",
+      "bool",
+      "unit"
+    ],
+    "MLIR_native_backend_changed": false
+  },
+  "verified_semantics": [
+    "Add/subtract/multiply/divide/remainder/negate and comparisons across both i64 endpoints, signed edges and deterministic full-width integer inputs.",
+    "Unsigned-bit checked arithmetic avoids Metal signed-overflow undefined behavior; division truncates toward zero and MIN modulo -1 is zero.",
+    "Arguments and operands evaluate once left-to-right; lazy boolean right operands remain conditional. First arithmetic trap ordering agrees with actual reference/native diagnostics.",
+    "Branches, mutable locals and lexical shadowing, loops, ordinary and concrete generic calls, unit roots/helpers, source pre/postconditions and loop contracts.",
+    "Only reachable function code enters the shader; an unused string and unsupported unused floating function are absent.",
+    "Finite loop under a low explicit GPU step bound reports E_GPU_STEP_LIMIT; an adequate bound matches reference/native. The GPU step metric is separate from CPU task accounting.",
+    "Noncanonical bool input is rejected per lane; eight arguments and32768 zero-argument lanes execute physically."
+  ],
+  "oracle_scope": {
+    "all_normal_GPU_lanes_checked_with_exact_Python_integer_or_known_result_oracles": true,
+    "all_successful_normal_lanes_also_run_in_NEX_reference_and_native": true,
+    "representative_each_error_code_per_case_run_in_both_CPU_modes": true,
+    "each_failing_GPU_lane_individually_executed_on_CPU": false
+  },
+  "limits": {
+    "root_arguments": 8,
+    "acyclic_reachable_functions": 128,
+    "call_depth": 128,
+    "lanes": 32768,
+    "per_lane_steps": 65536,
+    "lanes_times_steps": 16777216,
+    "graph_output_bytes": 16777216,
+    "shader_bytes": 4194304
+  },
+  "independent_seal": {
+    "native_GPU_status4_one_handler_and_drained_buffers_checked": true,
+    "all_successful_controllers_and_monitors_retired": true,
+    "raw_files": 1221,
+    "raw_bytes": 17838266,
+    "raw_archive_sha256": "0dcaefe524f2280dc5d1c3164952665335dfb091fc9644941c167eaf3766b238",
+    "raw_archive_bytes": 1791182,
+    "raw_archive_unpacked_and_rehashed": true
+  },
+  "retained_attempts": [
+    "First three-way comparison expected JSON integer tokens, while NEX correctly emitted exact decimal i64 strings. The harness expectation was fixed; the original outputs and four input files are retained.",
+    "The first generated call-depth fixture named one helper f64, a reserved source type. Generated helper names were corrected; all14 backend rejection requirements were retained. Original inputs/diagnostics are preserved.",
+    "The initial three-input physical prerequisite used the earlier runner with a deprecated Metal compile-option warning; the final runner uses current safe mathMode and precise functions."
+  ],
+  "build_scope": {
+    "ordinary_installed_NEX_compiler": true,
+    "native_runner_built_with_bundled_Clang22_and_explicit_private_header_override": true,
+    "current_frozen01630_SDK_unchanged": true,
+    "compiler_CPP_runtime_libraries_CMake_changed": false
+  },
+  "pending": [
+    "Connect generated kernels to the persistent owned NEX task/device provider, preserving admission, cancellation/deadline, physical completion, resource parents, copied-call budgets and trap behavior.",
+    "Public compiler discovery/CLI, exact graph/source diagnostic mapping, debug/profile integration and immutable relocated/archive-restored SDK delivery.",
+    "F64, aggregates, closures, recursion, source-error/finally support, remaining general GPU/NPU backends and Apple NPU.",
+    "All remaining original PLAN requirements, platform delivery, mobile/native UI, Studio, conversion, real multi-LLM costs and final main publication/cleanup."
+  ],
+  "limitations": [
+    "This is an external experimental scalar backend and a physical native test harness; it is not yet GPU execution inside an ordinary NEX task application.",
+    "Raw graph evidence can include unrelated source; only kernel.metal is emitted device code.",
+    "This finite, nonisolated numerical comparison establishes neither a universal proof nor a GPU speedup."
+  ],
+  "source_task_provider_integrated": false,
+  "installed_SDK_accepted": false,
+  "general_GPU_backend_complete": false,
+  "NPU_accepted": false,
+  "whole_original_goal_complete": false
+}

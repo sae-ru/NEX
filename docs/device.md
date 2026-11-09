@@ -26,6 +26,14 @@ maximum matrices and cross-provider opaque-resource rejection. It is outside
 the frozen 0.163 SDK and has distinct eight-function signatures and protocol3.
 The installed provider descriptor above continues to cover U8 Add/Affine.
 
+The separate `experiments/metal-codegen` backend generates scalar Metal kernels
+from ordinary checked NEX graph functions; its
+[three-way numerical record](evidence/macos-scalar-Metal-codegen-0.163.0-2026-11-09.json)
+covers i64/bool/unit, control flow, helper calls and source contracts. This code
+path is not yet connected to the owned resource/provider API below. Its physical
+native harness is a distinct precursor; task cancellation, generated-kernel
+resource ownership and installed delivery still need matching integration.
+
 ## Source contract
 
 `Session` and `Buffer` are opaque server resources. A trusted pinned C provider

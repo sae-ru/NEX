@@ -1,3 +1,21 @@
+# General GPU code generation — scalar Metal precursor
+
+The separate `experiments/metal-codegen` backend now lowers actual checked NEX
+scalar functions to Metal. Twenty reference/native/GPU comparisons and five
+physical boundary dispatches cover i64 arithmetic, pure control flow, calls and
+source contracts. It is outside the frozen0.163 SDK; see its exact development
+evidence and limits in STATUS.md.
+
+- [x] Generate reachable scalar code from the selected compiler's typed graph.
+- [x] Preserve checked i64 operations, evaluation order and lazy control flow.
+- [x] Compare real generated GPU execution with reference/native NEX and exact oracles.
+- [ ] Connect generated kernels to persistent owned task/device resources and trap delivery.
+- [ ] Integrate public compiler CLI/discovery, source diagnostics, debugging and profiling.
+- [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
+
+All remaining original language/platform/device/mobile/UI/Studio/conversion,
+measurement and publication/cleanup requirements remain part of the objective.
+
 # Owned Metal SDK tools — development0.163.0
 
 Install the provider/precondition tools in the SDK and expose their actual

@@ -1,3 +1,21 @@
+# Experimental scalar Metal code generation — 2026-11-09
+
+The separate [scalar backend](experiments/metal-codegen/README.md) emits MSL from
+the selected compiler's actual checked language0.28 graph. It preserves checked
+i64 arithmetic, operand/argument order, short-circuiting, branches, loops,
+helper/concrete generic calls and lowered source contracts. No second parser or
+handwritten per-function shader is used. [20 three-way cases](docs/evidence/macos-scalar-Metal-codegen-0.163.0-2026-11-09.json)
+passed against actual NEX reference/native execution, with1799 GPU lanes checked
+against exact integer/known-result oracles. Fourteen compiler-accepted programs
+are explicitly rejected by the narrower GPU backend. Five more physical GPU
+dispatches check limits/canonical inputs, including32768 lanes. All25 current
+kernel events verify status4, one completion handler and drained buffers.
+
+This prototype is outside the frozen0.163 SDK. The persistent owned task/device
+provider, public CLI/discovery, debug/profile, installed delivery and broader
+GPU/NPU code generation still need integration. Earlier fixed-kernel resource
+receipts do not accept this new code path.
+
 # Development0.163.0 — installed Metal tools
 
 Language0.28/taskABI7 and graph identities are unchanged. This candidate installs
