@@ -1,0 +1,148 @@
+{
+  "schema": "nex.development-evidence/1",
+  "status": "passed_scoped_core_and_physical_Metal",
+  "recorded_utc": "2026-11-09T14:17:55.376711+00:00",
+  "platform": "macOS ARM64",
+  "toolchain": "0.164.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "C_ABI_major": 1,
+  "source": {
+    "core_commit": "c09bc6f28ec3a0edd5a2d8ba61742931933a609d",
+    "GPU_commit": "3acb1ff62b48b46ad0a2ef9cc66b28928888c012",
+    "compiler_sha256": "406e7bc3f95ce16959bb5e053ec4e7097df3017b67cdb51bfc48ebe1fd5a3a79",
+    "executed_source_pins_match_commits": true
+  },
+  "core": {
+    "all_targets_built": true,
+    "passed_CTest_groups": [
+      "dependent_resource_source",
+      "discovery",
+      "ffi_loader_native",
+      "ffi_runtime_native",
+      "ffi_typed_native",
+      "ffi_types",
+      "foreign_scope_native",
+      "source_ffi",
+      "typed_external_resource_C_ABI"
+    ],
+    "passed_groups": 9,
+    "prefix_compatibility": "real C11/C++20 producers compiled with frozen0.163 header",
+    "previous_parent_prefix_bytes": 304,
+    "frozen_header_sha256": "638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe",
+    "checks": [
+      "copied UTF-8 code/message and original budgets",
+      "malformed packets rejected without installing a trap",
+      "sticky original diagnostic even with ignored status, wrong result or later callback exception",
+      "original observed cancellation/deadline has priority",
+      "wrong-thread and expired tokens rejected",
+      "partial resource factory rollback and reusable physical quotas",
+      "source catch/finally bypass in reference/Debug/Release",
+      "server native bindings absent from emitted client"
+    ]
+  },
+  "Metal": {
+    "device": "Apple M5 Max",
+    "CPU_fallback": false,
+    "ordinary_installed_SDK": true,
+    "provider_CXX": "Apple Clang through /usr/bin/clang++",
+    "lifetime_native_reference_pairs": 15,
+    "fatal_native_reference_pairs": 6,
+    "physical_GPU_kernel_events": 36,
+    "fatal_cases": [
+      {
+        "case": "overflow",
+        "host_code": "E_OVERFLOW",
+        "GPU_codes": [
+          "E_OVERFLOW"
+        ],
+        "native_reference_agree": true
+      },
+      {
+        "case": "division",
+        "host_code": "E_DIV_ZERO",
+        "GPU_codes": [
+          "E_DIV_ZERO"
+        ],
+        "native_reference_agree": true
+      },
+      {
+        "case": "assertion",
+        "host_code": "E_ASSERT",
+        "GPU_codes": [
+          "E_ASSERT"
+        ],
+        "native_reference_agree": true
+      },
+      {
+        "case": "device_steps",
+        "host_code": "E_GPU_STEP_LIMIT",
+        "GPU_codes": [
+          "E_GPU_STEP_LIMIT"
+        ],
+        "native_reference_agree": true
+      },
+      {
+        "case": "cancellation_overflow",
+        "host_code": "E_CANCELLED",
+        "GPU_codes": [
+          "E_OVERFLOW"
+        ],
+        "native_reference_agree": true
+      },
+      {
+        "case": "deadline_overflow",
+        "host_code": "E_TIMEOUT",
+        "GPU_codes": [
+          "E_OVERFLOW"
+        ],
+        "native_reference_agree": true
+      }
+    ],
+    "CPU_error_codes": [
+      "E_OVERFLOW",
+      "E_DIV_ZERO",
+      "E_ASSERT"
+    ],
+    "CPU_error_modes": [
+      "reference",
+      "Debug",
+      "Release"
+    ],
+    "original_GPU_driver_status": 4,
+    "completion_handlers": 1,
+    "admitted_physical_completion_before_release": true,
+    "all_buffers_and_sessions_retired": true,
+    "recoverable_errors": "try_apply keeps result<bytes>; ordinary unwrap(err) still produces E_RESULT",
+    "fatal_errors": "apply submits the original code/message through the negotiated raise_trap slot after settlement"
+  },
+  "retained_first_attempt": {
+    "status": "failed_trace_expectation",
+    "reason": "pending error incorrectly required3 published Buffers and a success event; actual failed output is unpublished. New trace records the pinned worker Failure acknowledgement after successful drain; tests require2 inputs, an error completion, actual driver status4/one handler, and release ordering.",
+    "reused_as_passing_evidence": false
+  },
+  "raw_evidence": {
+    "files": 848,
+    "bytes": 4066274,
+    "archive_sha256": "c8ef0c877532c4d70ed5606a77e154b5577d3eced3ad5bbd6ce6dc1e658114a5",
+    "archive_bytes": 785781,
+    "unpacked_and_rehashed": true,
+    "controllers_and_monitors_retired": true
+  },
+  "scope": {
+    "language_migration_required": false,
+    "original_primary_graph_and_compiler_preserved": true,
+    "matching_full_current_source_accepted": false,
+    "complete_current_SDK_accepted": false,
+    "remote_stands_accessed": false,
+    "general_GPU_NPU_complete": false,
+    "whole_original_goal_complete": false
+  },
+  "pending": [
+    "matching full current source regression",
+    "immutable SDK relocation/archive restoration and bundled compiler qualification",
+    "generated-provider malformed-reply/log-stress coverage",
+    "public scalar GPU compiler diagnostics/debug/profiling integration",
+    "broader GPU/NPU types/backends and remaining original PLAN requirements"
+  ]
+}

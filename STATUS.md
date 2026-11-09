@@ -1,4 +1,27 @@
-# Owned generated Metal task path — 2026-11-09
+# Explicit fatal C API — development0.164.0
+
+The new append-only `raise_trap` slot copies bounded diagnostic packets from
+trusted C providers. Original host control remains sticky; source catches and
+user finalizers cannot consume a runtime trap. Partial-factory/owned cleanup,
+all previous table prefixes, language0.28, taskABI7 and graph histories retain
+their contracts. See [the API contract](docs/ffi-design.md#explicit-fatal-diagnostics-0164).
+The generated Metal `apply` path now uses it after `try_apply` settles physical
+work and closes temporary resources. The [scoped record](docs/evidence/macos-explicit-FFI-traps-0.164.0-2026-11-09.json)
+passed all targets, nine core groups and21 native/reference Metal pairs with36
+physical GPU events. Three original CPU trap codes agree in reference/Debug/Release;
+GPU step limits and cancellation/deadline precedence over overflow retain their
+separate expectations. Both valid and failed queued commands settle before
+parent release; failed outputs are not published. The original failed trace
+expectation is retained. Complete matching regression/SDK/platform qualification
+remains pending.
+
+The earlier frozen0.163 Metal-tool source now passed
+[all301 groups in one unfiltered invocation](docs/evidence/macos-Metal-tools-full301-0.163.0-2026-11-09.json).
+Its independent receipt rehashes the exact2070 sources and compiler and retains
+raw JUnit/build evidence. That result excludes the new0.164 trap suffix; its
+corresponding SDK stages remain separate.
+
+# Earlier owned generated Metal task path — 2026-11-09
 
 The [persistent generated provider](experiments/owned-metal-codegen/README.md)
 executes ordinary generated scalar functions through actual NEX task/FFI
@@ -11,8 +34,8 @@ columns total 2 MiB without increasing the per-call FFI copy budget. All 22 scal
 MSL function prefixes match their prior physical-stage bytes.
 
 This is outside the frozen0.163 SDK. `try_apply` retains numeric errors inside
-an explicit Result; `apply` has the ordinary E_RESULT unwrap contract. Direct
-original fatal-trap forwarding, matching protocol/log stress, public CLI,
+an explicit Result; that recorded `apply` had the ordinary E_RESULT unwrap contract.
+The later0.164 bridge is described above. Matching protocol/log stress, public CLI,
 source diagnostics/debug/profile and coherent installed delivery remain pending.
 The independent raw archive retains the original native-limit mismatch and
 corrects an overbroad reporting label without changing executed checks.
@@ -43,8 +66,9 @@ and27 scenario sources plus the missing-effect rejection without a driver.
 Source checking is available on the supported64-bit hosts; compiling and running
 the native worker requires macOS. The earlier separate0.162.2 experiment passed
 [30 native/reference pairs on Apple M5 Max](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json).
-Fresh matching source, moved/restored SDK, Metal hardware and complete platform
-acceptance remain pending. Earlier accepted archives retain their exact scope.
+The matching frozen source passed all301 groups as recorded above. Moved/restored
+SDK, Metal hardware and complete platform acceptance remain pending. Earlier
+accepted archives retain their exact scope.
 The [private float-header correction](docs/macos-float-header-compatibility.md)
 addresses the actual packaged-Clang22 Metal compilation failure without changing
 source LLVM installations or redefining numeric constants.

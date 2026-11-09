@@ -53,13 +53,23 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.163.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.164.0 / language 0.28 / task ABI 7**, in development.
+The append-only [fatal diagnostic C API](docs/ffi-design.md#explicit-fatal-diagnostics-0164)
+lets trusted providers report their original runtime error code and copied UTF-8
+message while retaining cleanup and existing host-control precedence. Existing
+C table prefixes, source error/Result semantics and graph history are unchanged.
+The [scoped0.164 record](docs/evidence/macos-explicit-FFI-traps-0.164.0-2026-11-09.json)
+passed all targets, nine FFI/resource/discovery groups and21 native/reference
+Metal pairs with36 physical GPU events. Matching full source and complete
+installed SDK qualification remain pending.
+The earlier0.163 candidate remains separately pinned below.
 The new candidate installs discoverable Metal provider tools and checks their
 actual source/FFI signatures and all27 hardware/reply fixtures without a driver.
 The [development evidence](docs/evidence/macos-Metal-SDK-tools-0.163.0-2026-11-09.json)
 records all targets, three changed groups, ordinary installed source checks and
-the private Clang22 header correction. Matching full source, SDK relocation and
-physical Metal delivery gates are pending.
+the private Clang22 header correction. Its exact frozen source has now passed
+[all301 groups](docs/evidence/macos-Metal-tools-full301-0.163.0-2026-11-09.json).
+Matching SDK relocation and physical Metal delivery remain separate gates.
 Earlier 0.162.2 follow-ups preserve caller floating-point flags during optimized GCC ARM64
 float-to-integer conversion and requires the Windows OpenSSL runtime configuration
 when assembling an explicitly selected cohort. The [current development record](docs/evidence/current-platforms-0.162.2-2026-11-08.json)
@@ -111,7 +121,10 @@ generates GPU code from ordinary checked NEX functions. Its
 cover i64 arithmetic, branches, loops, helper calls and contracts. Its new
 [owned NEX task path passed 38 native/reference pairs and 122 GPU events](docs/evidence/macos-owned-scalar-Metal-0.163.0-2026-11-09.json),
 including hidden parents, cancellation and eight full input columns.
-Transparent fatal-trap forwarding, broader GPU types/backends and installed delivery remain pending.
+The checkout now connects `apply` to the0.164 fatal-trap API; its
+[21 native/reference pairs and36 physical GPU events](docs/evidence/macos-explicit-FFI-traps-0.164.0-2026-11-09.json)
+also verify original error codes and cancellation/deadline priority over overflow.
+Broader GPU types/backends and complete installed delivery remain pending.
 The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
 passed a replay of the original EXE/DLL and actual shared-library hit-count,
 condition, replacement and delayed-resolution checks, plus 20 transport cases.

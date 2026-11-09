@@ -1,0 +1,46 @@
+{
+  "schema": "nex.development-evidence/1",
+  "status": "passed_scoped_source_regression",
+  "recorded_utc": "2026-11-09T13:58:12.092553+00:00",
+  "platform": "macOS ARM64",
+  "toolchain": "0.163.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "source": {
+    "commit": "fb170e0db79af27adda81c9fb86d2d42d3a25a21",
+    "files": 2070,
+    "manifest_sha256": "27c2b4c03a1ef4739e1f13e27486dec18f327f6ff107ad8121b75133fad57d95",
+    "archive_sha256": "5dcde3a39ff2e993cc1d2dc7e7f663c887cbcd19e8eff188f4c88abfc9cb7e5e",
+    "compiler_sha256": "9a7641eff2a95641a0d92c04fc519121aaefd76ac3221ec0156b8c2d3ced9602"
+  },
+  "checks": {
+    "all_targets": true,
+    "single_unfiltered_CTest_groups": 301,
+    "passed": 301,
+    "failed": 0,
+    "skipped": 0,
+    "registry_and_JUnit_independently_checked": true,
+    "original_limits": true,
+    "source_owner_and_power_monitor_retired": true,
+    "source_tree_and_compiler_rehashed": true,
+    "primary_graph_and_compiler_preserved": true
+  },
+  "raw_evidence": {
+    "archive_sha256": "463a4288acac4e71d0bcf5422a6ec4391360d977a17a76da62b95cb92f212064",
+    "archive_bytes": 180844,
+    "files": 13,
+    "bytes": 1110514,
+    "unpacked_and_rehashed": true
+  },
+  "scope": {
+    "matching_complete_SDK_accepted": false,
+    "later_0164_explicit_trap_API_included": false,
+    "general_GPU_NPU_complete": false,
+    "whole_original_goal_complete": false
+  },
+  "pending": [
+    "later0.164 core changes need their own complete source gate",
+    "matching moved/restored SDK and physical Metal delivery",
+    "remaining platform, language/tooling/device and publication requirements"
+  ]
+}
