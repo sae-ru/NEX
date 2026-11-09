@@ -1,0 +1,39 @@
+{
+  "schema": "nex.development-evidence/1",
+  "recorded_date": "2026-11-09",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "exact-function-definition-source-full301-passed-current-SDK-remains-separate",
+  "source_commit": "432c3422714ca4ce0b1f2905fef6425866421ffd",
+  "source_files": 2051,
+  "compiler_sha256": "5368df06655a4f4a3b48f0cd39aaf02580a0bab4f8d07d39917ecd0d73233b94",
+  "platform": "macOS ARM64",
+  "all_targets_built": true,
+  "single_unfiltered_CTest_invocation": true,
+  "registered_groups": 301,
+  "passed_groups": 301,
+  "failed_groups": 0,
+  "skipped_groups": 0,
+  "registry_sha256": "3d727ecfb1a5cfc4d6a4a06b4a3de83ec63154cc38759c3692bd33edc15f65b3",
+  "junit_sha256": "547a7e7bc9c59293c618bbcc43e23160061bd65d1dba56cb6b39c710b195d916",
+  "total_controller_seconds": 7944.6768374159,
+  "source_Git_archive_and_tree_rehashed": true,
+  "source_owner_and_power_monitor_retired": true,
+  "earlier_power_interrupted_attempt_preserved": true,
+  "earlier182_partial_pass_rows_reused_for_acceptance": false,
+  "independent_seal": {
+    "raw_files": 13,
+    "raw_bytes": 934802,
+    "raw_archive_sha256": "526ee43702281bd0902d9a9c9d718735f9607569f2c3d32a426f67e81e27158a",
+    "raw_archive_bytes": 169750,
+    "raw_archive_unpacked_and_rehashed": true
+  },
+  "limitations": [
+    "This source snapshot includes the function-definition breakpoint changes. It does not establish a new Windows or installed SDK result.",
+    "Later0.163 Metal installation/header changes retain their own exact-source full301 and matching SDK gates.",
+    "The earlier power-interrupted attempt remains incomplete; this acceptance uses one new complete run with unchanged test budgets."
+  ],
+  "matching_complete_SDK_accepted": false,
+  "whole_original_goal_complete": false
+}

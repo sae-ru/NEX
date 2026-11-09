@@ -16,12 +16,28 @@ The [scoped development receipt](docs/evidence/macos-Metal-SDK-tools-0.163.0-202
 records the actual all-target build, changed groups, installed source checks and
 six physical GPU events through the corrected-header prerequisite.
 
+# Separate exact Metal Matmul prototype — 2026-11-09
+
+The checkout [Matmul provider](experiments/owned-metal-matmul/README.md) executes
+row-major I8×I8→I32 with exact final overflow checking. A private parent-retaining
+read cursor delivers the full 1 MiB result through 262144-byte chunks within the
+original FFI budget. [57 native/reference pairs](docs/evidence/macos-owned-metal-matmul-0.163.0-2026-11-09.json)
+passed on Apple M5 Max with 88 physical GPU kernel events, 52 accepted sources
+and one missing-effect rejection. Both actual providers rejected foreign opaque
+buffers before pointer use. The independent archive rechecks 50 cursor lifetimes
+and preserves the earlier full-result FFI-budget failure. This is outside the
+frozen 0.163 SDK candidate; installation and general GPU/NPU remain pending.
+
+The earlier [function-definition source snapshot passed all 301 macOS groups](docs/evidence/macos-function-def-full301-0.162.2-2026-11-09.json)
+in one complete run after the retained power interruption. The exact fixed 0.163
+source full run and corresponding SDK pipeline are still running.
+
 # Earlier0.162.2 qualification — 2026-11-09
 
 Language0.28/taskABI7 are unchanged. The current strict-LLDB-command-capture
 [e63 source snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).
-Its new immutable archive is assembled; current moved/restored and subsequent
-SDK gates are running. Fedora12281 passed full303 and ordinary installed smoke
+Its [immutable archive passed moved/restored and all subsequent SDK gates](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json).
+Fedora12281 passed full303 and ordinary installed smoke
 with its separately pinned source/compiler.
 
 The [native Bookworm solver cohort](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)

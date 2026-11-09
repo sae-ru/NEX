@@ -1,0 +1,95 @@
+{
+  "schema": "nex.development-evidence/1",
+  "recorded_date": "2026-11-09",
+  "toolchain": "0.163.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "separate-checkout-Metal-Matmul-prototype-passed-current-installed-SDK-gates-pending",
+  "component": "Persistent Metal Add/Affine/Matmul provider using existing std/device resources and private retained read cursors",
+  "source_commit": "6f9d6474ffc8c183058fa7497db9a0743d158d20",
+  "source_base_commit": "3adb0f0a18924d54c50428805c1de8831718a383",
+  "execution": {
+    "device": "Apple M5 Max",
+    "compiler_sha256": "d022c0b73b58acc249fc5fea63749b7f86170409825eda8eb908a581b138438c",
+    "worker_sha256": "5997aee2ccad1ed58e2e64b5ba41a977996dffd3ab11c4dc4ea9c7a16b2451a2",
+    "module_sha256": "9434090e994bb7914284e59790e3f28ef589fa2f177753e13288f9b6c1226716",
+    "manifest_sha256": "0affb7991db2b66bec6c9421879de61c861481289882448908a319dbaa737c37",
+    "hardware_native_reference_pairs": 34,
+    "malformed_reply_native_reference_pairs": 18,
+    "bounded_log_native_reference_pairs": 3,
+    "cross_provider_native_reference_pairs": 2,
+    "total_native_reference_pairs": 57,
+    "physical_GPU_kernel_events": 88,
+    "source_accepted_programs": 52,
+    "source_rejected_programs": 1,
+    "checked_read_cursors": 50
+  },
+  "semantics": {
+    "matmul": "row-major I8 x I8 -> I32",
+    "exact_accumulation": "two integer words; final signed32 check; no float approximation or CPU result substitute",
+    "I32_output_encoding": "explicit little-endian bytes",
+    "input_output_element_limit": 262144,
+    "maximum_MACs": 134217728,
+    "maximum_result_bytes": 1048576,
+    "read_chunk_bytes": 262144,
+    "original_per_call_copy_budget_preserved": true,
+    "wire_protocol_version": 3,
+    "actual_FFI_signatures": 8
+  },
+  "verified_behavior": [
+    "Small matrix agrees with the independent source CPU backend and known exact bytes; all256 I8 octets are exercised.",
+    "Both I32 endpoints, positive and negative intermediate excursions returning into range, positive/negative overflow and a2^32 wraparound are checked.",
+    "Maximum262144-result and134217728-MAC matrices execute physically; the larger cases use analytic exact expected bytes beyond the source CPU backend own work limit.",
+    "Admitted read cursor retains Buffer and Session after their logical owners close; five reads return four262144-byte chunks and an empty terminator. New reads on the closed tensor fail.",
+    "Cancellation and deadline interrupt queued work behind a real Metal shared event; physical completion precedes resource release.",
+    "Malformed replies and large private diagnostics preserve cleanup; overflow/protocol failures do not become CPU fallback.",
+    "Metal and OpenCL reject each other opaque buffers with E_FFI/status5 before pointer use, without starting a kernel or read cursor; both modes clean up."
+  ],
+  "build_scope": {
+    "ordinary_installed_compiler": true,
+    "bundled_Clang22_with_explicit_private_header_override": true,
+    "new_immutable_SDK_used": false,
+    "compiler_CPP_runtime_libraries_CMake_changed": false,
+    "descriptor_still_advertises_only_installed_Add_Affine": true,
+    "compiler_source_commit": "d503f1921b499fa7eaaba1f7f3344a6b0bd93bc3"
+  },
+  "independent_seal": {
+    "successful_owners_and_monitors_retired": true,
+    "cursor_before_buffer_before_session_release": true,
+    "raw_files": 1231,
+    "raw_bytes": 2894863,
+    "raw_archive_sha256": "9f336fca1179e3f1e7b5c7fc85681741cd4324ee5a729aae142d8fad59649a0c",
+    "raw_archive_bytes": 369534,
+    "raw_archive_unpacked_and_rehashed": true
+  },
+  "retained_attempts": [
+    "First full1MiB result computed on GPU but exceeded the per-call FFI budget with value metadata. That failed run is retained. The corrected provider uses a real parent-retaining read cursor and bounded chunks; no global budget increase or smaller acceptance limit."
+  ],
+  "pending": [
+    "Move the Matmul prototype through coherent SDK installation, descriptor and relocated/archive-restored delivery gates.",
+    "General GPU kernel generation, additional operations/dtypes, Apple NPU and broader platform acceptance.",
+    "Complete original PLAN, mobile/native UI, Studio, conversion and measured multi-LLM costs."
+  ],
+  "limitations": [
+    "This is a separately prepared trusted native provider, outside the frozen0.163 Add/Affine SDK candidate.",
+    "The prototype and header-override hardware checks do not accept an immutable installed SDK or a general GPU/NPU backend.",
+    "No universal numerical proof or production security guarantee is claimed by these finite tests."
+  ],
+  "installed_SDK_accepted": false,
+  "general_GPU_codegen_accepted": false,
+  "NPU_accepted": false,
+  "whole_original_goal_complete": false,
+  "source_pins": {
+    "protocol.h": "3e9fbb0c74e468ec91d45acfc9f4067f98fb05b92d3c2ceb4f48d266e8c030fb",
+    "check_sources.py": "70f5a40f4a69938114912a0d00b4df21ca3e958424fa947eb8b41ac1e6465070",
+    "cross_provider.py": "e4880655fef6441c9f0164c9e5a55cdf5eb4d7c17653a0acd608f9201c7bc434",
+    "main.nex.in": "e311b0b019efe35ad45873fea7ca6a9bf4fb394175e679fb164e3f25b44bb8e6",
+    "module.cpp": "7b1d5719cf71246598cd80374f28cb24e345bc36a27e1a700e0c393eb1e809bf",
+    "README.md": "0cd76c393ee971b918222f7e56e0c37447bd3e3306806770437f6281c83bf7fe",
+    "logs.py": "e2665e697be7abbd067df493d48aedd4270929bf7316439d7faee69ac416d2bd",
+    "worker.mm": "efab24d643763a8687399ef058beeb72decfe25f2044e2b8c2f32e869004bcfd",
+    "verify.py": "4cb27aeefdc7a28bfe25907eb3939b534b63f1430134de6c0c916e30173fd3c2",
+    "prepare.py": "4a941c5b688a63c61b268c5a9b0dd073dc5bbd184a40f2bd65e5637ab84213fd",
+    "faults.py": "b691cc4ccec10c3af7b569c40708a8704b158a1a2b82187d310593b0a44102e6"
+  }
+}

@@ -18,6 +18,14 @@ Provider instructions are installed at `tools/owned-metal/README.md`;
 checkout instructions are in `experiments/owned-metal/README.md`.
 Source-only preparation and all27 scenario checks require no Apple SDK or GPU.
 
+A separate checkout prototype at `experiments/owned-metal-matmul` adds exact
+I8×I8→I32 Matmul and a private parent-retaining read cursor. Its
+[hardware evidence](evidence/macos-owned-metal-matmul-0.163.0-2026-11-09.json)
+covers 57 native/reference pairs, including both I32 endpoints, overflow,
+maximum matrices and cross-provider opaque-resource rejection. It is outside
+the frozen 0.163 SDK and has distinct eight-function signatures and protocol3.
+The installed provider descriptor above continues to cover U8 Add/Affine.
+
 ## Source contract
 
 `Session` and `Buffer` are opaque server resources. A trusted pinned C provider

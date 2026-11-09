@@ -89,8 +89,9 @@ with read-only installations, denied source/dependency/opposite-SDK reads and
 six subsequent gates](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json):
 18 CLI scenarios, 150 production-browser checks, 21 native/reference OpenCL cases
 with 47 physical kernel events, Q1–Q5, all 85 schemas, sanitizer controls and one
-checked-integer measurement. The later Windows function-breakpoint source has a
-separate current full regression and matching SDK gate.
+checked-integer measurement. The later [Windows function-breakpoint source passed
+all 301 macOS groups](docs/evidence/macos-function-def-full301-0.162.2-2026-11-09.json).
+Later 0.163 changes and their matching SDK retain separate gates.
 On native Debian ARM64,
 [Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
 with the original limits. Complete Debian regression and portable SDK delivery
@@ -99,10 +100,16 @@ An [experimental owned Metal provider](experiments/owned-metal/README.md) now
 connects NEX to physical Apple GPU Add/Affine kernels; its
 [native/reference hardware record](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json)
 retains separate gates for installed delivery and general GPU code generation.
+A separate [exact Metal Matmul prototype](experiments/owned-metal-matmul/README.md)
+now executes I8×I8→I32 matrices, including a full 1 MiB result, using bounded reads
+that retain their buffers. Its [57 native/reference pairs and 88 physical GPU events](docs/evidence/macos-owned-metal-matmul-0.163.0-2026-11-09.json)
+cover arithmetic, lifetime, cancellation, malformed replies and cross-provider
+resource rejection. This checkout prototype is outside the frozen 0.163 SDK.
 The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
 passed a replay of the original EXE/DLL and actual shared-library hit-count,
 condition, replacement and delayed-resolution checks, plus 20 transport cases.
-The updated source and newly assembled matching SDK still require complete qualification.
+The full macOS source run is recorded above; complete current SDK and Windows
+qualification remain pending.
 The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
 runtime compilation in worker tests and select the SDK sysroot for Windows TCP
