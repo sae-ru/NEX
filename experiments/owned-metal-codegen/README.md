@@ -7,8 +7,8 @@ graph to MSL. A new pinned bundle contains the generated worker and typed host
 module. NEX reference and native task programs execute that physical GPU code
 through genuine `std/device` Session/Buffer resources.
 
-It is outside the frozen0.163 SDK candidate and now requires the0.164 explicit
-fatal-trap C API. Language0.28, taskABI7 and source grammar are unchanged.
+It requires the0.164 explicit fatal-trap C API. Language0.28, taskABI7 and source
+grammar are unchanged. Complete installed SDK qualification remains pending.
 Public compiler CLI/discovery,
 diagnostics/debug/profile, immutable SDK delivery and broader GPU/NPU remain
 separate work.
@@ -87,8 +87,29 @@ Opaque resources from another provider image are rejected before native pointer
 use. Arbitrary vendor stdout is kept on a separate bounded diagnostic pipe.
 
 The scalar generator and this persistent resource path have separate
-verification scopes. Malformed-reply/log-stress acceptance for this new path
-and complete installed SDK remain pending.
+verification scopes. The [generated-protocol record](../../docs/evidence/macos-generated-Metal-protocol-0.164.0-2026-11-09.json)
+passed16 native/reference pairs covering14 corrupt reply payloads, Result
+recovery refusal and the original protocol trap through `apply`. Failed factories
+return capacity after physical drainage; corrupt map success publishes no output
+Buffer. Three additional pairs cover9MiB worker cache files,9MiB diagnostic stdout
+and both together. Capture stays within64KiB, the actual cache file reaches9MiB,
+and protocol/results remain intact. These19 pairs contain22 physical GPU kernels.
+
+Run the independent generated-protocol corpora on a prepared two-argument
+baseline project (the same checked transform fixture used by `verify.py`):
+
+```sh
+python3 -B experiments/owned-metal-codegen/faults.py --sdk "$NEX_SDK" \
+  --project /absolute/existing/gpu-project --output /absolute/new/reply-faults
+python3 -B experiments/owned-metal-codegen/logs.py --sdk "$NEX_SDK" \
+  --project /absolute/existing/gpu-project --output /absolute/new/log-stress
+```
+
+`faults.py --source-only` checks all fixture programs against the selected
+compiler using that prepared project without executing its provider. The
+corruptions cover successful upload/map/download/free/close/open payloads,
+including kernel status/handler counts. Header/progress fault injection,
+unknown-completion recovery and complete installed delivery remain separate work.
 `verify.py` covers the two-argument multiply/conditional-loop fixture from the development evidence;
 `numerics.py` prepares and compares22 numerical/limit fixtures. Actual device
 recovery/reset and ownership under unknown vendor completion remain pending.

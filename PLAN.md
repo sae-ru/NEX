@@ -12,7 +12,7 @@ evidence and limits in STATUS.md.
 - [x] Execute generated kernels through persistent owned NEX task/device resources; 38 pairs/122 physical GPU events.
 - [x] Forward original fatal-trap codes through the0.164 append-only host API; nine core groups and21 native/reference Metal pairs/36 GPU events passed. `try_apply` retains Results; ordinary unwrap keeps E_RESULT.
 - [ ] Qualify that new path through matching full current regression, immutable SDK and remaining platform gates.
-- [ ] Match malformed-reply/log-stress checks to the generated provider's distinct protocol.
+- [ ] Match malformed-reply/log-stress checks to the generated provider's distinct protocol. Payload coverage passed14 corruptions in16 native/reference pairs, plus3 log/cache pairs and22 physical GPU kernels. Header/progress/error-packet injection remains required; matching installed delivery is separate.
 - [ ] Integrate public compiler CLI/discovery, source diagnostics, debugging and profiling.
 - [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
 

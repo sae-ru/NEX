@@ -1,0 +1,97 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Generated Metal map protocol:14 corrupt success payloads in16 reference/native pairs and3 log/cache pairs using the unchanged ordinary0.164 SDK and pinned prepared provider.",
+  "evidence": {
+    "schema": "nex.generated-Metal-protocol-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T17:22:41.224710+00:00",
+    "source_base_commit": "06e86e6bbb15fa64cdcb8f64f355ea0d7f6e4fe0",
+    "runtime_source_commit": "168180219a93b5485d01bc6b555362ab117356a9",
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "406e7bc3f95ce16959bb5e053ec4e7097df3017b67cdb51bfc48ebe1fd5a3a79",
+    "descriptor_hash": "b5093fc0a09ae8ac232575e335ed7eac0358917ebfc9ad615843635ad04ea438",
+    "protocol_magic": "0x3143474e",
+    "protocol_version": 1,
+    "harness_sha256": {
+      "faults.py": "a5ef977b7f190fefe63af695efcc50e52b4077de6421d406aea7c7be6670889c",
+      "logs.py": "84c46e9178c925090d373d635c2586794fdceac4b6cb3b103420e8f39fd2e651"
+    },
+    "generated_kernel_sha256": "8fa7ffbbcb906777b9cfe92f8b3fd8e82cfa60167df5e3bc6ba9dee3b051ea12",
+    "root_symbol": "baseline::transform",
+    "root_hash": "b5c98cd904bba48ddcc03131b93e311e62c75553d084a130aa37d8c903c9bdc7",
+    "worker_sha256": "f1f6a31ec2e005616e6757ccb8396741b03111eb5bab2a85938c51d16e83126b",
+    "module_sha256": "a19ce5eb4257405f8eaf4a64008743a8427724a40c20ce3d958528a454a47529",
+    "provider_manifest_sha256": "ee5672969e176414213c9eb66eee5546f27448f9677f751106e2dad2313b85ff",
+    "all_targets_and_two_CTest_groups_passed": true,
+    "source_fixture_programs_checked": 16,
+    "native_reference_fault_pairs": 16,
+    "distinct_corruptions": 14,
+    "native_reference_log_pairs": 3,
+    "native_reference_pairs": 19,
+    "physical_GPU_kernel_events": 22,
+    "buffer_and_cursor_creation_release_balanced": true,
+    "failed_factories_return_capacity_after_physical_drain": true,
+    "corrupt_map_success_does_not_publish_output_Buffer": true,
+    "failed_session_reuse_rejected": true,
+    "original_protocol_fatal_skips_user_handlers_and_finally": true,
+    "parent_and_buffer_release_follow_physical_drain": true,
+    "diagnostic_capture_bytes_max": 65536,
+    "worker_cache_bytes_per_file": 9437184,
+    "worker_cache_files": {
+      "cache9MiB-native-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache9MiB-reference-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache_and_stdout9MiB-native-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache_and_stdout9MiB-reference-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      }
+    },
+    "vendor_file_limit_imposed": false,
+    "no_CPU_fallback": true,
+    "complete_SDK_accepted": false,
+    "SDK_and_prepared_provider_unchanged": true,
+    "new_provider_native_CXX_compilation_this_run": false,
+    "prior_provider_CXX": "Apple Clang via /usr/bin/clang++",
+    "bundled_Clang_delivery_accepted": false,
+    "header_and_progress_fault_injection_accepted": false,
+    "unknown_completion_recovery_accepted": false,
+    "general_GPU_codegen_accepted": false,
+    "whole_original_goal_complete": false,
+    "owner_observations": {
+      "hardware": {
+        "controller_pid": 8883,
+        "retired": true
+      },
+      "build_checks": {
+        "controller_pid": 11110,
+        "retired": true
+      }
+    },
+    "all_command_monitors_retired": true,
+    "raw_files": 542,
+    "raw_bytes": 7213067,
+    "archive_bytes": 1447533,
+    "archive_sha256": "d47293683fcc58cb147a47fcddd42f48737e9fd5a9cbdaa182b1110202091d73",
+    "primary_source_and_graph_preserved": true
+  },
+  "remaining": [
+    "header, progress and error-packet fault injection",
+    "unknown vendor completion/recovery",
+    "public compiler CLI, source diagnostics, debugging and profiling",
+    "matching immutable SDK and broader GPU/NPU targets"
+  ],
+  "release_claimed": false,
+  "main_branch_changed": false
+}

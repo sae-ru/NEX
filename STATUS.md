@@ -15,6 +15,15 @@ parent release; failed outputs are not published. The original failed trace
 expectation is retained. Complete matching regression/SDK/platform qualification
 remains pending.
 
+The separate [generated-protocol corpus](docs/evidence/macos-generated-Metal-protocol-0.164.0-2026-11-09.json)
+now passed16 native/reference pairs over14 corrupt reply payloads, failed-session
+reuse refusal and direct protocol-trap forwarding. Three log/cache pairs kept
+9MiB worker files and diagnostic stdout separate from the framed protocol,
+with capture bounded to64KiB. These19 pairs executed22 physical GPU kernels.
+The ordinary0.164 SDK and pinned prepared provider remained unchanged. Header/
+progress fault injection, unknown-completion recovery, general GPU integration
+and complete installed SDK delivery remain separate requirements.
+
 The earlier frozen0.163 Metal-tool source now passed
 [all301 groups in one unfiltered invocation](docs/evidence/macos-Metal-tools-full301-0.163.0-2026-11-09.json).
 Its independent receipt rehashes the exact2070 sources and compiler and retains
@@ -35,8 +44,9 @@ MSL function prefixes match their prior physical-stage bytes.
 
 This is outside the frozen0.163 SDK. `try_apply` retains numeric errors inside
 an explicit Result; that recorded `apply` had the ordinary E_RESULT unwrap contract.
-The later0.164 bridge is described above. Matching protocol/log stress, public CLI,
-source diagnostics/debug/profile and coherent installed delivery remain pending.
+The later0.164 bridge and generated-protocol/log corpus are described above.
+Public CLI, source diagnostics/debug/profile and coherent installed delivery
+remain pending.
 The independent raw archive retains the original native-limit mismatch and
 corrects an overbroad reporting label without changing executed checks.
 
