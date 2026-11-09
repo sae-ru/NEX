@@ -1,0 +1,60 @@
+module owned_metal_codegen;
+import "std/compute.nex" as c;
+import "std/device.nex" as d;
+server resource ReadCursor;
+server extern fn open_raw(index:i64)->result<d::Session> !{ffi}=foreign("gpu","open","@PIN@");
+server extern fn upload_raw(session:d::Session,dtype:i64,data:bytes)->result<d::Buffer> !{ffi}=foreign("gpu","upload","@PIN@");
+server extern fn map_raw(session:d::Session,columns:list<d::Buffer>,count:i64,steps:i64)->result<d::Buffer> !{ffi}=foreign("gpu","map","@PIN@");
+server extern fn download_raw(buffer:d::Buffer)->result<ReadCursor> !{ffi}=foreign("gpu","download","@PIN@");
+server extern fn read_next_raw(cursor:ReadCursor)->result<bytes> !{ffi}=foreign("gpu","read_next","@PIN@");
+server extern fn name_raw(session:d::Session)->str !{ffi}=foreign("gpu","name","@PIN@");
+server extern fn kernel_ns_raw(buffer:d::Buffer)->i64 !{ffi}=foreign("gpu","kernel_ns","@PIN@");
+server extern fn busy_raw(session:d::Session)->i64 !{ffi}=foreign("gpu","busy","@PIN@");
+
+fn kernel_argument_count()->i64{return @ARGUMENTS@;}
+fn kernel_source_hash()->str{return "@ROOT_HASH@";}
+server fn make_context()->result<d::Session> !{task,ffi}{return open_raw(@INDEX@);}
+server fn close_columns(columns:list<d::Buffer>)->unit !{task,ffi}{var i:i64=0;while i<len(columns){resource_close(columns[i]);i=i+1;}}
+server fn read_buffer(buffer:d::Buffer)->result<bytes> !{task,ffi}{
+ if !resource_is_open(buffer){return err("E_DEVICE_CLOSED","device buffer is closed");}
+ let cursor:ReadCursor=download_raw(buffer)?;var output:bytes=unwrap(bytes([]));var done:bool=false;
+ while !done{
+  let read:result<bytes>=read_next_raw(cursor);
+  if !is_ok(read){resource_close(cursor);return err(error_code(read),error_message(read));}
+  let chunk:bytes=read?;
+  if len(chunk)>262144 || len(output)>262144-len(chunk){resource_close(cursor);return err("E_GPU_RESPONSE","generated output exceeded its bound");}
+  output=output+chunk;done=len(chunk)<262144;
+ }
+ resource_close(cursor);return ok(output);
+}
+server fn try_apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->result<bytes> !{task,ffi}{
+ if count<1 || count>32768 || steps<1 || steps>65536{return err("E_GPU_INPUT","generated kernel geometry exceeds bounds");}
+ if count*steps>16777216 || len(columns)!=kernel_argument_count(){return err("E_GPU_INPUT","generated kernel shape or work bound differs");}
+ if !resource_is_open(session){return err("E_DEVICE_CLOSED","GPU session is closed");}
+ var i:i64=0;while i<len(columns){if len(columns[i])!=count*8{return err("E_GPU_INPUT","column bytes differ from count");}i=i+1;}
+ var buffers:list<d::Buffer>=[];i=0;
+ while i<len(columns){
+  let uploaded:result<d::Buffer>=upload_raw(session,1,columns[i]);
+  if !is_ok(uploaded){close_columns(buffers);return err(error_code(uploaded),error_message(uploaded));}
+  buffers=buffers+[uploaded?];i=i+1;
+ }
+ let dispatched:result<d::Buffer>=map_raw(session,buffers,count,steps);close_columns(buffers);
+ let buffer:d::Buffer=dispatched?;
+ let read:result<bytes>=read_buffer(buffer);resource_close(buffer);return read;
+}
+// Explicit unwrap retains NEX's ordinary E_RESULT contract. Exact direct GPU
+// trap forwarding is a separate compiler/runtime integration, still pending.
+server fn apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->bytes !{task,ffi}{return unwrap(try_apply(session,columns,count,steps));}
+
+fn encode_i64s(values:list<i64>)->bytes{
+ var output:bytes=unwrap(bytes([]));var i:i64=0;
+ while i<len(values){var value:i64=values[i];var j:i64=0;while j<8{var octet:i64=value%256;if octet<0{octet=octet+256;}output=output+unwrap(bytes([octet]));value=(value-octet)/256;j=j+1;}i=i+1;}
+ return output;
+}
+fn decode_i64s(value:bytes)->list<i64>{
+ assert(len(value)%8==0);var output:list<i64>=[];var offset:i64=0;
+ while offset<len(value){var top:i64=value[offset+7];if top>=128{top=top-256;}var scalar:i64=top;var j:i64=7;while j>0{j=j-1;scalar=scalar*256+value[offset+j];}output=output+[scalar];offset=offset+8;}
+ return output;
+}
+client fn client_value()->i64{return 42;}
+server fn main()->unit !{task,ffi,io}{let session:d::Session=unwrap(make_context());resource_close(session);print(42);}

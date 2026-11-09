@@ -23,11 +23,14 @@ def msl_type(value):
 
 
 class Generator:
-    def __init__(self, graph, root):
+    def __init__(self, graph, root, input_layout="rows"):
         if graph.get("schema") != "nex.graph/2" or graph.get("language") != "0.28":
             raise Unsupported("expected a compiler-checked language0.28 graph")
         self.nodes = {row["name"]: row for row in graph["nodes"]}
         self.root = root
+        if input_layout not in {"rows", "columns"}:
+            raise Unsupported("unknown generated-kernel input layout")
+        self.input_layout = input_layout
         self.order = []
         self.visiting = set()
         self.visited = set()
@@ -219,16 +222,24 @@ class Generator:
                 self.line("nex_s.code = 5; " + self.stop())
             self.indent -= 1
             self.line("}")
-        self.line("kernel void nex_generated_map(device const long *input [[buffer(0)]],")
-        self.line("  device long *output [[buffer(1)]], device uint *errors [[buffer(2)]],")
-        self.line("  constant uint2 &parameters [[buffer(3)]], uint lane [[thread_position_in_grid]]) {")
+        if self.input_layout == "rows":
+            self.line("kernel void nex_generated_map(device const long *input [[buffer(0)]],")
+            self.line("  device long *output [[buffer(1)]], device uint *errors [[buffer(2)]],")
+            self.line("  constant uint2 &parameters [[buffer(3)]], uint lane [[thread_position_in_grid]]) {")
+        else:
+            self.line("kernel void nex_generated_map(")
+            for i in range(len(root["parameters"])):
+                self.line("  device const long *input_" + str(i) + " [[buffer(" + str(i) + ")]],")
+            self.line("  device long *output [[buffer(8)]], device uint *errors [[buffer(9)]],")
+            self.line("  constant uint2 &parameters [[buffer(10)]], uint lane [[thread_position_in_grid]]) {")
         self.indent += 1
         self.line("if (lane >= parameters.x) return;")
         self.line("NexState nex_s = {0, parameters.y};")
         arguments = []
         for i, parameter in enumerate(root["parameters"]):
             name = "nex_input_" + str(i)
-            self.line("long " + name + " = input[lane * " + str(len(root["parameters"])) + "u + " + str(i) + "u];")
+            address = "input[lane * " + str(len(root["parameters"])) + "u + " + str(i) + "u]" if self.input_layout == "rows" else "input_" + str(i) + "[lane]"
+            self.line("long " + name + " = " + address + ";")
             if parameter["type"] == "bool":
                 self.line("if (" + name + " != 0L && " + name + " != 1L) nex_s.code = 6;")
                 arguments.append("(" + name + " != 0L)")
@@ -253,6 +264,7 @@ def main():
     for key in ["sdk", "project", "output"]:
         parser.add_argument("--" + key, required=True, type=Path)
     parser.add_argument("--symbol", required=True)
+    parser.add_argument("--input-layout", choices=["rows", "columns"], default="rows")
     args = parser.parse_args()
     sdk, project = args.sdk.resolve(strict=True), args.project.resolve(strict=True)
     out = args.output.absolute()
@@ -290,7 +302,7 @@ def main():
         graph = run("graph", ["graph", "--revision", checked["revision"], "--json"])
         if context["revision"] != checked["revision"] or graph["revision"] != checked["revision"]:
             raise Unsupported("checked graph revision changed")
-        generator = Generator(graph, context["symbol"])
+        generator = Generator(graph, context["symbol"], args.input_layout)
         generated = generator.generate()
         runtime = Path(__file__).with_name("runtime.metal")
         (out / "kernel.metal").write_text(runtime.read_text() + "\n" + generated)
@@ -298,7 +310,7 @@ def main():
         report.update(ok=True, state="checked-source-generated", toolchain=index["toolchain"], language="0.28",
                       compiler_build=index["compiler_build"], descriptor_hash=index["descriptor_hash"],
                       revision=graph["revision"], root=context["symbol"], graph_sha256=sha(out / "graph.stdout"),
-                      parameter_types=[p["type"] for p in root["parameters"]], result_type=root["result"],
+                      parameter_types=[p["type"] for p in root["parameters"]], result_type=root["result"], input_layout=args.input_layout,
                       functions={name: generator.nodes[name]["hash"] for name in generator.order},
                       kernel_sha256=sha(out / "kernel.metal"), runtime_sha256=sha(runtime),
                       generator_sha256=sha(__file__), error_codes={"1": "E_OVERFLOW", "2": "E_DIV_ZERO", "3": "E_ASSERT",
