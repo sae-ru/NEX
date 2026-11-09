@@ -65,7 +65,9 @@ passed [all 301 macOS groups](docs/evidence/macos-current-source-full301-0.164.0
 in one unfiltered invocation. Matching complete installed SDK and remaining
 platform qualification remain pending.
 The later [package/SDK checker correction](docs/evidence/source-package-notices-parent-prefix-0.164.0-2026-11-09.json)
-passed nine package groups and108 validator tests; its matching complete SDK
+passed nine package groups and108 validator tests. That exact updated source
+then passed [all 301 macOS groups](docs/evidence/macos-package-notices-source-full301-0.164.0-2026-11-09.json)
+in one unfiltered run, with no failures or skips. Its matching complete SDK
 qualification remains pending.
 The latest source also passed a [native RK3588 CPU and TypeScript smoke check](docs/evidence/rk-current-CPU-TypeScript-0.164.0-2026-11-09.json):
 reference/Debug/Release output agreement and one generic Unicode test in native

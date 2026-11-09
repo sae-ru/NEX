@@ -26,8 +26,12 @@ The same correction updates the SDK checker from37 to43 dependent-resource
 checks for0.164, requiring six distinct C11/C++20 executions against the frozen
 304-byte parent-table prefix. The actual43-case installed report passed; its
 old aggregate checker rejected it. That failed immutable archive remains
-unaccepted. The corrected validator passed108 unit tests. Fresh matching full
-source and immutable SDK qualification remain required.
+unaccepted. The corrected validator passed108 unit tests. Its exact4490655
+source subsequently passed [all301 macOS groups](docs/evidence/macos-package-notices-source-full301-0.164.0-2026-11-09.json)
+in one unfiltered invocation, with no failures or skips and the original deadlines.
+An independent archive retains its all-target build and registry/JUnit evidence.
+Matching complete immutable SDK qualification remains required; this source
+result does not accept an installed SDK or the other platforms.
 
 The latest4490655 source also passed a [native RK3588 CPU and TypeScript smoke check](docs/evidence/rk-current-CPU-TypeScript-0.164.0-2026-11-09.json).
 Reference, native Debug and Release agree on the constraints example; its generic

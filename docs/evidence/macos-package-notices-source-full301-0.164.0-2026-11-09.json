@@ -1,0 +1,43 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Exact NEX 0.164.0 source4490655 with the explicit source-package notices and SDK43-case parent-prefix checker corrections: all targets and one unfiltered301-group macOS ARM64 invocation. Matching complete immutable SDK and other platforms remain separate.",
+  "evidence": {
+    "schema": "nex.Mac-current01640-source301-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T21:16:22.401414+00:00",
+    "source_commit": "44906558146a8553b510fd30d2ab5790d60d63d9",
+    "source_files": 2122,
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "b095f903da0205c07fb25850f236ed472850cf8a1d4123e88e8b00331fe54670",
+    "source_manifest_sha256": "6330dfb83963fe6a702cd4d29c13d938afb6b0964f1a9d0a576e281b3fa08abb",
+    "source_archive_sha256": "d8686c3eeda5e416d7300d98dcc0bdc8d0fcacd606533cbc8fb45fcff4d6be94",
+    "all_targets_built": true,
+    "unfiltered_passed_groups": 301,
+    "failed_groups": 0,
+    "skipped_groups": 0,
+    "original_deadlines_retained": true,
+    "actual_controller_and_monitors_retired": true,
+    "AC_and_open_lid_during_all_commands": true,
+    "primary_guard": {
+      "ok": true,
+      "commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+      "source_files": 1990,
+      "graph_revisions": 48,
+      "all_original47_revisions_and_local_IDs_preserved": true,
+      "origin016_verified": false,
+      "primary_compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756"
+    },
+    "matching_immutable_SDK_accepted": false,
+    "later_Windows_builder_and_experimental_provider_qualified_by_this_run": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 14,
+    "raw_bytes": 1100093,
+    "archive_sha256": "9b3ad4a6ff0fe593434cc1b8caf1242c9a02b9ed22ae1e12c61af54f8f0eda82",
+    "archive_bytes": 210712
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}
