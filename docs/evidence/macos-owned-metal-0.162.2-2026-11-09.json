@@ -1,0 +1,92 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "experimental-owned-Metal-native-reference-hardware-passed-installed-delivery-pending",
+  "component": "separately built persistent Metal provider using the existing std/device API",
+  "platform": "macOS ARM64",
+  "device": "Apple M5 Max",
+  "device_registryID": "4294969123",
+  "source_base_commit": "033bd9acf2f778d56f1d68722f7b03d0172da689",
+  "source_inputs_sha256": {
+    "experiments/owned-metal/README.md": "71bbea7b6354f4bfeed8b4f04514ab10c99360063a3c9b8164f61edaabd365ff",
+    "experiments/owned-metal/faults.py": "49a6d45b9391dbaaea0fff6a0b2d657fb7e429d7c3fa1441db813d0684ad02a4",
+    "experiments/owned-metal/logs.py": "fa7c2e7d2d03fcd80c992209045f379fa7ba404cd227b3d1869fb3b7256943e2",
+    "experiments/owned-metal/main.nex.in": "0db28213bcaea78802973bf0aba9bde48795a69d297ff0aef0e8f29eb480617d",
+    "experiments/owned-metal/module.cpp": "54fb2c99312dede6fc4d84acbef68d81c979e2bf9d62ff0d15cecd42deb5024e",
+    "experiments/owned-metal/prepare.py": "0eafb696ab9f929701164c800d08a1e7bb1bea53e311bfbf8ad4eaa852f0e283",
+    "experiments/owned-metal/protocol.h": "a02630f8fd2d331b839ee063c21af50f2c7ae76a04219cfb7160702ca71fa7b7",
+    "experiments/owned-metal/verify.py": "90672a8c6f37d8dda3e632ff4b4170e2cc6b36d0bc39412dfa1d4bf2f78ef447",
+    "experiments/owned-metal/worker.mm": "cb640993fa4b7ee43d8b852085a63c53790d17866665fc0a150bceff3e86cf2c",
+    "experiments/metal/README.md": "bbd11a52cc9f8fd114f1fc8d3d3dbce87149946dea26007ff99795dd391cf876",
+    "experiments/metal/probe.mm": "105dd1b0b242413fb12573d65d7188f0a5fce2ea2c71660e8ea42f2fc7374a93"
+  },
+  "NEX_SDK": {
+    "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+    "archive_sha256": "e2b6fadf9c86c2f6d99408b1656c0d305f0097395959611f25ffae638b98e850",
+    "compiler_sha256": "3863a9634b3230a90e28dac0939f0c13637a5a58f9f78646351e2453ecc804a4",
+    "SDK_resources_overlaid": false
+  },
+  "provider": {
+    "worker_sha256": "3a3a5f17606cf505966eefd9d7608a42f1fb423f5eb9c2ef45bbf92f44d44ee8",
+    "module_sha256": "c3741d7a391ef09d58a48635daf1cff65f34613504b92591ba416de7d8cd5aa0",
+    "manifest_sha256": "834cd0370c837278961e7255a98c74d9bff3f93953bfd4ed81a3572ccee8f729",
+    "operations": [
+      "exact U8 Add",
+      "exact U8 Affine, scale 0..255"
+    ],
+    "maximum_elements": 262144,
+    "CPU_GPU_output_substitution": false,
+    "physical_identity": "MTLDevice.registryID",
+    "native_success_status": 4,
+    "completed_handlers_required": 1,
+    "resource_parent_retention": true,
+    "separate_pinned_worker": true,
+    "distinct_Metal_wire_protocol": true
+  },
+  "validation": {
+    "native_prerequisite_Debug_GPU_cases": 12,
+    "native_prerequisite_Release_GPU_cases": 12,
+    "native_prerequisite_argument_or_unavailable_device_rejections": 16,
+    "NEX_hardware_native_reference_pairs": 15,
+    "malformed_reply_native_reference_pairs": 12,
+    "bounded_log_native_reference_pairs": 3,
+    "total_NEX_native_reference_pairs": 30,
+    "NEX_physical_GPU_kernel_events": 44,
+    "cancelled_or_expired_call_waits_for_physical_completion": true,
+    "all_created_buffers_released": true,
+    "session_cleanup_after_children": true,
+    "checked_overflow_never_becomes_CPU_fallback": true,
+    "malformed_successes_drain_the_physical_worker": true,
+    "log_and_cache_cases": "9 MiB cache, 9 MiB stdout, both together; bounded first/last log capture",
+    "all_successful_controllers_retired": true,
+    "power_policy": "open lid and AC power with owned-child supervision"
+  },
+  "raw_evidence": {
+    "raw_files": 463,
+    "raw_bytes": 1502508,
+    "raw_archive_sha256": "570469b452e74bde1a376fe357c6c83b4b31579a0c8b65325f2caaed3ffe74e3",
+    "raw_archive_bytes": 205539
+  },
+  "retained_failed_attempts": [
+    {
+      "attempt": "metal-owned-provider-v1",
+      "reason": "Test controller omitted SDKROOT for bundled NEX native runtime compilation; source/reference Metal execution passed before the native build failed.",
+      "recovery": "New output directory, explicit selected Apple SDK, unchanged provider sources and all fifteen original hardware pairs."
+    }
+  ],
+  "pending": [
+    "Integrate provider preparation and tests with a newly assembled, moved and archive-restored SDK.",
+    "General Metal kernel generation, additional operations/dtypes and Apple NPU.",
+    "Broader device/driver failure recovery, concurrent queues and explicit source fences."
+  ],
+  "limits": [
+    "This is a separately built experimental provider, not complete Metal SDK/platform acceptance.",
+    "Language syntax, graph identities, task ABI and compiler C++/runtime are unchanged.",
+    "No CPU/GPU speedup or universal device/process-memory/safety guarantee is inferred from these checks.",
+    "The frozen full-source and SDK jobs retain their own source/archive identity and do not include this experiment.",
+    "Remote stands were not accessed; main and a new binary release were not published."
+  ]
+}

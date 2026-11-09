@@ -153,9 +153,16 @@ CMake требует OpenSSL 3.x и отклоняет системную 4.0.3.
 [инструкцию сборки из исходников](docs/getting-started.ru.md).
 
 Это development preview для macOS ARM64, минимум macOS 27.0. Полная текущая
-поставка SDK Windows/Linux, общий GPU/NPU codegen, Metal compute, Apple NPU,
+поставка SDK Windows/Linux, общий GPU/NPU codegen, приёмка Metal в составе SDK, Apple NPU,
 полноценные мобильные приложения и native UI, NEX Studio, конвертер проектов
 и измерения стоимости работы разных LLM остаются в [плане](PLAN.md).
+
+[Экспериментальный Metal-провайдер](experiments/owned-metal/README.md) уже
+связывает NEX с физическим GPU Apple для точных операций U8 Add/Affine.
+[Результаты](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json) фиксируют
+совпадение интерпретатора и нативной программы, отмену во время работы GPU,
+очистку после повреждённых ответов и изоляцию журналов. Общая генерация
+GPU-кода и поставка провайдера внутри SDK требуют следующих этапов.
 
 [Проверка актуальной основной рабочей копии](docs/evidence/macos-current-primary-source-2026-11-06.json)
 фиксирует покрытие всех 300 групп исходным запуском и проверенными повторениями;

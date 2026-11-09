@@ -6,6 +6,13 @@ No syntax, canonical identity, retained-history or migration rule changes.
 Matching regression, installed SDK and actual platform acceptance have separate
 receipts. The OpenCL adapter is experimental and selected explicitly.
 
+The checkout also contains an [experimental owned Metal provider](../experiments/owned-metal/README.md)
+for macOS. It uses these same public resource types with native Metal registry
+IDs, command-buffer completion and shared-event cancellation tests. Its
+[physical hardware evidence](evidence/macos-owned-metal-0.162.2-2026-11-09.json)
+has a separate scope from installed SDK acceptance. Current kernels remain
+exact U8 Add/Affine; general Metal code generation and Apple NPU are pending.
+
 ## Source contract
 
 `Session` and `Buffer` are opaque server resources. A trusted pinned C provider

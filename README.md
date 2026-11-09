@@ -89,6 +89,10 @@ On native Debian ARM64,
 [Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
 with the original limits. Complete Debian regression and portable SDK delivery
 remain separate from that solver result.
+An [experimental owned Metal provider](experiments/owned-metal/README.md) now
+connects NEX to physical Apple GPU Add/Affine kernels; its
+[native/reference hardware record](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json)
+retains separate gates for installed delivery and general GPU code generation.
 The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
 passed a replay of the original EXE/DLL and actual shared-library hit-count,
 condition, replacement and delayed-resolution checks, plus 20 transport cases.
@@ -157,7 +161,7 @@ a new binary release. The published [0.159 archive](docs/releases/0.159.0.json)
 retains its own evidence. Use the [current source-build guide](docs/getting-started.en.md).
 
 This is a development preview for macOS ARM64, minimum macOS 27.0. Matching
-Windows/Linux SDK delivery, general GPU/NPU code generation, Metal compute,
+Windows/Linux SDK delivery, general GPU/NPU code generation, qualified Metal SDK delivery,
 Apple NPU, complete mobile/native UI, NEX Studio, project conversion and real
 cross-model token/cost measurement remain [planned work](PLAN.md).
 

@@ -1,3 +1,14 @@
+# Owned Metal experiment — development0.162.2
+
+Connect the existing `std/device` resource API to a pinned persistent Metal
+worker, retaining exact U8 Add/Affine, checked overflow, explicit placement,
+parent retention and physical completion before cancelled-call cleanup.
+[Actual hardware evidence](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json)
+records native/reference execution on Apple M5 Max. The provider is currently
+built separately from the checkout. Matching installed SDK delivery, general
+Metal kernels/code generation, other operations/dtypes and Apple NPU remain
+open, along with every other unfinished original roadmap item below.
+
 # Selected ELF runtime search — development0.162.1
 
 Share SONAME-aware runtime-directory planning between standalone and component
