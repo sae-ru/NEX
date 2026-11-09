@@ -5,6 +5,25 @@ tests. It creates a fresh ephemeral Windows AppContainer profile, copies an SDK
 into it, and runs controlled programs through the native Job Object observer.
 It does not add a NEX language feature or automatically sandbox NEX applications.
 
+## Debugger pipe prerequisite in development
+
+A controlled native PE ran to normal exit inside the same AppContainer through
+both ordinary `CreateProcessW` and `DEBUG_ONLY_THIS_PROCESS`. The retained LLDB
+CLI/DAP prerequisite still failed before an argument stop. The DAP log records
+`SetUpPipeRedirection` access denial. A direct native control rejected the global
+pipe namespace with Win32 error5 and created/opened a `LOCAL` pipe successfully.
+These observations do not accept debugger operation or a complete isolated SDK.
+
+`tools/windows/build_debugger.py --appcontainer-pipes` selects the separately
+pinned `lldb23-appcontainer-pipes.json` patch. It selects per-package `LOCAL`
+paths when the debugger process token is an AppContainer and keeps ordinary
+host pipe paths. It applies the decision to both creation and opening, reports
+token-query failures, and retains default object ACLs and existing ownership
+checks. Use new source, build and output directories. The selected patch hash
+is included in the debugger revision and build receipt. Source preparation was
+byte-verified; the new private build and native CLI/DAP regression remain pending.
+The existing qualified debugger remains unchanged.
+
 ## Current coherent SDK follow-up
 
 The [0.162.2 coherent-SDK receipt](evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json)

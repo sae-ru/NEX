@@ -1,0 +1,58 @@
+--- a/lldb/source/Host/windows/PipeWindows.cpp
++++ b/lldb/source/Host/windows/PipeWindows.cpp
+@@ -25,6 +25,29 @@
+ static std::atomic<uint32_t> g_pipe_serial(0);
+ static constexpr llvm::StringLiteral g_pipe_name_prefix = "\\\\.\\Pipe\\";
+ 
++// AppContainer named pipes use the per-package LOCAL namespace. Keep the
++// ordinary host namespace unchanged, and use the same decision at both ends.
++static Status GetPipePath(llvm::StringRef name, std::string &path) {
++  HANDLE token = nullptr;
++  if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &token))
++    return Status(::GetLastError(), eErrorTypeWin32);
++  DWORD app_container = 0;
++  DWORD bytes = 0;
++  // TokenIsAppContainer is hidden by some supported SDK header targets.
++  BOOL inspected = ::GetTokenInformation(
++      token, static_cast<TOKEN_INFORMATION_CLASS>(29), &app_container,
++      sizeof(app_container), &bytes);
++  DWORD error = inspected ? ERROR_SUCCESS : ::GetLastError();
++  ::CloseHandle(token);
++  if (!inspected)
++    return Status(error, eErrorTypeWin32);
++  path = g_pipe_name_prefix.str();
++  if (app_container && !name.take_front(6).equals_insensitive("LOCAL\\"))
++    path.append("LOCAL\\");
++  path.append(name.str());
++  return Status();
++}
++
+ PipeWindows::PipeWindows()
+     : m_read(INVALID_HANDLE_VALUE), m_write(INVALID_HANDLE_VALUE),
+       m_read_fd(PipeWindows::kInvalidDescriptor),
+@@ -85,8 +108,10 @@
+   if (CanRead() || CanWrite())
+     return Status(ERROR_ALREADY_EXISTS, eErrorTypeWin32);
+ 
+-  std::string pipe_path = g_pipe_name_prefix.str();
+-  pipe_path.append(name.str());
++  std::string pipe_path;
++  Status path_error = GetPipePath(name, pipe_path);
++  if (path_error.Fail())
++    return path_error;
+ 
+   // We always create inheritable handles, but we won't pass them to a child
+   // process unless explicitly requested (cf. ProcessLauncherWindows.cpp).
+@@ -171,8 +196,10 @@
+   // process unless explicitly requested (cf. ProcessLauncherWindows.cpp).
+   SECURITY_ATTRIBUTES attributes{sizeof(SECURITY_ATTRIBUTES), 0, TRUE};
+ 
+-  std::string pipe_path = g_pipe_name_prefix.str();
+-  pipe_path.append(name.str());
++  std::string pipe_path;
++  Status path_error = GetPipePath(name, pipe_path);
++  if (path_error.Fail())
++    return path_error;
+ 
+   if (is_read) {
+     m_read = ::CreateFileA(pipe_path.c_str(), GENERIC_READ, 0, &attributes,

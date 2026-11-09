@@ -1,0 +1,20 @@
+{
+  "schema": "nex.windows-lldb-AppContainer-pipes/1",
+  "version": "23.1.4",
+  "patch": "lldb23-appcontainer-pipes.patch",
+  "patch_sha256": "3e029317ea82468cba61c69f5a7186517101793a46932047e3363863e80cdbb3",
+  "source_file": "lldb/source/Host/windows/PipeWindows.cpp",
+  "original_sha256": "f045362d53441958b255331aaa73448e4e749a8c56dab2b841ab938314ba714d",
+  "patched_sha256": "54b0de6c7b200e9e65cc221279ab03f1f9112e393116d96b9c2c2b3bcf99a7e4",
+  "base_manifest_sha256": "c315044381372816cfc8fa8ec932fb4d208ed4f22255d5e8c6f50a6c39ba5731",
+  "scope": "Use per-package LOCAL pipe paths only when the debugger process token is an AppContainer. Retain host paths, owned handles, default ACLs and all existing regression requirements.",
+  "observed_controls": {
+    "same_PE_plain_and_debug_CreateProcess_passed": true,
+    "AppContainer_global_pipe_create_error": 5,
+    "AppContainer_LOCAL_pipe_create_and_open_passed": true,
+    "stock_Lldb_DAP_stdio_setup_denied": true
+  },
+  "patched_debugger_build_passed": false,
+  "patched_debugger_runtime_accepted": false,
+  "complete_SDK_accepted": false
+}
