@@ -31,6 +31,13 @@ argument stop at41, actual inferior output42 and normal exit on the host and
 inside AppContainer, together with outside read and copied-code write denials.
 The existing qualified debugger remains unchanged.
 
+The0.164 development build helper applies all pinned patches with command-local
+`core.autocrlf=false` / `core.eol=lf`. Git's Windows CRLF configuration otherwise
+changes the exact post-patch bytes and correctly trips the checksum gate.
+Operator Git settings stay unchanged; an existing CRLF tree is still rejected.
+Use a new source directory rather than relabelling that failed tree. Matching
+native Windows preparation/build/replay qualification remains separate.
+
 ## Current coherent SDK follow-up
 
 The [0.162.2 coherent-SDK receipt](evidence/windows-current-AppContainer-TCP-0.162.2-2026-11-08.json)

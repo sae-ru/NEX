@@ -21,6 +21,16 @@ def sha(path):
     return digest.hexdigest()
 
 
+def git_apply_patch(source, patch, *, check=False):
+    # Git's user/repository autocrlf settings otherwise rewrite the patched
+    # working files on Windows. Hash-pinned LLVM inputs require exact LF bytes;
+    # command-local settings leave the operator's Git configuration untouched.
+    command = ['git', '-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'apply']
+    if check:
+        command.append('--check')
+    subprocess.run([*command, str(patch)], cwd=source, check=True)
+
+
 def prepare_source_patch(source, record, label):
     """Apply one hash-pinned patch only to its exact retained source bytes."""
     patch = (HERE / record['patch']).resolve(strict=True)
@@ -32,8 +42,8 @@ def prepare_source_patch(source, record, label):
         return dict(record, applied=False, source_sha256=before)
     if before != record['original_sha256']:
         raise ValueError(label + ' source checksum differs')
-    subprocess.run(['git', 'apply', '--check', str(patch)], cwd=source, check=True)
-    subprocess.run(['git', 'apply', str(patch)], cwd=source, check=True)
+    git_apply_patch(source, patch, check=True)
+    git_apply_patch(source, patch)
     if sha(target) != record['patched_sha256']:
         raise ValueError('patched ' + label + ' source checksum differs')
     return dict(record, applied=True, source_sha256=sha(target))
@@ -77,7 +87,8 @@ def main():
             selected = [m for m in archive if '/lldb/' in m.name or '/cmake/' in m.name
                         or m.name.endswith('/LICENSE.TXT')]
             archive.extractall(source.parent, members=selected, filter='data')
-        subprocess.run(['git', 'apply', str(patch)], cwd=source, check=True)
+        git_apply_patch(source, patch, check=True)
+        git_apply_patch(source, patch)
     for record in manifest['source_files']:
         if sha(source / record['path']) != record['patched_sha256']:
             raise ValueError('patched source checksum differs: ' + record['path'])

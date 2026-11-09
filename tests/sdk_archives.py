@@ -26,6 +26,50 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class WindowsDebuggerPatchBytes(unittest.TestCase):
+    def setUp(self):
+        spec=importlib.util.spec_from_file_location('windows_debugger_build',Path(__file__).resolve().parents[1]/'tools/windows/build_debugger.py')
+        self.builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.builder)
+        temporary=tempfile.TemporaryDirectory(prefix='nex debugger patch % ');self.addCleanup(temporary.cleanup)
+        self.root=Path(temporary.name);self.source=self.root/'source';self.source.mkdir()
+        self.patch_root=self.root/'patches';self.patch_root.mkdir()
+        self.before=b'alpha\nbeta\n';self.after=b'alpha\ngamma\n'
+        self.target=self.source/'sample.cpp';self.target.write_bytes(self.before)
+        self.patch=self.patch_root/'fix.patch'
+        self.patch.write_bytes(b'--- a/sample.cpp\n+++ b/sample.cpp\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+gamma\n')
+        self.record={'patch':'fix.patch','patch_sha256':self.builder.sha(self.patch),'source_file':'sample.cpp',
+                     'original_sha256':self.builder.sha(self.target),'patched_sha256':hashlib.sha256(self.after).hexdigest()}
+        subprocess.run(['git','init','--quiet',str(self.source)],check=True,capture_output=True)
+        subprocess.run(['git','-C',str(self.source),'config','core.autocrlf','true'],check=True,capture_output=True)
+        subprocess.run(['git','-C',str(self.source),'config','core.eol','crlf'],check=True,capture_output=True)
+        subprocess.run(['git','-C',str(self.source),'add','sample.cpp'],check=True,capture_output=True)
+
+    def prepare(self):
+        with mock.patch.object(self.builder,'HERE',self.patch_root):
+            return self.builder.prepare_source_patch(self.source,self.record,'fixture')
+
+    def test_real_git_preserves_pinned_LF_bytes_despite_CRLF_configuration(self):
+        self.assertTrue(self.prepare()['applied']);self.assertEqual(self.target.read_bytes(),self.after)
+        self.assertFalse(self.prepare()['applied']);self.assertEqual(self.target.read_bytes(),self.after)
+        self.assertEqual(subprocess.check_output(['git','-C',str(self.source),'config','core.autocrlf'],text=True).strip(),'true')
+        self.assertEqual(subprocess.check_output(['git','-C',str(self.source),'config','core.eol'],text=True).strip(),'crlf')
+
+    def test_changed_source_is_rejected_without_rewriting(self):
+        altered=self.before+b'unknown change\n';self.target.write_bytes(altered)
+        with self.assertRaisesRegex(ValueError,'source checksum differs'):self.prepare()
+        self.assertEqual(self.target.read_bytes(),altered)
+
+    def test_preexisting_CRLF_is_not_silently_relabelled_as_a_pinned_source(self):
+        altered=self.after.replace(b'\n',b'\r\n');self.target.write_bytes(altered)
+        with self.assertRaisesRegex(ValueError,'source checksum differs'):self.prepare()
+        self.assertEqual(self.target.read_bytes(),altered)
+
+    def test_changed_patch_is_rejected_before_source_mutation(self):
+        self.patch.write_bytes(self.patch.read_bytes()+b'unknown\n')
+        with self.assertRaisesRegex(ValueError,'patch checksum differs'):self.prepare()
+        self.assertEqual(self.target.read_bytes(),self.before)
+
+
 class MacFloatHeaderCompatibility(unittest.TestCase):
     def setUp(self):
         spec=importlib.util.spec_from_file_location('mac_float_bundle',Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
