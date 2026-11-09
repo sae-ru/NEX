@@ -29,6 +29,14 @@ old aggregate checker rejected it. That failed immutable archive remains
 unaccepted. The corrected validator passed108 unit tests. Fresh matching full
 source and immutable SDK qualification remain required.
 
+The latest4490655 source also passed a [native RK3588 CPU and TypeScript smoke check](docs/evidence/rk-current-CPU-TypeScript-0.164.0-2026-11-09.json).
+Reference, native Debug and Release agree on the constraints example; its generic
+Unicode test passes natively and under Node22.22.3/TypeScript7.0.2. This is an
+actual Jammy ARM64 build with LLVM22.1.8 and explicit GCC11 headers. The full
+all-target/303-group run, GPU/NPU and portable SDK remain separate. A private
+Z3 5.3.1 cohort passed its own C++20 probe after retaining two preparation
+failures; NEX still uses its original4.8.12 cohort in this smoke record.
+
 The separate [generated-protocol corpus](docs/evidence/macos-generated-Metal-protocol-0.164.0-2026-11-09.json)
 now passed16 native/reference pairs over14 corrupt reply payloads, failed-session
 reuse refusal and direct protocol-trap forwarding. Three log/cache pairs kept

@@ -67,6 +67,9 @@ platform qualification remain pending.
 The later [package/SDK checker correction](docs/evidence/source-package-notices-parent-prefix-0.164.0-2026-11-09.json)
 passed nine package groups and108 validator tests; its matching complete SDK
 qualification remains pending.
+The latest source also passed a [native RK3588 CPU and TypeScript smoke check](docs/evidence/rk-current-CPU-TypeScript-0.164.0-2026-11-09.json):
+reference/Debug/Release output agreement and one generic Unicode test in native
+and Node execution. Full RK regression, GPU/NPU and portable delivery remain pending.
 The earlier0.163 candidate remains separately pinned below.
 The new candidate installs discoverable Metal provider tools and checks their
 actual source/FFI signatures and all27 hardware/reply fixtures without a driver.

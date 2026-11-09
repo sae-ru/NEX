@@ -1,0 +1,63 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "RK3588 native Ubuntu22.04 ARM64 current-source CPU and TypeScript smoke checks; separate prepared Z3 5.3.1 dependency probe. Full regression, GPU/NPU and portable SDK remain pending.",
+  "evidence": {
+    "source_commit": "44906558146a8553b510fd30d2ab5790d60d63d9",
+    "source_files": 2122,
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "8d6a372396a69922339b5909b1aa2c1c183fb40a983c81627060d4ca41e9f724",
+    "ok": true,
+    "host": "aarch64-unknown-linux-gnu",
+    "CPU": "cortex-a76",
+    "LLVM": "22.1.8",
+    "explicit_GCC_headers": "11",
+    "reference_native_Debug_Release_stdout": "NEX 🧠\n42\n[1,2,3]\n",
+    "native_tests": 1,
+    "TypeScript_under_Node_tests": 1,
+    "test": "constraints::constrained_operations",
+    "Node_version": "v22.22.3",
+    "Node_sha256": "41c1ec75816937af3893453a82b1535c566c65b682c67fbc59a0546b27c027bd",
+    "TypeScript_version": "7.0.2",
+    "web_lock_sha256": "9c3a63e7746cb1ee51fd0c0b486555562797e6732e954f955ccf7ffe84bbb87a",
+    "offline_npm_ci_with_install_scripts_disabled": true,
+    "original_Node_tree_unchanged": true,
+    "actual_smoke_controllers_retired": true,
+    "NEX_verifier_version_observed": "4.8.12.0",
+    "separate_Z3_preparation": {
+      "actual_CXX20_probe_passed": true,
+      "version": "5.3.1",
+      "source_commit": "ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+      "library_sha256": "b5cabb487997a26055e467582487a61434d0e24b8fc5bcfe90c6a35df0caf4b2",
+      "complete_archive_sha256": "15eb697f39c960f0169ff35a6288eb661d08d508d2e55061d3827244d76af005",
+      "complete_archive_bytes": 28811083,
+      "native_probe_sha256": "d17467321d4a9a1bf9bc220b7c58e5cba53ea03666185f4b1a80a5c4f1a94178",
+      "original_two_preparation_failures_preserved": true,
+      "NEX_accepted_against_prepared_cohort": false
+    },
+    "raw_evidence": {
+      "CPU": {
+        "raw_files": 21,
+        "raw_bytes": 422576,
+        "archive_sha256": "6621402aa13e2eed4dc18e84522e7482f1f12ce8d824788ff8ff6f73dd6eaab7",
+        "archive_bytes": 135141
+      },
+      "TypeScript_and_dependency_preparation": {
+        "raw_files": 55,
+        "raw_bytes": 108444,
+        "archive_sha256": "367ff52102d58bd6abb651591a7908cbd72405bc846c630b3acf9826c31ca29d",
+        "archive_bytes": 32480
+      }
+    },
+    "system_packages_or_settings_changed": false,
+    "all_targets_or_full303_accepted_by_this_record": false,
+    "production_browser_executed": false,
+    "GPU_NPU_executed": false,
+    "portable_SDK_accepted": false,
+    "whole_original_goal_complete": false
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}
