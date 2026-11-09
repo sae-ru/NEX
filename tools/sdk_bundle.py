@@ -54,6 +54,35 @@ def system_path(path):
     return str(path).startswith(('/usr/lib/', '/System/Library/'))
 
 
+MACOS_FLOAT_HEADER_SHA256='f0657a33777c5c9ce20516428a73dee88194e8482e35789fe5e46fec23ddc2ea'
+
+
+def patch_macos_float_header(path):
+    """Forward Apple's partial float.h request without setting libc++'s guard.
+
+    This modifies only the bundle's private, byte-pinned LLVM22 header. Both
+    include orders must retain FLT/DBL constants and INFINITY/NAN. Reordering
+    includes alone makes one set disappear on the current Apple SDK.
+    """
+    path=Path(path)
+    if not path.exists():
+        return None
+    before=sha256(path)
+    if before!=MACOS_FLOAT_HEADER_SHA256:
+        raise ValueError('unqualified macOS libc++ float.h; preserve source and qualify this header before packaging: '+before)
+    data=path.read_bytes();guard=b'#ifndef _LIBCPP_FLOAT_H\n';end=b'#endif // _LIBCPP_FLOAT_H\n'
+    if data.count(guard)!=1 or data.count(end)!=1 or not data.rstrip().endswith(end.rstrip()):
+        raise ValueError('macOS libc++ float.h guard structure differs')
+    prefix=(b'// NEX LLVM22 compatibility: Apple math.h may request only INFINITY/NAN.\n'
+            b'#if defined(__need_infinity_nan)\n'
+            b'#  include_next <float.h>\n'
+            b'#else\n')
+    patched=data.replace(guard,prefix+guard)+b'#endif // __need_infinity_nan\n'
+    path.write_bytes(patched)
+    return {'schema':'nex.macos-libcxx-float-compat/1','source_sha256':before,'patched_sha256':sha256(path),
+            'change':'Forward __need_infinity_nan outside the ordinary libc++ header guard; retain the complete original header.'}
+
+
 def macho(path):
     with path.open('rb') as source:
         magic = source.read(4)
@@ -251,6 +280,11 @@ class Bundle:
         resource = Path(run([doctor['native_compiler'], '-print-resource-dir'], env=environment).strip())
         self.external_tree(resource, self.output / 'libexec/nex/llvm/lib/clang' / resource.name)
         self.external_tree(llvm / 'include/c++/v1', self.output / 'libexec/nex/llvm/include/c++/v1')
+        float_compat=patch_macos_float_header(self.output / 'libexec/nex/llvm/include/c++/v1/float.h')
+        if float_compat is not None:
+            receipt=self.output/'share/nex/licenses/sdk/llvm22-float-compat.json'
+            receipt.parent.mkdir(parents=True,exist_ok=True)
+            receipt.write_text(json.dumps(float_compat,indent=2)+'\n')
         # Darwin Clang passes this path to Apple's linker, including ordinary
         # non-LTO links. Retain it when supplied by the selected LLVM package.
         lto = llvm / 'lib/libLTO.dylib'
@@ -284,7 +318,7 @@ class Bundle:
             'platform': 'macos', 'minimum_macos': '.'.join(map(str, self.minimum_os)),
             'external_prerequisites': ['Apple command line tools/SDK and system C++ runtime/linker',
                                        PYTHON_REQUIREMENT, 'Node.js/npm for browser builds', 'host LLDB/lldb-dap for live debugging'],
-            'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Source installations unchanged.'})
+            'modifications': 'Non-system Mach-O loads rewritten to bundle-relative loader paths; ad hoc signatures refreshed. Private LLVM22 float.h forwards Apple partial INFINITY/NAN requests; exact source/patched hashes recorded in licenses/sdk/llvm22-float-compat.json. Source installations unchanged.'})
 
     def relocate_macho(self):
         for source, image in self.images.items():

@@ -26,6 +26,38 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class MacFloatHeaderCompatibility(unittest.TestCase):
+    def setUp(self):
+        spec=importlib.util.spec_from_file_location('mac_float_bundle',Path(__file__).resolve().parents[1]/'tools/sdk_bundle.py')
+        self.bundle=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.bundle)
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup);self.root=Path(temporary.name)
+
+    def test_partial_requests_are_forwarded_outside_the_guard_and_original_bytes_retained(self):
+        original=b'// retained license\n#ifndef _LIBCPP_FLOAT_H\n#define _LIBCPP_FLOAT_H\n#include_next <float.h>\n#endif // _LIBCPP_FLOAT_H\n'
+        path=self.root/'float.h';path.write_bytes(original);pin=hashlib.sha256(original).hexdigest()
+        with mock.patch.object(self.bundle,'MACOS_FLOAT_HEADER_SHA256',pin):report=self.bundle.patch_macos_float_header(path)
+        data=path.read_bytes();prefix=(b'// NEX LLVM22 compatibility: Apple math.h may request only INFINITY/NAN.\n'
+            b'#if defined(__need_infinity_nan)\n#  include_next <float.h>\n#else\n')
+        self.assertEqual(data.replace(prefix,b'',1).removesuffix(b'#endif // __need_infinity_nan\n'),original)
+        self.assertLess(data.index(b'defined(__need_infinity_nan)'),data.index(b'#ifndef _LIBCPP_FLOAT_H'))
+        self.assertEqual(report['source_sha256'],pin);self.assertEqual(report['patched_sha256'],hashlib.sha256(data).hexdigest())
+
+    def test_unknown_or_changed_upstream_header_is_never_rewritten(self):
+        path=self.root/'float.h';original=b'unknown libc++ header\n';path.write_bytes(original)
+        with self.assertRaisesRegex(ValueError,'unqualified macOS libc'):self.bundle.patch_macos_float_header(path)
+        self.assertEqual(path.read_bytes(),original)
+
+    def test_wrong_guard_structure_is_rejected_even_after_a_digest_match(self):
+        for data in [b'no guard\n',b'#ifndef _LIBCPP_FLOAT_H\n#endif // _LIBCPP_FLOAT_H\nextra\n']:
+            path=self.root/'float.h';path.write_bytes(data)
+            with mock.patch.object(self.bundle,'MACOS_FLOAT_HEADER_SHA256',hashlib.sha256(data).hexdigest()):
+                with self.assertRaisesRegex(ValueError,'guard structure'):self.bundle.patch_macos_float_header(path)
+            self.assertEqual(path.read_bytes(),data)
+
+    def test_new_toolchains_without_the_libcxx_shim_need_no_patch(self):
+        self.assertIsNone(self.bundle.patch_macos_float_header(self.root/'absent.h'))
+
+
 class OwnedMetalEvidence(unittest.TestCase):
     def report(self):
         names=['README.md','prepare.py','verify.py','faults.py','logs.py','check_sources.py','module.cpp','worker.mm','protocol.h','main.nex.in']

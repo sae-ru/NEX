@@ -9,6 +9,9 @@ the native worker requires macOS. The earlier separate0.162.2 experiment passed
 [30 native/reference pairs on Apple M5 Max](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json).
 Fresh matching source, moved/restored SDK, Metal hardware and complete platform
 acceptance remain pending. Earlier accepted archives retain their exact scope.
+The [private float-header correction](docs/macos-float-header-compatibility.md)
+addresses the actual packaged-Clang22 Metal compilation failure without changing
+source LLVM installations or redefining numeric constants.
 
 # Earlier0.162.2 qualification — 2026-11-09
 
