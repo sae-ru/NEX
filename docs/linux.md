@@ -68,6 +68,13 @@ preserved. Its [receipt](evidence/cix-native-lldb-23.1.6-2026-11-09.json) indepe
 rehashed9576 source files and418 installed debugger files. Complete matching NEX
 source regression and portable SDK delivery remain separate gates.
 
+The [Fedora primary-resume snapshot](evidence/fedora-primary-resume-full303-0.162.2-2026-11-09.json)
+passed all303 registered groups in one complete invocation and ordinary installed
+smoke. It pins source12281/2031 files and the actual build/installed binaries.
+Installation changed only the ELF `.dynstr` section; every other byte remained
+identical. The source, dependencies and raw registry/JUnit results were independently
+rechecked. Later SDK-helper changes and portable SDK delivery remain separate.
+
 On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
 selected its cross sysroot when manually linking fixtures against native host
 libraries. Its C++ entrypoint now explicitly uses `--no-default-config`,

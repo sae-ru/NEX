@@ -74,6 +74,7 @@ Positive IPv6 and complete portable SDK acceptance remain separate.
 The [task-resume correction](docs/evidence/lldb-primary-resume-0.162.2-2026-11-08.json)
 passed the updated15-case debugger group on macOS ARM64, Windows x86-64 and
 Debian ARM64. The matching [macOS source snapshot passed all 301 groups](docs/evidence/macos-primary-resume-full301-0.162.2-2026-11-09.json).
+The [Fedora snapshot with that helper passed all 303 groups and installed smoke](docs/evidence/fedora-primary-resume-full303-0.162.2-2026-11-09.json).
 Later SDK-helper changes and matching installed delivery retain separate gates.
 The [original GCC probe](docs/evidence/floating-environment-gcc12-0.162.2-2026-11-08.json)
 retains its narrower scope. Two Python follow-ups accommodate measured cold
