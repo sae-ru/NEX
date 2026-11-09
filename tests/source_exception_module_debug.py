@@ -95,7 +95,7 @@ def main():
   for unit,tags in case['pauses'].items():
    file=directory/unit;lines=file.read_text().splitlines()
    for tag,visits in tags.items():
-    line=next(i for i,text in enumerate(lines,1) if '// STOP:'+tag in text);plans[str(file)+'#'+str(line)]=visits
+    line=next(i for i,text in enumerate(lines,1) if '// STOP:'+tag in text);plans[file.as_posix()+'#'+str(line)]=visits
   options=e/'session.json';options.write_text(json.dumps({'plans':plans,'breakpoint_files':sorted({key.rsplit('#',1)[0] for key in plans}),'limit':case.get('budget',1000000),'report':str(e/'lldb-report.json'),'watch':True,'directory':str(e),'source_files':[str(directory/n) for n in c['source_hashes']]+[str(directory/'context.json')],'catalog':str(state['catalog']) if case.get('foreign') else None,'step':name in ['debug-calls','debug-labels'],'deadline':bool(case.get('deadline'))},ensure_ascii=False,indent=2)+'\n', newline="\n")
   files=e/'debug-files';files.mkdir();(files/'input').write_bytes(b'abcdef');events=files/'events';env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(events)}
   argv=[debugger,'--no-lldbinit','--batch',binary]
