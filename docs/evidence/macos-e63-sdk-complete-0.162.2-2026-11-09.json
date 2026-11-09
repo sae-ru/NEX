@@ -1,0 +1,190 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "platform": "macOS ARM64",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "exact-e63-development-SDK-all-listed-gates-passed",
+  "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+  "source_files": 2038,
+  "archive": {
+    "sha256": "e2b6fadf9c86c2f6d99408b1656c0d305f0097395959611f25ffae638b98e850",
+    "bytes": 124402286,
+    "files_in_inventory": 3624,
+    "excluded_python_cache_files": []
+  },
+  "compiler_sha256": "3863a9634b3230a90e28dac0939f0c13637a5a58f9f78646351e2453ecc804a4",
+  "compiler_build": "6ecceb0fa930d3d8e20512c20ea1fe604248fc8e383f8629dda0b49ba8ce1bef",
+  "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+  "acceptance": {
+    "full_source_groups": 301,
+    "moved_restored_phases": 82,
+    "additional_cases": 184,
+    "native_host_calls": 4000,
+    "cleanup_checks": 4000,
+    "source_dependency_opposite_denials": 10,
+    "SDK_write_denials": 4,
+    "browser_tests": 150,
+    "CLI_composition_scenarios": 18,
+    "OpenCL_native_reference_cases": 21,
+    "OpenCL_kernel_events": 47,
+    "quality_scenarios": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5"
+    ],
+    "actual_LLVM_calls": [
+      9900,
+      0,
+      1
+    ],
+    "schemas": 85,
+    "actual_authoring_artifacts": 12,
+    "rejected_mutations": 36,
+    "four_standalone_sanitizer_controls_passed": true,
+    "generated_provider_IR_instrumented": false,
+    "both_SDK_inventories_and_archive_revalidated": true,
+    "all_controllers_retired": true,
+    "npm_offline": true,
+    "external_network_blocked": false
+  },
+  "physical_fence_modes": 3,
+  "benchmark": {
+    "scope": "One maintained checked-i64 modular recurrence: five semantic comparison inputs, 100 million steps per measured launch, five rotating-order repeats per NEX/checked C++/Python. Process wall includes startup; C++ has checked arithmetic but no NEX runtime polling. Host isolation and universal throughput parity are not established.",
+    "agreement_cases": 5,
+    "total_recurrence_steps": 100000000,
+    "measurement_samples": 15,
+    "observed_NEX_over_checked_CXX_wall_ratio": 1.0206118799051875,
+    "measurements": {
+      "nex": {
+        "samples": [
+          {
+            "seconds": 0.43904645787552,
+            "user_seconds": 0.434871,
+            "system_seconds": 0.0018,
+            "maximum_rss_bytes": 2129920
+          },
+          {
+            "seconds": 0.2961699580773711,
+            "user_seconds": 0.29343199999999997,
+            "system_seconds": 0.0012129999999999999,
+            "maximum_rss_bytes": 2129920
+          },
+          {
+            "seconds": 0.29683174984529614,
+            "user_seconds": 0.293944,
+            "system_seconds": 0.001218,
+            "maximum_rss_bytes": 2129920
+          },
+          {
+            "seconds": 0.2948740003630519,
+            "user_seconds": 0.29201699999999997,
+            "system_seconds": 0.001188,
+            "maximum_rss_bytes": 2129920
+          },
+          {
+            "seconds": 0.2916236249729991,
+            "user_seconds": 0.288964,
+            "system_seconds": 0.001091,
+            "maximum_rss_bytes": 2129920
+          }
+        ],
+        "median_wall_seconds": 0.2961699580773711,
+        "median_user_seconds": 0.29343199999999997,
+        "maximum_rss_bytes": 2129920
+      },
+      "cpp_checked": {
+        "samples": [
+          {
+            "seconds": 0.43615633295848966,
+            "user_seconds": 0.432475,
+            "system_seconds": 0.0018009999999999999,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.48712570779025555,
+            "user_seconds": 0.48299499999999995,
+            "system_seconds": 0.001839,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.28925312496721745,
+            "user_seconds": 0.286649,
+            "system_seconds": 0.001206,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.29018862498924136,
+            "user_seconds": 0.286953,
+            "system_seconds": 0.0012829999999999999,
+            "maximum_rss_bytes": 1851392
+          },
+          {
+            "seconds": 0.27426600037142634,
+            "user_seconds": 0.271196,
+            "system_seconds": 0.001251,
+            "maximum_rss_bytes": 1851392
+          }
+        ],
+        "median_wall_seconds": 0.29018862498924136,
+        "median_user_seconds": 0.286953,
+        "maximum_rss_bytes": 1851392
+      },
+      "python": {
+        "samples": [
+          {
+            "seconds": 11.135817124973983,
+            "user_seconds": 11.116761,
+            "system_seconds": 0.010513,
+            "maximum_rss_bytes": 19431424
+          },
+          {
+            "seconds": 9.339004875160754,
+            "user_seconds": 9.327012999999999,
+            "system_seconds": 0.007793,
+            "maximum_rss_bytes": 19415040
+          },
+          {
+            "seconds": 7.503370124846697,
+            "user_seconds": 7.491053,
+            "system_seconds": 0.006644,
+            "maximum_rss_bytes": 19365888
+          },
+          {
+            "seconds": 7.6101107080467045,
+            "user_seconds": 7.5963519999999995,
+            "system_seconds": 0.007072999999999999,
+            "maximum_rss_bytes": 19480576
+          },
+          {
+            "seconds": 7.282176500186324,
+            "user_seconds": 7.267824,
+            "system_seconds": 0.007183999999999999,
+            "maximum_rss_bytes": 19382272
+          }
+        ],
+        "median_wall_seconds": 7.6101107080467045,
+        "median_user_seconds": 7.5963519999999995,
+        "maximum_rss_bytes": 19480576
+      }
+    }
+  },
+  "raw_evidence": {
+    "files": 1157,
+    "bytes": 21061152,
+    "archive_sha256": "8d4860157490132a646808807035b89d7e1a7c89f77e8b10057a1befa5b058d5",
+    "archive_bytes": 4244580
+  },
+  "limits": [
+    "This accepts the exact e63 source and e2b archive in the listed Mac development scope.",
+    "The later Windows function-breakpoint fix432 and the new optional LLDB AppContainer pipe patch are not present in this archive.",
+    "Browser engines execute in a same-host external broker; SDK authoring/source-dependency isolation is checked separately.",
+    "The benchmark covers one checked-i64 workload with five rotating repeats per language. The host is not isolated; it does not establish universal performance parity or LLM token/cost savings.",
+    "Standalone sanitizer controls and physical fences are finite scopes; generated provider IR is not instrumented and universal binary safety is not established.",
+    "Latest matching Windows/Linux SDKs, positive Windows IPv6, general GPU/NPU/Metal/Apple NPU, mobile/UI, Studio, converters and actual multi-model measurements remain open.",
+    "No main promotion or new public binary release upload is claimed."
+  ]
+}

@@ -34,9 +34,9 @@ test fn answer_is_42() -> unit { assert(answer(21) == 42); }
   mapping and device providers cover their advertised, measured scopes.
 
 The repository includes [measurements and limitations](docs/overview.en.md#measurements).
-A [fresh 0.162.2 checked-integer benchmark](docs/evidence/macos-sdk-0.162.2-2026-11-08.json)
-measured median wall times of 0.293156 s for NEX, 0.274216 s for checked C++ and
-7.325599 s for Python on one Mac. These are one-workload observations.
+A [fresh 0.162.2 checked-integer benchmark](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json)
+measured median wall times of 0.296170 s for NEX, 0.290189 s for checked C++ and
+7.610111 s for Python on one Mac. These are one-workload observations.
 End-to-end token savings across LLMs have not yet been measured.
 
 ## What you can build
@@ -79,8 +79,12 @@ Later SDK-helper changes and matching installed delivery retain separate gates.
 The later [strict LLDB command-capture snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).
 Its [new immutable SDK passed 82 moved/restored phases and 184 additional checks](docs/evidence/macos-e63-sdk-82-184-0.162.2-2026-11-09.json),
 with read-only installations, denied source/dependency/opposite-SDK reads and
-4000 native C++ host calls with cleanup checks. Subsequent installed CLI/OpenCL,
-browser, quality, schema, sanitizer and measurement gates remain in progress.
+4000 native C++ host calls with cleanup checks. The [same archive then passed all
+six subsequent gates](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json):
+18 CLI scenarios, 150 production-browser checks, 21 native/reference OpenCL cases
+with 47 physical kernel events, Q1–Q5, all 85 schemas, sanitizer controls and one
+checked-integer measurement. The later Windows function-breakpoint source has a
+separate current full regression and matching SDK gate.
 On native Debian ARM64,
 [Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
 with the original limits. Complete Debian regression and portable SDK delivery
