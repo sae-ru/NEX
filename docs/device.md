@@ -29,10 +29,13 @@ The installed provider descriptor above continues to cover U8 Add/Affine.
 The separate `experiments/metal-codegen` backend generates scalar Metal kernels
 from ordinary checked NEX graph functions; its
 [three-way numerical record](evidence/macos-scalar-Metal-codegen-0.163.0-2026-11-09.json)
-covers i64/bool/unit, control flow, helper calls and source contracts. This code
-path is not yet connected to the owned resource/provider API below. Its physical
-native harness is a distinct precursor; task cancellation, generated-kernel
-resource ownership and installed delivery still need matching integration.
+covers i64/bool/unit, control flow, helper calls and source contracts. A separate
+[owned generated provider](../experiments/owned-metal-codegen/README.md) now
+connects this code to real NEX task/FFI Session/Buffer resources, with
+[matching lifetime/numerical evidence](evidence/macos-owned-scalar-Metal-0.163.0-2026-11-09.json).
+It has a column API independent of the fixed `compute::Operation` variants below.
+Numeric errors retain their codes in explicit Result; direct fatal forwarding,
+protocol/log stress, public discovery and installed delivery remain pending.
 
 ## Source contract
 

@@ -108,8 +108,10 @@ resource rejection. This checkout prototype is outside the frozen 0.163 SDK.
 A separate [scalar Metal backend](experiments/metal-codegen/README.md) now
 generates GPU code from ordinary checked NEX functions. Its
 [20 reference/native/Metal comparisons](docs/evidence/macos-scalar-Metal-codegen-0.163.0-2026-11-09.json)
-cover i64 arithmetic, branches, loops, helper calls and contracts. Owned-task
-integration, broader GPU types/backends and installed delivery remain pending.
+cover i64 arithmetic, branches, loops, helper calls and contracts. Its new
+[owned NEX task path passed 38 native/reference pairs and 122 GPU events](docs/evidence/macos-owned-scalar-Metal-0.163.0-2026-11-09.json),
+including hidden parents, cancellation and eight full input columns.
+Transparent fatal-trap forwarding, broader GPU types/backends and installed delivery remain pending.
 The Windows [function-definition breakpoint correction](docs/evidence/windows-function-definitions-0.162.2-2026-11-09.json)
 passed a replay of the original EXE/DLL and actual shared-library hit-count,
 condition, replacement and delayed-resolution checks, plus 20 transport cases.

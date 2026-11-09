@@ -9,7 +9,9 @@ evidence and limits in STATUS.md.
 - [x] Generate reachable scalar code from the selected compiler's typed graph.
 - [x] Preserve checked i64 operations, evaluation order and lazy control flow.
 - [x] Compare real generated GPU execution with reference/native NEX and exact oracles.
-- [ ] Connect generated kernels to persistent owned task/device resources and trap delivery.
+- [x] Execute generated kernels through persistent owned NEX task/device resources; 38 pairs/122 physical GPU events.
+- [ ] Add transparent original fatal-trap forwarding; the explicit Result path currently retains codes and unwrap uses E_RESULT.
+- [ ] Match malformed-reply/log-stress checks to the generated provider's distinct protocol.
 - [ ] Integrate public compiler CLI/discovery, source diagnostics, debugging and profiling.
 - [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
 

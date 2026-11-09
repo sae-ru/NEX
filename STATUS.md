@@ -1,4 +1,23 @@
-# Experimental scalar Metal code generation — 2026-11-09
+# Owned generated Metal task path — 2026-11-09
+
+The [persistent generated provider](experiments/owned-metal-codegen/README.md)
+executes ordinary generated scalar functions through actual NEX task/FFI
+Session/Buffer resources. Its [38 native/reference pairs](docs/evidence/macos-owned-scalar-Metal-0.163.0-2026-11-09.json)
+passed 122 physical GPU events: 14 lifetime/control cases, 22 numerical/limit
+scenarios and 2 cross-provider rejection cases. Hidden Session/Buffer parents
+survive task returns/channels/logical close, admitted reads retain parents,
+and cancellation/deadline drain a genuinely queued gated command. Eight maximum
+columns total 2 MiB without increasing the per-call FFI copy budget. All 22 scalar
+MSL function prefixes match their prior physical-stage bytes.
+
+This is outside the frozen0.163 SDK. `try_apply` retains numeric errors inside
+an explicit Result; `apply` has the ordinary E_RESULT unwrap contract. Direct
+original fatal-trap forwarding, matching protocol/log stress, public CLI,
+source diagnostics/debug/profile and coherent installed delivery remain pending.
+The independent raw archive retains the original native-limit mismatch and
+corrects an overbroad reporting label without changing executed checks.
+
+# Earlier scalar Metal code generation precursor — 2026-11-09
 
 The separate [scalar backend](experiments/metal-codegen/README.md) emits MSL from
 the selected compiler's actual checked language0.28 graph. It preserves checked
@@ -11,10 +30,9 @@ are explicitly rejected by the narrower GPU backend. Five more physical GPU
 dispatches check limits/canonical inputs, including32768 lanes. All25 current
 kernel events verify status4, one completion handler and drained buffers.
 
-This prototype is outside the frozen0.163 SDK. The persistent owned task/device
-provider, public CLI/discovery, debug/profile, installed delivery and broader
-GPU/NPU code generation still need integration. Earlier fixed-kernel resource
-receipts do not accept this new code path.
+This direct native-harness record remains outside the frozen0.163 SDK and
+separate from the new owned task path above. Public CLI/discovery, debug/profile,
+installed delivery and broader GPU/NPU code generation remain pending.
 
 # Development0.163.0 — installed Metal tools
 
@@ -1579,7 +1597,7 @@ integration requires explicit020 identity and019 history-preserving migration.
 No source keyword/type/canonical shape is changed by this private foundation.
 Writes, streaming/db/ffi/tasks-in-HTTP/providers/browser filesystem remain pending.
 
-Frozen115 separately passed122 groups, strict sanitizers, three production
+Frozen115 separately passed 122 groups, strict sanitizers, three production
 browser engines (87 private host cases each), and21 Linux ARM64 groups. Its
 matching installed SDK is being checked. Primary081 and history are unchanged.
 Historical entries below apply to their own source snapshots.

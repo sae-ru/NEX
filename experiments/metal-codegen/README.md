@@ -16,9 +16,10 @@ and explicit guards, preserving both endpoints, division toward zero and
 
 The prototype currently emits MSL directly from the canonical checked graph.
 It is separate from MLIR/LLVM native emission and the frozen0.163 SDK candidate.
-Connecting generated kernels to the persistent owned task/device provider,
-public compiler discovery/CLI, debug/profile sites and installed delivery is
-the next integration. Other GPU backends, F64, aggregates, captures, recursion,
+The separate [owned provider](../owned-metal-codegen/README.md) now executes
+these functions from actual NEX task programs with physical parent resources.
+Direct fatal-trap forwarding, public compiler discovery/CLI, debug/profile
+sites and installed delivery remain pending. Other GPU backends, F64, aggregates, captures, recursion,
 source errors/finally and general GPU/NPU execution remain pending. Unsupported
 reachable code fails generation; the generator does not substitute CPU results.
 
@@ -78,9 +79,10 @@ the CPU/reference task-step accounting. No wall-time speedup is claimed.
 
 The runner verifies physical Metal command status4 and exactly one completion
 handler before readback, then checks that all three buffers lose their retained
-owners after the drained scope. The persistent provider still needs its own
-task cancellation, resource ownership and relocation acceptance for these newly
-generated kernels.
+owners after the drained scope. The
+[owned provider record](../../docs/evidence/macos-owned-scalar-Metal-0.163.0-2026-11-09.json)
+separately covers task cancellation and resource ownership. Complete installed
+delivery and transparent fatal-trap forwarding remain pending.
 
 Apple documents the [64-bit Metal integer type](https://developer.apple.com/documentation/metal/mtldatatype/long)
 and [undefined signed-overflow behavior](https://developer.apple.com/videos/play/wwdc2020/10632/?time=1940).

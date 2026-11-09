@@ -1,0 +1,115 @@
+{
+  "schema": "nex.development-evidence/1",
+  "recorded_date": "2026-11-09",
+  "toolchain": "0.163.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "owned-generated-Metal-NEX-task-path-passed-direct-fatal-and-SDK-integration-pending",
+  "component": "Persistent typed task/FFI provider for Metal generated from checked scalar NEX functions",
+  "source_commit": "4b59f4f53b6db17c750a3487aec8613dbb4f7a71",
+  "source_base_commit": "7be9f75594256139da616737bf8ace0be1766eac",
+  "source_pins": {
+    "experiments/owned-metal-codegen/protocol.h": "294e96bda371d8261c1e3d7ba4a3c87cdd7c4354a53f1ff36369cba1175c9470",
+    "experiments/owned-metal-codegen/cross_provider.py": "99e146defea2d0f7d8d237cd6092b720af1dd7996f0955f1d03e23d95acebdef",
+    "experiments/owned-metal-codegen/main.nex.in": "c0bd88d0c613196ba527a02cdcac7f2b1f466825d2e44aad722a14a9c09226ea",
+    "experiments/owned-metal-codegen/module.cpp": "2e4c80d98b382b7c2a24ecadad5428ce7ae96b23d629c05663d1e45fb08ca251",
+    "experiments/owned-metal-codegen/README.md": "fbde762e4a87c2d276c34328984d96d6a118c8f2bcd0d5343efc3b837e5b48bd",
+    "experiments/owned-metal-codegen/worker.mm": "d6fc792de15967f6c2851e881b884858ce87da021bb0db744c55ba939b17bcae",
+    "experiments/owned-metal-codegen/verify.py": "0763ef4327209783c0e04b9d3333d3bbbe95b29729d436a9f6fcfa6c0c51d6a2",
+    "experiments/owned-metal-codegen/prepare.py": "1b6766d7578ef226db628750e80076133eefacdb2e6870c4bcc5c9c2988a6fc4",
+    "experiments/owned-metal-codegen/numerics.py": "e74a4d71dc320345db2077f3a11e46e4bdc2b08d8ed7bceb0e849a6181e1380f",
+    "experiments/metal-codegen/boundaries.py": "26fed7a326c88c10f8cb333b011f7147e2d51e65a590d8fc17d9a507fa9d8b53",
+    "experiments/metal-codegen/README.md": "4071d042c6e96052ee8036055766d7fb25627679b277886d48ba4df55f791626",
+    "experiments/metal-codegen/runner.mm": "6ae77d9af860ed1af958dbe1161230b9b86398ee60bf51f908599891d0e50582",
+    "experiments/metal-codegen/verify.py": "e4137af6add835bac18146cc7a84277fee087272043f26c65dd65996bc300fc7",
+    "experiments/metal-codegen/runtime.metal": "293b8ef29f00280881fc0c1f8e30b5c59db1e9e2f8f6cf5789dad86a0ea46513",
+    "experiments/metal-codegen/codegen.py": "ae8f5164ee91b736bf3ebb8bd6e4c7f1e14b1ed62b1866f6bfae4e4f4dcfecc7"
+  },
+  "execution": {
+    "device": "Apple M5 Max",
+    "compiler_sha256": "d022c0b73b58acc249fc5fea63749b7f86170409825eda8eb908a581b138438c",
+    "lifetime_native_reference_pairs": 14,
+    "numerical_native_reference_pairs": 22,
+    "cross_provider_native_reference_pairs": 2,
+    "total_native_reference_pairs": 38,
+    "physical_GPU_kernel_events": 122,
+    "separately_built_provider_bundles": 23,
+    "scalar_MSL_prefixes_byte_identical_to_prior_physical_stage": 22
+  },
+  "scope": {
+    "owned_NEX_task_path_executed": true,
+    "compiled_native_and_reference_NEX_both_call_the_physical_GPU": true,
+    "actual_FFI_signatures": 8,
+    "distinct_framed_protocol": "NGC1/version1",
+    "shader_hash_and_argument_count_checked_during_worker_handshake": true,
+    "compiler_CPP_runtime_libraries_CMake_changed": false,
+    "current_frozen01630_SDK_unchanged": true
+  },
+  "data_path": {
+    "input_layout": "one immutable signed64 word column per argument",
+    "bool_words": [
+      0,
+      1
+    ],
+    "maximum_arguments": 8,
+    "maximum_lanes": 32768,
+    "maximum_per_column_bytes": 262144,
+    "maximum_all_columns_bytes": 2097152,
+    "maximum_output_bytes": 262144,
+    "maximum_read_chunk_bytes": 262144,
+    "original_per_call_FFI_copy_budget_unchanged": true,
+    "zero_argument_function_needs_no_dummy_column": true
+  },
+  "verified_behavior": [
+    "NEX callers execute generated i64/bool/unit code, branches, loops, ordinary/concrete generic helpers and source contracts.",
+    "18 base fixtures directly compare successful CPU source calls with GPU results in both NEX engines. Two always-trapping roots check GPU Result codes already exercised directly by the retained scalar-stage CPU diagnostics.",
+    "The eight-argument maximum and finite-loop limit scenarios add successful CPU/GPU comparisons; eight full columns total2MiB.",
+    "Opaque Buffer returns and sibling task channels retain hidden physical Session parents after logical Session close. An admitted cursor completes a full read after Buffer and Session close.",
+    "Cancellation and deadline follow physical enqueue behind a real shared event; status4 and one completion handler precede release.",
+    "Invalid shape and declared capacity reject dispatch before GPU work. Overflow Result is followed by a successful dispatch on the same Session.",
+    "Cross-provider resources, including a foreign Buffer inside the map column list, fail E_FFI/status5 before native pointer use. Both images and workers close cleanly.",
+    "All22 scalar-function MSL prefixes are byte-identical to the earlier physical scalar stage; all20 default row-layout shaders remain byte-identical. Only the new column boundary changes their argument layout."
+  ],
+  "error_contract": {
+    "try_apply": "Explicit result<bytes> retains E_OVERFLOW/E_DIV_ZERO/E_ASSERT/E_GPU_INPUT/E_GPU_STEP_LIMIT codes and never silently substitutes CPU.",
+    "apply": "Explicit unwrap has the current NEX E_RESULT contract; original backend code is retained in its message.",
+    "direct_original_fatal_trap_forwarding_implemented": false,
+    "typed_source_error_after_successful_GPU_call_checked": true,
+    "user_finally_skipped_on_explicit_E_RESULT_checked": true
+  },
+  "independent_seal": {
+    "all_successful_controllers_and_monitors_retired": true,
+    "logical_and_hidden_physical_parents_checked": true,
+    "real_enqueued_cancellation_deadline_checked": true,
+    "raw_files": 1809,
+    "raw_bytes": 8366424,
+    "raw_archive_sha256": "2228f37a2695d006f8989e80368ec4fa94111e768aaa0dd41d450bfcec9ff6f4",
+    "raw_archive_bytes": 1964767,
+    "raw_archive_unpacked_and_rehashed": true
+  },
+  "retained_attempts": [
+    "First native lifetime launch requested the planned30000ms ceiling from an application compiled with the default5000ms. Runtime correctly rejected it. Explicit compiled task ceilings now match the original reference/launch settings; checks and cancellation/deadline requirements remain. Original source, commands, diagnostic and earlier reference GPU event are preserved.",
+    "An unconditional report label overstated CPU invocation for two always-trapping fixtures. It was removed; AST comparison proves every actual check, command and control-flow path unchanged. Original report is retained and scope above is explicit."
+  ],
+  "build_scope": {
+    "ordinary_installed_NEX_compiler_used": true,
+    "bundled_Clang22_with_explicit_private_copied_header_override": true,
+    "new_immutable_SDK_used": false
+  },
+  "pending": [
+    "Append an explicit sticky fatal-trap path to the typed C API, preserving old table prefixes and original cancellation/deadline precedence; route transparent GPU calls through it instead of E_RESULT.",
+    "Match malformed-reply and large-log stress checks to this new provider/protocol. Earlier fixed-kernel receipts do not qualify this path.",
+    "Public compiler CLI/discovery, exact graph/source diagnostics, debug/profile and immutable relocated/archive-restored SDK delivery.",
+    "Remaining scalar/aggregate types, GPU backends, owned model/NPU execution, vendor recovery/reset and all other original PLAN requirements."
+  ],
+  "limitations": [
+    "The earlier direct native shader runner and this actual NEX task/resource path have distinct acceptance scopes.",
+    "These finite nonisolated functional checks do not establish a GPU speedup, universal numerical proof or complete platform support."
+  ],
+  "direct_fatal_trap_forwarding_integrated": false,
+  "malformed_reply_and_large_log_stress_accepted_for_this_new_path": false,
+  "installed_SDK_accepted": false,
+  "general_GPU_NPU_backend_complete": false,
+  "NPU_accepted": false,
+  "whole_original_goal_complete": false
+}
