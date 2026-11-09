@@ -77,8 +77,11 @@ Debian ARM64. The matching [macOS source snapshot passed all 301 groups](docs/ev
 The [Fedora snapshot with that helper passed all 303 groups and installed smoke](docs/evidence/fedora-primary-resume-full303-0.162.2-2026-11-09.json).
 Later SDK-helper changes and matching installed delivery retain separate gates.
 The later [strict LLDB command-capture snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).
-Its new immutable SDK is assembled; matching moved/restored and subsequent
-installed qualification remain in progress. On native Debian ARM64,
+Its [new immutable SDK passed 82 moved/restored phases and 184 additional checks](docs/evidence/macos-e63-sdk-82-184-0.162.2-2026-11-09.json),
+with read-only installations, denied source/dependency/opposite-SDK reads and
+4000 native C++ host calls with cleanup checks. Subsequent installed CLI/OpenCL,
+browser, quality, schema, sanitizer and measurement gates remain in progress.
+On native Debian ARM64,
 [Z3 5.3.1 and the matching NEX passed all eleven existing proof methods](docs/evidence/cix-native-Z3-5.3.1-2026-11-09.json)
 with the original limits. Complete Debian regression and portable SDK delivery
 remain separate from that solver result.

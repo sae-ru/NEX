@@ -1,0 +1,49 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "platform": "macOS ARM64",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "matching-source-full301-and-installed82-plus184-passed-post-gates-pending",
+  "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+  "source_files": 2038,
+  "archive": {
+    "sha256": "e2b6fadf9c86c2f6d99408b1656c0d305f0097395959611f25ffae638b98e850",
+    "bytes": 124402286,
+    "files_in_inventory": 3624,
+    "excluded_python_cache_files": []
+  },
+  "compiler_sha256": "3863a9634b3230a90e28dac0939f0c13637a5a58f9f78646351e2453ecc804a4",
+  "compiler_build": "6ecceb0fa930d3d8e20512c20ea1fe604248fc8e383f8629dda0b49ba8ce1bef",
+  "descriptor_hash": "de84c35acf302ec9efc66ea21872eddfe220abc7ac24158fefdb18e72a0e4c7d",
+  "full_source_groups": 301,
+  "moved_and_archive_restored_phases": 82,
+  "additional_cases": 184,
+  "actual_Python_families": [
+    "3.10",
+    "3.14"
+  ],
+  "native_CPP_host_calls": 4000,
+  "owned_cleanup_checks": 4000,
+  "source_dependency_opposite_SDK_read_denials": 10,
+  "SDK_write_denials": 4,
+  "both_prefixes_and_archive_revalidated": true,
+  "source_independently_matches_Git_archive": true,
+  "source_and_primary_graph_preserved": true,
+  "npm_offline": true,
+  "external_network_blocked": false,
+  "raw_evidence": {
+    "files": 10,
+    "bytes": 4087604,
+    "archive_sha256": "7ce49f0fc22286f0800bc9e8951521b42fb65a5f8b880fe6b2fe70af5b71f73a",
+    "archive_bytes": 397291
+  },
+  "limits": [
+    "This qualifies the exact e63 source and e2b archive, not the later Windows function-breakpoint source432.",
+    "The installed CLI/OpenCL, production browsers, Q1-Q5, schemas, sanitizer controls and one-workload benchmark are a separate continuing chain for this archive.",
+    "Filesystem read denial and offline npm do not establish external-network isolation.",
+    "No latest Windows/Linux complete SDK, general GPU/NPU/Metal/Apple NPU, mobile/native UI, Studio, conversion or actual multi-model token/cost measurement is accepted here.",
+    "No new binary release or main promotion is claimed."
+  ]
+}
