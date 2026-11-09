@@ -1,3 +1,23 @@
+# Native Windows fixture paths — development0.164.0
+
+The current Windows restricted source run completed292 of296 groups; its four
+failed groups and all original diagnostics remain retained. Two native failures
+stopped while constructing an AF_UNIX test fixture under a long temporary path,
+before their nonregular-file rejection checks ran. The test helper now creates
+a real endpoint in a new private short directory on the same volume, closes it
+and moves its reparse point to the requested path. It changes no process cwd,
+existing ACL, network setting, product runtime or source-language semantics.
+
+The [independent correction record](docs/evidence/windows-native-file-fixture-0.164.0-2026-11-09.json)
+pins an isolated2108-file Windows derived source, the unchanged NEX compiler,
+all four affected native groups and four actual Python fixture cases, including
+the native resource suite under a long Unicode temporary parent. All five CTest
+groups passed without skips. Mac all-target compilation and the same four native
+groups also passed. The original cache-relocation setup failure is retained.
+The other two original failures involve debugging; their40-group replay uses
+the combined LLDB cohort in bounded batches. Full current regression, positive
+Windows IPv6 and complete installed SDK qualification remain separate gates.
+
 # Explicit fatal C API — development0.164.0
 
 The new append-only `raise_trap` slot copies bounded diagnostic packets from

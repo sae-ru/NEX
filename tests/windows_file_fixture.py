@@ -5,11 +5,13 @@ from ctypes import wintypes as W
 import importlib.util
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
 
 MODULE = Path(__file__).resolve().parents[1] / 'tools/windows_files.py'
+NATIVE_PROBE = None
 
 
 @unittest.skipUnless(os.name == 'nt', 'requires actual Windows filesystem handles')
@@ -78,10 +80,26 @@ class NonregularFixtures(unittest.TestCase):
             self.files.nonregular_fixture(path)
         self.assertFalse(os.path.lexists(path))
 
+    def test_native_resource_checks_keep_real_socket_under_long_unicode_temp(self):
+        if NATIVE_PROBE is None:
+            self.skipTest('select the native resource probe with --native-probe')
+        parent = self.root / ('native long directory % 🧠 ' + 'a' * 64)
+        parent.mkdir()
+        self.assertGreaterEqual(len(os.fsencode(parent)), 108)
+        before = os.getcwd()
+        result = subprocess.run([str(NATIVE_PROBE)], env={**os.environ, 'TMP': str(parent),
+            'TEMP': str(parent)}, capture_output=True, text=True, encoding='utf-8', timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS stream path and nonregular rejection without truncation', result.stdout)
+        self.assertIn('resource ownership and streaming files:', result.stdout)
+        self.assertEqual(os.getcwd(), before)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--module', type=Path, default=MODULE)
+    parser.add_argument('--native-probe', type=Path)
     args, remaining = parser.parse_known_args()
     MODULE = args.module.resolve(strict=True)
+    NATIVE_PROBE = args.native_probe.resolve(strict=True) if args.native_probe else None
     unittest.main(argv=[sys.argv[0], *remaining])

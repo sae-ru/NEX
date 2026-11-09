@@ -7,6 +7,7 @@
 #include <afunix.h>
 #include "nex_host_windows.h"
 #include <winternl.h>
+#include <array>
 #include <cstdlib>
 #include <sys/stat.h>
 #include <set>
@@ -53,15 +54,50 @@ inline DWORD run(const std::filesystem::path &self,const std::vector<std::string
 }
 struct NonRegular {
   std::filesystem::path path;
-  explicit NonRegular(std::filesystem::path path):path(std::move(path)){
-    WSADATA data{};if(WSAStartup(MAKEWORD(2,2),&data))throw std::runtime_error("cannot initialize native sockets");
-    struct Finish {~Finish(){WSACleanup();}} finish;
-    auto socket=::socket(AF_UNIX,SOCK_STREAM,0);if(socket==INVALID_SOCKET)throw std::runtime_error("cannot create native AF_UNIX socket");
-    struct Close {SOCKET value;~Close(){closesocket(value);}} close{socket};
-    sockaddr_un address{};address.sun_family=AF_UNIX;auto bytes=this->path.u8string();
-    if(bytes.size()>=sizeof(address.sun_path))throw std::runtime_error("nonregular socket fixture path exceeds native limit");
-    std::memcpy(address.sun_path,bytes.data(),bytes.size());
-    if(::bind(socket,reinterpret_cast<const sockaddr*>(&address),sizeof(address)))throw std::runtime_error("cannot bind native nonregular socket fixture");
+  explicit NonRegular(std::filesystem::path path):path(std::filesystem::absolute(path)){
+    sockaddr_un address{};address.sun_family=AF_UNIX;
+    auto bound=this->path;
+    struct Staged {
+      std::filesystem::path directory,endpoint;
+      ~Staged(){if(!endpoint.empty())DeleteFileW(endpoint.c_str());if(!directory.empty())RemoveDirectoryW(directory.c_str());}
+    } staged;
+    if(bound.u8string().size()>=sizeof(address.sun_path)){
+      if(bound.filename().u8string().size()>=sizeof(address.sun_path))throw std::runtime_error("nonregular socket fixture name exceeds native limit");
+      // Bind a genuine short endpoint on the same volume, close it, then move
+      // its AF_UNIX reparse point to the requested long path. The private
+      // staging directory is new; the process-wide cwd and existing ACLs stay
+      // untouched, including when other fixture threads are running.
+      nexrt::host_windows::PrivateSecurity security;
+      SECURITY_ATTRIBUTES attributes{sizeof(attributes),&security.descriptor,FALSE};
+      auto parent=bound.parent_path();
+      for(;!parent.empty()&&staged.directory.empty();){
+        for(unsigned attempt=0;attempt<8;++attempt){
+          std::array<unsigned char,16> random{};
+          if(BCryptGenRandom(nullptr,random.data(),ULONG(random.size()),BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0)throw std::runtime_error("cannot name native socket fixture staging directory");
+          std::string name="nex-sock-";for(auto byte:random){name+="0123456789abcdef"[byte>>4];name+="0123456789abcdef"[byte&15];}
+          auto directory=parent/name,endpoint=directory/"s";
+          if(endpoint.u8string().size()>=sizeof(address.sun_path))break;
+          if(CreateDirectoryW(directory.c_str(),&attributes)){staged.directory=directory;staged.endpoint=endpoint;bound=endpoint;break;}
+          if(GetLastError()!=ERROR_ALREADY_EXISTS&&GetLastError()!=ERROR_FILE_EXISTS)break;
+        }
+        auto next=parent.parent_path();if(next==parent)break;parent=std::move(next);
+      }
+      if(staged.directory.empty())throw std::runtime_error("cannot create bounded native socket fixture staging directory");
+    }
+    {
+      WSADATA data{};if(WSAStartup(MAKEWORD(2,2),&data))throw std::runtime_error("cannot initialize native sockets");
+      struct Finish {~Finish(){WSACleanup();}} finish;
+      auto socket=::socket(AF_UNIX,SOCK_STREAM,0);if(socket==INVALID_SOCKET)throw std::runtime_error("cannot create native AF_UNIX socket");
+      struct Close {SOCKET value;~Close(){closesocket(value);}} close{socket};
+      auto bytes=bound.u8string();std::memcpy(address.sun_path,bytes.data(),bytes.size());
+      if(::bind(socket,reinterpret_cast<const sockaddr*>(&address),sizeof(address)))throw std::runtime_error("cannot bind native nonregular socket fixture");
+    }
+    if(!staged.directory.empty()){
+      // MoveFileW refuses to replace an existing destination. Closing the
+      // socket first retains its native reparse tag without a live listener.
+      if(!MoveFileW(bound.c_str(),this->path.c_str()))throw std::runtime_error("cannot move native socket fixture to its long path: "+std::to_string(GetLastError()));
+      staged.endpoint.clear();
+    }
   }
   ~NonRegular(){DeleteFileW(path.c_str());}
 };

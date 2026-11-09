@@ -1,0 +1,77 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Native Windows test-fixture correction for long temporary paths. Four affected C++ groups and four actual Python fixture cases pass in an isolated derived source copy; Mac all-target and four affected native groups also pass. This is not a language/runtime semantic change or a complete Windows/SDK acceptance.",
+  "evidence": {
+    "schema": "nex.Windows-current164-native-file-fixture-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T22:26:47.545337+00:00",
+    "base_source_commit": "168180219a93b5485d01bc6b555362ab117356a9",
+    "Windows_derived_files": 2108,
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "NEX_compiler_sha256_unchanged": "70d8b709a45c1cae721a182def427b505a1a3abb2f735eecc107ecf9e41f1428",
+    "patched_test_files": {
+      "CMakeLists.txt": "5226b3052cd571247cb67f536647a56dab60ab99ca1668a7e2ef7913040d0192",
+      "tests/host_test.h": "3b08e0a1037aecb1e9998525a30ee01aafba3960aa9d070d481f0763b77bd02b",
+      "tests/windows_file_fixture.py": "2f59a889b162bef0e31e3aae2d8c92b9e821d1587ee1636966ca7eb7142c94ab"
+    },
+    "actual_native_groups_passed": 4,
+    "actual_Windows_Python_fixture_cases": 4,
+    "strict_registry_JUnit_groups_passed": 5,
+    "failed_or_skipped_groups": 0,
+    "actual_AF_UNIX_reparse_tag_retained_after_closed_endpoint_move": true,
+    "working_directory_and_existing_ACLs_unchanged": true,
+    "original_project_unchanged": true,
+    "Mac_all_targets_and_four_affected_native_groups_passed": true,
+    "Mac_NEX_compiler_sha256_unchanged": "406e7bc3f95ce16959bb5e053ec4e7097df3017b67cdb51bfc48ebe1fd5a3a79",
+    "original_restricted296_passed": 292,
+    "original_restricted296_failed": [
+      "resources_runtime_native",
+      "source_exception_module_http_debug",
+      "task_external_file_stream_host",
+      "task_provider_debugging_native"
+    ],
+    "original_restricted296_accepted": false,
+    "debugger_two_original_failures_and_full302_remain_separate": true,
+    "original_cache_and_missing_Python_socket_constant_failures_preserved": true,
+    "native_only_test_fixture_correction_not_a_product_runtime_or_language_change": true,
+    "full_current_regression_or_SDK_or_goal_complete": false,
+    "Windows_archive_sha256": "c53204f532d97202983c2c3153a6577f7d93d77204603d046bacce7502be16c7",
+    "Windows_archive_bytes": 5145016,
+    "Windows_raw_files": 63,
+    "Windows_raw_bytes": 53169198,
+    "local_archive_sha256": "e6ea943688464f22dedba480a9c53b62602f21835b41c2612960e714396d3db7",
+    "local_archive_bytes": 176988,
+    "local_raw_files": 17,
+    "actual_original_owners_retired": {
+      "native-fixed": {
+        "controller_pid": 290936,
+        "original_owner_live": false,
+        "actual_PID_creation_utc": null
+      },
+      "original296": {
+        "controller_pid": 265168,
+        "original_owner_live": false,
+        "actual_PID_creation_utc": null
+      },
+      "original-cache-failure": {
+        "controller_pid": 337800,
+        "original_owner_live": false,
+        "actual_PID_creation_utc": null
+      }
+    },
+    "primary_guard": {
+      "ok": true,
+      "commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+      "source_files": 1990,
+      "graph_revisions": 48,
+      "all_original47_revisions_and_local_IDs_preserved": true,
+      "origin016_verified": false,
+      "primary_compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756"
+    }
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}
