@@ -14,10 +14,17 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--source', type=Path, default=Path('/opt/lldb-src'),
+                        help='Matching llvm-project source root')
+    parser.add_argument('--llvm-prefix', type=Path, default=Path('/usr/lib/llvm-23'),
+                        help='Matching LLVM23 development prefix')
+    parser.add_argument('--compiler', default='clang++-23')
     parser.add_argument('--test-source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     build = args.build.resolve(strict=True)
+    source = args.source.resolve(strict=True)
+    llvm = args.llvm_prefix.resolve(strict=True)
     test = args.test_source.resolve(strict=True)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -37,9 +44,9 @@ def main():
 
     try:
         # The standalone debugger recipe pins these matching LLVM23 headers.
-        run('compile', ['clang++-23', '-std=c++20', '-fno-rtti',
-            '-I/opt/lldb-src/lldb/source', '-I/opt/lldb-src/lldb/include',
-            '-I/opt/lldb-build/include', '-I/usr/lib/llvm-23/include',
+        run('compile', [args.compiler, '-std=c++20', '-fno-rtti',
+            '-I'+str(source/'lldb/source'), '-I'+str(source/'lldb/include'),
+            '-I'+str(build/'include'), '-I'+str(llvm/'include'),
             '-c', test, '-o', output / 'registers.o'])
         commands = subprocess.check_output(['ninja', '-t', 'commands', 'lldb-server'],
                                            cwd=build, text=True).splitlines()

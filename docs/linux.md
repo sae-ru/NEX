@@ -59,8 +59,14 @@ With the private LLVM22 symbol tools and that primary-listener helper, the
 passed all nine original module/frontier/instance, profile, HTTP and debugger
 groups. The source files match commit12281c4; native probe hashes, original
 CTest limits and fixture dependencies were checked independently. The earlier
-failed303 invocation stays failed, and stock LLDB23 indexed paging and complete
-portable SDK delivery remain unqualified.
+failed303 invocation stays failed. The later
+[matching native Bookworm debugger](linux-native-debugger.md) completed all1300
+build steps, passed nine register profiles/105 checks, the original live indexed-page
+scenario and all fifteen task-debugger methods. It also passed the unchanged page
+test on the original stock-failure binary with its bytes and nanosecond mtime
+preserved. Its [receipt](evidence/cix-native-lldb-23.1.6-2026-11-09.json) independently
+rehashed9576 source files and418 installed debugger files. Complete matching NEX
+source regression and portable SDK delivery remain separate gates.
 
 On the Fedora x86-64 stand, the private Conda Clang 22 installation initially
 selected its cross sysroot when manually linking fixtures against native host

@@ -1,0 +1,246 @@
+{
+  "schema": "nex.linux-native-debugger-source-cohort/1",
+  "distribution": "Debian12 Bookworm",
+  "architecture": "arm64",
+  "debugger_version": "23.1.6",
+  "source_commit": "2875c6073a7eef62dc8eb3105b5ff50de483a563",
+  "source_url": "https://codeload.github.com/llvm/llvm-project/tar.gz/2875c6073a7eef62dc8eb3105b5ff50de483a563",
+  "source_archive_sha256": "ec06ad304576d47d9135eaefea941a288bb2c20e7ef9d8c35190be97ab64b646",
+  "source_archive_bytes": 277743059,
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "patches": [
+    {
+      "source_file": "lldb/tools/lldb-dap/Variables.cpp",
+      "before_sha256": "22d2c4fd44ef498df98364972ef704efc252c45dc5d45ba581230d56c4a46421",
+      "after_sha256": "960a03ea8b6a64b09ef5bdefd2a9af5d50da38022f548de8ca05ec648a9ee562",
+      "patch": "lldb23-indexed-pages.patch",
+      "patch_sha256": "447806a73c12274b26a6bb8306a12e7d1a57a0759052f5ae0c66f582e74e6653"
+    },
+    {
+      "source_file": "lldb/source/Plugins/Process/Utility/RegisterInfoPOSIX_arm64.cpp",
+      "before_sha256": "c0c6d57ccd69fc4f0b37ddac64bbf2fa4e039077c505ae6915c01376f5888a16",
+      "after_sha256": "c672b3ec6a24a1d5f621279426eb662a571c46e0dc83d55c0097b2c97b5ee4ee",
+      "patch": "lldb23-za-registers.patch",
+      "patch_sha256": "6a3bdf7cab9e7dc64d37081871851f705c22ed03067c02ff62eaa4057dc938eb"
+    }
+  ],
+  "LLVM_development": {
+    "apt_version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+    "repository": "https://apt.llvm.org/bookworm/",
+    "repository_signing_key_fingerprint": "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421",
+    "signed_InRelease_sha256": "2e046703afbeb6cd6d9fd16f209e87ef54a6ed68ac7327fcc8535c3a2ae2a53a",
+    "signed_Packages_gz_sha256": "77f7192766be1e9e9bb92addc8729e0d69fb3913b634df9a09eb870b59a48086"
+  },
+  "LLVM_packages": [
+    {
+      "Package": "llvm-23-dev",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "48028960",
+      "SHA256": "5337852c35d19d009356ab41660aca0713da8c44279ad37f27ecd4497c0fde76",
+      "Filename": "pool/main/l/llvm-toolchain-23/llvm-23-dev_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "llvm-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "17705796",
+      "SHA256": "23238abf765f38410ad190755e3e4c0b0ea3287651ef28368c006a96141166a3",
+      "Filename": "pool/main/l/llvm-toolchain-23/llvm-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "llvm-23-runtime",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "573412",
+      "SHA256": "12ecc9d93b306b12c4e1aa191d7a97402b08b8dba2b3c71ac10b6d3d81121da5",
+      "Filename": "pool/main/l/llvm-toolchain-23/llvm-23-runtime_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "llvm-23-tools",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "481036",
+      "SHA256": "251028fe4e3564ba7877cf3992c14178fde4b8eafa5b556cc6270c0bcc1a813d",
+      "Filename": "pool/main/l/llvm-toolchain-23/llvm-23-tools_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "llvm-23-linker-tools",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "1089528",
+      "SHA256": "138230a1f6f4189c7404b6e8287dbecf4ddef0d1d3f085aaa16fb9a5537dae24",
+      "Filename": "pool/main/l/llvm-toolchain-23/llvm-23-linker-tools_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "clang-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "168080",
+      "SHA256": "98c7f564b590ca0568295edeb5d88c6ec8c69792c3a567fe3cfb06722e603a80",
+      "Filename": "pool/main/l/llvm-toolchain-23/clang-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang-23-dev",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "31628284",
+      "SHA256": "ad40b737c976212f12487e15306f6f7bc32f12b566dd0c9d5d1fada8c990159c",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-23-dev_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang-cpp23-dev",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "59744",
+      "SHA256": "2e3eef068c4a480afb51b6512844a78c272c645398e59e97eb2df1ed7b2a11d2",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23-dev_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang-common-23-dev",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "824860",
+      "SHA256": "d8069a7645311f11be0640e61034d08f76f6245b354b90894d8ad046d7e41b80",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-common-23-dev_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang1-23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "7610808",
+      "SHA256": "c5e201aa0896498d7cfba771cdcb9ee5b71c3708034a4b3919c87d166edfc005",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang1-23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang-rt-23-dev",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "2151168",
+      "SHA256": "c8953b386509c078102cf2dc4a4c9d21e281eab5e0a08eafb9d8acef319669a6",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-rt-23-dev_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libllvm23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "27437672",
+      "SHA256": "33bdd01519d257d54f54ef55f3c94af599ebeecb172bc322f9a12f7f5a27e667",
+      "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    },
+    {
+      "Package": "libclang-cpp23",
+      "Version": "1:23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97",
+      "Architecture": "arm64",
+      "Size": "12484768",
+      "SHA256": "681ceb255c090ce53ea44bd8e276e117e2ea5220e2a7bdeda5695236ea30158c",
+      "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261103094256+2875c6073a7e-1~exp1~20261103214307.97_arm64.deb"
+    }
+  ],
+  "Debian_development_packages": [
+    {
+      "Package": "swig4.0",
+      "Version": "4.1.0-0.2",
+      "Architecture": "arm64",
+      "SHA256": "792e49fe732e2358ab24ff6ccfa5b2a6addfbf003024503f1523b08ec821a1f0",
+      "Size": "1298952",
+      "Filename": "pool/main/s/swig/swig4.0_4.1.0-0.2_arm64.deb"
+    },
+    {
+      "Package": "libedit-dev",
+      "Version": "3.1-20221030-2",
+      "Architecture": "arm64",
+      "SHA256": "80639322fd104c8d6e197aea90237fab6b46296f6944b19168430ed25a9e243c",
+      "Size": "111928",
+      "Filename": "pool/main/libe/libedit/libedit-dev_3.1-20221030-2_arm64.deb"
+    },
+    {
+      "Package": "libxml2-dev",
+      "Version": "2.9.14+dfsg-1.3~deb12u6",
+      "Architecture": "arm64",
+      "SHA256": "dd4ecc1c28855e2cc1e5d519cd355cde4d282941a45b99eb0781b2aaae10c81b",
+      "Size": "741256",
+      "Filename": "pool/main/libx/libxml2/libxml2-dev_2.9.14+dfsg-1.3~deb12u6_arm64.deb"
+    },
+    {
+      "Package": "libncurses-dev",
+      "Version": "6.4-4",
+      "Architecture": "arm64",
+      "SHA256": "a33e3269e924132dd49b4424754ca63ae2b901a89bc8a3f541e962d67bee9d41",
+      "Size": "335684",
+      "Filename": "pool/main/n/ncurses/libncurses-dev_6.4-4_arm64.deb"
+    },
+    {
+      "Package": "libcurl4-openssl-dev",
+      "Version": "7.88.1-10+deb12u15",
+      "Architecture": "arm64",
+      "SHA256": "b64c072a4cf1a5bbf2e7ced12564c73ce4ba6810c7e1de4c861c46c7d5eae6b0",
+      "Size": "476592",
+      "Filename": "pool/main/c/curl/libcurl4-openssl-dev_7.88.1-10+deb12u15_arm64.deb"
+    },
+    {
+      "Package": "libffi-dev",
+      "Version": "3.4.4-1",
+      "Architecture": "arm64",
+      "SHA256": "8ff6335f76752ef8659762435d0d88129ef0090a587520853238809bd10ef392",
+      "Size": "55984",
+      "Filename": "pool/main/libf/libffi/libffi-dev_3.4.4-1_arm64.deb"
+    },
+    {
+      "Package": "libz3-dev",
+      "Version": "4.8.12-3.1",
+      "Architecture": "arm64",
+      "SHA256": "d9ceb31ff52c1d6ee45e87d878ef03de1b12a5b5abc0b2ca3bd02ab14857361a",
+      "Size": "90560",
+      "Filename": "pool/main/z/z3/libz3-dev_4.8.12-3.1_arm64.deb"
+    },
+    {
+      "Package": "libzstd-dev",
+      "Version": "1.5.4+dfsg2-5",
+      "Architecture": "arm64",
+      "SHA256": "3e734e9e8ff0fca4c213bf6e3367541e63e6ea847d30e0a3dfe229c7c101acb1",
+      "Size": "316912",
+      "Filename": "pool/main/libz/libzstd/libzstd-dev_1.5.4+dfsg2-5_arm64.deb"
+    },
+    {
+      "Package": "libicu-dev",
+      "Version": "72.1-3+deb12u1",
+      "Architecture": "arm64",
+      "SHA256": "2447f2e7493ae6b531b680b492e581cafd92e6f58f6be5dccff122de1e61f868",
+      "Size": "10211716",
+      "Filename": "pool/main/i/icu/libicu-dev_72.1-3+deb12u1_arm64.deb"
+    }
+  ],
+  "additional_host_prerequisites": [
+    "CMake3.29.3 (tested)",
+    "Ninja",
+    "Python3.11 development headers and shared library",
+    "GNU C++12 system headers and runtime"
+  ],
+  "private_dependency_hook": {
+    "file": "private-debugger-dependencies.cmake",
+    "sha256": "6105192ee7ffe195fb212eaa20e2a1ff7c2b5f0cbd75371bf06fd5ff182d7c41",
+    "purpose": "Load imported CURL before LLVM exports; select an existing private Z3 library when Bookworm exports the absent system development symlink."
+  },
+  "register_controls": {
+    "file": "check_lldb_registers.py",
+    "sha256": "12fd4da6b3dd9097b7c2d9de9ee561d5d1def8b176299ffbebebe4f741810e33",
+    "source": "lldb23-za-registers-test.cpp",
+    "profiles": 9,
+    "checks": 105
+  },
+  "deployment": [
+    "liblldb",
+    "Python bindings",
+    "lldb",
+    "lldb-dap",
+    "lldb-server",
+    "lldb-argdumper",
+    "matching Clang resources"
+  ],
+  "NEX_compiler_LLVM_MLIR": "22.1.8",
+  "system_package_changes_required": false,
+  "scope": "Matching native debugger dependency and original NEX live controls on Debian12 ARM64; full matching NEX regression and portable SDK delivery remain separate.",
+  "evidence": "../../docs/evidence/cix-native-lldb-23.1.6-2026-11-09.json",
+  "complete_NEX_SDK_accepted": false
+}
