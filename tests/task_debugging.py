@@ -147,20 +147,40 @@ class TaskDebugging(harness.ToolchainCase):
         manifest = Path(built['debug_manifest'])
         data = json.loads(manifest.read_text())
         argv = [debugger, '--no-lldbinit', '--batch', built['executable']]
+        responses = self.root/'lldb-command-results.jsonl'
+        responses.write_text('', encoding='utf-8', newline="\n")
+        requested = []
         for command in ['settings set target.disable-aslr false',
                         'command script import ' + json.dumps(data['formatter'],ensure_ascii=False),
                         'nex-load-debug ' + json.dumps(str(manifest),ensure_ascii=False) + ' --compiler ' + json.dumps(harness.NEX,ensure_ascii=False),
                         *commands]:
+            if command.startswith('nex-') and not command.startswith('nex-load-debug '):
+                # lldb-server diagnostics share the batch driver's stdout and
+                # can follow JSON without a newline. Capture the actual command
+                # result separately; keep all raw output and parse its JSON strictly.
+                requested.append(command)
+                capture = '''import json,sys
+result=lldb.SBCommandReturnObject()
+lldb.debugger.GetCommandInterpreter().HandleCommand(COMMAND,result)
+with open(RESPONSES,'a',encoding='utf-8') as stream:
+    stream.write(json.dumps({'command':COMMAND,'output':result.GetOutput() or '',
+        'error':result.GetError() or '', 'succeeded':result.Succeeded()})+'\\n')
+print(result.GetOutput() or '',end='')
+print(result.GetError() or '',end='',file=sys.stderr)
+'''.replace('COMMAND',repr(command)).replace('RESPONSES',repr(str(responses)))
+                command = 'script exec(__import__("base64").b64decode("' + base64.b64encode(capture.encode()).decode() + '").decode("utf-8"))'
             argv += ['-o', command]
         run = subprocess.run(argv, cwd=self.root, capture_output=True, text=True, timeout=120,
                              env=None if env is None else {**os.environ, **env})
         (self.root/'lldb.stdout').write_text(run.stdout, newline="\n")
         (self.root/'lldb.stderr').write_text(run.stderr, newline="\n")
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        results = [json.loads(line) for line in responses.read_text(encoding='utf-8').splitlines()]
+        self.assertEqual([result['command'] for result in results], requested, run.stdout+run.stderr)
         rows = []
-        for line in run.stdout.splitlines():
-            if line.startswith('{'):
-                rows.append(json.loads(line))
+        for result in results:
+            self.assertTrue(result['succeeded'], result['command']+': '+result['error'])
+            rows.append(json.loads(result['output']))
         return run, rows
 
     def test_utf8_manifest_and_paths_reject_invalid_bytes(self):

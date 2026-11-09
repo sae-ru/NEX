@@ -39,6 +39,15 @@ An explicit invalid path remains an error. This matters when the compiler's
 LLVM 22 toolchain also supplies an LLDB executable while the selected native
 debugger uses a separately maintained LLVM version.
 
+LLDB batch stdout also contains debugger-server diagnostics, which may follow
+a command's JSON on the same line. Automated CLI checks capture each command's
+`SBCommandReturnObject` separately and strictly parse its complete response;
+they retain the mixed stdout/stderr for diagnostics. The
+[command-capture receipt](evidence/lldb-command-capture-0.162.2-2026-11-09.json)
+records all fifteen unchanged task-debugger methods on Windows and macOS and
+three successful replays of the original failing Windows binary. This test
+observer correction does not accept matching full source or portable SDK delivery.
+
 ## Stop and inspect
 
 ```sh
