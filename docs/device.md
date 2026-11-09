@@ -6,12 +6,17 @@ No syntax, canonical identity, retained-history or migration rule changes.
 Matching regression, installed SDK and actual platform acceptance have separate
 receipts. The OpenCL adapter is experimental and selected explicitly.
 
-The checkout also contains an [experimental owned Metal provider](../experiments/owned-metal/README.md)
-for macOS. It uses these same public resource types with native Metal registry
+Toolchain0.163 installs the experimental Metal preparer and verification tools
+at `tools/owned-metal` below the SDK resources. Query
+`nex describe --field device.metal_provider --json`. Native execution requires
+macOS. It uses these same public resource types with native Metal registry
 IDs, command-buffer completion and shared-event cancellation tests. Its
 [physical hardware evidence](evidence/macos-owned-metal-0.162.2-2026-11-09.json)
 has a separate scope from installed SDK acceptance. Current kernels remain
 exact U8 Add/Affine; general Metal code generation and Apple NPU are pending.
+Provider instructions are installed at `tools/owned-metal/README.md`;
+checkout instructions are in `experiments/owned-metal/README.md`.
+Source-only preparation and all27 scenario checks require no Apple SDK or GPU.
 
 ## Source contract
 

@@ -53,8 +53,11 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.162.2 / language 0.28 / task ABI 7**, in development.
-This follow-up preserves caller floating-point flags during optimized GCC ARM64
+Current source: **toolchain 0.163.0 / language 0.28 / task ABI 7**, in development.
+The new candidate installs discoverable Metal provider tools and checks their
+actual source/FFI signatures and all27 hardware/reply fixtures without a driver.
+Matching source, SDK relocation and physical Metal delivery gates are pending.
+Earlier0.162.2 follow-ups preserve caller floating-point flags during optimized GCC ARM64
 float-to-integer conversion and requires the Windows OpenSSL runtime configuration
 when assembling an explicitly selected cohort. The [current development record](docs/evidence/current-platforms-0.162.2-2026-11-08.json)
 records the complete 301-group macOS source run, the newly assembled macOS and

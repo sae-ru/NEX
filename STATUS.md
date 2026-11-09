@@ -1,4 +1,16 @@
-# Current0.162.2 qualification — 2026-11-09
+# Development0.163.0 — installed Metal tools
+
+Language0.28/taskABI7 and graph identities are unchanged. This candidate installs
+the fixed-kernel Metal provider and native prerequisite tools, advertises the
+experimental provider through `nex describe`, and checks its seven FFI signatures
+and27 scenario sources plus the missing-effect rejection without a driver.
+Source checking is available on the supported64-bit hosts; compiling and running
+the native worker requires macOS. The earlier separate0.162.2 experiment passed
+[30 native/reference pairs on Apple M5 Max](docs/evidence/macos-owned-metal-0.162.2-2026-11-09.json).
+Fresh matching source, moved/restored SDK, Metal hardware and complete platform
+acceptance remain pending. Earlier accepted archives retain their exact scope.
+
+# Earlier0.162.2 qualification — 2026-11-09
 
 Language0.28/taskABI7 are unchanged. The current strict-LLDB-command-capture
 [e63 source snapshot passed all301 macOS groups](docs/evidence/macos-e63-source-full301-0.162.2-2026-11-09.json).

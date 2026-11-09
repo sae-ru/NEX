@@ -1,3 +1,13 @@
+# Owned Metal SDK tools — development0.163.0
+
+Install the provider/precondition tools in the SDK and expose their actual
+experimental scope in the compiler descriptor. Source-only preparation must
+not require Apple's SDK or a GPU; all27 fixture programs and the missing-effect
+rejection are checked with the actual selected compiler. Complete SDK acceptance
+requires the installed tools, exact source/compiler pins and every named check.
+Fresh source/full SDK, relocation and physical hardware delivery gates remain
+required. Language0.28, taskABI7 and graph migration rules are unchanged.
+
 # Owned Metal experiment — development0.162.2
 
 Connect the existing `std/device` resource API to a pinned persistent Metal

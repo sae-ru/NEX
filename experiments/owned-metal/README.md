@@ -5,8 +5,10 @@ the existing `std/device` API. It provides persistent GPU sessions, immutable
 typed buffers, exact U8 Add/Affine kernels, checked overflow and physical GPU
 timing. It introduces no source syntax, compiler ABI or graph migration.
 
-The provider is built separately from this checkout. It is not yet included in
-an installed SDK or advertised as a qualified platform capability. General GPU
+Toolchain0.163 installs its preparation and verification tools under
+`share/nex/tools/owned-metal`; `nex describe --field device.metal_provider --json`
+describes their actual scope. Preparation builds a separate pinned provider
+bundle. Matching installed SDK hardware acceptance remains pending. General GPU
 code generation, Matmul, Apple NPU and complete Metal SDK acceptance remain
 pending. The native API prerequisite is in [../metal](../metal/README.md).
 
@@ -30,8 +32,14 @@ python3 -B experiments/owned-metal/logs.py --sdk "$NEX_SDK" \
   --project /absolute/new/metal-project --output /absolute/new/metal-logs
 ```
 
+From an installed SDK, replace `experiments/owned-metal` in the commands with
+`$NEX_SDK/share/nex/tools/owned-metal`.
+
 `prepare.py --check-sdk` performs source/signature discovery without building a
-provider or initializing a GPU. The default ordinal is0; `--index 0..63` selects
+provider, selecting an Apple SDK or initializing a GPU, including on non-macOS
+64-bit hosts. Run `check_sources.py --sdk ... --project ... --output ...` after
+that preparation to check all27 scenario sources and the missing-effect
+rejection with the selected compiler. The default ordinal is0; `--index 0..63` selects
 an available Metal device. Unavailable devices return an error. The bundle pins
 the module, worker, exported signatures and notices. Metal and the selected
 Apple SDK remain external system dependencies.

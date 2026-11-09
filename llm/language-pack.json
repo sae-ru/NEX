@@ -2263,7 +2263,29 @@
     "provider_realm": "server",
     "source_support": true,
     "source_task_bridge": true,
-    "status": "development_owned_device_library"
+    "status": "development_owned_device_library",
+    "experimental_metal_provider": true,
+    "metal_provider": {
+      "status": "experimental_operator_preparation",
+      "preparation": "tools/owned-metal/prepare.py",
+      "verification": "tools/owned-metal/verify.py",
+      "fault_verification": "tools/owned-metal/faults.py",
+      "log_verification": "tools/owned-metal/logs.py",
+      "native_build_hosts": [
+        "macOS"
+      ],
+      "source_check_cross_platform": true,
+      "operations": [
+        "add_u8",
+        "affine_u8"
+      ],
+      "physical_identity": "MTLDevice.registryID",
+      "successful_command_status": "MTLCommandBufferStatusCompleted",
+      "completed_handlers_required": 1,
+      "external_system_framework": "Metal",
+      "driver_bundled": false,
+      "installed_hardware_acceptance": false
+    }
   },
   "task_file_writes_host": {
     "atomic_replacement": true,

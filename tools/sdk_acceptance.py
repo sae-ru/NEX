@@ -1083,6 +1083,55 @@ def validate_task_tcp_evidence(report, *, expected_network_profile='full'):
             'SDK TCP rejected execution outcomes differ')
 
 
+METAL_SOURCE_CHECKS=(
+    'normal-small_cpu_oracle','normal-all_octets','normal-persistent_session_scales',
+    'normal-overflow_is_not_fallback_and_session_recovers','normal-maximum_262144_elements',
+    'normal-overflow_only_last_of_262144','normal-hidden_session_after_scope_return',
+    'normal-closed_context_existing_buffer_still_reads','normal-sibling_channel_hidden_session',
+    'normal-cross_session_buffers_rejected','normal-malformed_request_never_uploads',
+    'normal-explicit_placement_and_cpu_fallback','normal-unsupported_matmul_fallback',
+    'error-cancel_enqueued_GPU','error-deadline_enqueued_GPU',
+    'fault-upload_truncated','fault-upload_wrong_size','fault-upload_reused_id',
+    'fault-affine_truncated','fault-affine_trailing','fault-affine_reused_id',
+    'fault-download_truncated','fault-download_wrong_size','fault-free_trailing',
+    'fault-close_truncated','fault-open_trailing','fault-execute_fallback_never_masks_protocol',
+    'missing-source-error-effect')
+
+
+def validate_owned_metal_evidence(report):
+    device=report.get('evidence',{}).get('owned_device_contract',{})
+    metal=device.get('metal',{}) if isinstance(device,dict) else {}
+    require(isinstance(metal,dict) and all(metal.get(key) is True for key in
+            ('installed_provider_source_checked','verification_harness_installed','fault_harness_installed','log_harness_installed')),
+            'SDK acceptance lacks installed Metal provider tools')
+    preparation=metal.get('preparation',{})
+    pins=metal.get('tool_sha256',{})
+    names={'README.md','prepare.py','verify.py','faults.py','logs.py','check_sources.py','module.cpp','worker.mm','protocol.h','main.nex.in'}
+    require(isinstance(pins,dict) and set(pins)==names and all(isinstance(pin,str) and re.fullmatch('[0-9a-f]{64}',pin) for pin in pins.values()),
+            'SDK acceptance lacks complete installed Metal tool identities')
+    require(isinstance(preparation,dict) and preparation.get('schema')=='nex.owned-metal-preparation/1' and
+            preparation.get('ok') is True and preparation.get('source_checked') is True and
+            preparation.get('compiler_sha256')==report.get('compiler_sha256') and preparation.get('source_language')==report.get('language') and
+            all(preparation.get(key) is False for key in ('native_provider_built','driver_initialized','hardware_executed')) and
+            isinstance(preparation.get('signature_sha256'),dict) and set(preparation['signature_sha256'])=={'open','upload','dispatch','download','name','kernel_ns','busy'} and
+            all(isinstance(pin,str) and re.fullmatch('[0-9a-f]{64}',pin) for pin in preparation['signature_sha256'].values()) and
+            preparation.get('source_input_sha256')=={name:pins[name] for name in ('module.cpp','worker.mm','protocol.h','main.nex.in')},
+            'SDK acceptance lacks actual Metal source preparation evidence')
+    source=metal.get('source_report',{})
+    checks=source.get('checks',[]) if isinstance(source,dict) else []
+    require(isinstance(source,dict) and source.get('schema')=='nex.owned-metal-source-check/1' and source.get('ok') is True and
+            source.get('compiler_sha256')==report.get('compiler_sha256') and source.get('source_language')==report.get('language') and
+            all(source.get(key) is False for key in ('native_provider_built','driver_initialized','hardware_executed')) and
+            type(source.get('accepted_programs')) is int and source['accepted_programs']==27 and
+            type(source.get('rejected_programs')) is int and source['rejected_programs']==1 and
+            isinstance(checks,list) and len(checks)==28 and all(isinstance(row,dict) for row in checks) and
+            tuple(row.get('name') for row in checks)==METAL_SOURCE_CHECKS and
+            all(type(row.get('exit_code')) is int and row['exit_code']==(1 if row['name']=='missing-source-error-effect' else 0) for row in checks) and
+            checks[-1].get('diagnostic')=='E_EFFECT' and
+            source.get('fixture_sha256')=={name:pins[name] for name in ('verify.py','faults.py','main.nex.in')},
+            'SDK acceptance lacks complete Metal source-fixture evidence')
+
+
 def validate_completed_report(report, *, expected_network_profile='full'):
     require(report.get('schema') == 'nex.sdk-acceptance/1' and report.get('ok') is True,
             'SDK acceptance did not complete successfully')
@@ -1100,6 +1149,8 @@ def validate_completed_report(report, *, expected_network_profile='full'):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,163,0):
+        validate_owned_metal_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,151,0):
         validate_typed_source_evidence(report)
     if report.get('language')=='0.28':
@@ -1807,6 +1858,22 @@ test fn examples() -> unit {
             'installed_provider_source_checked':True,'preparation':preparation,'fault_harness_installed':True,'log_harness_installed':True,
             'library_sha256':hashlib.sha256((resources/'lib/device.nex').read_bytes()).hexdigest(),
             'hardware_execution_proved':False}
+        if owned.get('experimental_metal_provider') is True:
+            metadata=owned['metal_provider'];tool=resources/'tools/owned-metal'
+            names=['README.md','prepare.py','verify.py','faults.py','logs.py','check_sources.py','module.cpp','worker.mm','protocol.h','main.nex.in']
+            pins={name:hashlib.sha256((tool/name).read_bytes()).hexdigest() for name in names}
+            prepared=root/'owned-Metal-preparation'
+            run([sys.executable,'-B',resources/metadata['preparation'],'--sdk',sdk,'--output',prepared,'--check-sdk'],cwd=root,timeout=240)
+            for key,argument in [('verification','--only'),('fault_verification','--expect-regression'),('log_verification','--old-limit-red')]:
+                require(argument in run([sys.executable,'-B',resources/metadata[key],'--help'],cwd=root,timeout=60),
+                        'installed Metal verification harness is not callable')
+            source_output=root/'owned-Metal-source-fixtures'
+            run([sys.executable,'-B',tool/'check_sources.py','--sdk',sdk,'--project',prepared,'--output',source_output],cwd=root,timeout=240)
+            report['evidence']['owned_device_contract']['metal']={'installed_provider_source_checked':True,
+                'verification_harness_installed':True,'fault_harness_installed':True,'log_harness_installed':True,
+                'tool_sha256':pins,'preparation':json.loads((prepared/'preparation/report.json').read_text()),
+                'source_report':json.loads((source_output/'report.json').read_text())}
+            validate_owned_metal_evidence(report)
 
     def model_contract():
         descriptor=cli('describe','--field','model')['value']

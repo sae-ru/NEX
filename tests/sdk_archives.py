@@ -26,6 +26,62 @@ spec = importlib.util.spec_from_file_location('sdk_acceptance', Path(__file__).r
 acceptance = importlib.util.module_from_spec(spec); spec.loader.exec_module(acceptance)
 
 
+class OwnedMetalEvidence(unittest.TestCase):
+    def report(self):
+        names=['README.md','prepare.py','verify.py','faults.py','logs.py','check_sources.py','module.cpp','worker.mm','protocol.h','main.nex.in']
+        pins={name:hashlib.sha256(name.encode()).hexdigest() for name in names}
+        root=Path(__file__).resolve().parents[1]/'experiments/owned-metal'
+        spec=importlib.util.spec_from_file_location('metal_evidence_fixtures',root/'verify.py')
+        verify=importlib.util.module_from_spec(spec);spec.loader.exec_module(verify)
+        spec=importlib.util.spec_from_file_location('metal_evidence_faults',root/'faults.py')
+        faults=importlib.util.module_from_spec(spec);spec.loader.exec_module(faults)
+        cases=[group+'-'+name for group,values in [('normal',verify.CASES),('error',verify.ERROR_CASES),('fault',faults.CASES)] for name in values]
+        preparation={'schema':'nex.owned-metal-preparation/1','ok':True,'source_checked':True,'source_language':'0.28','compiler_sha256':'a'*64,
+            'native_provider_built':False,'driver_initialized':False,'hardware_executed':False,
+            'source_input_sha256':{name:pins[name] for name in ['worker.mm','module.cpp','protocol.h','main.nex.in']},
+            'signature_sha256':{name:'b'*64 for name in ['open','upload','dispatch','download','name','kernel_ns','busy']}}
+        source={'schema':'nex.owned-metal-source-check/1','ok':True,'source_language':'0.28','compiler_sha256':'a'*64,
+            'native_provider_built':False,'driver_initialized':False,'hardware_executed':False,'accepted_programs':27,'rejected_programs':1,
+            'fixture_sha256':{name:pins[name] for name in ['verify.py','faults.py','main.nex.in']},
+            'checks':[{'name':name,'exit_code':0} for name in cases]+[{'name':'missing-source-error-effect','exit_code':1,'diagnostic':'E_EFFECT'}]}
+        metal={'installed_provider_source_checked':True,'verification_harness_installed':True,'fault_harness_installed':True,'log_harness_installed':True,
+            'preparation':preparation,'source_report':source,'tool_sha256':pins}
+        return {'compiler_sha256':'a'*64,'language':'0.28','evidence':{'owned_device_contract':{'metal':metal}}}
+
+    def test_complete_installed_source_report_retains_no_hardware_claim(self):
+        acceptance.validate_owned_metal_evidence(self.report())
+
+    def test_missing_tools_wrong_compiler_or_hardware_claims_are_rejected(self):
+        original=self.report()
+        for mutate in [lambda d:d['evidence']['owned_device_contract'].pop('metal'),
+                       lambda d:d['evidence']['owned_device_contract']['metal'].update(log_harness_installed=False),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['tool_sha256'].pop('worker.mm'),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['preparation'].update(compiler_sha256='c'*64),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['preparation'].update(source_language='0.27'),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['preparation'].update(hardware_executed=True),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['preparation']['signature_sha256'].pop('busy'),
+                       lambda d:d['evidence']['owned_device_contract']['metal']['preparation']['source_input_sha256'].update(**{'worker.mm':'d'*64})]:
+            changed=copy.deepcopy(original);mutate(changed)
+            with self.assertRaisesRegex(RuntimeError,'Metal'):acceptance.validate_owned_metal_evidence(changed)
+
+    def test_all_named_sources_and_the_effect_rejection_are_required(self):
+        original=self.report()
+        mutations=[lambda s:s['checks'].pop(),lambda s:s['checks'][0].update(name='unrelated-program'),
+                   lambda s:s['checks'][-1].update(exit_code=0),lambda s:s['checks'][-1].update(exit_code=True),
+                   lambda s:s['checks'][-1].update(diagnostic='E_PARSE'),lambda s:s.update(accepted_programs=True),
+                   lambda s:s.update(compiler_sha256='d'*64),lambda s:s.update(native_provider_built=True),
+                   lambda s:s['fixture_sha256'].update(**{'verify.py':'d'*64})]
+        for mutate in mutations:
+            changed=copy.deepcopy(original);mutate(changed['evidence']['owned_device_contract']['metal']['source_report'])
+            with self.assertRaisesRegex(RuntimeError,'Metal source-fixture'):acceptance.validate_owned_metal_evidence(changed)
+
+    def test_new_toolchain_requires_metal_before_other_legacy_evidence(self):
+        current={'schema':'nex.sdk-acceptance/1','ok':True,'version':'0.163.0','doctor':{'version':'0.163.0'},
+            'phases':[{'name':name,'status':'passed'} for name in acceptance.acceptance_phases('0.163.0')],
+            'commands':[{'status':'passed','exit_code':0}]}
+        with self.assertRaisesRegex(RuntimeError,'installed Metal provider'):acceptance.validate_completed_report(current)
+
+
 class RetainedHostPaths(unittest.TestCase):
     def test_native_and_portable_spellings_bind_the_same_existing_file(self):
         with tempfile.TemporaryDirectory() as temporary:

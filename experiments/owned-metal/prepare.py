@@ -19,11 +19,10 @@ def main():
  parser.add_argument('--check-sdk',action='store_true',help='check actual source and FFI signatures without building or initializing a device')
  args=parser.parse_args();sdk=args.sdk.resolve(strict=True);out=args.output.absolute();compiler=sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex');resources=sdk/'share/nex'
  if platform.machine().lower() not in ('arm64','aarch64','x86_64','amd64'):parser.error('owned Metal preparation requires a supported64-bit architecture')
- if platform.system()!='Darwin':parser.error('the owned Metal worker currently requires macOS')
+ if platform.system()!='Darwin' and not args.check_sdk:parser.error('native Metal worker preparation requires macOS; use --check-sdk for source-only validation')
  if not 0<=args.index<64:parser.error('GPU index must be0..63')
  if out.exists():parser.error('output directory must be new')
  if not args.check_sdk and (not args.cxx or not Path(args.cxx).is_file()):parser.error('an actual C++20 compiler is required')
- sysroot=Path(subprocess.check_output(['/usr/bin/xcrun','--sdk','macosx','--show-sdk-path'],text=True,timeout=10).strip()).resolve(strict=True)
  out.mkdir(parents=True);evidence=out/'preparation';evidence.mkdir();commands=[]
  env={**os.environ,'NEX_RESOURCE_DIR':str(resources),'PYTHONDONTWRITEBYTECODE':'1'}
  def run(name,argv,cwd=out):
@@ -53,9 +52,11 @@ def main():
   'source_compiler_toolchain':json.loads(run('doctor',[compiler,'doctor','--json']))['version'],
   'source_checked':True,'signature_sha256':{name:digest(value) for name,value in signatures.items()},
   'source_input_sha256':source_hashes,'library_sha256':{name:sha(out/'stdlib'/name) for name in ['compute.nex','device.nex']},
+  'native_host_supported':platform.system()=='Darwin',
   'native_provider_built':False,'driver_initialized':False,'hardware_executed':False,'persistent_worker':True,'parent_C_API_required':True}
  if args.check_sdk:
   write(evidence/'report.json',{**base,'commands':commands});print(json.dumps({'ok':True,'output':str(out),'source_checked':True,'native_provider_built':False,'hardware_executed':False}));return
+ sysroot=Path(subprocess.check_output(['/usr/bin/xcrun','--sdk','macosx','--show-sdk-path'],text=True,timeout=10).strip()).resolve(strict=True)
  bundle=out/'bundle';bundle.mkdir();source=inputs
  flags=['-std=c++20','-O2','-pthread','-isysroot',str(sysroot),'-I'+str(resources/'runtime'),'-I'+str(source),'-I'+str(generated)]
  run('compile-worker',[args.cxx,*flags,'-fobjc-arc','-fobjc-arc-exceptions','-fblocks',source/'worker.mm','-framework','Foundation','-framework','Metal','-o',bundle/'worker'])

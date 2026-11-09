@@ -65,6 +65,41 @@ class DeviceContract(unittest.TestCase):
   # child source error even when this particular callback returns normally.
   (self.root/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+verify.CASES['hidden_session_after_scope_return'][0]+'print(42); }\n', newline="\n")
   self.assertEqual(self.cli('check',expected=1)['code'],'E_EFFECT')
+ def test_metal_preparer_and_all_templates_use_the_selected_compiler_without_a_driver(self):
+  metal=self.descriptor['device']['metal_provider']
+  self.assertTrue(self.descriptor['device']['experimental_metal_provider'])
+  self.assertEqual(metal['operations'],['add_u8','affine_u8'])
+  self.assertFalse(metal['installed_hardware_acceptance'])
+  for name in ['faults.py','logs.py','verify.py','check_sources.py']:
+   result=subprocess.run([sys.executable,'-B',str(ROOT/'experiments/owned-metal'/name),'--help'],capture_output=True,text=True,timeout=30)
+   self.assertEqual(result.returncode,0,(name,result.stderr))
+  sdk=self.root/'Metal SDK';(sdk/'bin').mkdir(parents=True);(sdk/'share').mkdir()
+  (sdk/'bin'/('nex.exe' if os.name=='nt' else 'nex')).symlink_to(COMPILER);(sdk/'share/nex').symlink_to(ROOT)
+  prepared=self.root/'prepared Metal'
+  # The source-only path must not consult an Apple SDK or compile/run a worker.
+  environment={**self.env,'SDKROOT':str(self.root/'unavailable Apple SDK')}
+  result=subprocess.run([sys.executable,'-B',str(ROOT/'experiments/owned-metal/prepare.py'),'--sdk',str(sdk),'--output',str(prepared),'--check-sdk','--cxx',str(self.root/'unavailable C++')],cwd=self.root,env=environment,capture_output=True,text=True,timeout=180)
+  self.assertEqual(result.returncode,0,(result.stdout,result.stderr))
+  report=json.loads((prepared/'preparation/report.json').read_text())
+  self.assertEqual(report['schema'],'nex.owned-metal-preparation/1');self.assertTrue(report['source_checked'])
+  self.assertEqual(report['compiler_sha256'],hashlib.sha256(COMPILER.read_bytes()).hexdigest())
+  self.assertEqual(report['source_language'],self.descriptor['version']);self.assertEqual(len(report['signature_sha256']),7)
+  for field in ['native_provider_built','driver_initialized','hardware_executed']:self.assertIs(report[field],False)
+  self.assertFalse((prepared/'bundle').exists())
+  for name,pin in report['source_input_sha256'].items():self.assertEqual(hashlib.sha256((prepared/'preparation/inputs'/name).read_bytes()).hexdigest(),pin)
+  def load(name,path):
+   spec=importlib.util.spec_from_file_location(name,path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+  verify=load('nex_owned_metal_fixtures',ROOT/'experiments/owned-metal/verify.py')
+  faults=load('nex_owned_metal_faults',ROOT/'experiments/owned-metal/faults.py')
+  template=(prepared/'main.nex').read_text();prefix=template[:template.index('server fn main()->unit')]+verify.HELPERS
+  count=0
+  for group,cases in [('normal',verify.CASES),('error',verify.ERROR_CASES),('fault',faults.CASES)]:
+   for name,case in cases.items():
+    with self.subTest(group=group,name=name):
+     (self.root/'main.nex').write_text(verify.source_program(prefix,case[0],self.descriptor['version']),newline="\n");self.cli('check');count+=1
+  self.assertEqual(count,27)
+  (self.root/'main.nex').write_text(prefix+'\nserver fn main()->unit !{task,ffi,io}{'+verify.CASES['hidden_session_after_scope_return'][0]+'print(42); }\n',newline="\n")
+  self.assertEqual(self.cli('check',expected=1)['code'],'E_EFFECT')
  def test_effect_realm_and_wire_boundaries(self):
   prefix='import "std/device.nex" as d;import "std/compute.nex" as c;'
   for body,codes in [

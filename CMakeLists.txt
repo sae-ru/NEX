@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.162.2 LANGUAGES C CXX)
+project(NEX VERSION 0.163.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -340,6 +340,10 @@ install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-opencl
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-metal/ DESTINATION share/nex/tools/owned-metal
+  PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/metal/ DESTINATION share/nex/tools/metal
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-cuda/ DESTINATION share/nex/tools/owned-cuda
   PATTERN __pycache__ EXCLUDE)
