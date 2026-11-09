@@ -1,0 +1,111 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "scope": "Experimental generated Metal provider: corrected canonical UTF-8 error parsing, actual framed/progress corruption, pending-command control precedence and prior corpora. Separate ordinary SDK plus newly compiled provider; no complete SDK or general GPU backend acceptance.",
+  "evidence": {
+    "schema": "nex.generated-Metal-transport-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-09T17:58:03.589795+00:00",
+    "source_base_commit": "6a7319b83a328cfd9937c19543e4271327268769",
+    "toolchain": "0.164.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "406e7bc3f95ce16959bb5e053ec4e7097df3017b67cdb51bfc48ebe1fd5a3a79",
+    "protocol_magic": "0x3143474e",
+    "protocol_version": 1,
+    "original_parser_source_sha256": "dc91e3544b443c5f527f79bc47079f4f8a90f2cc3c91bc4b5adc37c8f61f6e9a",
+    "corrected_parser_source_sha256": "7facbafaf2e7c75dcd91d09d29c8b574d9ced89ec0f5fce0db7603fb85a9a76e",
+    "worker_source_sha256": "1ec9b8f84ce5b66b003b6d7b2bc7ef159afabb4710638ce71dd12969a50aa3a0",
+    "transport_harness_sha256": "83a5c7f4dacf2a230bb8ee529304b9de29840880e03fbd2d3709f566955c4809",
+    "generated_kernel_sha256": "8fa7ffbbcb906777b9cfe92f8b3fd8e82cfa60167df5e3bc6ba9dee3b051ea12",
+    "module_sha256": "054bbc4c835224e7fd94dfd8ddde76994932e5ea11df56ad4bd24ef08b72b2c0",
+    "worker_sha256": "4f1f1a6a777da7d4908a8a51034c25d16b3a6cacea8b3f7aef18546e59ae516e",
+    "provider_manifest_sha256": "8771d517a4685ae851c5c65083e0d3b572d73fa1e625272127e569aee8ca4231",
+    "original_regression": {
+      "observed_code": "E_FFI",
+      "message": "foreign callback returned status 7",
+      "invalid_UTF8_accepted_by_provider_before_core_rejection": true,
+      "real_GPU_overflow_confirmed": true
+    },
+    "corrected_error_code": "E_DEVICE_PROTOCOL",
+    "new_transport_pairs": 34,
+    "new_transport_physical_GPU_events": 72,
+    "frame_cases": 8,
+    "progress_cases": 9,
+    "invalid_failure_packet_cases": 13,
+    "valid_UTF8_and_2048_byte_boundary_cases": 2,
+    "cancel_deadline_over_bad_pending_progress_cases": 2,
+    "previous_corpora_requalified": {
+      "payload_pairs": 16,
+      "lifetime_pairs": 15,
+      "log_pairs": 3,
+      "original_fatal_pairs": 6
+    },
+    "native_reference_pairs": 74,
+    "physical_GPU_kernel_events": 130,
+    "valid_error_packets_keep_recoverable_Result": true,
+    "invalid_error_packets_poison_session_after_physical_drain": true,
+    "bounded_canonical_error_codes": true,
+    "strict_UTF8_messages_max_bytes": 2048,
+    "message_NUL_rejected": true,
+    "capacity_return_and_release_after_physical_completion": true,
+    "driver_status_4_and_one_completion_handler": true,
+    "cancel_deadline_priority_preserved": true,
+    "no_CPU_fallback": true,
+    "captured_diagnostics_max_bytes": 65536,
+    "worker_cache_files": {
+      "cache9MiB-native-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache9MiB-reference-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache_and_stdout9MiB-native-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      },
+      "cache_and_stdout9MiB-reference-cache.bin": {
+        "bytes": 9437184,
+        "sha256": "d2ee4703cd9698945ca7b9fe1689ea3095597eac1a0afd8dba00cac7894fdc43"
+      }
+    },
+    "all_targets_and_two_CTest_groups_passed": true,
+    "all_owners_and_monitors_retired": true,
+    "owner_observations": {
+      "corrected_hardware": {
+        "pid": 33061,
+        "retired": true
+      },
+      "original_regression": {
+        "pid": 29886,
+        "retired": true
+      },
+      "host_checks": {
+        "pid": 37683,
+        "retired": true
+      }
+    },
+    "SDK_inventory_unchanged": true,
+    "primary_source_graph_preserved": true,
+    "provider_CXX": "Apple Clang via /usr/bin/clang++",
+    "bundled_Clang_delivery_accepted": false,
+    "complete_immutable_SDK_accepted": false,
+    "general_GPU_backend_accepted": false,
+    "unknown_vendor_completion_recovery_accepted": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 2620,
+    "raw_bytes": 36482607,
+    "archive_bytes": 7781306,
+    "archive_sha256": "3f3f7c853faf0e6d9e5d0428a184b870f9f48c6c67c4957942ad2ee3f049825b"
+  },
+  "remaining": [
+    "matching immutable SDK and own bundled-compiler delivery",
+    "unknown vendor completion, reset and recovery",
+    "public compiler CLI/source diagnostics/debugging/profiling",
+    "broader GPU/NPU types and backends"
+  ],
+  "release_claimed": false,
+  "main_branch_changed": false
+}

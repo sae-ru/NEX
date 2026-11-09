@@ -95,6 +95,25 @@ Buffer. Three additional pairs cover9MiB worker cache files,9MiB diagnostic stdo
 and both together. Capture stays within64KiB, the actual cache file reaches9MiB,
 and protocol/results remain intact. These19 pairs contain22 physical GPU kernels.
 
+The later [transport/error-packet record](../../docs/evidence/macos-generated-Metal-transport-0.164.0-2026-11-09.json)
+adds34 pairs: eight frame corruptions, nine progress corruptions, thirteen invalid
+error packets, two valid Unicode/boundary controls and cancellation/deadline
+over bad progress while a real shared-event-gated GPU command is pending. It
+also repeats the preceding corpora, lifetime checks and original fatal traps
+on the corrected provider:74 pairs and130 physical GPU kernels in total.
+The retained original parser reproduced `E_FFI` after accepting malformed UTF-8;
+the corrected parser returns `E_DEVICE_PROTOCOL` and retires the failed session.
+
+Worker error packets require a3..128-byte `E_[A-Z0-9_]+` code and a strict UTF-8
+message of at most2048 bytes without NUL. Valid Unicode is copied unchanged;
+the2048-byte positive control retains1024 Unicode scalars. This is the private
+worker packet contract, not a new restriction on NEX application Result codes.
+Frames retain their magic/version, matching sequence/operation and bounded
+status/payload checks. A generated call admits one valid progress packet;
+corrupt or duplicate progress cannot publish an output or return reserved
+capacity before physical drainage. The pinned worker's settled EOF/error exit
+is distinguished from unknown vendor completion.
+
 Run the independent generated-protocol corpora on a prepared two-argument
 baseline project (the same checked transform fixture used by `verify.py`):
 
@@ -103,13 +122,17 @@ python3 -B experiments/owned-metal-codegen/faults.py --sdk "$NEX_SDK" \
   --project /absolute/existing/gpu-project --output /absolute/new/reply-faults
 python3 -B experiments/owned-metal-codegen/logs.py --sdk "$NEX_SDK" \
   --project /absolute/existing/gpu-project --output /absolute/new/log-stress
+python3 -B experiments/owned-metal-codegen/transport_faults.py --sdk "$NEX_SDK" \
+  --project /absolute/newly-prepared/gpu-project --output /absolute/new/transport-faults
 ```
 
 `faults.py --source-only` checks all fixture programs against the selected
 compiler using that prepared project without executing its provider. The
 corruptions cover successful upload/map/download/free/close/open payloads,
-including kernel status/handler counts. Header/progress fault injection,
-unknown-completion recovery and complete installed delivery remain separate work.
+including kernel status/handler counts. `transport_faults.py --source-only`
+checks all34 transport programs without running their provider; its hardware
+corpus requires a newly prepared provider from this checkout. Unknown-completion
+recovery and complete installed delivery remain separate work.
 `verify.py` covers the two-argument multiply/conditional-loop fixture from the development evidence;
 `numerics.py` prepares and compares22 numerical/limit fixtures. Actual device
 recovery/reset and ownership under unknown vendor completion remain pending.

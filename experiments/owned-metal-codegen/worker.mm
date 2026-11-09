@@ -167,8 +167,29 @@ int main(){
    if(std::fflush(stdout))throw Error("E_DEVICE_TEST","controlled stdout flush failed");std::fprintf(stderr,"NEXGPU_TEST_NOISE_END %lu\n",count);
   }
   const char *fault=std::getenv("NEX_OWNED_METAL_MAP_TEST_BAD_REPLY");
-  if(fault&&std::strcmp(fault,"upload_truncated")&&std::strcmp(fault,"upload_wrong_size")&&std::strcmp(fault,"upload_reused_id")&&std::strcmp(fault,"map_reused_id")&&std::strcmp(fault,"map_truncated")&&std::strcmp(fault,"map_trailing")&&std::strcmp(fault,"download_truncated")&&std::strcmp(fault,"download_wrong_size")&&std::strcmp(fault,"free_trailing")&&std::strcmp(fault,"close_truncated")&&std::strcmp(fault,"open_trailing")&&std::strcmp(fault,"map_truncated")&&std::strcmp(fault,"map_reused_id")&&std::strcmp(fault,"map_wrong_size")&&std::strcmp(fault,"map_bad_status")&&std::strcmp(fault,"map_bad_handlers"))throw Error("E_DEVICE_PROTOCOL","unknown controlled reply fault");
+  const char *allowed[]={
+   "upload_truncated","upload_wrong_size","upload_reused_id","map_truncated","map_reused_id","map_wrong_size","map_bad_status","map_bad_handlers","map_trailing","download_truncated","download_wrong_size","free_trailing","close_truncated","open_trailing",
+   "frame_magic","frame_version","frame_sequence","frame_operation","frame_status","frame_oversize","frame_header_truncated","frame_payload_truncated",
+   "progress_truncated","progress_trailing","progress_tag","progress_state_low","progress_state_high","progress_gate","progress_duplicate","progress_sequence","progress_operation",
+   "failure_truncated","failure_trailing","failure_empty_code","failure_long_code","failure_code_prefix","failure_code_lowercase","failure_code_utf8","failure_message_long","failure_message_overlong_utf8","failure_message_surrogate","failure_message_beyond_scalar","failure_message_truncated_utf8","failure_message_NUL","failure_valid_utf8","failure_valid_utf8_limit"};
+  bool supported=!fault;for(auto name:allowed)if(fault&&std::strcmp(fault,name)==0)supported=true;
+  if(!supported)throw Error("E_DEVICE_PROTOCOL","unknown controlled reply fault");
   auto wants=[&](const char *name){return !faulted&&fault&&std::strcmp(fault,name)==0;};
+  auto recordFault=[&]{faulted=true;std::fprintf(stderr,"NEXGPU_FAULT %s %u\n",fault,request.operation);};
+  auto progressReply=[&](uint32_t state,bool gated){
+   auto admitted=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+   std::fprintf(stderr,"NEXGPU_ADMITTED %u %u %llu\n",state,gated?1u:0u,static_cast<unsigned long long>(admitted));
+   Data progress;progress.u32(wants("progress_tag")?2:1);
+   progress.u32(wants("progress_state_low")?1:wants("progress_state_high")?5:state);
+   progress.u32(wants("progress_gate")?2:gated?1:0);
+   bool corrupt=fault&&!faulted&&std::strncmp(fault,"progress_",9)==0;
+   bool duplicate=wants("progress_duplicate");
+   Frame frame{request.sequence+(wants("progress_sequence")?1:0),wants("progress_operation")?Upload:request.operation,Progress,{}};
+   if(wants("progress_truncated"))progress.bytes.resize(3);
+   if(wants("progress_trailing"))progress.bytes.push_back(0);
+   frame.payload=std::move(progress.bytes);if(corrupt)recordFault();
+   send(3,frame);if(duplicate)send(3,frame);
+  };
   while(receive(3,request)){ @autoreleasepool {
    if(request.sequence!=expected++||request.status!=0)throw Error("E_DEVICE_PROTOCOL","worker sequence or request status differs");
    try{
@@ -176,11 +197,21 @@ int main(){
     switch(request.operation){
      case Open:{if(gpu)throw Error("E_DEVICE_PROTOCOL","worker session already opened");auto ordinal=input.get32();input.done();gpu=std::make_unique<GPU>();gpu->open(ordinal);output=gpu->info();break;}
      case Upload:{if(!gpu)throw Error("E_DEVICE_PROTOCOL","no GPU session");auto dtype=input.get32();auto bytes=input.getBlob();input.done();output.u64(gpu->upload(dtype,bytes));output.u64(bytes.size());break;}
-     case Generated:{if(!gpu)throw Error("E_DEVICE_PROTOCOL","no GPU session");auto length=input.get32();if(length>8)throw Error("E_DEVICE_PROTOCOL","column count exceeds ABI bound");std::vector<uint64_t> columns;for(uint32_t i=0;i<length;++i)columns.push_back(input.get64());auto count=input.get32(),steps=input.get32();input.done();output=gpu->generated(columns,count,steps,[&](uint32_t status,bool gated){Data progress;progress.u32(1);progress.u32(status);progress.u32(gated?1:0);send(3,Frame{request.sequence,request.operation,Progress,std::move(progress.bytes)});});break;}
+     case Generated:{if(!gpu)throw Error("E_DEVICE_PROTOCOL","no GPU session");auto length=input.get32();if(length>8)throw Error("E_DEVICE_PROTOCOL","column count exceeds ABI bound");std::vector<uint64_t> columns;for(uint32_t i=0;i<length;++i)columns.push_back(input.get64());auto count=input.get32(),steps=input.get32();input.done();output=gpu->generated(columns,count,steps,progressReply);break;}
      case Download:{if(!gpu)throw Error("E_DEVICE_PROTOCOL","no GPU session");auto id=input.get64(),offset=input.get64();auto count=input.get32();input.done();output.blob(gpu->download(id,offset,count));break;}
      case Free:{if(!gpu)throw Error("E_DEVICE_PROTOCOL","no GPU session");auto id=input.get64();input.done();gpu->free(id);output.u32(uint32_t(gpu->live()));break;}
      case Close:{input.done();if(gpu&&gpu->live())throw Error("E_DEVICE_PROTOCOL","session closed before its actual buffers");if(gpu){gpu->closeNoThrow();if(!gpu->settled())throw Error("E_DEVICE_UNSETTLED","session release is not confirmed");gpu.reset();}output.u32(0);closing=true;break;}
      default:throw Error("E_DEVICE_PROTOCOL","unknown worker operation");
+    }
+    if(request.operation==Generated&&fault&&!faulted&&std::strncmp(fault,"frame_",6)==0){
+     Data header;header.u32(wants("frame_magic")?magic^1:magic);header.u32(wants("frame_version")?version+1:version);
+     header.u64(request.sequence+(wants("frame_sequence")?1:0));header.u32(wants("frame_operation")?Upload:request.operation);
+     header.u32(wants("frame_status")?Progress+1:Success);header.u32(wants("frame_oversize")?maximum+1:uint32_t(output.bytes.size()));
+     bool shortHeader=wants("frame_header_truncated"),shortPayload=wants("frame_payload_truncated");recordFault();
+     writeExact(3,header.bytes.data(),shortHeader?16:header.bytes.size());
+     if(!shortHeader)writeExact(3,output.bytes.data(),shortPayload?7:output.bytes.size());
+     if(shortHeader||shortPayload)::shutdown(3,SHUT_WR);
+     continue;
     }
     bool corrupt=false;
     if(request.operation==Generated&&wants("map_truncated")){output.bytes.resize(7);corrupt=true;}
@@ -196,7 +227,34 @@ int main(){
     if(request.operation==Download&&wants("download_wrong_size")){Data original(std::move(output.bytes));auto bytes=original.getBlob();original.done();if(!bytes.empty())bytes.pop_back();Data wrong;wrong.blob(bytes);output=std::move(wrong);corrupt=true;}
     if(corrupt){faulted=true;std::fprintf(stderr,"NEXGPU_FAULT %s %u\n",fault,request.operation);}
     send(3,Frame{request.sequence,request.operation,Success,std::move(output.bytes)});if(closing)return 0;
-   }catch(const Error &e){auto status=e.code=="E_DEVICE_UNSETTLED"||(gpu&&!gpu->drain())?Unsettled:Failure;send(3,Frame{request.sequence,request.operation,uint32_t(status),failure(e)});if(status==Unsettled)return 3;}
+   }catch(const Error &e){
+    auto status=e.code=="E_DEVICE_UNSETTLED"||(gpu&&!gpu->drain())?Unsettled:Failure;
+    auto payload=failure(e);
+    // Controls alter only a real, physically settled generated-function error.
+    if(status==Failure&&request.operation==Generated&&fault&&!faulted&&std::strncmp(fault,"failure_",8)==0){
+     if(wants("failure_truncated"))payload.resize(3);
+     else if(wants("failure_trailing"))payload.push_back(0);
+     else{
+      std::string code=e.code,message=e.what();
+      if(wants("failure_empty_code"))code.clear();
+      if(wants("failure_long_code"))code="E_"+std::string(127,'A');
+      if(wants("failure_code_prefix"))code="OVERFLOW";
+      if(wants("failure_code_lowercase"))code="E_overflow";
+      if(wants("failure_code_utf8"))code=std::string("E_\x80",3);
+      if(wants("failure_message_long"))message=std::string(2049,'A');
+      if(wants("failure_message_overlong_utf8"))message=std::string("\xc0\xaf",2);
+      if(wants("failure_message_surrogate"))message=std::string("\xed\xa0\x80",3);
+      if(wants("failure_message_beyond_scalar"))message=std::string("\xf4\x90\x80\x80",4);
+      if(wants("failure_message_truncated_utf8"))message=std::string("\xe2\x82",2);
+      if(wants("failure_message_NUL"))message=std::string("x\0y",3);
+      if(wants("failure_valid_utf8"))message="ошибка 🧠";
+      if(wants("failure_valid_utf8_limit")){message.clear();for(unsigned i=0;i<1024;++i)message+="é";}
+      Data error;error.text(code);error.text(message);payload=std::move(error.bytes);
+     }
+     recordFault();
+    }
+    send(3,Frame{request.sequence,request.operation,uint32_t(status),std::move(payload)});if(status==Unsettled)return 3;
+   }
   }}
   if(gpu){gpu->closeNoThrow();if(!gpu->settled())return 3;}return 0;
  }catch(const std::exception &){if(gpu){gpu->closeNoThrow();if(!gpu->settled())return 3;}return 20;}

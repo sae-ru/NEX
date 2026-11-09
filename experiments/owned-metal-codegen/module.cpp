@@ -29,6 +29,16 @@ static void trace(const JSON &value)noexcept{try{if(auto p=std::getenv("NEX_OWNE
 static void checked(nex_ffi_status value){if(value!=NEX_FFI_OK)throw HostStatus{value};}
 static std::string workerPath(){Dl_info info{};if(!dladdr(reinterpret_cast<const void*>(&workerPath),&info)||!info.dli_fname)throw Error("E_DEVICE_ABI","module cannot resolve its pinned snapshot");return (std::filesystem::path(info.dli_fname).parent_path()/"worker").string();}
 
+static bool validErrorPacket(const std::string &code,const std::string &message){
+ if(code.size()<3||code.size()>128||!code.starts_with("E_")||message.size()>2048||message.find('\0')!=std::string::npos)return false;
+ for(size_t i=2;i<code.size();++i){auto c=code[i];if(!((c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_'))return false;}
+ // Reuse the pinned JSON codec's strict UTF-8 decoder before any string
+ // crosses the C host API. The bounded message may contain Unicode scalars.
+ try{(void)JSON(message).dump(-1,' ',false,JSON::error_handler_t::strict);}
+ catch(const JSON::exception &){return false;}
+ return true;
+}
+
 struct BoundedLog {
  static constexpr size_t part=32736;
  std::array<char,part> first{},last{};size_t head=0,tail=0,next=0;uint64_t total=0;
@@ -104,7 +114,7 @@ class Session {
   if(response.status==Unsettled){failedDrain(poll);throw Error("E_DEVICE_UNSETTLED","worker could not confirm physical completion");}
   if(response.status==Failure){
    std::string code,message;
-   try{Data error(std::move(response.payload));code=error.getText();message=error.getText();error.done();if(code.empty()||code.size()>128||message.size()>2048)throw Error("E_DEVICE_PROTOCOL","worker error bounds differ");}
+   try{Data error(std::move(response.payload));code=error.getText();message=error.getText();error.done();if(!validErrorPacket(code,message))throw Error("E_DEVICE_PROTOCOL","worker error packet is not bounded canonical UTF-8");}
    catch(...){failedDrain(poll);throw;}
    if(code=="E_DEVICE_PROTOCOL"||code=="E_DEVICE_ABI"||code=="E_DEVICE_BUFFER")failedDrain(poll);
    // The pinned worker sends Failure only after gpu->drain() succeeds;

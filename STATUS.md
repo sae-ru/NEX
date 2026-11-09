@@ -20,9 +20,15 @@ now passed16 native/reference pairs over14 corrupt reply payloads, failed-sessio
 reuse refusal and direct protocol-trap forwarding. Three log/cache pairs kept
 9MiB worker files and diagnostic stdout separate from the framed protocol,
 with capture bounded to64KiB. These19 pairs executed22 physical GPU kernels.
-The ordinary0.164 SDK and pinned prepared provider remained unchanged. Header/
-progress fault injection, unknown-completion recovery, general GPU integration
-and complete installed SDK delivery remain separate requirements.
+The ordinary0.164 SDK and pinned prepared provider remained unchanged during
+that earlier corpus. The [subsequent transport/error correction](docs/evidence/macos-generated-Metal-transport-0.164.0-2026-11-09.json)
+rejects malformed frame/progress/error packets before the host API. It reproduced
+the original malformed-UTF-8 `E_FFI` outcome, then passed34 new pairs including
+valid Unicode at2048 bytes and cancellation/deadline over corrupt pending-GPU
+progress. Repeating all preceding corpora on the corrected provider passed74
+pairs and130 physical GPU kernels. The SDK inventory stayed unchanged; the new
+provider was built separately with Apple Clang. Unknown-completion recovery,
+general GPU integration and complete installed SDK delivery remain required.
 
 The earlier frozen0.163 Metal-tool source now passed
 [all301 groups in one unfiltered invocation](docs/evidence/macos-Metal-tools-full301-0.163.0-2026-11-09.json).
