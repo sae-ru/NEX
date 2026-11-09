@@ -173,6 +173,29 @@ def main():
    old_result=run(dialect+'-legacy-native',[old_built['executable'],'--nex-foreign',old_host,'--nex-task-workers','1']);assert old_result.stdout=='42\n'
    report['checks'].append({'dialect':dialect,'genuine_previous_resource_header':sha(fixture),'previous_resource_table_bytes':296,
     'native_and_independent_AST':True,'legacy_factory_borrow_close':True});save()
+   previous=directory/'parent-prefix-0163';previous.mkdir()
+   frozen=ROOT/'tests/fixtures/ffi-parent-prefix-0.163/nex_ffi.h'
+   assert sha(frozen)=='638e21da6a28639ee48828926a2875477d3cec5edae3ee2851ae2b1dcc0d0ffe'
+   previous_image=previous/'module.so'
+   run(dialect+'-parent-prefix-compile',[driver,'-x','c' if dialect=='C11' else 'c++','-std='+standard,'-shared','-fPIC','-pthread',
+    '-I'+str(ROOT/'runtime'),'-I'+str(directory),ROOT/'tests/legacy_parent_prefix_module.c','-o',previous_image])
+   (previous/'NOTICE').write_text('NEX frozen 0.163 parent-table producer\n', newline="\n")
+   previous_manifest={**manifest,'files':[{'path':n,'sha256':sha(previous/n)} for n in ['module.so','NOTICE']]}
+   write(previous/'manifest.json',previous_manifest);previous_pin=sha(previous/'manifest.json');previous_host=previous/'host.json'
+   write(previous_host,{**policy,'libraries':{'test':{'directory':str(previous),'manifest_sha256':previous_pin,'exports':list(signatures)}}})
+   for case in ['hidden_parent_scope_return','transitive_hidden_parents','close_during_admitted_factory']:
+    body,roots,children=CASES[case];label=dialect+'-parent-prefix-'+case;path=bundle(label,body,previous_pin)
+    reference=json.loads(run(label+'-reference',command('reference',path,previous_host)).stdout)
+    assert reference['output']=='42\n' and reference['external_capacity_after_scope']==0
+    built=json.loads(run(label+'-build',command('native',path,previous/'native')).stdout)
+    assert run(label+'-native',[built['executable'],'--nex-foreign',previous_host,'--nex-task-workers','1']).stdout=='42\n'
+    for mode in ['reference','native']:
+     events=(out/(label+'-'+mode+'.events')).read_text()
+     assert events.startswith('I') and events.endswith('D') and '!' not in events,events
+     assert events.count('A')==events.count('P')==roots and events.count('B')==events.count('C')==children,events
+     assert events.rfind('C')<events.index('P'),events
+    report['checks'].append({'dialect':dialect,'case':case,'genuine_previous_parent_header':sha(frozen),'previous_parent_table_bytes':304,
+     'native_and_independent_AST':True,'child_before_parent_destruction':True});save()
   assert sha(compiler)==report['compiler_sha256'];report.update(ok=True,state='passed',actual_producers=['C11','CPP20'],source_parent_FFI=True)
  except BaseException as error:
   report.update(state='failed',error=repr(error));raise

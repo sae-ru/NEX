@@ -50,6 +50,70 @@ int main(){try{
   require(api&&api->abi_version==1&&api->struct_size==sizeof(*api),"bad API table");
   require(nex_ffi_get_api(1,8)==api&&nex_ffi_get_api(1,0)==api,"prefix negotiation failed");
   require(!nex_ffi_get_api(0,0)&&!nex_ffi_get_api(2,0)&&!nex_ffi_get_api(1,UINT32_MAX),"unsupported ABI accepted");
+  require(NEX_FFI_V1_RESOURCE_PARENTS_SIZE<NEX_FFI_V1_TRAP_SIZE&&api->raise_trap&&nex_ffi_get_api(1,NEX_FFI_V1_RESOURCE_PARENTS_SIZE)==api,"trap slot changed a previous table prefix");
+ });
+ run("explicit fatal diagnostic is copied and cannot be swallowed or replaced",[]{
+  const std::string original="GPU overflow: Я 🧠";bool trapped=false;
+  try{call([&](auto c,auto a,auto,auto o){
+    std::string code="E_OVERFLOW",message=original;
+    require(api->raise_trap(c,reinterpret_cast<const uint8_t*>(code.data()),code.size(),reinterpret_cast<const uint8_t*>(message.data()),message.size())==NEX_FFI_HOST_TRAP,"explicit trap was not reported");
+    code.assign(code.size(),'X');message.assign(message.size(),'X');
+    int64_t unchanged=99;require(api->get_i64(c,a[0],&unchanged)==NEX_FFI_HOST_TRAP&&unchanged==99,"trap was not sticky");
+    require(api->raise_trap(c,nullptr,0,nullptr,0)==NEX_FFI_HOST_TRAP,"second packet replaced first trap");
+    *o=a[0];return NEX_FFI_OK;
+  },{Value(42)});}catch(const DataError &e){trapped=e.code=="E_OVERFLOW"&&std::string(e.what())==original;}
+  require(trapped,"explicit packet was translated, changed or swallowed");
+  require(call([](auto,auto a,auto,auto o){*o=a[0];return NEX_FFI_OK;},{Value(7)}).scalar==7,"trap leaked to a later invocation");
+ });
+ run("explicit UTF8 diagnostic code remains a fatal trap rather than transport status",[]{
+  error("E_UTF8",[]{call([](auto c,auto,auto,auto){return api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_UTF8"),6,reinterpret_cast<const uint8_t*>("strict input"),12);});});
+ });
+ run("original cancellation and deadline outrank a provider trap packet",[]{
+  for(const char *code:{"E_CANCELLED","E_TIMEOUT"}){unsigned polls=0;bool trapped=false;
+   try{call([&](auto c,auto a,auto,auto o){
+     // Even malformed provider data must not replace original host control.
+     require(api->raise_trap(c,nullptr,128,nullptr,2049)==NEX_FFI_HOST_TRAP,"original control lost");*o=a[0];return NEX_FFI_OK;
+   },{Value(42)},[&]{if(++polls==2)throw Trap(code,"original host control",47);});}
+   catch(const Trap &e){trapped=e.code==code&&e.line==47&&std::string(e.what())=="original host control";}
+   require(trapped,"provider trap replaced cancellation/deadline");
+  }
+ });
+ run("invalid explicit packets return statuses without installing a fatal trap",[]{
+  struct Packet{std::string code,message;nex_ffi_status status;};
+  for(const auto &p:std::vector<Packet>{{"E_","x",NEX_FFI_LIMIT},{std::string(129,'A'),"x",NEX_FFI_LIMIT},{"E_ASSERT",std::string(2049,'a'),NEX_FFI_LIMIT},
+      {"e_ASSERT","x",NEX_FFI_ARGUMENT},{"E_bad","x",NEX_FFI_ARGUMENT},{"E_Ω","x",NEX_FFI_ARGUMENT},
+      {std::string("E_A\0B",5),"x",NEX_FFI_ARGUMENT},{"E_ASSERT",std::string("a\0b",3),NEX_FFI_ARGUMENT},{"E_ASSERT",std::string(1,char(0xff)),NEX_FFI_UTF8}}){
+   auto result=call([&](auto c,auto a,auto,auto o){
+    require(api->raise_trap(c,reinterpret_cast<const uint8_t*>(p.code.data()),p.code.size(),reinterpret_cast<const uint8_t*>(p.message.data()),p.message.size())==p.status,"invalid trap packet status differs");
+    ok(api->poll(c));*o=a[0];return NEX_FFI_OK;
+   },{Value(42)});require(result.scalar==42,"invalid packet installed a trap");
+  }
+  call([](auto c,auto a,auto,auto o){require(api->raise_trap(c,nullptr,8,reinterpret_cast<const uint8_t*>("x"),1)==NEX_FFI_ARGUMENT,"null code accepted");require(api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,nullptr,1)==NEX_FFI_ARGUMENT,"null message accepted");*o=a[0];return NEX_FFI_OK;},{Value(42)});
+ });
+ run("maximum strict UTF8 packet and empty message retain exact owned bytes",[]{
+  for(const std::string message:{std::string(),std::string(2044,'a')+"🧠"}){std::string code="E_"+std::string(126,'A');bool trapped=false;
+   try{call([&](auto c,auto,auto,auto){return api->raise_trap(c,reinterpret_cast<const uint8_t*>(code.data()),code.size(),reinterpret_cast<const uint8_t*>(message.data()),message.size());});}
+   catch(const DataError &e){trapped=e.code==code&&std::string(e.what())==message;}require(trapped,"maximum or empty packet changed");
+  }
+ });
+ run("explicit packets consume the original copied-byte quota",[]{
+  ForeignCallLimits limits;limits.copiedBytes=11;
+  auto result=call([](auto c,auto a,auto,auto o){require(api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,reinterpret_cast<const uint8_t*>("four"),4)==NEX_FFI_LIMIT,"packet bypassed copy quota");*o=a[0];return NEX_FFI_OK;},{Value(42)},{},limits);
+  require(result.scalar==42,"copy quota failure installed an unrequested trap");
+ });
+ run("explicit trap tokens retain owner-thread and live-call checks",[]{
+  nex_ffi_call saved=0;
+  call([&](auto c,auto a,auto,auto o){saved=c;nex_ffi_status status=NEX_FFI_OK;std::thread worker([&]{status=api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,nullptr,0);});worker.join();require(status==NEX_FFI_THREAD,"wrong-thread trap accepted");*o=a[0];return NEX_FFI_OK;},{Value(42)});
+  require(api->raise_trap(saved,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,nullptr,0)==NEX_FFI_SCOPE,"expired trap call accepted");
+ });
+ run("nested invocation trap state is local to its genuine call token",[]{
+  error("E_ASSERT",[]{call([](auto outer,auto a,auto,auto out){
+    auto value=call([&](auto,auto innerArgs,auto,auto innerOut){require(api->raise_trap(outer,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,nullptr,0)==NEX_FFI_HOST_TRAP,"outer trap rejected");*innerOut=innerArgs[0];return NEX_FFI_OK;},{Value(9)});
+    require(value.scalar==9,"outer packet corrupted independent nested state");*out=a[0];return NEX_FFI_OK;
+  },{Value(42)});});
+ });
+ run("a later callback exception cannot replace its explicit fatal packet",[]{
+  error("E_DIV_ZERO",[]{call([](auto c,auto,auto,auto)->nex_ffi_status{require(api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_DIV_ZERO"),10,nullptr,0)==NEX_FFI_HOST_TRAP,"trap rejected");throw std::runtime_error("incorrect producer exception");});});
  });
  run("separately compiled C producer copies all scalar and binary kinds",[]{
   std::vector<uint8_t> storage{0,255,128,1};std::string text=std::string("Я\0",3)+"🧠";

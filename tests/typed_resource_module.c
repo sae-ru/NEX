@@ -46,6 +46,10 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
   if(value==-4)throw 42;
 #endif
   if(value==-1)return NEX_FFI_LIMIT;
+  if(value==-5){
+    if(api->struct_size<NEX_FFI_V1_TRAP_SIZE||!api->raise_trap)return NEX_FFI_ARGUMENT;
+    return api->raise_trap(call,(const uint8_t*)"E_OVERFLOW",10,(const uint8_t*)"partial factory overflow",24);
+  }
   if(value==-3)(void)api->poll(call);
   return NEX_FFI_OK;
 }

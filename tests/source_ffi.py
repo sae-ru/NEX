@@ -21,6 +21,7 @@ C=r'''
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+FATAL_EXAMPLE
 static void mark(char c){const char *p=getenv("NEX_SOURCE_FFI_MARKER");if(p){int f=open(p,O_WRONLY|O_CREAT|O_APPEND,0600);if(f>=0){(void)write(f,&c,1);close(f);}}}
 __attribute__((constructor)) static void start(void){mark('I');}
 __attribute__((destructor)) static void end(void){mark('D');}
@@ -46,7 +47,7 @@ class SourceFFI(harness.ToolchainCase):
             digest=hashlib.sha256(json.dumps(self.signatures[name],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
             rows.append('{sizeof(nex_ffi_export_v1),0,'+json.dumps(name)+','+json.dumps(digest)+','+body+',0}')
         bundle=self.root/'bundle';bundle.mkdir()
-        c=self.root/'producer.c';c.write_text(C.replace('EXPORTS',','.join(rows)), newline="\n")
+        c=self.root/'producer.c';c.write_text(C.replace('EXPORTS',','.join(rows)).replace('FATAL_EXAMPLE',(harness.REPO/'examples/ffi/fatal_trap.c').read_text()), newline="\n")
         driver=self.cli('doctor')['native_compiler']
         if os.name=='nt':driver=str(Path(driver).with_name('clang.exe'))
         output=bundle/('module.dll' if os.name=='nt' else 'module')
@@ -158,6 +159,34 @@ server test fn checks()->unit!{ffi}{assert(echo(42)==42);done();}
         self.cli('check',env=self.env);self.assertEqual(self.events(),'')
         self.both('41\n42\n')
         context=self.cli('context','--symbol','echo');self.assertEqual(context['foreign'],{'library':'test','export':'echo','manifest_sha256':self.pin})
+
+    def test_explicit_host_fatal_trap_bypasses_source_catch_and_finally(self):
+        template='''module trapffi;
+server extern fn fatal(code:str,message:str)->unit !{ffi}=foreign("test","fatal","@PIN@");
+client fn client_value()->i64{return 42;}
+server fn main()->unit !{ffi,io,throw}{
+ try { fatal("@CODE@","GPU diagnostic: Я 🧠"); print("after"); }
+ catch(code,message) { print("caught"); }
+ finally { print("finalized"); }
+}
+'''
+        self.program(template.replace('@CODE@','E_OVERFLOW'),{'fatal':'nex_example_raise_trap'})
+        self.assertEqual(self.events(),'')
+        capability=self.cli('describe','--field','foreign_trap_reporting')
+        pack=json.loads((harness.REPO/'llm/language-pack.json').read_text())
+        self.assertEqual(capability['value'],pack['foreign_trap_reporting'])
+        for code in ['E_OVERFLOW','E_DIV_ZERO','E_ASSERT','E_GPU_STEP_LIMIT']:
+            self.source(template.replace('@PIN@',self.pin).replace('@CODE@',code))
+            failed=self.cli('eval','--foreign',self.host,env=self.env,ok=False)
+            self.assertEqual(failed['code'],code);self.assertIn('GPU diagnostic: Я 🧠',failed['message'])
+            for profile in ['debug','release']:
+                failed=self.cli('run','--foreign',self.host,'--profile',profile,env=self.env,timeout=180,ok=False)
+                self.assertEqual((failed['exit_code'],failed['stdout']),(70,''))
+                self.assertIn(code,failed['stderr']);self.assertIn('GPU diagnostic: Я 🧠',failed['stderr'])
+        web=self.root/'web';self.cli('emit','--kind','typescript','--entry','client_value','--directory',web)
+        # The emitted client retains no server code or native capability.
+        emitted=web.read_text() if web.is_file() else '\n'.join(p.read_text() for p in web.rglob('*.ts'))
+        self.assertNotIn(self.pin,emitted);self.assertNotIn('raise_trap',emitted)
 
     @unittest.skipUnless(platform.system()=='Darwin','Darwin @rpath install-name regression')
     def test_external_native_program_finds_explicit_rpath_crypto_library(self):

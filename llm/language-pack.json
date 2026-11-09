@@ -1,6 +1,34 @@
 {
   "schema": "nex.language-pack/1",
   "language_version": "0.28",
+  "foreign_trap_reporting": {
+    "status": "development",
+    "introduced_toolchain": "0.164.0",
+    "source_support": true,
+    "header": "runtime/nex_ffi.h",
+    "guide": "docs/ffi-design.md",
+    "C_table_prefix": "NEX_FFI_V1_TRAP_SIZE",
+    "function": "raise_trap",
+    "abi_version": 1,
+    "code_pattern": "E_[A-Z0-9_]+",
+    "code_bytes_min": 3,
+    "code_bytes_max": 128,
+    "message_bytes_max": 2048,
+    "strict_UTF8": true,
+    "NUL_allowed": false,
+    "copies_packet": true,
+    "sticky": true,
+    "valid_status": "NEX_FFI_HOST_TRAP",
+    "original_host_control_precedence": true,
+    "physical_settlement_required": true,
+    "source_throw": false,
+    "language_migration_required": false,
+    "task_ABI": 7,
+    "pending": [
+      "matching full compiler regression",
+      "installed SDK and supported native platforms"
+    ]
+  },
   "native_runtime_search": {
     "status": "development",
     "platform": "ELF/Linux",

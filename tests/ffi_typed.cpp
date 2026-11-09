@@ -50,6 +50,19 @@ int main(int argc,char **argv){try{
   std::cout<<encodeJSON(invokeForeignTyped(nex_example_c_nominal,args,contract))<<'\n';return 0;
  }
  unsigned count=0;auto run=[&](const char *name,auto body){auto fds=descriptors();body();require(liveObjects==0,"managed value leak");require(descriptors()==fds,"descriptor leak");++count;std::cout<<"PASS "<<name<<std::endl;};
+ run("explicit fatal traps precede nominal and unit return validation",[]{
+  for(auto s:{signature(J::array({primitive("i64"),record("Box",J::array({field("value",0)}))}),J::array({0}),1),
+              signature(J::array({primitive("i64"),primitive("unit")}),J::array({0}),1)}){
+   bool trapped=false;
+   try{typed([](auto c,auto a,auto,auto o){
+    nex_ffi_ref retained=0;const uint8_t bytes[]={0,255,128};
+    ok(api->make_bytes(c,bytes,sizeof(bytes),&retained));
+    require(api->raise_trap(c,reinterpret_cast<const uint8_t*>("E_ASSERT"),8,reinterpret_cast<const uint8_t*>("typed fatal: Я"),15)==NEX_FFI_HOST_TRAP,"typed trap rejected");
+    *o=a[0];return NEX_FFI_OK; // deliberately wrong for either result signature
+   },s,{Value(42)});}catch(const DataError &e){trapped=e.code=="E_ASSERT"&&std::string(e.what())=="typed fatal: Я";}
+   require(trapped,"return validation or ignored status replaced explicit trap");
+  }
+ });
  run("scalar signatures reject wrong arguments before entering C",[]{
   auto s=integer();bool entered=false;error("E_FFI_TYPE",[&]{typed([&](auto,auto,auto,auto){entered=true;return NEX_FFI_OK;},s,{Value(1,true)});});require(!entered,"wrong argument entered C");
   error("E_FFI_TYPE",[&]{typed(echo,s,{});});require(typed(echo,s,{Value(42)}).scalar==42,"typed scalar roundtrip differs");

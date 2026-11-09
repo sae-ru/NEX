@@ -27,6 +27,13 @@ Toolchain0.162.1 develops [selected ELF runtime search ordering](native-runtime-
 It changes native dependency resolution and diagnostics, without changing source
 syntax, effects, value semantics, canonical identities or graph migration rules.
 
+Toolchain0.164 adds [explicit fatal diagnostic packets](ffi-design.md#explicit-fatal-diagnostics-0164)
+to the append-only trusted C API. Native/reference external calls preserve the
+packet's code and message as a runtime trap, bypassing source catches and user
+finalizers while retaining owned cleanup. This is distinct from a source
+`throw` or an ordinary `result<T>` failure. Language0.28, its grammar and graph
+identities, task ABI7 and C ABI major1 remain unchanged; no migration is needed.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external

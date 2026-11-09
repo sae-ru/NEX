@@ -115,7 +115,7 @@ contract; production-browser and installed-SDK acceptance remain separate.
 | Web/API/server | browser_workers, api_features, wasm_features | web, api, server, wasm, browser-worker |
 | CPU tasks and IO | source_concurrency, structured_tasks_runtime, task_file_reads, task_file_writes, task_file_streams | concurrency, task-lifetime, task-limits, task-file-reads, task-file-writes, task-file-streams |
 | DNS/TCP/HTTP clients and response streams | dns_provider, tcp_provider, http_client_provider, http_response_streams | dns, tcp, http-client, http-stream |
-| Resources and FFI | source_resources, foreign_boundary, resource_regions, task_foreign_prototype | source-resources, ffi, resource-regions, task-foreign-source |
+| Resources and FFI | source_resources, foreign_boundary, foreign_trap_reporting, resource_regions, task_foreign_prototype | source-resources, ffi, resource-regions, task-foreign-source |
 | Compute/models/devices | compute, model, device | compute, model, device |
 | Debug/profile | debug_features, task_debugging, task_provider_debugging, task_profiling, task_provider_profiling | debug, expression, task-debug, task-provider-debug, profile, task-provider-profile |
 
@@ -192,6 +192,12 @@ Preserve original grants, atomic owner transfer, hidden parent/code retention
 and child-before-parent cleanup. Ended logical owners cannot revive. Never
 retain borrowed source frames or C call/type/value tokens on IO workers.
 No opaque authority crosses wire/browser/file/unstructured-parallel boundaries.
+For a fatal native/device failure, query `foreign_trap_reporting` before using
+the appended C API `raise_trap`. Negotiate its table prefix, settle admitted
+physical work, then report a bounded copied packet. It bypasses source catches
+and user finalizers; runtime cleanup remains mandatory. Recoverable application
+errors remain `result<T>` values. `unwrap(err(...))` reports `E_RESULT`; it does
+not preserve the error code as a fatal trap. Source `throw` remains distinct.
 
 Source task/ffi resource transport differs from binary task-provider exports.
 Current027 static/fixed-shared images use ABI7 records14/15/16, requirement

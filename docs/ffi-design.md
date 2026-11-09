@@ -135,6 +135,43 @@ interrupted by this transport. Pure value operations consume the operation
 budget; `poll` invokes the supplied host callback. Source adapters must bind it
 to the native request/interpreter budget and cancellation mechanism.
 
+## Explicit fatal diagnostics (0.164)
+
+Trusted native/device modules may report a fatal runtime diagnostic with the
+appended `raise_trap(call, code, code_size, message, message_size)` slot. Negotiate
+`NEX_FFI_V1_TRAP_SIZE` before accessing it. C ABI major1 and every older table
+prefix retain their layout, including `NEX_FFI_V1_RESOURCE_PARENTS_SIZE`.
+Older hosts reject the larger minimum size; older modules continue to use only
+their known prefix.
+
+The host copies both buffers during the call. The code has3..128 ASCII bytes
+matching `E_[A-Z0-9_]+`; the message has0..2048 strict UTF-8 bytes. Neither may
+contain NUL. Copies and operations consume the original per-call budgets. An
+invalid packet returns the corresponding status without installing a trap;
+failed imports may still consume budget. Null is permitted only for a zero-byte
+message. The [C example](../examples/ffi/fatal_trap.c) copies source strings into
+bounded local buffers, then submits the packet without an exception crossing C.
+
+A valid packet returns `NEX_FFI_HOST_TRAP` and becomes sticky for that genuine
+call token. Ignoring the status, returning a different output/status or throwing
+a later callback exception cannot replace it. The invocation rethrows the owned
+diagnostic before return-type validation. Host polling runs first, so an already
+observed cancellation/deadline retains its original code and location. Subsequent
+calls have independent state. Expired tokens and wrong-thread access are rejected
+as before. Reporting a trap does not grant callbacks into NEX.
+
+This path reports a runtime trap, bypassing source catches and user `finally`
+blocks. It preserves runtime cleanup, partial-factory destruction, physical byte
+charges and admitted-operation leases. It adds no source syntax/effect or graph
+migration, and does not change task ABI7. Recoverable application errors remain
+ordinary `result<T>` values; `unwrap(err(...))` still raises `E_RESULT` rather than
+forwarding the contained code. Source `throw` still raises a catchable source error.
+
+The provider must finish admitted physical work and settle its owned resources
+before reporting. This API cannot prove that a driver fence has completed or
+make arbitrary native code safe. General GPU backends and matching installed SDK
+and platform qualification remain separate from this transport feature.
+
 ## Checked host signatures (0.38)
 
 Export a concrete named function's value contract without executing it:

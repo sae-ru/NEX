@@ -185,6 +185,18 @@ nex_ffi_status makeFailure(nex_ffi_call c,const uint8_t *code,uint64_t cn,const 
 nex_ffi_status retain(nex_ffi_call c,nex_ffi_ref r,nex_ffi_ref *o) noexcept {return guarded(c,[&](State &s){output(o);auto e=s.entry(r);*o=s.add(e.value,e.depth);});}
 nex_ffi_status release(nex_ffi_call c,nex_ffi_ref r) noexcept {return guarded(c,[&](State &s){auto i=s.refs.find(r);require(i!=s.refs.end(),NEX_FFI_REF);s.refs.erase(i);});}
 nex_ffi_status poll(nex_ffi_call c) noexcept {return guarded(c,[](State &s){s.hostPoll();});}
+nex_ffi_status raiseTrap(nex_ffi_call c,const uint8_t *code,uint64_t codeSize,const uint8_t *message,uint64_t messageSize) noexcept {
+  return guarded(c,[&](State &s){
+    // Preserve the original request control before accepting a provider trap.
+    s.hostPoll();
+    require(codeSize>=3&&codeSize<=128&&messageSize<=2048,NEX_FFI_LIMIT);
+    auto copiedCode=importText(s,code,codeSize),copiedMessage=importText(s,message,messageSize);
+    require(copiedCode.starts_with("E_")&&std::all_of(copiedCode.begin()+2,copiedCode.end(),[](unsigned char ch){return (ch>='A'&&ch<='Z')||(ch>='0'&&ch<='9')||ch=='_';}),NEX_FFI_ARGUMENT);
+    require(copiedMessage.find('\0')==std::string::npos,NEX_FFI_ARGUMENT);
+    s.hostTrap=std::make_exception_ptr(DataError(std::move(copiedCode),std::move(copiedMessage)));
+    std::rethrow_exception(s.hostTrap);
+  });
+}
 nex_ffi_status argumentType(nex_ffi_call c,uint64_t i,nex_ffi_type *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typeToken(s.typed().parameter(i));});}
 nex_ffi_status resultType(nex_ffi_call c,nex_ffi_type *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typeToken(s.typed().resultType());});}
 nex_ffi_status typeKind(nex_ffi_call c,nex_ffi_type r,uint32_t *o) noexcept {return guarded(c,[&](State &s){output(o);*o=s.typed().kind(s.type(r));});}
@@ -238,7 +250,7 @@ nex_ffi_status resourceBorrow(nex_ffi_call c,nex_ffi_ref r,nex_ffi_type t,void *
 nex_ffi_status resourceClose(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);s.hostPoll();auto value=resource(s,r);*o=value.close()?1:0;});}
 nex_ffi_status resourceIsOpen(nex_ffi_call c,nex_ffi_ref r,uint32_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).isOpen()?1:0;});}
 nex_ffi_status resourceIdentity(nex_ffi_call c,nex_ffi_ref r,uint64_t *o)noexcept{return guarded(c,[&](State &s){output(o);*o=resource(s,r).identity();});}
-const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature,resourceCreate,resourceBorrow,resourceClose,resourceIsOpen,resourceIdentity,resourceCreateWithParents};
+const nex_ffi_api_v1 api={NEX_FFI_ABI_V1,uint32_t(sizeof(nex_ffi_api_v1)),getKind,getI64,getF64,getBool,byteSize,copyBytes,childCount,child,labelSize,copyLabel,identity,makeI64,makeF64,makeBool,makeString,makeBytes,makeList,makeSuccess,makeFailure,retain,release,poll,argumentType,resultType,typeKind,typeChildCount,typeChild,typeVariantCount,makeNominal,signatureSize,copySignature,resourceCreate,resourceBorrow,resourceClose,resourceIsOpen,resourceIdentity,resourceCreateWithParents,raiseTrap};
 }
 
 extern "C" const nex_ffi_api_v1 *nex_ffi_get_api(uint32_t abi,uint32_t minimum){
