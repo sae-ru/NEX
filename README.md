@@ -60,8 +60,10 @@ message while retaining cleanup and existing host-control precedence. Existing
 C table prefixes, source error/Result semantics and graph history are unchanged.
 The [scoped0.164 record](docs/evidence/macos-explicit-FFI-traps-0.164.0-2026-11-09.json)
 passed all targets, nine FFI/resource/discovery groups and21 native/reference
-Metal pairs with36 physical GPU events. Matching full source and complete
-installed SDK qualification remain pending.
+Metal pairs with36 physical GPU events. The exact runtime source has since
+passed [all 301 macOS groups](docs/evidence/macos-current-source-full301-0.164.0-2026-11-09.json)
+in one unfiltered invocation. Matching complete installed SDK and remaining
+platform qualification remain pending.
 The earlier0.163 candidate remains separately pinned below.
 The new candidate installs discoverable Metal provider tools and checks their
 actual source/FFI signatures and all27 hardware/reply fixtures without a driver.

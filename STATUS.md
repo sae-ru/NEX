@@ -12,8 +12,11 @@ physical GPU events. Three original CPU trap codes agree in reference/Debug/Rele
 GPU step limits and cancellation/deadline precedence over overflow retain their
 separate expectations. Both valid and failed queued commands settle before
 parent release; failed outputs are not published. The original failed trace
-expectation is retained. Complete matching regression/SDK/platform qualification
-remains pending.
+expectation is retained. The exact 0.164 runtime source subsequently passed
+[all 301 macOS groups](docs/evidence/macos-current-source-full301-0.164.0-2026-11-09.json)
+in one unfiltered invocation, with unchanged deadlines and preserved primary
+source/graph. Matching SDK and remaining platform qualification remain pending;
+later Windows builder and experimental provider changes have separate records.
 
 The separate [generated-protocol corpus](docs/evidence/macos-generated-Metal-protocol-0.164.0-2026-11-09.json)
 now passed16 native/reference pairs over14 corrupt reply payloads, failed-session
