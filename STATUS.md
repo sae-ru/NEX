@@ -12,6 +12,9 @@ acceptance remain pending. Earlier accepted archives retain their exact scope.
 The [private float-header correction](docs/macos-float-header-compatibility.md)
 addresses the actual packaged-Clang22 Metal compilation failure without changing
 source LLVM installations or redefining numeric constants.
+The [scoped development receipt](docs/evidence/macos-Metal-SDK-tools-0.163.0-2026-11-09.json)
+records the actual all-target build, changed groups, installed source checks and
+six physical GPU events through the corrected-header prerequisite.
 
 # Earlier0.162.2 qualification — 2026-11-09
 

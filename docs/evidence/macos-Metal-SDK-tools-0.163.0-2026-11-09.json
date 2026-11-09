@@ -1,0 +1,81 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "toolchain": "0.163.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "all-targets-changed-source-groups-and-Metal-header-prerequisites-passed-complete-SDK-pending",
+  "source_commit": "fb170e0db79af27adda81c9fb86d2d42d3a25a21",
+  "source_files": 2070,
+  "compiler_sha256": "9a7641eff2a95641a0d92c04fc519121aaefd76ac3221ec0156b8c2d3ced9602",
+  "source_build": {
+    "all_targets": true,
+    "CMake_build_jobs": 4,
+    "changed_CTest_groups": [
+      "owned_device_contract",
+      "discovery",
+      "sdk_archives"
+    ],
+    "complete301": false
+  },
+  "ordinary_installation": {
+    "source_commit": "d503f1921b499fa7eaaba1f7f3344a6b0bd93bc3",
+    "compiler_sha256": "d022c0b73b58acc249fc5fea63749b7f86170409825eda8eb908a581b138438c",
+    "installed_Metal_tool_files": 12,
+    "actual_preparation_FFI_signatures": 7,
+    "accepted_scenario_sources": 27,
+    "missing_effect_rejections": 1,
+    "source_only_with_unavailable_Apple_SDK_and_CXX": true,
+    "SDK_inventory_unchanged": true,
+    "driver_initialized": false,
+    "hardware_executed": false
+  },
+  "private_Clang22_header_correction": {
+    "schema": "nex.macos-libcxx-float-compat/1",
+    "source_sha256": "f0657a33777c5c9ce20516428a73dee88194e8482e35789fe5e46fec23ddc2ea",
+    "patched_sha256": "6f661af6848b667cb95cdcfc35642bcdd37e86d9f40b31563a86fa1e5f97122d",
+    "change": "Forward __need_infinity_nan outside the ordinary libc++ header guard; retain the complete original header.",
+    "unknown_input_digest_rejected": true,
+    "original_source_installations_and_existing_SDKs_unchanged": true,
+    "include_order_native_controls": 2,
+    "FLT_DBL_INFNAN_and_finite_predicates_preserved": true,
+    "original_Metal_worker_compiled_unchanged": true
+  },
+  "physical_header_prerequisite": {
+    "NEX_source_commit": "d503f1921b499fa7eaaba1f7f3344a6b0bd93bc3",
+    "NEX_compiler_sha256": "d022c0b73b58acc249fc5fea63749b7f86170409825eda8eb908a581b138438c",
+    "header_fix_source_commit": "fb170e0db79af27adda81c9fb86d2d42d3a25a21",
+    "packaged_CXX_sha256": "28f22c4ee3f64a2350167a1cb428bb6d0cb6b4bd1ff9cb78c136098b7908b0ee",
+    "explicit_private_header_override": true,
+    "native_reference_pairs": 3,
+    "physical_GPU_kernel_events": 6,
+    "cases": [
+      "small_cpu_oracle",
+      "cancel_enqueued_GPU",
+      "deadline_enqueued_GPU"
+    ],
+    "matching_archive_acceptance": false
+  },
+  "retained_failures": [
+    "Original packaged-Clang22 Metal worker compile failed with missing INFINITY.",
+    "Including cmath first compiled that worker but lost FLT_MAX/DBL_MAX; both failures remain recorded."
+  ],
+  "raw_evidence": {
+    "raw_files": 154,
+    "raw_bytes": 2025290,
+    "raw_archive_sha256": "c20a8652e6b34133eb705ebe7ccd6d0f0a85a75147e224bc54fde9e67cb6f3b1",
+    "raw_archive_bytes": 344283
+  },
+  "pending": [
+    "Fresh exact-source full301 and controller retirement.",
+    "New immutable SDK ordinary assembly, relocation/archive restore, complete82+184 and six post gates.",
+    "Both actual SDK relocations must compile Metal using their own bundled LLVM and pass all60 native/reference pairs and88 GPU events.",
+    "Independent complete archive/source/inventory sealing and all remaining platform/original PLAN work."
+  ],
+  "limits": [
+    "The three-pair physical run is a header compatibility prerequisite using an explicit private header override, not acceptance of a new immutable SDK.",
+    "The earlier thirty-pair Metal experiment and earlier SDK archives retain their original source/toolchain identities.",
+    "No language syntax, task ABI, graph migration or numerical semantics change is introduced.",
+    "No main promotion, GitHub push, new binary release or completion of the original PLAN is claimed."
+  ]
+}
