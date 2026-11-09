@@ -1,0 +1,55 @@
+{
+  "schema": "nex.native-Z3-source-input/1",
+  "version": "5.3.1",
+  "tag": "z3-5.3.1",
+  "commit": "ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+  "source_url": "https://codeload.github.com/Z3Prover/z3/tar.gz/ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+  "source_sha256": "33558971c286653d47b03f97f9f973d0350629c827cacda2583608ba14d74ea6",
+  "source_bytes": 7876101,
+  "release_url": "https://github.com/Z3Prover/z3/releases/tag/z3-5.3.1",
+  "upstream_source_patches": [],
+  "native_CXX_standard_library_packages": [
+    {
+      "Package": "libc++-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Filename": "pool/main/l/llvm-toolchain-22/libc++-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb",
+      "Size": "1515036",
+      "SHA256": "37f0be25293d4a5fe56d6276bc368c171bfc7150f20e48ab02b19da9f46a6ec2",
+      "Depends": "libc++1 (>= 1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86), libc++abi-22-dev (= 1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86)"
+    },
+    {
+      "Package": "libc++1",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Filename": "pool/main/l/llvm-toolchain-22/libc++1_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb",
+      "Size": "322376",
+      "SHA256": "5232c3744a526ad423e8aaa7caff519c5ec0f1911ba8e13f9aa60fa9ca3a08c8",
+      "Depends": "libc++abi1 (>= 1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86), libc6 (>= 2.34), libgcc-s1 (>= 3.0)"
+    },
+    {
+      "Package": "libc++abi-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Filename": "pool/main/l/llvm-toolchain-22/libc++abi-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb",
+      "Size": "139128",
+      "SHA256": "245f6a5d836a8449f4389d43adcf47447890f3b5083f505b19893e18af603c95",
+      "Depends": "libc++abi1 (>= 1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86)"
+    },
+    {
+      "Package": "libc++abi1",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Filename": "pool/main/l/llvm-toolchain-22/libc++abi1_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb",
+      "Size": "113220",
+      "SHA256": "bd7f8c7cbc29f56daccc31cf2bf056b7230345d800d276b75b5ddc09467dce0b",
+      "Depends": "libc6 (>= 2.18), libgcc-s1 (>= 3.0)"
+    }
+  ],
+  "native_CXX_package_authentication": "Same signature-verified LLVM22 Bookworm InRelease/Packages snapshot as compiler-bookworm-arm64.json",
+  "native_CXX_compiler": "Clang22.1.8 with private libc++22.1.8; system GCC12 library lacks <format>",
+  "native_CXX_layout": {
+    "include": "usr/lib/llvm-22/include/c++/v1",
+    "libraries": "usr/lib/aarch64-linux-gnu"
+  }
+}

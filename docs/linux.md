@@ -1,5 +1,13 @@
 # Linux compiler and development chain
 
+For a native Debian12 ARM64 baseline, see the [Bookworm compiler guide](linux-native-compiler.md)
+and its exact LLVM/MLIR22.1.8 package pin. All730 source targets built and the
+compiler launched with system glibc2.36. The system Z3 cohort passed ten of eleven
+bounded-verification methods; the unchanged5.3.1 solver is being rebuilt natively
+before complete regression. This source/dependency milestone does not qualify a
+portable SDK. The raw failed proof and omitted package-notice argument remain
+recorded in its development receipt.
+
 The [physical Astra x86-64 component record](evidence/astra-source-development-2026-11-05.json)
 pins development0.162 source `f4db4dd`: all targets built on system glibc2.28 with
 the existing private LLVM/MLIR22.1.8 toolchain. Native Debug/Release and reference

@@ -1,0 +1,141 @@
+{
+  "schema": "nex.linux-native-compiler-prerequisites/1",
+  "distribution": "Debian12 Bookworm",
+  "architecture": "arm64",
+  "compiler_LLVM_MLIR_version": "22.1.8",
+  "apt_version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+  "repository": "https://apt.llvm.org/bookworm/",
+  "repository_signing_key_fingerprint": "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421",
+  "signed_InRelease_sha256": "912f03b6d97e78ff65bdab22078b560cb4ad91ddde217e2edd0bd056e6235313",
+  "signed_Packages_gz_sha256": "15d81cdc81338d2d3acee107d90eca0bf325859d9ce14f943a12aff5b00137dc",
+  "packages": [
+    {
+      "Package": "clang-22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "164760",
+      "SHA256": "430590ea84b21d717552bfb03bf7e71cb69250b5782d604e4983355938d8c66c",
+      "Filename": "pool/main/l/llvm-toolchain-22/clang-22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "llvm-22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "17292852",
+      "SHA256": "878c536b259cc7a5991bade55ec145f5da1ca3a38abc0a9acb97bd78e5222851",
+      "Filename": "pool/main/l/llvm-toolchain-22/llvm-22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "llvm-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "46062108",
+      "SHA256": "082752929c1dea29b0ae96aa27da3317455b01db20539c0db03ff6034282ac7d",
+      "Filename": "pool/main/l/llvm-toolchain-22/llvm-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "llvm-22-runtime",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "551420",
+      "SHA256": "ccccf22c86c47c5c1afa50c5d6944782ce89e78a0b579880e963ceed8200ba00",
+      "Filename": "pool/main/l/llvm-toolchain-22/llvm-22-runtime_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "llvm-22-tools",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "473296",
+      "SHA256": "c68d2b3476b755d866b2be6a1b804d456b7a4dca03933697a598ac88b68df1a5",
+      "Filename": "pool/main/l/llvm-toolchain-22/llvm-22-tools_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "llvm-22-linker-tools",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "1077916",
+      "SHA256": "4608bb4585119fb032283af2f43cf4bbea46c23a674855676f8ed62ac2a56e0e",
+      "Filename": "pool/main/l/llvm-toolchain-22/llvm-22-linker-tools_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "lld-22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "1326272",
+      "SHA256": "11abd3e0f3a594d1bb27c5e400dd35fc6ccf98f5f866ce41aa336663c8e39c28",
+      "Filename": "pool/main/l/llvm-toolchain-22/lld-22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libllvm22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "26446048",
+      "SHA256": "1c1ad88f557a6d321245768ccd0a6d1d8d4a7815ec473695d81b916512db3cc1",
+      "Filename": "pool/main/l/llvm-toolchain-22/libllvm22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libclang-cpp22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "12050100",
+      "SHA256": "e2117043e8e4705a0e2b096673f62025e67757d356e3d184548d6a8bc1b22835",
+      "Filename": "pool/main/l/llvm-toolchain-22/libclang-cpp22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libclang1-22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "7197512",
+      "SHA256": "6bc540faf8abf36819135fdc34fee31ab26a4773e5e231482da4686bd0afd537",
+      "Filename": "pool/main/l/llvm-toolchain-22/libclang1-22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libclang-common-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "806340",
+      "SHA256": "db154a9a49a01c53a0655cc3f08efa7b896aebdae9db3249a7a6121eb72e67a3",
+      "Filename": "pool/main/l/llvm-toolchain-22/libclang-common-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libclang-rt-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "2112860",
+      "SHA256": "17f0cf89eef49d3e006a9b77af8f7a8c2e7248c83e2fc94fb7350b39c85dc272",
+      "Filename": "pool/main/l/llvm-toolchain-22/libclang-rt-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libmlir-22",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "15582044",
+      "SHA256": "bac9ee266ac27563f4a88fbe25a1469ceaee5f10dc07bf1a07287cd0e9927016",
+      "Filename": "pool/main/l/llvm-toolchain-22/libmlir-22_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "libmlir-22-dev",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "33816508",
+      "SHA256": "f20a63540cf8ecfbf4ef01c5c27b739928c8e26a44fd280e93e71cf4f1e1d5ab",
+      "Filename": "pool/main/l/llvm-toolchain-22/libmlir-22-dev_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    },
+    {
+      "Package": "mlir-22-tools",
+      "Version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+      "Architecture": "arm64",
+      "Size": "25599488",
+      "SHA256": "2096e43d286e9ad8c3a62bcfc961384e661abddb9fee0c37e92cf8280182216a",
+      "Filename": "pool/main/l/llvm-toolchain-22/mlir-22-tools_22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86_arm64.deb"
+    }
+  ],
+  "LLVM_system_Z3_dependency": {
+    "version": "4.8.12",
+    "SONAME": "libz3.so.4",
+    "scope": "Native LLVM package dependency; NEX solver selection remains separate."
+  },
+  "NEX_Z3_source_pin": "z3-bookworm-source.json",
+  "deployment_scope": "Private extraction with dpkg-deb -x; native system glibc2.36/GCC12; no private glibc interpreter or global package changes.",
+  "complete_NEX_source_or_portable_SDK_accepted": false
+}

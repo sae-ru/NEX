@@ -1,0 +1,63 @@
+{
+  "schema": "nex.native-Bookworm-compiler-development-evidence/1",
+  "date": "2026-11-09",
+  "summary": {
+    "source_commit": "e63b6c6376f85d79740c80ddd6e32e7ceddca794",
+    "source_files": 2038,
+    "compiler_sha256": "73da44b25b8412918ec4e1b8e84003284f1205c20eac2cffd6b573eadfd11e8a",
+    "compiler_build": "6371956eab251589f6680c352f81a72f957d72efa17e10b5c02ab7e2d2946ef6",
+    "native_first_launch_passed": true,
+    "native_system_interpreter_verified": true,
+    "all_targets_built": true,
+    "Ninja_steps": 730,
+    "native_LLVM_MLIR": "22.1.8",
+    "selected_Z3": "4.8.12.0",
+    "signed_native_packages_verified": 15,
+    "repository": "https://apt.llvm.org/bookworm/",
+    "apt_version": "1:22.1.8~++20260714014842+ca7933e47d3a-1~exp1~20260714134950.86",
+    "signing_fingerprint": "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421",
+    "InRelease_sha256": "912f03b6d97e78ff65bdab22078b560cb4ad91ddde217e2edd0bd056e6235313",
+    "Packages_gz_sha256": "15d81cdc81338d2d3acee107d90eca0bf325859d9ce14f943a12aff5b00137dc",
+    "original_bounded_verification_methods": 11,
+    "passed_methods": 10,
+    "failed_methods": 1,
+    "failure": "checked::step checked_arithmetic obligation returned unknown/canceled with original2000ms and1000000rlimit",
+    "full303_or_portable_SDK_accepted": false,
+    "source_rehashed": true,
+    "owner_retired": true,
+    "individual_limits_changed": false,
+    "missing_operator_notice_CMake_option_detected": true
+  },
+  "immutable_raw_evidence": {
+    "raw_files": 66,
+    "raw_bytes": 3893090,
+    "archive_bytes": 368864,
+    "archive_sha256": "4666b69c59d045329daf720e66007bde0bef7e4dbdc9878c3ae2f78ac0c1a974"
+  },
+  "next_solver_source_commit": "ac9156f97cb44e56472e1c841f7a2beb1e976b24",
+  "next_solver_source_archive_sha256": "33558971c286653d47b03f97f9f973d0350629c827cacda2583608ba14d74ea6",
+  "native_Z3_531_build_and_NEX_requalification_pending": true,
+  "all_original_limits_preserved": true,
+  "whole_original_PLAN_complete": false,
+  "native_Z3_GCC12_build_failed_missing_format": true,
+  "native_Clang22_private_libcxx22_format_compile_and_execute_passed": true,
+  "native_Z3_build_setup_failures_retained": true,
+  "native_Z3_build_and_latest_NEX_qualification_pending": true,
+  "native_format_probe": {
+    "format_probe_source_sha256": "704713e26da88130c035c58b7b87257bfb3eab23264e8c3b0163b381c0174d24",
+    "format_probe_executable_sha256": "a07df7140df125206ded460b96f5008c56af0e24338efce2cc948051abee40b9",
+    "format_probe_stdout": "42\n",
+    "format_probe_stdout_sha256": "084c799cd551dd1d8d5c5f9a5d593b2e931f5e36122ee5c793c1d08a19839cc0"
+  },
+  "native_CXX_packages_independently_rehashed": 4,
+  "namespace_prerequisite_preflight": {
+    "exit_code": 0,
+    "actual_result": {
+      "ok": true,
+      "private_source_absent": true,
+      "IPv4_IPv6_loopback": true,
+      "visible_process_directories": 2
+    },
+    "source_or_SDK_acceptance_claimed": false
+  }
+}
