@@ -1,0 +1,45 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-09",
+  "toolchain": "0.162.2",
+  "language": "0.28",
+  "task_ABI": 7,
+  "status": "actual-optional-LLDB-source-object-compiled-full-build-and-runtime-pending",
+  "component": "optional private Windows LLDB 23.1.4 AppContainer named-pipe patch",
+  "patch_sha256": "3e029317ea82468cba61c69f5a7186517101793a46932047e3363863e80cdbb3",
+  "source_before_sha256": "f045362d53441958b255331aaa73448e4e749a8c56dab2b841ab938314ba714d",
+  "source_after_sha256": "54b0de6c7b200e9e65cc221279ab03f1f9112e393116d96b9c2c2b3bcf99a7e4",
+  "native_object": {
+    "format": "COFF x86-64",
+    "sha256": "8556dd4e8b8d70fd6b96a3cdf0e39d1e7095dc83bc0d176abcad344d493faaae",
+    "bytes": 32113,
+    "actual_token_API_references_and_new_helper_present": true
+  },
+  "validation": {
+    "command": "Actual prior LLVM Ninja compilation database; retain compiler, includes, language level and flags; redirect only input source, object and dependency outputs into a new diagnostic prefix.",
+    "parent_exit_code": 0,
+    "compiler_stderr_bytes": 0,
+    "kernel_job_assignment_before_resume": true,
+    "active_job_processes": 0,
+    "controller_retired": true,
+    "old_source_and_old_object_unchanged": true
+  },
+  "raw_evidence": {
+    "raw_files": 15,
+    "raw_bytes": 155494,
+    "raw_archive_sha256": "bfb059d0541db509b70a21a20a1c55dbf1137945dd4f1336b0c99b970698d81b",
+    "raw_archive_bytes": 26505
+  },
+  "pending": [
+    "Complete independent source build of LLDB and its startup check.",
+    "Run the unchanged original PE through actual CLI and DAP on the host and inside a new AppContainer; require argument 41, inferior output 42 and normal exit.",
+    "Retain outside source/dependency read denials and read-only copied code.",
+    "Run full debugger regressions and assemble and qualify a matching complete SDK."
+  ],
+  "limits": [
+    "This is compilation of one real LLVM source file, not a linked debugger or a successful runtime replay.",
+    "The NEX compiler, language semantics and task ABI are unchanged.",
+    "Original debugger, SDK, project ACLs, firewall and intentional IPv6 policy are unchanged.",
+    "No new release, main promotion, positive IPv6 support or completion of the original PLAN is claimed."
+  ]
+}

@@ -21,7 +21,14 @@ host pipe paths. It applies the decision to both creation and opening, reports
 token-query failures, and retains default object ACLs and existing ownership
 checks. Use new source, build and output directories. The selected patch hash
 is included in the debugger revision and build receipt. Source preparation was
-byte-verified; the new private build and native CLI/DAP regression remain pending.
+byte-verified. The [actual patched source compiled to a Windows x86-64 object](evidence/windows-lldb-appcontainer-pipe-object-0.162.2-2026-11-09.json)
+using the prior Ninja compilation database, with the same compiler, headers and
+flags and new source/object/dependency outputs. The compiler exited normally
+without diagnostics; the old source and object remained unchanged. This verifies
+one translation unit. The new private linked build and native CLI/DAP regression
+remain pending. The queued replay uses the unchanged original PE, requiring an
+argument stop at41, actual inferior output42 and normal exit on the host and
+inside AppContainer, together with outside read and copied-code write denials.
 The existing qualified debugger remains unchanged.
 
 ## Current coherent SDK follow-up
