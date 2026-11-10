@@ -16,6 +16,10 @@ no-driver control passed, with physical NVIDIA execution still pending.
 An explicit bounded device-clock gate and the original cancel/deadline cases
 are implemented for later physical execution. Gate configuration is checked
 locally; synthetic acknowledgements do not qualify GPU interruption handling.
+Offline Clang/LLVM22.1.8 compilation now passed232 IR/PTX variants covering the
+28-program/56-layout corpus, separate gate and actual combined preparation at
+O0/O2 for sm_52/PTX4.2 and sm_86/PTX7.1. IR and machine instructions are verified;
+this adds compiler evidence without qualifying NVRTC or physical execution.
 Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
 and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.

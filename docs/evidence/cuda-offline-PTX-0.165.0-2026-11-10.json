@@ -1,0 +1,61 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Real offline Clang22.1.8 CUDA C++20 to verified LLVM IR and NVPTX on macOS ARM64. No CUDA Driver, NVRTC, CUBIN assembly or GPU execution is accepted by this record.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "emitter_sha256": "147ae6cdb39301099e8ce7950a4219b4887076ade5ebd2c44a7d493286eba013",
+  "source_sha256": {
+    "clang_device.h": "59bd26b26cc692b3c0fde115d8f992082315be40284dfff059818f94351bd39f",
+    "verify_ptx.py": "85ebc57df6c18da7ebd1053181d9720d302137b2bb47d47acae83ac00f8e7116"
+  },
+  "LLVM_version": "22.1.8",
+  "tools_sha256": {
+    "clang++": "68bb87f784f09da01b7aea0f70952fb23f606242cdc4f6ff3cc26c372af0706f",
+    "opt": "15795d8062cbd29c6032fd85bc1f0a57069bf36f0b58d5ba04a8544510cccbe3",
+    "llc": "a82eeebd5e86cfe14e66dc102af70ee8c68d973b1a426a1c93f6715971c4db90"
+  },
+  "Clang_builtin_header_sha256": "32d445ec643c5802efbd54d41e4e8bff952436586d992fc0f91258238cb6e115",
+  "source_programs": 28,
+  "emitted_source_layouts": 56,
+  "separate_gate_and_actual_prepared_combined_included": true,
+  "verified_IR_and_PTX_variants": 232,
+  "architectures_and_PTX": {
+    "sm_52": "4.2",
+    "sm_86": "7.1"
+  },
+  "optimization_levels": [
+    0,
+    2
+  ],
+  "IR_and_machine_instruction_verification_enabled": true,
+  "kernel_parameter_widths_and_address_size_checked": true,
+  "unresolved_device_functions": 0,
+  "device_clock_retained_in_gate_and_combined_PTX": true,
+  "commands": 700,
+  "all_commands_exit_zero": true,
+  "NVIDIA_headers_libdevice_host_runtime_used": false,
+  "initial_failure": "Without explicit PTX selection Clang chose PTX4.2, which rejected sm_86; the failed command and diagnostic are retained. Frontend and backend now explicitly select PTX4.2 for sm_52 and PTX7.1 for sm_86.",
+  "actual_GPU_execution": false,
+  "NVRTC_CUBIN_or_native_provider_accepted": false,
+  "public_CUDA_CLI_or_SDK_accepted": false,
+  "raw_archive": {
+    "archive_sha256": "15596a9525ea7eecdd5bfb4220a67e810ce4e7f04ef865b3a8017d40f1f10bb4",
+    "archive_bytes": 1249781,
+    "raw_files": 1977,
+    "raw_bytes": 8886037
+  },
+  "independent_receipt_sha256": "1fd8b817648e776b5c2d2a32dca0ebf2e73d794da51cf57e35f6acb98dc18573",
+  "remaining_required_gates": [
+    "Explicit NVRTC compilation on the selected native Windows/Linux toolchain",
+    "Actual NVIDIA context ownership, values/errors, cancellation/deadline and physical settlement",
+    "Source-deleted replay, standalone and other generated roots",
+    "Compute Sanitizer",
+    "Coherent public compiler and immutable SDK qualification"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

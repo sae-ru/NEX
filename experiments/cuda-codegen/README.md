@@ -98,6 +98,40 @@ These results do not establish CUDA compilation or GPU execution.
 The [versioned source evidence](../../docs/evidence/cuda-scalar-match-source-0.165.0-2026-11-10.json)
 records the tested emitter, checked frontend and exact limits of these results.
 
+### Offline LLVM compilation
+
+`verify_ptx.py` compiles the pinned source corpus through actual Clang22.1,
+LLVM IR verification and the NVPTX backend, without a CUDA driver or Toolkit.
+`clang_device.h` supplies device attributes and uses Clang's own builtin register
+header; NVIDIA headers, libdevice and host-runtime shims are not used. Select
+`clang++`, `opt` and `llc` from the same LLVM22.1 installation:
+
+```sh
+python3 -B experiments/cuda-codegen/verify_ptx.py \
+  --matrix /path/to/source-controls/report.json \
+  --clang /path/to/llvm22/bin/clang++ \
+  --opt /path/to/llvm22/bin/opt --llc /path/to/llvm22/bin/llc \
+  --gate experiments/owned-cuda-codegen/gate.cu \
+  --combined /path/to/gated-preparation/generation/compilation.cu \
+  --output /new/offline-PTX-controls
+```
+
+The combined input is the actual two-argument columns preparation produced with
+`--acceptance-gate` by the [owned CUDA experiment](../owned-cuda-codegen/README.md).
+This maintained control expects the28-program source matrix, all56 layouts, the
+separate gate and that combined input. It checks232 compilations: each source
+at O0/O2 for sm_52/PTX4.2 and sm_86/PTX7.1. Both frontend and backend select the
+PTX version explicitly; the initial no-Toolkit sm_86 run failed because Clang's
+default PTX4.2 was too old. That diagnostic is retained with the evidence.
+
+Every LLVM module passes `opt -passes=verify`; `llc -verify-machineinstrs` checks
+code generation. The control checks64-bit addresses, kernel parameter widths,
+target/PTX versions, no unresolved device functions and the gate's device clock.
+It retains all IR, PTX, commands, diagnostics and source/tool hashes. The
+[versioned compilation evidence](../../docs/evidence/cuda-offline-PTX-0.165.0-2026-11-10.json)
+records the successful LLVM22.1.8 run on macOS ARM64. These are compiler controls;
+NVRTC, CUBIN assembly, physical execution and SDK qualification remain separate.
+
 `verify_device.py` separately uses an explicitly selected NVRTC12+ library and
 the installed CUDA Driver API. It compiles the pinned `.cu` files as C++20 for
 the selected physical GPU, records PTX and compiler logs, and checks actual
