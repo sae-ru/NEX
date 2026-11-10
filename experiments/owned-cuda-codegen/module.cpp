@@ -42,6 +42,8 @@ struct Ledger {
     {"kernel_launches",launches.load()},{"cleanup_errors",cleanupErrors.load()}};}
   void allocate(uint64_t size){++buffers;auto live=bytes.fetch_add(size)+size;auto peak=peakBytes.load();while(live>peak&&!peakBytes.compare_exchange_weak(peak,live)){}}
   void free(uint64_t size){++bufferFrees;bytes.fetch_sub(size);}
+  bool balanced()const noexcept{return bytes==0&&cleanupErrors==0&&buffers==bufferFrees&&events==eventFrees&&
+    contexts==contextFrees&&modules==moduleFrees&&streams==streamFrees;}
 };
 static Ledger ledger;
 static std::mutex traceLock;
@@ -55,6 +57,7 @@ static void trace(JSON row)noexcept{
 #else
     auto text=std::getenv("NEX_OWNED_CUDA_MAP_TRACE");if(!text||!*text)return;path=text;
 #endif
+    row["schema"]="nex.experimental-owned-CUDA-trace/2";
     row["steady_ns"]=uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now().time_since_epoch()).count());
     row["ledger"]=ledger.json();std::lock_guard lock(traceLock);std::ofstream output(path,std::ios::binary|std::ios::app);output<<row.dump()<<'\n';
   }catch(...){}
@@ -96,6 +99,7 @@ struct Session {
   CUcontext context=nullptr;CUmodule module=nullptr;CUfunction kernel=nullptr;CUstream stream=nullptr;CUdeviceptr overflow=0;
   const uint64_t identity=identities.fetch_add(1);
   std::atomic<uint32_t> busy{0};
+  uint64_t nextDispatch=1;
   static constexpr uint64_t scratchBytes=32768*4;
   std::string name,uuid,pci;
   void start(unsigned ordinal){
@@ -115,7 +119,8 @@ struct Session {
   void drain()noexcept{driver.cleanup(driver.p_cuCtxSynchronize(),"cuCtxSynchronize");}
   ~Session()noexcept{
     if(!context)return;std::lock_guard lock(mutex);driver.cleanup(driver.p_cuCtxPushCurrent(context),"cuCtxPushCurrent cleanup");drain();
-    if(overflow){driver.cleanup(driver.p_cuMemFree(overflow),"cuMemFree scratch");ledger.free(scratchBytes);overflow=0;}
+    if(overflow){driver.cleanup(driver.p_cuMemFree(overflow),"cuMemFree scratch");ledger.free(scratchBytes);overflow=0;
+      TRACE(JSON{{"event","status_storage_released"},{"session",identity},{"bytes",scratchBytes},{"physical_completion_verified",true}});}
     if(stream){driver.cleanup(driver.p_cuStreamDestroy(stream),"cuStreamDestroy");++ledger.streamFrees;stream=nullptr;}
     if(module){driver.cleanup(driver.p_cuModuleUnload(module),"cuModuleUnload");++ledger.moduleFrees;module=nullptr;}
     CUcontext popped=nullptr;driver.cleanup(driver.p_cuCtxPopCurrent(&popped),"cuCtxPopCurrent cleanup");if(popped!=context)unsettled("context cleanup identity",CUDA_ERROR_INVALID_CONTEXT);
@@ -151,24 +156,30 @@ thread_local Context *Context::active=nullptr;
 struct Event {
   Driver &driver;CUevent value=nullptr;
   explicit Event(Driver &driver):driver(driver){driver.check(driver.p_cuEventCreate(&value,CU_EVENT_DEFAULT),"cuEventCreate");++ledger.events;}
+  Event(const Event&)=delete;Event& operator=(const Event&)=delete;
   ~Event(){if(value){driver.cleanup(driver.p_cuEventDestroy(value),"cuEventDestroy");++ledger.eventFrees;}}
 };
 struct Buffer {
   Session *session=nullptr;CUdeviceptr pointer=0;uint64_t bytes=0,kernelNs=0;uint32_t dtype=0;
+  const uint64_t identity=identities.fetch_add(1);
+  Buffer()=default;Buffer(const Buffer&)=delete;Buffer& operator=(const Buffer&)=delete;
   ~Buffer(){if(pointer){Context context(*session);session->drain();session->driver.cleanup(session->driver.p_cuMemFree(pointer),"cuMemFree buffer");ledger.free(bytes);
-    TRACE(JSON{{"event","buffer_released"},{"session",session->identity},{"bytes",bytes},{"physical_completion_verified",true}});}}
+    TRACE(JSON{{"event","buffer_released"},{"session",session->identity},{"buffer",identity},{"bytes",bytes},{"physical_completion_verified",true}});}}
 };
 struct InFlight {
   Session &session;CUevent end;bool done=false;
+  uint64_t dispatch,output;
+  InFlight(Session &s,CUevent event,uint64_t sequence,uint64_t buffer):session(s),end(event),dispatch(sequence),output(buffer){}
+  InFlight(const InFlight&)=delete;InFlight& operator=(const InFlight&)=delete;
   ~InFlight(){if(!done){session.drain();auto result=session.driver.p_cuEventQuery(end);if(result!=CUDA_SUCCESS)unsettled("event after physical drain",result);
-    TRACE(JSON{{"event","physical_drain"},{"session",session.identity},{"physical_completion_verified",true},{"event_status",int(result)},{"unwind",true}});}session.busy=0;}
+    TRACE(JSON{{"event","physical_drain"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",output},{"physical_completion_verified",true},{"event_status",int(result)},{"unwind",true}});}session.busy=0;}
 };
 static constexpr uint32_t maximumElements=262144;
 struct ReadCursor {
   Buffer *buffer=nullptr;uint64_t offset=0;
   const uint64_t identity=identities.fetch_add(1);
   std::mutex mutex;
-  ~ReadCursor(){TRACE(JSON{{"event","read_cursor_released"},{"cursor",identity}});}
+  ~ReadCursor(){TRACE(JSON{{"event","read_cursor_released"},{"cursor",identity},{"session",buffer->session->identity},{"buffer",buffer->identity}});}
 };
 struct Creation {
   enum Kind{SessionOpen,BufferUpload,BufferGenerated,ReaderOpen}kind;
@@ -195,19 +206,22 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
       d.check(d.p_cuModuleGetFunction(&session->kernel,session->module,"nex_generated_cuda_map"),"cuModuleGetFunction");
       d.check(d.p_cuStreamCreate(&session->stream,CU_STREAM_NON_BLOCKING),"cuStreamCreate");++ledger.streams;
       d.check(d.p_cuMemAlloc(&session->overflow,Session::scratchBytes),"cuMemAlloc statuses");ledger.allocate(Session::scratchBytes);
+      TRACE(JSON{{"event","status_storage_allocated"},{"session",session->identity},{"bytes",Session::scratchBytes}});
       TRACE(JSON{{"event","generated_session_ready"},{"session",session->identity},{"kernel_sha256",GENERATED_SHADER_SHA256},{"PTX_sha256",GENERATED_PTX_SHA256},{"arguments",GENERATED_ARGUMENTS},{"cpu_fallback",false}});
     }else if(input.kind==Creation::ReaderOpen){
       auto value=std::make_unique<ReadCursor>();value->buffer=input.a;*out=value.release();
-      TRACE(JSON{{"event","read_cursor_created"},{"session",input.a->session->identity},{"cursor",static_cast<ReadCursor*>(*out)->identity}});
+      TRACE(JSON{{"event","read_cursor_created"},{"session",input.a->session->identity},{"buffer",input.a->identity},{"cursor",static_cast<ReadCursor*>(*out)->identity}});
     }else{
       auto value=std::make_unique<Buffer>();auto buffer=value.get();buffer->session=input.session;buffer->dtype=input.dtype;
       buffer->bytes=input.kind==Creation::BufferUpload?input.data.size():uint64_t(input.lanes)*8;*out=value.release();
       auto &session=*input.session;Context context(session,api,call);auto &d=session.driver;auto started=Clock::now();
       d.check(d.p_cuMemAlloc(&buffer->pointer,size_t(buffer->bytes)),"cuMemAlloc");ledger.allocate(buffer->bytes);
+      TRACE(JSON{{"event","buffer_allocated"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes}});
       if(input.kind==Creation::BufferUpload){
         d.check(d.p_cuMemcpyHtoD(buffer->pointer,input.data.data(),input.data.size()),"cuMemcpyHtoD");session.drain();
         TRACE(JSON{{"event","upload_completed"},{"session",session.identity},{"bytes",buffer->bytes},{"elapsed_ns",ns(started)},{"physical_completion_verified",true}});
       }else{
+        const auto dispatch=session.nextDispatch++;
         Event begin(d),end(d);d.check(d.p_cuEventRecord(begin.value,session.stream),"cuEventRecord begin");
         std::array<CUdeviceptr,8> columns{};std::array<void*,12> arguments{};unsigned argument=0;
         for(size_t i=0;i<input.columns.size();++i){columns[i]=input.columns[i]->pointer;arguments[argument++]=&columns[i];}
@@ -219,9 +233,9 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         if(recorded!=CUDA_SUCCESS){session.drain();d.check(recorded,"cuEventRecord end");}
         // This fence outlives all exception/cancellation exits after admission.
         // The borrowed event, output and columns stay live until it has drained.
-        InFlight flight{session,end.value};session.busy=1;
+        InFlight flight{session,end.value,dispatch,buffer->identity};session.busy=1;
         auto status=d.p_cuEventQuery(end.value);
-        TRACE(JSON{{"event","kernel_queued"},{"session",session.identity},{"elements",lanes},{"columns",input.columns.size()},{"steps",steps},{"event_status",int(status)},{"completion_pending",status==CUDA_ERROR_NOT_READY},{"physical_enqueue_verified",true}});
+        TRACE(([&]{JSON ids=JSON::array();for(auto column:input.columns)ids.push_back(column->identity);return JSON{{"event","kernel_queued"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"input_buffers",std::move(ids)},{"elements",lanes},{"columns",input.columns.size()},{"steps",steps},{"event_status",int(status)},{"completion_pending",status==CUDA_ERROR_NOT_READY},{"physical_enqueue_verified",true}};})());
         for(;;){status=d.p_cuEventQuery(end.value);if(status==CUDA_SUCCESS)break;if(status!=CUDA_ERROR_NOT_READY){session.drain();d.check(status,"cuEventQuery");}checked(api->poll(call));std::this_thread::sleep_for(std::chrono::milliseconds(1));}
         d.check(d.p_cuEventSynchronize(end.value),"cuEventSynchronize");session.drain();
         float milliseconds=0;d.check(d.p_cuEventElapsedTime(&milliseconds,begin.value,end.value),"cuEventElapsedTime");
@@ -230,10 +244,10 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         std::vector<unsigned> errors(lanes);d.check(d.p_cuMemcpyDtoH(errors.data(),session.overflow,errors.size()*sizeof(unsigned)),"cuMemcpyDtoH statuses");session.drain();flight.done=true;session.busy=0;
         unsigned code=0,lane=0;
         for(unsigned i=0;i<lanes;++i){if(errors[i]>6)throw Error("E_DEVICE_ABI","generated kernel returned an unknown lane status");if(!code&&errors[i]){code=errors[i];lane=i;}}
-        TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
+        TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
         if(code){const char *codes[]={"","E_OVERFLOW","E_DIV_ZERO","E_ASSERT","E_GPU_STEP_LIMIT","E_GPU_INTERNAL","E_GPU_INPUT"};throw Error(codes[code],"generated GPU function failed at lane "+std::to_string(lane));}
       }
-      TRACE(JSON{{"event","buffer_created"},{"session",session.identity},{"bytes",buffer->bytes},{"dtype",buffer->dtype}});
+      TRACE(JSON{{"event","buffer_created"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes},{"dtype",buffer->dtype}});
     }
     return api->poll(call);
   }catch(const HostStatus &error){return error.value;}
@@ -319,4 +333,4 @@ static const nex_ffi_export_v1 exports[]={
 };
 extern "C" const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi,uint32_t size){static const nex_ffi_module_v1 m{NEX_FFI_MODULE_ABI_V1,sizeof(nex_ffi_module_v1),sizeof(exports)/sizeof(exports[0]),sizeof(nex_ffi_export_v1),exports};return abi==1&&size>=NEX_FFI_V1_TRAP_SIZE?&m:nullptr;}
 
-__attribute__((destructor)) static void unloaded(){TRACE(JSON{{"event","module_unloaded"},{"physical_completion_verified",ledger.bytes==0&&ledger.cleanupErrors==0}});}
+__attribute__((destructor)) static void unloaded(){TRACE(JSON{{"event","module_unloaded"},{"physical_completion_verified",ledger.balanced()}});}

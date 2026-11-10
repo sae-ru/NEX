@@ -40,7 +40,11 @@ The resulting GPU must support that target. Compilation logs, options and
 NVRTC/PTX hashes are retained. The PTX is embedded in the provider module;
 NVRTC is a build dependency. No vendor header or implementation is bundled.
 
-The preparer then builds a pinned FFI bundle and checks its source and catalogue.
+The preparer then builds a pinned FFI bundle and a separate context probe, and
+checks the source and catalogue. The probe uses the actual provider classes
+with three CUDA contexts to test caller preservation, nested buffer cleanup,
+reentry rejection before polling and constructor rollback. It runs explicitly
+before the physical scalar/parent corpus.
 Native Windows/Linux preparation, NVRTC compilation and actual CUDA execution
 have not yet been qualified for this new provider.
 
@@ -77,6 +81,10 @@ restoration, cancellation, deadlines, resource limits, replay and memory checkin
 `NEX_OWNED_CUDA_MAP_TRACE` enables JSONL identity, allocation, enqueue,
 completion and cleanup events. Kernel timing uses CUDA events. GPU stepping,
 operation-level attribution and public profiling integration remain pending.
+Trace schema `nex.experimental-owned-CUDA-trace/2` identifies each allocation,
+cursor parent and dispatch. The reader matches every dispatch's input/output
+buffers to their allocation and release, checks completion before their release
+and requires each cursor to close before its physical parent buffer.
 
 ## Local controls
 
@@ -91,9 +99,12 @@ python3 -B experiments/owned-cuda-codegen/check_sources.py \
 On macOS, `--host-unavailable-controls --cxx /absolute/path/to/clang++` also
 builds the real host module with warnings treated as errors, then checks the
 typed unavailable-driver result through the interpreter and native Debug/Release.
+It also compiles the context probe and runs its explicit
+`--expect-unavailable` control. That control reports zero CUDA contexts and
+does not qualify context-stack behavior on NVIDIA hardware.
 This exercises the FFI and constructor rollback without creating a CUDA context
 or launching a kernel. It cannot qualify CUDA compilation or device execution.
-The local [source evidence](../../docs/evidence/owned-cuda-codegen-source-0.165.0-2026-11-10.json)
+The local [source evidence](../../docs/evidence/owned-cuda-context-temporal-source-0.165.0-2026-11-10.json)
 records four prepared roots, 36 checked signatures, two rejected preparations
 and 96 unavailable-driver calls across those three backends. A 256 KiB resource
 limit admits one session reservation but not two unreleased reservations;
@@ -118,9 +129,10 @@ Windows/Linux NVIDIA host, prepare a native provider first and omit this flag
 to execute the interpreter/native Release pairs. The physical runner requires
 exact values/errors, device identity, generated-source/PTX hashes, CUDA
 completions, closed cursors and balanced buffer/event/context/module/stream
-counters. This phase covers byte codecs, maximum geometry, typed errors,
+counters. It first requires the actual three-context probe to succeed.
+This phase covers byte codecs, maximum geometry, typed errors,
 parent retention, cross-session rejection, quotas and fatal error forwarding.
-It is a partial phase: post-enqueue cancellation/deadline, context restoration,
+It is a partial phase: post-enqueue cancellation/deadline,
 source-deleted replay/standalone, other scalar roots and Compute Sanitizer
 remain separate mandatory gates. Its report never marks complete owned CUDA
 acceptance.
@@ -128,8 +140,9 @@ acceptance.
 `check_acceptance.py` accepts the same compiler/resources/emitter/frontend/output
 arguments as `check_sources.py`. It prepares the pinned fixture, checks the
 13 programs with the actual compiler and exercises the receipt reader with
-synthetic records. Eight false reports are rejected, including leaked buffers,
+synthetic records. Twelve false reports are rejected, including leaked buffers,
 contexts/events/streams, missing completion, an unsettled state, an unclosed
-cursor, CPU fallback and a different compiled PTX. Synthetic records are not
-GPU evidence. The [versioned corpus controls](../../docs/evidence/owned-cuda-corpus-source-0.165.0-2026-11-10.json)
+cursor, CPU fallback, a different compiled PTX and release before a dispatch,
+cursor or parent lifetime has ended. Synthetic records are not
+GPU evidence. The [versioned corpus controls](../../docs/evidence/owned-cuda-context-temporal-source-0.165.0-2026-11-10.json)
 retain the exact scope and code identities.

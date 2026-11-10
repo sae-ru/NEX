@@ -89,6 +89,12 @@ def main():
             apple_sdk = run("host-sdk", ["/usr/bin/xcrun", "--sdk", "macosx", "--show-sdk-path"]).stdout.decode("utf-8").strip()
             run("host-module-build", [args.cxx, "-isysroot", apple_sdk, "-std=c++20", "-O1", "-g", "-shared", "-fPIC", "-fvisibility=hidden", "-pthread",
                 "-Wall", "-Wextra", "-Werror", "-I" + str(resources / "runtime"), "-I" + str(inputs), inputs / "module.cpp", "-o", bundle / "module.so"])
+            probe = out / "context-probe"
+            run("host-probe-build", [args.cxx, "-isysroot", apple_sdk, "-std=c++20", "-O1", "-g", "-pthread",
+                "-Wall", "-Wextra", "-Werror", "-I" + str(resources / "runtime"), "-I" + str(inputs), inputs / "context_probe.cpp", "-o", probe])
+            probe_result = json.loads(run("host-probe-unavailable", [probe, "--expect-unavailable"]).stdout)
+            assert probe_result["scope"] == "unavailable-driver-host-control" and probe_result["ok"]
+            assert probe_result["actual_CUDA_contexts"] == 0 and probe_result["actual_device_allocations"] == 0 and not probe_result["physical_CUDA_context_probe_passed"]
             (bundle / "NOTICE").write_bytes((resources / "LICENSE").read_bytes() + b"\n" + (resources / "runtime/third_party/JSON-LICENSE.MIT").read_bytes())
             proof = json.loads((prepared / "preparation/report.json").read_bytes())
             write(bundle / "manifest.json", {"schema": "nex.foreign-bundle/1", "platform": "macos-" + ("arm64" if platform.machine().lower() in {"arm64", "aarch64"} else "x86_64"), "entry": "module.so",
@@ -126,6 +132,7 @@ def main():
             report["host_unavailable_controls"] = {"actual_CXX_module_built": True, "backends": ["reference", "native-debug", "native-release"],
                 "typed_unavailable_results": 96, "zero_created_CUDA_contexts_allocations_or_launches": True,
                 "declared_resource_byte_capacity": 262144, "constructor_reservation_capacity_recovered_each_call": True,
+                "context_probe_compiled_and_unavailable_control_passed": True, "physical_context_probe_passed": False,
                 "reference_resource_capacity_after_scope": 0, "CPU_fallback": False, "GPU_execution_accepted": False}
         report["ok"] = True
     finally:

@@ -67,19 +67,25 @@ def main():
         valid = [
             {"event": "session_created", "session": 1, "name": "NVIDIA synthetic contract record", "uuid": "c" * 32,
              "pci_bus_id": "00000000:01:00.0", "driver_version": 12010, "ordinal": 0, "cpu_fallback": False},
+            {"event": "status_storage_allocated", "session": 1, "bytes": 131072},
             {"event": "generated_session_ready", "session": 1, "kernel_sha256": shader, "PTX_sha256": ptx, "arguments": 2, "cpu_fallback": False},
-            {"event": "kernel_queued", "columns": 2, "physical_enqueue_verified": True},
-            {"event": "kernel_completed", "kernel_sha256": shader, "physical_completion_verified": True, "cpu_fallback": False, "lane_status": 0},
-            {"event": "buffer_released", "physical_completion_verified": True},
+            *[{"event": "buffer_allocated", "session": 1, "buffer": identity, "bytes": 8} for identity in [10, 11, 12]],
+            {"event": "kernel_queued", "session": 1, "dispatch": 1, "input_buffers": [10, 11], "output_buffer": 12, "columns": 2, "physical_enqueue_verified": True},
+            {"event": "kernel_completed", "session": 1, "dispatch": 1, "output_buffer": 12, "kernel_sha256": shader, "physical_completion_verified": True, "cpu_fallback": False, "lane_status": 0},
+            *[{"event": "buffer_released", "session": 1, "buffer": identity, "bytes": 8, "physical_completion_verified": True} for identity in [10, 11, 12]],
+            {"event": "status_storage_released", "session": 1, "bytes": 131072, "physical_completion_verified": True},
             {"event": "session_destroyed", "session": 1, "physical_completion_verified": True},
             {"event": "module_unloaded", "physical_completion_verified": True, "ledger": ledger},
         ]
+        def find(rows, event, buffer=None):
+            return next(i for i, row in enumerate(rows) if row["event"] == event and (buffer is None or row.get("buffer") == buffer))
+
         contracts = [("synthetic-contract-consistency", valid, True)]
         rows = copy.deepcopy(valid)
         rows[-1]["ledger"].update(live_bytes=8, frees=3)
         contracts.append(("clean-exit-with-device-buffer-leak", rows, False))
         rows = copy.deepcopy(valid)
-        rows.pop(3)
+        rows.pop(find(rows, "kernel_completed"))
         contracts.append(("successful-process-without-kernel-completion", rows, False))
         rows = copy.deepcopy(valid)
         rows[-1]["ledger"]["context_frees"] = 0
@@ -91,16 +97,31 @@ def main():
         rows.insert(-1, {"event": "unsettled"})
         contracts.append(("unsettled-state-followed-by-success-claim", rows, False))
         rows = copy.deepcopy(valid)
-        rows.insert(2, {"event": "read_cursor_created", "cursor": 7})
+        rows.insert(find(rows, "buffer_released", 12), {"event": "read_cursor_created", "session": 1, "buffer": 12, "cursor": 7})
         contracts.append(("unreleased-cursor-with-balanced-GPU-counters", rows, False))
         rows = copy.deepcopy(valid)
-        rows[3]["cpu_fallback"] = True
+        rows[find(rows, "kernel_completed")]["cpu_fallback"] = True
         contracts.append(("CUDA-identity-with-CPU-fallback", rows, False))
         rows = copy.deepcopy(valid)
-        rows[1]["PTX_sha256"] = "d" * 64
+        rows[find(rows, "generated_session_ready")]["PTX_sha256"] = "d" * 64
         contracts.append(("different-compiled-PTX", rows, False))
+        for buffer, name in [(10, "input-freed-before-dispatch-settlement"), (12, "unpublished-output-freed-before-settlement")]:
+            rows = copy.deepcopy(valid)
+            release = rows.pop(find(rows, "buffer_released", buffer))
+            rows.insert(find(rows, "kernel_completed"), release)
+            contracts.append((name, rows, False))
+        rows = copy.deepcopy(valid)
+        close = rows.pop(find(rows, "session_destroyed"))
+        rows.insert(find(rows, "buffer_released", 12), close)
+        contracts.append(("parent-session-destroyed-before-last-buffer", rows, False))
+        rows = copy.deepcopy(valid)
+        rows.insert(find(rows, "buffer_released", 12), {"event": "read_cursor_created", "session": 1, "buffer": 12, "cursor": 7})
+        rows.insert(find(rows, "status_storage_released"), {"event": "read_cursor_released", "session": 1, "buffer": 12, "cursor": 7})
+        contracts.append(("buffer-freed-while-retained-cursor-exists", rows, False))
         for name, rows, accepted in contracts:
             trace = out / (name + ".synthetic.jsonl")
+            for index, row in enumerate(rows):
+                row.update(schema="nex.experimental-owned-CUDA-trace/2", steady_ns=index * 10)
             trace.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
             try:
                 verifier.inspect_trace(trace, 1, 0, shader, ptx)
@@ -109,7 +130,7 @@ def main():
                 actual = False
             assert actual == accepted, name
             report["receipt_contracts"].append({"name": name, "synthetic_only": True, "accepted": actual})
-        report.update(ok=True, synthetic_contracts=len(contracts), rejected_false_receipts=8,
+        report.update(ok=True, synthetic_contracts=len(contracts), rejected_false_receipts=sum(not accepted for _, _, accepted in contracts),
                       preparation_report_sha256=sha(project / "preparation/report.json"), corpus_report_sha256=sha(out / "corpus/report.json"))
     finally:
         save()

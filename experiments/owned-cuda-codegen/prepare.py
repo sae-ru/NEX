@@ -166,7 +166,7 @@ def main():
         for name in ["open", "upload", "map", "download", "read_next", "name", "kernel_ns", "busy", "fatal"]:
             signature = json.loads(run("signature-" + name, [compiler, "ffi", "--symbol", name + "_raw", "--json"]))
             signatures[name] = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        for name in ["module.cpp", "cuda_driver.h", "main.nex.in"]:
+        for name in ["module.cpp", "cuda_driver.h", "main.nex.in", "context_probe.cpp"]:
             shutil.copyfile(source / name, inputs / name)
         (inputs / "signatures.h").write_text("\n".join('#define PIN_' + n.upper() + ' "' + h + '"' for n, h in signatures.items()) + "\n")
         ptx, nvrtc = b"", None
@@ -189,7 +189,7 @@ def main():
             "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc, "commands": commands}
         if not args.source_only:
             cxx = (args.cxx or Path(doctor["native_compiler"])).resolve(strict=True)
-            flags = ["-std=c++20", "-O2", "-pthread", "-Wall", "-Wextra", "-shared", "-I" + str(resources / "runtime"), "-I" + str(inputs)]
+            flags = ["-std=c++20", "-O2", "-pthread", "-Wall", "-Wextra", "-I" + str(resources / "runtime"), "-I" + str(inputs)]
             if os.name == "nt":
                 if not doctor["host"].startswith("x86_64"):
                     raise RuntimeError("native Windows provider currently selects x86_64")
@@ -200,7 +200,10 @@ def main():
                 image, target = "module.so", "linux-" + ("arm64" if platform.machine().lower() in {"arm64", "aarch64"} else "x86_64")
             bundle = out / "bundle"
             bundle.mkdir()
-            run("compile-module", [cxx, *flags, inputs / "module.cpp", *([] if os.name == "nt" else ["-ldl"]), "-o", bundle / image])
+            run("compile-module", [cxx, *flags, "-shared", inputs / "module.cpp", *([] if os.name == "nt" else ["-ldl"]), "-o", bundle / image])
+            probe = evidence / ("context-probe.exe" if os.name == "nt" else "context-probe")
+            run("compile-context-probe", [cxx, *flags, "-DNEX_CUDA_PROBE_INDEX=" + str(args.index), inputs / "context_probe.cpp",
+                *([] if os.name == "nt" else ["-ldl"]), "-o", probe])
             notice = "NEX experimental generated CUDA provider\n\n" + (resources / "LICENSE").read_text() + "\n\nnlohmann/json\n" + (resources / "runtime/third_party/JSON-LICENSE.MIT").read_text()
             if os.name == "nt":
                 notice += "\n\nNative compiler runtime notices\n" + Path(doctor["native_windows_notices"]).read_text(encoding="utf-8")
@@ -213,7 +216,8 @@ def main():
                 "libraries": {"gpu": {"directory": "./bundle", "manifest_sha256": pin, "exports": list(signatures)}}})
             run("check-pinned", [compiler, "check", "--json"])
             run("catalogue", [compiler, "foreign", out / "foreign.json", "--json"])
-            report.update(native_provider_built=True, manifest_sha256=pin, module_sha256=sha(bundle / image), cxx_sha256=sha(cxx))
+            report.update(native_provider_built=True, manifest_sha256=pin, module_sha256=sha(bundle / image), cxx_sha256=sha(cxx),
+                          context_probe=str(probe), context_probe_sha256=sha(probe), context_probe_executed=False)
         assert all(sha(inputs / n) == h for n, h in input_pins.items())
         guard()
         write(evidence / "report.json", report)

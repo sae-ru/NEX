@@ -22,6 +22,7 @@ def sha(path):
 def inspect_trace(path, kernels, errors, shader_hash, ptx_hash):
     assert path.stat().st_size <= 16 * 1024 * 1024
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    assert all(row["schema"] == "nex.experimental-owned-CUDA-trace/2" and type(row["steady_ns"]) is int and row["steady_ns"] >= 0 for row in rows)
     assert rows and rows[-1]["event"] == "module_unloaded" and rows[-1]["physical_completion_verified"]
     assert not any(row["event"] == "unsettled" for row in rows)
     ledger = rows[-1]["ledger"]
@@ -53,9 +54,52 @@ def inspect_trace(path, kernels, errors, shader_hash, ptx_hash):
     created = [row["cursor"] for row in rows if row["event"] == "read_cursor_created"]
     closed = [row["cursor"] for row in rows if row["event"] == "read_cursor_released"]
     assert len(created) == len(set(created)) and sorted(created) == sorted(closed)
+
+    def indexed(event, key):
+        selected = [row for row in rows if row["event"] == event]
+        keys = [key(row) for row in selected]
+        assert len(keys) == len(set(keys)), event
+        return dict(zip(keys, selected))
+
+    session_created = {row["session"]: row for row in sessions}
+    session_closed = {row["session"]: row for row in destroyed}
+    allocated = indexed("buffer_allocated", lambda row: row["buffer"])
+    released = indexed("buffer_released", lambda row: row["buffer"])
+    scratch = indexed("status_storage_allocated", lambda row: row["session"])
+    scratch_closed = indexed("status_storage_released", lambda row: row["session"])
+    assert set(allocated) == set(released) and set(scratch) == set(scratch_closed) == set(session_created)
+    assert ledger["allocations"] == len(allocated) + len(scratch)
+    for identity, row in allocated.items():
+        end = released[identity]
+        assert type(identity) is int and identity > 0 and row["bytes"] > 0
+        assert row["session"] == end["session"] and row["bytes"] == end["bytes"]
+        assert session_created[row["session"]]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= session_closed[row["session"]]["steady_ns"]
+    for identity, row in scratch.items():
+        end = scratch_closed[identity]
+        assert row["bytes"] == end["bytes"] == 32768 * 4 and end["physical_completion_verified"]
+        assert session_created[identity]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= session_closed[identity]["steady_ns"]
+    launches = indexed("kernel_queued", lambda row: (row["session"], row["dispatch"]))
+    settlements = {(row["session"], row["dispatch"]): row for row in complete}
+    assert len(settlements) == len(complete) and set(launches) == set(settlements)
+    for identity, row in launches.items():
+        end = settlements[identity]
+        assert type(row["dispatch"]) is int and row["dispatch"] > 0
+        assert row["output_buffer"] == end["output_buffer"] and len(row["input_buffers"]) == 2
+        assert row["output_buffer"] not in row["input_buffers"] and row["steady_ns"] <= end["steady_ns"]
+        assert scratch[row["session"]]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= scratch_closed[row["session"]]["steady_ns"]
+        for buffer in [*row["input_buffers"], row["output_buffer"]]:
+            assert allocated[buffer]["session"] == row["session"]
+            assert allocated[buffer]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= released[buffer]["steady_ns"]
+    cursor_created = indexed("read_cursor_created", lambda row: row["cursor"])
+    cursor_closed = indexed("read_cursor_released", lambda row: row["cursor"])
+    for identity, row in cursor_created.items():
+        end = cursor_closed[identity]
+        assert row["session"] == end["session"] == allocated[row["buffer"]]["session"]
+        assert row["buffer"] == end["buffer"]
+        assert allocated[row["buffer"]]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= released[row["buffer"]]["steady_ns"]
     return {"trace_sha256": sha(path), "sessions": [{key: row[key] for key in ["name", "uuid", "pci_bus_id", "ordinal", "driver_version"]} for row in sessions],
             "ledger": ledger, "physical_kernel_completions": len(complete), "failed_kernel_completions": len(failed), "closed_cursors": len(closed),
-            "all_resource_counter_pairs_balanced": True, "full_temporal_resource_graph_or_context_probe_qualified": False}
+            "all_resource_counter_pairs_balanced": True, "per_buffer_dispatch_and_cursor_lifetimes_checked": True, "context_probe_qualified_by_this_reader": False}
 
 
 def main():
@@ -95,7 +139,7 @@ def main():
     report = {"schema": "nex.experimental-owned-CUDA-scalar-parent-verification/1", "ok": False, "commands": [], "cases": [],
               "compiler_sha256": sha(compiler), "preparation_sha256": sha(prep_path), "shared_corpus_sha256": sha(corpus_path),
               "check_only": args.check_only, "actual_GPU_execution": False, "complete_owned_CUDA_acceptance": False,
-              "required_additional_gates": ["actual post-enqueue cancellation/deadline", "context restoration and constructor rollback probe",
+              "required_additional_gates": ["actual post-enqueue cancellation/deadline", "physical context restoration/rollback probe required by hardware mode",
                                             "source-deleted replay/standalone", "Compute Sanitizer", "remaining generated scalar roots and public SDK delivery"]}
     started = time.monotonic()
 
@@ -127,6 +171,14 @@ def main():
         return value
 
     try:
+        if not args.check_only:
+            probe = project / "preparation" / ("context-probe.exe" if os.name == "nt" else "context-probe")
+            assert sha(probe) == preparation["context_probe_sha256"]
+            control = json.loads(run("physical-context-probe", [probe], out, trace=out / "context-probe.trace.jsonl").stdout)
+            assert control["ok"] and control["scope"] == "physical-CUDA-context-probe" and control["actual_CUDA_contexts"] == 3
+            assert control["actual_device_allocations"] == 1 and all(control[key] for key in ["caller_context_preserved", "source_reentry_rejected_before_poll", "nested_cleanup_restores_context", "constructor_trap_rolls_back", "physical_cleanup_verified"])
+            report["physical_context_probe"] = control
+            report["required_additional_gates"].remove("physical context restoration/rollback probe required by hardware mode")
         for name, (body, kernels, errors, quota, code) in cases.items():
             directory = out / name
             directory.mkdir()

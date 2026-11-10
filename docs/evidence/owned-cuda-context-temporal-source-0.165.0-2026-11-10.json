@@ -1,0 +1,80 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Generated CUDA context probe and allocation/dispatch/cursor tracing. Actual C++ host compilation and no-driver behavior were checked on macOS; NEX corpus and synthetic lifetime reader controls passed. No actual NVIDIA context stack, native Windows/Linux provider, GPU dispatch or complete SDK qualification is claimed.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "emitter_sha256": "147ae6cdb39301099e8ce7950a4219b4887076ade5ebd2c44a7d493286eba013",
+  "source_sha256": {
+    "module.cpp": "06623e0ad3d57cc18a69b3c60cea98dfc83561bfc4f033bf7321970aff8e852b",
+    "cuda_driver.h": "39d833f9a8b435d911c799e46c88f60b1c88791ee4dbbd6f22c59a2240df370f",
+    "context_probe.cpp": "24c075260380bd7be21cc6aa589160f36d9b9eeee54bdffbd6316b74455c850c",
+    "prepare.py": "d106f91d045ca2ad0a33b9eb413b29bea19ba84f8be107201ab20ca53ba27d01",
+    "check_sources.py": "ffb5323e3fc7ebcd9bd19fc5edac53cb69ce4c043989ab40295b76212d061705",
+    "verify.py": "7c9bdce85f56ccd83d9f63a46951c43124ef757a174b09a3570ed1cb8b6cb4a6",
+    "check_acceptance.py": "1a2e970910e2e4d0491909023617e63bc186b199cf7fe8010e86023376801f33"
+  },
+  "host_controls": {
+    "actual_CXX_module_built": true,
+    "backends": [
+      "reference",
+      "native-debug",
+      "native-release"
+    ],
+    "typed_unavailable_results": 96,
+    "zero_created_CUDA_contexts_allocations_or_launches": true,
+    "declared_resource_byte_capacity": 262144,
+    "constructor_reservation_capacity_recovered_each_call": true,
+    "context_probe_compiled_and_unavailable_control_passed": true,
+    "physical_context_probe_passed": false,
+    "reference_resource_capacity_after_scope": 0,
+    "CPU_fallback": false,
+    "GPU_execution_accepted": false
+  },
+  "context_probe_default_no_driver": {
+    "actual_exit_code": 1,
+    "physical_success_printed": false,
+    "actual_CUDA_contexts": 0
+  },
+  "source_preparations": 4,
+  "actual_FFI_signatures_checked": 36,
+  "actual_NEX_corpus_cases_checked": 13,
+  "synthetic_trace_contracts": 13,
+  "false_receipts_rejected": 12,
+  "temporal_controls": [
+    "Input buffer freed while its dispatch remains unsettled",
+    "Unpublished output freed before dispatch settlement",
+    "Session destroyed before its last buffer",
+    "Buffer freed while a retained read cursor still exists"
+  ],
+  "trace_schema": "nex.experimental-owned-CUDA-trace/2",
+  "actual_NVIDIA_probe_requires": [
+    "Three real CUDA contexts and one actual device allocation",
+    "Caller and nested context identity restoration",
+    "Source reentry rejected before host polling",
+    "Host-trap constructor rollback and successful retry",
+    "All context and allocation counters balanced"
+  ],
+  "physical_Graphics_or_context_probe_execution": false,
+  "raw_archive": {
+    "archive_sha256": "dc6357cc29c02cd42eda32cf6f2ee093506bb8fcbcd1c400a1258bbabd264a45",
+    "archive_bytes": 3734456,
+    "raw_files": 411,
+    "raw_bytes": 17637546
+  },
+  "independent_receipt_sha256": "1bc312232289dccec8522e799ac184a96d2b62253ffebda8fb2a64a095ec1298",
+  "remaining_gates": [
+    "Native Windows/Linux compilation and actual NVIDIA context/scalar/parent run",
+    "Controlled post-enqueue cancellation/deadline",
+    "Source-deleted replay and standalone delivery",
+    "Other generated scalar roots",
+    "Compute Sanitizer",
+    "Coherent public CUDA and installed SDK qualification"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "public_CUDA_or_complete_owned_provider_or_SDK_accepted": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

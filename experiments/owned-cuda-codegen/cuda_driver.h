@@ -51,6 +51,7 @@ CUresult CUDA_CALL cuCtxCreate(CUcontext*,unsigned,CUdevice);
 CUresult CUDA_CALL cuCtxDestroy(CUcontext);
 CUresult CUDA_CALL cuCtxPushCurrent(CUcontext);
 CUresult CUDA_CALL cuCtxPopCurrent(CUcontext*);
+CUresult CUDA_CALL cuCtxGetCurrent(CUcontext*);
 CUresult CUDA_CALL cuCtxSynchronize();
 CUresult CUDA_CALL cuModuleLoadData(CUmodule*,const void*);
 CUresult CUDA_CALL cuModuleUnload(CUmodule);
