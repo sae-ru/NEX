@@ -30,11 +30,17 @@ function line ranges, parameter/result types and exact CUDA source SHA256.
 Source rejection happens before the selected output is opened.
 
 The subset is shared pure concrete `i64`/`bool`/`unit`, locals, assignment,
-branches, bounded execution of loops, helper/concrete generic calls, assertions
-and lowered source contracts. Unsupported reachable code is rejected. Only the
+branches, bounded execution of loops, scalar `match` expressions/statements,
+helper/concrete generic calls, assertions and lowered source contracts.
+Unsupported reachable code is rejected. Only the
 reachable call graph is emitted; unused server/foreign code is excluded. There
 are at most8 root arguments,128 functions/call levels and16MiB of generated code.
-Recursion, heap values, f64, source errors, closures and match remain unsupported.
+Recursion, heap values, f64, source errors, closures and aggregate patterns remain
+unsupported. Scalar matches support integer/bool literals, immutable bindings,
+wildcards, ordered lazy guards, nested values, unit arms and normal returns.
+The subject is evaluated once. Each attempted arm consumes the lane budget;
+false guards retain the original subject and later arms do not run after a match.
+Exhaustiveness, unreachable patterns and binding mutability use the NEX checker.
 
 ## Physical ABI and arithmetic
 
@@ -59,7 +65,7 @@ bool output is0/1, and unit output is0. Nonzero status always writes zero output
 | 2 | Division/remainder by zero |
 | 3 | Failed assertion or source contract |
 | 4 | Lane step budget exhausted |
-| 5 | Invalid value-function fallthrough |
+| 5 | Invalid checked control flow or value-function fallthrough |
 | 6 | Noncanonical bool input |
 
 A trusted host must validate allocation shapes, every pointer, launch geometry
@@ -82,8 +88,15 @@ python3 -B experiments/cuda-codegen/verify_source.py \
 ```
 
 Set the usual `NEX_NODE`/`NEX_TSC` paths for TypeScript tests. The initial source
-control passed16 fixtures,32 layouts,186 lane outcomes and7 rejected programs.
+control passed 28 fixtures, 56 layouts, 256 lane outcomes and 9 rejected programs.
+Match cases cover guard traps, skipped arms, binding shadowing, generic patterns,
+loops and a subject-once budget control. The original 16 fixtures / 32 layouts
+retain identical emitted source, metadata and data; their separately queued
+hardware check is still applicable to that exact subset. The 24 new match kernels
+need their own physical qualification.
 These results do not establish CUDA compilation or GPU execution.
+The [versioned source evidence](../../docs/evidence/cuda-scalar-match-source-0.165.0-2026-11-10.json)
+records the tested emitter, checked frontend and exact limits of these results.
 
 `verify_device.py` separately uses an explicitly selected NVRTC12+ library and
 the installed CUDA Driver API. It compiles the pinned `.cu` files as C++20 for

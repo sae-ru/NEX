@@ -1,10 +1,11 @@
 # General GPU code generation — scalar Metal precursor
 
 The independent [checked-AST CUDA experiment](experiments/cuda-codegen/README.md)
-now emits ordinary checked0.28 scalar functions with explicit64-bit arithmetic
-and rows/columns ABIs. Its source controls passed16 fixtures,32 layouts and186
-lane outcomes under host UBSan, reference/native/TypeScript agreement and7
-rejected programs. This is a source-only experiment, separate from the public
+now emits ordinary checked 0.28 scalar functions with explicit 64-bit arithmetic
+and rows/columns ABIs, including scalar `match` with ordered guards and one
+subject evaluation. Its source controls passed 28 fixtures, 56 layouts and 256
+lane outcomes under host UBSan, positive reference/native/TypeScript agreement
+and 9 rejected programs. This is a source-only experiment, separate from the public
 compiler and fixed Windows CUDA provider. Actual NVRTC/GPU/memcheck, generated
 owned-provider integration and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.

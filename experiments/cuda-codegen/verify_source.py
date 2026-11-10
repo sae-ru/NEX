@@ -52,6 +52,31 @@ def fixtures():
           ([MAX, 0, 2, 3, 10, 0, MIN, MIN], 0, 0),
           ([0, 2, 0, 0, 0, 0, 0, 0], 0, 6)]),
         ('quota', 'pub fn transform(x:i64)->i64{while true{}return x;}', [([1], 0, 4)]),
+        ('match_returns', 'pub fn transform(x:bool)->i64{match x{true=>{return 1;},false=>{return 0;}}}',
+         [([1], 1, 0), ([0], 0, 0), ([2], 0, 6)]),
+        ('match_integers', 'pub fn transform(x:i64)->i64{return match x{-9223372036854775808=>11,9223372036854775807=>12,0=>13,n=>n};}',
+         [([MIN], 11, 0), ([MAX], 12, 0), ([0], 13, 0), ([-7], -7, 0)]),
+        ('match_guards', 'pub fn transform(x:i64)->i64{return match x{n if n==0=>1,n if n<0=>-n,n=>n+2};}',
+         [([0], 1, 0), ([-3], 3, 0), ([7], 9, 0), ([MIN], 0, 1)]),
+        ('match_guard_trap', 'fn fail()->bool{assert(false);return true;}pub fn transform(x:i64)->i64{return match x{0 if fail()=>1,n=>n+1};}',
+         [([1], 2, 0), ([0], 0, 3), ([MAX], 0, 1)]),
+        ('match_unselected_value', 'fn fail()->i64{assert(false);return 0;}pub fn transform(x:i64)->i64{return match x{0=>42,_=>fail()};}',
+         [([0], 42, 0), ([1], 0, 3)]),
+        ('match_shadowing', 'pub fn transform(x:i64)->i64{var y:i64=100;match x{0=>{let y:i64=7;assert(y==7);},n=>{y=n+1;}}return y;}',
+         [([0], 100, 0), ([5], 6, 0), ([MAX], 0, 1)]),
+        ('match_nested', 'pub fn transform(x:bool,y:i64)->i64{return match x{true=>match y{0=>7,n=>n},false=>-1};}',
+         [([1, 0], 7, 0), ([1, 9], 9, 0), ([0, MAX], -1, 0), ([2, 0], 0, 6)]),
+        ('match_loop', 'pub fn transform(x:i64)->i64{var i:i64=0;var sum:i64=0;while i<x{sum=sum+match i%3{0=>10,1=>20,_=>30};i=i+1;}return sum;}',
+         [([0], 0, 0), ([3], 60, 0), ([6], 120, 0)]),
+        ('match_generic', 'fn choose<T:integer>(x:T)->T{return match x{0=>1,n=>n};}pub fn transform(x:i64)->i64{return choose<i64>(x);}',
+         [([0], 1, 0), ([MIN], MIN, 0), ([MAX], MAX, 0)]),
+        ('match_unit_statement', 'pub fn transform(x:bool)->unit{match x{true=>{assert(true);},false=>{assert(false);}}}',
+         [([1], 0, 0), ([0], 0, 3)]),
+        ('match_unit_expression', 'pub fn transform(x:bool)->unit{match x{true=>assert(true),false=>assert(false)};}',
+         [([1], 0, 0), ([0], 0, 3)]),
+        ('match_subject_once', 'fn subject(x:i64)->i64{var i:i64=0;while i<128{i=i+1;}return x;}pub fn transform(x:i64)->i64{return match subject(x){' +
+         ','.join(str(i) + '=>' + str(i) for i in range(10)) + ',n=>n};}',
+         [([100], 100, 0), ([MIN], MIN, 0)]),
     ])
     return cases
 
@@ -106,11 +131,12 @@ def main():
                 assert 'UNREACHABLE_DEVICE_SECRET' not in code
                 assert all(1 <= f['first_line'] <= f['last_line'] <= len(code.splitlines()) for f in metadata['functions'])
                 count, arity = len(rows), len(metadata['parameter_types'])
+                steps = 64 if name == 'quota' else 4096 if name == 'match_subject_once' else 65536
                 matrix = [r[0] for r in rows]
                 values = [v for row in matrix for v in row] if layout == 'rows' else [matrix[lane][p] for p in range(arity) for lane in range(count)]
                 literals = ','.join('nex_bits(0x%016xULL)' % (v % (1 << 64)) for v in values) or '0LL'
                 inputs = ['input'] if layout == 'rows' else ['input+' + str(p * count) for p in range(arity)]
-                call = ','.join([*inputs, 'output', 'errors', str(count) + 'U', '64U' if name == 'quota' else '65536U'])
+                call = ','.join([*inputs, 'output', 'errors', str(count) + 'U', str(steps) + 'U'])
                 harness = project / (layout + '-host.cpp')
                 harness.write_text('#include <iostream>\n#define __device__\n#define __global__\n'
                     'struct Index{unsigned int x;};Index blockIdx,blockDim,threadIdx;\n#include ' + json.dumps(str(shader)) + '\n'
@@ -127,7 +153,7 @@ def main():
                 row = {'name': name, 'layout': layout, 'shader': str(shader.relative_to(out)),
                        'shader_sha256': sha(shader), 'metadata': metadata,
                        'lanes': [{'arguments': list(map(str, r[0])), 'value': str(r[1]), 'error': r[2]} for r in rows],
-                       'steps': 64 if name == 'quota' else 65536,
+                       'steps': steps,
                        'host_UBSan_passed': True, 'excess_lanes_untouched': True}
                 report['cases'].append(row)
             types = metadata['parameter_types']
@@ -160,7 +186,9 @@ def main():
             ('server', 'pub server fn transform(x:i64)->i64{return x;}', 'E_GPU_REALM'),
             ('effect', 'pub fn transform()->unit !{io}{print(1);}', 'E_GPU_REALM'),
             ('recursive', 'pub fn transform(x:i64)->i64{return transform(x);}', 'E_GPU_RECURSION'),
-            ('match', 'pub fn transform(x:bool)->i64{match x{true=>{return 1;},false=>{return 0;}}}', 'E_GPU_UNSUPPORTED'),
+            ('aggregate_match', 'pub enum Choice{A;B;}pub fn transform(x:Choice)->i64{return match x{Choice::A()=>1,Choice::B()=>0};}', 'E_GPU_TYPE'),
+            ('uncovered_match', 'pub fn transform(x:bool)->i64{return match x{true=>1};}', 'E_MATCH_EXHAUSTIVE'),
+            ('duplicate_match', 'pub fn transform(x:bool)->i64{return match x{true=>1,true=>2,false=>0};}', 'E_MATCH_DUPLICATE'),
             ('nine', 'pub fn transform(' + ','.join('a' + str(i) + ':i64' for i in range(9)) + ')->i64{return a0;}', 'E_GPU_LIMIT'),
         ]
         for name, body, expected in rejected:

@@ -1,0 +1,59 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Independent checked-AST CUDA scalar source experiment with match expressions and statements. Generated CUDA was executed as host C++ under UBSan, with separate checked NEX agreement. No NVRTC, GPU, generated owned provider, public CUDA CLI or portable SDK acceptance is claimed.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "public_compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "experimental_emitter_sha256": "147ae6cdb39301099e8ce7950a4219b4887076ade5ebd2c44a7d493286eba013",
+  "checked_frontend_archive_sha256": "e6508063c820ce82caf4f62f49d59b5b5e62909a038419d8913134ef19951c26",
+  "experimental_emitter_source_sha256": "38439460c26af05af756f3ce9dc0ca78466c380013968b82c7f7606c830187c7",
+  "source_verifier_sha256": "15538372cc3135deada56f660c0ae841bf952e47a8030a06f0f4e3409fede231",
+  "local_controls": {
+    "source_fixtures": 28,
+    "CUDA_layout_cases": 56,
+    "lane_results_checked": 256,
+    "rejected_programs": 9,
+    "host_UBSan_controls": 56,
+    "positive_NEX_reference_native_TypeScript_agreement": true,
+    "reference_fatal_error_precedence_checked": true,
+    "extra_lanes_untouched": true,
+    "checked_program_revision_and_reachable_hash_matches": 28,
+    "actual_generated_function_line_maps_checked": 56,
+    "prior32_sources_metadata_and_case_data_byte_identical": true
+  },
+  "match_controls": [
+    "Integer min/max, bool literals, bindings and wildcards",
+    "Lazy ordered guards and trap priority",
+    "Unselected branch remains unexecuted",
+    "Arm binding scope, shadowing and outer assignment",
+    "Nested matches, loop bodies and concrete generics",
+    "Unit expressions, unit statements and early returns",
+    "Single subject evaluation under a bounded lane budget",
+    "Uncovered and duplicate patterns rejected before output mutation"
+  ],
+  "unsupported": [
+    "Aggregate patterns and heap values",
+    "Floating point",
+    "Source errors and closures",
+    "Recursive device call graphs"
+  ],
+  "physical_status": {
+    "previous32_cases": "Queued before the operator reported stands offline; current state unobserved.",
+    "new24_match_cases": "Not executed on physical CUDA hardware.",
+    "GPU_execution_accepted": false,
+    "CPU_host_controls_qualify_GPU": false
+  },
+  "raw_archive": {
+    "archive_sha256": "de5968b1b01fb2fc2a251a2fe980f82a4c2e36cece718b7b607babe9eec85a87",
+    "archive_bytes": 6671524,
+    "raw_files": 1287,
+    "raw_bytes": 40756712
+  },
+  "independent_receipt_sha256": "3ef89540a3b9d34644d0ad350372e312a8b287de49dfa6a73447587e0287a516",
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "public_CUDA_CLI_or_owned_provider_or_SDK_accepted": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

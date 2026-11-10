@@ -125,6 +125,23 @@ class Emitter {
         }else if(expression->args.size()!=1||expression->type!=Type::Unit)
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA assertion",expression->span);
         break;
+      case Expr::Match:
+        if(expression->args.empty()||expression->arms.empty())
+          throw Error("E_GPU_UNSUPPORTED","missing checked CUDA match arms",expression->span);
+        for(const auto &arm:expression->arms){
+          if(!arm->pattern||!arm->pattern->args.empty()||
+             (arm->pattern->type!=Type::I64&&arm->pattern->type!=Type::Bool))
+            throw Error("E_GPU_TYPE","CUDA match requires scalar i64/bool patterns",arm->span);
+          switch(arm->pattern->kind){
+            case Pattern::Binding:case Pattern::Wildcard:case Pattern::Integer:case Pattern::Boolean:break;
+            default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA scalar pattern",arm->span);
+          }
+          if((arm->guard&&arm->guard>=expression->args.size())||
+             (!expression->statementMatch&&(!arm->value||arm->value>=expression->args.size())))
+            throw Error("E_GPU_UNSUPPORTED","invalid checked CUDA match operand",arm->span);
+          validateBlock(arm->body);
+        }
+        break;
       default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA expression",expression->span);
     }
     for(const auto &argument:expression->args)validateExpression(argument);
@@ -136,7 +153,7 @@ class Emitter {
         case Stmt::Let:case Stmt::Var:
           if(statement->type==Type::Unit)throw Error("E_GPU_TYPE","unit is not a CUDA local",statement->span);
           scalar(statement->type,statement->span);break;
-        case Stmt::Assign:case Stmt::Expression:case Stmt::Return:case Stmt::If:case Stmt::While:break;
+        case Stmt::Assign:case Stmt::Expression:case Stmt::Return:case Stmt::If:case Stmt::While:case Stmt::Match:break;
         default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA statement",statement->span);
       }
       validateExpression(statement->expr);
@@ -155,6 +172,50 @@ class Emitter {
   void guard(){line("if (nex_s.code) { "+stop()+" }");}
   void tick(){line("if (!nex_tick(nex_s)) { "+stop()+" }");}
 
+  std::string patternCondition(const P &pattern,const std::string &subject){
+    switch(pattern->kind){
+      case Pattern::Binding:case Pattern::Wildcard:return "true";
+      case Pattern::Boolean:return subject+" == "+(pattern->number?"true":"false");
+      case Pattern::Integer:{
+        std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(pattern->number);
+        return subject+" == nex_bits(0x"+bits.str()+"ULL)";
+      }
+      default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA scalar pattern",pattern->span);
+    }
+  }
+
+  std::string matching(const E &value,const Scope &scope){
+    // Keep one immutable subject across failed patterns and guards. Bindings
+    // point to that already evaluated scalar, never to a caller's mutable slot.
+    const auto subject=expression(value->args.at(0),scope);
+    const auto matched=temporary();std::string output;
+    if(!value->statementMatch&&value->type!=Type::Unit){
+      output=temporary();line(scalar(value->type,value->span)+" "+output+" = "+(value->type==Type::Bool?"false":"0LL")+";");
+    }
+    line("bool "+matched+" = false;");
+    for(const auto &arm:value->arms){
+      line("if (!"+matched+") {");++indentation;
+      where=arm->span;tick(); // Each attempted arm consumes the lane budget.
+      line("if ("+patternCondition(arm->pattern,subject)+") {");++indentation;
+      Scope bound=scope;
+      if(arm->pattern->kind==Pattern::Binding)bound[arm->pattern->text]=subject;
+      if(arm->guard){
+        const auto condition=expression(value->args.at(arm->guard),bound);
+        line("if ("+condition+") {");++indentation;
+      }
+      line(matched+" = true;");
+      if(value->statementMatch)block(arm->body,bound);
+      else{
+        const auto accepted=expression(value->args.at(arm->value),bound);
+        if(value->type!=Type::Unit)line(output+" = "+accepted+";");
+      }
+      if(arm->guard){--indentation;line("}");}
+      --indentation;line("}");--indentation;line("}");
+    }
+    line("if (!"+matched+") { nex_s.code = 5; "+stop()+" }");
+    return output;
+  }
+
   std::string expression(const E &value,const Scope &scope){
     if(!value)throw Error("E_GPU_UNSUPPORTED","missing CUDA expression",where);
     where=value->span;tick();std::string generated;
@@ -169,6 +230,7 @@ class Emitter {
         if(found==scope.end())throw Error("E_GPU_UNSUPPORTED","unbound CUDA local: "+value->text,value->span);
         generated=found->second;break;
       }
+      case Expr::Match:return matching(value,scope);
       case Expr::Unary:{
         auto child=expression(value->args.at(0),scope);
         generated=value->text=="-"?"nex_neg("+child+", nex_s)":"!"+child;break;
@@ -215,6 +277,7 @@ class Emitter {
           line(found->second+" = "+value+";");break;
         }
         case Stmt::Expression:expression(statement->expr,scope);break;
+        case Stmt::Match:expression(statement->expr,scope);break;
         case Stmt::Return:{
           auto value=statement->expr?expression(statement->expr,scope):std::string{};
           line("return"+(value.empty()?std::string{}:" "+value)+";");break;
