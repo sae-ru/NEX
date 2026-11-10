@@ -1,6 +1,7 @@
 # LLM comparison campaign v1
 
-Status: **prepared source bundles and host controls; no model trials**. Applies to NEX
+Status: **prepared host controls, local transport and scoped macOS isolation;
+no model task trials**. Applies to NEX
 language0.28. The [catalogue](tasks.json) contains ten language-neutral tasks
 based on pinned learning examples. Those files establish provenance; they are
 not measured model candidates. [Preparation and executable acceptance](README.md)
@@ -120,9 +121,11 @@ solutions and30 rejected starts qualify the functional host controls. Independen
 source-rule review remains separately bound to exact candidate/contract pins.
 The models have not attempted these tasks.
 
-Next implement the local collection runner, including restricted model tool/file
-access, OS isolation of model-generated execution, source-rule review and full
-usage/retry evidence. Pin the selected Qwen weight/tokenizer revision and
-stopping rules; freeze all inputs, then run a small infrastructure pilot before
+The local native-API transport, weight-pinning/readiness tools and separate
+macOS compilation/execution policies are implemented with scoped host controls.
+One benign real Qwen readiness response is transport evidence, not a task trial.
+Next implement the collection runner with restricted model tool/file access,
+host-owned source-rule review and complete usage/retry evidence. Pin the selected
+Qwen runtime/effective template and stopping rules; freeze all inputs, then run a small infrastructure pilot before
 the comparable matrix. Changed pilot rules create a new version. These host
 controls and the learning corpus are not any of the model trials.

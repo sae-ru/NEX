@@ -177,7 +177,8 @@ def _summarize(path):
         calls = run.get('calls')
         require(isinstance(calls, list) and 0 < len(calls) <= 10000, 'record every attempted model call')
         row = {'accepted': status == 'accepted', 'status': status, 'wall_ms': count(run.get('wall_ms')),
-               'calls': len(calls), 'unknown_usage': 0, 'input': 0, 'cached': 0, 'output': 0,
+               'calls': len(calls), 'unknown_usage': 0, 'unknown_cache': 0,
+               'input': 0, 'cached': 0, 'uncached': 0, 'output': 0,
                'costs': {}, 'unknown_cost': 0}
         call_ids = set()
         for call in calls:
@@ -191,12 +192,20 @@ def _summarize(path):
             usage = call.get('usage')
             if usage is None:
                 row['unknown_usage'] += 1
+                row['unknown_cache'] += 1
             else:
                 require(isinstance(usage, dict), 'invalid token usage')
-                incoming = count(usage.get('input_tokens'));cached = count(usage.get('cached_input_tokens'))
+                incoming = count(usage.get('input_tokens'))
                 outgoing = count(usage.get('output_tokens'))
-                require(cached <= incoming, 'cached input must be a subset of input tokens')
-                row['input'] += incoming;row['cached'] += cached;row['output'] += outgoing
+                require('cached_input_tokens' in usage, 'declare cached input explicitly, using null when unknown')
+                cached = usage['cached_input_tokens']
+                if cached is None:
+                    row['unknown_cache'] += 1
+                else:
+                    cached = count(cached)
+                    require(cached <= incoming, 'cached input must be a subset of input tokens')
+                    row['cached'] += cached;row['uncached'] += incoming - cached
+                row['input'] += incoming;row['output'] += outgoing
             cost = call.get('confirmed_cost')
             if cost is None:
                 row['unknown_cost'] += 1
@@ -226,9 +235,11 @@ def _summarize(path):
                                   for s in ('accepted', 'failed', 'timeout', 'budget_exhausted')},
             'matrix_complete': complete, 'calls': sum(row['calls'] for row in rows),
             'calls_without_usage': unknown, 'usage_complete': not unknown,
+            'calls_without_cache_usage': sum(row['unknown_cache'] for row in rows),
+            'cache_usage_complete': not any(row['unknown_cache'] for row in rows),
             'known_input_tokens': sum(row['input'] for row in rows),
             'known_cached_input_tokens': sum(row['cached'] for row in rows),
-            'known_uncached_input_tokens': sum(row['input'] - row['cached'] for row in rows),
+            'known_uncached_input_tokens': sum(row['uncached'] for row in rows),
             'known_output_tokens': sum(row['output'] for row in rows), 'known_total_tokens': tokens,
             'all_tokens_per_accepted_trial': ratio(tokens, accepted) if complete and not unknown else None,
             'median_trial_tokens': median(trials) if complete and not unknown else None,
@@ -249,11 +260,13 @@ def _summarize(path):
                     baseline['known_total_tokens'] * nex['accepted_trials']) if comparable else None,
                 'nex_success_rate_at_least_baseline': nex['accepted_trials'] >= baseline['accepted_trials'] if comparable else None}
     usage_complete = all(row['calls_without_usage'] == 0 for rows in results.values() for row in rows.values())
+    cache_complete = all(row['cache_usage_complete'] for rows in results.values() for row in rows.values())
     return {'schema': 'nex.llm-cost-summary/1', 'valid': True, 'data_kind': campaign['data_kind'],
             'ledger_sha256': hashlib.sha256(raw).hexdigest(), 'models': list(models.values()),
             'tasks': [{'id': name, 'contract_sha256': pin} for name, pin in tasks.items()],
             'repeats': repeats, 'matrix_complete': not missing, 'missing_trials': missing,
-            'usage_complete_for_observed_calls': usage_complete, 'results': results, 'comparisons': comparisons,
+            'usage_complete_for_observed_calls': usage_complete,
+            'cache_usage_complete_for_observed_calls': cache_complete, 'results': results, 'comparisons': comparisons,
             'eligible_for_comparison_review': campaign['data_kind'] == 'observed' and not missing and
                 usage_complete and len(models) >= 3 and repeats >= 2,
             'artifact_hashes_verified': {name: value[0] for name, value in sorted(artifacts.items())},

@@ -2,9 +2,11 @@
 
 These host tools prepare30 starting bundles (ten tasks × NEX/C++/Python),
 execute functional acceptance, retain raw evidence and bind independent source
-reviews. They make no model requests. Control solutions are experiment fixtures,
-not observed LLM answers. The [protocol](protocol.md) and [task contracts](tasks.json)
-define the intended comparison. Actual local-model trials remain a later step.
+reviews. Preparation/acceptance make no model requests. The separate local
+transport and readiness command can invoke the selected Qwen model. Control
+solutions are experiment fixtures, not observed LLM answers. The [protocol](protocol.md)
+and [task contracts](tasks.json) define the intended comparison. Actual task trials
+and their collection runner remain pending.
 
 From a checkout or matching SDK resource root, prepare one fresh candidate:
 
@@ -25,7 +27,7 @@ Check a candidate with actual execution:
 python3 experiments/quality/llm-campaign-v1/acceptance.py check \
   --task unicode-window --language nex --candidate /path/to/candidate \
   --compiler /absolute/path/to/nex --output /new/acceptance \
-  --functional-only
+  --functional-only --isolate
 ```
 
 For C++, select `--language cpp --cpp-compiler /absolute/path/to/clang++`.
@@ -96,13 +98,54 @@ private-job observer through `--windows-observer`; it is never replaced with a
 process-name/PID-tree scan. That helper's native binary must already be built
 for the host. Current Windows qualification remains separate.
 
-Process ownership is **not an OS security sandbox**. This tool currently executes
-maintained trusted host controls. Before running model-generated candidates,
-the collection host must enforce restricted source/tool access and OS isolation
-for untrusted execution. It must also pin model weights/tokenizers/settings,
-collect exact local-provider usage and retain every failed/retried call. User
-policy for the experiment is the installed Qwen3.8 27B Q8_0 only, without paid
-APIs. The [selected profile](local-model.json) must acquire real revision pins
-before the60-slot study. No weights
-are downloaded or models loaded by these tools. The full60-slot experiment,
-token-saving result, independent review and portable SDK qualification are pending.
+`--isolate` requires the qualified macOS Seatbelt backend. It uses separate
+compilation and execution profiles: compilation writes only its private workspace
+and explicitly owned cache; execution cannot fork/spawn, connect to the network,
+read arbitrary host files or write its source directory. Threads remain available.
+The environment excludes API keys and inherited proxy settings. Hard CPU/file/
+descriptor limits, owned-group wall/output limits and observed group RSS budgets
+apply. C++ and NEX select the actual Xcode linker directly. The OS loader profile
+is pinned. These policies have scoped host checks; they are not a VM or a proof
+against kernel/compiler vulnerabilities. Other hosts require their own qualified
+isolation backend. Without this option, the runner provides process ownership
+and limits only; use it for maintained trusted controls.
+
+The isolated checks cover three unchanged task solutions (21 case observations),
+actual file/network/process/signal denials and rejection of a Python candidate
+attempting to read the expected-value oracle. The private driver passes inputs
+only to Python candidates; expected values stay in the parent. The earlier
+244 control observations retain their original harness pins and execution mode.
+See [scoped evidence](../../../docs/evidence/llm-local-transport-isolation-0.165.0-2026-11-11.json).
+
+## Selected local model readiness
+
+User policy is the existing **Qwen3.8 27B GGUF Q8_0 only**, without paid APIs.
+Start the operator's LM Studio local server on `http://127.0.0.1:1234`. Hash
+the existing directory into a new host manifest (this reads all artifact bytes):
+
+```sh
+python3 experiments/quality/llm-campaign-v1/weights.py \
+  --root /absolute/path/to/Qwen3.8-27B-GGUF --output /new/weights.json
+python3 experiments/quality/llm-campaign-v1/readiness.py \
+  --weights /new/weights.json --output /new/readiness
+```
+
+`weights.py` neither downloads nor loads a model. Readiness requires an idle
+local service, creates its own uniquely named instance, sets context16384 /
+parallel1 / full GPU offload and performs **one benign transport probe**, then
+unloads only that instance. It executes no model-authored programs and is not
+one of the60 task trials. Existing user instances are never replaced or unloaded.
+The GGUF tokenizer is covered by its full-file hash; runtime/effective template
+and all study stopping rules still need to be frozen before task trials.
+
+The native API client permits only numeric loopback, ignores proxy environment
+variables, rejects redirects and disables server integrations/history storage.
+Requests explicitly disable reasoning and fix temperature0/top-p1. Exact transmitted
+requests, raw responses, usage, errors and interrupted calls are retained. Actual
+input/output totals are counted once; an unreported cached-input subtotal stays
+`null`, never an invented zero. The observed readiness call used36 input and6
+output tokens with an unreported cache split; the owned instance was unloaded.
+
+The remaining collection runner must restrict the model's file/tool view, own
+source-rule review and freeze runtime/template/budgets. Full60-slot results,
+token savings, independent review and matching portable SDK qualification are pending.

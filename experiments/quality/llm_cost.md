@@ -123,6 +123,12 @@ Do not add a reasoning subtotal twice. Count every call's complete input,
 including repeated prompts, documents, tool responses and repaired context.
 `usage: null` means unavailable usage and prevents a complete token comparison.
 Do not estimate missing tokens from bytes, file length or a different tokenizer.
+When total input/output counts are known but the provider does not report a
+cache split, explicitly set `cached_input_tokens:null`. This preserves the real
+total-token comparison, marks cache usage incomplete and reports only known
+cached/uncached subtotals. Missing the field entirely is rejected. Never replace
+unknown cached input with zero. `calls_without_cache_usage` and
+`cache_usage_complete_for_observed_calls` expose the distinction.
 
 `confirmed_cost` is either null or, for example,
 `{"amount":"0.001234","currency":"USD"}`. Use confirmed recorded amounts,

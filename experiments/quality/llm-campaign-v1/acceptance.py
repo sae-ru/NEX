@@ -6,6 +6,7 @@ Behavioral success is distinct from independent review of source-level rules.
 """
 import argparse
 import contextlib
+import datetime
 import hashlib
 import importlib.util
 import json
@@ -132,7 +133,7 @@ def source_review(review, candidate, digest, item):
     return raw
 
 
-def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None):
+def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None, max_group_rss=None):
     argv = list(map(str, argv)); began = time.monotonic(); reason = None
     stdout, stderr = output / (name + '.stdout'), output / (name + '.stderr')
     if os.name == 'nt':
@@ -147,12 +148,28 @@ def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None)
         with stdout.open('xb') as out, stderr.open('xb') as err:
             child = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
                                      stdout=out, stderr=err, start_new_session=True)
+            started = {'pid': child.pid, 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                       'argv': argv, 'cwd': str(cwd), 'owned_new_session': True}
+            save(output / (name + '.owner.json'), started)
             def interrupt(signum, frame): raise InterruptedError('campaign command interrupted')
             previous = signal.signal(signal.SIGTERM, interrupt)
+            last_rss_sample = 0
             try:
                 while child.poll() is None:
                     if time.monotonic() - began > timeout: reason = 'timeout'; break
                     if any(p.stat().st_size > LIMIT for p in (stdout, stderr)): reason = 'output_limit'; break
+                    if max_group_rss is not None and time.monotonic() - last_rss_sample >= 0.1:
+                        # Query only the new owned session's kernel process group,
+                        # never a process-name or unrelated PID tree. RSS is an
+                        # aggregate upper bound, not a heap/peak memory metric.
+                        sample = subprocess.run(['/bin/ps', '-o', 'rss=', '-g', str(child.pid)],
+                                                capture_output=True, timeout=5)
+                        if sample.returncode and child.poll() is None: raise ValueError('cannot observe owned process-group memory')
+                        values = sample.stdout.split()
+                        if any(not item.isdigit() for item in values): raise ValueError('invalid owned RSS observation')
+                        if sum(map(int, values)) * 1024 > max_group_rss:
+                            reason = 'resident_memory_limit'; break
+                        last_rss_sample = time.monotonic()
                     time.sleep(0.02)
             finally:
                 # Retire the newly owned group even when its root already exited.
@@ -172,10 +189,14 @@ def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None)
 
 def check(candidate, task, language, output, *, compiler=None, cpp=None,
           resources=RESOURCES, cache=None, trial_id='offline-control', review=None,
-          cpp_args=(), windows_observer=None, visible_only=False):
+          cpp_args=(), windows_observer=None, visible_only=False, isolate=False):
     item = catalogue()[task]; candidate = Path(candidate).resolve(strict=True)
     files = read_candidate(candidate, task, language); digest = source_digest(files)
     review_raw = source_review(review, candidate, digest, item)
+    sandbox = None
+    if isolate:
+        isolation = module('nex_campaign_isolation', HERE / 'isolation.py')
+        sandbox = isolation.MacSandbox(compiler=compiler, cpp=cpp, resources=resources)
     cases = item['contract']['visible_cases'] + ([] if visible_only else fixtures.held_out(task))
     expected = drivers.expected(task, cases); output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -188,8 +209,15 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
     env = {k: v for k, v in os.environ.items() if not k.startswith(('NEX_', 'PYTHON', 'LD_', 'DYLD_'))}
     env.update(NEX_RESOURCE_DIR=str(Path(resources).resolve()), PYTHONDONTWRITEBYTECODE='1')
     tool_pins = {'python': {'executable': sys.executable, 'version': sys.version, 'sha256': sha(Path(sys.executable).read_bytes())}}
-    def run(name, args, timeout=120):
-        row = command(args, workspace, env, output, name, timeout=timeout, windows_observer=windows_observer)
+    def run(name, args, timeout=120, *, compile_phase=False):
+        selected_env, limit = env, None
+        if sandbox:
+            selected_env = sandbox.environment(workspace, compile_phase=compile_phase)
+            args = sandbox.wrap(args, workspace, output, name, compile_phase=compile_phase,
+                                writable_cache=cache if compile_phase and language == 'nex' else None)
+            limit = (2048 if compile_phase else 512) * 1024 * 1024
+        row = command(args, workspace, selected_env, output, name, timeout=timeout,
+                      windows_observer=windows_observer, max_group_rss=limit)
         commands.append(row)
         return row
     def observe(row, nex=False):
@@ -211,7 +239,7 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
             if not compiler: raise ValueError('selected NEX compiler is required')
             compiler = Path(compiler).resolve(strict=True); pin = sha(compiler.read_bytes())
             tool_pins['nex'] = {'path': str(compiler), 'sha256': pin}
-            discovery = run('discovery', [compiler, 'describe', '--kind', 'index', '--json'])
+            discovery = run('discovery', [compiler, 'describe', '--kind', 'index', '--json'], compile_phase=True)
             if discovery['exit_code'] != 0: raise ValueError('NEX discovery failed')
             descriptor = decode((output / discovery['stdout']).read_bytes())
             if descriptor.get('language') != '0.28': raise ValueError('campaign requires current language0.28')
@@ -225,10 +253,33 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
             (workspace / 'main.nex').write_text(body, encoding='utf-8')
             (output / 'driver.nex').write_text(body, encoding='utf-8')
             save(workspace / 'nex.json', {'schema': 'nex.project/1', 'language': '0.28', 'entry': 'main.nex'})
-            checked = run('source-check', [compiler, 'check', '--json'])
+            checked = run('source-check', [compiler, 'check', '--json'], compile_phase=True)
             if checked['exit_code'] == 0 and not checked['stopped']:
-                observe(run('reference', [compiler, 'eval', '--json']), nex=True)
-                observe(run('native', [compiler, 'run', '--profile', 'release', '--build-directory', cache, '--json']), nex=True)
+                observe(run('reference', [compiler, 'eval', '--json'], compile_phase=True), nex=True)
+                if sandbox:
+                    info = run('toolchain-info', [compiler, 'doctor', '--json'], compile_phase=True)
+                    if info['exit_code'] != 0: raise ValueError('cannot capture the selected native toolchain')
+                    doctor = decode((output / info['stdout']).read_bytes())
+                    toolchain = {'schema': 'nex.toolchain/1', 'target': doctor['host'],
+                        'compiler': doctor['native_compiler'], 'archiver': doctor['native_archiver'],
+                        'debug_packager': doctor['native_debug_packager'], 'linker': str(sandbox.linker)}
+                    if doctor['native_sysroot']: toolchain['sysroot'] = doctor['native_sysroot']
+                    if doctor['native_sqlite_include'] and doctor['native_sqlite_library']:
+                        toolchain['sqlite'] = {'include': doctor['native_sqlite_include'], 'library': doctor['native_sqlite_library']}
+                    if doctor['native_openssl_include']:
+                        toolchain['openssl'] = {'include': doctor['native_openssl_include'],
+                            'ssl': doctor['native_openssl_ssl'], 'crypto': doctor['native_openssl_crypto']}
+                    save(workspace / 'toolchain.json', toolchain); save(output / 'toolchain.json', toolchain)
+                    tool_pins['nex']['explicit_linker'] = str(sandbox.linker)
+                    built = run('native-build', [compiler, 'build', '--profile', 'release', '--build-directory', cache,
+                                '--toolchain', workspace / 'toolchain.json', '--json'], compile_phase=True)
+                    if built['exit_code'] == 0 and not built['stopped']:
+                        executable = Path(decode((output / built['stdout']).read_bytes())['executable']).resolve(strict=True)
+                        if not executable.is_relative_to(cache): raise ValueError('native image escaped the owned cache')
+                        observe(run('native', [executable], 30))
+                    else: errors.append({'step': 'native-build', 'reason': 'native compilation failed'})
+                else:
+                    observe(run('native', [compiler, 'run', '--profile', 'release', '--build-directory', cache, '--json']), nex=True)
             else: errors.append({'step': 'source-check', 'reason': 'candidate rejected'})
             if sha(compiler.read_bytes()) != pin: raise ValueError('compiler changed during acceptance')
         elif language == 'cpp':
@@ -242,7 +293,9 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
             shutil.copyfile(workspace / 'driver.cpp', output / 'driver.cpp')
             binary = workspace / ('application.exe' if os.name == 'nt' else 'application')
             sources = [workspace / 'driver.cpp'] + ([workspace / 'operations.cpp'] if task == 'module-interface-change' else [])
-            built = run('compile', [cpp, '-std=c++20', '-O2', '-pthread', *cpp_args, *sources, '-o', binary])
+            selected_linker = ['--ld-path=' + str(sandbox.linker)] if sandbox else []
+            if sandbox: tool_pins['cpp']['explicit_linker'] = str(sandbox.linker)
+            built = run('compile', [cpp, '-std=c++20', '-O2', '-pthread', *cpp_args, *selected_linker, *sources, '-o', binary], compile_phase=True)
             if built['exit_code'] == 0 and not built['stopped']: observe(run('execute', [binary], 30))
             else: errors.append({'step': 'compile', 'reason': 'candidate rejected'})
             if sha(cpp.read_bytes()) != tool_pins['cpp']['sha256']: raise ValueError('C++ compiler changed')
@@ -273,7 +326,9 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
               'source_contract_reviewed': reviewed, 'tool_pins': tool_pins,
               'commands': commands, 'observations': observations, 'errors': errors,
               'successful_workspace_removed': True, 'model_calls': 0,
-              'runner_is_OS_sandbox': False, 'candidate_source_not_modified': True}
+              'runner_is_OS_sandbox': sandbox is not None,
+              'isolation_backend': 'darwin-seatbelt/1' if sandbox else None,
+              'candidate_source_not_modified': True}
     save(output / 'acceptance.json', receipt); save(output / 'report.json', report)
     return report
 
@@ -290,6 +345,7 @@ def main():
             p.add_argument('--compiler', type=Path); p.add_argument('--cpp-compiler', type=Path); p.add_argument('--cache', type=Path)
             p.add_argument('--resources', type=Path, default=RESOURCES); p.add_argument('--trial-id', default='offline-control')
             p.add_argument('--source-review', type=Path); p.add_argument('--functional-only', action='store_true')
+            p.add_argument('--isolate', action='store_true')
             p.add_argument('--cpp-arg', action='append', default=[]); p.add_argument('--windows-observer', type=Path)
     args = parser.parse_args()
     try:
@@ -298,7 +354,8 @@ def main():
             print(json.dumps(materialize(args.task, args.language, args.directory))); return 0
         result = check(args.candidate, args.task, args.language, args.output, compiler=args.compiler,
                        cpp=args.cpp_compiler, resources=args.resources, cache=args.cache, trial_id=args.trial_id,
-                       review=args.source_review, cpp_args=args.cpp_arg, windows_observer=args.windows_observer)
+                       review=args.source_review, cpp_args=args.cpp_arg, windows_observer=args.windows_observer,
+                       isolate=args.isolate)
         print(json.dumps({k: result[k] for k in ['task', 'language', 'functional_passed', 'accepted', 'candidate_digest']}))
         return 0 if result['functional_passed' if args.functional_only else 'accepted'] else 1
     except (OSError, ValueError, KeyError, TypeError) as error:

@@ -192,6 +192,25 @@ class LedgerTests(unittest.TestCase):
                 with self.assertRaises(tool.LedgerError):
                     self.inspect(campaign)
 
+    def test_unknown_cache_split_preserves_actual_total_usage(self):
+        campaign = self.campaign()
+        nex = [run for run in campaign['runs'] if run['language'] == 'nex']
+        nex[0]['calls'][0]['usage']['cached_input_tokens'] = None
+        report = self.inspect(campaign)
+        row = report['results']['model-0']['nex']
+        self.assertTrue(row['usage_complete'])
+        self.assertFalse(row['cache_usage_complete'])
+        self.assertEqual(row['calls_without_cache_usage'], 1)
+        self.assertEqual(row['known_input_tokens'], 200)
+        self.assertEqual(row['known_cached_input_tokens'], 40)
+        self.assertEqual(row['known_uncached_input_tokens'], 60)
+        self.assertEqual(row['all_tokens_per_accepted_trial'], {'numerator': 120, 'denominator': 1})
+        self.assertTrue(report['usage_complete_for_observed_calls'])
+        self.assertFalse(report['cache_usage_complete_for_observed_calls'])
+        del nex[0]['calls'][0]['usage']['cached_input_tokens']
+        with self.assertRaises(tool.LedgerError):
+            self.inspect(campaign)
+
     def test_artifact_mutation_wrong_pin_and_escape(self):
         for kind in ['mutation', 'pin', 'parent', 'absolute', 'symlink']:
             with self.subTest(kind=kind):

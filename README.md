@@ -67,7 +67,9 @@ counterexamples with actual reference/native Release/TypeScript observations.
 contracts. [`nex cost`](experiments/quality/llm_cost.md) now summarizes pinned
 trial records offline; a [ten-task comparison protocol](experiments/quality/llm-campaign-v1/protocol.md)
 has [qualified cross-language host controls](experiments/quality/llm-campaign-v1/README.md).
-Local-model collection and real task/token measurements remain pending.
+Local Qwen transport and scoped macOS execution isolation are implemented;
+[one readiness probe](docs/evidence/llm-local-transport-isolation-0.165.0-2026-11-11.json)
+passed. Task collection and comparative token measurements remain pending.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

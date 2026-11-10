@@ -1,3 +1,38 @@
+# Local Qwen transport and scoped execution isolation — development0.165.0
+
+The selected local Qwen3.8 27B GGUF Q8_0 answered one benign readiness request:
+36 actual input /6 output tokens, cache split unreported. Its uniquely owned
+instance was unloaded. No model-authored program or task trial ran, no weights
+were downloaded and no paid API was contacted. Two earlier setup failures sent
+no generation requests and remain recorded. Full SHA256 pins cover the existing
+two artifacts (29,978,230,112 bytes), including the embedded tokenizer. Runtime
+was llama.cpp-mac-arm64-apple-metal-advsimd@2.60.0; effective template and complete
+study settings still need freezing. [Scoped evidence](docs/evidence/llm-local-transport-isolation-0.165.0-2026-11-11.json).
+
+The native local API transport retains exact requests, raw responses, actual
+usage and interrupted attempts. It permits only numeric loopback and no proxy,
+redirect or integration fallback. Unknown cached-input splits stay null while
+observed input/output totals remain usable in the offline ledger. Explicit
+reasoning-off/temperature0/top-p1 settings replace inherited defaults.
+
+The acceptance runner now offers separate macOS compilation and execution
+policies with minimal environment, private write roots and owned resource limits.
+Three scoped unchanged solutions passed21 case observations; actual file,
+network, fork/spawn and signal denials passed. A Python expected-value lookup
+was rejected; only input cases are embedded in its process. These results do
+not qualify every host, kernel/compiler safety or earlier244 controls under the
+new policy. The remaining full collector, restricted tool broker, independent
+source-rule review, pilot and60-slot study are still pending.
+
+All targets built; the compiler binary remains63cd6b70 and language/ABIs unchanged.
+The initial three-group check passed ledger/provider and exposed four isolation
+assertions. Startup needed the selected OS dyld support profile; compilation
+needed canonical Clang configuration and the actual selected Xcode linker
+instead of the ld shim. Failed scopes were repaired and repeated selectively;
+passed unrelated checks were retained. Failed IR/metadata/source/profiles/logs
+remain; only owned obsolete object caches were removed. No whole/full/platform/
+remote/device/SDK/main/push stage ran. The original goal remains active.
+
 # Comparable local-model task preparation — development0.165.0
 
 [Host preparation/acceptance](experiments/quality/llm-campaign-v1/README.md) now

@@ -148,11 +148,12 @@ def nex_driver(task, cases):
 
 
 def python_driver(task, cases):
+    inputs = [{'input': case['input']} for case in cases]
     return '''import json, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import candidate as c
-task = ''' + repr(task) + '\ncases = ' + repr(cases) + '''
+task = ''' + repr(task) + '\ncases = ' + repr(inputs) + '''
 for case in cases:
     x = case['input']
     extra = {}

@@ -23,8 +23,10 @@ learning work checks all registered shared capability fields and has freshly val
 0.28 labels for9 positive projects/6 counterexamples. Real model-cost measurement
 remains pending. The public nex cost command reuses the offline ledger; ten
 comparison contracts,30 generated starting bundles and cross-language executable
-controls are prepared. Next complete isolated local-model collection, exact
-usage/source-rule review and actual trials. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
+controls are prepared. Local Qwen transport, weight pins and scoped macOS
+execution isolation now have host evidence and one benign readiness response.
+Next complete restricted task collection, runtime/template/budget freeze,
+source-rule review and actual trials. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
 APIs. Conclusions will be scoped to that model.
 
 The original objective remains intact. The main unfinished implementation areas
