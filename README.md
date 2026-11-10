@@ -70,6 +70,12 @@ selected groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evide
 on an RTX3090 through an ordinary development installation. Full Windows
 regression and complete portable SDK qualification remain pending.
 
+The later [2172b35 snapshot](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json),
+including the installed Metal tools and corrected HTTP fixtures, passed all-target
+Windows compilation, eleven selected groups, 35 physical CUDA cases and
+36 Compute Sanitizer cases on RTX 3090. Its exact source and compiler hashes are
+recorded separately; full regression and portable SDK qualification remain pending.
+
 The corrected HTTP debugger fixture separately passed
 [all38 macOS sessions and their offline captures](docs/evidence/macos-HTTP-debug38-0.165.0-2026-11-10.json).
 The later [callback/census correction](docs/evidence/HTTP-debug-callback-census-0.165.0-2026-11-10.json)

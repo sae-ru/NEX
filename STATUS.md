@@ -52,6 +52,15 @@ through its ordinary development installation on RTX3090. The source/compiler
 and raw records are pinned independently; full current Windows regression and
 portable SDK qualification remain pending.
 
+The later [2172b35 Windows follow-up](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json)
+includes the installed public Metal tools and corrected HTTP fixtures. It passed
+all targets, eleven selected groups, 35 physical CUDA cases and 36 Compute
+Sanitizer cases on RTX 3090 with the original 2000 ms runtime deadline. Its
+ordinary installation includes all 13 owned Metal tool files and passed source-only
+preparation without executing a GPU. Full Windows regression, positive IPv6 and
+complete portable SDK qualification remain pending; earlier snapshots retain
+their original evidence.
+
 The frozen4490655/0.164 source now passed [all303 Fedora groups and ordinary installed smoke](docs/evidence/fedora-package-notices-full303-0.164.0-2026-11-10.json),
 with no failures or skips. The separate frozen1681802 Windows snapshot passed
 [39 of40 debug/profile groups](docs/evidence/windows-combined-debugger-39plus1-0.164.0-2026-11-10.json)
