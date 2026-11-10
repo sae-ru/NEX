@@ -1,9 +1,10 @@
 # LLM comparison campaign v1
 
-Status: **prepared contracts; not an executed experiment**. Applies to NEX
+Status: **prepared source bundles and host controls; no model trials**. Applies to NEX
 language0.28. The [catalogue](tasks.json) contains ten language-neutral tasks
 based on pinned learning examples. Those files establish provenance; they are
-not measured candidates or reviewed C++/Python starting snapshots. The
+not measured model candidates. [Preparation and executable acceptance](README.md)
+now cover all30 starting bundles,32 visible and29 host-only cases. The
 [accounting command](../llm_cost.md) is implemented separately.
 
 ## Question and measurements
@@ -27,14 +28,19 @@ tasks cannot establish gains for arbitrary large systems.
 
 ## Matrix and freeze
 
-Target: three independent immutable model revisions, two fresh repeats, ten
-tasks, three languages: **180 terminal slots**. Two models may form a pilot;
-they do not satisfy the existing three-model comparison-review gate. Aliases
-of one provider/revision count once. Pin actual tokenizer IDs, model settings,
-tool permissions, trial order and budgets before any calls. Model choice and
-total monetary/token ceilings require operator selection; this protocol
-provides no default authorization for paid calls.
+The operator limited the current study to the installed local
+**`qwen/qwen3.8-27b` / Q8_0**. Two fresh repeats × ten tasks × three languages
+produce **60 terminal slots**. Pin the actual weights, embedded tokenizer,
+runtime/template and settings before calls; an alias is not an immutable
+revision. [Selected local profile](local-model.json) records the intended host.
+The user permits local models only, without paid APIs. No model download is
+needed. Per-trial token/time stopping rules must be frozen with the collector.
 
+Report within-model NEX/C++/Python results for this Qwen revision. No conclusion
+about other models follows. The ledger's existing three-model comparison-review
+eligibility remains false for this one-model study; that field is not a reason
+to invent or launch additional models. The scope change occurred before any
+model trials, so no observed results were discarded.
 Every slot starts in a fresh conversation and copy of the starting source.
 No answers, chat history or retrieved context carry across repeats. Record
 provider caching as observed. Compiler caches may be prewarmed identically;
@@ -108,9 +114,15 @@ acceptance calls.
 
 ## Remaining preparation
 
-Contracts and provenance are written. The30 starting snapshots and executable
-acceptance harnesses, their passing/wrong-solution controls, the selected models
-and budgets and the host collection runner remain to be implemented/reviewed.
-Then freeze pins and run a small infrastructure pilot before the comparable
-matrix. Changed pilot rules create a new version. The learning-corpus run is
-compiler evidence; it is not any of these model trials.
+The maintained preparation/acceptance tools now materialize all30 starting
+bundles and execute the full61-case set for NEX/C++/Python. Thirty positive
+solutions and30 rejected starts qualify the functional host controls. Independent
+source-rule review remains separately bound to exact candidate/contract pins.
+The models have not attempted these tasks.
+
+Next implement the local collection runner, including restricted model tool/file
+access, OS isolation of model-generated execution, source-rule review and full
+usage/retry evidence. Pin the selected Qwen weight/tokenizer revision and
+stopping rules; freeze all inputs, then run a small infrastructure pilot before
+the comparable matrix. Changed pilot rules create a new version. These host
+controls and the learning corpus are not any of the model trials.

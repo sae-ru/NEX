@@ -43,9 +43,11 @@ an incomplete matrix. An invalid ledger emits a summary with `valid:false`.
 
 The [first comparison protocol](llm-campaign-v1/protocol.md) and its
 [ten task contracts](llm-campaign-v1/tasks.json) fix the intended observation
-scope. Their C++/Python/NEX starting snapshots and executable acceptance harness
-still need implementation and review. No model trials have been recorded for
-this task set, and preparing a protocol does not establish savings.
+scope. [Host preparation and acceptance](llm-campaign-v1/README.md) now qualify
+30 positive/30 rejected starting controls across all three languages. They
+separate functional execution from bound source-rule review. The local model
+collection/isolation runner and actual trials remain pending; these controls
+do not establish savings.
 
 ## Record a campaign
 

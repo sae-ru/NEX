@@ -1,6 +1,6 @@
 {
   "schema": "nex.llm-campaign-tasks/1",
-  "status": "prepared_contracts_not_model_trials",
+  "status": "prepared_sources_and_host_controls_not_model_trials",
   "language": "0.28",
   "languages": [
     "nex",
@@ -8,9 +8,9 @@
     "python"
   ],
   "task_count": 10,
-  "intended_model_revisions": 3,
+  "intended_model_revisions": 1,
   "repeats": 2,
-  "intended_terminal_slots": 180,
+  "intended_terminal_slots": 60,
   "observed_trials": 0,
   "tasks": [
     {
@@ -64,8 +64,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "recoverable-selection",
@@ -138,8 +138,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "unicode-window",
@@ -200,8 +200,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "immutable-byte-update",
@@ -293,8 +293,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "generic-projection",
@@ -344,8 +344,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "associated-value-adapter",
@@ -394,8 +394,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "module-interface-change",
@@ -449,8 +449,8 @@
           "sha256": "d0278ec0debaf661fb4d5a13267a54d1a52be8b86045c1d06e5dd4846bd0b670"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "ordered-bounded-map",
@@ -516,8 +516,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "typed-error-finally",
@@ -581,8 +581,8 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     },
     {
       "id": "joined-yielding-child",
@@ -648,8 +648,10 @@
           "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
         }
       ],
-      "starting_snapshots_status": "pending all three languages",
-      "executable_acceptance_status": "pending all three languages"
+      "starting_snapshots_status": "maintained generator; all three languages exercised in host controls",
+      "executable_acceptance_status": "visible and held-out functional controls qualified; independent bound source review required"
     }
-  ]
+  ],
+  "selected_local_model": "qwen/qwen3.8-27b",
+  "selected_quantization": "Q8_0"
 }

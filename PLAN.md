@@ -22,8 +22,10 @@ without dropping any original functional or delivery requirement. Current discov
 learning work checks all registered shared capability fields and has freshly validated
 0.28 labels for9 positive projects/6 counterexamples. Real model-cost measurement
 remains pending. The public nex cost command reuses the offline ledger; ten
-comparison contracts and a protocol are prepared. Next complete comparable
-starting snapshots, executable acceptance and collection before actual model trials.
+comparison contracts,30 generated starting bundles and cross-language executable
+controls are prepared. Next complete isolated local-model collection, exact
+usage/source-rule review and actual trials. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
+APIs. Conclusions will be scoped to that model.
 
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
@@ -40,7 +42,8 @@ and final delivery work are:
   permissions, signing, device launch/debugging and the planned graphics adapter.
 - [ ] NEX Studio, the optional task-to-change AI layer and the planned
   [C++/Python conversion pipeline](docs/project-porting-design.md).
-- [ ] Comparable real multi-LLM task-success/retry/token/cost measurements.
+- [ ] Real matched task-success/retry/token/cost measurements for the user-selected
+  local Qwen3.8 27B Q8_0 study; no unsupported cross-model generalization.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across
   the supported platform/device matrix, then publish the latest main/release
   and remove obsolete branches/build artifacts with retained useful evidence.

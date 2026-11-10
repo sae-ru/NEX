@@ -66,7 +66,8 @@ counterexamples with actual reference/native Release/TypeScript observations.
 [Discovery and corpus tools](docs/learning-corpus.md) check all shared capability
 contracts. [`nex cost`](experiments/quality/llm_cost.md) now summarizes pinned
 trial records offline; a [ten-task comparison protocol](experiments/quality/llm-campaign-v1/protocol.md)
-is prepared. Real model-cost measurement remains pending.
+has [qualified cross-language host controls](experiments/quality/llm-campaign-v1/README.md).
+Local-model collection and real task/token measurements remain pending.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

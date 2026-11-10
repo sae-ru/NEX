@@ -1,0 +1,20 @@
+{
+  "schema": "nex.local-model-selection/1",
+  "provider": "lmstudio-local",
+  "base_url": "http://127.0.0.1:1234",
+  "model_key": "qwen/qwen3.8-27b",
+  "quantization": "Q8_0",
+  "local_only": true,
+  "paid_APIs_allowed": false,
+  "model_download_required": false,
+  "weight_revision_status": "actual weights/tokenizer/runtime/template pins required before trials",
+  "languages": [
+    "nex",
+    "cpp",
+    "python"
+  ],
+  "tasks": 10,
+  "repeats": 2,
+  "terminal_slots": 60,
+  "generalization_to_other_models_claimed": false
+}

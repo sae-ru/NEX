@@ -1,3 +1,39 @@
+# Comparable local-model task preparation — development0.165.0
+
+[Host preparation/acceptance](experiments/quality/llm-campaign-v1/README.md) now
+materializes30 starting bundles for ten NEX/C++/Python contracts. Thirty control
+solutions pass and30 incomplete starts are rejected against32 visible and29
+fixed held-out cases. NEX reference/native Release plus C++20/Python produced244
+accepted case observations. Every retained/generated input and driver matches
+its executed bytes; crashes, infrastructure failures and timeouts cannot qualify
+these negative host controls. [Scoped evidence](docs/evidence/llm-campaign-controls-0.165.0-2026-11-11.json).
+
+The first group run exposed19 control assertions: the neutral NEX adapter had
+not accounted for i64's string-valued JSON wire encoding, and resolving clang++
+to clang-N silently selected the C link-driver mode. The adapter now uses typed
+decimal observations, preserving the language's wire contract; C++ argv[0] keeps
+its name and separately hashes its real image. Original failures remain. Only
+38 affected controls were repeated;22 unaffected controls and the three passed
+review/held-out/budget methods were retained. No whole group or full suite was
+repeated. All targets build; the compiler binary remains unchanged63cd6b70.
+
+Behavioral success alone cannot mark a task accepted: source-level rules require
+a separate host review bound to all rules, exact source digest and contract.
+Controls use explicit synthetic host attestations. The collection host must exclude model-authored receipts; reviewer identity
+authentication and model execution isolation remain host responsibilities, not
+claims of this preparation tool.
+
+The user selected only local Qwen3.8 27B Q8_0, without paid APIs: the planned
+comparison has60 slots across ten tasks/three languages/two repeats. Read-only inventory
+confirmed LM Studio and available weights; no model was loaded or invoked and
+nothing was downloaded. Next: restricted local collection/tool access, OS-isolated
+candidate execution, real weight/tokenizer/settings pins, review and usage/retry
+capture, then the comparison pilot/matrix. These244 observations measure host
+acceptance, not model success or token savings. No full/platform/remote/device/
+SDK/main/push action occurred. The original failed native cache was removed only
+after all inputs, drivers, raw outputs and reports were retained. The rest of the
+original language/platform/UI/Studio/conversion and final release scope remains.
+
 # Public offline LLM cost command — development0.165.0
 
 `nex cost LEDGER.json [--output NEW.json] [--json]` now invokes the maintained

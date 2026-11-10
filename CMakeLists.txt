@@ -398,6 +398,7 @@ install(FILES tests/task_provider_debug_lifetime.cpp DESTINATION share/nex/tools
 install(FILES experiments/quality/llm_cost.py DESTINATION share/nex/tools)
 install(FILES experiments/quality/llm_cost.py DESTINATION share/nex/experiments/quality)
 install(DIRECTORY experiments/quality/llm-campaign-v1 DESTINATION share/nex/experiments/quality PATTERN __pycache__ EXCLUDE)
+install(FILES tools/windows/job_observer.py DESTINATION share/nex/tools/windows)
 install(FILES experiments/quality/README.md experiments/quality/llm_cost.md
   DESTINATION share/nex/experiments/quality COMPONENT Documentation)
 install(FILES tests/fixtures/language-0.19-sdk115-history.json tests/fixtures/language-0.19-sdk115-history.sql tests/fixtures/language-0.19-sdk115-tasks.json tests/fixtures/language-0.19-sdk115-tasks.sql tests/fixtures/language-0.19-sdk115-fs-helper.json tests/fixtures/language-0.19-sdk115-fs-helper.sql DESTINATION share/nex/examples/task-migration)
@@ -424,6 +425,8 @@ add_test(NAME llm_cost_ledger COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_S
 set_tests_properties(llm_cost_ledger PROPERTIES TIMEOUT 30)
 add_test(NAME llm_cost_cli COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_cost_cli.py $<TARGET_FILE:nex>)
 set_tests_properties(llm_cost_cli PROPERTIES TIMEOUT 60)
+add_test(NAME llm_campaign COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_campaign.py $<TARGET_FILE:nex>)
+set_tests_properties(llm_campaign PROPERTIES TIMEOUT 1200)
 add_test(NAME ctest_report_validation COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/ctest_report_validation.py)
 add_test(NAME owned_device_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/device_contract.py $<TARGET_FILE:nex>)
 set_tests_properties(owned_device_contract PROPERTIES TIMEOUT 300)
