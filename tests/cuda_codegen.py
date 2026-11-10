@@ -66,7 +66,7 @@ fn main()->unit{}
                 ('fn transform(x:str)->str{return x+"x";}', 'E_GPU_UNSUPPORTED'),
                 ('fn transform(x:i64)->i64 !{io}{print(x);return x;}', 'E_GPU_REALM'),
                 ('fn transform(x:i64)->i64{return transform(x);}', 'E_GPU_RECURSION'),
-                ('fn transform(x:bytes)->bytes{return x;}', 'E_GPU_TYPE')]:
+                ('fn transform(x:bytes)->str{return unwrap(decode_utf8(x));}', 'E_GPU_UNSUPPORTED')]:
             with self.subTest(code=code):
                 self.source('module gpu;'+source+'fn main()->unit{}')
                 self.cli('check')

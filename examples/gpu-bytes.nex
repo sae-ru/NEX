@@ -1,0 +1,21 @@
+module gpu_bytes;
+
+// Emit --kind cuda --entry transform --byte-capacity 256.
+// This example transforms packed buffer data without mutating the input.
+pub fn transform(input: bytes) -> bytes {
+  var output: bytes = input;
+  var i: i64 = 0;
+  while i < len(input) {
+    output = set(output, i, 255 - input[i]);
+    i = i + 1;
+  }
+  return output;
+}
+
+test fn inverse_keeps_original() -> unit {
+  let original: bytes = unwrap(bytes([0, 255, 128, 65]));
+  assert(transform(original) == unwrap(bytes([255, 0, 127, 190])));
+  assert(original[0] == 0);
+}
+
+fn main() -> unit {}

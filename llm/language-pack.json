@@ -4106,7 +4106,8 @@
         "fixed record",
         "fixed enum",
         "result<T>",
-        "bounded list<T>"
+        "bounded list<T>",
+        "bounded bytes"
       ],
       "root_parameter_types": [
         "i64",
@@ -4116,7 +4117,8 @@
         "fixed record",
         "fixed enum",
         "result<T>",
-        "bounded list<T>"
+        "bounded list<T>",
+        "bounded bytes"
       ],
       "realm": "shared",
       "effects": [],
@@ -4160,7 +4162,7 @@
         "current owned CUDA provider NVIDIA execution and lifecycle acceptance",
         "physical f64 and current generated-provider Compute Sanitizer acceptance",
         "GPU operation debugging and physical profiling",
-        "unbounded containers/bytes/text allocation and general GPU/NPU compilation"
+        "unbounded containers/dynamic text and general GPU/NPU compilation"
       ],
       "owned_provider": {
         "status": "experimental_operator_preparation",
@@ -4187,9 +4189,10 @@
       "schemas": [
         "nex.cuda-emission/1",
         "nex.cuda-emission/2",
-        "nex.cuda-emission/3"
+        "nex.cuda-emission/3",
+        "nex.cuda-emission/4"
       ],
-      "schema_selection": "version1 for scalar values; version2 for fixed values/text; version3 when bounded lists are reachable",
+      "schema_selection": "version1 scalar; version2 fixed values/text; version3 bounded lists; version4 bounded bytes",
       "fixed_values": {
         "schema": "nex.cuda-values/1",
         "word_bytes": 8,
@@ -4232,6 +4235,43 @@
           "concatenate",
           "equal",
           "exact match"
+        ]
+      },
+      "bounded_bytes": {
+        "schema": "nex.cuda-values/3",
+        "emission_schema": "nex.cuda-emission/4",
+        "capacity_option": "--byte-capacity",
+        "default_capacity": 256,
+        "maximum_capacity": 32760,
+        "maximum_words": 4096,
+        "maximum_words_without_containers": 64,
+        "length_offset": 0,
+        "elements_offset": 1,
+        "octets_per_word": 8,
+        "octet_order": "least_significant_first",
+        "immutable": true,
+        "index_status": 11,
+        "slice_status": 12,
+        "range_status": 13,
+        "capacity_status": 14,
+        "source_language_changed": false,
+        "operations": [
+          "bytes(list<i64>)",
+          "len",
+          "index",
+          "slice",
+          "push",
+          "set",
+          "concatenate",
+          "equal",
+          "utf8_bytes(bounded text)",
+          "decode_base64(bounded text)"
+        ],
+        "pending": [
+          "dynamic text creation",
+          "decode_utf8",
+          "encode_base64",
+          "matching physical GPU and immutable SDK qualification"
         ]
       }
     }

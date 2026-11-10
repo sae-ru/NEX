@@ -61,7 +61,7 @@ struct Options {
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=executablePath(argv[0],reinterpret_cast<void*>(&options));
   const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices","--task-debug"};
-  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--task-steps","--task-timeout-ms","--task-workers","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit","--input-layout","--list-capacity"};
+  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--task-steps","--task-timeout-ms","--task-workers","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit","--input-layout","--list-capacity","--byte-capacity"};
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
     if(a=="-o")a="--output";
@@ -336,16 +336,23 @@ int run(const Options &o) {
   const bool metalSource=o.command=="emit"&&o.get("--kind")=="metal";
   const bool cudaSource=o.command=="emit"&&o.get("--kind")=="cuda";
   unsigned cudaListCapacity=32;
+  unsigned cudaByteCapacity=256;
   if(o.values.contains("--list-capacity")){
     if(!cudaSource)throw Error("E_OPTION","--list-capacity requires emit --kind cuda");
     auto value=o.get("--list-capacity");cudaListCapacity=0;
     for(char c:value){if(c<'0'||c>'9'||cudaListCapacity>(1024-unsigned(c-'0'))/10)throw Error("E_OPTION","CUDA list capacity must be1..1024");cudaListCapacity=cudaListCapacity*10+unsigned(c-'0');}
     if(!cudaListCapacity)throw Error("E_OPTION","CUDA list capacity must be1..1024");
   }
+  if(o.values.contains("--byte-capacity")){
+    if(!cudaSource)throw Error("E_OPTION","--byte-capacity requires emit --kind cuda");
+    auto value=o.get("--byte-capacity");cudaByteCapacity=0;
+    for(char c:value){if(c<'0'||c>'9'||cudaByteCapacity>(32760-unsigned(c-'0'))/10)throw Error("E_OPTION","CUDA byte capacity must be1..32760");cudaByteCapacity=cudaByteCapacity*10+unsigned(c-'0');}
+    if(!cudaByteCapacity)throw Error("E_OPTION","CUDA byte capacity must be1..32760");
+  }
   if(o.values.contains("--input-layout")&&!metalSource&&!cudaSource)throw Error("E_OPTION","--input-layout requires emit --kind metal or cuda");
   if(metalSource||cudaSource){
     const std::string backend=cudaSource?"CUDA":"Metal";
-    const std::set<std::string> allowed={"--kind","--entry","--revision","--output","--input-layout","--list-capacity"};
+    const std::set<std::string> allowed={"--kind","--entry","--revision","--output","--input-layout","--list-capacity","--byte-capacity"};
     for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported "+backend+" source option: "+key);}
     for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported "+backend+" source flag: "+flag);
     if(!o.extra.empty())throw Error("E_OPTION",backend+" source emission does not take execution arguments");
@@ -381,7 +388,7 @@ int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--task-debug (plan/build/package)] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind source-contract|source-contract-migration|dns|tcp|model|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-file-reads|task-external|task-limits|tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
-      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex emit [file] --kind metal|cuda --entry NAME [--input-layout rows|columns] [--list-capacity N (CUDA)] [-o FILE] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex contract [file] --kind runtime --contracts FILE --directory NEW [--json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
+      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex emit [file] --kind metal|cuda --entry NAME [--input-layout rows|columns] [--list-capacity N (CUDA)] [--byte-capacity N (CUDA)] [-o FILE] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex contract [file] --kind runtime --contracts FILE --directory NEW [--json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
@@ -825,7 +832,7 @@ int run(const Options &o) {
         {"kernel",cudaSource?"nex_generated_cuda_map":"nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
         {"functions",std::move(functions)},{"function_map",std::move(mapping)},{"shader_sha256",llvm::toHex(shaderDigest,true)},
         {"source_bytes",int64_t(generated.source.size())},{"driver_initialized",false},{"device_executed",false}};
-      if constexpr(requires{generated.valueABI;})if(auto *abi=generated.valueABI.getAsObject()){response["schema"]=abi->getString("schema").value_or("")=="nex.cuda-values/2"?"nex.cuda-emission/3":"nex.cuda-emission/2";response["value_abi"]=generated.valueABI;}
+      if constexpr(requires{generated.valueABI;})if(auto *abi=generated.valueABI.getAsObject()){const auto schema=abi->getString("schema").value_or("");response["schema"]=schema=="nex.cuda-values/3"?"nex.cuda-emission/4":schema=="nex.cuda-values/2"?"nex.cuda-emission/3":"nex.cuda-emission/2";response["value_abi"]=generated.valueABI;}
       if(cudaSource&&floatingPoint)response["floating_point"]=llvm::json::Object{
         {"format","finite binary64"},{"word_encoding","IEEE754 bits"},{"rounding","nearest_ties_even"},
         {"positive_zero_normalized",true},{"nonfinite_status",7},{"host_environment_status",8},
@@ -834,7 +841,7 @@ int run(const Options &o) {
       print(std::move(response));
     }else if(output.empty())std::cout<<generated.source;
     };
-    if(cudaSource){auto generated=emitCuda(p,o.get("--entry","main"),o.get("--input-layout","rows"),cudaListCapacity);publish(generated,generated.floatingPoint);}
+    if(cudaSource){auto generated=emitCuda(p,o.get("--entry","main"),o.get("--input-layout","rows"),cudaListCapacity,cudaByteCapacity);publish(generated,generated.floatingPoint);}
     else publish(emitMetal(p,o.get("--entry","main"),o.get("--input-layout","rows")));
     return 0;
   }

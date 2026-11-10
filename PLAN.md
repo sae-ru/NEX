@@ -1,3 +1,42 @@
+# Current implementation and remaining roadmap — development0.165.0
+
+The working language remains0.28 (task ABI7, C ABI1). The public CUDA compiler
+now emits fixed values, bounded immutable lists and packed immutable bytes from
+its checked graph. Byte operations include construction, index/slice/updates,
+concatenation/equality and conversion from bounded static UTF-8/base64 text.
+Dynamic text creation/codecs remain explicitly unsupported on CUDA. These are
+source/backend capabilities; physical device and immutable SDK acceptance retain
+their own exact snapshots. See [current status](STATUS.md) and
+[the GPU contracts](docs/gpu-codegen.md).
+
+The original objective remains intact. The main unfinished implementation areas
+and final delivery work are:
+
+- [ ] General GPU/NPU compilation and backend coverage, dynamic GPU text,
+  GPU operation debugging/profiling and Apple NPU integration.
+- [ ] Remaining language/toolchain extensions in the original stages below:
+  advanced type-constructor inference/effect handling, graph identity-preserving
+  edits and complete source/optimized-machine/core/profile attribution.
+- [ ] Remaining browser adapter integration, application components/styles,
+  asynchronous UI boundaries and browser/debug/profile qualification described
+  in [the web contract](docs/web.md).
+- [ ] Mobile targets and native UI: Android/iOS toolchains, packages, lifecycle,
+  permissions, signing, device launch/debugging and the planned graphics adapter.
+- [ ] NEX Studio, the optional task-to-change AI layer and the planned
+  [C++/Python conversion pipeline](docs/project-porting-design.md).
+- [ ] Comparable real multi-LLM task-success/retry/token/cost measurements.
+- [ ] At the final functional milestone, qualify one matching compiler/SDK across
+  the supported platform/device matrix, then publish the latest main/release
+  and remove obsolete branches/build artifacts with retained useful evidence.
+
+Existing working CPU/server/web features are not pending solely because an old
+historical checkbox remains open. The detailed stages below preserve original
+scope and historical evidence; use the current descriptor/specification to tell
+implemented behavior from unimplemented work. Full regression/stand/SDK cohorts
+remain deferred during implementation-first development. Finished functional
+blocks receive a build and short affected-behavior checks, not a full suite after
+individual edits.
+
 # General GPU code generation — checked Metal and CUDA backends
 
 The public `nex emit --kind cuda` command now shares the implementation with the

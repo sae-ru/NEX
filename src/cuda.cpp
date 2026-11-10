@@ -132,7 +132,7 @@ class Emitter {
         if(expression->args.size()>values.listCapacity)throw Error("E_GPU_LIMIT","device list literal exceeds declared capacity",expression->span);
         break;
       case Expr::Index:
-        if(expression->args[0]->type.kind!=Type::List)throw Error("E_GPU_UNSUPPORTED","CUDA indexing requires a bounded list",expression->span);
+        if(expression->args[0]->type.kind!=Type::List&&expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_UNSUPPORTED","CUDA indexing requires a bounded list or bytes",expression->span);
         break;
       case Expr::Unary:
         if(expression->args.size()!=1||(expression->text!="-"&&expression->text!="!"))
@@ -142,15 +142,23 @@ class Emitter {
         static const std::set<std::string> operators={"+","-","*","/","%","==","!=","<","<=",">",">=","&&","||"};
         if(expression->args.size()!=2||!operators.contains(expression->text))
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA binary expression",expression->span);
-        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!="&&!(expression->text=="+"&&expression->type.kind==Type::List))
+        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!="&&!(expression->text=="+"&&(expression->type.kind==Type::List||expression->type==Type::Bytes)))
           throw Error("E_GPU_UNSUPPORTED","device values support equality; dynamic heap/text arithmetic is unavailable",expression->span);
         break;
       }
       case Expr::Call:
         if(expression->text=="as_i64"){
           values.conversion=true;values.literal("E_RANGE",expression->span);values.literal("f64 value is outside i64 range",expression->span);
+        }else if(expression->text=="bytes"){
+          values.literal("E_RANGE",expression->span);values.literal("byte value must be between 0 and 255",expression->span);
+        }else if(expression->text=="utf8_bytes")values.utf8Encoding=true;
+        else if(expression->text=="decode_base64"){
+          values.base64Decoding=true;values.literal("E_BASE64",expression->span);values.literal("invalid canonical base64",expression->span);
+        }
+        else if(expression->text=="slice"){
+          if(expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_UNSUPPORTED","CUDA slice requires bounded bytes",expression->span);
         }else if(expression->text=="ok"||expression->text=="err"||expression->text=="is_ok"||expression->text=="unwrap"||expression->text=="error_code"||expression->text=="error_message"||expression->text=="len"||expression->text=="push"||expression->text=="set"||program.hasStructure(expression->text)||program.variant(expression->text)){
-          if(expression->text=="len"&&expression->args[0]->type!=Type::Str&&expression->args[0]->type.kind!=Type::List)throw Error("E_GPU_TYPE","device len requires bounded text or a list",expression->span);
+          if(expression->text=="len"&&expression->args[0]->type!=Type::Str&&expression->args[0]->type.kind!=Type::List&&expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_TYPE","device len requires bounded text, a list or bytes",expression->span);
         }else if(expression->text=="as_f64"){
           if(expression->args.size()!=1||expression->args[0]->type!=Type::I64||expression->type!=Type::F64)
             throw Error("E_GPU_TYPE","invalid checked CUDA integer-to-f64 conversion",expression->span);
@@ -230,6 +238,19 @@ class Emitter {
   std::string listOffset(const Type &list,const std::string &index)const{return "1ULL+static_cast<unsigned long long>("+index+")*"+std::to_string(values.words(*list.element))+"ULL";}
   void listBounds(const std::string &list,const std::string &index){line("if ("+index+" < 0LL || "+index+" >= "+list+".w[0]) { nex_s.code = 9; "+stop()+" }");}
   void listLimit(const std::string &length){line("if ("+length+" > "+std::to_string(values.listCapacity)+"LL) { nex_s.code = 10; "+stop()+" }");}
+  void byteBounds(const std::string &bytes,const std::string &index){line("if ("+index+" < 0LL || "+index+" >= "+bytes+".w[0]) { nex_s.code = 11; "+stop()+" }");}
+  void byteRange(const std::string &value){line("if ("+value+" < 0LL || "+value+" > 255LL) { nex_s.code = 13; "+stop()+" }");}
+  void byteLimit(const std::string &length){line("if ("+length+" > "+std::to_string(values.byteCapacity)+"LL) { nex_s.code = 14; "+stop()+" }");}
+  std::string byteConstruction(const Type &type,const std::string &input){
+    // Validate source octets before the additional device-capacity bound, so a
+    // recoverable E_RANGE remains recoverable even for an oversized input.
+    const auto valid=temporary();line("bool "+valid+" = true;");
+    line("for(unsigned i=0;i<static_cast<unsigned>("+input+".w[0]);++i) if("+input+".w[1U+i]<0LL||"+input+".w[1U+i]>255LL){"+valid+"=false;break;}");
+    const auto result=temporary();line(deviceType(type,where)+" "+result+"{};");line("if (!"+valid+") {");++indentation;
+    const auto error=construct(type,{std::to_string(values.id("E_RANGE"))+"U",std::to_string(values.id("byte value must be between 0 and 255"))+"U"},0);line(result+" = "+error+";");--indentation;line("} else {");++indentation;
+    byteLimit(input+".w[0]");const auto bytes=temporary();line(deviceType(Type::Bytes,where)+" "+bytes+"{};");line(bytes+".w[0] = "+input+".w[0];");line("for(unsigned i=0;i<static_cast<unsigned>("+input+".w[0]);++i) nex_byte_put("+bytes+",i,"+input+".w[1U+i]);");
+    const auto success=construct(type,{bytes},1);line(result+" = "+success+";");--indentation;line("}");return result;
+  }
   std::string construct(const Type &type,const std::vector<std::string> &arguments,int64_t tag=0){
     const auto name=temporary();line(deviceType(type,where)+" "+name+"{};");
     unsigned offset=values.payloadOffset(type);if(offset)line(name+".w[0] = "+std::to_string(tag)+"LL;");
@@ -307,7 +328,9 @@ class Emitter {
         for(size_t i=0;i<value->args.size();++i){auto item=expression(value->args[i],scope);insert(*value->type.element,item,name,1+unsigned(i)*values.words(*value->type.element));}return name;
       }
       case Expr::Index:{
-        auto base=expression(value->args[0],scope),index=expression(value->args[1],scope);listBounds(base,index);generated=extract(value->type,base,listOffset(value->args[0]->type,index));break;
+        auto base=expression(value->args[0],scope),index=expression(value->args[1],scope);
+        if(value->args[0]->type==Type::Bytes){byteBounds(base,index);generated="nex_byte_get("+base+",static_cast<unsigned long long>("+index+"))";}
+        else{listBounds(base,index);generated=extract(value->type,base,listOffset(value->args[0]->type,index));}break;
       }
       case Expr::Field:{
         auto base=expression(value->args.at(0),scope);const auto fields=values.fields(value->args[0]->type);unsigned offset=0;
@@ -338,6 +361,10 @@ class Emitter {
         auto right=expression(value->args.at(1),scope);
         static const std::map<std::string,std::string> helpers={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
         auto helper=helpers.find(value->text);
+        if(value->type==Type::Bytes&&value->text=="+"){
+          const auto length=left+".w[0]+"+right+".w[0]";byteLimit(length);const auto name=temporary();line(deviceType(Type::Bytes,where)+" "+name+" = "+left+";");line(name+".w[0] = "+length+";");
+          line("for(unsigned i=0;i<static_cast<unsigned>("+right+".w[0]);++i) nex_byte_put("+name+",static_cast<unsigned long long>("+left+".w[0])+i,nex_byte_get("+right+",i));");return name;
+        }
         if(value->type.kind==Type::List&&value->text=="+"){
           const auto length=left+".w[0]+"+right+".w[0]";listLimit(length);const auto name=temporary();line(deviceType(value->type,where)+" "+name+" = "+left+";");line(name+".w[0] = "+length+";");
           const auto width=std::to_string(values.words(*value->type.element));line("for(unsigned i=0;i<static_cast<unsigned>("+right+".w[0])*"+width+"U;++i) "+name+".w[1U+static_cast<unsigned>("+left+".w[0])*"+width+"U+i] = "+right+".w[1U+i];");return name;
@@ -356,16 +383,28 @@ class Emitter {
         }
         if(value->text=="ok")return construct(value->type,arguments,1);
         if(value->text=="err")return construct(value->type,arguments,0);
+        if(value->text=="bytes")return byteConstruction(value->type,arguments.at(0));
+        if(value->text=="utf8_bytes"){generated="nex_utf8_bytes("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="decode_base64"){generated="nex_decode_base64("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="as_i64"){generated="nex_f_to_integer("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="is_ok"){generated="("+arguments.at(0)+".w[0] == 1LL)";break;}
         if(value->text=="error_code"||value->text=="error_message"){generated="("+arguments.at(0)+".w[0] == 1LL ? 0U : static_cast<unsigned int>("+arguments.at(0)+".w["+std::string(value->text=="error_code"?"1":"2")+"]))";break;}
         if(value->text=="unwrap"){
           const auto input=arguments.at(0);line("if ("+input+".w[0] == 0LL) { nex_s.code = 0x80000000U | (static_cast<unsigned int>("+input+".w[1]) << 10U) | static_cast<unsigned int>("+input+".w[2]); "+stop()+" }");generated=extract(value->type,input,1);break;
         }
-        if(value->text=="len"){generated=value->args[0]->type.kind==Type::List?arguments.at(0)+".w[0]":"nex_text_length("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="len"){generated=value->args[0]->type!=Type::Str?arguments.at(0)+".w[0]":"nex_text_length("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="slice"){
+          const auto &input=arguments[0],&start=arguments[1],&count=arguments[2];
+          line("if ("+start+" < 0LL || "+count+" < 0LL || "+start+" > "+input+".w[0] || "+count+" > "+input+".w[0]-"+start+") { nex_s.code = 12; "+stop()+" }");
+          const auto name=temporary();line(deviceType(Type::Bytes,where)+" "+name+"{};");line(name+".w[0] = "+count+";");line("for(unsigned i=0;i<static_cast<unsigned>("+count+");++i) nex_byte_put("+name+",i,nex_byte_get("+input+",static_cast<unsigned long long>("+start+")+i));");return name;
+        }
         if(value->text=="push"||value->text=="set"){
           const auto &input=arguments.at(0);const bool push=value->text=="push";
           const auto index=push?input+".w[0]":arguments.at(1);
+          if(value->type==Type::Bytes){
+            const auto &octet=arguments.at(push?1:2);if(!push)byteBounds(input,index);byteRange(octet);if(push)byteLimit(index+"+1LL");
+            const auto name=temporary();line(deviceType(Type::Bytes,where)+" "+name+" = "+input+";");line("nex_byte_put("+name+",static_cast<unsigned long long>("+index+"),"+octet+");");if(push)line(name+".w[0] = "+index+"+1LL;");return name;
+          }
           if(push)listLimit(index+"+1LL");else listBounds(input,index);
           const auto name=temporary();line(deviceType(value->type,where)+" "+name+" = "+input+";");
           insert(*value->type.element,arguments.at(push?1:2),name,listOffset(value->type,index));
@@ -444,8 +483,8 @@ class Emitter {
   }
 
 public:
-  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity)
-      :program(program),root(program.function(entry)),values(program,capacity),layout(inputLayout),where(root.span){
+  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity)
+      :program(program),root(program.function(entry)),values(program,capacity,byteCapacity),layout(inputLayout),where(root.span){
     if(layout!="rows"&&layout!="columns")throw Error("E_OPTION","CUDA input layout must be rows or columns");
     if(std::string(programLanguage(program))!="0.28")throw Error("E_GPU_UNSUPPORTED","CUDA emission requires checked language0.28",root.span);
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
@@ -504,7 +543,7 @@ public:
   }
 };
 }
-CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity){
-  return Emitter(program,entry,inputLayout,capacity).generate();
+CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity){
+  return Emitter(program,entry,inputLayout,capacity,byteCapacity).generate();
 }
 }

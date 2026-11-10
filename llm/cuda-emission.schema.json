@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nex.dev/schemas/cuda-emission.schema.json",
-  "title": "Checked scalar CUDA source emission",
+  "title": "Checked CUDA source emission",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -30,7 +30,8 @@
       "enum": [
         "nex.cuda-emission/1",
         "nex.cuda-emission/2",
-        "nex.cuda-emission/3"
+        "nex.cuda-emission/3",
+        "nex.cuda-emission/4"
       ]
     },
     "ok": {
@@ -191,7 +192,8 @@
         "schema": {
           "enum": [
             "nex.cuda-values/1",
-            "nex.cuda-values/2"
+            "nex.cuda-values/2",
+            "nex.cuda-values/3"
           ]
         },
         "word_bytes": {
@@ -259,7 +261,8 @@
                   "record",
                   "enum",
                   "result",
-                  "list"
+                  "list",
+                  "bytes"
                 ]
               },
               "words": {
@@ -309,13 +312,19 @@
               "capacity": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 1024
+                "maximum": 32760
               },
               "length_offset": {
                 "const": 0
               },
               "elements_offset": {
                 "const": 1
+              },
+              "octets_per_word": {
+                "const": 8
+              },
+              "octet_order": {
+                "const": "least_significant_first"
               }
             },
             "allOf": [
@@ -334,6 +343,29 @@
                     "capacity",
                     "length_offset",
                     "elements_offset"
+                  ],
+                  "properties": {
+                    "capacity": {
+                      "maximum": 1024
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "bytes"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "capacity",
+                    "length_offset",
+                    "elements_offset",
+                    "octets_per_word",
+                    "octet_order"
                   ]
                 }
               }
@@ -363,6 +395,26 @@
         },
         "maximum_words_without_lists": {
           "const": 64
+        },
+        "byte_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32760
+        },
+        "byte_index_status": {
+          "const": 11
+        },
+        "byte_slice_status": {
+          "const": 12
+        },
+        "byte_range_status": {
+          "const": 13
+        },
+        "byte_capacity_status": {
+          "const": 14
+        },
+        "maximum_words_without_containers": {
+          "const": 64
         }
       },
       "allOf": [
@@ -370,17 +422,15 @@
           "if": {
             "properties": {
               "schema": {
-                "const": "nex.cuda-values/2"
+                "enum": [
+                  "nex.cuda-values/2",
+                  "nex.cuda-values/3"
+                ]
               }
             }
           },
           "then": {
-            "required": [
-              "list_capacity",
-              "list_bounds_status",
-              "list_capacity_status",
-              "maximum_words_without_lists"
-            ],
+            "required": [],
             "properties": {
               "maximum_words": {
                 "const": 4096
@@ -408,13 +458,90 @@
                     },
                     "kind": {
                       "not": {
-                        "const": "list"
+                        "enum": [
+                          "list",
+                          "bytes"
+                        ]
                       }
                     }
                   }
                 }
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/2"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "list_capacity",
+              "list_bounds_status",
+              "list_capacity_status",
+              "maximum_words_without_lists"
+            ],
+            "properties": {
+              "types": {
+                "items": {
+                  "properties": {
+                    "kind": {
+                      "not": {
+                        "const": "bytes"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/3"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "byte_capacity",
+              "byte_index_status",
+              "byte_slice_status",
+              "byte_range_status",
+              "byte_capacity_status",
+              "maximum_words_without_containers"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "types": {
+                "contains": {
+                  "properties": {
+                    "kind": {
+                      "const": "list"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "list_capacity",
+              "list_bounds_status",
+              "list_capacity_status"
+            ]
           }
         }
       ]
@@ -504,7 +631,8 @@
           "schema": {
             "enum": [
               "nex.cuda-emission/2",
-              "nex.cuda-emission/3"
+              "nex.cuda-emission/3",
+              "nex.cuda-emission/4"
             ]
           }
         }
@@ -575,6 +703,26 @@
             "properties": {
               "schema": {
                 "const": "nex.cuda-values/2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.cuda-emission/4"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value_abi": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/3"
               }
             }
           }

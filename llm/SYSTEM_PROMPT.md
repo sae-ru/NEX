@@ -228,12 +228,16 @@ cancellation or device loss. General NPU/model ownership and recovery are pendin
 
 For scalar GPU source, discover `gpu_codegen` and read `nex guide --kind gpu --json`.
 When `gpu_codegen.cuda.source_support` is true, use `nex emit --kind cuda`;
-its exact scalar/fixed-value/list subset and `nex.cuda-emission/1`, `/2` or `/3` schema are
+its exact scalar/fixed-value/list subset and `nex.cuda-emission/1`, `/2`, `/3` or `/4` schema are
 advertised there. For `/2`, read `value_abi`: never guess field offsets, tags,
 text IDs or batch widths. Results remain ordinary values; `?` propagates them.
 For bounded CUDA lists, select `--list-capacity N` (default32,1..1024) and read
 `nex.cuda-values/2`; length and all inactive words are validated. Device capacity
 overflow is fatal `E_LIMIT`; it does not change CPU list semantics.
+For CUDA `bytes`, select `--byte-capacity N` (default256,1..32760) and read
+`nex.cuda-values/3`. Length plus packed little-endian octets have zero inactive
+padding. Existing index/slice/range traps are retained. Dynamic text production
+and UTF-8 decoding/base64 encoding remain unsupported on this backend.
 CUDA preparation defaults to that selected compiler and needs no standalone
 emitter/frontend archive. Emission alone does not execute on a GPU.
 If that descriptor includes `owned_provider`, query `gpu_codegen.owned_provider`

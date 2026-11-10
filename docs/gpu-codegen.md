@@ -109,7 +109,7 @@ nex emit examples/gpu-cuda.nex --kind cuda --entry transform \
 CUDA accepts shared pure i64/f64/bool/unit functions, concrete scalar generic
 instances, branches, loops, checked source/loop contracts and scalar matches
 with ordered binding/wildcard guards or i64/bool literal patterns. Fixed records/enums, Results and bounded static device text are described below.
-Unbounded containers/bytes/text allocation, source errors, finally, closures, indirect
+Unbounded containers/dynamic text allocation, source errors, finally, closures, indirect
 calls, effects and recursion fail explicitly.
 Unreachable unsupported functions are excluded.
 
@@ -261,3 +261,56 @@ columns into physical batches using their declared word widths; every input and
 output FFI transfer stays within256KiB. No device heap allocation, raw pointers
 or additional authority is introduced. Device execution and matching SDK
 qualification remain pending until the final platform gate.
+
+### Packed immutable CUDA bytes
+
+Reachable `bytes`, including nested record/enum/Result/list payloads, select
+`nex.cuda-emission/4` and `nex.cuda-values/3`. The earlier scalar, fixed-value and
+list-only versions keep their wire contracts. No source syntax/version or core
+bytes behavior changes.
+
+```sh
+nex emit examples/gpu-bytes.nex --kind cuda --entry transform \
+  --byte-capacity 256 --input-layout columns -o bytes.cu --json
+```
+
+The CUDA-only `--byte-capacity N` selects1..32760 octets, default256. The owned
+preparer forwards it. A byte value occupies `1 + ceil(capacity / 8)` words:
+word0 is its octet count; following words pack octets least-significant first.
+The metadata describes `capacity`, `octets_per_word`, `octet_order`,
+`length_offset` and `elements_offset`. Length must be0..capacity; every inactive
+octet and word is zero. Invalid padding/length fails before source execution
+with E_GPU_INPUT. Every type containing bytes/lists must fit4096 words; types
+without either retain64 words. A maximum-size bytes root fits; a Result wrapper
+at that same capacity needs one more word and is rejected. Choose capacity to
+fit the whole reachable value layout.
+
+Supported operations are `bytes(list<i64>)`, `len`, indexing, `slice`, `push`,
+`set`, concatenation and structural equality. They copy values and preserve
+snapshots. All operands evaluate once, left to right, before operation checks.
+`set` checks index before octet range; `push` checks octet range before the
+additional device-capacity bound. The constructor validates octets and returns
+recoverable `E_RANGE` before applying that bound; it never silently truncates.
+Nested Results, patterns, `?` and exact `unwrap` diagnostics remain available.
+
+| Status | Diagnostic | Message |
+|---|---|---|
+| 11 | E_BOUNDS | `byte index is outside buffer bounds` |
+| 12 | E_BOUNDS | `slice is outside byte buffer bounds` |
+| 13 | E_RANGE | `byte value must be between 0 and 255` |
+| 14 | E_LIMIT | `device bytes exceed declared capacity` |
+
+The first three retain ordinary NEX diagnostics. The fourth is the explicit
+backend resource limit. They are accepted only for byte ABI3; list statuses9/10
+are accepted when lists are also reachable. Wide columns keep the same256KiB
+FFI transfer bound through physical batching.
+
+`utf8_bytes` and `decode_base64` accept the existing bounded static text IDs.
+Encoding preserves their exact UTF-8 octets; base64 decoding preserves canonical
+padding/alphabet/unused-bit validation and recoverable E_BASE64. The emitter
+precomputes each text-pool entry; runtime selection still follows the source
+value. A valid decoded buffer exceeding capacity traps E_LIMIT. Ordinary text
+pool limits, including its NUL restriction, remain unchanged; byte buffers
+support all octets, including zero. Dynamic text creation, `decode_utf8` and
+`encode_base64` remain explicitly unsupported. Full GPU code generation, actual
+NVIDIA execution, sanitizer and matching immutable SDK acceptance remain open.

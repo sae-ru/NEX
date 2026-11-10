@@ -1,3 +1,24 @@
+# Packed CUDA binary values — development0.165.0
+
+The public backend now lowers immutable `bytes`: construction from i64 lists,
+length/index/slice, push/set, concatenation/equality and nested compound values.
+Explicit `--byte-capacity` selects1..32760 octets (default256). Emission `/4`
+and value ABI3 describe canonical packed octets with zero inactive padding.
+Original bounds/range errors, recoverable constructor failures, immutable copies
+and argument/trap order are retained. UTF-8 encoding and canonical base64
+decoding accept existing static text IDs; dynamic text creation/codecs remain
+unsupported. Source language0.28 and prior emission wire versions are unchanged.
+
+All targets build. One short four-group CUDA cohort passed in64.30seconds; the
+new binary block covered26 emitted CPU layouts/130 lane outcomes with UBSan,
+13 NEX oracles each in reference/native Release/TypeScript, source preparation,
+actual C++ status decoding and descriptor/pack consistency. One binary example
+also passed LLVM22.1 IR and machine verification to sm_86/PTX7.1, with33-word
+input/output and no unresolved device functions. [Development record](docs/evidence/cuda-binary-values-0.165.0-2026-11-10.json).
+Full regression, physical NVIDIA/sanitizer and matching immutable SDK remain
+deferred to the final milestone. [Current remaining scope](PLAN.md) preserves
+all original language/platform/UI/Studio/conversion/measurement/publication work.
+
 # Bounded CUDA lists — development0.165.0
 
 Public CUDA emission now lowers existing immutable list literals, indexing,
