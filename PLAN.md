@@ -15,6 +15,11 @@ source/backend capabilities; physical device and immutable SDK acceptance retain
 their own exact snapshots. See [current status](STATUS.md) and
 [the GPU contracts](docs/gpu-codegen.md).
 
+The user-supplied14 improvement proposals have been audited in
+[development priorities](docs/development-priorities.md). Current LLM discovery/corpus,
+real model-cost measurement, repeatable builds and tiered checks take priority
+without dropping any original functional or delivery requirement.
+
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
 

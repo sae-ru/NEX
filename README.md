@@ -1,6 +1,6 @@
 # NEX — Neural Execution Language
 
-[Русский](README.ru.md) · [Language overview](docs/overview.en.md) · [Get started](docs/getting-started.en.md) · [For LLMs](llm/LEARNING.md)
+[Русский](README.ru.md) · [Language overview](docs/overview.en.md) · [Get started](docs/getting-started.en.md) · [For LLMs](llm/LEARNING.md) · [Current status](docs/STATUS.current.md)
 
 **Precise programs, bounded context, native execution.**
 

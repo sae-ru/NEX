@@ -1,5 +1,6 @@
 # NEX — Neural Execution Language
 
+[Краткий актуальный статус](docs/STATUS.current.md) · [Приоритеты улучшений](docs/development-priorities.md)
 **Язык нейронного исполнения.**
 
 [English](README.md) · [Описание языка](docs/overview.ru.md) · [Начать работу](docs/getting-started.ru.md) · [Материалы для LLM](llm/LEARNING.md)
