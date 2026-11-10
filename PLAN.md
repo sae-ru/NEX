@@ -20,6 +20,10 @@ Offline Clang/LLVM22.1.8 compilation now passed232 IR/PTX variants covering the
 28-program/56-layout corpus, separate gate and actual combined preparation at
 O0/O2 for sm_52/PTX4.2 and sm_86/PTX7.1. IR and machine instructions are verified;
 this adds compiler evidence without qualifying NVRTC or physical execution.
+The real module also passed local task capture, source-deleted replay and
+relocated standalone packaging in explicit macOS unavailable-driver mode:
+160 typed results across five processes, zero CUDA resources and four actual
+sandbox read-denial controls. Native NVIDIA delivery remains unqualified.
 Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
 and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.

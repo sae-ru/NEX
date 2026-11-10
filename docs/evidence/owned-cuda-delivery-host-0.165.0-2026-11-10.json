@@ -1,0 +1,57 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Actual generated-provider module delivery on macOS ARM64 with typed CUDA-unavailable results. Checked task capture, source-deleted replay, explicit-current-authority rejection and relocated standalone package. No NVIDIA execution is accepted.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "verifier_sha256": "37296fd60a9650d8267a199ba4b36022c272e76872c70f403ef3038ae8807d28",
+  "preparation_sha256": "fc704819b57f7d317929b0ca915849a13bb6bc7c57068d3c4e17b3fd1808274a",
+  "checked_revision": "df5130b51d0f54057b618d819d7da818befd7c46f38ef43f515e6df3e523bd59",
+  "task_hash": "6692f19b7ddab875167aa906c0cbede0b099828e529f163024669fa0da40c8af",
+  "capture_receipt_sha256": "de73632d34b233932de1649f6f45b0b276a59c9b7bfcca7616ee835a2d81a0ec",
+  "application_manifest_sha256": "9bc44eca203e2948872581c2e1719cb3d6cf9230e43aae9beb5e0047edf7d712",
+  "typed_unavailable_calls": 160,
+  "processes": {
+    "captured_reference_and_native": 2,
+    "replayed_reference_and_native": 2,
+    "relocated_standalone": 1
+  },
+  "actual_CUDA_contexts_allocations_launches": 0,
+  "all_process_cleanup_counters_zero": true,
+  "working_copy_sources_module_and_graph_deleted_before_replay": true,
+  "original_prepared_inputs_preserved": true,
+  "original_prepared_files_matched_prior_seal": 54,
+  "replay_without_explicit_current_authority_rejected_before_module_initialization": true,
+  "Mac_standalone_read_denials": {
+    "original_project": true,
+    "compiler_resources": true,
+    "compiler_executable": true,
+    "external_operator_catalogue": true,
+    "actual_file_open_controls": 4,
+    "Windows_or_Linux_denial_claimed": false
+  },
+  "standalone_minimal_environment_and_absent_resource_dir": true,
+  "standalone_path_contains_spaces_percent_and_Unicode": true,
+  "standalone_package_contains_no_NEX_source_or_graph": true,
+  "native_dependency_notices_and_foreign_projection_pins_preserved": true,
+  "actual_GPU_execution": false,
+  "native_NVIDIA_delivery_or_complete_provider_or_public_SDK_accepted": false,
+  "raw_archive": {
+    "archive_sha256": "edd5da8d21113c4dc44b711d42992cdef1dd3837ce449d770d97bcd3cf48dcd6",
+    "archive_bytes": 11663054,
+    "raw_files": 584,
+    "raw_bytes": 46239886
+  },
+  "independent_receipt_sha256": "1b5318c5df7b15b75185ea6bbb8eb41435f438d9f37be25d3bee7f7aff183950",
+  "remaining_required_gates": [
+    "Native NVIDIA values, context ownership, cancellation/deadline and delivery controls",
+    "Compute Sanitizer",
+    "Other generated roots",
+    "Coherent public compiler and immutable SDK qualification"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

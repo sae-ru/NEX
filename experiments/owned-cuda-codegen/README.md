@@ -137,6 +137,46 @@ replay/standalone, other scalar roots and Compute Sanitizer also remain
 mandatory gates. Its report never marks complete owned CUDA
 acceptance.
 
+## Captured replay and relocated delivery
+
+`verify_delivery.py` exercises the ordinary compiler's task capture/replay and
+application packager with this provider. Supply explicit native dependency
+notices in the `nex.sdk-notices/1` format. Use a fresh output outside every NEX
+project so temporary inputs cannot enter a parent semantic graph:
+
+```sh
+python3 -B experiments/owned-cuda-codegen/verify_delivery.py \
+  --compiler /absolute/build/nex --resources /absolute/NEX \
+  --project /absolute/prepared-provider \
+  --notices /absolute/native-dependency-notices.json \
+  --output /new/temporary/delivery-proof
+```
+
+The runner creates its own working project and current operator catalogue.
+It captures and executes a checked task, builds a package, deletes its working
+source/module/graph, then replays from the captured inputs. Replay without
+explicit current authority must fail before module initialization. The package
+moves to a path containing spaces, `%` and Unicode, then runs with a minimal
+environment and absent `NEX_RESOURCE_DIR`. The original prepared project is
+preserved. Native NVIDIA mode checks the baseline scalar values and complete
+resource traces in all five interpreter/native/standalone processes; that mode
+still needs physical qualification.
+
+On macOS, use `--host-unavailable-control` with the `match-prepared` project
+created by `check_sources.py --host-unavailable-controls`. This executes the
+real FFI module and requires32 typed `E_COMPUTE_UNAVAILABLE` results per process.
+It never substitutes CPU computation for a CUDA kernel. The relocated package
+runs under a sandbox denying reads of the original project, compiler resources,
+compiler executable and external operator catalogue. Four actual rejected
+file-open controls check those denials. This OS denial control is specific to
+macOS; it is not claimed for Windows/Linux.
+
+The [local delivery record](../../docs/evidence/owned-cuda-delivery-host-0.165.0-2026-11-10.json)
+passed capture, source-deleted replay, authority rejection and relocated
+standalone execution:160 typed unavailable results across five processes,
+zero CUDA contexts/allocations/launches. NVIDIA delivery, memory checking,
+other roots and coherent public compiler/SDK acceptance remain pending.
+
 Cancellation/deadline preparation additionally requires `--acceptance-gate`.
 That explicit option appends a separate device-clock delay kernel to the NVRTC
 compilation input; the original emitted function, source hash and function map
