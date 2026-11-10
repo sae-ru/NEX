@@ -181,12 +181,12 @@ def main():
             result = json.loads(run('NEX-reference-trap', [args.compiler, 'eval', '--json'], root, expected=1))
             assert result['code'] == {1: 'E_OVERFLOW', 2: 'E_DIV_ZERO', 3: 'E_ASSERT'}[error]
         rejected = [
-            ('float_result', 'pub fn transform(x:f64)->result<i64>{return as_i64(x);}', 'E_GPU_TYPE'),
-            ('heap', 'pub fn transform(x:str)->str{return x;}', 'E_GPU_TYPE'),
+            ('dynamic_result', 'pub fn transform(x:list<f64>)->result<list<f64>>{return ok(x);}', 'E_GPU_TYPE'),
+            ('dynamic_text', 'pub fn transform(x:str)->str{return x+"x";}', 'E_GPU_UNSUPPORTED'),
             ('server', 'pub server fn transform(x:i64)->i64{return x;}', 'E_GPU_REALM'),
             ('effect', 'pub fn transform()->unit !{io}{print(1);}', 'E_GPU_REALM'),
             ('recursive', 'pub fn transform(x:i64)->i64{return transform(x);}', 'E_GPU_RECURSION'),
-            ('aggregate_match', 'pub enum Choice{A;B;}pub fn transform(x:Choice)->i64{return match x{Choice::A()=>1,Choice::B()=>0};}', 'E_GPU_TYPE'),
+            ('dynamic_match', 'pub fn transform(x:list<i64>)->i64{return match x{[]=>0,_=>1};}', 'E_GPU_TYPE'),
             ('uncovered_match', 'pub fn transform(x:bool)->i64{return match x{true=>1};}', 'E_MATCH_EXHAUSTIVE'),
             ('duplicate_match', 'pub fn transform(x:bool)->i64{return match x{true=>1,true=>2,false=>0};}', 'E_MATCH_DUPLICATE'),
             ('nine', 'pub fn transform(' + ','.join('a' + str(i) + ':i64' for i in range(9)) + ')->i64{return a0;}', 'E_GPU_LIMIT'),

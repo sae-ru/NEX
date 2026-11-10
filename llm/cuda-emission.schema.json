@@ -27,7 +27,10 @@
   ],
   "properties": {
     "schema": {
-      "const": "nex.cuda-emission/1"
+      "enum": [
+        "nex.cuda-emission/1",
+        "nex.cuda-emission/2"
+      ]
     },
     "ok": {
       "const": true
@@ -73,21 +76,15 @@
       "type": "array",
       "maxItems": 8,
       "items": {
-        "enum": [
-          "i64",
-          "f64",
-          "bool"
-        ]
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
       }
     },
     "result_type": {
       "type": "string",
-      "enum": [
-        "i64",
-        "f64",
-        "bool",
-        "unit"
-      ]
+      "minLength": 1,
+      "maxLength": 8192
     },
     "functions": {
       "type": "object",
@@ -170,6 +167,141 @@
           "const": false
         }
       }
+    },
+    "value_abi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "word_bytes",
+        "byte_order",
+        "maximum_words",
+        "maximum_depth",
+        "inactive_words_zero",
+        "result_failure_status_mask",
+        "result_code_shift",
+        "result_text_id_bits",
+        "parameter_words",
+        "result_words",
+        "types",
+        "text_pool"
+      ],
+      "properties": {
+        "schema": {
+          "const": "nex.cuda-values/1"
+        },
+        "word_bytes": {
+          "const": 8
+        },
+        "byte_order": {
+          "const": "little"
+        },
+        "maximum_words": {
+          "const": 64
+        },
+        "maximum_depth": {
+          "const": 32
+        },
+        "inactive_words_zero": {
+          "const": true
+        },
+        "result_failure_status_mask": {
+          "const": 2147483648
+        },
+        "result_code_shift": {
+          "const": 10
+        },
+        "result_text_id_bits": {
+          "const": 10
+        },
+        "parameter_words": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        },
+        "result_words": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "types": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "required": [
+              "type",
+              "kind",
+              "words"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              },
+              "kind": {
+                "enum": [
+                  "scalar",
+                  "text_id",
+                  "record",
+                  "enum",
+                  "result"
+                ]
+              },
+              "words": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "fields": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "type",
+                    "offset"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 8192
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 8192
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 63
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "text_pool": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 1023
+          }
+        }
+      }
     }
   },
   "oneOf": [
@@ -248,5 +380,47 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.cuda-emission/2"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "value_abi"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "value_abi"
+          ]
+        },
+        "properties": {
+          "parameter_types": {
+            "items": {
+              "enum": [
+                "i64",
+                "f64",
+                "bool"
+              ]
+            }
+          },
+          "result_type": {
+            "enum": [
+              "i64",
+              "f64",
+              "bool",
+              "unit"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }

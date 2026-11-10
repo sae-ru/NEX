@@ -37,7 +37,8 @@ identities, task ABI7 and C ABI major1 remain unchanged; no migration is needed.
 Toolchain0.165 adds [checked scalar GPU emission](gpu-codegen.md) through
 `nex emit --kind metal` and `nex emit --kind cuda`. Both lower reachable shared
 pure functions from the checked AST. Metal accepts i64/bool/unit; CUDA additionally
-accepts finite f64 and scalar matches with guards. Unsupported reachable code is
+accepts finite f64, fixed records/enums/Results, bounded device text, conversions
+and nested matches with guards. GPU value wire records are backend metadata. Unsupported reachable code is
 rejected explicitly.
 It changes no source production, source semantics or canonical identity and
 requires no language migration. Emission initializes no GPU driver; installed

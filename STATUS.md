@@ -1,3 +1,24 @@
+# CUDA fixed values — development0.165.0
+
+Public CUDA emission now supports fixed records/concrete generics, enums,
+Results, nested constructor matches, bounded device text and checked `as_i64`.
+The new `nex.cuda-emission/2` record describes canonical layouts in
+`nex.cuda-values/1`; legacy scalar `/1` and source language0.28 are retained.
+`?` propagates ordinary errors; `unwrap(err)` retains fatal E_RESULT and its
+bounded original diagnostic. Wide columns are batched before FFI without
+raising existing call limits. [Implementation/check record](docs/evidence/cuda-fixed-values-0.165.0-2026-11-10.json).
+
+All targets build. Short checks covered16 emitted CPU layouts/74 lane outcomes
+under UBSan and eight NEX tests in reference/native Release/TypeScript, plus
+provider source preparation and the actual C++ status parser. One Record/Result
+example also passed Clang/LLVM IR and machine verification to sm_86/PTX7.1 with
+no unresolved device functions. The original LLVM22.1.8 by-value parameter
+verifier failure is retained; immutable const-reference helper arguments avoid
+it while returned values remain independent copies. Verification stays enabled.
+Full regression, NVIDIA/memcheck and immutable SDK qualification remain deferred
+under the implementation-first workflow. Dynamic GPU allocation, NPU general
+compilation and the remaining original PLAN scope are still pending.
+
 # Public CUDA source backend — development0.165.0
 
 `nex emit --kind cuda` now lowers the checked language0.28 AST directly through

@@ -1,0 +1,10 @@
+module gpu_values;
+pub struct Measurement { value:f64; valid:bool; }
+pub struct Count { value:i64; valid:bool; }
+pub fn transform(input:Measurement)->result<Count>{
+ if !input.valid{return err<Count>("E_INPUT","invalid measurement");}
+ let value:i64=as_i64(input.value)?;
+ return ok(Count(value,true));
+}
+fn main()->unit !{io}{print(encode_json(transform(Measurement(42.75,true))));}
+test fn converts()->unit{assert(transform(Measurement(42.75,true))==ok(Count(42,true)));assert(error_code(transform(Measurement(1e100,true)))=="E_RANGE");}

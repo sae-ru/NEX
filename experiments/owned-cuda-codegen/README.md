@@ -260,3 +260,13 @@ actual C++ configuration parser on macOS without loading CUDA: disabled,
 minimum/maximum and eight malformed/out-of-range settings.
 The [versioned gate controls](../../docs/evidence/owned-cuda-gate-source-0.165.0-2026-11-10.json)
 retain the exact scope and code identities.
+
+## Fixed aggregate columns
+
+Public CUDA emission can return `nex.cuda-emission/2`. The preparer retains its
+`value_abi`, exact text pool and parameter/result widths. `try_apply`/`apply` still
+accept canonical byte columns. They split wide inputs before FFI so each upload
+and physical output is at most256KiB, then concatenate settled batches. Existing
+C-call budgets are unchanged. `result<T>` errors are encoded output values;
+`unwrap(err)` is a distinct fatal E_RESULT with the original bounded diagnostic.
+See [the value ABI](../../docs/gpu-codegen.md#fixed-cuda-values-and-results).

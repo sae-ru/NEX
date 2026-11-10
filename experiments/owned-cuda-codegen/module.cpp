@@ -202,11 +202,29 @@ struct InFlight {
     TRACE(JSON{{"event","physical_drain"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",output},{"gate_launches",gates},{"kernel_sha256",GENERATED_SHADER_SHA256},{"cpu_fallback",false},{"physical_completion_verified",true},{"event_status",int(result)},{"unwind",true}});}session.busy=0;}
 };
 static constexpr uint32_t maximumElements=262144;
+#if GENERATED_VALUE_ABI
+static const JSON &textPool(){static const JSON pool=JSON::parse(GENERATED_TEXT_POOL_JSON);return pool;}
+#endif
 static const char *laneError(uint32_t code){
+#if GENERATED_VALUE_ABI
+  if(code&0x80000000u){
+    const auto a=(code>>10u)&1023u,b=code&1023u;
+    if((code&0x7ff00000u)||a>=textPool().size()||b>=textPool().size())throw Error("E_DEVICE_ABI","invalid device Result diagnostic IDs");
+    return "E_RESULT";
+  }
+#endif
   static const char *codes[]={"","E_OVERFLOW","E_DIV_ZERO","E_ASSERT","E_GPU_STEP_LIMIT","E_GPU_INTERNAL","E_GPU_INPUT","E_FLOAT"};
   if(code>(GENERATED_FLOATING_POINT?7u:6u))throw Error("E_DEVICE_ABI","generated kernel returned an unknown lane status");
   return codes[code];
 }
+static std::string laneMessage(uint32_t code,unsigned lane){
+ (void)code;
+#if GENERATED_VALUE_ABI
+ if(code&0x80000000u)return textPool().at((code>>10u)&1023u).get<std::string>()+": "+textPool().at(code&1023u).get<std::string>();
+#endif
+ return "generated GPU function failed at lane "+std::to_string(lane);
+}
+static constexpr std::array<unsigned,8> argumentWords=GENERATED_ARGUMENT_WORDS;
 struct ReadCursor {
   Buffer *buffer=nullptr;uint64_t offset=0;
   const uint64_t identity=identities.fetch_add(1);
@@ -247,7 +265,7 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
       TRACE(JSON{{"event","read_cursor_created"},{"session",input.a->session->identity},{"buffer",input.a->identity},{"cursor",static_cast<ReadCursor*>(*out)->identity}});
     }else{
       auto value=std::make_unique<Buffer>();auto buffer=value.get();buffer->session=input.session;buffer->dtype=input.dtype;
-      buffer->bytes=input.kind==Creation::BufferUpload?input.data.size():uint64_t(input.lanes)*8;*out=value.release();
+      buffer->bytes=input.kind==Creation::BufferUpload?input.data.size():uint64_t(input.lanes)*8*GENERATED_OUTPUT_WORDS;*out=value.release();
       auto &session=*input.session;Context context(session,api,call);auto &d=session.driver;auto started=Clock::now();
       d.check(d.p_cuMemAlloc(&buffer->pointer,size_t(buffer->bytes)),"cuMemAlloc");ledger.allocate(buffer->bytes);
       TRACE(JSON{{"event","buffer_allocated"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes}});
@@ -286,7 +304,7 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         unsigned code=0,lane=0;
         for(unsigned i=0;i<lanes;++i){(void)laneError(errors[i]);if(!code&&errors[i]){code=errors[i];lane=i;}}
         TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
-        if(code)throw Error(laneError(code),"generated GPU function failed at lane "+std::to_string(lane));
+        if(code)throw Error(laneError(code),laneMessage(code,lane));
       }
       TRACE(JSON{{"event","buffer_created"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes},{"dtype",buffer->dtype}});
     }
@@ -364,6 +382,7 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
    auto lanes=integer(api,call,args[2]),steps=integer(api,call,args[3]);
    if(lanes<1||lanes>32768||steps<1||steps>65536||uint64_t(lanes)*uint64_t(steps)>16777216)
     return failure(api,call,out,"E_GPU_INPUT","generated kernel geometry exceeds declared bounds");
+   if(uint64_t(lanes)*8*GENERATED_OUTPUT_WORDS>262144)return failure(api,call,out,"E_GPU_INPUT","fixed output exceeds batch capacity");
    uint64_t length=0;checked(api->child_count(call,args[1],&length));
    if(length!=GENERATED_ARGUMENTS||length>8)return failure(api,call,out,"E_GPU_INPUT","column count differs from selected scalar function");
    nex_ffi_type listType=0,elementType=0;checked(api->argument_type(call,1,&listType));checked(api->type_child(call,listType,0,0,&elementType));
@@ -371,10 +390,10 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
    for(uint64_t i=0;i<length;++i){nex_ffi_ref child=0;checked(api->child(call,args[1],i,&child));void *pointer=nullptr;checked(api->resource_borrow(call,child,elementType,&pointer));
     auto *column=static_cast<Buffer*>(pointer);
     if(column->session!=session)return failure(api,call,out,"E_GPU_INPUT","column belongs to another physical session");
-    if(column->dtype!=1||column->bytes!=uint64_t(lanes)*8)return failure(api,call,out,"E_GPU_INPUT","column bytes do not match selected scalar function");
+    if(column->dtype!=1||column->bytes!=uint64_t(lanes)*8*argumentWords[i])return failure(api,call,out,"E_GPU_INPUT","column bytes do not match selected scalar function");
     in.columns.push_back(column);
    }
-   return construct(api,call,in,uint64_t(lanes)*8+sizeof(Buffer),args[0],out);
+   return construct(api,call,in,uint64_t(lanes)*8*GENERATED_OUTPUT_WORDS+sizeof(Buffer),args[0],out);
   }
   if(op==4){
    if(count!=1)return NEX_FFI_ARGUMENT;auto *buffer=static_cast<Buffer*>(borrow(api,call,args[0],0));

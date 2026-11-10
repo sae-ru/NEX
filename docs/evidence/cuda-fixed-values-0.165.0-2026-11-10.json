@@ -1,0 +1,89 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-10",
+  "utc": "2026-11-10T16:47:18.320287+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "C_ABI_major": 1,
+  "compiler_sha256": "e01974d94e6d03e267660f340591cc526e6909d60805de5b526e9c7c34a578ae",
+  "emission_schemas": [
+    "nex.cuda-emission/1",
+    "nex.cuda-emission/2"
+  ],
+  "fixed_value_schema": "nex.cuda-values/1",
+  "implemented": [
+    "Fixed records/concrete generics/enums and immutable value copies",
+    "Result construction, patterns, inspection, unwrap and cross-payload ? propagation",
+    "Exact f64 to i64 truncation with recoverable E_RANGE",
+    "Bounded static UTF8 text IDs, Unicode scalar len and literal patterns",
+    "Canonical active-field validation and zero padding, exact error diagnostic IDs",
+    "Byte-column batching before FFI; prior256KiB per-call size and standard C budgets retained"
+  ],
+  "maximum_words": 64,
+  "maximum_depth": 32,
+  "maximum_aggregate_types": 128,
+  "text_limits": {
+    "entries": 1024,
+    "total_UTF8_bytes": 65536,
+    "entry_UTF8_bytes": 1023,
+    "NUL": false
+  },
+  "all_targets_build": true,
+  "targeted_CTest_groups": [
+    "cuda_codegen",
+    "cuda_values"
+  ],
+  "targeted_methods": 6,
+  "fixed_value_scenarios": 8,
+  "CPU_emitted_kernel_layouts": 16,
+  "CPU_lane_value_and_status_outcomes": 74,
+  "CPU_host_UBSan": true,
+  "input_immutability_and_excess_lane_sentinels": true,
+  "NEX_reference_native_release_TypeScript_tests_per_backend": 8,
+  "actual_CXX_Result_status_parser_and_rejected_IDs": true,
+  "offline_GPU_compile": {
+    "examples": 1,
+    "target": "sm_86/PTX7.1",
+    "IR_machine_verification_passed": true,
+    "unresolved_device_functions": 0,
+    "parameter_words": [
+      2
+    ],
+    "result_words": 3,
+    "PTX_sha256": "80bad6a284358bd45cf4f38d4f2d00a48cff1bc8fe891acdb38cbe37b656512a"
+  },
+  "initial_LLVM22_byvalue_parameter_machine_verifier_diagnostic_retained": true,
+  "LLVM_workaround": "Aggregate helper parameters use immutable const-reference borrowing; returned values remain independent copies. Verification stays enabled.",
+  "source_grammar_graph_canonical_format_or_ABI_major_changed": false,
+  "full_regression_run": false,
+  "actual_NVIDIA_or_Compute_Sanitizer_execution": false,
+  "new_immutable_SDK_accepted": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false,
+  "raw_files": 48,
+  "raw_bytes": 1266956,
+  "archive_bytes": 234067,
+  "archive_sha256": "09ee5a42ec3d7dbbb21cad74b73d662d7a27c150b1532738b3e2b9b689fc46a4",
+  "source_sha256": {
+    "CMakeLists.txt": "6346cc901edc8fa3be52abede18c9167fb6ed8968b76396fe147742cfaf6d962",
+    "include/nex/cuda.h": "44bf447c5d9d8319a8ed7247f10c7e9b962f29e1df2d6754757d3792316f95f5",
+    "src/cuda.cpp": "3bace898557313c151f574250b7ea1d2ce029a07e125ab51fa8041bc7a84dc72",
+    "src/cuda_values.h": "4677a761d098dc1c37563bf58f83ee5cb614497ae9d83a2d8b118de8ed22d92c",
+    "src/main.cpp": "093b68bcc8880b7ec5a0ae0c74d0fde1797876e368f11da64a542a69eacdb7cb",
+    "src/language.cpp": "e83175329dca27ba1cb48837d2756244d33dd2899138e86fadc610a383fd2a5c",
+    "tests/cuda_codegen.py": "44094d4cbde91c6c1ed350490661af0e6049a82167a85fcfd3ee4b04ba1688a0",
+    "tests/cuda_values.py": "69403edaad27366b95d4a53765e927b41e0e77b5b121da11f6e0f927f15313ce",
+    "experiments/owned-cuda-codegen/prepare.py": "aefd9ed1de2a397bc51cfccdc62bdc4189bd32bcd6095f60f16d72b1c5efac18",
+    "experiments/owned-cuda-codegen/module.cpp": "53d6a113434e708624194cc154d70ec17401fc05dc3f01695c6a4b88b1cee7ea",
+    "experiments/owned-cuda-codegen/main.nex.in": "38b25fb6683556652a5f991232c2853ee83dc97d305e93ddf46188fe70f52c44",
+    "llm/cuda-emission.schema.json": "335b53ccd14d063e186cc8c5dbcf45269bd84b3fc7d3ab3091580147d70b1378",
+    "llm/language-pack.json": "45922c3fe86d3be94247d6a43ae5322f76a488b2d8fb1252821dc75d83edbdd9",
+    "llm/SYSTEM_PROMPT.md": "5d684a52d0a60b5fd4fcb7380ba8c650686f5d23632c89ad02765a4a0782daff",
+    "docs/gpu-codegen.md": "9c841d302cbd7ae27893e00dfff18ab502dc4e827aad31001618becd19eebc94",
+    "examples/gpu-values.nex": "91cd175a581b2f2f64d4653bb389dd63d428ea5f4100d694da5de4effa33a907"
+  },
+  "scope": "CUDA fixed-value implementation and short source/backend checks, plus one verified offline PTX compilation. No NVIDIA execution or final release qualification.",
+  "independent_receipt_sha256": "2ca6e904d23cef05902aa0c006391cffee1a9e106229cf0027c729b9b067a4a1"
+}

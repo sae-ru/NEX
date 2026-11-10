@@ -551,7 +551,8 @@
     "runtime_value_contracts": "examples/runtime-value-contracts/main.nex",
     "runtime_value_contract": "examples/runtime-value-contracts/contracts.json",
     "source_contracts": "examples/source-contracts/main.nex",
-    "cuda_scalar": "examples/gpu-cuda.nex"
+    "cuda_scalar": "examples/gpu-cuda.nex",
+    "cuda_fixed_values": "examples/gpu-values.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4100,12 +4101,20 @@
         "i64",
         "f64",
         "bool",
-        "unit"
+        "unit",
+        "str",
+        "fixed record",
+        "fixed enum",
+        "result<T>"
       ],
       "root_parameter_types": [
         "i64",
         "f64",
-        "bool"
+        "bool",
+        "bounded str",
+        "fixed record",
+        "fixed enum",
+        "result<T>"
       ],
       "realm": "shared",
       "effects": [],
@@ -4149,7 +4158,7 @@
         "current owned CUDA provider NVIDIA execution and lifecycle acceptance",
         "physical f64 and current generated-provider Compute Sanitizer acceptance",
         "GPU operation debugging and physical profiling",
-        "aggregate/result types and general GPU compilation"
+        "dynamic lists/bytes/text allocation and general GPU/NPU compilation"
       ],
       "owned_provider": {
         "status": "experimental_operator_preparation",
@@ -4168,7 +4177,34 @@
         "source_task_bridge": true,
         "checked_exports": 11,
         "f64_transport": true,
-        "installed_hardware_acceptance": false
+        "installed_hardware_acceptance": false,
+        "fixed_value_columns": true,
+        "maximum_column_bytes_per_FFI_call": 262144,
+        "large_columns": "split before FFI; original call budgets preserved"
+      },
+      "schemas": [
+        "nex.cuda-emission/1",
+        "nex.cuda-emission/2"
+      ],
+      "schema_selection": "version1 for legacy scalar values; version2 when fixed values or bounded device text are reachable",
+      "fixed_values": {
+        "schema": "nex.cuda-values/1",
+        "word_bytes": 8,
+        "maximum_words": 64,
+        "maximum_depth": 32,
+        "maximum_aggregate_types": 128,
+        "inactive_words_zero": true,
+        "result_ok_tag": 1,
+        "result_error_tag": 0,
+        "result_propagation": true,
+        "float_to_i64_result": true,
+        "exact_Result_unwrap_diagnostic": true,
+        "maximum_text_entries": 1024,
+        "maximum_text_bytes": 65536,
+        "maximum_text_entry_bytes": 1023,
+        "text_NUL_allowed": false,
+        "text_values": "references to reachable bounded UTF-8 literals; no dynamic allocation",
+        "ordinary_source_language_semantics_changed": false
       }
     }
   }

@@ -818,6 +818,7 @@ int run(const Options &o) {
         {"kernel",cudaSource?"nex_generated_cuda_map":"nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
         {"functions",std::move(functions)},{"function_map",std::move(mapping)},{"shader_sha256",llvm::toHex(shaderDigest,true)},
         {"source_bytes",int64_t(generated.source.size())},{"driver_initialized",false},{"device_executed",false}};
+      if constexpr(requires{generated.valueABI;})if(generated.valueABI.getAsObject()){response["schema"]="nex.cuda-emission/2";response["value_abi"]=generated.valueABI;}
       if(cudaSource&&floatingPoint)response["floating_point"]=llvm::json::Object{
         {"format","finite binary64"},{"word_encoding","IEEE754 bits"},{"rounding","nearest_ties_even"},
         {"positive_zero_normalized",true},{"nonfinite_status",7},{"host_environment_status",8},

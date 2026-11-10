@@ -228,7 +228,9 @@ cancellation or device loss. General NPU/model ownership and recovery are pendin
 
 For scalar GPU source, discover `gpu_codegen` and read `nex guide --kind gpu --json`.
 When `gpu_codegen.cuda.source_support` is true, use `nex emit --kind cuda`;
-its exact scalar/f64 subset and `nex.cuda-emission/1` schema are advertised there.
+its exact scalar/fixed-value subset and `nex.cuda-emission/1` or `/2` schema are
+advertised there. For `/2`, read `value_abi`: never guess field offsets, tags,
+text IDs or batch widths. Results remain ordinary values; `?` propagates them.
 CUDA preparation defaults to that selected compiler and needs no standalone
 emitter/frontend archive. Emission alone does not execute on a GPU.
 If that descriptor includes `owned_provider`, query `gpu_codegen.owned_provider`

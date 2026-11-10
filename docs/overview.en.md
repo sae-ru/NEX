@@ -146,8 +146,8 @@ Read the [normative specification](language.md), [grammar](grammar.ebnf),
 Use the actual compiler to distinguish implemented support from proposals.
 
 The public compiler also emits CUDA C++20 through `nex emit --kind cuda`.
-Its checked scalar subset includes finite f64, source/loop contracts and guarded
-scalar matches; the generated record binds source maps and reachable hashes to
+Its checked subset includes finite f64, fixed records/enums/Results, `as_i64`,
+source/loop contracts and nested guarded matches; the generated record binds source maps and reachable hashes to
 the selected compiler/revision. CUDA provider preparation uses this compiler
 directly. Device authority, physical execution and SDK qualification remain
 explicit, separate steps. See [the GPU guide](gpu-codegen.md#cuda-source-emission).

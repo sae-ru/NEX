@@ -10,10 +10,10 @@ C++20. It uses the existing NEX frontend and canonical function identities. It
 does not parse NEX again or translate generated Metal text. The initial lowering
 walk follows `src/metal.cpp`; the CUDA runtime and kernel ABI are explicit here.
 
-This is not an installed `nex emit --kind cuda` command. The compiler descriptor
-and language pack continue to advertise their actual public Metal backend.
-Public CLI integration, a generated owned CUDA provider, coherent SDK delivery
-and broader types/backends remain pending. No syntax, graph format, task ABI or
+The public compiler now provides `nex emit --kind cuda`; this executable is an
+optional standalone developer harness. The descriptor and language pack advertise
+its exact scalar/fixed-value scope. Matching hardware and immutable SDK acceptance
+remain separate. No syntax, graph format, task ABI or
 language migration changes are introduced by this experiment.
 
 ## Build and emit
@@ -40,8 +40,9 @@ helper/concrete generic calls, assertions and lowered source contracts.
 Unsupported reachable code is rejected. Only the
 reachable call graph is emitted; unused server/foreign code is excluded. There
 are at most8 root arguments,128 functions/call levels and16MiB of generated code.
-Recursion, heap values, source errors, closures and aggregate patterns remain
-unsupported. Scalar matches support integer/bool literals, immutable bindings,
+Fixed records/enums/Results, bounded device text and nested constructor patterns
+are supported with the versioned value ABI. Recursion, dynamic heap allocation,
+source errors and closures remain unsupported. Scalar matches support integer/bool literals, immutable bindings,
 wildcards, ordered lazy guards, nested values, unit arms and normal returns.
 The subject is evaluated once. Each attempted arm consumes the lane budget;
 false guards retain the original subject and later arms do not run after a match.
@@ -79,7 +80,8 @@ For `f64`, each eight-byte input/output word carries its IEEE754 binary64 bits.
 Values are finite, and all zero inputs/results normalize to positive zero.
 The emitter supports arithmetic, negation, comparisons, `as_f64`, concrete
 `number` generics and binding/wildcard matches with guards. `as_i64` returns a
-`result<i64>` and remains outside this scalar-only subset. Floating literal
+`result<i64>` and now uses the fixed-value ABI, with a recoverable E_RANGE
+outside the integer domain. Floating literal
 patterns are rejected by the ordinary NEX checker.
 
 GPU arithmetic uses explicit PTX round-to-nearest/ties-to-even instructions;
@@ -101,9 +103,9 @@ sm_86/PTX7.1. Supply explicit emitter/compiler/resources/frontend-archive/cxx,
 LLVM `--llvm-bin` and a fresh `--output`; use the usual `NEX_NODE`/`NEX_TSC` paths.
 The [versioned f64 evidence](../../docs/evidence/cuda-f64-source-PTX-0.165.0-2026-11-10.json)
 records these compiler/CPU controls. NVRTC, ptxas and physical GPU acceptance
-remain pending. The generated owned CUDA preparer currently rejects reachable
-f64 until its typed transport and fatal-status mapping are implemented and
-qualified. Public CLI/SDK integration remains separate.
+retain their own pending gates. Typed f64 transport and original fatal-status
+mapping are implemented. Public CLI/value-ABI source checks and current native
+NVIDIA/immutable SDK qualification remain distinct.
 
 A trusted host must validate allocation shapes, every pointer, launch geometry
 and budgets, then settle the GPU command and examine **all** statuses before

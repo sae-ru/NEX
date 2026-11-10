@@ -16,6 +16,9 @@ server extern fn decode_f64_raw(data:bytes,offset:i64,count:i64)->result<list<f6
 
 fn kernel_argument_count()->i64{return @ARGUMENTS@;}
 fn kernel_source_hash()->str{return "@ROOT_HASH@";}
+fn kernel_argument_words(index:i64)->i64{@ARGUMENT_WORDS@}
+fn kernel_output_words()->i64{return @OUTPUT_WORDS@;}
+fn kernel_batch_lanes()->i64{return @BATCH_LANES@;}
 fn kernel_all_f64()->bool{return @F64_INTERFACE@;}
 server fn make_context()->result<d::Session> !{task,ffi}{return open_raw(@INDEX@);}
 server fn close_columns(columns:list<d::Buffer>)->unit !{task,ffi}{var i:i64=0;while i<len(columns){resource_close(columns[i]);i=i+1;}}
@@ -31,11 +34,11 @@ server fn read_buffer(buffer:d::Buffer)->result<bytes> !{task,ffi}{
  }
  resource_close(cursor);return ok(output);
 }
-server fn try_apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->result<bytes> !{task,ffi}{
+server fn try_apply_batch(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->result<bytes> !{task,ffi}{
  if count<1 || count>32768 || steps<1 || steps>65536{return err("E_GPU_INPUT","generated kernel geometry exceeds bounds");}
  if count*steps>16777216 || len(columns)!=kernel_argument_count(){return err("E_GPU_INPUT","generated kernel shape or work bound differs");}
  if !resource_is_open(session){return err("E_DEVICE_CLOSED","GPU session is closed");}
- var i:i64=0;while i<len(columns){if len(columns[i])!=count*8{return err("E_GPU_INPUT","column bytes differ from count");}i=i+1;}
+ var i:i64=0;while i<len(columns){if len(columns[i])!=count*8*kernel_argument_words(i){return err("E_GPU_INPUT","column bytes differ from count");}i=i+1;}
  var buffers:list<d::Buffer>=[];i=0;
  while i<len(columns){
   let uploaded:result<d::Buffer>=upload_raw(session,1,columns[i]);
@@ -45,6 +48,23 @@ server fn try_apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)-
  let dispatched:result<d::Buffer>=map_raw(session,buffers,count,steps);close_columns(buffers);
  let buffer:d::Buffer=dispatched?;
  let read:result<bytes>=read_buffer(buffer);resource_close(buffer);return read;
+}
+// Large fixed-value columns are physically split before the C FFI boundary.
+// Each upload/output remains <=256KiB and preserves the ordinary C-call limits.
+server fn try_apply(session:d::Session,columns:list<bytes>,count:i64,steps:i64)->result<bytes> !{task,ffi}{
+ if count<1 || count>32768 || steps<1 || steps>65536 || len(columns)!=kernel_argument_count(){return err("E_GPU_INPUT","generated kernel geometry differs");}
+ if count*steps>16777216{return err("E_GPU_INPUT","generated work exceeds bounds");}
+ var i:i64=0;while i<len(columns){if len(columns[i])!=count*8*kernel_argument_words(i){return err("E_GPU_INPUT","fixed value column byte count differs");}i=i+1;}
+ var output:bytes=unwrap(bytes([]));var offset:i64=0;
+ while offset<count{
+  var lanes:i64=count-offset;if lanes>kernel_batch_lanes(){lanes=kernel_batch_lanes();}
+  var chunks:list<bytes>=[];i=0;
+  while i<len(columns){let width:i64=8*kernel_argument_words(i);chunks=chunks+[slice(columns[i],offset*width,lanes*width)];i=i+1;}
+  let part:bytes=try_apply_batch(session,chunks,lanes,steps)?;
+  if len(part)!=lanes*8*kernel_output_words(){return err("E_GPU_RESPONSE","fixed value output byte count differs");}
+  output=output+part;offset=offset+lanes;
+ }
+ return ok(output);
 }
 // try_apply settles GPU work and closes temporary resources before returning.
 // Escalate its explicit failure through the negotiated host trap API; unwrap

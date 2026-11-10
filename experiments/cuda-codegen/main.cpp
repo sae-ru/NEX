@@ -33,6 +33,7 @@ int main(int argc,char **argv){
       {"parameter_types",std::move(parameters)},{"result_type",emitted.resultType},
       {"kernel","nex_generated_cuda_map"},{"shader_sha256",llvm::toHex(shaderDigest,true)},
       {"source_bytes",uint64_t(emitted.source.size())},{"functions",std::move(functions)}};
+    if(emitted.valueABI.getAsObject())record["value_abi"]=emitted.valueABI;
     if(emitted.floatingPoint)record["floating_point"]=llvm::json::Object{
       {"format","finite binary64"},{"word_encoding","IEEE754 bits"},{"rounding","nearest_ties_even"},
       {"positive_zero_normalized",true},{"nonfinite_status",7},{"host_environment_status",8},

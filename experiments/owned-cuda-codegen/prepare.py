@@ -155,7 +155,7 @@ def main():
             assert capability["source_support"] and capability["schema"] == "nex.cuda-emission/1"
             generated = json.loads(run("generate", [compiler, "emit", "--kind", "cuda", "--entry", args.symbol,
                 "--input-layout", "columns", "-o", generation / "kernel.cu", "--json"], project))
-            assert generated["schema"] == capability["schema"] and generated["kind"] == "cuda"
+            assert generated["schema"] in capability.get("schemas", [capability["schema"]]) and generated["kind"] == "cuda"
             assert all(generated[name] == index[name] for name in ["compiler_build", "descriptor_hash", "toolchain", "language"])
             functions = generated["function_map"]
             assert generated["functions"] == {row["name"]: row["hash"] for row in functions}
@@ -178,9 +178,20 @@ def main():
         for name in ["compute.nex", "device.nex"]:
             shutil.copyfile(resources / "lib" / name, out / "stdlib" / name)
         write(out / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": "./stdlib"}})
+        value_abi = generated.get("value_abi")
+        argument_words = value_abi["parameter_words"] if value_abi else [1] * len(generated["parameter_types"])
+        output_words = value_abi["result_words"] if value_abi else 1
+        if len(argument_words) != len(generated["parameter_types"]) or any(type(n) is not int or not 1 <= n <= 64 for n in [*argument_words, output_words]):
+            raise RuntimeError("invalid fixed device value widths")
+        batch_lanes = min(32768 // n for n in [*argument_words, output_words])
+        text_pool = value_abi["text_pool"] if value_abi else []
+        if len(text_pool) > 1024 or any(not isinstance(s, str) or "\0" in s or len(s.encode("utf-8")) > 1023 for s in text_pool):
+            raise RuntimeError("invalid bounded device text pool")
         source = Path(__file__).resolve().parent
         all_f64 = generated["result_type"] == "f64" and all(t == "f64" for t in generated["parameter_types"])
         template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", root_hash).replace("@F64_INTERFACE@", "true" if all_f64 else "false")
+        width_function = "".join("if index==" + str(i) + "{return " + str(n) + ";}" for i, n in enumerate(argument_words)) + "return 0;"
+        template = template.replace("@ARGUMENT_WORDS@", width_function).replace("@OUTPUT_WORDS@", str(output_words)).replace("@BATCH_LANES@", str(batch_lanes))
         (out / "main.nex").write_text(template.replace("@PIN@", "0" * 64), encoding="utf-8")
         run("check-template", [compiler, "check", "--json"])
         signatures = {}
@@ -202,6 +213,10 @@ def main():
             if args.acceptance_gate and (b"nex_acceptance_gate" not in ptx or b"%clock64" not in ptx):
                 raise RuntimeError("NVRTC PTX omitted the explicit acceptance gate or its device clock")
         (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) +
+            "\n#define GENERATED_VALUE_ABI " + ("1" if value_abi else "0") +
+            "\n#define GENERATED_ARGUMENT_WORDS {" + ",".join(map(str, argument_words or [0])) + "}" +
+            "\n#define GENERATED_OUTPUT_WORDS " + str(output_words) +
+            "\n#define GENERATED_TEXT_POOL_JSON " + json.dumps(json.dumps(text_pool, ensure_ascii=True, separators=(",", ":"))) +
             "\n#define GENERATED_FLOATING_POINT " + ("1" if generated.get("floating_point") else "0") +
             "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["shader_sha256"]) +
             "\n#define GENERATED_PTX_SHA256 " + json.dumps(hashlib.sha256(ptx).hexdigest()) +
@@ -219,6 +234,7 @@ def main():
             "signature_sha256": signatures, "source_input_pins": input_pins, "source_checked": True,
             "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
             "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc,
+            "value_abi": value_abi, "maximum_batch_lanes": batch_lanes,
             "floating_point": generated.get("floating_point"), "all_f64_interface": all_f64,
             "f64_transport": {"implemented": True, "byte_order": "little", "chunk_values": 1024, "maximum_values": 32768,
                 "finite_only": True, "positive_zero_normalized": True, "GPU_acceptance": False},

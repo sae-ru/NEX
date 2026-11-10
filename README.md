@@ -72,7 +72,8 @@ cleanup checks across read-only moved/restored installations. Its post stages
 and the later SDK containing the new public Metal tools remain separate gates.
 
 The compiler now also provides `nex emit --kind cuda` for reachable shared pure
-`i64`/`f64`/`bool`/`unit` functions, scalar matches and bounded contracts. The
+`i64`/`f64`/`bool`/`unit` functions, fixed records/enums/Results, nested matches
+and bounded contracts. The value ABI also supports checked `as_i64` and `?`. The
 [CUDA guide](docs/gpu-codegen.md#cuda-source-emission) describes finite binary64,
 source maps and explicit provider preparation. Source generation grants no
 device access; matching current hardware and SDK acceptance remain pending.

@@ -1,8 +1,9 @@
-# General GPU code generation — scalar Metal precursor
+# General GPU code generation — checked Metal and CUDA backends
 
 The public `nex emit --kind cuda` command now shares the implementation with the
 [checked-AST CUDA developer harness](experiments/cuda-codegen/README.md). It emits
-ordinary checked0.28 scalar functions with explicit 64-bit arithmetic
+ordinary checked0.28 functions with explicit64-bit arithmetic, fixed records,
+enums/Results and bounded static device text
 and rows/columns ABIs, including scalar `match` with ordered guards and one
 subject evaluation. Its source controls passed 28 fixtures, 56 layouts and 256
 lane outcomes under host UBSan, positive reference/native/TypeScript agreement
@@ -20,7 +21,8 @@ and RTX3090 execution (186 lanes); its Python sanitizer failed to attach before
 any CUDA work, so memcheck remains pending. The backend is connected to the
 public compiler; its owned preparation tools
 now default to that same compiler and are installed with the SDK. Matching
-public-CLI/current-provider/immutable-SDK acceptance remains separate from the
+public source-command checks and new fixed-value CPU/reference/native/TypeScript
+agreement passed; current-provider/immutable-SDK hardware acceptance remains separate from the
 earlier fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.
