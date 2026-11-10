@@ -72,7 +72,10 @@ regression and complete portable SDK qualification remain pending.
 
 The corrected HTTP debugger fixture separately passed
 [all38 macOS sessions and their offline captures](docs/evidence/macos-HTTP-debug38-0.165.0-2026-11-10.json).
-The corresponding Windows HTTP gate remains open.
+The later [callback/census correction](docs/evidence/HTTP-debug-callback-census-0.165.0-2026-11-10.json)
+passed all38 original sessions and offline captures on both Mac and Windows,
+retaining the original budgets and strengthening Windows handle cleanup checks.
+Full Windows regression and portable SDK qualification remain pending.
 
 The checkout [owned Metal bridge](docs/evidence/macos-public-owned-Metal-0.165.0-2026-11-10.json)
 now prepares shaders through that public emitter and executes them through NEX

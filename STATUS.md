@@ -82,6 +82,17 @@ Defender quarantined the test server under `Behavior:Win32/DefenseEvasion.A!ml`.
 The original timeout and Defender events are retained. The listener-gate change
 is still external/unaccepted; complete Windows HTTP and SDK gates remain open.
 
+The subsequent [callback/census fixture correction](docs/evidence/HTTP-debug-callback-census-0.165.0-2026-11-10.json)
+passed all38 original HTTP debug sessions and38 offline captures on both Windows
+and macOS. Clients start after the listener is ready; task-memory inspection
+waits for actual marker-callback selection or error, avoiding transient
+auto-continuing stops. Cleanup uses the same baseline/final observations for
+its verdict and telemetry, with exact Windows handle-set equality. The tested
+driver and C++ host body are now in their source files. All original numeric
+budgets and source/stack/watch/step/request/cleanup assertions remain.
+No production runtime, debugger helper or security setting changed. Complete
+Windows source regression and portable SDK qualification remain pending.
+
 # Native Windows fixture paths — development0.164.0
 
 The current Windows restricted source run completed292 of296 groups; its four

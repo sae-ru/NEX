@@ -1,0 +1,224 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "HTTP debug fixture correction: listener readiness precedes unchanged client clocks; first task-memory query follows actual marker callback selection/error. Cleanup verdict and telemetry share the same baseline/final observations, with stricter Windows handle-set equality. All38 original sessions and38 offline captures passed independently on Mac and Windows. Production language/runtime/debug-helper semantics and numeric budgets are unchanged; complete source/portable SDK qualification is separate.",
+  "Mac": {
+    "receipt_sha256": "bd27943b1914edba88a59289fe6a84f437436e36394bd7c1101555230acefd49",
+    "evidence": {
+      "schema": "nex.Mac-current165-HTTP38-callback-atomic-independent-evidence/1",
+      "ok": true,
+      "sealed_utc": "2026-11-10T03:46:35.823457+00:00",
+      "source_commit": "0abc5d7aeca4e5f2a9bd5f77d16216339422aeb2",
+      "source_files": 2144,
+      "toolchain": "0.165.0",
+      "language": "0.28",
+      "compiler_sha256": "2c24505eba56712e2ab743c46ac25940cd21cea2096170895f941c966c5ac397",
+      "test_fixture_working_candidate_not_yet_committed": true,
+      "test_fixture_sha256": "adbce661ac29bb3e35b90957f90ccf6147e3009fe3f4b6baf32f0d1733aaee48",
+      "debug_sessions": 38,
+      "offline_captures": 38,
+      "source_files_absent_in_each_session": true,
+      "request_identity_stacks_steps_and_cleanup_passed": true,
+      "original_assertions_and_deadlines_retained": true,
+      "AC_and_open_lid_during_workload": true,
+      "actual_owner_and_monitor_retired": true,
+      "full_later_snapshot_or_SDK_accepted": false,
+      "whole_original_goal_complete": false,
+      "raw_files": 553,
+      "raw_bytes": 14581829,
+      "archive_sha256": "2bba8e73f29d2e18490cc97bcea149717f933e4b63718661f561fb63a98965c8",
+      "archive_bytes": 2376184
+    }
+  },
+  "Windows": {
+    "receipt_sha256": "cb5013128d6434a135f3123c27c617f294766e99ecdc653c7b0c0df8b039f16d",
+    "evidence": {
+      "schema": "nex.Windows-current165-HTTP38-atomic-audit-evidence/1",
+      "ok": true,
+      "sealed_utc": "2026-11-10T03:37:15.735984+00:00",
+      "summary": {
+        "source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+        "source_files": 2136,
+        "compiler_sha256": "be5d8f7f190231f333588fc9ee647fcc27b9c9828867a045a9fac134deaf3bab",
+        "toolchain": "0.165.0",
+        "language": "0.28",
+        "fixture_sha256": "adbce661ac29bb3e35b90957f90ccf6147e3009fe3f4b6baf32f0d1733aaee48",
+        "debug_sessions": 38,
+        "offline_captures": 38,
+        "debug_delivery": {
+          "ok": true,
+          "DAP": [
+            {
+              "program": "pure-static",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": false,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "8ceaa0cd229b2d6b41ee79da146dd2ef3b1acacfc3746d632a7e818bb55792fe"
+            },
+            {
+              "program": "pure-shared",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": false,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "19cf7a5d3748ceb965aa91cd5891ea239a399eb2a8bec70c486206ae4a91486e"
+            },
+            {
+              "program": "pure-mixed",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": false,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "9f36909ca93406726afecaa5ac8bebf615972324748a94d1681f9fe274378da0"
+            },
+            {
+              "program": "host-static",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": false,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "cbdf00e3b6e8a401723436f9c207a372a92db7725b277aa42caadb3986553e10"
+            },
+            {
+              "program": "host-shared",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": false,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "26dfdfd1880ddc1c069217f9e02b25e1e6b7f20db2c3a521ff8b4e36794e827c"
+            },
+            {
+              "program": "host-mixed",
+              "optimization": "2",
+              "request_id": "1",
+              "TLS": true,
+              "source_files_absent": true,
+              "all_stop": true,
+              "terminal_step_out": true,
+              "stale_frame_and_reference_rejected": true,
+              "response": {
+                "status": 500,
+                "body": "{\"error\":{\"code\":\"E_SOURCE_EXCEPTION\",\"message\":\"request failed\"},\"request_id\":\"1\"}",
+                "request_id": "1"
+              },
+              "cleanup": {
+                "ok": true,
+                "live_frames": 0,
+                "tasks": 1,
+                "registries": 4
+              },
+              "exit": 0,
+              "passed": true,
+              "protocol_sha256": "e9e7c4956e1f7c91461db8b500e5a68c5b0ce4b1f707b85d5e32f5be10ec51c9"
+            }
+          ],
+          "DAP_sessions": 6
+        },
+        "actual_source_files_absent_in_each_session": true,
+        "actual_stacks_watches_steps_request_identity_and_cleanup": true,
+        "client_clocks_start_after_listener": true,
+        "task_reads_wait_for_real_marker_callback_selection_or_error": true,
+        "Windows_file_census_uses_same_baseline_final_sets_and_stricter_set_equality": true,
+        "original_numeric_budgets_and_case_assertions_retained": true,
+        "all_actual_job_members_and_controllers_retired": true,
+        "previous_failure_inputs_retained": true,
+        "source_helper_runtime_or_security_settings_changed": false,
+        "fixture_candidate_still_external": true,
+        "full_source_or_portable_SDK_accepted": false
+      },
+      "raw_files": 1105,
+      "archive_bytes": 7357957,
+      "archive_sha256": "a1c3fb350ff7f657603ac82352c505237a93d3980074c14661c456607741a669",
+      "whole_original_goal_complete": false
+    }
+  },
+  "landed_fixture_equivalence": {
+    "debug_file_sha256": "1f265cc5bf4c81b02da94e83dba722f93a6ae5561ec6e015eae523b3ad99d4e0",
+    "CXX_host_value_sha256": "3a8abcf8a17a11db63470c204fbeb22adf577e7bdcad5754a9919784881b01f9",
+    "debug_main_and_driver_AST_equal_to_tested_candidate": true,
+    "import_time_diagnostic_monkeypatch_replaced_by_direct_source_host_value": true
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}

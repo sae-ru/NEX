@@ -69,6 +69,8 @@ pub server fn run(req:http::Request)->http::Response !{task,throw}{
     return result
 
 
+# Use the same observations for cleanup decisions and their diagnostics.
+# Windows also rejects changed handle identities, even when counts match.
 HOST = r'''#include "nex_host.h"
 #include "nex_task_application.h"
 #include <cstdio>
@@ -114,16 +116,20 @@ static void images(unsigned &runtime,unsigned &code){
 #endif
 }
 int main(int argc,char **argv){bool addresses=true;CHECKS
- auto before=nexrt::liveObjects.load();auto descriptors=files();
+ auto before=nexrt::liveObjects.load();
 #ifdef _WIN32
- auto initialFiles=nex_test::files();std::fprintf(stderr,"NEX_PRIVATE_HANDLES_BEFORE ");for(auto h:initialFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));for(auto h:initialFiles)if(GetFileType(reinterpret_cast<HANDLE>(h))==FILE_TYPE_DISK){wchar_t p[32768];auto n=GetFinalPathNameByHandleW(reinterpret_cast<HANDLE>(h),p,32768,0);if(n&&n<32768)std::fprintf(stderr,"DISK[%llu]=%s ",(unsigned long long)h,nexrt::platform::utf8(std::wstring(p,n)).c_str());}std::fprintf(stderr,"\n");
+ auto initialFiles=nex_test::files();auto descriptors=static_cast<long>(initialFiles.size());std::fprintf(stderr,"NEX_PRIVATE_HANDLES_BEFORE ");for(auto h:initialFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));for(auto h:initialFiles)if(GetFileType(reinterpret_cast<HANDLE>(h))==FILE_TYPE_DISK){wchar_t p[32768];auto n=GetFinalPathNameByHandleW(reinterpret_cast<HANDLE>(h),p,32768,0);if(n&&n<32768)std::fprintf(stderr,"DISK[%llu]=%s ",(unsigned long long)h,nexrt::platform::utf8(std::wstring(p,n)).c_str());}std::fprintf(stderr,"\n");
+#else
+ auto descriptors=files();
 #endif
  auto result=nex_private_http_main(argc,argv);nex_runtime_finish();unsigned runtime=0,code=0;images(runtime,code);
 #ifdef _WIN32
- auto finalFiles=nex_test::files();std::fprintf(stderr,"NEX_PRIVATE_HANDLES_AFTER ");for(auto h:finalFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));std::fprintf(stderr,"\n");
+ auto finalFiles=nex_test::files();auto finalDescriptors=static_cast<long>(finalFiles.size());bool sameFiles=finalFiles==initialFiles;std::fprintf(stderr,"NEX_PRIVATE_HANDLES_AFTER ");for(auto h:finalFiles)std::fprintf(stderr,"%llu:%lu ",(unsigned long long)h,GetFileType(reinterpret_cast<HANDLE>(h)));std::fprintf(stderr,"\n");
+#else
+ auto finalDescriptors=files();bool sameFiles=finalDescriptors==descriptors;
 #endif
- bool clean=addresses&&nexrt::liveObjects.load()==before&&files()==descriptors&&runtime==EXPECT_RUNTIME&&code==EXPECT_CODE;
- std::fprintf(stderr,"NEX_PRIVATE_HTTP_CLEANUP {\"ok\":%s,\"managed_live\":%llu,\"runtime_finish\":true,\"file_delta\":%ld,\"runtime_images\":%u,\"code_images\":%u}\n",clean?"true":"false",(unsigned long long)(nexrt::liveObjects.load()-before),files()-descriptors,runtime,code);return clean?result:71;
+ bool clean=addresses&&nexrt::liveObjects.load()==before&&sameFiles&&runtime==EXPECT_RUNTIME&&code==EXPECT_CODE;
+ std::fprintf(stderr,"NEX_PRIVATE_HTTP_CLEANUP {\"ok\":%s,\"managed_live\":%llu,\"runtime_finish\":true,\"file_delta\":%ld,\"runtime_images\":%u,\"code_images\":%u}\n",clean?"true":"false",(unsigned long long)(nexrt::liveObjects.load()-before),finalDescriptors-descriptors,runtime,code);return clean?result:71;
 }
 '''
 
