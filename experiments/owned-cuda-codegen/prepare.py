@@ -1,0 +1,227 @@
+"""Prepare an experimental owned provider for a checked-AST CUDA scalar root."""
+import argparse
+import ctypes as C
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def write(path, value):
+    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+
+def compile_ptx(library, shader, output, compute):
+    """NVRTC needs no initialized CUDA driver; PTX remains an explicit build input."""
+    library_pin = sha(library)
+    if os.name == "nt":
+        directory = os.add_dll_directory(str(library.parent))
+        rtc = C.CDLL(str(library), winmode=0x1100)
+    else:
+        directory = None
+        rtc = C.CDLL(str(library))
+
+    def bind(name, types):
+        function = getattr(rtc, name)
+        function.argtypes, function.restype = types, C.c_int
+        return function
+
+    def checked(function, *values):
+        code = function(*values)
+        if code:
+            raise RuntimeError(function.__name__ + " returned " + str(code))
+
+    version = bind("nvrtcVersion", [C.POINTER(C.c_int), C.POINTER(C.c_int)])
+    create = bind("nvrtcCreateProgram", [C.POINTER(C.c_void_p), C.c_char_p, C.c_char_p, C.c_int, C.c_void_p, C.c_void_p])
+    compile_program = bind("nvrtcCompileProgram", [C.c_void_p, C.c_int, C.POINTER(C.c_char_p)])
+    log_size = bind("nvrtcGetProgramLogSize", [C.c_void_p, C.POINTER(C.c_size_t)])
+    get_log = bind("nvrtcGetProgramLog", [C.c_void_p, C.c_void_p])
+    ptx_size = bind("nvrtcGetPTXSize", [C.c_void_p, C.POINTER(C.c_size_t)])
+    get_ptx = bind("nvrtcGetPTX", [C.c_void_p, C.c_void_p])
+    destroy = bind("nvrtcDestroyProgram", [C.POINTER(C.c_void_p)])
+    major, minor, program = C.c_int(), C.c_int(), C.c_void_p()
+    try:
+        checked(version, C.byref(major), C.byref(minor))
+        if major.value < 12:
+            raise RuntimeError("NVRTC 12+ is required for generated CUDA C++20")
+        checked(create, C.byref(program), shader.read_bytes(), b"kernel.cu", 0, None, None)
+        options = [b"--std=c++20", ("--gpu-architecture=compute_" + str(compute)).encode(), b"--generate-line-info"]
+        result = compile_program(program, len(options), (C.c_char_p * len(options))(*options))
+        size = C.c_size_t()
+        checked(log_size, program, C.byref(size))
+        if not 1 <= size.value <= 1024 * 1024:
+            raise RuntimeError("NVRTC log exceeds its bounded capture")
+        log = C.create_string_buffer(size.value)
+        checked(get_log, program, log)
+        (output / "nvrtc.log").write_bytes(log.raw)
+        if result:
+            raise RuntimeError("NVRTC rejected generated code; inspect nvrtc.log, status " + str(result))
+        checked(ptx_size, program, C.byref(size))
+        if not 1 <= size.value <= 32 * 1024 * 1024:
+            raise RuntimeError("NVRTC PTX exceeds its bound")
+        ptx = C.create_string_buffer(size.value)
+        checked(get_ptx, program, ptx)
+        if ptx.raw[-1:] != b"\0" or b"\0" in ptx.raw[:-1]:
+            raise RuntimeError("NVRTC returned malformed PTX")
+        (output / "kernel.ptx").write_bytes(ptx.raw)
+        if sha(library) != library_pin:
+            raise RuntimeError("NVRTC library changed during compilation")
+        return {"NVRTC_sha256": library_pin, "version": [major.value, minor.value],
+                "options": [value.decode() for value in options], "PTX_sha256": sha(output / "kernel.ptx")}
+    finally:
+        if program:
+            checked(destroy, C.byref(program))
+        if directory:
+            directory.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ["compiler", "resources", "emitter", "frontend-archive", "source-project", "output"]:
+        parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--symbol", required=True)
+    parser.add_argument("--source-only", action="store_true")
+    parser.add_argument("--cxx", type=Path)
+    parser.add_argument("--nvrtc", type=Path)
+    parser.add_argument("--compute", type=int, default=52)
+    parser.add_argument("--index", type=int, default=0)
+    args = parser.parse_args()
+    if not 0 <= args.index < 64 or not 52 <= args.compute <= 999:
+        parser.error("select GPU ordinal 0..63 and a supported compute target >=52")
+    if not args.source_only and (platform.system() not in {"Windows", "Linux"} or not args.nvrtc):
+        parser.error("native preparation requires Windows/Linux and explicit NVRTC; use --source-only on other hosts")
+    compiler, resources, emitter, frontend, project = [p.resolve(strict=True) for p in
+        [args.compiler, args.resources, args.emitter, args.frontend_archive, args.source_project]]
+    out = args.output.absolute()
+    out.mkdir(parents=True, exist_ok=False)
+    evidence, generation, inputs = out / "preparation", out / "generation", out / "preparation/inputs"
+    for path in [evidence, generation, inputs]:
+        path.mkdir()
+    env = {k: v for k, v in os.environ.items() if not k.startswith("NEX_")}
+    env.update(NEX_RESOURCE_DIR=str(resources), PYTHONDONTWRITEBYTECODE="1")
+    commands = []
+    pins = {"compiler": sha(compiler), "emitter": sha(emitter), "frontend": sha(frontend)}
+
+    def guard():
+        assert pins == {"compiler": sha(compiler), "emitter": sha(emitter), "frontend": sha(frontend)}
+
+    def run(label, argv, cwd=out):
+        guard()
+        row = {"label": label, "argv": list(map(str, argv)), "cwd": str(cwd)}
+        commands.append(row)
+        write(evidence / "commands.json", commands)
+        result = subprocess.run(row["argv"], cwd=cwd, env=env, capture_output=True, timeout=600)
+        for name, data in [("stdout", result.stdout), ("stderr", result.stderr)]:
+            (evidence / (label + "." + name)).write_bytes(data)
+        row["exit_code"] = result.returncode
+        write(evidence / "commands.json", commands)
+        if result.returncode:
+            raise RuntimeError(label + " failed; inspect retained stdout/stderr")
+        guard()
+        return result.stdout
+
+    try:
+        index = json.loads(run("index", [compiler, "describe", "--kind", "index", "--json"]))
+        descriptor = json.loads(run("descriptor", [compiler, "describe", "--json"]))
+        doctor = json.loads(run("doctor", [compiler, "doctor", "--json"]))
+        assert index["language"] == "0.28" and doctor["language"] == "0.28"
+        assert descriptor["source_resources"]["source_task_bridge"]
+        assert descriptor["resource_regions"]["dependency_graph"]["C_table_parent_creation"]
+        assert descriptor["foreign_trap_reporting"]["C_table_prefix"] == "NEX_FFI_V1_TRAP_SIZE"
+        generated = json.loads(run("generate", [emitter, project, args.symbol, "columns", generation / "kernel.cu"], project))
+        write(generation / "report.json", generated)
+        assert generated["schema"] == "nex.experimental-cuda-emission/1" and generated["ok"]
+        assert generated["language"] == "0.28" and generated["input_layout"] == "columns"
+        assert generated["kernel"] == "nex_generated_cuda_map" and not generated["integrated_compiler_CLI"]
+        assert not generated["driver_initialized"] and not generated["device_executed"]
+        if generated["frontend_archive_sha256"] != pins["frontend"]:
+            raise RuntimeError("emitter and selected frontend archive identities differ")
+        assert generated["shader_sha256"] == sha(generation / "kernel.cu")
+        assert generated["source_bytes"] == (generation / "kernel.cu").stat().st_size
+        checked = json.loads(run("check-root", [compiler, "check", "--json"], project))
+        graph = json.loads(run("checked-graph", [compiler, "graph", "--json"], project))
+        nodes = {node["name"]: node for node in graph["nodes"]}
+        if checked["revision"] != generated["revision"]:
+            raise RuntimeError("public compiler and experimental emitter checked different program revisions")
+        for function in generated["functions"]:
+            if nodes.get(function["name"], {}).get("hash") != function["hash"]:
+                raise RuntimeError("public compiler and experimental emitter differ for " + function["name"])
+        root_hash = next(f["hash"] for f in generated["functions"] if f["name"] == generated["entry"])
+        (out / "stdlib").mkdir()
+        for name in ["compute.nex", "device.nex"]:
+            shutil.copyfile(resources / "lib" / name, out / "stdlib" / name)
+        write(out / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": "./stdlib"}})
+        source = Path(__file__).resolve().parent
+        template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", root_hash)
+        (out / "main.nex").write_text(template.replace("@PIN@", "0" * 64), encoding="utf-8")
+        run("check-template", [compiler, "check", "--json"])
+        signatures = {}
+        for name in ["open", "upload", "map", "download", "read_next", "name", "kernel_ns", "busy", "fatal"]:
+            signature = json.loads(run("signature-" + name, [compiler, "ffi", "--symbol", name + "_raw", "--json"]))
+            signatures[name] = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        for name in ["module.cpp", "cuda_driver.h", "main.nex.in"]:
+            shutil.copyfile(source / name, inputs / name)
+        (inputs / "signatures.h").write_text("\n".join('#define PIN_' + n.upper() + ' "' + h + '"' for n, h in signatures.items()) + "\n")
+        ptx, nvrtc = b"", None
+        if not args.source_only:
+            nvrtc = compile_ptx(args.nvrtc.resolve(strict=True), generation / "kernel.cu", generation, args.compute)
+            ptx = (generation / "kernel.ptx").read_bytes()
+        (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) +
+            "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["shader_sha256"]) +
+            "\n#define GENERATED_PTX_SHA256 " + json.dumps(hashlib.sha256(ptx).hexdigest()) +
+            "\n#define GENERATED_PTX " + json.dumps(ptx.rstrip(b"\0").decode("utf-8")) + "\n", encoding="utf-8")
+        input_pins = {p.name: sha(p) for p in inputs.iterdir()}
+        report = {"schema": "nex.experimental-owned-CUDA-codegen-preparation/1", "ok": True,
+            "experimental": True, "compiler_sha256": pins["compiler"], "emitter_sha256": pins["emitter"],
+            "frontend_archive_sha256": pins["frontend"], "compiler_index": index, "source_language": "0.28",
+            "source_revision": generated["revision"], "emission_sha256": sha(generation / "report.json"),
+            "kernel_sha256": generated["shader_sha256"], "root": generated["entry"], "root_hash": root_hash,
+            "functions": generated["functions"], "parameter_types": generated["parameter_types"], "result_type": generated["result_type"],
+            "signature_sha256": signatures, "source_input_pins": input_pins, "source_checked": True,
+            "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
+            "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc, "commands": commands}
+        if not args.source_only:
+            cxx = (args.cxx or Path(doctor["native_compiler"])).resolve(strict=True)
+            flags = ["-std=c++20", "-O2", "-pthread", "-Wall", "-Wextra", "-shared", "-I" + str(resources / "runtime"), "-I" + str(inputs)]
+            if os.name == "nt":
+                if not doctor["host"].startswith("x86_64"):
+                    raise RuntimeError("native Windows provider currently selects x86_64")
+                flags += ["--target=" + doctor["host"], "--sysroot=" + doctor["native_sysroot"], "-static"]
+                image, target = "module.dll", "windows-x86_64"
+            else:
+                flags += ["-fPIC", "-fvisibility=hidden"]
+                image, target = "module.so", "linux-" + ("arm64" if platform.machine().lower() in {"arm64", "aarch64"} else "x86_64")
+            bundle = out / "bundle"
+            bundle.mkdir()
+            run("compile-module", [cxx, *flags, inputs / "module.cpp", *([] if os.name == "nt" else ["-ldl"]), "-o", bundle / image])
+            notice = "NEX experimental generated CUDA provider\n\n" + (resources / "LICENSE").read_text() + "\n\nnlohmann/json\n" + (resources / "runtime/third_party/JSON-LICENSE.MIT").read_text()
+            if os.name == "nt":
+                notice += "\n\nNative compiler runtime notices\n" + Path(doctor["native_windows_notices"]).read_text(encoding="utf-8")
+            (bundle / "NOTICE").write_text(notice, encoding="utf-8")
+            write(bundle / "manifest.json", {"schema": "nex.foreign-bundle/1", "platform": target, "entry": image,
+                "files": [{"path": n, "sha256": sha(bundle / n)} for n in [image, "NOTICE"]], "exports": signatures, "notices": ["NOTICE"]})
+            pin = sha(bundle / "manifest.json")
+            (out / "main.nex").write_text(template.replace("@PIN@", pin), encoding="utf-8")
+            write(out / "foreign.json", {"schema": "nex.foreign-host/1", "module_limit": 1, "resource_limit": 64, "resource_bytes": 16777216,
+                "libraries": {"gpu": {"directory": "./bundle", "manifest_sha256": pin, "exports": list(signatures)}}})
+            run("check-pinned", [compiler, "check", "--json"])
+            run("catalogue", [compiler, "foreign", out / "foreign.json", "--json"])
+            report.update(native_provider_built=True, manifest_sha256=pin, module_sha256=sha(bundle / image), cxx_sha256=sha(cxx))
+        assert all(sha(inputs / n) == h for n, h in input_pins.items())
+        guard()
+        write(evidence / "report.json", report)
+        print(json.dumps({"ok": True, "output": str(out), "source_checked": True, "native_provider_built": report["native_provider_built"], "hardware_executed": False}))
+    except BaseException as error:
+        write(evidence / "failure.json", {"ok": False, "error": repr(error), "commands": commands})
+        raise
+
+
+if __name__ == "__main__":
+    main()

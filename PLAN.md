@@ -6,8 +6,11 @@ and rows/columns ABIs, including scalar `match` with ordered guards and one
 subject evaluation. Its source controls passed 28 fixtures, 56 layouts and 256
 lane outcomes under host UBSan, positive reference/native/TypeScript agreement
 and 9 rejected programs. This is a source-only experiment, separate from the public
-compiler and fixed Windows CUDA provider. Actual NVRTC/GPU/memcheck, generated
-owned-provider integration and coherent public compiler/SDK delivery remain
+compiler and fixed Windows CUDA provider. A separate
+[owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
+checked preparation and a C FFI implementation for sessions/buffers/cursors.
+Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
+and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.
 
 The separate `experiments/metal-codegen` backend now lowers actual checked NEX

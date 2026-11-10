@@ -1,0 +1,65 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Independent generated scalar CUDA owned-provider source preparation, real host C++ module build and typed unavailable-driver behavior on macOS. No NVRTC, Windows/Linux native provider or physical CUDA execution is qualified.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "public_compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "experimental_emitter_sha256": "147ae6cdb39301099e8ce7950a4219b4887076ade5ebd2c44a7d493286eba013",
+  "provider_source_sha256": "7b603db8779e77f5e3a59e63af928d74c79da2abea7fc4e9e0039e9e4b48842e",
+  "minimal_driver_declarations_sha256": "5b2f065e29e71af358c774c03469ff12c32a04b2c2e63812fb5bd72f1af6c7c6",
+  "preparer_sha256": "2a067458c9c1bbfec83c2e8a6863533956d4423c2183cd3356e89420dd96131d",
+  "source_control_runner_sha256": "67900281162b37fdeebbdbf01524888f9416b3b991d1d978a6ed87346f9c928f",
+  "source_controls": {
+    "roots": [
+      "zero arguments/unit result",
+      "eight integer arguments",
+      "nested bool/integer match",
+      "concrete generic match"
+    ],
+    "prepared_projects": 4,
+    "checked_FFI_signatures": 36,
+    "program_revisions_and_all_reachable_hashes_compared_to_actual_compiler": true,
+    "rejected_preparations": [
+      "mismatched frontend archive identity",
+      "unsupported reachable floating-point root"
+    ],
+    "native_provider_bundle_published_for_rejected_inputs": false
+  },
+  "host_controls": {
+    "actual_CXX_module_built": true,
+    "backends": [
+      "reference",
+      "native-debug",
+      "native-release"
+    ],
+    "typed_unavailable_results": 96,
+    "zero_created_CUDA_contexts_allocations_or_launches": true,
+    "declared_resource_byte_capacity": 262144,
+    "constructor_reservation_capacity_recovered_each_call": true,
+    "reference_resource_capacity_after_scope": 0,
+    "CPU_fallback": false,
+    "GPU_execution_accepted": false
+  },
+  "raw_archive": {
+    "archive_sha256": "942a9e6637bf3276aeda7031729486b37745091396b27290f9d7c8ada8608377",
+    "archive_bytes": 20410063,
+    "raw_files": 1077,
+    "raw_bytes": 100256931
+  },
+  "independent_receipt_sha256": "6b560a6c4e1506a6b4fad1ff3f9dbd61ddf3f90f981c9d3647853be505b0f998",
+  "required_physical_gates": [
+    "NVRTC compilation and native Windows/Linux preparation",
+    "Selected GPU identity and exact generated values/statuses",
+    "Parent session/buffer/cursor lifetimes and context restoration",
+    "Cancellation/deadline after actual enqueue and verified physical drain",
+    "Resource/limit recovery and source-deleted replay/standalone delivery",
+    "Compute Sanitizer memory and leak checks"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "public_CUDA_CLI_or_SDK_accepted": false,
+  "physical_CUDA_execution_accepted": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

@@ -115,3 +115,8 @@ python3 -B experiments/cuda-codegen/verify_device.py \
 Physical execution and a separate Compute Sanitizer run remain required. CUDA
 event timing here is diagnostic evidence, not NEX source-level GPU profiling or
 debugging. Successful source controls do not qualify a CUDA SDK or provider.
+
+The separate [owned generated CUDA experiment](../owned-cuda-codegen/README.md)
+prepares this emission for NEX sessions, buffers and tasks. Its source/FFI and
+unavailable-driver host controls remain separate from NVRTC, physical resource
+lifetime, cancellation and sanitizer acceptance.
