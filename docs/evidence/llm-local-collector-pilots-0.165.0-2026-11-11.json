@@ -1,0 +1,214 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-11",
+  "timezone": "Europe/Moscow",
+  "utc": "2026-11-10T23:20:50.584344+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "C_ABI_major": 1,
+  "source_parent_commit": "e38990a",
+  "compiler_sha256": "63cd6b70baedeea537e3ba84ce5c7186700c726be4436f495150856bcddbf992",
+  "compiler_binary_changed": false,
+  "source_language_or_major_ABIs_changed": false,
+  "local_collector_implemented": true,
+  "bounded_model_file_tool_broker_implemented": true,
+  "host_shell_or_fixture_access_granted": false,
+  "separate_OS_isolation_retained": true,
+  "independent_local_source_review_calls_counted": true,
+  "source_review_is_formal_or_authenticated_human_proof": false,
+  "candidate_non_JSON_observation_is_task_failure": true,
+  "bounded_stdout_compiler_diagnostics_forwarded": true,
+  "author_receipts_are_accepted": false,
+  "current_collector_policy": 4,
+  "policy4_real_pilot_completed": false,
+  "all_targets_builds_this_block": 1,
+  "CTest_registry_groups_on_mac": 317,
+  "full_regression_run": false,
+  "initial_new_collector_group_passed": true,
+  "initial_synthetic_methods": 9,
+  "selected_new_or_changed_controls_passed": [
+    "runtime internal aliases/external rejection",
+    "complete history and guarded edits",
+    "bounded literal search/scalar offsets",
+    "between-call config drift rejected before POST",
+    "single strict data envelope",
+    "stdout JSON compiler diagnostic fields without embedded source",
+    "non-JSON candidate output classification"
+  ],
+  "initial_alias_unit_fixture_failure": "expected /var path instead of canonical /private/var; assertion repaired and selected method passed",
+  "initial_runtime_preflight_failure": "ordinary internal dylib aliases rejected; pins now include canonical target within selected runtime",
+  "initial_drift_unit_environment_failure": "sandbox denied synthetic loopback bind; same selected method passed with loopback permission",
+  "selected_model": "qwen/qwen3.8-27b",
+  "quantization": "Q8_0",
+  "observed_runtime": "llama.cpp-mac-arm64-apple-metal-advsimd@2.60.0",
+  "GGUF_template_and_selected_Hub_user_defaults_pinned": true,
+  "exact_rendered_prompt_API_attestation": false,
+  "settings": {
+    "context": 16384,
+    "parallel": 1,
+    "temperature": 0,
+    "top_p": 1,
+    "top_k": 40,
+    "min_p": 0,
+    "repeat_penalty": 1,
+    "reasoning": "off",
+    "Draft_MTP": false
+  },
+  "runtime_configs_verified_before_and_after_calls": true,
+  "effective_load_config_persisted_and_checked_between_prefixes": true,
+  "observed_infrastructure_slots": 8,
+  "real_local_generation_request_attempts": 69,
+  "calls_without_usage": 1,
+  "known_input_output_tokens": 153735,
+  "unreported_usage_estimated": false,
+  "main_study_slots_attempted": 0,
+  "main_study_planned_slots": 60,
+  "other_models_or_paid_APIs_invoked": false,
+  "weights_downloaded": 0,
+  "token_savings_established": false,
+  "pilots_pooled_for_comparison": false,
+  "pilots": [
+    {
+      "policy": 1,
+      "source_commit": "34572fa",
+      "kind": "infrastructure_pilot",
+      "matrix_complete": true,
+      "owned_instance_unloaded": true,
+      "outcomes": [
+        {
+          "language": "cpp",
+          "status": "accepted",
+          "stop_reason": "independent_source_review_passed",
+          "requests": 5,
+          "wall_ms": 35421,
+          "known_total_tokens": 4703,
+          "calls_without_usage": 0
+        },
+        {
+          "language": "nex",
+          "status": "budget_exhausted",
+          "stop_reason": "request_limit",
+          "requests": 11,
+          "wall_ms": 41348,
+          "known_total_tokens": 33577,
+          "calls_without_usage": 0
+        },
+        {
+          "language": "python",
+          "status": "accepted",
+          "stop_reason": "independent_source_review_passed",
+          "requests": 6,
+          "wall_ms": 26314,
+          "known_total_tokens": 5218,
+          "calls_without_usage": 0
+        }
+      ],
+      "summary_sha256": "a35666c996c7b2d5adbcac986e6a3c374260f9d8f708799e7e40aadd27d0bb92",
+      "freeze_sha256": "cb997286ef242f6ad8a112b6b621d28c5ee76c98f2539041139a37e6ea2d2b55",
+      "execution_sha256": "428b43293a871b4ef476602bd0b01f1eb873ff642660d3ce37130e81fb0ce053",
+      "missing_slots": []
+    },
+    {
+      "policy": 2,
+      "source_commit": "98ec3b5",
+      "kind": "infrastructure_pilot",
+      "matrix_complete": false,
+      "owned_instance_unloaded": true,
+      "outcomes": [
+        {
+          "language": "cpp",
+          "status": "failed",
+          "stop_reason": "provider_failure_or_unknown_usage",
+          "requests": 10,
+          "wall_ms": 129188,
+          "known_total_tokens": 19928,
+          "calls_without_usage": 1
+        },
+        {
+          "language": "nex",
+          "status": "budget_exhausted",
+          "stop_reason": "request_limit",
+          "requests": 11,
+          "wall_ms": 46223,
+          "known_total_tokens": 31216,
+          "calls_without_usage": 0
+        }
+      ],
+      "summary_sha256": "ba42460deb6212ed37e905f11b695039539a2c39503c6e4604ee7eed5c574c31",
+      "freeze_sha256": "dd81262b18ebafa21dd2acc94e5bb4e45ad2775f5c8f0512cc7a7a37d05d3e9c",
+      "execution_sha256": "bc7d80f2d8b212fa5e59bab6ffb3d7e5b55051846401c2d1010d87fc592b4ac7",
+      "missing_slots": [
+        [
+          "qwen38-27b-q8",
+          "bounded-total",
+          0,
+          "python"
+        ]
+      ]
+    },
+    {
+      "policy": 3,
+      "source_commit": "e38990a",
+      "kind": "infrastructure_pilot",
+      "matrix_complete": true,
+      "owned_instance_unloaded": true,
+      "outcomes": [
+        {
+          "language": "cpp",
+          "status": "accepted",
+          "stop_reason": "independent_source_review_passed",
+          "requests": 8,
+          "wall_ms": 60709,
+          "known_total_tokens": 12211,
+          "calls_without_usage": 0
+        },
+        {
+          "language": "nex",
+          "status": "failed",
+          "stop_reason": "terminal_functional_failure",
+          "requests": 11,
+          "wall_ms": 37143,
+          "known_total_tokens": 37977,
+          "calls_without_usage": 0
+        },
+        {
+          "language": "python",
+          "status": "accepted",
+          "stop_reason": "independent_source_review_passed",
+          "requests": 7,
+          "wall_ms": 42645,
+          "known_total_tokens": 8905,
+          "calls_without_usage": 0
+        }
+      ],
+      "summary_sha256": "0c4d897b019b0896a8e013740d14f58355405e29d6ad1a9be64b3eb218678ad8",
+      "freeze_sha256": "f40cad7bc6468dccdec56a246ee465fd9879890ce6f93bf23d1dcb4e2a2f2041",
+      "execution_sha256": "1d54251eb3c4018922e7373ef51fb94eef7c3263cb669d04799177f35880d590",
+      "missing_slots": []
+    }
+  ],
+  "original_rejected_answers_and_stopped_calls_retained": true,
+  "live_model_instances_left_by_pilots": false,
+  "no_new_remote_contacts": true,
+  "matching_SDK_or_device_acceptance_claimed": false,
+  "main_or_push": false,
+  "input_pins": {
+    "README.md": "706b0f420c08675f49d3f28defaa3737bfbf852d5a7bc6503f13491f36e93130",
+    "acceptance.py": "31e6f370cacf0c02cfd94132fc78e16c596a1bea7a261c7f4f1362c7076d1fa7",
+    "collector.py": "00c8c2b84c7b374b6b162f0c6a4cef0bbb631c3e55a1a75a1951867b0ac21eb4",
+    "drivers.py": "f17d22e59df455d796572e7818435271ae222f0d2e93e8ca751ccbf0a1ae9326",
+    "fixtures.py": "51cd6ac59bc8058a8681de306643d2b9453f8c43d62e5fe48fc2c9698b477852",
+    "isolation.py": "6e643e2f38d11ed563dfef5f8344ed53409f3a9c5f75aed0ca1e48a71919ddd3",
+    "local-model.json": "b5bd34ef11a73699c23a1cc63f36b7e08f32af224a895612b453a79426459443",
+    "local_provider.py": "a5ccf6917a801c2f0ed432dcc1a611f21d12fba918618458b607934c70ce5b22",
+    "protocol.md": "0b9c1d6bc491e93f0d3544535b184e03dd62d8d787e9912373f9c2309e98c1f9",
+    "readiness.py": "9308552c8707105b3dd58dfa45c6eb7e9f60ed0d1232dad15ebaf52252c02419",
+    "tasks.json": "d13dda55ffce6f0455a5e5fdd0c517a8658bc4ad1b8ad096f05d2727a52a028c",
+    "weights.py": "5d2106593741a905b125a9077ebedfb24e64ead8d16797c3ee8ba69d138d4327"
+  },
+  "original_JUnit_sha256": "ea074455edb9680345768d87fdbef02aa5992bddeac71815751674db49a3aa92",
+  "relative_document_links_checked": 134,
+  "bounded_current_status_bytes": 5374
+}

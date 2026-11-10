@@ -228,5 +228,34 @@ class Collection(unittest.TestCase):
         with self.assertRaises(ValueError):
             broker.action(c.model_object('<tool_call>{"action":"shell","command":"true"}</tool_call>'))
 
+    def test_json_compiler_error_is_visible_without_embedded_host_source(self):
+        broker=self.broker('nex')
+        def check(output,*,visible):
+            self.assertTrue(visible);output=Path(output);output.mkdir()
+            c.a.save(output/'check.stdout',{'schema':'nex.diagnostic/1','ok':False,'code':'E_PARSE',
+                'message':"expected expression, found '='",'line':5,'reported_source':'HOST_ONLY_ORACLE'})
+            (output/'check.stderr').write_bytes(b'')
+            return {'functional_passed':False,'errors':[{'step':'source-check','reason':'candidate rejected'}],
+                'observations':[],'commands':[{'name':'source-check','exit_code':1,'stopped':None,
+                    'stdout':'check.stdout','stderr':'check.stderr'}]}
+        with patch.object(broker,'run_check',side_effect=check):reply=broker.action({'action':'check'})
+        error=reply['diagnostics'][0]['stdout_diagnostic']
+        self.assertEqual(error['code'],'E_PARSE');self.assertEqual(error['line'],5)
+        self.assertEqual(error['message'],"expected expression, found '='")
+        self.assertNotIn('HOST_ONLY_ORACLE',json.dumps(reply))
+
+    def test_non_json_candidate_output_is_a_task_failure_not_host_failure(self):
+        broker=self.broker()
+        def command(argv,cwd,env,output,name,**kwargs):
+            (output/(name+'.stdout')).write_bytes(b'unexpected candidate text\n{"result":1}\n')
+            (output/(name+'.stderr')).write_bytes(b'')
+            return {'name':name,'exit_code':0,'stopped':None,'stdout':name+'.stdout','stderr':name+'.stderr'}
+        with patch.object(c.a,'command',side_effect=command):
+            report=c.a.check(broker.work,broker.task,broker.language,self.root/'invalid-output',visible_only=True)
+        self.assertFalse(report['functional_passed']);self.assertFalse(report['accepted'])
+        self.assertEqual(report['errors'][0]['step'],'execute')
+        self.assertEqual(report['errors'][0]['reason'],'invalid candidate observation JSON')
+        self.assertFalse(any(x['step']=='infrastructure'for x in report['errors']))
+
 
 if __name__=='__main__':unittest.main(verbosity=2)

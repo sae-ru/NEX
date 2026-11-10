@@ -25,8 +25,9 @@ remains pending. The public nex cost command reuses the offline ledger; ten
 comparison contracts,30 generated starting bundles and cross-language executable
 controls are prepared. Local Qwen transport, weight pins and scoped macOS
 execution isolation now have host evidence and one benign readiness response.
-Next complete restricted task collection, runtime/template/budget freeze,
-source-rule review and actual trials. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
+Restricted collection, runtime/template/budget freeze and counted fresh-context
+local source review are implemented. Infrastructure pilots retain all failures;
+next qualify repaired diagnostic feedback, then run the full matched study. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
 APIs. Conclusions will be scoped to that model.
 
 The original objective remains intact. The main unfinished implementation areas

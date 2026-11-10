@@ -226,12 +226,17 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
         if row['exit_code'] != 0 or row['stopped']:
             errors.append({'step': row['name'], 'reason': 'process failed or exceeded its budget'}); return
         raw = (output / row['stdout']).read_bytes()
-        if nex:
-            packet = decode(raw)
-            if packet.get('ok') is not True or packet.get('exit_code', 0) != 0:
-                errors.append({'step': row['name'], 'reason': 'NEX did not complete'}); return
-            raw = packet['stdout'].encode('utf-8')
-        actual = [decode(line) for line in raw.splitlines()]
+        try:
+            if nex:
+                packet = decode(raw)
+                if not isinstance(packet,dict):raise ValueError('expected a NEX observation object')
+                if packet.get('ok') is not True or packet.get('exit_code', 0) != 0:
+                    errors.append({'step': row['name'], 'reason': 'NEX did not complete'}); return
+                if not isinstance(packet.get('stdout'),str):raise ValueError('expected NEX stdout text')
+                raw = packet['stdout'].encode('utf-8')
+            actual = [decode(line) for line in raw.splitlines()]
+        except (ValueError,TypeError,KeyError,UnicodeError)as error:
+            errors.append({'step':row['name'],'reason':'invalid candidate observation JSON','detail':str(error)[:512]});return
         observations.append({'step': row['name'], 'values': actual})
         if not same(actual, expected):
             errors.append({'step': row['name'], 'reason': 'observable outputs differ'})

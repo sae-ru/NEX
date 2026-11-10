@@ -113,6 +113,23 @@ def model_object(text):
     return value
 
 
+def stdout_diagnostic(path):
+    """Expose bounded diagnostic fields, never embedded source/oracle payloads."""
+    try:packet=a.decode(checked_file(path, a.LIMIT))
+    except (ValueError,UnicodeError):return None
+    def fields(value,depth=0):
+        if not isinstance(value,dict)or depth>2:return None
+        result={}
+        for key in ['schema','ok','code','message','file','line','column']:
+            item=value.get(key)
+            if isinstance(item,str):result[key]=item[:2000]
+            elif type(item)in (bool,int):result[key]=item
+        for key in ['error','diagnostic']:
+            if isinstance(value.get(key),dict):result[key]=fields(value[key],depth+1)
+        return result or None
+    return fields(packet)
+
+
 def template(gguf):
     """Read bounded GGUF metadata only; never scan or load tensor data."""
     with Path(gguf).open('rb') as stream:
@@ -258,8 +275,8 @@ def freeze(output, *, compiler, cpp, weights, lm_home, runtime, pilot=False):
            'compiler':str(compiler),'cpp':str(cpp),'resources':str(ROOT),'lms':str(Path(lm_home)/'bin/lms'),
            'compiler_index':index,'doctor':doctor,'python':sys.version,'python_executable':sys.executable,
            'cache_policy':'fresh compiler-owned cache for each check, removed after retaining diagnostics; no prewarm',
-           'context_policy':'policy3: full current candidate and task, NEX bootstrap or baseline note, complete prior action/tool transcript; no server-side history; one strict JSON envelope',
-           'collector_policy_version':3,
+           'context_policy':'policy4: full current candidate and task, NEX bootstrap or baseline note, complete prior action/tool transcript; one strict JSON envelope; bounded stdout/stderr diagnostics',
+           'collector_policy_version':4,
            'stopping_policy':'11 author requests plus1 independent review within12 total;900s or observed60000-token soft stop; one response may cross token threshold; explicit submit required',
            'source_review_policy':'host-owned fresh-context local Qwen all-rule review; counted in original trial; no author-provided attestation',
            'source_review_mode':'independent_local_call',
@@ -356,10 +373,12 @@ class Broker:
             # Only visible observations exist in this report. Never expose a
             # terminal held-out report or a review/receipt through this broker.
             logs=[]
+            failed_steps={error['step']for error in report['errors']}
             for row in report['commands']:
-                if row['exit_code']!=0 or row['stopped']:
+                if row['exit_code']!=0 or row['stopped']or row['name']in failed_steps:
                     logs.append({'step':row['name'],'exit_code':row['exit_code'],'stopped':row['stopped'],
-                                 'stderr':(output/row['stderr']).read_text(errors='replace')[-6000:]})
+                                 'stderr':(output/row['stderr']).read_text(errors='replace')[-3000:],
+                                 'stdout_diagnostic':stdout_diagnostic(output/row['stdout'])})
             return {'functional_passed':report['functional_passed'],'errors':report['errors'],
                     'observations':report['observations'],'diagnostics':logs}
         return {'submitted':True}

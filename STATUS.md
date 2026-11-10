@@ -1,3 +1,37 @@
+# Local Qwen task collector and infrastructure pilots — development0.165.0
+
+The serial local Qwen3.8 27B GGUF Q8_0 collector now freezes model/runtime/
+template/settings/toolchain inputs and provides bounded guarded source edits,
+reads, document search, source-text lookup, NEX discovery and visible checks.
+Terminal submit runs held-out acceptance once, then a separate stateless local
+source-rule review counted in the original trial. The host binds and writes the
+receipt. Model-assisted judgment remains distinct from formal proof or human
+authentication. Existing macOS compilation/execution isolation remains in use.
+
+Three separate infrastructure pilots retain8 attempted slots and69 actual local
+requests. Known input/output usage totals153735 tokens; one interrupted request
+has unknown usage, never zero or an estimate. Policy1 completed three slots:
+NEX exhausted its request budget through repeated guide reads, while C++/Python
+passed. Policy2 preserved history but was stopped after repeated Qwen tool-call
+envelopes were rejected; Python was not attempted. Policy3 normalized one strict
+data envelope and completed three slots: C++/Python passed, NEX source used
+unsupported += and failed. These are infrastructure pilots, not the60-slot study;
+they are neither pooled nor claimed as language token savings.
+
+The third pilot also exposed missing compiler feedback: NEX JSON diagnostics
+are on stdout while the broker had returned only stderr. Policy4 now forwards
+bounded diagnostic code/message/location fields without embedded source. Invalid
+candidate output JSON is a task failure rather than a host failure. Both changes
+passed their selected controls; this repaired policy still needs a real pilot.
+Every original request/response/source/check/review, negative result and stopped
+call remains recorded. All three uniquely owned model instances were unloaded.
+[Scoped evidence](docs/evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json).
+
+One all-target build and the new collector group passed; only changed/new scopes
+were subsequently checked. The compiler remains63cd6b70, language/ABIs unchanged.
+No full/platform/remote/device/SDK/main/push stage ran. General GPU/NPU, remaining
+language/browser/platform/UI/Studio/conversion work and final release remain open.
+
 # Local Qwen transport and scoped execution isolation — development0.165.0
 
 The selected local Qwen3.8 27B GGUF Q8_0 answered one benign readiness request:

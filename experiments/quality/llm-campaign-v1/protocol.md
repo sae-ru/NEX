@@ -183,3 +183,12 @@ source-rule acceptance are unchanged. Policy2's partial pilot (source `98ec3b5`)
 was stopped when repeated Qwen envelopes were rejected as non-JSON; all calls,
 including one interrupted request with unknown usage, remain recorded. Its
 unattempted Python slot is missing, not a fabricated failure or success.
+
+Policy4 forwards bounded JSON diagnostics from compiler stdout as well as
+stderr. It excludes embedded source payloads and exposes only the visible
+check's code/message/location fields. Non-JSON output from a candidate is a
+failed task observation, not a host-infrastructure failure. Policy3's completed
+pilot (`e38990a`) retained a NEX syntax rejection (`+=` is unsupported), while
+C++/Python passed; the model had not received the compiler's stdout diagnostic
+during visible repair checks. That result remains recorded. The repaired
+feedback policy still needs its own infrastructure pilot before the main study.

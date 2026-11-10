@@ -190,3 +190,6 @@ pilot also remains recorded: Qwen used tool-call envelopes and the host rejected
 their framing. Policy3 normalizes one strict advertised data envelope before
 the same action validation; it never executes arbitrary tools. Each version's
 pilot remains separate from the60-slot main study.
+Policy4 additionally exposes bounded stdout JSON compiler diagnostics alongside
+stderr. This repairs a missing-error-feedback path found by the third pilot;
+source/program acceptance is unchanged. Its own real pilot remains pending.
