@@ -1,18 +1,11 @@
 # Why NEX exists
 
-Current source is toolchain 0.162.2 / language 0.28, in development. It exposes
-source contracts in the ordinary CLI.
-Pure function and loop clauses remain checked in release code. Existing 0.27
-histories need explicit migration. The [Mac development SDK receipt](releases/0.162.0.json)
-records its exact 0.162.0 archive. The [0.162.2 development evidence](evidence/current-platforms-0.162.2-2026-11-08.json)
-records all 301 macOS source groups, newly assembled SDKs and scoped Windows TCP
-and CIX device results. The same current Windows SDK passed 35 physical CUDA
-scenarios and 36 Compute Sanitizer cases with balanced resource ledgers.
-The [exact 0.162.2 Mac SDK](evidence/macos-sdk-0.162.2-2026-11-08.json) has now passed
-its complete scoped acceptance. [Fedora passed all 303 groups](evidence/fedora-full303-0.162.2-2026-11-08.json)
-and ordinary installed smoke. Windows/CIX regressions and Windows/Linux portable
-SDK delivery remain pending.
-Other platforms retain their own versioned evidence.
+Current source is **toolchain 0.165.0 / language 0.28 / task ABI 7**, in
+development. It includes ordinary source contracts and experimental checked
+scalar Metal emission. Complete matching portable SDK qualification remains
+pending. The [current platform summary](../README.md#development-status) links
+exact source and hardware records; [STATUS](../STATUS.md) retains the history.
+Older SDK archives keep their own source, compiler and acceptance identities.
 
 [Русский](overview.ru.md) · [Start here](getting-started.en.md)
 
@@ -49,6 +42,7 @@ flowchart LR
     D --> E["MLIR / LLVM: native code"]
     D --> F["TypeScript: browser"]
     D --> G["Scalar Wasm adapter"]
+    D --> H["Experimental scalar Metal source"]
 ```
 
 ## The language
@@ -98,7 +92,7 @@ steps per invocation and five repetitions. Median wall seconds were:
 
 The host was not isolated. The C++ comparison does not implement NEX task
 cancellation/limit machinery. These observations are scoped to one algorithm
-and older versions; they are not current 0.162.0 benchmarks or universal language
+and older versions; they are not current-toolchain benchmarks or universal language
 comparisons. The Linux observation missed that experiment's 90% C++ throughput goal.
 
 A separate [0.96 build-cache experiment](evidence/native-scale-0.96.0.json) used
@@ -115,28 +109,35 @@ objective is a target, not an achieved result.
 The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
 for 100 million steps and five samples per language. Median wall times on this
 Mac were 0.295775 s for NEX, 0.278295 s for checked C++ and 7.366667 s for Python.
-The host was not isolated; this is one workload. Its current 100-module,
+The host was not isolated; this is one workload. Its recorded 100-module,
 10,000-declaration workflow also confirmed actual LLVM calls of 9900/0/1 for
 cold/unchanged/single-function-edit builds. Neither result measures LLM savings.
 
-A [fresh 0.162.2 repetition](evidence/macos-sdk-0.162.2-2026-11-08.json) measured
+A [separate 0.162.2 repetition](evidence/macos-sdk-0.162.2-2026-11-08.json) measured
 0.293156 s NEX, 0.274216 s checked C++ and 7.325599 s Python medians using 15 new
 samples. Its 100-module workflow again made 9900/0/1 actual LLVM calls. The same
 one-workload and unisolated-host limits apply.
 
 ## Hardware and delivery
 
-The [current Mac SDK/OpenCL receipt](releases/0.162.0.json) covers one
-Apple M5 Max: U8 Add/Affine, 21 native/reference scenarios, six source profiles
-and 47 physical kernel events. Installed source clauses and detached contracts
-compose with typed owned resources. [Linux accelerator evidence](evidence/accelerators-0.151.0.json)
-retains its CIX/RK and version scope. General GPU code generation remains pending.
+Development 0.165 adds [checked scalar Metal emission](gpu-codegen.md). Its
+installed owned-provider tools passed [15 reference/native pairs and 24 physical
+Metal kernels](evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
+on Apple M5 Max. These ordinary-installation checks do not accept the matching
+immutable SDK. GPU operation stepping/profiling and broader types/backends remain
+pending.
 
-The [0.162 SDK record](releases/0.162.0.json) includes 300 CTest groups and two
-installed 41-phase workflows plus 90 extra cases each. The same archive passed
-150 actual production-browser checks. Earlier Windows 0.152.1 receipts establish
-their own native/CUDA scope; current Windows/Linux qualification, Metal compute,
-Apple NPU, broader device operations, mobile/native UI, general algebraic effects,
+On Windows, [snapshot `2172b35`](evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json)
+passed all targets, eleven selected groups, 35 physical CUDA cases and 36 Compute
+Sanitizer cases on RTX 3090. The [CIX `979ef54` record](evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json)
+reports 36 GPU and 26 NPU calls, with ZhouyiExecutionProvider and CPU fallback
+disabled for NPU. Each uses its own pinned ordinary development installation;
+complete source and portable SDK qualification remain separate.
+
+The earlier [0.162 SDK record](releases/0.162.0.json) retains its 300 source groups,
+moved/restored workflows, browser and OpenCL scope. It does not qualify the
+current 0.165 source or SDK. Matching Windows/Linux portable delivery, Apple NPU,
+remaining GPU/NPU operations, mobile/native UI, broader algebraic effects,
 remaining network/DB integrations, project conversion and NEX Studio remain in
 [PLAN](../PLAN.md). Complete accepted-task token savings remain to be measured.
 

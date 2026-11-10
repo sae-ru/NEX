@@ -13,95 +13,91 @@ NEX — Neural Execution Language, язык нейронного исполне�
 токенов на принятых задачах разных LLM ещё не измерена. Готовой программе LLM
 не нужна.
 
-Работаем с актуальным NEX: toolchain 0.162.2 / язык 0.28 / task ABI 7.
-GitHub sae-ru/NEX, public, MIT. Прочитай AGENTS.md, README.md,
+Текущая разработка: toolchain 0.165.0 / язык 0.28 / task ABI 7. Это не готовый
+бинарный релиз. GitHub sae-ru/NEX, MIT. Прочитай AGENTS.md, README.md,
 llm/SYSTEM_PROMPT.md, docs/windows-host.md, docs/windows-handoff-current.md,
-docs/evidence/current-platforms-0.162.2-2026-11-08.json и PLAN.md. План включает
-будущие возможности и не является списком уже реализованного. Для изменения
-языка дополнительно прочитай docs/language.md и docs/grammar.ebnf.
+docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json и PLAN.md.
+План включает будущие возможности и не является списком уже реализованного.
+Перед изменением языка прочитай docs/language.md и docs/grammar.ebnf.
 
 Вначале проверь git status, git log -1, upstream и фактические doctor/describe.
-Сохраняй локальные изменения и историю графа. Обновляй checkout до согласованной
-актуальной версии без reset/force-push. Нативный снимок этого этапа —
-78acb4395573f003807b48e1bb5694bf9630f347; Python-поправки включены в
-3bdad7ab365c3d794d403031ad3ae2bfcec09b12. Позднейшая документация имеет отдельный
-commit. Точные версии каждой проверки и архива указаны в evidence.
-Используй актуальную реализацию, сохраняй результаты старых снимков отдельно.
+Сохраняй локальные изменения и историю графа; не используй reset/force-push.
+Опубликованная ветка, локальная разработка и архив SDK могут иметь разные версии.
+Проверенный Windows-снимок 2172b35fcad4c959a34ccbb11149264d52f9daf9 содержит
+2146 файлов; последующая документация не меняет его идентичность. Сверяй текущий
+код и возможности по actual compiler, а каждую квитанцию — по её source/compiler
+и archive hashes. Не запускай старые NEX ради нового результата.
 
-Измеренные результаты: полный Mac source 301 прошёл. На Windows собраны все
-цели, новый SDK перемещён/восстановлен и прошёл doctor. Реальный TCP binary
-обмен прошёл в reference/Debug/Release с закрытием всех соединений. Первый
-Windows SDK этого этапа прошёл 28 фаз и упал на компиляции TCP-модуля без SDK
-sysroot; новый согласованный архив содержит исправление. Тот же архив уже
-прошёл CUDA 35/memcheck 36 на RTX 3090: 66 физических завершений ядер, баланс ресурсов
-и 36 нулевых error/leak summaries подтверждены независимой сверкой сырых логов.
-Полные 82 фазы SDK и полная актуальная Windows-матрица пока не приняты.
-Перед новым запуском проверь, не работают ли уже владельцы этих проверок.
-Не запускай дубликат, пока его реальный процесс/handle жив.
+Для обычной установки этого снимка прошли все цели сборки, 11 выбранных групп,
+35 физических CUDA-сценариев и 36 Compute Sanitizer случаев на RTX 3090.
+Windows compiler SHA256: 0ee1c4bdc4cc121ec020cb03af7eb39b5f4d157624c5ac0981203ec814df2a76.
+Она включает 13 установленных файлов owned Metal tools; source-only preparation
+прошла без запуска GPU. Это не приёмка нового переносимого SDK. HTTP callback
+и census отдельно проверены в 38 debug sessions и 38 offline captures на Mac и
+Windows, с исходными ограничениями. Детали и исходные сбои — в evidence.
+
+Перед запуском проверь, не работают ли уже владельцы source/SDK/CUDA-проверок.
+Сверяй реальный process/handle и время создания процесса, а не только state file.
+Тайм-аут опроса не означает завершение; не запускай дубликат живой задачи.
 
 Последовательность работы:
 
-1. Зафиксируй точный HEAD и хеши исходников, compiler/resources, языка/ABI и
-   инструментов. Запроси nex doctor --json и nex describe --kind index --json.
-   Возможности извлекай через describe --field PATH --json; контекст проекта —
-   через context --symbol NAME --json. Сохраняй согласованные compiler_build и
-   descriptor_hash. Не меняй строки версий старых графов/отчётов.
+1. Зафиксируй HEAD и хеши compiler/resources, версии языка/ABI и инструментов.
+   Запроси nex doctor --json и nex describe --kind index --json. Возможности
+   извлекай через describe --field PATH --json; контекст — context --symbol NAME --json.
+   Сохраняй согласованные compiler_build и descriptor_hash. Не меняй строки
+   версий старых графов/отчётов.
 
 2. Проверь C++20, LLVM/MLIR 22.1.x, Z3, SQLite, OpenSSL 3, CMake/Ninja, Python 3.10+
    и закреплённые Node/npm зависимости. Host CLANG64 и target LLVM-MinGW имеют
-   разные C++ ABI. Используй отдельный build-каталог и фактически выбранный
-   согласованный OpenSSL cohort. tools/windows/openssl/README.md описывает
-   path corrections; не смешивай его библиотеки, DLL, configuration и providers.
-   Собери все цели через cmake --build <build> -j4, сохрани unfiltered registry,
-   actual CTest exit, JUnit, stdout/stderr. docs/ctest-results.md описывает
-   проверку точного набора, включая обязательные fixtures.
+   разные C++ ABI. Собери все цели cmake --build build -j 4 в отдельном каталоге.
+   Используй согласованный OpenSSL cohort, включая configuration/providers/notices,
+   и совместимые LLDB pipe/stdio transports. Сохрани полный registry, CTest exit,
+   JUnit и журналы; проверь их через tools/ctest_report.py вместе с fixtures.
 
-3. Проверь обычную установку, перемещённый и восстановленный SDK. Полная цепочка
-   tools/sdk_acceptance.py использует --live --browser и 41 maintained phase на
-   каждую установку. На этом стенде IPv6 намеренно ограничен: профиль
-   --network-profile windows-ipv6-denied требует реального Windows отказа 10013.
-   Не меняй сетевую политику. Четыре положительные IPv6-группы
-   task_dns_source/task_dns_delivery/task_tcp_source/task_tcp_delivery остаются
-   непроверенными; 298 остальных групп не равны полному 302. Число групп всегда
-   проверяй по фактическому registry, а не по историческому отчёту.
-   Подтверди фактическую область изоляции, неизменность SDK, source/dependency
-   denial и реальные отрицательные controls. Обычный token не равен изоляции.
+3. В снимке 2172b35 зарегистрированы 303 группы. Оператор намеренно ограничил
+   IPv6; не меняй эту политику. Restricted297 исключает task_dns_source,
+   task_dns_delivery, task_tcp_source, task_tcp_delivery, task_network_transport
+   и task_http_client_source. Отдельно проверь исходные IPv4 DNS/TCP delivery
+   commands, все доступные source-сценарии, HTTP и kernel cases. Native-отказ
+   10013 и windows-ipv6-denied не доказывают успешный IPv6. Restricted297 и
+   дополнительные проверки не переименовываются в полный303; всегда сверяй
+   фактические registry и scope, сохраняя исходные неуспешные команды.
 
-4. Сохраняй checked arithmetic, left-to-right и short-circuit semantics, строгий
-   UTF-8/Unicode scalars, immutable aggregates, эффекты и realms. Сравнивай
-   observable native/reference/TypeScript behavior и rejected programs.
+4. Собери новый SDK из одной обычной установки через sdk_bundle/sdk_archive,
+   без подмены ресурсов. Проверь перенос/восстановление, immutable inventory,
+   doctor и native/reference выполнение. Полные поддерживаемые SDK phases с
+   --live --browser выполняются для каждой установки; выбранные Python и
+   network-profile фиксируются. Проверь реальные read-denial controls и
+   read-only SDK. Обычный token не равен изоляции.
+
+5. CUDA35/memcheck36 выше — ordinary-install evidence. Проверь новый immutable
+   SDK на реальном GPU, включая CUDA provider, context, dispatches, resource
+   settlement и cleanup. Сохраняй все source/compiler/provider/header/driver/
+   sanitizer identities и deadline 2000ms. Metal emitter поддерживает только
+   объявленный скалярный subset; Windows source-only check не исполняет Metal.
+   Apple NPU и другие неподтверждённые устройства остаются pending.
+
+6. Сохраняй checked arithmetic, left-to-right/short-circuit, строгий UTF-8 и
+   Unicode scalars, immutable aggregates, эффекты, realms и owned cleanup.
+   Сравнивай observable native/reference/TypeScript и rejected programs.
    result<T>, typed source errors, traps, cancellation и limits различаются.
-   Исходные requires/ensures/invariant/decreases языка 0.28 проверяются и в
-   release. Истории 0.27 мигрируются явно с сохранением ID и ревизий.
+   requires/ensures/invariant/decreases языка0.28 проверяются и в release;
+   истории0.27 мигрируются явно с сохранением ID и ревизий.
 
-5. CUDA 35/memcheck 36 уже прошли для закреплённого архива из evidence. Сохраняй
-   эти результаты; повторяй при изменении соответствующих implementation/tool
-   inputs. Новую проверку готовь из experiments/owned-cuda (в установленном
-   SDK: share/nex/tools/owned-cuda). Запусти 35 реальных hardware cases и
-   memcheck.py: 35 native cases плюс context probe. Запиши модель GPU, драйвер,
-   CUDA headers, фактические kernel/fence records, исходники и бинарные hashes.
-   Проверяй cancellation/deadline, owned buffers и cleanup после физического
-   завершения. CPU fallback не доказывает GPU execution. U8 Add/Affine provider
-   не является общей компиляцией произвольных GPU-ядер.
+7. Проверь browser/API delivery: в клиент входят только достижимые client/shared
+   declarations. Windows GUI/GPU/DPI, NPU/D3D12 и остальные API проверяй на
+   реальном устройстве с точным operation/backend/fallback scope. Большой новый
+   игровой проект не входит в задачу языка.
 
-6. Проверь production Workers/UI в Chromium, Firefox и WebKit по npm lock,
-   включая typed errors, контракты, отмену и последующий успешный запрос.
-   В клиент должны попадать только достижимые client/shared declarations.
-   Для examples/tic-tac-toe проверь события, самостоятельный пакет, GPU readback,
-   resize/DPI; большой новый игровой проект не входит в задачу языка.
-   Доступные Windows NPU/D3D12/другие API проверяй на реальных устройствах с
-   точным operation/backend/fallback scope.
+8. Сохраняй исходные сбои, IR, журналы и владение процессами. Повторяй после
+   подтверждённого исправления нужную область, не скрывай отказ skips или
+   ослаблением verifier. Не меняй защиту, сеть или права исходного проекта ради
+   зелёного результата. Обнови EN/RU, evidence и handoff по фактическим данным.
+   После приёмки актуального SDK сохрани согласованные изменения commit/push
+   в main, с сохранением чужих изменений и истории, без force-push.
 
-7. Сохраняй исходные сбои, промежуточный IR и process ownership. Тайм-аут опроса
-   не означает завершение задания. Исправляй подтверждённую причину и повторяй
-   нужную область; не скрывай неудачи изменением verifier или skips.
-   Обнови evidence, EN/RU описания и handoff по фактическим результатам.
-   Пользователь разрешил commit/push принятого актуального SDK в main;
-   сохраняй локальные изменения и историю, без force-push.
-
-Весь исходный PLAN сохраняется: общий GPU/NPU codegen, остальные платформы,
-mobile/native UI, NEX Studio, C++/Python конвертер и реальные измерения полных
-принятых задач разных LLM. SDK и аппаратная проверка отдельных провайдеров —
-этапы этого проекта. В результате нужны точные receipts, сохранённые отказы и
-честный список оставшейся реализации; завершение всего проекта должно быть
-подтверждено по каждому требованию.
+Весь исходный PLAN сохраняется: общий GPU/NPU codegen, GPU debugging/profiling,
+остальные платформы, Apple NPU, mobile/native UI, NEX Studio, C++/Python-конвертер
+и реальные измерения полных принятых задач разных LLM. Завершение одного SDK или
+провайдера не завершает проект; результат должен подтверждаться по требованиям.

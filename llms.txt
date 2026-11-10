@@ -1,11 +1,11 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Current source development 0.162.2 selects ordinary source language 0.28 with
-runtime function/loop contracts. The qualified Mac 0.162.0 archive keeps its exact
-versioned acceptance. The 0.162.1 source evidence is separate; matching 0.162.2 SDK delivery
-is pending. The
-current Windows/Linux and broader hardware delivery retain separate gates.
+Current source development is toolchain 0.165.0 / language 0.28 / task ABI 7.
+It includes ordinary source contracts and experimental checked scalar Metal
+emission with installed owned-provider preparation tools. Complete matching
+portable SDK qualification remains pending. The current README links exact
+source/device records; older SDK archives keep their own versioned evidence.
 Executables run without an LLM. Precise semantics and small retrieved contexts are design goals;
 end-to-end model-token savings remain unmeasured.
 
@@ -25,15 +25,19 @@ end-to-end model-token savings remain unmeasured.
 - [Capability and guide manifest](llm/language-pack.json)
 - [Labelled example corpus](llm/corpus.json)
 - [Versioned SDK evidence](docs/releases/0.162.0.json)
-- [Current source development evidence](docs/evidence/native-runtime-search-0.162.1-2026-11-08.json)
+- [Current platform summary](README.md#development-status)
+- [Current Windows source/CUDA evidence](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json)
+- [Installed Metal tool evidence](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
 
 Use `nex describe --kind index --json`, then `--field PATH --json`.
 Use `nex context --symbol NAME --json` for bounded project context.
-For native hosts, source development 0.160 supplies bounded
+For native hosts, query the bounded
 [`native_entry_abi`](docs/native-entry-abi.md) in library build JSON. Retrieve the
 actual physical signature and hidden error output; a symbol name alone is not
 a host prototype. Discover availability in the selected compiler first.
 The selected compiler and actual tests govern support. PLAN and historical
-experiments are not implemented capability lists. Windows/CUDA has earlier
-versioned evidence; current platform qualification, Metal compute, Apple NPU
-and general GPU compilation remain open work.
+experiments are not implemented capability lists. Current Windows CUDA and CIX
+GPU/NPU checks retain their exact source and
+ordinary-installation scope. Scalar Metal emission is experimental; broader
+GPU/NPU compilation, Apple NPU and complete matching platform/SDK qualification
+remain open. Query `gpu_codegen` and `gpu_codegen.owned_provider` before use.

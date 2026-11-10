@@ -1,0 +1,38 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Frozen 61fbd21 macOS ARM64 SDK baseline only, preceding later installed public Metal tools: two immutable moved/restored installations passed canonical and additional workflows with readonly SDKs and real source/dependency/opposite-SDK read denials. Post stages and matching later SDK remain separate gates.",
+  "evidence": {
+    "source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+    "source_files": 2136,
+    "toolchain": "0.165.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "10fca222513eec6ed6efbd11aabbd4596eeff8aabf92c7c80c37648d76ae0233",
+    "actual_controller_retired": true,
+    "canonical_phases": 82,
+    "additional_cases": 184,
+    "native_Cpp_host_calls": 4000,
+    "owned_cleanup_checks": 4000,
+    "moved_restored_readonly_and_read_denials": true,
+    "both_actual_SDK_inventories_revalidated": true,
+    "source_dependency_oppositeSDK_read_denials": 10,
+    "SDK_write_denials": 4,
+    "complete_SDK_accepted": false,
+    "six_post_stages_and_installed_Metal_still_pending": true,
+    "later_0abc_installed_public_tools_accepted_by_this_receipt": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 165,
+    "archive_sha256": "b5990162cf14895606a4689043bbbeed5a6fb94d6801cc068e19bb24e61a463a",
+    "archive_bytes": 901134,
+    "SDK_archive": {
+      "name": "nex-sdk-0.165.0-macos-arm64-owned-metal-development.tar.gz",
+      "sha256": "8bc3086b3dcc2cedd8b4f77fe61c7e236d9860b4a98d1c42ae6591af4478d4d4",
+      "bytes": 124556001,
+      "files_in_inventory": 3683
+    }
+  },
+  "independent_receipt_sha256": "6b90e94ee3674997862fcd7b216977f88a9a43368696b6a67285b82d95054879",
+  "release_claimed": false,
+  "main_branch_changed": false
+}

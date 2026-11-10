@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.162.2 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.165.0 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
@@ -52,9 +52,10 @@ find the selected dependencies. Optional DNS/HTTP groups need the explicit
 operator-selected `NEX_PACKAGE_NOTICES_FILE` where automatic ownership discovery
 is unavailable. Test counts depend on configuration. See [SDK](sdk.md),
 [Linux](linux.md) and [Windows](windows-handoff-current.md) for platform recipes.
-Fedora45/OpenSSL4 and complete current Windows/Linux SDK delivery remain pending.
+Use the selected OpenSSL 3 cohort; system OpenSSL 4 is rejected. Current portable
+SDK qualification remains pending; see the [current platform evidence](../README.md#development-status).
 
-## Use a matching prebuilt SDK
+## Older SDK archives
 
 The [qualified0.162 macOS ARM64 record](releases/0.162.0.json) identifies the exact
 archive `nex-sdk-0.162.0-macos-arm64-development.tar.gz`, minimum macOS27.0:
@@ -63,10 +64,12 @@ archive `nex-sdk-0.162.0-macos-arm64-development.tar.gz`, minimum macOS27.0:
 SHA256 c1393c94709d3e3290d39b1a60da7ad78e28705bfa6cea539e74ff7e40bc6208
 ```
 
-This source commit publishes its evidence and does not upload a0.162 binary
-release. Build current `main` above, or verify that exact archive if supplied by
-the maintainer. The [published0.159 release](https://github.com/sae-ru/NEX/releases/tag/v0.159.0)
-is a separate historical artifact.
+This is a historical 0.162.0 archive, not a 0.165 SDK. Current 0.165 portable
+SDK qualification is still pending. To use the current implementation, build a
+matching source revision above and verify its actual `doctor` and `describe`
+output. Cloning `main` selects the published branch head; its version can differ
+from an unpublished development checkout. The [0.159 release](https://github.com/sae-ru/NEX/releases/tag/v0.159.0)
+also retains its separate historical scope.
 
 Keep `bin/nex` and `share/nex` together. Select your actual OS/architecture;
 macOS ARM64 binaries do not run on Windows. Ordinary CMake installation uses

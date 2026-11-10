@@ -1,5 +1,12 @@
 # Public checked scalar Metal emission — development0.165.0
 
+The earlier [`61fbd21` immutable macOS SDK baseline](docs/evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
+passed 82 maintained phases, 184 additional cases and 4000 C++ host calls with
+4000 cleanup checks. Python 3.10/3.14 installations were moved/restored, read-only,
+and subject to actual source/dependency/opposite-SDK read denials. Its exact
+archive is pinned independently; six post stages and the later public-owned
+Metal tools' matching immutable SDK acceptance remain separate.
+
 The C++ compiler now implements `nex emit --kind metal`, using its checked AST
 and only reachable shared pure scalar functions. It preserves checked integer
 operations, source evaluation order and lowered contracts, supplies function
