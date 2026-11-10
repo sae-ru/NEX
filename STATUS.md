@@ -1,3 +1,28 @@
+# CUDA typed transport and returned-stand results — 2026-11-10
+
+The experimental generated CUDA provider now transports finite f64 through11
+checked exports, bounded1024-value calls and32768-value columns. Actual reference,
+native Debug and native Release controls passed nine codec/fatal processes,
+including exact bits, zero normalization, malformed input rejection and original
+E_FLOAT bypass of source catch/finally. Standard C-call limits are unchanged.
+Five roots/55 signatures,96 unavailable-driver calls and15 parent source cases
+passed. [Host evidence](docs/evidence/owned-cuda-f64-host-0.165.0-2026-11-10.json).
+The new11-export provider has no NVIDIA hardware qualification yet.
+
+An earlier pinned checked-AST CUDA corpus passed actual NVRTC12.1 and RTX3090:
+32 generated kernels,186 checked lane outcomes,107 allocations/frees, physical
+completion, unchanged inputs and untouched excess lanes. Its separate Python
+Compute Sanitizer failed to attach before any CUDA allocation/launch and was
+retired at its original1800s observer limit. Both outcomes are retained in the
+[hardware record](docs/evidence/windows-checked-AST-CUDA-physical-0.165.0-2026-11-10.json).
+This qualifies the named integer/bool/unit corpus, not f64, owned integration,
+memcheck, a complete SDK or release.
+
+Development now batches features into functional milestones. Incremental work
+uses builds and short affected-behavior checks; broad regression/platform/device
+suites run at milestone and release gates. The newly started101-group Windows
+continuation was stopped at the user's request; prior reports remain intact.
+
 # RK3588 current0.165 and checked-AST CUDA experiment — 2026-11-10
 
 [Current RK3588 evidence](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json)

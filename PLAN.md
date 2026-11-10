@@ -11,8 +11,12 @@ remain byte-identical after adding finite `f64`. The new floating corpus passed
 across actual NEX reference/native/TypeScript and152 verified LLVM IR/PTX variants.
 It includes explicit nearest/ties-even operations, normalized zero, subnormals,
 exact binary remainder, comparisons, `as_f64`, number generics and guarded matches.
-NVRTC/ptxas/physical f64 execution and typed owned transport remain pending; the
-owned preparer rejects reachable f64 before bundling. This experiment remains
+Typed owned f64 transport and original E_FLOAT forwarding are implemented;
+reference/native Debug/Release codec and fatal controls passed. Physical f64
+execution, NVRTC/ptxas qualification and current owned-module acceptance remain
+pending. An earlier32-kernel integer/bool/unit corpus passed actual NVRTC12.1
+and RTX3090 execution (186 lanes); its Python sanitizer failed to attach before
+any CUDA work, so memcheck remains pending. This experiment remains
 separate from the public compiler and fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.

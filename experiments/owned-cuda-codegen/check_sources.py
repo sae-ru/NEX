@@ -53,6 +53,7 @@ def main():
         ("eight", "pub fn transform(" + ",".join("a" + str(i) + ":i64" for i in range(8)) + ")->i64{return a0+a7;}", 8, "i64"),
         ("match", "pub fn transform(x:bool,y:i64)->i64{return match x{true=>match y{0=>7,n=>n},false=>-1};}", 2, "i64"),
         ("generic", "fn choose<T:integer>(x:T)->T{return match x{0=>1,n=>n};}pub fn transform(x:i64)->i64{return choose<i64>(x);}", 1, "i64"),
+        ("float", "pub fn transform(x:f64,y:f64)->f64{return x/y;}", 2, "f64"),
     ]
     try:
         for name, body, arity, result in fixtures:
@@ -64,9 +65,9 @@ def main():
             prepared = out / (name + "-prepared")
             proof = json.loads((prepared / "preparation/report.json").read_bytes())
             assert proof["ok"] and proof["source_checked"] and not proof["driver_initialized"] and not proof["native_provider_built"]
-            assert len(proof["signature_sha256"]) == 9 and len(proof["parameter_types"]) == arity and proof["result_type"] == result
+            assert len(proof["signature_sha256"]) == 11 and len(proof["parameter_types"]) == arity and proof["result_type"] == result
             assert proof["root_hash"] in {f["hash"] for f in proof["functions"]}
-            rows.append({"name": name, "arity": arity, "result": result, "checked_signatures": 9,
+            rows.append({"name": name, "arity": arity, "result": result, "checked_signatures": 11,
                          "preparation_report_sha256": sha(prepared / "preparation/report.json")})
         wrong = out / "wrong-frontend.a"
         wrong.write_bytes(b"not the checked frontend archive\n")
@@ -95,6 +96,8 @@ def main():
             probe_result = json.loads(run("host-probe-unavailable", [probe, "--expect-unavailable"]).stdout)
             assert probe_result["scope"] == "unavailable-driver-host-control" and probe_result["ok"]
             assert probe_result["actual_CUDA_contexts"] == 0 and probe_result["actual_device_allocations"] == 0 and not probe_result["physical_CUDA_context_probe_passed"]
+            lane = json.loads(run("host-probe-lane-status", [probe, "--check-lane-status"]).stdout)
+            assert lane["ok"] and not lane["floating_point"] and lane["actual_CUDA_contexts"] == 0 and not lane["actual_kernel_status_observed"]
             blocked = run("host-probe-gate-disabled", [probe, "--check-gate-config"], expected=1,
                 extra={"NEX_OWNED_CUDA_MAP_GATE_CYCLES": "1", "NEX_OWNED_CUDA_MAP_GATE_REPEATS": "1"})
             assert b"E_DEVICE_CONFIG" in blocked.stderr and blocked.stdout == b""
@@ -140,7 +143,7 @@ def main():
         report["ok"] = True
     finally:
         write(out / "report.json", report)
-    print(json.dumps({"ok": True, "source_preparations": len(rows), "checked_signatures": len(rows) * 9, "rejected_preparations": 2, "actual_GPU_execution": False}))
+    print(json.dumps({"ok": True, "source_preparations": len(rows), "checked_signatures": len(rows) * 11, "rejected_preparations": 2, "actual_GPU_execution": False}))
 
 
 if __name__ == "__main__":

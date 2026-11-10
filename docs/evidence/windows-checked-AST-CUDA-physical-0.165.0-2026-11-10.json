@@ -1,0 +1,43 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "utc": "2026-11-10T15:27:01.143846+00:00",
+  "controller_retired": true,
+  "all_owned_jobs_retired": true,
+  "manifest_sha256": "0f37aa78dd4f6c80148dffc0d6dc3f2d9ce46155f6ca09cc3f2f4da668a3082c",
+  "NVRTC_sha256": "b6728e893db1c797af2cf55c9104e25e793a1b709d8809b9991af81035a7a8a2",
+  "ComputeSanitizer_sha256": "216c1608ba381e46062714d5f1c88c2a8d3c5b4cbf9b49902e51da4e06d12933",
+  "memcheck_failure": "No attachable process found; original1800s observer timeout; zero CUDA allocations or launches in memcheck target.",
+  "archive_sha256": "97fce463f4d04e96c390edbdfa0aebe3a3afb7a443bb9db20280ec3b08767bb1",
+  "archive_bytes": 61110,
+  "physical_GPU": {
+    "index": 0,
+    "name": "NVIDIA GeForce RTX 3090",
+    "PCI_bus": "0000:01:00.0",
+    "compute_capability": [
+      8,
+      6
+    ]
+  },
+  "generated_kernel_cases": 32,
+  "lane_results_checked": 186,
+  "allocations": 107,
+  "frees": 107,
+  "kernel_launches": 32,
+  "physical_completions": 32,
+  "raw_files": 119,
+  "raw_bytes": 683748,
+  "original_combined_job_passed": false,
+  "actual_Compute_Sanitizer_accepted": false,
+  "CPU_fallback": false,
+  "owned_generated_provider_or_f64_GPU_or_SDK_accepted": false,
+  "whole_original_goal_complete": false,
+  "date": "2026-11-10",
+  "scope": "32 checked-AST integer/bool/unit CUDA kernels compiled by actual NVRTC12.1 and run on RTX3090; original Python Compute Sanitizer attachment failed before any CUDA work.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "physical_report_sha256": "53ff4d80133f4467cc6826200647b903bb554724c77c1293aff423807c17e77d",
+  "independent_receipt_sha256": "6ec00c0a768cd499323f0344a45a1f6db764d21d40382482726dfecbf0727df2",
+  "release_claimed": false
+}

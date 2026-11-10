@@ -152,9 +152,10 @@ def main():
         for index,call,error in negatives:
             root=out/('reference-error-'+str(index));root.mkdir();manifest(root);(root/'f.nex').write_bytes((references/('f'+str(index)+'.nex')).read_bytes());(root/'main.nex').write_text('module failure;import "./f.nex" as c'+str(index)+';fn main()->unit{'+call+';}')
             value=json.loads(run('NEX-trap',[compiler,'eval','--json'],root,expected=1));assert value['code']=={2:'E_DIV_ZERO',3:'E_ASSERT',7:'E_FLOAT'}[error]
-        blocked=out/'owned-f64-must-stay-unqualified'
-        run('owned-f64-rejection',[sys.executable,'-B',source.parent/'owned-cuda-codegen/prepare.py','--compiler',compiler,'--resources',resources,'--emitter',emitter,'--frontend-archive',frontend,'--source-project',out/'f64_add','--symbol','transform','--source-only','--output',blocked],expected=1)
-        assert 'f64 transport'in json.loads((blocked/'preparation/failure.json').read_bytes())['error']and not(blocked/'bundle').exists()
+        prepared=out/'owned-f64-source-preparation'
+        run('owned-f64-preparation',[sys.executable,'-B',source.parent/'owned-cuda-codegen/prepare.py','--compiler',compiler,'--resources',resources,'--emitter',emitter,'--frontend-archive',frontend,'--source-project',out/'f64_add','--symbol','transform','--source-only','--output',prepared])
+        proof=json.loads((prepared/'preparation/report.json').read_bytes())
+        assert proof['all_f64_interface'] and proof['f64_transport']['implemented'] and len(proof['signature_sha256'])==11 and not proof['native_provider_built']
         assert all(sha(p)==h for p,h in pins.items())
         report.update(ok=True,source_fixtures=len(fixtures()),emitted_layout_cases=len(report['cases']),lane_results_checked=sum(len(c['lanes'])for c in report['cases']),
             actual_IR_PTX_variants=len(report['PTX_variants']),positive_NEX_assertions=len(assertions),NEX_reference_native_TypeScript_agreement=True,

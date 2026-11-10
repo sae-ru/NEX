@@ -142,8 +142,6 @@ def main():
         assert generated["language"] == "0.28" and generated["input_layout"] == "columns"
         assert generated["kernel"] == "nex_generated_cuda_map" and not generated["integrated_compiler_CLI"]
         assert not generated["driver_initialized"] and not generated["device_executed"]
-        if generated.get("floating_point"):
-            raise RuntimeError("owned CUDA f64 transport and fatal-status mapping are not yet qualified; standalone f64 emission remains separate")
         if generated["frontend_archive_sha256"] != pins["frontend"]:
             raise RuntimeError("emitter and selected frontend archive identities differ")
         assert generated["shader_sha256"] == sha(generation / "kernel.cu")
@@ -162,11 +160,12 @@ def main():
             shutil.copyfile(resources / "lib" / name, out / "stdlib" / name)
         write(out / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": "./stdlib"}})
         source = Path(__file__).resolve().parent
-        template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", root_hash)
+        all_f64 = generated["result_type"] == "f64" and all(t == "f64" for t in generated["parameter_types"])
+        template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", root_hash).replace("@F64_INTERFACE@", "true" if all_f64 else "false")
         (out / "main.nex").write_text(template.replace("@PIN@", "0" * 64), encoding="utf-8")
         run("check-template", [compiler, "check", "--json"])
         signatures = {}
-        for name in ["open", "upload", "map", "download", "read_next", "name", "kernel_ns", "busy", "fatal"]:
+        for name in ["open", "upload", "map", "download", "read_next", "name", "kernel_ns", "busy", "fatal", "encode_f64", "decode_f64"]:
             signature = json.loads(run("signature-" + name, [compiler, "ffi", "--symbol", name + "_raw", "--json"]))
             signatures[name] = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         for name in ["module.cpp", "cuda_driver.h", "main.nex.in", "context_probe.cpp", "gate.cu"]:
@@ -184,6 +183,7 @@ def main():
             if args.acceptance_gate and (b"nex_acceptance_gate" not in ptx or b"%clock64" not in ptx):
                 raise RuntimeError("NVRTC PTX omitted the explicit acceptance gate or its device clock")
         (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) +
+            "\n#define GENERATED_FLOATING_POINT " + ("1" if generated.get("floating_point") else "0") +
             "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["shader_sha256"]) +
             "\n#define GENERATED_PTX_SHA256 " + json.dumps(hashlib.sha256(ptx).hexdigest()) +
             "\n#define GENERATED_ACCEPTANCE_GATE " + ("1" if args.acceptance_gate else "0") +
@@ -199,6 +199,9 @@ def main():
             "signature_sha256": signatures, "source_input_pins": input_pins, "source_checked": True,
             "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
             "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc,
+            "floating_point": generated.get("floating_point"), "all_f64_interface": all_f64,
+            "f64_transport": {"implemented": True, "byte_order": "little", "chunk_values": 1024, "maximum_values": 32768,
+                "finite_only": True, "positive_zero_normalized": True, "GPU_acceptance": False},
             "acceptance_gate": {"compiled": args.acceptance_gate, "source_sha256": gate_hash,
                 "compilation_source_sha256": sha(compilation_source), "default_active": False,
                 "maximum_cycles_per_kernel": 200000000, "maximum_repeats": 32}, "commands": commands}

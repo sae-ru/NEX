@@ -78,6 +78,11 @@ provider is experimental; the SDK installs its preparation tools and advertises
 Apple NPU, complete mobile/native UI, NEX Studio, project conversion and measured
 cross-model token/cost savings remain [planned work](PLAN.md).
 
+The independent [checked-AST CUDA corpus](docs/evidence/windows-checked-AST-CUDA-physical-0.165.0-2026-11-10.json)
+also passed32 generated kernels/186 lane outcomes on RTX3090 with actual NVRTC12.1.
+Its sanitizer attachment failed before GPU work; f64 and owned CUDA hardware
+qualification remain pending.
+
 [STATUS.md](STATUS.md) and [versioned evidence](docs/evidence/) retain the
 history, exact source/compiler/archive identities, original failures and scope
 of each result. An earlier SDK's acceptance does not qualify a new archive.

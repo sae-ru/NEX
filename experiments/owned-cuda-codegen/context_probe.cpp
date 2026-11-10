@@ -12,8 +12,15 @@ static CUcontext current(Session &session){
 int main(int argc,char **argv){
   const bool unavailable=argc==2&&std::string(argv[1])=="--expect-unavailable";
   const bool configuration=argc==2&&std::string(argv[1])=="--check-gate-config";
+  const bool laneStatus=argc==2&&std::string(argv[1])=="--check-lane-status";
   try{
-    require(argc==1||unavailable||configuration,"usage: context-probe [--expect-unavailable|--check-gate-config]");
+    require(argc==1||unavailable||configuration||laneStatus,"usage: context-probe [--expect-unavailable|--check-gate-config|--check-lane-status]");
+    if(laneStatus){
+      const char *expected[]={"","E_OVERFLOW","E_DIV_ZERO","E_ASSERT","E_GPU_STEP_LIMIT","E_GPU_INTERNAL","E_GPU_INPUT","E_FLOAT"};
+      for(unsigned i=0;i<=(GENERATED_FLOATING_POINT?7u:6u);++i)require(std::string(laneError(i))==expected[i],"lane status mapping differs");
+      for(auto code:{GENERATED_FLOATING_POINT?8u:7u,UINT32_MAX}){bool rejected=false;try{(void)laneError(code);}catch(const Error &e){rejected=e.code=="E_DEVICE_ABI";}require(rejected,"unknown lane status was accepted");}
+      std::printf("{\"ok\":true,\"scope\":\"lane-status-host-control\",\"floating_point\":%s,\"actual_CUDA_contexts\":0,\"actual_kernel_status_observed\":false}\n",GENERATED_FLOATING_POINT?"true":"false");return 0;
+    }
     if(configuration){auto control=gateConfiguration();std::printf("{\"ok\":true,\"scope\":\"gate-config-host-control\",\"compiled\":%s,\"cycles\":%llu,\"repeats\":%u,\"actual_CUDA_contexts\":0}\n",GENERATED_ACCEPTANCE_GATE?"true":"false",static_cast<unsigned long long>(control.cycles),control.repeats);return 0;}
     unsigned polls=0;bool rejected=false,rolledBack=false;
     {

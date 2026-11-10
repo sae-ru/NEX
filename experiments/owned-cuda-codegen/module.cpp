@@ -23,6 +23,8 @@
 #include <fstream>
 #include <cstdlib>
 #include <charconv>
+#include <bit>
+#include <limits>
 using namespace cuda_api;
 
 using JSON=nlohmann::json;
@@ -200,6 +202,11 @@ struct InFlight {
     TRACE(JSON{{"event","physical_drain"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",output},{"gate_launches",gates},{"kernel_sha256",GENERATED_SHADER_SHA256},{"cpu_fallback",false},{"physical_completion_verified",true},{"event_status",int(result)},{"unwind",true}});}session.busy=0;}
 };
 static constexpr uint32_t maximumElements=262144;
+static const char *laneError(uint32_t code){
+  static const char *codes[]={"","E_OVERFLOW","E_DIV_ZERO","E_ASSERT","E_GPU_STEP_LIMIT","E_GPU_INTERNAL","E_GPU_INPUT","E_FLOAT"};
+  if(code>(GENERATED_FLOATING_POINT?7u:6u))throw Error("E_DEVICE_ABI","generated kernel returned an unknown lane status");
+  return codes[code];
+}
 struct ReadCursor {
   Buffer *buffer=nullptr;uint64_t offset=0;
   const uint64_t identity=identities.fetch_add(1);
@@ -277,9 +284,9 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         buffer->kernelNs=uint64_t(double(milliseconds)*1000000.0);
         std::vector<unsigned> errors(lanes);d.check(d.p_cuMemcpyDtoH(errors.data(),session.overflow,errors.size()*sizeof(unsigned)),"cuMemcpyDtoH statuses");session.drain();flight.done=true;session.busy=0;
         unsigned code=0,lane=0;
-        for(unsigned i=0;i<lanes;++i){if(errors[i]>6)throw Error("E_DEVICE_ABI","generated kernel returned an unknown lane status");if(!code&&errors[i]){code=errors[i];lane=i;}}
+        for(unsigned i=0;i<lanes;++i){(void)laneError(errors[i]);if(!code&&errors[i]){code=errors[i];lane=i;}}
         TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
-        if(code){const char *codes[]={"","E_OVERFLOW","E_DIV_ZERO","E_ASSERT","E_GPU_STEP_LIMIT","E_GPU_INTERNAL","E_GPU_INPUT"};throw Error(codes[code],"generated GPU function failed at lane "+std::to_string(lane));}
+        if(code)throw Error(laneError(code),"generated GPU function failed at lane "+std::to_string(lane));
       }
       TRACE(JSON{{"event","buffer_created"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes},{"dtype",buffer->dtype}});
     }
@@ -298,9 +305,49 @@ static nex_ffi_status construct(const nex_ffi_api_v1 *api,nex_ffi_call call,Crea
  if(status!=NEX_FFI_OK){if(status==NEX_FFI_HOST_TRAP)return status;if(!input.code.empty())return failure(api,call,out,input.code,input.message);if(status==NEX_FFI_LIMIT)return failure(api,call,out,"E_COMPUTE_LIMIT","declared owned device capacity is exhausted");return status;}
  return api->make_success(call,value,out);
 }
+struct ValueReference {
+ const nex_ffi_api_v1 *api;nex_ffi_call call;nex_ffi_ref value=0;
+ ValueReference(const nex_ffi_api_v1 *a,nex_ffi_call c):api(a),call(c){}
+ ~ValueReference(){if(value)(void)api->release(call,value);}
+ ValueReference(const ValueReference&)=delete;ValueReference&operator=(const ValueReference&)=delete;
+};
+static constexpr uint64_t floatChunk=1024;
+static uint64_t finiteWord(uint64_t bits){
+ const auto magnitude=bits&UINT64_C(0x7fffffffffffffff);
+ if((magnitude&UINT64_C(0x7ff0000000000000))==UINT64_C(0x7ff0000000000000))throw Error("E_FLOAT","f64 transport rejects infinities and NaNs");
+ return magnitude?bits:0;
+}
+static nex_ffi_status floatCodec(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,bool encode){
+ static_assert(sizeof(double)==8&&std::numeric_limits<double>::is_iec559&&std::numeric_limits<double>::digits==53);
+ if(count!=3)return NEX_FFI_ARGUMENT;
+ uint64_t length=0;
+ if(encode)checked(api->child_count(call,args[0],&length));
+ else {checked(api->byte_size(call,args[0],&length));if(length%8)throw Error("E_GPU_INPUT","f64 bytes must contain complete eight-byte words");length/=8;}
+ auto offset=integer(api,call,args[1]),amount=integer(api,call,args[2]);
+ if(length>floatChunk||offset<0||amount<0||uint64_t(amount)>floatChunk||uint64_t(offset)>length||uint64_t(amount)>length-uint64_t(offset))
+  throw Error("E_GPU_INPUT","f64 codec range exceeds declared bounds");
+ const auto size=uint64_t(amount);std::vector<uint8_t> bytes(size*8);
+ if(encode){
+  for(uint64_t i=0;i<size;++i){
+   if(i%128==0)checked(api->poll(call));ValueReference child(api,call);checked(api->child(call,args[0],uint64_t(offset)+i,&child.value));double value=0;
+   checked(api->get_f64(call,child.value,&value));auto bits=finiteWord(std::bit_cast<uint64_t>(value));
+   for(unsigned j=0;j<8;++j)bytes[i*8+j]=uint8_t(bits>>(j*8));
+  }
+  ValueReference data(api,call);checked(api->make_bytes(call,bytes.data(),bytes.size(),&data.value));return api->make_success(call,data.value,out);
+ }
+ uint64_t copied=0;checked(api->copy_bytes(call,args[0],uint64_t(offset)*8,bytes.data(),bytes.size(),&copied));if(copied!=bytes.size())return NEX_FFI_INTERNAL;
+ std::vector<nex_ffi_ref> values;values.reserve(size);
+ struct References {const nex_ffi_api_v1 *api;nex_ffi_call call;std::vector<nex_ffi_ref> &values;~References(){for(auto r:values)(void)api->release(call,r);}} cleanup{api,call,values};
+ for(uint64_t i=0;i<size;++i){
+  if(i%128==0)checked(api->poll(call));uint64_t bits=0;for(unsigned j=0;j<8;++j)bits|=uint64_t(bytes[i*8+j])<<(j*8);
+  bits=finiteWord(bits);nex_ffi_ref value=0;checked(api->make_f64(call,std::bit_cast<double>(bits),&value));values.push_back(value);
+ }
+ ValueReference list(api,call);checked(api->make_list(call,values.data(),values.size(),&list.value));return api->make_success(call,list.value,out);
+}
 static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const nex_ffi_ref *args,uint64_t count,nex_ffi_ref *out,void *user)noexcept{
  try{
   if(api->struct_size<NEX_FFI_V1_TRAP_SIZE||!api->raise_trap)return NEX_FFI_ARGUMENT;checked(api->poll(call));auto op=uint64_t(user);
+  if(op==10||op==11)return floatCodec(api,call,args,count,out,op==10);
   if(op==9){
    if(count!=2)return NEX_FFI_ARGUMENT;uint64_t cn=0,mn=0,written=0;
    checked(api->byte_size(call,args[0],&cn));checked(api->byte_size(call,args[1],&mn));
@@ -352,7 +399,7 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
   if(op==6){if(count!=1)return NEX_FFI_ARGUMENT;auto *buffer=static_cast<Buffer*>(borrow(api,call,args[0],0));if(buffer->kernelNs>uint64_t(INT64_MAX))return NEX_FFI_RANGE;return api->make_i64(call,int64_t(buffer->kernelNs),out);}
   if(op==7){if(count!=1)return NEX_FFI_ARGUMENT;auto *session=static_cast<Session*>(borrow(api,call,args[0],0));auto busy=session->busy.load();if(busy)TRACE(JSON{{"event","kernel_busy_observed"},{"session",session->identity}});return api->make_i64(call,busy,out);}
   return NEX_FFI_ARGUMENT;
- }catch(const HostStatus &e){return e.value;}catch(const Error &e){try{return failure(api,call,out,e.code,e.what());}catch(...){return NEX_FFI_LIMIT;}}catch(...){return NEX_FFI_INTERNAL;}
+ }catch(const HostStatus &e){return e.value;}catch(const Error &e){try{return failure(api,call,out,e.code,e.what());}catch(...){return NEX_FFI_LIMIT;}}catch(const std::bad_alloc&){return NEX_FFI_LIMIT;}catch(...){return NEX_FFI_INTERNAL;}
 }
 static const nex_ffi_export_v1 exports[]={
  {sizeof(nex_ffi_export_v1),0,"open",PIN_OPEN,callback,(void*)1},
@@ -363,7 +410,9 @@ static const nex_ffi_export_v1 exports[]={
  {sizeof(nex_ffi_export_v1),0,"kernel_ns",PIN_KERNEL_NS,callback,(void*)6},
  {sizeof(nex_ffi_export_v1),0,"busy",PIN_BUSY,callback,(void*)7},
  {sizeof(nex_ffi_export_v1),0,"read_next",PIN_READ_NEXT,callback,(void*)8},
- {sizeof(nex_ffi_export_v1),0,"fatal",PIN_FATAL,callback,(void*)9}
+ {sizeof(nex_ffi_export_v1),0,"fatal",PIN_FATAL,callback,(void*)9},
+ {sizeof(nex_ffi_export_v1),0,"encode_f64",PIN_ENCODE_F64,callback,(void*)10},
+ {sizeof(nex_ffi_export_v1),0,"decode_f64",PIN_DECODE_F64,callback,(void*)11}
 };
 extern "C" const nex_ffi_module_v1 *nex_ffi_module_entry(uint32_t abi,uint32_t size){static const nex_ffi_module_v1 m{NEX_FFI_MODULE_ABI_V1,sizeof(nex_ffi_module_v1),sizeof(exports)/sizeof(exports[0]),sizeof(nex_ffi_export_v1),exports};return abi==1&&size>=NEX_FFI_V1_TRAP_SIZE?&m:nullptr;}
 
