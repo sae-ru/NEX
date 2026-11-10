@@ -189,7 +189,7 @@ def command(argv, cwd, env, output, name, *, timeout=120, windows_observer=None,
 
 def check(candidate, task, language, output, *, compiler=None, cpp=None,
           resources=RESOURCES, cache=None, trial_id='offline-control', review=None,
-          cpp_args=(), windows_observer=None, visible_only=False, isolate=False):
+          cpp_args=(), windows_observer=None, visible_only=False, isolate=False, deadline=None):
     item = catalogue()[task]; candidate = Path(candidate).resolve(strict=True)
     files = read_candidate(candidate, task, language); digest = source_digest(files)
     review_raw = source_review(review, candidate, digest, item)
@@ -210,6 +210,8 @@ def check(candidate, task, language, output, *, compiler=None, cpp=None,
     env.update(NEX_RESOURCE_DIR=str(Path(resources).resolve()), PYTHONDONTWRITEBYTECODE='1')
     tool_pins = {'python': {'executable': sys.executable, 'version': sys.version, 'sha256': sha(Path(sys.executable).read_bytes())}}
     def run(name, args, timeout=120, *, compile_phase=False):
+        if deadline is not None:
+            timeout=min(timeout,max(0.01,deadline-time.monotonic()))
         selected_env, limit = env, None
         if sandbox:
             selected_env = sandbox.environment(workspace, compile_phase=compile_phase)

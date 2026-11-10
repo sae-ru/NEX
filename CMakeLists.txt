@@ -429,6 +429,8 @@ add_test(NAME llm_campaign COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOUR
 set_tests_properties(llm_campaign PROPERTIES TIMEOUT 1200)
 add_test(NAME llm_local_provider COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_local_provider.py)
 set_tests_properties(llm_local_provider PROPERTIES TIMEOUT 30)
+add_test(NAME llm_local_collector COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_local_collector.py)
+set_tests_properties(llm_local_collector PROPERTIES TIMEOUT 60)
 if(APPLE)
   add_test(NAME llm_local_isolation COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_local_isolation.py $<TARGET_FILE:nex>)
   set_tests_properties(llm_local_isolation PROPERTIES TIMEOUT 600)

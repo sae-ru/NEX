@@ -5,8 +5,8 @@ execute functional acceptance, retain raw evidence and bind independent source
 reviews. Preparation/acceptance make no model requests. The separate local
 transport and readiness command can invoke the selected Qwen model. Control
 solutions are experiment fixtures, not observed LLM answers. The [protocol](protocol.md)
-and [task contracts](tasks.json) define the intended comparison. Actual task trials
-and their collection runner remain pending.
+and [task contracts](tasks.json) define the intended comparison. The serial
+collector is implemented; actual task results require a separate frozen run.
 
 From a checkout or matching SDK resource root, prepare one fresh candidate:
 
@@ -146,6 +146,39 @@ input/output totals are counted once; an unreported cached-input subtotal stays
 `null`, never an invented zero. The observed readiness call used36 input and6
 output tokens with an unreported cache split; the owned instance was unloaded.
 
-The remaining collection runner must restrict the model's file/tool view, own
-source-rule review and freeze runtime/template/budgets. Full60-slot results,
-token savings, independent review and matching portable SDK qualification are pending.
+## Collect and account for task attempts
+
+The collector restricts model reads/edits to its own candidate and frozen language
+references. `read` windows, source-text lookup and NEX descriptor queries are
+bounded. `check` returns only visible observations. `submit` performs the terminal
+held-out check once, followed by an independent fresh-context local Qwen source
+review. Review usage is counted in the same trial. The host creates the receipt;
+the author cannot supply one. Model-assisted source judgment is not formal proof.
+
+```sh
+python3 experiments/quality/llm-campaign-v1/collector.py freeze \
+  --output /new/pilot --pilot --weights /path/to/weights.json \
+  --compiler /absolute/path/to/nex --cpp /absolute/path/to/clang++ \
+  --runtime /absolute/path/to/selected/llama.cpp-mac-arm64-apple-metal-advsimd-VERSION
+python3 experiments/quality/llm-campaign-v1/collector.py run --campaign /new/pilot
+python3 experiments/quality/llm-campaign-v1/collector.py ledger --campaign /new/pilot
+```
+
+`--pilot` creates three separate infrastructure slots; omit it for the60-slot
+study after pilot review. The freeze includes all operational rules in the
+[protocol](protocol.md): at most11 author calls plus one review, observed usage
+soft stop, wall/context/output limits, current source plus latest tool reply,
+fresh caches and isolated execution. It rejects user prediction/template overrides
+and pins the selected runtime, Hub defaults and embedded GGUF template. Pinning
+the template is not an API attestation of the exact rendered token stream.
+
+Raw requests/responses, every rejected action, check output, source pin, review,
+interruption and terminal result remain in the campaign. Host/provider failure
+stops collection; existing attempts are not overwritten. Use `--max-slots N` to
+end at a clean prefix and `--resume` for the next untouched slot, after the owned
+instance has been unloaded. A stopped/unclean process is never blindly resumed.
+External host reviews can finalize explicitly pending manual-review records with
+`finalize --reviews DIR`; they cannot repair source or change frozen conditions.
+`ledger` uses the existing offline accounting engine. Missing/pending slots keep
+the comparison incomplete; one model keeps multi-model review eligibility false.
+Full60-slot token-saving results and matching portable SDK qualification remain pending.

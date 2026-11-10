@@ -112,7 +112,7 @@ class Client:
             raise ValueError('invalid local model inventory')
         return result
 
-    def chat(self, instance, system, prompt, output, *, max_tokens=4096, context=16384):
+    def chat(self, instance, system, prompt, output, *, max_tokens=4096, context=16384, sampling=None):
         """Retain even failed request evidence and unknown usage, never retry here."""
         selection = authorized_instance(self.models(), instance, context)
         if type(max_tokens) is not int or not 1 <= max_tokens <= 4096:
@@ -124,6 +124,10 @@ class Client:
                    'temperature': 0, 'top_p': 1, 'max_output_tokens': max_tokens,
                    'reasoning': 'off',
                    'context_length': context}
+        if sampling is not None:
+            if sampling != {'top_k': 40, 'min_p': 0, 'repeat_penalty': 1}:
+                raise ValueError('unsupported frozen collection sampling settings')
+            payload.update(sampling)
         request = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False).encode('utf-8') + b'\n'
         (output / 'request.json').write_bytes(request)
         started = time.monotonic()

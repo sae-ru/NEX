@@ -120,6 +120,15 @@ class Provider(unittest.TestCase):
         self.assertIsNone(record['usage']); self.assertEqual(record['error'], 'KeyboardInterrupt')
         self.assertTrue((self.root / 'interrupted/request.json').is_file())
 
+    def test_frozen_collection_sampling_is_transmitted(self):
+        sampling={'top_k':40,'min_p':0,'repeat_penalty':1}
+        _,record=self.client.chat(INSTANCE,'system','task',self.root/'frozen',sampling=sampling)
+        self.assertIsNone(record['error'])
+        payload=self.requests[-2][2]
+        self.assertEqual({key:payload[key]for key in sampling},sampling)
+        with self.assertRaises(ValueError):
+            self.client.chat(INSTANCE,'s','t',self.root/'invalid-sampling',sampling={'top_k':1})
+
 
 class Readiness(unittest.TestCase):
     """Synthetic ownership controls; no real model/CLI is loaded here."""

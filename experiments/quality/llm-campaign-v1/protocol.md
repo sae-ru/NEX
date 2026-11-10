@@ -1,7 +1,7 @@
 # LLM comparison campaign v1
 
-Status: **prepared host controls, local transport and scoped macOS isolation;
-no model task trials**. Applies to NEX
+Status: **prepared host controls, local collector and scoped macOS isolation;
+task observations require their own frozen campaign evidence**. Applies to NEX
 language0.28. The [catalogue](tasks.json) contains ten language-neutral tasks
 based on pinned learning examples. Those files establish provenance; they are
 not measured model candidates. [Preparation and executable acceptance](README.md)
@@ -124,8 +124,45 @@ The models have not attempted these tasks.
 The local native-API transport, weight-pinning/readiness tools and separate
 macOS compilation/execution policies are implemented with scoped host controls.
 One benign real Qwen readiness response is transport evidence, not a task trial.
-Next implement the collection runner with restricted model tool/file access,
-host-owned source-rule review and complete usage/retry evidence. Pin the selected
-Qwen runtime/effective template and stopping rules; freeze all inputs, then run a small infrastructure pilot before
-the comparable matrix. Changed pilot rules create a new version. These host
-controls and the learning corpus are not any of the model trials.
+The collector now supplies a source/document allowlist and guarded JSON edit,
+read, source-text lookup, NEX descriptor and visible-check actions. It never
+supplies a host shell, hidden fixtures or held-out feedback. Each request includes
+the complete current task/source snapshot, NEX bootstrap or baseline note, and
+the latest broker reply. Earlier replies remain in the complete host transcript;
+they are not silently appended by the server. Rejected actions and malformed
+answers consume their request and actual token usage.
+
+Freeze with `collector.py freeze` before requests. It pins all starting bundles,
+host scripts/protocol, actual compiler/runtime images, selected model weights,
+embedded GGUF tokenizer/template, Hub defaults and empty user prediction
+overrides. The selected runtime directory and loaded instance config are retained;
+no rendered-prompt API attestation is claimed. Temperature0/top-p1/top-k40/min-p0/
+repeat-penalty1/reasoning-off, context16384/parallel1 and Draft MTP off are explicit.
+The system SDK path remains an observation, not a complete immutable SDK closure.
+
+Each slot allows at most11 author requests and one independent source-review
+request (12 total),4096 output tokens per author response and2048 per review.
+The trial wall budget is900 seconds, including checks/review; request timeout is
+at most180 seconds and is lowered near the deadline. Stop at60000 observed
+input+output tokens; one completed response may cross that soft threshold and
+its complete usage is counted. A48000 UTF-8-byte prompt cap is a transport limit,
+not an estimated token count. The provider enforces the actual context cap.
+Each check uses a fresh compiler-owned cache, retained diagnostics and removal
+afterward, without prewarming. Runtime/compiler OS limits remain in the runner.
+
+Explicit submit runs the full visible/held-out set once. Behavioral success
+then triggers a fresh stateless Qwen source review, without author conversation
+or hidden tests. Every exact rule requires a boolean decision and specific
+source evidence. The host binds that decision to exact source/contract pins;
+the author cannot write receipts. The review call belongs to the original slot's
+token/time budget, including a rejected/invalid review. This is model-assisted
+judgment, not authenticated human review or a formal source proof. All languages
+use the same process. Provider/host failures stop the campaign and remain in
+evidence; no successful replacement slot is invented.
+
+The infrastructure pilot is one task (`bounded-total`) across all three languages,
+one fresh repeat. Its three slots are separate from the60-slot study. Run the
+study only after the pilot is examined. Changed pilot rules create a new frozen
+version. Clean completed prefixes can resume at the next untouched slot;
+unclean/stopped executions require inspection rather than automatic restart.
+These host controls and the learning corpus are not model task trials.
