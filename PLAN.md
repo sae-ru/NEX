@@ -9,6 +9,8 @@ and 9 rejected programs. This is a source-only experiment, separate from the pub
 compiler and fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.
+Its scalar/parent acceptance runner now has 13 compiler-checked NEX programs
+and eight false-receipt rejection controls, without claiming GPU execution.
 Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
 and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.

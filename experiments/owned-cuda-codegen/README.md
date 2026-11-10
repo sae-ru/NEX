@@ -99,3 +99,37 @@ and 96 unavailable-driver calls across those three backends. A 256 KiB resource
 limit admits one session reservation but not two unreleased reservations;
 repeated constructor failures restored capacity on each call.
 The full public compiler/platform/SDK and broader original roadmap gates remain.
+
+## Scalar and parent-resource corpus
+
+Use `fixture.nex` as `main.nex` in a new language 0.28 project and prepare its
+`transform` root. The acceptance runner pins that exact root and checks the
+same mathematical/lifetime programs used by the Metal provider:
+
+```sh
+python3 -B experiments/owned-cuda-codegen/verify.py \
+  --compiler /absolute/build/nex --resources /absolute/NEX \
+  --project /absolute/prepared-provider --check-only \
+  --output /absolute/new/source-case-checks
+```
+
+`--check-only` checks all 13 NEX programs and loads no provider. On an available
+Windows/Linux NVIDIA host, prepare a native provider first and omit this flag
+to execute the interpreter/native Release pairs. The physical runner requires
+exact values/errors, device identity, generated-source/PTX hashes, CUDA
+completions, closed cursors and balanced buffer/event/context/module/stream
+counters. This phase covers byte codecs, maximum geometry, typed errors,
+parent retention, cross-session rejection, quotas and fatal error forwarding.
+It is a partial phase: post-enqueue cancellation/deadline, context restoration,
+source-deleted replay/standalone, other scalar roots and Compute Sanitizer
+remain separate mandatory gates. Its report never marks complete owned CUDA
+acceptance.
+
+`check_acceptance.py` accepts the same compiler/resources/emitter/frontend/output
+arguments as `check_sources.py`. It prepares the pinned fixture, checks the
+13 programs with the actual compiler and exercises the receipt reader with
+synthetic records. Eight false reports are rejected, including leaked buffers,
+contexts/events/streams, missing completion, an unsettled state, an unclosed
+cursor, CPU fallback and a different compiled PTX. Synthetic records are not
+GPU evidence. The [versioned corpus controls](../../docs/evidence/owned-cuda-corpus-source-0.165.0-2026-11-10.json)
+retain the exact scope and code identities.
