@@ -1,3 +1,34 @@
+# Explicit test layers and measured core loop — development0.165.0
+
+All318 configured Mac CTest groups now have explicit labels. The catalogue also
+includes five currently conditional Windows/Linux groups. Each group has one
+core/extended base; browser/platform/sdk/scale area labels overlap. An
+unclassified future group fails configuration. The real configure negative
+fixture, exact core filter, fixture closure and malformed metadata controls pass.
+All317 earlier commands and non-label properties (including timeouts, skips,
+resource locks and fixtures) remain unchanged.
+
+The existing compiler/probes have a `nex_core_tests` build target. Its11-group
+sequential core command passed in12.36s on this development Mac, without skips
+or injected fixtures. The selected PATH/NEX_NODE/NEX_TSC guard saw no Node/npm/
+npx/tsc request. Other whole-layer wall times remain for the agreed milestone;
+declared timeout budgets are not runtime measurements. One all-target build
+passed and the compiler remains63cd6b70. [Guide](docs/testing.md) and
+[scoped evidence](docs/evidence/test-tiers-0.165.0-2026-11-11.json).
+
+The separate policy4 local Qwen pilot also completed. Its actual next request
+contained E_PARSE/code/line/message from compiler stdout, proving the repaired
+feedback path. Qwen still submitted unsupported += syntax and NEX failed;
+C++/Python passed, with independent local review usage counted.26 requests /
+59151 known input+output tokens belong only to this three-slot infrastructure
+pilot, not the60-slot main study. Every earlier pilot remains separately
+retained. The owned model instance was unloaded; no acceptance condition was
+weakened or NEX answer repaired by the operator. [Pilot evidence](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json).
+
+The main matched Qwen study is next. Presets, repeatable SDK preparation, CI and
+the remaining original language/platform/UI/Studio/conversion requirements stay
+open. No full/platform/remote/device/SDK/main/push stage ran.
+
 # Local Qwen task collector and infrastructure pilots — development0.165.0
 
 The serial local Qwen3.8 27B GGUF Q8_0 collector now freezes model/runtime/

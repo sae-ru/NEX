@@ -191,4 +191,8 @@ failed task observation, not a host-infrastructure failure. Policy3's completed
 pilot (`e38990a`) retained a NEX syntax rejection (`+=` is unsupported), while
 C++/Python passed; the model had not received the compiler's stdout diagnostic
 during visible repair checks. That result remains recorded. The repaired
-feedback policy still needs its own infrastructure pilot before the main study.
+feedback policy's own pilot subsequently completed: actual E_PARSE code/message/
+location reached Qwen, while its NEX answer still failed source parsing; C++ and
+Python passed. No budget, task, acceptance rule or model was changed to obtain a
+successful NEX result. These three observations remain separate infrastructure
+evidence. The main study now uses this policy, including all semantic failures.

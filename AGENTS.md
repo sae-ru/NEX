@@ -8,4 +8,6 @@ For compiler changes, keep the frontend checker, reference interpreter, MLIR and
 
 Use C++20, CMake, LLVM/MLIR 22.1 and SQLite. Batch implementation into complete functional milestones. Use `cmake --build build -j 4` and short checks of changed behavior during development; run `ctest --test-dir build --output-on-failure` and full platform/device suites at milestone or release gates, rather than after each small edit. Preserve earlier results and rerun them only when affected by a new change or unresolved failure. Preserve useful diagnostics and inspect failed intermediate IR rather than disabling verification.
 
+For the small no-Node baseline, build `nex_core_tests` and run `ctest --test-dir build -L '^core$' --output-on-failure`. Use the relevant additional backend/feature checks for changed behavior. See `docs/testing.md` and keep new test groups classified in `cmake/test-tiers.json`; core alone is not release acceptance.
+
 The project is the NEX language and development toolchain. Large image editors and games are outside the requested implementation scope. Keep unsupported platforms and unfinished integrations visible as pending work.

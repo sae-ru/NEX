@@ -191,5 +191,8 @@ their framing. Policy3 normalizes one strict advertised data envelope before
 the same action validation; it never executes arbitrary tools. Each version's
 pilot remains separate from the60-slot main study.
 Policy4 additionally exposes bounded stdout JSON compiler diagnostics alongside
-stderr. This repairs a missing-error-feedback path found by the third pilot;
-source/program acceptance is unchanged. Its own real pilot remains pending.
+stderr. Its separate three-slot pilot completed: the actual NEX E_PARSE code,
+line and message reached the model, which still submitted unsupported += syntax;
+C++ and Python passed. The owned instance was unloaded. This qualifies the
+feedback path, not NEX success or token savings. The60-slot study uses the same
+policy and budgets, retaining semantic failures as outcomes.

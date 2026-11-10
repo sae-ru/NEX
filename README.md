@@ -69,7 +69,9 @@ trial records offline; a [ten-task comparison protocol](experiments/quality/llm-
 has [qualified cross-language host controls](experiments/quality/llm-campaign-v1/README.md).
 Local Qwen task collection, bounded tool access and counted source review are implemented.
 [Infrastructure pilots](docs/evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json)
-retain failures; repaired feedback and the60-slot comparison remain to be qualified.
+retain failures. [Repaired feedback](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is next.
+The [11-group core layer](docs/testing.md) passed in12.36s; broader layers retain
+their own dependencies and final qualification gates.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
@@ -116,6 +118,17 @@ Python 3.10+. The full CTest suite includes Web/TypeScript workflows and also
 requires Node.js 22.18+, npm and the repository's locked web dependencies.
 On Unix, the ELF fixture tests also require LLVM22.1 `ld.lld` and `llvm-ar`;
 use `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` when LLD has a separate prefix.
+
+For a short development loop after configuring, use the [11-group core layer](docs/testing.md):
+
+```sh
+cmake --build build --target nex_core_tests -j 4
+ctest --test-dir build -L '^core$' --output-on-failure
+```
+
+It needs the selected compiler build and Python, with no Node/npm preparation.
+The [tier inventory](cmake/test-tiers.json) also labels browser, platform, SDK and
+scale groups. Use the complete workflow below at the agreed milestone:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release

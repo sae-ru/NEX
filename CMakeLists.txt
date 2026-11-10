@@ -8,6 +8,7 @@ if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   string(APPEND CMAKE_C_FLAGS " --rsp-quoting=windows")
   string(APPEND CMAKE_CXX_FLAGS " --rsp-quoting=windows")
 endif()
+
 set(NEX_DEFAULT_TOOLCHAIN "" CACHE FILEPATH "Explicit default target toolchain for this local compiler installation")
 # Source package fixtures must receive explicit provenance for private native
 # dependencies, including the early private project-protocol fixture below.
@@ -1706,3 +1707,13 @@ if(WIN32)
     endif()
   endforeach()
 endif()
+
+# Build only the existing compiler/probes needed by the fast CTest layer.
+# This target does not execute tests or prepare browser/package dependencies.
+add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
+  nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe)
+add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
+  --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})
+set_tests_properties(test_tiers PROPERTIES TIMEOUT 30)
+include(cmake/TestTiers.cmake)

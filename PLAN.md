@@ -27,7 +27,11 @@ controls are prepared. Local Qwen transport, weight pins and scoped macOS
 execution isolation now have host evidence and one benign readiness response.
 Restricted collection, runtime/template/budget freeze and counted fresh-context
 local source review are implemented. Infrastructure pilots retain all failures;
-next qualify repaired diagnostic feedback, then run the full matched study. The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
+repaired diagnostic feedback passed its real pilot and the full matched study is next.
+The11-group core test layer is implemented (12.36s on the development Mac), with
+explicit browser/platform/sdk/scale labels and the original complete registry
+preserved. Presets, repeatable SDK preparation and CI remain next engineering work.
+The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
 APIs. Conclusions will be scoped to that model.
 
 The original objective remains intact. The main unfinished implementation areas
