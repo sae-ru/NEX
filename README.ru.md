@@ -58,7 +58,7 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 | Платформа | Подтверждённые результаты | Что ещё проверить |
 |---|---|---|
-| macOS ARM64 | [302 группы исходников, снимок `61fbd21`](docs/evidence/macos-public-Metal-full302-0.165.0-2026-11-10.json); [более поздние установленные инструменты Metal: 15 пар reference/native, 24 физических ядра](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json) | Полный соответствующий прогон и неизменяемый SDK с новыми инструментами |
+| macOS ARM64 | [302 группы `0abc5d7`, девять текущих delta-групп и перенесённый/восстановленный SDK-кандидат `53634a5`](docs/evidence/macos-installed-Metal-full302-SDK-candidate-0.165.0-2026-11-10.json); [обычная установка Metal tools: 15 пар, 24 физических ядра](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json) | Полные цепочки и аппаратная Metal-приёмка нового неизменяемого SDK |
 | Windows x86-64 / RTX 3090 | [Снимок `2172b35`: все цели сборки, 11 групп, 35 физических CUDA-сценариев, 36 проверок Compute Sanitizer](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json) | Полная регрессия и переносимый SDK; успешный IPv6 не подтверждён при намеренном ограничении оператора |
 | Fedora x86-64 | [304 группы и проверка обычной установки, снимок `61fbd21`](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json) | Последующие изменения и переносимый SDK |
 | CIX ARM64 | [Снимок `979ef54`: 36 GPU- и 26 NPU-вызовов, CPU fallback для NPU отключён](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | Полный соответствующий прогон, последующие изменения и переносимый SDK |

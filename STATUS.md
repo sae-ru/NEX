@@ -1,5 +1,14 @@
 # Public checked scalar Metal emission — development0.165.0
 
+The [installed-tool source and current SDK candidate record](docs/evidence/macos-installed-Metal-full302-SDK-candidate-0.165.0-2026-11-10.json)
+adds all302 unfiltered Mac groups for `0abc5d7`, with no failures or skips.
+Current `53634a5` has identical production C++/CMake/pack/grammar and separately
+passed nine packaging/discovery/HTTP delta groups plus six public debug-builder
+controls. Its official single-install SDK candidate passed move/restore, doctor
+and both inventories; all13 owned Metal tools and11 current entry documents
+match the source. New immutable SDK workflows and physical Metal acceptance
+remain pending. This does not claim an unfiltered `53634a5` invocation.
+
 The earlier [`61fbd21` immutable macOS SDK baseline](docs/evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
 passed 82 maintained phases, 184 additional cases and 4000 C++ host calls with
 4000 cleanup checks. Python 3.10/3.14 installations were moved/restored, read-only,

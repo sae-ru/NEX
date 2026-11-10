@@ -1,0 +1,128 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Production source0abc passed all302 Mac groups unfiltered. Current536 source has identical production C++/CMake/pack/grammar and separately passed nine current packaging/discovery/HTTP delta groups. Its new single-install SDK candidate was moved/restored and checked, including all13 owned Metal tool files and11 current entry documents. Full new SDK workflows and physical Metal qualification remain pending.",
+  "production_unfiltered302": {
+    "schema": "nex.Mac-current01650-source302-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T06:08:01.832022+00:00",
+    "source_commit": "0abc5d7aeca4e5f2a9bd5f77d16216339422aeb2",
+    "source_files": 2144,
+    "toolchain": "0.165.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "2c24505eba56712e2ab743c46ac25940cd21cea2096170895f941c966c5ac397",
+    "source_manifest_sha256": "60a0ee2f37108c438920c57a14f52cac8b236c5bcc55870c32869a9ba47f1a5e",
+    "source_archive_sha256": "6d37f6490a46db3adffdad262c55f5600788dbec3bc6b99653e47ce88bf71e5b",
+    "all_targets_built": true,
+    "unfiltered_passed_groups": 302,
+    "failed_groups": 0,
+    "skipped_groups": 0,
+    "original_deadlines_retained": true,
+    "actual_controller_and_monitors_retired": true,
+    "AC_and_open_lid_during_all_commands": true,
+    "matching_immutable_SDK_accepted": false,
+    "later_HTTP_fixture_and_entry_docs_qualified_by_this_unfiltered_run": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 14,
+    "raw_bytes": 1108436,
+    "archive_sha256": "8f959cd9b957bf1203b0b6f2d685b93ebf9df0cb354c240473a1bd4dc4a5ec1d",
+    "archive_bytes": 212153
+  },
+  "current_source_and_SDK_candidate": {
+    "schema": "nex.current536-Mac-SDK-candidate-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T06:54:38.726657+00:00",
+    "source_commit": "53634a55fb1a46608f56b26b599be77e8203be2e",
+    "source_files": 2148,
+    "toolchain": "0.165.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "input_compiler_sha256": "561db41acb20a622b31593cb7080778a525b55a16a2ae268e47b1faef2078568",
+    "SDK_compiler_sha256": "bff53f34ac9f67ff7a4f6b89ea923c96d1ad558e3d2d69e9f8c4434edbf0c6a1",
+    "compiler_build": "716ac5ac178594dd560dcc8e9e3b7f8897b4ac1f8dba2794be706cc0375f2523",
+    "descriptor_hash": "dac0722e9904557b7dd48887dcde4d27fc7c86e92da4d011cbe34c42be73a4e1",
+    "all_targets_built": true,
+    "selected_current_groups": [
+      "discovery",
+      "metal_codegen",
+      "provider_preparation_source",
+      "sdk_archives",
+      "sdk_host",
+      "sdk_operator_notices",
+      "source_exception_module_http",
+      "source_exception_module_http_debug",
+      "source_exception_module_http_profile"
+    ],
+    "selected_current_passed": 9,
+    "production_source_equivalence": {
+      "ok": true,
+      "prior_full_source_commit": "0abc5d7aeca4e5f2a9bd5f77d16216339422aeb2",
+      "prior_full302_report_sha256": "833a31bf21f11dde13a7d53426e5463b4f584c390e101bf5ed625baa99c71eb0",
+      "prior_compiler_sha256": "2c24505eba56712e2ab743c46ac25940cd21cea2096170895f941c966c5ac397",
+      "unchanged_files": 2132,
+      "changed_files": [
+        "README.md",
+        "README.ru.md",
+        "STATUS.md",
+        "docs/WINDOWS-CODEX-PROMPT.md",
+        "docs/evidence/HTTP-debug-callback-census-0.165.0-2026-11-10.json",
+        "docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json",
+        "docs/evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json",
+        "docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json",
+        "docs/getting-started.en.md",
+        "docs/getting-started.ru.md",
+        "docs/overview.en.md",
+        "docs/overview.ru.md",
+        "docs/windows-handoff-current.md",
+        "llms.txt",
+        "tests/source_exception_module_http.py",
+        "tests/source_exception_module_http_debug.py"
+      ],
+      "changed_test_files": [
+        "tests/source_exception_module_http.py",
+        "tests/source_exception_module_http_debug.py"
+      ],
+      "production_Cpp_CMake_pack_grammar_unchanged": true,
+      "new_source_unfiltered302_claimed": false
+    },
+    "unfiltered_current536_run_claimed": false,
+    "SDK_archive": {
+      "name": "nex-sdk-0.165.0-macos-arm64-public-owned-metal-tools-current-docs-development.tar.gz",
+      "sha256": "48cde91f3a9bb777e81cfc34a2246f1ccdee8d48298de12f4f0dd8c18432e145",
+      "bytes": 124660765,
+      "files_in_inventory": 3708
+    },
+    "official_single_CMake_installation_no_overlays": true,
+    "moved_restored_doctor_and_inventory_checked": {
+      "moved": {
+        "inventory_files": 3708,
+        "compiler_sha256": "bff53f34ac9f67ff7a4f6b89ea923c96d1ad558e3d2d69e9f8c4434edbf0c6a1",
+        "eleven_current_entry_documents_match": true,
+        "all13_owned_tools_match": true
+      },
+      "restored": {
+        "inventory_files": 3708,
+        "compiler_sha256": "bff53f34ac9f67ff7a4f6b89ea923c96d1ad558e3d2d69e9f8c4434edbf0c6a1",
+        "eleven_current_entry_documents_match": true,
+        "all13_owned_tools_match": true
+      }
+    },
+    "public_debug_builder_controls": 6,
+    "raw_files": 34,
+    "archive_sha256": "27c74704a30b1be8f9606d953ce7fb68ab1dfeb4c02bae90b88db0201f32ca3e",
+    "archive_bytes": 298483,
+    "complete_SDK_accepted": false,
+    "physical_Metal_accepted_by_this_record": false,
+    "whole_original_goal_complete": false
+  },
+  "independent_receipt_sha256": {
+    "full302": "a561337f3c4c26e24c182f14a1385ee4a7bd0deffd56ed754c371df81a261a55",
+    "current_candidate": "4d5bdf59ca402a0053802f2819e51a2422399a951100a3b3964c2e7be59121f3"
+  },
+  "current536_unfiltered302_claimed": false,
+  "complete_current_SDK_accepted": false,
+  "release_claimed": false,
+  "main_branch_changed": false,
+  "whole_original_goal_complete": false
+}

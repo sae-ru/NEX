@@ -59,7 +59,7 @@ physical device checks and portable delivery have separate acceptance records.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [302 source groups, snapshot `61fbd21`](docs/evidence/macos-public-Metal-full302-0.165.0-2026-11-10.json); [later installed Metal tools: 15 reference/native pairs, 24 physical kernels](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json) | Full matching regression and immutable SDK for the later tools |
+| macOS ARM64 | [302 groups for `0abc5d7`, nine current delta groups and a moved/restored `53634a5` SDK candidate](docs/evidence/macos-installed-Metal-full302-SDK-candidate-0.165.0-2026-11-10.json); [ordinary installed Metal tools: 15 pairs, 24 physical kernels](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json) | Complete workflows and physical Metal acceptance for the new immutable SDK |
 | Windows x86-64 / RTX 3090 | [Snapshot `2172b35`: all targets, 11 groups, 35 physical CUDA cases, 36 Compute Sanitizer cases](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json) | Complete source regression and portable SDK; positive IPv6 remains unverified under the operator's restriction |
 | Fedora x86-64 | [304 source groups and ordinary installed smoke, snapshot `61fbd21`](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json) | Later changes and portable SDK |
 | CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, NPU CPU fallback disabled](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression, later changes and portable SDK |
