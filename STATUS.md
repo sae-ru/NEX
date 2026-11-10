@@ -12,8 +12,13 @@ The [scoped acceptance](docs/evidence/macos-public-Metal-emission-0.165.0-2026-1
 passed all native targets, six CLI tests,86 schema documents/eight actual
 artifacts/37 rejected mutations and20 reference/native Debug/Release/TypeScript/
 Metal cases. Both input layouts execute on Apple M5 Max:48 physical dispatches,
-including eight boundary dispatches, plus nine rejected host inputs. Full
-regression and matching installed SDK delivery remain pending. Earlier experimental
+including eight boundary dispatches, plus nine rejected host inputs. The exact
+61fbd21/2136-file snapshot has since passed
+[all302 macOS groups](docs/evidence/macos-public-Metal-full302-0.165.0-2026-11-10.json)
+and [all304 Fedora groups plus ordinary installed smoke](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json)
+in unfiltered invocations, without failures or skips. These results retain that
+snapshot's identity; they do not qualify later fixture/provider changes.
+Complete matching portable SDK delivery remains pending. Earlier experimental
 Python/typed-graph and0.164 SDK results retain their original pins. Installed owned
 dispatch, broader types/backends, GPU debugging/profiling and the remaining
 original roadmap are still required.
@@ -50,8 +55,12 @@ stops at `main` after loader startup, starts clients and resumes through the
 existing primary-listener helper. The exact failing current PE passed all
 original session assertions after a deliberate31-second hold before clients.
 The original failures and unchanged deadlines are retained. The complete fixed
-Windows HTTP group and macOS follow-up remain pending; compiler/runtime,
+Windows HTTP group remains pending; compiler/runtime,
 language, ABI and debugger-helper code are unchanged.
+The corrected fixture separately passed
+[all38 macOS HTTP sessions and38 offline captures](docs/evidence/macos-HTTP-debug38-0.165.0-2026-11-10.json)
+with the same frozen0.165 compiler. Each session retained absent source files,
+logical stacks/watches/steps, request identity and terminal cleanup checks.
 
 That full current Windows replay subsequently passed
 [37 original HTTP debugging sessions](docs/evidence/windows-HTTP37-Defender-0.165.0-2026-11-10.json).

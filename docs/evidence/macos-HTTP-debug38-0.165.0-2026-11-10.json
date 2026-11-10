@@ -1,0 +1,33 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "The31f96e6 HTTP fixture with exact61fbd21 compiler:38 macOS logical HTTP debug sessions and38 offline captures, retaining original assertions/deadlines. No full later snapshot, Windows HTTP or portable SDK acceptance is claimed.",
+  "evidence": {
+    "schema": "nex.Mac-current165-HTTP38-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T02:47:07.787097+00:00",
+    "source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+    "source_files": 2136,
+    "toolchain": "0.165.0",
+    "language": "0.28",
+    "compiler_sha256": "dfc2920a11733fc5232ab468644c814d65ee4f3ed0bb0a2ac3ab990722d18021",
+    "test_fixture_commit": "31f96e66bb51a96f2db9ece0a54336d30efd23d7",
+    "test_fixture_sha256": "aacfae1f593df158a5130e832e056bacce3717df9fbd5dfdea7b73e966cad261",
+    "debug_sessions": 38,
+    "offline_captures": 38,
+    "source_files_absent_in_each_session": true,
+    "request_identity_stacks_steps_and_cleanup_passed": true,
+    "original_assertions_and_deadlines_retained": true,
+    "AC_and_open_lid_during_workload": true,
+    "actual_owner_and_monitor_retired": true,
+    "full_later_snapshot_or_SDK_accepted": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 553,
+    "raw_bytes": 14529667,
+    "archive_sha256": "e0965027f81c21a4675ccd1ea34ee9d6c9a2c0867e96c7f62030a7300241e845",
+    "archive_bytes": 2395712
+  },
+  "independent_receipt_sha256": "d078800ebe8a5a11b76317b6bff6fcb6943a3abf415095640555b8e985620ed3",
+  "release_claimed": false,
+  "main_branch_changed": false
+}

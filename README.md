@@ -59,13 +59,20 @@ The new [scalar Metal backend](docs/gpu-codegen.md) adds
 the checked compiler AST. It supplies function source maps and a versioned JSON
 record without initializing a driver. Its [scoped acceptance](docs/evidence/macos-public-Metal-emission-0.165.0-2026-11-10.json)
 passed all targets, six CLI tests and20 reference/native/TypeScript/Metal cases
-with48 physical GPU dispatches across rows and columns. Full regression and
-matching installed SDK qualification remain pending for this new emitter.
+with48 physical GPU dispatches across rows and columns. The exact61fbd21
+compiler snapshot has since passed [all302 macOS groups](docs/evidence/macos-public-Metal-full302-0.165.0-2026-11-10.json)
+and [all304 Fedora groups with ordinary installed smoke](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json),
+without failures or skips. Later fixture/provider changes have separately scoped
+results. Complete matching portable SDK qualification remains pending.
 
 The same0.165 source has also passed [all-target Windows compilation, seven
 selected groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evidence/windows-current-source-CUDA-0.165.0-2026-11-10.json)
 on an RTX3090 through an ordinary development installation. Full Windows
 regression and complete portable SDK qualification remain pending.
+
+The corrected HTTP debugger fixture separately passed
+[all38 macOS sessions and their offline captures](docs/evidence/macos-HTTP-debug38-0.165.0-2026-11-10.json).
+The corresponding Windows HTTP gate remains open.
 
 The checkout [owned Metal bridge](docs/evidence/macos-public-owned-Metal-0.165.0-2026-11-10.json)
 now prepares shaders through that public emitter and executes them through NEX
