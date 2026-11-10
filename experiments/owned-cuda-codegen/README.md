@@ -177,6 +177,49 @@ standalone execution:160 typed unavailable results across five processes,
 zero CUDA contexts/allocations/launches. NVIDIA delivery, memory checking,
 other roots and coherent public compiler/SDK acceptance remain pending.
 
+## Compute Sanitizer
+
+`memcheck.py` requires a successful complete physical `verify.py` report in
+`nex.experimental-owned-CUDA-scalar-parent-verification/2` format. That report
+pins the retained executable, source, build receipt, foreign catalogue, module,
+generated source/PTX and context probe. Earlier reports and source-only controls
+cannot qualify this run. Keep the native build outputs until it finishes:
+
+```sh
+python3 -B experiments/owned-cuda-codegen/memcheck.py \
+  --hardware-report /absolute/physical-corpus/report.json \
+  --sanitizer /absolute/CUDA/compute-sanitizer/compute-sanitizer \
+  --output /new/generated-provider-memcheck
+```
+
+Use the native `.exe` tool on Windows. The runner instruments the exact15
+retained applications and the three-context probe with NVIDIA
+[memcheck and full leak checking](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html).
+It does not build or evaluate another program. Fresh resource traces must match
+the original device, physical work and balanced counters. Values, fatal errors,
+pending work, post-enqueue cancellation and physical drain checks remain in
+force. The original5000ms cancellation and2000ms deadline budgets are unchanged;
+instrumentation that prevents those conditions causes a failed run.
+
+Every error/leak summary must be present and zero, including later summaries;
+nonzero or malformed ignored/suppressed counts are rejected. Windows uses named
+pipes and Linux uses Unix domain sockets for the tool's local connection. A
+300-second process-tree timeout fails the command and retires its launched
+processes; it never acknowledges successful GPU settlement.
+
+`check_memcheck.py` accepts explicit compiler/resources/project/output arguments.
+Use a source-only gated baseline preparation for local controls. The
+[local record](../../docs/evidence/generated-cuda-memcheck-source-0.165.0-2026-11-10.json)
+checks all15 actual NEX programs, rejects a source-only report before resolving
+the supplied tool, checks17 synthetic log contracts, including Windows CRLF,
+and7 argument contracts,
+detects changed input bytes, and retires a real timed-out POSIX parent/child.
+These controls run no Compute Sanitizer or GPU. Native Windows/Linux memcheck,
+the physical corpus, NVIDIA delivery and complete compiler/SDK qualification
+remain pending for this generated provider.
+
+## Cancellation and deadline controls
+
 Cancellation/deadline preparation additionally requires `--acceptance-gate`.
 That explicit option appends a separate device-clock delay kernel to the NVRTC
 compilation input; the original emitted function, source hash and function map

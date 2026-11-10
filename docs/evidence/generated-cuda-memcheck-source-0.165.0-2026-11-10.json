@@ -1,0 +1,59 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Generated CUDA memcheck orchestration and exact v2 hardware input recorder. Local compiler/source, synthetic log/argument rejection, real byte-change and POSIX process-tree controls passed. No Compute Sanitizer or GPU execution is accepted.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "source_sha256": {
+    "verify.py": "8a8acd0890a4e9ac26a685440c969fea397562b22661f75274707b58aae73bab",
+    "memcheck.py": "addeb3f2d070b5e96140906bf79548d73ff20116ef875a9f2a90044ec63b7626",
+    "check_memcheck.py": "6639e49c859734b959480648280c00d373125a6a69a45f595b0bbbfd1077464d"
+  },
+  "actual_NEX_programs_checked": 15,
+  "NEX_source_and_canonical_revisions_unchanged": true,
+  "physical_lifetime_trace_reader_AST_unchanged": true,
+  "hardware_report_schema": "nex.experimental-owned-CUDA-scalar-parent-verification/2",
+  "future_instrumented_cohort": {
+    "native_applications": 15,
+    "three_context_probe": 1,
+    "build_or_eval_under_memcheck": false,
+    "original_cancel_timeout_ms": 5000,
+    "original_deadline_timeout_ms": 2000,
+    "task_budgets_changed": false,
+    "retained_executable_foreign_module_source_PTX_and_probe_pinned": true,
+    "fresh_resource_device_and_work_traces_required": true,
+    "zero_all_error_leak_and_ignored_summaries_required": true,
+    "instrumented_exit_errors_checked_even_when_source_fails": true,
+    "command_process_tree_timeout_seconds": 300
+  },
+  "synthetic_log_contracts": 17,
+  "false_log_reports_rejected": 12,
+  "synthetic_argument_contracts": 7,
+  "false_native_commands_rejected": 6,
+  "actual_source_only_receipt_rejected_before_tool_resolution": true,
+  "actual_changed_input_detected": true,
+  "actual_POSIX_timeout_parent_and_child_retired": true,
+  "Windows_process_tree_cleanup_qualified": false,
+  "own_completed_fixture_graph_integrity_and_HEAD_checks": 15,
+  "actual_Compute_Sanitizer_execution": false,
+  "actual_GPU_execution": false,
+  "native_generated_provider_memcheck_or_public_SDK_accepted": false,
+  "raw_archive": {
+    "archive_sha256": "04acb6b0e47573c093eb1c214834bffb361471c33cfcda362a00972c1018599e",
+    "archive_bytes": 11261139,
+    "raw_files": 110,
+    "raw_bytes": 54201135
+  },
+  "independent_receipt_sha256": "99b8edbcd6c21538cf60458bd949fa7c0ba99e38291be9ab4f5f87f4876b0540",
+  "remaining_required_gates": [
+    "Actual complete v2 generated-provider NVIDIA hardware corpus",
+    "Native Windows/Linux Compute Sanitizer and physical context/values/parents/cancellation/deadline checks",
+    "Source-deleted NVIDIA delivery and other generated roots",
+    "Coherent public compiler and immutable SDK qualification"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

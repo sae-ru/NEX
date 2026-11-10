@@ -19,6 +19,21 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def case_specs():
+    shared = runpy.run_path(str(Path(__file__).resolve().parent.parent / "owned-metal-codegen/verify.py"))
+    cases = {name: (body, kernels, errors, quota, None, 30000, False) for name, (body, kernels, errors, quota) in shared["CASES"].items()}
+    for name in ["explicit_unwrap_E_RESULT_skips_finally", "direct_overflow_skips_catch_and_finally"]:
+        body, code, gate, timeout, errors = shared["ERROR_CASES"][name]
+        assert gate == 0 and timeout == 30000
+        cases[name] = body, 1, errors, None, code, timeout, False
+    for name in ["cancel_enqueued_generated_GPU", "deadline_enqueued_generated_GPU"]:
+        body, code, _, timeout, errors = shared["ERROR_CASES"][name]
+        assert errors == 0 and timeout == (5000 if code == "E_CANCELLED" else 2000)
+        cases[name] = body, 1, 0, None, code, timeout, True
+    assert len(cases) == 15
+    return shared, cases
+
+
 def inspect_trace(path, kernels, errors, shader_hash, ptx_hash, gate_hash="", pending=False, cancelled=False):
     assert path.stat().st_size <= 16 * 1024 * 1024
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
@@ -125,22 +140,12 @@ def main():
     if not args.check_only and platform.system() not in {"Windows", "Linux"}:
         parser.error("physical CUDA verification requires Windows/Linux; use --check-only for source validation")
     compiler, resources, project = [p.resolve(strict=True) for p in [args.compiler, args.resources, args.project]]
-    out = args.output.absolute()
+    out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     source = Path(__file__).resolve().parent
     assert sha(source / "fixture.nex") == FIXTURE_SHA256
     corpus_path = source.parent / "owned-metal-codegen/verify.py"
-    shared = runpy.run_path(str(corpus_path))
-    cases = {name: (body, kernels, errors, quota, None, 30000, False) for name, (body, kernels, errors, quota) in shared["CASES"].items()}
-    for name in ["explicit_unwrap_E_RESULT_skips_finally", "direct_overflow_skips_catch_and_finally"]:
-        body, code, gate, timeout, errors = shared["ERROR_CASES"][name]
-        assert gate == 0 and timeout == 30000
-        cases[name] = body, 1, errors, None, code, timeout, False
-    for name in ["cancel_enqueued_generated_GPU", "deadline_enqueued_generated_GPU"]:
-        body, code, _, timeout, errors = shared["ERROR_CASES"][name]
-        assert errors == 0 and timeout == (5000 if code == "E_CANCELLED" else 2000)
-        cases[name] = body, 1, 0, None, code, timeout, True
-    assert len(cases) == 15
+    shared, cases = case_specs()
     prep_path = project / "preparation/report.json"
     preparation = json.loads(prep_path.read_bytes())
     assert preparation["ok"] and preparation["compiler_sha256"] == sha(compiler)
@@ -155,8 +160,9 @@ def main():
     prefix = (project / "main.nex").read_text(encoding="utf-8").split("server fn main()->unit", 1)[0] + shared["HELPERS"]
     env = {k: v for k, v in os.environ.items() if not k.startswith("NEX_")}
     env.update(NEX_RESOURCE_DIR=str(resources), PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
-    report = {"schema": "nex.experimental-owned-CUDA-scalar-parent-verification/1", "ok": False, "commands": [], "cases": [],
+    report = {"schema": "nex.experimental-owned-CUDA-scalar-parent-verification/2", "ok": False, "commands": [], "cases": [],
               "compiler_sha256": sha(compiler), "preparation_sha256": sha(prep_path), "shared_corpus_sha256": sha(corpus_path),
+              "verifier_sha256": sha(__file__), "project": str(project), "retained_input_sha256": {},
               "check_only": args.check_only, "actual_GPU_execution": False, "complete_owned_CUDA_acceptance": False,
               "required_additional_gates": ["actual post-enqueue cancellation/deadline", "physical context restoration/rollback probe required by hardware mode",
                                             "source-deleted replay/standalone", "Compute Sanitizer", "remaining generated scalar roots and public SDK delivery"]}
@@ -168,6 +174,8 @@ def main():
 
     def guard():
         assert sha(compiler) == report["compiler_sha256"] and sha(prep_path) == report["preparation_sha256"] and sha(corpus_path) == report["shared_corpus_sha256"]
+        assert sha(__file__) == report["verifier_sha256"]
+        assert all(sha(path) == digest for path, digest in report["retained_input_sha256"].items())
         assert preparation["emission_sha256"] == sha(project / "generation/report.json") and preparation["kernel_sha256"] == sha(project / "generation/kernel.cu")
         assert preparation["acceptance_gate"]["source_sha256"] == sha(project / "preparation/inputs/gate.cu")
         assert preparation["acceptance_gate"]["compilation_source_sha256"] == sha(project / "generation/compilation.cu")
@@ -178,7 +186,7 @@ def main():
 
     def run(label, argv, directory, expected=0, trace=None, pending=False):
         guard()
-        row = {"label": label, "argv": list(map(str, argv)), "cwd": str(directory)}
+        row = {"label": label, "argv": list(map(str, argv)), "cwd": str(directory), "expected_exit_code": expected}
         report["commands"].append(row)
         save()
         extra = {"NEX_OWNED_CUDA_MAP_TRACE": str(trace)} if trace else {}
@@ -197,10 +205,22 @@ def main():
         if not args.check_only:
             probe = project / "preparation" / ("context-probe.exe" if os.name == "nt" else "context-probe")
             assert sha(probe) == preparation["context_probe_sha256"]
+            retained = [prep_path, project / "generation/report.json", project / "generation/kernel.cu", project / "generation/kernel.ptx",
+                        project / "generation/compilation.cu", project / "preparation/inputs/gate.cu", project / "bundle/manifest.json", probe]
+            manifest = json.loads((project / "bundle/manifest.json").read_bytes())
+            retained += [project / "bundle" / row["path"] for row in manifest["files"]]
+            report["retained_input_sha256"].update({str(path): sha(path) for path in retained})
+            report["kernel_sha256"] = preparation["kernel_sha256"]
+            report["PTX_sha256"] = preparation["NVRTC"]["PTX_sha256"]
+            report["manifest_sha256"] = preparation["manifest_sha256"]
+            report["module_sha256"] = preparation["module_sha256"]
             control = json.loads(run("physical-context-probe", [probe], out, trace=out / "context-probe.trace.jsonl").stdout)
             assert control["ok"] and control["scope"] == "physical-CUDA-context-probe" and control["actual_CUDA_contexts"] == 3
             assert control["actual_device_allocations"] == 1 and all(control[key] for key in ["caller_context_preserved", "source_reentry_rejected_before_poll", "nested_cleanup_restores_context", "constructor_trap_rolls_back", "physical_cleanup_verified"])
             report["physical_context_probe"] = control
+            report["physical_context_probe_executable"] = str(probe)
+            report["physical_context_probe_executable_sha256"] = sha(probe)
+            report["physical_context_probe_trace_sha256"] = sha(out / "context-probe.trace.jsonl")
             report["required_additional_gates"].remove("physical context restoration/rollback probe required by hardware mode")
         for name, (body, kernels, errors, quota, code, timeout, pending) in cases.items():
             directory = out / name
@@ -208,7 +228,8 @@ def main():
             (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": str(project / "stdlib")}}) + "\n", encoding="utf-8")
             (directory / "main.nex").write_text(prefix + "\nserver fn main()->unit !{task,ffi,io,throw}{" + body + "print(42);}\n", encoding="utf-8")
             checked = json.loads(run(name + "-check", [compiler, "check", "--json"], directory).stdout)
-            row = {"name": name, "checked_revision": checked["revision"], "expected_kernels_per_backend": kernels, "expected_failed_kernels_per_backend": errors}
+            row = {"name": name, "checked_revision": checked["revision"], "expected_kernels_per_backend": kernels, "expected_failed_kernels_per_backend": errors,
+                   "expected_error": code, "task_timeout_ms": timeout, "pending": pending, "source_sha256": sha(directory / "main.nex")}
             report["cases"].append(row)
             if args.check_only:
                 save()
@@ -228,6 +249,11 @@ def main():
             else:
                 assert reference["stdout"] == "42\n" and reference["foreign_resource_bytes_after_scope"] == 0
             built = json.loads(run(name + "-build", [compiler, "build", "--profile", "release", "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", str(timeout), "--build-directory", out / "native", "--json"], directory).stdout)
+            build_receipt = out / (name + "-build.stdout")
+            row.update(executable=str(Path(built["executable"]).resolve(strict=True)), executable_sha256=sha(built["executable"]),
+                       foreign_sha256=sha(foreign), build_receipt_sha256=sha(build_receipt))
+            report["retained_input_sha256"].update({row["executable"]: row["executable_sha256"], str(foreign): row["foreign_sha256"],
+                str(directory / "main.nex"): row["source_sha256"], str(build_receipt): row["build_receipt_sha256"]})
             native_trace = directory / "native.trace.jsonl"
             native = run(name + "-native", [built["executable"], "--nex-foreign", foreign, "--nex-task-workers", "1", "--nex-task-timeout-ms", str(timeout)], directory, 70 if code else 0, native_trace, pending)
             assert native.stdout == (b"" if code else b"42\n")

@@ -24,6 +24,12 @@ The real module also passed local task capture, source-deleted replay and
 relocated standalone packaging in explicit macOS unavailable-driver mode:
 160 typed results across five processes, zero CUDA resources and four actual
 sandbox read-denial controls. Native NVIDIA delivery remains unqualified.
+The generated-provider memcheck runner now retains exact native binaries and
+authority/source/PTX pins in a version2 hardware report and reuses all15 cases
+plus the physical context probe without changing task budgets. Local controls
+checked15 NEX programs,17 synthetic log and7 argument contracts, changed-input
+rejection and real POSIX process-tree timeout cleanup. No Compute Sanitizer or
+NVIDIA execution is inferred from these local controls.
 Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
 and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.
