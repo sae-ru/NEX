@@ -24,7 +24,7 @@ int main(int argc,char **argv){
     nex::writeFile(argv[4],emitted.source);
     auto shaderDigest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(
       reinterpret_cast<const uint8_t*>(emitted.source.data()),emitted.source.size()));
-    std::cout<<nex::json(llvm::json::Object{
+    llvm::json::Object record{
       {"schema","nex.experimental-cuda-emission/1"},{"ok",true},{"experimental",true},
       {"integrated_compiler_CLI",false},{"driver_initialized",false},{"device_executed",false},
       {"frontend_archive_sha256",NEX_EXPERIMENT_FRONTEND_SHA256},
@@ -32,7 +32,12 @@ int main(int argc,char **argv){
       {"entry",emitted.entry},{"input_layout",emitted.inputLayout},
       {"parameter_types",std::move(parameters)},{"result_type",emitted.resultType},
       {"kernel","nex_generated_cuda_map"},{"shader_sha256",llvm::toHex(shaderDigest,true)},
-      {"source_bytes",uint64_t(emitted.source.size())},{"functions",std::move(functions)}})<<'\n';
+      {"source_bytes",uint64_t(emitted.source.size())},{"functions",std::move(functions)}};
+    if(emitted.floatingPoint)record["floating_point"]=llvm::json::Object{
+      {"format","finite binary64"},{"word_encoding","IEEE754 bits"},{"rounding","nearest_ties_even"},
+      {"positive_zero_normalized",true},{"nonfinite_status",7},{"host_environment_status",8},
+      {"owned_provider_transport_accepted",false}};
+    std::cout<<nex::json(std::move(record))<<'\n';
     return 0;
   }catch(const nex::Error &error){
     std::cout<<nex::json(llvm::json::Object{{"ok",false},{"code",error.code},

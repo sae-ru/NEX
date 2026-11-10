@@ -12,6 +12,9 @@ the generated NEX wrapper and obtains nine actual FFI signatures. A mismatched
 frontend or unsupported root fails before a provider bundle is created.
 The compiler must support language 0.28, dependent resources, the source task
 bridge and the append-only fatal trap API.
+The standalone emitter now also lowers finite `f64`. This provider preparer
+rejects reachable f64 before bundling: typed float transport and its additional
+fatal statuses still need implementation and physical qualification.
 
 From a checkout with a built compiler and standalone CUDA emitter:
 

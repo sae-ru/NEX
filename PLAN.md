@@ -5,8 +5,15 @@ now emits ordinary checked 0.28 scalar functions with explicit 64-bit arithmetic
 and rows/columns ABIs, including scalar `match` with ordered guards and one
 subject evaluation. Its source controls passed 28 fixtures, 56 layouts and 256
 lane outcomes under host UBSan, positive reference/native/TypeScript agreement
-and 9 rejected programs. This is a source-only experiment, separate from the public
-compiler and fixed Windows CUDA provider. A separate
+and 9 rejected programs. All56 original sources, metadata, lane data and budgets
+remain byte-identical after adding finite `f64`. The new floating corpus passed
+19 programs /38 layouts /586 lane outcomes in four host FP modes,264 assertions
+across actual NEX reference/native/TypeScript and152 verified LLVM IR/PTX variants.
+It includes explicit nearest/ties-even operations, normalized zero, subnormals,
+exact binary remainder, comparisons, `as_f64`, number generics and guarded matches.
+NVRTC/ptxas/physical f64 execution and typed owned transport remain pending; the
+owned preparer rejects reachable f64 before bundling. This experiment remains
+separate from the public compiler and fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.
 Its scalar/parent acceptance runner now has 15 compiler-checked NEX programs

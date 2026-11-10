@@ -142,6 +142,8 @@ def main():
         assert generated["language"] == "0.28" and generated["input_layout"] == "columns"
         assert generated["kernel"] == "nex_generated_cuda_map" and not generated["integrated_compiler_CLI"]
         assert not generated["driver_initialized"] and not generated["device_executed"]
+        if generated.get("floating_point"):
+            raise RuntimeError("owned CUDA f64 transport and fatal-status mapping are not yet qualified; standalone f64 emission remains separate")
         if generated["frontend_archive_sha256"] != pins["frontend"]:
             raise RuntimeError("emitter and selected frontend archive identities differ")
         assert generated["shader_sha256"] == sha(generation / "kernel.cu")

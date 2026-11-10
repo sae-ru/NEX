@@ -29,13 +29,13 @@ archive SHA256, checked program revision, reachable canonical function hashes,
 function line ranges, parameter/result types and exact CUDA source SHA256.
 Source rejection happens before the selected output is opened.
 
-The subset is shared pure concrete `i64`/`bool`/`unit`, locals, assignment,
+The subset is shared pure concrete `i64`/`f64`/`bool`/`unit`, locals, assignment,
 branches, bounded execution of loops, scalar `match` expressions/statements,
 helper/concrete generic calls, assertions and lowered source contracts.
 Unsupported reachable code is rejected. Only the
 reachable call graph is emitted; unused server/foreign code is excluded. There
 are at most8 root arguments,128 functions/call levels and16MiB of generated code.
-Recursion, heap values, f64, source errors, closures and aggregate patterns remain
+Recursion, heap values, source errors, closures and aggregate patterns remain
 unsupported. Scalar matches support integer/bool literals, immutable bindings,
 wildcards, ordered lazy guards, nested values, unit arms and normal returns.
 The subject is evaluated once. Each attempted arm consumes the lane budget;
@@ -67,6 +67,38 @@ bool output is0/1, and unit output is0. Nonzero status always writes zero output
 | 4 | Lane step budget exhausted |
 | 5 | Invalid checked control flow or value-function fallthrough |
 | 6 | Noncanonical bool input |
+| 7 | Non-finite f64 input or arithmetic result |
+| 8 | Host lowering control cannot select its floating environment |
+
+For `f64`, each eight-byte input/output word carries its IEEE754 binary64 bits.
+Values are finite, and all zero inputs/results normalize to positive zero.
+The emitter supports arithmetic, negation, comparisons, `as_f64`, concrete
+`number` generics and binding/wildcard matches with guards. `as_i64` returns a
+`result<i64>` and remains outside this scalar-only subset. Floating literal
+patterns are rejected by the ordinary NEX checker.
+
+GPU arithmetic uses explicit PTX round-to-nearest/ties-to-even instructions;
+separate operations cannot contract into FMA. Remainder reduces integer binary
+significands, including subnormals, without a device math library. The exponent
+reduction has at most2097 iterations. The device path uses no NVIDIA headers or
+libdevice. See the [PTX instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html)
+and [inline assembly constraints](https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html).
+The explicitly labelled CPU lowering control selects the default floating
+environment for arithmetic and restores its caller's mode/status flags.
+
+`verify_f64.py` checks exact word values/statuses, signed-zero normalization,
+subnormals, non-finite rejection, overflow, zero division, uncontracted operations,
+guard/evaluation order and geometry sentinels in both layouts. It compares
+positive programs with actual NEX reference/native/TypeScript execution and
+checks source fatal errors. It also compiles all layouts through Clang22.1,
+`opt -passes=verify` and `llc -verify-machineinstrs` at O0/O2 for sm_52/PTX4.2 and
+sm_86/PTX7.1. Supply explicit emitter/compiler/resources/frontend-archive/cxx,
+LLVM `--llvm-bin` and a fresh `--output`; use the usual `NEX_NODE`/`NEX_TSC` paths.
+The [versioned f64 evidence](../../docs/evidence/cuda-f64-source-PTX-0.165.0-2026-11-10.json)
+records these compiler/CPU controls. NVRTC, ptxas and physical GPU acceptance
+remain pending. The generated owned CUDA preparer currently rejects reachable
+f64 until its typed transport and fatal-status mapping are implemented and
+qualified. Public CLI/SDK integration remains separate.
 
 A trusted host must validate allocation shapes, every pointer, launch geometry
 and budgets, then settle the GPU command and examine **all** statuses before

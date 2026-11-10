@@ -181,7 +181,7 @@ def main():
             result = json.loads(run('NEX-reference-trap', [args.compiler, 'eval', '--json'], root, expected=1))
             assert result['code'] == {1: 'E_OVERFLOW', 2: 'E_DIV_ZERO', 3: 'E_ASSERT'}[error]
         rejected = [
-            ('float', 'pub fn transform(x:f64)->f64{return x;}', 'E_GPU_TYPE'),
+            ('float_result', 'pub fn transform(x:f64)->result<i64>{return as_i64(x);}', 'E_GPU_TYPE'),
             ('heap', 'pub fn transform(x:str)->str{return x;}', 'E_GPU_TYPE'),
             ('server', 'pub server fn transform(x:i64)->i64{return x;}', 'E_GPU_REALM'),
             ('effect', 'pub fn transform()->unit !{io}{print(1);}', 'E_GPU_REALM'),

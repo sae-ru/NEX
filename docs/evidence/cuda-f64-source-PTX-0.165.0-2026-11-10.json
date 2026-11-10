@@ -1,0 +1,76 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Standalone checked-AST CUDA finite-f64 lowering. Actual CPU/UBSan four-FP-mode controls, NEX reference/native/TypeScript agreement and Clang22.1.8 LLVM IR/PTX compilation passed. Native NVIDIA/NVRTC/ptxas and owned f64 transport remain unqualified.",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "compiler_sha256": "a9d99a7033a1c3b0f92775e35e0790b474d8df052991de93193077573a5b141e",
+  "frontend_archive_sha256": "e6508063c820ce82caf4f62f49d59b5b5e62909a038419d8913134ef19951c26",
+  "emitter_sha256": "9ec75fd1d60d9c5e2cf3b15e1090dc4dad7bcb296f18eb3f619bfd3fd0b26908",
+  "source_sha256": {
+    "cuda-codegen/verify_source.py": "639baf891abc3015d44ccef41716525d25aae627b8960ade797c59392db5fa02",
+    "cuda-codegen/verify_f64.py": "2616893bc2c613baa213982333813ae94c0602fd763c4e75f572193b62116ac3",
+    "cuda-codegen/emitter.h": "757186c50730394cef142162e19a2cfc0fab3acfa910d3466441b71cde695791",
+    "cuda-codegen/emitter.cpp": "871e2bd5bd085cdc0363d3919d4b61385d2a1183845dcb4eeb1c77cb5ec2df8f",
+    "cuda-codegen/floating_runtime.h": "48b1382b8300be08b1cae82a47994877b199b4f6a5d215288646127d9c5dde8e",
+    "cuda-codegen/main.cpp": "640204ff01c89cd5fa4463be734f64c45e8960b19f951d46aedab41c0ef5c5ad",
+    "owned-cuda-codegen/check_sources.py": "336c065179c53e50fa95da2f1e955e5bc2ca267b475baee4a1e42615697f5975",
+    "owned-cuda-codegen/prepare.py": "0417562c8486e660d45d7b52518a1b5eef4484cf9983ef024d58401dfd418f62"
+  },
+  "implemented": [
+    "Finite binary64 literals, parameters/results/locals, arithmetic and negation",
+    "Explicit nearest/ties-even PTX arithmetic and i64-to-f64 conversion, no FMA contraction",
+    "Positive-zero normalization, subnormals, bitwise finite/order checks and bounded exact binary remainder",
+    "Concrete number generics and binding/wildcard matches with lazy guards",
+    "Left-to-right traps and earliest malformed input status; unchanged rows/columns eight-byte-word ABI"
+  ],
+  "f64_programs": 19,
+  "layouts": 38,
+  "lane_outcomes_per_host_FP_mode": 586,
+  "host_FP_modes": 4,
+  "host_lane_outcomes": 2344,
+  "host_rounding_and_exception_flags_preserved": true,
+  "UBSan_passed": true,
+  "positive_NEX_assertions_across_reference_native_TypeScript": 264,
+  "reference_fatal_trap_cases": 10,
+  "verified_IR_PTX_variants": 152,
+  "LLVM": "22.1.8",
+  "targets": [
+    "sm_52/PTX4.2",
+    "sm_86/PTX7.1"
+  ],
+  "optimization_levels": [
+    0,
+    2
+  ],
+  "kernel_ABI_64bit_addresses_and32bit_counters_verified": true,
+  "NVIDIA_headers_libdevice_or_unresolved_device_functions_used": false,
+  "remainder_max_exponent_reduction_iterations": 2097,
+  "all_original_28_programs_56_layouts_source_metadata_lanes_budgets_byte_identical": true,
+  "legacy_source_UBSan_three_backend_agreement_passed": true,
+  "legacy_rejections": 9,
+  "former_f64_rejection_replaced_with_still_unsupported_Result": true,
+  "owned_source_preparations": 4,
+  "checked_owned_FFI_signatures": 36,
+  "owned_f64_transport_rejected_before_bundling": true,
+  "initial_compile_and_harness_diagnostics_retained": true,
+  "actual_NVRTC_ptxas_or_GPU_execution": false,
+  "public_CUDA_CLI_owned_f64_or_SDK_accepted": false,
+  "raw_archive": {
+    "archive_sha256": "db65e5a32cccf9fd1c8894ca8d0f24a866ecf18bb44f60d8405d659512ecaa6d",
+    "archive_bytes": 23658150,
+    "raw_files": 6553,
+    "raw_bytes": 145643943
+  },
+  "independent_receipt_sha256": "5fb0aa9e7ca5a64f94d95447b1d23cc8a26b21316319e2ff36a59ef20c999bb7",
+  "remaining_required_gates": [
+    "Typed owned f64 transport and original E_FLOAT/status mapping",
+    "Actual NVRTC/ptxas and NVIDIA exact-bit/value/error checks",
+    "Complete generated-provider scalar/context/parent/cancellation/deadline/delivery/memcheck acceptance",
+    "Broader aggregate/result types and public compiler/immutable SDK integration"
+  ],
+  "production_compiler_language_ABI_or_capability_descriptor_changed": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

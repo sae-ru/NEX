@@ -1,4 +1,5 @@
 #include "emitter.h"
+#include "floating_runtime.h"
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -65,6 +66,7 @@ constexpr size_t maximumSourceBytes=16*1024*1024;
 std::string scalar(const Type &type,Span span){
   switch(type.kind){
     case Type::I64:return "long long";
+    case Type::F64:return "double";
     case Type::Bool:return "bool";
     case Type::Unit:return "void";
     default:throw Error("E_GPU_TYPE","CUDA scalar emission does not support "+typeName(type),span);
@@ -81,7 +83,10 @@ class Emitter {
   unsigned indentation=0,serial=0,lines=0;
   Type result=Type::Unit;
   Span where;
+  bool floatingPoint=false;
   using Scope=std::map<std::string,std::string>;
+
+  void checkType(const Type &type,Span span){scalar(type,span);floatingPoint=floatingPoint||type==Type::F64;}
 
   void discover(const Function &function,Span caller){
     if(visiting.contains(function.name))throw Error("E_GPU_RECURSION","recursive CUDA call graph: "+function.name,caller);
@@ -91,10 +96,10 @@ class Emitter {
       throw Error("E_GPU_REALM","CUDA functions must be shared and pure: "+function.name,function.span);
     if(function.foreign||function.closure||!function.captures.empty()||!function.typeParameters.empty())
       throw Error("E_GPU_UNSUPPORTED","CUDA functions must be concrete, without captures or foreign authority",function.span);
-    scalar(function.result,function.span);
+    checkType(function.result,function.span);
     for(const auto &parameter:function.params){
       if(parameter.type==Type::Unit)throw Error("E_GPU_TYPE","unit is not a CUDA argument",parameter.span);
-      scalar(parameter.type,parameter.span);
+      checkType(parameter.type,parameter.span);
     }
     visiting.insert(function.name);
     validateBlock(function.body);
@@ -104,9 +109,9 @@ class Emitter {
 
   void validateExpression(const E &expression){
     if(!expression)return;
-    scalar(expression->type,expression->span);
+    checkType(expression->type,expression->span);
     switch(expression->kind){
-      case Expr::Integer:case Expr::Boolean:case Expr::Name:break;
+      case Expr::Integer:case Expr::Floating:case Expr::Boolean:case Expr::Name:break;
       case Expr::Unary:
         if(expression->args.size()!=1||(expression->text!="-"&&expression->text!="!"))
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA unary expression",expression->span);
@@ -118,7 +123,10 @@ class Emitter {
         break;
       }
       case Expr::Call:
-        if(expression->text!="assert"){
+        if(expression->text=="as_f64"){
+          if(expression->args.size()!=1||expression->args[0]->type!=Type::I64||expression->type!=Type::F64)
+            throw Error("E_GPU_TYPE","invalid checked CUDA integer-to-f64 conversion",expression->span);
+        }else if(expression->text!="assert"){
           auto found=functions.find(expression->text);
           if(found==functions.end())throw Error("E_GPU_UNSUPPORTED","unsupported CUDA builtin or callee: "+expression->text,expression->span);
           discover(*found->second,expression->span);
@@ -130,8 +138,8 @@ class Emitter {
           throw Error("E_GPU_UNSUPPORTED","missing checked CUDA match arms",expression->span);
         for(const auto &arm:expression->arms){
           if(!arm->pattern||!arm->pattern->args.empty()||
-             (arm->pattern->type!=Type::I64&&arm->pattern->type!=Type::Bool))
-            throw Error("E_GPU_TYPE","CUDA match requires scalar i64/bool patterns",arm->span);
+             (arm->pattern->type!=Type::I64&&arm->pattern->type!=Type::Bool&&arm->pattern->type!=Type::F64))
+            throw Error("E_GPU_TYPE","CUDA match requires scalar i64/bool/f64 patterns",arm->span);
           switch(arm->pattern->kind){
             case Pattern::Binding:case Pattern::Wildcard:case Pattern::Integer:case Pattern::Boolean:break;
             default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA scalar pattern",arm->span);
@@ -152,7 +160,7 @@ class Emitter {
       switch(statement->kind){
         case Stmt::Let:case Stmt::Var:
           if(statement->type==Type::Unit)throw Error("E_GPU_TYPE","unit is not a CUDA local",statement->span);
-          scalar(statement->type,statement->span);break;
+          checkType(statement->type,statement->span);break;
         case Stmt::Assign:case Stmt::Expression:case Stmt::Return:case Stmt::If:case Stmt::While:case Stmt::Match:break;
         default:throw Error("E_GPU_UNSUPPORTED","unsupported CUDA statement",statement->span);
       }
@@ -163,12 +171,13 @@ class Emitter {
 
   void line(const std::string &value){
     const size_t extra=2*indentation+value.size()+1;
-    if(extra>maximumSourceBytes-text.size()-runtime.size()-1)
+    if(extra>maximumSourceBytes-text.size()-runtime.size()-(floatingPoint?floatingRuntime.size():0)-1)
       throw Error("E_GPU_LIMIT","generated CUDA source exceeds16MiB",where);
     text.append(2*indentation,' ');text+=value;text+='\n';++lines;
   }
   std::string temporary(){return "nex_v_"+std::to_string(++serial);}
-  std::string stop()const{return result==Type::Unit?"return;":std::string("return ")+(result==Type::Bool?"false":"0LL")+";";}
+  static std::string zero(const Type &type){return type==Type::Bool?"false":type==Type::F64?"0.0":"0LL";}
+  std::string stop()const{return result==Type::Unit?"return;":"return "+zero(result)+";";}
   void guard(){line("if (nex_s.code) { "+stop()+" }");}
   void tick(){line("if (!nex_tick(nex_s)) { "+stop()+" }");}
 
@@ -190,7 +199,7 @@ class Emitter {
     const auto subject=expression(value->args.at(0),scope);
     const auto matched=temporary();std::string output;
     if(!value->statementMatch&&value->type!=Type::Unit){
-      output=temporary();line(scalar(value->type,value->span)+" "+output+" = "+(value->type==Type::Bool?"false":"0LL")+";");
+      output=temporary();line(scalar(value->type,value->span)+" "+output+" = "+zero(value->type)+";");
     }
     line("bool "+matched+" = false;");
     for(const auto &arm:value->arms){
@@ -224,6 +233,10 @@ class Emitter {
         std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(value->number);
         generated="nex_bits(0x"+bits.str()+"ULL)";break;
       }
+      case Expr::Floating:{
+        std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(value->number);
+        generated="nex_f_value(0x"+bits.str()+"ULL, nex_s)";break;
+      }
       case Expr::Boolean:generated=value->number?"true":"false";break;
       case Expr::Name:{
         auto found=scope.find(value->text);
@@ -233,7 +246,7 @@ class Emitter {
       case Expr::Match:return matching(value,scope);
       case Expr::Unary:{
         auto child=expression(value->args.at(0),scope);
-        generated=value->text=="-"?"nex_neg("+child+", nex_s)":"!"+child;break;
+        generated=value->text=="-"?std::string(value->type==Type::F64?"nex_f_neg(":"nex_neg(")+child+", nex_s)":"!"+child;break;
       }
       case Expr::Binary:{
         auto left=expression(value->args.at(0),scope);
@@ -245,7 +258,10 @@ class Emitter {
         auto right=expression(value->args.at(1),scope);
         static const std::map<std::string,std::string> helpers={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
         auto helper=helpers.find(value->text);
-        generated=helper==helpers.end()?left+" "+value->text+" "+right:"nex_"+helper->second+"("+left+", "+right+", nex_s)";break;
+        if(value->args[0]->type==Type::F64&&helper==helpers.end()){
+          static const std::map<std::string,unsigned> comparisons={{"==",0},{"!=",1},{"<",2},{"<=",3},{">",4},{">=",5}};
+          generated="nex_f_compare("+left+", "+right+", "+std::to_string(comparisons.at(value->text))+"U)";
+        }else generated=helper==helpers.end()?left+" "+value->text+" "+right:"nex_"+std::string(value->type==Type::F64?"f_":"")+helper->second+"("+left+", "+right+", nex_s)";break;
       }
       case Expr::Call:{
         std::vector<std::string> arguments;
@@ -253,6 +269,7 @@ class Emitter {
         if(value->text=="assert"){
           line("if (!"+arguments.at(0)+") { nex_s.code = 3; "+stop()+" }");return {};
         }
+        if(value->text=="as_f64"){generated="nex_f_from_integer("+arguments.at(0)+", nex_s)";break;}
         generated=names.at(value->text)+"(";
         for(const auto &argument:arguments)generated+=argument+", ";
         generated+="nex_s)";break;
@@ -309,7 +326,9 @@ public:
   CudaSource generate(){
     CudaSource emission;emission.entry=root.name;emission.inputLayout=layout;emission.resultType=typeName(root.result);
     for(const auto &parameter:root.params)emission.parameterTypes.push_back(typeName(parameter.type));
-    const auto prefixLines=unsigned(std::count(runtime.begin(),runtime.end(),'\n'))+1;
+    const auto prefix=std::string(runtime)+(floatingPoint?std::string(floatingRuntime):std::string{});
+    const auto prefixLines=unsigned(std::count(prefix.begin(),prefix.end(),'\n'))+1;
+    emission.floatingPoint=floatingPoint;
     for(const auto *function:order){
       result=function->result;where=function->span;Scope scope;
       CudaSourceFunction metadata{function->name,names.at(function->name),hash(json(canonical(*function),false)),function->span,prefixLines+lines+1,0};
@@ -337,14 +356,16 @@ public:
       auto name="nex_input_"+std::to_string(i);
       auto address=layout=="rows"?"input[lane * "+std::to_string(root.params.size())+"ULL + "+std::to_string(i)+"ULL]":"input_"+std::to_string(i)+"[lane]";
       line("long long "+name+" = "+address+";");
-      if(root.params[i].type==Type::Bool){line("if ("+name+" != 0LL && "+name+" != 1LL) nex_s.code = 6;");arguments.push_back("("+name+" != 0LL)");}
+      if(root.params[i].type==Type::Bool){line("if ("+name+" != 0LL && "+name+" != 1LL"+std::string(floatingPoint?" && !nex_s.code":"")+") nex_s.code = 6;");arguments.push_back("("+name+" != 0LL)");}
+      else if(root.params[i].type==Type::F64){auto decoded=name+"_float";line("double "+decoded+" = nex_f_value(nex_unsigned("+name+"), nex_s);");arguments.push_back(decoded);}
       else arguments.push_back(name);
     }
     line("long long nex_result = 0LL;");auto call=names.at(root.name)+"(";
     for(const auto &argument:arguments)call+=argument+", ";call+="nex_s)";
+    if(root.result==Type::F64)call="nex_bits(nex_f_bits("+call+"))";
     line("if (!nex_s.code) {");++indentation;line(std::string(root.result==Type::Unit?"":"nex_result = ")+call+";");--indentation;line("}");
     line("output[lane] = nex_s.code ? 0LL : nex_result;");line("errors[lane] = nex_s.code;");--indentation;line("}");
-    emission.source=std::string(runtime)+"\n"+text;return emission;
+    emission.source=prefix+"\n"+text;return emission;
   }
 };
 }

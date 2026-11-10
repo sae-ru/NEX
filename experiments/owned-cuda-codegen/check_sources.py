@@ -74,7 +74,7 @@ def main():
         rejected = out / "unsupported-source"
         rejected.mkdir()
         write(rejected / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex"})
-        (rejected / "main.nex").write_text("module unsupported;pub fn transform(x:f64)->f64{return x;}\n")
+        (rejected / "main.nex").write_text("module unsupported;pub fn transform(x:str)->str{return x;}\n")
         prepare("unsupported", rejected, expected="failure")
         for name in ["wrong-frontend", "unsupported"]:
             prepared = out / (name + "-prepared")
