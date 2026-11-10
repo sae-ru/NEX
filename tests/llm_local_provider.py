@@ -129,6 +129,14 @@ class Provider(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.client.chat(INSTANCE,'s','t',self.root/'invalid-sampling',sampling={'top_k':1})
 
+    def test_between_call_configuration_drift_stops_before_generation(self):
+        self.client.expected_selection=p.authorized_instance(json.loads(json.dumps(self.models)),INSTANCE)
+        self.models['models'][0]['loaded_instances'][0]['config']['eval_batch_size']=512
+        with self.assertRaisesRegex(ValueError,'initial collection selection'):
+            self.client.chat(INSTANCE,'s','t',self.root/'drift')
+        self.assertFalse((self.root/'drift').exists())
+        self.assertFalse(any(row[0]=='POST'for row in self.requests))
+
 
 class Readiness(unittest.TestCase):
     """Synthetic ownership controls; no real model/CLI is loaded here."""

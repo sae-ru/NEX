@@ -149,7 +149,7 @@ output tokens with an unreported cache split; the owned instance was unloaded.
 ## Collect and account for task attempts
 
 The collector restricts model reads/edits to its own candidate and frozen language
-references. `read` windows, source-text lookup and NEX descriptor queries are
+references. `read` windows, literal document search, source-text lookup and NEX descriptor queries are
 bounded. `check` returns only visible observations. `submit` performs the terminal
 held-out check once, followed by an independent fresh-context local Qwen source
 review. Review usage is counted in the same trial. The host creates the receipt;
@@ -167,7 +167,7 @@ python3 experiments/quality/llm-campaign-v1/collector.py ledger --campaign /new/
 `--pilot` creates three separate infrastructure slots; omit it for the60-slot
 study after pilot review. The freeze includes all operational rules in the
 [protocol](protocol.md): at most11 author calls plus one review, observed usage
-soft stop, wall/context/output limits, current source plus latest tool reply,
+soft stop, wall/context/output limits, current source plus complete action/tool history,
 fresh caches and isolated execution. It rejects user prediction/template overrides
 and pins the selected runtime, Hub defaults and embedded GGUF template. Pinning
 the template is not an API attestation of the exact rendered token stream.
@@ -182,3 +182,7 @@ External host reviews can finalize explicitly pending manual-review records with
 `ledger` uses the existing offline accounting engine. Missing/pending slots keep
 the comparison incomplete; one model keeps multi-model review eligibility false.
 Full60-slot token-saving results and matching portable SDK qualification remain pending.
+The first latest-reply-only pilot remains a separate negative infrastructure
+result: NEX repeated guide pages and exhausted its request budget. Policy2
+preserves earlier replies and supports targeted search; it requires a new pilot,
+without discarding or merging the earlier three outcomes.

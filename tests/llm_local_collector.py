@@ -112,7 +112,11 @@ class Collection(unittest.TestCase):
         self.assertTrue(result['source_review_pending']);self.assertIsNone(result['status'])
         self.assertEqual(result['phase'],'awaiting_source_review')
         self.assertNotIn('held_out',json.dumps(client.prompts[0]['task']).replace('held_out_cases_status',''))
-        self.assertIn('error',client.prompts[1]['latest_tool_reply'])
+        self.assertIn('error',client.prompts[1]['history'][0]['tool_reply'])
+        self.assertEqual(len(client.prompts[3]['history']),3)
+        self.assertEqual(client.prompts[3]['history'][0]['assistant'],'not JSON')
+        self.assertEqual(client.prompts[3]['history'][1]['tool_reply']['updated'],
+            c.a.inventory({'candidate.py':b'def total(n: int) -> int:\n    return sum(range(n+1))\n'}))
         trial=self.root/'trials'/self.slot['id']
         self.assertFalse((trial/'acceptance.json').exists())
         reviews=self.root/'host-reviews';reviews.mkdir()
@@ -200,6 +204,16 @@ class Collection(unittest.TestCase):
             self.assertTrue(alias['symlink']);self.assertEqual(alias['resolved'],str((runtime/'libactual.dylib').resolve()))
             (runtime/'liboutside.dylib').symlink_to(defaults)
             with self.assertRaisesRegex(ValueError,'aliases must stay inside'):c.host_facts('/synthetic/weights',home,runtime)
+
+    def test_doc_search_is_literal_bounded_and_returns_scalar_offsets(self):
+        broker=self.broker('nex');broker.docs['docs/language.md']='🌍 start\nWhile x\nwhile y\n'+('while z\n'*12)
+        reply=broker.action({'action':'search','path':'docs/language.md','query':'WHILE'})
+        self.assertEqual(reply['total_matches'],14);self.assertEqual(len(reply['matches']),8)
+        offset=reply['matches'][0]['offset'];self.assertEqual(offset,len('🌍 start\n'))
+        page=broker.action({'action':'read','path':'docs/language.md','offset':offset,'limit':7})
+        self.assertEqual(page['text'],'While x')
+        for path in ['../fixtures.py','terminal/report.json','host-reviews/source-review.json']:
+            with self.assertRaises(ValueError):broker.action({'action':'search','path':path,'query':'secret'})
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

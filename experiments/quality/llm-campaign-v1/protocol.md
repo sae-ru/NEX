@@ -125,11 +125,11 @@ The local native-API transport, weight-pinning/readiness tools and separate
 macOS compilation/execution policies are implemented with scoped host controls.
 One benign real Qwen readiness response is transport evidence, not a task trial.
 The collector now supplies a source/document allowlist and guarded JSON edit,
-read, source-text lookup, NEX descriptor and visible-check actions. It never
+read, literal document search, source-text lookup, NEX descriptor and visible-check actions. It never
 supplies a host shell, hidden fixtures or held-out feedback. Each request includes
 the complete current task/source snapshot, NEX bootstrap or baseline note, and
-the latest broker reply. Earlier replies remain in the complete host transcript;
-they are not silently appended by the server. Rejected actions and malformed
+the complete previous action/tool transcript. The server stores no conversation
+history. Rejected actions and malformed
 answers consume their request and actual token usage.
 
 Freeze with `collector.py freeze` before requests. It pins all starting bundles,
@@ -166,3 +166,11 @@ study only after the pilot is examined. Changed pilot rules create a new frozen
 version. Clean completed prefixes can resume at the next untouched slot;
 unclean/stopped executions require inspection rather than automatic restart.
 These host controls and the learning corpus are not model task trials.
+
+Policy2 retains earlier tool context and adds bounded literal document search.
+The first three-slot infrastructure pilot used a latest-reply-only policy:
+NEX repeated the same guide reads and exhausted11 author requests, while C++
+and Python passed. That pilot and its exact usage remain recorded under source
+`34572fa`; it is not replaced or pooled with policy2. A new frozen pilot is
+required before the main study. No main-study slot has been attempted under
+either pilot policy at this revision.

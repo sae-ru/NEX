@@ -115,6 +115,9 @@ class Client:
     def chat(self, instance, system, prompt, output, *, max_tokens=4096, context=16384, sampling=None):
         """Retain even failed request evidence and unknown usage, never retry here."""
         selection = authorized_instance(self.models(), instance, context)
+        expected=getattr(self,'expected_selection',None)
+        if expected is not None and selection!=expected:
+            raise ValueError('local model configuration differs from the initial collection selection')
         if type(max_tokens) is not int or not 1 <= max_tokens <= 4096:
             raise ValueError('invalid bounded completion limit')
         if not isinstance(system, str) or not isinstance(prompt, str): raise ValueError('text-only input required')
