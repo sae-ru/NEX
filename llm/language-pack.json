@@ -4057,10 +4057,28 @@
     ],
     "pending": [
       "matching full compiler regression and installed SDK qualification",
-      "public owned-task dispatch integration",
       "GPU operation debugging and physical profiling",
       "additional types, control flow and backends",
       "unknown vendor completion recovery"
-    ]
+    ],
+    "owned_provider": {
+      "status": "experimental_operator_preparation",
+      "preparation": "tools/owned-metal-codegen/prepare.py",
+      "verification": "tools/owned-metal-codegen/verify.py",
+      "numerical_verification": "tools/owned-metal-codegen/numerics.py",
+      "fatal_verification": "tools/owned-metal-codegen/traps.py",
+      "fault_verification": "tools/owned-metal-codegen/faults.py",
+      "log_verification": "tools/owned-metal-codegen/logs.py",
+      "transport_verification": "tools/owned-metal-codegen/transport_faults.py",
+      "native_build_hosts": [
+        "macOS"
+      ],
+      "source_check_cross_platform": true,
+      "source_check_option": "--check-sdk",
+      "input_layout": "columns",
+      "requires_explicit_foreign_catalogue": true,
+      "source_task_bridge": true,
+      "installed_hardware_acceptance": false
+    }
   }
 }

@@ -1,6 +1,6 @@
 # Owned generated Metal functions
 
-This checkout prototype prepares a persistent GPU provider for an ordinary
+This operator tool prepares a persistent GPU provider for an ordinary
 checked NEX scalar function. The selected compiler's public
 [`nex emit --kind metal`](../../docs/gpu-codegen.md) command lowers its checked
 AST to MSL. A new pinned bundle contains the generated worker and typed host
@@ -8,14 +8,16 @@ module. NEX reference and native task programs execute that physical GPU code
 through genuine `std/device` Session/Buffer resources.
 
 It requires toolchain0.165 public Metal emission and the explicit fatal-trap
-C API. Language0.28, taskABI7 and source grammar are unchanged. The checkout
+C API. Language0.28, taskABI7 and source grammar are unchanged. The
 preparer retains the compiler/descriptor identity, canonical function hashes,
 source maps and exact shader SHA256 from `nex.metal-emission/1`. Its preparation
 record pins that emission record and all compiled provider inputs. Preparation
 and source checking initialize no driver.
 
-Discoverable installed tools, complete immutable SDK qualification, GPU
-debug/profile and broader GPU/NPU support remain separate work. Historical
+The SDK installs this directory as `share/nex/tools/owned-metal-codegen`.
+`nex describe --field gpu_codegen.owned_provider --json` supplies its preparation
+and verification paths. Complete immutable SDK qualification, GPU debug/profile
+and broader GPU/NPU support remain separate work. Historical
 Python/typed-graph experiments retain their original source and result pins.
 
 ## Prepare and call
@@ -28,7 +30,7 @@ rejected before a driver is initialized.
 ```sh
 export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
 NEX_SDK=/absolute/path/to/current/nex-sdk
-python3 -B experiments/owned-metal-codegen/prepare.py --sdk "$NEX_SDK" \
+python3 -B "$NEX_SDK/share/nex/tools/owned-metal-codegen/prepare.py" --sdk "$NEX_SDK" \
   --source-project /absolute/path/to/checked-project --symbol transform \
   --output /absolute/new/gpu-project --cxx "$(xcrun --find clang++)"
 ```

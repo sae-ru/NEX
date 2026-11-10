@@ -78,7 +78,12 @@ The checkout [owned Metal bridge](docs/evidence/macos-public-owned-Metal-0.165.0
 now prepares shaders through that public emitter and executes them through NEX
 tasks and owned device resources. Nine source checks passed on Mac and Windows;
 96 reference/native pairs passed with230 physical Metal kernels on Apple M5 Max.
-Installed-tool discovery and complete immutable SDK qualification remain pending.
+The SDK now installs those preparation/verification tools and advertises their
+paths in `gpu_codegen.owned_provider`. Complete matching immutable SDK and
+platform qualification remain pending.
+This [installation follow-up](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
+passed six groups and15 installed reference/native pairs with24 physical Metal
+kernels; its complete matching regression remains pending.
 
 The preceding0.164 runtime retains its separately pinned results below.
 The append-only [fatal diagnostic C API](docs/ffi-design.md#explicit-fatal-diagnostics-0164)

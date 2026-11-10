@@ -354,6 +354,8 @@ install(DIRECTORY experiments/owned-opencl/ DESTINATION share/nex/tools/owned-op
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-metal/ DESTINATION share/nex/tools/owned-metal
   PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-metal-codegen/ DESTINATION share/nex/tools/owned-metal-codegen
+  PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/metal/ DESTINATION share/nex/tools/metal
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-cuda/ DESTINATION share/nex/tools/owned-cuda

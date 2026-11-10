@@ -70,10 +70,12 @@ offers `nex emit --kind metal` directly from checked source. Its versioned
 record includes reachable identities and function line mappings; emission
 alone neither executes a GPU nor establishes installed SDK support. Keep
 unsupported types, effects, realms and control flow explicit.
-The checkout `experiments/owned-metal-codegen/prepare.py` connects that public
-emission to a pinned owned NEX task provider. Keep its actual emission record,
-compiler/descriptor hashes and foreign grant together. Installed-tool discovery
-and immutable SDK acceptance remain separate requirements.
+When the selected descriptor includes `gpu_codegen.owned_provider`, query that
+field for the installed preparation and verification paths. They connect public
+emission to a pinned owned NEX task provider; source-only preparation uses
+`--check-sdk` without a GPU or Apple's SDK. Keep its actual emission record,
+compiler/descriptor hashes and foreign grant together. Complete immutable SDK
+and hardware acceptance remain separate requirements.
 
 ## Using the material in a dataset
 

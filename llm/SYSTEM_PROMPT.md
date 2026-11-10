@@ -227,9 +227,11 @@ placement; it must not hide overflow, invalid input, protocol failure,
 cancellation or device loss. General NPU/model ownership and recovery are pending.
 
 For scalar GPU source, discover `gpu_codegen` and read `nex guide --kind gpu --json`.
-The checkout `experiments/owned-metal-codegen/prepare.py` uses public Metal emission
-for a pinned owned-task provider. Match the selected compiler, exact emission and
-foreign grant; distinguish checkout execution from installed SDK acceptance.
+If that descriptor includes `owned_provider`, query `gpu_codegen.owned_provider`
+for installed preparation/verification paths and the source-only `--check-sdk`
+option. Its provider uses public emission with owned task/device resources.
+Match the selected compiler, exact emission and foreign grant; distinguish an
+installed tool from complete immutable SDK and physical hardware acceptance.
 Function source maps provide attribution; GPU operation stepping remains pending.
 
 ## Versioning and delivery

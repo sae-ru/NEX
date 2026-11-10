@@ -64,14 +64,17 @@ and actual JSON contract validation. This establishes the named scalar scope.
 
 ## Execute through owned NEX resources
 
-The checkout [owned-provider preparer](../experiments/owned-metal-codegen/README.md)
-now calls the selected compiler's public emitter with `columns` layout. It keeps
+The [owned-provider preparer](../experiments/owned-metal-codegen/README.md)
+calls the selected compiler's public emitter with `columns` layout. The SDK
+installs it with its worker sources and verification tools. Discover its paths
+and exact scope with `nex describe --field gpu_codegen.owned_provider --json`.
+It keeps
 the exact emission record, source maps, canonical function hashes and shader
 SHA256, then obtains nine actual FFI signatures and builds a pinned worker/module
 bundle. Select a0.165 or later SDK and a source project containing the scalar root:
 
 ```sh
-python3 -B experiments/owned-metal-codegen/prepare.py --sdk "$NEX_SDK" \
+python3 -B "$NEX_SDK/share/nex/tools/owned-metal-codegen/prepare.py" --sdk "$NEX_SDK" \
   --source-project /absolute/path/to/project --symbol transform \
   --output /absolute/new/gpu-project --cxx "$(xcrun --find clang++)"
 ```
@@ -84,7 +87,8 @@ read cursors retain their physical parents; cancellation and failures drain the
 admitted GPU command before resource release. `try_apply` returns explicit
 Results, while `apply` forwards original fatal codes through the trusted C API.
 
-This is a checkout integration. Discoverable installed tools, full regression
-and matching immutable SDK qualification remain pending. GPU operation debugging
+The same tools remain available under `experiments/owned-metal-codegen` in a
+source checkout. Complete matching immutable SDK and platform qualification
+remain pending. GPU operation debugging
 and profiling, further types/backends and device-loss recovery are also pending.
 Emitting a shader alone does not establish device execution or speedup.

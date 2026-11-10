@@ -17,7 +17,8 @@ evidence and limits in STATUS.md.
 - [x] Validate the public C++ emitter against reference/native Debug/Release/TypeScript and physical Metal:20 cases, both layouts,48 GPU dispatches and nine host rejections.
 - [ ] Complete its full current regression and matching installed SDK/platform qualification.
 - [x] Connect public emission to the checkout owned-task provider, retaining exact compiler/emission identities, source maps and physical settlement;96 native/reference pairs and230 physical GPU events passed.
-- [ ] Install and discover that public-emission provider through a matching immutable SDK.
+- [x] Install public-emission preparation/verification tools and expose their paths through `gpu_codegen.owned_provider`.
+- [ ] Qualify that installed provider through the matching immutable SDK and physical hardware.
 - [ ] Implement GPU operation debugging and profiling.
 - [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
 

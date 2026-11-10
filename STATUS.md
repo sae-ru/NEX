@@ -32,8 +32,19 @@ Numerics, hidden parents, cancellation/deadlines, original fatal codes, malforme
 replies/progress and bounded diagnostic capture retain their existing checks.
 The numerical/fatal runners also preserve the name of a symlinked C++ driver.
 Compiler/runtime C++, language0.28, ABI and graph history are unchanged.
-Discoverable installed tools, complete current SDK qualification, GPU operation
-debugging/profiling and broader GPU/NPU support remain pending.
+The SDK installation now includes this provider's preparation/verification tools
+and adjacent native sources; `gpu_codegen.owned_provider` advertises their paths,
+source-only check and required explicit foreign catalogue. Matching complete
+immutable SDK qualification, GPU operation debugging/profiling and broader
+GPU/NPU support remain pending.
+
+The [installed-tool follow-up](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json)
+passed all targets and six relevant groups. All13 tool files were installed
+unchanged; source-only and native provider preparation passed with checkout
+reads denied. The installed verifier then passed15 reference/native pairs and
+24 physical Metal kernels on Apple M5 Max, retaining resource settlement and
+cleanup checks and the exact ordinary SDK inventory. Full regression of this
+follow-up and complete matching immutable SDK qualification remain pending.
 
 The same0.165 source passed [all-target Windows compilation, seven selected
 CTest groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evidence/windows-current-source-CUDA-0.165.0-2026-11-10.json)
