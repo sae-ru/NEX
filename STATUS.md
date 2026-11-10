@@ -1,3 +1,32 @@
+# Public offline LLM cost command — development0.165.0
+
+`nex cost LEDGER.json [--output NEW.json] [--json]` now invokes the maintained
+ledger from selected source/SDK resources. It emits the same UTF-8 JSON and
+ledger exit status, uses isolated Python3.10+, never loads a project graph and
+creates output exclusively. The descriptor/language-pack advertise its explicit
+offline scope; all57 shared capability contracts agree. Legacy direct helper
+entry points remain installed. See [usage](experiments/quality/llm_cost.md) and
+[scoped evidence](docs/evidence/llm-cost-cli-0.165.0-2026-11-10.json).
+
+All targets built. Only llm_cost_ledger/llm_cost_cli/language_pack_contract were
+checked. The new CLI control initially expected E_TOOL for a missing absolute
+Python executable; the existing common process helper returns E_PROCESS. The
+original failed fixture/JUnit remain; only that group was repeated after fixing
+the expectation and checking both missing names and paths. All three groups
+are now accepted, with no skips. No product implementation changed after build.
+The staged resource-layout check is not portable SDK qualification.
+
+A [comparison protocol](experiments/quality/llm-campaign-v1/protocol.md) and ten
+language-neutral contracts now pin21 example inputs and32 visible cases. They
+plan180 slots but contain zero observed trials. Thirty starting snapshots,
+executable acceptance/controls, collection, actual models and budget remain
+pending. Synthetic ledger tests and prepared contracts prove no token savings.
+No full regression, remote/device run, SDK repack, main update or push occurred.
+The current5075-byte generated status is checked. Previous corpus labels retain
+their actual compiler/manifest pins; unrelated CLI work did not relabel them.
+All original planned language/toolchain/platform/UI/Studio/conversion and final
+delivery work remains active.
+
 # Current LLM discovery and learning corpus — development0.165.0
 
 The legacy36-entry features list remains compatible and is explicitly partial.

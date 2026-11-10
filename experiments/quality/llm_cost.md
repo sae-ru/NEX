@@ -5,7 +5,22 @@ network requests and does not run a model, an acceptance command or a price
 lookup. Actual multi-model experiments and the quality targets in
 [quality.md](../../docs/quality.md) remain open.
 
-From a source checkout:
+Use the public command with a current source build or matching installed SDK:
+
+```sh
+nex cost /path/to/campaign/ledger.json --output /path/to/new-summary.json
+```
+
+Output is UTF-8 JSON with or without `--json`. `-o` aliases `--output`.
+The command works outside a project and never opens or synchronizes its graph.
+It runs the same ledger implementation below, using resources from the selected
+installation. Python runs in isolated mode; select Python3.10+ with `NEX_PYTHON`
+if the default `python3` (`python` on Windows) is older. Other command flags,
+extra arguments and repeated output options are rejected. The helper is a
+shipped resource, not downloaded on first use. `nex guide --kind cost` shows
+this guide; `nex describe --field llm_cost --json` reports the actual CLI contract.
+
+The direct entry points remain available. From a source checkout:
 
 ```sh
 python3 experiments/quality/llm_cost.py /path/to/campaign/ledger.json \
@@ -22,6 +37,15 @@ Requires Python 3.10+. The output path must be new. Exit0 means that the declare
 matrix and token usage are complete; exit1 means missing trials or unknown usage;
 exit2 means invalid input, an evidence-pin mismatch or an I/O error. Synthetic
 control data can exit0; that is an accounting check, not an actual experiment.
+CLI option errors or missing Python/resources use the ordinary NEX diagnostic
+and exit1 before the ledger starts. They are distinct from a summary reporting
+an incomplete matrix. An invalid ledger emits a summary with `valid:false`.
+
+The [first comparison protocol](llm-campaign-v1/protocol.md) and its
+[ten task contracts](llm-campaign-v1/tasks.json) fix the intended observation
+scope. Their C++/Python/NEX starting snapshots and executable acceptance harness
+still need implementation and review. No model trials have been recorded for
+this task set, and preparing a protocol does not establish savings.
 
 ## Record a campaign
 

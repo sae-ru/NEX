@@ -1,0 +1,655 @@
+{
+  "schema": "nex.llm-campaign-tasks/1",
+  "status": "prepared_contracts_not_model_trials",
+  "language": "0.28",
+  "languages": [
+    "nex",
+    "cpp",
+    "python"
+  ],
+  "task_count": 10,
+  "intended_model_revisions": 3,
+  "repeats": 2,
+  "intended_terminal_slots": 180,
+  "observed_trials": 0,
+  "tasks": [
+    {
+      "id": "bounded-total",
+      "kind": "change",
+      "contract": {
+        "objective": "Extend a running total to include zero and the upper bound without losing the loop contract.",
+        "domain": "n is an integer in [0,100].",
+        "neutral_interface": "total(n) -> signed64",
+        "visible_cases": [
+          {
+            "input": {
+              "n": 0
+            },
+            "expected": 0
+          },
+          {
+            "input": {
+              "n": 1
+            },
+            "expected": 1
+          },
+          {
+            "input": {
+              "n": 10
+            },
+            "expected": 55
+          },
+          {
+            "input": {
+              "n": 100
+            },
+            "expected": 5050
+          }
+        ],
+        "acceptance_rules": [
+          "Return the sum of integers 1 through n.",
+          "Do not widen the declared input domain."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "a1380b7d99f7a715f974950bd29f397358f3bfd9ebac0212521161a7d87988de",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/contracts/main.nex",
+          "sha256": "161be4eebecc5b24eb8678a7fea7ae04c6e17a71a9729a4892db309a4580e861"
+        },
+        {
+          "path": "examples/learn/contracts/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "recoverable-selection",
+      "kind": "change",
+      "contract": {
+        "objective": "Add a recoverable None/negative branch to a selected-value doubling pipeline.",
+        "domain": "choice is None or Some(n), n in [-1000,1000].",
+        "neutral_interface": "double_selected(choice) -> success(signed64) | failure(code,message)",
+        "visible_cases": [
+          {
+            "input": {
+              "choice": {
+                "Some": 21
+              }
+            },
+            "expected": {
+              "ok": 42
+            }
+          },
+          {
+            "input": {
+              "choice": {
+                "Some": 0
+              }
+            },
+            "expected": {
+              "ok": 0
+            }
+          },
+          {
+            "input": {
+              "choice": {
+                "Some": -1
+              }
+            },
+            "expected": {
+              "error": {
+                "code": "NEGATIVE",
+                "message": "negative"
+              }
+            }
+          },
+          {
+            "input": {
+              "choice": "None"
+            },
+            "expected": {
+              "error": {
+                "code": "EMPTY",
+                "message": "empty"
+              }
+            }
+          }
+        ],
+        "acceptance_rules": [
+          "Propagate the selection error unchanged.",
+          "Errors are returned values; they do not abort the process."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "9401046c6641de3486b3ff61c6a5b8c535b71198ca9a7211cdade75de38df402",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/values/main.nex",
+          "sha256": "ba48f8bc3faf1039534c8d2079a7b46ddee29f142213223b8388ca91fd28a5e2"
+        },
+        {
+          "path": "examples/learn/values/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "unicode-window",
+      "kind": "change",
+      "contract": {
+        "objective": "Extend text windows to Unicode scalar indexing, including embedded NUL.",
+        "domain": "Text is valid UTF-8 without unpaired surrogates; start and count select an in-bounds scalar interval.",
+        "neutral_interface": "window(text,start,count) -> text",
+        "visible_cases": [
+          {
+            "input": {
+              "text": "A🌍\u0000é",
+              "start": 1,
+              "count": 2
+            },
+            "expected": "🌍\u0000"
+          },
+          {
+            "input": {
+              "text": "éZ",
+              "start": 1,
+              "count": 1
+            },
+            "expected": "́"
+          },
+          {
+            "input": {
+              "text": "🧠",
+              "start": 0,
+              "count": 1
+            },
+            "expected": "🧠"
+          },
+          {
+            "input": {
+              "text": "",
+              "start": 0,
+              "count": 0
+            },
+            "expected": ""
+          }
+        ],
+        "acceptance_rules": [
+          "A combining mark is one scalar, not part of a grapheme-level index.",
+          "Neither byte indexing nor UTF-16 code-unit indexing is accepted."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "a43a288cbad9b2d81b00969dbaecc47daa78bf4666ca3cfe8f1f80afe2c80934",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/text-bytes/main.nex",
+          "sha256": "8571f341a88d3bda125afe1c15da414fe327fba268624a5e4501690b9c5b7785"
+        },
+        {
+          "path": "examples/learn/text-bytes/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "immutable-byte-update",
+      "kind": "change",
+      "contract": {
+        "objective": "Change one octet while preserving the original byte sequence and strict UTF-8 decoding.",
+        "domain": "Octets are in [0,255]; replacement index is in bounds.",
+        "neutral_interface": "updated_copy(octets,index,value) -> {original,updated,decoded-or-error}",
+        "visible_cases": [
+          {
+            "input": {
+              "octets": [
+                65,
+                66
+              ],
+              "index": 0,
+              "value": 67
+            },
+            "expected": {
+              "original": [
+                65,
+                66
+              ],
+              "updated": [
+                67,
+                66
+              ],
+              "decoded": "CB"
+            }
+          },
+          {
+            "input": {
+              "octets": [
+                65,
+                0,
+                66
+              ],
+              "index": 0,
+              "value": 67
+            },
+            "expected": {
+              "original": [
+                65,
+                0,
+                66
+              ],
+              "updated": [
+                67,
+                0,
+                66
+              ],
+              "decoded": "C\u0000B"
+            }
+          },
+          {
+            "input": {
+              "octets": [
+                65
+              ],
+              "index": 0,
+              "value": 255
+            },
+            "expected": {
+              "original": [
+                65
+              ],
+              "updated": [
+                255
+              ],
+              "decode_error": "E_UTF8"
+            }
+          }
+        ],
+        "acceptance_rules": [
+          "The input object remains unchanged after the call.",
+          "Invalid UTF-8 is rejected rather than replaced or silently truncated."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "9f4289d1d140105b1b8fd37791e66acc7f6b0b0f56abe0abd8673da2d5bb86b5",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/text-bytes/main.nex",
+          "sha256": "8571f341a88d3bda125afe1c15da414fe327fba268624a5e4501690b9c5b7785"
+        },
+        {
+          "path": "examples/learn/text-bytes/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "generic-projection",
+      "kind": "change",
+      "contract": {
+        "objective": "Extend a reusable boxed-value projection to text and floating-point values.",
+        "domain": "Supported items are signed64 values in [-1000,1000], valid Unicode text, or finite binary64 values.",
+        "neutral_interface": "project(Box<T>) -> T",
+        "visible_cases": [
+          {
+            "input": {
+              "type": "i64",
+              "value": 42
+            },
+            "expected": 42
+          },
+          {
+            "input": {
+              "type": "str",
+              "value": "🧠\u0000é"
+            },
+            "expected": "🧠\u0000é"
+          },
+          {
+            "input": {
+              "type": "f64",
+              "value": 1.25
+            },
+            "expected": 1.25
+          }
+        ],
+        "acceptance_rules": [
+          "Use one reusable public projection interface.",
+          "Preserve the value and its type; do not serialize and parse the payload."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "cc38be02f5c2c63c7babf6f7c1d589f4346c08a6b5095dbab8dab90f9047f9c2",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/values/main.nex",
+          "sha256": "ba48f8bc3faf1039534c8d2079a7b46ddee29f142213223b8388ca91fd28a5e2"
+        },
+        {
+          "path": "examples/learn/values/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "associated-value-adapter",
+      "kind": "change",
+      "contract": {
+        "objective": "Extend a public content-reading abstraction while keeping direct and referenced calls equivalent.",
+        "domain": "A box contains signed64 or valid Unicode text.",
+        "neutral_interface": "read_content(box) and referenced_reader(box) -> item",
+        "visible_cases": [
+          {
+            "input": {
+              "type": "i64",
+              "value": 7
+            },
+            "expected": {
+              "direct": 7,
+              "referenced": 7
+            }
+          },
+          {
+            "input": {
+              "type": "str",
+              "value": "🧠"
+            },
+            "expected": {
+              "direct": "🧠",
+              "referenced": "🧠"
+            }
+          }
+        ],
+        "acceptance_rules": [
+          "The abstraction must support both item types.",
+          "Baselines may use their idiomatic generic/protocol interface rather than reproduce NEX trait syntax."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "80a6c1365f20b5f664d54b58ccc202c904e95b14f0e682170202da060a584c1d",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/traits/main.nex",
+          "sha256": "acdd9c89d920f2cdd71affd21290178789d92e5d410bc5f5575e45084662dc05"
+        },
+        {
+          "path": "examples/learn/traits/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "module-interface-change",
+      "kind": "change",
+      "contract": {
+        "objective": "Add an offset to a public operation in a dependency module and update its caller.",
+        "domain": "n and offset are signed64 in [-1000,1000].",
+        "neutral_interface": "operation.answer(n,offset) -> signed64",
+        "visible_cases": [
+          {
+            "input": {
+              "n": 21,
+              "offset": 5
+            },
+            "expected": 47
+          },
+          {
+            "input": {
+              "n": 0,
+              "offset": -3
+            },
+            "expected": -3
+          },
+          {
+            "input": {
+              "n": -7,
+              "offset": 2
+            },
+            "expected": -12
+          }
+        ],
+        "acceptance_rules": [
+          "Keep the operation in the dependency module and the caller in a separate module.",
+          "Update both the public signature and callers; compute 2*n + offset."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "201702b690b18f9e167d30fa7140d252a5a5e891d4280143f9397ddae7b1bdbc",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/modules/main.nex",
+          "sha256": "6e51e66b11508e4812a69103b180380be898d0ad26c0b76aec7eb3fee5d2e624"
+        },
+        {
+          "path": "examples/learn/modules/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        },
+        {
+          "path": "examples/learn/modules/operations.nex",
+          "sha256": "d0278ec0debaf661fb4d5a13267a54d1a52be8b86045c1d06e5dd4846bd0b670"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "ordered-bounded-map",
+      "kind": "change",
+      "contract": {
+        "objective": "Extend ordered square mapping to empty and negative inputs while respecting a worker bound.",
+        "domain": "Input length is [0,32]; values are in [-1000000,1000000]; workers in [1,4].",
+        "neutral_interface": "squares(values,workers) -> list<signed64>",
+        "visible_cases": [
+          {
+            "input": {
+              "values": [],
+              "workers": 1
+            },
+            "expected": []
+          },
+          {
+            "input": {
+              "values": [
+                1,
+                -2,
+                3
+              ],
+              "workers": 2
+            },
+            "expected": [
+              1,
+              4,
+              9
+            ]
+          },
+          {
+            "input": {
+              "values": [
+                -1000000,
+                0,
+                1000000
+              ],
+              "workers": 4
+            },
+            "expected": [
+              1000000000000,
+              0,
+              1000000000000
+            ]
+          }
+        ],
+        "acceptance_rules": [
+          "Preserve input order and do not mutate the input.",
+          "Use an explicit bounded executor/map interface. No throughput or Python GIL claim is part of acceptance."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "e3df201571a05ee7324b8934b4ac8167aaf010e4957d0ad51ec558aa5fc80c99",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/cpu-map/main.nex",
+          "sha256": "06fb1a2f31e23554796b6e268d5b13f15b7a1c5386d22b278c36e6d79c508a27"
+        },
+        {
+          "path": "examples/learn/cpu-map/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "typed-error-finally",
+      "kind": "change",
+      "contract": {
+        "objective": "Preserve typed error payloads and run finalization once on success and failure.",
+        "domain": "Input is valid Unicode text. Only the exact text 42 denotes success.",
+        "neutral_interface": "read_with_trace(text) -> success(value,trace) | failure(text,trace)",
+        "visible_cases": [
+          {
+            "input": {
+              "text": "42"
+            },
+            "expected": {
+              "ok": 42,
+              "trace": [
+                "finished"
+              ]
+            }
+          },
+          {
+            "input": {
+              "text": "bad"
+            },
+            "expected": {
+              "error_text": "bad",
+              "trace": [
+                "caught",
+                "finished"
+              ]
+            }
+          },
+          {
+            "input": {
+              "text": "🧠\u0000x"
+            },
+            "expected": {
+              "error_text": "🧠\u0000x",
+              "trace": [
+                "caught",
+                "finished"
+              ]
+            }
+          }
+        ],
+        "acceptance_rules": [
+          "Finalize exactly once on every path.",
+          "Keep the typed error payload; catch-all text matching is not equivalent."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "c9e4cadf3528196c53c851f3fcdf072f58098cd47b8e36d5d8df815d28298c85",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/typed-errors/main.nex",
+          "sha256": "70297f76cc8bd52bcda415b827ad2725520da8ef1c4c7b756a779dfea91c0f43"
+        },
+        {
+          "path": "examples/learn/typed-errors/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    },
+    {
+      "id": "joined-yielding-child",
+      "kind": "change",
+      "contract": {
+        "objective": "Parameterize a yielding child task and return its value only after joined completion.",
+        "domain": "Input value is signed64 in [-1000,1000]; the task scope has one worker.",
+        "neutral_interface": "joined_answer(value) -> {value,trace}",
+        "visible_cases": [
+          {
+            "input": {
+              "value": 42
+            },
+            "expected": {
+              "value": 42,
+              "trace": [
+                "child",
+                "returned"
+              ]
+            }
+          },
+          {
+            "input": {
+              "value": -7
+            },
+            "expected": {
+              "value": -7,
+              "trace": [
+                "child",
+                "returned"
+              ]
+            }
+          },
+          {
+            "input": {
+              "value": 0
+            },
+            "expected": {
+              "value": 0,
+              "trace": [
+                "child",
+                "returned"
+              ]
+            }
+          }
+        ],
+        "acceptance_rules": [
+          "Create the child using a real bounded task/executor interface and join it.",
+          "No live child work remains after the outer function returns.",
+          "Do not use timing-dependent sleeps to establish completion order."
+        ],
+        "held_out_cases_status": "pending independent harness review"
+      },
+      "contract_sha256": "152e2ded1a0f92d5fa78f403d133bf883ec08cf0795cc18154f8a9599415bcf0",
+      "contract_hash_encoding": "UTF-8; sorted JSON keys; compact separators; trailing LF",
+      "example_provenance": [
+        {
+          "path": "examples/learn/tasks/main.nex",
+          "sha256": "f95d2194e45d4df930cb36135a43a211275bfaa54b027c7216712c51dbf7ec62"
+        },
+        {
+          "path": "examples/learn/tasks/nex.json",
+          "sha256": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+        }
+      ],
+      "starting_snapshots_status": "pending all three languages",
+      "executable_acceptance_status": "pending all three languages"
+    }
+  ]
+}

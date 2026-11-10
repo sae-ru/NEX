@@ -268,6 +268,7 @@ def main():
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     try:
+        require(sys.version_info >= (3, 10), 'LLM cost accounting requires Python 3.10+')
         result = summarize(args.ledger)
         code = 0 if result['matrix_complete'] and result['usage_complete_for_observed_calls'] else 1
         text = json.dumps(result, ensure_ascii=False, indent=2) + '\n'

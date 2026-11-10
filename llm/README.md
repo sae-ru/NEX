@@ -91,7 +91,7 @@ artifact-schema checks and installed delivery retain separate evidence.
 
 The broader `tests/schema_artifacts.py` gate exercises the current language0.28
 compiler and ABI7. It generates real graph, editor, diagnostic, native debug,
-verification, Wasm and project artifacts in 14 selected tests. All 85 schema
+verification, Wasm and project artifacts in 14 selected tests. All discovered schema
 documents are checked for valid definitions; the selected scenarios must produce
 the 23 required artifact families. This does not claim runtime coverage of every
 schema document.

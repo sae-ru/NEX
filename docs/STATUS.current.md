@@ -23,9 +23,9 @@ text capacity; [current scope and checks](evidence/cuda-formatting-0.165.0-2026-
 The [current learning labels](../llm/corpus.json) cover nine0.28 projects and six
 counterexamples with actual reference/native Release/TypeScript observations.
 [Discovery and corpus tools](learning-corpus.md) check all shared capability
-contracts; real model-cost measurement remains pending.
-CUDA also formats finite f64 and supported immutable aggregates under explicit
-text capacity; [current scope and checks](evidence/cuda-formatting-0.165.0-2026-11-10.json).
+contracts. [`nex cost`](../experiments/quality/llm_cost.md) now summarizes pinned
+trial records offline; a [ten-task comparison protocol](../experiments/quality/llm-campaign-v1/protocol.md)
+is prepared. Real model-cost measurement remains pending.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

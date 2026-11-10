@@ -16,6 +16,7 @@
       "http_response_streams",
       "http_storage_transactions",
       "language_pack_contract",
+      "llm_cost",
       "model",
       "native_application_lifetime",
       "native_core",
@@ -558,7 +559,8 @@
     "native_entry_abi_schema": "llm/native-entry-abi.schema.json",
     "gpu_codegen": "docs/gpu-codegen.md",
     "metal_emission_schema": "llm/metal-emission.schema.json",
-    "cuda_emission_schema": "llm/cuda-emission.schema.json"
+    "cuda_emission_schema": "llm/cuda-emission.schema.json",
+    "llm_cost": "experiments/quality/llm_cost.md"
   },
   "document_access": "nex guide --kind source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4451,6 +4453,33 @@
           "capacity_status": 18
         }
       }
+    }
+  },
+  "llm_cost": {
+    "status": "offline_recorded_trial_accounting",
+    "command": "nex cost LEDGER.json [--output NEW.json] [--json]",
+    "guide": "experiments/quality/llm_cost.md",
+    "ledger_schema": "nex.llm-cost-ledger/1",
+    "summary_schema": "nex.llm-cost-summary/1",
+    "acceptance_schema": "nex.llm-acceptance/1",
+    "languages": [
+      "nex",
+      "cpp",
+      "python"
+    ],
+    "python_minimum": "3.10",
+    "network_requests": false,
+    "model_calls": false,
+    "acceptance_commands_executed": false,
+    "graph_store_opened": false,
+    "output_overwrite": false,
+    "missing_usage_estimated": false,
+    "synthetic_data_is_experiment": false,
+    "provider_usage_authenticated": false,
+    "exit_codes": {
+      "complete": 0,
+      "incomplete": 1,
+      "invalid": 2
     }
   }
 }
