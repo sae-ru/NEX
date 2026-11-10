@@ -2,6 +2,8 @@
 #include "nex/language.h"
 #include "nex_bytes.h"
 #include "cuda_text_runtime.h"
+#include "cuda_decimal_runtime.h"
+#include "cuda_format_runtime.h"
 #include <algorithm>
 #include <functional>
 #include <sstream>
@@ -17,8 +19,11 @@ class Values {
   std::vector<std::string> order;
   std::map<std::string,unsigned> textIDs;
   size_t textBytes=0;
+  std::map<std::string,std::string> formats;
+  std::vector<Type> formatOrder;
 public:
   bool extended=false,floating=false,conversion=false,hasLists=false,hasBytes=false,hasText=false,utf8Encoding=false,base64Decoding=false;
+  bool formatFloating=false;
   const unsigned listCapacity,byteCapacity,textCapacity;
   explicit Values(const Program &p,unsigned capacity=32,unsigned bytes=256,unsigned text=0):program(p),listCapacity(capacity),byteCapacity(bytes),textCapacity(text){
     if(!capacity||capacity>1024)throw Error("E_OPTION","CUDA list capacity must be1..1024");
@@ -62,6 +67,17 @@ public:
   }
   std::string zero(const Type &t)const{return aggregate(t)||t==Type::Unit?"{}":t==Type::Bool?"false":t==Type::F64?"0.0":t==Type::Str?"0U":"0LL";}
   bool aggregate(const Type &t)const{return t.kind==Type::Record||t.kind==Type::Result||t.kind==Type::List||t==Type::Bytes||(t==Type::Str&&textCapacity);}
+  void format(const Type &t,Span span){
+    if(t==Type::Unit)throw Error("E_GPU_TYPE","CUDA str requires a value",span);
+    ensure(t,span);const auto key=typeName(t);if(formats.contains(key))return;
+    formats.emplace(key,"nex_repr_"+std::to_string(formats.size()));
+    if(t==Type::F64)formatFloating=true;
+    if(t.kind==Type::List)format(*t.element,span);
+    else if(t.kind==Type::Result){format(*t.element,span);format(Type::Str,span);}
+    else if(t.kind==Type::Record){const auto &s=program.structure(t.name);if(s.enumeration){for(const auto &v:s.variants)for(const auto &f:v.fields)format(f.type,span);}else for(const auto &f:s.fields)format(f.type,span);}
+    formatOrder.push_back(t);
+  }
+  std::string formatter(const Type &t)const{return formats.at(typeName(t));}
   void finalize(){unsigned i=0;for(const auto &s:texts)textIDs.emplace(s,i++);}
   unsigned id(const std::string &s)const{return textIDs.at(s);}
   size_t idMax()const{return textIDs.size();}
@@ -126,6 +142,28 @@ public:
       }else if(t.kind==Type::Result){o<<"if(v.w[0]==1LL){\n";payload(fields(t,1),1);o<<"}else if(v.w[0]==0LL){\n";payload(fields(t,0),1);o<<"}else{nex_s.code=6;return {};}\n";}
       else{const auto &s=program.structure(t.name);if(s.enumeration){o<<"switch(v.w[0]){\n";for(const auto &variant:s.variants){o<<"case "<<variant.ordinal<<"LL:{\n";payload(fields(t,variant.ordinal),1);o<<"break;}\n";}o<<"default:nex_s.code=6;return {};\n}\n";}else payload(fields(t),0);}
       o<<"return v;\n}\n__device__ inline bool nex_equal_"<<v.cpp<<"("<<v.cpp<<" const &a,"<<v.cpp<<" const &b){for(unsigned i=0;i<"<<v.words<<"U;++i)if(a.w[i]!=b.w[i])return false;return true;}\n";
+    }
+    if(!formats.empty()){
+      o<<formatRuntime;if(formatFloating)o<<decimalCache<<decimalRuntime;
+      const auto output=cpp(Type::Str);const auto cap=std::to_string(textCapacity)+"U";
+      for(const auto &t:formatOrder){
+        o<<"__device__ inline void "<<formatter(t)<<"("<<cpp(t)<<(aggregate(t)?" const &":" ")<<"value,"<<output<<" &out,NexState &nex_s){if(nex_s.code)return;\n";
+        auto literal=[&](const std::string &text){o<<"nex_repr_literal(out,"<<json(text,false)<<","<<text.size()<<"U,"<<cap<<",nex_s);\n";};
+        auto child=[&](const Type &type,const std::string &offset){
+          if(aggregate(type)){o<<cpp(type)<<" child{};for(unsigned j=0;j<"<<words(type)<<"U;++j)child.w[j]=value.w["<<offset<<"+j];\n";o<<formatter(type)<<"(child,out,nex_s);\n";}
+          else o<<formatter(type)<<"("<<load(type,"value.w["+offset+"]")<<",out,nex_s);\n";
+        };
+        auto members=[&](const std::vector<Param> &fields,unsigned offset){
+          for(size_t i=0;i<fields.size();++i){if(i)literal(",");literal(json(fields[i].name,false)+":");o<<"{\n";child(fields[i].type,std::to_string(offset)+"U");o<<"}\n";offset+=words(fields[i].type);}
+        };
+        if(t==Type::Str)o<<"nex_repr_quoted(out,value,"<<cap<<",nex_s);\n";
+        else if(t==Type::Bytes)o<<"nex_repr_bytes(out,value,"<<cap<<",nex_s);\n";
+        else if(t==Type::I64||t==Type::Bool||t==Type::F64)o<<"auto text="<<(t==Type::I64?"nex_integer_text<":t==Type::Bool?"nex_boolean_text<":"nex_float_text<")<<output<<">(value,"<<cap<<",nex_s);nex_repr_append(out,text,"<<cap<<",nex_s);\n";
+        else if(t.kind==Type::List){literal("[");o<<"for(unsigned slot=0;slot<static_cast<unsigned>(value.w[0])&&!nex_s.code;++slot){if(slot)nex_repr_char(out,44U,"<<cap<<",nex_s);unsigned offset=1U+slot*"<<words(*t.element)<<"U;\n";child(*t.element,"offset");o<<"}\n";literal("]");}
+        else if(t.kind==Type::Result){o<<"if(value.w[0]==1LL){\n";literal("{\"ok\":");child(*t.element,"1U");literal("}");o<<"}else if(value.w[0]==0LL){\n";literal("{\"error\":{\"code\":");child(Type::Str,"1U");literal(",\"message\":");o<<"{\n";child(Type::Str,std::to_string(1U+words(Type::Str))+"U");o<<"}\n";literal("}}");o<<"}else nex_s.code=6;\n";}
+        else{const auto &s=program.structure(t.name);if(s.enumeration){o<<"switch(value.w[0]){\n";for(const auto &v:s.variants){o<<"case "<<v.ordinal<<"LL:{\n";literal("{\"case\":"+json(v.name,false)+",\"fields\":{");members(v.fields,1U);literal("}}");o<<"break;}\n";}o<<"default:nex_s.code=6;}\n";}else{literal("{");members(s.fields,0);literal("}");}}
+        o<<"}\n";
+      }
     }
     if(hasText){
       for(const auto &[text,id]:textIDs){o<<"__device__ inline "<<cpp(Type::Str)<<" nex_text_literal_"<<id<<"(){"<<cpp(Type::Str)<<" r{};r.w[0]="<<text.size()<<"LL;\n";for(size_t i=0;i<text.size();++i)o<<"nex_put_octet(r,"<<i<<"U,"<<unsigned(static_cast<unsigned char>(text[i]))<<"U);\n";o<<"return r;}\n";}

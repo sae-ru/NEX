@@ -4321,7 +4321,14 @@
           "decode_base64",
           "str(i64)",
           "str(bool)",
-          "dynamic Result code/message"
+          "dynamic Result code/message",
+          "str(f64)",
+          "str(str)",
+          "str(bytes)",
+          "str(list<T>)",
+          "str(record)",
+          "str(enum)",
+          "str(result<T>)"
         ],
         "fatal_host_relay": {
           "scope": "host/device faults only",
@@ -4329,7 +4336,6 @@
           "NUL_allowed": false
         },
         "pending": [
-          "str(f64/aggregate) formatting",
           "matching physical GPU and immutable SDK qualification"
         ],
         "source_result_relay": {
@@ -4338,6 +4344,17 @@
           "C_host_trap_text_envelope_used": false,
           "session_global_error_slot": false,
           "rendering": "ordinary source diagnostic bounds and formatting"
+        },
+        "formatting": {
+          "finite_f64": "shortest scientific, nearest ties to even",
+          "algorithm": "Dragonbox1.1.3 binary64 specialization",
+          "cache_bytes": 9904,
+          "float_digits_max": 17,
+          "aggregate_order": "source declaration order; active enum/Result payload only",
+          "nested_strings": "JSON quotes and lowercase control escapes",
+          "bytes": "quoted canonical base64",
+          "dynamic_allocation": false,
+          "capacity_status": 18
         }
       }
     }

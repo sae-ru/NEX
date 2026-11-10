@@ -158,7 +158,7 @@ class Emitter {
         else if(expression->text=="decode_utf8"||expression->text=="encode_base64"||expression->text=="str"){
           if(!values.textCapacity)throw Error("E_GPU_UNSUPPORTED","dynamic CUDA text requires --text-capacity",expression->span);
           if(expression->text=="decode_utf8"){values.literal("E_UTF8",expression->span);values.literal("invalid UTF-8 string",expression->span);values.literal("invalid Unicode scalar",expression->span);}
-          if(expression->text=="str"&&expression->args[0]->type!=Type::I64&&expression->args[0]->type!=Type::Bool)throw Error("E_GPU_UNSUPPORTED","CUDA str currently formats i64 and bool",expression->span);
+          if(expression->text=="str"&&expression->args[0]->type!=Type::I64&&expression->args[0]->type!=Type::Bool&&expression->args[0]->type!=Type::Str)values.format(expression->args[0]->type,expression->span);
         }
         else if(expression->text=="slice"){
           if(expression->args[0]->type!=Type::Bytes&&!(expression->args[0]->type==Type::Str&&values.textCapacity))throw Error("E_GPU_UNSUPPORTED","CUDA text slicing requires --text-capacity",expression->span);
@@ -409,7 +409,11 @@ class Emitter {
           if(value->text=="decode_utf8"||value->text=="decode_base64")return decodeText(value->type,arguments.at(0),value->text=="decode_utf8");
           if(value->text=="utf8_bytes"){byteLimit(arguments[0]+".w[0]");generated="nex_octet_slice<"+values.cpp(Type::Bytes)+">("+arguments[0]+", 0U, static_cast<unsigned>("+arguments[0]+".w[0]))";break;}
           if(value->text=="encode_base64"){textLimit("(("+arguments[0]+".w[0]+2LL)/3LL)*4LL");generated="nex_base64_encode<"+values.cpp(Type::Str)+">("+arguments[0]+")";break;}
-          if(value->text=="str"){generated=std::string(value->args[0]->type==Type::Bool?"nex_boolean_text<":"nex_integer_text<")+values.cpp(Type::Str)+">("+arguments[0]+", "+std::to_string(values.textCapacity)+"U, nex_s)";break;}
+          if(value->text=="str"){
+            const auto &type=value->args[0]->type;if(type==Type::Str){generated=arguments[0];break;}
+            if(type==Type::I64||type==Type::Bool){generated=std::string(type==Type::Bool?"nex_boolean_text<":"nex_integer_text<")+values.cpp(Type::Str)+">("+arguments[0]+", "+std::to_string(values.textCapacity)+"U, nex_s)";break;}
+            auto out=temporary();line(values.cpp(Type::Str)+" "+out+"{};");line(values.formatter(type)+"("+arguments[0]+", "+out+", nex_s);");line("if (nex_s.code) "+stop());return out;
+          }
         }
         if(value->text=="utf8_bytes"){generated="nex_utf8_bytes("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="decode_base64"){generated="nex_decode_base64("+arguments.at(0)+", nex_s)";break;}

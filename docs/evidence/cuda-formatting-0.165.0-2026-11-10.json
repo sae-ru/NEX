@@ -1,0 +1,176 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-10",
+  "utc": "2026-11-10T19:41:19.172030+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "C_ABI_major": 1,
+  "compiler_sha256": "2848dee3b3b99a77f2a2ceea20a60bdc97046f950d0981f3bfa56bd8fe8d7ffc",
+  "source_parent_commit": "164f76b6687226b32de0cce5cc252d99e79c9e16",
+  "implemented": [
+    "Header-free binary64 Dragonbox1.1.3 nearest/ties-even specialization with the pinned full619-entry cache",
+    "Exact scientific shortest decimal formatting, normalized zero and non-finite rejection",
+    "str identity for strings; bounded recursive rendering of bytes/lists/records/enums/Results",
+    "Source declaration/element order, active payloads, JSON quoting and lowercase control escapes, canonical quoted base64",
+    "Existing text-capacity failure18 with zero output publication and no dynamic allocation"
+  ],
+  "all_targets_built": true,
+  "initial_compiler_sha256": "142823a67e354fd1cc61c9bc21aa02476c8a428431e11c68507549835928dce0",
+  "initial_passed_CTest_groups": [
+    "cuda_codegen",
+    "cuda_format",
+    "cuda_text"
+  ],
+  "initial_CTest_methods": 8,
+  "final_passed_CTest_groups": [
+    "cuda_format"
+  ],
+  "final_CTest_methods": 2,
+  "only_affected_format_group_repeated_after_ABI_correction": true,
+  "initial_passes_not_relabelled_as_new_compiler_qualification": true,
+  "case_names": [
+    "float",
+    "identity",
+    "list",
+    "integers",
+    "bytes",
+    "result",
+    "record",
+    "enum",
+    "empty",
+    "nested",
+    "order"
+  ],
+  "emitted_CPU_kernel_layouts": 22,
+  "exact_CPU_lane_value_status_diagnostic_outcomes": 68,
+  "host_UBSan": true,
+  "source_oracles_per_reference_nativeRelease_TypeScript": 11,
+  "binary64_exact_comparisons": 198209,
+  "ambient_FP_rounding_modes": 4,
+  "exponent_fields_covered": 2047,
+  "fraction_patterns_per_exponent": 6,
+  "both_signs": true,
+  "additional_seeded_random_candidates": 100000,
+  "text_capacity3_and32_checked": true,
+  "native_formatter_oracle": "pinned original runtime/nex_float.h Dragonbox nearest-to-even",
+  "full_binary64_domain_exhaustively_tested": false,
+  "Dragonbox": {
+    "version": "1.1.3",
+    "commit": "3053a74ac81099591a12a55341a203d9688fbb92",
+    "upstream_header_sha256": "d3795bba52fb25970d9a1819429f6f225bb0db09fb1db26e55bdec290291e98c",
+    "upstream_modified": false,
+    "license": "BSL-1.0",
+    "notice_in_emitted_source": true,
+    "cache_entries": 619,
+    "device_constant_cache_bytes": 9904,
+    "cache_regenerator": "tools/update_cuda_decimal_cache.py --check",
+    "cache_source_sha256": "d62c68236867ad7301cf018e00a15b624e3e540d05b14f57ee078874b7f8b5cc"
+  },
+  "original_device_failure": {
+    "compiler_sha256": "142823a67e354fd1cc61c9bc21aa02476c8a428431e11c68507549835928dce0",
+    "target": "sm_52/PTX4.2 O0",
+    "IR_verified": true,
+    "machine_verified": false,
+    "error": "LLVM22.1.8 MOV64_PARAM aggregate-by-value argument in nex_decimal_trim",
+    "correction": "const-reference helper parameter with an independent local copy; preserve immutable value semantics",
+    "original_IR_sha256": "33d2ad4b021fc52bc2cafdeab031f6da81e72b248555c4daac79a421914e5e38",
+    "original_machine_stderr_sha256": "6e7db427fceb564279b7b0d6c8ce675958939558dbb6f256831cbaaa4a5c10a1",
+    "verification_not_disabled": true
+  },
+  "offline_device_compile": {
+    "ok": true,
+    "actual_GPU_execution": false,
+    "whole_regression_run": false,
+    "compiler_sha256": "2848dee3b3b99a77f2a2ceea20a60bdc97046f950d0981f3bfa56bd8fe8d7ffc",
+    "shader_sha256": "779e50cd41af5ffe139a6eabd7dccf853f29dc2972d0e482bb14a47e83d4a4e2",
+    "variants": [
+      {
+        "target": "sm_52/ptx42",
+        "optimization": 0,
+        "IR_sha256": "ef2d5db40df2d03b0a2d26627fcb1a451f87d4add41fc2264eb96600f742014a",
+        "PTX_sha256": "83f77b0b68e197260440ad4a78fc7e8a9bbf8e082a68570635f1c3aa934fb833",
+        "kernel_parameter_bits": [
+          64,
+          64,
+          64,
+          64,
+          32,
+          32
+        ],
+        "decimal_constant_cache_bytes": 9904
+      },
+      {
+        "target": "sm_52/ptx42",
+        "optimization": 2,
+        "IR_sha256": "51f7d4458e207ddf1d96e2c040b7bb5ef49bc5f6a7133031aa015ff653219fa7",
+        "PTX_sha256": "ef72bfea8677496e46f0d5669ce957f57a7b5f74016e51bd71a3a79fb6a5c80c",
+        "kernel_parameter_bits": [
+          64,
+          64,
+          64,
+          64,
+          32,
+          32
+        ],
+        "decimal_constant_cache_bytes": 9904
+      },
+      {
+        "target": "sm_86/ptx71",
+        "optimization": 0,
+        "IR_sha256": "b74923bea64eb57b859ca045d9c14832ac4689b2beae3e18e9abc005ad432ab0",
+        "PTX_sha256": "28fd4286ee782b697cc237dc1c33b930daeb5ceed72d85c97aa60fd65ebe7ef2",
+        "kernel_parameter_bits": [
+          64,
+          64,
+          64,
+          64,
+          32,
+          32
+        ],
+        "decimal_constant_cache_bytes": 9904
+      },
+      {
+        "target": "sm_86/ptx71",
+        "optimization": 2,
+        "IR_sha256": "fdaba13d0faec990ad374b1a9c8b838b832f10250d254d83f2e12feb082ae3ec",
+        "PTX_sha256": "683b65132f6a1cb08c66fa681d72530f390acb34b8c224d6781c959a865fd1c3",
+        "kernel_parameter_bits": [
+          64,
+          64,
+          64,
+          64,
+          32,
+          32
+        ],
+        "decimal_constant_cache_bytes": 9904
+      }
+    ],
+    "IR_and_machine_verification_passed": true,
+    "unresolved_device_functions": 0,
+    "parameter_words": [
+      37
+    ],
+    "result_words": 33
+  },
+  "private_receipt_artifacts": "build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/CUDA-formatting-v1, v2 and v3",
+  "source_grammar_canonical_format_task_ABI_or_C_major_changed": false,
+  "emission_schema": "nex.cuda-emission/5",
+  "value_ABI": "nex.cuda-values/4",
+  "new_GPU_execution": false,
+  "NVIDIA_NVRTC_or_hardware_qualification": false,
+  "GPU_throughput_or_latency_measured": false,
+  "full_regression_run": false,
+  "remote_contact": false,
+  "new_SDK_repacked_or_qualified": false,
+  "push_or_main_promotion": false,
+  "remaining": "Broader GPU/Metal/NPU operations/types, debug/profile, Apple NPU and the rest of the original PLAN; final matching platform/device/SDK qualification and publication remain pending.",
+  "final_generated_comment_cleanup": {
+    "intermediate_compiler_sha256": "2f5ec411e31e70623d9cf404f89b151aed4d96c6932d396e55eb8f4a94f2de93",
+    "reason": "Remove trailing spaces from generated blank license-comment lines before local commit",
+    "intermediate_format_group_passed": true,
+    "all_four_final_PTX_byte_hashes_equal_intermediate": true,
+    "current_compiler_format_and_IR_PTX_rechecked": true
+  }
+}

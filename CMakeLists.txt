@@ -437,6 +437,8 @@ add_test(NAME cuda_codegen COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOUR
 set_tests_properties(cuda_codegen PROPERTIES TIMEOUT 180)
 add_test(NAME cuda_outcomes COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_outcomes.py $<TARGET_FILE:nex>)
 set_tests_properties(cuda_outcomes PROPERTIES TIMEOUT 600)
+add_test(NAME cuda_format COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_format.py $<TARGET_FILE:nex>)
+set_tests_properties(cuda_format PROPERTIES TIMEOUT 600)
 add_test(NAME cuda_text COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_text.py $<TARGET_FILE:nex>)
 set_tests_properties(cuda_text PROPERTIES TIMEOUT 300)
 add_test(NAME cuda_bytes COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_bytes.py $<TARGET_FILE:nex>)

@@ -8,7 +8,9 @@ Explicit `--text-capacity` now enables runtime UTF-8 values, Unicode scalar
 operations, byte codecs and per-lane Result diagnostic packets. Source Result faults now travel as managed per-dispatch outcomes to ordinary
 source unwrap after resource cleanup. Ordinary fatal message transport now retains
 NUL and Unicode through reference/native/task paths and frontend JSON; structured
-records keep their explicit byte limits and truncation flags. These are
+records keep their explicit byte limits and truncation flags. CUDA str now also
+formats finite f64 and supported immutable aggregates with the existing source
+representation rules under explicit text capacity. These are
 source/backend capabilities; physical device and immutable SDK acceptance retain
 their own exact snapshots. See [current status](STATUS.md) and
 [the GPU contracts](docs/gpu-codegen.md).
@@ -16,7 +18,7 @@ their own exact snapshots. See [current status](STATUS.md) and
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
 
-- [ ] General GPU/NPU compilation and backend coverage, remaining GPU value formatting,
+- [ ] General GPU/NPU compilation and backend coverage, including further Metal value/type support,
   GPU operation debugging/profiling and Apple NPU integration.
 - [ ] Remaining language/toolchain extensions in the original stages below:
   advanced type-constructor inference/effect handling, graph identity-preserving

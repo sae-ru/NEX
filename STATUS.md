@@ -1,3 +1,55 @@
+# CUDA value formatting — development0.165.0
+
+Explicit dynamic text now supports str for finite f64, strings, bytes, lists,
+records, enums and Results. The header-free Dragonbox1.1.3 binary64 specialization
+uses a9904-byte constant cache and retains shortest scientific nearest/ties-even
+formatting without host rounding dependencies or dynamic allocation. Nested text
+uses JSON control escapes; bytes use quoted canonical base64; fields/elements keep
+source order and only active payloads are rendered. Capacity failure18 publishes
+zero output. Original source0.28/taskABI7/CABI1 and emission5/valueABI4 are unchanged.
+The pinned upstream copy is unmodified; generated CUDA carries the BSL-1.0 notice.
+
+All targets build. The initial three-group cohort passed eight methods. Offline
+LLVM machine verification then found a by-value helper argument failure at O0.
+A const-reference parameter with a local value copy fixed that ABI path; verification
+stays enabled and the original failed IR/diagnostic is retained. Only the affected
+format group was repeated on the new compiler (two methods):22 emitted
+CPU layouts/68 exact lane outcomes under UBSan,11 oracles each in reference/native
+Release/TypeScript, and198209 exact comparisons with the original CPU Dragonbox
+across four rounding modes, every finite exponent field, boundary fractions/signs
+and seeded random candidates. This is not an exhaustive binary64-domain proof.
+Four actual LLVM22.1.8 IR/PTX variants passed IR and machine verification for
+sm_52/PTX4.2 and sm_86/PTX7.1, O0/O2, with no unresolved device functions and the
+exact9904-byte device constant cache. [Development record](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json).
+No NVIDIA execution/performance, full regression, stand, SDK repack or publication
+was performed. All other original PLAN requirements remain active.
+
+# CUDA value formatting — development0.165.0
+
+Explicit dynamic text now supports str for finite f64, strings, bytes, lists,
+records, enums and Results. The header-free Dragonbox1.1.3 binary64 specialization
+uses a9904-byte constant cache and retains shortest scientific nearest/ties-even
+formatting without host rounding dependencies or dynamic allocation. Nested text
+uses JSON control escapes; bytes use quoted canonical base64; fields/elements keep
+source order and only active payloads are rendered. Capacity failure18 publishes
+zero output. Original source0.28/taskABI7/CABI1 and emission5/valueABI4 are unchanged.
+The pinned upstream copy is unmodified; generated CUDA carries the BSL-1.0 notice.
+
+All targets build. The initial three-group cohort passed eight methods. Offline
+LLVM machine verification then found a by-value helper argument failure at O0.
+A const-reference parameter with a local value copy fixed that ABI path; verification
+stays enabled and the original failed IR/diagnostic is retained. Only the affected
+format group was repeated on the new compiler (two methods,16.94seconds):22 emitted
+CPU layouts/68 exact lane outcomes under UBSan,11 oracles each in reference/native
+Release/TypeScript, and198209 exact comparisons with the original CPU Dragonbox
+across four rounding modes, every finite exponent field, boundary fractions/signs
+and seeded random candidates. This is not an exhaustive binary64-domain proof.
+Four actual LLVM22.1.8 IR/PTX variants passed IR and machine verification for
+sm_52/PTX4.2 and sm_86/PTX7.1, O0/O2, with no unresolved device functions and the
+exact9904-byte device constant cache. [Development record](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json).
+No NVIDIA execution/performance, full regression, stand, SDK repack or publication
+was performed. All other original PLAN requirements remain active.
+
 # Length-aware runtime diagnostics — development0.165.0
 
 Ordinary runtime/compiler failures now retain owned message lengths through

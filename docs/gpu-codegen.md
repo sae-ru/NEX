@@ -340,10 +340,26 @@ Inputs may contain text absent from the literal pool.
 
 Supported text operations are literals, concatenation/equality, scalar indexing,
 scalar slicing, `len`, nested patterns/guards, `utf8_bytes`, strict `decode_utf8`,
-canonical `encode_base64`/`decode_base64`, and decimal `str(i64)`/`str(bool)`.
+canonical `encode_base64`/`decode_base64`, and `str` for every supported value type.
 Codecs process runtime values and retain recoverable E_UTF8/E_BASE64 diagnostics.
 They validate malformed input before applying the additional destination capacity.
-`str(f64)` and aggregate formatting are pending. All arguments retain their
+Finite f64 uses the shortest scientific representation with nearest/ties-even
+rounding, matching the CPU Dragonbox1.1.3 and TypeScript contracts. The header-free
+binary64 specialization has a9904-byte constant cache, no dynamic allocation and
+no dependency on ambient host FP modes. Generated source includes its BSL-1.0
+notice. `str(str)` is identity; nested strings are quoted with lowercase JSON
+control escapes. Bytes use quoted canonical base64. Lists preserve element order;
+records preserve declaration order; enums/Results format only the active payload.
+Output exceeding the explicit text capacity fails with status18 and publishes no
+partial value. The [formatting example](../examples/gpu-format.nex) can be emitted with:
+
+```sh
+nex emit examples/gpu-format.nex --kind cuda --entry render --input-layout columns \
+  --text-capacity 256 --byte-capacity 16 -o render.cu --json
+```
+
+Physical NVIDIA performance and matching SDK acceptance remain
+separate gates. All arguments retain their
 left-to-right evaluation/trap order and all produced values are immutable.
 
 Text capacity includes literals and builtin diagnostic strings. A reachable

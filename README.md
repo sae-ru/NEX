@@ -59,6 +59,10 @@ physical device checks and portable delivery have separate acceptance records.
 Ordinary fatal diagnostics now preserve embedded NUL and Unicode through source,
 task and frontend paths while keeping explicit log limits; see the
 [scoped implementation record](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
+CUDA also formats finite f64 and supported immutable aggregates under explicit
+text capacity; [current scope and checks](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json).
+CUDA also formats finite f64 and supported immutable aggregates under explicit
+text capacity; [current scope and checks](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json).
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

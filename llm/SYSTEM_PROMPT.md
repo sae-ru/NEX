@@ -127,6 +127,13 @@ contract; production-browser and installed-SDK acceptance remain separate.
 Read indexed `docs/sdk.md`, `docs/packaging.md` and `docs/task-profiling.md` for
 those delivery contracts. Follow the actual SDK's index when names differ.
 Inspect limits and pending integrations before composing features.
+For CUDA, discover `gpu_codegen.cuda.dynamic_text.operations` and `formatting`
+before choosing conversions. Advertised `str` conversions run under the explicit
+text capacity. Finite f64 has the same shortest scientific
+representation as CPU/TypeScript; nested text is JSON-escaped, bytes use quoted
+base64 and aggregate fields keep declaration order. Capacity failure is fatal
+E_LIMIT; generated source alone does not establish hardware/SDK acceptance.
+
 
 ## Tasks, resources and IO
 

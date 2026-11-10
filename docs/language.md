@@ -38,7 +38,9 @@ Toolchain0.165 adds [checked scalar GPU emission](gpu-codegen.md) through
 `nex emit --kind metal` and `nex emit --kind cuda`. Both lower reachable shared
 pure functions from the checked AST. Metal accepts i64/bool/unit; CUDA additionally
 accepts finite f64, fixed records/enums/Results, bounded device text, conversions
-bounded immutable lists/bytes, explicit dynamic UTF-8 and nested matches with guards. GPU value wire records and managed provider outcomes are backend metadata. Unsupported reachable code is
+bounded immutable lists/bytes, explicit dynamic UTF-8 and nested matches with guards. CUDA `str` also formats finite f64 and supported aggregates with the existing
+CPU/TypeScript representation rules under the declared text capacity.
+GPU value wire records and managed provider outcomes are backend metadata. Unsupported reachable code is
 rejected explicitly.
 It changes no source production, source semantics or canonical identity and
 requires no language migration. Emission initializes no GPU driver; installed

@@ -1,0 +1,5 @@
+module gpu_format;
+pub struct Sample{value:f64;label:str;data:bytes;}
+pub fn render(sample:Sample)->str{return str(sample);}
+fn main()->unit{}
+test fn oracle()->unit{assert(render(Sample(1.25,"🌍",unwrap(bytes([0,255]))))=="{\"value\":1.25e0,\"label\":\"🌍\",\"data\":\"AP8=\"}");}
