@@ -1,0 +1,4 @@
+module learn_tasks;
+fn answer()->i64 !{task,throw}{return with_tasks(1,fn(scope:task_scope)->i64 !{task,throw}{let child:task<i64>=task_spawn(scope,fn()->i64 !{task}{task_yield();return 42;});return task_wait(child);});}
+fn main()->unit !{task,throw,io}{print(answer());}
+test fn joined_answer()->unit !{task,throw}{assert(answer()==42);}

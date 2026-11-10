@@ -18,7 +18,10 @@ their own exact snapshots. See [current status](STATUS.md) and
 The user-supplied14 improvement proposals have been audited in
 [development priorities](docs/development-priorities.md). Current LLM discovery/corpus,
 real model-cost measurement, repeatable builds and tiered checks take priority
-without dropping any original functional or delivery requirement.
+without dropping any original functional or delivery requirement. Current discovery/
+learning work now checks all56 shared capability fields and has freshly validated
+0.28 labels for9 positive projects/6 counterexamples. Real model-cost measurement
+and nex cost remain the next implementation priority.
 
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:

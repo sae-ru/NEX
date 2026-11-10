@@ -1,0 +1,8 @@
+module cpu_mapping;
+fn square(x: i64) -> i64 { return x * x; }
+fn squares() -> list<i64> { return parallel_map([1,2,3],square,2); }
+fn main() -> unit !{io} {
+    let values: list<i64> = squares();
+    print(values[0] + values[1] + values[2]);
+}
+test fn order_and_values() -> unit { assert(squares() == [1,4,9]); }

@@ -23,9 +23,19 @@ compiler capabilities and matching acceptance evidence govern actual support.
 
 `language-pack.json` indexes documents, schemas, examples and capability contracts.
 The installed SDK also includes source/runtime resources and acceptance tools.
-The labelled `corpus.json` retains its language0.27/toolchain0.152.1 validation
-record; it does not qualify a newer compiler. Follow the selected compiler's
-capabilities and recheck examples when moving to another version.
+The current labelled `corpus.json` has fresh language0.28 validation for nine
+positive projects and six rejected programs. It pins the actual compiler,
+manifest and source/project/import inputs. Reference/native Release/TypeScript
+main and test observations are separate from browser or SDK qualification.
+The original0.27/0.152.1 record and Git-recovered inputs remain in
+[history](history/learning-0.27-0.152.1/README.md). Use the maintained
+[corpus workflow](../docs/learning-corpus.md), not a manual version-field change.
+A recorded pass does not qualify a later compiler or a different SDK/platform.
+The legacy `features` array is explicitly partial. Use the indexed sections.
+`language_pack_contract` lists every shared capability field; its validator
+compares all nested JSON values and types and rejects missing or undeclared
+shared sections. Document indexes and envelope schemas have their own roles.
+
 No model-specific syntax or separate private grammar is required. A natural
 language request still needs observable acceptance criteria; the compiler cannot
 prove that a test suite completely captures the user's intent.

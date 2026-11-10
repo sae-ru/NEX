@@ -20,6 +20,10 @@ task and frontend paths while keeping explicit log limits; see the
 [scoped implementation record](evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
 CUDA also formats finite f64 and supported immutable aggregates under explicit
 text capacity; [current scope and checks](evidence/cuda-formatting-0.165.0-2026-11-10.json).
+The [current learning labels](../llm/corpus.json) cover nine0.28 projects and six
+counterexamples with actual reference/native Release/TypeScript observations.
+[Discovery and corpus tools](learning-corpus.md) check all shared capability
+contracts; real model-cost measurement remains pending.
 CUDA also formats finite f64 and supported immutable aggregates under explicit
 text capacity; [current scope and checks](evidence/cuda-formatting-0.165.0-2026-11-10.json).
 

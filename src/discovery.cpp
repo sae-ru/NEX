@@ -36,6 +36,8 @@ llvm::json::Value discover(const std::string &kind,const std::string &field,cons
     result["fields"]=std::move(names);result["full_schema"]="nex.language/1";
     result["full_command"]="nex describe --json";result["field_command"]="nex describe --field PATH --json";
     result["guide"]="docs/discovery.md";result["bootstrap_prompt"]="llm/BOOTSTRAP.md";
+    result["legacy_fields"]=llvm::json::Array{"features"};
+    result["recommended_fields"]=*descriptor.getAsObject()->getObject("features_scope")->get("recommended_fields");
   }else{
     auto *selected=&descriptor;
     for(const auto &part:parts){
@@ -43,6 +45,7 @@ llvm::json::Value discover(const std::string &kind,const std::string &field,cons
       selected=object->get(part);if(!selected)throw Error("E_OPTION","describe field path does not exist");
     }
     result["field"]=field;result["value"]=std::move(*selected);
+    if(field=="features"){result["value_scope"]="legacy_partial_summary";result["value_complete"]=false;result["capability_index_command"]="nex describe --kind index --json";}
   }
   return result;
 }

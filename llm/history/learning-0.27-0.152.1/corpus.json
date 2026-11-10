@@ -1,0 +1,57 @@
+{
+  "schema": "nex.learning-corpus/1",
+  "language": "0.27",
+  "toolchain": "0.152.1",
+  "validation_status": "passed",
+  "capability_authority": "nex describe --kind index --json",
+  "examples": [
+    {
+      "kind": "valid",
+      "project": "examples/learn/hello",
+      "expected_stdout": "42\n",
+      "source_sha256": "4a4fb586675867aca7852f3e35370acad2697552ae325f45d809363326dea462"
+    },
+    {
+      "kind": "valid",
+      "project": "examples/learn/typed-errors",
+      "expected_stdout": "caught\nfinished\n",
+      "source_sha256": "70297f76cc8bd52bcda415b827ad2725520da8ef1c4c7b756a779dfea91c0f43"
+    },
+    {
+      "kind": "valid",
+      "project": "examples/learn/cpu-map",
+      "expected_stdout": "14\n",
+      "source_sha256": "06fb1a2f31e23554796b6e268d5b13f15b7a1c5386d22b278c36e6d79c508a27"
+    },
+    {
+      "kind": "rejected",
+      "source": "llm/rejected/type.nex",
+      "expected_check_code": "E_TYPE",
+      "source_sha256": "881f9779298f23aa0d1f3fa1a9144fdf3326b3fb997aea37787daaa6a518d708"
+    },
+    {
+      "kind": "rejected",
+      "source": "llm/rejected/effect.nex",
+      "expected_check_code": "E_EFFECT",
+      "source_sha256": "e88cf43e4d2b06e48227fb3353fb10cfb34368dbf561db592ec7a3d48a629c91"
+    }
+  ],
+  "validation": {
+    "compiler_sha256": "c444b9e878a2fd26d43abc72790d0ac28d33f41a1816b9d1aa81570a5acd407a",
+    "compiler_build": "397f32dae2656aa43e85705b40daa942028f435af8ce852b288a5777fe7d066c",
+    "descriptor_hash": "a93ce26a1bfc54d234b99dcaaf7fde84019eda3053f05d9e815f04bfa9a82976",
+    "valid_projects": 3,
+    "rejected_programs": 2,
+    "checks": [
+      "frontend",
+      "reference_main",
+      "native_tests",
+      "typescript_tests",
+      "release_main",
+      "expected_diagnostics"
+    ],
+    "GPU_or_browser_execution_claimed": false,
+    "labelled_counterexamples_rechecked": true
+  },
+  "path_base": "repository_root"
+}

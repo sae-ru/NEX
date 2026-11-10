@@ -35,6 +35,21 @@ intentionally rejected source with expected diagnostic codes. Start with:
 - [Values and a test](../examples/learn/hello/main.nex).
 - [Typed source error, guard and finally](../examples/learn/typed-errors/main.nex).
 - [Ordered CPU mapping](../examples/learn/cpu-map/main.nex).
+- [Runtime source contracts and loop checks](../examples/learn/contracts/main.nex).
+- [Generics, enums, Results and f64](../examples/learn/values/main.nex).
+- [Unicode and immutable bytes](../examples/learn/text-bytes/main.nex).
+- [Traits and associated types](../examples/learn/traits/main.nex).
+- [Structured tasks](../examples/learn/tasks/main.nex).
+- [Modules and checked imports](../examples/learn/modules/main.nex).
+
+The current0.28 labels are generated from [corpus-spec.json](corpus-spec.json)
+by the [actual-compiler workflow](../docs/learning-corpus.md). Nine positive
+projects have reference/native Release/TypeScript main/test observations; six
+counterexamples have exact rejected diagnostics. The old0.27 record and inputs
+are preserved separately. Absence from this finite corpus does not disable an
+advertised compiler feature. The old `features` summary is also explicitly
+partial: query the indexed sections and respect their scope/pending fields.
+
 
 Language 0.28 also supports pure `requires` / `ensures` and loop
 `invariant` / `decreases` clauses. Discover `source_contracts` and read the

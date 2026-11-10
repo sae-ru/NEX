@@ -1,3 +1,29 @@
+# Current LLM discovery and learning corpus — development0.165.0
+
+The legacy36-entry features list remains compatible and is explicitly partial.
+Current index/field projections route callers to current capability sections.
+A maintained validator compares all56 registered shared manifest/descriptor
+sections,3326 nested JSON values with exact types, and rejects missing or
+undeclared shared fields. The two envelope schemas and document indexes retain
+separate roles. Discovery still opens no graph or physical project.
+
+The [current learning corpus](llm/corpus.json) now has fresh0.28 labels for nine
+projects and six counterexamples. All78 actual commands passed: source checks,
+reference main/tests, native Release main/tests, TypeScript tests and emitted
+TypeScript main. Skipped/missing/wrong-backend tests and signal exits cannot count
+as acceptance. Labels pin compiler/descriptor/manifest/spec and source/project/
+import inputs. Failed or incomplete validation cannot publish passed labels;
+successful native workspaces are removed after retained inputs/logs/report.
+The original0.27/0.152.1 corpus bytes and Git-recovered input snapshot remain
+immutable history; no old compiler was executed. [Workflow](docs/learning-corpus.md).
+
+All targets build and only discovery/language_pack_contract/learning_corpus were
+checked. Actual corpus execution took33.803seconds. New corpus/discovery data
+conform to their schemas. Source0.28/program16/taskABI7/CABI1 are unchanged.
+This is a finite local source/Node corpus, not a model-cost experiment, browser UI,
+physical GPU or complete SDK/platform qualification. Those and the rest of the
+original PLAN remain open; next priority is real LLM cost measurement/nex cost.
+
 # CUDA value formatting — development0.165.0
 
 Explicit dynamic text now supports str for finite f64, strings, bytes, lists,

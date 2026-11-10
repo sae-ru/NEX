@@ -1,0 +1,2 @@
+// Counterexample: expected E_CONTRACT_SYNTAX; this is not a valid template.
+module rejected_ranking;fn main()->unit{while false invariant(true){}}

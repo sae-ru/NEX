@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.learning-corpus/2",
+  "title": "Current learning inputs and observed validation labels",
+  "type": "object",
+  "required": [
+    "schema",
+    "language",
+    "path_base",
+    "capability_authority",
+    "historical_record",
+    "historical_record_sha256",
+    "examples"
+  ],
+  "properties": {
+    "schema": {
+      "enum": [
+        "nex.learning-spec/1",
+        "nex.learning-corpus/2"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "toolchain": {
+      "type": "string"
+    },
+    "path_base": {
+      "enum": [
+        "resource_root",
+        "repository_root"
+      ]
+    },
+    "capability_authority": {
+      "const": "nex describe --kind index --json"
+    },
+    "historical_record": {
+      "type": "string",
+      "minLength": 1
+    },
+    "historical_record_sha256": {
+      "$ref": "#/$defs/digest"
+    },
+    "definition": {
+      "const": "llm/corpus-spec.json"
+    },
+    "validation_status": {
+      "const": "passed"
+    },
+    "examples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "kind": {
+            "enum": [
+              "valid",
+              "rejected"
+            ]
+          },
+          "project": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_stdout": {
+            "type": "string"
+          },
+          "expected_tests": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expected_check_code": {
+            "type": "string",
+            "pattern": "^E_[A-Z0-9_]+$"
+          },
+          "teaches": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "$ref": "#/$defs/digest"
+          },
+          "files_sha256": {
+            "type": "object",
+            "minProperties": 2,
+            "additionalProperties": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "kind": {
+                "const": "valid"
+              }
+            },
+            "required": [
+              "project",
+              "expected_stdout",
+              "expected_tests",
+              "teaches"
+            ],
+            "not": {
+              "required": [
+                "source"
+              ]
+            }
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "rejected"
+              }
+            },
+            "required": [
+              "source",
+              "expected_check_code"
+            ],
+            "not": {
+              "required": [
+                "project"
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "compiler_sha256",
+        "compiler_build",
+        "descriptor_hash",
+        "manifest_sha256",
+        "spec_sha256",
+        "validated_utc",
+        "valid_projects",
+        "rejected_programs",
+        "checks",
+        "GPU_or_browser_execution_claimed",
+        "labelled_counterexamples_rechecked",
+        "report_sha256"
+      ],
+      "properties": {
+        "compiler_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "compiler_build": {
+          "$ref": "#/$defs/digest"
+        },
+        "descriptor_hash": {
+          "$ref": "#/$defs/digest"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "spec_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "validated_utc": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valid_projects": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rejected_programs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "checks": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 7,
+          "items": {
+            "enum": [
+              "frontend",
+              "reference_main",
+              "reference_tests",
+              "native_release_tests",
+              "typescript_tests",
+              "native_release_main",
+              "typescript_main"
+            ]
+          }
+        },
+        "GPU_or_browser_execution_claimed": {
+          "const": false
+        },
+        "labelled_counterexamples_rechecked": {
+          "const": true
+        },
+        "report_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.learning-corpus/2"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "toolchain",
+          "definition",
+          "validation_status",
+          "validation"
+        ],
+        "properties": {
+          "path_base": {
+            "const": "repository_root"
+          },
+          "examples": {
+            "items": {
+              "required": [
+                "source_sha256"
+              ],
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "valid"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "files_sha256"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "path_base": {
+            "const": "resource_root"
+          }
+        },
+        "not": {
+          "required": [
+            "validation_status"
+          ]
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

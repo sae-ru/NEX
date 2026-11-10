@@ -40,3 +40,33 @@ model-independent workflow and applicable normative guides. Retrieve only
 needed capability sections and graph contexts. Do not repaste the whole pack on
 every turn. This reduces a discovery response's measured bytes; actual LLM
 token/cost and task-success improvements require the [quality evaluation](quality.md).
+
+## Legacy summary and language-pack consistency
+
+The original `features` array is retained as a partial historical summary. It is
+not an exhaustive list of current language support. `features_scope` says so;
+current index responses identify legacy and recommended fields. A direct
+`--field features` response keeps the original values and adds `value_complete:
+false` and a route back to the capability index. Other field projections keep
+their exact JSON types and values. These additions introduce no source syntax,
+language migration, graph write or runtime authority.
+
+Use scoped sections such as types, numeric_features, generic_features,
+trait_features, source_exceptions, source_contracts, source_concurrency and
+gpu_codegen for the corresponding current contract. A listed backend/type is
+still subject to the placement and delivery limits in that section.
+
+`language_pack_contract` registers every shared top-level capability field.
+The maintained read-only check compares all their nested values and JSON types,
+requires every registered field and rejects undeclared shared fields. The two
+envelope schemas deliberately differ; manifest language_version must equal the
+compiled descriptor version. Document indexes have a separate role and are not
+pretended to be capability objects.
+
+```sh
+python3 tools/llm/language_pack.py --compiler /absolute/path/to/nex \
+  --resources /absolute/path/to/resources --check
+```
+
+The tools are installed under share/nex/tools/llm. Matching installed delivery
+and current platform checks remain separate from source implementation.

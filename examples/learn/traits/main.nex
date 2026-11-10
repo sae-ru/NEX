@@ -1,0 +1,8 @@
+module box;
+trait Content {type Item;fn get(value:Self)->Content::Item<Self>;}
+struct Box<T> {value:T;}
+fn extract<T>(value:Box<T>)->T {return value.value;}
+impl boxed<T>:Content for Box<T> {type Item=T;get=extract<T>;}
+fn read<T:Content>(value:T)->Content::Item<T> {return Content<T>::get(value);}
+fn main()->unit!{io} {print(read(Box<str>("🧠")));}
+test fn values()->unit {assert(read(Box<i64>(42))==42);let get:fn(Box<i64>)->i64=Content<Box<i64>>::get;assert(get(Box<i64>(7))==7);}

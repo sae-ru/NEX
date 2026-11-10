@@ -1,0 +1,118 @@
+{
+  "schema": "nex.learning-spec/1",
+  "language": "0.28",
+  "path_base": "resource_root",
+  "capability_authority": "nex describe --kind index --json",
+  "historical_record": "llm/history/learning-0.27-0.152.1/corpus.json",
+  "historical_record_sha256": "462ee5c34109dc127439faf9ddf4006581a9cc38c057bc5e5e17c9102770cd0e",
+  "examples": [
+    {
+      "id": "hello",
+      "kind": "valid",
+      "project": "examples/learn/hello",
+      "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "typed functions, arithmetic, IO and tests"
+    },
+    {
+      "id": "typed-errors",
+      "kind": "valid",
+      "project": "examples/learn/typed-errors",
+      "expected_stdout": "caught\nfinished\n",
+      "expected_tests": 1,
+      "teaches": "owned typed source errors, guard and finally"
+    },
+    {
+      "id": "cpu-map",
+      "kind": "valid",
+      "project": "examples/learn/cpu-map",
+      "expected_stdout": "14\n",
+      "expected_tests": 1,
+      "teaches": "ordered pure CPU map and immutable results"
+    },
+    {
+      "id": "contracts",
+      "kind": "valid",
+      "project": "examples/learn/contracts",
+      "expected_stdout": "55\n",
+      "expected_tests": 1,
+      "teaches": "source contracts, loop invariants/rankings and release checks"
+    },
+    {
+      "id": "values",
+      "kind": "valid",
+      "project": "examples/learn/values",
+      "expected_stdout": "values\n",
+      "expected_tests": 1,
+      "teaches": "generic records/enums, guarded match, Result propagation and finite f64"
+    },
+    {
+      "id": "text-bytes",
+      "kind": "valid",
+      "project": "examples/learn/text-bytes",
+      "expected_stdout": "text/bytes\n",
+      "expected_tests": 1,
+      "teaches": "Unicode scalar indexing, embedded NUL, immutable bytes and codecs"
+    },
+    {
+      "id": "traits",
+      "kind": "valid",
+      "project": "examples/learn/traits",
+      "expected_stdout": "🧠\n",
+      "expected_tests": 1,
+      "teaches": "trait bounds, associated types, generic impls and method references"
+    },
+    {
+      "id": "tasks",
+      "kind": "valid",
+      "project": "examples/learn/tasks",
+      "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "structured task scope, spawn, yield, wait and joined cleanup"
+    },
+    {
+      "id": "modules",
+      "kind": "valid",
+      "project": "examples/learn/modules",
+      "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "module imports and checked public interfaces"
+    },
+    {
+      "id": "rejected-type",
+      "kind": "rejected",
+      "source": "llm/rejected/type.nex",
+      "expected_check_code": "E_TYPE"
+    },
+    {
+      "id": "rejected-effect",
+      "kind": "rejected",
+      "source": "llm/rejected/effect.nex",
+      "expected_check_code": "E_EFFECT"
+    },
+    {
+      "id": "rejected-match",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/match.nex",
+      "expected_check_code": "E_MATCH_EXHAUSTIVE"
+    },
+    {
+      "id": "rejected-contract-effect",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/contract-effect.nex",
+      "expected_check_code": "E_EFFECT"
+    },
+    {
+      "id": "rejected-contract-ranking",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/contract-ranking.nex",
+      "expected_check_code": "E_CONTRACT_SYNTAX"
+    },
+    {
+      "id": "rejected-task-effect",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/task-effect.nex",
+      "expected_check_code": "E_EFFECT"
+    }
+  ]
+}

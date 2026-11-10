@@ -1,0 +1,4 @@
+module learn_modules;
+import "./operations.nex" as operations;
+fn main()->unit !{io}{print(operations::answer(21));}
+test fn imported_public_interface()->unit{assert(operations::answer(21)==42);}

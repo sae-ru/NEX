@@ -1,0 +1,2 @@
+module learn_operations;
+pub fn answer(n:i64)->i64{return n*2;}

@@ -347,6 +347,7 @@ install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EX
 install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
 install(FILES tools/ctest_report.py DESTINATION share/nex/tools)
+install(DIRECTORY tools/llm/ DESTINATION share/nex/tools/llm PATTERN __pycache__ EXCLUDE)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
 install(DIRECTORY experiments/models/ DESTINATION share/nex/tools/models
   PATTERN __pycache__ EXCLUDE)
@@ -451,6 +452,10 @@ add_test(NAME model_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURC
 set_tests_properties(model_contract PROPERTIES TIMEOUT 1200)
 add_test(NAME discovery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/discovery.py $<TARGET_FILE:nex>)
 set_tests_properties(discovery PROPERTIES TIMEOUT 120)
+add_test(NAME language_pack_contract COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/language_pack_contract.py $<TARGET_FILE:nex>)
+set_tests_properties(language_pack_contract PROPERTIES TIMEOUT 60)
+add_test(NAME learning_corpus COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/learning_corpus.py $<TARGET_FILE:nex>)
+set_tests_properties(learning_corpus PROPERTIES TIMEOUT 900)
 add_test(NAME project_packaging COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/project_packaging.py $<TARGET_FILE:nex> ${NEX_TEST_PACKAGE_NOTICES_ARGS})
 set_tests_properties(project_packaging PROPERTIES COST 100 TIMEOUT 1200)
 add_test(NAME project_foreign_packaging COMMAND ${Python3_EXECUTABLE}

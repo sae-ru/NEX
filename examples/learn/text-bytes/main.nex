@@ -1,0 +1,4 @@
+module learn_text_bytes;
+fn check_text()->unit{let text:str="A🌍\u0000é";assert(len(text)==4);assert(text[1]=="🌍");assert(slice(text,1,2)=="🌍\u0000");let data:bytes=utf8_bytes(text);assert(unwrap(decode_utf8(data))==text);assert(unwrap(decode_base64(encode_base64(data)))==data);let changed:bytes=set(data,0,66);assert(data[0]==65&&changed[0]==66);assert(error_code(decode_utf8(unwrap(bytes([255]))))=="E_UTF8");}
+fn main()->unit !{io}{check_text();print("text/bytes");}
+test fn immutable_unicode_bytes()->unit{check_text();}

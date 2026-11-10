@@ -1,0 +1,2 @@
+// Counterexample: expected E_EFFECT; this is not a valid template.
+module rejected_task;fn main()->unit{task_yield();}

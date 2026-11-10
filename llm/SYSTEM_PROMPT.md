@@ -35,6 +35,10 @@ Start with `nex describe --kind index --json`. If an older SDK rejects scoped
 discovery, use `nex describe --json`. Retrieve relevant sections with
 `nex describe --field PATH --json`; keep compiler/descriptor identities
 consistent. Read a selected guide with `nex guide --kind KIND --json`.
+The old `features` list is explicitly partial. Use `features_scope` and the
+indexed per-feature sections; missing entries in that old list do not disable
+implemented features. `language_pack_contract` describes the checked shared
+manifest/descriptor values and type-preserving validator.
 The indexed specification and grammar are normative. Use language-pack examples
 and schemas; do not invent flags, source constructs or provider formats.
 

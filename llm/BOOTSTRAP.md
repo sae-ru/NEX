@@ -6,6 +6,8 @@ designs are not implemented features. Preserve the project's language version.
 1. Run `nex describe --kind index --json` once. On an older SDK that rejects it,
    use `nex describe --json`. Request only relevant `nex describe --field PATH`
    sections; keep compiler_build/descriptor_hash consistent across lookups.
+   The legacy `features` array is partial; use the indexed capability sections,
+   not absence from that summary, to decide support.
 2. Follow `llm/SYSTEM_PROMPT.md` and the normative language/grammar. Retrieve
    guides for the selected features. Never invent syntax, effects or support.
 3. State behavior, constraints and acceptance criteria. Get bounded graph

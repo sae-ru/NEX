@@ -1,0 +1,9 @@
+module learn_values;
+struct Box<T>{value:T;}
+enum Choice<T>{Some(value:T);None;}
+fn project<T>(value:Box<T>)->T{return value.value;}
+fn selected(value:Choice<i64>)->result<i64>{return match value{Choice::Some(n) if n>=0=>ok(n),Choice::Some(_)=>err<i64>("NEGATIVE","negative"),Choice::None()=>err<i64>("EMPTY","empty")};}
+fn doubled(value:Choice<i64>)->result<i64>{let n:i64=selected(value)?;return ok(n*2);}
+fn check_values()->unit{assert(project(Box<f64>(1.25))==1.25);assert(str(as_f64(42))=="4.2e1");assert(unwrap(as_i64(-1.75)) == -1);assert(unwrap(doubled(Choice<i64>::Some(21)))==42);assert(error_code(doubled(Choice<i64>::None()))=="EMPTY");}
+fn main()->unit !{io}{check_values();print("values");}
+test fn typed_values()->unit{check_values();}

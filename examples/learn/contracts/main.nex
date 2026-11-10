@@ -1,0 +1,8 @@
+module learn_contracts;
+fn total(n:i64)->i64 requires(n>=0&&n<=100) ensures(value=>value>=0){
+ var i:i64=0;var sum:i64=0;
+ while i<n invariant(i>=0&&i<=n) invariant(sum>=0) decreases(n-i){i=i+1;sum=sum+i;}
+ return sum;
+}
+fn main()->unit !{io}{print(total(10));}
+test fn contracts_hold()->unit{assert(total(0)==0);assert(total(10)==55);}

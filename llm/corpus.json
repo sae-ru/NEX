@@ -1,57 +1,195 @@
 {
-  "schema": "nex.learning-corpus/1",
-  "language": "0.27",
-  "toolchain": "0.152.1",
+  "schema": "nex.learning-corpus/2",
+  "language": "0.28",
+  "toolchain": "0.165.0",
   "validation_status": "passed",
   "capability_authority": "nex describe --kind index --json",
+  "path_base": "repository_root",
+  "definition": "llm/corpus-spec.json",
+  "historical_record": "llm/history/learning-0.27-0.152.1/corpus.json",
+  "historical_record_sha256": "462ee5c34109dc127439faf9ddf4006581a9cc38c057bc5e5e17c9102770cd0e",
   "examples": [
     {
+      "id": "hello",
       "kind": "valid",
       "project": "examples/learn/hello",
       "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "typed functions, arithmetic, IO and tests",
+      "files_sha256": {
+        "main.nex": "4a4fb586675867aca7852f3e35370acad2697552ae325f45d809363326dea462",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
       "source_sha256": "4a4fb586675867aca7852f3e35370acad2697552ae325f45d809363326dea462"
     },
     {
+      "id": "typed-errors",
       "kind": "valid",
       "project": "examples/learn/typed-errors",
       "expected_stdout": "caught\nfinished\n",
+      "expected_tests": 1,
+      "teaches": "owned typed source errors, guard and finally",
+      "files_sha256": {
+        "main.nex": "70297f76cc8bd52bcda415b827ad2725520da8ef1c4c7b756a779dfea91c0f43",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
       "source_sha256": "70297f76cc8bd52bcda415b827ad2725520da8ef1c4c7b756a779dfea91c0f43"
     },
     {
+      "id": "cpu-map",
       "kind": "valid",
       "project": "examples/learn/cpu-map",
       "expected_stdout": "14\n",
+      "expected_tests": 1,
+      "teaches": "ordered pure CPU map and immutable results",
+      "files_sha256": {
+        "main.nex": "06fb1a2f31e23554796b6e268d5b13f15b7a1c5386d22b278c36e6d79c508a27",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
       "source_sha256": "06fb1a2f31e23554796b6e268d5b13f15b7a1c5386d22b278c36e6d79c508a27"
     },
     {
+      "id": "contracts",
+      "kind": "valid",
+      "project": "examples/learn/contracts",
+      "expected_stdout": "55\n",
+      "expected_tests": 1,
+      "teaches": "source contracts, loop invariants/rankings and release checks",
+      "files_sha256": {
+        "main.nex": "161be4eebecc5b24eb8678a7fea7ae04c6e17a71a9729a4892db309a4580e861",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
+      "source_sha256": "161be4eebecc5b24eb8678a7fea7ae04c6e17a71a9729a4892db309a4580e861"
+    },
+    {
+      "id": "values",
+      "kind": "valid",
+      "project": "examples/learn/values",
+      "expected_stdout": "values\n",
+      "expected_tests": 1,
+      "teaches": "generic records/enums, guarded match, Result propagation and finite f64",
+      "files_sha256": {
+        "main.nex": "ba48f8bc3faf1039534c8d2079a7b46ddee29f142213223b8388ca91fd28a5e2",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
+      "source_sha256": "ba48f8bc3faf1039534c8d2079a7b46ddee29f142213223b8388ca91fd28a5e2"
+    },
+    {
+      "id": "text-bytes",
+      "kind": "valid",
+      "project": "examples/learn/text-bytes",
+      "expected_stdout": "text/bytes\n",
+      "expected_tests": 1,
+      "teaches": "Unicode scalar indexing, embedded NUL, immutable bytes and codecs",
+      "files_sha256": {
+        "main.nex": "8571f341a88d3bda125afe1c15da414fe327fba268624a5e4501690b9c5b7785",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
+      "source_sha256": "8571f341a88d3bda125afe1c15da414fe327fba268624a5e4501690b9c5b7785"
+    },
+    {
+      "id": "traits",
+      "kind": "valid",
+      "project": "examples/learn/traits",
+      "expected_stdout": "🧠\n",
+      "expected_tests": 1,
+      "teaches": "trait bounds, associated types, generic impls and method references",
+      "files_sha256": {
+        "main.nex": "acdd9c89d920f2cdd71affd21290178789d92e5d410bc5f5575e45084662dc05",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
+      "source_sha256": "acdd9c89d920f2cdd71affd21290178789d92e5d410bc5f5575e45084662dc05"
+    },
+    {
+      "id": "tasks",
+      "kind": "valid",
+      "project": "examples/learn/tasks",
+      "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "structured task scope, spawn, yield, wait and joined cleanup",
+      "files_sha256": {
+        "main.nex": "f95d2194e45d4df930cb36135a43a211275bfaa54b027c7216712c51dbf7ec62",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30"
+      },
+      "source_sha256": "f95d2194e45d4df930cb36135a43a211275bfaa54b027c7216712c51dbf7ec62"
+    },
+    {
+      "id": "modules",
+      "kind": "valid",
+      "project": "examples/learn/modules",
+      "expected_stdout": "42\n",
+      "expected_tests": 1,
+      "teaches": "module imports and checked public interfaces",
+      "files_sha256": {
+        "main.nex": "6e51e66b11508e4812a69103b180380be898d0ad26c0b76aec7eb3fee5d2e624",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30",
+        "operations.nex": "d0278ec0debaf661fb4d5a13267a54d1a52be8b86045c1d06e5dd4846bd0b670"
+      },
+      "source_sha256": "6e51e66b11508e4812a69103b180380be898d0ad26c0b76aec7eb3fee5d2e624"
+    },
+    {
+      "id": "rejected-type",
       "kind": "rejected",
       "source": "llm/rejected/type.nex",
       "expected_check_code": "E_TYPE",
       "source_sha256": "881f9779298f23aa0d1f3fa1a9144fdf3326b3fb997aea37787daaa6a518d708"
     },
     {
+      "id": "rejected-effect",
       "kind": "rejected",
       "source": "llm/rejected/effect.nex",
       "expected_check_code": "E_EFFECT",
       "source_sha256": "e88cf43e4d2b06e48227fb3353fb10cfb34368dbf561db592ec7a3d48a629c91"
+    },
+    {
+      "id": "rejected-match",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/match.nex",
+      "expected_check_code": "E_MATCH_EXHAUSTIVE",
+      "source_sha256": "087efc40da93e51431549f495f07a6b09e16b8674da47d0cde93611d83e0d567"
+    },
+    {
+      "id": "rejected-contract-effect",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/contract-effect.nex",
+      "expected_check_code": "E_EFFECT",
+      "source_sha256": "37ad86ad487d20fafa6e6bc94cc7a8af68e6810fcd6c467d96dbcdd3e2975370"
+    },
+    {
+      "id": "rejected-contract-ranking",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/contract-ranking.nex",
+      "expected_check_code": "E_CONTRACT_SYNTAX",
+      "source_sha256": "cb4baecc6e7e62a42a61dd92d4f0df324947c61a34af003286323d4dac0107bd"
+    },
+    {
+      "id": "rejected-task-effect",
+      "kind": "rejected",
+      "source": "llm/rejected/0.28/task-effect.nex",
+      "expected_check_code": "E_EFFECT",
+      "source_sha256": "337d6775a7b459183d34f751729a846e2d64a3e7fa33238a331d1eb36126fadc"
     }
   ],
   "validation": {
-    "compiler_sha256": "c444b9e878a2fd26d43abc72790d0ac28d33f41a1816b9d1aa81570a5acd407a",
-    "compiler_build": "397f32dae2656aa43e85705b40daa942028f435af8ce852b288a5777fe7d066c",
-    "descriptor_hash": "a93ce26a1bfc54d234b99dcaaf7fde84019eda3053f05d9e815f04bfa9a82976",
-    "valid_projects": 3,
-    "rejected_programs": 2,
+    "compiler_sha256": "d41f325b17e038847004aa132bc81f8c61033083f60ca06907d4803559836ff4",
+    "compiler_build": "96fc6cb88c7f71f72f61fd6f368e496178498ee764d91ae42e9b433d5bd6aa10",
+    "descriptor_hash": "48c7c0fec029b4ffb46a98e1bbcd2c22d6e4ff2440c5dd3c539336efbf6aaafa",
+    "manifest_sha256": "94f7853f28b297fbfc98f083b0d06fd68cc0822adca798a1f9f53be9c45f9a1d",
+    "spec_sha256": "2d886070f2457e933aae3eba84e6a3fa45001ef4a9fe64e4a4d77e71583c093d",
+    "validated_utc": "2026-11-10T20:13:32.634177+00:00",
+    "valid_projects": 9,
+    "rejected_programs": 6,
+    "report_sha256": "c561a74d1ae352b840ab5d582b466b62af5d5785d3f2e1071d357a3a1dfe4ceb",
     "checks": [
       "frontend",
       "reference_main",
-      "native_tests",
+      "reference_tests",
+      "native_release_tests",
       "typescript_tests",
-      "release_main",
-      "expected_diagnostics"
+      "native_release_main",
+      "typescript_main"
     ],
     "GPU_or_browser_execution_claimed": false,
     "labelled_counterexamples_rechecked": true
-  },
-  "path_base": "repository_root"
+  }
 }

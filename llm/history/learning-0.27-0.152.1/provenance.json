@@ -1,0 +1,42 @@
+{
+  "schema": "nex.learning-history/1",
+  "source_commit": "948d72b39bf16b9e8f3797d7ac0a613be28727bb",
+  "original_corpus_sha256": "462ee5c34109dc127439faf9ddf4006581a9cc38c057bc5e5e17c9102770cd0e",
+  "original_corpus_bytes_unchanged": true,
+  "input_base": "inputs",
+  "files": [
+    {
+      "path": "examples/learn/hello/main.nex",
+      "sha256": "4a4fb586675867aca7852f3e35370acad2697552ae325f45d809363326dea462"
+    },
+    {
+      "path": "examples/learn/hello/nex.json",
+      "sha256": "4503aa9649364f799674d119f3b718f4d9384b5020d9bfb2c1e0d09410366113"
+    },
+    {
+      "path": "examples/learn/typed-errors/main.nex",
+      "sha256": "70297f76cc8bd52bcda415b827ad2725520da8ef1c4c7b756a779dfea91c0f43"
+    },
+    {
+      "path": "examples/learn/typed-errors/nex.json",
+      "sha256": "4503aa9649364f799674d119f3b718f4d9384b5020d9bfb2c1e0d09410366113"
+    },
+    {
+      "path": "examples/learn/cpu-map/main.nex",
+      "sha256": "06fb1a2f31e23554796b6e268d5b13f15b7a1c5386d22b278c36e6d79c508a27"
+    },
+    {
+      "path": "examples/learn/cpu-map/nex.json",
+      "sha256": "4503aa9649364f799674d119f3b718f4d9384b5020d9bfb2c1e0d09410366113"
+    },
+    {
+      "path": "llm/rejected/type.nex",
+      "sha256": "881f9779298f23aa0d1f3fa1a9144fdf3326b3fb997aea37787daaa6a518d708"
+    },
+    {
+      "path": "llm/rejected/effect.nex",
+      "sha256": "e88cf43e4d2b06e48227fb3353fb10cfb34368dbf561db592ec7a3d48a629c91"
+    }
+  ],
+  "old_compiler_executed": false
+}

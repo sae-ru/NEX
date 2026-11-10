@@ -1,0 +1,2 @@
+// Counterexample: expected E_MATCH_EXHAUSTIVE; this is not a valid template.
+module rejected_match;fn main()->i64{return match true{true=>1};}
