@@ -29,7 +29,8 @@
     "schema": {
       "enum": [
         "nex.cuda-emission/1",
-        "nex.cuda-emission/2"
+        "nex.cuda-emission/2",
+        "nex.cuda-emission/3"
       ]
     },
     "ok": {
@@ -188,7 +189,10 @@
       ],
       "properties": {
         "schema": {
-          "const": "nex.cuda-values/1"
+          "enum": [
+            "nex.cuda-values/1",
+            "nex.cuda-values/2"
+          ]
         },
         "word_bytes": {
           "const": 8
@@ -197,7 +201,10 @@
           "const": "little"
         },
         "maximum_words": {
-          "const": 64
+          "enum": [
+            64,
+            4096
+          ]
         },
         "maximum_depth": {
           "const": 32
@@ -220,13 +227,13 @@
           "items": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 64
+            "maximum": 4096
           }
         },
         "result_words": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 64
+          "maximum": 4096
         },
         "types": {
           "type": "array",
@@ -251,17 +258,18 @@
                   "text_id",
                   "record",
                   "enum",
-                  "result"
+                  "result",
+                  "list"
                 ]
               },
               "words": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 64
+                "maximum": 4096
               },
               "fields": {
                 "type": "array",
-                "maxItems": 64,
+                "maxItems": 4096,
                 "items": {
                   "type": "object",
                   "required": [
@@ -283,12 +291,53 @@
                     "offset": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 63
+                      "maximum": 4095
                     }
                   }
                 }
+              },
+              "element_type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              },
+              "element_words": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4096
+              },
+              "capacity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1024
+              },
+              "length_offset": {
+                "const": 0
+              },
+              "elements_offset": {
+                "const": 1
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "list"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "element_type",
+                    "element_words",
+                    "capacity",
+                    "length_offset",
+                    "elements_offset"
+                  ]
+                }
+              }
+            ]
           }
         },
         "text_pool": {
@@ -300,8 +349,75 @@
             "type": "string",
             "maxLength": 1023
           }
+        },
+        "list_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "list_bounds_status": {
+          "const": 9
+        },
+        "list_capacity_status": {
+          "const": 10
+        },
+        "maximum_words_without_lists": {
+          "const": 64
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/2"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "list_capacity",
+              "list_bounds_status",
+              "list_capacity_status",
+              "maximum_words_without_lists"
+            ],
+            "properties": {
+              "maximum_words": {
+                "const": 4096
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "maximum_words": {
+                "const": 64
+              },
+              "parameter_words": {
+                "items": {
+                  "maximum": 64
+                }
+              },
+              "result_words": {
+                "maximum": 64
+              },
+              "types": {
+                "items": {
+                  "properties": {
+                    "words": {
+                      "maximum": 64
+                    },
+                    "kind": {
+                      "not": {
+                        "const": "list"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "oneOf": [
@@ -386,7 +502,10 @@
       "if": {
         "properties": {
           "schema": {
-            "const": "nex.cuda-emission/2"
+            "enum": [
+              "nex.cuda-emission/2",
+              "nex.cuda-emission/3"
+            ]
           }
         }
       },
@@ -418,6 +537,46 @@
               "bool",
               "unit"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.cuda-emission/2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value_abi": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/1"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.cuda-emission/3"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value_abi": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/2"
+              }
+            }
           }
         }
       }

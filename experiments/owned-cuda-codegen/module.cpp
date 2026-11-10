@@ -206,6 +206,10 @@ static constexpr uint32_t maximumElements=262144;
 static const JSON &textPool(){static const JSON pool=JSON::parse(GENERATED_TEXT_POOL_JSON);return pool;}
 #endif
 static const char *laneError(uint32_t code){
+#if GENERATED_LIST_VALUES
+  if(code==9)return "E_BOUNDS";
+  if(code==10)return "E_LIMIT";
+#endif
 #if GENERATED_VALUE_ABI
   if(code&0x80000000u){
     const auto a=(code>>10u)&1023u,b=code&1023u;
@@ -219,6 +223,10 @@ static const char *laneError(uint32_t code){
 }
 static std::string laneMessage(uint32_t code,unsigned lane){
  (void)code;
+#if GENERATED_LIST_VALUES
+ if(code==9)return "index is outside collection bounds";
+ if(code==10)return "device list exceeds declared capacity";
+#endif
 #if GENERATED_VALUE_ABI
  if(code&0x80000000u)return textPool().at((code>>10u)&1023u).get<std::string>()+": "+textPool().at(code&1023u).get<std::string>();
 #endif

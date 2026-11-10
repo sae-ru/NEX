@@ -57,21 +57,25 @@ class IDs:
 
 
 class CudaValues(harness.ToolchainCase):
+    cases = staticmethod(fixtures)
+    emission_schema = "nex.cuda-emission/2"
+    value_schema = "nex.cuda-values/1"
+    emit_args = ()
     def test_values_wire_execution_and_existing_source_backends(self):
         self.source('module oracle;fn main()->unit{}')
         imports, definitions, runs, expected = [], [], [], []
         cpp = ['#include <iostream>\n#include <bit>\n#include <cfenv>\n#define __device__\n#define __global__\n']
-        for i, (name, body, vectors) in enumerate(fixtures()):
+        for i, (name, body, vectors) in enumerate(self.cases()):
             source = self.root / (name+'.nex')
             source.write_text('module case'+str(i)+';'+body+'\nfn main()->unit{}\n', encoding='utf-8')
             imports.append('import "./'+name+'.nex" as c'+str(i)+';')
             self.cli('check', source)
             for layout in ['rows','columns']:
                 shader = self.root / (name+'-'+layout+'.cu')
-                r = self.cli('emit', source, '--kind', 'cuda', '--entry', 'transform', '--input-layout', layout, '-o', shader)
-                self.assertEqual(r['schema'], 'nex.cuda-emission/2')
+                r = self.cli('emit', source, '--kind', 'cuda', '--entry', 'transform', '--input-layout', layout, '-o', shader, *self.emit_args)
+                self.assertEqual(r['schema'], self.emission_schema)
                 abi = r['value_abi'];rows=vectors(IDs(abi['text_pool']));widths=abi['parameter_words'];width=abi['result_words'];count=len(rows)
-                self.assertEqual(abi['schema'],'nex.cuda-values/1')
+                self.assertEqual(abi['schema'],self.value_schema)
                 self.assertTrue(abi['inactive_words_zero'])
                 self.assertEqual(r['shader_sha256'],hashlib.sha256(shader.read_bytes()).hexdigest())
                 self.assertTrue(all([len(x)for x in row[0]]==widths and len(row[1])==width for row in rows))
@@ -102,7 +106,7 @@ class CudaValues(harness.ToolchainCase):
         self.file.write_text('module oracle;'+''.join(imports)+'fn main()->unit{}')
         for args in [('test','--interpreter-only'),('test','--profile','release'),('test','--target','web')]:
             result=self.cli(*args,timeout=180)
-            self.assertEqual(len(result['tests']),len(fixtures()))
+            self.assertEqual(len(result['tests']),len(self.cases()))
 
     def test_public_preparation_and_limits(self):
         self.source('''module gpu;pub struct Pair{n:i64;b:bool;}

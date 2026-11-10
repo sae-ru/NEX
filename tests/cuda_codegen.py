@@ -63,7 +63,7 @@ fn main()->unit{}
         self.assertEqual(columns['shader_sha256'], hashlib.sha256(output.read_bytes()).hexdigest())
         self.assertIn('const long long *input_0,', output.read_text())
         for source, code in [
-                ('fn transform(x:list<i64>)->list<i64>{return x;}', 'E_GPU_TYPE'),
+                ('fn transform(x:str)->str{return x+"x";}', 'E_GPU_UNSUPPORTED'),
                 ('fn transform(x:i64)->i64 !{io}{print(x);return x;}', 'E_GPU_REALM'),
                 ('fn transform(x:i64)->i64{return transform(x);}', 'E_GPU_RECURSION'),
                 ('fn transform(x:bytes)->bytes{return x;}', 'E_GPU_TYPE')]:

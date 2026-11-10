@@ -6,7 +6,13 @@
 
 int main(int argc,char **argv){
   try{
-    if(argc!=5)throw nex::Error("E_OPTION","usage: nex-cuda-emit PROJECT SYMBOL rows|columns OUTPUT.cu");
+    if(argc!=5&&argc!=7)throw nex::Error("E_OPTION","usage: nex-cuda-emit PROJECT SYMBOL rows|columns OUTPUT.cu [--list-capacity N]");
+    unsigned capacity=32;
+    if(argc==7){
+      if(std::string(argv[5])!="--list-capacity")throw nex::Error("E_OPTION","expected --list-capacity");
+      capacity=0;for(char c:std::string(argv[6])){if(c<'0'||c>'9'||capacity>(1024-unsigned(c-'0'))/10)throw nex::Error("E_OPTION","CUDA list capacity must be1..1024");capacity=capacity*10+unsigned(c-'0');}
+      if(!capacity)throw nex::Error("E_OPTION","CUDA list capacity must be1..1024");
+    }
     auto root=std::filesystem::canonical(argv[1]);
     auto manifest=llvm::json::parse(nex::readFile((root/"nex.json").string()));
     if(!manifest)throw nex::Error("E_MANIFEST",llvm::toString(manifest.takeError()));
@@ -14,7 +20,7 @@ int main(int argc,char **argv){
     auto entry=object?object->getString("entry"):std::nullopt;
     if(!entry)throw nex::Error("E_MANIFEST","nex.json requires an entry");
     auto program=nex::loadProgram(entry->str(),root.string());
-    auto emitted=nex::cuda_experiment::emitCuda(program,argv[2],argv[3]);
+    auto emitted=nex::cuda_experiment::emitCuda(program,argv[2],argv[3],capacity);
     llvm::json::Array parameters,functions;
     for(const auto &type:emitted.parameterTypes)parameters.push_back(type);
     for(const auto &f:emitted.functions)functions.push_back(llvm::json::Object{

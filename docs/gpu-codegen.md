@@ -109,7 +109,7 @@ nex emit examples/gpu-cuda.nex --kind cuda --entry transform \
 CUDA accepts shared pure i64/f64/bool/unit functions, concrete scalar generic
 instances, branches, loops, checked source/loop contracts and scalar matches
 with ordered binding/wildcard guards or i64/bool literal patterns. Fixed records/enums, Results and bounded static device text are described below.
-Dynamic lists/bytes/text allocation, source errors, finally, closures, indirect
+Unbounded containers/bytes/text allocation, source errors, finally, closures, indirect
 calls, effects and recursion fail explicitly.
 Unreachable unsupported functions are excluded.
 
@@ -171,7 +171,7 @@ values are flattened. A record has the sum of its fields' widths, with one zero
 word for an empty record. An enum has a tag followed by enough words for its
 largest variant. All inactive/padding words are zero. Concrete generic instances
 retain their concrete nominal type names. Maximum nesting is32, aggregate types128
-and width64 words. Dynamic containers and authority-bearing types are rejected.
+and width64 words. Lists use the separately versioned bounded layout below. Authority-bearing types and unbounded allocation are rejected.
 
 A Result uses tag1 for `ok`, with its payload at word1. Tag0 is an ordinary error:
 words1/2 reference its code/message in the emitted text pool. Its total width is
@@ -218,3 +218,46 @@ Internal device helper parameters use read-only borrowing for aggregates and
 return independent values. This compiler-private calling convention preserves
 source value semantics and avoids a retained LLVM22.1.8 aggregate-parameter
 machine-verifier failure. The public kernel wire layout is the `value_abi` record.
+
+### Bounded immutable CUDA lists
+
+Reachable `list<T>` values select emission `nex.cuda-emission/3` with
+`nex.cuda-values/2`. Existing scalar `/1` and fixed-value `/2` layouts keep their
+versions. Source list syntax and CPU semantics remain language0.28.
+
+```sh
+nex emit examples/gpu-lists.nex --kind cuda --entry transform \
+  --list-capacity 32 --input-layout columns -o lists.cu --json
+```
+
+The CUDA-only `--list-capacity N` chooses1..1024 slots per list, default32.
+Owned CUDA preparation accepts the same option. The limit is part of the exact
+emission and wire metadata; hosts must read it rather than assume a capacity.
+Lists containing other lists, records, enums or Results are supported when their
+acyclic layout fits. A type containing lists has at most4096 eight-byte words;
+a type without lists retains its64-word bound. Depth32 and128 aggregate types
+remain enforced. Increasing capacity can exceed these layout limits.
+
+Each list occupies `1 + capacity * element_words` words: word0 is its length,
+followed by fixed-width element slots. Metadata gives `element_type`,
+`element_words`, `capacity`, `length_offset` and `elements_offset`. Length must
+be0..capacity. Every inactive word is zero, including inactive nested payloads.
+Active elements are validated recursively, including bool/text IDs and finite
+f64; negative f64 zero is normalized. Malformed length/padding is `E_GPU_INPUT`.
+
+Supported operations are list literals, indexing, `len`, `push`, `set`, `+`,
+structural equality and exact nested list patterns with guards. They preserve
+immutable values and left-to-right evaluation. All call arguments evaluate
+before the operation checks bounds/capacity: for example, division by zero in
+`set(xs, -1, 1 / 0)` wins over the invalid index. Indexing and `set` trap with
+status9 / `E_BOUNDS`, message `index is outside collection bounds`. `push` and
+concatenation beyond the declared capacity trap with status10 / `E_LIMIT`,
+message `device list exceeds declared capacity`. Oversized literals/patterns
+are rejected during emission. This device resource bound does not constrain CPU
+lists or introduce a source-level fixed-size list type.
+
+The owned adapter accepts these statuses only for list ABI2. It splits logical
+columns into physical batches using their declared word widths; every input and
+output FFI transfer stays within256KiB. No device heap allocation, raw pointers
+or additional authority is introduced. Device execution and matching SDK
+qualification remain pending until the final platform gate.

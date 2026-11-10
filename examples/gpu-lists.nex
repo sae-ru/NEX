@@ -1,0 +1,21 @@
+module gpu_lists;
+
+// Emit this pure function with --kind cuda --entry transform --list-capacity 32.
+// Each lane has a private, immutable list with an explicit device capacity.
+pub fn transform(values: list<i64>) -> list<i64> {
+  var result: list<i64> = [];
+  var i: i64 = 0;
+  while i < len(values) {
+    result = push(result, values[i] * 2);
+    i = i + 1;
+  }
+  return result;
+}
+
+test fn doubles_without_changing_input() -> unit {
+  let original: list<i64> = [1, 2, 21];
+  assert(transform(original) == [2, 4, 42]);
+  assert(original == [1, 2, 21]);
+}
+
+fn main() -> unit {}

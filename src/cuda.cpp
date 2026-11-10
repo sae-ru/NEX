@@ -96,8 +96,9 @@ class Emitter {
     if(!pattern)throw Error("E_GPU_UNSUPPORTED","missing checked CUDA pattern");
     checkType(pattern->type,pattern->span);
     if(pattern->kind==Pattern::String)values.literal(pattern->text,pattern->span);
-    else if(pattern->kind!=Pattern::Binding&&pattern->kind!=Pattern::Wildcard&&pattern->kind!=Pattern::Integer&&pattern->kind!=Pattern::Boolean&&pattern->kind!=Pattern::Constructor)
+    else if(pattern->kind!=Pattern::Binding&&pattern->kind!=Pattern::Wildcard&&pattern->kind!=Pattern::Integer&&pattern->kind!=Pattern::Boolean&&pattern->kind!=Pattern::Constructor&&pattern->kind!=Pattern::List)
       throw Error("E_GPU_UNSUPPORTED","unsupported CUDA value pattern",pattern->span);
+    if(pattern->kind==Pattern::List&&pattern->args.size()>values.listCapacity)throw Error("E_GPU_LIMIT","device list pattern exceeds declared capacity",pattern->span);
     for(const auto &child:pattern->args)validatePattern(child);
   }
 
@@ -127,6 +128,12 @@ class Emitter {
       case Expr::Integer:case Expr::Floating:case Expr::Boolean:case Expr::Name:break;
       case Expr::String:values.literal(expression->text,expression->span);break;
       case Expr::Field:case Expr::Propagate:break;
+      case Expr::List:
+        if(expression->args.size()>values.listCapacity)throw Error("E_GPU_LIMIT","device list literal exceeds declared capacity",expression->span);
+        break;
+      case Expr::Index:
+        if(expression->args[0]->type.kind!=Type::List)throw Error("E_GPU_UNSUPPORTED","CUDA indexing requires a bounded list",expression->span);
+        break;
       case Expr::Unary:
         if(expression->args.size()!=1||(expression->text!="-"&&expression->text!="!"))
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA unary expression",expression->span);
@@ -135,15 +142,15 @@ class Emitter {
         static const std::set<std::string> operators={"+","-","*","/","%","==","!=","<","<=",">",">=","&&","||"};
         if(expression->args.size()!=2||!operators.contains(expression->text))
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA binary expression",expression->span);
-        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!=")
+        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!="&&!(expression->text=="+"&&expression->type.kind==Type::List))
           throw Error("E_GPU_UNSUPPORTED","device values support equality; dynamic heap/text arithmetic is unavailable",expression->span);
         break;
       }
       case Expr::Call:
         if(expression->text=="as_i64"){
           values.conversion=true;values.literal("E_RANGE",expression->span);values.literal("f64 value is outside i64 range",expression->span);
-        }else if(expression->text=="ok"||expression->text=="err"||expression->text=="is_ok"||expression->text=="unwrap"||expression->text=="error_code"||expression->text=="error_message"||expression->text=="len"||program.hasStructure(expression->text)||program.variant(expression->text)){
-          if(expression->text=="len"&&expression->args[0]->type!=Type::Str)throw Error("E_GPU_TYPE","device len currently requires bounded text",expression->span);
+        }else if(expression->text=="ok"||expression->text=="err"||expression->text=="is_ok"||expression->text=="unwrap"||expression->text=="error_code"||expression->text=="error_message"||expression->text=="len"||expression->text=="push"||expression->text=="set"||program.hasStructure(expression->text)||program.variant(expression->text)){
+          if(expression->text=="len"&&expression->args[0]->type!=Type::Str&&expression->args[0]->type.kind!=Type::List)throw Error("E_GPU_TYPE","device len requires bounded text or a list",expression->span);
         }else if(expression->text=="as_f64"){
           if(expression->args.size()!=1||expression->args[0]->type!=Type::I64||expression->type!=Type::F64)
             throw Error("E_GPU_TYPE","invalid checked CUDA integer-to-f64 conversion",expression->span);
@@ -209,15 +216,20 @@ class Emitter {
     }
   }
 
-  std::string extract(const Type &type,const std::string &base,unsigned offset){
-    if(!values.aggregate(type))return values.load(type,base+".w["+std::to_string(offset)+"]");
+  std::string extract(const Type &type,const std::string &base,const std::string &offset){
+    if(!values.aggregate(type))return values.load(type,base+".w["+offset+"]");
     const auto name=temporary();line(deviceType(type,where)+" "+name+"{};");
-    line("for(unsigned i=0;i<"+std::to_string(values.words(type))+"U;++i) "+name+".w[i] = "+base+".w["+std::to_string(offset)+"U+i];");return name;
+    line("for(unsigned i=0;i<"+std::to_string(values.words(type))+"U;++i) "+name+".w[i] = "+base+".w[("+offset+")+i];");return name;
   }
-  void insert(const Type &type,const std::string &value,const std::string &base,unsigned offset){
-    if(values.aggregate(type))line("for(unsigned i=0;i<"+std::to_string(values.words(type))+"U;++i) "+base+".w["+std::to_string(offset)+"U+i] = "+value+".w[i];");
-    else line(base+".w["+std::to_string(offset)+"] = "+values.store(type,value)+";");
+  std::string extract(const Type &type,const std::string &base,unsigned offset){return extract(type,base,std::to_string(offset)+"U");}
+  void insert(const Type &type,const std::string &value,const std::string &base,const std::string &offset){
+    if(values.aggregate(type))line("for(unsigned i=0;i<"+std::to_string(values.words(type))+"U;++i) "+base+".w[("+offset+")+i] = "+value+".w[i];");
+    else line(base+".w["+offset+"] = "+values.store(type,value)+";");
   }
+  void insert(const Type &type,const std::string &value,const std::string &base,unsigned offset){insert(type,value,base,std::to_string(offset)+"U");}
+  std::string listOffset(const Type &list,const std::string &index)const{return "1ULL+static_cast<unsigned long long>("+index+")*"+std::to_string(values.words(*list.element))+"ULL";}
+  void listBounds(const std::string &list,const std::string &index){line("if ("+index+" < 0LL || "+index+" >= "+list+".w[0]) { nex_s.code = 9; "+stop()+" }");}
+  void listLimit(const std::string &length){line("if ("+length+" > "+std::to_string(values.listCapacity)+"LL) { nex_s.code = 10; "+stop()+" }");}
   std::string construct(const Type &type,const std::vector<std::string> &arguments,int64_t tag=0){
     const auto name=temporary();line(deviceType(type,where)+" "+name+"{};");
     unsigned offset=values.payloadOffset(type);if(offset)line(name+".w[0] = "+std::to_string(tag)+"LL;");
@@ -226,7 +238,10 @@ class Emitter {
   void pattern(const P &p,const std::string &subject,const std::string &accepted,Scope &bound){
     line("if ("+accepted+") {");++indentation;
     if(p->kind==Pattern::Binding)line(bound.at(p->text)+" = "+subject+";");
-    else if(p->kind==Pattern::Constructor){
+    else if(p->kind==Pattern::List){
+      line(accepted+" = ("+subject+".w[0] == "+std::to_string(p->args.size())+"LL);");
+      for(size_t i=0;i<p->args.size();++i){line("if ("+accepted+") {");++indentation;auto child=extract(*p->type.element,subject,1+unsigned(i)*values.words(*p->type.element));pattern(p->args[i],child,accepted,bound);--indentation;line("}");}
+    }else if(p->kind==Pattern::Constructor){
       auto offset=values.payloadOffset(p->type);
       if(offset)line(accepted+" = ("+subject+".w[0] == "+std::to_string(p->ordinal)+"LL);");
       const auto fs=values.fields(p->type,p->ordinal);
@@ -287,6 +302,13 @@ class Emitter {
       }
       case Expr::Boolean:generated=value->number?"true":"false";break;
       case Expr::String:generated=std::to_string(values.id(value->text))+"U";break;
+      case Expr::List:{
+        const auto name=temporary();line(deviceType(value->type,where)+" "+name+"{};");line(name+".w[0] = "+std::to_string(value->args.size())+"LL;");
+        for(size_t i=0;i<value->args.size();++i){auto item=expression(value->args[i],scope);insert(*value->type.element,item,name,1+unsigned(i)*values.words(*value->type.element));}return name;
+      }
+      case Expr::Index:{
+        auto base=expression(value->args[0],scope),index=expression(value->args[1],scope);listBounds(base,index);generated=extract(value->type,base,listOffset(value->args[0]->type,index));break;
+      }
       case Expr::Field:{
         auto base=expression(value->args.at(0),scope);const auto fields=values.fields(value->args[0]->type);unsigned offset=0;
         for(int64_t i=0;i<value->number;++i)offset+=values.words(fields.at(size_t(i)));
@@ -316,6 +338,10 @@ class Emitter {
         auto right=expression(value->args.at(1),scope);
         static const std::map<std::string,std::string> helpers={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
         auto helper=helpers.find(value->text);
+        if(value->type.kind==Type::List&&value->text=="+"){
+          const auto length=left+".w[0]+"+right+".w[0]";listLimit(length);const auto name=temporary();line(deviceType(value->type,where)+" "+name+" = "+left+";");line(name+".w[0] = "+length+";");
+          const auto width=std::to_string(values.words(*value->type.element));line("for(unsigned i=0;i<static_cast<unsigned>("+right+".w[0])*"+width+"U;++i) "+name+".w[1U+static_cast<unsigned>("+left+".w[0])*"+width+"U+i] = "+right+".w[1U+i];");return name;
+        }
         if(values.aggregate(value->args[0]->type))generated=std::string(value->text=="!="?"!":"")+"nex_equal_"+values.cpp(value->args[0]->type)+"("+left+", "+right+")";
         else if(value->args[0]->type==Type::F64&&helper==helpers.end()){
           static const std::map<std::string,unsigned> comparisons={{"==",0},{"!=",1},{"<",2},{"<=",3},{">",4},{">=",5}};
@@ -336,7 +362,15 @@ class Emitter {
         if(value->text=="unwrap"){
           const auto input=arguments.at(0);line("if ("+input+".w[0] == 0LL) { nex_s.code = 0x80000000U | (static_cast<unsigned int>("+input+".w[1]) << 10U) | static_cast<unsigned int>("+input+".w[2]); "+stop()+" }");generated=extract(value->type,input,1);break;
         }
-        if(value->text=="len"){generated="nex_text_length("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="len"){generated=value->args[0]->type.kind==Type::List?arguments.at(0)+".w[0]":"nex_text_length("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="push"||value->text=="set"){
+          const auto &input=arguments.at(0);const bool push=value->text=="push";
+          const auto index=push?input+".w[0]":arguments.at(1);
+          if(push)listLimit(index+"+1LL");else listBounds(input,index);
+          const auto name=temporary();line(deviceType(value->type,where)+" "+name+" = "+input+";");
+          insert(*value->type.element,arguments.at(push?1:2),name,listOffset(value->type,index));
+          if(push)line(name+".w[0] = "+index+"+1LL;");return name;
+        }
         if(program.variant(value->text))return construct(value->type,arguments,value->number);
         if(program.hasStructure(value->text))return construct(value->type,arguments);
         if(value->text=="as_f64"){generated="nex_f_from_integer("+arguments.at(0)+", nex_s)";break;}
@@ -410,8 +444,8 @@ class Emitter {
   }
 
 public:
-  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout)
-      :program(program),root(program.function(entry)),values(program),layout(inputLayout),where(root.span){
+  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity)
+      :program(program),root(program.function(entry)),values(program,capacity),layout(inputLayout),where(root.span){
     if(layout!="rows"&&layout!="columns")throw Error("E_OPTION","CUDA input layout must be rows or columns");
     if(std::string(programLanguage(program))!="0.28")throw Error("E_GPU_UNSUPPORTED","CUDA emission requires checked language0.28",root.span);
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
@@ -470,7 +504,7 @@ public:
   }
 };
 }
-CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout){
-  return Emitter(program,entry,inputLayout).generate();
+CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity){
+  return Emitter(program,entry,inputLayout,capacity).generate();
 }
 }

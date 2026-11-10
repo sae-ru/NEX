@@ -4105,7 +4105,8 @@
         "str",
         "fixed record",
         "fixed enum",
-        "result<T>"
+        "result<T>",
+        "bounded list<T>"
       ],
       "root_parameter_types": [
         "i64",
@@ -4114,7 +4115,8 @@
         "bounded str",
         "fixed record",
         "fixed enum",
-        "result<T>"
+        "result<T>",
+        "bounded list<T>"
       ],
       "realm": "shared",
       "effects": [],
@@ -4158,7 +4160,7 @@
         "current owned CUDA provider NVIDIA execution and lifecycle acceptance",
         "physical f64 and current generated-provider Compute Sanitizer acceptance",
         "GPU operation debugging and physical profiling",
-        "dynamic lists/bytes/text allocation and general GPU/NPU compilation"
+        "unbounded containers/bytes/text allocation and general GPU/NPU compilation"
       ],
       "owned_provider": {
         "status": "experimental_operator_preparation",
@@ -4184,9 +4186,10 @@
       },
       "schemas": [
         "nex.cuda-emission/1",
-        "nex.cuda-emission/2"
+        "nex.cuda-emission/2",
+        "nex.cuda-emission/3"
       ],
-      "schema_selection": "version1 for legacy scalar values; version2 when fixed values or bounded device text are reachable",
+      "schema_selection": "version1 for scalar values; version2 for fixed values/text; version3 when bounded lists are reachable",
       "fixed_values": {
         "schema": "nex.cuda-values/1",
         "word_bytes": 8,
@@ -4205,6 +4208,31 @@
         "text_NUL_allowed": false,
         "text_values": "references to reachable bounded UTF-8 literals; no dynamic allocation",
         "ordinary_source_language_semantics_changed": false
+      },
+      "bounded_lists": {
+        "schema": "nex.cuda-values/2",
+        "emission_schema": "nex.cuda-emission/3",
+        "capacity_option": "--list-capacity",
+        "default_capacity": 32,
+        "maximum_capacity": 1024,
+        "maximum_words": 4096,
+        "maximum_words_without_lists": 64,
+        "length_offset": 0,
+        "elements_offset": 1,
+        "immutable": true,
+        "bounds_status": 9,
+        "capacity_status": 10,
+        "source_language_changed": false,
+        "operations": [
+          "literal",
+          "index",
+          "len",
+          "push",
+          "set",
+          "concatenate",
+          "equal",
+          "exact match"
+        ]
       }
     }
   }

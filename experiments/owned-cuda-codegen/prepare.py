@@ -89,6 +89,7 @@ def main():
     for name in ["emitter", "frontend-archive"]:
         parser.add_argument("--" + name, type=Path, help="Optional standalone developer harness; both options must be supplied together")
     parser.add_argument("--symbol", required=True)
+    parser.add_argument("--list-capacity", type=int, help="CUDA list slots per value (1..1024; default32)")
     parser.add_argument("--source-only", action="store_true")
     parser.add_argument("--acceptance-gate", action="store_true", help="Compile a bounded GPU delay kernel for explicit cancellation/deadline tests")
     parser.add_argument("--cxx", type=Path)
@@ -96,6 +97,8 @@ def main():
     parser.add_argument("--compute", type=int, default=52)
     parser.add_argument("--index", type=int, default=0)
     args = parser.parse_args()
+    if args.list_capacity is not None and not 1 <= args.list_capacity <= 1024:
+        parser.error("--list-capacity must be1..1024")
     if not 0 <= args.index < 64 or not 52 <= args.compute <= 999:
         parser.error("select GPU ordinal 0..63 and a supported compute target >=52")
     if not args.source_only and (platform.system() not in {"Windows", "Linux"} or not args.nvrtc):
@@ -145,7 +148,8 @@ def main():
         assert descriptor["resource_regions"]["dependency_graph"]["C_table_parent_creation"]
         assert descriptor["foreign_trap_reporting"]["C_table_prefix"] == "NEX_FFI_V1_TRAP_SIZE"
         if emitter:
-            generated = json.loads(run("generate", [emitter, project, args.symbol, "columns", generation / "kernel.cu"], project))
+            capacity = ["--list-capacity", str(args.list_capacity)] if args.list_capacity is not None else []
+            generated = json.loads(run("generate", [emitter, project, args.symbol, "columns", generation / "kernel.cu", *capacity], project))
             assert generated["schema"] == "nex.experimental-cuda-emission/1" and not generated["integrated_compiler_CLI"]
             if generated["frontend_archive_sha256"] != pins["frontend"]:
                 raise RuntimeError("emitter and selected frontend archive identities differ")
@@ -154,7 +158,8 @@ def main():
             capability = descriptor["gpu_codegen"]["cuda"]
             assert capability["source_support"] and capability["schema"] == "nex.cuda-emission/1"
             generated = json.loads(run("generate", [compiler, "emit", "--kind", "cuda", "--entry", args.symbol,
-                "--input-layout", "columns", "-o", generation / "kernel.cu", "--json"], project))
+                "--input-layout", "columns", "-o", generation / "kernel.cu", "--json",
+                *(["--list-capacity", str(args.list_capacity)] if args.list_capacity is not None else [])], project))
             assert generated["schema"] in capability.get("schemas", [capability["schema"]]) and generated["kind"] == "cuda"
             assert all(generated[name] == index[name] for name in ["compiler_build", "descriptor_hash", "toolchain", "language"])
             functions = generated["function_map"]
@@ -179,9 +184,14 @@ def main():
             shutil.copyfile(resources / "lib" / name, out / "stdlib" / name)
         write(out / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": "./stdlib"}})
         value_abi = generated.get("value_abi")
+        list_values = bool(value_abi and value_abi["schema"] == "nex.cuda-values/2")
+        if value_abi and value_abi["schema"] not in {"nex.cuda-values/1", "nex.cuda-values/2"}:
+            raise RuntimeError("unknown device value ABI")
+        if list_values and (type(value_abi["list_capacity"]) is not int or not 1 <= value_abi["list_capacity"] <= 1024):
+            raise RuntimeError("invalid device list capacity")
         argument_words = value_abi["parameter_words"] if value_abi else [1] * len(generated["parameter_types"])
         output_words = value_abi["result_words"] if value_abi else 1
-        if len(argument_words) != len(generated["parameter_types"]) or any(type(n) is not int or not 1 <= n <= 64 for n in [*argument_words, output_words]):
+        if len(argument_words) != len(generated["parameter_types"]) or any(type(n) is not int or not 1 <= n <= (4096 if list_values else 64) for n in [*argument_words, output_words]):
             raise RuntimeError("invalid fixed device value widths")
         batch_lanes = min(32768 // n for n in [*argument_words, output_words])
         text_pool = value_abi["text_pool"] if value_abi else []
@@ -214,6 +224,7 @@ def main():
                 raise RuntimeError("NVRTC PTX omitted the explicit acceptance gate or its device clock")
         (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) +
             "\n#define GENERATED_VALUE_ABI " + ("1" if value_abi else "0") +
+            "\n#define GENERATED_LIST_VALUES " + ("1" if list_values else "0") +
             "\n#define GENERATED_ARGUMENT_WORDS {" + ",".join(map(str, argument_words or [0])) + "}" +
             "\n#define GENERATED_OUTPUT_WORDS " + str(output_words) +
             "\n#define GENERATED_TEXT_POOL_JSON " + json.dumps(json.dumps(text_pool, ensure_ascii=True, separators=(",", ":"))) +

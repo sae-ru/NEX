@@ -1,3 +1,24 @@
+# Bounded CUDA lists — development0.165.0
+
+Public CUDA emission now lowers existing immutable list literals, indexing,
+`len`, `push`, `set`, concatenation, equality and nested exact list patterns.
+`--list-capacity` selects1..1024 slots (default32). Emission `/3` and value ABI2
+record length, capacity and element layout. Active elements are checked and
+inactive words must be zero. Invalid indices trap with E_BOUNDS; operations
+exceeding the declared device capacity trap with E_LIMIT. CPU semantics,
+language0.28, task ABI7, C ABI1 and prior emission versions are retained.
+
+The complete block builds. Three affected groups passed in40.72seconds: the new
+list cases execute22 CPU kernel layouts/76 lane outcomes under UBSan and11 NEX
+oracles per reference/native Release/TypeScript backend; fixed-value and scalar
+checks also passed. The actual generated adapter status parser and source-only
+preparation passed. One list example passed actual LLVM22.1 IR and machine
+verification to sm_86/PTX7.1, with33-word input/output and no unresolved device
+functions. [Development record](docs/evidence/cuda-bounded-lists-0.165.0-2026-11-10.json).
+Full regression, physical NVIDIA/Compute Sanitizer and matching immutable SDK
+qualification remain deferred to the final milestone under the implementation-first
+workflow. General GPU/NPU compilation and the remaining PLAN scope are pending.
+
 # CUDA fixed values — development0.165.0
 
 Public CUDA emission now supports fixed records/concrete generics, enums,
