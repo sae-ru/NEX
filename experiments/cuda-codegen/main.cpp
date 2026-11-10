@@ -6,15 +6,15 @@
 
 int main(int argc,char **argv){
   try{
-    if(argc!=5&&argc!=7&&argc!=9)throw nex::Error("E_OPTION","usage: nex-cuda-emit PROJECT SYMBOL rows|columns OUTPUT.cu [--list-capacity N] [--byte-capacity N]");
-    unsigned capacity=32,byteCapacity=256;std::set<std::string> options;
+    if(argc!=5&&argc!=7&&argc!=9&&argc!=11)throw nex::Error("E_OPTION","usage: nex-cuda-emit PROJECT SYMBOL rows|columns OUTPUT.cu [--list-capacity N] [--byte-capacity N] [--text-capacity N]");
+    unsigned capacity=32,byteCapacity=256,textCapacity=0;std::set<std::string> options;
     for(int i=5;i<argc;i+=2){
       const std::string option=argv[i];
-      if((option!="--list-capacity"&&option!="--byte-capacity")||!options.insert(option).second)throw nex::Error("E_OPTION","invalid capacity option");
+      if((option!="--list-capacity"&&option!="--byte-capacity"&&option!="--text-capacity")||!options.insert(option).second)throw nex::Error("E_OPTION","invalid capacity option");
       const unsigned maximum=option=="--list-capacity"?1024:32760;unsigned value=0;
       for(char c:std::string(argv[i+1])){if(c<'0'||c>'9'||value>(maximum-unsigned(c-'0'))/10)throw nex::Error("E_OPTION","invalid CUDA capacity");value=value*10+unsigned(c-'0');}
       if(!value)throw nex::Error("E_OPTION","invalid CUDA capacity");
-      (option=="--list-capacity"?capacity:byteCapacity)=value;
+      (option=="--list-capacity"?capacity:option=="--byte-capacity"?byteCapacity:textCapacity)=value;
     }
     auto root=std::filesystem::canonical(argv[1]);
     auto manifest=llvm::json::parse(nex::readFile((root/"nex.json").string()));
@@ -23,7 +23,7 @@ int main(int argc,char **argv){
     auto entry=object?object->getString("entry"):std::nullopt;
     if(!entry)throw nex::Error("E_MANIFEST","nex.json requires an entry");
     auto program=nex::loadProgram(entry->str(),root.string());
-    auto emitted=nex::cuda_experiment::emitCuda(program,argv[2],argv[3],capacity,byteCapacity);
+    auto emitted=nex::cuda_experiment::emitCuda(program,argv[2],argv[3],capacity,byteCapacity,textCapacity);
     llvm::json::Array parameters,functions;
     for(const auto &type:emitted.parameterTypes)parameters.push_back(type);
     for(const auto &f:emitted.functions)functions.push_back(llvm::json::Object{

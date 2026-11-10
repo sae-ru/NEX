@@ -312,5 +312,69 @@ precomputes each text-pool entry; runtime selection still follows the source
 value. A valid decoded buffer exceeding capacity traps E_LIMIT. Ordinary text
 pool limits, including its NUL restriction, remain unchanged; byte buffers
 support all octets, including zero. Dynamic text creation, `decode_utf8` and
-`encode_base64` remain explicitly unsupported. Full GPU code generation, actual
+`encode_base64` require the explicit UTF-8 mode below. Full GPU code generation, actual
 NVIDIA execution, sanitizer and matching immutable SDK acceptance remain open.
+
+### Runtime UTF-8 text and diagnostic packets
+
+`--text-capacity N` enables actual runtime text, instead of selecting IDs from a
+closed literal pool. Select1..32760 UTF-8 octets per text value; a useful starting
+point is256. Emission becomes `nex.cuda-emission/5`, value ABI `nex.cuda-values/4`
+when text or Results are reachable. Without the option, the earlier static-ID
+contract remains explicit. Ordinary language0.28, its grammar and source graph
+identities do not change.
+
+```sh
+nex emit examples/gpu-text.nex --kind cuda --entry transform \
+  --text-capacity 256 --byte-capacity 256 --input-layout columns \
+  -o text.cu --json
+```
+
+A text value is one length word followed by `ceil(capacity/8)` packed words,
+least-significant octet first. Its wire length counts UTF-8 octets. Source `len`,
+indexing and slicing count Unicode scalars, including NUL and combining scalars;
+they do not count grapheme clusters. Ingress validates length, every inactive
+bit/word and strict UTF-8, rejecting malformed, truncated, overlong, surrogate and
+out-of-range encodings with E_GPU_INPUT. BOM, NUL and normalization are preserved.
+Inputs may contain text absent from the literal pool.
+
+Supported text operations are literals, concatenation/equality, scalar indexing,
+scalar slicing, `len`, nested patterns/guards, `utf8_bytes`, strict `decode_utf8`,
+canonical `encode_base64`/`decode_base64`, and decimal `str(i64)`/`str(bool)`.
+Codecs process runtime values and retain recoverable E_UTF8/E_BASE64 diagnostics.
+They validate malformed input before applying the additional destination capacity.
+`str(f64)` and aggregate formatting are pending. All arguments retain their
+left-to-right evaluation/trap order and all produced values are immutable.
+
+Text capacity includes literals and builtin diagnostic strings. A reachable
+literal exceeding it is rejected during emission; choose a capacity sufficient
+for the whole reachable program. Each type containing text/bytes/lists must
+still fit4096 words; other fixed types retain64. Result success has tag1 and its
+payload at word1. An error has tag0 and two canonical text values: code at word1,
+message at `1 + text_words`. Width is `1 + max(payload_words, 2*text_words)`.
+This replaces text IDs in the new ABI, including dynamic `?` propagation,
+`error_code`/`error_message` and immutable copies.
+
+| Status | Diagnostic | Message |
+|---|---|---|
+| 15 | E_RESULT | Two text values in the diagnostic buffer |
+| 16 | E_BOUNDS | `index is outside collection bounds` |
+| 17 | E_BOUNDS | `slice is outside string bounds` |
+| 18 | E_LIMIT | `device text exceeds declared capacity` |
+
+The kernel adds a64-bit diagnostic-buffer pointer after `errors` and before
+`lanes, steps`. Every active lane zeroes `diagnostic_words = 2*text_words`; failed
+`unwrap` copies its original code/message there. Output values are zero on
+failure; excess lanes touch neither output, status nor diagnostic storage.
+This is a new wire version, not a reinterpretation of a legacy kernel signature.
+
+The owned preparer and module consume that exact layout. Physical batches bound
+input/output and diagnostic columns to256KiB each. Output and diagnostics share
+one owned allocation; quotas and cleanup account for both. Diagnostics are read
+only after physical completion, and their lengths, padding and UTF-8 are checked
+again before importing them. `try_apply` preserves the complete E_RESULT message,
+including NUL and long text, without truncation. The existing `apply` fatal C API
+relay accepts NUL-free messages of at most2048 bytes; arbitrary fatal packets
+outside that envelope remain an unfinished integration, and are not qualified
+by source/host packet checks. The new kernel/adapter still requires matching
+physical NVIDIA, lifecycle/sanitizer and immutable SDK acceptance.

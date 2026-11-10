@@ -180,8 +180,25 @@ export function bytesFromIntegers(values: ReadonlyArray<bigint>): Result<ByteBuf
 }
 export function utf8Bytes(text: string, site?: Site): ByteBuffer { return ByteBuffer.copy(new TextEncoder().encode(string(text, site))); }
 export function decodeUTF8(value: ByteBuffer): Result<string> {
-  try { return ok(new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(value.toUint8Array())); }
-  catch (error) { if (error instanceof TypeError) return err('E_UTF8', 'invalid UTF-8 string'); throw error; }
+  const data = value.toUint8Array();
+  try { return ok(new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(data)); }
+  catch (error) { if (!(error instanceof TypeError)) throw error; }
+  // Keep the host decoder's fast path for valid input; classify a rejection
+  // because it collapses malformed sequences and invalid Unicode scalars.
+  for (let i = 0; i < data.length;) {
+    const first = data[i];
+    const count = first < 0x80 ? 1 : first >= 0xc2 && first <= 0xdf ? 2 : first >= 0xe0 && first <= 0xef ? 3 : first >= 0xf0 && first <= 0xf4 ? 4 : 0;
+    if (!count || count > data.length - i) return err('E_UTF8', 'invalid UTF-8 string');
+    let code = first & (count === 1 ? 0x7f : count === 2 ? 0x1f : count === 3 ? 0x0f : 0x07);
+    for (let j = 1; j < count; ++j) {
+      const next = data[i + j];
+      if ((next & 0xc0) !== 0x80) return err('E_UTF8', 'invalid UTF-8 string');
+      code = (code << 6) | (next & 0x3f);
+    }
+    if ((count === 2 && code < 0x80) || (count === 3 && code < 0x800) || (count === 4 && code < 0x10000) || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return err('E_UTF8', 'invalid Unicode scalar');
+    i += count;
+  }
+  return err('E_UTF8', 'invalid UTF-8 string');
 }
 export function encodeBase64(value: ByteBuffer): string { return value.base64(); }
 export function decodeBase64(text: string): Result<ByteBuffer> {

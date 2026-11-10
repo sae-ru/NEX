@@ -1,0 +1,16 @@
+module gpu_text;
+
+// --kind cuda --entry transform --text-capacity 256 --byte-capacity 256
+pub fn transform(text: str) -> result<str> {
+  let encoded: str = encode_base64(utf8_bytes(text));
+  let data: bytes = decode_base64(encoded)?;
+  let restored: str = decode_utf8(data)?;
+  return ok(str(len(restored)) + ":" + restored);
+}
+
+test fn unicode_round_trip() -> unit {
+  assert(transform("α🌍") == ok("2:α🌍"));
+  assert(transform("A\u0000B") == ok("3:A\u0000B"));
+}
+
+fn main() -> unit {}

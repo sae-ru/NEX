@@ -1,3 +1,33 @@
+# Runtime CUDA UTF-8 text — development0.165.0
+
+Explicit `--text-capacity` now enables runtime UTF-8 values, including arbitrary
+input text, NUL/BOM, Unicode scalar len/index/slice, immutable concat/equality
+and patterns. Runtime UTF-8/base64 codecs and i64/bool formatting are lowered.
+Emission `/5` / value ABI4 use packed text, inline Result code/message values,
+and a separate per-lane diagnostic buffer for failed unwrap. Owned allocations
+and quotas include that buffer; physical batching retains256KiB boundaries.
+`try_apply` preserves complete packets. The existing apply fatal C API relay
+still restricts messages to2048 bytes without NUL; lifting that integration
+boundary and f64/aggregate formatting remain unfinished.
+
+All targets build. The new block covers24 emitted CPU layouts/124 exact lane
+value/status/diagnostic outcomes with UBSan and12 NEX oracles each in reference,
+native Release and TypeScript. An exact-message oracle found an existing
+TypeScript UTF-8 mismatch; it was fixed without weakening the check. The host
+decoder fast path remains for valid input. Only the failed group was repeated
+(2 methods,25.44seconds), followed by12 final TypeScript/reference checks after
+preserving that fast path. Three other groups passed in the original cohort;
+its original failed outcome remains retained. Actual C++ packet parsing tested
+NUL and malformed lengths/padding/UTF-8. One example passed LLVM22.1 IR and
+machine verification to sm_86/PTX7.1 with the new diagnostic pointer and no
+unresolved device functions. [Development record](docs/evidence/cuda-runtime-text-0.165.0-2026-11-10.json).
+
+Source language0.28/task ABI7/C ABI1 remain unchanged. Full regression, current
+NVIDIA/lifecycle/sanitizer and matching immutable SDK acceptance stay deferred.
+The original failed fixture was archived and verified before removing its
+unneeded working cache (72.24MB to20.57MB); diagnostics/source evidence is retained.
+All remaining original PLAN requirements remain active.
+
 # Packed CUDA binary values — development0.165.0
 
 The public backend now lowers immutable `bytes`: construction from i64 lists,

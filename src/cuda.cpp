@@ -132,7 +132,7 @@ class Emitter {
         if(expression->args.size()>values.listCapacity)throw Error("E_GPU_LIMIT","device list literal exceeds declared capacity",expression->span);
         break;
       case Expr::Index:
-        if(expression->args[0]->type.kind!=Type::List&&expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_UNSUPPORTED","CUDA indexing requires a bounded list or bytes",expression->span);
+        if(expression->args[0]->type.kind!=Type::List&&expression->args[0]->type!=Type::Bytes&&!(expression->args[0]->type==Type::Str&&values.textCapacity))throw Error("E_GPU_UNSUPPORTED","CUDA text indexing requires --text-capacity",expression->span);
         break;
       case Expr::Unary:
         if(expression->args.size()!=1||(expression->text!="-"&&expression->text!="!"))
@@ -142,7 +142,7 @@ class Emitter {
         static const std::set<std::string> operators={"+","-","*","/","%","==","!=","<","<=",">",">=","&&","||"};
         if(expression->args.size()!=2||!operators.contains(expression->text))
           throw Error("E_GPU_UNSUPPORTED","unsupported CUDA binary expression",expression->span);
-        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!="&&!(expression->text=="+"&&(expression->type.kind==Type::List||expression->type==Type::Bytes)))
+        if(expression->args[0]->type.heap()&&expression->text!="=="&&expression->text!="!="&&!(expression->text=="+"&&(expression->type.kind==Type::List||expression->type==Type::Bytes||(expression->type==Type::Str&&values.textCapacity))))
           throw Error("E_GPU_UNSUPPORTED","device values support equality; dynamic heap/text arithmetic is unavailable",expression->span);
         break;
       }
@@ -155,8 +155,13 @@ class Emitter {
         else if(expression->text=="decode_base64"){
           values.base64Decoding=true;values.literal("E_BASE64",expression->span);values.literal("invalid canonical base64",expression->span);
         }
+        else if(expression->text=="decode_utf8"||expression->text=="encode_base64"||expression->text=="str"){
+          if(!values.textCapacity)throw Error("E_GPU_UNSUPPORTED","dynamic CUDA text requires --text-capacity",expression->span);
+          if(expression->text=="decode_utf8"){values.literal("E_UTF8",expression->span);values.literal("invalid UTF-8 string",expression->span);values.literal("invalid Unicode scalar",expression->span);}
+          if(expression->text=="str"&&expression->args[0]->type!=Type::I64&&expression->args[0]->type!=Type::Bool)throw Error("E_GPU_UNSUPPORTED","CUDA str currently formats i64 and bool",expression->span);
+        }
         else if(expression->text=="slice"){
-          if(expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_UNSUPPORTED","CUDA slice requires bounded bytes",expression->span);
+          if(expression->args[0]->type!=Type::Bytes&&!(expression->args[0]->type==Type::Str&&values.textCapacity))throw Error("E_GPU_UNSUPPORTED","CUDA text slicing requires --text-capacity",expression->span);
         }else if(expression->text=="ok"||expression->text=="err"||expression->text=="is_ok"||expression->text=="unwrap"||expression->text=="error_code"||expression->text=="error_message"||expression->text=="len"||expression->text=="push"||expression->text=="set"||program.hasStructure(expression->text)||program.variant(expression->text)){
           if(expression->text=="len"&&expression->args[0]->type!=Type::Str&&expression->args[0]->type.kind!=Type::List&&expression->args[0]->type!=Type::Bytes)throw Error("E_GPU_TYPE","device len requires bounded text, a list or bytes",expression->span);
         }else if(expression->text=="as_f64"){
@@ -214,7 +219,7 @@ class Emitter {
   std::string patternCondition(const P &pattern,const std::string &subject){
     switch(pattern->kind){
       case Pattern::Binding:case Pattern::Wildcard:return "true";
-      case Pattern::String:return subject+" == "+std::to_string(values.id(pattern->text))+"U";
+      case Pattern::String:return values.hasText?"nex_equal_"+values.cpp(Type::Str)+"("+subject+", "+values.textLiteral(pattern->text)+")":subject+" == "+values.textLiteral(pattern->text);
       case Pattern::Boolean:return subject+" == "+(pattern->number?"true":"false");
       case Pattern::Integer:{
         std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(pattern->number);
@@ -241,15 +246,28 @@ class Emitter {
   void byteBounds(const std::string &bytes,const std::string &index){line("if ("+index+" < 0LL || "+index+" >= "+bytes+".w[0]) { nex_s.code = 11; "+stop()+" }");}
   void byteRange(const std::string &value){line("if ("+value+" < 0LL || "+value+" > 255LL) { nex_s.code = 13; "+stop()+" }");}
   void byteLimit(const std::string &length){line("if ("+length+" > "+std::to_string(values.byteCapacity)+"LL) { nex_s.code = 14; "+stop()+" }");}
+  void textLimit(const std::string &length){line("if ("+length+" > "+std::to_string(values.textCapacity)+"LL) { nex_s.code = 18; "+stop()+" }");}
   std::string byteConstruction(const Type &type,const std::string &input){
     // Validate source octets before the additional device-capacity bound, so a
     // recoverable E_RANGE remains recoverable even for an oversized input.
     const auto valid=temporary();line("bool "+valid+" = true;");
     line("for(unsigned i=0;i<static_cast<unsigned>("+input+".w[0]);++i) if("+input+".w[1U+i]<0LL||"+input+".w[1U+i]>255LL){"+valid+"=false;break;}");
     const auto result=temporary();line(deviceType(type,where)+" "+result+"{};");line("if (!"+valid+") {");++indentation;
-    const auto error=construct(type,{std::to_string(values.id("E_RANGE"))+"U",std::to_string(values.id("byte value must be between 0 and 255"))+"U"},0);line(result+" = "+error+";");--indentation;line("} else {");++indentation;
+    const auto error=construct(type,{values.textLiteral("E_RANGE"),values.textLiteral("byte value must be between 0 and 255")},0);line(result+" = "+error+";");--indentation;line("} else {");++indentation;
     byteLimit(input+".w[0]");const auto bytes=temporary();line(deviceType(Type::Bytes,where)+" "+bytes+"{};");line(bytes+".w[0] = "+input+".w[0];");line("for(unsigned i=0;i<static_cast<unsigned>("+input+".w[0]);++i) nex_byte_put("+bytes+",i,"+input+".w[1U+i]);");
     const auto success=construct(type,{bytes},1);line(result+" = "+success+";");--indentation;line("}");return result;
+  }
+  std::string decodeText(const Type &type,const std::string &input,bool utf8){
+    auto issue=temporary(),count=temporary(),name=temporary();
+    if(utf8)line("unsigned "+issue+" = nex_utf8_error("+input+");");
+    else{line("unsigned "+count+" = 0;");line("bool "+issue+" = !nex_base64_size("+input+", "+count+");");}
+    line(deviceType(type,where)+" "+name+"{};");line("if ("+issue+") {");++indentation;
+    const auto message=utf8?"("+issue+" == 1U ? "+values.textLiteral("invalid UTF-8 string")+" : "+values.textLiteral("invalid Unicode scalar")+")":values.textLiteral("invalid canonical base64");
+    auto error=construct(type,{values.textLiteral(utf8?"E_UTF8":"E_BASE64"),message},0);line(name+" = "+error+";");--indentation;line("} else {");++indentation;
+    if(utf8)textLimit(input+".w[0]");else byteLimit(count);
+    auto payload=temporary();const auto &payloadType=*type.element;
+    line(deviceType(payloadType,where)+" "+payload+" = "+(utf8?"nex_octet_slice<"+values.cpp(Type::Str)+">("+input+", 0U, static_cast<unsigned>("+input+".w[0]))":"nex_base64_decode<"+values.cpp(Type::Bytes)+">("+input+", "+count+")")+";");
+    auto success=construct(type,{payload},1);line(name+" = "+success+";");--indentation;line("}");return name;
   }
   std::string construct(const Type &type,const std::vector<std::string> &arguments,int64_t tag=0){
     const auto name=temporary();line(deviceType(type,where)+" "+name+"{};");
@@ -322,14 +340,16 @@ class Emitter {
         generated="nex_f_value(0x"+bits.str()+"ULL, nex_s)";break;
       }
       case Expr::Boolean:generated=value->number?"true":"false";break;
-      case Expr::String:generated=std::to_string(values.id(value->text))+"U";break;
+      case Expr::String:generated=values.textLiteral(value->text);break;
       case Expr::List:{
         const auto name=temporary();line(deviceType(value->type,where)+" "+name+"{};");line(name+".w[0] = "+std::to_string(value->args.size())+"LL;");
         for(size_t i=0;i<value->args.size();++i){auto item=expression(value->args[i],scope);insert(*value->type.element,item,name,1+unsigned(i)*values.words(*value->type.element));}return name;
       }
       case Expr::Index:{
         auto base=expression(value->args[0],scope),index=expression(value->args[1],scope);
-        if(value->args[0]->type==Type::Bytes){byteBounds(base,index);generated="nex_byte_get("+base+",static_cast<unsigned long long>("+index+"))";}
+        if(value->args[0]->type==Type::Str){
+          line("if ("+index+" < 0LL || "+index+" >= nex_unicode_length("+base+")) { nex_s.code = 16; "+stop()+" }");auto offset=temporary(),end=temporary();line("unsigned "+offset+" = nex_unicode_offset("+base+", static_cast<unsigned>("+index+"));");line("unsigned "+end+" = nex_unicode_offset("+base+", static_cast<unsigned>("+index+")+1U);");generated="nex_octet_slice<"+values.cpp(Type::Str)+">("+base+", "+offset+", "+end+"-"+offset+")";
+        }else if(value->args[0]->type==Type::Bytes){byteBounds(base,index);generated="nex_byte_get("+base+",static_cast<unsigned long long>("+index+"))";}
         else{listBounds(base,index);generated=extract(value->type,base,listOffset(value->args[0]->type,index));}break;
       }
       case Expr::Field:{
@@ -339,7 +359,7 @@ class Emitter {
       }
       case Expr::Propagate:{
         const auto input=expression(value->args.at(0),scope);line("if ("+input+".w[0] == 0LL) {");++indentation;
-        const auto failed=construct(result,{"static_cast<unsigned int>("+input+".w[1])","static_cast<unsigned int>("+input+".w[2])"},0);line("return "+failed+";");--indentation;line("}");generated=extract(value->type,input,1);break;
+        auto code=extract(Type::Str,input,1),message=extract(Type::Str,input,1+values.words(Type::Str));const auto failed=construct(result,{code,message},0);line("return "+failed+";");--indentation;line("}");generated=extract(value->type,input,1);break;
       }
       case Expr::Name:{
         auto found=scope.find(value->text);
@@ -361,6 +381,7 @@ class Emitter {
         auto right=expression(value->args.at(1),scope);
         static const std::map<std::string,std::string> helpers={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
         auto helper=helpers.find(value->text);
+        if(value->type==Type::Str&&value->text=="+"){textLimit(left+".w[0]+"+right+".w[0]");generated="nex_text_concat("+left+", "+right+")";break;}
         if(value->type==Type::Bytes&&value->text=="+"){
           const auto length=left+".w[0]+"+right+".w[0]";byteLimit(length);const auto name=temporary();line(deviceType(Type::Bytes,where)+" "+name+" = "+left+";");line(name+".w[0] = "+length+";");
           line("for(unsigned i=0;i<static_cast<unsigned>("+right+".w[0]);++i) nex_byte_put("+name+",static_cast<unsigned long long>("+left+".w[0])+i,nex_byte_get("+right+",i));");return name;
@@ -384,17 +405,31 @@ class Emitter {
         if(value->text=="ok")return construct(value->type,arguments,1);
         if(value->text=="err")return construct(value->type,arguments,0);
         if(value->text=="bytes")return byteConstruction(value->type,arguments.at(0));
+        if(values.hasText){
+          if(value->text=="decode_utf8"||value->text=="decode_base64")return decodeText(value->type,arguments.at(0),value->text=="decode_utf8");
+          if(value->text=="utf8_bytes"){byteLimit(arguments[0]+".w[0]");generated="nex_octet_slice<"+values.cpp(Type::Bytes)+">("+arguments[0]+", 0U, static_cast<unsigned>("+arguments[0]+".w[0]))";break;}
+          if(value->text=="encode_base64"){textLimit("(("+arguments[0]+".w[0]+2LL)/3LL)*4LL");generated="nex_base64_encode<"+values.cpp(Type::Str)+">("+arguments[0]+")";break;}
+          if(value->text=="str"){generated=std::string(value->args[0]->type==Type::Bool?"nex_boolean_text<":"nex_integer_text<")+values.cpp(Type::Str)+">("+arguments[0]+", "+std::to_string(values.textCapacity)+"U, nex_s)";break;}
+        }
         if(value->text=="utf8_bytes"){generated="nex_utf8_bytes("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="decode_base64"){generated="nex_decode_base64("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="as_i64"){generated="nex_f_to_integer("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="is_ok"){generated="("+arguments.at(0)+".w[0] == 1LL)";break;}
-        if(value->text=="error_code"||value->text=="error_message"){generated="("+arguments.at(0)+".w[0] == 1LL ? 0U : static_cast<unsigned int>("+arguments.at(0)+".w["+std::string(value->text=="error_code"?"1":"2")+"]))";break;}
-        if(value->text=="unwrap"){
-          const auto input=arguments.at(0);line("if ("+input+".w[0] == 0LL) { nex_s.code = 0x80000000U | (static_cast<unsigned int>("+input+".w[1]) << 10U) | static_cast<unsigned int>("+input+".w[2]); "+stop()+" }");generated=extract(value->type,input,1);break;
+        if(value->text=="error_code"||value->text=="error_message"){
+          if(values.hasText){const auto name=temporary();line(values.cpp(Type::Str)+" "+name+"{};");line("if ("+arguments[0]+".w[0] == 0LL) {");++indentation;auto text=extract(Type::Str,arguments[0],value->text=="error_code"?1:1+values.words(Type::Str));line(name+" = "+text+";");--indentation;line("}");return name;}
+          generated="("+arguments.at(0)+".w[0] == 1LL ? 0U : static_cast<unsigned int>("+arguments.at(0)+".w["+std::string(value->text=="error_code"?"1":"2")+"]))";break;
         }
-        if(value->text=="len"){generated=value->args[0]->type!=Type::Str?arguments.at(0)+".w[0]":"nex_text_length("+arguments.at(0)+", nex_s)";break;}
+        if(value->text=="unwrap"){
+          const auto input=arguments.at(0);
+          if(values.hasText){line("if ("+input+".w[0] == 0LL) {");++indentation;line("for(unsigned i=0;i<"+std::to_string(2*values.words(Type::Str))+"U;++i)nex_s.diagnostic[i] = "+input+".w[1U+i];");line("nex_s.code = 15; "+stop());--indentation;line("}");}
+          else line("if ("+input+".w[0] == 0LL) { nex_s.code = 0x80000000U | (static_cast<unsigned int>("+input+".w[1]) << 10U) | static_cast<unsigned int>("+input+".w[2]); "+stop()+" }");generated=extract(value->type,input,1);break;
+        }
+        if(value->text=="len"){generated=value->args[0]->type!=Type::Str?arguments.at(0)+".w[0]":values.hasText?"nex_unicode_length("+arguments[0]+")":"nex_text_length("+arguments.at(0)+", nex_s)";break;}
         if(value->text=="slice"){
           const auto &input=arguments[0],&start=arguments[1],&count=arguments[2];
+          if(value->type==Type::Str){
+            auto length=temporary(),offset=temporary(),end=temporary();line("long long "+length+" = nex_unicode_length("+input+");");line("if ("+start+" < 0LL || "+count+" < 0LL || "+start+" > "+length+" || "+count+" > "+length+"-"+start+") { nex_s.code = 17; "+stop()+" }");line("unsigned "+offset+" = nex_unicode_offset("+input+", static_cast<unsigned>("+start+"));");line("unsigned "+end+" = nex_unicode_offset("+input+", static_cast<unsigned>("+start+"+"+count+"));");generated="nex_octet_slice<"+values.cpp(Type::Str)+">("+input+", "+offset+", "+end+"-"+offset+")";break;
+          }
           line("if ("+start+" < 0LL || "+count+" < 0LL || "+start+" > "+input+".w[0] || "+count+" > "+input+".w[0]-"+start+") { nex_s.code = 12; "+stop()+" }");
           const auto name=temporary();line(deviceType(Type::Bytes,where)+" "+name+"{};");line(name+".w[0] = "+count+";");line("for(unsigned i=0;i<static_cast<unsigned>("+count+");++i) nex_byte_put("+name+",i,nex_byte_get("+input+",static_cast<unsigned long long>("+start+")+i));");return name;
         }
@@ -459,8 +494,9 @@ class Emitter {
   void kernelValues(){
     where=root.span;line("extern \"C\" __global__ void nex_generated_cuda_map(");
     if(layout=="rows")line("  const long long *input,");else for(size_t i=0;i<root.params.size();++i)line("  const long long *input_"+std::to_string(i)+",");
-    line("  long long *output, unsigned int *errors, unsigned int lanes, unsigned int steps) {");++indentation;
-    line("const unsigned long long lane = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;");line("if (lane >= static_cast<unsigned long long>(lanes)) return;");line("NexState nex_s = {0, steps};");
+    line(std::string("  long long *output, unsigned int *errors, ")+(values.hasText?"long long *diagnostics, ":"")+"unsigned int lanes, unsigned int steps) {");++indentation;
+    line("const unsigned long long lane = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;");line("if (lane >= static_cast<unsigned long long>(lanes)) return;");
+    if(values.hasText){const auto width=std::to_string(2*values.words(Type::Str));line("long long *diagnostic = diagnostics + lane * "+width+"ULL;");line("for(unsigned i=0;i<"+width+"U;++i)diagnostic[i]=0LL;");line("NexState nex_s = {0, steps, diagnostic};");}else line("NexState nex_s = {0, steps};");
     unsigned rowWords=0;for(const auto &p:root.params)rowWords+=values.words(p.type);unsigned offset=0;std::vector<std::string> arguments;
     for(size_t i=0;i<root.params.size();++i){const auto &p=root.params[i];auto name="nex_input_"+std::to_string(i);const auto width=values.words(p.type);
       const auto address=layout=="rows"?"input[lane * "+std::to_string(rowWords)+"ULL + "+std::to_string(offset)+"ULL":"input_"+std::to_string(i)+"[lane * "+std::to_string(width)+"ULL";
@@ -483,8 +519,8 @@ class Emitter {
   }
 
 public:
-  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity)
-      :program(program),root(program.function(entry)),values(program,capacity,byteCapacity),layout(inputLayout),where(root.span){
+  Emitter(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity,unsigned textCapacity)
+      :program(program),root(program.function(entry)),values(program,capacity,byteCapacity,textCapacity),layout(inputLayout),where(root.span){
     if(layout!="rows"&&layout!="columns")throw Error("E_OPTION","CUDA input layout must be rows or columns");
     if(std::string(programLanguage(program))!="0.28")throw Error("E_GPU_UNSUPPORTED","CUDA emission requires checked language0.28",root.span);
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
@@ -496,9 +532,11 @@ public:
   CudaSource generate(){
     CudaSource emission;emission.entry=root.name;emission.inputLayout=layout;emission.resultType=typeName(root.result);
     for(const auto &parameter:root.params)emission.parameterTypes.push_back(typeName(parameter.type));
-    const auto valuePrefix=values.prelude();valuePrefixBytes=valuePrefix.size();
+    auto runtimeSource=std::string(runtime);
+    if(values.hasText){const auto at=runtimeSource.find("unsigned int remaining; }");runtimeSource.replace(at,std::string("unsigned int remaining; }").size(),"unsigned int remaining; long long *diagnostic; }");}
+    const auto valuePrefix=values.prelude();valuePrefixBytes=valuePrefix.size()+runtimeSource.size()-runtime.size();
     if(runtime.size()+valuePrefixBytes+(floatingPoint?cuda_detail::floatingRuntime.size():0)+1>=maximumSourceBytes)throw Error("E_GPU_LIMIT","CUDA value prelude exceeds16MiB",root.span);
-    const auto prefix=std::string(runtime)+(floatingPoint?std::string(cuda_detail::floatingRuntime):std::string{})+valuePrefix;
+    const auto prefix=runtimeSource+(floatingPoint?std::string(cuda_detail::floatingRuntime):std::string{})+valuePrefix;
     emission.valueABI=values.metadata(root.params,root.result);
     const auto prefixLines=unsigned(std::count(prefix.begin(),prefix.end(),'\n'))+1;
     emission.floatingPoint=floatingPoint;
@@ -543,7 +581,7 @@ public:
   }
 };
 }
-CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity){
-  return Emitter(program,entry,inputLayout,capacity,byteCapacity).generate();
+CudaSource emitCuda(const Program &program,const std::string &entry,const std::string &inputLayout,unsigned capacity,unsigned byteCapacity,unsigned textCapacity){
+  return Emitter(program,entry,inputLayout,capacity,byteCapacity,textCapacity).generate();
 }
 }

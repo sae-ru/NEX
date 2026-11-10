@@ -75,6 +75,7 @@ class CudaValues(harness.ToolchainCase):
                 r = self.cli('emit', source, '--kind', 'cuda', '--entry', 'transform', '--input-layout', layout, '-o', shader, *self.emit_args)
                 self.assertEqual(r['schema'], self.emission_schema)
                 abi = r['value_abi'];rows=vectors(IDs(abi['text_pool']));widths=abi['parameter_words'];width=abi['result_words'];count=len(rows)
+                diag_width=abi.get('diagnostic_words',0);diag_count=(count+3)*diag_width
                 self.assertEqual(abi['schema'],self.value_schema)
                 self.assertTrue(abi['inactive_words_zero'])
                 self.assertEqual(r['shader_sha256'],hashlib.sha256(shader.read_bytes()).hexdigest())
@@ -84,15 +85,19 @@ class CudaValues(harness.ToolchainCase):
                 literals=','.join(ns+'::nex_bits(0x%016xULL)'%(w%(1<<64))for w in words)or'0LL'
                 out_count=(count+3)*width
                 pointers=['input']if layout=='rows'else['input+'+str(count*sum(widths[:p]))for p in range(len(widths))]
-                call=','.join([*pointers,'output','errors',str(count)+'U','65536U'])
+                call=','.join([*pointers,'output','errors',*(['diagnostics']if diag_width else[]),str(count)+'U','65536U'])
                 code='{long long input[]={'+literals+'};long long original[]={'+literals+'};long long output['+str(out_count)+'];unsigned errors['+str(count+3)+'];'
                 code+='for(unsigned i=0;i<'+str(out_count)+'U;++i)output[i]=123456789LL;for(unsigned i=0;i<'+str(count+3)+'U;++i)errors[i]=98765U;'
+                if diag_width:code+='long long diagnostics['+str(diag_count)+'];for(unsigned i=0;i<'+str(diag_count)+'U;++i)diagnostics[i]=345678901LL;'
                 code+=ns+'::blockDim.x=128;for(unsigned lane=0;lane<'+str(count+256)+'U;++lane){'+ns+'::blockIdx.x=lane/128;'+ns+'::threadIdx.x=lane%128;'+ns+'::host_kernel_'+ns+'('+call+');}'
                 code+='for(unsigned i=0;i<'+str(max(1,len(words)))+'U;++i)if(input[i]!=original[i])return 22;'
                 code+=('std::cout<<",";'if expected else'')+'std::cout<<'+json.dumps('{"values":[')+';'
                 code+='for(unsigned i=0;i<'+str(out_count)+'U;++i){if(i)std::cout<<",";std::cout<<output[i];}std::cout<<'+json.dumps('],"errors":[')+';'
-                code+='for(unsigned i=0;i<'+str(count+3)+'U;++i){if(i)std::cout<<",";std::cout<<errors[i];}std::cout<<'+json.dumps(']}')+';}\n'
+                code+='for(unsigned i=0;i<'+str(count+3)+'U;++i){if(i)std::cout<<",";std::cout<<errors[i];}'
+                if diag_width:code+='std::cout<<'+json.dumps('],"diagnostics":[')+';for(unsigned i=0;i<'+str(diag_count)+'U;++i){if(i)std::cout<<",";std::cout<<diagnostics[i];}'
+                code+='std::cout<<'+json.dumps(']}')+';}\n'
                 runs.append(code);expected.append({'values':[x for row in rows for x in row[1]]+[123456789]*(3*width),'errors':[row[2]for row in rows]+[98765]*3})
+                if diag_width:expected[-1]['diagnostics']=[w for row in rows for w in (row[3]if len(row)>3 else[0]*diag_width)]+[345678901]*(3*diag_width)
         cpp.append('int main(){std::cout<<"[";'+''.join(runs)+'std::cout<<"]\\n";}\n')
         path=self.root/'host.cpp';path.write_text(''.join(cpp));exe=self.root/('host.exe'if os.name=='nt'else'host')
         doctor=self.cli('doctor');flags=['-std=c++20','-O1']

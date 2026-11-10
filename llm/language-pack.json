@@ -4162,7 +4162,7 @@
         "current owned CUDA provider NVIDIA execution and lifecycle acceptance",
         "physical f64 and current generated-provider Compute Sanitizer acceptance",
         "GPU operation debugging and physical profiling",
-        "unbounded containers/dynamic text and general GPU/NPU compilation"
+        "remaining GPU pure operations and general GPU/NPU compilation"
       ],
       "owned_provider": {
         "status": "experimental_operator_preparation",
@@ -4190,9 +4190,10 @@
         "nex.cuda-emission/1",
         "nex.cuda-emission/2",
         "nex.cuda-emission/3",
-        "nex.cuda-emission/4"
+        "nex.cuda-emission/4",
+        "nex.cuda-emission/5"
       ],
-      "schema_selection": "version1 scalar; version2 fixed values/text; version3 bounded lists; version4 bounded bytes",
+      "schema_selection": "version1 scalar; version2 fixed values/text IDs; version3 bounded lists; version4 bounded bytes; version5 explicit UTF8 text",
       "fixed_values": {
         "schema": "nex.cuda-values/1",
         "word_bytes": 8,
@@ -4268,9 +4269,53 @@
           "decode_base64(bounded text)"
         ],
         "pending": [
-          "dynamic text creation",
+          "dynamic text/codecs require --text-capacity",
+          "matching physical GPU and immutable SDK qualification"
+        ]
+      },
+      "dynamic_text": {
+        "schema": "nex.cuda-values/4",
+        "emission_schema": "nex.cuda-emission/5",
+        "capacity_option": "--text-capacity",
+        "minimum_capacity": 1,
+        "maximum_capacity": 32760,
+        "explicit_enable": true,
+        "maximum_words": 4096,
+        "strict_UTF8": true,
+        "NUL_allowed": true,
+        "Unicode_scalar_indices": true,
+        "length_units": "UTF-8 octets in wire; Unicode scalars in source",
+        "octets_per_word": 8,
+        "result_failure_status": 15,
+        "index_status": 16,
+        "slice_status": 17,
+        "capacity_status": 18,
+        "diagnostic_buffer": "two canonical text values per lane; zero unless Result unwrap fails",
+        "diagnostic_batch_bytes": 262144,
+        "immutable": true,
+        "operations": [
+          "literal",
+          "index",
+          "slice",
+          "len",
+          "concatenate",
+          "equal",
+          "match",
+          "utf8_bytes",
           "decode_utf8",
           "encode_base64",
+          "decode_base64",
+          "str(i64)",
+          "str(bool)",
+          "dynamic Result code/message"
+        ],
+        "fatal_host_relay": {
+          "maximum_message_bytes": 2048,
+          "NUL_allowed": false,
+          "oversized_or_NUL_packets": "try_apply preserves full text; apply fatal relay remains restricted"
+        },
+        "pending": [
+          "str(f64/aggregate) formatting",
           "matching physical GPU and immutable SDK qualification"
         ]
       }

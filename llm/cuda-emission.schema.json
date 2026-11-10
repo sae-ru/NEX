@@ -31,7 +31,8 @@
         "nex.cuda-emission/1",
         "nex.cuda-emission/2",
         "nex.cuda-emission/3",
-        "nex.cuda-emission/4"
+        "nex.cuda-emission/4",
+        "nex.cuda-emission/5"
       ]
     },
     "ok": {
@@ -180,9 +181,6 @@
         "maximum_words",
         "maximum_depth",
         "inactive_words_zero",
-        "result_failure_status_mask",
-        "result_code_shift",
-        "result_text_id_bits",
         "parameter_words",
         "result_words",
         "types",
@@ -193,7 +191,8 @@
           "enum": [
             "nex.cuda-values/1",
             "nex.cuda-values/2",
-            "nex.cuda-values/3"
+            "nex.cuda-values/3",
+            "nex.cuda-values/4"
           ]
         },
         "word_bytes": {
@@ -262,7 +261,8 @@
                   "enum",
                   "result",
                   "list",
-                  "bytes"
+                  "bytes",
+                  "utf8"
                 ]
               },
               "words": {
@@ -368,6 +368,24 @@
                     "octet_order"
                   ]
                 }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "utf8"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "capacity",
+                    "length_offset",
+                    "elements_offset",
+                    "octets_per_word",
+                    "octet_order"
+                  ]
+                }
               }
             ]
           }
@@ -379,7 +397,7 @@
           "uniqueItems": true,
           "items": {
             "type": "string",
-            "maxLength": 1023
+            "maxLength": 32760
           }
         },
         "list_capacity": {
@@ -415,6 +433,39 @@
         },
         "maximum_words_without_containers": {
           "const": 64
+        },
+        "text_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32760
+        },
+        "text_words": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4096
+        },
+        "diagnostic_words": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 8192
+        },
+        "result_failure_status": {
+          "const": 15
+        },
+        "text_index_status": {
+          "const": 16
+        },
+        "text_slice_status": {
+          "const": 17
+        },
+        "text_capacity_status": {
+          "const": 18
+        },
+        "UTF8_strict": {
+          "const": true
+        },
+        "text_NUL_allowed": {
+          "const": true
         }
       },
       "allOf": [
@@ -424,7 +475,8 @@
               "schema": {
                 "enum": [
                   "nex.cuda-values/2",
-                  "nex.cuda-values/3"
+                  "nex.cuda-values/3",
+                  "nex.cuda-values/4"
                 ]
               }
             }
@@ -543,6 +595,53 @@
               "list_capacity_status"
             ]
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/4"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "text_capacity",
+              "text_words",
+              "diagnostic_words",
+              "result_failure_status",
+              "text_index_status",
+              "text_slice_status",
+              "text_capacity_status",
+              "UTF8_strict",
+              "text_NUL_allowed"
+            ]
+          },
+          "else": {
+            "required": [
+              "result_failure_status_mask",
+              "result_code_shift",
+              "result_text_id_bits"
+            ],
+            "properties": {
+              "text_pool": {
+                "items": {
+                  "maxLength": 1023
+                }
+              },
+              "types": {
+                "items": {
+                  "properties": {
+                    "kind": {
+                      "not": {
+                        "const": "utf8"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       ]
     }
@@ -632,7 +731,8 @@
             "enum": [
               "nex.cuda-emission/2",
               "nex.cuda-emission/3",
-              "nex.cuda-emission/4"
+              "nex.cuda-emission/4",
+              "nex.cuda-emission/5"
             ]
           }
         }
@@ -723,6 +823,26 @@
             "properties": {
               "schema": {
                 "const": "nex.cuda-values/3"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "nex.cuda-emission/5"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value_abi": {
+            "properties": {
+              "schema": {
+                "const": "nex.cuda-values/4"
               }
             }
           }

@@ -1,3 +1,14 @@
+# Current language0.28 browser runtime
+
+The ordinary compiler selects language0.28. The historical development records
+below retain their original version/scope and do not redefine the current
+language. The shared TypeScript runtime now preserves the reference/native
+UTF-8 diagnostic categories: malformed/truncated sequences versus invalid
+Unicode scalars. BOM/NUL and valid text remain unchanged. This correction adds
+no adapter authority, reachable server code, syntax or npm dependency; the lock
+and bundled notices are unchanged. Complete matching browser/SDK qualification
+remains a separate delivery gate.
+
 # Candidate027 checked browser delivery development0.150.0
 
 Explicit C++027 UI/Worker builds now use checked revision/source maps with a

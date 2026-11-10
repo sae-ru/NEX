@@ -38,7 +38,7 @@ Toolchain0.165 adds [checked scalar GPU emission](gpu-codegen.md) through
 `nex emit --kind metal` and `nex emit --kind cuda`. Both lower reachable shared
 pure functions from the checked AST. Metal accepts i64/bool/unit; CUDA additionally
 accepts finite f64, fixed records/enums/Results, bounded device text, conversions
-bounded immutable lists/bytes and nested matches with guards. GPU value wire records are backend metadata. Unsupported reachable code is
+bounded immutable lists/bytes, explicit dynamic UTF-8 and nested matches with guards. GPU value wire records are backend metadata. Unsupported reachable code is
 rejected explicitly.
 It changes no source production, source semantics or canonical identity and
 requires no language migration. Emission initializes no GPU driver; installed
@@ -822,7 +822,9 @@ There are no byte literals or byte patterns; use construction/codecs, a binding
 and guards. Existing string indexing/slicing still counts Unicode scalars.
 
 Strict UTF-8 rejects overlong encodings, surrogate code points, truncation and
-values above U+10FFFF. A leading BOM is preserved. Base64 rejects whitespace,
+values above U+10FFFF. `decode_utf8` reports `E_UTF8` with `invalid UTF-8 string`
+for invalid leading/continuation bytes or truncation, and `invalid Unicode scalar`
+for overlong scalar encodings, surrogates or values above U+10FFFF. A leading BOM is preserved. Base64 rejects whitespace,
 URL-safe alphabet, missing/excess/interior padding and nonzero unused bits.
 `str`/`print` of a byte value uses its quoted base64 representation; the explicit
 encoder returns the unquoted string.

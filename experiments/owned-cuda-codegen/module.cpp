@@ -2,6 +2,9 @@
 // adapted from owned-cuda; generated kernels and lane statuses have their own ABI.
 #include "cuda_driver.h"
 #include "generated_kernel.h"
+#ifndef GENERATED_DIAGNOSTIC_WORDS
+#define GENERATED_DIAGNOSTIC_WORDS 0
+#endif
 #include "nex_ffi_module.h"
 #include "signatures.h"
 #include "third_party/json.hpp"
@@ -15,6 +18,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 #include <array>
@@ -31,8 +35,8 @@ using JSON=nlohmann::json;
 using Clock=std::chrono::steady_clock;
 struct HostStatus {nex_ffi_status value;};
 struct Error:std::runtime_error {
-  std::string code;
-  Error(std::string code,std::string message):std::runtime_error(std::move(message)),code(std::move(code)){}
+  std::string code,message;
+  Error(std::string code,std::string message):std::runtime_error(message),code(std::move(code)),message(std::move(message)){}
 };
 struct GateConfiguration {uint64_t cycles;unsigned repeats;};
 static uint64_t gateValue(const char *name,uint64_t maximum){
@@ -187,11 +191,11 @@ struct Event {
   ~Event(){if(value){driver.cleanup(driver.p_cuEventDestroy(value),"cuEventDestroy");++ledger.eventFrees;}}
 };
 struct Buffer {
-  Session *session=nullptr;CUdeviceptr pointer=0;uint64_t bytes=0,kernelNs=0;uint32_t dtype=0;
+  Session *session=nullptr;CUdeviceptr pointer=0;uint64_t bytes=0,allocationBytes=0,kernelNs=0;uint32_t dtype=0;
   const uint64_t identity=identities.fetch_add(1);
   Buffer()=default;Buffer(const Buffer&)=delete;Buffer& operator=(const Buffer&)=delete;
-  ~Buffer(){if(pointer){Context context(*session);session->drain();session->driver.cleanup(session->driver.p_cuMemFree(pointer),"cuMemFree buffer");ledger.free(bytes);
-    TRACE(JSON{{"event","buffer_released"},{"session",session->identity},{"buffer",identity},{"bytes",bytes},{"physical_completion_verified",true}});}}
+  ~Buffer(){if(pointer){Context context(*session);session->drain();session->driver.cleanup(session->driver.p_cuMemFree(pointer),"cuMemFree buffer");ledger.free(allocationBytes);
+    TRACE(JSON{{"event","buffer_released"},{"session",session->identity},{"buffer",identity},{"bytes",allocationBytes},{"physical_completion_verified",true}});}}
 };
 struct InFlight {
   Session &session;CUevent end;bool done=false;
@@ -206,6 +210,12 @@ static constexpr uint32_t maximumElements=262144;
 static const JSON &textPool(){static const JSON pool=JSON::parse(GENERATED_TEXT_POOL_JSON);return pool;}
 #endif
 static const char *laneError(uint32_t code){
+#if GENERATED_TEXT_VALUES
+  if(code==15)return "E_RESULT";
+  if(code==16||code==17)return "E_BOUNDS";
+  if(code==18)return "E_LIMIT";
+  if(code&0x80000000u)throw Error("E_DEVICE_ABI","text kernel returned legacy diagnostic IDs");
+#endif
 #if GENERATED_BYTE_VALUES
   if(code==11||code==12)return "E_BOUNDS";
   if(code==13)return "E_RANGE";
@@ -228,6 +238,12 @@ static const char *laneError(uint32_t code){
 }
 static std::string laneMessage(uint32_t code,unsigned lane){
  (void)code;
+#if GENERATED_TEXT_VALUES
+ if(code==15)throw Error("E_DEVICE_ABI","text Result status requires its diagnostic packet");
+ if(code==16)return "index is outside collection bounds";
+ if(code==17)return "slice is outside string bounds";
+ if(code==18)return "device text exceeds declared capacity";
+#endif
 #if GENERATED_BYTE_VALUES
  if(code==11)return "byte index is outside buffer bounds";
  if(code==12)return "slice is outside byte buffer bounds";
@@ -244,6 +260,15 @@ static std::string laneMessage(uint32_t code,unsigned lane){
  return "generated GPU function failed at lane "+std::to_string(lane);
 }
 static constexpr std::array<unsigned,8> argumentWords=GENERATED_ARGUMENT_WORDS;
+#if GENERATED_TEXT_VALUES
+static std::string diagnosticText(const long long *words){
+ const auto length=words[0];if(length<0||uint64_t(length)>GENERATED_TEXT_CAPACITY)throw Error("E_DEVICE_ABI","invalid device diagnostic length");
+ std::string text;for(unsigned i=0;i<GENERATED_TEXT_CAPACITY;++i){auto c=uint8_t(uint64_t(words[1U+i/8U])>>((i%8U)*8U));if(i<unsigned(length))text+=char(c);else if(c)throw Error("E_DEVICE_ABI","nonzero device diagnostic padding");}
+ for(unsigned i=GENERATED_TEXT_CAPACITY;i<(GENERATED_TEXT_WORDS-1U)*8U;++i)if(uint8_t(uint64_t(words[1U+i/8U])>>((i%8U)*8U)))throw Error("E_DEVICE_ABI","nonzero device diagnostic padding");
+ try{(void)JSON(text).dump();}catch(const JSON::exception&){throw Error("E_DEVICE_ABI","invalid UTF-8 device diagnostic");}return text;
+}
+static std::string resultDiagnostic(const std::vector<long long> &packet){if(packet.size()!=GENERATED_DIAGNOSTIC_WORDS)throw Error("E_DEVICE_ABI","invalid device diagnostic width");return diagnosticText(packet.data())+": "+diagnosticText(packet.data()+GENERATED_TEXT_WORDS);}
+#endif
 struct ReadCursor {
   Buffer *buffer=nullptr;uint64_t offset=0;
   const uint64_t identity=identities.fetch_add(1);
@@ -261,8 +286,8 @@ struct Creation {
 static void destroySession(void *p)noexcept{delete static_cast<Session*>(p);}
 static void destroyBuffer(void *p)noexcept{delete static_cast<Buffer*>(p);}
 static void destroyCursor(void *p)noexcept{delete static_cast<ReadCursor*>(p);}
-static nex_ffi_status creationError(Creation &in,const char *code,const char *message)noexcept{
-  try{in.code=code;in.message=message;return NEX_FFI_INTERNAL;}catch(...){return NEX_FFI_LIMIT;}
+static nex_ffi_status creationError(Creation &in,std::string_view code,std::string_view message)noexcept{
+  try{in.code.assign(code);in.message.assign(message);return NEX_FFI_INTERNAL;}catch(...){return NEX_FFI_LIMIT;}
 }
 static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *user,void **out)noexcept{
   auto &input=*static_cast<Creation*>(user);
@@ -285,9 +310,13 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
     }else{
       auto value=std::make_unique<Buffer>();auto buffer=value.get();buffer->session=input.session;buffer->dtype=input.dtype;
       buffer->bytes=input.kind==Creation::BufferUpload?input.data.size():uint64_t(input.lanes)*8*GENERATED_OUTPUT_WORDS;*out=value.release();
+      buffer->allocationBytes=buffer->bytes;
+#if GENERATED_TEXT_VALUES
+      if(input.kind==Creation::BufferGenerated)buffer->allocationBytes+=uint64_t(input.lanes)*8*GENERATED_DIAGNOSTIC_WORDS;
+#endif
       auto &session=*input.session;Context context(session,api,call);auto &d=session.driver;auto started=Clock::now();
-      d.check(d.p_cuMemAlloc(&buffer->pointer,size_t(buffer->bytes)),"cuMemAlloc");ledger.allocate(buffer->bytes);
-      TRACE(JSON{{"event","buffer_allocated"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes}});
+      d.check(d.p_cuMemAlloc(&buffer->pointer,size_t(buffer->allocationBytes)),"cuMemAlloc");ledger.allocate(buffer->allocationBytes);
+      TRACE(JSON{{"event","buffer_allocated"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->allocationBytes}});
       if(input.kind==Creation::BufferUpload){
         d.check(d.p_cuMemcpyHtoD(buffer->pointer,input.data.data(),input.data.size()),"cuMemcpyHtoD");session.drain();
         TRACE(JSON{{"event","upload_completed"},{"session",session.identity},{"bytes",buffer->bytes},{"elapsed_ns",ns(started)},{"physical_completion_verified",true}});
@@ -299,10 +328,14 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
           auto queued=d.p_cuLaunchKernel(session.gate,1,1,1,1,1,1,0,session.stream,parameters,nullptr);
           if(queued!=CUDA_SUCCESS){session.drain();d.check(queued,"cuLaunchKernel acceptance gate");}++ledger.gateLaunches;
         }
-        std::array<CUdeviceptr,8> columns{};std::array<void*,12> arguments{};unsigned argument=0;
+        std::array<CUdeviceptr,8> columns{};std::array<void*,13> arguments{};unsigned argument=0;
         for(size_t i=0;i<input.columns.size();++i){columns[i]=input.columns[i]->pointer;arguments[argument++]=&columns[i];}
         auto output=buffer->pointer,statuses=session.overflow;unsigned lanes=input.lanes,steps=input.steps;
-        arguments[argument++]=&output;arguments[argument++]=&statuses;arguments[argument++]=&lanes;arguments[argument++]=&steps;
+        arguments[argument++]=&output;arguments[argument++]=&statuses;
+#if GENERATED_TEXT_VALUES
+        auto diagnostics=buffer->pointer+buffer->bytes;arguments[argument++]=&diagnostics;
+#endif
+        arguments[argument++]=&lanes;arguments[argument++]=&steps;
         auto launched=d.p_cuLaunchKernel(session.kernel,(lanes+255)/256,1,1,256,1,1,0,session.stream,arguments.data(),nullptr);
         if(launched!=CUDA_SUCCESS){session.drain();d.check(launched,"cuLaunchKernel");}++ledger.launches;
         auto recorded=d.p_cuEventRecord(end.value,session.stream);
@@ -323,19 +356,24 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         unsigned code=0,lane=0;
         for(unsigned i=0;i<lanes;++i){(void)laneError(errors[i]);if(!code&&errors[i]){code=errors[i];lane=i;}}
         TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
-        if(code)throw Error(laneError(code),laneMessage(code,lane));
+        if(code){
+#if GENERATED_TEXT_VALUES
+          if(code==15){std::vector<long long> packet(GENERATED_DIAGNOSTIC_WORDS);d.check(d.p_cuMemcpyDtoH(packet.data(),diagnostics+uint64_t(lane)*8*GENERATED_DIAGNOSTIC_WORDS,packet.size()*8),"cuMemcpyDtoH diagnostic");session.drain();throw Error("E_RESULT",resultDiagnostic(packet));}
+#endif
+          throw Error(laneError(code),laneMessage(code,lane));
+        }
       }
       TRACE(JSON{{"event","buffer_created"},{"session",session.identity},{"buffer",buffer->identity},{"bytes",buffer->bytes},{"dtype",buffer->dtype}});
     }
     return api->poll(call);
   }catch(const HostStatus &error){TRACE(JSON{{"event","host_trap"},{"status",int(error.value)},{"session",input.session?input.session->identity:0}});return error.value;}
-  catch(const Error &error){return creationError(input,error.code.c_str(),error.what());}
+  catch(const Error &error){return creationError(input,error.code,error.message);}
   catch(const std::exception &error){return creationError(input,"E_DEVICE_HOST",error.what());}
   catch(...){return creationError(input,"E_DEVICE_HOST","unexpected trusted CUDA provider failure");}
 }
 static int64_t integer(const nex_ffi_api_v1 *api,nex_ffi_call c,nex_ffi_ref r){int64_t v=0;checked(api->get_i64(c,r,&v));return v;}
 static void *borrow(const nex_ffi_api_v1 *api,nex_ffi_call c,nex_ffi_ref r,uint64_t argument){nex_ffi_type t=0;checked(api->argument_type(c,argument,&t));void *p=nullptr;checked(api->resource_borrow(c,r,t,&p));return p;}
-static nex_ffi_status failure(const nex_ffi_api_v1 *api,nex_ffi_call call,nex_ffi_ref *out,const std::string &code,const std::string &text){auto message=text.substr(0,2048);return api->make_failure(call,reinterpret_cast<const uint8_t*>(code.data()),code.size(),reinterpret_cast<const uint8_t*>(message.data()),message.size(),out);}
+static nex_ffi_status failure(const nex_ffi_api_v1 *api,nex_ffi_call call,nex_ffi_ref *out,const std::string &code,const std::string &text){return api->make_failure(call,reinterpret_cast<const uint8_t*>(code.data()),code.size(),reinterpret_cast<const uint8_t*>(text.data()),text.size(),out);}
 static nex_ffi_status construct(const nex_ffi_api_v1 *api,nex_ffi_call call,Creation &input,uint64_t capacity,nex_ffi_ref parent,nex_ffi_ref *out){
  nex_ffi_type type=0;checked(api->result_type(call,&type));checked(api->type_child(call,type,0,0,&type));nex_ffi_ref value=0;
  auto status=input.kind==Creation::SessionOpen?api->resource_create(call,type,capacity,factory,destroySession,&input,&value):api->resource_create_with_parents(call,type,capacity,&parent,1,factory,input.kind==Creation::ReaderOpen?destroyCursor:destroyBuffer,&input,&value);
@@ -402,6 +440,9 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
    if(lanes<1||lanes>32768||steps<1||steps>65536||uint64_t(lanes)*uint64_t(steps)>16777216)
     return failure(api,call,out,"E_GPU_INPUT","generated kernel geometry exceeds declared bounds");
    if(uint64_t(lanes)*8*GENERATED_OUTPUT_WORDS>262144)return failure(api,call,out,"E_GPU_INPUT","fixed output exceeds batch capacity");
+#if GENERATED_TEXT_VALUES
+   if(uint64_t(lanes)*8*GENERATED_DIAGNOSTIC_WORDS>262144)return failure(api,call,out,"E_GPU_INPUT","diagnostics exceed batch capacity");
+#endif
    uint64_t length=0;checked(api->child_count(call,args[1],&length));
    if(length!=GENERATED_ARGUMENTS||length>8)return failure(api,call,out,"E_GPU_INPUT","column count differs from selected scalar function");
    nex_ffi_type listType=0,elementType=0;checked(api->argument_type(call,1,&listType));checked(api->type_child(call,listType,0,0,&elementType));
@@ -412,7 +453,7 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
     if(column->dtype!=1||column->bytes!=uint64_t(lanes)*8*argumentWords[i])return failure(api,call,out,"E_GPU_INPUT","column bytes do not match selected scalar function");
     in.columns.push_back(column);
    }
-   return construct(api,call,in,uint64_t(lanes)*8*GENERATED_OUTPUT_WORDS+sizeof(Buffer),args[0],out);
+   return construct(api,call,in,uint64_t(lanes)*8*(GENERATED_OUTPUT_WORDS+GENERATED_DIAGNOSTIC_WORDS)+sizeof(Buffer),args[0],out);
   }
   if(op==4){
    if(count!=1)return NEX_FFI_ARGUMENT;auto *buffer=static_cast<Buffer*>(borrow(api,call,args[0],0));
@@ -437,7 +478,7 @@ static nex_ffi_status callback(const nex_ffi_api_v1 *api,nex_ffi_call call,const
   if(op==6){if(count!=1)return NEX_FFI_ARGUMENT;auto *buffer=static_cast<Buffer*>(borrow(api,call,args[0],0));if(buffer->kernelNs>uint64_t(INT64_MAX))return NEX_FFI_RANGE;return api->make_i64(call,int64_t(buffer->kernelNs),out);}
   if(op==7){if(count!=1)return NEX_FFI_ARGUMENT;auto *session=static_cast<Session*>(borrow(api,call,args[0],0));auto busy=session->busy.load();if(busy)TRACE(JSON{{"event","kernel_busy_observed"},{"session",session->identity}});return api->make_i64(call,busy,out);}
   return NEX_FFI_ARGUMENT;
- }catch(const HostStatus &e){return e.value;}catch(const Error &e){try{return failure(api,call,out,e.code,e.what());}catch(...){return NEX_FFI_LIMIT;}}catch(const std::bad_alloc&){return NEX_FFI_LIMIT;}catch(...){return NEX_FFI_INTERNAL;}
+ }catch(const HostStatus &e){return e.value;}catch(const Error &e){try{return failure(api,call,out,e.code,e.message);}catch(...){return NEX_FFI_LIMIT;}}catch(const std::bad_alloc&){return NEX_FFI_LIMIT;}catch(...){return NEX_FFI_INTERNAL;}
 }
 static const nex_ffi_export_v1 exports[]={
  {sizeof(nex_ffi_export_v1),0,"open",PIN_OPEN,callback,(void*)1},
