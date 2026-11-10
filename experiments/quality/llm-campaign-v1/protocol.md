@@ -174,3 +174,12 @@ and Python passed. That pilot and its exact usage remain recorded under source
 `34572fa`; it is not replaced or pooled with policy2. A new frozen pilot is
 required before the main study. No main-study slot has been attempted under
 either pilot policy at this revision.
+
+Policy3 accepts a single plain JSON object, one `<tool_call>...</tool_call>`
+envelope or one `json` Markdown fence. It still rejects duplicate keys, multiple
+objects/envelopes, surrounding text, unknown action fields and non-whitelisted
+paths. Only framing is normalized; compiler, program-output JSON, budgets and
+source-rule acceptance are unchanged. Policy2's partial pilot (source `98ec3b5`)
+was stopped when repeated Qwen envelopes were rejected as non-JSON; all calls,
+including one interrupted request with unknown usage, remain recorded. Its
+unattempted Python slot is missing, not a fabricated failure or success.

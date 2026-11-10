@@ -38,8 +38,9 @@ LIMITS = {'model_requests': 12, 'author_requests': 11, 'completion_tokens': 4096
           'trial_wall_seconds': 900, 'request_timeout_seconds': 180, 'prompt_utf8_bytes': 48000,
           'file_bytes': 32768, 'read_characters': 4096, 'feedback_characters': 12000}
 SYSTEM = '''Complete the requested code change in the selected language. Use only the supplied
-task, files, reference documents and broker. Return exactly one JSON object with
-no Markdown fences. Actions:
+task, files, reference documents and broker. Return exactly one JSON object.
+A single <tool_call>...</tool_call> or ```json ... ``` envelope is also accepted;
+do not include any other text or multiple actions. Actions:
 {"action":"edit","files":{"FILE":{"sha256":"CURRENT_HASH","content":"COMPLETE_NEW_TEXT"}}}
 {"action":"read","path":"EXACT_LISTED_FILE_OR_DOCUMENT","offset":0,"limit":4096}
 {"action":"symbol","name":"DECLARATION_NAME"}
@@ -98,6 +99,18 @@ def checked_file(path, limit=32 * 1024**2):
     raw = path.read_bytes()
     if len(raw) > limit: raise ValueError('host artifact grew beyond its bound')
     return raw
+
+
+def model_object(text):
+    """Decode one advertised data envelope; never infer or execute a tool call."""
+    raw=text.strip()
+    if raw.startswith('<tool_call>')and raw.endswith('</tool_call>'):
+        raw=raw[len('<tool_call>'):-len('</tool_call>')].strip()
+    elif raw.startswith('```json\n')and raw.endswith('```'):
+        raw=raw[len('```json\n'):-3].strip()
+    value=p.decode(raw.encode('utf-8'))
+    if not isinstance(value,dict):raise ValueError('one JSON object is required')
+    return value
 
 
 def template(gguf):
@@ -245,8 +258,8 @@ def freeze(output, *, compiler, cpp, weights, lm_home, runtime, pilot=False):
            'compiler':str(compiler),'cpp':str(cpp),'resources':str(ROOT),'lms':str(Path(lm_home)/'bin/lms'),
            'compiler_index':index,'doctor':doctor,'python':sys.version,'python_executable':sys.executable,
            'cache_policy':'fresh compiler-owned cache for each check, removed after retaining diagnostics; no prewarm',
-           'context_policy':'policy2: full current candidate and task, NEX bootstrap or baseline note, complete prior action/tool transcript; no server-side history',
-           'collector_policy_version':2,
+           'context_policy':'policy3: full current candidate and task, NEX bootstrap or baseline note, complete prior action/tool transcript; no server-side history; one strict JSON envelope',
+           'collector_policy_version':3,
            'stopping_policy':'11 author requests plus1 independent review within12 total;900s or observed60000-token soft stop; one response may cross token threshold; explicit submit required',
            'source_review_policy':'host-owned fresh-context local Qwen all-rule review; counted in original trial; no author-provided attestation',
            'source_review_mode':'independent_local_call',
@@ -378,7 +391,7 @@ def local_review(broker, directory, client, instance, number, deadline):
     client.timeout=min(LIMITS['request_timeout_seconds'],max(0.01,deadline-time.monotonic()))
     text,call=client.chat(instance,REVIEW_SYSTEM,prompt,directory/f'call-{number}',max_tokens=2048,sampling=SAMPLING)
     if call['error']or call['usage']is None:raise RuntimeError('source-review provider failure or unknown usage')
-    value=p.decode(text.encode())
+    value=model_object(text)
     if not isinstance(value,dict)or set(value)!={'rules'}or not isinstance(value['rules'],list):raise ValueError('invalid independent source review')
     rules=item['contract']['acceptance_rules']
     if len(value['rules'])!=len(rules):raise ValueError('incomplete independent source review')
@@ -429,7 +442,7 @@ def collect_trial(root, frozen, slot, client, instance):
                 state.update(status='timeout'if time.monotonic()>=deadline else 'failed',stop_reason='provider_failure_or_unknown_usage');break
             observed+=call['usage']['input_tokens']+call['usage']['output_tokens']
             try:
-                request=p.decode(text.encode());save(directory/f'action-{number}.json',request)
+                request=model_object(text);save(directory/f'action-{number}.json',request)
                 state.update(phase='broker');retain();feedback=broker.action(request)
                 if request['action']=='submit':
                     state.update(phase='terminal_check');retain()
@@ -459,7 +472,8 @@ def collect_trial(root, frozen, slot, client, instance):
                     else:state.update(phase='finished',status='timeout'if time.monotonic()>=deadline else 'failed',stop_reason='terminal_functional_failure')
                     break
             except (ValueError,KeyError,TypeError,UnicodeError)as error:
-                feedback={'error':str(error)}
+                feedback={'error':'Invalid action: '+str(error),
+                          'required_format':'One JSON object; optional single tool_call or json-code envelope; no extra text.'}
             encoded=json.dumps(feedback,ensure_ascii=False)
             if len(encoded)>LIMITS['feedback_characters']:
                 feedback={'error':'tool result exceeded its bounded reply; use a smaller query','result_retained_by_host':True}

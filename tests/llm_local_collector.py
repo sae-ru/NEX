@@ -215,5 +215,18 @@ class Collection(unittest.TestCase):
         for path in ['../fixtures.py','terminal/report.json','host-reviews/source-review.json']:
             with self.assertRaises(ValueError):broker.action({'action':'search','path':path,'query':'secret'})
 
+    def test_one_data_envelope_keeps_action_validation_strict(self):
+        request={'action':'read','path':'reference.md','offset':0,'limit':10}
+        raw=json.dumps(request)
+        for text in [raw,'<tool_call>\n'+raw+'\n</tool_call>','```json\n'+raw+'\n```']:
+            self.assertEqual(c.model_object(text),request)
+        for text in ['prefix '+raw,raw+' trailing','<tool_call>'+raw+'</tool_call></tool_call>',
+                     '<tool_call>'+raw+'</tool_call><tool_call>'+raw+'</tool_call>',
+                     '```python\n'+raw+'\n```','[]','{"action":"submit","action":"check"}']:
+            with self.subTest(text=text),self.assertRaises(ValueError):c.model_object(text)
+        broker=self.broker()
+        with self.assertRaises(ValueError):
+            broker.action(c.model_object('<tool_call>{"action":"shell","command":"true"}</tool_call>'))
+
 
 if __name__=='__main__':unittest.main(verbosity=2)
