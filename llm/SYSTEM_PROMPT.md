@@ -240,8 +240,11 @@ padding. Existing index/slice/range traps are retained. For runtime UTF-8 text a
 and use emission5/valueABI4. Strings carry length/packed UTF-8 octets, accept NUL
 and index Unicode scalars. Result errors have two inline text payloads; unwrap
 status15 writes a separate diagnostic packet. Read diagnostic widths and batch
-bounds from metadata. `try_apply` preserves the packet; `apply` fatal relay
-retains its2048-byte/NUL-free C API boundary.
+bounds from metadata. `try_apply` preserves the packet; `apply` receives a managed dispatch outcome
+and invokes ordinary source unwrap after cleanup. Source Result faults do not
+pass through the restricted C host-trap text API. Other host/device faults keep
+that2048-byte/NUL-free boundary. Ordinary source diagnostic rendering limits
+still apply; managed strings and rendered fatal output are different contracts.
 CUDA preparation defaults to that selected compiler and needs no standalone
 emitter/frontend archive. Emission alone does not execute on a GPU.
 If that descriptor includes `owned_provider`, query `gpu_codegen.owned_provider`

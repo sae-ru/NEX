@@ -1,3 +1,32 @@
+# Managed CUDA dispatch outcomes — development0.165.0
+
+The provider now returns a pinned `result<Dispatch>`: either an owned completed
+buffer or the original source Result code/message. Failed buffer construction
+settles and releases its resource before publishing the managed string pair.
+No session-global error slot or delimiter parsing is used. Source outcomes stay
+separate from host faults through batching. `apply`/`apply_f64` invoke ordinary
+source unwrap after cleanup, so Result packets do not pass through the restricted
+C host-trap text envelope. That API retains its original validation for host/device
+faults. GPU wire/language/task ABI/C ABI majors are unchanged; regenerate a
+coherent module/source pair because the map signature now includes the enum.
+
+All targets build. The real C API/nominal/resource path and generated NEX adapter
+passed18 backend executions across reference/native Debug/Release: retained NUL
+and long messages, successful buffers, second-batch and upload failures, f64,
+fatal cleanup and catch/finally bypass. Four ordinary unwrap reference baselines
+bind source error behavior. Every created resource was destroyed once, with
+session parents last; failed temporary outputs were destroyed before fault
+publication. The CPU fixture initializes no CUDA driver/context and is not a
+GPU provider/fallback. Rendered diagnostics retain ordinary runtime bounds and
+formatting; lossless string transport does not prove unrestricted log rendering.
+[Development record](docs/evidence/cuda-managed-outcomes-0.165.0-2026-11-10.json).
+
+The initial cohort passed cuda_codegen/cuda_text; the new trace assertion failed
+because it associated another buffer's destroy event with the output. After an
+ID-specific correction, only cuda_outcomes was repeated (78.88seconds) and passed.
+The original failed outcome and trace are retained. No full regression, device,
+SDK repack or publication was run. All remaining original PLAN work stays active.
+
 # Runtime CUDA UTF-8 text — development0.165.0
 
 Explicit `--text-capacity` now enables runtime UTF-8 values, including arbitrary

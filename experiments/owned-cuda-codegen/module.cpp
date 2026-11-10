@@ -267,7 +267,9 @@ static std::string diagnosticText(const long long *words){
  for(unsigned i=GENERATED_TEXT_CAPACITY;i<(GENERATED_TEXT_WORDS-1U)*8U;++i)if(uint8_t(uint64_t(words[1U+i/8U])>>((i%8U)*8U)))throw Error("E_DEVICE_ABI","nonzero device diagnostic padding");
  try{(void)JSON(text).dump();}catch(const JSON::exception&){throw Error("E_DEVICE_ABI","invalid UTF-8 device diagnostic");}return text;
 }
-static std::string resultDiagnostic(const std::vector<long long> &packet){if(packet.size()!=GENERATED_DIAGNOSTIC_WORDS)throw Error("E_DEVICE_ABI","invalid device diagnostic width");return diagnosticText(packet.data())+": "+diagnosticText(packet.data()+GENERATED_TEXT_WORDS);}
+struct ResultPacket{std::string code,message;};
+static ResultPacket resultPacket(const std::vector<long long> &packet){if(packet.size()!=GENERATED_DIAGNOSTIC_WORDS)throw Error("E_DEVICE_ABI","invalid device diagnostic width");return {diagnosticText(packet.data()),diagnosticText(packet.data()+GENERATED_TEXT_WORDS)};}
+[[maybe_unused]] static std::string resultDiagnostic(const std::vector<long long> &packet){auto value=resultPacket(packet);return value.code+": "+value.message;}
 #endif
 struct ReadCursor {
   Buffer *buffer=nullptr;uint64_t offset=0;
@@ -280,7 +282,7 @@ struct Creation {
   Session *session=nullptr;Buffer *a=nullptr;
   std::vector<Buffer*> columns;
   unsigned ordinal=0,dtype=0,lanes=0,steps=0;
-  std::vector<uint8_t> data;std::string code,message;
+  std::vector<uint8_t> data;std::string code,message,sourceCode,sourceMessage;bool sourceFault=false;
   explicit Creation(Kind value):kind(value){}
 };
 static void destroySession(void *p)noexcept{delete static_cast<Session*>(p);}
@@ -358,7 +360,10 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
         TRACE(JSON{{"event",code?"kernel_failure_settled":"kernel_completed"},{"session",session.identity},{"dispatch",dispatch},{"output_buffer",buffer->identity},{"elements",lanes},{"lane_status",code},{"failed_lane",lane},{"kernel_ns",buffer->kernelNs},{"elapsed_ns",ns(started)},{"kernel_sha256",GENERATED_SHADER_SHA256},{"physical_completion_verified",true},{"cpu_fallback",false}});
         if(code){
 #if GENERATED_TEXT_VALUES
-          if(code==15){std::vector<long long> packet(GENERATED_DIAGNOSTIC_WORDS);d.check(d.p_cuMemcpyDtoH(packet.data(),diagnostics+uint64_t(lane)*8*GENERATED_DIAGNOSTIC_WORDS,packet.size()*8),"cuMemcpyDtoH diagnostic");session.drain();throw Error("E_RESULT",resultDiagnostic(packet));}
+          if(code==15){std::vector<long long> packet(GENERATED_DIAGNOSTIC_WORDS);d.check(d.p_cuMemcpyDtoH(packet.data(),diagnostics+uint64_t(lane)*8*GENERATED_DIAGNOSTIC_WORDS,packet.size()*8),"cuMemcpyDtoH diagnostic");session.drain();auto result=resultPacket(packet);input.sourceCode=std::move(result.code);input.sourceMessage=std::move(result.message);input.sourceFault=true;return NEX_FFI_INTERNAL;}
+#endif
+#if GENERATED_VALUE_ABI
+          if(code&0x80000000u){input.sourceCode=textPool().at((code>>10u)&1023u).get<std::string>();input.sourceMessage=textPool().at(code&1023u).get<std::string>();input.sourceFault=true;return NEX_FFI_INTERNAL;}
 #endif
           throw Error(laneError(code),laneMessage(code,lane));
         }
@@ -374,18 +379,35 @@ static nex_ffi_status factory(const nex_ffi_api_v1 *api,nex_ffi_call call,void *
 static int64_t integer(const nex_ffi_api_v1 *api,nex_ffi_call c,nex_ffi_ref r){int64_t v=0;checked(api->get_i64(c,r,&v));return v;}
 static void *borrow(const nex_ffi_api_v1 *api,nex_ffi_call c,nex_ffi_ref r,uint64_t argument){nex_ffi_type t=0;checked(api->argument_type(c,argument,&t));void *p=nullptr;checked(api->resource_borrow(c,r,t,&p));return p;}
 static nex_ffi_status failure(const nex_ffi_api_v1 *api,nex_ffi_call call,nex_ffi_ref *out,const std::string &code,const std::string &text){return api->make_failure(call,reinterpret_cast<const uint8_t*>(code.data()),code.size(),reinterpret_cast<const uint8_t*>(text.data()),text.size(),out);}
-static nex_ffi_status construct(const nex_ffi_api_v1 *api,nex_ffi_call call,Creation &input,uint64_t capacity,nex_ffi_ref parent,nex_ffi_ref *out){
- nex_ffi_type type=0;checked(api->result_type(call,&type));checked(api->type_child(call,type,0,0,&type));nex_ffi_ref value=0;
- auto status=input.kind==Creation::SessionOpen?api->resource_create(call,type,capacity,factory,destroySession,&input,&value):api->resource_create_with_parents(call,type,capacity,&parent,1,factory,input.kind==Creation::ReaderOpen?destroyCursor:destroyBuffer,&input,&value);
- if(status!=NEX_FFI_OK){if(status==NEX_FFI_HOST_TRAP)return status;if(!input.code.empty())return failure(api,call,out,input.code,input.message);if(status==NEX_FFI_LIMIT)return failure(api,call,out,"E_COMPUTE_LIMIT","declared owned device capacity is exhausted");return status;}
- return api->make_success(call,value,out);
-}
 struct ValueReference {
  const nex_ffi_api_v1 *api;nex_ffi_call call;nex_ffi_ref value=0;
  ValueReference(const nex_ffi_api_v1 *a,nex_ffi_call c):api(a),call(c){}
  ~ValueReference(){if(value)(void)api->release(call,value);}
  ValueReference(const ValueReference&)=delete;ValueReference&operator=(const ValueReference&)=delete;
 };
+// Result faults are managed NEX data. They never pass through raise_trap or a
+// session-global last-error slot; the exact pair belongs to this one dispatch.
+static nex_ffi_status publishDispatch(const nex_ffi_api_v1 *api,nex_ffi_call call,nex_ffi_type type,nex_ffi_ref buffer,const std::string *code,const std::string *message,nex_ffi_ref *out){
+ ValueReference a(api,call),b(api,call),value(api,call);nex_ffi_ref fields[2]={buffer,0};uint64_t count=1,variant=0;
+ if(code){checked(api->make_string(call,reinterpret_cast<const uint8_t*>(code->data()),code->size(),&a.value));checked(api->make_string(call,reinterpret_cast<const uint8_t*>(message->data()),message->size(),&b.value));fields[0]=a.value;fields[1]=b.value;count=2;variant=1;}
+ checked(api->make_nominal(call,type,variant,fields,count,&value.value));return api->make_success(call,value.value,out);
+}
+static nex_ffi_status constructResourceResult(const nex_ffi_api_v1 *api,nex_ffi_call call,Creation &input,uint64_t capacity,nex_ffi_ref parent,nex_ffi_ref *out,nex_ffi_resource_factory_v1 create,nex_ffi_resource_destroy_v1 destroy){
+ nex_ffi_type payload=0,type=0;checked(api->result_type(call,&payload));checked(api->type_child(call,payload,0,0,&payload));type=payload;
+ const bool dispatch=input.kind==Creation::BufferGenerated;
+ if(dispatch)checked(api->type_child(call,payload,0,0,&type));
+ ValueReference value(api,call);
+ auto status=input.kind==Creation::SessionOpen?api->resource_create(call,type,capacity,create,destroy,&input,&value.value):api->resource_create_with_parents(call,type,capacity,&parent,1,create,destroy,&input,&value.value);
+ if(status!=NEX_FFI_OK){
+  if(status==NEX_FFI_HOST_TRAP)return status;
+  if(dispatch&&input.sourceFault&&status==NEX_FFI_INTERNAL)return publishDispatch(api,call,payload,0,&input.sourceCode,&input.sourceMessage,out);
+  if(!input.code.empty())return failure(api,call,out,input.code,input.message);
+  if(status==NEX_FFI_LIMIT)return failure(api,call,out,"E_COMPUTE_LIMIT","declared owned device capacity is exhausted");return status;
+ }
+ if(dispatch)return publishDispatch(api,call,payload,value.value,nullptr,nullptr,out);
+ return api->make_success(call,value.value,out);
+}
+static nex_ffi_status construct(const nex_ffi_api_v1 *api,nex_ffi_call call,Creation &input,uint64_t capacity,nex_ffi_ref parent,nex_ffi_ref *out){return constructResourceResult(api,call,input,capacity,parent,out,factory,input.kind==Creation::SessionOpen?destroySession:input.kind==Creation::ReaderOpen?destroyCursor:destroyBuffer);}
 static constexpr uint64_t floatChunk=1024;
 static uint64_t finiteWord(uint64_t bits){
  const auto magnitude=bits&UINT64_C(0x7fffffffffffffff);

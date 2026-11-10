@@ -373,8 +373,44 @@ input/output and diagnostic columns to256KiB each. Output and diagnostics share
 one owned allocation; quotas and cleanup account for both. Diagnostics are read
 only after physical completion, and their lengths, padding and UTF-8 are checked
 again before importing them. `try_apply` preserves the complete E_RESULT message,
-including NUL and long text, without truncation. The existing `apply` fatal C API
-relay accepts NUL-free messages of at most2048 bytes; arbitrary fatal packets
-outside that envelope remain an unfinished integration, and are not qualified
-by source/host packet checks. The new kernel/adapter still requires matching
+including NUL and long text, without truncation. `apply` now receives the original pair in a managed `Dispatch::SourceFault`
+value and invokes ordinary source `unwrap` after cleanup. This avoids the C
+host-trap text envelope for source Result failures. Other host/device faults
+retain the2048-byte/NUL-free host-trap contract. Rendered diagnostics still have
+the ordinary source runtime bounds and formatting; transporting complete string
+values does not establish lossless terminal/log rendering. The new kernel/adapter still requires matching
 physical NVIDIA, lifecycle/sanitizer and immutable SDK acceptance.
+
+### Managed dispatch outcomes
+
+The generated provider's `map_raw` now returns `result<Dispatch>`. A completed
+alternative carries the owned buffer; a source Result failure carries its
+original code/message strings. The nominal type and resource child are part of
+the actual pinned FFI signature. New preparations derive those signatures from
+the selected compiler; never combine a new source adapter with an older module.
+The eleven export names and C ABI prefix remain unchanged.
+
+The resource factory settles the device operation first. On a source fault it
+retains the validated string pair in that one call's creation state and fails
+the temporary buffer construction. The existing resource boundary destroys the
+buffer before the pair is published as a managed enum. Host cancellation/trap
+and allocation-limit failures keep their precedence. On success, nominal
+construction retains the buffer and its session parent. There is no session
+last-error slot, packet parsing by delimiters, or fabricated resource in the
+failure alternative.
+
+The source adapter closes uploaded columns and preserves distinct data, source
+fault and host fault outcomes through physical batching. `try_apply` converts a
+source fault to E_RESULT data with the original combined message. `apply` uses
+the two original strings in ordinary NEX `unwrap(err(...))`, after cleanup.
+`apply_f64` shares that path. Source catches/finally cannot intercept a fatal
+Result unwrap; normal owned cleanup still executes. An earlier completed batch
+is not returned as partial success if a later batch fails.
+
+The C host-trap API keeps its existing code/message validation and limits for
+host/device faults. It is not used for these source Result failures. Actual
+source diagnostic display/truncation rules remain those of the ordinary
+runtime; retained managed values are distinct from rendered logs. A CPU-only
+fixture exercises the real publisher, C resource factories, nominal validation,
+source adapter and cleanup with no CUDA context. That does not qualify actual
+NVIDIA completion, cancellation, sanitizer or immutable SDK delivery.

@@ -270,3 +270,12 @@ and physical output is at most256KiB, then concatenate settled batches. Existing
 C-call budgets are unchanged. `result<T>` errors are encoded output values;
 `unwrap(err)` is a distinct fatal E_RESULT with the original bounded diagnostic.
 See [the value ABI](../../docs/gpu-codegen.md#fixed-cuda-values-and-results).
+
+The current source adapter uses a managed `Dispatch` enum: complete buffers and
+source Result packets have separate alternatives. Source packets reach ordinary
+NEX unwrap after temporary cleanup, including the f64 convenience interface.
+The actual pinned map signature changes with this nominal type; regenerate a
+coherent module/source pair. Host-trap limits are unchanged. See the
+[managed outcome contract](../../docs/gpu-codegen.md#managed-dispatch-outcomes).
+The repository's CPU-only outcome fixture checks the C API/source ownership path
+and is explicitly not a GPU provider or fallback.

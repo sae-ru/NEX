@@ -4310,14 +4310,21 @@
           "dynamic Result code/message"
         ],
         "fatal_host_relay": {
+          "scope": "host/device faults only",
           "maximum_message_bytes": 2048,
-          "NUL_allowed": false,
-          "oversized_or_NUL_packets": "try_apply preserves full text; apply fatal relay remains restricted"
+          "NUL_allowed": false
         },
         "pending": [
           "str(f64/aggregate) formatting",
           "matching physical GPU and immutable SDK qualification"
-        ]
+        ],
+        "source_result_relay": {
+          "transport": "per-dispatch managed enum",
+          "source_unwrap_after_cleanup": true,
+          "C_host_trap_text_envelope_used": false,
+          "session_global_error_slot": false,
+          "rendering": "ordinary source diagnostic bounds and formatting"
+        }
       }
     }
   }
