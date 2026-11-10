@@ -67,6 +67,12 @@ selected groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evide
 on an RTX3090 through an ordinary development installation. Full Windows
 regression and complete portable SDK qualification remain pending.
 
+The checkout [owned Metal bridge](docs/evidence/macos-public-owned-Metal-0.165.0-2026-11-10.json)
+now prepares shaders through that public emitter and executes them through NEX
+tasks and owned device resources. Nine source checks passed on Mac and Windows;
+96 reference/native pairs passed with230 physical Metal kernels on Apple M5 Max.
+Installed-tool discovery and complete immutable SDK qualification remain pending.
+
 The preceding0.164 runtime retains its separately pinned results below.
 The append-only [fatal diagnostic C API](docs/ffi-design.md#explicit-fatal-diagnostics-0164)
 lets trusted providers report their original runtime error code and copied UTF-8

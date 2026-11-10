@@ -99,11 +99,19 @@ def main():
     out = args.output.absolute()
     out.mkdir(parents=True, exist_ok=False)
     compiler = sdk / "bin/nex"
+    preparation = json.loads((project / "preparation/report.json").read_bytes())
+    assert preparation["ok"] and preparation["native_provider_built"] and preparation["compiler_sha256"] == sha(compiler)
+    assert preparation["emitter"] == "public_checked_AST" and preparation["emission_schema"] == "nex.metal-emission/1"
+    assert preparation["emission_sha256"] == sha(project / "generation/report.json")
+    assert preparation["kernel_sha256"] == sha(project / "generation/kernel.metal")
     prefix = (project / "main.nex").read_text().split("server fn main()->unit")[0] + HELPERS
     env = {**os.environ, "NEX_RESOURCE_DIR": str(sdk / "share/nex"), "PYTHONDONTWRITEBYTECODE": "1", "NEX_OWNED_METAL_MAP_TEST_NOISE": "1"}
     for name in ["NEX_OWNED_METAL_MAP_TEST_BAD_REPLY", "NEX_OWNED_METAL_MAP_TEST_GATE_MS"]:
         env.pop(name, None)
     report = {"schema": "nex.owned-generated-Metal-lifetimes/1", "ok": False, "commands": [], "cases": [], "compiler_sha256": sha(compiler),
+              "emitter": preparation["emitter"], "emission_schema": preparation["emission_schema"],
+              "emission_sha256": preparation["emission_sha256"], "function_map": preparation["function_map"],
+              "preparation_sha256": sha(project / "preparation/report.json"),
               "worker_sha256": sha(project / "bundle/worker"), "module_sha256": sha(project / "bundle/module.so"), "manifest_sha256": sha(project / "bundle/manifest.json"),
               "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
     started = time.monotonic()

@@ -116,7 +116,7 @@ contract; production-browser and installed-SDK acceptance remain separate.
 | CPU tasks and IO | source_concurrency, structured_tasks_runtime, task_file_reads, task_file_writes, task_file_streams | concurrency, task-lifetime, task-limits, task-file-reads, task-file-writes, task-file-streams |
 | DNS/TCP/HTTP clients and response streams | dns_provider, tcp_provider, http_client_provider, http_response_streams | dns, tcp, http-client, http-stream |
 | Resources and FFI | source_resources, foreign_boundary, foreign_trap_reporting, resource_regions, task_foreign_prototype | source-resources, ffi, resource-regions, task-foreign-source |
-| Compute/models/devices | compute, model, device | compute, model, device |
+| Compute/models/devices/GPU | compute, model, device, gpu_codegen | compute, model, device, gpu |
 | Debug/profile | debug_features, task_debugging, task_provider_debugging, task_profiling, task_provider_profiling | debug, expression, task-debug, task-provider-debug, profile, task-provider-profile |
 
 Read indexed `docs/sdk.md`, `docs/packaging.md` and `docs/task-profiling.md` for
@@ -225,6 +225,12 @@ buffers/session/code. Cancellation does not prove GPU/DMA completion. CPU
 fallback must be explicitly allowed for reported unavailable/unsupported
 placement; it must not hide overflow, invalid input, protocol failure,
 cancellation or device loss. General NPU/model ownership and recovery are pending.
+
+For scalar GPU source, discover `gpu_codegen` and read `nex guide --kind gpu --json`.
+The checkout `experiments/owned-metal-codegen/prepare.py` uses public Metal emission
+for a pinned owned-task provider. Match the selected compiler, exact emission and
+foreign grant; distinguish checkout execution from installed SDK acceptance.
+Function source maps provide attribution; GPU operation stepping remains pending.
 
 ## Versioning and delivery
 

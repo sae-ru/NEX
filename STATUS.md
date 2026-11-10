@@ -14,9 +14,21 @@ artifacts/37 rejected mutations and20 reference/native Debug/Release/TypeScript/
 Metal cases. Both input layouts execute on Apple M5 Max:48 physical dispatches,
 including eight boundary dispatches, plus nine rejected host inputs. Full
 regression and matching installed SDK delivery remain pending. Earlier experimental
-Python/typed-graph and0.164 SDK results retain their original pins. Public owned
+Python/typed-graph and0.164 SDK results retain their original pins. Installed owned
 dispatch, broader types/backends, GPU debugging/profiling and the remaining
 original roadmap are still required.
+
+The checkout [public-emission owned provider](docs/evidence/macos-public-owned-Metal-0.165.0-2026-11-10.json)
+now prepares its shader through the actual `nex emit --kind metal` CLI, retaining
+compiler/descriptor identity, canonical hashes, source maps and shader SHA256.
+Nine source checks passed on Mac and Windows;96 reference/native pairs passed
+on Apple M5 Max with230 physical GPU kernels over24 prepared providers.
+Numerics, hidden parents, cancellation/deadlines, original fatal codes, malformed
+replies/progress and bounded diagnostic capture retain their existing checks.
+The numerical/fatal runners also preserve the name of a symlinked C++ driver.
+Compiler/runtime C++, language0.28, ABI and graph history are unchanged.
+Discoverable installed tools, complete current SDK qualification, GPU operation
+debugging/profiling and broader GPU/NPU support remain pending.
 
 The same0.165 source passed [all-target Windows compilation, seven selected
 CTest groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evidence/windows-current-source-CUDA-0.165.0-2026-11-10.json)
@@ -40,6 +52,15 @@ original session assertions after a deliberate31-second hold before clients.
 The original failures and unchanged deadlines are retained. The complete fixed
 Windows HTTP group and macOS follow-up remain pending; compiler/runtime,
 language, ABI and debugger-helper code are unchanged.
+
+That full current Windows replay subsequently passed
+[37 original HTTP debugging sessions](docs/evidence/windows-HTTP37-Defender-0.165.0-2026-11-10.json).
+The final mixed/O2/TLS case still exhausted its client clock during native module
+initialization after `main`. A separate listener-gated diagnostic reached HTTPS
+health200 and an inferior stop, then image validation failed with WinError225:
+Defender quarantined the test server under `Behavior:Win32/DefenseEvasion.A!ml`.
+The original timeout and Defender events are retained. The listener-gate change
+is still external/unaccepted; complete Windows HTTP and SDK gates remain open.
 
 # Native Windows fixture paths — development0.164.0
 

@@ -1,19 +1,22 @@
 # Owned generated Metal functions
 
 This checkout prototype prepares a persistent GPU provider for an ordinary
-checked NEX scalar function. The selected compiler checks the source project;
-the [scalar generator](../metal-codegen/README.md) lowers its exact saved typed
-graph to MSL. A new pinned bundle contains the generated worker and typed host
+checked NEX scalar function. The selected compiler's public
+[`nex emit --kind metal`](../../docs/gpu-codegen.md) command lowers its checked
+AST to MSL. A new pinned bundle contains the generated worker and typed host
 module. NEX reference and native task programs execute that physical GPU code
 through genuine `std/device` Session/Buffer resources.
 
-It requires the0.164 explicit fatal-trap C API. Language0.28, taskABI7 and source
-grammar are unchanged. Complete installed SDK qualification remains pending.
-Development0.165 adds a [public C++ source emitter](../../docs/gpu-codegen.md)
-with discovery, diagnostics and function maps. This prototype still uses its
-separately pinned Python/typed-graph generator. Connecting the public emitter
-to owned dispatch, GPU debug/profile, immutable SDK delivery and broader GPU/NPU
-remain separate work.
+It requires toolchain0.165 public Metal emission and the explicit fatal-trap
+C API. Language0.28, taskABI7 and source grammar are unchanged. The checkout
+preparer retains the compiler/descriptor identity, canonical function hashes,
+source maps and exact shader SHA256 from `nex.metal-emission/1`. Its preparation
+record pins that emission record and all compiled provider inputs. Preparation
+and source checking initialize no driver.
+
+Discoverable installed tools, complete immutable SDK qualification, GPU
+debug/profile and broader GPU/NPU support remain separate work. Historical
+Python/typed-graph experiments retain their original source and result pins.
 
 ## Prepare and call
 

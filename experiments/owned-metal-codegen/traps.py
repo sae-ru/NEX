@@ -36,7 +36,10 @@ def main():
     for name in ["sdk", "cxx", "output"]:
         parser.add_argument("--" + name, required=True, type=Path)
     args = parser.parse_args()
-    sdk, cxx = args.sdk.resolve(strict=True), args.cxx.resolve(strict=True)
+    sdk, cxx = args.sdk.resolve(strict=True), args.cxx.absolute()
+    # Preserve the selected C++ driver's name when it is a symlink.
+    if not cxx.is_file():
+        parser.error("select an actual C++20 compiler")
     out = args.output.absolute()
     out.mkdir(parents=True, exist_ok=False)
     source = Path(__file__).parent

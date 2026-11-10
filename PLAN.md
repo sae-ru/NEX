@@ -16,7 +16,9 @@ evidence and limits in STATUS.md.
 - [x] Add public checked-AST scalar emission, CLI/discovery, source diagnostics, function maps and a versioned JSON contract in development0.165; matching acceptance remains pending.
 - [x] Validate the public C++ emitter against reference/native Debug/Release/TypeScript and physical Metal:20 cases, both layouts,48 GPU dispatches and nine host rejections.
 - [ ] Complete its full current regression and matching installed SDK/platform qualification.
-- [ ] Connect public emission to owned dispatch and implement GPU debugging and profiling.
+- [x] Connect public emission to the checkout owned-task provider, retaining exact compiler/emission identities, source maps and physical settlement;96 native/reference pairs and230 physical GPU events passed.
+- [ ] Install and discover that public-emission provider through a matching immutable SDK.
+- [ ] Implement GPU operation debugging and profiling.
 - [ ] Extend supported types/control and GPU/NPU backends and qualify immutable SDK delivery.
 
 All remaining original language/platform/device/mobile/UI/Studio/conversion,

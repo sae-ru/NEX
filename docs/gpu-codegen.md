@@ -62,9 +62,29 @@ dispatches including eight boundary dispatches; nine invalid host inputs were
 rejected. The independent record also covers all native targets, six CLI tests
 and actual JSON contract validation. This establishes the named scalar scope.
 
-The existing [owned generated-provider experiment](../experiments/owned-metal-codegen/README.md)
-retains its separate source/compiler and physical settlement records. The public
-emitter still needs full regression and matching installed SDK qualification.
-Public owned-task dispatch integration, GPU
-debugging/profiling, further types/backends and device-loss recovery remain
-planned work. Emitting a shader does not establish device execution or speedup.
+## Execute through owned NEX resources
+
+The checkout [owned-provider preparer](../experiments/owned-metal-codegen/README.md)
+now calls the selected compiler's public emitter with `columns` layout. It keeps
+the exact emission record, source maps, canonical function hashes and shader
+SHA256, then obtains nine actual FFI signatures and builds a pinned worker/module
+bundle. Select a0.165 or later SDK and a source project containing the scalar root:
+
+```sh
+python3 -B experiments/owned-metal-codegen/prepare.py --sdk "$NEX_SDK" \
+  --source-project /absolute/path/to/project --symbol transform \
+  --output /absolute/new/gpu-project --cxx "$(xcrun --find clang++)"
+```
+
+`--check-sdk` checks preparation and source signatures without native compilation
+on other hosts. Native preparation requires macOS and its SDK. Execution uses
+the generated project's `make_context`, `try_apply`/`apply` and the explicitly
+granted `foreign.json`. See the preparer guide for a complete caller. Buffers and
+read cursors retain their physical parents; cancellation and failures drain the
+admitted GPU command before resource release. `try_apply` returns explicit
+Results, while `apply` forwards original fatal codes through the trusted C API.
+
+This is a checkout integration. Discoverable installed tools, full regression
+and matching immutable SDK qualification remain pending. GPU operation debugging
+and profiling, further types/backends and device-loss recovery are also pending.
+Emitting a shader alone does not establish device execution or speedup.

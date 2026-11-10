@@ -1,7 +1,10 @@
 """Actual checked-AST Metal emission, source identities and rejected programs."""
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import unittest
 import support as harness
 
@@ -9,6 +12,92 @@ import support as harness
 class MetalCodegen(harness.ToolchainCase):
     def emit(self, *args, ok=True):
         return self.cli('emit', '--kind', 'metal', '--entry', 'transform', *args, ok=ok)
+
+    def prepare_owned(self, name, ok=True):
+        sdk = self.root / ('SDK ' + name)
+        (sdk / 'bin').mkdir(parents=True)
+        (sdk / 'share').mkdir()
+        (sdk / 'bin' / ('nex.exe' if os.name == 'nt' else 'nex')).symlink_to(harness.NEX)
+        (sdk / 'share/nex').symlink_to(harness.REPO, target_is_directory=True)
+        output = self.root / ('prepared % 🧠 ' + name)
+        # Source-only preparation must need neither Apple's SDK nor C++/GPU.
+        command = [sys.executable, '-B', harness.REPO / 'experiments/owned-metal-codegen/prepare.py',
+            '--sdk', sdk, '--source-project', self.root, '--symbol', 'transform',
+            '--output', output, '--check-sdk', '--cxx', self.root / 'unavailable compiler']
+        result = subprocess.run(list(map(str, command)), cwd=self.root, capture_output=True,
+            text=True, encoding='utf-8', timeout=180,
+            env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'SDKROOT': str(self.root / 'unavailable SDK')})
+        self.assertEqual(result.returncode == 0, ok, result.stdout + result.stderr)
+        return output, result
+
+    def test_owned_preparation_uses_public_emission_and_exact_source_identity(self):
+        self.source('''module gpu;
+fn identity<T>(x:T)->T{return x;}
+fn transform(x:i64,add:bool)->i64 requires(x>=0) ensures(r=>r>=x){
+ if add{return identity<i64>(x)+1;}return x;
+}
+server fn unused()->str{return "unreachable provider secret";}
+fn main()->unit{}
+''')
+        checked = self.cli('check')
+        before = harness.database_rows(self.root / '.nex/graph.db')
+        expected = self.emit('--input-layout', 'columns')
+        output, _ = self.prepare_owned('public')
+        report = json.loads((output / 'preparation/report.json').read_bytes())
+        emission = json.loads((output / 'generation/report.json').read_bytes())
+        self.assertEqual(report['emitter'], 'public_checked_AST')
+        self.assertEqual(report['emission_schema'], 'nex.metal-emission/1')
+        self.assertEqual(report['source_revision'], checked['revision'])
+        self.assertEqual(report['root'], expected['entry'])
+        self.assertEqual(report['root_hash'], expected['functions'][expected['entry']])
+        for name in ['functions', 'function_map', 'compiler_build', 'descriptor_hash', 'toolchain']:
+            self.assertEqual(report[name], expected[name])
+        self.assertEqual(emission['shader_sha256'], expected['shader_sha256'])
+        self.assertEqual(report['emission_sha256'], hashlib.sha256((output / 'generation/report.json').read_bytes()).hexdigest())
+        self.assertEqual(report['compiler_sha256'], hashlib.sha256(Path(harness.NEX).read_bytes()).hexdigest())
+        self.assertEqual(len(report['signature_sha256']), 9)
+        self.assertTrue(report['source_checked'])
+        for name in ['driver_initialized', 'hardware_executed', 'native_provider_built']:
+            self.assertFalse(report[name])
+        generation = next(row for row in report['commands'] if row['label'] == 'generate')
+        self.assertEqual(Path(generation['argv'][0]).resolve(), Path(harness.NEX))
+        self.assertEqual(generation['argv'][1:4], ['emit', '--kind', 'metal'])
+        self.assertEqual(Path(generation['cwd']), self.root.resolve())
+        shader = (output / 'generation/kernel.metal').read_bytes()
+        header = (output / 'preparation/inputs/generated_kernel.h').read_text(encoding='utf-8')
+        embedded = next(line[len('#define GENERATED_MSL '):] for line in header.splitlines() if line.startswith('#define GENERATED_MSL '))
+        self.assertEqual(json.loads(embedded).encode('utf-8'), shader)
+        self.assertEqual(report['kernel_sha256'], hashlib.sha256(shader).hexdigest())
+        self.assertNotIn(b'unreachable provider secret', shader)
+        self.assertIn(report['root_hash'], (output / 'main.nex').read_text())
+        for name, digest in report['source_input_pins'].items():
+            self.assertEqual(hashlib.sha256((output / 'preparation/inputs' / name).read_bytes()).hexdigest(), digest)
+        self.assertEqual(harness.database_rows(self.root / '.nex/graph.db'), before)
+
+    def test_owned_preparation_keeps_zero_unit_and_eight_argument_contracts(self):
+        for i, (source, count, result) in enumerate([
+                ('fn transform()->unit{assert(true);}', 0, 'unit'),
+                ('fn transform(a:i64,b:bool,c:i64,d:i64,e:i64,f:i64,g:i64,h:i64)->bool{return b&&a==h;}', 8, 'bool')]):
+            with self.subTest(parameters=count):
+                self.source('module gpu;' + source + 'fn main()->unit{}')
+                output, _ = self.prepare_owned(str(i))
+                report = json.loads((output / 'preparation/report.json').read_bytes())
+                self.assertEqual(len(report['parameter_types']), count)
+                self.assertEqual(report['result_type'], result)
+                self.assertIn('#define GENERATED_ARGUMENTS ' + str(count) + '\n',
+                    (output / 'preparation/inputs/generated_kernel.h').read_text())
+                self.assertFalse((output / 'bundle').exists())
+
+    def test_owned_preparation_preserves_gpu_rejection_without_fallback(self):
+        self.source('module gpu;fn transform(x:f64)->f64{return x;}fn main()->unit{}')
+        self.cli('check')
+        before = harness.database_rows(self.root / '.nex/graph.db')
+        output, result = self.prepare_owned('rejected', ok=False)
+        self.assertIn('E_GPU_TYPE', result.stderr)
+        self.assertFalse((output / 'generation/kernel.metal').exists())
+        self.assertFalse((output / 'preparation/report.json').exists())
+        self.assertFalse((output / 'bundle').exists())
+        self.assertEqual(harness.database_rows(self.root / '.nex/graph.db'), before)
 
     def test_reachable_source_hashes_mapping_and_saved_revision(self):
         self.source('''module gpu;

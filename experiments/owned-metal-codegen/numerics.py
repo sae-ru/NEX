@@ -26,7 +26,10 @@ def main():
     for name in ["sdk", "cxx", "output"]:
         parser.add_argument("--" + name, required=True, type=Path)
     args = parser.parse_args()
-    sdk, cxx = args.sdk.resolve(strict=True), args.cxx.resolve(strict=True)
+    sdk, cxx = args.sdk.resolve(strict=True), args.cxx.absolute()
+    # clang++ may be a symlink to clang; argv[0] selects C++ linking.
+    if not cxx.is_file():
+        parser.error("select an actual C++20 compiler")
     out = args.output.absolute()
     out.mkdir(parents=True, exist_ok=False)
     source = Path(__file__).parent
@@ -37,6 +40,7 @@ def main():
     for name in ["NEX_OWNED_METAL_MAP_TEST_BAD_REPLY", "NEX_OWNED_METAL_MAP_TEST_GATE_MS"]:
         env.pop(name, None)
     report = {"schema": "nex.owned-generated-Metal-numerics/1", "ok": False, "cases": [], "commands": [], "compiler_sha256": sha(compiler),
+              "emitter": "public_checked_AST", "emission_schema": "nex.metal-emission/1",
               "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "whole_original_goal_complete": False}
     start = time.monotonic()
 
@@ -67,6 +71,9 @@ def main():
         run(name + "-prepare", [sys.executable, "-B", source / "prepare.py", "--sdk", sdk, "--source-project", cpu, "--symbol", "transform", "--output", project, "--cxx", cxx], directory)
         metadata = json.loads((project / "preparation/report.json").read_bytes())
         assert metadata["ok"] and metadata["native_provider_built"] and metadata["input_layout"] == "columns" and not metadata["hardware_executed"]
+        assert metadata["emitter"] == "public_checked_AST" and metadata["emission_schema"] == "nex.metal-emission/1"
+        assert metadata["emission_sha256"] == sha(project / "generation/report.json")
+        assert metadata["kernel_sha256"] == sha(project / "generation/kernel.metal")
         return directory, project, metadata
 
     def compare(name, directory, project, metadata, text, body, kernels, errors):
@@ -88,6 +95,7 @@ def main():
         nat = lifetime.inspect_trace(native_trace, kernels, errors)
         assert ref["devices"] == nat["devices"] and ref["buffers"] == nat["buffers"]
         report["cases"].append({"name": name, "native_reference": True, "source_revision": metadata["source_revision"],
+                                "emission_sha256": metadata["emission_sha256"], "function_map": metadata["function_map"],
                                 "kernel_sha256": metadata["kernel_sha256"], "manifest_sha256": metadata["manifest_sha256"], "worker_sha256": metadata["worker_sha256"],
                                 "module_sha256": metadata["module_sha256"], "parameter_types": metadata["parameter_types"], "reference": ref, "native": nat})
         save()

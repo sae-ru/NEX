@@ -1,0 +1,133 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Checkout bridge from public checked-AST Metal emission to owned NEX task/device dispatch: actual selected-compiler emission/identity/signatures, nine source preparation cases on Mac and Windows,96 reference/native pairs and230 physical Metal kernels on Apple M5 Max. Separate from installed-tool discovery, complete immutable SDK, operation stepping/profiling and broader GPU/NPU support.",
+  "compiler_runtime_CPP_language_ABI_or_migration_changed": false,
+  "evidence": {
+    "schema": "nex.public-owned-Metal-independent-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T01:28:59.462467+00:00",
+    "base_source_commit": "31f96e66bb51a96f2db9ece0a54336d30efd23d7",
+    "toolchain": "0.165.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "compiler_sha256": "c788ac39771555c7408d833510fe17b05f83587456d68e980b76b653bc5b4cdb",
+    "compiler_build": "1a08741c7bea3179d8185b51925f132b5112e1d6e72bb47288e101d90e7d4fef",
+    "descriptor_hash": "48e572589cfc0423a8cfbfc6d3b57fafd6af8b4408191a1f92864b3593b91511",
+    "emitter": "public_checked_AST",
+    "native_reference_pairs": 96,
+    "physical_GPU_kernel_events": 230,
+    "trace_files": 192,
+    "prepared_public_providers": 24,
+    "actual_FFI_signatures_per_provider": 9,
+    "physical_devices": [
+      "Apple M5 Max"
+    ],
+    "corpora": [
+      {
+        "name": "lifetimes",
+        "native_reference_pairs": 15,
+        "physical_GPU_events": 24,
+        "actual_trace_files": 30,
+        "report_sha256": "37afd1a4f6ddcb062ede639650223c46fbb9d59a2852a81db87808a7b822d825"
+      },
+      {
+        "name": "numerics",
+        "native_reference_pairs": 22,
+        "physical_GPU_events": 100,
+        "actual_trace_files": 44,
+        "report_sha256": "aa6615efd84bdfbbbff8c544d54181e130ce403bbd53af6e912501b0d4072469"
+      },
+      {
+        "name": "fatal-traps",
+        "native_reference_pairs": 6,
+        "physical_GPU_events": 12,
+        "actual_trace_files": 12,
+        "report_sha256": "91779be2b397c706593d37f9cc02f7ae3035cd4ac0c3c0e71e8a1505cf27f0bc"
+      },
+      {
+        "name": "reply-faults",
+        "native_reference_pairs": 16,
+        "physical_GPU_events": 16,
+        "actual_trace_files": 32,
+        "report_sha256": "edbfcab1144060a8d75f6d2ea6efd4c8d25747c08d50cc0005c272eb96bdad9d"
+      },
+      {
+        "name": "logs",
+        "native_reference_pairs": 3,
+        "physical_GPU_events": 6,
+        "actual_trace_files": 6,
+        "report_sha256": "f2c57f82ad9e29a88895347f0d2591d3954dc45557238c1894ef1b143802a0b3"
+      },
+      {
+        "name": "transport-faults",
+        "native_reference_pairs": 34,
+        "physical_GPU_events": 72,
+        "actual_trace_files": 68,
+        "report_sha256": "299af19a65b7e2d95f73e47dd1500da787859ef789d20ee993ff3c4fec5febc2"
+      }
+    ],
+    "Mac_source_tests_passed": 9,
+    "all_targets_built": true,
+    "ordinary_SDK_inventory_files": 1513,
+    "ordinary_SDK_unchanged": true,
+    "native_CXX_driver_symlink_preserved": true,
+    "changed_code_sha256": {
+      "experiments/owned-metal-codegen/prepare.py": "55533cb4707cf4994672359dca411548e52533ef658966ff9cbccbe06e1c9501",
+      "experiments/owned-metal-codegen/numerics.py": "2fc8c41830ddf21855f01be54773c3b74e77f0579754878dfa2c42e0736bea16",
+      "experiments/owned-metal-codegen/traps.py": "191d0880f3b0799901a16756bb6259ce912dedc0374265884f99efa997719eb0",
+      "experiments/owned-metal-codegen/verify.py": "54af49bc404797a8765e04a74d1a0a1bafb62d49219b08abcbbd5958725d2aa8",
+      "tests/metal_codegen.py": "69bc2af58bfad85153d15cdc401d23c13a0aa516b239365ea30ac9a64133b6a7"
+    },
+    "initial_index_identity_failure_fixture_formula_error_and_CXX_link_failure_retained": true,
+    "same_provider_completed15_pairs_reused_without_rerun": true,
+    "all_hardware_owners_retired": true,
+    "CPU_fallback_accepted": false,
+    "installed_discovery_or_complete_SDK_accepted": false,
+    "GPU_operation_debugging_or_profiling_accepted": false,
+    "full_current_regression_accepted": false,
+    "whole_original_goal_complete": false,
+    "raw_files": 4301,
+    "raw_bytes": 62072252,
+    "archive_sha256": "9c5e7563637b35bbb91a5b47e269723992705c8474a9f68bcc7cf1dac6e97102",
+    "archive_bytes": 15924001,
+    "primary_guard": {
+      "ok": true,
+      "commit": "b2595149aacc25c0729773dd0dcd25509390021d",
+      "source_files": 1990,
+      "graph_revisions": 48,
+      "all_original47_revisions_and_local_IDs_preserved": true,
+      "origin016_verified": false,
+      "primary_compiler_sha256": "992e8b71bbed112a44dde9dc7d389eea78ab0cd663678094449cd81163df1756"
+    }
+  },
+  "Windows_source_only": {
+    "schema": "nex.Windows-public-owned-Metal-source-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T01:30:37.190553+00:00",
+    "summary": {
+      "source_base_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+      "derived_files": 2136,
+      "delta": {
+        "experiments/owned-metal-codegen/prepare.py": "55533cb4707cf4994672359dca411548e52533ef658966ff9cbccbe06e1c9501",
+        "experiments/owned-metal-codegen/numerics.py": "35f484432cfa994165fad4d6eeed03731c0d6a7e45d67c53a2d08388bce385e6",
+        "experiments/owned-metal-codegen/verify.py": "54af49bc404797a8765e04a74d1a0a1bafb62d49219b08abcbbd5958725d2aa8",
+        "tests/metal_codegen.py": "69bc2af58bfad85153d15cdc401d23c13a0aa516b239365ea30ac9a64133b6a7"
+      },
+      "compiler_sha256": "be5d8f7f190231f333588fc9ee647fcc27b9c9828867a045a9fac134deaf3bab",
+      "toolchain": "0.165.0",
+      "language": "0.28",
+      "tests_passed": 9,
+      "all_Job_processes_retired": true,
+      "original_source_compiler_and_SDK_unchanged": true,
+      "hardware_executed": false,
+      "full_source_or_SDK_accepted": false
+    },
+    "raw_files": 13,
+    "archive_bytes": 208428,
+    "archive_sha256": "cf4d2e3170eb1e4963b3ed2b49ba3aeed5c9b7a0142f9b286dbd0d3b1d9531fb",
+    "whole_original_goal_complete": false
+  },
+  "release_claimed": false,
+  "main_branch_changed": false
+}

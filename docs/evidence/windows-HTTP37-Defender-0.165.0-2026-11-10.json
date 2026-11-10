@@ -1,0 +1,40 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Current0.165 modular HTTP debugging with startup-to-main fixture:37 original sessions passed, final host-mixed/O2/TLS readiness clock still expired before listener startup. A subsequent listener-gated same-PE diagnostic reached HTTPS health200 and an inferior stop, then image validation failedWinError225 after Defender quarantined the test server. Complete HTTP/Windows/SDK acceptance remains pending.",
+  "evidence": {
+    "schema": "nex.Windows-current165-HTTP37-and-Defender-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T01:35:09.548190+00:00",
+    "summary": {
+      "source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+      "test_fixture_commit": "31f96e66bb51a96f2db9ece0a54336d30efd23d7",
+      "toolchain": "0.165.0",
+      "language": "0.28",
+      "compiler_sha256": "be5d8f7f190231f333588fc9ee647fcc27b9c9828867a045a9fac134deaf3bab",
+      "completed_original_HTTP_debug_sessions": 37,
+      "complete_HTTP_group_accepted": false,
+      "remaining_variant": "host-mixed/O2/TLS",
+      "remaining_main_startup_failure": "30s client clock exhausted before native module initialization reached listener; inner command300s timeout.",
+      "subsequent_listener_gate_diagnostic": "Real HTTPS health200 after listener observed and31s pre-client hold; logical tasks query then failedWinError225. No full session acceptance.",
+      "quarantined_test_PE_sha256_before_launch": "d0f565ecf9a202584e57284a24f39a9ebbcea5084a06db478c2dfd6fea7c3f66",
+      "source_or_helper_changed": false,
+      "all_Job_processes_retired": true,
+      "full_source_or_SDK_accepted": false,
+      "security_exclusions_or_restore_applied": false
+    },
+    "Defender_detection": "Behavior:Win32/DefenseEvasion.A!ml",
+    "Defender_action": "quarantine",
+    "Defender_event_observation_sha256": "219ece138e6494409d4e25d951c93750e5c380bf0ff5ebf5cf0ae3a3667601fd",
+    "Defender_cause_or_false_positive_not_yet_established": true,
+    "raw_files": 564,
+    "archive_bytes": 3083411,
+    "archive_sha256": "8e4b8043caa1052ff780320f9ba984dc589cb32d52e1933fdbc706fa56252c69",
+    "whole_original_goal_complete": false
+  },
+  "compiler_runtime_or_helper_changes": false,
+  "original_numeric_test_deadlines_changed": false,
+  "new_listener_gate_committed_or_accepted": false,
+  "release_claimed": false,
+  "main_branch_changed": false
+}

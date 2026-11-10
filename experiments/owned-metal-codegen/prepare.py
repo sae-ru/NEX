@@ -17,7 +17,7 @@ def sha(path):
 
 
 def write(path, value):
-    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def main():
@@ -50,29 +50,44 @@ def main():
         row = {"label": label, "argv": list(map(str, argv)), "cwd": str(cwd)}
         commands.append(row)
         write(evidence / "commands.json", commands)
-        result = subprocess.run(row["argv"], cwd=cwd, env=env, capture_output=True, text=True, timeout=600)
-        (evidence / (label + ".stdout")).write_text(result.stdout)
-        (evidence / (label + ".stderr")).write_text(result.stderr)
+        result = subprocess.run(row["argv"], cwd=cwd, env=env, capture_output=True, text=True, encoding="utf-8", timeout=600)
+        (evidence / (label + ".stdout")).write_text(result.stdout, encoding="utf-8", newline="\n")
+        (evidence / (label + ".stderr")).write_text(result.stderr, encoding="utf-8", newline="\n")
         row["exit_code"] = result.returncode
         write(evidence / "commands.json", commands)
         if result.returncode:
             raise RuntimeError(label + " failed; inspect retained diagnostics: " + result.stdout[-1000:] + result.stderr[-1500:])
         return result.stdout
 
-    run("generate", [sys.executable, "-B", ROOT / "experiments/metal-codegen/codegen.py", "--sdk", sdk, "--project", source_project, "--symbol", args.symbol, "--input-layout", "columns", "--output", out / "generation"])
-    generated = json.loads((out / "generation/report.json").read_bytes())
-    assert generated["ok"] and generated["input_layout"] == "columns" and generated["compiler_sha256"] == sha(compiler)
+    compiler_pin = sha(compiler)
     descriptor = json.loads(run("describe", [compiler, "describe", "--json"]))
+    index = json.loads(run("index", [compiler, "describe", "--kind", "index", "--json"]))
+    if descriptor.get("gpu_codegen", {}).get("schema") != "nex.metal-emission/1":
+        raise RuntimeError("selected compiler lacks public checked-AST Metal emission; select toolchain0.165 or later")
     if not descriptor.get("resource_regions", {}).get("dependency_graph", {}).get("C_table_parent_creation") or not descriptor.get("source_resources", {}).get("source_task_bridge"):
         raise RuntimeError("selected compiler lacks source-task FFI and dependent resources")
     if descriptor.get("foreign_trap_reporting", {}).get("C_table_prefix") != "NEX_FFI_V1_TRAP_SIZE":
         raise RuntimeError("selected compiler lacks the explicit fatal trap C API; select toolchain0.164 or later")
+    generation = out / "generation"
+    generation.mkdir()
+    shader = generation / "kernel.metal"
+    generated = json.loads(run("generate", [compiler, "emit", "--kind", "metal", "--entry", args.symbol,
+        "--input-layout", "columns", "-o", shader, "--json"], source_project))
+    write(generation / "report.json", generated)
+    assert generated["schema"] == "nex.metal-emission/1" and generated["input_layout"] == "columns"
+    assert generated["kernel"] == "nex_generated_map" and not generated["driver_initialized"] and not generated["device_executed"]
+    assert generated["shader_sha256"] == sha(shader) and generated["source_bytes"] == shader.stat().st_size
+    assert Path(generated["path"]).resolve(strict=True) == shader.resolve(strict=True)
+    assert all(generated[name] == index[name] for name in ["compiler_build", "descriptor_hash", "language", "toolchain"])
+    assert sha(compiler) == compiler_pin
+    root = generated["entry"]
+    root_hash = generated["functions"][root]
     stdlib = out / "stdlib"
     stdlib.mkdir()
     for name in ["compute.nex", "device.nex"]:
         shutil.copyfile(resources / "lib" / name, stdlib / name)
     write(out / "nex.json", {"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": "./stdlib"}})
-    template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", generated["functions"][generated["root"]])
+    template = (source / "main.nex.in").read_text().replace("@INDEX@", str(args.index)).replace("@ARGUMENTS@", str(len(generated["parameter_types"]))).replace("@ROOT_HASH@", root_hash)
     (out / "main.nex").write_text(template.replace("@PIN@", "0" * 64))
     run("check-template", [compiler, "check", "--json"])
     signatures = {}
@@ -84,10 +99,13 @@ def main():
     for name in ["module.cpp", "worker.mm", "protocol.h", "main.nex.in"]:
         shutil.copyfile(source / name, inputs / name)
     (inputs / "signatures.h").write_text("\n".join('#define PIN_' + name.upper() + ' "' + digest + '"' for name, digest in signatures.items()) + "\n")
-    (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) + "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["kernel_sha256"]) + "\n#define GENERATED_MSL " + json.dumps((out / "generation/kernel.metal").read_text()) + "\n")
+    (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) + "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["shader_sha256"]) + "\n#define GENERATED_MSL " + json.dumps(shader.read_bytes().decode("utf-8")) + "\n", encoding="utf-8", newline="\n")
     input_pins = {p.name: sha(p) for p in inputs.iterdir() if p.is_file()}
-    report = {"schema": "nex.owned-Metal-codegen-preparation/1", "ok": True, "compiler_sha256": sha(compiler), "source_language": "0.28", "toolchain": generated["toolchain"],
-              "source_revision": generated["revision"], "root": generated["root"], "root_hash": generated["functions"][generated["root"]], "kernel_sha256": generated["kernel_sha256"],
+    report = {"schema": "nex.owned-Metal-codegen-preparation/1", "ok": True, "compiler_sha256": compiler_pin, "source_language": generated["language"], "toolchain": generated["toolchain"],
+              "source_revision": generated["revision"], "root": root, "root_hash": root_hash, "kernel_sha256": generated["shader_sha256"],
+              "emitter": "public_checked_AST", "emission_schema": generated["schema"], "compiler_build": generated["compiler_build"],
+              "descriptor_hash": generated["descriptor_hash"], "emission_sha256": sha(generation / "report.json"),
+              "function_map": generated["function_map"], "functions": generated["functions"],
               "input_layout": "columns", "parameter_types": generated["parameter_types"], "result_type": generated["result_type"], "source_input_pins": input_pins,
               "signature_sha256": signatures, "source_checked": True, "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
               "direct_fatal_trap_forwarding_integrated": True, "installed_SDK_accepted": False, "commands": commands}
