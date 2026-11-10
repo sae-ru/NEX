@@ -86,7 +86,7 @@ def main():
     out = args.output.resolve();out.mkdir(exist_ok=False)
     sha = lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
     source = Path(__file__).resolve().parent
-    pins = {str(p):sha(p)for p in [emitter,compiler,frontend,Path(__file__).resolve(),source/'floating_runtime.h',source/'clang_device.h']}
+    pins = {str(p):sha(p)for p in [emitter,compiler,frontend,Path(__file__).resolve(),source/'floating_runtime.h',source.parent.parent/'src/cuda_floating_runtime.h',source.parent.parent/'src/cuda.cpp',source/'clang_device.h']}
     env = {k:v for k,v in os.environ.items()if not k.startswith(('NEX_','PYTHON','CUDA_','LD_','DYLD_')) and k not in ['SDKROOT','CPATH','CPLUS_INCLUDE_PATH','C_INCLUDE_PATH','LIBRARY_PATH']}
     env.update({k:os.environ[k] for k in ['NEX_NODE','NEX_TSC','NEX_PYTHON'] if k in os.environ})
     env.update(NEX_RESOURCE_DIR=str(resources),PYTHONDONTWRITEBYTECODE='1')

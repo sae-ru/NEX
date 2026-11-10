@@ -64,7 +64,7 @@ get_filename_component(NEX_Z3_LIBRARY_DIR "${NEX_Z3_LIBRARY}" DIRECTORY)
 find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 message(STATUS "NEX uses LLVM ${LLVM_PACKAGE_VERSION} and MLIR at ${MLIR_DIR}")
 
-file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp" "runtime/*.manifest")
+file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp" "runtime/*.manifest")
 list(APPEND NEX_COMPILER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.manifest" "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.rc.in")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${NEX_COMPILER_FILES})
 set(NEX_BUILD_INPUTS "${PROJECT_VERSION};${LLVM_PACKAGE_VERSION};${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${CMAKE_BUILD_TYPE}")
@@ -118,7 +118,7 @@ target_sources(nex PRIVATE src/core_dump.cpp src/discovery.cpp)
 target_sources(nex PRIVATE src/task_profile_report.cpp)
 target_sources(nex PRIVATE src/task_package.cpp src/server_workload.cpp src/task_workload.cpp)
 target_sources(nex PRIVATE src/wasm.cpp src/project_build.cpp src/native_images.cpp src/debug_session.cpp src/project_capture.cpp)
-target_sources(nex PRIVATE src/metal.cpp)
+target_sources(nex PRIVATE src/metal.cpp src/cuda.cpp)
 target_sources(nex PRIVATE src/graph_migration.cpp)
 target_include_directories(nex SYSTEM PRIVATE ${MLIR_INCLUDE_DIRS})
 target_include_directories(nex SYSTEM PRIVATE ${NEX_Z3_INCLUDE})
@@ -356,6 +356,8 @@ install(DIRECTORY experiments/owned-metal/ DESTINATION share/nex/tools/owned-met
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-metal-codegen/ DESTINATION share/nex/tools/owned-metal-codegen
   PATTERN __pycache__ EXCLUDE)
+install(DIRECTORY experiments/owned-cuda-codegen/ DESTINATION share/nex/tools/owned-cuda-codegen
+  PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/metal/ DESTINATION share/nex/tools/metal
   PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY experiments/owned-cuda/ DESTINATION share/nex/tools/owned-cuda
@@ -431,6 +433,8 @@ add_test(NAME compute_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOU
 set_tests_properties(compute_contract PROPERTIES TIMEOUT 1200)
 add_test(NAME metal_codegen COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/metal_codegen.py $<TARGET_FILE:nex>)
 set_tests_properties(metal_codegen PROPERTIES TIMEOUT 480)
+add_test(NAME cuda_codegen COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_codegen.py $<TARGET_FILE:nex>)
+set_tests_properties(cuda_codegen PROPERTIES TIMEOUT 180)
 add_test(NAME model_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/model.py --compiler $<TARGET_FILE:nex> --resources ${CMAKE_CURRENT_SOURCE_DIR})
 set_tests_properties(model_contract PROPERTIES TIMEOUT 1200)
 add_test(NAME discovery COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/discovery.py $<TARGET_FILE:nex>)

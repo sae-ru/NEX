@@ -71,6 +71,12 @@ passed 82 maintained phases, 184 additional cases and 4000 C++ host calls with
 cleanup checks across read-only moved/restored installations. Its post stages
 and the later SDK containing the new public Metal tools remain separate gates.
 
+The compiler now also provides `nex emit --kind cuda` for reachable shared pure
+`i64`/`f64`/`bool`/`unit` functions, scalar matches and bounded contracts. The
+[CUDA guide](docs/gpu-codegen.md#cuda-source-emission) describes finite binary64,
+source maps and explicit provider preparation. Source generation grants no
+device access; matching current hardware and SDK acceptance remain pending.
+
 The [scalar Metal backend](docs/gpu-codegen.md) emits reachable shared pure
 `i64`/`bool`/`unit` functions from the checked AST. Its explicit owned-task
 provider is experimental; the SDK installs its preparation tools and advertises

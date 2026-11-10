@@ -84,8 +84,10 @@ def compile_ptx(library, shader, output, compute):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ["compiler", "resources", "emitter", "frontend-archive", "source-project", "output"]:
+    for name in ["compiler", "resources", "source-project", "output"]:
         parser.add_argument("--" + name, type=Path, required=True)
+    for name in ["emitter", "frontend-archive"]:
+        parser.add_argument("--" + name, type=Path, help="Optional standalone developer harness; both options must be supplied together")
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--source-only", action="store_true")
     parser.add_argument("--acceptance-gate", action="store_true", help="Compile a bounded GPU delay kernel for explicit cancellation/deadline tests")
@@ -98,8 +100,11 @@ def main():
         parser.error("select GPU ordinal 0..63 and a supported compute target >=52")
     if not args.source_only and (platform.system() not in {"Windows", "Linux"} or not args.nvrtc):
         parser.error("native preparation requires Windows/Linux and explicit NVRTC; use --source-only on other hosts")
-    compiler, resources, emitter, frontend, project = [p.resolve(strict=True) for p in
-        [args.compiler, args.resources, args.emitter, args.frontend_archive, args.source_project]]
+    if bool(args.emitter) != bool(args.frontend_archive):
+        parser.error("--emitter and --frontend-archive must be supplied together")
+    compiler, resources, project = [p.resolve(strict=True) for p in [args.compiler, args.resources, args.source_project]]
+    emitter = args.emitter.resolve(strict=True) if args.emitter else None
+    frontend = args.frontend_archive.resolve(strict=True) if args.frontend_archive else None
     out = args.output.absolute()
     out.mkdir(parents=True, exist_ok=False)
     evidence, generation, inputs = out / "preparation", out / "generation", out / "preparation/inputs"
@@ -108,10 +113,13 @@ def main():
     env = {k: v for k, v in os.environ.items() if not k.startswith("NEX_")}
     env.update(NEX_RESOURCE_DIR=str(resources), PYTHONDONTWRITEBYTECODE="1")
     commands = []
-    pins = {"compiler": sha(compiler), "emitter": sha(emitter), "frontend": sha(frontend)}
+    pin_files = {"compiler": compiler}
+    if emitter:
+        pin_files.update(emitter=emitter, frontend=frontend)
+    pins = {name: sha(path) for name, path in pin_files.items()}
 
     def guard():
-        assert pins == {"compiler": sha(compiler), "emitter": sha(emitter), "frontend": sha(frontend)}
+        assert pins == {name: sha(path) for name, path in pin_files.items()}
 
     def run(label, argv, cwd=out):
         guard()
@@ -136,25 +144,36 @@ def main():
         assert descriptor["source_resources"]["source_task_bridge"]
         assert descriptor["resource_regions"]["dependency_graph"]["C_table_parent_creation"]
         assert descriptor["foreign_trap_reporting"]["C_table_prefix"] == "NEX_FFI_V1_TRAP_SIZE"
-        generated = json.loads(run("generate", [emitter, project, args.symbol, "columns", generation / "kernel.cu"], project))
+        if emitter:
+            generated = json.loads(run("generate", [emitter, project, args.symbol, "columns", generation / "kernel.cu"], project))
+            assert generated["schema"] == "nex.experimental-cuda-emission/1" and not generated["integrated_compiler_CLI"]
+            if generated["frontend_archive_sha256"] != pins["frontend"]:
+                raise RuntimeError("emitter and selected frontend archive identities differ")
+            functions = generated["functions"]
+        else:
+            capability = descriptor["gpu_codegen"]["cuda"]
+            assert capability["source_support"] and capability["schema"] == "nex.cuda-emission/1"
+            generated = json.loads(run("generate", [compiler, "emit", "--kind", "cuda", "--entry", args.symbol,
+                "--input-layout", "columns", "-o", generation / "kernel.cu", "--json"], project))
+            assert generated["schema"] == capability["schema"] and generated["kind"] == "cuda"
+            assert all(generated[name] == index[name] for name in ["compiler_build", "descriptor_hash", "toolchain", "language"])
+            functions = generated["function_map"]
+            assert generated["functions"] == {row["name"]: row["hash"] for row in functions}
         write(generation / "report.json", generated)
-        assert generated["schema"] == "nex.experimental-cuda-emission/1" and generated["ok"]
-        assert generated["language"] == "0.28" and generated["input_layout"] == "columns"
-        assert generated["kernel"] == "nex_generated_cuda_map" and not generated["integrated_compiler_CLI"]
+        assert generated["ok"] and generated["language"] == "0.28" and generated["input_layout"] == "columns"
+        assert generated["kernel"] == "nex_generated_cuda_map"
         assert not generated["driver_initialized"] and not generated["device_executed"]
-        if generated["frontend_archive_sha256"] != pins["frontend"]:
-            raise RuntimeError("emitter and selected frontend archive identities differ")
         assert generated["shader_sha256"] == sha(generation / "kernel.cu")
         assert generated["source_bytes"] == (generation / "kernel.cu").stat().st_size
         checked = json.loads(run("check-root", [compiler, "check", "--json"], project))
         graph = json.loads(run("checked-graph", [compiler, "graph", "--json"], project))
         nodes = {node["name"]: node for node in graph["nodes"]}
         if checked["revision"] != generated["revision"]:
-            raise RuntimeError("public compiler and experimental emitter checked different program revisions")
-        for function in generated["functions"]:
+            raise RuntimeError("selected compiler and CUDA emission checked different program revisions")
+        for function in functions:
             if nodes.get(function["name"], {}).get("hash") != function["hash"]:
-                raise RuntimeError("public compiler and experimental emitter differ for " + function["name"])
-        root_hash = next(f["hash"] for f in generated["functions"] if f["name"] == generated["entry"])
+                raise RuntimeError("selected compiler and CUDA emission differ for " + function["name"])
+        root_hash = next(f["hash"] for f in functions if f["name"] == generated["entry"])
         (out / "stdlib").mkdir()
         for name in ["compute.nex", "device.nex"]:
             shutil.copyfile(resources / "lib" / name, out / "stdlib" / name)
@@ -191,8 +210,9 @@ def main():
             "\n#define GENERATED_PTX " + json.dumps(ptx.rstrip(b"\0").decode("utf-8")) + "\n", encoding="utf-8")
         input_pins = {p.name: sha(p) for p in inputs.iterdir()}
         report = {"schema": "nex.experimental-owned-CUDA-codegen-preparation/1", "ok": True,
-            "experimental": True, "compiler_sha256": pins["compiler"], "emitter_sha256": pins["emitter"],
-            "frontend_archive_sha256": pins["frontend"], "compiler_index": index, "source_language": "0.28",
+            "experimental": True, "compiler_sha256": pins["compiler"], "emitter_sha256": pins.get("emitter", pins["compiler"]),
+            "frontend_archive_sha256": pins.get("frontend"), "emitter": "standalone" if emitter else "public_checked_AST",
+            "emission_schema": generated["schema"], "compiler_build": index["compiler_build"], "descriptor_hash": index["descriptor_hash"], "compiler_index": index, "source_language": "0.28",
             "source_revision": generated["revision"], "emission_sha256": sha(generation / "report.json"),
             "kernel_sha256": generated["shader_sha256"], "root": generated["entry"], "root_hash": root_hash,
             "functions": generated["functions"], "parameter_types": generated["parameter_types"], "result_type": generated["result_type"],

@@ -1,4 +1,4 @@
-# Checked scalar Metal emission
+# Checked scalar GPU source emission
 
 Development toolchain0.165 adds a compiler backend for ordinary checked
 language0.28 functions. It emits Metal Shading Language directly from the
@@ -92,3 +92,66 @@ source checkout. Complete matching immutable SDK and platform qualification
 remain pending. GPU operation debugging
 and profiling, further types/backends and device-loss recovery are also pending.
 Emitting a shader alone does not establish device execution or speedup.
+
+## CUDA source emission
+
+The same compiler also accepts `--kind cuda`. Discover its own subset with
+`nex describe --field gpu_codegen.cuda --json`; the Metal fields above retain
+Metal's narrower contract. The [CUDA result schema](../llm/cuda-emission.schema.json)
+uses `nex.cuda-emission/1` and carries the same revision, compiler/descriptor
+identities, reachable function hashes and declaration line mappings.
+
+```sh
+nex emit examples/gpu-cuda.nex --kind cuda --entry transform \
+  --input-layout columns -o kernel.cu --json
+```
+
+CUDA accepts shared pure i64/f64/bool/unit functions, concrete scalar generic
+instances, branches, loops, checked source/loop contracts and scalar matches
+with ordered binding/wildcard guards or i64/bool literal patterns. Unsupported
+aggregates, strings/bytes, Result operations including `as_i64`, source errors,
+finally, closures, indirect calls, effects and recursion fail explicitly.
+Unreachable unsupported functions are excluded.
+
+Finite f64 uses IEEE754 binary64 bits in the same eight-byte words as i64.
+Arithmetic and i64-to-f64 conversion specify round-to-nearest/ties-even; FMA
+contraction is absent. Zero normalizes positive, subnormals are retained, and
+NaNs/infinities fail with lane status7 (`E_FLOAT`). Binary remainder uses bounded
+integer significand reduction. Source evaluation/trap order is preserved.
+The optional `floating_point` result object describes reachable f64 use, even
+if the root's signature contains only integers. Status8 denotes failure to
+establish the host FP environment in developer host controls; device kernels
+have no host FP environment.
+
+The kernel is `nex_generated_cuda_map`. Rows accepts one input pointer; columns
+accepts one pointer per parameter, followed by output and uint32 status pointers,
+uint32 lane count and uint32 step limit. A zero-argument columns root has no input
+pointer. Both layouts retain the bounds described above. Bool words are exactly
+0/1 and unit results are0; failed outputs are0. Source emission needs no CUDA
+headers, NVRTC, driver or NVIDIA device. It produces CUDA C++20 source, not PTX,
+a binary or an automatic CPU fallback.
+
+The owned CUDA preparer now uses this public command by default:
+
+```sh
+python3 -B "$NEX_SDK/share/nex/tools/owned-cuda-codegen/prepare.py" \
+  --compiler "$NEX_SDK/bin/nex" --resources "$NEX_SDK/share/nex" \
+  --source-project /absolute/project --symbol transform \
+  --source-only --output /absolute/new/prepared-project
+```
+
+Native preparation is explicit on Windows/Linux: omit `--source-only`, select
+`--nvrtc /absolute/library` (version12+) and an appropriate `--compute` target.
+It embeds exact compiled PTX and checks eleven actual FFI signatures. All-f64
+roots expose `try_apply_f64`/`apply_f64`; codecs use1024-value bounded calls for
+columns of up to32768 values. Ordinary Results remain distinct from forwarded
+fatal `E_FLOAT`, which skips source catches/finally after resource settlement.
+Only an explicit foreign catalogue grants device access.
+
+The promoted backend shares its implementation with the standalone developer
+harness. Earlier scoped records establish [integer CUDA hardware execution](evidence/windows-checked-AST-CUDA-physical-0.165.0-2026-11-10.json),
+[f64 host/IR/PTX semantics](evidence/cuda-f64-source-PTX-0.165.0-2026-11-10.json)
+and [typed transport host behavior](evidence/owned-cuda-f64-host-0.165.0-2026-11-10.json).
+Matching public-CLI, current owned-provider NVIDIA execution, sanitizer and
+immutable SDK acceptance remain separate gates. GPU stepping/profiling and
+aggregate/result lowering remain unfinished.

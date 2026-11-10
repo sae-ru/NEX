@@ -449,7 +449,8 @@
     "native_entry_abi": "docs/native-entry-abi.md",
     "native_entry_abi_schema": "llm/native-entry-abi.schema.json",
     "gpu_codegen": "docs/gpu-codegen.md",
-    "metal_emission_schema": "llm/metal-emission.schema.json"
+    "metal_emission_schema": "llm/metal-emission.schema.json",
+    "cuda_emission_schema": "llm/cuda-emission.schema.json"
   },
   "document_access": "nex guide --kind source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -549,7 +550,8 @@
     "runtime_loop_contract": "examples/runtime-loop-contracts/contracts.json",
     "runtime_value_contracts": "examples/runtime-value-contracts/main.nex",
     "runtime_value_contract": "examples/runtime-value-contracts/contracts.json",
-    "source_contracts": "examples/source-contracts/main.nex"
+    "source_contracts": "examples/source-contracts/main.nex",
+    "cuda_scalar": "examples/gpu-cuda.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4079,6 +4081,95 @@
       "requires_explicit_foreign_catalogue": true,
       "source_task_bridge": true,
       "installed_hardware_acceptance": false
+    },
+    "cuda": {
+      "status": "development_checked_scalar_CUDA_source",
+      "introduced_toolchain": "0.165.0",
+      "command": "nex emit --kind cuda --entry NAME --input-layout rows|columns -o FILE --json",
+      "guide": "docs/gpu-codegen.md",
+      "guide_kind": "gpu",
+      "schema": "nex.cuda-emission/1",
+      "schema_file": "llm/cuda-emission.schema.json",
+      "source_support": true,
+      "language": "0.28",
+      "language_migration_required": false,
+      "backend": "CUDA C++20",
+      "input": "checked compiler AST; no second source parser",
+      "reachable_functions_only": true,
+      "source_types": [
+        "i64",
+        "f64",
+        "bool",
+        "unit"
+      ],
+      "root_parameter_types": [
+        "i64",
+        "f64",
+        "bool"
+      ],
+      "realm": "shared",
+      "effects": [],
+      "input_layouts": [
+        "rows",
+        "columns"
+      ],
+      "maximum_root_arguments": 8,
+      "maximum_reachable_functions": 128,
+      "maximum_call_depth": 128,
+      "maximum_source_bytes": 16777216,
+      "maximum_dispatch_lanes": 32768,
+      "maximum_lane_steps": 65536,
+      "maximum_total_lane_steps": 16777216,
+      "kernel": "nex_generated_cuda_map",
+      "word_bytes": 8,
+      "checked_i64": true,
+      "finite_f64": true,
+      "rounding": "nearest_ties_even",
+      "positive_zero_normalized": true,
+      "nonfinite_status": 7,
+      "scalar_match_with_guards": true,
+      "left_to_right_evaluation": true,
+      "short_circuiting": true,
+      "source_contracts": true,
+      "function_source_map": true,
+      "driver_required_for_emission": false,
+      "device_execution": false,
+      "GPU_debugging": false,
+      "GPU_profiling": false,
+      "dispatch_boundary": "trusted bounded host with explicit device and buffer authority",
+      "diagnostic_codes": [
+        "E_GPU_TYPE",
+        "E_GPU_REALM",
+        "E_GPU_RECURSION",
+        "E_GPU_LIMIT",
+        "E_GPU_UNSUPPORTED"
+      ],
+      "pending": [
+        "matching full compiler and portable SDK qualification",
+        "current owned CUDA provider NVIDIA execution and lifecycle acceptance",
+        "physical f64 and current generated-provider Compute Sanitizer acceptance",
+        "GPU operation debugging and physical profiling",
+        "aggregate/result types and general GPU compilation"
+      ],
+      "owned_provider": {
+        "status": "experimental_operator_preparation",
+        "preparation": "tools/owned-cuda-codegen/prepare.py",
+        "verification": "tools/owned-cuda-codegen/verify.py",
+        "memcheck": "tools/owned-cuda-codegen/memcheck.py",
+        "native_build_hosts": [
+          "Windows",
+          "Linux"
+        ],
+        "source_check_cross_platform": true,
+        "source_check_option": "--source-only",
+        "public_emitter_default": true,
+        "input_layout": "columns",
+        "requires_explicit_foreign_catalogue": true,
+        "source_task_bridge": true,
+        "checked_exports": 11,
+        "f64_transport": true,
+        "installed_hardware_acceptance": false
+      }
     }
   }
 }

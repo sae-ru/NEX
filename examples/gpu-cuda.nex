@@ -1,0 +1,5 @@
+module gpu_cuda;
+fn affine<T:number>(x:T,gain:T,bias:T)->T { return x*gain+bias; }
+fn transform(x:f64,gain:f64)->f64 { return affine<f64>(x,gain,1.0); }
+fn main()->unit !{io} { print(transform(20.5,2.0)); }
+test fn example()->unit { assert(transform(20.5,2.0)==42.0); }

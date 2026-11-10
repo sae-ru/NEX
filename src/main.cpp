@@ -5,6 +5,7 @@
 #include "nex/discovery.h"
 #include "nex/wasm.h"
 #include "nex/metal.h"
+#include "nex/cuda.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/executable_path.h"
 #include "nex/editor.h"
@@ -333,14 +334,16 @@ int run(const Options &o) {
   if(o.command=="context"&&o.values.contains("--entity")&&(o.values.contains("--operation")||o.values.contains("--site")))throw Error("E_OPTION","--entity requires declaration context with --symbol");
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
   const bool metalSource=o.command=="emit"&&o.get("--kind")=="metal";
-  if(o.values.contains("--input-layout")&&!metalSource)throw Error("E_OPTION","--input-layout requires emit --kind metal");
-  if(metalSource){
+  const bool cudaSource=o.command=="emit"&&o.get("--kind")=="cuda";
+  if(o.values.contains("--input-layout")&&!metalSource&&!cudaSource)throw Error("E_OPTION","--input-layout requires emit --kind metal or cuda");
+  if(metalSource||cudaSource){
+    const std::string backend=cudaSource?"CUDA":"Metal";
     const std::set<std::string> allowed={"--kind","--entry","--revision","--output","--input-layout"};
-    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported Metal source option: "+key);}
-    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported Metal source flag: "+flag);
-    if(!o.extra.empty())throw Error("E_OPTION","Metal source emission does not take execution arguments");
-    if(o.values.contains("--entry")&&o.get("--entry").empty())throw Error("E_OPTION","Metal entry must not be empty");
-    auto layout=o.get("--input-layout","rows");if(layout!="rows"&&layout!="columns")throw Error("E_OPTION","Metal input layout must be rows or columns");
+    for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported "+backend+" source option: "+key);}
+    for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported "+backend+" source flag: "+flag);
+    if(!o.extra.empty())throw Error("E_OPTION",backend+" source emission does not take execution arguments");
+    if(o.values.contains("--entry")&&o.get("--entry").empty())throw Error("E_OPTION",backend+" entry must not be empty");
+    auto layout=o.get("--input-layout","rows");if(layout!="rows"&&layout!="columns")throw Error("E_OPTION",backend+" input layout must be rows or columns");
   }
   if(o.command=="package"){
     if(o.get("--directory").empty())throw Error("E_OPTION","package requires --directory NEW_DIRECTORY");
@@ -371,7 +374,7 @@ int run(const Options &o) {
   if(o.command=="help"||o.command=="--help"||o.command=="-h") {
     std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
       "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--task-debug (plan/build/package)] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex lsp\n  nex guide --kind source-contract|source-contract-migration|dns|tcp|model|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-file-reads|task-external|task-limits|tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex toolchain FILE [--json]\n"
-      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex emit [file] --kind metal --entry NAME [--input-layout rows|columns] [-o FILE] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex contract [file] --kind runtime --contracts FILE --directory NEW [--json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
+      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex emit [file] --kind metal|cuda --entry NAME [--input-layout rows|columns] [-o FILE] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex contract [file] --kind runtime --contracts FILE --directory NEW [--json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
       "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
       "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
       "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
@@ -382,7 +385,7 @@ int run(const Options &o) {
       "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
       "  nex task SOURCE --kind init [-o TASK.json]\n  nex task NOTICES.json --kind notices\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
       "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server|wasm --toolchain FILE\n"
-      "         --foreign HOST.json (eval/run/test/debug/profile/task check/run/replay)\n         --kind mlir|llvm|typescript|metal --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
+      "         --foreign HOST.json (eval/run/test/debug/profile/task check/run/replay)\n         --kind mlir|llvm|typescript|metal|cuda --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
   }
   if(o.command=="describe"){
     if(!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","describe does not take source files or execution arguments");
@@ -797,8 +800,8 @@ int run(const Options &o) {
     if(!directory.empty()){writeWebModule(module,directory);print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",revision(p)}});}
     else if(output.empty())std::cout<<module.source;else writeFile(output,module.source);return 0;
   }
-  if(metalSource){
-    auto generated=emitMetal(p,o.get("--entry","main"),o.get("--input-layout","rows"));
+  if(metalSource||cudaSource){
+    auto publish=[&](const auto &generated,bool floatingPoint=false){
     auto output=o.get("--output");if(!output.empty())writeFile(output,generated.source);
     if(o.has("--json")){
       llvm::json::Array parameters,mapping;llvm::json::Object functions;
@@ -810,14 +813,21 @@ int run(const Options &o) {
           {"generated_first_line",int64_t(function.firstLine)},{"generated_last_line",int64_t(function.lastLine)}});
       }
       auto shaderDigest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(generated.source.data()),generated.source.size()));
-      llvm::json::Object response{{"schema","nex.metal-emission/1"},{"ok",true},{"kind","metal"},{"language",languageVersion},{"toolchain",NEX_VERSION},
+      llvm::json::Object response{{"schema",cudaSource?"nex.cuda-emission/1":"nex.metal-emission/1"},{"ok",true},{"kind",cudaSource?"cuda":"metal"},{"language",languageVersion},{"toolchain",NEX_VERSION},
         {"compiler_build",NEX_BUILD_ID},{"descriptor_hash",hash(json(describe(),false))},{"revision",revision(p)},{"entry",generated.entry},
-        {"kernel","nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
+        {"kernel",cudaSource?"nex_generated_cuda_map":"nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
         {"functions",std::move(functions)},{"function_map",std::move(mapping)},{"shader_sha256",llvm::toHex(shaderDigest,true)},
         {"source_bytes",int64_t(generated.source.size())},{"driver_initialized",false},{"device_executed",false}};
+      if(cudaSource&&floatingPoint)response["floating_point"]=llvm::json::Object{
+        {"format","finite binary64"},{"word_encoding","IEEE754 bits"},{"rounding","nearest_ties_even"},
+        {"positive_zero_normalized",true},{"nonfinite_status",7},{"host_environment_status",8},
+        {"owned_provider_transport_accepted",false}};
       if(output.empty())response["source"]=generated.source;else response["path"]=fs::absolute(output).string();
       print(std::move(response));
     }else if(output.empty())std::cout<<generated.source;
+    };
+    if(cudaSource){auto generated=emitCuda(p,o.get("--entry","main"),o.get("--input-layout","rows"));publish(generated,generated.floatingPoint);}
+    else publish(emitMetal(p,o.get("--entry","main"),o.get("--input-layout","rows")));
     return 0;
   }
   if(o.get("--target")=="server"&&o.command=="test")throw Error("E_OPTION","use native test for server functions; --target server builds the HTTP entry");
@@ -884,7 +894,7 @@ int run(const Options &o) {
   if(o.command=="emit"&&o.get("--kind","mlir")=="mlir"){
     auto text=emitMLIR(p,buildOptions.entry,false,buildOptions.libraryEntry||buildOptions.target=="server");auto output=o.get("--output");if(output.empty())std::cout<<text;else writeFile(output,text);return 0;
   }
-  if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm, typescript or metal");
+  if(o.command=="emit"&&o.get("--kind")!="llvm")throw Error("E_OPTION","--kind must be mlir, llvm, typescript, metal or cuda");
   if(o.command=="package"){
     print(packageApplication(p,buildOptions,directory,root.string(),store,
       {o.get("--directory"),o.get("--notices"),o.compiler,o.has("--dpkg-notices"),o.get("--foreign")}));return 0;

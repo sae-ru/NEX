@@ -1,28 +1,32 @@
 # Owned generated scalar CUDA experiment
 
-This checkout experiment connects the independent
-[checked-AST CUDA emitter](../cuda-codegen/README.md) to the versioned NEX C FFI.
+This experimental provider connects the public `nex emit --kind cuda` backend
+to the versioned NEX C FFI. A standalone developer harness remains optional.
 It prepares a selected pure scalar function, its reachable helpers and an owned
-session/buffer/cursor interface. It is outside the public compiler descriptor
-and installed SDK. Physical CUDA acceptance remains pending.
+session/buffer/cursor interface. The compiler advertises its preparation tools in `gpu_codegen.cuda.owned_provider`;
+source support and complete installed/hardware acceptance remain separate. Physical CUDA acceptance remains pending.
 
-The preparer compares the emitter's frontend archive hash, program revision and
-every reachable function hash with the explicitly selected compiler. It checks
-the generated NEX wrapper and obtains nine actual FFI signatures. A mismatched
+The preparer checks the public emission's compiler/descriptor identity, program
+revision and every reachable function hash against the selected compiler. The
+optional standalone mode also checks its frontend archive hash. It checks
+the generated NEX wrapper and obtains eleven actual FFI signatures. A mismatched
 frontend or unsupported root fails before a provider bundle is created.
 The compiler must support language 0.28, dependent resources, the source task
 bridge and the append-only fatal trap API.
-The standalone emitter now also lowers finite `f64`. This provider preparer
-rejects reachable f64 before bundling: typed float transport and its additional
-fatal statuses still need implementation and physical qualification.
+The preparer also accepts finite `f64` roots. The wrapper exposes bounded
+`encode_f64s`/`decode_f64s` and `try_apply_f64`/`apply_f64` for all-f64 roots.
+Codecs exchange IEEE754 little-endian words in actual1024-value chunks, up to
+32768 values per column, preserving standard C-call reference/byte/operation
+limits. NaNs/infinities return `E_FLOAT`; zeros normalize positive. Status7 maps
+to the original fatal `E_FLOAT` after physical settlement. These paths have
+[actual reference/native Debug/Release host controls](../../docs/evidence/owned-cuda-f64-host-0.165.0-2026-11-10.json);
+NVIDIA execution of this11-export module remains unqualified.
 
-From a checkout with a built compiler and standalone CUDA emitter:
+From a checkout with a built compiler:
 
 ```sh
 python3 -B experiments/owned-cuda-codegen/prepare.py \
   --compiler /absolute/build/nex --resources /absolute/NEX \
-  --emitter /absolute/cuda-build/nex-cuda-emit \
-  --frontend-archive /absolute/build/libnex_frontend.a \
   --source-project /absolute/scalar-project --symbol transform \
   --source-only --output /absolute/new/provider-project
 ```
@@ -112,6 +116,10 @@ records four prepared roots, 36 checked signatures, two rejected preparations
 and 96 unavailable-driver calls across those three backends. A 256 KiB resource
 limit admits one session reservation but not two unreleased reservations;
 repeated constructor failures restored capacity on each call.
+The later f64 transport record adds five prepared roots/55 checked signatures,
+nine actual codec/fatal runtime processes and a repeat of the96 unavailable-driver
+calls and15 parent-case source checks. The earlier record remains scoped to its
+original module.
 The full public compiler/platform/SDK and broader original roadmap gates remain.
 
 ## Scalar and parent-resource corpus

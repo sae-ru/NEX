@@ -1,7 +1,8 @@
 # General GPU code generation — scalar Metal precursor
 
-The independent [checked-AST CUDA experiment](experiments/cuda-codegen/README.md)
-now emits ordinary checked 0.28 scalar functions with explicit 64-bit arithmetic
+The public `nex emit --kind cuda` command now shares the implementation with the
+[checked-AST CUDA developer harness](experiments/cuda-codegen/README.md). It emits
+ordinary checked0.28 scalar functions with explicit 64-bit arithmetic
 and rows/columns ABIs, including scalar `match` with ordered guards and one
 subject evaluation. Its source controls passed 28 fixtures, 56 layouts and 256
 lane outcomes under host UBSan, positive reference/native/TypeScript agreement
@@ -16,8 +17,11 @@ reference/native Debug/Release codec and fatal controls passed. Physical f64
 execution, NVRTC/ptxas qualification and current owned-module acceptance remain
 pending. An earlier32-kernel integer/bool/unit corpus passed actual NVRTC12.1
 and RTX3090 execution (186 lanes); its Python sanitizer failed to attach before
-any CUDA work, so memcheck remains pending. This experiment remains
-separate from the public compiler and fixed Windows CUDA provider. A separate
+any CUDA work, so memcheck remains pending. The backend is connected to the
+public compiler; its owned preparation tools
+now default to that same compiler and are installed with the SDK. Matching
+public-CLI/current-provider/immutable-SDK acceptance remains separate from the
+earlier fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.
 Its scalar/parent acceptance runner now has 15 compiler-checked NEX programs

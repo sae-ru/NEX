@@ -1,3 +1,8 @@
+The backend is now also available through `nex emit --kind cuda` and shares
+its implementation with `src/cuda.cpp`. See [the public guide](../../docs/gpu-codegen.md#cuda-source-emission).
+This directory retains standalone developer controls and historical receipts;
+those earlier receipts keep their original scope.
+
 # Checked-AST CUDA emission experiment
 
 This separate source tool lowers checked language0.28 functions directly to CUDA

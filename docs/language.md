@@ -34,9 +34,11 @@ finalizers while retaining owned cleanup. This is distinct from a source
 `throw` or an ordinary `result<T>` failure. Language0.28, its grammar and graph
 identities, task ABI7 and C ABI major1 remain unchanged; no migration is needed.
 
-Toolchain0.165 adds [checked scalar Metal emission](gpu-codegen.md) through
-`nex emit --kind metal`. It lowers reachable shared pure i64/bool/unit functions
-from the checked AST, with explicit rejection of unsupported reachable code.
+Toolchain0.165 adds [checked scalar GPU emission](gpu-codegen.md) through
+`nex emit --kind metal` and `nex emit --kind cuda`. Both lower reachable shared
+pure functions from the checked AST. Metal accepts i64/bool/unit; CUDA additionally
+accepts finite f64 and scalar matches with guards. Unsupported reachable code is
+rejected explicitly.
 It changes no source production, source semantics or canonical identity and
 requires no language migration. Emission initializes no GPU driver; installed
 delivery and physical execution have separate acceptance requirements.

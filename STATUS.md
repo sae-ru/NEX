@@ -1,3 +1,23 @@
+# Public CUDA source backend — development0.165.0
+
+`nex emit --kind cuda` now lowers the checked language0.28 AST directly through
+the same implementation as the standalone CUDA developer harness. The public
+record `nex.cuda-emission/1` binds exact shader bytes, reachable function hashes,
+function maps, compiler/descriptor identities and saved revision. Shared pure
+scalar i64/f64/bool/unit, concrete generics, guarded scalar matches, branches,
+loops and contracts are supported. Unsupported reachable code is rejected before
+overwriting output. Syntax, graph identities, task ABI7 and C ABI1 are unchanged.
+
+Owned CUDA preparation now defaults to this selected compiler, with no separate
+emitter or frontend archive. It checks11 FFI exports and exact source/revision
+identity. CMake installs its provider tools; the descriptor, language pack,
+model-independent prompt, schemas, example and English/Russian entry documents
+are updated. The compiler build identity now includes private source headers.
+All native targets build; only the two affected CUDA/Metal source-command groups
+(13 methods) were checked. [Current integration record](docs/evidence/public-CUDA-source-0.165.0-2026-11-10.json). Complete regression, current NVIDIA owned-provider
+acceptance and a newly qualified immutable SDK remain deferred gates. Earlier
+standalone f64/IR/PTX and32-kernel hardware records retain their original scope.
+
 # CUDA typed transport and returned-stand results — 2026-11-10
 
 The experimental generated CUDA provider now transports finite f64 through11
