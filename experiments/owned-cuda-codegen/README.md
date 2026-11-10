@@ -104,7 +104,7 @@ It also compiles the context probe and runs its explicit
 does not qualify context-stack behavior on NVIDIA hardware.
 This exercises the FFI and constructor rollback without creating a CUDA context
 or launching a kernel. It cannot qualify CUDA compilation or device execution.
-The local [source evidence](../../docs/evidence/owned-cuda-context-temporal-source-0.165.0-2026-11-10.json)
+The local [source evidence](../../docs/evidence/owned-cuda-gate-source-0.165.0-2026-11-10.json)
 records four prepared roots, 36 checked signatures, two rejected preparations
 and 96 unavailable-driver calls across those three backends. A 256 KiB resource
 limit admits one session reservation but not two unreleased reservations;
@@ -124,7 +124,7 @@ python3 -B experiments/owned-cuda-codegen/verify.py \
   --output /absolute/new/source-case-checks
 ```
 
-`--check-only` checks all 13 NEX programs and loads no provider. On an available
+`--check-only` checks all 15 NEX programs and loads no provider. On an available
 Windows/Linux NVIDIA host, prepare a native provider first and omit this flag
 to execute the interpreter/native Release pairs. The physical runner requires
 exact values/errors, device identity, generated-source/PTX hashes, CUDA
@@ -132,17 +132,37 @@ completions, closed cursors and balanced buffer/event/context/module/stream
 counters. It first requires the actual three-context probe to succeed.
 This phase covers byte codecs, maximum geometry, typed errors,
 parent retention, cross-session rejection, quotas and fatal error forwarding.
-It is a partial phase: post-enqueue cancellation/deadline,
-source-deleted replay/standalone, other scalar roots and Compute Sanitizer
-remain separate mandatory gates. Its report never marks complete owned CUDA
+Actual NVIDIA execution of this phase remains unverified. Source-deleted
+replay/standalone, other scalar roots and Compute Sanitizer also remain
+mandatory gates. Its report never marks complete owned CUDA
 acceptance.
+
+Cancellation/deadline preparation additionally requires `--acceptance-gate`.
+That explicit option appends a separate device-clock delay kernel to the NVRTC
+compilation input; the original emitted function, source hash and function map
+are retained. The normal provider rejects activation through environment
+variables. The accepted test range is 1..200000000 device cycles per kernel and
+1..32 repetitions, with both values zero by default. It queues the delay kernels
+and then the unchanged generated root in the same CUDA stream. See NVIDIA's
+[device clock contract](https://docs.nvidia.com/cuda/archive/12.1.0/cuda-c-programming-guide/index.html#time-function).
+
+The full runner checks 15 programs, including cancel with its original 5000 ms
+task budget and deadline with its original 2000 ms budget. Those two controls
+require actual queued/pending work, 32 admitted GPU delay kernels, observation
+of busy after enqueue, a sticky host interruption and a dispatch-matched
+successful physical drain before used buffers close. The measured pending
+interval must be at least 0.5 s. The cycle bound is not a wall-time guarantee;
+an early timeout or missing physical acknowledgement fails the test.
 
 `check_acceptance.py` accepts the same compiler/resources/emitter/frontend/output
 arguments as `check_sources.py`. It prepares the pinned fixture, checks the
-13 programs with the actual compiler and exercises the receipt reader with
-synthetic records. Twelve false reports are rejected, including leaked buffers,
+15 programs with the actual compiler and exercises the receipt reader with
+synthetic records. Nineteen false reports are rejected, including leaked buffers,
 contexts/events/streams, missing completion, an unsettled state, an unclosed
 cursor, CPU fallback, a different compiled PTX and release before a dispatch,
 cursor or parent lifetime has ended. Synthetic records are not
-GPU evidence. The [versioned corpus controls](../../docs/evidence/owned-cuda-context-temporal-source-0.165.0-2026-11-10.json)
+GPU evidence. `--host-gate-config-controls --cxx /absolute/clang++` checks the
+actual C++ configuration parser on macOS without loading CUDA: disabled,
+minimum/maximum and eight malformed/out-of-range settings.
+The [versioned gate controls](../../docs/evidence/owned-cuda-gate-source-0.165.0-2026-11-10.json)
 retain the exact scope and code identities.

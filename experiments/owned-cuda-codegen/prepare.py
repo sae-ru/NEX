@@ -88,6 +88,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--source-only", action="store_true")
+    parser.add_argument("--acceptance-gate", action="store_true", help="Compile a bounded GPU delay kernel for explicit cancellation/deadline tests")
     parser.add_argument("--cxx", type=Path)
     parser.add_argument("--nvrtc", type=Path)
     parser.add_argument("--compute", type=int, default=52)
@@ -166,16 +167,25 @@ def main():
         for name in ["open", "upload", "map", "download", "read_next", "name", "kernel_ns", "busy", "fatal"]:
             signature = json.loads(run("signature-" + name, [compiler, "ffi", "--symbol", name + "_raw", "--json"]))
             signatures[name] = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        for name in ["module.cpp", "cuda_driver.h", "main.nex.in", "context_probe.cpp"]:
+        for name in ["module.cpp", "cuda_driver.h", "main.nex.in", "context_probe.cpp", "gate.cu"]:
             shutil.copyfile(source / name, inputs / name)
         (inputs / "signatures.h").write_text("\n".join('#define PIN_' + n.upper() + ' "' + h + '"' for n, h in signatures.items()) + "\n")
         ptx, nvrtc = b"", None
+        compilation_source = generation / "kernel.cu"
+        gate_hash = sha(source / "gate.cu") if args.acceptance_gate else ""
+        if args.acceptance_gate:
+            compilation_source = generation / "compilation.cu"
+            compilation_source.write_bytes((generation / "kernel.cu").read_bytes() + b"\n" + (inputs / "gate.cu").read_bytes())
         if not args.source_only:
-            nvrtc = compile_ptx(args.nvrtc.resolve(strict=True), generation / "kernel.cu", generation, args.compute)
+            nvrtc = compile_ptx(args.nvrtc.resolve(strict=True), compilation_source, generation, args.compute)
             ptx = (generation / "kernel.ptx").read_bytes()
+            if args.acceptance_gate and (b"nex_acceptance_gate" not in ptx or b"%clock64" not in ptx):
+                raise RuntimeError("NVRTC PTX omitted the explicit acceptance gate or its device clock")
         (inputs / "generated_kernel.h").write_text("#pragma once\n#define GENERATED_ARGUMENTS " + str(len(generated["parameter_types"])) +
             "\n#define GENERATED_SHADER_SHA256 " + json.dumps(generated["shader_sha256"]) +
             "\n#define GENERATED_PTX_SHA256 " + json.dumps(hashlib.sha256(ptx).hexdigest()) +
+            "\n#define GENERATED_ACCEPTANCE_GATE " + ("1" if args.acceptance_gate else "0") +
+            "\n#define GENERATED_GATE_SOURCE_SHA256 " + json.dumps(gate_hash) +
             "\n#define GENERATED_PTX " + json.dumps(ptx.rstrip(b"\0").decode("utf-8")) + "\n", encoding="utf-8")
         input_pins = {p.name: sha(p) for p in inputs.iterdir()}
         report = {"schema": "nex.experimental-owned-CUDA-codegen-preparation/1", "ok": True,
@@ -186,7 +196,10 @@ def main():
             "functions": generated["functions"], "parameter_types": generated["parameter_types"], "result_type": generated["result_type"],
             "signature_sha256": signatures, "source_input_pins": input_pins, "source_checked": True,
             "native_provider_built": False, "driver_initialized": False, "hardware_executed": False,
-            "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc, "commands": commands}
+            "public_CUDA_CLI_or_SDK_accepted": False, "NVRTC": nvrtc,
+            "acceptance_gate": {"compiled": args.acceptance_gate, "source_sha256": gate_hash,
+                "compilation_source_sha256": sha(compilation_source), "default_active": False,
+                "maximum_cycles_per_kernel": 200000000, "maximum_repeats": 32}, "commands": commands}
         if not args.source_only:
             cxx = (args.cxx or Path(doctor["native_compiler"])).resolve(strict=True)
             flags = ["-std=c++20", "-O2", "-pthread", "-Wall", "-Wextra", "-I" + str(resources / "runtime"), "-I" + str(inputs)]

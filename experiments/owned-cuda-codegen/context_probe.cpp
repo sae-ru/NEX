@@ -11,8 +11,10 @@ static CUcontext current(Session &session){
 }
 int main(int argc,char **argv){
   const bool unavailable=argc==2&&std::string(argv[1])=="--expect-unavailable";
+  const bool configuration=argc==2&&std::string(argv[1])=="--check-gate-config";
   try{
-    require(argc==1||unavailable,"usage: context-probe [--expect-unavailable]");
+    require(argc==1||unavailable||configuration,"usage: context-probe [--expect-unavailable|--check-gate-config]");
+    if(configuration){auto control=gateConfiguration();std::printf("{\"ok\":true,\"scope\":\"gate-config-host-control\",\"compiled\":%s,\"cycles\":%llu,\"repeats\":%u,\"actual_CUDA_contexts\":0}\n",GENERATED_ACCEPTANCE_GATE?"true":"false",static_cast<unsigned long long>(control.cycles),control.repeats);return 0;}
     unsigned polls=0;bool rejected=false,rolledBack=false;
     {
       Session caller;caller.start(NEX_CUDA_PROBE_INDEX);

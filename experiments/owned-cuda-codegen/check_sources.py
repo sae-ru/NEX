@@ -95,6 +95,9 @@ def main():
             probe_result = json.loads(run("host-probe-unavailable", [probe, "--expect-unavailable"]).stdout)
             assert probe_result["scope"] == "unavailable-driver-host-control" and probe_result["ok"]
             assert probe_result["actual_CUDA_contexts"] == 0 and probe_result["actual_device_allocations"] == 0 and not probe_result["physical_CUDA_context_probe_passed"]
+            blocked = run("host-probe-gate-disabled", [probe, "--check-gate-config"], expected=1,
+                extra={"NEX_OWNED_CUDA_MAP_GATE_CYCLES": "1", "NEX_OWNED_CUDA_MAP_GATE_REPEATS": "1"})
+            assert b"E_DEVICE_CONFIG" in blocked.stderr and blocked.stdout == b""
             (bundle / "NOTICE").write_bytes((resources / "LICENSE").read_bytes() + b"\n" + (resources / "runtime/third_party/JSON-LICENSE.MIT").read_bytes())
             proof = json.loads((prepared / "preparation/report.json").read_bytes())
             write(bundle / "manifest.json", {"schema": "nex.foreign-bundle/1", "platform": "macos-" + ("arm64" if platform.machine().lower() in {"arm64", "aarch64"} else "x86_64"), "entry": "module.so",

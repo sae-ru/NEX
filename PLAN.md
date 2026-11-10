@@ -9,10 +9,13 @@ and 9 rejected programs. This is a source-only experiment, separate from the pub
 compiler and fixed Windows CUDA provider. A separate
 [owned generated CUDA provider](experiments/owned-cuda-codegen/README.md) now has
 checked preparation and a C FFI implementation for sessions/buffers/cursors.
-Its scalar/parent acceptance runner now has 13 compiler-checked NEX programs
-and twelve false-receipt rejection controls, including per-buffer temporal
+Its scalar/parent acceptance runner now has 15 compiler-checked NEX programs
+and nineteen false-receipt rejection controls, including per-buffer temporal
 checks. A real three-context restoration/rollback probe is built; its local
 no-driver control passed, with physical NVIDIA execution still pending.
+An explicit bounded device-clock gate and the original cancel/deadline cases
+are implemented for later physical execution. Gate configuration is checked
+locally; synthetic acknowledgements do not qualify GPU interruption handling.
 Actual NVRTC/GPU/memcheck, generated-provider lifetime/cancellation acceptance
 and coherent public compiler/SDK delivery remain
 pending; no CUDA support is inferred from CPU execution of emitted code.

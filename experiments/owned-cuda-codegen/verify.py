@@ -19,7 +19,7 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def inspect_trace(path, kernels, errors, shader_hash, ptx_hash):
+def inspect_trace(path, kernels, errors, shader_hash, ptx_hash, gate_hash="", pending=False, cancelled=False):
     assert path.stat().st_size <= 16 * 1024 * 1024
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     assert all(row["schema"] == "nex.experimental-owned-CUDA-trace/2" and type(row["steady_ns"]) is int and row["steady_ns"] >= 0 for row in rows)
@@ -40,14 +40,27 @@ def inspect_trace(path, kernels, errors, shader_hash, ptx_hash):
     ready = [row for row in rows if row["event"] == "generated_session_ready"]
     assert {row["session"] for row in ready} == {row["session"] for row in sessions}
     assert len(ready) == len(sessions) and all(row["kernel_sha256"] == shader_hash and row["PTX_sha256"] == ptx_hash and row["arguments"] == 2 and row["cpu_fallback"] is False for row in ready)
+    assert all(row["gate_source_sha256"] == gate_hash and row["acceptance_gate_compiled"] == bool(gate_hash) for row in ready)
     queued = [row for row in rows if row["event"] == "kernel_queued"]
-    complete = [row for row in rows if row["event"] in ["kernel_completed", "kernel_failure_settled"]]
+    complete = [row for row in rows if row["event"] in ["kernel_completed", "kernel_failure_settled", "physical_drain"]]
     failed = [row for row in complete if row["event"] == "kernel_failure_settled"]
     assert len(queued) == len(complete) == ledger["kernel_launches"] == kernels and len(failed) == errors
     assert all(row["physical_enqueue_verified"] and row["columns"] == 2 for row in queued)
     assert all(row["kernel_sha256"] == shader_hash and row["physical_completion_verified"] and row["cpu_fallback"] is False for row in complete)
     assert all(1 <= row["lane_status"] <= 6 for row in failed)
     assert all(row["lane_status"] == 0 for row in complete if row["event"] == "kernel_completed")
+    drains = [row for row in complete if row["event"] == "physical_drain"]
+    if pending:
+        assert kernels == 1 and errors == 0 and len(drains) == 1 and len(queued) == 1
+        assert queued[0]["completion_pending"] and queued[0]["event_status"] == 600
+        assert queued[0]["gate_launches"] == drains[0]["gate_launches"] == ledger["acceptance_gate_launches"] == 32
+        assert queued[0]["gate_cycles"] == 200000000 and drains[0]["event_status"] == 0 and drains[0]["unwind"]
+        assert drains[0]["steady_ns"] - queued[0]["steady_ns"] >= 500000000
+        assert any(row["event"] == "host_trap" and row["status"] == 10 for row in rows)
+        if cancelled:
+            assert any(row["event"] == "kernel_busy_observed" and row["session"] == queued[0]["session"] and queued[0]["steady_ns"] <= row["steady_ns"] <= drains[0]["steady_ns"] for row in rows)
+    else:
+        assert not drains and ledger["acceptance_gate_launches"] == 0 and all(row["gate_launches"] == 0 for row in queued)
     for row in rows:
         if row["event"] in ["buffer_released", "session_destroyed", "physical_drain"]:
             assert row["physical_completion_verified"]
@@ -99,6 +112,7 @@ def inspect_trace(path, kernels, errors, shader_hash, ptx_hash):
         assert allocated[row["buffer"]]["steady_ns"] <= row["steady_ns"] <= end["steady_ns"] <= released[row["buffer"]]["steady_ns"]
     return {"trace_sha256": sha(path), "sessions": [{key: row[key] for key in ["name", "uuid", "pci_bus_id", "ordinal", "driver_version"]} for row in sessions],
             "ledger": ledger, "physical_kernel_completions": len(complete), "failed_kernel_completions": len(failed), "closed_cursors": len(closed),
+            "acceptance_gate_GPU_launches": ledger["acceptance_gate_launches"], "post_enqueue_interruption_checked": pending,
             "all_resource_counter_pairs_balanced": True, "per_buffer_dispatch_and_cursor_lifetimes_checked": True, "context_probe_qualified_by_this_reader": False}
 
 
@@ -117,12 +131,16 @@ def main():
     assert sha(source / "fixture.nex") == FIXTURE_SHA256
     corpus_path = source.parent / "owned-metal-codegen/verify.py"
     shared = runpy.run_path(str(corpus_path))
-    cases = {name: (body, kernels, errors, quota, None) for name, (body, kernels, errors, quota) in shared["CASES"].items()}
+    cases = {name: (body, kernels, errors, quota, None, 30000, False) for name, (body, kernels, errors, quota) in shared["CASES"].items()}
     for name in ["explicit_unwrap_E_RESULT_skips_finally", "direct_overflow_skips_catch_and_finally"]:
         body, code, gate, timeout, errors = shared["ERROR_CASES"][name]
         assert gate == 0 and timeout == 30000
-        cases[name] = body, 1, errors, None, code
-    assert len(cases) == 13
+        cases[name] = body, 1, errors, None, code, timeout, False
+    for name in ["cancel_enqueued_generated_GPU", "deadline_enqueued_generated_GPU"]:
+        body, code, _, timeout, errors = shared["ERROR_CASES"][name]
+        assert errors == 0 and timeout == (5000 if code == "E_CANCELLED" else 2000)
+        cases[name] = body, 1, 0, None, code, timeout, True
+    assert len(cases) == 15
     prep_path = project / "preparation/report.json"
     preparation = json.loads(prep_path.read_bytes())
     assert preparation["ok"] and preparation["compiler_sha256"] == sha(compiler)
@@ -133,6 +151,7 @@ def main():
     if not args.check_only:
         assert preparation["native_provider_built"] and preparation["NVRTC"]["version"][0] >= 12
         assert preparation["NVRTC"]["PTX_sha256"] == sha(project / "generation/kernel.ptx")
+    assert preparation["acceptance_gate"]["compiled"], "prepare the fixture with --acceptance-gate for this corpus"
     prefix = (project / "main.nex").read_text(encoding="utf-8").split("server fn main()->unit", 1)[0] + shared["HELPERS"]
     env = {k: v for k, v in os.environ.items() if not k.startswith("NEX_")}
     env.update(NEX_RESOURCE_DIR=str(resources), PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
@@ -150,17 +169,21 @@ def main():
     def guard():
         assert sha(compiler) == report["compiler_sha256"] and sha(prep_path) == report["preparation_sha256"] and sha(corpus_path) == report["shared_corpus_sha256"]
         assert preparation["emission_sha256"] == sha(project / "generation/report.json") and preparation["kernel_sha256"] == sha(project / "generation/kernel.cu")
+        assert preparation["acceptance_gate"]["source_sha256"] == sha(project / "preparation/inputs/gate.cu")
+        assert preparation["acceptance_gate"]["compilation_source_sha256"] == sha(project / "generation/compilation.cu")
         if not args.check_only:
             assert preparation["manifest_sha256"] == sha(project / "bundle/manifest.json")
             manifest = json.loads((project / "bundle/manifest.json").read_bytes())
             assert all(sha(project / "bundle" / row["path"]) == row["sha256"] for row in manifest["files"])
 
-    def run(label, argv, directory, expected=0, trace=None):
+    def run(label, argv, directory, expected=0, trace=None, pending=False):
         guard()
         row = {"label": label, "argv": list(map(str, argv)), "cwd": str(directory)}
         report["commands"].append(row)
         save()
         extra = {"NEX_OWNED_CUDA_MAP_TRACE": str(trace)} if trace else {}
+        if pending:
+            extra.update(NEX_OWNED_CUDA_MAP_GATE_CYCLES="200000000", NEX_OWNED_CUDA_MAP_GATE_REPEATS="32")
         value = subprocess.run(row["argv"], cwd=directory, env={**env, **extra}, capture_output=True, timeout=300)
         (out / (label + ".stdout")).write_bytes(value.stdout)
         (out / (label + ".stderr")).write_bytes(value.stderr)
@@ -179,7 +202,7 @@ def main():
             assert control["actual_device_allocations"] == 1 and all(control[key] for key in ["caller_context_preserved", "source_reentry_rejected_before_poll", "nested_cleanup_restores_context", "constructor_trap_rolls_back", "physical_cleanup_verified"])
             report["physical_context_probe"] = control
             report["required_additional_gates"].remove("physical context restoration/rollback probe required by hardware mode")
-        for name, (body, kernels, errors, quota, code) in cases.items():
+        for name, (body, kernels, errors, quota, code, timeout, pending) in cases.items():
             directory = out / name
             directory.mkdir()
             (directory / "nex.json").write_text(json.dumps({"schema": "nex.project/1", "language": "0.28", "entry": "main.nex", "libraries": {"std": str(project / "stdlib")}}) + "\n", encoding="utf-8")
@@ -197,16 +220,16 @@ def main():
             foreign = directory / "foreign.json"
             foreign.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
             reference_trace = directory / "reference.trace.jsonl"
-            reference = json.loads(run(name + "-reference", [compiler, "eval", "--foreign", foreign, "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", "30000", "--json"], directory, 1 if code else 0, reference_trace).stdout)
+            reference = json.loads(run(name + "-reference", [compiler, "eval", "--foreign", foreign, "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", str(timeout), "--json"], directory, 1 if code else 0, reference_trace, pending).stdout)
             if code:
                 assert reference["code"] == code and reference["stdout"] == ""
                 if code == "E_RESULT":
                     assert "E_OVERFLOW" in reference["message"]
             else:
                 assert reference["stdout"] == "42\n" and reference["foreign_resource_bytes_after_scope"] == 0
-            built = json.loads(run(name + "-build", [compiler, "build", "--profile", "release", "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", "30000", "--build-directory", out / "native", "--json"], directory).stdout)
+            built = json.loads(run(name + "-build", [compiler, "build", "--profile", "release", "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", str(timeout), "--build-directory", out / "native", "--json"], directory).stdout)
             native_trace = directory / "native.trace.jsonl"
-            native = run(name + "-native", [built["executable"], "--nex-foreign", foreign, "--nex-task-workers", "1"], directory, 70 if code else 0, native_trace)
+            native = run(name + "-native", [built["executable"], "--nex-foreign", foreign, "--nex-task-workers", "1", "--nex-task-timeout-ms", str(timeout)], directory, 70 if code else 0, native_trace, pending)
             assert native.stdout == (b"" if code else b"42\n")
             if code:
                 assert code.encode() in native.stderr
@@ -214,14 +237,17 @@ def main():
                     assert b"E_OVERFLOW" in native.stderr
             else:
                 assert native.stderr == b""
-            row["reference"] = inspect_trace(reference_trace, kernels, errors, preparation["kernel_sha256"], preparation["NVRTC"]["PTX_sha256"])
-            row["native"] = inspect_trace(native_trace, kernels, errors, preparation["kernel_sha256"], preparation["NVRTC"]["PTX_sha256"])
+            row["reference"] = inspect_trace(reference_trace, kernels, errors, preparation["kernel_sha256"], preparation["NVRTC"]["PTX_sha256"], preparation["acceptance_gate"]["source_sha256"], pending, code == "E_CANCELLED")
+            row["native"] = inspect_trace(native_trace, kernels, errors, preparation["kernel_sha256"], preparation["NVRTC"]["PTX_sha256"], preparation["acceptance_gate"]["source_sha256"], pending, code == "E_CANCELLED")
             assert row["reference"]["sessions"] == row["native"]["sessions"]
             save()
         guard()
         report.update(ok=True, state="passed", source_cases_checked=len(cases),
                       actual_GPU_execution=not args.check_only,
                       physical_GPU_kernel_events=0 if args.check_only else sum(row[mode]["physical_kernel_completions"] for row in report["cases"] for mode in ["reference", "native"]))
+        if not args.check_only:
+            report["required_additional_gates"].remove("actual post-enqueue cancellation/deadline")
+            report["acceptance_gate_GPU_launches"] = sum(row[mode]["acceptance_gate_GPU_launches"] for row in report["cases"] for mode in ["reference", "native"])
     except BaseException as error:
         report.update(state="failed", error=repr(error))
         raise
