@@ -1,3 +1,27 @@
+# Length-aware runtime diagnostics — development0.165.0
+
+Ordinary runtime/compiler failures now retain owned message lengths through
+reference/native/task propagation and frontend JSON/message identities. Embedded
+NUL and Unicode survive source unwrap, including managed CUDA source outcomes.
+Additive exception types preserve the original Trap/LocatedTrap layouts and legacy
+C-string functions. Native structured records retain128/4096-byte code/message
+input limits, UTF-8-safe truncation and explicit flags. IO/resource mailboxes keep
+their4096-byte message quota; trusted C raise_trap retains NUL-free strict UTF-8
+and its2048-byte limit. Source0.28/task ABI7/C ABI1 and graph identities are unchanged.
+
+All targets build. Eight affected groups passed across the retained initial
+invocation and the corrected diagnostic group:24 ordinary backend executions
+(reference/native Debug/native Release/TypeScript),18 CUDA adapter executions,
+12 native site/layout cases,27 frontend cases, direct fatal reporting, resource
+cleanup, mailbox normalization and existing C API rejection controls. New test
+setup errors (callback effects, irrelevant CLI limits and synchronous TypeScript
+scheduler assumptions) remain recorded; production code was unchanged after the
+initial build. Only the failed group was repeated. Failed private caches were
+archived and byte-verified before shrinking240.29MB to68.58MB.
+[Development record](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
+No full regression, stand/device cohort, SDK repack or publication was run.
+All other original PLAN requirements remain active.
+
 # Managed CUDA dispatch outcomes — development0.165.0
 
 The provider now returns a pinned `result<Dispatch>`: either an owned completed

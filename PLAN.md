@@ -6,8 +6,9 @@ its checked graph. Byte operations include construction, index/slice/updates,
 concatenation/equality and conversion from bounded static UTF-8/base64 text.
 Explicit `--text-capacity` now enables runtime UTF-8 values, Unicode scalar
 operations, byte codecs and per-lane Result diagnostic packets. Source Result faults now travel as managed per-dispatch outcomes to ordinary
-source unwrap after resource cleanup. Rendered diagnostic completeness remains
-a separate concern. These are
+source unwrap after resource cleanup. Ordinary fatal message transport now retains
+NUL and Unicode through reference/native/task paths and frontend JSON; structured
+records keep their explicit byte limits and truncation flags. These are
 source/backend capabilities; physical device and immutable SDK acceptance retain
 their own exact snapshots. See [current status](STATUS.md) and
 [the GPU contracts](docs/gpu-codegen.md).
@@ -15,8 +16,7 @@ their own exact snapshots. See [current status](STATUS.md) and
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
 
-- [ ] General GPU/NPU compilation and backend coverage, remaining formatting and
-  complete diagnostic rendering,
+- [ ] General GPU/NPU compilation and backend coverage, remaining GPU value formatting,
   GPU operation debugging/profiling and Apple NPU integration.
 - [ ] Remaining language/toolchain extensions in the original stages below:
   advanced type-constructor inference/effect handling, graph identity-preserving

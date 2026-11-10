@@ -22,7 +22,7 @@ class PreparedTaskFileRead {
         // Ordinary filesystem failures travel as raw diagnostics. Cancellation,
         // resource revocation and execution limits retain their fatal priority.
         if(error.code!="NOT_FOUND"&&error.code!="PERMISSION"&&error.code!="VALIDATION"&&error.code!="LIMIT"&&error.code!="E_FILE")throw;
-        result.errorCode=error.code;result.errorMessage=error.what();
+        result.errorCode=error.code;result.errorMessage=error.message;
       }
       control.checkpoint();return result;
     }
@@ -59,7 +59,7 @@ public:
       lease.check();return value;
     }catch(const DataError &error){
       if(error.code!="E_UTF8")throw;
-      auto value=failure(error.code,error.what());lease.check();return value;
+      auto value=failure(error.code,error.message);lease.check();return value;
     }
   }
 };

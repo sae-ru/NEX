@@ -41,7 +41,7 @@ ForeignCatalogueSnapshot inspectForeignCatalogue(const std::string &configuratio
     result.manifest=Object{{"schema","nex.foreign-host/1"},{"module_limit",int64_t(libraries->moduleLimit())},{"resource_limit",int64_t(libraries->resourceLimit())},{"resource_bytes",int64_t(libraries->resourceBytesLimit())},{"libraries",std::move(grants)}};
     result.identity=Object{{"schema","nex.foreign-catalogue/1"},{"platform",result.platform},{"catalogue",result.manifest}};
     result.hash=hash(json(result.identity,false));return result;
-  }catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
+  }catch(const nexrt::DataError &error){throw Error(error.code,error.message);}
 }
 llvm::json::Value describeForeignCatalogue(const ForeignCatalogueSnapshot &snapshot){
   Object libraries;size_t bytes=0;

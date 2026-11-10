@@ -27,7 +27,7 @@ namespace {
 namespace fs=std::filesystem;
 using J=nlohmann::ordered_json;
 using Poll=std::function<void()>;
-[[noreturn]] void fail(const char *code,const char *message){throw DataError(code,message);}
+[[noreturn]] void fail(const char *code,const std::string &message){throw DataError(code,message);}
 void pollNow(const Poll &poll){if(poll)poll();}
 #ifdef _WIN32
 struct WindowsFile {std::shared_ptr<TextFiles> root;FileResource file;};
@@ -70,7 +70,7 @@ std::vector<std::string> pathParts(const std::string &path){
 FD openFile(const WindowsFile &root,const std::string &path,const Poll &poll){
   (void)pathParts(path);pollNow(poll);
   try{return FD(WindowsFile{root.root,root.root->open(path,FileMode::Read,poll)});}
-  catch(const DataError &error){fail("E_FFI_IO",error.what());}
+  catch(const DataError &error){fail("E_FFI_IO",error.message);}
 }
 template<class Consume> size_t readFile(const WindowsFile &file,size_t limit,const Poll &poll,Consume consume){
   size_t total=0;auto lease=file.file.lease();

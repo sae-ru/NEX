@@ -80,7 +80,7 @@ Project prepare(const Program &p){
     const auto &input=workerCompute->params[0].type;
     requireFunction(*workerCompute,{input},workerCompute->result,true,isPublicSourceExceptionLanguage(p.sourceLanguage));
     try{workerInput=wireSchema(p,input);workerOutput=wireSchema(p,workerCompute->result);}
-    catch(const Error &e){throw Error("E_WEB_SIGNATURE",std::string("worker_compute requires wire input/output: ")+e.what(),workerCompute->span);}
+    catch(const Error &e){throw Error("E_WEB_SIGNATURE",std::string("worker_compute requires wire input/output: ")+e.message,workerCompute->span);}
     if(workerCommands->result.kind!=Type::List||workerCommands->result.element->kind!=Type::Record)throw Error("E_WEB_SIGNATURE","worker_commands must return list<worker::Command<Input>>",workerCommands->span);
     auto command=*workerCommands->result.element;const auto &s=p.structure(command.name);
     if(s.templateName!="std::worker::Command"||s.typeArguments!=std::vector<Type>{input})throw Error("E_WEB_SIGNATURE","worker command input must match worker_compute",workerCommands->span);

@@ -86,7 +86,7 @@ std::string readBoundedText(const std::string &path,size_t limit,const std::stri
 #ifdef _WIN32
   std::string text;
   try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
-  catch(const nexrt::DataError &error){throw Error(code,label+": "+error.what());}
+  catch(const nexrt::DataError &error){throw Error(code,label+": "+error.message);}
 #else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};
@@ -111,7 +111,7 @@ llvm::json::Value readIdentityManifest(const std::string &path){return parseJSON
 std::string required(const llvm::json::Object &object,const std::string &key){auto v=object.getString(key);if(!v)throw Error("E_JSON","missing string '"+key+"'");return v->str();}
 std::shared_ptr<nexrt::ForeignLibraries> foreignLibraries(const std::string &path){
   try{return nexrt::loadForeignLibraries(path);}
-  catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
+  catch(const nexrt::DataError &error){throw Error(error.code,error.message);}
 }
 std::string defaultSource(const fs::path &root){
   if(fs::exists(root/"nex.json")){auto value=parseJSON(readFile((root/"nex.json").string()));auto obj=value.getAsObject();if(!obj)throw Error("E_MANIFEST","manifest must be an object");return (root/required(*obj,"entry")).string();}
@@ -167,7 +167,7 @@ void migrate(const Options &o,const fs::path &root){
   if(o.values.contains("--candidate")){
     const auto path=o.get("--candidate");if(path.empty())throw Error("E_OPTION","migration candidate path must not be empty");
     auto text=readBoundedText(path,64*1024*1024,"migration candidate","E_MIGRATION_CANDIDATE");
-    try{nexrt::validateJSONText(text);}catch(const nexrt::DataError &error){throw Error("E_MIGRATION_CANDIDATE",error.what());}
+    try{nexrt::validateJSONText(text);}catch(const nexrt::DataError &error){throw Error("E_MIGRATION_CANDIDATE",error.message);}
     auto value=parseJSON(text);auto object=value.getAsObject();
     if(!object||object->size()!=6||object->getString("schema")!="nex.migration-candidate/1"||
        object->getString("origin_revision")!=original||object->getString("origin_language")!=originLanguage||
@@ -225,7 +225,7 @@ int run(const Options &o) {
     auto selected=fs::absolute(o.positional.empty()?projectRoot(fs::current_path())/"nex.build.json":fs::path(o.positional[0]));
     if(fs::is_directory(selected))selected/="nex.build.json";
     auto source=readBoundedText(selected.string(),262144,"project build manifest","E_PROJECT_LIMIT");
-    try{nexrt::validateJSONText(source);}catch(const nexrt::DataError &e){throw Error("E_PROJECT_BUILD",e.what());}
+    try{nexrt::validateJSONText(source);}catch(const nexrt::DataError &e){throw Error("E_PROJECT_BUILD",e.message);}
     ProjectBuildOptions project{o.get("--kind","plan"),o.get("--component"),o.get("--configuration"),o.get("--build-directory"),NEX_VERSION,NEX_BUILD_ID};
     project.taskDebug=o.has("--task-debug");
     project.package.directory=o.get("--directory");project.package.notices=o.get("--notices");project.package.compiler=o.compiler;project.package.dpkgNotices=o.has("--dpkg-notices");
@@ -971,6 +971,6 @@ int main(int argc,char **argv) {
   }
   catch(const nex::Error &e){
     if(machine)print(nex::diagnosticJSON(e,NEX_VERSION,NEX_BUILD_ID));
-    else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.what()<<'\n';}return 1;
+    else {std::cout<<e.output;std::cerr<<(e.span.file.empty()?"":e.span.file+":")<<e.code<<":"<<e.span.line<<":"<<e.span.column<<": "<<e.message<<'\n';}return 1;
   }catch(const std::exception &e){if(machine)print(nex::diagnosticJSON(nex::Error("E_INTERNAL",e.what()),NEX_VERSION,NEX_BUILD_ID));else std::cerr<<"E_INTERNAL: "<<e.what()<<'\n';return 1;}
 }

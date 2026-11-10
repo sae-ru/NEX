@@ -22,7 +22,7 @@ void fields(const Object &o,std::set<std::string> allowed){for(const auto &[key,
 JSON read(const std::filesystem::path &path,uint64_t limit){if(!std::filesystem::is_regular_file(path)||std::filesystem::file_size(path)>limit)throw Error("E_DEBUG_SNAPSHOT","missing/oversized debug snapshot: "+path.string());auto value=llvm::json::parse(readFile(path.string()));if(!value)throw Error("E_DEBUG_SNAPSHOT",llvm::toString(value.takeError()));return std::move(*value);}
 }
 JSON parseDebugFrame(const std::string &text){
-  try{nexrt::validateJSONText(text);}catch(const nexrt::DataError &error){throw Error("E_DEBUG_FRAME",error.what());}
+  try{nexrt::validateJSONText(text);}catch(const nexrt::DataError &error){throw Error("E_DEBUG_FRAME",error.message);}
   llvm::StringRef input(text);if(input.starts_with("\xef\xbb\xbf"))input=input.drop_front(3);
   auto value=llvm::json::parse(input);if(!value)throw Error("E_DEBUG_FRAME",llvm::toString(value.takeError()));return std::move(*value);
 }

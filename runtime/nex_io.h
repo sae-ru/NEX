@@ -9,7 +9,7 @@ inline Value readEnvironment(const std::string &name){
   try{
     auto text=platform::environment(name);if(!text)return failure("NOT_FOUND","environment variable is not defined");
     return success(Value(string(*text)));
-  }catch(const DataError &error){return failure(error.code,error.what());}
+  }catch(const DataError &error){return failure(error.code,error.message);}
 }
 class Database {
   struct Impl;std::unique_ptr<Impl> impl;

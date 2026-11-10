@@ -64,7 +64,7 @@ std::string readFile(const std::string &path) {
 #ifdef _WIN32
   std::wstring native;
   try{native=nexrt::platform::wide(path);}
-  catch(const nexrt::DataError &error){throw Error(error.code,error.what());}
+  catch(const nexrt::DataError &error){throw Error(error.code,error.message);}
   // An atomic publisher can still hold DELETE access after the new name is
   // visible. Full sharing also keeps an existing reader valid across rename.
   nexrt::host_windows::Handle in(CreateFileW(native.c_str(),GENERIC_READ,
@@ -461,7 +461,7 @@ class Parser {
       if(!list&&value->text.find("::")!=std::string::npos)editorName("value",value->text,head(token.span));
       if(list||accept("(")){value->kind=list?Pattern::List:Pattern::Constructor;auto end=list?"]":")";if(!accept(end)){do{if(value->args.size()>=1024)throw Error("E_MATCH_LIMIT","pattern payload exceeds 1024 entries",peek().span);value->args.push_back(pattern(depth+1,nodes));}while(accept(","));expect(end);}}
       else{if(value->text.find("::")!=std::string::npos)throw Error("E_PARSE","constructor pattern requires parentheses",token.span);value->kind=value->text=="_"?Pattern::Wildcard:Pattern::Binding;}
-    }else if(token.kind==Token::String){value->kind=Pattern::String;try{value->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}}
+    }else if(token.kind==Token::String){value->kind=Pattern::String;try{value->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.message,token.span);}}
     else if(token.kind==Token::Num||token.text=="-"){
       auto text=token.text;if(token.text=="-"){auto number=take();if(number.kind!=Token::Num)throw Error("E_PARSE","negative pattern requires an integer literal",number.span);text+=number.text;}
       value->kind=Pattern::Integer;auto result=std::from_chars(text.data(),text.data()+text.size(),value->number);if(result.ec!=std::errc())throw Error("E_RANGE","integer pattern is outside i64",token.span);
@@ -491,7 +491,7 @@ class Parser {
     }
     else if(token.kind==Token::String) {
       e=std::make_shared<Expr>();e->kind=Expr::String;e->span=token.span;
-      try{e->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
+      try{e->text=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.message,token.span);}
     } else if(token.text=="[") {
       e=std::make_shared<Expr>();e->kind=Expr::List;e->span=token.span;
       if(!accept("]")){do{e->args.push_back(expression());}while(accept(","));expect("]");}
@@ -640,7 +640,7 @@ public:
     while(peek().kind!=Token::End) {
       if(accept("endpoint")){
         Endpoint endpoint;endpoint.span=tokens.at(i-1).span;endpoint.name=name().text;
-        auto literal=[&](){auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","endpoint requires quoted method/path",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}};
+        auto literal=[&](){auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","endpoint requires quoted method/path",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.message,token.span);}};
         expect("(");endpoint.method=literal();expect(",");endpoint.path=literal();
         if(accept(",")){auto token=take();auto [end,error]=std::from_chars(token.text.data(),token.text.data()+token.text.size(),endpoint.successStatus);if(token.kind!=Token::Num||error!=std::errc()||end!=token.text.data()+token.text.size())throw Error("E_PARSE","endpoint status must be an integer literal",token.span);}
         expect(")");expect("=");auto targetSpan=peek().span;endpoint.target=qualified();editorName("function",endpoint.target,head(targetSpan));endpoint.span.end=expect(";").span.end;p.endpoints.push_back(std::move(endpoint));continue;
@@ -648,7 +648,7 @@ public:
       if(accept("import")){
         Import dependency;dependency.span=tokens.at(i-1).span;auto token=take();
         if(token.kind!=Token::String)throw Error("E_PARSE","import path must be a quoted string",token.span);
-        try{dependency.path=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.what(),token.span);}
+        try{dependency.path=nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &err){throw Error(err.code,err.message,token.span);}
         expect("as");auto alias=name();dependency.alias=alias.text;editorName("alias",alias.text,alias.span);dependency.span.end=expect(";").span.end;p.imports.push_back(std::move(dependency));continue;
       }
       auto start=peek().span;bool exported=accept("pub");
@@ -730,7 +730,7 @@ public:
       if(f.sourceContractClauses.valid)f.sourceContractClauses.end=peek().span.begin;
       if(external){
         expect("=");expect("foreign");expect("(");
-        auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.what(),token.span);}};
+        auto literal=[&]{auto token=take();if(token.kind!=Token::String)throw Error("E_PARSE","foreign binding requires a string literal",token.span);try{return nexrt::decodeLiteral(token.text);}catch(const nexrt::DataError &e){throw Error(e.code,e.message,token.span);}};
         ForeignBinding binding;binding.library=literal();expect(",");binding.symbol=literal();expect(",");binding.manifestSpan=peek().span;binding.manifest=literal();expect(")");expect(";");f.foreign=std::move(binding);
       }else{f.body=block();}
       f.span.end=tokens.at(i-1).span.end;lowerFunctionContracts(f,pre,post);p.functions.push_back(std::move(f));clearParameters();
@@ -1403,7 +1403,7 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
   try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &error){
     Span span;span.begin=span.end=error.offset;span.file=path;
     for(size_t i=0;i<error.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
-    Error diagnostic(error.code,error.what(),span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true);throw diagnostic;
+    Error diagnostic(error.code,error.message,span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true);throw diagnostic;
   }
 }
 }
@@ -1890,6 +1890,7 @@ llvm::json::Value describe() {
     {"debug_guide","docs/debugging.md"},
     {"graph_features",llvm::json::Array{"persistent_operation_ids","typed_operation_tree","lexical_binding_edges","paged_operation_context","deterministic_operation_sites","history_preserving_operation_index","persistent_module_ids","persistent_type_ids","paged_declaration_context","transitive_dependency_context","snapshot_scoped_identity_reconciliation","atomic_identity_pages","history_preserving_declaration_backfill"}},
     {"diagnostic_features",llvm::json::Array{"native_operation_sites","native_application_identity","manifest_checked_trap_mapping","archived_native_log_mapping","bounded_native_trap_records","request_operator_diagnostics"}},
+    {"runtime_diagnostic_messages",llvm::json::Object{{"source_and_frontend_length_aware",true},{"embedded_NUL_preserved",true},{"frontend_hash_includes_complete_message",true},{"native_record_message_input_bytes",4096},{"native_record_code_input_bytes",128},{"native_record_UTF8_safe",true},{"native_record_truncation_flags",true},{"legacy_C_string_entries_preserved",true},{"legacy_Trap_and_LocatedTrap_layouts_preserved",true},{"task_error_mailbox_message_bytes",4096},{"foreign_raise_trap_contract_unchanged",true},{"guide","docs/native-diagnostics.md"}}},
     {"native_diagnostic_guide","docs/native-diagnostics.md"},{"native_diagnostic_schema","llm/native-diagnostics.schema.json"},
     {"native_application_lifetime",llvm::json::Object{{"normal_and_checked_failure_cleanup",true},{"checked_failure_exit",70},{"request_capabilities_added",false},{"request_budgets_added",false},{"embedding_request_scope","explicit"},{"forced_termination_cleanup",false},{"guide","docs/incremental.md"}}},
     {"native_diagnostic_limits",llvm::json::Object{{"record_bytes",65536},{"records",32},{"source_descriptor_bytes",16384},{"message_input_bytes",4096},{"code_input_bytes",128},{"log_bytes",4194304},{"manifest_bytes",67108864},{"json_depth",64}}},

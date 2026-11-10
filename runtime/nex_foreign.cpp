@@ -41,7 +41,7 @@ std::string packagedForeignCatalogue(){
 }
 namespace {
 using J=nlohmann::ordered_json;
-[[noreturn]] void invalid(const char *code,const char *message){throw DataError(code,message);}
+[[noreturn]] void invalid(const char *code,const std::string &message){throw DataError(code,message);}
 bool hash(const std::string &v){return v.size()==64&&v.find_first_not_of("0123456789abcdef")==std::string::npos;}
 bool identifier(const std::string &v){auto letter=[](char c){return(c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_';};return !v.empty()&&v.size()<=128&&letter(v.front())&&std::all_of(v.begin(),v.end(),[&](char c){return letter(c)||(c>='0'&&c<='9');});}
 void keys(const J &value,std::initializer_list<const char*> names,const char *code){if(!value.is_object()||value.size()!=names.size())invalid(code,"foreign object fields differ");for(auto name:names)if(!value.contains(name))invalid(code,"missing foreign object field");}
@@ -102,7 +102,7 @@ std::shared_ptr<ForeignLibraries> loadForeignLibraries(const std::string &config
 #ifdef _WIN32
   std::string text;
   try{text=host_windows::readRegular(absolute,1048576);}
-  catch(const DataError &error){invalid(error.code=="E_LIMIT"?"E_FFI_LIMIT":"E_FFI_IO",error.what());}
+  catch(const DataError &error){invalid(error.code=="E_LIMIT"?"E_FFI_LIMIT":"E_FFI_IO",error.message);}
 #else
   struct File {int fd;~File(){if(fd>=0)::close(fd);}} file{::open(absolute.c_str(),O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC)};
   if(file.fd<0)invalid("E_FFI_IO","foreign host configuration is unavailable");struct stat info{};

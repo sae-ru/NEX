@@ -23,7 +23,7 @@ struct Completion {
 std::exception_ptr checkedFailure()noexcept{
   try{throw;}
   catch(const DataError &error){
-    try{throw DataError(error.code.size()<=128?error.code:"E_RUNTIME",std::string(std::string_view(error.what()).substr(0,4096)));}
+    try{throw DataError(error.code.size()<=128?error.code:"E_RUNTIME",std::string(std::string_view(error.message).substr(0,4096)));}
     catch(...){return std::current_exception();}
   }
   catch(const std::bad_alloc &){return std::make_exception_ptr(std::bad_alloc{});}

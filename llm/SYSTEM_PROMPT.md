@@ -91,6 +91,11 @@ field alone does not migrate it. A false catch predicate retains the original
 source error; only literal true is statically total. Result ? still returns from
 the current function. Use the exception guide for the exact engine boundaries.
 Preserve owned cleanup on successful, ordinary-error, trap and cancellation exits.
+Runtime messages can contain embedded NUL. Discover `runtime_diagnostic_messages`:
+internal source/frontend text retains its length; native JSON logs escape controls
+and keep declared byte limits/truncation flags. Trusted C `raise_trap` retains its
+separate NUL-free2048-byte contract. Do not infer unbounded logs or new FFI authority.
+
 
 Keep client/server/shared boundaries. Emit only reachable client/shared code in
 clients; server credentials, filesystem operations and opaque host authority

@@ -361,7 +361,7 @@ struct TaskAstMachine::Impl {
     }catch(Error &error){
       output+=error.output;error.output=output;failed=true;frames.clear();pending=0;throw;
     }catch(const nexrt::DataError &error){
-      failed=true;frames.clear();pending=0;Error located(error.code,error.what(),activeSpan);located.output=output;throw located;
+      failed=true;frames.clear();pending=0;Error located(error.code,error.message,activeSpan);located.output=output;throw located;
     }catch(...){failed=true;frames.clear();pending=0;throw;}
   }
   Impl(const Program &program,const std::string &entry,const std::vector<AV> &args,uint64_t limit,

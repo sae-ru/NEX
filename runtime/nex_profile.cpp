@@ -393,11 +393,11 @@ extern "C" void nex_task_profile_prepare(const nexrt::TaskProfileCodeSite *sites
   // an escaping DataError would be reduced to generic E_RUNTIME by the wrapper.
   const nexrt::TaskProfileCodeRegistry registry{nexrt::taskProfileRegistryABI,sites,count,"standalone"};const auto *pointer=&registry;
   try{prepareTaskProfiles(&pointer,1,false);}
-  catch(const nexrt::DataError &error){throw nexrt::Trap(error.code,error.what(),0);}
+  catch(const nexrt::DataError &error){throw nexrt::MessageTrap(error.code,error.message,0);}
 }
 extern "C" void nex_task_profile_prepare_registries(const nexrt::TaskProfileCodeRegistry *const *registries,int64_t count){
   try{prepareTaskProfiles(registries,count,true);}
-  catch(const nexrt::DataError &error){throw nexrt::Trap(error.code,error.what(),0);}
+  catch(const nexrt::DataError &error){throw nexrt::MessageTrap(error.code,error.message,0);}
 }
 namespace nexrt {
 TaskProfileCollector *taskProfileCollector()noexcept{return taskCollectorPointer.load(std::memory_order_acquire);}

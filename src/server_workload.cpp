@@ -28,7 +28,7 @@ std::string bounded(const std::string &path,size_t limit=1048576){
 #ifdef _WIN32
   std::string text;
   try{text=nexrt::host_windows::readRegular(nexrt::platform::wide(path),limit);}
-  catch(const nexrt::DataError &error){fail(error.what());}
+  catch(const nexrt::DataError &error){fail(error.message);}
 #else
   struct File{int fd;~File(){if(fd>=0)::close(fd);}} file{::open(path.c_str(),O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC)};
   struct stat info{};

@@ -29,6 +29,20 @@
       "installed SDK and supported native platforms"
     ]
   },
+  "runtime_diagnostic_messages": {
+    "source_and_frontend_length_aware": true,
+    "embedded_NUL_preserved": true,
+    "frontend_hash_includes_complete_message": true,
+    "native_record_message_input_bytes": 4096,
+    "native_record_code_input_bytes": 128,
+    "native_record_UTF8_safe": true,
+    "native_record_truncation_flags": true,
+    "legacy_C_string_entries_preserved": true,
+    "legacy_Trap_and_LocatedTrap_layouts_preserved": true,
+    "task_error_mailbox_message_bytes": 4096,
+    "foreign_raise_trap_contract_unchanged": true,
+    "guide": "docs/native-diagnostics.md"
+  },
   "native_runtime_search": {
     "status": "development",
     "platform": "ELF/Linux",

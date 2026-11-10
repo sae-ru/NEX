@@ -8,11 +8,14 @@ site, exact revision/source hash/build key and source location.
 
 ```sh
 nex run examples/native-diagnostics.nex --json
+nex run examples/native-diagnostics.nex --entry message --json
 nex diagnose --revision REVISION --manifest BUILD/debug.json --log stderr.log --json
 nex context --operation OPERATION_ID --revision REVISION --json
 ```
 
-The bundled example deliberately exits with `E_DIV_ZERO` (process status 70).
+The bundled example deliberately exits with `E_DIV_ZERO` (process status70).
+Its `message` entry instead exits with `E_RESULT` and preserves embedded NUL/Unicode
+in the human output and escaped bounded JSON record.
 
 `diagnose` reads an existing log and manifest; it does not build or execute an
 application. Use a source filename for current checked source, or `--revision`
@@ -55,6 +58,23 @@ Whole-program identity is linked separately so an unrelated function edit can
 reuse existing function objects. Relative operation offsets and exact function
 source hashes are checked against the current manifest before coordinates are
 used. Existing cache rules still invalidate changed emitted source coordinates.
+
+Toolchain0.165 retains explicit message lengths through ordinary runtime failures,
+reference/task evaluation, native application/request boundaries and frontend
+JSON diagnostics. Embedded NUL is part of the message, including when computing
+frontend message hashes and diagnostic identities. New derived runtime exceptions
+carry the owned text; the original `Trap`/`LocatedTrap` layouts and C-string entry
+points remain available. Legacy C-string callers retain their terminator contract.
+Source semantics, language0.28, task ABI7 and C ABI major1 are unchanged.
+
+Length-aware transport does not remove protocol bounds. Task IO/resource failure
+mailboxes still copy at most4096 message bytes while the producer is leased.
+Native structured records retain the limits below and escape embedded NUL as
+JSON data. The human-readable stderr message retains the original text, including
+NUL. Consumers should use the escaped JSON record for structured display.
+The separate trusted C API `raise_trap` still requires NUL-free strict UTF-8,
+its original code pattern and at most2048 message bytes; this change grants no
+additional foreign authority and does not widen that packet.
 
 Limits are explicit: at most 32 parsed reports are retained, each at most 64 KiB;
 older parsed reports are counted in `omitted`. Compiler source descriptors are

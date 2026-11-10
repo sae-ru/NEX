@@ -229,7 +229,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           static const char *names[]={"file_open_read","file_open_write","file_open_append","file_read","file_write","file_seek","file_size","file_flush","file_close","file_is_open"};
           auto name=names[int64_t(request.operation)-int64_t(TaskRequestKind::FileOpenRead)];
           try{prepared.emplace(name,request.arguments,current.host->fileReads,current.host->fileWrites,group.resourceAuthority(),current.host->fileCleanup);}
-          catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;result=failure(error.code,error.what());}
+          catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;result=failure(error.code,error.message);}
         });
         if(prepared){
           if(prepared->external()){
@@ -254,7 +254,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           auto bytes=text?std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(content.object->text.data()),content.object->text.size()):byteBuffer(content.object).view();
           try{prepared.emplace(current.host->fileWrites,path.object->text,bytes,text);}
           catch(const DataError &error){
-            if(!PreparedTaskFileWrite::ordinaryError(error.code))throw;result=failure(error.code,error.what());
+            if(!PreparedTaskFileWrite::ordinaryError(error.code))throw;result=failure(error.code,error.message);
             try{current.host->fileWrites.check();}catch(const DataError &grantError){if(grantError.code!="CAPABILITY")throw;}
           }
         });
@@ -277,7 +277,7 @@ TaskBody executeTaskFrame(TaskGroup &group,NativeTaskFrame frame,TaskStepObserve
           if(path.tag!=Value::Object||!path.object||path.object->kind!=Data::String)throw DataError("E_TASK_STATE","compiled file read path must be a string");
           try{prepared.emplace(current.host->fileReads,path.object->text,request.operation==TaskRequestKind::FileReadText);}
           catch(const DataError &error){
-            if(!ordinaryTaskFileReadError(error.code))throw;result=failure(error.code,error.what());
+            if(!ordinaryTaskFileReadError(error.code))throw;result=failure(error.code,error.message);
             try{current.host->fileReads.check();}catch(const DataError &grantError){if(grantError.code!="CAPABILITY")throw;}
           }
         });

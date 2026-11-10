@@ -281,26 +281,26 @@ void FileWriteLease::write(std::span<const uint8_t> content,const TextFiles::Pol
 Value TextFiles::read(const std::string &relative,const Poll &poll) const {
   auto retained=impl;auto path=relative;auto callback=poll;
   try{return success(Value(string(retained->read<std::string>(path,callback))));}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value TextFiles::write(const std::string &relative,const std::string &text,const Poll &poll) const {
   auto retained=impl;auto path=relative;auto content=text;auto callback=poll;
   try{
     retained->write(path,{reinterpret_cast<const uint8_t*>(content.data()),content.size()},callback,[&]{unicodeOffsets(content,false);});
     return success(Value(1,true));
-  }catch(const DataError &error){return failure(error.code,error.what());}
+  }catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value TextFiles::readBytes(const std::string &relative,const Poll &poll) const {
   auto retained=impl;auto path=relative;auto callback=poll;
   try{return success(Value(bytes(ByteBuffer::owned(retained->read<std::vector<uint8_t>>(path,callback)))));}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value TextFiles::writeBytes(const std::string &relative,const ByteBuffer &bytes,const Poll &poll) const {
   // Poll may release the caller's last value. Retain immutable storage until
   // every borrowed write view has finished, including exceptional exits.
   auto content=bytes;auto retained=impl;auto path=relative;auto callback=poll;
   try{retained->write(path,content.view(),callback,[]{});return success(Value(1,true));}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 
 struct FileResource::State {
@@ -440,7 +440,7 @@ struct Access {
         if(root.empty()||!absoluteRoot(root))throw DataError("CAPABILITY","file root must be an absolute configured directory");
         owned=std::make_unique<TextFiles>(root,writable);
       }
-      catch(const DataError &error){errorCode=error.code;errorMessage=error.what();}
+      catch(const DataError &error){errorCode=error.code;errorMessage=error.message;}
     }
     if(!owned)throw DataError(errorCode.empty()?"CAPABILITY":errorCode,errorMessage.empty()?"file capability is not configured":errorMessage);
     return *owned;
@@ -498,7 +498,7 @@ FileReadGrant captureFileReadGrant(bool environmentAllowed){
     // A declaration or skipped conditional read must not require authority.
     // Control/resource failures are never converted into a missing grant.
     if(error.code!="CAPABILITY")throw;
-    return FileReadGrant(std::make_shared<FileReadGrant::State>(error.what()));
+    return FileReadGrant(std::make_shared<FileReadGrant::State>(error.message));
   }
 }
 FileWriteGrant captureFileWriteGrant(bool environmentAllowed){
@@ -507,19 +507,19 @@ FileWriteGrant captureFileWriteGrant(bool environmentAllowed){
 }
 Value fileReadText(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().read(relative,poll);}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value fileWriteText(const std::string &relative,const std::string &text,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().write(relative,text,poll);}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value fileReadBytes(const std::string &relative,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().readBytes(relative,poll);}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 Value fileWriteBytes(const std::string &relative,const ByteBuffer &bytes,bool environmentAllowed,const TextFiles::Poll &poll){
   try{return access(environmentAllowed).capability().writeBytes(relative,bytes,poll);}
-  catch(const DataError &error){return failure(error.code,error.what());}
+  catch(const DataError &error){return failure(error.code,error.message);}
 }
 void resetFileEnvironment() noexcept {environmentFiles.reset();}
 FileResource fileOpen(const std::string &relative,FileMode mode,bool environmentAllowed,const TextFiles::Poll &poll){

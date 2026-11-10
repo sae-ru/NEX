@@ -129,6 +129,12 @@ int main(int argc,char **argv){try{
     auto ticket=executor.submit(operation([](const auto&){throw DataError("E_DEVICE_TEST","settled failure");},[&]{destroyed=true;}),32);
     error("E_DEVICE_TEST",[&]{ticket.wait();});require(destroyed&&ticket.ready()&&executor.stats().reservedBytes==0,"failure published before destruction");executor.finish();
   });
+  run("owned bounded failure text preserves NUL across the executor mailbox",[]{
+    ResourceExecutor executor;const auto text=std::string("before\0after🌍",16)+std::string(5000,'x');
+    auto ticket=executor.submit(operation([&](const auto&){throw DataError("E_DEVICE_TEST",text);}),32);bool caught=false;
+    try{ticket.wait();}catch(const DataError &e){caught=true;require(e.code=="E_DEVICE_TEST"&&e.message==text.substr(0,4096),"executor message truncated at NUL or exceeded quota");}
+    require(caught,"executor failure disappeared");executor.finish();
+  });
   run("completed result cannot be changed by a later cancellation",[]{
     ResourceExecutor executor;auto ticket=executor.submit(operation([](const auto&){}));ticket.wait();ticket.cancel();ticket.wait();executor.finish();
   });

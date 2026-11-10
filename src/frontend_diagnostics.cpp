@@ -78,7 +78,7 @@ JSON diagnosticJSON(const Error &error,const std::string &toolchain,const std::s
   Array escaped;
   auto safe=[&](const char *name,const std::string &value){if(!utf8(value))escaped.push_back(name);return display(value);};
   Object result{{"schema","nex.diagnostic/1"},{"ok",false},{"code",safe("code",error.code)},
-    {"message",safe("message",error.what())},{"line",int64_t(error.span.line)},
+    {"message",safe("message",error.message)},{"line",int64_t(error.span.line)},
     {"column",int64_t(error.span.column)},{"file",safe("file",error.span.file)},
     {"stdout",safe("stdout",error.output)}};
   if(!error.operationSite.empty()){
@@ -86,12 +86,12 @@ JSON diagnosticJSON(const Error &error,const std::string &toolchain,const std::s
   }
   if(!error.operationId.empty())result["operation_id"]=error.operationId;
   if(auto captured=error.frontend.getAsObject();captured&&captured->getString("phase")&&captured->getString("input_kind")&&captured->getString("source_inputs_hash")&&captured->get("location")){
-    auto frontend=*captured;frontend["code_hash"]=hash(error.code);frontend["message_hash"]=hash(error.what());
+    auto frontend=*captured;frontend["code_hash"]=hash(error.code);frontend["message_hash"]=hash(error.message);
     Object identity{{"schema","nex.frontend-diagnostic-id/1"},{"language",frontend.getString("language").value_or(languageVersion)},
       {"phase",*frontend.get("phase")},{"input_kind",*frontend.get("input_kind")},
       {"source_inputs_hash",*frontend.get("source_inputs_hash")},
       {"reported_key_hash",hash(error.span.file)},{"location",*frontend.get("location")},
-      {"code_hash",hash(error.code)},{"message_hash",hash(error.what())}};
+      {"code_hash",hash(error.code)},{"message_hash",hash(error.message)}};
     if(auto watch=frontend.get("watch"))identity["watch"]=*watch;
     frontend["id"]=hash(json(std::move(identity),false));
     if(!toolchain.empty()&&!build.empty())frontend["compiler"]=Object{{"version",toolchain},{"build",build}};

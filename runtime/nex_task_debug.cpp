@@ -217,7 +217,7 @@ extern "C" void nex_task_debug_prepare(const nexrt::TaskDebugCodeSite *codes,int
   try{
     if(auto *old=published.load(std::memory_order_acquire)){if(!old->registryCount&&old->codes==codes&&old->count==uint64_t(count))return;throw DataError("E_DEBUG_INIT","task debugger registry cannot change during execution");}
     validate(codes,count);publish(std::make_unique<State>(codes,size_t(count)));
-  }catch(const DataError &error){throw Trap(error.code,error.what(),0);}catch(...){throw Trap("E_DEBUG_INIT","task debugger initialization failed before source execution",0);}
+  }catch(const DataError &error){throw MessageTrap(error.code,error.message,0);}catch(...){throw Trap("E_DEBUG_INIT","task debugger initialization failed before source execution",0);}
 }
 extern "C" void nex_task_debug_prepare_registries(const nexrt::TaskDebugCodeRegistry *const *rows,int64_t count){
   using namespace nexrt;using namespace nexrt::task_debug_detail;
@@ -228,7 +228,7 @@ extern "C" void nex_task_debug_prepare_registries(const nexrt::TaskDebugCodeRegi
       if(same)return;throw DataError("E_DEBUG_INIT","task debugger registry batch cannot change during execution");
     }
     publish(std::make_unique<State>(nullptr,total,std::span<const TaskDebugCodeRegistry *const>(registries.data(),registries.size())));
-  }catch(const DataError &error){throw Trap(error.code,error.what(),0);}catch(...){throw Trap("E_DEBUG_INIT","task debugger registry initialization failed before source execution",0);}
+  }catch(const DataError &error){throw MessageTrap(error.code,error.message,0);}catch(...){throw Trap("E_DEBUG_INIT","task debugger registry initialization failed before source execution",0);}
 }
 extern "C" __attribute__((weak,noinline,used)) void nex_task_debug_stop_marker(const nexrt::TaskDebugStop *stop)noexcept{
 #ifdef _WIN32

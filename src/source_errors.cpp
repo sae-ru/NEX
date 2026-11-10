@@ -28,7 +28,7 @@ nexrt::Value checkedSourceErrorValue(const Program &program,const SourceExceptio
     }
     default:throw Error("E_TYPED_EXCEPTION_AUTHORITY","typed exception binding requires payload lifetime integration",span);
     }
-  }catch(const nexrt::DataError &e){throw Error(e.code,e.what(),span);}
+  }catch(const nexrt::DataError &e){throw Error(e.code,e.message,span);}
 }
 
 std::string sourceErrorTypeKey(const Program &program,const Type &root){

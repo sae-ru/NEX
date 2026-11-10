@@ -82,7 +82,7 @@ class PreparedTaskFileStream {
         state->lease.check();
       }catch(const DataError &error){
         if(!task_file_stream_detail::ordinary(error.code))throw;
-        raw.bytes={};raw.errorCode=error.code;raw.errorMessage=error.what();
+        raw.bytes={};raw.errorCode=error.code;raw.errorMessage=error.message;
       }
       control.checkpoint();return raw;
     }
@@ -139,7 +139,7 @@ public:
       if(error.code!="E_RESOURCE_CLOSED")throw;
       if(callback)callback();
       try{retained->lease.check();}catch(const DataError &revoked){if(revoked.code!="E_RESOURCE_CLOSED")throw;}
-      return failure(error.code,error.what());
+      return failure(error.code,error.message);
     }
   }
 };
@@ -173,7 +173,7 @@ class PreparedTaskFileOpen {
       try{state->lease.check();file=state->lease.openInRegion(state->region,poll,state->cleanup);poll();}
       catch(const DataError &error){
         if(!task_file_stream_detail::ordinary(error.code))throw;
-        raw.errorCode=error.code;raw.errorMessage=error.what();file.reset();
+        raw.errorCode=error.code;raw.errorMessage=error.message;file.reset();
       }
       control.checkpoint();
       {std::lock_guard lock(state->mutex);

@@ -715,7 +715,7 @@ struct Runner {
         auto finish=[&](){if(serverState)serverState->finish();if(temporary)temporary->finish();};
         verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyWorkload(id);JSON measured=nullptr;
         try{measured=profileNative(source,built,Object{{"nodes",std::move(nodes)}},profiling);finish();}
-        catch(const Error &error){finish();if(error.code=="E_PROFILE_TIMEOUT")throw Error("E_TASK_TIMEOUT",error.what());if(error.code=="E_PROFILE_OUTPUT")throw Error("E_TASK_OUTPUT",error.what());if(error.code=="E_PROFILE_INTERRUPTED")throw Error("E_TASK_INTERRUPTED",error.what());throw;}
+        catch(const Error &error){finish();if(error.code=="E_PROFILE_TIMEOUT")throw Error("E_TASK_TIMEOUT",error.message);if(error.code=="E_PROFILE_OUTPUT")throw Error("E_TASK_OUTPUT",error.message);if(error.code=="E_PROFILE_INTERRUPTED")throw Error("E_TASK_INTERRUPTED",error.message);throw;}
         catch(...){finish();throw;}
         verifyToolchain(id);verifyForeign(id);verifyProject(program);verifyWorkload(id);passed=ok(measured);
         if(!profileSources.empty()){
@@ -796,7 +796,7 @@ struct Runner {
     checkpoint(store);
     for(const auto &v:array(object(p.task),"checks")){
       const auto &c=object(v);Object row{{"id",text(c,"id")},{"status",interrupted?"skipped":"running"}};report.getArray("checks")->push_back(std::move(row));checkpoint(store);
-      if(!interrupted)try{report.getArray("checks")->back()=check(c);}catch(const Error &e){report.getArray("checks")->back()=Object{{"id",text(c,"id")},{"status",interrupted?"interrupted":"failed"},{"code",e.code},{"message",std::string(e.what())}};}catch(const std::exception &e){report.getArray("checks")->back()=Object{{"id",text(c,"id")},{"status","failed"},{"code","E_TASK_CHECK"},{"message",std::string(e.what())}};}
+      if(!interrupted)try{report.getArray("checks")->back()=check(c);}catch(const Error &e){report.getArray("checks")->back()=Object{{"id",text(c,"id")},{"status",interrupted?"interrupted":"failed"},{"code",e.code},{"message",e.message}};}catch(const std::exception &e){report.getArray("checks")->back()=Object{{"id",text(c,"id")},{"status","failed"},{"code","E_TASK_CHECK"},{"message",std::string(e.what())}};}
       checkpoint(store);
     }
     std::map<std::string,std::string> statuses;bool passed=true;for(const auto &v:*report.getArray("checks")){auto status=text(object(v),"status");statuses[text(object(v),"id")]=status;passed&=status=="passed";}

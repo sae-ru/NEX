@@ -5,6 +5,7 @@
 #include <functional>
 #include <chrono>
 #include <optional>
+#include <string_view>
 
 namespace nexrt {
 struct Handle;
@@ -28,8 +29,28 @@ struct LocatedTrap : Trap {
   std::string source;
   LocatedTrap(const Trap &trap,std::string source);
 };
+// New runtime failures carry their explicit message length in a derived type.
+// The layouts and C-string entry points of Trap/LocatedTrap remain unchanged.
+struct MessageTrap : Trap {
+  std::string message;
+  MessageTrap(std::string code,std::string message,int64_t line)
+      :Trap(std::move(code),"",line),message(std::move(message)){}
+  const char *what()const noexcept override{return message.c_str();}
+};
+struct LocatedMessageTrap : LocatedTrap {
+  std::string message;
+  LocatedMessageTrap(std::string code,std::string message,int64_t line,std::string source)
+      :LocatedTrap(Trap(std::move(code),"",line),std::move(source)),message(std::move(message)){}
+  const char *what()const noexcept override{return message.c_str();}
+};
+inline std::string_view trapMessage(const Trap &trap)noexcept{
+  if(auto value=dynamic_cast<const MessageTrap*>(&trap))return value->message;
+  if(auto value=dynamic_cast<const LocatedMessageTrap*>(&trap))return value->message;
+  return trap.what();
+}
 [[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location);
 void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
+void printNativeTrapText(std::string_view code,std::string_view message,int64_t line,const std::string &source,const char *request=nullptr)noexcept;
 void printNativeSourceException(const NativeSourceException &,const char *request=nullptr)noexcept;
 // Trusted runtime boundary. Resource/handle pointers are never NEX source values.
 class RequestScope {
@@ -59,6 +80,7 @@ Handle *makeSourceErrorHandle(const NativeSourceException &error);
 NativeSourceException readSourceErrorHandle(const Handle *handle);
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line);
 [[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location);
+[[noreturn]] void runtimeFailText(std::string_view code,std::string_view message,SourceLocation location);
 bool inRequestScope();
 std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline() noexcept;
 void pollHostOperation(int64_t line);
@@ -68,7 +90,7 @@ template<class F> auto hostOperation(SourceLocation line,F operation)->decltype(
   try{return operation();}
   catch(const NativeSourceException &){throw;}
   catch(const Trap &trap){propagateTrap(trap,line);}
-  catch(const DataError &e){runtimeFail(e.code.c_str(),e.what(),line);}
+  catch(const DataError &e){runtimeFailText(e.code,e.message,line);}
   catch(const std::bad_alloc &){runtimeFail("E_MEMORY","allocation failed",line);}
   catch(const std::exception &){runtimeFail("E_RUNTIME","host value operation failed",line);}
 }

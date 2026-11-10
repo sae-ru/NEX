@@ -130,7 +130,7 @@ public:
       // The local socket closes before pool publication, on every exit path.
     }catch(const DataError &error){
       if(error.code!="E_NETWORK")throw;
-      std::vector<uint8_t>{}.swap(result.bytes);result.errorCode=error.code;result.errorMessage=error.what();
+      std::vector<uint8_t>{}.swap(result.bytes);result.errorCode=error.code;result.errorMessage=error.message;
     }
     checkpoint(*work,control);return result;
   }

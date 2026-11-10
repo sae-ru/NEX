@@ -34,7 +34,7 @@ bool verifyMigrationOrigin(const llvm::json::Value &bundle,const std::filesystem
   try{
     auto old=loadVersionedBundle(bundle,root.string(),language);
     if(revision(old)!=original)throw Error("E_REVISION","origin source does not match its retained semantic revision");
-  }catch(const Error &error){throw Error("E_REVISION",std::string("invalid archived migration origin: ")+error.what(),error.span);}
+  }catch(const Error &error){throw Error("E_REVISION",std::string("invalid archived migration origin: ")+error.message,error.span);}
   return true;
 }
 Program preflightMigrationTarget(const llvm::json::Value &bundle,const std::filesystem::path &root,SourceLanguage target){

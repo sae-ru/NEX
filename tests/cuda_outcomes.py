@@ -62,6 +62,8 @@ class CudaOutcomes(h.ToolchainCase):
                 (project/'main.nex').write_text(prefix+'server fn main()->unit !{task,ffi,io,throw}{'+baseline+'}')
                 expected=self.cli('eval','--foreign',foreign,'--task-workers','1',cwd=project,ok=False,timeout=180)
                 self.assertEqual(expected['code'],'E_RESULT')
+                full={'short':'CUSTOM: runtime message: 🌍','nul':'source\0code: before\0after🌍','long':'源'*50+': '+'msg🌍'*500,'f64-fault':'CUSTOM: runtime message: 🌍'}
+                self.assertEqual(expected['message'],full[name])
             (project/'main.nex').write_text(prefix+'server fn main()->unit !{task,ffi,io,throw}{'+body+'}')
             self.cli('check',cwd=project)
             for backend,args in [('reference',('eval',)),('debug',('run','--profile','debug')),('release',('run','--profile','release'))]:

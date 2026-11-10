@@ -51,7 +51,7 @@ class Interpreter {
   }
   V expression(E e) {
     try{if(!atomRoot||e==atomRoot||e->kind!=Expr::Name||!e->text.starts_with("$task_slot_"))step(e->span);auto value=expr(e);if(watch)watch->bounded(value);return value;}
-    catch(const nexrt::DataError &err){Error error(err.code,err.what(),e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
+    catch(const nexrt::DataError &err){Error error(err.code,err.message,e->span);if(sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw error;}
     catch(Error &error){if(error.operationSite.empty()&&sites.contains(e.get())){error.operationSite=sites.at(e.get());error.operationRevision=revision(p);error.operationSource=hash(json(sourceBundle(p),false));}throw;}
   }
   bool pattern(P p,const std::function<V()> &read){
@@ -114,7 +114,7 @@ class Interpreter {
           if(!failure)failure=std::current_exception();
         }catch(const nexrt::DataError &error){
           if(error.code=="E_LIMIT"||error.code=="E_MEMORY")throw;
-          if(!failure)failure=std::make_exception_ptr(Error(error.code,error.what(),e->span));
+          if(!failure)failure=std::make_exception_ptr(Error(error.code,error.message,e->span));
         }
         if(failure)std::rethrow_exception(failure);return V(std::move(output));
       }
@@ -155,7 +155,7 @@ class Interpreter {
           if(e->text=="file_seek")return nexrt::success(V(file.seek(full(args[1]).scalar,poll)));
           if(e->text=="file_size")return nexrt::success(V(file.size(poll)));
           file.flush(poll);return nexrt::success(V(1,true));
-        }catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.what());}
+        }catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.message);}
       }
       if(e->text=="file_read_text")return nexrt::fileReadText(args[0].object->text,true,[&]{step(e->span);});
       if(e->text=="file_write_text")return nexrt::fileWriteText(args[0].object->text,args[1].object->text,true,[&]{step(e->span);});
@@ -353,10 +353,10 @@ Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit
 }
 llvm::json::Value evaluateExpression(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
   rejectUnloweredTasks(p,"reference inspection");
-  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
+  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.message,expression->span);}
 }
 llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &p,E expression,const std::map<std::string,Type> &types,const llvm::json::Object &values,uint64_t limit,const llvm::json::Array *captures,bool demand,const std::set<std::string> *compiledCallables){
   if(!sourceExceptionTasksPrototype(p))throw Error("E_LANGUAGE_VERSION","private watch requires the checked task/exception frontend");
-  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.what(),expression->span);}
+  try{return Interpreter(p,limit).inspect(expression,types,values,captures,demand,compiledCallables);}catch(const nexrt::DataError &error){throw Error(error.code,error.message,expression->span);}
 }
 }

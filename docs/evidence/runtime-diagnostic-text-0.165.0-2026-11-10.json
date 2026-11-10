@@ -1,0 +1,149 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-10",
+  "utc": "2026-11-10T19:04:34.480936+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "C_ABI_major": 1,
+  "compiler_sha256": "ba4612139541e732bdff3b2233a01da78cca212be931d099d53a1361927544e5",
+  "compiler_build": "ff223c1c338e973a865f59230645d0576c2e19673e7baea8ecec9a172acce925",
+  "all_targets_build": true,
+  "source_parent_commit": "ee033ea168bd4dd90cd8352a769f7c1c7d2f243e",
+  "implemented": [
+    "Private DataError and compiler Error own length-aware messages; typed forwarding no longer converts through what()",
+    "Additive MessageTrap/LocatedMessageTrap preserve the frozen base layouts and legacy C-string functions",
+    "Reference, synchronous native, structured tasks and CPU mapping retain embedded NUL and Unicode",
+    "Frontend JSON and diagnostic/message hashes include the full message",
+    "Native application and operator HTTP records use length-aware input with existing UTF8-safe limits/flags",
+    "Executor and task IO mailboxes retain embedded NUL under existing4096-byte copy quotas"
+  ],
+  "original_reproduction": {
+    "compiler_sha256": "e5e65504f2566805d33886ebaeae9a865ae07111a7bb70fd675bdff442274dd7",
+    "expected_message": "X: A\u0000B",
+    "observed_message": "X: A",
+    "expected_bytes": 6,
+    "observed_bytes": 4,
+    "report_sha256": "318bc4111fd5c43073e903fbed2e86b60a3c8594d281f3f8b08d1ab88cbe5163"
+  },
+  "ordinary_cases": [
+    "NUL in source error code/message, Unicode and newline",
+    "empty code/message",
+    "exact4096-byte structured message",
+    "UTF8 scalar crossing4096-byte truncation boundary",
+    "fatal after task_yield/spawn/wait",
+    "ordered first-failure selection in parallel_map"
+  ],
+  "ordinary_backend_executions": 24,
+  "ordinary_backends": [
+    "reference",
+    "native Debug",
+    "native Release",
+    "TypeScript under Node22.22.3"
+  ],
+  "mapped_native_reports": 12,
+  "fatal_source_catch_and_finally_bypassed": true,
+  "TypeScript_task_frames_retired": true,
+  "native_sites_probe_cases": 12,
+  "frontend_probe_cases": 27,
+  "direct_no_application_scope_failure_checked": true,
+  "record_NUL_empty_exact_limit_overflow_and_malformed_UTF8_checked": true,
+  "CUDA_source_adapter_executions": 18,
+  "CUDA_ordinary_reference_baselines": 4,
+  "CUDA_actual_C_API_resource_rollback_and_cleanup_checked": true,
+  "CUDA_fixture_is_CPU_only_not_GPU_fallback": true,
+  "foreign_raise_trap_NUL_rejection_and2048_byte_limit_unchanged_and_checked": true,
+  "native_Trap_and_LocatedTrap_source_definitions_unchanged": true,
+  "legacy_host_layout_and_function_signatures_checked": true,
+  "source_grammar_canonical_format_or_major_ABIs_changed": false,
+  "native_record_message_input_bytes": 4096,
+  "native_record_code_input_bytes": 128,
+  "mailbox_message_bytes": 4096,
+  "source_and_human_message_transport_not_truncated_at_NUL": true,
+  "initial_cohort_remains_failed": true,
+  "all_attempts": [
+    {
+      "attempt": "v1",
+      "ctest_exit_code": 8,
+      "groups": {
+        "owned_resource_executor": "passed",
+        "cuda_outcomes": "passed",
+        "frontend_diagnostics_native": "passed",
+        "native_sites_runtime": "passed",
+        "diagnostic_text": "failed",
+        "application_ownership_runtime": "passed",
+        "ffi_runtime_native": "passed",
+        "task_external_native": "passed"
+      },
+      "junit_sha256": "e15a42e4de66b0b1c15415d5cb7e83c8354e989c2cb8354d4195224a2d93b237",
+      "elapsed_seconds": "85"
+    },
+    {
+      "attempt": "v2",
+      "ctest_exit_code": 8,
+      "groups": {
+        "diagnostic_text": "failed"
+      },
+      "junit_sha256": "a0b17691c2df1284a9ae0fe1b88ea724db06c31eac0bc6ebe6791898ed519484",
+      "elapsed_seconds": "0"
+    },
+    {
+      "attempt": "v3",
+      "ctest_exit_code": 8,
+      "groups": {
+        "diagnostic_text": "failed"
+      },
+      "junit_sha256": "a4d2b536db78a6d9a5db677c019fd3605f6e5917d075cd72c1f329350208a9e2",
+      "elapsed_seconds": "21"
+    },
+    {
+      "attempt": "v4",
+      "ctest_exit_code": 8,
+      "groups": {
+        "diagnostic_text": "failed"
+      },
+      "junit_sha256": "76772a61ee50c68325653398c93a69a7a8c0a50b05a687c27ba15c39c1dae1cf",
+      "elapsed_seconds": "36"
+    },
+    {
+      "attempt": "v5",
+      "ctest_exit_code": 0,
+      "groups": {
+        "diagnostic_text": "passed"
+      },
+      "junit_sha256": "7a685a24d4d0f67461d6b13cf69d6b22f9beb4367a7e7779cb622afa225d410c",
+      "elapsed_seconds": "37"
+    }
+  ],
+  "passed_affected_union": [
+    "application_ownership_runtime",
+    "cuda_outcomes",
+    "diagnostic_text",
+    "ffi_runtime_native",
+    "frontend_diagnostics_native",
+    "native_sites_runtime",
+    "owned_resource_executor",
+    "task_external_native"
+  ],
+  "only_failed_diagnostic_group_repeated": true,
+  "failed_attempt_explanation": [
+    "v1: test task callback omitted required throw effect",
+    "v2: test task callback also included unsupported io; printing moved to the caller and task callback returns i64",
+    "v3: test incorrectly supplied task limits to non-task entries; parameters now selected only for task entry",
+    "v4: test incorrectly required task scheduler statistics for synchronous TypeScript errors; separate synchronous/task runners and independent methods now used"
+  ],
+  "production_code_changed_after_initial_build": false,
+  "failed_private_caches_archived_and_verified": {
+    "sha256": "16739e105542537cbdd6c40d3499b869c9a2f2898af56a3dbd297fad8b0763e3",
+    "archive_bytes": 68577713,
+    "original_regular_bytes": 240291180,
+    "entries": 741
+  },
+  "full_regression_run": false,
+  "new_remote_contact": false,
+  "new_GPU_execution": false,
+  "new_immutable_SDK_qualified": false,
+  "push_or_main_promotion": false,
+  "remaining": "All other original PLAN requirements, final matching compiler/platform/device/immutable SDK qualification, publication and cleanup remain pending."
+}

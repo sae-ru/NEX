@@ -104,7 +104,7 @@ struct TaskReferenceExternalMailbox::Impl {
       auto operation=std::move(pending->operation);
       try{
         control.checkpoint();result=operation->run(control);
-      }catch(const nexrt::DataError &error){result={{},error.code,error.what()};}
+      }catch(const nexrt::DataError &error){result={{},error.code,error.message};}
       catch(const std::bad_alloc &){result={{},"E_MEMORY","reference external host allocation failed"};}
       catch(const std::exception &){result={{},"E_TASK_HOST","reference external host operation failed"};}
       catch(...){result={{},"E_TASK_HOST","reference external host operation failed"};}
@@ -385,7 +385,7 @@ struct Reference {
     if(supportsTaskFileReads(program)||supportsSourceExceptionTasks(program))try{nexrt::pollHostOperation(span.line);}
     catch(const nexrt::Trap &error){
       if(span.file.empty())span=rootSpan;
-      controlFailure=std::make_shared<Error>(error.code,error.what(),span);throw *controlFailure;
+      controlFailure=std::make_shared<Error>(error.code,std::string(nexrt::trapMessage(error)),span);throw *controlFailure;
     }
     if(externalHost&&externalHost->cancellation.stop_requested()){
       if(span.file.empty())span=rootSpan;
@@ -568,7 +568,7 @@ struct Reference {
           auto &owner=*jobs[r.owner];
           try{sourceSnapshot(*r.sourceFailure,r.parent,s,owner,r.parent==owner.member);}
           catch(const Error &e){prefer(r.failure,std::make_shared<Error>(e));r.sourceFailure.reset();}
-          catch(const nexrt::DataError &e){prefer(r.failure,std::make_shared<Error>(e.code,e.what()));r.sourceFailure.reset();}
+          catch(const nexrt::DataError &e){prefer(r.failure,std::make_shared<Error>(e.code,e.message));r.sourceFailure.reset();}
           r.sourcePayloadTransferred=true;
         }
         if(r.resources){
@@ -675,8 +675,8 @@ struct Reference {
         if(j.externalScope!=none)++regions.at(j.externalScope).external;
         j.state=External;return;
       }catch(const nexrt::DataError &error){
-        if(!nexrt::task_file_stream_detail::ordinary(error.code))throw Error(error.code,error.what(),r.span);
-        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+        if(!nexrt::task_file_stream_detail::ordinary(error.code))throw Error(error.code,error.message,r.span);
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.message));return;
       }
     }
     if(taskFileWriteOperation(r.operation)){
@@ -696,9 +696,9 @@ struct Reference {
         if(j.externalScope!=none)++regions.at(j.externalScope).external;
         j.state=External;return;
       }catch(const nexrt::DataError &error){
-        if(!nexrt::PreparedTaskFileWrite::ordinaryError(error.code))throw Error(error.code,error.what(),r.span);
-        try{writeGrant.check();}catch(const nexrt::DataError &grantError){if(grantError.code!="CAPABILITY")throw Error(grantError.code,grantError.what(),r.span);}
-        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+        if(!nexrt::PreparedTaskFileWrite::ordinaryError(error.code))throw Error(error.code,error.message,r.span);
+        try{writeGrant.check();}catch(const nexrt::DataError &grantError){if(grantError.code!="CAPABILITY")throw Error(grantError.code,grantError.message,r.span);}
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.message));return;
       }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file write preparation allocation failed",r.span);}
     }
     if(taskFileReadOperation(r.operation)){
@@ -719,8 +719,8 @@ struct Reference {
         j.state=External;return;
       }catch(const nexrt::DataError &error){
         if(!nexrt::ordinaryTaskFileReadError(error.code))
-          throw Error(error.code,error.what(),r.span);
-        checkControl(r.span);answer(i,nexrt::failure(error.code,error.what()));return;
+          throw Error(error.code,error.message,r.span);
+        checkControl(r.span);answer(i,nexrt::failure(error.code,error.message));return;
       }catch(const std::bad_alloc &){throw Error("E_MEMORY","reference file read preparation allocation failed",r.span);}
     }
     if(r.operation=="task_yield"){
@@ -812,7 +812,7 @@ struct Reference {
       auto source=std::make_shared<SourceException>(error);auto &a=j.stack.back();
       try{sourceSnapshot(error,a.region==none?j.member:a.parent,j.current,j,a.region!=none&&a.parent==j.member);}
       catch(const Error &e){beginFinish(i,std::make_shared<Error>(e));return;}
-      catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.what(),error.span));return;}
+      catch(const nexrt::DataError &e){beginFinish(i,std::make_shared<Error>(e.code,e.message,error.span));return;}
       if(a.region==none){beginFinish(i,{},{},std::move(source));return;}
       regions[a.region].sourcePayloadTransferred=true;
       auto scope=a.region;a.sourceFailure=std::move(source);a.completed=true;
@@ -830,7 +830,7 @@ struct Reference {
       if(located->span.file.empty())located->span=operationSpan;beginFinish(i,std::move(located));
     }
     catch(const nexrt::DataError &e){
-      auto failure=std::make_shared<Error>(e.code,e.what(),j.request.span);
+      auto failure=std::make_shared<Error>(e.code,e.message,j.request.span);
       if(sourceHostRequest(j.request.operation)&&fatal(failure)){
         prefer(controlFailure,failure);failure=controlFailure;
       }
@@ -927,7 +927,7 @@ struct Reference {
         beginFinish(i,std::move(selected));
       }
       catch(const nexrt::DataError &error){
-        auto selected=std::make_shared<Error>(error.code,error.what(),span);
+        auto selected=std::make_shared<Error>(error.code,error.message,span);
         if(sourceHostCompletion&&fatal(selected)){prefer(controlFailure,selected);selected=controlFailure;}
         beginFinish(i,std::move(selected));
       }
@@ -1053,8 +1053,8 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
     }
     Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,taskIR);
     try{return scheduler.run(entry,arguments);}catch(SourceException &e){e.output=scheduler.output;throw;}catch(Error &e){e.output=scheduler.output;annotateReferenceError(p,e);throw;}
-  }catch(const nexrt::DataError &error){throw Error(error.code,error.what(),p.function(entry).span);}
-  catch(const nexrt::Trap &error){throw Error(error.code,error.what(),p.function(entry).span);}
+  }catch(const nexrt::DataError &error){throw Error(error.code,error.message,p.function(entry).span);}
+  catch(const nexrt::Trap &error){throw Error(error.code,std::string(nexrt::trapMessage(error)),p.function(entry).span);}
   catch(const std::bad_alloc &){throw Error("E_MEMORY","reference host allocation failed",p.function(entry).span);}
 }
 TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){

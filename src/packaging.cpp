@@ -265,7 +265,7 @@ ForeignProgramProjection projectForeignProgram(const Program &program,
     if(revision(derived)!=revision(candidate))throw Error("E_PACKAGE","packaged projection changed semantics outside reachable manifest pins");
     for(const auto *function:bindings){
       try{checkForeignBinding(prepared.snapshot,derived,derived.function(function->name));}
-      catch(const Error &error){throw Error("E_FFI_PACKAGE",error.what(),error.span);}
+      catch(const Error &error){throw Error("E_FFI_PACKAGE",error.message,error.span);}
     }
   auto report=llvm::json::Object{{"schema","nex.foreign-projection/1"},{"source_revision",revision(program)},
       {"packaged_revision",revision(derived)},{"source_hash",hash(json(sourceBundle(program),false))},

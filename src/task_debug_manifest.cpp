@@ -19,7 +19,7 @@ namespace fs=std::filesystem;
 using Object=llvm::json::Object;using Array=llvm::json::Array;using JSON=llvm::json::Value;
 [[noreturn]] void fail(const std::string &message){throw Error("E_TASK_DEBUG",message);}
 std::string text(const Object &o,const char *key){auto p=o.getString(key);if(!p||p->empty()||p->contains('\0'))fail(std::string("missing debug field: ")+key);return p->str();}
-JSON parse(const std::string &raw){try{nexrt::validateJSONText(raw);}catch(const nexrt::DataError &e){fail(e.what());}auto v=llvm::json::parse(raw);if(!v)fail("invalid debug JSON: "+llvm::toString(v.takeError()));return std::move(*v);}
+JSON parse(const std::string &raw){try{nexrt::validateJSONText(raw);}catch(const nexrt::DataError &e){fail(e.message);}auto v=llvm::json::parse(raw);if(!v)fail("invalid debug JSON: "+llvm::toString(v.takeError()));return std::move(*v);}
 std::string sha(const std::string &raw){return llvm::toHex(llvm::SHA256::hash(llvm::arrayRefFromStringRef(raw)),true);}
 fs::path closed(const fs::path &root,const std::string &relative){
   fs::path name(relative);if(name.empty()||name.is_absolute()||name.lexically_normal()!=name)fail("invalid debug relative input");

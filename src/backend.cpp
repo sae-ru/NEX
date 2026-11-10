@@ -1555,7 +1555,7 @@ int executeNativeBuildTool(const std::vector<std::string> &arguments){
     return status;
   }catch(const Error &error){
     if(response.empty()||error.code=="E_LINK")throw;
-    throw Error(error.code,std::string(error.what())+"; response file retained at "+response.string(),error.span);
+    throw Error(error.code,error.message+"; response file retained at "+response.string(),error.span);
   }
 }
 std::string createTemporaryDirectory(const std::string &prefix,const std::string &directory){
@@ -2673,7 +2673,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
         if(options.positionIndependent)compile.push_back("-fPIC");
         if(executeNativeBuildTool(compile)!=0)throw Error("E_LINK","native unit compiler failed");
         artifact.object=readFile((stage/"program.o").string());saveArtifact(buildRoot,unitKeys[i],artifact);std::filesystem::remove_all(stage);
-      }catch(const Error &error){throw Error(error.code,std::string(error.what())+"; intermediate files retained at "+stage.string(),error.span);}
+      }catch(const Error &error){throw Error(error.code,error.message+"; intermediate files retained at "+stage.string(),error.span);}
       result.compiledFunctions+=tasks?unit.functions.size():1;
       if(tasks)for(const auto &name:unit.functions)compiledSourceUnits.insert(p.function(name).unit);
       else compiledSourceUnits.insert(unit.unit);
@@ -2835,7 +2835,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   if(executeNativeBuildTool(link)!=0)throw Error("E_LINK","native linker failed; intermediate files retained at "+folder.string()+(linkStage.empty()?"":"; link output at "+linkStage.string()));
   if(!linkStage.empty()){
     try{copyFile(linkOutput,result.executable,true);std::filesystem::remove_all(linkStage);}
-    catch(const Error &e){throw Error(e.code,std::string(e.what())+"; link output retained at "+linkStage.string(),e.span);}
+    catch(const Error &e){throw Error(e.code,e.message+"; link output retained at "+linkStage.string(),e.span);}
   }
   if(!objectArchive&&driverABI.isOSDarwin()) {
     auto dsym=toolchain.debugPackager;

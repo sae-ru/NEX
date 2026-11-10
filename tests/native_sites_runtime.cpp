@@ -21,7 +21,14 @@ const nexrt::NativeFunctionSite function{zero,zero,zero};
 const nexrt::NativeSite inner{&function,key,"inner",1,2},outer{&function,zero,"outer",0,3};
 std::string expectedInner;
 }
-int main(int argc,char**){
+int main(int argc,char **argv){
+  if(argc>1&&std::string(argv[1])=="--direct-text")nexrt::runtimeFailText("E_RESULT",std::string("a\0b",3),{7,&inner});
+  if(argc>1&&std::string(argv[1])=="--text-records"){
+    auto source=nexrt::copyNativeSourceRecord(&inner);
+    for(const auto &text:std::vector<std::string>{std::string("a\0b",3),"",std::string(4096,'x'),std::string(4095,'x')+"🌍",std::string(4097,'x'),std::string("a\0",2)+char(0xff)+"b"})
+      nexrt::printNativeTrapText(std::string("E_A\0B",5),text,7,source,"request");
+    nexrt::printNativeTrap("E_LEGACY","legacy",7,source);return 0;
+  }
   if(argc>1){nexrt::RequestScope scope;try{nexrt::runtimeFail("E_\xff","bad\xff\nmessage",nexrt::SourceLocation{7,&inner});}catch(const nexrt::LocatedTrap &trap){nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,trap.source);}return 0;}
   unsigned cases=0;
   {
@@ -72,5 +79,32 @@ int main(int argc,char**){
     }++passed;}catch(...){}
   });
   for(auto &thread:threads)thread.join();require(passed==8);require(nexrt::liveObjects.load()==objects);++cases;
+  // Preserve the frozen polymorphic host layouts and callable C-string APIs.
+  struct OldTrap:std::runtime_error {std::string code;int64_t line;OldTrap():std::runtime_error("old"),code("E_OLD"),line(1){}};
+  struct OldLocated:OldTrap {std::string source;};
+  static_assert(sizeof(nexrt::Trap)==sizeof(OldTrap)&&alignof(nexrt::Trap)==alignof(OldTrap));
+  static_assert(sizeof(nexrt::LocatedTrap)==sizeof(OldLocated)&&alignof(nexrt::LocatedTrap)==alignof(OldLocated));
+  auto offset=[](const auto &object,const auto &member){return reinterpret_cast<const char*>(&member)-reinterpret_cast<const char*>(&object);};
+  OldTrap old;nexrt::Trap current("E_OLD","old",1);OldLocated oldLocated;nexrt::LocatedTrap currentLocated(current,"source");
+  require(offset(old,old.code)==offset(current,current.code)&&offset(old,old.line)==offset(current,current.line)&&offset(oldLocated,oldLocated.source)==offset(currentLocated,currentLocated.source));
+  using LegacyFail=void(*)(const char*,const char*,int64_t);LegacyFail legacyFail=nexrt::runtimeFail;
+  auto legacyPrint=&nexrt::printNativeTrap;require(legacyFail&&legacyPrint);++cases;
+  const std::string complete=std::string("prefix\0",7)+"suffix🌍";
+  {
+    nexrt::RequestScope scope;
+    try{nexrt::hostOperation(nexrt::SourceLocation{41},[&]{throw nexrt::DataError("E_TEXT",complete);});require(false);}
+    catch(const nexrt::Trap &trap){require(nexrt::trapMessage(trap)==complete&&!dynamic_cast<const nexrt::LocatedTrap*>(&trap));}
+  }++cases;
+  {
+    nexrt::RequestScope scope;
+    try{nexrt::hostOperation({43,&outer},[&]{nexrt::hostOperation({42,&inner},[&]{throw nexrt::DataError("E_TEXT",complete);});});require(false);}
+    catch(const nexrt::LocatedTrap &trap){require(nexrt::trapMessage(trap)==complete&&trap.source==expectedInner&&trap.line==42);}
+  }++cases;
+  {
+    nexrt::RequestScope scope;
+    try{nexrt::hostOperation({45,&outer},[&]{nexrt::hostOperation({44},[&]{throw nexrt::DataError("E_TEXT",complete);});});require(false);}
+    catch(const nexrt::LocatedTrap &trap){require(nexrt::trapMessage(trap)==complete&&trap.source.find("outer")!=std::string::npos&&trap.line==44);}
+  }++cases;
+  require(nexrt::liveObjects.load()==objects);
   std::printf("{\"ok\":true,\"cases\":%u}\n",cases);
 }

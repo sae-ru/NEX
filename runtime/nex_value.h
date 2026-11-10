@@ -141,7 +141,7 @@ inline Value bytesFromIntegers(const Value &list){
   if(list.tag!=Value::Object||!list.object||list.object->kind!=Data::List)
     throw DataError("E_RUNTIME","byte construction requires an i64 list");
   try{return success(Value(bytes(ByteData::fromList(list.object->values))));}
-  catch(const DataError &error){if(error.code!="E_RANGE")throw;return failure(error.code,error.what());}
+  catch(const DataError &error){if(error.code!="E_RANGE")throw;return failure(error.code,error.message);}
 }
 inline std::shared_ptr<Data> utf8Bytes(const std::string &text){
   unicodeOffsets(text,false);
@@ -152,11 +152,11 @@ inline Value decodeUTF8(const ByteBuffer &buffer){
     auto view=buffer.view();std::string text;
     if(!view.empty())text.assign(reinterpret_cast<const char*>(view.data()),view.size());
     return success(Value(string(std::move(text))));
-  }catch(const DataError &error){if(error.code!="E_UTF8")throw;return failure(error.code,error.what());}
+  }catch(const DataError &error){if(error.code!="E_UTF8")throw;return failure(error.code,error.message);}
 }
 inline Value decodeBase64(const std::string &text){
   try{return success(Value(bytes(ByteBuffer::fromBase64(text))));}
-  catch(const DataError &error){if(error.code!="E_BASE64")throw;return failure(error.code,error.what());}
+  catch(const DataError &error){if(error.code!="E_BASE64")throw;return failure(error.code,error.message);}
 }
 inline bool isSuccess(const Value &value){return value.object->kind==Data::Success;}
 inline Value unwrap(const Value &value){

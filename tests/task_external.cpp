@@ -41,6 +41,10 @@ struct CapacityOnly final:TaskExternalOperation {
     return result;
   }
 };
+struct TextFailure final:TaskExternalOperation {
+  std::string text;explicit TextFailure(std::string text):text(std::move(text)){}
+  TaskExternalResult run(const TaskExternalControl &)override{throw DataError("E_TEXT",text);}
+};
 struct GatedCapacity final:TaskExternalOperation {
   std::shared_ptr<Gate> gate;int field;
   GatedCapacity(std::shared_ptr<Gate> gate,int field):gate(std::move(gate)),field(field){}
@@ -69,6 +73,12 @@ void cancelledPoolPriority(){
 }
 void clean(){require(!inRequestScope(),"request survived");require(liveObjects==0,"source owned value survived");nex_runtime_finish();}
 void poolCases(){
+  {
+    TaskExternalPool textPool;const auto text=std::string("before\0after🌍",16)+std::string(5000,'x');
+    auto ticket=textPool.submit(1,std::make_shared<TextFailure>(text),8);until([&]{return textPool.ready(ticket);});bool caught=false;
+    try{textPool.take(ticket);}catch(const DataError &e){caught=true;require(e.code=="E_TEXT"&&e.message==text.substr(0,taskExternalErrorMessageCapacity),"IO mailbox lost NUL suffix or exceeded quota");}
+    require(caught,"IO failure disappeared");textPool.drain();
+  }
   auto gate=std::make_shared<Gate>(),queued=std::make_shared<Gate>();std::atomic<unsigned> published{0};
   TaskExternalPool *inspection=nullptr;
   TaskExternalPool pool({1,2,16,8},[&](const TaskExternalTicket &){(void)inspection->stats();++published;});inspection=&pool;

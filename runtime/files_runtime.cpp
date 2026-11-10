@@ -6,7 +6,7 @@ namespace {
 void prepare(){if(!nexrt::inRequestScope())nexrt::registerRuntimeCleanup(nexrt::resetFileEnvironment);}
 template<class F> nexrt::Value outcome(F operation){
   try{return nexrt::success(operation());}
-  catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.what());}
+  catch(const nexrt::DataError &error){return nexrt::failure(error.code,error.message);}
 }
 Handle *openFile(Handle *path,nexrt::FileMode mode,nexrt::SourceLocation line){
   return nexrt::hostValue(line,[&]{prepare();return outcome([&]{

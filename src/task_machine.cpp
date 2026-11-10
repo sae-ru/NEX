@@ -169,7 +169,7 @@ struct TaskMachine::Impl {
       }
       throw Error("E_TASK_STATE","continuation lost its root frame");
     }catch(SourceException &error){failed=true;frames.clear();incomingSource.reset();error.output=output;throw;}
-    catch(const nexrt::DataError &error){failed=true;frames.clear();incomingSource.reset();Error failure(error.code,error.what(),activeSpan);failure.output=output;throw failure;}
+    catch(const nexrt::DataError &error){failed=true;frames.clear();incomingSource.reset();Error failure(error.code,error.message,activeSpan);failure.output=output;throw failure;}
     catch(Error &error){failed=true;frames.clear();incomingSource.reset();error.output=output;throw;}
     catch(...){failed=true;frames.clear();incomingSource.reset();throw;}
   }

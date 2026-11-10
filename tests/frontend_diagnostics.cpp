@@ -57,6 +57,13 @@ int main(int argc,char **argv){
     attachFrontendDiagnostic(bounded,{{longKey,longText}},longKey,"unit","parse",true);auto boundedJSON=diagnosticJSON(bounded);frontend=boundedJSON.getAsObject()->getObject("frontend");
     require(frontend->getObject("entry")->getBoolean("truncated")==true,"long input label not bounded");
     require(frontend->getObject("preview")->getString("data")->size()==4096&&json(*boundedJSON.getAsObject()->get("frontend"),false).size()<65536,"bounded preview record grew beyond its scope");++cases;
+    Error nulA("E_TEST",std::string("same\0A",6)),nulB("E_TEST",std::string("same\0B",6));
+    for(auto *e:{&nulA,&nulB})attachFrontendDiagnostic(*e,{{"<nul>","1"}},"<nul>","expression","check",true);
+    auto jsonA=diagnosticJSON(nulA),jsonB=diagnosticJSON(nulB);
+    auto frontA=jsonA.getAsObject()->getObject("frontend"),frontB=jsonB.getAsObject()->getObject("frontend");
+    require(jsonA.getAsObject()->getString("message")==nulA.message&&jsonB.getAsObject()->getString("message")==nulB.message,"NUL diagnostic suffix lost");
+    require(frontA->getString("message_hash")==hash(nulA.message)&&frontB->getString("message_hash")==hash(nulB.message)&&frontA->getString("id")!=frontB->getString("id"),"diagnostic identity ignored NUL suffix");
+    captured.push_back(jsonA);captured.push_back(jsonB);++cases;
     std::set<std::string> versionedIds;
     Error defaultWatch("E_EFFECT","watch effect",Span{1,1,0,1,"<watch>"});
     attachFrontendDiagnostic(defaultWatch,{{"<watch>","1"}},"<watch>","expression","check",true);
@@ -70,7 +77,7 @@ int main(int argc,char **argv){
       llvm::json::Object identity{{"schema","nex.frontend-diagnostic-id/1"},{"language",language},
         {"phase",*front->get("phase")},{"input_kind",*front->get("input_kind")},
         {"source_inputs_hash",*front->get("source_inputs_hash")},{"reported_key_hash",hash(selected.span.file)},
-        {"location",*front->get("location")},{"code_hash",hash(selected.code)},{"message_hash",hash(selected.what())}};
+        {"location",*front->get("location")},{"code_hash",hash(selected.code)},{"message_hash",hash(selected.message)}};
       require(front->getString("id")==hash(json(std::move(identity),false)),"diagnostic ID does not bind its actual source language");
       if(language==languageVersion)require(json(value,false)==json(defaultValue,false),"ordinary diagnostic identity changed");
       captured.push_back(value);++cases;

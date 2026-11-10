@@ -27,6 +27,6 @@ llvm::json::Value foreignSignature(const Program &p,const Function &fn){
   llvm::json::Array parameters;for(const auto &param:fn.params)parameters.push_back(add(param.type));auto result=add(fn.result);
   llvm::json::Value signature=llvm::json::Object{{"schema","nex.foreign-signature/1"},{"parameters",std::move(parameters)},{"result",result},{"types",std::move(types)}};
   auto text=json(signature,false);if(text.size()>1048576)throw Error("E_FFI_SIGNATURE","foreign signature exceeds its byte limit",fn.span);
-  try{nexrt::ForeignSignature checked(text);}catch(const nexrt::DataError &e){throw Error("E_FFI_SIGNATURE",e.what(),fn.span);}return signature;
+  try{nexrt::ForeignSignature checked(text);}catch(const nexrt::DataError &e){throw Error("E_FFI_SIGNATURE",e.message,fn.span);}return signature;
 }
 }

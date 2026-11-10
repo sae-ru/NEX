@@ -127,7 +127,7 @@ JSON buildWasm(const Program &p,const std::string &directory,const std::string &
  auto key=hash(json(configuration,false));auto folder=fs::absolute(fs::path(directory)/"wasm"/key);bool cached=false;
  auto invoke=[&](const std::vector<std::string> &args){
   try{return command(args);}
-  catch(const Error &error){throw Error(error.code,std::string(error.what())+"\nretained intermediate artifacts: "+folder.string(),error.span);}
+  catch(const Error &error){throw Error(error.code,error.message+"\nretained intermediate artifacts: "+folder.string(),error.span);}
  };
  try{
   auto parsed=llvm::json::parse(readFile((folder/"module.json").string()));

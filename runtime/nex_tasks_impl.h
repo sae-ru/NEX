@@ -600,7 +600,7 @@ struct TaskGroup::Impl {
         }}catch(...){failure=std::current_exception();}
       }
       try{if(failure)std::rethrow_exception(failure);if(transfer.payload)validateSourceTransfer(transfer);}
-      catch(const DataError &e){try{throw LocatedTrap(Trap(e.code,e.what(),transfer.location.line),copyNativeSourceRecord(transfer.location.site));}catch(...){failure=std::current_exception();}}
+      catch(const DataError &e){try{throw LocatedMessageTrap(e.code,e.message,transfer.location.line,copyNativeSourceRecord(transfer.location.site));}catch(...){failure=std::current_exception();}}
       catch(...){failure=std::current_exception();}
       {
         std::lock_guard lock(mutex);auto &scope=*regions[transfer.scope];scope.sourceTransferInFlight=false;scope.sourceTransferPrepared=true;
@@ -719,7 +719,7 @@ struct TaskGroup::Impl {
   void retireExternal(Job &job,External &entry){
     entry.consumed=true;std::exception_ptr failure;
     try{(void)externalPool->take(entry.ticket);}
-    catch(const DataError &error){try{throw Trap(error.code,error.what(),job.location);}catch(...){failure=std::current_exception();}}
+    catch(const DataError &error){try{throw MessageTrap(error.code,error.message,job.location);}catch(...){failure=std::current_exception();}}
     catch(const std::bad_alloc &){try{throw Trap("E_MEMORY","external host allocation failed",job.location);}catch(...){failure=std::current_exception();}}
     catch(...){failure=std::current_exception();}
     bool fatal=fatalFailure(failure);
@@ -1326,7 +1326,7 @@ TaskExternalResult TaskGroup::ExternalAwaiter::await_resume(){
     }
     TaskExternalResult result;std::exception_ptr failure;
     try{result=state->externalPool->take(ticket);}
-    catch(const DataError &error){try{throw Trap(error.code,error.what(),location);}catch(...){failure=std::current_exception();}}
+    catch(const DataError &error){try{throw MessageTrap(error.code,error.message,location);}catch(...){failure=std::current_exception();}}
     catch(...){failure=std::current_exception();}
     {
       std::lock_guard lock(state->mutex);auto &job=*state->jobs[activeTaskIndex];

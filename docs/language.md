@@ -44,6 +44,13 @@ It changes no source production, source semantics or canonical identity and
 requires no language migration. Emission initializes no GPU driver; installed
 delivery and physical execution have separate acceptance requirements.
 
+Toolchain0.165 ordinary runtime diagnostics retain explicit message lengths,
+including embedded NUL, through reference/native/task failures and frontend JSON.
+Native structured records keep their existing UTF-8-safe byte limits and truncation
+flags; legacy C-string APIs and trusted C `raise_trap` restrictions are unchanged.
+See [native diagnostics](native-diagnostics.md). This correction changes no grammar,
+source-error/fatal-control semantics, graph identity or language version.
+
 ## Source and program structure
 
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external

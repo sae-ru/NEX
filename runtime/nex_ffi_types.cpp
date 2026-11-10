@@ -81,7 +81,7 @@ ForeignSignature::ForeignSignature(const std::string &text){
     while(!pending.empty()){auto i=pending.back();pending.pop_back();if(!out->resultReachable.insert(i).second)continue;const auto &t=out->types[i];if(t.kind==NEX_FFI_LIST||t.kind==NEX_FFI_RESULT)pending.push_back(t.item);for(const auto &f:t.fields)pending.push_back(f.type);for(const auto &v:t.variants)for(const auto &f:v.fields)pending.push_back(f.type);}
     for(size_t i=0;i<out->types.size();++i){std::set<size_t> chain;auto at=i;while(out->types[at].kind==NEX_FFI_LIST||out->types[at].kind==NEX_FFI_RESULT){if(!chain.insert(at).second)schemaError("recursive foreign containers need a nominal type");at=out->types[at].item;}}
     out->description=doc.dump();out->canonical=nlohmann::json(doc).dump();layout=std::move(out);
-  }catch(const DataError &e){if(e.code=="E_FFI_SIGNATURE")throw;schemaError(e.what());}
+  }catch(const DataError &e){if(e.code=="E_FFI_SIGNATURE")throw;schemaError(e.message);}
   catch(const J::exception &){schemaError("invalid foreign signature JSON");}
 }
 const std::string &ForeignSignature::canonical()const{if(!layout)schemaError("foreign signature has no layout");return layout->canonical;}

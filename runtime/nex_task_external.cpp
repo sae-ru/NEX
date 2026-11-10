@@ -33,7 +33,7 @@ struct State {
 std::exception_ptr checkedFailure()noexcept{
   try{throw;}
   catch(const DataError &error){
-    try{throw DataError(error.code.size()<=taskExternalErrorCodeCapacity?error.code:"E_RUNTIME",std::string(std::string_view(error.what()).substr(0,taskExternalErrorMessageCapacity)));}
+    try{throw DataError(error.code.size()<=taskExternalErrorCodeCapacity?error.code:"E_RUNTIME",std::string(std::string_view(error.message).substr(0,taskExternalErrorMessageCapacity)));}
     catch(...){return std::current_exception();}
   }
   catch(const std::bad_alloc &){return std::make_exception_ptr(std::bad_alloc{});}

@@ -87,7 +87,7 @@ NativeToolchain hostDefaults() {
       if(result.windowsRuntime!="ucrt-static")throw Error("E_TOOLCHAIN","Windows SDK requires ucrt-static runtime");
     }
     result.sdkManifest=manifest.string();
-  }catch(const Error &error){throw Error("E_SDK",std::string(error.what())+"; descriptor: "+manifest.string());}
+  }catch(const Error &error){throw Error("E_SDK",error.message+"; descriptor: "+manifest.string());}
   return result;
 }
 }

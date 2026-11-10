@@ -28,7 +28,7 @@ class PreparedTaskFileWrite {
       try{lease.write(payload->view(),[&]{control.checkpoint();});}
       catch(const DataError &error){
         if(!ordinaryError(error.code))throw;
-        result.errorCode=error.code;result.errorMessage=error.what();
+        result.errorCode=error.code;result.errorMessage=error.message;
       }
       // Cancellation/revocation may win after rename. The file is already
       // committed then; suppressing source admission does not roll it back.

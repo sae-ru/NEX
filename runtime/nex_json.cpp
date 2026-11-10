@@ -113,7 +113,7 @@ Value decodeJSON(const std::string &text,const std::string &schema){
     auto contract=JSON::parse(schema);auto value=parse(text);size_t nodes=0;
     if(contract.at("schema")!="nex.wire/1"&&contract.at("schema")!="nex.wire/2")reject("unsupported wire schema");
     auto enums=contract.at("schema")=="nex.wire/2"?contract.at("enums"):JSON::object();return success(decode(value,contract.at("root"),contract.at("records"),enums,0,nodes));
-  }catch(const DataError &error){return failure(error.code,error.what());}
+  }catch(const DataError &error){return failure(error.code,error.message);}
   catch(const JSON::exception &){return failure("E_JSON","invalid JSON text or wire schema");}
 }
 }

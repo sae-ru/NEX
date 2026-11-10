@@ -423,15 +423,15 @@ std::string sourceRecord(const NativeSite *site)noexcept{
     return "{\"schema\":\"nex.native-site/1\",\"operation_site\":"+nexrt::quoted(key)+",\"function_hash\":"+nexrt::quoted(content)+",\"function_source_hash\":"+nexrt::quoted(source)+",\"compiler_build\":"+nexrt::quoted(compiler)+",\"byte_begin\":"+std::to_string(site->begin)+",\"byte_end\":"+std::to_string(site->end)+",\"kind\":"+nexrt::quoted(kind)+"}";
   }catch(...){return {};}
 }
-std::pair<std::string,bool> diagnosticText(const char *text,size_t maximum){
-  if(!text)return {{},false};size_t size=::strnlen(text,maximum+1);bool truncated=size>maximum;size=std::min(size,maximum);std::string result;
+std::pair<std::string,bool> diagnosticText(std::string_view text,size_t maximum){
+  size_t size=text.size();bool truncated=size>maximum;size=std::min(size,maximum);std::string result;
   for(size_t i=0;i<size;){auto first=static_cast<unsigned char>(text[i]);if(first<0x80){result+=char(first);++i;continue;}
     size_t count=first>=0xc2&&first<=0xdf?2:first>=0xe0&&first<=0xef?3:first>=0xf0&&first<=0xf4?4:0;
     bool valid=count&&count<=size-i;uint32_t scalar=count?first&((1u<<(7-count))-1):0;
     if(count&&count>size-i&&truncated)break;
     if(valid)for(size_t n=1;n<count;++n){auto byte=static_cast<unsigned char>(text[i+n]);if((byte&0xc0)!=0x80){valid=false;break;}scalar=(scalar<<6)|(byte&0x3f);}
     valid=valid&&!(count==2&&scalar<0x80)&&!(count==3&&scalar<0x800)&&!(count==4&&scalar<0x10000)&&scalar<=0x10ffff&&!(scalar>=0xd800&&scalar<=0xdfff);
-    if(valid){result.append(text+i,count);i+=count;}else{result+="\xef\xbf\xbd";++i;}
+    if(valid){result.append(text.data()+i,count);i+=count;}else{result+="\xef\xbf\xbd";++i;}
   }
   return {std::move(result),truncated};
 }
@@ -440,17 +440,20 @@ std::string copyNativeSourceRecord(const NativeSite *site)noexcept{return source
 LocatedTrap::LocatedTrap(const Trap &trap,std::string source):Trap(trap.code,trap.what(),trap.line),source(std::move(source)){}
 [[noreturn]] void propagateTrap(const Trap &trap,SourceLocation location){
   if(dynamic_cast<const LocatedTrap*>(&trap)||!location.site)throw;
-  auto source=sourceRecord(location.site);if(source.empty())throw;throw LocatedTrap(trap,std::move(source));
+  auto source=sourceRecord(location.site);if(source.empty())throw;throw LocatedMessageTrap(trap.code,std::string(trapMessage(trap)),trap.line,std::move(source));
 }
-void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request)noexcept{
+void printNativeTrapText(std::string_view code,std::string_view message,int64_t line,const std::string &source,const char *request)noexcept{
   if(source.empty())return;
   try{
     auto [safeCode,codeTruncated]=diagnosticText(code,128);auto [safeMessage,messageTruncated]=diagnosticText(message,4096);
     auto application=sourceRecord(nex_application_identity());
     std::string record="{\"schema\":\"nex.native-trap/1\",\"code\":"+nexrt::quoted(safeCode)+",\"message\":"+nexrt::quoted(safeMessage)+",\"reported_line\":"+std::to_string(line)+",\"message_truncated\":"+(messageTruncated?"true":"false")+",\"code_truncated\":"+(codeTruncated?"true":"false")+",\"source\":"+source+",\"application\":"+(application.empty()?"null":application);
-    if(request)record+=",\"request_id\":"+nexrt::quoted(diagnosticText(request,256).first);record+="}";
+    if(request)record+=",\"request_id\":"+nexrt::quoted(diagnosticText(std::string_view(request,::strnlen(request,257)),256).first);record+="}";
     std::fprintf(stderr,"NEX_NATIVE_TRAP %s\n",record.c_str());
   }catch(...){/* Error reporting must not replace the original failure. */}
+}
+void printNativeTrap(const char *code,const char *message,int64_t line,const std::string &source,const char *request)noexcept{
+  printNativeTrapText(code?std::string_view(code,::strnlen(code,129)):std::string_view{},message?std::string_view(message,::strnlen(message,4097)):std::string_view{},line,source,request);
 }
 void printNativeSourceException(const NativeSourceException &error,const char *request)noexcept{
   try{
@@ -460,13 +463,17 @@ void printNativeSourceException(const NativeSourceException &error,const char *r
   }catch(...){/* Reporting must not replace the original source failure. */}
 }
 [[noreturn]] void runtimeFail(const char *code,const char *message,int64_t line){runtimeFail(code,message,SourceLocation{line});}
-[[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location){
-  // Copy while the producing module is leased. Cleanup may unload its image.
+[[noreturn]] void runtimeFail(const char *code,const char *message,SourceLocation location){runtimeFailText(code?std::string_view(code):std::string_view{},message?std::string_view(message):std::string_view{},location);}
+[[noreturn]] void runtimeFailText(std::string_view code,std::string_view message,SourceLocation location){
+  // Own the message while the producing module is leased; cleanup can unload it.
   auto source=sourceRecord(location.site);auto line=location.line;
   profileUnwind();
-  if(currentRequest||currentApplication){Trap trap(code,message,line);if(source.empty())throw trap;throw LocatedTrap(trap,std::move(source));}
-  cleanupRuntimeResources();
-  std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",code,message,static_cast<long long>(line));printNativeTrap(code,message,line,source);std::exit(70);
+  if(currentRequest||currentApplication){
+    if(!source.empty())throw LocatedMessageTrap(std::string(code),std::string(message),line,std::move(source));
+    throw MessageTrap(std::string(code),std::string(message),line);
+  }
+  std::string ownedCode(code),ownedMessage(message);cleanupRuntimeResources();
+  std::fflush(stdout);std::fwrite(ownedCode.data(),1,ownedCode.size(),stderr);std::fputs(": ",stderr);std::fwrite(ownedMessage.data(),1,ownedMessage.size(),stderr);std::fprintf(stderr," at source line %lld\n",static_cast<long long>(line));printNativeTrapText(ownedCode,ownedMessage,line,source);std::exit(70);
 }
 }
 using nexrt::Handle;
@@ -478,7 +485,7 @@ namespace {
 template<class F> auto guarded(SourceLocation line,F operation)->decltype(operation()) {
   try{return operation();}
   catch(const nexrt::Trap &trap){nexrt::propagateTrap(trap,line);}
-  catch(const nexrt::DataError &e){fail(e.code.c_str(),e.what(),line);}
+  catch(const nexrt::DataError &e){nexrt::runtimeFailText(e.code,e.message,line);}
   catch(const std::bad_alloc &){fail("E_MEMORY","allocation failed",line);}
   catch(const std::exception &e){fail("E_RUNTIME",e.what(),line);}
 }
@@ -959,9 +966,9 @@ static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *con
     std::fflush(stdout);
     nexrt::printNativeSourceException(error);
   }catch(const nexrt::Trap &trap){
-    std::fflush(stdout);std::fprintf(stderr,"%s: %s at source line %lld\n",trap.code.c_str(),trap.what(),static_cast<long long>(trap.line));
+    auto message=nexrt::trapMessage(trap);std::fflush(stdout);std::fwrite(trap.code.data(),1,trap.code.size(),stderr);std::fputs(": ",stderr);std::fwrite(message.data(),1,message.size(),stderr);std::fprintf(stderr," at source line %lld\n",static_cast<long long>(trap.line));
     auto located=dynamic_cast<const nexrt::LocatedTrap*>(&trap);
-    nexrt::printNativeTrap(trap.code.c_str(),trap.what(),trap.line,located?located->source:std::string());
+    nexrt::printNativeTrapText(trap.code,nexrt::trapMessage(trap),trap.line,located?located->source:std::string());
   }catch(const std::bad_alloc &){
     std::fflush(stdout);std::fprintf(stderr,"E_MEMORY: allocation failed\n");
   }catch(const std::exception &){

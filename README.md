@@ -56,6 +56,9 @@ platform acceptance.
 Current source: **toolchain 0.165.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
+Ordinary fatal diagnostics now preserve embedded NUL and Unicode through source,
+task and frontend paths while keeping explicit log limits; see the
+[scoped implementation record](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

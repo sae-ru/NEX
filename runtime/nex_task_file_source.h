@@ -54,7 +54,7 @@ public:
     if(work)return work->admit(std::move(raw),checkpoint);
     if(!open)throw DataError("E_TASK_STATE","source file operation has no outcome");
     try{return success(Value(fileValue(open->admit(std::move(raw),checkpoint))));}
-    catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;return failure(error.code,error.what());}
+    catch(const DataError &error){if(!task_file_stream_detail::ordinary(error.code))throw;return failure(error.code,error.message);}
   }
 };
 }
