@@ -1,5 +1,14 @@
 # General GPU code generation — scalar Metal precursor
 
+The independent [checked-AST CUDA experiment](experiments/cuda-codegen/README.md)
+now emits ordinary checked0.28 scalar functions with explicit64-bit arithmetic
+and rows/columns ABIs. Its source controls passed16 fixtures,32 layouts and186
+lane outcomes under host UBSan, reference/native/TypeScript agreement and7
+rejected programs. This is a source-only experiment, separate from the public
+compiler and fixed Windows CUDA provider. Actual NVRTC/GPU/memcheck, generated
+owned-provider integration and coherent public compiler/SDK delivery remain
+pending; no CUDA support is inferred from CPU execution of emitted code.
+
 The separate `experiments/metal-codegen` backend now lowers actual checked NEX
 scalar functions to Metal. Twenty reference/native/GPU comparisons and five
 physical boundary dispatches cover i64 arithmetic, pure control flow, calls and

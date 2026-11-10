@@ -1,0 +1,87 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "Current2172b35 Linux ARM64 ordinary development installation on RK3588. All native targets, eight original selected groups plus two unchanged ELF groups with corrected private producer/probe RPATH dependencies, ordinary installation and public Metal source-only preparation. Real common OpenCL GPU and raw RKNN NPU fixtures; this does not qualify a full304 run, portable SDK, generated CUDA/NPU code or owned async device resources.",
+  "source_commit": "2172b35fcad4c959a34ccbb11149264d52f9daf9",
+  "source_files": 2146,
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "task_ABI": 7,
+  "build_compiler_sha256": "51975fdb2a0a901f891c8ae39765caa3f75c7c06e9515b6727d5b349d331b848",
+  "ordinary_compiler_sha256": "e655ba4cb4577f825e73e35154ebb6d525143bfdd34266de35f8b55c65a31e06",
+  "source_checks": {
+    "all_targets_built": true,
+    "original_selected_groups_passed": [
+      "metal_codegen",
+      "discovery",
+      "native_arithmetic",
+      "sdk_archives",
+      "verification",
+      "typed_source_frontend_reference",
+      "typed_source_typescript",
+      "typed_source_native"
+    ],
+    "ELF_recovery_groups_passed": [
+      "native_runtime_paths",
+      "native_runtime_loader"
+    ],
+    "original_failed_run_retained": true,
+    "recovery": "Private copies of LLVM/probe producer images with corrected RPATH; original images and code sections unchanged. Tests and generated-image execution still clear LD variables. Both original120-second CTest budgets retained.",
+    "ten_groups_in_one_successful_invocation_claimed": false,
+    "ordinary_install_and_public_source_preparation_passed": true
+  },
+  "GPU": {
+    "device_names": [
+      "Mali-G610 r0p0"
+    ],
+    "common_GPU_calls": 49,
+    "common_valid_values_checked": 1835078,
+    "common_expected_overflow_rejections": 7,
+    "worker_GPU_calls": 14,
+    "worker_valid_values_checked": 524321,
+    "exact_CPU_oracle": true,
+    "source_deleted_replay": true,
+    "standalone_without_SDK_resources": true,
+    "managed_memory_balanced": true
+  },
+  "NPU": {
+    "physical_NPU_calls": 30,
+    "checked_values": 6400,
+    "provider": "RKNN",
+    "device_driver": "RKNPU",
+    "all_calls_real_rknpu_fd_open": true,
+    "CPU_fallback_allowed": false,
+    "all_calls_cleanup_verified": true,
+    "source_deleted_replay": true,
+    "standalone_without_SDK_resources": true,
+    "managed_memory_balanced": true
+  },
+  "raw_archives": {
+    "selected_source_and_install": {
+      "archive_sha256": "9c37accb1e07847444407a776e19f2154db45c9bd2e3152ccecfca4036861845",
+      "archive_bytes": 188140,
+      "raw_files": 59
+    },
+    "GPU": {
+      "archive_sha256": "fd80b0e29fa77045e95152c529df9dcbad56b3ca93ef8cf4ecb405f6642f76a9",
+      "archive_bytes": 5307952,
+      "raw_files": 82
+    },
+    "NPU": {
+      "archive_sha256": "73022ae3e4c81fa2556f4a46468d3a9641487b062e11650be1188bf8dd97c031",
+      "archive_bytes": 5185476,
+      "raw_files": 46
+    }
+  },
+  "independent_receipts_sha256": {
+    "source": "e7e8adea93c8e0f0aefd55f79fcf67ffdc00b458fb34dff555e24dcecf155102",
+    "GPU": "27253c673208606df15a968e8b57eeb9f3e8a1889844b0d75aeab0e8052dacae",
+    "NPU": "50e4bdc5f63f48fdf4526cab5bbfb0ec86b05f0b9030097d835a303b51eaa794"
+  },
+  "operator_dependencies": "Existing OpenCL loader and private RKNN headers/license/runtime were hash-pinned; drivers and system settings unchanged. No vendor headers or runtime were copied into the repository.",
+  "ordinary_development_installation_only": true,
+  "full304_or_portable_SDK_accepted": false,
+  "general_GPU_NPU_codegen_or_owned_async_resources_accepted": false,
+  "release_claimed": false,
+  "whole_original_goal_complete": false
+}

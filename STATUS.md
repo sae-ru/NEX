@@ -1,3 +1,26 @@
+# RK3588 current0.165 and checked-AST CUDA experiment — 2026-11-10
+
+[Current RK3588 evidence](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json)
+now covers source2172b35, all targets, eight original selected groups plus two
+unchanged ELF groups after private producer/probe dependency packaging correction,
+and ordinary installed source preparation. Its common OpenCL fixture passed49
+GPU calls/1,835,078 valid values and7 expected overflow rejections; the worker
+suite added14 GPU calls/524,321 values on Mali-G610. RKNN passed30 physical NPU
+calls/6400 values with actual RKNPU descriptors and CPU fallback disabled.
+Replay, standalone with SDK resources unavailable and managed cleanup passed.
+The original failed ELF invocation and first incomplete private packaging attempt
+remain retained. Full304 and portable SDK qualification remain separate.
+
+The [independent CUDA AST emitter](experiments/cuda-codegen/README.md) compiles
+against the existing frontend without changing the public compiler or grammar.
+Its source controls passed16 fixtures,32 layouts and186 lane results under host
+UBSan plus reference/native/TypeScript agreement and7 rejected programs. The
+initial metadata check caught a BLAKE3/SHA256 field error; SHA256 was corrected
+and the original failed control retained. GPU/NVRTC and Compute Sanitizer checks
+are separately queued on Windows after existing jobs retire. No physical CUDA
+or generated owned-provider/SDK acceptance is claimed by those CPU controls.
+All original language/platform/mobile/UI/Studio/conversion/LLM requirements remain.
+
 # Public checked scalar Metal emission — development0.165.0
 
 The [installed-tool source and current SDK candidate record](docs/evidence/macos-installed-Metal-full302-SDK-candidate-0.165.0-2026-11-10.json)

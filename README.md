@@ -63,7 +63,8 @@ physical device checks and portable delivery have separate acceptance records.
 | Windows x86-64 / RTX 3090 | [Snapshot `2172b35`: all targets, 11 groups, 35 physical CUDA cases, 36 Compute Sanitizer cases](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json) | Complete source regression and portable SDK; positive IPv6 remains unverified under the operator's restriction |
 | Fedora x86-64 | [304 source groups and ordinary installed smoke, snapshot `61fbd21`](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json) | Later changes and portable SDK |
 | CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, NPU CPU fallback disabled](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression, later changes and portable SDK |
-| RK3588, other architectures and mobile devices | Earlier records retain their own versions in [STATUS](STATUS.md) | Matching current platform and device acceptance |
+| RK3588 ARM64 | [Snapshot `2172b35`: all targets, ten selected groups across the retained failure/recovery, 63 GPU and 30 NPU calls](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression and portable SDK |
+| Other architectures and mobile devices | Earlier records retain their own versions in [STATUS](STATUS.md) | Matching current platform and device acceptance |
 
 The earlier [`61fbd21` macOS SDK baseline](docs/evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
 passed 82 maintained phases, 184 additional cases and 4000 C++ host calls with
