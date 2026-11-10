@@ -77,6 +77,12 @@ passed all38 original sessions and offline captures on both Mac and Windows,
 retaining the original budgets and strengthening Windows handle cleanup checks.
 Full Windows regression and portable SDK qualification remain pending.
 
+The [CIX ARM64 follow-up](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json)
+passed36 GPU and26 NPU calls through the ordinary0.165 development installation,
+including typed device payloads across suspended error handlers. NPU profiles
+record ZhouyiExecutionProvider with CPU fallback disabled. Its full304-group
+source regression and portable SDK qualification remain separate gates.
+
 The checkout [owned Metal bridge](docs/evidence/macos-public-owned-Metal-0.165.0-2026-11-10.json)
 now prepares shaders through that public emitter and executes them through NEX
 tasks and owned device resources. Nine source checks passed on Mac and Windows;

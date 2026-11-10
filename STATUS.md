@@ -93,6 +93,15 @@ budgets and source/stack/watch/step/request/cleanup assertions remain.
 No production runtime, debugger helper or security setting changed. Complete
 Windows source regression and portable SDK qualification remain pending.
 
+The [exact979ef54 CIX ARM64 cohort](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json)
+passed all targets, six relevant groups and36 physical GPU/26 NPU calls through
+an ordinary development installation. Reference, Debug/Release, test/profile/
+replay and source-deleted standalone paths retain their checks. Typed device
+payloads survive suspended guards/catch/finally. Every NPU placement profile
+uses ZhouyiExecutionProvider with CPU fallback disabled; managed cleanup passed.
+Full304 source regression is running separately. Portable delivery, later
+Metal-tool/HTTP-fixture changes and other devices retain separate qualification.
+
 # Native Windows fixture paths — development0.164.0
 
 The current Windows restricted source run completed292 of296 groups; its four
