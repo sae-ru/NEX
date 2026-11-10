@@ -62,6 +62,11 @@ passed all targets, six CLI tests and20 reference/native/TypeScript/Metal cases
 with48 physical GPU dispatches across rows and columns. Full regression and
 matching installed SDK qualification remain pending for this new emitter.
 
+The same0.165 source has also passed [all-target Windows compilation, seven
+selected groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evidence/windows-current-source-CUDA-0.165.0-2026-11-10.json)
+on an RTX3090 through an ordinary development installation. Full Windows
+regression and complete portable SDK qualification remain pending.
+
 The preceding0.164 runtime retains its separately pinned results below.
 The append-only [fatal diagnostic C API](docs/ffi-design.md#explicit-fatal-diagnostics-0164)
 lets trusted providers report their original runtime error code and copied UTF-8

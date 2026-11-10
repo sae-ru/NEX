@@ -80,10 +80,13 @@ def session(debugger,command,result,internal_dict):
   response=request('breakpoints',source=config['break_file'],breakpoints=[{'line':config['break_line']}]);assert all(row['verified'] for row in response['breakpoints'])
   address=socket.socket();address.bind(('127.0.0.1',0));port=address.getsockname()[1];address.close();arguments=list(config['arguments']);arguments[arguments.index('--port')+1]=str(port)
   watched=[i for i,item in enumerate(config['requests']) if not item.get('background')]
+  # Loading a cold debug image can outlast the client's readiness budget.
+  # Stop at main after loader startup, then start clients with their original budget.
+  debugger.SetAsync(False);run('process launch --stop-at-user-entry -o '+json.dumps(str(Path(config['directory'])/'inferior-stdout'))+' -e '+json.dumps(str(Path(config['directory'])/'inferior-stderr'))+' -- '+ ' '.join(json.dumps(str(value)) for value in arguments));process=target.GetProcess();assert process.IsValid() and process.GetState()==lldb.eStateStopped
+  run('process handle -s false -p true -n false SIGTERM');report['launch_stopped_before_clients']=True
   for index in watched:
    thread=threading.Thread(target=client,args=(port,index),daemon=True);clients.append(thread);thread.start()
-  debugger.SetAsync(False);run('process launch -o '+json.dumps(str(Path(config['directory'])/'inferior-stdout'))+' -e '+json.dumps(str(Path(config['directory'])/'inferior-stderr'))+' -- '+ ' '.join(json.dumps(str(value)) for value in arguments));process=target.GetProcess();assert process.IsValid() and process.GetState()==lldb.eStateStopped
-  run('process handle -s false -p true -n false SIGTERM');seen=set()
+  request('continue');assert process.GetState()==lldb.eStateStopped;seen=set()
   for index in range(len(watched)):
    tasks=request('tasks');assert not tasks.get('marker_error'),tasks;identity=tasks['selected'];assert identity not in seen;seen.add(identity);stack=request('stack',task_id=identity);assert stack['frames'][0]['name']==config['function'],stack
    req_index=next(i for i,row in enumerate(stack['frames']) if row['name']=='mid::run');path=watch(identity,'req.path',req_index);request_id=watch(identity,'req.request_id',req_index);user=watch(identity,'req.user',req_index);body=watch(identity,'req.body',req_index)
@@ -186,7 +189,7 @@ def main():
     options.update(TLS=True,certificate=str(out/'cert.pem'));arguments+=['--cert',str(out/'cert.pem'),'--key',str(out/'key.pem')]
    config=live/'session.json';config.write_text(json.dumps(options,ensure_ascii=False,indent=2)+'\n', newline="\n");argv=[debugger_tool('lldb'),'--no-lldbinit','--batch',binary]
    for command in ['settings set target.disable-aslr false','command script import '+json.dumps(str(source/'debug/lldb_nex.py')),'nex-load-private-task-debug '+json.dumps(str(file))+' --compiler '+json.dumps(str(compiler)),'command script import '+json.dumps(str(driver)),'nex-private-http-test-session '+str(config)]:argv+=['-o',command]
-   env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(live/'events')};result=run(label+'-debug-'+tag,argv,env);observed=json.loads((live/'report.json').read_text());assert observed['ok'] and observed['source_files_absent']
+   env={**os.environ,'NEX_FILES_ROOT':str(files),'NEX_FILES_WRITE':'1','NEX_PRIVATE_HOST_EVENTS':str(live/'events')};result=run(label+'-debug-'+tag,argv,env);observed=json.loads((live/'report.json').read_text());assert observed['ok'] and observed['source_files_absent'] and observed['launch_stopped_before_clients']
    observe(binary,observed);assert observed['cleanup']['ok']
    assert observed['observations'][0]['terminal_completion']==(tag in ['uncaught','generic','next'])
    for i,capture in enumerate(observed['captures']):

@@ -1,0 +1,70 @@
+{
+  "schema": "nex.development-evidence/1",
+  "date": "2026-11-10",
+  "scope": "HTTP debugger fixture startup ordering on current0.165: original cold launch exceeded the unchanged30s client readiness budget. Stop at main after loader startup, then start clients and resume through the existing NEX primary-listener helper. Same current PE passed all original session assertions after a deliberate31s pre-client hold. Complete HTTP group and cross-platform follow-up remain pending.",
+  "base_source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+  "test_fixture": "tests/source_exception_module_http_debug.py",
+  "test_fixture_sha256": "aacfae1f593df158a5130e832e056bacce3717df9fbd5dfdea7b73e966cad261",
+  "compiler_runtime_language_ABI_or_helper_changed": false,
+  "test_deadlines_relaxed": false,
+  "cold_launch_observation": {
+    "session_start_monotonic": 1972468.9839244,
+    "listener_log_mtime_monotonic_estimate": 1972505.0170811277,
+    "client_failure_monotonic": 1972499.0441,
+    "clock_mapping": "File mtime mapped into the same Windows monotonic clock during the read-only observation.",
+    "observation_sha256": "479c9bb9603c6d9f96895da82a7934af2fee46ff882648bafb0b6ebbaf1212fd"
+  },
+  "evidence": {
+    "schema": "nex.Windows-current165-HTTP-startup-evidence/1",
+    "ok": true,
+    "sealed_utc": "2026-11-10T00:49:23.502540+00:00",
+    "summary": {
+      "source_commit": "61fbd21c2809b6c32afa492a9cf1da912b65f915",
+      "source_files": 2136,
+      "compiler_sha256": "be5d8f7f190231f333588fc9ee647fcc27b9c9828867a045a9fac134deaf3bab",
+      "toolchain": "0.165.0",
+      "language": "0.28",
+      "all_targets_built": true,
+      "original_unchanged_HTTP_debug_sessions_passed_before_failure": 16,
+      "original_client_failed_after_seconds": 30.045450099976733,
+      "original_command_timeout_seconds": 300,
+      "client_readiness_budget_seconds": 30,
+      "POST_response_budget_seconds": 40,
+      "CTest_group_budget_seconds": 3600,
+      "same_current_PE_regressions": {
+        "HTTP-entry-hold31-v2": {
+          "entry_hold_seconds": 31.000623299973086,
+          "session_report_sha256": "bd9ec183a2c31cf020f801ca4754269db01a4fc7f880ecb2aca45aa27648f878",
+          "PE_sha256": "febbba1b285e77020e45e75133381bbe9e5e1bed74ef989fd3255526bb449353",
+          "HTTP_status": 500,
+          "all_original_session_assertions_passed": true,
+          "cleanup_live_frames": 0,
+          "source_files_absent": true
+        },
+        "HTTP-main-hold31-v1": {
+          "entry_hold_seconds": 31.000348099973053,
+          "session_report_sha256": "d8f207df6a4e6e20df55d31ee18873622483744ded7525496975aaf26eab8a0b",
+          "PE_sha256": "febbba1b285e77020e45e75133381bbe9e5e1bed74ef989fd3255526bb449353",
+          "HTTP_status": 500,
+          "all_original_session_assertions_passed": true,
+          "cleanup_live_frames": 0,
+          "source_files_absent": true
+        }
+      },
+      "current_source_SDK_unchanged": true,
+      "original_and_first_incomplete_fix_failures_preserved": true,
+      "full_HTTP_debug_group_accepted": false,
+      "full_source_or_complete_SDK_accepted": false
+    },
+    "raw_files": 173,
+    "raw_bytes": 4693337,
+    "archive_sha256": "63d4fd1ce5e98acf68f38560ce869092518e08f6215ea2975c96d42733744a17",
+    "archive_bytes": 803272,
+    "whole_original_goal_complete": false
+  },
+  "full_HTTP_debug_group_accepted": false,
+  "full_changed_source_regression_accepted": false,
+  "complete_SDK_accepted": false,
+  "release_claimed": false,
+  "main_branch_changed": false
+}

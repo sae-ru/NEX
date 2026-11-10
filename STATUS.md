@@ -18,12 +18,28 @@ Python/typed-graph and0.164 SDK results retain their original pins. Public owned
 dispatch, broader types/backends, GPU debugging/profiling and the remaining
 original roadmap are still required.
 
+The same0.165 source passed [all-target Windows compilation, seven selected
+CTest groups,35 physical CUDA cases and36 Compute Sanitizer cases](docs/evidence/windows-current-source-CUDA-0.165.0-2026-11-10.json)
+through its ordinary development installation on RTX3090. The source/compiler
+and raw records are pinned independently; full current Windows regression and
+portable SDK qualification remain pending.
+
 The frozen4490655/0.164 source now passed [all303 Fedora groups and ordinary installed smoke](docs/evidence/fedora-package-notices-full303-0.164.0-2026-11-10.json),
 with no failures or skips. The separate frozen1681802 Windows snapshot passed
 [39 of40 debug/profile groups](docs/evidence/windows-combined-debugger-39plus1-0.164.0-2026-11-10.json)
 with the combined pipe/stdio LLDB. The historical modular HTTP fixture still
 times out during its first pure-static O0 recover session. Original results
 and individual budgets are preserved; complete Windows acceptance is pending.
+
+A [current0.165 phase trace and same-PE regression](docs/evidence/windows-HTTP-debug-startup-0.165.0-2026-11-10.json)
+identified a fixture startup race: the client exhausted its30-second readiness
+budget before a cold LLDB launch reached the server listener. The fixture now
+stops at `main` after loader startup, starts clients and resumes through the
+existing primary-listener helper. The exact failing current PE passed all
+original session assertions after a deliberate31-second hold before clients.
+The original failures and unchanged deadlines are retained. The complete fixed
+Windows HTTP group and macOS follow-up remain pending; compiler/runtime,
+language, ABI and debugger-helper code are unchanged.
 
 # Native Windows fixture paths — development0.164.0
 
