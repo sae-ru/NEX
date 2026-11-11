@@ -648,6 +648,16 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_import_document_links(self):
+        (self.root/'helper.nex').write_text('module helper;\npub fn add(left: i64, right: i64) -> i64 { return left + right; }\n')
+        text='module app;\nimport "./helper.nex" as h;\nfn main()->unit !{io}{print(h::add(1,2));}\n'
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertIn('documentLinkProvider',capabilities)
+        client.open(self.file,text)
+        result=client.request('textDocument/documentLink', {'textDocument': {'uri': self.file.as_uri()}})
+        self.assertEqual(len(result),1)
+        self.assertTrue(result[0]['target'].endswith('/helper.nex'))
+
     def test_selection_ranges_nest_identifier_and_blocks(self):
         text='module app;\nfn main()->unit !{io}{\n  let value: i64 = 1;\n  print(value);\n}\n'
         line=text.splitlines()[3];at=line.index('value')

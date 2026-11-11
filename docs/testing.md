@@ -349,6 +349,9 @@ TypeScript in 5.81 s; the full standard-library pin/catalogue test passed in
 Toolchain 0.210 adds LSP selection ranges; `language_server` passed in
 20.87 s.
 
+Toolchain 0.211 adds LSP import document links; `language_server` passed in
+21.04 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
