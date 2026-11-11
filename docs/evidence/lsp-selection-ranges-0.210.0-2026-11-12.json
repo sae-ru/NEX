@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP selection ranges",
+  "implementation_commit": "f3a06b1820d16425e568c049c457ec4843443454",
+  "build_source_base_commit": "c649409",
+  "compiler": {
+    "toolchain": "0.210.0",
+    "language": "0.28",
+    "sha256": "702d6c1e563859506ec6b2773c924e2068dc8b54f843b56f7dad3caa48ef9807",
+    "compiler_build": "949e3f6f1b4aef35d62bd74e84df196d3b702d2f849e17dac6f8a941f32911b0",
+    "descriptor_hash": "73ea42aa8097c7339a72e79368275f86779022126b9eb6212ae7210e9ba27cfe"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "selectionRangeProvider",
+    "method": "textDocument/selectionRange",
+    "chain": [
+      "identifier",
+      "enclosing brace blocks",
+      "full document"
+    ],
+    "positions": true,
+    "strings_comments_aware_braces": true
+  },
+  "observations": {
+    "registered_groups": 342,
+    "language_server_seconds": 20.869,
+    "editor_language_client_seconds": 1.10661,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.73,
+    "docs_documents": 179,
+    "docs_links": 1230,
+    "full_ctest_started": "0.209",
+    "full_ctest_progress": "11/342 in 30 minutes",
+    "full_ctest_aborted": true
+  },
+  "limits": [
+    "selection ranges use lexical braces/identifier scanning, not a full syntax tree",
+    "full CTest was started for 0.209 but is impractically long serially and was aborted; no full-suite claim",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-selection-0210-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-selection-0210-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-selection-0210-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-selection-0210-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
