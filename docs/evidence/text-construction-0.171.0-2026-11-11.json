@@ -1,0 +1,137 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T11:31:21.613240+00:00",
+  "scope": "Sequential linear text construction through two-, three- and four-argument str(...) forms",
+  "implementation_commit": "9af71bdf9b947893aa71333dd8740a3b9a15b8da",
+  "build_source_base_commit": "1be63b9eca658bf2f590f659df1de4e45c13de2a",
+  "compiler": {
+    "toolchain": "0.171.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "f2be19a33e12ef1396cfe4b8cad23b53247b9623b6e95eda5282cb58e8d4ba7a",
+    "compiler_build": "458b24f5f92459664b385c14f8c8270c5e8fd7ea201ee10bac48a90157501622",
+    "descriptor_hash": "68c8a04f0a49f2bcc303e8fbcffec9b47955e2209905128acc23cad2f7ec916c",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "fd10d4b21d218f78c77ad90c57ef21b135cb3f94b35083ad618ac5eaaa0f2611",
+      "include/nex/language.h": "b60fd0307290355267333d06fa065bba6925007d25d554b521272b63982c2e3f",
+      "include/nex/text_build.h": "7fc029db9125601798fcceff5a72e7761566b112f8913e9253389c9185c6e87e",
+      "src/text_build.cpp": "5991c9ddc9ae3b2a509022817d0a2494c4e3dfd5191d996fb99e6d3cd55989a1",
+      "src/language.cpp": "9d7b2c0bc25fa356a9980ebe1918f5b32d200d5eb704c8f5adea604aafe5e809",
+      "src/interpreter.cpp": "dc06a50b3e81e2a0b1039b0e73b86befd2fd20b1e9eb84db8b0a38d6b3b55bbe",
+      "src/backend.cpp": "01c55fcf99a556a414fa805605967093903b64fe276de2f6aa0f07fc6f554fb1",
+      "src/typescript.cpp": "95a1e507cf1cd773f53e27116ee4bdeab535ce7a8991112bfb21deff6976ab62",
+      "src/task_lifetime.cpp": "24d95752facf4c621c758aa77b3bf668035ac238b00161ef9985753c7ef62c6d",
+      "src/cli_catalogue.cpp": "98fcbfff9fd3dc3a8528e2bc87f1dd0715a52de7d1971101042c760f97fb525d",
+      "src/standard_library.cpp": "543553c4d813ad646e83e7805740a6ae8dae230dceea1ca4707b5b1ce1bdd37a",
+      "runtime/runtime.cpp": "cbf7e9db67e89cd964854c71aa44c0018a84e2f95c23b32da464ac20ff540e64",
+      "web/nex-runtime.ts": "d3a38b164b41e18cc1a0bd85b87ca41292597a369111a21fa2893279950b730d",
+      "llm/language-pack.json": "3dd55e993d23e3e3f7cfc604398fee3830d9a85a0bf60751875c96054b431d11"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2",
+    "power": "AC and lid conditions are not claimed; short focused blocks only",
+    "exclusive_host_latency_claimed": false
+  },
+  "text_constructor": {
+    "source_name": "str",
+    "previous_one_argument_formatting_preserved": true,
+    "previously_reserved_name": true,
+    "forms": [
+      "str(count,make)",
+      "str(values,transform)",
+      "str(values,predicate,transform)",
+      "str(count,initial,next,emit)"
+    ],
+    "backends": [
+      "reference",
+      "native",
+      "TypeScript"
+    ],
+    "callback_effects": "inferred union",
+    "source_errors": true,
+    "task_callbacks": true,
+    "private_accumulator": "list<str>",
+    "final_join": "single allocation, linear in pieces and output bytes",
+    "new_native_runtime_symbol": "nex_text_join",
+    "public_C_ABI_changed": false,
+    "runtime_ABI_changed": false,
+    "source_version_changed": false,
+    "language_migration_required": false,
+    "GPU_Wasm_constructor_support": false,
+    "new_worker_threads": false,
+    "new_authority": false
+  },
+  "observations": {
+    "registered_Mac_groups": 327,
+    "text_methods": 7,
+    "text_seconds": 66.2193,
+    "text_junit": "/Users/sae/projects/NEX/build/text-construction-0171-v1/constructors.xml",
+    "list_seconds": 110.929,
+    "standard_library_seconds": 46.31,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.81,
+    "core_junit": "/Users/sae/projects/NEX/build/text-construction-0171-v1/core.xml",
+    "language_pack_ok": true,
+    "language_pack_shared_fields": 64,
+    "language_pack_compared_values": 3596,
+    "coverage": [
+      "all four forms, empty and 20000-piece inputs, generic function references and immutable aliases",
+      "argument/callback evaluation order and effect inference",
+      "typed source errors, filters and finally across the constructor",
+      "suspending callbacks and genuine task/future values",
+      "rejected effect/type/arity cases and negative-count E_ASSERT in reference, native Debug/Release and TypeScript",
+      "generated binding hygiene against caller len/assert/nex_text_count shadows",
+      "partial native construction releases its private buffer on a checked exit"
+    ],
+    "examples": [
+      "examples/text-construction/main.nex",
+      "examples/text-construction/effects/main.nex",
+      "examples/text-construction/tasks/main.nex"
+    ],
+    "example_outputs_match": "checked against each expected.txt"
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "initial test_all_shapes callback declared ->str but returned i64 1/i",
+      "resolution": "test corrected to str(1/i); the checker correctly rejected the mismatch; no language rule weakened"
+    },
+    {
+      "attempt": "unicode scalar count asserted 10 for two \u042f+\ud83c\udf0d+NUL+digit pieces",
+      "resolution": "corrected to 8; actual length was already correct"
+    },
+    {
+      "attempt": "example was not formatter-canonical at creation",
+      "resolution": "nex fmt --write applied before final reference/native/TypeScript run; expected stdout unchanged"
+    }
+  ],
+  "limits": [
+    "not a full regression, portable SDK or platform qualification",
+    "GPU/CUDA/Metal and scalar Wasm do not lower this heap constructor",
+    "std::text::join retains its balanced-concatenation bound; the new constructor is a separate operation",
+    "named source-library effect parameters and wider containers remain pending",
+    "no measured throughput or token-cost claim",
+    "one-argument str(value) keeps its previous formatting semantics"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "binary_sha256": "/Users/sae/projects/NEX/build/text-construction-0171-v1/nex.sha256",
+    "describe_index": "/Users/sae/projects/NEX/build/text-construction-0171-v1/describe-index.json",
+    "describe_text_construction": "/Users/sae/projects/NEX/build/text-construction-0171-v1/describe-text-construction.json",
+    "doctor": "/Users/sae/projects/NEX/build/text-construction-0171-v1/doctor.json",
+    "language_pack_check": "/Users/sae/projects/NEX/build/text-construction-0171-v1/language-pack-check.json",
+    "constructors_junit": "/Users/sae/projects/NEX/build/text-construction-0171-v1/constructors.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/text-construction-0171-v1/core.xml",
+    "guide": "docs/text-construction.md",
+    "test": "tests/text_construction.py"
+  }
+}

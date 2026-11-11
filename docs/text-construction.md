@@ -92,3 +92,7 @@ existing unsupported-type diagnostics remain. Wider containers, named
 source-library effect parameters, and measured runtime benchmarks remain pending.
 A failed construction releases its partial private buffer on normal, source-error
 and fatal native exits through the ordinary owned-value cleanup.
+
+[Recorded 0.171 validation](evidence/text-construction-0.171.0-2026-11-11.json)
+pins the compiler, source commit, focused test scope, retained corrections and
+remaining limits.

@@ -115,9 +115,9 @@ Earlier test-driver/fixture errors remain separate; no whole platform/SDK claim
 follows from this focused source block.
 
 Toolchain 0.171 adds `text_construction` (327 registered Mac groups). Seven
-constructor methods passed in 59.02 s on the final binary; the affected list and
-standard-library groups passed in 107.43 s and 46.75 s, and the unchanged
-12-group core in 24.34 s. Reference/native Debug/Release and strict executed
+constructor methods passed in 66.22 s on the final binary; the affected list and
+standard-library groups passed in 110.93 s and 46.31 s, and the unchanged
+12-group core in 22.81 s. Reference/native Debug/Release and strict executed
 TypeScript cover count/map/filter/state forms, empty and 20,000-piece inputs,
 generic references, effect order, typed source errors and finally, task
 suspension, lexical-shadow hygiene and partial native cleanup. The compiled
