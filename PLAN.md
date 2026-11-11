@@ -99,6 +99,8 @@ and final delivery work are:
 - [x] Allow `nex doctor --toolchain FILE` on explicit native hosts.
 - [x] Teach owned CUDA preparation to pass explicit Windows toolchains.
 - [x] Fix owned-CUDA context-probe buffer ledger bookkeeping.
+- [x] Fix the CUDA corpus owned_output helper for Dispatch.
+- [x] Pass explicit toolchains through CUDA corpus builds.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

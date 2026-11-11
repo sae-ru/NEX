@@ -385,6 +385,20 @@ The subsequent corpus then failed a source check (`expected std::device::Buffer,
 found owned_cuda_codegen::Dispatch`), so physical kernel acceptance is still
 pending.
 
+Toolchain 0.219 fixes the CUDA corpus helper: the shared Metal `owned_output`
+forced `map_raw` into `d::Buffer`, while CUDA's dispatch returns
+`result<Dispatch>`. CUDA now builds its output via `apply` plus `upload_raw`.
+
+Toolchain 0.220 passes an explicit `--toolchain` through the owned-CUDA
+verifier's native corpus builds on Windows.
+
+Toolchain 0.220 also corrected the CUDA `owned_output` helper for the
+`result<Dispatch>` provider and passed an explicit toolchain to corpus builds.
+On RTX 3090 the 15-case CUDA corpus completed with **24 physical GPU kernel
+events**; context probe passed. Complete owned-CUDA acceptance remains false:
+source-deleted replay/standalone, Compute Sanitizer, remaining roots and public
+SDK delivery are still pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

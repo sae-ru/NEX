@@ -136,6 +136,7 @@ def main():
     for name in ["compiler", "resources", "project", "output"]:
         parser.add_argument("--" + name, required=True, type=Path)
     parser.add_argument("--check-only", action="store_true", help="Check every NEX case without loading any provider or executing CUDA")
+    parser.add_argument("--toolchain", type=Path, help="Explicit native toolchain for host builds")
     args = parser.parse_args()
     if not args.check_only and platform.system() not in {"Windows", "Linux"}:
         parser.error("physical CUDA verification requires Windows/Linux; use --check-only for source validation")
@@ -157,7 +158,11 @@ def main():
         assert preparation["native_provider_built"] and preparation["NVRTC"]["version"][0] >= 12
         assert preparation["NVRTC"]["PTX_sha256"] == sha(project / "generation/kernel.ptx")
     assert preparation["acceptance_gate"]["compiled"], "prepare the fixture with --acceptance-gate for this corpus"
-    prefix = (project / "main.nex").read_text(encoding="utf-8").split("server fn main()->unit", 1)[0] + shared["HELPERS"]
+    cuda_helpers = '''
+fn repeat_word(value:i64,count:i64)->bytes{var result:bytes=unwrap(bytes([]));var block:bytes=encode_i64s([value]);var n:i64=count;while n>0{if n%2==1{result=result+block;}n=n/2;if n>0{block=block+block;}}return result;}
+server fn owned_output(session:d::Session,a:bytes,b:bytes,count:i64)->d::Buffer !{task,ffi}{let x:d::Buffer=unwrap(upload_raw(session,1,a));let y:d::Buffer=unwrap(upload_raw(session,1,b));let output:bytes=apply(session,[a,b],count,512);let buffer:d::Buffer=unwrap(upload_raw(session,1,output));resource_close(x);resource_close(y);return buffer;}
+'''
+    prefix = (project / "main.nex").read_text(encoding="utf-8").split("server fn main()->unit", 1)[0] + cuda_helpers
     env = {k: v for k, v in os.environ.items() if not k.startswith("NEX_")}
     env.update(NEX_RESOURCE_DIR=str(resources), PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
     report = {"schema": "nex.experimental-owned-CUDA-scalar-parent-verification/2", "ok": False, "commands": [], "cases": [],
@@ -248,7 +253,11 @@ def main():
                     assert "E_OVERFLOW" in reference["message"]
             else:
                 assert reference["stdout"] == "42\n" and reference["foreign_resource_bytes_after_scope"] == 0
-            built = json.loads(run(name + "-build", [compiler, "build", "--profile", "release", "--task-workers", "1", "--task-steps", "16000000", "--task-timeout-ms", str(timeout), "--build-directory", out / "native", "--json"], directory).stdout)
+            build_command = [compiler, "build", "--profile", "release", "--task-workers", "1", "--task-steps", "16000000",
+                "--task-timeout-ms", str(timeout), "--build-directory", out / "native", "--json"]
+            if args.toolchain:
+                build_command += ["--toolchain", args.toolchain.resolve(strict=True)]
+            built = json.loads(run(name + "-build", build_command, directory).stdout)
             build_receipt = out / (name + "-build.stdout")
             row.update(executable=str(Path(built["executable"]).resolve(strict=True)), executable_sha256=sha(built["executable"]),
                        foreign_sha256=sha(foreign), build_receipt_sha256=sha(build_receipt))
