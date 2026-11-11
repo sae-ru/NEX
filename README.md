@@ -37,7 +37,8 @@ The repository includes [measurements and limitations](docs/overview.en.md#measu
 A [recorded 0.162.2 checked-integer benchmark](docs/evidence/macos-e63-sdk-complete-0.162.2-2026-11-09.json)
 measured median wall times of 0.296170 s for NEX, 0.290189 s for checked C++ and
 7.610111 s for Python on one Mac. These are one-workload observations.
-End-to-end token savings across LLMs have not yet been measured.
+The [first local Qwen3.8 27B task comparison](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
+found no NEX token saving. Other models/workloads remain unmeasured.
 
 ## What you can build
 
@@ -68,8 +69,9 @@ contracts. [`nex cost`](experiments/quality/llm_cost.md) now summarizes pinned
 trial records offline; a [ten-task comparison protocol](experiments/quality/llm-campaign-v1/protocol.md)
 has [qualified cross-language host controls](experiments/quality/llm-campaign-v1/README.md).
 Local Qwen task collection, bounded tool access and counted source review are implemented.
-[Infrastructure pilots](docs/evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json)
-retain failures. [Repaired feedback](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
+The [completed60-slot Qwen comparison](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
+accepted4/20 NEX,14/20 C++ and20/20 Python trials, with no NEX token saving.
+Original failures and earlier pilots are retained separately.
 The [11-group core layer](docs/testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
 [Development CI](docs/ci.md) now defines macOS/Linux core and separate Linux full

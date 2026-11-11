@@ -101,10 +101,12 @@ single-function-edit builds compiled 9,900, 0 and 1 functions respectively. Obse
 latencies were 585.43 s, 25.48 s and 84.38 s on one Mac with a compiler observer.
 That demonstrates reuse in the recorded corpus, not model-token savings.
 
-A cross-model study of complete accepted tasks is still pending. The
-[quality protocol](quality.md) counts input/output, retrieved context, tool
-responses, retries, time and correctness. The project's 30% token-reduction
-objective is a target, not an achieved result.
+The user-selected [local Qwen3.8 27B study](llm-cost-qwen38-27b-2026-11-11.en.md)
+completed60 attempts: NEX4/20 accepted, C++14/20 and Python20/20. Including all
+failures, NEX used821,214 tokens, C++254,634 and Python212,556. No saving was
+demonstrated. Other-model/workload comparisons remain unmeasured. The
+[quality protocol](quality.md) counts full context/tools/retries/correctness;
+the project's30% reduction objective is not an achieved result.
 
 The [0.162 SDK measurement](releases/0.162.0.json) repeats the checked recurrence
 for 100 million steps and five samples per language. Median wall times on this
@@ -139,7 +141,8 @@ moved/restored workflows, browser and OpenCL scope. It does not qualify the
 current 0.165 source or SDK. Matching Windows/Linux portable delivery, Apple NPU,
 remaining GPU/NPU operations, mobile/native UI, broader algebraic effects,
 remaining network/DB integrations, project conversion and NEX Studio remain in
-[PLAN](../PLAN.md). Complete accepted-task token savings remain to be measured.
+[PLAN](../PLAN.md). The selected Qwen study found no token saving; improvements
+and any later matched measurements retain that original result.
 
 Read the [normative specification](language.md), [grammar](grammar.ebnf),
 [architecture](architecture.md) and [model-independent workflow](../llm/LEARNING.md).

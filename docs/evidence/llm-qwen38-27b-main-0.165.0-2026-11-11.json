@@ -1,0 +1,296 @@
+{
+  "schema": "nex.llm-local-study-evidence/1",
+  "ok": true,
+  "utc": "2026-11-11T00:53:54.890229+00:00",
+  "data_kind": "observed",
+  "source_commit": "67da05cab1ec8af678d889e3d49bbc8a927729bd",
+  "freeze_sha256": "526416a3fa6667da5d02977b08ca6ced4e54877d89b2c974b7728fc684ad91cc",
+  "ledger_sha256": "3349157d38ab549f561367b41cbd6ba81b5f5aff70f724bb702c6bc300756631",
+  "summary_sha256": "7c768c7a7674f22ffd5a280d72a62cd77f7bd4ffafdfb57bc81514006d9034bd",
+  "run_observation_sha256": "c3597ea48ef2430ea627ceb5eba9fa927d18f436a9f794455fd28bc7e4043406",
+  "terminal_process_exit": 0,
+  "owned_instance_unloaded": true,
+  "model": "qwen/qwen3.8-27b",
+  "quantization": "Q8_0",
+  "model_revision": "f0fc43cfd802bd87bc7b95f2120553a6407848e3229126b623cc397427857e8a",
+  "trials": 60,
+  "calls": 479,
+  "calls_with_raw_request_response_stats_agreement": 479,
+  "calls_with_unknown_usage": 0,
+  "calls_with_unreported_cache_split": 479,
+  "source_reviews": 40,
+  "fresh_stateless_review_inputs_verified": true,
+  "statuses": {
+    "failed": 10,
+    "accepted": 38,
+    "budget_exhausted": 12
+  },
+  "total_tokens": 1288404,
+  "comparisons": {
+    "qwen38-27b-q8": {
+      "cpp": {
+        "nex_to_baseline_tokens_per_accepted_trial": {
+          "numerator": 958083,
+          "denominator": 84878
+        },
+        "nex_success_rate_at_least_baseline": false
+      },
+      "python": {
+        "nex_to_baseline_tokens_per_accepted_trial": {
+          "numerator": 684345,
+          "denominator": 35426
+        },
+        "nex_success_rate_at_least_baseline": false
+      }
+    }
+  },
+  "scope": "one local model revision, ten fixed contracts, two deterministic repeats per language",
+  "eligible_for_multi_model_comparison_review": false,
+  "source_review_is_model_assisted_not_formal_or_human": true,
+  "broad_NEX_token_savings_demonstrated": false,
+  "runtime_performance_claimed": false,
+  "latency_is_exclusive_host_benchmark": false,
+  "old_pilots_or_readiness_calls_included": false,
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "compiler_sha256": "63cd6b70baedeea537e3ba84ce5c7186700c726be4436f495150856bcddbf992",
+  "independent_stochastic_repeats_claimed": false,
+  "results": {
+    "nex": {
+      "attempted_trials": 20,
+      "accepted_trials": 4,
+      "terminal_statuses": {
+        "accepted": 4,
+        "failed": 4,
+        "timeout": 0,
+        "budget_exhausted": 12
+      },
+      "calls": 215,
+      "known_input_tokens": 810324,
+      "known_output_tokens": 10890,
+      "known_total_tokens": 821214,
+      "all_tokens_per_accepted_trial": {
+        "numerator": 410607,
+        "denominator": 2
+      },
+      "median_trial_tokens": {
+        "numerator": 75301,
+        "denominator": 2
+      },
+      "p95_trial_tokens": 58052,
+      "total_wall_ms": 1225873,
+      "cached_input_tokens": null,
+      "uncached_input_tokens": null,
+      "confirmed_monetary_cost": null
+    },
+    "cpp": {
+      "attempted_trials": 20,
+      "accepted_trials": 14,
+      "terminal_statuses": {
+        "accepted": 14,
+        "failed": 6,
+        "timeout": 0,
+        "budget_exhausted": 0
+      },
+      "calls": 130,
+      "known_input_tokens": 235215,
+      "known_output_tokens": 19419,
+      "known_total_tokens": 254634,
+      "all_tokens_per_accepted_trial": {
+        "numerator": 127317,
+        "denominator": 7
+      },
+      "median_trial_tokens": {
+        "numerator": 19623,
+        "denominator": 2
+      },
+      "p95_trial_tokens": 43878,
+      "total_wall_ms": 1472647,
+      "cached_input_tokens": null,
+      "uncached_input_tokens": null,
+      "confirmed_monetary_cost": null
+    },
+    "python": {
+      "attempted_trials": 20,
+      "accepted_trials": 20,
+      "terminal_statuses": {
+        "accepted": 20,
+        "failed": 0,
+        "timeout": 0,
+        "budget_exhausted": 0
+      },
+      "calls": 134,
+      "known_input_tokens": 197784,
+      "known_output_tokens": 14772,
+      "known_total_tokens": 212556,
+      "all_tokens_per_accepted_trial": {
+        "numerator": 53139,
+        "denominator": 5
+      },
+      "median_trial_tokens": {
+        "numerator": 17019,
+        "denominator": 2
+      },
+      "p95_trial_tokens": 29502,
+      "total_wall_ms": 1143702,
+      "cached_input_tokens": null,
+      "uncached_input_tokens": null,
+      "confirmed_monetary_cost": null
+    }
+  },
+  "task_statuses": {
+    "bounded-total": {
+      "nex": [
+        "failed",
+        "failed"
+      ],
+      "cpp": [
+        "accepted",
+        "accepted"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    "recoverable-selection": {
+      "cpp": [
+        "failed",
+        "failed"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ]
+    },
+    "unicode-window": {
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "failed",
+        "failed"
+      ],
+      "cpp": [
+        "failed",
+        "failed"
+      ]
+    },
+    "immutable-byte-update": {
+      "nex": [
+        "accepted",
+        "accepted"
+      ],
+      "cpp": [
+        "accepted",
+        "accepted"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    "generic-projection": {
+      "cpp": [
+        "accepted",
+        "accepted"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ]
+    },
+    "associated-value-adapter": {
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ],
+      "cpp": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    "module-interface-change": {
+      "nex": [
+        "accepted",
+        "accepted"
+      ],
+      "cpp": [
+        "failed",
+        "failed"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    "ordered-bounded-map": {
+      "cpp": [
+        "accepted",
+        "accepted"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ]
+    },
+    "typed-error-finally": {
+      "python": [
+        "accepted",
+        "accepted"
+      ],
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ],
+      "cpp": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    "joined-yielding-child": {
+      "nex": [
+        "budget_exhausted",
+        "budget_exhausted"
+      ],
+      "cpp": [
+        "accepted",
+        "accepted"
+      ],
+      "python": [
+        "accepted",
+        "accepted"
+      ]
+    }
+  },
+  "audit_sha256": "1ad6ddbcee9254422a4f9973c37d4d9a0c2fedf18fb3b8d47471514413f5c162",
+  "retained_seal_sha256": "d113fd976d22a016384e0d943d5cc1155c409c8095eaada360005c99c0dfe10d",
+  "raw_artifacts_retained_locally": true,
+  "raw_artifacts_in_this_public_JSON": false,
+  "limitations": [
+    "one model/quantization/revision and ten selected contracts",
+    "same local model judges source rules in a separate stateless counted call; not formal/human review",
+    "deterministic repeats; no statistical independence or cross-model generalization",
+    "cache split and monetary cost unreported, not zero",
+    "brief concurrent development activity; no exclusive-host latency or runtime-speed conclusion"
+  ],
+  "public_nex_cost_cli_matched_collector_summary": true,
+  "nex_cost_cli_report_sha256": "ce3fd88d8738cd34e5d20f5b0b4b8f04237a7724a665c0c0fe09600843359a59"
+}

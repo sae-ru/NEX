@@ -20,14 +20,16 @@ The user-supplied14 improvement proposals have been audited in
 real model-cost measurement, repeatable builds and tiered checks take priority
 without dropping any original functional or delivery requirement. Current discovery/
 learning work checks all registered shared capability fields and has freshly validated
-0.28 labels for9 positive projects/6 counterexamples. Real model-cost measurement
-remains pending. The public nex cost command reuses the offline ledger; ten
+0.28 labels for9 positive projects/6 counterexamples. The user-selected local
+Qwen study now has60 observed trials:4/20 NEX accepted,14/20 C++ and20/20 Python,
+with higher NEX token use. [Results and limits](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
+retain this negative result. The public nex cost command reuses the offline ledger; ten
 comparison contracts,30 generated starting bundles and cross-language executable
 controls are prepared. Local Qwen transport, weight pins and scoped macOS
 execution isolation now have host evidence and one benign readiness response.
 Restricted collection, runtime/template/budget freeze and counted fresh-context
 local source review are implemented. Infrastructure pilots retain all failures;
-repaired diagnostic feedback passed its real pilot and the60-slot matched study is running.
+repaired diagnostic feedback passed its real pilot and the60-slot matched study is complete.
 The11-group core test layer is implemented (12.36s on the development Mac), with
 explicit browser/platform/sdk/scale labels and the original complete registry
 preserved. Shared Debug/Release presets and macOS/Linux core/separate Linuxfull
@@ -36,7 +38,7 @@ fixes a committed source snapshot and joins the maintained macOS/Linux workflows
 its full source-to-archive execution, hosted CI and final matching SDK acceptance
 remain pending.
 The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
-APIs. Conclusions will be scoped to that model.
+APIs. Conclusions are scoped to that model; savings were not demonstrated.
 
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
@@ -53,8 +55,12 @@ and final delivery work are:
   permissions, signing, device launch/debugging and the planned graphics adapter.
 - [ ] NEX Studio, the optional task-to-change AI layer and the planned
   [C++/Python conversion pipeline](docs/project-porting-design.md).
-- [ ] Real matched task-success/retry/token/cost measurements for the user-selected
-  local Qwen3.8 27B Q8_0 study; no unsupported cross-model generalization.
+- [x] Complete the user-selected local Qwen3.8 27B Q8_0 study:60 trials/479 requests,
+  with every failed/budget/review request counted. The result is negative for NEX;
+  cache split/monetary cost remain unknown and no cross-model claim is made.
+- [ ] Improve compiler-validated bounded language entry, diagnostics and standard
+  helpers in response to the observed failures; later studies must preserve this
+  original result and use the user-selected local model under a new versioned protocol.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across
   the supported platform/device matrix, then publish the latest main/release
   and remove obsolete branches/build artifacts with retained useful evidence.

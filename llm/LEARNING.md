@@ -103,3 +103,7 @@ failed outcomes when measuring model performance.
 Measure total accepted-task cost, including retrieved context, tool responses,
 generation and retries. [Quality criteria](../docs/quality.md) describe the planned
 cross-model comparison; compact syntax alone does not prove lower token cost.
+The user-selected [local Qwen3.8 27B study](../docs/llm-cost-qwen38-27b-2026-11-11.en.md)
+completed60 trials and found lower NEX acceptance with higher total token use.
+Keep that negative result separate from the labelled learning corpus; do not
+present compiler-checked examples as evidence of model task-success or savings.

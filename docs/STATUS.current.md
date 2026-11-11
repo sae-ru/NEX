@@ -27,8 +27,9 @@ contracts. [`nex cost`](../experiments/quality/llm_cost.md) now summarizes pinne
 trial records offline; a [ten-task comparison protocol](../experiments/quality/llm-campaign-v1/protocol.md)
 has [qualified cross-language host controls](../experiments/quality/llm-campaign-v1/README.md).
 Local Qwen task collection, bounded tool access and counted source review are implemented.
-[Infrastructure pilots](evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json)
-retain failures. [Repaired feedback](evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
+The [completed60-slot Qwen comparison](llm-cost-qwen38-27b-2026-11-11.en.md)
+accepted4/20 NEX,14/20 C++ and20/20 Python trials, with no NEX token saving.
+Original failures and earlier pilots are retained separately.
 The [11-group core layer](testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
 [Development CI](ci.md) now defines macOS/Linux core and separate Linux full
