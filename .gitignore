@@ -15,3 +15,6 @@ __pycache__/
 
 **/*.vsix
 **/.vscode-test/
+
+# Local stand handoff with connection details; keep out of Git.
+/STANDS-DEEPSEEK.local.md
