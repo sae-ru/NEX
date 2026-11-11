@@ -1,0 +1,62 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Owned-CUDA source-deleted replay and relocated standalone delivery",
+  "implementation_commit": "dc1ff9a97c7d73e83c92bde1673810595b9f7ae3",
+  "build_source_base_commit": "b9ae046",
+  "compiler": {
+    "toolchain": "0.223.0",
+    "language": "0.28",
+    "sha256": "6514f44a89609b5cf753cd8a9dcb39c1521123514941918cf2b0b9c4db74341c",
+    "compiler_build": "de0dc190682386ddf6728d9f7533137eff6e20d57b0799e9275ced0c8e7f830f",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "delivery": {
+    "schema": "nex.experimental-owned-CUDA-delivery/1",
+    "ok": true,
+    "working_project_sources_bundle_and_graph_deleted": true,
+    "actual_GPU_execution": true,
+    "actual_GPU_kernel_completions": 5,
+    "typed_unavailable_calls": 0,
+    "replay_explicit_current_authority_required": true,
+    "standalone_original_project_resources_and_authority_OS_read_denied": false,
+    "complete_owned_CUDA_or_public_SDK_accepted": false,
+    "remaining_gates": [
+      "Remaining physical provider corpora",
+      "Compute Sanitizer",
+      "Other generated roots",
+      "Coherent public compiler and immutable SDK"
+    ],
+    "report_sha256": "b396c253e1becff373afb2693d3ce5654b44627aa3510189f4e1a14d60067e94"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.69,
+    "cuda_source_seconds": 76.83,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "delivery passes; complete owned-CUDA/public SDK acceptance remains false",
+    "other generated roots and coherent public compiler/immutable SDK remain pending",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "delivery_report": "/Users/sae/projects/NEX/build/cuda-delivery-0223/report.json",
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-delivery-0223/core.json",
+    "focused_junit": "/Users/sae/projects/NEX/build/cuda-delivery-0223/focused.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-delivery-0223/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-delivery-0223/nex.sha256",
+    "verifier": "experiments/owned-cuda-codegen/verify_delivery.py",
+    "guide": "docs/testing.md"
+  }
+}
