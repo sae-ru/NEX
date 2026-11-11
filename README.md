@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.178.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.179.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
@@ -123,10 +123,10 @@ of each result. An earlier SDK's acceptance does not qualify a new archive.
 ## Build and use
 
 Start with the [current installation guide](docs/getting-started.en.md). A source
-build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x, SQLite, OpenSSL 3, Z3 and
+build requires C++20, CMake 3.25+, LLVM/MLIR 22.1.x or 23.1.x, SQLite, OpenSSL 3 or 4, Z3 and
 Python 3.10+. The full CTest suite includes Web/TypeScript workflows and also
 requires Node.js 22.18+, npm and the repository's locked web dependencies.
-On Unix, the ELF fixture tests also require LLVM22.1 `ld.lld` and `llvm-ar`;
+On Unix, the ELF fixture tests also require matching LLVM `ld.lld` and `llvm-ar`;
 use `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` when LLD has a separate prefix.
 
 For a short development loop after configuring, use the [11-group core layer](docs/testing.md):

@@ -31,7 +31,7 @@ endif()
 if(NOT LLVM_DIR AND EXISTS "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
   set(LLVM_DIR "/opt/homebrew/opt/llvm@22/lib/cmake/llvm")
 endif()
-find_package(LLVM 22.1.0 REQUIRED CONFIG)
+find_package(LLVM 22.1...<24 REQUIRED CONFIG)
 find_package(MLIR REQUIRED CONFIG HINTS "${LLVM_INSTALL_PREFIX}/lib/cmake/mlir")
 find_program(NEX_WASM_LD NAMES wasm-ld HINTS "${LLVM_TOOLS_BINARY_DIR}")
 if(NOT NEX_WASM_LD)
@@ -41,8 +41,8 @@ find_package(SQLite3 3.37 REQUIRED)
 if(NOT OPENSSL_ROOT_DIR AND EXISTS "/opt/homebrew/opt/openssl@3")
   set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
 endif()
-# OpenSSL4 TLS environment handling and package closure are not qualified yet.
-find_package(OpenSSL 3...<4 REQUIRED)
+# OpenSSL 4 is accepted for the qualified Fedora 45 cohort; older 3.x remains supported.
+find_package(OpenSSL 3...<5 REQUIRED)
 # Source-only native acceptance executables must also run after SDK paths
 # disappear. Prefer the genuine Windows archives for their private test hosts.
 set(NEX_PRIVATE_CRYPTO_LIBRARY "${OPENSSL_CRYPTO_LIBRARY}")

@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.178.0 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.179.0 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
@@ -8,12 +8,12 @@ are available through the ordinary CLI.
 
 ## Build the current version
 
-Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x**, SQLite 3.37+, OpenSSL **3**,
+Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x or 23.1.x**, SQLite 3.37+, OpenSSL **3**,
 Z3 development files and Python 3.10+. Web/TypeScript needs Node.js 22.18+ and npm.
 Native execution needs the target platform's compiler/SDK; live debugging needs
 compatible LLDB tools. Keep the repository's `web/package-lock.json`.
 
-On Unix, the complete source suite also requires LLVM22.1 `ld.lld` and `llvm-ar`
+On Unix, the complete source suite also requires matching LLVM `ld.lld` and `llvm-ar`
 for the [ELF library selection tests](native-runtime-search.md). If ELF LLD has a
 separate prefix, add `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` to the CMake
 configure command below. This option is independent of `NEX_WASM_LD`.
@@ -52,7 +52,7 @@ find the selected dependencies. Optional DNS/HTTP groups need the explicit
 operator-selected `NEX_PACKAGE_NOTICES_FILE` where automatic ownership discovery
 is unavailable. Test counts depend on configuration. See [SDK](sdk.md),
 [Linux](linux.md) and [Windows](windows-handoff-current.md) for platform recipes.
-Use the selected OpenSSL 3 cohort; system OpenSSL 4 is rejected. Current portable
+Use a matching OpenSSL 3 or 4 installation; both ranges are accepted, with OpenSSL 4 qualified on Fedora 45. Current portable
 SDK qualification remains pending; see the [current platform evidence](../README.md#development-status).
 
 ## Older SDK archives
