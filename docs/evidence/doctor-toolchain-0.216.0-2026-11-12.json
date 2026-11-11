@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "nex doctor explicit native toolchain selection",
+  "implementation_commit": "3a5ea1ebc0342fab4a38d7995f8015b60b1b8e82",
+  "build_source_base_commit": "b5efb35",
+  "compiler": {
+    "toolchain": "0.216.0",
+    "language": "0.28",
+    "sha256": "25f7265c84e0011da4ae014cea14f6587667290d8df0f0806c0899706bb92bfc",
+    "compiler_build": "d0473c49dd2dcc46b50ac5fb2fe5e9ab855fb682f7b5a2c2327262b4df93d6cd",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "command": "nex doctor --toolchain FILE",
+    "invalid_selector": "E_TOOLCHAIN",
+    "passes_to": "configureNative",
+    "windows_preparation_unblocked": true
+  },
+  "observations": {
+    "registered_groups": 345,
+    "discovery_seconds": 9.85948,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.41,
+    "docs_documents": 179,
+    "docs_links": 1232,
+    "cuda_native_provider_executed": false
+  },
+  "limits": [
+    "doctor still requires a valid explicit toolchain on Windows; no CUDA hardware run followed this change",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/doctor-toolchain-0216-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/doctor-toolchain-0216-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/doctor-toolchain-0216-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/doctor-toolchain-0216-v1/nex.sha256",
+    "test": "tests/discovery.py",
+    "guide": "docs/getting-started.en.md"
+  }
+}
