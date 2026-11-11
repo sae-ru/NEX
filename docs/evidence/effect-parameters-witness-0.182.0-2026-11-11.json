@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit effect witnesses for generic calls and contextual function values",
+  "implementation_commit": "a1e1ba57d5d932578738a2cd78c5099783a83158",
+  "build_source_base_commit": "a2be9b6",
+  "compiler": {
+    "toolchain": "0.182.0",
+    "language": "0.28",
+    "sha256": "00854e1e1216ee0d3a1d39c1498ba0a7c915da1ef8442db2fd2bd5022cb63cee",
+    "compiler_build": "09171587303a876b65d8282f7017c08040fcd5f4c05c735f7c8aed9f40a682dc",
+    "descriptor_hash": "70ca93bd9ae75c73519c9366771e004d3915d3910a7e0e5ee5bf8f7cee4aa1f0"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "syntax": "seq::map<i64,i64>!{io}(...)",
+    "function_value": "seq::map<i64,i64>!{io}",
+    "constraint": "exactly one effect parameter; witness must equal every callable argument effect set",
+    "mismatch": "E_EFFECT",
+    "contextual_expected_type_still_supported": true
+  },
+  "observations": {
+    "registered_groups": 335,
+    "focused_tests": 3,
+    "focused_seconds": 62.68,
+    "effect_parameters_seconds": 8.76658,
+    "standard_library_seconds": 46.5733,
+    "containers_seconds": 7.33061,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.7,
+    "docs_documents": 179,
+    "docs_links": 1225
+  },
+  "limits": [
+    "higher-rank effects and language-version migration remain pending",
+    "only one effect parameter per function can be witnessed explicitly",
+    "no full CTest/full SDK; 0.182 not yet deployed to CIX/RK/Windows stands",
+    "no GPU/NPU, browser UI, mobile/native UI, Studio or converter work"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/effect-0182-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/effect-0182-v1/core.json",
+    "effect_manual": "/Users/sae/projects/NEX/build/effect-0182-v1/effect-manual.log",
+    "describe": "/Users/sae/projects/NEX/build/effect-0182-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/effect-0182-v1/nex.sha256",
+    "guide": "docs/effect-parameters.md",
+    "test": "tests/effect_parameters.py"
+  }
+}
