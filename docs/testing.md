@@ -146,7 +146,15 @@ generator reproduced three byte-identical corpora for one seed, rejected a
 different seed's corpus identity and ran its generated programs in 15.55 s.
 `docs_index` passed in 0.09 s and the unchanged 12-group core in 22.63 s. This is
 a bounded semantic smoke matrix, not proof of language equivalence or full
-platform/SDK acceptance.
+
+Toolchain 0.175 adds `bench_command` (332 registered Mac groups). The command
+builds one native executable, checks deterministic stdout and reports
+min/median/mean/max process wall time, exit codes, stdout hash, build key, source
+revision and host/CPU identity; an earlier `nex.bench/1` report supplies
+`delta_seconds` and `ratio`. The command test passed in 3.86 s and the unchanged
+12-group core in 23.60 s. Only runtime measurement is implemented; cold/warm/edit
+build timing, cross-host normalization and statistical significance remain
+pending.
 
 ## Maintain the catalogue
 

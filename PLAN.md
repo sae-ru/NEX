@@ -60,6 +60,7 @@ and final delivery work are:
   edits and complete source/optimized-machine/core/profile attribution.
 - [x] Add a generated documentation index with local-link and current-version checks.
 - [x] Add a checked three-backend agreement corpus with valid/rejected/trap cases and a deterministic seed/reproducer generator.
+- [x] Add `nex bench --kind runtime` with deterministic output, repeated samples, build/source identity and baseline comparison.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).

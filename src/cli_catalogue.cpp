@@ -115,6 +115,7 @@ const std::map<std::string,std::string> &cliGuides(){
     {"cli","docs/cli.md"},
     {"list-build","docs/list-construction.md"},
     {"text-construction","docs/text-construction.md"},
+    {"bench","docs/bench.md"},
     {"bytes-construction","docs/bytes-construction.md"},
   };return files;
 }
@@ -159,6 +160,9 @@ const std::vector<CliOption> &cliOptions(){
     add("--auth","FILE","Operator-selected authentication configuration.");
     add("--events","COUNT","Profiling event limit.");
     add("--timeout","SECONDS","Command-specific wall timeout.");
+    add("--repetitions","COUNT","Measured benchmark repetitions.");
+    add("--warmup","COUNT","Unmeasured benchmark warmup runs.");
+    add("--baseline","FILE","Earlier nex.bench/1 report for comparison.");
     add("--scenario","TEXT","Profiling scenario label.");
     add("--contracts","FILE","Explicit verification/runtime/intent contracts.");
     add("--solver-timeout","MS","Bounded proof solver timeout.");
@@ -208,6 +212,7 @@ const std::vector<CliOption> &cliOptions(){
       if(o.name=="--details"||o.name=="--references"){o.restrictedCommands={"analyze"};o.restrictionMessage=o.name+" requires analyze";}
       if(o.name=="--capsule"||o.name=="--export"){o.restrictedCommands={"core"};o.restrictionMessage="--capsule/--export require core and a directory";}
       if(o.name=="--thread"||o.name=="--frame"){o.restrictedCommands={"core"};o.restrictionMessage="--thread/--frame require core and an index";}
+      if(o.name=="--repetitions"||o.name=="--warmup"||o.name=="--baseline"){o.restrictedCommands={"bench"};o.restrictionMessage=o.name+" requires bench";}
     }
     return v;
   }();return options;
@@ -249,6 +254,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("emit","[FILE]","Emit checked MLIR/LLVM/TypeScript/Metal/CUDA source.","gpu",native+" --kind --output --directory --library --input-layout --list-capacity --byte-capacity --text-capacity");
     add("package","[FILE] --directory NEW","Build/package a native application with its notices.","build",native+" --directory --notices --dpkg-notices --foreign");
     add("profile","[FILE]","Profile actual native work with a bounded event budget.","profile",native+" --foreign --events --timeout --scenario --output");
+    add("bench","[FILE]","Measure repeated native runtime of one checked program.","bench",native+" --kind --repetitions --warmup --baseline --output");
     add("debug","[FILE] [-- DEBUGGER_ARGS...]","Launch native LLDB/DAP debugging with matching source metadata.","debug",native+" --kind --foreign");
     add("contract","[FILE]","Generate proof/runtime/intent contracts as explicitly selected.","verify","--kind --revision --symbol --output --contracts --directory");
     add("verify","[FILE] --contracts FILE","Check explicitly supplied bounded proof contracts.","verify","--revision --contracts --symbol --solver-timeout --resource-limit --timeout --output");

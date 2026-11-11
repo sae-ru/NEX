@@ -50,6 +50,7 @@
     "docs_index": ["extended", "platform"],
     "backend_agreement": ["extended", "browser", "platform"],
     "agreement_generator": ["extended", "platform"],
+    "bench_command": ["extended", "platform"],
     "discovery": ["core"],
     "dns_library": ["extended", "browser", "platform"],
     "dns_policy": ["extended", "platform"],

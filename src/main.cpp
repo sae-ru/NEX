@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <functional>
 #include <array>
+#include <chrono>
 #include <cerrno>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -586,7 +587,7 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose","search","subgraph"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","bench","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose","search","subgraph"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
@@ -997,8 +998,61 @@ int run(const Options &o) {
     print(packageApplication(p,buildOptions,directory,root.string(),store,
       {o.get("--directory"),o.get("--notices"),o.compiler,o.has("--dpkg-notices"),o.get("--foreign")}));return 0;
   }
+  if(o.command=="bench"&&!o.values.contains("--profile"))buildOptions.profile="release";
   auto result=build(p,directory,buildOptions);
   if(o.command=="run"||o.command=="debug"||o.command=="profile")requireNativeHost(result);
+  if(o.command=="bench"){
+    if(o.get("--kind","runtime")!="runtime")throw Error("E_OPTION","bench currently supports --kind runtime");
+    if(o.get("--target")!=""&&o.get("--target")!="native")throw Error("E_OPTION","bench requires a native target");
+    if(o.has("--library"))throw Error("E_OPTION","bench requires an executable entry");
+    requireNativeHost(result);
+    auto number=[&](const std::string &name,int fallback,int minimum,int maximum){
+      auto raw=o.get(name);if(raw.empty())return fallback;size_t used=0;long long value=0;
+      try{value=std::stoll(raw,&used);}catch(...){throw Error("E_OPTION",name+" requires an integer");}
+      if(used!=raw.size()||value<minimum||value>maximum)throw Error("E_OPTION",name+" is outside "+std::to_string(minimum)+".."+std::to_string(maximum));
+      return int(value);
+    };
+    const int repetitions=number("--repetitions",5,1,1000),warmup=number("--warmup",1,0,1000);
+    const unsigned timeout=unsigned(number("--timeout",30,1,3600));
+    std::vector<std::string> arguments{result.executable};arguments.insert(arguments.end(),o.extra.begin(),o.extra.end());
+    auto observe=[&](){auto started=std::chrono::steady_clock::now();auto child=capture(arguments,timeout);
+      double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count();return std::pair<double,ProcessResult>{seconds,std::move(child)};};
+    for(int index=0;index<warmup;++index){auto observed=observe();if(observed.second.code!=0)throw Error("E_BENCH","warmup exited with status "+std::to_string(observed.second.code));}
+    std::vector<double> samples;std::set<std::string> stdoutHashes;std::vector<int> codes;std::string digest;size_t stdoutBytes=0,stderrBytes=0;
+    for(int index=0;index<repetitions;++index){
+      auto observed=observe();if(observed.second.code!=0)throw Error("E_BENCH","measured run exited with status "+std::to_string(observed.second.code));
+      auto hash=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(observed.second.output.data()),observed.second.output.size()));
+      digest=llvm::toHex(hash,true);stdoutHashes.insert(digest);samples.push_back(observed.first);codes.push_back(observed.second.code);
+      stdoutBytes=observed.second.output.size();stderrBytes=observed.second.errors.size();
+    }
+    if(stdoutHashes.size()!=1)throw Error("E_BENCH","benchmark stdout differed between runs");
+    std::sort(samples.begin(),samples.end());
+    double minimum=samples.front(),maximum=samples.back(),sum=0;for(double value:samples)sum+=value;
+    double mean=sum/double(samples.size());
+    double median=samples.size()%2?samples[samples.size()/2]:(samples[samples.size()/2-1]+samples[samples.size()/2])/2.0;
+    llvm::json::Array measuredSamples,codesJSON;for(double value:samples)measuredSamples.push_back(value);for(int code:codes)codesJSON.push_back(int64_t(code));
+    llvm::json::Object report{{"schema","nex.bench/1"},{"ok",true},{"mode","runtime"},{"entry",buildOptions.entry},{"profile",buildOptions.profile},
+      {"repetitions",int64_t(repetitions)},{"warmup",int64_t(warmup)},{"samples_seconds",std::move(measuredSamples)},
+      {"min_seconds",minimum},{"median_seconds",median},{"mean_seconds",mean},{"max_seconds",maximum},{"exit_codes",std::move(codesJSON)},
+      {"stdout_sha256",digest},{"stdout_bytes",int64_t(stdoutBytes)},{"stderr_bytes",int64_t(stderrBytes)},
+      {"executable",result.executable},{"build_key",result.key},{"source_revision",revision(p)},
+      {"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"host",llvm::sys::getDefaultTargetTriple()},
+      {"cpu",llvm::sys::getHostCPUName().str()},
+      {"measurement","process wall time including native executable start, captured stdout/stderr and process exit"}};
+    auto baselinePath=o.get("--baseline");
+    if(!baselinePath.empty()){
+      auto baseline=parseJSON(readFile(baselinePath));auto object=baseline.getAsObject();
+      if(!object)throw Error("E_BENCH","baseline must be a nex.bench/1 object");
+      auto previous=object->getNumber("median_seconds");if(!previous)throw Error("E_BENCH","baseline lacks median_seconds");
+      report["baseline"]=llvm::json::Object{{"path",baselinePath},{"median_seconds",*previous},
+        {"delta_seconds",median-*previous},{"ratio",*previous==0?0.0:median / *previous}};
+    }
+    llvm::json::Value output=std::move(report);
+    auto destination=o.get("--output");if(!destination.empty())writeFile(destination,json(output)+"\n");
+    if(o.has("--json"))print(std::move(output));
+    else {auto object=output.getAsObject();std::cout<<"Benchmark "<<buildOptions.entry<<" ("<<buildOptions.profile<<"): median "<<object->getNumber("median_seconds").value_or(0)<<" s over "<<repetitions<<" runs\n";}
+    return 0;
+  }
   if(o.command=="profile"){
     auto report=profileNative(p,result,store.graph(p),profiling);auto object=report.getAsObject();auto code=int(*object->getInteger("exit_code"));
     if(o.has("--json"))print(std::move(report));else std::cout<<"Profile: "<<object->getString("output")->str()<<" (exit "<<code<<")\n";return code;
