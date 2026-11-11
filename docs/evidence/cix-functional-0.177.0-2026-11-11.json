@@ -1,0 +1,99 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "CIX P1 ARM64 Linux functional check of NEX 0.177.0 source",
+  "source_commit": "38aea02",
+  "source_archive_sha256": "9811e148e46eb953bef1cc50a60b21a7e6ba5d596b7336bf1afbba2942115fcc",
+  "compiler": {
+    "toolchain": "0.177.0",
+    "language": "0.28",
+    "llvm": "22.1.8",
+    "sha256": "b40f10f781fa2eab2a544f0b1daa600b28b57c08b232f88c675b4dd071a74d2f",
+    "native_compiler": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/clang++"
+  },
+  "host": {
+    "uname": [
+      "Linux",
+      "orangepi6plus",
+      "6.6.89-cix",
+      "#39 SMP PREEMPT Thu Oct 23 19:47:16 CST 2025",
+      "aarch64"
+    ],
+    "os": "PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"\nVERSION_CODENAME=bookworm\nID=debian\nHOME_URL=\"https://www.debian.org/\"\nSUPPORT_URL=\"https://www.debian.org/support\"\nBUG_REPORT_URL=\"https://bugs.debian.org/\"\n"
+  },
+  "build": {
+    "llvm_release": "LLVM-22.1.8-Linux-ARM64.tar.xz",
+    "llvm_sha256": "805efad2bb91cb4967fa569e0881d10c0f69c04461cf671cccbae19f547acc34",
+    "source_modified": true,
+    "modification": "set_source_files_properties(src/language.cpp PROPERTIES COMPILE_OPTIONS \"-fno-rtti\")",
+    "why": "official LLVM 22.1.8 release is built without RTTI; language.cpp instantiates llvm::format_provider typeinfo",
+    "linker_workarounds": [
+      "libLLVM.so GROUP of libLLVM*.a",
+      "libMLIR.so GROUP of libMLIR*.a",
+      "-L<LLVM>/lib",
+      "-lz -lzstd"
+    ],
+    "installed_dev": {
+      "libz3-dev": "4.8.12-3.1",
+      "libsqlite3-dev": "3.40.1",
+      "libzstd-dev": "present"
+    }
+  },
+  "results": {
+    "doctor": {
+      "cpu": "cortex-a720",
+      "host": "aarch64-unknown-linux-gnu",
+      "language": "0.28",
+      "llvm": "22.1.8",
+      "native_archiver": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/llvm-ar",
+      "native_compiler": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/clang++",
+      "native_debug_packager": "",
+      "native_linker": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/ld.lld",
+      "native_openssl_crypto": "/usr/lib/aarch64-linux-gnu/libcrypto.so.3",
+      "native_openssl_include": "/usr/include",
+      "native_openssl_ssl": "/usr/lib/aarch64-linux-gnu/libssl.so.3",
+      "native_sqlite_include": "/usr/include",
+      "native_sqlite_library": "/usr/lib/aarch64-linux-gnu/libsqlite3.so.0.8.6",
+      "native_sysroot": "",
+      "native_windows_notices": "",
+      "native_windows_runtime": "",
+      "runtime": "/tmp/nex-0177-20261111/src/runtime/runtime.cpp",
+      "runtime_available": true,
+      "schema": "nex.doctor/1",
+      "sdk_manifest": "",
+      "verifier": "Z3",
+      "verifier_version": "4.8.12.0",
+      "version": "0.177.0",
+      "wasm_compiler": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/clang++",
+      "wasm_linker": "/tmp/nex-0177-20261111/LLVM-22.1.8-Linux-ARM64/bin/wasm-ld"
+    },
+    "describe_language": "0.28",
+    "app_check_ok": true,
+    "app_test_ok": true,
+    "app_eval_stdout": "55\n",
+    "app_native_stdout": "55\n",
+    "examples": {
+      "list": true,
+      "text": true,
+      "bytes": true
+    },
+    "bench_schema": "nex.bench/1",
+    "bench_median_seconds": 0.004099348
+  },
+  "limits": [
+    "functional compiler/app/constructor/bench check, not a full CTest or SDK acceptance",
+    "stand source was adapted only by a build flag for language.cpp because the official LLVM release lacks RTTI",
+    "no Node/TypeScript, web, GPU, NPU or SDK install checks",
+    "Astra .78 unreachable; Windows .99 host key mismatch; RK .200 lacks LLVM 22 and free disk for the same build",
+    "the macOS 0.177 local results remain separate"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "artifacts": {
+    "report": "build/cix-0177-evidence/cix-report.json",
+    "doctor": "build/cix-0177-evidence/doctor.json",
+    "describe": "build/cix-0177-evidence/describe.json",
+    "app": "build/cix-0177-evidence/app",
+    "examples": "build/cix-0177-evidence/*-run.json",
+    "bench": "build/cix-0177-evidence/bench.json",
+    "build_log": "build/cix-0177-evidence/build-nex2.log"
+  }
+}
