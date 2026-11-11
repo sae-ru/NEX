@@ -830,6 +830,22 @@ static void impl_nex_list_append_heap(Handle *p,Handle *value, nexrt::SourceLoca
 }
 void nex_list_append_heap(Handle *p,Handle *value){return impl_nex_list_append_heap(p, value, nexrt::SourceLocation{});}
 void nex_list_append_heap_at(Handle *p,Handle *value, const nexrt::NativeSite *nex_site){return impl_nex_list_append_heap(p, value, nexrt::SourceLocation{0,nex_site});}
+static Handle * impl_nex_text_join(Handle *p, nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{
+    if(!p||!p->data||p->data->kind!=nexrt::Data::List)throw nexrt::DataError("E_INTERNAL","text builder requires its private list");
+    size_t total=0;
+    for(const auto &value:p->data->values){
+      if(value.tag!=nexrt::Value::Object||!value.object||value.object->kind!=nexrt::Data::String)throw nexrt::DataError("E_INTERNAL","text builder item is not a string");
+      if(value.object->text.size()>std::numeric_limits<size_t>::max()-total)throw nexrt::DataError("E_LIMIT","text builder exceeds addressable bytes");
+      total+=value.object->text.size();
+    }
+    std::string text;text.reserve(total);
+    for(const auto &value:p->data->values)text+=value.object->text;
+    return owned(nexrt::string(std::move(text)));
+  });});
+}
+Handle * nex_text_join(Handle *p){return impl_nex_text_join(p, nexrt::SourceLocation{});}
+Handle * nex_text_join_at(Handle *p, const nexrt::NativeSite *nex_site){return impl_nex_text_join(p, nexrt::SourceLocation{0,nex_site});}
 static void impl_nex_record_init_i64(Handle *p,int64_t index,int64_t value,int64_t tag, nexrt::SourceLocation location){
   return nexrt::hostOperation(location,[&]() -> void {guarded(location,[&]{p->data->values.at(index)=nexrt::Value::taggedScalar(value,tag);});});
 }

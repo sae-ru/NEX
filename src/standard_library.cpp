@@ -35,6 +35,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","containers beyond immutable lists","linear text construction","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","containers beyond immutable lists","complete matching SDK/platform qualification"}}};
 }
 }

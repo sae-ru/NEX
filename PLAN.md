@@ -85,8 +85,12 @@ and final delivery work are:
   inferred callback effects and suspension through the existing task machinery.
   Toolchain 0.170 source list generation/map/filter/reverse and stable merge
   outputs now build linearly, without changing existing valid 0.28 identities.
-- [ ] Linear text construction, wider containers, named source-library effect
-  parameters and GPU/Wasm constructor lowering remain required work. Later
+- [x] Implement sequential linear text construction through two-, three- and
+  four-argument forms of the reserved `str` builtin: inferred callback effects,
+  source errors, task suspension, one private buffer and one final join.
+  Toolchain 0.171 keeps language 0.28 and existing valid identities.
+- [ ] Wider containers, named source-library effect parameters and GPU/Wasm
+  constructor lowering remain required work. Later
   versioned model studies preserve the original negative result and use only
   the selected local model.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across

@@ -62,8 +62,11 @@ constant number of search indices; UTF-8/bytes conversion still costs storage.
 Split searches/counts then constructs balanced field lists: O(n+m+k log(k+1))
 work for k fields. Join uses balanced concatenation, O(k+B log(k+1)) copied bytes
 for B output bytes; replacement also includes its O(n+m) search work. These
-source implementations avoid repeatedly copying a growing prefix. They do not
-claim a linear-time text builder or a measured throughput improvement.
+source implementations avoid repeatedly copying a growing prefix. `join` itself
+retains that balanced bound. A separate language-level [`str(...)` text
+constructor](text-construction.md) (toolchain 0.171) appends pieces to a private
+buffer and performs one linear final join; it is not a stdlib function and makes
+no measured-throughput claim.
 
 ## Lists
 

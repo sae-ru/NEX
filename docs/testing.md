@@ -114,6 +114,17 @@ The lexical-shadow regression has a retained failing witness and a passing fix.
 Earlier test-driver/fixture errors remain separate; no whole platform/SDK claim
 follows from this focused source block.
 
+Toolchain 0.171 adds `text_construction` (327 registered Mac groups). Seven
+constructor methods passed in 59.02 s on the final binary; the affected list and
+standard-library groups passed in 107.43 s and 46.75 s, and the unchanged
+12-group core in 24.34 s. Reference/native Debug/Release and strict executed
+TypeScript cover count/map/filter/state forms, empty and 20,000-piece inputs,
+generic references, effect order, typed source errors and finally, task
+suspension, lexical-shadow hygiene and partial native cleanup. The compiled
+language pack checked 3596 JSON values across 64 shared fields, and the new forms
+are rejected by retired source languages. This is one focused source block, not a
+full regression, installed-SDK or platform qualification.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

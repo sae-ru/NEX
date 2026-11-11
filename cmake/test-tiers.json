@@ -89,6 +89,7 @@
     "language_server": ["extended"],
     "learning_corpus": ["extended", "browser", "scale"],
     "list_construction": ["extended", "browser", "platform"],
+    "text_construction": ["extended", "browser", "platform"],
     "llm_campaign": ["extended", "scale"],
     "llm_cost_cli": ["extended"],
     "llm_cost_ledger": ["core"],

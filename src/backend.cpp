@@ -714,6 +714,9 @@ class Emitter {
         result={"",Type::Unit};
       }else if(e->text=="$list_finish"){
         result=args[0];args.clear();
+      }else if(e->text=="$text_join"){
+        result=call("nex_text_join",args,e->type,e->span);
+        release(args[0],e->span);args.clear();
       }else if(e->text=="parallel_map"){
         auto symbol="nex_parallel_bridge_"+hash(selectedFunction->name+":"+sites.at(e.get()));
         parallelThunks.emplace(symbol,ParallelThunk{selectedFunction,e});
@@ -1166,7 +1169,7 @@ public:
     declaration("nex_record_init_i64","!llvm.ptr, i64, i64, i64");declaration("nex_record_init_heap","!llvm.ptr, i64, !llvm.ptr");
     declaration("nex_collection_get_i64","!llvm.ptr, i64, i64","i64");declaration("nex_collection_get_heap","!llvm.ptr, i64, i64","!llvm.ptr");
     declaration("nex_list_update_i64","!llvm.ptr, i64, i64, i64, i64, i64","!llvm.ptr");declaration("nex_list_update_heap","!llvm.ptr, i64, !llvm.ptr, i64, i64","!llvm.ptr");
-    declaration("nex_length","!llvm.ptr","i64");declaration("nex_heap_equal","!llvm.ptr, !llvm.ptr","i64");declaration("nex_heap_concat","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
+    declaration("nex_text_join","!llvm.ptr","!llvm.ptr");declaration("nex_length","!llvm.ptr","i64");declaration("nex_heap_equal","!llvm.ptr, !llvm.ptr","i64");declaration("nex_heap_concat","!llvm.ptr, !llvm.ptr, i64","!llvm.ptr");
     declaration("nex_string_slice","!llvm.ptr, i64, i64, i64","!llvm.ptr");declaration("nex_string_contains","!llvm.ptr, !llvm.ptr","i64");
     declaration("nex_format_i64","i64, i64","!llvm.ptr");declaration("nex_format_heap","!llvm.ptr","!llvm.ptr");declaration("nex_print_heap","!llvm.ptr");
     declaration("nex_ok_i64","i64, i64","!llvm.ptr");declaration("nex_ok_heap","!llvm.ptr","!llvm.ptr");declaration("nex_err","!llvm.ptr, !llvm.ptr","!llvm.ptr");

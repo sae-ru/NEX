@@ -1,0 +1,51 @@
+module text_builder;
+struct Pair {
+  left: i64;
+  right: i64;
+}
+fn identity<T>(value: T) -> T {
+  return value;
+}
+fn main() -> unit !{io} {
+  assert(str(42) == "42");
+  assert(str(true) == "true");
+  assert(str("x") == "x");
+  assert(str(0, fn(i: i64) -> str {
+        return str(i);
+      }) == "");
+  assert(str(4, fn(i: i64) -> str {
+        return str(i * i);
+      }) == "0149");
+  assert(str(["a", "b"], identity) == "ab");
+  let empty: str = str([], fn(x: i64) -> str {
+      return str(x);
+    });
+  assert(empty == "");
+  let original: list<str> = ["a", "bb", "c"];
+  let alias: list<str> = original;
+  assert(str(original, fn(x: str) -> str {
+        return x + x;
+      }) == "aabbbbcc");
+  assert(str(original, fn(x: str) -> bool {
+        return len(x) > 1;
+      }, fn(x: str) -> str {
+        return "[" + x + "]";
+      }) == "[bb]");
+  assert(str(3, 10, fn(s: i64) -> i64 {
+        return s + 10;
+      }, fn(s: i64) -> str {
+        return str(s);
+      }) == "102030");
+  assert(str(4, Pair(1, 2), fn(p: Pair) -> Pair {
+        return Pair(p.right, p.left + p.right);
+      }, fn(p: Pair) -> str {
+        return str(p.left);
+      }) == "1235");
+  assert(original == alias && alias == ["a", "bb", "c"]);
+  let unicode: str = str(2, fn(i: i64) -> str {
+      return "Я🌍\u0000" + str(i);
+    });
+  assert(len(unicode) == 8);
+  assert(unicode == "Я🌍\u00000Я🌍\u00001");
+  print("text-values-ok");
+}

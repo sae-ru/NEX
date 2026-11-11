@@ -219,6 +219,8 @@ export function listBuilderAppend<T extends Value>(items: ReadonlyArray<T>, valu
   (items as T[]).push(value);
 }
 export function listBuilderFinish<T extends Value>(items: ReadonlyArray<T>): ReadonlyArray<T> { return Object.freeze(items); }
+// One linear pass; the published string is ordinary immutable NEX text.
+export function textBuilderJoin(items: ReadonlyArray<string>): string { return items.join(''); }
 export function record<T extends RecordValue>(name: string, fields: ReadonlyArray<readonly [string, Value]>): T {
   const result = Object.create(null) as Record<string | symbol, Value>;
   Object.defineProperty(result, TYPE, { value: name });

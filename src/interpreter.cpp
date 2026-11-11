@@ -105,6 +105,19 @@ class Interpreter {
         auto target=full(args[0]);target.object->values.push_back(args[1]);return V();
       }
       if(e->text=="$list_finish")return args[0];
+      if(e->text=="$text_join"){
+        auto list=full(args[0]);
+        if(!list.object||list.object->kind!=nexrt::Data::List)throw Error("E_INTERNAL","text builder requires its private list",e->span);
+        size_t total=0;
+        for(const auto &value:list.object->values){
+          if(value.tag!=nexrt::Value::Object||!value.object||value.object->kind!=nexrt::Data::String)throw Error("E_INTERNAL","text builder item is not a string",e->span);
+          if(value.object->text.size()>std::numeric_limits<size_t>::max()-total)throw Error("E_LIMIT","text builder exceeds addressable bytes",e->span);
+          total+=value.object->text.size();
+        }
+        std::string text;text.reserve(total);
+        for(const auto &value:list.object->values)text+=value.object->text;
+        return V(nexrt::string(std::move(text)));
+      }
       if(e->text=="parallel_map"){
         auto items=full(args[0]);auto callback=watch?watch->callable(args[1]):args[1];auto workers=full(args[2]).scalar;
         if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);

@@ -310,6 +310,7 @@ struct Analysis {
     if(e->text=="unwrap")return field(args[0],0,e->type);
     if(e->text=="$list_start")return aggregate({});
     if(e->text=="$list_finish")return args[0];
+    if(e->text=="$text_join")return args[0];
     if(e->text=="$list_append"){
       V value;
       if(args[0]->shape&&args[0]->fields.size()<64){auto fields=args[0]->fields;fields.push_back(args[1]);value=aggregate(std::move(fields));}

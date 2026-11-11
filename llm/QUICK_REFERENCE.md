@@ -34,6 +34,10 @@ fn main()->unit !{io} {
 - If `list_construction` is advertised, use `list(3,fn(i:i64)->i64{return i*i;})` or
   `list(values,transform)` for sequential bulk construction; callbacks retain
   their effects. See `nex guide --kind list-build`.
+- If `text_construction` is advertised, `str(count,fn(i:i64)->str{...})`,
+  `str(values,transform)`, filtered and state/next/emit forms build text
+  sequentially; one-argument `str(value)` still formats. See
+  `nex guide --kind text-construction`.
 - Strings are strict UTF-8. `len(text)`, `text[index]` and
   `slice(text,start,count)` use Unicode scalars; the third slice argument is a
   **count**, not an end index. Scalars are not grapheme clusters. Bytes preserve

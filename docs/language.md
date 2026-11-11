@@ -71,6 +71,15 @@ is no identifier conflict, changed meaning for existing valid source, runtime
 ABI or source-language promotion. Earlier builds must advertise `list_construction`
 before this operation is used. Retained source languages before 0.28 reject it.
 
+Toolchain 0.171 adds the [sequential text constructor](text-construction.md) as
+two-, three- and four-argument forms of the already reserved builtin `str`.
+One-argument `str(value)` formatting is unchanged. Count/map/filter/state forms
+infer callback effects, append to an unpublished private `list<str>` and perform
+one final linear join. There is no new identifier, source-language promotion or
+public C ABI change; one private native runtime symbol (`nex_text_join`) is used.
+Earlier builds must advertise `text_construction` before these forms are used.
+Retained source languages before 0.28 reject them.
+
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external
 build metadata. They preserve language0.16, checked ownership, effects, realms
 and canonical identities. They require matching private native ABIs and source
@@ -696,7 +705,7 @@ Endpoints participate in program identity, graph nodes/edges, context, archived 
 - `assert(condition)` requires `bool`, returns `unit`, and traps with `E_ASSERT` when false.
 - `as_f64(i64) -> f64` explicitly rounds an integer; `as_i64(f64) -> result<i64>` truncates with a recoverable range error.
 - `len(str | list<T>) -> i64` returns a Unicode scalar count or list item count.
-- `str(value) -> str` explicitly formats any non-unit value using the same representation as print, without a newline. A string's content is unchanged.
+- `str(value) -> str` explicitly formats any non-unit value using the same representation as print, without a newline. A string's content is unchanged. Two-, three- and four-argument forms are the checked sequential text constructor described above; invalid counts trap with `E_ASSERT`.
 - `push(list<T>, T) -> list<T>` and `set(list<T>, i64, T) -> list<T>` return updated immutable lists.
 - `slice(str, i64, i64) -> str` returns a checked Unicode scalar slice.
 - `contains(str, str) -> bool` checks for an exact substring; the empty substring is contained in every string.

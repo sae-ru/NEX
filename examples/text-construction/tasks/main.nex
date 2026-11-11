@@ -1,0 +1,16 @@
+module text_tasks;
+fn main() -> unit !{task, io} {
+  let output: str = str(3, 0,
+    fn(x: i64) -> i64 !{task, io} {
+      task_yield();
+      print("next" + str(x));
+      return x + 1;
+    },
+    fn(x: i64) -> str !{task, io} {
+      task_yield();
+      print("emit" + str(x));
+      return str(x);
+    });
+  assert(output == "012");
+  print("text-task-ok");
+}

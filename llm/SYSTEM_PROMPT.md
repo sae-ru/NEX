@@ -82,6 +82,11 @@ the predicate/transform form for filtering and count/state/next/emit for unfold.
 Callbacks run sequentially with their inferred effects, ordinary task suspension,
 realm/grants and errors. The constructor publishes one immutable result; it adds
 no workers or authority. GPU/Wasm constructor lowering remains pending.
+When `text_construction` is advertised, read `nex guide --kind text-construction --json`.
+`str(count,make)`, `str(values,transform)`, its filtered form and
+count/state/next/emit build text sequentially over an unpublished buffer and
+join once. One-argument `str(value)` still formats; `std::text::join` retains
+its separate balanced bound.
 When `source_formatting` is advertised, use `nex fmt FILE` for a preview,
 `--check` for a read-only style check and `--write` only for an intended source
 edit. This checks syntax, not types or imports; run ordinary affected functional

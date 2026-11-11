@@ -43,9 +43,10 @@ found no NEX token saving. Other models/workloads remain unmeasured.
 ## What you can build
 
 The implemented core includes modules, generics and traits, immutable aggregates,
-Unicode strings and bytes, checked arithmetic, typed source errors and `finally`,
-structured tasks, graph history, project components, native libraries, HTTP/API
-and browser adapters, debugging, profiling and bounded scalar verification.
+linear list/text construction, Unicode strings and bytes, checked arithmetic,
+typed source errors and `finally`, structured tasks, graph history, project
+components, native libraries, HTTP/API and browser adapters, debugging,
+profiling and bounded scalar verification.
 
 A project can share portable logic between a native server and a TypeScript /
 React / Vite client. Device execution uses explicit trusted providers. Read the
@@ -54,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.170.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.171.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);

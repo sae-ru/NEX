@@ -275,3 +275,9 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    none. Pure bool predicates, pure i64 rankings, source-clause limits and realm
    rules are semantic checks. An annotated while requires nonempty invariants
    and one decreases clause. See source-contracts.md for exact edge ordering. *)
+
+(* Toolchain0.171 text construction reuses the existing str(...) primary; it adds
+   no production or keyword. Two-, three- and four-argument forms are checked
+   overloads of the already reserved builtin. The one-argument formatting form
+   keeps its meaning. Language0.28, canonical identities and the public C ABI
+   remain unchanged; one private native runtime join symbol is used. *)

@@ -1,0 +1,28 @@
+module text_effects;
+struct Stopped {
+  index: i64;
+}
+fn main() -> unit !{io, throw} {
+  let chosen: str = str([0, 1, 2], fn(x: i64) -> bool !{io} {
+      print("p" + str(x));
+      return x % 2 == 0;
+    }, fn(x: i64) -> str !{io} {
+      print("m" + str(x));
+      return str(x + 10);
+    });
+  assert(chosen == "1012");
+  try {
+    let stopped: str = str(3, fn(i: i64) -> str !{io, throw} {
+        print("s" + str(i));
+        if i == 1 {
+          throw(Stopped(i));
+        }
+        return str(i);
+      });
+    print(stopped);
+  } catch(error: Stopped) {
+    print(error.index);
+  } finally {
+    print("finally");
+  }
+}
