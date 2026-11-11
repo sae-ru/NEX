@@ -338,6 +338,9 @@ Toolchain 0.206 adds LSP completion fallback for unparsed source;
 Toolchain 0.207 adds LSP pull diagnostics; `language_server` passed in
 20.99 s.
 
+Toolchain 0.208 adds LSP folding ranges from brace blocks; `language_server`
+passed in 21.40 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

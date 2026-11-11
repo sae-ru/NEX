@@ -648,6 +648,16 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_folding_ranges_from_brace_blocks(self):
+        text='module app;\nfn main()->unit !{io}{\n  if true {\n    print(1);\n  }\n}\n'
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['foldingRangeProvider'])
+        client.open(self.file,text)
+        result=client.request('textDocument/foldingRange', {'textDocument': {'uri': self.file.as_uri()}})
+        self.assertEqual(len(result),2)
+        self.assertEqual(result[0],{'startLine':1,'endLine':5,'kind':'region'})
+        self.assertEqual(result[1],{'startLine':2,'endLine':4,'kind':'region'})
+
     def test_pull_diagnostics_match_published_state(self):
         bad='module app;\nfn main()->i64{return missing;}\n'
         good='module app;\nfn main()->i64{return 1;}\n'

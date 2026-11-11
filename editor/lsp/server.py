@@ -771,6 +771,8 @@ class Server:
         return {'changes': changes}
 
     def query(self, method, params, cache, cancelled=None):
+        if method == 'textDocument/foldingRange':
+            return self.folding_ranges(params)
         if method == 'textDocument/diagnostic':
             return self.pull_diagnostics(params)
         if method == 'workspace/symbol':
@@ -862,6 +864,22 @@ class Server:
             return []
         return [] if method != 'textDocument/hover' else None
 
+    def folding_ranges(self, params):
+        path, _ = self.document(params)
+        with self.lock:
+            document = self.documents.get(path)
+        text = document['text'] if document is not None else None
+        if text is None:
+            try:text = path.read_text(encoding='utf-8')
+            except OSError:raise RPCError(-32602, 'Document is not open')
+        ranges = []
+        for begin, end in block_ranges(text):
+            start_line = text.encode('utf-8')[:begin].count(b'\n')
+            end_line = text.encode('utf-8')[:max(begin, end - 1)].count(b'\n')
+            if end_line > start_line:ranges.append({'startLine': start_line, 'endLine': end_line, 'kind': 'region'})
+        ranges.sort(key=lambda item: (item['startLine'], item['endLine']))
+        return ranges
+
     def pull_diagnostics(self, params):
         descriptor = params.get('textDocument')
         if not isinstance(descriptor, dict):raise RPCError(-32602, 'Expected textDocument')
@@ -911,7 +929,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic', 'textDocument/foldingRange']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -970,7 +988,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}, 'foldingRangeProvider': True},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
