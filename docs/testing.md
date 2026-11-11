@@ -326,6 +326,9 @@ inside `if`/`while`/nested braces are hidden outside their block.
 Toolchain 0.203 adds LSP signature help for checked function calls;
 `language_server` passed in 20.40 s.
 
+Toolchain 0.204 adds LSP workspace symbol search; `language_server` passed in
+20.23 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

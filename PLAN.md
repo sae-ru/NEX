@@ -85,6 +85,7 @@ and final delivery work are:
 - [x] Filter LSP import completion to public symbols.
 - [x] Add lexical-block scope to LSP value completion.
 - [x] Add LSP signature help for checked calls.
+- [x] Add LSP workspace symbol search.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

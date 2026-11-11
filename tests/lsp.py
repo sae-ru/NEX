@@ -650,6 +650,17 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_workspace_symbol_search(self):
+        text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x; }\nfn main()->unit !{io}{print(helper(1));}\n'
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['workspaceSymbolProvider'])
+        client.open(self.file,text)
+        result=client.request('workspace/symbol', {'query':'hel'})
+        names=[item['name'] for item in result]
+        self.assertIn('helper',names)
+        self.assertTrue(result[0]['location']['uri'].endswith('/main.nex'))
+        self.assertIn('range',result[0]['location'])
+
     def test_signature_help_for_checked_call(self):
         text='module app;\nfn helper(x: i64, y: i64) -> i64 { return x + y; }\nfn main()->unit !{io}{print(helper(1,2));}\n'
         line=text.splitlines()[2];start=line.index('helper(')+len('helper(')

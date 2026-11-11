@@ -675,6 +675,27 @@ class Server:
             if len(items) >= 1000:break
         return {'isIncomplete': False, 'items': sorted(items.values(), key=lambda item: (item['sortText'], item['label']))}
 
+    def workspace_symbol(self, params, cache, cancelled=None):
+        query = params.get('query', '')
+        if not isinstance(query, str):raise RPCError(-32602, 'workspace/symbol requires a query string')
+        query = query.lower()
+        kinds = {'function': 12, 'struct': 23, 'enum': 10, 'resource': 5, 'trait': 11, 'endpoint': 12}
+        result = []
+        for index in cache['indices']:
+            if cancelled is not None and cancelled.is_set():
+                raise RPCError(-32800, 'Request cancelled')
+            files = {f['key']: f for f in index.get('files', [])}
+            for symbol in index.get('symbols', []):
+                name = symbol.get('name')
+                if not isinstance(name, str) or (query and query not in name.lower()):continue
+                unit = next((f for f in index.get('files', []) if Path(f['path']).resolve() == Path(symbol['file']).resolve()), None)
+                if unit is None:continue
+                at = symbol.get('selection') or symbol.get('range')
+                result.append({'name': name, 'kind': kinds.get(symbol.get('kind'), 1),
+                    'location': {'uri': Path(unit['path']).as_uri(), 'range': source_range(unit['text'], at)}})
+                if len(result) >= 1000:return result
+        return result
+
     def signature_help(self, path, params, cache, cancelled=None):
         current_index = next((index for index in cache['indices']
             if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
@@ -717,6 +738,8 @@ class Server:
         return {'changes': changes}
 
     def query(self, method, params, cache, cancelled=None):
+        if method == 'workspace/symbol':
+            return self.workspace_symbol(params, cache, cancelled)
         path, _ = self.document(params)
         if method == 'textDocument/signatureHelp':
             return self.signature_help(path, params, cache, cancelled)
@@ -842,7 +865,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'workspace/symbol']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -901,7 +924,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
