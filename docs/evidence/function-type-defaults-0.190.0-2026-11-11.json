@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Trailing type-parameter defaults on generic functions",
+  "implementation_commit": "cb533fb9d82651bd5c36c175028099ce634f2e00",
+  "build_source_base_commit": "b7875b0",
+  "compiler": {
+    "toolchain": "0.190.0",
+    "language": "0.28",
+    "sha256": "5d2c931f1b9b390bd39ac875f539c9f6939b11834e574c350b3d515c8ed8dc4a",
+    "compiler_build": "9626f98b4e08bbcfc9e4cfeacaa540fed6a0db1bc34b28a04eb951a4bd45431b",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "syntax": "fn marker<T = i64>() -> str",
+    "bare_call": "marker()",
+    "explicit": "marker<str>()",
+    "partial": "pair<i64>(...) with B=str default",
+    "function_value": "let f: fn()->str = marker",
+    "defaults_resolve_prior_parameters": true,
+    "rejections": [
+      "non-trailing default",
+      "unit default"
+    ]
+  },
+  "observations": {
+    "registered_groups": 339,
+    "type_defaults_seconds": 5.05823,
+    "function_type_defaults_seconds": 5.34976,
+    "focused_tests": 3,
+    "focused_seconds": 87.49,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.71,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "type lambdas and general higher-kinded inference remain pending",
+    "no full CTest/full SDK; 0.190 not deployed to CIX/RK/Windows stands"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/fn-defaults-0190-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/fn-defaults-0190-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/fn-defaults-0190-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/fn-defaults-0190-v1/nex.sha256",
+    "test": "tests/function_type_defaults.py",
+    "guide": "docs/language.md"
+  }
+}
