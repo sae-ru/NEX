@@ -1,0 +1,71 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical CUDA fixed-record/result generated root execution",
+  "implementation_commit": "802413f",
+  "build_source_base_commit": "e62454c",
+  "compiler": {
+    "toolchain": "0.218.0",
+    "language": "0.28",
+    "windows_binary": "F:/sae/NEX-0.218-20261112/build/stand/nex.exe"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "values_root": {
+    "prepared_project": "cuda-values-prepared",
+    "root": "transform(Measurement)->result<Count>",
+    "input": {
+      "value": 42.75,
+      "valid": true
+    },
+    "expected": {
+      "ok_tag": 1,
+      "value": 42,
+      "valid": true
+    },
+    "run_stdout": "42\n",
+    "run_exit_code": 0,
+    "trace_rows": 18,
+    "kernel_completions": 1,
+    "last_event": "module_unloaded",
+    "ledger": {
+      "acceptance_gate_launches": 0,
+      "allocations": 3,
+      "cleanup_errors": 0,
+      "context_frees": 1,
+      "contexts": 1,
+      "event_frees": 2,
+      "events": 2,
+      "frees": 3,
+      "kernel_launches": 1,
+      "live_bytes": 0,
+      "module_frees": 1,
+      "modules": 1,
+      "peak_bytes": 131112,
+      "stream_frees": 1,
+      "streams": 1
+    },
+    "trace_sha256": "e466853f45595054a61bbef1ab66b098c2dc809eaef0532afc7e39f26e5f5bd1",
+    "run_sha256": "892313382433b8bbad8b3b48b4cbf7da23c57715cd017dd0459d1c284b177e22"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "single fixed-record/result root; remaining roots and public SDK remain",
+    "complete owned-CUDA/public SDK acceptance remains false",
+    "run used the 0.218 Windows compiler; current source toolchain is 0.223"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "run": "/Users/sae/projects/NEX/build/cuda-values-0224/cuda-values-run.utf8.json",
+    "trace": "/Users/sae/projects/NEX/build/cuda-values-0224/cuda-values-run.trace.jsonl",
+    "guide": "docs/testing.md"
+  }
+}

@@ -438,6 +438,10 @@ Physical CUDA dynamic-text root: a prepared `transform(str)->result<str>`
 provider with text capacity 256 ran on RTX 3090 with `α🌍 -> 2:α🌍`, one kernel
 completion and a balanced trace ledger.
 
+Physical CUDA fixed-record/result root: a prepared `transform(Measurement)->
+result<Count>` provider ran on RTX 3090 with `Measurement(42.75,true)` producing
+`ok(Count(42,true))`, one kernel completion and a balanced trace ledger.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
