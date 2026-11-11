@@ -88,6 +88,9 @@ restoration, cancellation, deadlines, resource limits, replay and memory checkin
 On Windows, pass `--toolchain FILE` so the preparer's `nex doctor`
 discovery uses the same explicit native toolchain as builds.
 
+Pass `--toolchain FILE` to `verify_delivery.py` on Windows so task builds
+pin the explicit native toolchain.
+
 `NEX_OWNED_CUDA_MAP_TRACE` enables JSONL identity, allocation, enqueue,
 completion and cleanup events. Kernel timing uses CUDA events. GPU stepping,
 operation-level attribution and public profiling integration remain pending.

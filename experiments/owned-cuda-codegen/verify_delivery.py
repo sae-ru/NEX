@@ -37,6 +37,7 @@ def main():
     for name in ["compiler", "resources", "project", "notices", "output"]:
         parser.add_argument("--" + name, required=True, type=Path)
     parser.add_argument("--host-unavailable-control", action="store_true", help="macOS only: actual FFI delivery with a typed unavailable CUDA result; never GPU acceptance")
+    parser.add_argument("--toolchain", type=Path, help="Explicit native toolchain for task builds")
     args = parser.parse_args()
     if args.host_unavailable_control:
         if platform.system() != "Darwin":
@@ -157,16 +158,28 @@ def main():
         assert len(task["checks"]) == 1 and task["checks"][0]["kind"] == "build"
         build = task["checks"][0]
         build.update(timeout_seconds=300, task_limits={"steps": 16000000, "timeout_ms": 30000, "workers": 1})
+        toolchain_catalog = None
+        if args.toolchain:
+            toolchain_report = json.loads(run("toolchain", [compiler, "toolchain", args.toolchain.resolve(strict=True), "--json"], work).stdout)
+            build["toolchain"] = "delivery"
+            build["toolchain_hash"] = toolchain_report["hash"]
+            toolchain_catalog = out / "toolchains.json"
+            write(toolchain_catalog, {"delivery": str(args.toolchain.resolve(strict=True))})
         task.update(title="Generated CUDA provider delivery", goal="Capture and replay the exact checked provider, then run an independently relocated package")
-        task["checks"].append({"id": "observe", "kind": "run", "target": "native", "program": "app", "entry": build["entry"],
+        observe = {"id": "observe", "kind": "run", "target": "native", "program": "app", "entry": build["entry"],
             "foreign_hash": foreign["hash"], "timeout_seconds": 180, "task_limits": {"steps": 16000000, "timeout_ms": 30000, "workers": 1},
-            "expect": {"stdout": "42\n", "exit_code": 0}})
+            "expect": {"stdout": "42\n", "exit_code": 0}}
+        if args.toolchain:
+            observe["toolchain"] = "delivery"
+            observe["toolchain_hash"] = toolchain_report["hash"]
+        task["checks"].append(observe)
         task["requirements"].append({"id": "delivery", "text": "Exact values and resource cleanup from the selected generated provider", "targets": ["native"],
             "checks": ["observe"], "bindings": [{"program": "app", "kind": "function", "symbol": build["entry"]}]})
         write(work / "task.json", task)
-        task_checked = json.loads(run("task-check", [compiler, "task", "task.json", "--kind", "check", "--foreign", work / "foreign.json", "--json"], work).stdout)
+        toolchain_args = ["--toolchains", str(toolchain_catalog)] if toolchain_catalog else []
+        task_checked = json.loads(run("task-check", [compiler, "task", "task.json", "--kind", "check", "--foreign", work / "foreign.json", *toolchain_args, "--json"], work).stdout)
         capture_trace = out / "capture.trace.jsonl"
-        captured = json.loads(run("task-capture", [compiler, "task", "task.json", "--kind", "run", "--foreign", work / "foreign.json", "--task-hash", task_checked["task_hash"], "--directory", out / "capture", "--json"], work, trace=capture_trace).stdout)
+        captured = json.loads(run("task-capture", [compiler, "task", "task.json", "--kind", "run", "--foreign", work / "foreign.json", "--task-hash", task_checked["task_hash"], *toolchain_args, "--directory", out / "capture", "--json"], work, trace=capture_trace).stdout)
         assert captured["ok"] and all(c["status"] == "passed" for c in captured["checks"])
         report["capture"] = inspect(capture_trace, 2)
         notice_data = json.loads(notices.read_bytes())
@@ -178,7 +191,10 @@ def main():
             "roots": [str(work / "bundle")], "license_files": [str(work / "bundle/NOTICE")]})
         write(out / "package-notices.json", notice_data)
         package = out / "application"
-        packaged = json.loads(run("package", [compiler, "package", "--foreign", work / "foreign.json", "--notices", out / "package-notices.json", "--directory", package, "--json"], work).stdout)
+        package_command = [compiler, "package", "--foreign", work / "foreign.json", "--notices", out / "package-notices.json", "--directory", package, "--json"]
+        if args.toolchain:
+            package_command += ["--toolchain", str(args.toolchain.resolve(strict=True))]
+        packaged = json.loads(run("package", package_command, work).stdout)
         application = json.loads((package / "application.json").read_bytes())
         assert application["schema"] == "nex.application-package/1" and not application["execution_verified"]
         assert {p.relative_to(package).as_posix() for p in package.rglob("*") if p.is_file() or p.is_symlink()} == set(application["files"]) | {"application.json"}
@@ -200,7 +216,7 @@ def main():
         denied = json.loads(run("replay-without-authority", [compiler, "task", receipt, "--kind", "replay", "--directory", out / "denied-replay", "--json"], expected=1, trace=denied_trace).stdout)
         assert denied["code"] == "E_TASK_FOREIGN" and not denied_trace.exists()
         replay_trace = out / "replay.trace.jsonl"
-        replay = json.loads(run("source-deleted-replay", [compiler, "task", receipt, "--kind", "replay", "--foreign", authority / "foreign.json", "--directory", out / "replay", "--json"], trace=replay_trace).stdout)
+        replay = json.loads(run("source-deleted-replay", [compiler, "task", receipt, "--kind", "replay", "--foreign", authority / "foreign.json", *toolchain_args, "--directory", out / "replay", "--json"], trace=replay_trace).stdout)
         assert replay["ok"] and replay["task_hash"] == captured["task_hash"] and replay["foreign_catalogue"] == captured["foreign_catalogue"]
         report["replay"] = inspect(replay_trace, 2)
         executable = moved / ("bin/app.exe" if os.name == "nt" else "bin/app")

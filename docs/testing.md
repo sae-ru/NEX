@@ -408,6 +408,14 @@ Toolchain 0.221 then completed the Compute Sanitizer gate on RTX 3090:
 full leak checking, `task_budgets_changed: false`; all required summaries were
 zero. Complete owned-CUDA acceptance remains false.
 
+Toolchain 0.222 pins an explicit native toolchain in owned-CUDA delivery task
+checks and passes a trusted toolchain catalogue through check/capture/replay.
+
+Toolchain 0.222 also allows the CUDA delivery task to pin `toolchain` on both
+build and observe checks and to pass a trusted toolchain catalog. On Windows the
+task check and capture then passed; packaging stopped at missing provenance for
+`libcrypto.dll.a`, so delivery acceptance remains pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
