@@ -648,6 +648,21 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_pull_diagnostics_match_published_state(self):
+        bad='module app;\nfn main()->i64{return missing;}\n'
+        good='module app;\nfn main()->i64{return 1;}\n'
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['diagnosticProvider']['interFileDependencies'])
+        client.open(self.file,bad,1)
+        published=client.diagnostics(self.file,1)
+        pulled=client.request('textDocument/diagnostic', {'textDocument': {'uri': self.file.as_uri()}})
+        self.assertEqual(pulled['kind'],'full')
+        self.assertEqual(pulled['items'],published)
+        client.change(self.file,good,2)
+        client.diagnostics(self.file,2)
+        pulled=client.request('textDocument/diagnostic', {'textDocument': {'uri': self.file.as_uri()}})
+        self.assertEqual(pulled['items'],[])
+
     def test_document_highlights_for_checked_occurrences(self):
         text='module app;\nfn helper(x: i64) -> i64 { return x; }\nfn main()->unit !{io}{print(helper(1));}\n'
         line=text.splitlines()[2];start=line.index('helper')

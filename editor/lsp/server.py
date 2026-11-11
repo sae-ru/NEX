@@ -157,6 +157,7 @@ class Server:
         self.analysis_lock = threading.Lock()
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix='nex-lsp')
         self.documents = {}
+        self.latest_diagnostics = {}
         self.pending = {}
         self.published = set()
         self.epoch = 0
@@ -315,6 +316,7 @@ class Server:
             with self.lock:
                 self.current(epoch)
                 self.cache = cache
+                self.latest_diagnostics = {uri: list(items) for uri, items in diagnostics.items()}
                 current_uris = {d['uri'] for d in documents.values()}
                 for uri in self.published | current_uris | diagnostics.keys():
                     params = {'uri': uri, 'diagnostics': diagnostics.get(uri, [])}
@@ -769,6 +771,8 @@ class Server:
         return {'changes': changes}
 
     def query(self, method, params, cache, cancelled=None):
+        if method == 'textDocument/diagnostic':
+            return self.pull_diagnostics(params)
         if method == 'workspace/symbol':
             return self.workspace_symbol(params, cache, cancelled)
         path, _ = self.document(params)
@@ -858,6 +862,15 @@ class Server:
             return []
         return [] if method != 'textDocument/hover' else None
 
+    def pull_diagnostics(self, params):
+        descriptor = params.get('textDocument')
+        if not isinstance(descriptor, dict):raise RPCError(-32602, 'Expected textDocument')
+        uri = descriptor.get('uri')
+        if not isinstance(uri, str):raise RPCError(-32602, 'Expected a document URI')
+        with self.lock:
+            items = list(self.latest_diagnostics.get(uri, []))
+        return {'kind': 'full', 'items': items}
+
     def formatting(self, params):
         path, _ = self.document(params)
         with self.lock:
@@ -898,7 +911,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -957,7 +970,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:

@@ -335,6 +335,9 @@ Toolchain 0.205 adds LSP document highlights; `language_server` passed in
 Toolchain 0.206 adds LSP completion fallback for unparsed source;
 `language_server` passed in 20.40 s.
 
+Toolchain 0.207 adds LSP pull diagnostics; `language_server` passed in
+20.99 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
