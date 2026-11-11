@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nex_docker_mount import mount
@@ -112,17 +113,27 @@ def package(arguments, output):
         if value['Architecture'] != arguments.arch:
             raise RuntimeError('image architecture differs: ' + image)
         return value['Id']
-    toolchain = 'nex-linux-toolchain:' + arguments.arch
+    toolchain = getattr(arguments, 'toolchain_image', None) or 'nex-linux-toolchain:' + arguments.arch
     packager, runtime = 'nex-sdk-packager:' + arguments.arch, 'nex-sdk-runtime:' + arguments.arch
     original_image = inspect(toolchain)
     try:
         if not arguments.skip_image_build:
+            # Dockerfile FROM uses an image reference. Bind a fresh local alias
+            # to the already inspected ID rather than resolving a mutable tag.
+            base_alias='nex-sdk-build-input:'+uuid.uuid4().hex
+            run('pin-build-input',['docker','image','tag',original_image,base_alias])
+            if inspect(base_alias)!=original_image:
+                raise RuntimeError('owned build input alias differs from the inspected image')
+            report['toolchain_build_alias']={'tag':base_alias,'image_id':original_image}
             for tag, recipe in [(packager, 'Bundle.Dockerfile'), (runtime, 'BundleRuntime.Dockerfile')]:
                 run('image-' + recipe.split('.')[0], ['docker', 'build', '--platform', 'linux/' + arguments.arch,
-                    '--build-arg', 'TOOLCHAIN_IMAGE=' + toolchain, '-f', source / 'tools/linux' / recipe, '-t', tag, source])
+                    '--build-arg', 'TOOLCHAIN_IMAGE=' + base_alias, '-f', source / 'tools/linux' / recipe, '-t', tag, source])
+            if inspect(base_alias)!=original_image:
+                raise RuntimeError('owned build input alias changed during image preparation')
         report['images'] = {name: inspect(name) for name in (toolchain, packager, runtime)}
         if inspect(toolchain) != original_image:
             raise RuntimeError('original compiler image changed')
+        packager_id, runtime_id = report['images'][packager], report['images'][runtime]
         frozen = output / 'input-sdk'
         shutil.copytree(sdk, frozen, symlinks=True)
         report['input_compiler_sha256'] = digest(frozen / 'bin/nex')
@@ -136,12 +147,12 @@ def package(arguments, output):
         (output / 'notices.json').write_text(json.dumps(notices, indent=2) + '\n')
         shutil.copyfile(source / 'tools/linux/bundle_boundaries.py', output / 'boundary-check.py')
         run('metadata-boundaries', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
-            *mount(frozen, '/sdk'), *mount(output, '/work', False), packager,
+            *mount(frozen, '/sdk'), *mount(output, '/work', False), packager_id,
             'python3', '/work/boundary-check.py', '--sdk', '/sdk', '--assembler', '/work/assembler.py',
             '--output', '/work/boundaries'])
         report['metadata_boundaries'] = json.loads((output / 'boundaries/report.json').read_text())
         run('assemble', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
-            *mount(frozen, '/sdk'), *mount(output, '/work', False), packager,
+            *mount(frozen, '/sdk'), *mount(output, '/work', False), packager_id,
             'python3', '/work/assembler.py', '--sdk', '/sdk', '--output', '/work/stage',
             '--notices', '/work/notices.json', '--dpkg-notices'])
         moved = output / 'moved SDK, % 🧠'
@@ -149,7 +160,7 @@ def package(arguments, output):
         evidence = output / 'clean-acceptance'; evidence.mkdir()
         target = '/relocated SDK, % 🧠'
         run('clean-sdk', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
-            *mount(moved, target), *mount(evidence, '/evidence', False), '--workdir', '/evidence', runtime,
+            *mount(moved, target), *mount(evidence, '/evidence', False), '--workdir', '/evidence', runtime_id,
             'python3', target + '/share/nex/tools/linux/bundle.py', '--verify', target, '--output', '/evidence/report'])
         accepted = json.loads((evidence / 'report/verification.json').read_text())
         if not accepted['ok']:
@@ -170,7 +181,7 @@ subprocess.run(['python3',str(sdk/'share/nex/tools/linux/bundle.py'),'--verify',
 '''.replace('EXPECTED_SHA256', report['archive']['sha256'])
         run('restored-archive', ['docker', 'run', '--rm', '--platform', 'linux/' + arguments.arch, '--network', 'none',
             *mount(archive, '/archive.tar.gz'), *mount(output / 'archive-helper.py', '/archive-helper.py'),
-            *mount(restored, '/evidence', False), runtime, 'python3', '-c', extract])
+            *mount(restored, '/evidence', False), runtime_id, 'python3', '-c', extract])
         checked_archive = json.loads((restored / 'report/verification.json').read_text())
         if not checked_archive['ok'] or checked_archive['compiler_sha256'] != accepted['compiler_sha256']:
             raise RuntimeError('restored archive differs from the checked SDK')
@@ -190,6 +201,7 @@ def main():
     parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument('--arch', choices=('arm64', 'amd64'), default='arm64' if platform.machine() in ('arm64', 'aarch64') else 'amd64')
     parser.add_argument('--skip-image-build', action='store_true')
+    parser.add_argument('--toolchain-image', help='Explicit already built compiler image reference; inspected and executed by immutable ID')
     arguments = parser.parse_args(); output = arguments.output.resolve()
     sdk = (arguments.sdk or arguments.verify).resolve()
     if output == sdk or sdk in output.parents or output in sdk.parents:

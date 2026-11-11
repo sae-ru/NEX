@@ -135,6 +135,8 @@ scale groups.
 Shared [development presets](docs/development-build.md) also provide
 `cmake --workflow --preset dev-core` with separate Debug/Release build directories.
 See [CI receipts and workflow scope](docs/ci.md) for the automated checks.
+The [source-to-archive SDK driver](docs/sdk-build.md) joins the maintained
+macOS/Linux workflows; complete execution of the new driver remains pending.
 
 Use the complete workflow below at the agreed milestone:
 

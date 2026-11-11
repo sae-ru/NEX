@@ -27,10 +27,14 @@ controls are prepared. Local Qwen transport, weight pins and scoped macOS
 execution isolation now have host evidence and one benign readiness response.
 Restricted collection, runtime/template/budget freeze and counted fresh-context
 local source review are implemented. Infrastructure pilots retain all failures;
-repaired diagnostic feedback passed its real pilot and the full matched study is next.
+repaired diagnostic feedback passed its real pilot and the60-slot matched study is running.
 The11-group core test layer is implemented (12.36s on the development Mac), with
 explicit browser/platform/sdk/scale labels and the original complete registry
-preserved. Presets, repeatable SDK preparation and CI remain next engineering work.
+preserved. Shared Debug/Release presets and macOS/Linux core/separate Linuxfull
+CI definitions are implemented with local evidence. The [SDK build driver](docs/sdk-build.md)
+fixes a committed source snapshot and joins the maintained macOS/Linux workflows;
+its full source-to-archive execution, hosted CI and final matching SDK acceptance
+remain pending.
 The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
 APIs. Conclusions will be scoped to that model.
 

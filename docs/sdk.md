@@ -1,5 +1,9 @@
 # Qualified SDK: 0.162.0 / language 0.28 / task ABI 7
 
+For the current source-to-archive development command, see
+[one-command SDK build](sdk-build.md). Its pipeline qualification is separate
+from the historical immutable SDK record below.
+
 The [Mac ARM64 SDK record](releases/0.162.0.json) pins the immutable archive:
 300 source CTest groups; 41 maintained phases and 90 additional cases on each
 moved/restored installation; actual Python3.10/3.14; 4000 C++ host calls and

@@ -156,6 +156,7 @@
     "runtime_loop_contracts": ["extended", "platform", "scale"],
     "runtime_value_contracts": ["extended", "browser", "platform", "scale"],
     "sdk_archives": ["extended", "browser", "sdk"],
+    "sdk_build_workflow": ["extended", "sdk"],
     "sdk_host": ["extended", "sdk"],
     "sdk_operator_notices": ["extended", "sdk"],
     "server_debug": ["extended", "browser", "platform", "scale"],

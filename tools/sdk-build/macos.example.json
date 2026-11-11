@@ -1,0 +1,21 @@
+{
+  "schema": "nex.sdk-build/1",
+  "target": "macos-native",
+  "jobs": 4,
+  "cmake_definitions": {
+    "CMAKE_C_COMPILER": "/usr/bin/clang",
+    "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+    "LLVM_DIR": "/opt/homebrew/opt/llvm@22/lib/cmake/llvm",
+    "MLIR_DIR": "/opt/homebrew/opt/llvm@22/lib/cmake/mlir",
+    "OPENSSL_ROOT_DIR": "/opt/homebrew/opt/openssl@3",
+    "NEX_Z3_ROOT": "/absolute/z3-prefix",
+    "NEX_WASM_LD": "/opt/homebrew/opt/lld@22/bin/wasm-ld",
+    "NEX_ELF_TEST_LD": "/opt/homebrew/opt/lld@22/bin/ld.lld"
+  },
+  "notices": "/absolute/dependency-notices.json",
+  "npm_cache": "/absolute/locked-npm-cache",
+  "deny_read": ["/opt/homebrew", "/opt/local"],
+  "node": "/absolute/external-node",
+  "npm": "/absolute/external-npm",
+  "live": true
+}

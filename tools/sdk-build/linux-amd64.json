@@ -1,0 +1,5 @@
+{
+  "schema": "nex.sdk-build/1",
+  "target": "linux-amd64",
+  "jobs": 2
+}

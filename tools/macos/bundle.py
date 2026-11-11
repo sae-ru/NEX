@@ -26,6 +26,26 @@ def profile(roots, sdk):
            '(deny file-write* (subpath '+json.dumps(str(sdk), ensure_ascii=False)+'))\n'
 
 
+def read_probes(sdk, notices, roots, extra=()):
+    candidates = [sdk/'bin/nex']
+    for path in extra:
+        probe = Path(path).resolve(strict=True)
+        if not probe.is_file() or not any(inside(probe, root) for root in roots):
+            raise ValueError('--deny-probe must name a readable file inside a denied root')
+        candidates.append(probe)
+    for component in json.loads(notices.read_text())['components']:
+        candidates.extend((notices.parent/filename).resolve(strict=True) for filename in component['license_files'])
+    probes = []
+    for root in roots:
+        probe = next((path for path in candidates if inside(path.resolve(), root) and path.is_file()), None)
+        if probe is None:
+            raise ValueError('no bounded negative-control input for denied root: '+str(root))
+        with probe.open('rb') as stream:
+            stream.read(1)
+        probes.append(probe.resolve())
+    return probes
+
+
 def package(args):
     sdk, output, notices = args.sdk.resolve(strict=True), args.output.resolve(), args.notices.resolve(strict=True)
     roots = list(dict.fromkeys(path.resolve() for path in args.deny_read))
@@ -95,17 +115,7 @@ def package(args):
             raise ValueError('--deny-read must cover the input SDK and all copied host-component sources')
         report.update(toolchain=manifest['toolchain'], language=manifest['language'], host=manifest['host'],
                       minimum_macos=manifest['minimum_macos'], external_prerequisites=manifest['external_prerequisites'])
-        candidates = [sdk/'bin/nex']
-        for component in json.loads(notices.read_text())['components']:
-            candidates.extend((notices.parent/filename).resolve(strict=True) for filename in component['license_files'])
-        probes = []
-        for root in roots:
-            probe = next((path for path in candidates if inside(path.resolve(), root) and path.is_file()), None)
-            if probe is None:
-                raise ValueError('no bounded negative-control input for denied root: '+str(root))
-            with probe.open('rb') as stream:
-                stream.read(1)
-            probes.append(probe.resolve())
+        probes = read_probes(sdk, notices, roots, getattr(args, 'deny_probe', []))
         report['negative_control_inputs'] = list(map(str, probes))
         deny_read = '''import json,sys
 try:
@@ -185,6 +195,8 @@ def main():
     parser.add_argument('--npm-cache', type=Path, required=True)
     parser.add_argument('--deny-read', type=Path, action='append', required=True,
                         help='Block this source/host-dependency tree with a tested kernel policy; repeat as needed')
+    parser.add_argument('--deny-probe', type=Path, action='append', default=[],
+                        help='Explicit readable control file in a denied source/build root; repeat as needed')
     parser.add_argument('--node', default=shutil.which('node'))
     parser.add_argument('--npm', default=shutil.which('npm'))
     parser.add_argument('--python', default=sys.executable)

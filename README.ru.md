@@ -138,6 +138,8 @@ ctest --test-dir build -L '^core$' --output-on-failure
 [Пресеты разработки](docs/development-build.md) также дают одну команду
 `cmake --workflow --preset dev-core` с отдельными каталогами Debug/Release.
 Проверка отчётов и границы автоматизации описаны в [руководстве CI](docs/ci.md).
+[Команда сборки SDK](docs/sdk-build.md) объединяет существующие macOS/Linux
+workflow; полный прогон новой команды ещё предстоит.
 
 Полный цикл для согласованного этапа приёмки:
 

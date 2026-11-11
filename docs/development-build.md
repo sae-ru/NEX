@@ -73,6 +73,10 @@ Complete dependency inventories, immutable archive preparation and current
 platform/source-free acceptance remain separate delivery work. Whole-profile
 builds and timing for every platform remain qualification gates.
 
+The [SDK build driver](sdk-build.md) exports a committed source snapshot and
+joins source/full/installed checks with the existing macOS/Linux distributors.
+Its local controls are distinct from executing a new complete SDK pipeline.
+
 The [current qualification](evidence/development-presets-0.165.0-2026-11-11.json) covers actual CMake preset parsing, a fresh selected-
 dependency Debug configure and exact11-group core preset selection on macOS.
 The fresh profile has not been fully rebuilt or executed: the independent
