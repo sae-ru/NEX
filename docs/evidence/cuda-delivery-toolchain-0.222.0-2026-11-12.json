@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit native toolchain pinning through CUDA delivery tasks",
+  "implementation_commit": "82a2cecf6adf2fb811966df2fb6b1bf52f3e970a",
+  "build_source_base_commit": "1b8f3cf",
+  "compiler": {
+    "toolchain": "0.222.0",
+    "language": "0.28",
+    "sha256": "6e8bf720edef5318db6a77bfc4b66badded73d9ec2a87f4f77bb905cce1d5616",
+    "compiler_build": "3bfc7e5fa90279fc3c64d3cb50bcf26c849e15fef56211263cd5b33422b912f6",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "delivery": {
+    "task_check_passed": true,
+    "task_capture_passed": true,
+    "package_blocked": true,
+    "package_error": "no component/license provenance for external file libcrypto.dll.a",
+    "relocated_replay_executed": false,
+    "complete_delivery": false
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.78,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "delivery capture passes with pinned toolchain; packaging needs complete native dependency provenance",
+    "source-deleted replay/standalone and public SDK delivery remain pending",
+    "complete owned-CUDA acceptance remains false"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-delivery-0222/core.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-delivery-0222/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-delivery-0222/nex.sha256",
+    "verifier": "experiments/owned-cuda-codegen/verify_delivery.py",
+    "guide": "docs/testing.md"
+  }
+}
