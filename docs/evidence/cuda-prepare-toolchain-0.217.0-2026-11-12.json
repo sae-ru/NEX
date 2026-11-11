@@ -1,0 +1,66 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Windows owned-CUDA native preparation with explicit toolchain",
+  "implementation_commit": "f3ee389",
+  "build_source_base_commit": "9daf354",
+  "compiler": {
+    "toolchain": "0.217.0",
+    "language": "0.28",
+    "sha256": "e3ae292c55726b2c89884db370476ce84783ccccdf306882832b07606f043a69",
+    "compiler_build": "27410660f5cf312cb7b574d56c191225eb8c2876b9c134c1b98e3503ffd468e1",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1",
+    "nvrtc": {
+      "NVRTC_sha256": "b6728e893db1c797af2cf55c9104e25e793a1b709d8809b9991af81035a7a8a2",
+      "version": [
+        12,
+        1
+      ],
+      "options": [
+        "--std=c++20",
+        "--gpu-architecture=compute_86",
+        "--generate-line-info"
+      ],
+      "PTX_sha256": "fa686ba8baf0bc1891ecd9db237444dbffcfb27b1720e7862aab12eddb52b40e"
+    }
+  },
+  "preparation": {
+    "schema": "nex.experimental-owned-CUDA-codegen-preparation/1",
+    "native_provider_built": true,
+    "hardware_executed": false,
+    "report_sha256": "6deb629266e81eb6c8b8e39c3fa781657889d0cdfb3e6a4ea54764df548a3073",
+    "hardware_execution_attempted": true,
+    "physical_context_probe": "failed: nested cleanup retained device memory"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "cuda_source_tests": 4,
+    "cuda_source_seconds": 89.61,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.58,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "native provider/PTX built, but the physical context probe failed on retained device memory",
+    "no CUDA hardware acceptance, memcheck, delivery or full SDK claim",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "preparation_report": "/Users/sae/projects/NEX/build/cuda-physical-0217/report.json",
+    "focused_junit": "/Users/sae/projects/NEX/build/cuda-physical-0217/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-physical-0217/core.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-physical-0217/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-physical-0217/nex.sha256",
+    "preparer": "experiments/owned-cuda-codegen/prepare.py",
+    "doc": "docs/testing.md"
+  }
+}

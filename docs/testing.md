@@ -371,6 +371,11 @@ toolchain instead of rejecting the selector; invalid files return E_TOOLCHAIN.
 Toolchain 0.217 lets the owned CUDA preparer pass an explicit `--toolchain`
 file to `nex doctor` on Windows hosts.
 
+Toolchain 0.217 prepared a native owned-CUDA provider on Windows with NVRTC
+12.1/PTX compute_86 and an explicit toolchain. The physical context probe then
+failed with `nested cleanup retained device memory`, so no CUDA hardware
+acceptance is claimed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
