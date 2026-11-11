@@ -6,22 +6,37 @@
 namespace nex {
 namespace {
 constexpr size_t maxInstances=4096;
-std::vector<S> cloneBlock(const std::vector<S> &,const std::map<std::string,Type> &);
+std::vector<S> cloneBlock(const std::vector<S> &,const std::map<std::string,Type> &,const std::map<std::string,std::set<std::string>> &);
+static std::set<std::string> substituteEffects(const std::set<std::string> &effects,const std::map<std::string,std::set<std::string>> &arguments){
+  std::set<std::string> result;
+  for(const auto &effect:effects){
+    auto found=arguments.find(effect);
+    if(found!=arguments.end())result.insert(found->second.begin(),found->second.end());
+    else result.insert(effect);
+  }
+  return result;
+}
+static Type substituteEffectTypes(Type type,const std::map<std::string,std::set<std::string>> &arguments){
+  if(type.element)type.element=std::make_shared<Type>(substituteEffectTypes(*type.element,arguments));
+  for(auto &argument:type.arguments)argument=substituteEffectTypes(argument,arguments);
+  if(type.kind==Type::Function)type.effects=substituteEffects(type.effects,arguments);
+  return type;
+}
 P clonePattern(P source){auto value=std::make_shared<Pattern>(*source);value->type=Type::Unknown;value->args.clear();for(auto child:source->args)value->args.push_back(clonePattern(child));return value;}
-E cloneExpression(E source,const std::map<std::string,Type> &arguments){
+E cloneExpression(E source,const std::map<std::string,Type> &arguments,const std::map<std::string,std::set<std::string>> &effectArguments){
   if(!source)return nullptr;auto value=std::make_shared<Expr>(*source);value->type=Type::Unknown;
-  value->annotation=substituteType(source->annotation,arguments);value->args.clear();
-  for(auto child:source->args)value->args.push_back(cloneExpression(child,arguments));
+  value->annotation=substituteEffectTypes(substituteType(source->annotation,arguments),effectArguments);value->args.clear();
+  for(auto child:source->args)value->args.push_back(cloneExpression(child,arguments,effectArguments));
   for(auto &type:value->typeArguments)type=substituteType(type,arguments);
   for(auto &type:value->methodArguments)type=substituteType(type,arguments);
   for(auto &type:value->traitArguments)type=substituteType(type,arguments);
-  if(source->lambda){value->lambda=std::make_shared<Function>(*source->lambda);auto &fn=*value->lambda;fn.checked=false;fn.captures.clear();fn.closure=false;fn.closureOwner.clear();fn.name.clear();fn.result=substituteType(fn.result,arguments);for(auto &param:fn.params)param.type=substituteType(param.type,arguments);fn.body=cloneBlock(source->lambda->body,arguments);if(value->kind==Expr::Lambda){value->text.clear();value->args.clear();}}
-  value->arms.clear();for(auto original:source->arms){auto arm=std::make_shared<MatchArm>(*original);arm->pattern=clonePattern(original->pattern);arm->bindings.clear();arm->body=cloneBlock(original->body,arguments);value->arms.push_back(std::move(arm));}return value;
+  if(source->lambda){value->lambda=std::make_shared<Function>(*source->lambda);auto &fn=*value->lambda;fn.checked=false;fn.captures.clear();fn.closure=false;fn.closureOwner.clear();fn.name.clear();fn.effects=substituteEffects(fn.effects,effectArguments);fn.result=substituteEffectTypes(substituteType(fn.result,arguments),effectArguments);for(auto &param:fn.params)param.type=substituteEffectTypes(substituteType(param.type,arguments),effectArguments);fn.body=cloneBlock(source->lambda->body,arguments,effectArguments);if(value->kind==Expr::Lambda){value->text.clear();value->args.clear();}}
+  value->arms.clear();for(auto original:source->arms){auto arm=std::make_shared<MatchArm>(*original);arm->pattern=clonePattern(original->pattern);arm->bindings.clear();arm->body=cloneBlock(original->body,arguments,effectArguments);value->arms.push_back(std::move(arm));}return value;
 }
-std::vector<S> cloneBlock(const std::vector<S> &source,const std::map<std::string,Type> &arguments){
+std::vector<S> cloneBlock(const std::vector<S> &source,const std::map<std::string,Type> &arguments,const std::map<std::string,std::set<std::string>> &effectArguments){
   std::vector<S> result;for(auto original:source){auto statement=std::make_shared<Stmt>(*original);
-    statement->type=substituteType(original->type,arguments);statement->expr=cloneExpression(original->expr,arguments);
-    statement->body=cloneBlock(original->body,arguments);statement->alternative=cloneBlock(original->alternative,arguments);statement->arms.clear();
+    statement->type=substituteEffectTypes(substituteType(original->type,arguments),effectArguments);statement->expr=cloneExpression(original->expr,arguments,effectArguments);
+    statement->body=cloneBlock(original->body,arguments,effectArguments);statement->alternative=cloneBlock(original->alternative,arguments,effectArguments);statement->arms.clear();
     if(statement->kind==Stmt::Match)statement->arms=statement->expr->arms;
     result.push_back(std::move(statement));}return result;
 }
@@ -33,7 +48,7 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
     bound[parameters[i]]=arguments[i];}return bound;
 }
 }
-E cloneSourceExpression(E source){return cloneExpression(source,{});}
+E cloneSourceExpression(E source){return cloneExpression(source,{},{});}
 bool containsFile(const Program &program,const Type &type){
   std::set<std::string> seen;
   std::function<bool(const Type&)> visit=[&](const Type &value){
@@ -139,7 +154,7 @@ void prepareGenerics(Program &p){
   size_t functionInstances=0,structureInstances=0;for(const auto &f:p.functions)functionInstances+=!f.templateName.empty();for(const auto &s:p.structures)structureInstances+=!s.templateName.empty();
   if(functionInstances>maxInstances||structureInstances>maxInstances)throw Error("E_GENERIC_LIMIT","generic instance limit exceeded");
   p.functions.reserve(p.functions.size()+2*maxInstances-functionInstances);p.structures.reserve(p.structures.size()+maxInstances-structureInstances);
-  for(const auto &f:p.functions)if(!f.typeParameters.empty()&&!p.functionTemplates.contains(f.name)){auto source=f;source.body=cloneBlock(f.body,{});p.functionTemplates.emplace(f.name,std::move(source));}
+  for(const auto &f:p.functions)if(!f.typeParameters.empty()&&!p.functionTemplates.contains(f.name)){auto source=f;source.body=cloneBlock(f.body,{},{});p.functionTemplates.emplace(f.name,std::move(source));}
   for(const auto &s:p.structures)if(!s.typeParameters.empty()&&!p.structureTemplates.contains(s.name))p.structureTemplates.emplace(s.name,s);
 }
 Type resolveType(Program &p,Type type,Span span,unsigned depth){
@@ -186,21 +201,6 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   for(auto field:stored.members())field->type=resolveType(p,field->type,field->span,depth+1);
   return Type::record(name);
 }
-static std::set<std::string> substituteEffects(const std::set<std::string> &effects,const std::map<std::string,std::set<std::string>> &arguments){
-  std::set<std::string> result;
-  for(const auto &effect:effects){
-    auto found=arguments.find(effect);
-    if(found!=arguments.end())result.insert(found->second.begin(),found->second.end());
-    else result.insert(effect);
-  }
-  return result;
-}
-static Type substituteEffectTypes(Type type,const std::map<std::string,std::set<std::string>> &arguments){
-  if(type.element)type.element=std::make_shared<Type>(substituteEffectTypes(*type.element,arguments));
-  for(auto &argument:type.arguments)argument=substituteEffectTypes(argument,arguments);
-  if(type.kind==Type::Function)type.effects=substituteEffects(type.effects,arguments);
-  return type;
-}
 Function &instantiateFunction(Program &p,const Function &source,const std::vector<Type> &types,Span span,const std::map<std::string,std::set<std::string>> &effectArguments){
   auto original=p.functionTemplates.find(source.name);if(original==p.functionTemplates.end())throw Error("E_GENERIC_ARITY","function is not generic: "+source.name,span);
   const auto &raw=original->second;auto arguments=bindTypeArguments(p,raw.typeParameters,raw.typeBounds,types,span);
@@ -213,6 +213,6 @@ Function &instantiateFunction(Program &p,const Function &source,const std::vecto
   auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types)+suffix;instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.typeArities.clear();instance.dependencies.clear();instance.checked=false;instance.effects=effects;
   instance.result=resolveType(p,substituteEffectTypes(substituteType(raw.result,arguments),effectArguments),span);
   for(auto &parameter:instance.params)parameter.type=resolveType(p,substituteEffectTypes(substituteType(parameter.type,arguments),effectArguments),parameter.span);
-  instance.body=cloneBlock(raw.body,arguments);p.functions.push_back(std::move(instance));return p.functions.back();
+  instance.body=cloneBlock(raw.body,arguments,effectArguments);p.functions.push_back(std::move(instance));return p.functions.back();
 }
 }

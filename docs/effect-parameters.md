@@ -30,7 +30,7 @@ as for any other call. A pure callable infers the empty set; an `io` callable
 infers `{io}`. If several callable arguments use the same parameter, their
 effect sets are unioned.
 
-`std/list.nex` now exposes effect-inferred `map`, `filter` and `fold`:
+`std/list.nex` exposes effect-inferred `generate`, `map`, `filter`, `fold`, `any`, `all`, `find_index` and `sort_by`:
 
 ```nex
 let mapped: list<i64> = seq::map(values, fn(x: i64) -> i64 !{io} {

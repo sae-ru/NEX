@@ -221,6 +221,13 @@ mismatches are `E_EFFECT`. The focused checker/reference/native/TypeScript test
 passed in 8.77 s. Higher-rank effects and a language-version migration remain
 pending.
 
+Toolchain 0.183 extends `?E` inference to the remaining `std/list` callback
+helpers (`generate`, `any`, `all`, `find_index`, `sort_by`) and substitutes
+effect parameters in cloned lambda bodies during generic instantiation, so
+effectful merge/sort helpers type-check with concrete effects. The focused
+checker/reference/native/TypeScript test passed in 10.34 s. Higher-rank effects
+remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

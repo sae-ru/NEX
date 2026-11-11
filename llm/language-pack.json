@@ -4606,7 +4606,7 @@
         "mutation": false,
         "recursion_depth": "sort O(log(n+1)); generate/map/filter/reverse O(1) excluding callbacks",
         "resource": "lib/list.nex",
-        "sha256": "31e96a522f38c7f09e7aad27183e26c9fc07352395d65f62dbf304ab293574a2",
+        "sha256": "04be7257ced138fc83cb67cb9c220eac8ded09ccdfaa2a71861a02dda3beb63a",
         "sort": "stable; sort_by requires a pure strict weak ordering",
         "sort_bound": "ordered; numeric i64/f64"
       },

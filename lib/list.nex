@@ -1,7 +1,7 @@
 module std::lists;
 
 // Construction is sequential; callback effects are inferred into the named function result.
-pub fn generate<T>(count: i64, make: fn(i64) -> T) -> list<T> {
+pub fn generate<T>(count: i64, make: fn(i64) -> T !{? E}) -> list<T> !{? E} {
   return list(count, make);
 }
 pub fn map<T, U>(values: list<T>, transform: fn(T) -> U !{? E}) -> list<U> !{? E} {
@@ -22,7 +22,7 @@ pub fn fold<T, U>(values: list<T>, initial: U, combine: fn(U, T) -> U !{? E}) ->
   }
   return result;
 }
-pub fn any<T>(values: list<T>, predicate: fn(T) -> bool) -> bool {
+pub fn any<T>(values: list<T>, predicate: fn(T) -> bool !{? E}) -> bool !{? E} {
   var index: i64 = 0;
   while index < len(values) {
     if predicate(values[index]) {
@@ -32,7 +32,7 @@ pub fn any<T>(values: list<T>, predicate: fn(T) -> bool) -> bool {
   }
   return false;
 }
-pub fn all<T>(values: list<T>, predicate: fn(T) -> bool) -> bool {
+pub fn all<T>(values: list<T>, predicate: fn(T) -> bool !{? E}) -> bool !{? E} {
   var index: i64 = 0;
   while index < len(values) {
     if !predicate(values[index]) {
@@ -42,7 +42,7 @@ pub fn all<T>(values: list<T>, predicate: fn(T) -> bool) -> bool {
   }
   return true;
 }
-pub fn find_index<T>(values: list<T>, predicate: fn(T) -> bool) -> i64 {
+pub fn find_index<T>(values: list<T>, predicate: fn(T) -> bool !{? E}) -> i64 !{? E} {
   var index: i64 = 0;
   while index < len(values) {
     if predicate(values[index]) {
@@ -64,7 +64,7 @@ struct MergeCursor<T> {
   right: i64;
   value: T;
 }
-fn take_next<T>(left: list<T>, right: list<T>, less: fn(T, T) -> bool, a: i64, b: i64) -> MergeCursor<T> {
+fn take_next<T>(left: list<T>, right: list<T>, less: fn(T, T) -> bool !{? E}, a: i64, b: i64) -> MergeCursor<T> !{? E} {
   if a == len(left) {
     return MergeCursor<T>(a, b + 1, right[b]);
   }
@@ -77,20 +77,20 @@ fn take_next<T>(left: list<T>, right: list<T>, less: fn(T, T) -> bool, a: i64, b
   }
   return MergeCursor<T>(a + 1, b, left[a]);
 }
-fn merge<T>(left: list<T>, right: list<T>, less: fn(T, T) -> bool) -> list<T> {
+fn merge<T>(left: list<T>, right: list<T>, less: fn(T, T) -> bool !{? E}) -> list<T> !{? E} {
   let count: i64 = len(left) + len(right);
   if count == 0 {
     return [];
   }
   return list(count, take_next(left, right, less, 0, 0),
-    fn(cursor: MergeCursor<T>) -> MergeCursor<T> {
+    fn(cursor: MergeCursor<T>) -> MergeCursor<T> !{? E} {
       return take_next(left, right, less, cursor.left, cursor.right);
     },
     fn(cursor: MergeCursor<T>) -> T {
       return cursor.value;
     });
 }
-fn sort_range<T>(values: list<T>, less: fn(T, T) -> bool, start: i64, count: i64) -> list<T> {
+fn sort_range<T>(values: list<T>, less: fn(T, T) -> bool !{? E}, start: i64, count: i64) -> list<T> !{? E} {
   if count == 0 {
     return [];
   }
@@ -102,14 +102,16 @@ fn sort_range<T>(values: list<T>, less: fn(T, T) -> bool, start: i64, count: i64
   let right: list<T> = sort_range(values, less, start + half, count - half);
   return merge(left, right, less);
 }
-pub fn sort_by<T>(values: list<T>, less: fn(T, T) -> bool) -> list<T> {
+pub fn sort_by<T>(values: list<T>, less: fn(T, T) -> bool !{? E}) -> list<T> !{? E} {
   return sort_range(values, less, 0, len(values));
 }
 fn ascending<T: ordered>(left: T, right: T) -> bool {
   return left < right;
 }
 pub fn sort<T: ordered>(values: list<T>) -> list<T> {
-  return sort_by(values, ascending<T>);
+  return sort_by<T> !{}(values, fn(a: T, b: T) -> bool {
+      return a < b;
+    });
 }
 
 test fn list_test() -> unit {

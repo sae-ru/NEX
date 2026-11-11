@@ -49,6 +49,16 @@ fn main() -> unit !{io} {
   assert(explicit == [1]);
   let explicit_mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map<i64, i64>!{io};
   assert(explicit_mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
+  let generated: list<i64> = seq::generate(2, fn(i: i64) -> i64 !{io} { print(i); return i; });
+  assert(generated == [0, 1]);
+  let any_true: bool = seq::any([1, 2], fn(x: i64) -> bool !{io} { print(x); return x == 2; });
+  assert(any_true);
+  let all_true: bool = seq::all([1, 2], fn(x: i64) -> bool !{io} { print(x); return x > 0; });
+  assert(all_true);
+  let found: i64 = seq::find_index([1, 2, 3], fn(x: i64) -> bool !{io} { print(x); return x == 2; });
+  assert(found == 1);
+  let sorted: list<i64> = seq::sort_by([2, 1], fn(a: i64, b: i64) -> bool !{io} { print(a); return a < b; });
+  assert(sorted == [1, 2]);
   let pure_mapper: fn(list<i64>, fn(i64)->i64) -> list<i64> = seq::map;
   assert(pure_mapper([1], fn(x: i64) -> i64 { return x + 1; }) == [2]);
   print("effect-parameters-ok");
@@ -74,6 +84,16 @@ test fn effect_test() -> unit !{io} {
   assert(explicit == [1]);
   let explicit_mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map<i64, i64>!{io};
   assert(explicit_mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
+  let generated: list<i64> = seq::generate(2, fn(i: i64) -> i64 !{io} { print(i); return i; });
+  assert(generated == [0, 1]);
+  let any_true: bool = seq::any([1, 2], fn(x: i64) -> bool !{io} { print(x); return x == 2; });
+  assert(any_true);
+  let all_true: bool = seq::all([1, 2], fn(x: i64) -> bool !{io} { print(x); return x > 0; });
+  assert(all_true);
+  let found: i64 = seq::find_index([1, 2, 3], fn(x: i64) -> bool !{io} { print(x); return x == 2; });
+  assert(found == 1);
+  let sorted: list<i64> = seq::sort_by([2, 1], fn(a: i64, b: i64) -> bool !{io} { print(a); return a < b; });
+  assert(sorted == [1, 2]);
 }
 '''
 REJECT='''module effect_reject;
