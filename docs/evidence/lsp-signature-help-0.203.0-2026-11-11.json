@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP signature help for checked function calls",
+  "implementation_commit": "d95dfebceefc5a78926221f6a95d245a7a429208",
+  "build_source_base_commit": "bb0bb1c",
+  "compiler": {
+    "toolchain": "0.203.0",
+    "language": "0.28",
+    "sha256": "2a756020187890bd57a472386f4f49a5566aea68b586cf35f0ebfaa62ada1bc8",
+    "compiler_build": "7f078f4b318d41507690b00ee06d14fb5f2f473e932c4d6ac1a5e832c8212bcd",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "signatureHelpProvider",
+    "triggerCharacters": [
+      "(",
+      ","
+    ],
+    "signature_source": "checked function detail",
+    "active_parameter": "commas before cursor",
+    "parameters": 2,
+    "nested_call_precision": "bounded by simple prefix scan"
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.4007,
+    "editor_language_client_seconds": 1.12979,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.68,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "signature extraction relies on the checked detail string and a simple call-prefix scan",
+    "nested calls/overload-style precision, parser recovery and broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-signature-0203-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-signature-0203-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-signature-0203-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-signature-0203-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
