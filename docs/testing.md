@@ -303,6 +303,10 @@ Toolchain 0.196 adds `nex fmt --width N` for conservative wrapping of long
 unquoted lines at commas; quoted/comment lines are unchanged and invalid widths
 are rejected. `fmt_width` passed in 0.24 s.
 
+Toolchain 0.197 filters LSP local/parameter completion to the enclosing
+function and declarations before the cursor; `language_server` passed in
+20.14 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

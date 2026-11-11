@@ -529,6 +529,15 @@ class Server:
                     'detail': symbol.get('detail'), 'sortText': name.lower(),
                     'filterText': name}
                 if len(items) >= 1000:break
+            current_unit = next((f for f in index.get('files', []) if Path(f['path']).resolve() == path), None)
+            current_offset = byte_offset(current_unit['text'], params.get('position')) if current_unit else -1
+            enclosing = None
+            for symbol in index.get('symbols', []):
+                if symbol.get('kind') != 'function':continue
+                if Path(symbol['file']).resolve() != path:continue
+                at = symbol['range']
+                if at['begin'] <= current_offset <= at['end'] and (enclosing is None or at['end'] - at['begin'] < enclosing['end'] - enclosing['begin']):
+                    enclosing = at
             for number, record in enumerate(index.get('identifiers', [])):
                 if number % 1000 == 0 and cancelled is not None and cancelled.is_set():
                     raise RPCError(-32800, 'Request cancelled')
@@ -539,6 +548,12 @@ class Server:
                 at = record['range']
                 name = unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8')
                 if not name or (prefix and not name.lower().startswith(prefix)):continue
+                if kind in ('local', 'parameter'):
+                    if enclosing is None:continue
+                    definition = record.get('definition') or {'file': record['file'], 'range': at}
+                    if Path(definition['file']).resolve() != path:continue
+                    declared = definition['range']['begin']
+                    if not enclosing['begin'] <= declared < current_offset:continue
                 identity = ('value', name)
                 if identity in items:continue
                 items[identity] = {'label': name, 'kind': 6 if kind in ('local', 'parameter') else 5,

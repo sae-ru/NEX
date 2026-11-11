@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.195
+# NEX language server: development toolchain 0.197
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -71,9 +71,10 @@ checked declaration and references across open/captured files with a single
 edit, not the separate graph identity-preserving rename. Toolchain 0.195 adds `textDocument/completion` for checked function,
 struct/enum/resource/trait declarations plus local, parameter and field values,
 filtered by the ASCII identifier prefix at the cursor and bounded to 1000
-items. Value completion is name-deduplicated and not yet scope-filtered;
-member completion after `::`/`.`, parser recovery/incremental indexing and the
-broader IDE matrix remain pending.
+items. Value completion is name-deduplicated and filtered to the enclosing function
+and declarations before the cursor; nested-block precision and member completion
+after `::`/`.`, parser recovery/incremental indexing and the broader IDE matrix
+remain pending.
 
 ## Checked references
 
