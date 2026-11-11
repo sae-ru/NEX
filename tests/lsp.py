@@ -648,6 +648,16 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_inlay_hints_show_local_types(self):
+        text='module app;\nfn main()->unit !{io}{let value:i64=1;print(value);}\n'
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertIn('inlayHintProvider',capabilities)
+        client.open(self.file,text)
+        result=client.request('textDocument/inlayHint', {'textDocument': {'uri': self.file.as_uri()},
+            'range': {'start': {'line':1,'character':0}, 'end': {'line':1,'character':100}}})
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0]['label'],': i64')
+
     def test_import_document_links(self):
         (self.root/'helper.nex').write_text('module helper;\npub fn add(left: i64, right: i64) -> i64 { return left + right; }\n')
         text='module app;\nimport "./helper.nex" as h;\nfn main()->unit !{io}{print(h::add(1,2));}\n'

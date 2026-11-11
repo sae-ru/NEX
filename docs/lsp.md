@@ -90,7 +90,9 @@ diagnostic list that was last published for the document. Toolchain 0.208 adds `
 `foldingRangeProvider` for multi-line brace blocks (`region`). Toolchain 0.210 adds `textDocument/selectionRange` with
 `selectionRangeProvider`: each requested position returns an identifier range
 nested through enclosing brace blocks to the full document. Toolchain 0.211 adds `textDocument/documentLink` with
-`documentLinkProvider` for resolved import paths. Parser recovery metadata,
+`documentLinkProvider` for resolved import paths. Toolchain 0.213 adds
+`textDocument/inlayHint` with `inlayHintProvider` for checked local
+declarations (`: type` after the binding). Parser recovery metadata,
 incremental indexing and the broader IDE matrix remain pending.
 
 ## Checked references

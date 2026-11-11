@@ -771,6 +771,9 @@ class Server:
         return {'changes': changes}
 
     def query(self, method, params, cache, cancelled=None):
+        if method == 'textDocument/inlayHint':
+            path, _ = self.document(params)
+            return self.inlay_hints(path, params, cache, cancelled)
         if method == 'textDocument/documentLink':
             return self.document_links(params)
         if method == 'textDocument/selectionRange':
@@ -920,6 +923,25 @@ class Server:
             links.append({'range': source_range(text, {'begin': begin, 'end': end}), 'target': target.as_uri()})
         return links
 
+    def inlay_hints(self, path, params, cache, cancelled=None):
+        current_index = next((index for index in cache['indices']
+            if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
+        if current_index is None:return []
+        unit = next((f for f in current_index.get('files', []) if Path(f['path']).resolve() == path), None)
+        if unit is None:return []
+        hints = []
+        for record in current_index.get('identifiers', []):
+            if record.get('kind') != 'local':continue
+            if Path(record.get('file', '')).resolve() != path:continue
+            detail = record.get('detail')
+            if not isinstance(detail, str) or ':' not in detail:continue
+            at = record['range']
+            definition = record.get('definition')
+            if definition is not None and definition.get('range') != at:continue
+            hints.append({'position': source_range(unit['text'], {'begin': at['end'], 'end': at['end']})['start'],
+                'label': detail[detail.index(':'):], 'kind': 1})
+        return hints
+
     def folding_ranges(self, params):
         path, _ = self.document(params)
         with self.lock:
@@ -985,7 +1007,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic', 'textDocument/foldingRange', 'textDocument/selectionRange', 'textDocument/documentLink']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic', 'textDocument/foldingRange', 'textDocument/selectionRange', 'textDocument/documentLink', 'textDocument/inlayHint']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -1044,7 +1066,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}, 'foldingRangeProvider': True, 'selectionRangeProvider': True, 'documentLinkProvider': {}},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}, 'foldingRangeProvider': True, 'selectionRangeProvider': True, 'documentLinkProvider': {}, 'inlayHintProvider': {}},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
