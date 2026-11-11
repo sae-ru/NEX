@@ -675,6 +675,29 @@ class Server:
             if len(items) >= 1000:break
         return {'isIncomplete': False, 'items': sorted(items.values(), key=lambda item: (item['sortText'], item['label']))}
 
+    def signature_help(self, path, params, cache, cancelled=None):
+        current_index = next((index for index in cache['indices']
+            if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
+        if current_index is None:return None
+        unit = next((f for f in current_index.get('files', []) if Path(f['path']).resolve() == path), None)
+        if unit is None:return None
+        offset = byte_offset(unit['text'], params.get('position'))
+        before = unit['text'].encode('utf-8')[:offset].decode('utf-8')
+        call = re.search(r'([A-Za-z_][A-Za-z0-9_:]*)\s*\(([^()]*)$', before)
+        if call is None:return None
+        name = call.group(1).split('::')[-1]
+        arguments = call.group(2)
+        symbol = next((item for item in current_index.get('symbols', [])
+            if item.get('kind') == 'function' and (item.get('name') == name or str(item.get('symbol', '')).endswith('::' + name))), None)
+        if symbol is None or not isinstance(symbol.get('detail'), str):return None
+        detail = symbol['detail']
+        match = re.search(r'\(([^)]*)\)', detail)
+        parameters = []
+        if match is not None and match.group(1).strip():
+            parameters = [{'label': part.strip()} for part in match.group(1).split(',')]
+        return {'signatures': [{'label': detail, 'parameters': parameters}], 'activeSignature': 0,
+            'activeParameter': min(arguments.count(','), max(0, len(parameters) - 1))}
+
     def prepare_rename(self, path, params, cache, cancelled=None):
         at, text, source = self.symbol_at(path, params, cache, cancelled)
         return {'range': source_range(source, at), 'placeholder': text}
@@ -695,6 +718,8 @@ class Server:
 
     def query(self, method, params, cache, cancelled=None):
         path, _ = self.document(params)
+        if method == 'textDocument/signatureHelp':
+            return self.signature_help(path, params, cache, cancelled)
         if method == 'textDocument/completion':
             return self.completion(path, params, cache, cancelled)
         if method == 'textDocument/prepareRename':
@@ -817,7 +842,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -876,7 +901,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:

@@ -323,6 +323,9 @@ Toolchain 0.202 makes LSP value completion lexical-block aware: declarations
 inside `if`/`while`/nested braces are hidden outside their block.
 `language_server` passed in 19.99 s.
 
+Toolchain 0.203 adds LSP signature help for checked function calls;
+`language_server` passed in 20.40 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

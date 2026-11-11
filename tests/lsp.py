@@ -650,6 +650,22 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_signature_help_for_checked_call(self):
+        text='module app;\nfn helper(x: i64, y: i64) -> i64 { return x + y; }\nfn main()->unit !{io}{print(helper(1,2));}\n'
+        line=text.splitlines()[2];start=line.index('helper(')+len('helper(')
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertIn('signatureHelpProvider',capabilities)
+        client.open(self.file,text)
+        result=client.request('textDocument/signatureHelp', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start}})
+        self.assertEqual(len(result['signatures']),1)
+        self.assertIn('helper',result['signatures'][0]['label'])
+        self.assertEqual(len(result['signatures'][0]['parameters']),2)
+        self.assertEqual(result['activeParameter'],0)
+        second=client.request('textDocument/signatureHelp', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start+2}})
+        self.assertEqual(second['activeParameter'],1)
+
     def test_completion_returns_checked_declarations(self):
         text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x + 1; }\nfn main() -> unit !{io} { print(helper(1)); }\n'
         line=text.splitlines()[3];start=line.index('helper')

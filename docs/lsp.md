@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.202
+# NEX language server: development toolchain 0.203
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -75,8 +75,11 @@ items. Value completion is name-deduplicated, filtered to the enclosing function
 respects lexical brace blocks (including `if`/`while` bodies). Member completion
 after `.` returns checked struct fields; `Type::` returns checked enum cases, an
 import alias followed by `::` returns public symbols from that imported file,
-and a direct module-name qualifier returns matching public symbols. Parser
-recovery/incremental indexing and the broader IDE matrix remain pending.
+and a direct module-name qualifier returns matching public symbols. Toolchain 0.203 adds
+`textDocument/signatureHelp` for checked function calls, deriving parameter
+labels from the function's checked detail and computing the active parameter
+from commas before the cursor. Parser recovery/incremental indexing and the
+broader IDE matrix remain pending.
 
 ## Checked references
 
