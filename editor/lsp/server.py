@@ -771,6 +771,8 @@ class Server:
         return {'changes': changes}
 
     def query(self, method, params, cache, cancelled=None):
+        if method == 'textDocument/selectionRange':
+            return self.selection_ranges(params)
         if method == 'textDocument/foldingRange':
             return self.folding_ranges(params)
         if method == 'textDocument/diagnostic':
@@ -864,6 +866,41 @@ class Server:
             return []
         return [] if method != 'textDocument/hover' else None
 
+    def selection_ranges(self, params):
+        path, _ = self.document(params)
+        positions = params.get('positions')
+        if not isinstance(positions, list) or not positions:
+            raise RPCError(-32602, 'selectionRange requires a positions array')
+        with self.lock:
+            document = self.documents.get(path)
+        if document is None:
+            raise RPCError(-32602, 'Document is not open')
+        data = document['text'].encode('utf-8')
+        blocks = block_ranges(document['text'])
+        result = []
+        for position in positions:
+            offset = byte_offset(document['text'], position)
+            offsets = []
+            begin = offset
+            while begin > 0 and (data[begin - 1:begin].isalnum() or data[begin - 1:begin] == b'_'):begin -= 1
+            end = offset
+            while end < len(data) and (data[end:end + 1].isalnum() or data[end:end + 1] == b'_'):end += 1
+            if begin < end:offsets.append((begin, end))
+            scopes = [(a, b) for a, b in blocks if a <= offset <= b]
+            scopes.sort(key=lambda value: value[1] - value[0])
+            offsets.extend(scopes)
+            offsets.append((0, len(data)))
+            unique = []
+            for pair in offsets:
+                if pair not in unique:unique.append(pair)
+            chain = None
+            for a, b in reversed(unique):
+                item = {'range': source_range(document['text'], {'begin': a, 'end': b})}
+                if chain is not None:item['parent'] = chain
+                chain = item
+            result.append(chain)
+        return result
+
     def folding_ranges(self, params):
         path, _ = self.document(params)
         with self.lock:
@@ -929,7 +966,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic', 'textDocument/foldingRange']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol', 'textDocument/diagnostic', 'textDocument/foldingRange', 'textDocument/selectionRange']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -988,7 +1025,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}, 'foldingRangeProvider': True},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True, 'diagnosticProvider': {'interFileDependencies': True, 'workspaceDiagnostics': False}, 'foldingRangeProvider': True, 'selectionRangeProvider': True},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:

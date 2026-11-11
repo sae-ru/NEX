@@ -87,7 +87,9 @@ when the current document has no checked index, so `fn`/`struct`/`enum`/
 `resource`/`trait` names still appear while source is unparsed. Toolchain 0.207 adds pull diagnostics:
 `textDocument/diagnostic` with `diagnosticProvider` returns the same full
 diagnostic list that was last published for the document. Toolchain 0.208 adds `textDocument/foldingRange` with
-`foldingRangeProvider` for multi-line brace blocks (`region`). Parser recovery
+`foldingRangeProvider` for multi-line brace blocks (`region`). Toolchain 0.210 adds `textDocument/selectionRange` with
+`selectionRangeProvider`: each requested position returns an identifier range
+nested through enclosing brace blocks to the full document. Parser recovery
 metadata, incremental indexing and the broader IDE matrix remain pending.
 
 ## Checked references

@@ -648,6 +648,20 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_selection_ranges_nest_identifier_and_blocks(self):
+        text='module app;\nfn main()->unit !{io}{\n  let value: i64 = 1;\n  print(value);\n}\n'
+        line=text.splitlines()[3];at=line.index('value')
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['selectionRangeProvider'])
+        client.open(self.file,text)
+        result=client.request('textDocument/selectionRange', {'textDocument': {'uri': self.file.as_uri()},
+            'positions': [{'line':3,'character':at}]})
+        self.assertEqual(len(result),1)
+        chain=result[0];depth=0
+        while chain is not None:
+            depth+=1;chain=chain.get('parent')
+        self.assertGreaterEqual(depth,3)
+
     def test_folding_ranges_from_brace_blocks(self):
         text='module app;\nfn main()->unit !{io}{\n  if true {\n    print(1);\n  }\n}\n'
         client=self.client();capabilities=client.initialize()['capabilities']

@@ -91,6 +91,7 @@ and final delivery work are:
 - [x] Add LSP pull diagnostics.
 - [x] Add LSP brace-block folding ranges.
 - [x] Add checked list-backed `std/queue.nex` and `std/stack.nex`.
+- [x] Add LSP selection ranges.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

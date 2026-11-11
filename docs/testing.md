@@ -346,6 +346,9 @@ Toolchain 0.209 adds list-backed `std/queue.nex` and `std/stack.nex` with
 TypeScript in 5.81 s; the full standard-library pin/catalogue test passed in
 45.18 s.
 
+Toolchain 0.210 adds LSP selection ranges; `language_server` passed in
+20.87 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
