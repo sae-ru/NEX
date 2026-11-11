@@ -54,7 +54,7 @@ TypeScript / React / Vite клиентом. Устройства подключ�
 
 ## Состояние разработки
 
-Текущие исходники: **toolchain 0.172.0 / язык 0.28 / task ABI 7**, в разработке.
+Текущие исходники: **toolchain 0.173.0 / язык 0.28 / task ABI 7**, в разработке.
 Сообщения фатальных ошибок сохраняют NUL и Unicode при передаче через исходный
 код, задачи и диагностику frontend; ограничения структурированных журналов
 сохраняются. [Результаты этого блока](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
@@ -185,7 +185,7 @@ nex init /path/to/my-app
 
 ## Документация
 
-[Спецификация](docs/language.md) · [Грамматика](docs/grammar.ebnf) ·
+[Индекс документации](docs/INDEX.md) · [Спецификация](docs/language.md) · [Грамматика](docs/grammar.ebnf) ·
 [Архитектура](docs/architecture.md) · [Веб](docs/web.md) ·
 [Сборка проектов](docs/project-build.md) · [Ошибки](docs/exceptions.md) ·
 [Отладка](docs/debugging.md) · [Профилирование](docs/profiling.md) ·

@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.172.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.173.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
@@ -173,7 +173,7 @@ nex init /path/to/my-app
 
 ## Documentation
 
-[Specification](docs/language.md) · [Grammar](docs/grammar.ebnf) ·
+[Documentation index](docs/INDEX.md) · [Specification](docs/language.md) · [Grammar](docs/grammar.ebnf) ·
 [Architecture](docs/architecture.md) · [Web](docs/web.md) ·
 [Project builds](docs/project-build.md) · [Errors](docs/exceptions.md) ·
 [Debugging](docs/debugging.md) · [Profiling](docs/profiling.md) ·

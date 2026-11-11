@@ -133,8 +133,14 @@ Debug/Release and strict executed TypeScript cover all four forms, empty and
 20,000-octet inputs, generic references, effect order, typed errors and finally,
 task suspension, lexical-shadow hygiene, `E_RANGE` for invalid octets and partial
 native cleanup. The compiled language pack checked 3633 JSON values across 65
-shared fields. This is one focused source block, not a full regression,
-installed-SDK or platform qualification.
+
+Toolchain 0.173 adds `docs_index` (329 registered Mac groups). The generated
+index covers 174 documents and checks 1209 local links with zero missing targets;
+eight current contracts and one deferred document are version-checked against
+the compiler, and `STATUS.current.md` is regenerated/checked by the same test.
+`docs_index` passed in 0.09 s and the unchanged 12-group core in 24.36 s. Most
+older documents remain unclassified reference/history rather than being rewritten;
+external URLs are not fetched.
 
 ## Maintain the catalogue
 

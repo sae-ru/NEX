@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.172.0 LANGUAGES C CXX)
+project(NEX VERSION 0.173.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1761,4 +1761,8 @@ set_tests_properties(text_construction PROPERTIES TIMEOUT 600)
 add_test(NAME bytes_construction COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes_construction.py $<TARGET_FILE:nex>)
 set_tests_properties(bytes_construction PROPERTIES TIMEOUT 600)
+
+add_test(NAME docs_index COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tools/docs_index.py --check)
+set_tests_properties(docs_index PROPERTIES TIMEOUT 120)
 include(cmake/TestTiers.cmake)

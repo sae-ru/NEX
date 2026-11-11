@@ -58,6 +58,7 @@ and final delivery work are:
 - [ ] Remaining language/toolchain extensions in the original stages below:
   advanced type-constructor inference/effect handling, graph identity-preserving
   edits and complete source/optimized-machine/core/profile attribution.
+- [x] Add a generated documentation index with local-link and current-version checks.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).
