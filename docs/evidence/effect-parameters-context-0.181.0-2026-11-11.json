@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Contextual effect-parameter inference for function values",
+  "implementation_commit": "ff83d87efa43e43971b64cdd0842784ba904b9f7",
+  "build_source_base_commit": "0c40cf1",
+  "compiler": {
+    "toolchain": "0.181.0",
+    "language": "0.28",
+    "sha256": "2c149679802e7f04a9a8743f662823282b84541c5501701616f4c2851e891689",
+    "compiler_build": "cf7e3168f06076025665524354fab0c83550cf84df959aa95813721556c48fd1",
+    "descriptor_hash": "f34f62ceddb0ad0bd0a8e2c10171f04591a5a028069416fc6ba01b98f2f2c5fd"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "syntax": "let f: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;",
+    "context": "expected function type binds ?E and type parameters",
+    "bare_reference": "E_GENERIC_INFER",
+    "pure_function_value": true,
+    "effectful_function_value": true
+  },
+  "observations": {
+    "registered_groups": 335,
+    "focused_tests": 3,
+    "focused_seconds": 63.88,
+    "effect_parameters_seconds": 8.96825,
+    "standard_library_seconds": 47.1461,
+    "containers_seconds": 7.76045,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 24.13,
+    "docs_documents": 179,
+    "docs_links": 1225
+  },
+  "limits": [
+    "explicit effect-witness arguments and higher-rank effects remain pending",
+    "language 0.28 additive extension; no migration",
+    "no full CTest/full SDK; 0.181 not yet deployed to CIX/RK/Windows stands",
+    "no GPU/NPU, browser UI, mobile/native UI, Studio or converter work"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/effect-0181-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/effect-0181-v1/core.json",
+    "effect_manual": "/Users/sae/projects/NEX/build/effect-0181-v1/effect-manual.log",
+    "describe": "/Users/sae/projects/NEX/build/effect-0181-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/effect-0181-v1/nex.sha256",
+    "guide": "docs/effect-parameters.md",
+    "test": "tests/effect_parameters.py"
+  }
+}
