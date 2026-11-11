@@ -348,6 +348,7 @@
     "typed_web_delivery": ["extended", "browser", "sdk", "scale"],
     "verification": ["extended", "browser"],
     "wasm": ["extended", "browser", "scale"],
+    "wasm_f64": ["extended", "browser", "scale"],
     "web": ["extended", "browser"],
     "web_commands": ["extended", "browser"],
     "web_workers": ["extended", "browser"],

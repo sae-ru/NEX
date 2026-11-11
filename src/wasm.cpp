@@ -23,7 +23,7 @@ std::string sha256(const std::string &text){
  auto bytes=llvm::ArrayRef(reinterpret_cast<const uint8_t*>(text.data()),text.size());
  auto digest=llvm::SHA256::hash(bytes);return llvm::toHex(llvm::ArrayRef(digest),true);
 }
-bool scalar(Type type){return type==Type::I64||type==Type::Bool||type==Type::Unit;}
+bool scalar(Type type){return type==Type::I64||type==Type::F64||type==Type::Bool||type==Type::Unit;}
 std::set<std::string> validate(const Program &p,const std::string &entry){
  const auto &root=p.function(entry);
  if(root.test)throw Error("E_WASM_ENTRY","Wasm entry cannot be a test",root.span);
@@ -41,20 +41,20 @@ std::set<std::string> validate(const Program &p,const std::string &entry){
   if(f.params.size()>32||count>512)
    throw Error("E_WASM_LIMIT","scalar Wasm supports at most 32 parameters and 512 operations per function",f.span);
   for(const auto &parameter:f.params)if(!scalar(parameter.type)||parameter.type==Type::Unit)
-   throw Error("E_WASM_TYPE","Wasm parameters must be i64 or bool",parameter.span);
+   throw Error("E_WASM_TYPE","Wasm parameters must be i64, f64 or bool",parameter.span);
   std::function<void(const E&)> expression;
   std::function<void(const std::vector<S>&)> block;
   expression=[&](const E &e){
    if(!e)return;
    if(!scalar(e->type)||e->kind==Expr::Invoke||e->kind==Expr::Lambda||e->kind==Expr::FunctionRef)
-    throw Error("E_WASM_TYPE","scalar Wasm supports only i64, bool and unit expressions",e->span);
+    throw Error("E_WASM_TYPE","scalar Wasm supports only i64, f64, bool and unit expressions",e->span);
    for(const auto &argument:e->args)expression(argument);
    for(const auto &arm:e->arms)block(arm->body);
   };
   block=[&](const std::vector<S> &statements){for(const auto &s:statements){
    if(s->kind==Stmt::Finally)throw Error("E_WASM_TYPE","finally is not supported by the scalar Wasm backend",s->span);
    if((s->kind==Stmt::Let||s->kind==Stmt::Var)&&!scalar(s->type))
-    throw Error("E_WASM_TYPE","scalar Wasm locals must be i64 or bool",s->span);
+    throw Error("E_WASM_TYPE","scalar Wasm locals must be i64, f64 or bool",s->span);
    expression(s->expr);childBlocks(s,block);
   }};
   block(f.body);

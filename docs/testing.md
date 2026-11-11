@@ -258,6 +258,12 @@ in `runtime/wasm_runtime.c`. With LLVM 22.1 `wasm-ld`, the `wasm` and
 20.67 s and `typed_scalar_wasm` in 1.96 s, including overflow/assert/div-zero
 agreement. Full Wasm/SDK/platform acceptance remains pending.
 
+Toolchain 0.187 adds finite `f64` to the scalar Wasm ABI. The wrapper accepts
+only finite JS numbers, checks non-finite results with `E_FLOAT`, and supports
+f64 arguments/results. `wasm` passed in 17.87 s, `wasm_f64` in 0.84 s and
+`typed_scalar_wasm` in 1.99 s under LLVM 22.1 `wasm-ld` plus Node. Full
+Wasm/SDK/platform acceptance remains pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

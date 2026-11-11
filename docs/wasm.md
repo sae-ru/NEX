@@ -19,9 +19,11 @@ override selects a trusted development tool. A bundled SDK records its relative
 linker path. No linker is downloaded during an application build.
 
 Functions reachable from the selected entry must be pure shared/client NEX
-definitions with only `i64`, `bool` and `unit` values. Concrete ordinary generic
-specializations work within those limits. Server functions, effects, FFI, heap
-values, callable environments and `f64` are rejected when reachable. Unreachable
+definitions with only `i64`, `f64`, `bool` and `unit` values. Concrete ordinary
+generic specializations work within those limits. Server functions, effects,
+FFI, heap values and callable environments are rejected when reachable. `f64`
+accepts finite JS numbers and rejects NaN/Infinity at the wrapper boundary;
+non-finite arithmetic results fail with `E_FLOAT`. Unreachable
 server bodies and literals are excluded from the emitted module, wrapper, maps
 and IR. Native target checking keeps its separate 64-bit ABI policy.
 

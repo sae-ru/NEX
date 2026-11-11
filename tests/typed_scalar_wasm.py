@@ -34,7 +34,7 @@ for profile in ['debug','release']:
  assert b'WASM_SERVER_SECRET_EXCLUDED_060' not in Path(built['module']).read_bytes()
  assert b'unused_typed_error' not in Path(built['module']).read_bytes()
 boolean=build('typed027-bool',probe,source027,'0.27','release','invert');count+=node('typed027-bool',boolean,'invert')
-for label,text,error in [('caught-typed','fn compute()->i64{try{throw(42);}catch(e:i64){return e;}catch(c,m){return 0;}}','E_EXCEPTION_BACKEND'),('uncaught-typed','fn compute()->i64 !{throw}{throw(42);}','E_WASM_REALM'),('finally','fn compute()->i64{try{return 42;}finally{}}','E_WASM_TYPE'),('float','fn compute()->f64{return 1.5;}','E_WASM_TYPE')]:
+for label,text,error in [('caught-typed','fn compute()->i64{try{throw(42);}catch(e:i64){return e;}catch(c,m){return 0;}}','E_EXCEPTION_BACKEND'),('uncaught-typed','fn compute()->i64 !{throw}{throw(42);}','E_WASM_REALM'),('finally','fn compute()->i64{try{return 42;}finally{}}','E_WASM_TYPE'),('heap','fn compute()->list<i64>{return [1];}','E_WASM_TYPE')]:
  bad=root/(label+'.nex');bad.write_text("module negative;"+text, newline="\n");build(label,probe,bad,'0.27',error=error);report['cases'].append({'rejection':label,'code':error,'passed':True});save()
 report.update(ok=True,actual_Wasm_Node_checks=count,source_language027_selected_explicitly=True,reference027_assertions_passed=True,source_errors_and_finally_still_rejected=True,goal_complete=False);save();print(json.dumps({'ok':True,'actual_Wasm_Node_checks':count,'rejected_cases':4,'report':str(O/'report.json')}),flush=True)
 

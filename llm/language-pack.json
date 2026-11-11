@@ -931,7 +931,6 @@
       "comparable_performance",
       "general_wasm_applications",
       "wasi",
-      "f64",
       "heap_values"
     ],
     "realms": [
@@ -943,10 +942,11 @@
     "source028_scalar_public": true,
     "source_exception_lowering": false,
     "source_support": true,
-    "status": "scalar_checked_i64_Node_validated",
+    "status": "scalar_checked_i64_f64_Node_validated",
     "target": "wasm32-unknown-unknown",
     "types": [
       "i64",
+      "f64",
       "bool",
       "unit"
     ],

@@ -157,7 +157,7 @@ for(const value of [0,1,0n,1n,'true',null]){
 }console.log(JSON.stringify({ok:true}));'''
   self.assertTrue(self.node(body)['ok'])
  def test_unsupported_reachable_code_and_profiles_are_explicitly_rejected(self):
-  cases=[('fn main()->str{return "x";}','E_WASM_TYPE'),('fn main()->f64{return 1.0;}','E_WASM_TYPE'),
+  cases=[('fn main()->str{return "x";}','E_WASM_TYPE'),
    ('fn main()->i64{let x:list<i64>=[1];return x[0];}','E_WASM_TYPE'),
    ('fn main()->unit !{io}{print(1);}','E_WASM_REALM'),('server fn main()->i64{return 1;}','E_WASM_REALM'),
    ('fn main()->i64{let f:fn(i64)->i64=fn(x:i64)->i64{return x;};return f(1);}','E_WASM_TYPE'),

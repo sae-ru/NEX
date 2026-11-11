@@ -307,6 +307,10 @@ add_test(NAME windows_runtime COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOUR
 set_tests_properties(windows_runtime PROPERTIES COST 60 TIMEOUT 1200)
 add_test(NAME wasm COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/wasm.py $<TARGET_FILE:nex>)
 set_tests_properties(wasm PROPERTIES COST 60 TIMEOUT 1200)
+
+add_test(NAME wasm_f64 COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/wasm_f64.py $<TARGET_FILE:nex>)
+set_tests_properties(wasm_f64 PROPERTIES COST 20 TIMEOUT 300)
 add_test(NAME editor COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/editor.py $<TARGET_FILE:nex>)
 add_test(NAME language_server COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/lsp.py $<TARGET_FILE:nex>)
 add_test(NAME editor_language_client COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/editor_lsp.py $<TARGET_FILE:nex>)

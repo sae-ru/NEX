@@ -14,6 +14,7 @@ const errors = new Map([
   [4, ['E_WASM_BUDGET', 'Wasm polling budget exhausted']],
   [5, ['E_WASM_DEPTH', 'Wasm call depth exceeds 64']],
   [6, ['E_MATCH', 'no matching arm']],
+  [7, ['E_FLOAT', 'non-finite f64 result']],
 ]);
 function failure(code, message, context = {}) {
   const error = new Error(message);
@@ -71,6 +72,11 @@ export async function createNexWasm(input, options = {}) {
           throw failure('E_WASM_INPUT', 'i64 arguments require an in-range BigInt');
         return value;
       }
+      if (descriptor.parameters[index] === 'f64') {
+        if (typeof value !== 'number' || !Number.isFinite(value))
+          throw failure('E_WASM_INPUT', 'f64 arguments require finite numbers');
+        return value;
+      }
       if (typeof value !== 'boolean') throw failure('E_WASM_INPUT', 'bool arguments require booleans');
       return value ? 1 : 0;
     });
@@ -83,6 +89,11 @@ export async function createNexWasm(input, options = {}) {
       if (descriptor.result === 'bool') {
         if (result !== 0 && result !== 1) throw failure('E_WASM_RESULT', 'invalid bool result');
         return result === 1;
+      }
+      if (descriptor.result === 'f64') {
+        if (typeof result !== 'number' || !Number.isFinite(result))
+          throw failure('E_WASM_RESULT', 'invalid f64 result');
+        return result;
       }
       return descriptor.result === 'unit' ? undefined : result;
     } catch (cause) {
