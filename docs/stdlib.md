@@ -100,6 +100,13 @@ The earlier 0.167 balanced-concatenation implementation and its scoped O(n log n
 map / O(n log² n) sort copy bounds remain historical evidence, not current costs.
 These structural bounds do not establish C++ vector throughput or token savings.
 
+## Containers
+
+[`std/map.nex`](containers.md) and [`std/set.nex`](containers.md) provide
+immutable insertion-ordered `Map<K,V>` and `Set<T>` source containers. They are
+list-backed: lookup and update are O(n), not a hash table. See
+[Map and set containers](containers.md) for APIs and limits.
+
 ## Integer math
 
 `min`, `max`, `clamp` and `abs` keep their existing i64 signatures. `clamp` checks

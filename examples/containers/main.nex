@@ -1,0 +1,17 @@
+module containers_example;
+import "std/map.nex" as maps;
+import "std/set.nex" as sets;
+
+fn main() -> unit !{io} {
+  let empty_map: maps::Map<str, i64> = maps::empty();
+  let stock: maps::Map<str, i64> = maps::put(maps::put(empty_map, "bolts", 12), "nuts", 4);
+  assert(maps::size(stock) == 2);
+  assert(unwrap(maps::get(stock, "bolts")) == 12);
+  assert(maps::keys(stock) == ["bolts", "nuts"]);
+
+  let empty_set: sets::Set<str> = sets::empty();
+  let tags: sets::Set<str> = sets::add(sets::add(empty_set, "metal"), "metal");
+  assert(sets::size(tags) == 1);
+  assert(sets::has(tags, "metal"));
+  print("containers-example-ok");
+}

@@ -7,7 +7,7 @@ import re
 import shutil
 
 EXPECTED='1,1,2,3\nЯ + 🌍\n5\n6\n'
-FILES=('lib/text.nex','lib/list.nex','lib/math.nex')
+FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex')
 
 
 def require(condition,message):
@@ -16,7 +16,7 @@ def require(condition,message):
 
 def resource_pins(resources,capability):
     modules=capability.get('modules',{})
-    require(set(modules)=={'text','list','math'},'standard library module set differs')
+    require(set(modules)=={'text','list','math','map','set'},'standard library module set differs')
     pins={}
     for name in FILES:
         module=modules[Path(name).stem]

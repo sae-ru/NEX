@@ -63,6 +63,7 @@ and final delivery work are:
 - [x] Add `nex bench --kind runtime` with deterministic output, repeated samples, build/source identity and baseline comparison.
 - [x] Add compiler-checked `nex.fix/1` edits for unknown identifiers/fields with preview, apply and rollback.
 - [x] Move test targets/registrations into `cmake/Tests.cmake` and make `VERSION` the single toolchain version source.
+- [x] Add checked source `std/map.nex` and `std/set.nex` immutable list-backed containers.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).

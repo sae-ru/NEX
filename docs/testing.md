@@ -178,6 +178,13 @@ This is an install/move/archive/restore smoke, not the maintained `sdk_build.py`
 sequence, full CTest, source-free/denied-read acceptance, live debugging or a
 portable platform matrix.
 
+Toolchain 0.178 adds checked source `std/map.nex` and `std/set.nex`: immutable,
+insertion-ordered, list-backed `Map<K,V>`/`Set<T>` with O(n) lookup/update.
+`containers` passed its checker, reference/native and TypeScript paths in 7.43 s
+on macOS; the pinned `standard_library` workflow passed in 44.90 s and the
+unchanged 12-group core in 21.76 s. Descriptor hashes pin both sources. Hash/balanced-tree containers and
+effect-polymorphic named signatures remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

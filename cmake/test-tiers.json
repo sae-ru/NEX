@@ -231,6 +231,7 @@
     "source_task_resource_prototype": ["extended", "platform", "scale"],
     "source_formatting": ["extended", "browser", "platform"],
     "standard_library": ["extended", "browser", "platform", "sdk"],
+    "containers": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],
     "store_transactions_native": ["extended", "platform"],
     "string_debug": ["extended", "platform", "scale"],

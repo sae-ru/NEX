@@ -1,0 +1,66 @@
+module std::set;
+
+// Immutable insertion-ordered set backed by a list. Membership and update are
+// linear; this is a checked source container, not a hash set.
+pub struct Set<T> {
+  items: list<T>;
+}
+
+pub fn empty<T>() -> Set<T> {
+  return Set([]);
+}
+
+pub fn add<T>(set: Set<T>, value: T) -> Set<T> {
+  var i: i64 = 0;
+  while i < len(set.items) {
+    if set.items[i] == value {
+      return set;
+    }
+    i = i + 1;
+  }
+  return Set(push(set.items, value));
+}
+
+pub fn has<T>(set: Set<T>, value: T) -> bool {
+  var i: i64 = 0;
+  while i < len(set.items) {
+    if set.items[i] == value {
+      return true;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+pub fn remove<T>(set: Set<T>, value: T) -> Set<T> {
+  var output: list<T> = [];
+  var i: i64 = 0;
+  while i < len(set.items) {
+    if set.items[i] != value {
+      output = push(output, set.items[i]);
+    }
+    i = i + 1;
+  }
+  return Set(output);
+}
+
+pub fn items<T>(set: Set<T>) -> list<T> {
+  return set.items;
+}
+
+pub fn size<T>(set: Set<T>) -> i64 {
+  return len(set.items);
+}
+
+test fn set_test() -> unit {
+  let empty_set: Set<i64> = empty();
+  assert(size(empty_set) == 0);
+  let one: Set<i64> = add(empty_set, 2);
+  let two: Set<i64> = add(one, 1);
+  assert(size(two) == 2);
+  assert(has(two, 1) && has(two, 2) && !has(two, 3));
+  assert(size(add(two, 2)) == 2);
+  assert(items(two) == [2, 1]);
+  assert(items(remove(two, 2)) == [1]);
+  assert(size(remove(two, 9)) == 2);
+}

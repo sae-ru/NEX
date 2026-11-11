@@ -1518,6 +1518,10 @@ set_tests_properties(llm_quick_reference PROPERTIES TIMEOUT 600)
 add_test(NAME standard_library COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/standard_library.py $<TARGET_FILE:nex>)
 set_tests_properties(standard_library PROPERTIES TIMEOUT 800)
+
+add_test(NAME containers COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/containers.py $<TARGET_FILE:nex>)
+set_tests_properties(containers PROPERTIES TIMEOUT 300)
 add_test(NAME source_formatting COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_formatting.py $<TARGET_FILE:nex>)
 set_tests_properties(source_formatting PROPERTIES TIMEOUT 240)

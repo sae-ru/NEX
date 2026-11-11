@@ -28,6 +28,18 @@ llvm::json::Object standardLibraryCapability(){
         {"copy_complexity","generate/map/filter/reverse amortized O(n); sort O(n log(n+1)); excludes callbacks/state/value construction"},
         {"comparison_complexity","stable mergesort O(n log(n+1))"},
         {"recursion_depth","sort O(log(n+1)); generate/map/filter/reverse O(1) excluding callbacks"},{"linear_bulk_construction",true}}},
+      {"map",llvm::json::Object{{"import","std/map.nex"},{"module","std::map"},
+        {"resource","lib/map.nex"},{"sha256",NEX_STDLIB_MAP_SHA256},{"introduced_toolchain","0.178.0"},
+        {"types",llvm::json::Array{"Map<K,V>","Entry<K,V>"}},
+        {"functions",llvm::json::Array{"empty","put","remove","get","has","keys","values","size"}},
+        {"lookup","result<V>; E_NOT_FOUND"},{"ordering","insertion order; put replaces in place; immutable"},
+        {"complexity","put/remove/get/has O(n); keys/values O(n); list-backed, no hash table"},{"mutation",false}}},
+      {"set",llvm::json::Object{{"import","std/set.nex"},{"module","std::set"},
+        {"resource","lib/set.nex"},{"sha256",NEX_STDLIB_SET_SHA256},{"introduced_toolchain","0.178.0"},
+        {"types",llvm::json::Array{"Set<T>"}},
+        {"functions",llvm::json::Array{"empty","add","remove","has","items","size"}},
+        {"ordering","insertion order; add of an existing value is a no-op; immutable"},
+        {"complexity","add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table"},{"mutation",false}}},
       {"math",llvm::json::Object{{"import","std/math.nex"},{"module","std::math"},
         {"resource","lib/math.nex"},{"sha256",NEX_STDLIB_MATH_SHA256},
         {"functions",llvm::json::Array{"min","max","clamp","abs","sign","floor_div","ceil_div","pow_i64","gcd","lcm"}},
@@ -35,6 +47,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","containers beyond immutable lists","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","hash-based or balanced-tree containers beyond list-backed map/set","complete matching SDK/platform qualification"}}};
 }
 }

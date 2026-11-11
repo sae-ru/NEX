@@ -1,0 +1,108 @@
+module std::map;
+
+// Immutable ordered map backed by a list. Lookup and update are linear; this is
+// a checked source container, not a hash table or a new language primitive.
+pub struct Entry<K, V> {
+  key: K;
+  value: V;
+}
+pub struct Map<K, V> {
+  entries: list<Entry<K, V>>;
+}
+
+pub fn empty<K, V>() -> Map<K, V> {
+  return Map([]);
+}
+
+pub fn put<K, V>(map: Map<K, V>, key: K, value: V) -> Map<K, V> {
+  var output: list<Entry<K, V>> = [];
+  var found: bool = false;
+  var i: i64 = 0;
+  while i < len(map.entries) {
+    let entry: Entry<K, V> = map.entries[i];
+    if entry.key == key {
+      output = push(output, Entry(key, value));
+      found = true;
+    } else {
+      output = push(output, entry);
+    }
+    i = i + 1;
+  }
+  if !found {
+    output = push(output, Entry(key, value));
+  }
+  return Map(output);
+}
+
+pub fn remove<K, V>(map: Map<K, V>, key: K) -> Map<K, V> {
+  var output: list<Entry<K, V>> = [];
+  var i: i64 = 0;
+  while i < len(map.entries) {
+    let entry: Entry<K, V> = map.entries[i];
+    if entry.key != key {
+      output = push(output, entry);
+    }
+    i = i + 1;
+  }
+  return Map(output);
+}
+
+pub fn get<K, V>(map: Map<K, V>, key: K) -> result<V> {
+  var i: i64 = 0;
+  while i < len(map.entries) {
+    let entry: Entry<K, V> = map.entries[i];
+    if entry.key == key {
+      return ok(entry.value);
+    }
+    i = i + 1;
+  }
+  return err<V>("E_NOT_FOUND", "map key not found");
+}
+
+pub fn has<K, V>(map: Map<K, V>, key: K) -> bool {
+  return is_ok(get(map, key));
+}
+
+pub fn keys<K, V>(map: Map<K, V>) -> list<K> {
+  var output: list<K> = [];
+  var i: i64 = 0;
+  while i < len(map.entries) {
+    output = push(output, map.entries[i].key);
+    i = i + 1;
+  }
+  return output;
+}
+
+pub fn values<K, V>(map: Map<K, V>) -> list<V> {
+  var output: list<V> = [];
+  var i: i64 = 0;
+  while i < len(map.entries) {
+    output = push(output, map.entries[i].value);
+    i = i + 1;
+  }
+  return output;
+}
+
+pub fn size<K, V>(map: Map<K, V>) -> i64 {
+  return len(map.entries);
+}
+
+test fn map_test() -> unit {
+  let empty_map: Map<str, i64> = empty();
+  assert(size(empty_map) == 0);
+  let one: Map<str, i64> = put(empty_map, "a", 1);
+  let two: Map<str, i64> = put(one, "b", 2);
+  assert(size(two) == 2);
+  assert(unwrap(get(two, "a")) == 1);
+  assert(unwrap(get(two, "b")) == 2);
+  assert(!is_ok(get(two, "c")));
+  assert(has(two, "a") && !has(two, "c"));
+  let replaced: Map<str, i64> = put(two, "a", 9);
+  assert(size(replaced) == 2);
+  assert(unwrap(get(replaced, "a")) == 9);
+  assert(keys(replaced) == ["a", "b"]);
+  assert(values(replaced) == [9, 2]);
+  assert(size(remove(replaced, "a")) == 1);
+  assert(!has(remove(replaced, "a"), "a"));
+  assert(size(remove(replaced, "missing")) == 2);
+}
