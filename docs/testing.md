@@ -399,6 +399,15 @@ events**; context probe passed. Complete owned-CUDA acceptance remains false:
 source-deleted replay/standalone, Compute Sanitizer, remaining roots and public
 SDK delivery are still pending.
 
+Toolchain 0.221 preserves `NEX_RESOURCE_DIR` through the CUDA memcheck harness
+so generated applications can locate their checked runtime resources under
+Compute Sanitizer.
+
+Toolchain 0.221 then completed the Compute Sanitizer gate on RTX 3090:
+15 native cases plus the three-context probe passed with actual GPU execution,
+full leak checking, `task_budgets_changed: false`; all required summaries were
+zero. Complete owned-CUDA acceptance remains false.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

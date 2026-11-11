@@ -101,6 +101,7 @@ and final delivery work are:
 - [x] Fix owned-CUDA context-probe buffer ledger bookkeeping.
 - [x] Fix the CUDA corpus owned_output helper for Dispatch.
 - [x] Pass explicit toolchains through CUDA corpus builds.
+- [x] Preserve NEX_RESOURCE_DIR through CUDA memcheck.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

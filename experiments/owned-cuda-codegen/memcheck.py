@@ -169,7 +169,8 @@ def main():
     pins.update({str(tool): sha(tool), str(Path(__file__).resolve()): sha(__file__), str(Path(__file__).with_name("verify.py").resolve()): sha(Path(__file__).with_name("verify.py"))})
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("NEX_", "NV_COMPUTE_SANITIZER_", "PYTHON", "LD_", "DYLD_"))}
+    env = {k: v for k, v in os.environ.items()
+        if not k.startswith(("NEX_", "NV_COMPUTE_SANITIZER_", "PYTHON", "LD_", "DYLD_")) or k == "NEX_RESOURCE_DIR"}
     env.update(PYTHONUTF8="1", NV_COMPUTE_SANITIZER_LOCAL_CONNECTION_OVERRIDE="named-pipes" if os.name == "nt" else "uds")
     report = {"schema": "nex.experimental-generated-CUDA-memcheck/1", "ok": False, "cases": [], "hardware_report_sha256": sha(source),
         "compiler_sha256": base["compiler_sha256"], "module_sha256": base["module_sha256"], "manifest_sha256": base["manifest_sha256"],
