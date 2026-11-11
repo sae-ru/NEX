@@ -1,0 +1,60 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP workspace symbol search",
+  "implementation_commit": "3c09bdf6308bee8b67c5a28eb2ad81a470800105",
+  "build_source_base_commit": "0174d04",
+  "compiler": {
+    "toolchain": "0.204.0",
+    "language": "0.28",
+    "sha256": "ff32e02bc6c8ec6458d74fc56eb019b7b59b7795837c1397d3a2afe9ce84ecce",
+    "compiler_build": "2437ed2522f1ba8c93a243ac81d679fc1c7b7e291de024985f3e0c30e4f37602",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "workspaceSymbolProvider",
+    "method": "workspace/symbol",
+    "query": "case-insensitive name substring",
+    "kinds": {
+      "function": 12,
+      "struct": 23,
+      "enum": 10,
+      "resource": 5,
+      "trait": 11,
+      "endpoint": 12
+    },
+    "locations": true,
+    "limit": 1000
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.4278,
+    "editor_language_client_seconds": 1.10727,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.37,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "workspace search covers checked declaration symbols, not locals or arbitrary text",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-workspace-0204-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-workspace-0204-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-workspace-0204-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-workspace-0204-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
