@@ -1,0 +1,54 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP local-type inlay hints",
+  "implementation_commit": "b9fe0a416f512b7e51f15d6853446384aa76c2ce",
+  "build_source_base_commit": "ff085ec",
+  "compiler": {
+    "toolchain": "0.213.0",
+    "language": "0.28",
+    "sha256": "5b6bbf601b8df8ab4a86e97e49f200f470b8f0e5898f5c997d2d7631f123b4e7",
+    "compiler_build": "739c2cc01d4dc0fb698cbb560f04c4f6aa76c629076c76a8b084ba4d57de5bf1",
+    "descriptor_hash": "e74e4fc4f9c68abb18a1d11fd64111c548e4f20805964eaeaf4454301d9cf26b"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "inlayHintProvider",
+    "method": "textDocument/inlayHint",
+    "source": "checked local declarations",
+    "label": ": type",
+    "kind": 1,
+    "uses_excluded": true,
+    "position": "binding range end"
+  },
+  "observations": {
+    "registered_groups": 343,
+    "language_server_seconds": 21.047,
+    "editor_language_client_seconds": 1.12869,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.37,
+    "docs_documents": 179,
+    "docs_links": 1231
+  },
+  "limits": [
+    "inlay hints cover local declarations only; parameters/returns are not hinted",
+    "Windows native CUDA provider preparation was attempted during this round and blocked by the explicit toolchain requirement for nex doctor; no CUDA evidence is claimed",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-inlay-0213-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-inlay-0213-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-inlay-0213-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-inlay-0213-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
