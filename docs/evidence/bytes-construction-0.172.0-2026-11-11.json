@@ -1,0 +1,138 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:17:04.331830+00:00",
+  "scope": "Sequential linear byte construction through two-, three- and four-argument bytes(...) forms",
+  "implementation_commit": "85208e8fb934118509fbdd7531f1f148b4e1d528",
+  "build_source_base_commit": "1a574a3",
+  "compiler": {
+    "toolchain": "0.172.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "8db70f4fc386b978c985a00adb27d5d1357ce3b40b52795b8c6cb0d33891b72c",
+    "compiler_build": "2b9919da5d3fced6517e8d4abb16457e72b2f9578ff338a39c43bc36088e20ef",
+    "descriptor_hash": "e78838c3e66d2583cb5feb091e427dc9638575a1cbb86bb0e2eb3106a1de79d0",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "d25476e075bc4992715316a3ffdacb5fb6b3a9dde64132237ca130c932b5f484",
+      "include/nex/language.h": "656f28d59fb2be08a412cdd45dbbc23f84944eeb384be7e9720195136ca039d6",
+      "include/nex/bytes_build.h": "c9c98734c2dc45c70103e31be09a5956d35ac27eca61d2cedea892e8d382ae7e",
+      "src/bytes_build.cpp": "5e090cc437d823779ab83c0ee27b9d37c42d792c74e22216338ae27e2a8b899e",
+      "src/language.cpp": "bc08e6ff17faf1f163b94337e7de895e0036e048dcd083f97869a72a9d535e4a",
+      "src/interpreter.cpp": "6367c6c5cc97b9e1cd74120e1369c80f3d2074aff434aed75971fb30153ff386",
+      "src/backend.cpp": "155fb281d26c316d36322850bc4a892c368616a61e4585440013356cafcd67a3",
+      "src/typescript.cpp": "fb3683670ed149c230fd0aaa3c33919bf8fffb3b843a5f12dd5aebbaca395bb6",
+      "src/task_lifetime.cpp": "05e46c9d13c1d58556bb475cddf374a1570b2696c8d1189c2cc0aa51eeb1132e",
+      "src/cli_catalogue.cpp": "fa67616fd93700944a2c90cdf7eb2514aa397ca52fe5d3853df04b408b7891a4",
+      "runtime/runtime.cpp": "1d67d79ab884bb532f646d65c5dfac7eff0e4c2ca7e4324ae6d288d0c90fd84a",
+      "web/nex-runtime.ts": "88db42c861d0aeec44cfe9f4b0cc7bd38ba5de95b29f6dbe6d142dd5b8c00fd2",
+      "llm/language-pack.json": "7ccc2468083cb9bafb8a402ab7a5d208cd988ff910ff1ce822086487749e3934"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2",
+    "exclusive_host_latency_claimed": false
+  },
+  "byte_constructor": {
+    "source_name": "bytes",
+    "one_argument_conversion_preserved": true,
+    "previously_reserved_name": true,
+    "forms": [
+      "bytes(count,make)",
+      "bytes(values,transform)",
+      "bytes(values,predicate,transform)",
+      "bytes(count,initial,next,emit)"
+    ],
+    "backends": [
+      "reference",
+      "native",
+      "TypeScript"
+    ],
+    "callback_effects": "inferred union",
+    "source_errors": true,
+    "task_callbacks": true,
+    "private_accumulator": "list<i64> octets",
+    "final_conversion": "single validated immutable buffer",
+    "negative_count": "E_ASSERT",
+    "out_of_range_octet": "E_RANGE",
+    "new_native_runtime_symbol": "nex_bytes_from_octets",
+    "public_C_ABI_changed": false,
+    "runtime_ABI_changed": false,
+    "source_version_changed": false,
+    "language_migration_required": false,
+    "GPU_Wasm_constructor_support": false,
+    "new_worker_threads": false,
+    "new_authority": false
+  },
+  "observations": {
+    "registered_Mac_groups": 328,
+    "bytes_methods": 7,
+    "bytes_seconds": 61.7792,
+    "bytes_junit": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/constructors.xml",
+    "text_seconds": 61.9775,
+    "list_seconds": 112.95,
+    "standard_library_seconds": 48.3581,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.32,
+    "core_junit": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/core.xml",
+    "language_pack_ok": true,
+    "language_pack_shared_fields": 65,
+    "language_pack_compared_values": 3633,
+    "coverage": [
+      "all four forms, empty and 20000-octet inputs, generic function references and immutable aliases",
+      "argument/callback evaluation order and effect inference",
+      "typed source errors, filters and finally across the constructor",
+      "suspending callbacks and genuine task/future values",
+      "rejected effect/type/arity cases, negative-count E_ASSERT and out-of-range E_RANGE in reference, native Debug/Release and TypeScript",
+      "generated binding hygiene against caller len/assert/nex_bytes_count shadows",
+      "one-argument bytes(list<i64>) keeps its result<bytes>/E_RANGE contract",
+      "partial native construction releases its private buffer on a checked exit"
+    ],
+    "examples": [
+      "examples/bytes-construction/main.nex",
+      "examples/bytes-construction/effects/main.nex",
+      "examples/bytes-construction/tasks/main.nex"
+    ],
+    "example_outputs_match": "checked against each expected.txt"
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "hygiene test called a list-only shadowed len on the bytes result",
+      "resolution": "test changed to direct index checks; the checker correctly rejected the mismatch and no language rule was weakened"
+    },
+    {
+      "attempt": "language pack lacked bytes_construction while the test expected it",
+      "resolution": "descriptor and pack were completed before the final run; the final pack validation passes"
+    },
+    {
+      "attempt": "example sources were not formatter-canonical at creation",
+      "resolution": "nex fmt --write applied before the final reference/native/TypeScript run; expected stdout unchanged"
+    }
+  ],
+  "limits": [
+    "not a full regression, portable SDK or platform qualification",
+    "GPU/CUDA/Metal and scalar Wasm do not lower this heap constructor",
+    "wider containers, named source-library effect parameters and measured runtime benchmarks remain pending",
+    "no measured throughput or token-cost claim",
+    "one-argument bytes(list<i64>) retains its result<bytes> semantics"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "binary_sha256": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/nex.sha256",
+    "describe_index": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/describe-index.json",
+    "describe_bytes_construction": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/describe-bytes-construction.json",
+    "doctor": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/doctor.json",
+    "language_pack_check": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/language-pack-check.json",
+    "constructors_junit": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/constructors.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/bytes-construction-0172-v1/core.xml",
+    "guide": "docs/bytes-construction.md",
+    "test": "tests/bytes_construction.py"
+  }
+}
