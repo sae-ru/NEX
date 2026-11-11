@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Compute Sanitizer memcheck for the owned-CUDA physical corpus",
+  "implementation_commit": "ebcf23a49000569ff147a5474fe5867030b59db5",
+  "build_source_base_commit": "6dc1701",
+  "compiler": {
+    "toolchain": "0.221.0",
+    "language": "0.28",
+    "sha256": "a29c248fd4b9c9ad02bbd8e06e8c1e7ab0d74609e2fb56ee806f7f76a3c6c941",
+    "compiler_build": "468faf9462577715eae36f883686ea74df1b83ba2b814474d43175abd4a3070f",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1",
+    "sanitizer": "compute-sanitizer 12.1"
+  },
+  "memcheck": {
+    "schema": "nex.experimental-generated-CUDA-memcheck/1",
+    "ok": true,
+    "native_cases": 15,
+    "physical_context_probe": true,
+    "actual_GPU_execution": true,
+    "task_budgets_changed": false,
+    "report_sha256": "ff5203a9618346f909255183557522a9560cb08fb07e0591c811a44ebd824760",
+    "resource_directory_preserved": true,
+    "full_leak_checking": true
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.97,
+    "cuda_source_seconds": 78.1,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "memcheck passes; complete owned-CUDA acceptance remains false",
+    "source-deleted replay/standalone, remaining generated scalar roots and public SDK delivery remain pending",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "memcheck_report": "/Users/sae/projects/NEX/build/cuda-memcheck-0221/report.json",
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-memcheck-0221/core.json",
+    "focused_junit": "/Users/sae/projects/NEX/build/cuda-memcheck-0221/focused.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-memcheck-0221/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-memcheck-0221/nex.sha256",
+    "memcheck": "experiments/owned-cuda-codegen/memcheck.py",
+    "guide": "docs/testing.md"
+  }
+}
