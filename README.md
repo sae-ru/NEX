@@ -54,7 +54,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.168.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.169.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
@@ -63,6 +63,8 @@ The [source standard library](docs/stdlib.md) adds Unicode split/replace/trim,
 ordered list helpers/stable sort and checked integer math, with explicit copy costs.
 The [source formatter](docs/formatting.md) provides parser-aware preview/check/write,
 retaining comments and literal spelling without opening graph history.
+The [compiled CLI](docs/cli.md) adds bounded per-command help, shell completion
+and quiet success summaries while preserving JSON and program output.
 The [current learning labels](llm/corpus.json) cover nine0.28 projects and six
 counterexamples with actual reference/native Release/TypeScript observations.
 [Discovery and corpus tools](docs/learning-corpus.md) check all shared capability

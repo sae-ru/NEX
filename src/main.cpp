@@ -5,6 +5,7 @@
 #include "nex/discovery.h"
 #include "nex/diagnostic_catalogue.h"
 #include "nex/formatting.h"
+#include "nex/cli.h"
 #include "nex/wasm.h"
 #include "nex/metal.h"
 #include "nex/cuda.h"
@@ -40,6 +41,7 @@
 #include "llvm/TargetParser/Host.h"
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <algorithm>
 #include <functional>
 #include <array>
@@ -57,30 +59,34 @@ using namespace nex;
 struct Options {
   std::string command,compiler;std::map<std::string,std::string> values;std::set<std::string> flags;
   std::vector<std::string> positional,extra;
+  bool helpRequested=false,quiet=false;
   bool has(const std::string &name)const{return flags.contains(name);}
   std::string get(const std::string &name,const std::string &fallback="")const{auto i=values.find(name);return i==values.end()?fallback:i->second;}
 };
 Options options(int argc,char **argv) {
   Options o;o.command=argc>1?argv[1]:"help";o.compiler=executablePath(argv[0],reinterpret_cast<void*>(&options));
-  const std::set<std::string> flagNames={"--json","--interpreter-only","--library","--dpkg-notices","--task-debug"};
-  const std::set<std::string> valueNames={"--workload","--adapter","--profile-output","--component","--configuration","--profile","--target","--toolchain","--toolchains","--entry","--kind","--revision","--steps","--task-steps","--task-timeout-ms","--task-workers","--patch","--symbol","--output","--directory","--user","--auth","--events","--timeout","--scenario","--contracts","--solver-timeout","--resource-limit","--build-directory","--candidates","--task-hash","--manifest","--expression","--operation","--site","--offset","--limit","--notices","--foreign","--entity","--origin","--node","--from-revision","--expected-revision","--log","--note","--actor","--query","--field","--depth","--direction","--edge-offset","--edge-limit","--input-layout","--list-capacity","--byte-capacity","--text-capacity"};
+  if(o.command=="--help"||o.command=="-h")o.command="help";
   for(int i=2;i<argc;++i){
     std::string a=argv[i];if(a=="--"){while(++i<argc)o.extra.push_back(argv[i]);break;}
-    if(a=="-o")a="--output";
-    if(a=="--check"||a=="--write"){
-      if(o.command!="fmt"||!o.flags.insert(a).second)throw Error("E_OPTION",a+" requires fmt and may occur only once");
-      continue;
-    }
-    if(flagNames.contains(a)){if(a=="--task-debug"&&o.command!="project")throw Error("E_OPTION","--task-debug requires project plan/build/package");o.flags.insert(a);}
-    else if(a=="--candidate"){if(o.command!="migrate"||i+1==argc||o.values.contains(a))throw Error("E_OPTION","--candidate requires migrate and one reviewed candidate file");o.values[a]=argv[++i];}
-    else if(a=="--overlay"){if(o.command!="analyze"||i+1==argc)throw Error("E_OPTION","--overlay requires analyze and a JSON file");o.values[a]=argv[++i];}
-    else if(a=="--details"){if(o.command!="analyze")throw Error("E_OPTION","--details requires analyze");o.flags.insert(a);}
-    else if(a=="--references"){if(o.command!="analyze")throw Error("E_OPTION","--references requires analyze");o.flags.insert(a);}
-    else if(a=="--capsule"||a=="--export"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--capsule/--export require core and a directory");o.values[a]=argv[++i];}
-    else if(a=="--thread"||a=="--frame"){if(o.command!="core"||i+1==argc)throw Error("E_OPTION","--thread/--frame require core and an index");o.values[a]=argv[++i];}
-    else if(valueNames.contains(a)){if(i+1==argc)throw Error("E_OPTION","missing value for "+a);if((a.starts_with("--task-")||o.command=="cost"||o.command=="explain")&&o.values.contains(a))throw Error("E_OPTION","duplicate option "+a);o.values[a]=argv[++i];}
-    else if(a.starts_with("-"))throw Error("E_OPTION","unknown option "+a);
-    else o.positional.push_back(a);
+    if(a.starts_with("-")){
+      const auto *definition=cliOption(a);
+      if(!definition)throw Error("E_OPTION","unknown option "+a);
+      a=definition->name;
+      if(a=="--help"){o.helpRequested=true;continue;}
+      if(a=="--quiet"){if(o.quiet)throw Error("E_OPTION","duplicate option --quiet");o.quiet=true;continue;}
+      if(!definition->restrictedCommands.empty()&&
+         std::find(definition->restrictedCommands.begin(),definition->restrictedCommands.end(),o.command)==definition->restrictedCommands.end())
+        throw Error("E_OPTION",definition->restrictionMessage);
+      if(definition->metavar.empty()){
+        if(definition->unique&&o.flags.contains(a))throw Error("E_OPTION",definition->restrictionMessage);
+        o.flags.insert(a);
+      }else{
+        if(i+1==argc)throw Error("E_OPTION",definition->restrictionMessage.empty()?"missing value for "+a:definition->restrictionMessage);
+        if(o.values.contains(a)&&(definition->unique||a.starts_with("--task-")||o.command=="cost"||o.command=="explain"))
+          throw Error("E_OPTION",definition->restrictionMessage.empty()?"duplicate option "+a:definition->restrictionMessage);
+        o.values[a]=argv[++i];
+      }
+    }else o.positional.push_back(a);
   }
   if(o.positional.size()>1)throw Error("E_OPTION","expected at most one source file or directory");return o;
 }
@@ -200,6 +206,38 @@ void migrate(const Options &o,const fs::path &root){
     {"changed",previous!=selected},{"materialized",false}});
 }
 int run(const Options &o) {
+  if(o.command=="help"||o.helpRequested){
+    std::string selected=o.command=="help"?(o.positional.empty()?(o.helpRequested?"help":""):o.positional.front()):o.command;
+    const auto *command=selected.empty()?nullptr:cliCommand(selected);
+    if(!selected.empty()&&!command)throw Error("E_COMMAND","unknown command '"+selected+"'");
+    if(!o.extra.empty())throw Error("E_OPTION","help does not execute trailing arguments");
+    for(const auto &[name,value]:o.values){(void)value;
+      if(o.command=="help"||!command||std::find(command->options.begin(),command->options.end(),name)==command->options.end())
+        throw Error("E_OPTION","unsupported help option: "+name);
+    }
+    for(const auto &flag:o.flags)
+      if(flag!="--json"&&(o.command=="help"||!command||std::find(command->options.begin(),command->options.end(),flag)==command->options.end()))
+        throw Error("E_OPTION","unsupported help flag: "+flag);
+    auto help=cliHelp(selected,NEX_VERSION,NEX_BUILD_ID);
+    if(o.has("--json"))print(std::move(help));else std::cout<<cliHelpText(help);
+    return 0;
+  }
+  if(o.command=="complete"||o.command=="completion"){
+    if(!o.positional.empty()||std::any_of(o.flags.begin(),o.flags.end(),[](const auto &flag){return flag!="--json";})||
+       std::any_of(o.values.begin(),o.values.end(),[&](const auto &item){return o.command!="completion"||item.first!="--kind";}))
+      throw Error("E_OPTION","completion requires --kind SHELL; complete takes literal words after --");
+    if(o.command=="complete"){
+      auto result=cliComplete(o.extra);
+      if(o.has("--json"))print(std::move(result));
+      else for(const auto &candidate:*result.getAsObject()->getArray("candidates"))std::cout<<candidate.getAsString()->str()<<'\n';
+    }else{
+      if(!o.extra.empty())throw Error("E_OPTION","completion does not take trailing words");
+      auto shell=o.get("--kind");auto script=cliCompletionScript(shell);
+      if(o.has("--json"))print(llvm::json::Object{{"schema","nex.cli-completion-script/1"},{"ok",true},{"shell",shell},{"script",script}});
+      else std::cout<<script;
+    }
+    return 0;
+  }
   if(o.command=="fmt"){
     if(o.positional.size()!=1||o.positional.front().empty()||!o.values.empty()||!o.extra.empty()||
        (o.has("--check")&&o.has("--write"))||
@@ -445,22 +483,7 @@ int run(const Options &o) {
     auto result=o.command=="snapshot"?createGraphSnapshot(projectRoot(fs::current_path()).string(),o.get("--directory"),seconds):recoverGraphSnapshot(o.positional[0],o.get("--directory"),seconds);
     print(std::move(result));return 0;
   }
-  if(o.command=="help"||o.command=="--help"||o.command=="-h") {
-    std::cout<<"NEX "<<NEX_VERSION<<" (language "<<languageVersion<<")\n"
-      "  nex init [directory]\n  nex project [directory|nex.build.json] [--kind plan|build|package|run|test|build-test|debug|profile] [--component NAME] [--configuration NAME] [--workload FILE] [--foreign HOST.json] [--task-debug (plan/build/package)] [--json]\n  nex describe [--kind full|index | --field PATH] [--json]\n  nex analyze [file] [--overlay FILE] [--references|--details] [--json]\n  nex fmt FILE [--check|--write] [--json]\n  nex lsp\n  nex guide --kind format|stdlib|quick|source-contract|source-contract-migration|dns|tcp|model|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-file-reads|task-external|task-limits|tasks-runtime|browser-worker|project|project-task|server-workload|server-debug|task-workload|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor [--json]\n  nex doctor\n  nex explain CODE [--json] | --kind index [--json]\n  nex cost LEDGER.json [--output NEW.json] [--json]\n  nex toolchain FILE [--json]\n"
-      "  Task hosts: --task-steps N --task-timeout-ms N --task-workers N (see guide)\n  nex check|eval|build|run|test|emit [file] [--json]\n  nex emit [file] --kind metal|cuda --entry NAME [--input-layout rows|columns] [--list-capacity N (CUDA)] [--byte-capacity N (CUDA)] [--text-capacity N (CUDA)] [-o FILE] [--json]\n  nex package [file] --directory NEW [--target server] [--notices FILE] [--dpkg-notices] [--json]\n  nex profile [file] [--events COUNT] [--timeout SECONDS] [--scenario TEXT] [-o REPORT.json] [--json]\n  nex contract [file] --symbol NAME [-o CONTRACT.json]\n  nex contract [file] --kind runtime --contracts FILE --directory NEW [--json]\n  nex verify [file] --contracts FILE [--symbol NAME] [--solver-timeout MS] [--resource-limit COUNT] [--timeout SECONDS] [--json]\n"
-      "  nex ffi [file] --symbol NAME [--json]\n  nex foreign HOST.json [--json]\n  nex snapshot --directory NEW [--timeout SECONDS] [--json]\n  nex recover SNAPSHOT --directory NEW_PROJECT [--timeout SECONDS] [--json]\n  nex graph|history [--json]\n  nex search --query TEXT [--entity KIND] [--field symbol|source|any] [--revision HASH] [--json]\n  nex subgraph --symbol NAME [--entity KIND] [--direction dependencies|dependents|both] [--depth N] [--json]\n  nex context --symbol NAME | --operation ID | --site KEY\n  nex operations --symbol NAME [--offset N] [--limit N] [--json]\n"
-      "  nex declarations [file] [--entity module|type|trait|impl] [--symbol NAME] [--offset N] [--limit N]\n  nex context --entity module|type|trait|impl|function|endpoint --symbol NAME\n"
-      "  nex identities [file] [--entity all|module|type|trait|impl|function|endpoint|operation] [--symbol NAME] [-o PAGE.json]\n  nex identities --kind reconcile --manifest PAGE.json --expected-revision HEAD_HASH [--revision HASH]\n  nex identities --kind resolve --origin NAMESPACE --from-revision SOURCE_HASH --node ID [--revision HASH]\n"
-      "  nex changes [--offset N] [--limit N] [-o PAGE.json]\n  nex restore --revision HASH --expected-revision HEAD_HASH [--note TEXT] [--actor LABEL]\n  nex apply --patch FILE\n  nex export --revision HEAD -o FILE\n"
-      "  nex import FILE\n  nex migrate [GRAPH.json] [--revision HASH] [--kind plan|apply] [--candidate FILE] [--expected-revision HASH]\n  nex lock [file]\n  nex export --directory PATH\n  nex web [file] --directory PATH\n  nex api [file] [--directory PATH]\n  nex token --user USER --auth FILE\n  nex debug [file] [--kind lldb|dap|nex-dap] [--json] -- [lldb options]\n"
-      "  nex core CORE_FILE --manifest DEBUG.json [--export NEW_DIRECTORY] [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n  nex core --capsule DIRECTORY [--expression TEXT] [--thread INDEX] [--frame INDEX] [--json]\n"
-      "  nex diagnose [file] --manifest DEBUG.json --log STDERR.log [--revision HASH] [--json]\n"
-      "  nex inspect [FRAME.json] --manifest DEBUG.json --expression TEXT [--kind plan|demand|value] [--steps COUNT] [--json]\n"
-      "  nex task SOURCE --kind init [-o TASK.json]\n  nex task NOTICES.json --kind notices\n  nex task TASK.json --kind check|run|history [--task-hash HASH] [--revision HASH | --candidates FILE]\n  nex task RECEIPT.json --kind replay [--directory NEW_RUN] [--toolchains CATALOG.json]\n  nex contract --kind intent --contracts FILE\n"
-      "Options: --profile debug|profile|release --entry NAME --target native|TRIPLE|web|server|wasm --toolchain FILE\n"
-      "         --foreign HOST.json (eval/run/test/debug/profile/task check/run/replay)\n         --kind mlir|llvm|typescript|metal|cuda --revision HASH --steps COUNT --interpreter-only --library --build-directory PATH\n";return 0;
-  }
+
   if(o.command=="describe"){
     if(!o.positional.empty()||!o.extra.empty())throw Error("E_OPTION","describe does not take source files or execution arguments");
     for(const auto &[key,value]:o.values){(void)value;if(key!="--kind"&&key!="--field")throw Error("E_OPTION","unsupported describe option: "+key);}
@@ -545,9 +568,9 @@ int run(const Options &o) {
     print(llvm::json::Object{{"ok",true},{"user",user},{"token",token},{"auth",output.string()}});return 0;
   }
   if(o.command=="guide") {
-    const std::map<std::string,std::string> files={{"format","docs/formatting.md"},{"stdlib","docs/stdlib.md"},{"quick","llm/QUICK_REFERENCE.md"},{"source-contract","docs/source-contracts.md"},{"source-contract-migration","docs/source-contract-migration.md"},{"typed-web-delivery","docs/typed-web-delivery.md"},{"typed-error-provider","docs/typed-error-providers.md"},{"typed-exception","docs/typed-exceptions-design.md"},{"exception-provider","docs/source-exception-providers.md"},{"exception","docs/exceptions.md"},{"exception-module-debug","docs/source-exception-module-debug.md"},{"exception-module-profile","docs/source-exception-module-profile.md"},{"exception-module-http","docs/source-exception-module-http.md"},{"exception-instances","docs/source-exception-instances.md"},{"exception-frontiers","docs/source-exception-frontiers.md"},{"exception-modules","docs/source-exception-modules.md"},{"exception-http","docs/source-exception-http.md"},{"exception-host","docs/source-exception-host.md"},{"exception-task-watch","docs/source-exception-task-watch.md"},{"exception-task-lldb","docs/source-exception-task-lldb.md"},{"exception-task-debug","docs/source-exception-task-debug.md"},{"exception-task-control-profile","docs/source-exception-task-control-profile.md"},{"exception-native-tasks","docs/source-exception-native-tasks.md"},{"exception-task-ir","docs/source-exception-task-ir.md"},{"exception-lifetimes","docs/source-exception-lifetimes.md"},{"exception-tasks-prototype","docs/source-exception-tasks-prototype.md"},{"exception-prototype","docs/source-exceptions-prototype.md"},{"http-stream","docs/http-streams.md"},{"http-client","docs/http-client.md"},{"dns","docs/dns-provider.md"},{"tcp","docs/tcp-provider.md"},{"task-network-host","docs/task-network-transport.md"},{"task-file-streams","docs/task-file-streams.md"},{"task-file-stream-host","docs/task-file-stream-host.md"},{"task-write-providers","docs/task-write-providers.md"},{"task-write-migration","docs/task-write-migration.md"},{"task-file-writes","docs/task-file-writes-prototype.md"},{"task-file-write-host","docs/task-file-writes-host.md"},{"device","docs/device.md"},{"task-foreign-source","docs/task-foreign-prototype.md"},{"task-value-retirement","docs/task-value-retirement.md"},{"resource-regions","docs/resource-regions.md"},{"resource-executor","docs/resource-executor.md"},{"source-resources","docs/source-resources.md"},{"model","docs/models.md"},{"gpu","docs/gpu-codegen.md"},{"compute","docs/compute.md"},{"task-provider-debug","docs/task-provider-debugging.md"},{"task-provider-profile","docs/task-provider-profiling.md"},{"task-shared-providers","docs/task-shared-providers.md"},{"task-providers","docs/task-providers.md"},{"task-debug","docs/task-debugging.md"},{"task-file-reads","docs/task-file-reads.md"},{"task-external","docs/task-external.md"},{"task-limits","docs/task-limits.md"},{"task-migration","docs/task-migration.md"},{"task-lifetime","docs/task-lifetimes.md"},{"tasks-runtime","docs/tasks-runtime-design.md"},{"browser-worker","docs/browser-workers.md"},{"result","docs/error-propagation.md"},{"discovery","docs/discovery.md"},{"bootstrap","llm/BOOTSTRAP.md"},{"quality","docs/quality.md"},{"cost","experiments/quality/llm_cost.md"},{"concurrency","docs/concurrency-design.md"},{"task-workload","docs/task-workloads.md"},{"server-workload","docs/server-workload.md"}, {"server-debug","docs/server-debugging.md"},{"project-task","docs/project-tasks.md"},{"project","docs/project-build.md"},{"lsp","docs/lsp.md"},{"windows","docs/windows.md"},{"wasm","docs/wasm.md"},{"core","docs/core-debugging.md"},{"prompt","llm/SYSTEM_PROMPT.md"},{"language","docs/language.md"},{"grammar","docs/grammar.ebnf"},{"protocol","docs/protocol.md"},{"web","docs/web.md"},{"server","docs/server.md"},{"api","docs/api.md"},{"debug","docs/debugging.md"},{"build","docs/incremental.md"},{"native-entry-abi","docs/native-entry-abi.md"},{"profile","docs/profiling.md"},{"verify","docs/verification.md"},{"runtime-contract","docs/runtime-contracts.md"},{"task","docs/tasks.md"},{"expression","docs/expressions.md"},{"operation","docs/operations.md"},{"graph","docs/graph.md"},{"linux","docs/linux.md"},{"match","docs/matching.md"},{"function","docs/functions.md"},{"files","docs/files.md"},{"bytes","docs/bytes.md"},{"resources","docs/resources.md"},{"ffi","docs/ffi-design.md"},{"diagnostic","docs/native-diagnostics.md"},{"history","docs/history.md"},{"snapshot","docs/snapshots.md"},{"compatibility","docs/compatibility.md"},{"frontend","docs/frontend-diagnostics.md"},{"query","docs/queries.md"},{"string-debug","docs/string-debug.md"},{"trait","docs/traits.md"},{"editor","docs/editor.md"}};
+    const auto &files=cliGuides();
     auto kind=o.get("--kind","prompt");
-    if(!files.contains(kind))throw Error("E_OPTION","guide kind must be format, quick, gpu, native-entry-abi, source-contract, source-contract-migration, typed-web-delivery, typed-error-provider, exception-prototype, http-stream, http-client, dns, tcp, task-network-host, task-file-streams, task-write-migration, task-file-writes, task-file-write-host, task-foreign-source, task-value-retirement, resource-regions, resource-executor, task-provider-debug, task-provider-profile, task-shared-providers, task-providers, task-debug, task-file-reads, task-external, task-limits, task-migration, task-lifetime, tasks-runtime, browser-worker, result, discovery, bootstrap, quality, cost, concurrency, server-debug, task-workload, server-workload, project-task, prompt, language, grammar, protocol, web, server, api, debug, build, profile, verify, task, expression, operation, graph, linux, match, function, files, bytes, resources, ffi, diagnostic, history, snapshot, compatibility, frontend, query, string-debug, trait, editor, lsp, core, windows, project or wasm");
+    if(!files.contains(kind))throw Error("E_OPTION","unknown guide kind '"+kind+"'; use nex help guide");
     auto text=kind=="quick"?readBoundedText(resourceFile(files.at(kind)),6144,"quick reference","E_RESOURCE"):readFile(resourceFile(files.at(kind)));
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
@@ -1006,6 +1029,16 @@ int run(const Options &o) {
   else std::cout<<(result.cached?"Cached ":"Built ")<<(output.empty()?result.executable:output)<<'\n';return 0;
 }
 }
+namespace {
+class QuietSuccessOutput {
+  std::ostringstream captured;
+  std::streambuf *original=nullptr;
+public:
+  bool success=false;
+  explicit QuietSuccessOutput(bool active){if(active)original=std::cout.rdbuf(captured.rdbuf());}
+  ~QuietSuccessOutput(){if(original){std::cout.rdbuf(original);if(!success)std::cout<<captured.str();}}
+};
+}
 int main(int argc,char **argv) {
   bool machine=false;for(int i=1;i<argc;++i)if(std::string(argv[i])=="--json")machine=true;
   try{
@@ -1015,7 +1048,11 @@ int main(int argc,char **argv) {
     if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,GetCommandLineW(),-1,nullptr,0,nullptr,nullptr))
       throw nex::Error("E_OPTION","Windows command line contains invalid Unicode");
 #endif
-    return run(options(argc,argv));
+    auto selected=options(argc,argv);auto command=nex::cliCommand(selected.command);
+    bool status=command&&command->quietStatus;
+    if(selected.command=="fmt")status=selected.has("--check")||selected.has("--write");
+    QuietSuccessOutput output(selected.quiet&&!selected.has("--json")&&!selected.helpRequested&&status);
+    auto code=run(selected);output.success=code==0;return code;
   }
   catch(const nex::SourceException &e){
     nex::Error error("E_SOURCE_EXCEPTION",e.message,e.span);error.output=e.output;

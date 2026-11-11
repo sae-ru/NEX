@@ -75,6 +75,10 @@ and final delivery work are:
 - [x] Add parser-aware `nex fmt FILE` preview/check/write, retaining ordered
   comments and literal spelling, idempotence and graph rows. Toolchain 0.168
   functional coverage includes reference/native Debug/Release/strict TypeScript.
+- [x] Add compiled per-command help and contextual shell completion from one
+  CLI catalogue, with option-type/alias parsing and quiet success summaries.
+  Toolchain 0.169 retains JSON/errors/program stdout; Bash 3.2/5.3 and zsh
+  callbacks have local execution evidence. Fish/PowerShell execution is pending.
 - [ ] Extend formatting to editor requests, directory selection and width-based
   wrapping; these are not part of the current single-file command.
 - [ ] Linear immutable bulk builders, wider containers and effect-polymorphic

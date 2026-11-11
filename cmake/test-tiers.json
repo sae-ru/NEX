@@ -25,6 +25,7 @@
     "bytes_values": ["extended", "browser"],
     "bytes_values_native": ["extended", "platform"],
     "change_history": ["extended", "browser", "scale"],
+    "cli_interface": ["extended", "platform"],
     "ci_ctest_receipts": ["extended"],
     "compiled_workers_native": ["extended", "platform"],
     "compute_contract": ["extended", "browser", "scale"],

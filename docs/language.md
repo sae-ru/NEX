@@ -60,6 +60,10 @@ It changes whitespace, preserves comment/literal spelling and uses this parser's
 type punctuation, including compact type-closing `>=`. It adds no source syntax
 or semantic identity and performs no graph synchronization or migration.
 
+Toolchain 0.169 adds compiled [command help and completion](cli.md) and a quiet
+success-status option. These are CLI contracts; source grammar, execution
+semantics, effects, canonical identities and language 0.28 remain unchanged.
+
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external
 build metadata. They preserve language0.16, checked ownership, effects, realms
 and canonical identities. They require matching private native ABIs and source

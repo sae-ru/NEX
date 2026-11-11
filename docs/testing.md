@@ -95,6 +95,13 @@ observations; no full layer, SDK or additional platform was qualified.
 The [scoped receipt](evidence/source-formatting-0.168.0-2026-11-11.json)
 pins the implementation, binary, original failure and later successful reports.
 
+Toolchain 0.169 adds the extended/platform `cli_interface` group: 325 groups on
+this Mac and 330 explicit catalogue entries including conditional groups. Its
+six methods passed in 15.248 s, the affected formatter's seven methods in 9.310 s
+and the unchanged 12-group core in 22.78 s. Bash 3.2.57/5.3.9 and zsh 5.9
+callbacks executed; generated fish/PowerShell adapters have no execution claim.
+The original failed attempt and later metadata refinements remain separate.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

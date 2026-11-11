@@ -39,6 +39,11 @@ The old `features` list is explicitly partial. Use `features_scope` and the
 indexed per-feature sections; missing entries in that old list do not disable
 implemented features. `language_pack_contract` describes the checked shared
 manifest/descriptor values and type-preserving validator.
+When `cli_interface` is advertised, retrieve `nex help COMMAND --json` for
+unknown flags or value-taking rules instead of loading the whole CLI manual.
+This is compiled help, not execution or a value-combination preflight. Keep
+`--json` before a command's `--` application/completion-data separator. `--quiet`
+only suppresses routine success summaries and does not replace JSON or tests.
 The indexed specification and grammar are normative. Use language-pack examples
 and schemas; do not invent flags, source constructs or provider formats.
 

@@ -15,6 +15,7 @@
     "schema": "nex.language-pack-contract/1",
     "shared_fields": [
       "browser_workers",
+      "cli_interface",
       "compute",
       "device",
       "diagnostic_catalogue",
@@ -87,6 +88,7 @@
       "diagnostic_catalogue",
       "standard_library",
       "source_formatting",
+      "cli_interface",
       "types",
       "numeric_features",
       "generic_features",
@@ -577,7 +579,8 @@
     "standard_text_source": "lib/text.nex",
     "standard_list_source": "lib/list.nex",
     "standard_math_source": "lib/math.nex",
-    "source_formatting": "docs/formatting.md"
+    "source_formatting": "docs/formatting.md",
+    "cli": "docs/cli.md"
   },
   "document_access": "nex guide --kind format|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4662,5 +4665,28 @@
       "check_needs_formatting": 1,
       "invalid_input": 1
     }
+  },
+  "cli_interface": {
+    "help_command": "nex help [COMMAND] [--json]",
+    "command_help": "nex COMMAND --help [--json]",
+    "help_schema": "nex.cli-help/1",
+    "completion_command": "nex completion --kind bash|zsh|fish|powershell [--json]",
+    "query_command": "nex complete [--json] -- WORDS...",
+    "query_schema": "nex.cli-completion/1",
+    "script_schema": "nex.cli-completion-script/1",
+    "guide": "docs/cli.md",
+    "parser_option_types_from_catalogue": true,
+    "compiled": true,
+    "project_opened": false,
+    "quiet_flag": "--quiet",
+    "quiet_preserves_JSON_errors_and_program_output": true,
+    "help_text_maximum_bytes": 16384,
+    "help_JSON_maximum_bytes": 32768,
+    "completion_JSON_maximum_bytes": 16384,
+    "completion_maximum_words": 128,
+    "completion_word_maximum_bytes": 4096,
+    "filesystem_completion": "delegated to shell",
+    "shell_profiles_modified": false,
+    "value_combination_validation": "existing command handlers"
   }
 }
