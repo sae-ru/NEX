@@ -1,0 +1,68 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-11",
+  "utc": "2026-11-11T00:25:12.211110+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "source_parent_commit": "b3f687b8f23848852f314e32d96c7172a09f1117",
+  "scope": "local development CI workflow and report handling",
+  "compiler_sha256": "63cd6b70baedeea537e3ba84ce5c7186700c726be4436f495150856bcddbf992",
+  "compiler_changed": false,
+  "language_or_ABIs_changed": false,
+  "workflows": {
+    "core": "macOS15 native + Ubuntu24.04 offline container; PR/push/manual",
+    "full": "Ubuntu24.04 source/full-CTest/install/source-free SDK; manual/nightly03:23UTC"
+  },
+  "actions": {
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/upload-artifact": "cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+  },
+  "local_observations": {
+    "one_all_target_build": true,
+    "new_ci_CTest_group_passed": true,
+    "new_group_methods": 3,
+    "small_real_CTest_controls": [
+      "core excludes extended",
+      "full includes fixture consumer",
+      "process failure",
+      "disabled core",
+      "zero-exit skipped group",
+      "existing evidence rejected"
+    ],
+    "real_NEX_core_groups_passed": 11,
+    "core_CTest_wall_seconds": 13.61,
+    "browser_tools_requested_through_guard": false,
+    "registry_groups": 319,
+    "all_prior318_commands_and_properties_preserved": true,
+    "Ruby_Psych_YAML_parsing_passed": true,
+    "actionlint_version": "1.7.12",
+    "actionlint_passed": true,
+    "actionlint_external_shellcheck_pyflakes": "disabled; YAML/workflow/expression checks only",
+    "actionlint_archive_sha256": "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
+  },
+  "Linux_helpers_execute_inspected_immutable_image_ID": true,
+  "hosted_GitHub_executions": false,
+  "new_Linux_container_execution": false,
+  "Windows_CI": false,
+  "full_NEX_regression_or_live_device_suite_executed": false,
+  "portable_SDK_release_qualified": false,
+  "active_Qwen_comparison_compiler_and_frozen_inputs_preserved": true,
+  "runtime_performance_comparison_claimed_by_this_check": false,
+  "main_or_push": false,
+  "input_pins": {
+    ".github/workflows/core.yml": "989e147db3d59a1f4d0f9baa67c965fc3c93e845d7a16ca4701cd781ee3d05e0",
+    ".github/workflows/full.yml": "a2f03c4a8d40f020bd0981516054f05b49545c1e4ee5930bb0d397b8d4994b4c",
+    "tools/ci/ctest.py": "ab196dd22c353bd71f7f45498f8c2747d603c2deb447e59ab31d5c879c95cf08",
+    "tests/ci_ctest.py": "d4692e1f0e37de232e470878bc49dc3af07925a6f5fbbbbc20aab85ba53db030",
+    "tools/linux/check.py": "dd085573f8fab229cb6f86412cf248af2592441d24b78eff345d6c07fd2b93ac",
+    "tools/linux/verify.py": "b3144eef78772a37e483435213dc86292693c9f548ed7485cbdd4e899243603d",
+    "CMakeLists.txt": "f5393bf6da09f3b7a02d7df662d351be2cd2f3a8589529096313a9e8567606ad",
+    "cmake/test-tiers.json": "d69f681fb908ceb871126f3579959cfebcf87e125fe42fb980811c10fbacbc62"
+  },
+  "registry_sha256": "f0016f9170177eff9dec7157d23ac1c255a1ad01b984f1c2c42f4d00b8f38161",
+  "new_group_JUnit_sha256": "4e798de0a7c0f9bbc2a7b47cbf2a14c296abfef3ec7b4d1a129d5d31c23e06f7",
+  "core_receipt_sha256": "a83e87125923c80a45aadfb22163ceccae5245f6b84fc78560e20075a36890be",
+  "workflow_actionlint_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "qualification_receipt_sha256": "2720590f0c71ad7e2b6532b5d275d3388623ecd69b9cdea2a6980b879828a947"
+}

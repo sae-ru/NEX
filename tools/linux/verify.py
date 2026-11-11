@@ -37,9 +37,13 @@ def check_scratch_filesystem(directory=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--jobs',type=int,default=2)
+    parser.add_argument('--tier',choices=('core','full'),default='full')
     parser.add_argument('--live',action='store_true')
-    args=parser.parse_args();root=Path('/build');started=time.monotonic()
-    report={'ok':False,'source':'/src','network':'none','phases':[]}
+    args=parser.parse_args()
+    if not 1<=args.jobs<=8:parser.error('--jobs must be 1..8')
+    if args.live and args.tier=='core':parser.error('--live requires --tier full')
+    root=Path('/build');started=time.monotonic()
+    report={'ok':False,'source':'/src','network':'none','tier':args.tier,'phases':[], 'release_qualification':False}
     def save(): (root/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
     def run(name,command):
         row={'name':name,'command':list(map(str,command)),'status':'running'};report['phases'].append(row);save()
@@ -50,7 +54,18 @@ def main():
     try:
         report['scratch_filesystem']=check_scratch_filesystem();save()
         run('configure',['cmake','-S','/src','-B','/build','-DCMAKE_CXX_COMPILER=clang++','-DCMAKE_C_COMPILER=clang','-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld','-DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm','-DMLIR_DIR=/usr/lib/llvm-22/lib/cmake/mlir','-DNEX_Z3_ROOT=/opt/z3'])
-        run('build',['cmake','--build','/build','-j',str(args.jobs)])
+        build=['cmake','--build','/build','-j',str(args.jobs)]
+        if args.tier=='core':build+=['--target','nex_core_tests']
+        run('build',build)
+        if args.tier=='core':
+            run('ctest',['python3','/src/tools/ci/ctest.py','--build','/build',
+                         '--output','/build/ci-core','--tier','core','--jobs','1'])
+            report['ctest']=json.loads((root/'ci-core/ctest-receipt.json').read_text())
+            report['compiler_sha256']=hashlib.sha256((root/'nex').read_bytes()).hexdigest()
+            report['ok']=True
+            print(json.dumps({'ok':True,'tier':'core','groups':len(report['ctest']['observed_groups']),
+                              'sdk_checked':False}),flush=True)
+            return
         # Private TypeScript runtime probes require a real strict type checker.
         # Hydrate the same pinned lock already cached by the toolchain image;
         # the container remains offline and the source mount remains read-only.
@@ -69,7 +84,9 @@ def main():
             'version':json.loads((dependencies/'node_modules/typescript/package.json').read_text())['version'],
             'lock_sha256':hashlib.sha256((dependencies/'package-lock.json').read_bytes()).hexdigest(),
             'cache':cache,'offline':True,'ignore_scripts':True}
-        run('ctest',['ctest','--test-dir','/build','--output-on-failure','-j',str(args.jobs)])
+        run('ctest',['python3','/src/tools/ci/ctest.py','--build','/build',
+                     '--output','/build/ci-full','--tier','full','--jobs',str(args.jobs)])
+        report['ctest']=json.loads((root/'ci-full/ctest-receipt.json').read_text())
         text=(root/'Testing/Temporary/LastTest.log').read_text()
         report['case_counts']=[int(n) for n in re.findall(r'Ran (\d+) tests? in ',text)]
         report['skips']=re.findall(r"\.\.\. skipped ['\"]([^'\"]+)",text)

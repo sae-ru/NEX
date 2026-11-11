@@ -16,6 +16,8 @@ ctest --test-dir build -L '^core$' -j 1 --output-on-failure
 
 The [development presets](development-build.md) also provide
 `cmake --workflow --preset dev-core` for configure/build/core-test orchestration.
+The [CI receipt runner](ci.md) also saves and validates the actual registry,
+JUnit, exit code and logs for core/full selections.
 
 The selected11 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
@@ -61,6 +63,13 @@ Other whole-layer wall times remain
 unmeasured on the current source until the agreed full milestone. Inventory
 reports declared timeout sums separately; those are upper budgets, not runtime
 measurements. Historical timings retain their own source/hardware scope.
+
+The later CI block adds the extended `ci_ctest_receipts` group:319 groups are now
+registered on this Mac, with all318 earlier commands/properties preserved. Its
+three methods execute small real CTest projects, including failure and skip
+controls. The new receipt path also ran all11 real core groups in13.61s;
+[local CI evidence](evidence/ci-workflows-0.165.0-2026-11-11.json) retains that
+separate observation. It does not claim a GitHub or Linux container execution.
 
 ## Maintain the catalogue
 

@@ -1716,4 +1716,8 @@ add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})
 set_tests_properties(test_tiers PROPERTIES TIMEOUT 30)
+add_test(NAME ci_ctest_receipts COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/ci_ctest.py
+  --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})
+set_tests_properties(ci_ctest_receipts PROPERTIES TIMEOUT 60)
 include(cmake/TestTiers.cmake)

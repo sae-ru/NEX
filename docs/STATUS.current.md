@@ -31,6 +31,8 @@ Local Qwen task collection, bounded tool access and counted source review are im
 retain failures. [Repaired feedback](evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
 The [11-group core layer](testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
+[Development CI](ci.md) now defines macOS/Linux core and separate Linux full
+workflows; hosted executions remain pending.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|

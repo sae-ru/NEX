@@ -72,6 +72,8 @@ Local Qwen task collection, bounded tool access and counted source review are im
 retain failures. [Repaired feedback](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
 The [11-group core layer](docs/testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
+[Development CI](docs/ci.md) now defines macOS/Linux core and separate Linux full
+workflows; hosted executions remain pending.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
@@ -132,6 +134,7 @@ scale groups.
 
 Shared [development presets](docs/development-build.md) also provide
 `cmake --workflow --preset dev-core` with separate Debug/Release build directories.
+See [CI receipts and workflow scope](docs/ci.md) for the automated checks.
 
 Use the complete workflow below at the agreed milestone:
 

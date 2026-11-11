@@ -60,8 +60,13 @@ with LLVM/MLIR22.1.8 package versions, a pinned Ubuntu base and pinned Z3/Node
 archives. Reuse this environment for Linux work. The existing
 [`tools/linux/check.py`](../tools/linux/check.py) orchestrates the complete
 source/full-test/installed-SDK/source-free SDK workflow, with immutable image ID
-recording and offline verification after image preparation. Its `--skip-image-build`
+execution/recording and offline verification after image preparation. Its `--skip-image-build`
 option uses an already prepared image.
+
+The [development CI](ci.md) uses this image for Linux core and separate full
+workflows. `--tier core` omits web hydration and SDK stages; full remains the
+default. macOS core selects native dependencies. Hosted-runner executions and
+complete platform/SDK qualification retain their own pending status.
 
 Presets do not pin every host package or establish a reproducible portable SDK.
 Complete dependency inventories, immutable archive preparation and current
