@@ -543,14 +543,35 @@ class Server:
                     if imported.group(2) != qualifier:continue
                     target = (Path(path).parent / imported.group(1)).resolve()
                     fields = []
+                    imported_unit = next((f for f in current_index.get('files', []) if Path(f['path']).resolve() == target), None)
+                    if imported_unit is None:continue
                     for symbol in current_index.get('symbols', []):
                         if Path(symbol['file']).resolve() != target:continue
                         name = symbol.get('name')
                         if not isinstance(name, str) or not name or (prefix and not name.lower().startswith(prefix)):continue
+                        at = symbol.get('range')
+                        if at is None:continue
+                        declaration = imported_unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8').lstrip()
+                        if not declaration.startswith('pub '):continue
                         fields.append({'label': name, 'kind': kinds.get(symbol.get('kind'), 1), 'detail': symbol.get('detail'),
                             'sortText': name.lower(), 'filterText': name})
                     if fields:
                         return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: (item['sortText'], item['label']))}
+                fields = []
+                for symbol in current_index.get('symbols', []):
+                    identity = str(symbol.get('symbol', ''))
+                    if not identity.startswith(qualifier + '::'):continue
+                    name = symbol.get('name')
+                    if not isinstance(name, str) or not name or (prefix and not name.lower().startswith(prefix)):continue
+                    unit = next((f for f in current_index.get('files', []) if Path(f['path']).resolve() == Path(symbol['file']).resolve()), None)
+                    if unit is None:continue
+                    at = symbol.get('range')
+                    declaration = unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8').lstrip()
+                    if not declaration.startswith('pub '):continue
+                    fields.append({'label': name, 'kind': kinds.get(symbol.get('kind'), 1), 'detail': symbol.get('detail'),
+                        'sortText': name.lower(), 'filterText': name})
+                if fields:
+                    return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: (item['sortText'], item['label']))}
         member = re.search(r'\.\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
         if member is not None:
             dot_offset = offset - len(member.group(0).encode('utf-8'))

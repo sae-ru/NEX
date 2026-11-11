@@ -316,6 +316,9 @@ Toolchain 0.199 adds `Enum::` case completion with LSP kind 20;
 Toolchain 0.200 adds import-alias `h::` completion from checked imported
 files; `language_server` passed in 20.38 s.
 
+Toolchain 0.201 filters import-alias completion to public declarations and
+supports direct module-name qualifiers; `language_server` passed in 20.54 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

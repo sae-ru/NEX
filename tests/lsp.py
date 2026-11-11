@@ -586,13 +586,13 @@ class LanguageServer(harness.ToolchainCase):
         self.assertFalse((self.root/'.nex').exists())
 
     def test_import_alias_member_completion(self):
-        (self.root/'helper.nex').write_text('module helper;\npub fn add(left: i64, right: i64) -> i64 { return left + right; }\n')
+        (self.root/'helper.nex').write_text('module helper;\nfn secret() -> i64 { return 1; }\npub fn add(left: i64, right: i64) -> i64 { return left + right + secret(); }\n')
         text='module app;\nimport "./helper.nex" as h;\nfn main()->unit !{io}{print(h::add(1,2));}\n'
         line=text.splitlines()[2];start=line.index('h::')+len('h::')
         client=self.client();client.initialize();client.open(self.file,text)
         result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
             'position': {'line':2,'character':start}})
-        self.assertIn('add',{item['label'] for item in result['items']})
+        self.assertEqual({item['label'] for item in result['items']},{'add'})
         self.assertTrue(all(item['kind']==3 for item in result['items']))
 
     def test_qualified_enum_case_completion(self):
