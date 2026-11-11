@@ -38,3 +38,6 @@ Currently only `--kind runtime` is implemented. Cold/warm/edit build timing,
 cross-host normalization, statistical significance and GPU/device timing remain
 pending. Install/portable-SDK acceptance and the full platform matrix are
 separate. Profiling for per-function attribution remains `nex profile`.
+
+[Recorded 0.175 validation](evidence/bench-0.175.0-2026-11-11.json) pins the
+compiler, command test, sample report, host identity and remaining limits.

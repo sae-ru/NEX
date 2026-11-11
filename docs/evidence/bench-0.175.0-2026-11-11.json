@@ -1,0 +1,88 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:42:35.282026+00:00",
+  "scope": "Bounded nex bench runtime measurement with deterministic output and baseline comparison",
+  "implementation_commit": "60924d17f5657537a551307a78594b5e5c5a9746",
+  "build_source_base_commit": "c4d6110",
+  "compiler": {
+    "toolchain": "0.175.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "bbd60e452265aded6b3fe32a5aad1ce44755078f680624fad9c5184f435e0edd",
+    "compiler_build": "73e9c3e64901be1c8b95221d29f64c35ff27fc03030f52626f83bceaede8c406",
+    "descriptor_hash": "8dbdc55d14da95ed368c98c05a79180489c78b19fff8eadb0fbfd3e2e0c917cd",
+    "built_from_clean_committed_export": false,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "1d75618205924c00e7b1afb1705f7f281cbb44df290d61aaa83f75c5b2e29fa5",
+      "src/main.cpp": "81acbcca5ecfe89dbd616689693af38efc1dc406678d749928d8ee937a9d4993",
+      "src/cli_catalogue.cpp": "60925ecb9bd02494d8a313d46bca38f5c0fe5fdaaf3fb490f4106c8e16a572d5",
+      "src/language.cpp": "ff36ef16ed5e0a5cc066602a0f5546de9bab81449b640cf8df3b7d8d4a31cc42",
+      "tests/bench.py": "70f958069142393deef72c94344948b29dbb38cf19770ff08e317482e3693587",
+      "docs/bench.md": "fd0e809e9b0bdcd1a0052f47c03578c80658e0b1e1d8070dc2438f8df3886302",
+      "cmake/test-tiers.json": "6703126b7c635c7a114f7473680ac75b4015c644d88933d5a1563bd43d83e83a",
+      "llm/language-pack.json": "d3e9fc3b73675badbb98566cba3c65716babdbbf379fa6ae899aa7ac9cd6ad50"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "command": {
+    "name": "nex bench [FILE]",
+    "kind": "runtime",
+    "default_profile": "release",
+    "default_repetitions": 5,
+    "default_warmup": 1,
+    "maximum_repetitions": 1000,
+    "maximum_warmup": 1000,
+    "deterministic_stdout_required": true,
+    "baseline_schema": "nex.bench/1",
+    "measurement": "process wall time including executable start, captured stdout/stderr and exit",
+    "does_not_replace": "profiling, cold/warm/edit build timing, platform or SDK acceptance"
+  },
+  "observations": {
+    "registered_Mac_groups": 332,
+    "bench_command_seconds": 3.86072,
+    "sample_report": {
+      "repetitions": 3,
+      "warmup": 1,
+      "median_seconds": 0.002648,
+      "schema": "nex.bench/1"
+    },
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.6,
+    "docs_index_documents": 176,
+    "docs_index_links": 1214
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "rejection checks parsed human error text as JSON",
+      "resolution": "added --json to the rejected invocations; command and test then reported E_OPTION"
+    }
+  ],
+  "limits": [
+    "only runtime measurement is implemented; cold/warm/edit build timing is pending",
+    "timing includes process startup and captured output, not pure function work",
+    "results are one host/one workload and make no universal speed claim",
+    "cross-host normalization, statistical significance and GPU/device timing remain pending",
+    "no source-language semantics or canonical identities changed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "bench_junit": "/Users/sae/projects/NEX/build/bench-0175-v1/bench.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/bench-0175-v1/core.xml",
+    "sample_report": "/Users/sae/projects/NEX/build/bench-0175-v1/bench-report.json",
+    "bench_stdout": "/Users/sae/projects/NEX/build/bench-0175-v1/bench-stdout.json",
+    "describe_index": "/Users/sae/projects/NEX/build/bench-0175-v1/describe-index.json",
+    "doctor": "/Users/sae/projects/NEX/build/bench-0175-v1/doctor.json",
+    "binary_sha256": "/Users/sae/projects/NEX/build/bench-0175-v1/nex.sha256",
+    "guide": "docs/bench.md",
+    "test": "tests/bench.py"
+  }
+}
