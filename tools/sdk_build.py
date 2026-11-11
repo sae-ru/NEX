@@ -125,7 +125,11 @@ def plan(config, source, output):
     if not required <= set(tracked) or len(tracked) > 100000:
         raise ValueError('source is not the current NEX SDK-build checkout')
     cmake = git(source, 'show', commit + ':CMakeLists.txt').decode('utf-8')
-    version = re.search(r'project\(NEX VERSION ([0-9.]+)', cmake)
+    try:
+        version_text = git(source, 'show', commit + ':VERSION').decode('utf-8').strip()
+        version = (version_text, version_text) if re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version_text) else None
+    except subprocess.CalledProcessError:
+        version = re.search(r'project\(NEX VERSION ([0-9.]+)', cmake)
     pack = decode(git(source, 'show', commit + ':llm/language-pack.json'))
     header = git(source, 'show', commit + ':include/nex/language.h').decode('utf-8')
     language = re.search(r'languageVersion\s*=\s*"([^"]+)"', header)

@@ -11,8 +11,13 @@ MAX_BYTES=6144
 
 
 def generated():
-    cmake=(ROOT/'CMakeLists.txt').read_text()
-    toolchain=re.search(r'project\(NEX VERSION ([0-9.]+)\b',cmake)[1]
+    version_file=ROOT/'VERSION'
+    if version_file.is_file():
+        toolchain=version_file.read_text().strip()
+        if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',toolchain):raise ValueError('VERSION is not a semantic version')
+    else:
+        cmake=(ROOT/'CMakeLists.txt').read_text()
+        toolchain=re.search(r'project\(NEX VERSION ([0-9.]+)\b',cmake)[1]
     language=json.loads((ROOT/'llm/language-pack.json').read_text())['language_version']
     declared=re.search(r'\blanguageVersion\s*=\s*"([^"]+)"',(ROOT/'include/nex/language.h').read_text())[1]
     if language!=declared:raise ValueError('language pack and compiler header disagree')

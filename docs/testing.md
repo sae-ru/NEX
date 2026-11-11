@@ -162,6 +162,15 @@ passed in 0.54 s, and the unchanged 12-group core in 23.94 s. Applying a fix
 rechecks the whole file and restores the original bytes on rejection. Other
 diagnostic families, multi-fix batches and editor protocols remain pending.
 
+Toolchain 0.177 moves test targets and CTest registrations into
+`cmake/Tests.cmake` and makes the top-level `VERSION` file the single toolchain
+version source. `CMakeLists.txt` is 160 lines, `cmake/Tests.cmake` is 1639; the
+registry remains 333 groups. A full all-target build succeeded, the focused
+version/docs/agreement/bench/fix/sdk tests passed in 5.51 s and the unchanged
+12-group core in 23.26 s. Test semantics, language 0.28 and canonical identities
+are unchanged; further build-logic module splitting remains possible but is not
+required for this block.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
