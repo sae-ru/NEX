@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "std/set union/intersection/difference",
+  "implementation_commit": "eebc90b2f890a7f1890c012001436039c7e1621c",
+  "build_source_base_commit": "1c46f49",
+  "compiler": {
+    "toolchain": "0.215.0",
+    "language": "0.28",
+    "sha256": "c83641f15fd50bbd85e1968e56244a7a1e7954cbfc9e8031be5ab8dc0c3b47a5",
+    "compiler_build": "678f346aff4560dde89949a6de7326df03257592a6f920c711a963c3c0da060a",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "module": "std/set.nex",
+    "functions_added": [
+      "union",
+      "intersection",
+      "difference"
+    ],
+    "ordering": "left insertion order",
+    "immutable": true,
+    "list_backed": true,
+    "complexity": "O(n*m) worst-case scans"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "stdlib_set_ops_seconds": 5.52001,
+    "standard_library_seconds": 39.9909,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.02,
+    "docs_documents": 179,
+    "docs_links": 1232,
+    "cuda_native_preparation_attempt": "still blocked by explicit Windows toolchain for nex doctor; no CUDA evidence claimed"
+  },
+  "limits": [
+    "set operations are list-backed scans, not hash/balanced-tree structures",
+    "full CTest remains unqualified",
+    "CUDA native provider preparation remains blocked"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/stdlib-set-0215-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/stdlib-set-0215-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/stdlib-set-0215-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/stdlib-set-0215-v1/nex.sha256",
+    "test": "tests/stdlib_set_ops.py",
+    "guide": "docs/containers.md"
+  }
+}
