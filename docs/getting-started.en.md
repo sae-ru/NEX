@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.215.0 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.216.0 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
@@ -31,6 +31,7 @@ ctest --test-dir build --output-on-failure
 cmake --install build --prefix /absolute/path/to/nex-sdk
 export PATH="/absolute/path/to/nex-sdk/bin:$PATH"
 nex doctor --json
+nex doctor --toolchain windows-toolchain.json --json
 nex describe --kind index --json
 ```
 

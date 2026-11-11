@@ -365,6 +365,9 @@ Toolchain 0.215 adds `std/set.nex` union/intersection/difference;
 `stdlib_set_ops` covers reference/native/TypeScript in 5.52 s and the standard
 library pin/catalogue test passed in 39.99 s.
 
+Toolchain 0.216 lets `nex doctor --toolchain FILE` report an explicit native
+toolchain instead of rejecting the selector; invalid files return E_TOOLCHAIN.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

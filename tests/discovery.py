@@ -190,6 +190,10 @@ class Discovery(harness.ToolchainCase):
         schema = json.loads((harness.REPO / full['scoped_discovery']['schema_file']).read_text())
         self.assertEqual(schema['properties']['schema']['const'], 'nex.discovery/1')
 
+    def test_doctor_accepts_explicit_toolchain_selector(self):
+        result=self.cli('doctor','--toolchain',str(self.root/'missing-toolchain.json'),ok=False)
+        self.assertEqual(result['code'],'E_TOOLCHAIN')
+
     def test_projected_responses_are_smaller_without_claiming_token_counts(self):
         full = self.cli('describe', machine=False).stdout.encode()
         index = self.cli('describe', '--kind', 'index', machine=False).stdout.encode()

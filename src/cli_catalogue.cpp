@@ -247,7 +247,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("fmt","FILE|DIRECTORY [--check|--write] [--width N]","Format current syntax, retaining comments and graph history.","format","--check --write --width");
     add("lsp","","Run the installed language server on standard input/output.","lsp","");
     add("guide","[--kind KIND]","Read one selected source/SDK guide.","discovery","--kind");
-    add("doctor","","Report the selected host/compiler/runtime configuration.","build","");
+    add("doctor","[--toolchain FILE]","Report the selected host/compiler/runtime configuration.","build","--toolchain");
     add("explain","[CODE | --kind index]","Read bounded compiled diagnostic advice or its index.","diagnostic","--kind");
     add("cost","LEDGER.json","Summarize recorded model trial costs offline.","cost","--output");
     add("toolchain","FILE","Inspect a native toolchain configuration.","build","");

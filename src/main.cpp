@@ -585,9 +585,9 @@ int run(const Options &o) {
   if(o.values.contains("--foreign")&&o.command!="eval"&&o.command!="run"&&o.command!="test"&&o.command!="debug"&&o.command!="profile"&&o.command!="task"&&o.command!="package")throw Error("E_OPTION","--foreign FILE is for eval/run/test/debug/profile/package or reviewed task execution");
   if(o.values.contains("--toolchains")&&o.command!="task")throw Error("E_OPTION","--toolchains FILE is for task check/run/replay");
   if(o.values.contains("--toolchain")){
-    const std::set<std::string> nativeCommands={"build","package","run","test","debug","profile","emit"};
+    const std::set<std::string> nativeCommands={"build","package","run","test","debug","profile","emit","doctor"};
     if(o.get("--toolchain").empty()||!nativeCommands.contains(o.command)||o.get("--target")=="web"||o.has("--interpreter-only")||(o.command=="emit"&&o.get("--kind")!="llvm"))
-      throw Error("E_OPTION","--toolchain FILE selects a native build/package/run/test/debug/profile or emit --kind llvm");
+      throw Error("E_OPTION","--toolchain FILE selects a native build/package/run/test/debug/profile/doctor or emit --kind llvm");
   }
   if(o.command=="snapshot"||o.command=="recover"){
     const std::set<std::string> allowed={"--directory","--timeout"};
@@ -690,7 +690,8 @@ int run(const Options &o) {
     if(o.has("--json"))print(llvm::json::Object{{"schema","nex.guide/1"},{"language",languageVersion},{"kind",kind},{"hash",hash(text)},{"text",text}});else std::cout<<text;return 0;
   }
   if(o.command=="doctor") {
-    auto runtime=resourceFile("runtime/runtime.cpp");auto native=configureNative({});
+    BuildOptions nativeOptions;nativeOptions.toolchain=o.get("--toolchain");
+    auto runtime=resourceFile("runtime/runtime.cpp");auto native=configureNative(nativeOptions);
     print(llvm::json::Object{{"schema","nex.doctor/1"},{"version",NEX_VERSION},{"language",languageVersion},{"llvm",LLVM_VERSION_STRING},{"host",llvm::sys::getDefaultTargetTriple()},{"cpu",llvm::sys::getHostCPUName().str()},{"native_compiler",native.compiler},{"wasm_linker",native.wasmLinker},{"wasm_compiler",configureWasm().compiler},{"native_archiver",native.archiver},{"native_debug_packager",native.debugPackager},{"native_linker",native.linker},{"native_sysroot",native.sysroot},{"native_windows_runtime",native.windowsRuntime},{"native_windows_notices",native.windowsNotices},{"sdk_manifest",native.sdkManifest},{"native_sqlite_include",native.sqliteInclude},{"native_sqlite_library",native.sqliteLibrary},{"native_openssl_include",native.opensslInclude},{"native_openssl_ssl",native.opensslSSL},{"native_openssl_crypto",native.opensslCrypto},{"runtime",runtime},{"runtime_available",fs::exists(runtime)},{"verifier","Z3"},{"verifier_version",verifierVersion()}});return 0;
   }
   if(o.command=="init") {
