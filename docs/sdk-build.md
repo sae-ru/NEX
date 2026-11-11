@@ -73,6 +73,17 @@ kernel read/write denial checks remain active. Host Apple SDK/system tools are
 declared prerequisites. Complete source-test and newly assembled archive
 execution through this joining command remain pending.
 
+## Local 0.177 macOS smoke
+
+A local Release install/move/archive/restore smoke was run on macOS ARM64: the
+installed `bin/nex` and `share/nex` initialized, checked, tested, evaluated and
+natively ran a fresh app; the SDK was moved and restored from an 11 MB archive
+with the runtime path following each location. The
+[scoped evidence](evidence/sdk-local-smoke-0.177.0-2026-11-11.json) records the
+Release binary/compiler identity and limits. It is not the full `sdk_build.py`
+sequence, full CTest, source-free/denied-read acceptance, live debugging or a
+portable platform matrix.
+
 ## Inputs, outputs and limits
 
 `source` defaults to the checkout containing the command; `--source` can select

@@ -169,7 +169,14 @@ registry remains 333 groups. A full all-target build succeeded, the focused
 version/docs/agreement/bench/fix/sdk tests passed in 5.51 s and the unchanged
 12-group core in 23.26 s. Test semantics, language 0.28 and canonical identities
 are unchanged; further build-logic module splitting remains possible but is not
-required for this block.
+
+A local 0.177 macOS ARM64 Release smoke installed the current `bin/nex` and
+`share/nex`, initialized/checked/tested/evaluated/ran a fresh application,
+moved the SDK, created an 11 MB archive and restored it to a third path. The
+installed runtime path followed each move and all app commands stayed green.
+This is an install/move/archive/restore smoke, not the maintained `sdk_build.py`
+sequence, full CTest, source-free/denied-read acceptance, live debugging or a
+portable platform matrix.
 
 ## Maintain the catalogue
 
