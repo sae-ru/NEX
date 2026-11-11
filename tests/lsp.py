@@ -585,6 +585,16 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_completion_returns_local_values(self):
+        text='module app;\nfn main()->unit !{io}{let value:i64=1;print(value);}\n'
+        line=text.splitlines()[1];start=line.rindex('value')
+        client=self.client();client.initialize();client.open(self.file,text)
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':1,'character':start+3}})
+        items=[item for item in result['items'] if item['label']=='value']
+        self.assertEqual(len(items),1)
+        self.assertEqual(items[0]['kind'],6)
+
     def test_completion_returns_checked_declarations(self):
         text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x + 1; }\nfn main() -> unit !{io} { print(helper(1)); }\n'
         line=text.splitlines()[3];start=line.index('helper')

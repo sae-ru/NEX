@@ -296,6 +296,9 @@ Toolchain 0.194 adds LSP declaration completion filtered by the identifier
 prefix at the cursor; `language_server` passed in 19.38 s with completion items
 for helper/main/Point.
 
+Toolchain 0.195 extends LSP completion to local/parameter/field values with
+name deduplication; `language_server` passed in 19.25 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

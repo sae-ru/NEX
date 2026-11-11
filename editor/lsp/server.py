@@ -518,6 +518,7 @@ class Server:
         for index in cache['indices']:
             if cancelled is not None and cancelled.is_set():
                 raise RPCError(-32800, 'Request cancelled')
+            texts = {f['key']: f['text'] for f in index.get('files', [])}
             for symbol in index.get('symbols', []):
                 name = symbol.get('name')
                 if not isinstance(name, str) or not name or (prefix and not name.lower().startswith(prefix)):
@@ -527,6 +528,21 @@ class Server:
                 items[identity] = {'label': name, 'kind': kinds.get(symbol.get('kind'), 1),
                     'detail': symbol.get('detail'), 'sortText': name.lower(),
                     'filterText': name}
+                if len(items) >= 1000:break
+            for number, record in enumerate(index.get('identifiers', [])):
+                if number % 1000 == 0 and cancelled is not None and cancelled.is_set():
+                    raise RPCError(-32800, 'Request cancelled')
+                kind = record.get('kind')
+                if kind not in ('local', 'parameter', 'field'):continue
+                unit = next((f for f in index.get('files', []) if Path(f['path']).resolve() == Path(record['file']).resolve()), None)
+                if unit is None:continue
+                at = record['range']
+                name = unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8')
+                if not name or (prefix and not name.lower().startswith(prefix)):continue
+                identity = ('value', name)
+                if identity in items:continue
+                items[identity] = {'label': name, 'kind': 6 if kind in ('local', 'parameter') else 5,
+                    'detail': record.get('detail'), 'sortText': name.lower(), 'filterText': name}
                 if len(items) >= 1000:break
             if len(items) >= 1000:break
         return {'isIncomplete': False, 'items': sorted(items.values(), key=lambda item: (item['sortText'], item['label']))}
