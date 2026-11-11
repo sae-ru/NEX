@@ -264,6 +264,12 @@ f64 arguments/results. `wasm` passed in 17.87 s, `wasm_f64` in 0.84 s and
 `typed_scalar_wasm` in 1.99 s under LLVM 22.1 `wasm-ld` plus Node. Full
 Wasm/SDK/platform acceptance remains pending.
 
+Toolchain 0.188 completes OpenCL scalar `f64`: `cl_khr_fp64` source, checked
+non-finite status 7, finite input validation and f64 rows ABI. The kernel ran on
+NVIDIA RTX 3090 OpenCL 3.0 (`42.0`, error 0; infinity input error 7); Mali
+remains i64/bool because it has no fp64. The OpenCL focused suite passed in
+0.24 s. Full device/SDK acceptance remains pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

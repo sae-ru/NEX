@@ -17,8 +17,8 @@ fn transform(x: i64, bias: i64) -> i64 {
 fn main() -> unit !{io} { print(transform(20, 2)); }
 '''
 FLOAT='''module opencl_float;
-fn transform(x: f64) -> f64 { return x + 1.0; }
-fn main() -> unit !{io} { print(transform(1.0)); }
+fn transform(x: f64, gain: f64) -> f64 { return x * gain + 1.0; }
+fn main() -> unit !{io} { print(transform(20.5, 2.0)); }
 '''
 
 
@@ -60,6 +60,17 @@ class OpenCL(unittest.TestCase):
             self.assertFalse(descriptor['device_execution'])
 
             (root/'main.nex').write_text(FLOAT)
+            floating=run(['emit','--kind','opencl','--entry','transform','--input-layout','rows','--json'],root)
+            self.assertEqual(floating.returncode,0,floating.stdout+floating.stderr)
+            floating=json.loads(floating.stdout)
+            self.assertEqual(floating['result_type'],'f64')
+            self.assertIn('double',floating['source'])
+            self.assertIn('nex_f_mul',floating['source'])
+            self.assertIn('cl_khr_fp64',floating['source'])
+            (root/'main.nex').write_text('''module opencl_string;
+fn transform(x: str) -> str { return x; }
+fn main() -> unit !{io} { print(transform("x")); }
+''')
             rejected=run(['emit','--kind','opencl','--entry','transform','--json'],root)
             self.assertNotEqual(rejected.returncode,0)
             self.assertEqual(json.loads(rejected.stdout)['code'],'E_GPU_TYPE')

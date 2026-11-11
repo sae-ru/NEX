@@ -70,6 +70,7 @@ and final delivery work are:
 - [x] Infer `?E` effects for all `std/list` callback helpers and substitute them in cloned lambdas.
 - [x] Collect and substitute effect parameters in parameter/result function types.
 - [x] Add checked scalar OpenCL C source emission.
+- [x] Add finite f64 OpenCL C emission and NVIDIA RTX execution.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

@@ -105,7 +105,11 @@ columns use `input_0...`, and every dispatch writes `output` plus per-lane
 buffer authority; `driver_initialized` and `device_executed` remain false.
 
 The emitter is source-only: device dispatch, Mali/NPU hardware acceptance,
-bounded lists/bytes/text, f64 and additional control flow are pending. The
+bounded lists/bytes/text and additional control flow are pending. Finite `f64`
+is supported through `cl_khr_fp64`; non-finite inputs/results use lane status 7
+(`E_FLOAT`). Mali does not advertise fp64; the f64 path was executed on
+NVIDIA RTX 3090 OpenCL 3.0 with `(20.5,2.0)->42.0` and an infinity input
+returning error 7. The
 report schema is [nex.opencl-emission/1](../llm/opencl-emission.schema.json).
 The focused test compiles the emitted source with Clang's OpenCL frontend when
 available and rejects unsupported f64.
