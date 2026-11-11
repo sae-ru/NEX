@@ -17,11 +17,11 @@ const char *nex_wasm_error_site(void){return error_site?error_site->site:0;}
 void nex_wasm_enter_at(int64_t line,const NexSite *site){if(depth>=64)fail(DEPTH,line,site);++depth;}
 void nex_wasm_leave(void){if(depth)--depth;}
 void nex_poll_at(int64_t line,const NexSite *site){if(!remaining)fail(BUDGET,line,site);--remaining;}
-int64_t nex_add_at(int64_t a,int64_t b,int64_t line,const NexSite *site){(void)a;(void)b;fail(OVERFLOW,line,site);}
-int64_t nex_sub_at(int64_t a,int64_t b,int64_t line,const NexSite *site){(void)a;(void)b;fail(OVERFLOW,line,site);}
-int64_t nex_mul_at(int64_t a,int64_t b,int64_t line,const NexSite *site){(void)a;(void)b;fail(OVERFLOW,line,site);}
-int64_t nex_neg_at(int64_t a,int64_t line,const NexSite *site){(void)a;fail(OVERFLOW,line,site);}
-int64_t nex_div_at(int64_t a,int64_t b,int64_t line,const NexSite *site){(void)a;fail(b?OVERFLOW:DIV_ZERO,line,site);}
-int64_t nex_mod_at(int64_t a,int64_t b,int64_t line,const NexSite *site){(void)a;if(!b)fail(DIV_ZERO,line,site);return 0;}
+int64_t nex_add_at(int64_t a,int64_t b,int64_t line,const NexSite *site){int64_t r;if(__builtin_add_overflow(a,b,&r))fail(OVERFLOW,line,site);return r;}
+int64_t nex_sub_at(int64_t a,int64_t b,int64_t line,const NexSite *site){int64_t r;if(__builtin_sub_overflow(a,b,&r))fail(OVERFLOW,line,site);return r;}
+int64_t nex_mul_at(int64_t a,int64_t b,int64_t line,const NexSite *site){int64_t r;if(__builtin_mul_overflow(a,b,&r))fail(OVERFLOW,line,site);return r;}
+int64_t nex_neg_at(int64_t a,int64_t line,const NexSite *site){if(a==INT64_MIN)fail(OVERFLOW,line,site);return -a;}
+int64_t nex_div_at(int64_t a,int64_t b,int64_t line,const NexSite *site){if(!b)fail(DIV_ZERO,line,site);if(a==INT64_MIN&&b==-1)fail(OVERFLOW,line,site);return a/b;}
+int64_t nex_mod_at(int64_t a,int64_t b,int64_t line,const NexSite *site){if(!b)fail(DIV_ZERO,line,site);if(a==INT64_MIN&&b==-1)return 0;return a%b;}
 void nex_assert_at(int64_t value,int64_t line,const NexSite *site){if(!value)fail(ASSERTION,line,site);}
 void nex_match_fail_at(int64_t line,const NexSite *site){fail(MATCH,line,site);}

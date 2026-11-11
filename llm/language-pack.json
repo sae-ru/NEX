@@ -904,34 +904,24 @@
     "owned_images": true
   },
   "wasm_features": {
-    "source_support": true,
-    "status": "experimental_scalar_compute_validation_pending",
-    "command": "nex build FILE --target wasm --entry NAME --profile debug|release --json",
-    "guide": "docs/wasm.md",
-    "target": "wasm32-unknown-unknown",
     "abi": 1,
-    "types": [
-      "i64",
-      "bool",
-      "unit"
-    ],
-    "realms": [
-      "shared",
-      "client"
-    ],
+    "checked_arithmetic": "real i64 add/sub/mul/neg/div/mod in runtime/wasm_runtime.c",
+    "checked_i64": true,
+    "command": "nex build FILE --target wasm --entry NAME --profile debug|release --json",
     "effects": [],
-    "javascript_i64": "BigInt",
+    "explicit027_scalar_cpp_development": true,
+    "guide": "docs/wasm.md",
     "host_imports": false,
-    "wrapper": "(await createNexWasm(bytes)).call(argumentArray, {budget})",
+    "javascript_i64": "BigInt",
     "limits": {
-      "functions": 128,
-      "operations": 8192,
-      "function_operations": 512,
-      "parameters": 32,
       "call_depth": 64,
+      "function_operations": 512,
+      "functions": 128,
       "maximum_budget": 10000000,
       "memory_bytes": 16777216,
-      "module_bytes": 8388608
+      "module_bytes": 8388608,
+      "operations": 8192,
+      "parameters": 32
     },
     "pending": [
       "full_current_regression",
@@ -944,11 +934,23 @@
       "f64",
       "heap_values"
     ],
-    "explicit027_scalar_cpp_development": true,
-    "source027_test_source": "tests/typed_scalar_wasm.py",
-    "source_exception_lowering": false,
+    "realms": [
+      "shared",
+      "client"
+    ],
     "source027_scalar_public": false,
-    "source028_scalar_public": true
+    "source027_test_source": "tests/typed_scalar_wasm.py",
+    "source028_scalar_public": true,
+    "source_exception_lowering": false,
+    "source_support": true,
+    "status": "scalar_checked_i64_Node_validated",
+    "target": "wasm32-unknown-unknown",
+    "types": [
+      "i64",
+      "bool",
+      "unit"
+    ],
+    "wrapper": "(await createNexWasm(bytes)).call(argumentArray, {budget})"
   },
   "ios_archive_commands": [
     "nex toolchain IOS_TOOLCHAIN.json --json",

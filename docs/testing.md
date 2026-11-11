@@ -251,6 +251,13 @@ The 0.185 OpenCL scalar kernel also ran on RK3588's physical
 **Mali-G610 r0p0** GPU under OpenCL 3.0: `(20,2)->42/error 0` and
 `(INT64_MAX,1)->0/error 1`, with `CL_DEVICE_TYPE_GPU` and no CPU fallback.
 
+Toolchain 0.186 replaces the scalar Wasm arithmetic stubs with real checked i64
+add/sub/mul/neg/div/mod (including INT64_MIN/-1 overflow and division by zero)
+in `runtime/wasm_runtime.c`. With LLVM 22.1 `wasm-ld`, the `wasm` and
+`typed_scalar_wasm` suites now execute instead of skipping: `wasm` passed in
+20.67 s and `typed_scalar_wasm` in 1.96 s, including overflow/assert/div-zero
+agreement. Full Wasm/SDK/platform acceptance remains pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -55,11 +55,21 @@ inline long nex_mod(long a, long b, __private NexState *s) {
   return nex_bits(a < 0 ? 0UL - value : value);
 }
 )nexopencl";
+constexpr std::string_view floatRuntime=R"nexfp64(inline double nex_f_bits(ulong x) { union { ulong u; double d; } v; v.u = x; return v.d; }
+inline ulong nex_f_unsigned(double x) { union { ulong u; double d; } v; v.d = x; return v.u; }
+inline double nex_f_add(double a, double b, __private NexState *s) { double r = a + b; if (!isfinite(r)) s->code = 7; return r; }
+inline double nex_f_sub(double a, double b, __private NexState *s) { double r = a - b; if (!isfinite(r)) s->code = 7; return r; }
+inline double nex_f_mul(double a, double b, __private NexState *s) { double r = a * b; if (!isfinite(r)) s->code = 7; return r; }
+inline double nex_f_div(double a, double b, __private NexState *s) { if (!b) { s->code = 2; return 0.0; } double r = a / b; if (!isfinite(r)) s->code = 7; return r; }
+inline double nex_f_neg(double a, __private NexState *s) { double r = -a; if (!isfinite(r)) s->code = 7; return r; }
+inline double nex_f_from_integer(long x) { return (double)x; }
+)nexfp64";
 constexpr size_t maximumSourceBytes=16*1024*1024;
 
 std::string scalar(const Type &type,Span span){
   switch(type.kind){
     case Type::I64:return "long";
+    case Type::F64:return "double";
     case Type::Bool:return "bool";
     case Type::Unit:return "void";
     default:throw Error("E_GPU_TYPE","OpenCL scalar emission does not support "+typeName(type),span);
@@ -74,7 +84,7 @@ class Emitter {
   std::set<std::string> visiting,visited;
   std::vector<const Function*> order;
   unsigned indentation=0,serial=0,lines=0;
-  Type result=Type::Unit;
+  Type result=Type::Unit;bool usesFloat=false;
   Span where;
   using Scope=std::map<std::string,std::string>;
 
@@ -86,6 +96,7 @@ class Emitter {
       throw Error("E_GPU_REALM","OpenCL functions must be shared and pure: "+function.name,function.span);
     if(function.foreign||function.closure||!function.captures.empty()||!function.typeParameters.empty())
       throw Error("E_GPU_UNSUPPORTED","OpenCL functions must be concrete, without captures or foreign authority",function.span);
+    if(function.result==Type::F64)usesFloat=true;
     scalar(function.result,function.span);
     for(const auto &parameter:function.params){
       if(parameter.type==Type::Unit)throw Error("E_GPU_TYPE","unit is not a OpenCL argument",parameter.span);
@@ -99,9 +110,10 @@ class Emitter {
 
   void validateExpression(const E &expression){
     if(!expression)return;
+    if(expression->type==Type::F64)usesFloat=true;
     scalar(expression->type,expression->span);
     switch(expression->kind){
-      case Expr::Integer:case Expr::Boolean:case Expr::Name:break;
+      case Expr::Integer:case Expr::Floating:case Expr::Boolean:case Expr::Name:break;
       case Expr::Unary:
         if(expression->args.size()!=1||(expression->text!="-"&&expression->text!="!"))
           throw Error("E_GPU_UNSUPPORTED","unsupported OpenCL unary expression",expression->span);
@@ -130,6 +142,7 @@ class Emitter {
       switch(statement->kind){
         case Stmt::Let:case Stmt::Var:
           if(statement->type==Type::Unit)throw Error("E_GPU_TYPE","unit is not a OpenCL local",statement->span);
+          if(statement->type==Type::F64)usesFloat=true;
           scalar(statement->type,statement->span);break;
         case Stmt::Assign:case Stmt::Expression:case Stmt::Return:case Stmt::If:case Stmt::While:break;
         default:throw Error("E_GPU_UNSUPPORTED","unsupported OpenCL statement",statement->span);
@@ -146,7 +159,7 @@ class Emitter {
     text.append(2*indentation,' ');text+=value;text+='\n';++lines;
   }
   std::string temporary(){return "nex_v_"+std::to_string(++serial);}
-  std::string stop()const{return result==Type::Unit?"return;":std::string("return ")+(result==Type::Bool?"false":"0L")+";";}
+  std::string stop()const{return result==Type::Unit?"return;":std::string("return ")+(result==Type::Bool?"false":result==Type::F64?"0.0":"0L")+";";}
   void guard(){line("if (s->code) { "+stop()+" }");}
   void tick(){line("if (!nex_tick(s)) { "+stop()+" }");}
 
@@ -158,6 +171,10 @@ class Emitter {
         std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(value->number);
         generated="nex_bits(0x"+bits.str()+"UL)";break;
       }
+      case Expr::Floating:{
+        std::ostringstream bits;bits<<std::hex<<std::setfill('0')<<std::setw(16)<<static_cast<uint64_t>(value->number);
+        generated="nex_f_bits(0x"+bits.str()+"UL)";break;
+      }
       case Expr::Boolean:generated=value->number?"true":"false";break;
       case Expr::Name:{
         auto found=scope.find(value->text);
@@ -166,7 +183,7 @@ class Emitter {
       }
       case Expr::Unary:{
         auto child=expression(value->args.at(0),scope);
-        generated=value->text=="-"?"nex_neg("+child+", s)":"!"+child;break;
+        generated=value->text=="-"?(value->type==Type::F64?"nex_f_neg("+child+", s)":"nex_neg("+child+", s)"):"!"+child;break;
       }
       case Expr::Binary:{
         auto left=expression(value->args.at(0),scope);
@@ -176,6 +193,12 @@ class Emitter {
           auto right=expression(value->args.at(1),scope);line(name+" = "+right+";");--indentation;line("}");return name;
         }
         auto right=expression(value->args.at(1),scope);
+        if(value->type==Type::F64){
+          if(value->text=="%"||value->text=="&&"||value->text=="||")throw Error("E_GPU_UNSUPPORTED","unsupported OpenCL f64 operator",value->span);
+          static const std::map<std::string,std::string> floatHelpers={{"+","f_add"},{"-","f_sub"},{"*","f_mul"},{"/","f_div"}};
+          auto helper=floatHelpers.find(value->text);
+          generated=helper==floatHelpers.end()?left+" "+value->text+" "+right:"nex_"+helper->second+"("+left+", "+right+", s)";break;
+        }
         static const std::map<std::string,std::string> helpers={{"+","add"},{"-","sub"},{"*","mul"},{"/","div"},{"%","mod"}};
         auto helper=helpers.find(value->text);
         generated=helper==helpers.end()?left+" "+value->text+" "+right:"nex_"+helper->second+"("+left+", "+right+", s)";break;
@@ -183,6 +206,7 @@ class Emitter {
       case Expr::Call:{
         std::vector<std::string> arguments;
         for(const auto &argument:value->args)arguments.push_back(expression(argument,scope));
+        if(value->text=="as_f64"&&arguments.size()==1&&value->args[0]->type==Type::I64){generated="nex_f_from_integer("+arguments[0]+")";break;}
         if(value->text=="assert"){
           line("if (!"+arguments.at(0)+") { s->code = 3; "+stop()+" }");return {};
         }
@@ -271,13 +295,18 @@ public:
       auto address=layout=="rows"?"input[lane * "+std::to_string(root.params.size())+"u + "+std::to_string(i)+"u]":"input_"+std::to_string(i)+"[lane]";
       line("long "+name+" = "+address+";");
       if(root.params[i].type==Type::Bool){line("if ("+name+" != 0L && "+name+" != 1L) s->code = 6;");arguments.push_back("("+name+" != 0L)");}
+      else if(root.params[i].type==Type::F64){auto decoded=name+"_f64";line("double "+decoded+" = nex_f_bits(nex_unsigned("+name+")); if (!isfinite("+decoded+")) s->code = 7;");arguments.push_back(decoded);}
       else arguments.push_back(name);
     }
-    line("long nex_result = 0L;");auto call=names.at(root.name)+"(";
+    line(root.result==Type::F64?"double nex_result = 0.0;":"long nex_result = 0L;");auto call=names.at(root.name)+"(";
     for(const auto &argument:arguments)call+=argument+", ";call+="s)";
     line("if (!s->code) {");++indentation;line(std::string(root.result==Type::Unit?"":"nex_result = ")+call+";");--indentation;line("}");
-    line("output[lane] = s->code ? 0L : nex_result;");line("errors[lane] = s->code;");--indentation;line("}");
-    emission.source=std::string(runtime)+"\n"+text;return emission;
+    if(root.result==Type::F64)line("output[lane] = s->code ? 0L : (long)nex_f_unsigned(nex_result);");
+    else line("output[lane] = s->code ? 0L : nex_result;");
+    line("errors[lane] = s->code;");--indentation;line("}");
+    std::string preamble=std::string(runtime);
+    if(usesFloat)preamble="#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"+preamble+"\n"+std::string(floatRuntime);
+    emission.source=preamble+"\n"+text;return emission;
   }
 };
 }
