@@ -14,6 +14,9 @@ import "std/list.nex" as seq;
 fn apply<T, U>(value: T, transform: fn(T) -> U !{?E}) -> U !{?E} {
   return transform(value);
 }
+fn factory<T, U>(transform: fn(T) -> U !{?E}) -> fn(T) -> U !{?E} {
+  return transform;
+}
 
 fn main() -> unit !{io} {
   let mapped: list<i64> = seq::map([1, 2], fn(x: i64) -> i64 !{io} {
@@ -36,6 +39,13 @@ fn main() -> unit !{io} {
       return x + 1;
     });
   assert(applied == 42);
+  let factory_io: fn(i64) -> i64 !{io} = factory(fn(x: i64) -> i64 !{io} {
+      print(x);
+      return x + 1;
+    });
+  assert(factory_io(41) == 42);
+  let factory_pure: fn(i64) -> i64 = factory(fn(x: i64) -> i64 { return x + 2; });
+  assert(factory_pure(40) == 42);
   let pure: list<i64> = seq::map([1, 2], fn(x: i64) -> i64 {
       return x + 10;
     });
@@ -75,6 +85,8 @@ test fn effect_test() -> unit !{io} {
       return x + 1;
     });
   assert(applied == 2);
+  let factory_io: fn(i64) -> i64 !{io} = factory(fn(x: i64) -> i64 !{io} { print(x); return x + 1; });
+  assert(factory_io(1) == 2);
   let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
   assert(mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
   let explicit: list<i64> = seq::map<i64, i64>!{io}([1], fn(x: i64) -> i64 !{io} {

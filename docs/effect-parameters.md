@@ -48,6 +48,14 @@ expected function type:
 let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
 ```
 
+Effect parameters may also appear inside returned function types; the inferred
+set is substituted into the returned callable:
+
+```nex
+fn factory<T,U>(f: fn(T)->U !{?E}) -> fn(T)->U !{?E} { return f; }
+let g: fn(i64)->i64 !{io} = factory(fn(x: i64)->i64 !{io} { print(x); return x; });
+```
+
 The expected type supplies the effect context; without one, a bare generic
 reference is rejected.
 

@@ -206,7 +206,8 @@ Function &instantiateFunction(Program &p,const Function &source,const std::vecto
   const auto &raw=original->second;auto arguments=bindTypeArguments(p,raw.typeParameters,raw.typeBounds,types,span);
   if(raw.traitSignature&&!containsParameter(types.at(0)))return instantiateTraitMethod(p,raw,types,span);
   auto effects=substituteEffects(raw.effects,effectArguments);
-  std::string suffix;if(!effectArguments.empty()&&!effects.empty()){suffix="!{";for(const auto &effect:effects){if(suffix.back()!='{')suffix+=",";suffix+=effect;}suffix+="}";}
+  std::set<std::string> concreteEffectArguments;for(const auto &[name,value]:effectArguments){if(!value.empty())concreteEffectArguments.insert(value.begin(),value.end());}
+  std::string suffix;if(!concreteEffectArguments.empty()){suffix="!{";for(const auto &effect:concreteEffectArguments){if(suffix.back()!='{')suffix+=",";suffix+=effect;}suffix+="}";}
   auto name=genericName(raw.name,types)+suffix;
   for(auto &f:p.functions)if(f.name==name)return f;
   size_t instances=0;for(const auto &f:p.functions)instances+=!f.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic function instance limit exceeded",span);

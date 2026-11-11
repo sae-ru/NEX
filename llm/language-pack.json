@@ -4882,8 +4882,10 @@
       "higher-rank effects",
       "language-version migration"
     ],
+    "returned_function_toolchain": "0.184.0",
+    "returned_function_types": true,
     "schema": "nex.effect-parameters/1",
-    "scope": "direct calls and function-type contexts",
+    "scope": "direct calls, function-type contexts and returned function types",
     "syntax": "fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}",
     "witness_syntax": "f<T,U>!{io}(...)",
     "witness_toolchain": "0.182.0"

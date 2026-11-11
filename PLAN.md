@@ -68,6 +68,7 @@ and final delivery work are:
 - [x] Infer effect parameters for function values with an expected function type.
 - [x] Add explicit effect witnesses for single-parameter generic calls.
 - [x] Infer `?E` effects for all `std/list` callback helpers and substitute them in cloned lambdas.
+- [x] Collect and substitute effect parameters in parameter/result function types.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).

@@ -228,6 +228,12 @@ effectful merge/sort helpers type-check with concrete effects. The focused
 checker/reference/native/TypeScript test passed in 10.34 s. Higher-rank effects
 remain pending.
 
+Toolchain 0.184 collects effect parameters from function types as well as the
+outer effects set, so named generic functions can return `fn(T)->U !{?E}` and
+instantiate it with the inferred set. Pure and `io` factory instances receive
+distinct names; the focused checker/reference/native/TypeScript test passed in
+11.09 s. Higher-rank effects and a language-version migration remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
