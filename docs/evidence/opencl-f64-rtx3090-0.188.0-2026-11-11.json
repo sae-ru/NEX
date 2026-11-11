@@ -1,0 +1,76 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Finite f64 OpenCL C scalar emission and NVIDIA RTX 3090 execution",
+  "implementation_commit": "4cbda2c140c97a98cee98e3e292b02108928fc69",
+  "build_source_base_commit": "b02ae1a",
+  "compiler": {
+    "toolchain": "0.188.0",
+    "language": "0.28",
+    "sha256": "657540efcd3453dce54823fd65e964e6d50ad7ac2a787fc6e44fe12851ae4b96",
+    "compiler_build": "ec46ac352daeb10008deadaf61b3eb8566fba6eaceeb186b78af7c07894894e4",
+    "descriptor_hash": "cdd6d3831136e2c47275d23de431e08bb4919fbcd00324c20ba89f79284c4755"
+  },
+  "windows_compiler": {
+    "toolchain": "0.187.0",
+    "sha256": "83d12fa2a5fe84cd7dd42de62bd0a6229e80a6f785b61a2464a84aae8a1c9533"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "device": "NVIDIA GeForce RTX 3090",
+    "opencl": "OpenCL 3.0 CUDA",
+    "device_type": "GPU",
+    "cpu_fallback": false
+  },
+  "kernel": {
+    "sha256": "ece04c16e697112b66a06abd3312eca5ee87c8d91386155f1a6db46468e55bb6",
+    "schema": "nex.opencl-emission/1",
+    "kernel": "nex_generated_map"
+  },
+  "results": {
+    "normal": {
+      "output": 42,
+      "error": 0
+    },
+    "infinity_input": {
+      "output": 0,
+      "error": 7
+    }
+  },
+  "feature": {
+    "f64_source": true,
+    "cl_khr_fp64": true,
+    "nonfinite_status": 7,
+    "mali_fp64": false,
+    "test_compiles_f64_on_mac": false,
+    "test_rejects_str": "E_GPU_TYPE"
+  },
+  "observations": {
+    "registered_groups": 337,
+    "opencl_seconds": 0.25,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.26,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "OpenCL compiler remains source-only; the RTX run used an external Python ctypes host",
+    "Mali-G720/G610 do not advertise fp64; only i64/bool hardware execution is qualified there",
+    "bounded lists/bytes/text and additional control flow remain pending",
+    "no full CTest/SDK; Windows compiler was 0.187 and the 0.188 change is descriptor/test only"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "opencl_junit": "/Users/sae/projects/NEX/build/opencl-0188-v1/opencl.json",
+    "core_junit": "/Users/sae/projects/NEX/build/opencl-0188-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/opencl-0188-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/opencl-0188-v1/nex.sha256",
+    "rtx_report": "/Users/sae/projects/NEX/build/rtx-f64-evidence/f64-report.json",
+    "rtx_log": "/Users/sae/projects/NEX/build/rtx-f64-evidence/f64-run.log",
+    "rtx_kernel": "/Users/sae/projects/NEX/build/rtx-f64-evidence/kernel.cl",
+    "guide": "docs/gpu-codegen.md",
+    "test": "tests/opencl_emission.py"
+  }
+}
