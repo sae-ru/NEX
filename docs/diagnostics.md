@@ -71,3 +71,5 @@ These tools improve access to information. They do not prove lower token cost
 or greater model success. The [original local Qwen result](llm-cost-qwen38-27b-2026-11-11.en.md)
 remains negative and unchanged. New model observations need their own versioned
 protocol; no earlier failed candidate is repaired or relabelled by this command.
+
+[Recorded0.166 scope and checks](evidence/bounded-language-entry-0.166.0-2026-11-11.json) bind compiler/source identities and retain the initial failures.

@@ -1,3 +1,20 @@
+# Bounded language entry — development0.166.0
+
+`nex explain CODE` now gives compiled bounded guidance for103 builtin diagnostics,
+with9 actual checker rejection/correction pairs. `nex guide --kind quick` returns
+a4980-byte0.28 source reference; its complete sample and multi-module example
+passed reference/native Debug/Release and executed/strict checked TypeScript7.0.2.
+Shared capabilities, schemas and model-independent instructions are registered.
+Matching SDK acceptance uses the same focused sub-workflow and resource-pinned
+receipt controls; whole-SDK execution remains pending.
+
+One12-group core workflow passed in20.78s. After correcting the generic-advice
+JSON flag, the two affected groups passed again. The first example/build failures
+are retained. [Scope and exact compiler identities](docs/evidence/bounded-language-entry-0.166.0-2026-11-11.json).
+Language0.28/taskABI7/CABI1 are unchanged. No new model requests were made; all4382
+sealed Qwen study files were reverified and its negative result remains intact.
+Full platform/device/SDK qualification and the original remaining PLAN are pending.
+
 # Shared development presets — development0.165.0
 
 `CMakePresets.json` now selects separate Debug/Release caches, core/all build
