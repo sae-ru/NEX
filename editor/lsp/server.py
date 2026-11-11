@@ -25,6 +25,26 @@ class RPCError(Exception):
         self.code = code
 
 
+def block_ranges(text):
+    data = text.encode('utf-8');stack=[];ranges=[];index=0;quote=None;line_comment=False;block_comment=False
+    while index < len(data):
+        byte = data[index]
+        if line_comment:
+            if byte == 10:line_comment=False
+        elif block_comment:
+            if byte == 42 and index + 1 < len(data) and data[index+1] == 47:block_comment=False;index+=1
+        elif quote:
+            if byte == 92:index+=1
+            elif byte == quote:quote=None
+        elif byte in (34,39):quote=byte
+        elif byte == 47 and index + 1 < len(data):
+            if data[index+1] == 47:line_comment=True;index+=1
+            elif data[index+1] == 42:block_comment=True;index+=1
+        elif byte == 123:stack.append(index)
+        elif byte == 125 and stack:ranges.append((stack.pop(),index+1))
+        index+=1
+    return ranges
+
 def file_path(uri):
     if not isinstance(uri, str):
         raise RPCError(-32602, 'Expected a file URI')
@@ -616,6 +636,7 @@ class Server:
                 if len(items) >= 1000:break
             current_unit = next((f for f in index.get('files', []) if Path(f['path']).resolve() == path), None)
             current_offset = byte_offset(current_unit['text'], params.get('position')) if current_unit else -1
+            blocks = block_ranges(current_unit['text']) if current_unit else []
             enclosing = None
             for symbol in index.get('symbols', []):
                 if symbol.get('kind') != 'function':continue
@@ -638,7 +659,14 @@ class Server:
                     definition = record.get('definition') or {'file': record['file'], 'range': at}
                     if Path(definition['file']).resolve() != path:continue
                     declared = definition['range']['begin']
-                    if not enclosing['begin'] <= declared < current_offset:continue
+                    if declared >= current_offset:continue
+                    if kind == 'parameter':
+                        if not enclosing['begin'] <= declared <= enclosing['end']:continue
+                    else:
+                        scopes = [(begin, end) for begin, end in blocks if begin <= declared <= end]
+                        if not scopes:continue
+                        scope = min(scopes, key=lambda value: value[1] - value[0])
+                        if not scope[0] <= current_offset <= scope[1]:continue
                 identity = ('value', name)
                 if identity in items:continue
                 items[identity] = {'label': name, 'kind': 6 if kind in ('local', 'parameter') else 5,

@@ -615,6 +615,21 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(fields,{'x','y'})
         self.assertTrue(all(item['kind']==5 for item in result['items']))
 
+    def test_completion_filters_values_to_lexical_blocks(self):
+        text='module app;\nfn main()->unit !{io}{let outer:i64=1;if outer==1{let inner:i64=2;print(inner);}print(outer);}\n'
+        line=text.splitlines()[1];inner=line.rindex('inner');outer=line.rindex('outer')
+        client=self.client();client.initialize();client.open(self.file,text)
+        inside=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':1,'character':inner}})
+        print('DEBUG',[(item['label'],item['detail']) for item in inside['items']])
+        self.assertTrue({'inner','outer'} <= {item['label'] for item in inside['items']})
+        outside=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':1,'character':outer}})
+        print('DEBUGOUT',[(item['label'],item['detail']) for item in outside['items']])
+        labels={item['label'] for item in outside['items']}
+        self.assertIn('outer',labels)
+        self.assertNotIn('inner',labels)
+
     def test_completion_filters_values_to_the_enclosing_function(self):
         text='module app;\nfn one()->unit !{io}{let alpha:i64=1;print(alpha);}\nfn two()->unit !{io}{let beta:i64=2;print(beta);}\n'
         line=text.splitlines()[2];start=line.rindex('beta')

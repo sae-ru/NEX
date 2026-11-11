@@ -319,6 +319,10 @@ files; `language_server` passed in 20.38 s.
 Toolchain 0.201 filters import-alias completion to public declarations and
 supports direct module-name qualifiers; `language_server` passed in 20.54 s.
 
+Toolchain 0.202 makes LSP value completion lexical-block aware: declarations
+inside `if`/`while`/nested braces are hidden outside their block.
+`language_server` passed in 19.99 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
