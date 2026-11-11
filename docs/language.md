@@ -55,6 +55,11 @@ source-error/fatal-control semantics, graph identity or language version.
 
 ## Source and program structure
 
+Toolchain 0.168 adds [`nex fmt`](formatting.md), a syntax-aware source formatter.
+It changes whitespace, preserves comment/literal spelling and uses this parser's
+type punctuation, including compact type-closing `>=`. It adds no source syntax
+or semantic identity and performs no graph synchronization or migration.
+
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external
 build metadata. They preserve language0.16, checked ownership, effects, realms
 and canonical identities. They require matching private native ABIs and source

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.167.0"
+applies_to: "language 0.28; toolchain 0.168.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,13 +12,15 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.167.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.168.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
 CUDA [formats finite f64/aggregates](evidence/cuda-formatting-0.165.0-2026-11-10.json) within explicit text capacity.
 The [source standard library](stdlib.md) adds Unicode split/replace/trim,
 ordered list helpers/stable sort and checked integer math, with explicit copy costs.
+The [source formatter](formatting.md) provides parser-aware preview/check/write,
+retaining comments and literal spelling without opening graph history.
 The [current learning labels](../llm/corpus.json) cover nine0.28 projects and six
 counterexamples with actual reference/native Release/TypeScript observations.
 [Discovery and corpus tools](learning-corpus.md) check all shared capability

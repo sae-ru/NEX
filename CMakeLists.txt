@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.167.0 LANGUAGES C CXX)
+project(NEX VERSION 0.168.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -86,6 +86,7 @@ target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp src
 target_sources(nex_frontend PRIVATE src/migration.cpp)
 target_sources(nex_frontend PRIVATE src/diagnostic_catalogue.cpp)
 target_sources(nex_frontend PRIVATE src/standard_library.cpp)
+target_sources(nex_frontend PRIVATE src/formatting.cpp)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   lib/text.nex lib/list.nex lib/math.nex)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex" NEX_STDLIB_TEXT_SHA256)
@@ -1743,4 +1744,7 @@ set_tests_properties(llm_quick_reference PROPERTIES TIMEOUT 600)
 add_test(NAME standard_library COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/standard_library.py $<TARGET_FILE:nex>)
 set_tests_properties(standard_library PROPERTIES TIMEOUT 800)
+add_test(NAME source_formatting COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_formatting.py $<TARGET_FILE:nex>)
+set_tests_properties(source_formatting PROPERTIES TIMEOUT 240)
 include(cmake/TestTiers.cmake)

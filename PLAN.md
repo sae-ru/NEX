@@ -1,5 +1,10 @@
 # Current implementation and remaining roadmap — development0.167.0
 
+User instruction,2026-11-11: additional security/instrumentation/fuzz work is
+deferred. Do not run or re-enable it without a new explicit instruction. Continue
+language functionality and ordinary functional verification. The retained list,
+actual outcomes and archive are in [deferred checks](docs/deferred-checks.ru.md).
+
 The working language remains0.28 (task ABI7, C ABI1). The public CUDA compiler
 now emits fixed values, bounded immutable lists and packed immutable bytes from
 its checked graph. Byte operations include construction, index/slice/updates,
@@ -67,6 +72,11 @@ and final delivery work are:
   in response to observed failures, without changing the original study.
 - [x] Expand source text/list/math helpers with checked Unicode/integers, stable
   ordering and explicit nonquadratic copy costs; retain locks and archived source.
+- [x] Add parser-aware `nex fmt FILE` preview/check/write, retaining ordered
+  comments and literal spelling, idempotence and graph rows. Toolchain 0.168
+  functional coverage includes reference/native Debug/Release/strict TypeScript.
+- [ ] Extend formatting to editor requests, directory selection and width-based
+  wrapping; these are not part of the current single-file command.
 - [ ] Linear immutable bulk builders, wider containers and effect-polymorphic
   callbacks remain required standard-library work. Later versioned model studies
   preserve the original negative result and use only the selected local model.

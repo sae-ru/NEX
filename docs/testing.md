@@ -86,6 +86,13 @@ the latter does not qualify a whole SDK. Core remains12 groups, with one0.167
 workflow observation of20.58s. The library guide reports copy complexity separately
 from runtime benchmarks.
 
+Toolchain 0.168 adds the extended/browser/platform `source_formatting` group:
+324 groups registered on this Mac and 329 explicit catalogue entries including
+conditional groups. Its seven methods passed in 15.104 s, including unchanged
+graph rows/revision and reference/native Debug/Release/strict executed TypeScript.
+The same source's 12 core groups passed in 29.03 s. These are single local
+observations; no full layer, SDK or additional platform was qualified.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

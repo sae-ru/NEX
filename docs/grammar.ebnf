@@ -5,6 +5,9 @@
    Toolchain0.164 C API raise_trap and0.165 scalar Metal/CUDA emission add no
    source production or keyword. Length-aware diagnostics and CUDA value
    formatting also add no syntax. Fixed GPU values and bounded device lists/bytes/UTF-8 use existing types and patterns. *)
+(* Toolchain 0.168 formatting uses this parser and changes no productions.
+   Whitespace/comments remain semantically inert; typeEnd may split >= into
+   closing > followed by assignment = in a type position. *)
 program       = "module", qualified_name, ";", { import | function | structure | enumeration | resource | endpoint | trait | implementation } ;
 resource      = [ "pub" ], "server", "resource", identifier, [ type_parameters ], ";" ;
 endpoint      = "endpoint", identifier, "(", string, ",", string, [ ",", integer ], ")",

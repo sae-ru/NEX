@@ -71,6 +71,10 @@ libraries; `nex.build.json` describes components/configurations/edges;
 Query `standard_library` before reimplementing text/list/math helpers. If
 advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback
 and complexity rules. Import `std/list.nex` as `seq`/`lists` (`list` is reserved).
+When `source_formatting` is advertised, use `nex fmt FILE` for a preview,
+`--check` for a read-only style check and `--write` only for an intended source
+edit. This checks syntax, not types or imports; run ordinary affected functional
+validation afterwards. Formatting does not synchronize or migrate the graph.
 Review library changes and run `nex lock` explicitly; do not bypass stale pins.
 
 Make coherent edits. For graph patches use the advertised schema and exact

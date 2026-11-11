@@ -220,6 +220,7 @@
     "source_task_foreign_genuine021_origins": ["extended", "browser", "platform"],
     "source_task_foreign_prototype": ["extended", "platform"],
     "source_task_resource_prototype": ["extended", "platform", "scale"],
+    "source_formatting": ["extended", "browser", "platform"],
     "standard_library": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],
     "store_transactions_native": ["extended", "platform"],

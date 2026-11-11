@@ -1,13 +1,13 @@
 # NEX — Neural Execution Language
 
 NEX is a checked programming language and toolchain for humans and LLMs.
-Current source development is toolchain 0.165.0 / language 0.28 / task ABI 7.
+Current source development is toolchain 0.168.0 / language 0.28 / task ABI 7.
 It includes ordinary source contracts and experimental checked scalar Metal
 emission with installed owned-provider preparation tools. Complete matching
 portable SDK qualification remains pending. The current README links exact
 source/device records; older SDK archives keep their own versioned evidence.
 Executables run without an LLM. Precise semantics and small retrieved contexts are design goals;
-end-to-end model-token savings remain unmeasured.
+the first local Qwen3.8 27B comparison found no NEX token savings.
 
 ## Start
 
@@ -17,6 +17,8 @@ end-to-end model-token savings remain unmeasured.
 - [Repository instructions](AGENTS.md)
 - [Compact bootstrap](llm/BOOTSTRAP.md)
 - [Coding contract](llm/SYSTEM_PROMPT.md)
+- [Source formatting](docs/formatting.md)
+- [Measured local Qwen task results](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
 
 ## Authority
 
