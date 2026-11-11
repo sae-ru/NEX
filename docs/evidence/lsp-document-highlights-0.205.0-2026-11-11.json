@@ -1,0 +1,53 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP document highlights",
+  "implementation_commit": "ac3167472be488fe91b5ead981df16eb3ccd6db2",
+  "build_source_base_commit": "821deff",
+  "compiler": {
+    "toolchain": "0.205.0",
+    "language": "0.28",
+    "sha256": "92583c40829af9ee509f72a7dd682aee2d236b6300706839fcec40da6a20cd0c",
+    "compiler_build": "724510d804580d50d6d4b50d0671e95a57990b0b0e71ec7c0615ca1370490252",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "documentHighlightProvider",
+    "method": "textDocument/documentHighlight",
+    "scope": "current binding in current file",
+    "declaration_kind": 3,
+    "read_kind": 1,
+    "cross_file": "document/references"
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.6207,
+    "editor_language_client_seconds": 1.10912,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.42,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "highlights are limited to the current file; cross-file use document/references",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-highlight-0205-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-highlight-0205-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-highlight-0205-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-highlight-0205-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
