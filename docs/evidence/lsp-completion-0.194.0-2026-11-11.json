@@ -1,0 +1,63 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP checked declaration completion",
+  "implementation_commit": "0a1a80f3e045d2387263ab687efffbd141692075",
+  "build_source_base_commit": "e983d2c",
+  "compiler": {
+    "toolchain": "0.194.0",
+    "language": "0.28",
+    "sha256": "83a3c71a10b1520ec99721dbb107b7a9fa1c34ce9a0d96646e62b5d75ff1eac9",
+    "compiler_build": "debbea003c82da4c8e5a99ba8f4b95e1f89c69f6cb54fc040977a2cde00f555f",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "completionProvider",
+    "triggerCharacters": [
+      ":"
+    ],
+    "scope": [
+      "function",
+      "struct",
+      "enum",
+      "resource",
+      "trait"
+    ],
+    "prefix_filter": "ASCII identifier",
+    "limit": 1000,
+    "kind_function": 3,
+    "member_completion": false,
+    "local_completion": false
+  },
+  "observations": {
+    "registered_groups": 340,
+    "language_server_seconds": 19.3807,
+    "editor_language_client_seconds": 1.11513,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.35,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "completion covers checked declarations only; local variables and member completion after ::/. remain pending",
+    "no parser recovery/incremental indexing or broader IDE matrix",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-completion-0194-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-completion-0194-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-completion-0194-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-completion-0194-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
