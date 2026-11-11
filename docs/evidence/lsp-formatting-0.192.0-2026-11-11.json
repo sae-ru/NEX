@@ -1,0 +1,54 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP textDocument/formatting full-document TextEdit",
+  "implementation_commit": "42983a7e54b53ec1103c059c47c96d7e02cf5cff",
+  "build_source_base_commit": "d9d7ace",
+  "compiler": {
+    "toolchain": "0.192.0",
+    "language": "0.28",
+    "sha256": "64a554ddfd39c2b7184e2b06cfba2a8cd3dd8b10620a2b2358ecff87bf0ee4f3",
+    "compiler_build": "de1a1189360e892561f04a9301cd740ac8f1c1f12bdd84ac2e91ffb0b1f34823",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "documentFormattingProvider",
+    "request": "textDocument/formatting",
+    "result": "single full-document TextEdit",
+    "source_write": false,
+    "unchanged_result": "[]",
+    "byte_range_conversion": "LSP UTF-16 end position",
+    "server_version": "0.192.0"
+  },
+  "observations": {
+    "registered_groups": 340,
+    "language_server_seconds": 18.9777,
+    "editor_language_client_seconds": 1.09609,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.41,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "completion, rename, parser recovery and incremental indexing remain pending",
+    "formatting ignores editor tab/insertSpaces options; NEX style is fixed",
+    "no full IDE/client platform matrix; language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-format-0192-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-format-0192-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-format-0192-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-format-0192-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
