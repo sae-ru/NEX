@@ -107,6 +107,11 @@ immutable insertion-ordered `Map<K,V>` and `Set<T>` source containers. They are
 list-backed: lookup and update are O(n), not a hash table. See
 [Map and set containers](containers.md) for APIs and limits.
 
+`std/list.nex` `map`, `filter` and `fold` use inferred effect parameter `?E`:
+a callback's effects flow into the named function's result and must be declared
+by the caller. Pure callbacks infer the empty set, so existing calls keep their
+meaning. See [inferred effect parameters](effect-parameters.md).
+
 ## Integer math
 
 `min`, `max`, `clamp` and `abs` keep their existing i64 signatures. `clamp` checks

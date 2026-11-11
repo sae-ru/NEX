@@ -574,7 +574,12 @@ and migration are normative in [functions.md](functions.md).
 
 ## Effects and execution realms
 
-A function declares effects after its return type: `!{io}` or `!{db, io}`. Omitting the declaration means an empty effect set. Current effects are `io`, database access `db`, file access `fs`, opaque native access `ffi` and structured scheduling `task`; declaring `db`, `fs` or `ffi` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment, storage and filesystem builtins require a server realm as well as their effect.
+A function declares effects after its return type: `!{io}` or `!{db, io}`.
+A generic named function may use an **inferred effect parameter** `?E` in a
+callable parameter and its own result, for example
+`fn apply<T,U>(value:T, f:fn(T)->U !{?E}) -> U !{?E}`. The callable's actual
+effect set is inferred at a direct call and the caller must declare it; see
+[inferred effect parameters](effect-parameters.md). Omitting the declaration means an empty effect set. Current effects are `io`, database access `db`, file access `fs`, opaque native access `ffi` and structured scheduling `task`; declaring `db`, `fs` or `ffi` requires a server function. Calling a function requires its effects to be included in the caller's declaration; the compiler checks the call graph through declared signatures. An assertion failure or arithmetic trap is a deterministic terminating error and does not require `io`. Environment, storage and filesystem builtins require a server realm as well as their effect.
 
 Optional `shared`, `server`, or `client` precedes `fn` (and precedes `test` for a test definition); `pub`, when present, precedes the realm. The default is `shared`. A function may directly call shared functions or functions in its own realm. These checks apply across imports. Direct client/server calls and shared/platform-specific calls are rejected with `E_REALM`. This is a static boundary, not a network-call implementation. Client-entry native builds and server-entry TypeScript emission are rejected. Browser applications use the checked state/update/view contract in `docs/web.md`; the browser emitter includes only reachable client/shared functions.
 

@@ -64,6 +64,7 @@ and final delivery work are:
 - [x] Add compiler-checked `nex.fix/1` edits for unknown identifiers/fields with preview, apply and rollback.
 - [x] Move test targets/registrations into `cmake/Tests.cmake` and make `VERSION` the single toolchain version source.
 - [x] Add checked source `std/map.nex` and `std/set.nex` immutable list-backed containers.
+- [x] Add inferred effect parameters `?E` to named generic functions and `std/list` callbacks.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).

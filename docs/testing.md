@@ -199,6 +199,14 @@ check/test/native run and map/set containers all passed. macOS LLVM 22.1.8 /
 OpenSSL 3.6.3 remains green. Full Linux CTest/SDK and GPU/NPU/web matrices
 remain pending.
 
+Toolchain 0.180 adds inferred effect parameters on named generic functions:
+`fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}` infers `?E` from each callable
+argument, unions repeated uses and requires the caller to declare the result.
+`std/list.map/filter/fold` now accept `io` callbacks while pure callbacks keep
+the empty set. The focused checker/reference/native/TypeScript test passed in
+8.72 s. Function values, explicit effect witnesses and higher-rank effects
+remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

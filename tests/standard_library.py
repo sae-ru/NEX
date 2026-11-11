@@ -209,7 +209,7 @@ fn find(data:bytes,needle:bytes)->i64 {
 
     def test_callback_type_effect_and_private_helpers_rejected_and_runtime_failures_agree(self):
         for expression,code in [('seq::sort(["a","b"])','E_GENERIC_BOUND'),
-            ('seq::map([1],fn(x:i64)->i64 !{io}{print(x);return x;})','E_TYPE'),
+            ('seq::map([1],fn(x:i64)->i64 !{io}{print(x);return x;})','E_EFFECT'),
             ('seq::filter([1],fn(x:i64)->i64{return x;})','E_TYPE'),
             ('text::find_bytes(utf8_bytes("a"),utf8_bytes("b"),0)','E_VISIBILITY')]:
             self.source(PREFIX+'fn main()->unit { '+expression+'; }')

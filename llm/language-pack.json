@@ -21,6 +21,7 @@
       "device",
       "diagnostic_catalogue",
       "dns_provider",
+      "effect_parameters",
       "features_scope",
       "foreign_trap_reporting",
       "gpu_codegen",
@@ -98,6 +99,7 @@
       "types",
       "numeric_features",
       "generic_features",
+      "effect_parameters",
       "trait_features",
       "source_exceptions",
       "source_contracts",
@@ -594,7 +596,8 @@
     "fixes": "docs/fixes.md",
     "standard_map_source": "lib/map.nex",
     "standard_set_source": "lib/set.nex",
-    "containers": "docs/containers.md"
+    "containers": "docs/containers.md",
+    "effect_parameters": "docs/effect-parameters.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4562,7 +4565,11 @@
   },
   "standard_library": {
     "automatic_lock_updates": false,
-    "callback_effects": [],
+    "callback_effects": [
+      "pure",
+      "io"
+    ],
+    "effect_parameters": "?E inferred from callable effects; caller must declare them",
     "example": "examples/stdlib/nex.json",
     "existing_dependency_pins_enforced": true,
     "guide": "docs/stdlib.md",
@@ -4578,6 +4585,7 @@
         "any_all": "short-circuit; any([])=false,all([])=true",
         "comparison_complexity": "stable mergesort O(n log(n+1))",
         "copy_complexity": "generate/map/filter/reverse amortized O(n); sort O(n log(n+1)); excludes callbacks/state/value construction",
+        "effect_parameters": "?E inferred from the callable; caller must declare the union",
         "fold": "left fold",
         "functions": [
           "generate",
@@ -4598,7 +4606,7 @@
         "mutation": false,
         "recursion_depth": "sort O(log(n+1)); generate/map/filter/reverse O(1) excluding callbacks",
         "resource": "lib/list.nex",
-        "sha256": "0eb0917634895fa64fe97bf07bde3caa1c41072b8e00132bd07342da38fb7ea7",
+        "sha256": "31e96a522f38c7f09e7aad27183e26c9fc07352395d65f62dbf304ab293574a2",
         "sort": "stable; sort_by requires a pure strict weak ordering",
         "sort_bound": "ordered; numeric i64/f64"
       },
@@ -4697,7 +4705,6 @@
       }
     },
     "pending": [
-      "effect-polymorphic named source-library signatures (constructor callbacks already infer effects)",
       "hash-based or balanced-tree containers beyond list-backed map/set",
       "complete matching SDK/platform qualification"
     ],
@@ -4862,5 +4869,22 @@
     "source_version_changed": false,
     "state_advance_calls": "max(0,count-1); emit precedes next",
     "task_callbacks": true
+  },
+  "effect_parameters": {
+    "caller_requirement": "the caller must declare the inferred effect set",
+    "explicit_effect_witnesses": false,
+    "function_values": false,
+    "higher_rank": false,
+    "inference": "effect set of every callable argument",
+    "introduced_toolchain": "0.180.0",
+    "pending": [
+      "explicit effect witness arguments",
+      "effect-polymorphic function values",
+      "higher-rank effects",
+      "language-version migration"
+    ],
+    "schema": "nex.effect-parameters/1",
+    "scope": "direct calls to named generic functions",
+    "syntax": "fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}"
   }
 }

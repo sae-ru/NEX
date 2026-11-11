@@ -6,7 +6,7 @@ llvm::json::Object standardLibraryCapability(){
     {"source_language_changed",false},{"language_migration_required",false},
     {"source_pin_algorithm","SHA256"},{"lock_command","nex lock --json"},
     {"existing_dependency_pins_enforced",true},{"automatic_lock_updates",false},
-    {"callback_effects",llvm::json::Array{}},{"implicit_worker_threads",false},
+    {"callback_effects",llvm::json::Array{"pure","io"}},{"effect_parameters","?E inferred from callable effects; caller must declare them"},{"implicit_worker_threads",false},
     {"modules",llvm::json::Object{
       {"text",llvm::json::Object{{"import","std/text.nex"},{"module","std::text"},
         {"resource","lib/text.nex"},{"sha256",NEX_STDLIB_TEXT_SHA256},
@@ -22,6 +22,7 @@ llvm::json::Object standardLibraryCapability(){
         {"alias_note","list is a reserved word; import as seq or lists"},
         {"functions",llvm::json::Array{"generate","map","filter","fold","any","all","find_index","reverse","sort_by","sort"}},
         {"map_filter_callbacks","once per element, left-to-right"},
+        {"effect_parameters","?E inferred from the callable; caller must declare the union"},
         {"fold","left fold"},{"any_all","short-circuit; any([])=false,all([])=true"},
         {"sort","stable; sort_by requires a pure strict weak ordering"},
         {"sort_bound","ordered; numeric i64/f64"},{"mutation",false},
@@ -47,6 +48,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","hash-based or balanced-tree containers beyond list-backed map/set","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set","complete matching SDK/platform qualification"}}};
 }
 }

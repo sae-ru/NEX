@@ -2,7 +2,7 @@
   "dependencies": {
     "@std/list.nex": {
       "module": "std::lists",
-      "source_hash": "a290952866db14f879244785c08ba7390a13551540632f9fca4af8f80e31be33"
+      "source_hash": "fb5e381f253d74e6df130ae3391b09a5751029fabd85535bba993c62df2fbdc7"
     },
     "@std/math.nex": {
       "module": "std::math",

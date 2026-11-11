@@ -292,7 +292,7 @@ llvm::json::Value canonicalPattern(P pattern);
 llvm::json::Value canonicalBounds(const std::vector<std::string> &parameters,const TypeBounds &bounds);
 Type substituteType(Type type,const std::map<std::string,Type> &arguments);
 Type resolveType(Program &program,Type type,Span span={},unsigned depth=0);
-Function &instantiateFunction(Program &program,const Function &source,const std::vector<Type> &arguments,Span span);
+Function &instantiateFunction(Program &program,const Function &source,const std::vector<Type> &arguments,Span span,const std::map<std::string,std::set<std::string>> &effectArguments={});
 std::string genericName(const std::string &name,const std::vector<Type> &arguments);
 bool containsParameter(const Type &type);
 void check(Program &program);

@@ -165,7 +165,7 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.kind==Type::Function){
     if(type.arguments.size()>1024||typeName(type).size()>4096)throw Error("E_FUNCTION_LIMIT","callable signature exceeds its parameter/name budget",span);
     for(const auto &argument:type.arguments)if(argument==Type::Unit||argument==Type::Unknown)throw Error("E_TYPE","function parameters require non-unit types",span);
-    for(const auto &effect:type.effects)if(effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(supportsSourceExceptions(p)&&effect=="throw"))throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
+    for(const auto &effect:type.effects)if(!(effect.size()>1&&effect[0]=='?')&&effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(supportsSourceExceptions(p)&&effect=="throw"))throw Error("E_EFFECT","unsupported callable effect '"+effect+"'",span);
     if(type.effects.contains("db")&&type.realm!="server")throw Error("E_REALM","db callable effect requires server realm",span);
     if(type.effects.contains("ffi")&&type.realm!="server")throw Error("E_REALM","ffi callable effect requires server realm",span);
     if(type.effects.contains("fs")&&type.realm!="server")throw Error("E_REALM","fs callable effect requires server realm",span);
@@ -186,16 +186,33 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   for(auto field:stored.members())field->type=resolveType(p,field->type,field->span,depth+1);
   return Type::record(name);
 }
-Function &instantiateFunction(Program &p,const Function &source,const std::vector<Type> &types,Span span){
+static std::set<std::string> substituteEffects(const std::set<std::string> &effects,const std::map<std::string,std::set<std::string>> &arguments){
+  std::set<std::string> result;
+  for(const auto &effect:effects){
+    auto found=arguments.find(effect);
+    if(found!=arguments.end())result.insert(found->second.begin(),found->second.end());
+    else result.insert(effect);
+  }
+  return result;
+}
+static Type substituteEffectTypes(Type type,const std::map<std::string,std::set<std::string>> &arguments){
+  if(type.element)type.element=std::make_shared<Type>(substituteEffectTypes(*type.element,arguments));
+  for(auto &argument:type.arguments)argument=substituteEffectTypes(argument,arguments);
+  if(type.kind==Type::Function)type.effects=substituteEffects(type.effects,arguments);
+  return type;
+}
+Function &instantiateFunction(Program &p,const Function &source,const std::vector<Type> &types,Span span,const std::map<std::string,std::set<std::string>> &effectArguments){
   auto original=p.functionTemplates.find(source.name);if(original==p.functionTemplates.end())throw Error("E_GENERIC_ARITY","function is not generic: "+source.name,span);
   const auto &raw=original->second;auto arguments=bindTypeArguments(p,raw.typeParameters,raw.typeBounds,types,span);
   if(raw.traitSignature&&!containsParameter(types.at(0)))return instantiateTraitMethod(p,raw,types,span);
-  auto name=genericName(raw.name,types);
+  auto effects=substituteEffects(raw.effects,effectArguments);
+  std::string suffix;if(!effectArguments.empty()&&!effects.empty()){suffix="!{";for(const auto &effect:effects){if(suffix.back()!='{')suffix+=",";suffix+=effect;}suffix+="}";}
+  auto name=genericName(raw.name,types)+suffix;
   for(auto &f:p.functions)if(f.name==name)return f;
   size_t instances=0;for(const auto &f:p.functions)instances+=!f.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic function instance limit exceeded",span);
-  auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types);instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.typeArities.clear();instance.dependencies.clear();instance.checked=false;
-  instance.result=resolveType(p,substituteType(raw.result,arguments),span);
-  for(auto &parameter:instance.params)parameter.type=resolveType(p,substituteType(parameter.type,arguments),parameter.span);
+  auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types)+suffix;instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.typeArities.clear();instance.dependencies.clear();instance.checked=false;instance.effects=effects;
+  instance.result=resolveType(p,substituteEffectTypes(substituteType(raw.result,arguments),effectArguments),span);
+  for(auto &parameter:instance.params)parameter.type=resolveType(p,substituteEffectTypes(substituteType(parameter.type,arguments),effectArguments),parameter.span);
   instance.body=cloneBlock(raw.body,arguments);p.functions.push_back(std::move(instance));return p.functions.back();
 }
 }
