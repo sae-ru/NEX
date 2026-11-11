@@ -41,6 +41,14 @@ let mapped: list<i64> = seq::map(values, fn(x: i64) -> i64 !{io} {
 
 The syntax is additive: existing functions with concrete effect sets, and pure
 callbacks, keep their meaning. A function with `?E` must be generic; effect
-parameters are supported on direct calls only. Function values, explicit
-effect-witness arguments, higher-rank effects, and a language-version migration
-are pending. Callable effect/realm equality remains exact after substitution.
+parameters are supported on direct calls and on function values with an
+expected function type:
+
+```nex
+let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
+```
+
+The expected type supplies the effect context; without one, a bare generic
+reference is rejected. Explicit effect-witness arguments, higher-rank effects
+and a language-version migration remain pending. Callable effect/realm equality
+remains exact after substitution.

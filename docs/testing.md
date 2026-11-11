@@ -207,6 +207,13 @@ the empty set. The focused checker/reference/native/TypeScript test passed in
 8.72 s. Function values, explicit effect witnesses and higher-rank effects
 remain pending.
 
+Toolchain 0.181 extends `?E` inference to function values when an expected
+function type supplies the effect context; a bare effect-polymorphic reference
+without that context is rejected. The focused checker/reference/native/
+TypeScript test now covers both direct calls and `seq::map` function values and
+passed in 9.08 s. Explicit effect witnesses, higher-rank effects and a
+language-version migration remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

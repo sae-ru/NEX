@@ -4873,18 +4873,18 @@
   "effect_parameters": {
     "caller_requirement": "the caller must declare the inferred effect set",
     "explicit_effect_witnesses": false,
-    "function_values": false,
+    "function_value_toolchain": "0.181.0",
+    "function_values": true,
     "higher_rank": false,
     "inference": "effect set of every callable argument",
     "introduced_toolchain": "0.180.0",
     "pending": [
       "explicit effect witness arguments",
-      "effect-polymorphic function values",
       "higher-rank effects",
       "language-version migration"
     ],
     "schema": "nex.effect-parameters/1",
-    "scope": "direct calls to named generic functions",
+    "scope": "direct calls and function-type contexts",
     "syntax": "fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}"
   }
 }

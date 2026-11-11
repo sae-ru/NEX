@@ -40,6 +40,10 @@ fn main() -> unit !{io} {
       return x + 10;
     });
   assert(pure == [11, 12]);
+  let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
+  assert(mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
+  let pure_mapper: fn(list<i64>, fn(i64)->i64) -> list<i64> = seq::map;
+  assert(pure_mapper([1], fn(x: i64) -> i64 { return x + 1; }) == [2]);
   print("effect-parameters-ok");
 }
 
@@ -54,6 +58,8 @@ test fn effect_test() -> unit !{io} {
       return x + 1;
     });
   assert(applied == 2);
+  let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
+  assert(mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
 }
 '''
 REJECT='''module effect_reject;
@@ -108,7 +114,7 @@ class EffectParameters(unittest.TestCase):
             descriptor=json.loads(run(['describe','--field','effect_parameters','--json'],root).stdout)['value']
             self.assertEqual(descriptor['schema'],'nex.effect-parameters/1')
             self.assertIn('?E',descriptor['syntax'])
-            self.assertFalse(descriptor['function_values'])
+            self.assertTrue(descriptor['function_values'])
 
     def test_missing_caller_effect_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix='nex effect reject ') as temporary:
