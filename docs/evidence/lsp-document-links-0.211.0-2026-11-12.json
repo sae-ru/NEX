@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP import document links",
+  "implementation_commit": "19d01e2d76ce8df85abccba6d079914d5e824237",
+  "build_source_base_commit": "6ee1ef1",
+  "compiler": {
+    "toolchain": "0.211.0",
+    "language": "0.28",
+    "sha256": "b1886b63dd024464d106d0a1ed12cd5263fa43bc8ddc601f97567afd14f0382d",
+    "compiler_build": "dc15a7e043b0d2850c8ba2f0ae2154b76c516a09dcc1ac5123e060a8f6dd1fb9",
+    "descriptor_hash": "73ea42aa8097c7339a72e79368275f86779022126b9eb6212ae7210e9ba27cfe"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "documentLinkProvider",
+    "method": "textDocument/documentLink",
+    "scope": "local import paths",
+    "resolved_targets": true,
+    "missing_targets_omitted": true,
+    "range": "string contents"
+  },
+  "observations": {
+    "registered_groups": 342,
+    "language_server_seconds": 21.0396,
+    "editor_language_client_seconds": 1.12149,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.43,
+    "docs_documents": 179,
+    "docs_links": 1230,
+    "full_ctest_parallel_started": "0.210",
+    "full_ctest_parallel_progress": "4/342 in 10 minutes",
+    "full_ctest_aborted": true
+  },
+  "limits": [
+    "only local relative imports with existing files become links; package/remote imports are omitted",
+    "full CTest remains unqualified (serial and -j4 attempts were impractically long)",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-links-0211-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-links-0211-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-links-0211-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-links-0211-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
