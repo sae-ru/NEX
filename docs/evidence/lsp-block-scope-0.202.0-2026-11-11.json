@@ -1,0 +1,53 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Lexical-block scope filtering for LSP value completion",
+  "implementation_commit": "8704221861e2c8d6311674fee9a7563ebb5f3543",
+  "build_source_base_commit": "8e84883",
+  "compiler": {
+    "toolchain": "0.202.0",
+    "language": "0.28",
+    "sha256": "f221ca5d870a4974022ccd207f2c228619671642decd457ba8f29d621b1a6e68",
+    "compiler_build": "66d323416ff6472860cdf88bcdfdc159926e1a075a84756e0dc5812f4931d88f",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "scope": "innermost brace block containing declaration",
+    "braces": "scanned outside strings/comments",
+    "if_while_bodies": true,
+    "parameters": "function scope",
+    "outer_locals_visible": true,
+    "sibling_block_locals_hidden": true
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 19.9944,
+    "editor_language_client_seconds": 1.12936,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.69,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "scope is derived from source braces, not analysis scope metadata",
+    "parser recovery/incremental indexing and the broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-block-0202-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-block-0202-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-block-0202-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-block-0202-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
