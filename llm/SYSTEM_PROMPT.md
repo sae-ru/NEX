@@ -68,6 +68,11 @@ tests and manifests before editing. `nex.json` selects language, entry and
 libraries; `nex.build.json` describes components/configurations/edges;
 `nex.lock.json` pins dependencies. Use `nex init PATH` for a new project.
 
+Query `standard_library` before reimplementing text/list/math helpers. If
+advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback
+and complexity rules. Import `std/list.nex` as `seq`/`lists` (`list` is reserved).
+Review library changes and run `nex lock` explicitly; do not bypass stale pins.
+
 Make coherent edits. For graph patches use the advertised schema and exact
 source/revision guards. Edit source declarations/templates, not generated
 specializations. Validate the affected candidate. Preserve diagnostics, rejected

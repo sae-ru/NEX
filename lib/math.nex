@@ -20,8 +20,71 @@ pub fn abs(value: i64) -> i64 {
   return value;
 }
 
+pub fn sign(value:i64)->i64 {
+  if value<0 { return -1; }
+  if value>0 { return 1; }
+  return 0;
+}
+pub fn floor_div(value:i64, divisor:i64)->i64 {
+  let quotient:i64=value/divisor;
+  if value%divisor!=0 && (value<0)!=(divisor<0) { return quotient-1; }
+  return quotient;
+}
+pub fn ceil_div(value:i64, divisor:i64)->i64 {
+  let quotient:i64=value/divisor;
+  if value%divisor!=0 && (value<0)==(divisor<0) { return quotient+1; }
+  return quotient;
+}
+pub fn pow_i64(base:i64, exponent:i64)->i64 {
+  assert(exponent>=0);
+  var remaining:i64=exponent;
+  var factor:i64=base;
+  var result:i64=1;
+  while remaining>0 {
+    if remaining%2==1 { result=result*factor; }
+    remaining=remaining/2;
+    if remaining>0 { factor=factor*factor; }
+  }
+  return result;
+}
+pub fn gcd(a:i64, b:i64)->result<i64> {
+  // Negative magnitudes represent abs(MIN) without overflowing.
+  var left:i64=a;
+  var right:i64=b;
+  if left>0 { left=-left; }
+  if right>0 { right=-right; }
+  while right!=0 {
+    if right== -1 { return ok(1); }
+    let remainder:i64=left%right;
+    left=right;
+    right=remainder;
+  }
+  if left== -9223372036854775808 {
+    return err<i64>("E_MATH_OVERFLOW","gcd magnitude exceeds i64");
+  }
+  return ok(-left);
+}
+pub fn lcm(a:i64, b:i64)->result<i64> {
+  if a==0 || b==0 { return ok(0); }
+  let divisor:i64=gcd(a,b)?;
+  var left:i64=a;
+  var right:i64=b;
+  if left>0 { left=-left; }
+  if right>0 { right=-right; }
+  let factor:i64=left/divisor;
+  if factor<9223372036854775807/right {
+    return err<i64>("E_MATH_OVERFLOW","lcm magnitude exceeds i64");
+  }
+  return ok(factor*right);
+}
+
 test fn math_test() -> unit {
   assert(clamp(15, 0, 10) == 10);
   assert(clamp(-1, 0, 10) == 0);
   assert(abs(-7) == 7);
+  assert(floor_div(-7,3)== -3 && ceil_div(-7,3)== -2);
+  assert(pow_i64(-2,63)== -9223372036854775808);
+  assert(sign(-9223372036854775808)== -1);
+  assert(unwrap(gcd(-9223372036854775808,6))==2);
+  assert(!is_ok(lcm(-9223372036854775808,1)));
 }

@@ -90,3 +90,8 @@ For0.28 source clauses query `source_contracts` and its guide before using
 requires/ensures/invariant/decreases. Runtime checks are distinct from bounded
 proof. Keep unknown integrations pending. This sheet does not establish LLM
 token savings; retain the published negative Qwen study when improving it.
+
+If `standard_library` is advertised, query it before writing text/list/math
+helpers. Import `std/list.nex` as `seq`/`lists`; `list` is reserved. The `stdlib`
+guide defines Unicode/empty cases, pure callbacks, stable sort and copy costs.
+Review dependency changes and update existing pins explicitly with `nex lock`.

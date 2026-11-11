@@ -1,0 +1,22 @@
+module stdlib_example;
+import "std/text.nex" as text;
+import "std/list.nex" as seq;
+import "std/math.nex" as math;
+
+fn total(values:list<i64>)->i64 {
+  return seq::fold(values,0,fn(sum:i64,value:i64)->i64{return sum+value;});
+}
+fn main()->unit !{io} {
+  let original:list<i64>=[3,1,2,1];
+  let sorted:list<i64>=seq::sort(original);
+  let mapped:list<str>=seq::map(sorted,fn(value:i64)->str{return str(value);});
+  print(text::join(mapped,","));
+  print(text::replace(text::trim("\u2003Я 🌍\u00a0")," "," + "));
+  print(total(seq::filter(original,fn(value:i64)->bool{return value>1;})));
+  print(unwrap(math::gcd(-48,18)));
+  assert(original==[3,1,2,1]);
+}
+test fn helpers_test()->unit {
+  assert(total([3,1,2,1])==7);
+  assert(text::split("Я🌍Я","Я")==["","🌍",""]);
+}

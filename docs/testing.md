@@ -71,13 +71,20 @@ controls. The new receipt path also ran all11 real core groups in13.61s;
 [local CI evidence](evidence/ci-workflows-0.165.0-2026-11-11.json) retains that
 separate observation. It does not claim a GitHub or Linux container execution.
 
-Toolchain0.166 adds `diagnostic_catalogue` to core and the separate
-`llm_quick_reference` integration group:322 groups are registered on this Mac.
+Toolchain0.166 added `diagnostic_catalogue` to core and the separate
+`llm_quick_reference` integration group:322 groups were registered at that block.
 One sequential12-group core workflow passed in20.78s, including receipt validation.
 After correcting a JSON context-advice flag, the two affected new groups passed
 again. The quick example compares reference/native Debug/Release, executes
 TypeScript and passes the locked7.0.2 strict compiler. These are focused source
 observations, not complete SDK or platform qualification.
+
+Toolchain0.167 adds the `standard_library` group (323 registered on this Mac,
+328 explicit catalogue entries including conditional groups). Its focused source
+checks cover text/list/math semantics and the matching SDK consumption helper;
+the latter does not qualify a whole SDK. Core remains12 groups, with one0.167
+workflow observation of20.58s. The library guide reports copy complexity separately
+from runtime benchmarks.
 
 ## Maintain the catalogue
 

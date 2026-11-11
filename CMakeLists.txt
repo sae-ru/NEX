@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.166.0 LANGUAGES C CXX)
+project(NEX VERSION 0.167.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -67,6 +67,8 @@ message(STATUS "NEX uses LLVM ${LLVM_PACKAGE_VERSION} and MLIR at ${MLIR_DIR}")
 
 file(GLOB_RECURSE NEX_COMPILER_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h" "include/*.h" "runtime/*.cpp" "runtime/*.c" "runtime/*.h" "runtime/*.hpp" "runtime/*.manifest")
 list(APPEND NEX_COMPILER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.manifest" "${CMAKE_CURRENT_SOURCE_DIR}/tools/windows/nex.rc.in")
+list(APPEND NEX_COMPILER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/list.nex" "${CMAKE_CURRENT_SOURCE_DIR}/lib/math.nex")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${NEX_COMPILER_FILES})
 set(NEX_BUILD_INPUTS "${PROJECT_VERSION};${LLVM_PACKAGE_VERSION};${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${CMAKE_BUILD_TYPE}")
 if(NEX_DEFAULT_TOOLCHAIN)
@@ -83,6 +85,14 @@ add_library(nex_frontend src/frontend_diagnostics.cpp src/language.cpp src/gener
 target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp src/source_errors.cpp)
 target_sources(nex_frontend PRIVATE src/migration.cpp)
 target_sources(nex_frontend PRIVATE src/diagnostic_catalogue.cpp)
+target_sources(nex_frontend PRIVATE src/standard_library.cpp)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  lib/text.nex lib/list.nex lib/math.nex)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex" NEX_STDLIB_TEXT_SHA256)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/list.nex" NEX_STDLIB_LIST_SHA256)
+file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/math.nex" NEX_STDLIB_MATH_SHA256)
+set_source_files_properties(src/standard_library.cpp PROPERTIES COMPILE_DEFINITIONS
+  "NEX_STDLIB_TEXT_SHA256=\"${NEX_STDLIB_TEXT_SHA256}\";NEX_STDLIB_LIST_SHA256=\"${NEX_STDLIB_LIST_SHA256}\";NEX_STDLIB_MATH_SHA256=\"${NEX_STDLIB_MATH_SHA256}\"")
 target_sources(nex_frontend PRIVATE src/editor.cpp src/task_frontend.cpp src/task_lifetime.cpp src/task_ir.cpp src/task_machine.cpp src/task_ast.cpp src/task_reference.cpp)
 target_sources(nex_frontend PRIVATE runtime/runtime.cpp)
 target_include_directories(nex_frontend PUBLIC include runtime)
@@ -346,7 +356,7 @@ install(DIRECTORY tools/dns_provider DESTINATION share/nex/tools PATTERN __pycac
 install(DIRECTORY tools/http_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
-install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
+install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_stdlib.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
 install(FILES tools/ctest_report.py DESTINATION share/nex/tools)
 install(DIRECTORY tools/llm/ DESTINATION share/nex/tools/llm PATTERN __pycache__ EXCLUDE)
@@ -1730,4 +1740,7 @@ set_tests_properties(diagnostic_catalogue PROPERTIES TIMEOUT 90)
 add_test(NAME llm_quick_reference COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/llm_quick_reference.py $<TARGET_FILE:nex>)
 set_tests_properties(llm_quick_reference PROPERTIES TIMEOUT 600)
+add_test(NAME standard_library COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/standard_library.py $<TARGET_FILE:nex>)
+set_tests_properties(standard_library PROPERTIES TIMEOUT 800)
 include(cmake/TestTiers.cmake)

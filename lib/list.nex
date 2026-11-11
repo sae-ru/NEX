@@ -1,0 +1,119 @@
+module std::lists;
+
+// Immutable concatenations are balanced; see docs/stdlib.md for copy costs.
+fn map_range<T, U>(values:list<T>, transform:fn(T)->U, start:i64, count:i64)->list<U> {
+  if count==0 { return []; }
+  if count==1 { return [transform(values[start])]; }
+  let half:i64=count/2;
+  let left:list<U>=map_range(values,transform,start,half);
+  let right:list<U>=map_range(values,transform,start+half,count-half);
+  return left+right;
+}
+pub fn map<T, U>(values:list<T>, transform:fn(T)->U)->list<U> {
+  return map_range(values,transform,0,len(values));
+}
+
+fn filter_range<T>(values:list<T>, predicate:fn(T)->bool, start:i64, count:i64)->list<T> {
+  if count==0 { return []; }
+  if count==1 {
+    if predicate(values[start]) { return [values[start]]; }
+    return [];
+  }
+  let half:i64=count/2;
+  let left:list<T>=filter_range(values,predicate,start,half);
+  let right:list<T>=filter_range(values,predicate,start+half,count-half);
+  return left+right;
+}
+pub fn filter<T>(values:list<T>, predicate:fn(T)->bool)->list<T> {
+  return filter_range(values,predicate,0,len(values));
+}
+
+pub fn fold<T, U>(values:list<T>, initial:U, combine:fn(U,T)->U)->U {
+  var result:U=initial;
+  var index:i64=0;
+  while index<len(values) {
+    result=combine(result,values[index]);
+    index=index+1;
+  }
+  return result;
+}
+pub fn any<T>(values:list<T>, predicate:fn(T)->bool)->bool {
+  var index:i64=0;
+  while index<len(values) {
+    if predicate(values[index]) { return true; }
+    index=index+1;
+  }
+  return false;
+}
+pub fn all<T>(values:list<T>, predicate:fn(T)->bool)->bool {
+  var index:i64=0;
+  while index<len(values) {
+    if !predicate(values[index]) { return false; }
+    index=index+1;
+  }
+  return true;
+}
+pub fn find_index<T>(values:list<T>, predicate:fn(T)->bool)->i64 {
+  var index:i64=0;
+  while index<len(values) {
+    if predicate(values[index]) { return index; }
+    index=index+1;
+  }
+  return -1;
+}
+
+fn reverse_range<T>(values:list<T>, start:i64, count:i64)->list<T> {
+  if count==0 { return []; }
+  if count==1 { return [values[start]]; }
+  let half:i64=count/2;
+  let right:list<T>=reverse_range(values,start+half,count-half);
+  let left:list<T>=reverse_range(values,start,half);
+  return right+left;
+}
+pub fn reverse<T>(values:list<T>)->list<T> {
+  return reverse_range(values,0,len(values));
+}
+
+struct Merged<T> { values:list<T>; left:i64; right:i64; }
+fn merge_count<T>(left:list<T>, right:list<T>, less:fn(T,T)->bool, a:i64, b:i64, count:i64)->Merged<T> {
+  if count==0 { return Merged<T>([],a,b); }
+  if count==1 {
+    if a==len(left) { return Merged<T>([right[b]],a,b+1); }
+    if b==len(right) { return Merged<T>([left[a]],a+1,b); }
+    // Left wins ties: sort_by is stable for a strict weak ordering.
+    if less(right[b],left[a]) { return Merged<T>([right[b]],a,b+1); }
+    return Merged<T>([left[a]],a+1,b);
+  }
+  let half:i64=count/2;
+  let first:Merged<T>=merge_count(left,right,less,a,b,half);
+  let second:Merged<T>=merge_count(left,right,less,first.left,first.right,count-half);
+  return Merged<T>(first.values+second.values,second.left,second.right);
+}
+fn sort_range<T>(values:list<T>, less:fn(T,T)->bool, start:i64, count:i64)->list<T> {
+  if count==0 { return []; }
+  if count==1 { return [values[start]]; }
+  let half:i64=count/2;
+  let left:list<T>=sort_range(values,less,start,half);
+  let right:list<T>=sort_range(values,less,start+half,count-half);
+  return merge_count(left,right,less,0,0,count).values;
+}
+pub fn sort_by<T>(values:list<T>, less:fn(T,T)->bool)->list<T> {
+  return sort_range(values,less,0,len(values));
+}
+fn ascending<T:ordered>(left:T, right:T)->bool { return left<right; }
+pub fn sort<T:ordered>(values:list<T>)->list<T> {
+  return sort_by(values,ascending<T>);
+}
+
+test fn list_test()->unit {
+  let original:list<i64>=[3,1,2,1];
+  assert(sort(original)==[1,1,2,3]);
+  assert(original==[3,1,2,1]);
+  assert(map(original,fn(x:i64)->i64{return x+1;})==[4,2,3,2]);
+  assert(filter(original,fn(x:i64)->bool{return x>1;})==[3,2]);
+  assert(fold(original,0,fn(a:i64,b:i64)->i64{return a+b;})==7);
+  assert(reverse(original)==[1,2,1,3]);
+  assert(all<i64>([],fn(x:i64)->bool{return x>0;}));
+  assert(!any<i64>([],fn(x:i64)->bool{return x>0;}));
+  assert(find_index(original,fn(x:i64)->bool{return x==2;})==2);
+}

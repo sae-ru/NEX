@@ -25,6 +25,11 @@ Retrieve extra context only for a concrete uncertainty. Count the entire accepte
 task's context, tools, generation and retries when comparing token cost. A short
 prompt or a smaller JSON response alone proves no overall LLM improvement.
 
+Before writing basic text/list/math helpers, query `standard_library` when
+advertised and read its `stdlib` guide. Import only needed modules; `list` is a
+reserved word, so use `seq`/`lists` as the alias for `std/list.nex`. Keep existing
+dependency pins until an explicit reviewed `nex lock` update.
+
 For typed error forwarding, query `nex describe --field result_propagation --json`
 and `nex guide --kind result --json`. Respect the reported language and pending
 integration gates. For source exceptions, query `source_exceptions` and read the exception guide.

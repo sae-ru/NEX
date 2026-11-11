@@ -54,14 +54,13 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.166.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.167.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
-Ordinary fatal diagnostics now preserve embedded NUL and Unicode through source,
-task and frontend paths while keeping explicit log limits; see the
-[scoped implementation record](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json).
-CUDA also formats finite f64 and supported immutable aggregates under explicit
-text capacity; [current scope and checks](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json).
+Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
+CUDA [formats finite f64/aggregates](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json) within explicit text capacity.
+The [source standard library](docs/stdlib.md) adds Unicode split/replace/trim,
+ordered list helpers/stable sort and checked integer math, with explicit copy costs.
 The [current learning labels](llm/corpus.json) cover nine0.28 projects and six
 counterexamples with actual reference/native Release/TypeScript observations.
 [Discovery and corpus tools](docs/learning-corpus.md) check all shared capability

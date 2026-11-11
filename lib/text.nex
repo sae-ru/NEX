@@ -10,19 +10,177 @@ pub fn ends_with(value: str, suffix: str) -> bool {
   return slice(value, len(value) - len(suffix), len(suffix)) == suffix;
 }
 
+fn join_range(values:list<str>, separator:str, start:i64, count:i64)->str {
+  if count==0 { return ""; }
+  if count==1 { return values[start]; }
+  let half:i64=count/2;
+  let left:str=join_range(values,separator,start,half);
+  let right:str=join_range(values,separator,start+half,count-half);
+  return left+separator+right;
+}
 pub fn join(values: list<str>, separator: str) -> str {
-  var result: str = "";
-  var i: i64 = 0;
-  while i < len(values) {
-    if i > 0 { result = result + separator; }
-    result = result + values[i];
-    i = i + 1;
+  return join_range(values,separator,0,len(values));
+}
+
+// Independent Two-Way search implementation. See docs/stdlib.md for algorithm
+// references. All indices below are bytes in already validated UTF-8 strings.
+struct Factor { suffix:i64; period:i64; }
+fn maximal_suffix(needle:bytes, reverse:bool)->Factor {
+  var suffix:i64= -1;
+  var candidate:i64=0;
+  var offset:i64=1;
+  var period:i64=1;
+  while candidate+offset<len(needle) {
+    let a:i64=needle[candidate+offset];
+    let b:i64=needle[suffix+offset];
+    if (a<b && !reverse) || (a>b && reverse) {
+      candidate=candidate+offset;
+      offset=1;
+      period=candidate-suffix;
+    } else {
+      if a==b {
+        if offset==period { candidate=candidate+period; offset=1; }
+        else { offset=offset+1; }
+      } else {
+        suffix=candidate;
+        candidate=candidate+1;
+        offset=1;
+        period=1;
+      }
+    }
   }
-  return result;
+  return Factor(suffix,period);
+}
+fn find_bytes(data:bytes, needle:bytes, start:i64)->i64 {
+  let count:i64=len(needle);
+  if count==0 { return start; }
+  if count>len(data)-start { return -1; }
+  let forward:Factor=maximal_suffix(needle,false);
+  let backward:Factor=maximal_suffix(needle,true);
+  var suffix:i64=forward.suffix;
+  var period:i64=forward.period;
+  if backward.suffix>suffix { suffix=backward.suffix; period=backward.period; }
+  let cut:i64=suffix+1;
+  var periodic:bool=period<=count-cut;
+  var index:i64=0;
+  while periodic && index<cut {
+    periodic=needle[index]==needle[period+index];
+    index=index+1;
+  }
+  if !periodic {
+    period=count-cut;
+    if cut>period { period=cut; }
+    period=period+1;
+  }
+  var position:i64=start;
+  var memory:i64=0;
+  while position<=len(data)-count {
+    index=cut;
+    if memory>index { index=memory; }
+    while index<count && needle[index]==data[position+index] { index=index+1; }
+    if index==count {
+      index=cut;
+      while index>memory && needle[index-1]==data[position+index-1] { index=index-1; }
+      if index<=memory { return position; }
+      if period>len(data)-count-position { return -1; }
+      position=position+period;
+      if periodic { memory=count-period; }
+    } else {
+      position=position+index-cut+1;
+      memory=0;
+    }
+  }
+  return -1;
+}
+fn scalar_width(lead:i64)->i64 {
+  if lead<128 { return 1; }
+  if lead<224 { return 2; }
+  if lead<240 { return 3; }
+  return 4;
+}
+pub fn find(value:str, needle:str)->i64 {
+  let data:bytes=utf8_bytes(value);
+  let position:i64=find_bytes(data,utf8_bytes(needle),0);
+  if position<0 { return -1; }
+  var index:i64=0;
+  var scalars:i64=0;
+  while index<position { index=index+scalar_width(data[index]); scalars=scalars+1; }
+  return scalars;
+}
+struct Fields { values:list<str>; next:i64; }
+fn split_fields(data:bytes, separator:bytes, start:i64, count:i64)->Fields {
+  if count==0 { return Fields([],start); }
+  if count==1 {
+    if len(separator)==0 {
+      let width:i64=scalar_width(data[start]);
+      return Fields([unwrap(decode_utf8(slice(data,start,width)))],start+width);
+    }
+    let found:i64=find_bytes(data,separator,start);
+    if found<0 { return Fields([unwrap(decode_utf8(slice(data,start,len(data)-start)))],len(data)); }
+    return Fields([unwrap(decode_utf8(slice(data,start,found-start)))],found+len(separator));
+  }
+  let half:i64=count/2;
+  let first:Fields=split_fields(data,separator,start,half);
+  let second:Fields=split_fields(data,separator,first.next,count-half);
+  return Fields(first.values+second.values,second.next);
+}
+pub fn split(value:str, separator:str)->list<str> {
+  let data:bytes=utf8_bytes(value);
+  let needle:bytes=utf8_bytes(separator);
+  if len(needle)==0 { return split_fields(data,needle,0,len(value)).values; }
+  var fields:i64=1;
+  var position:i64=0;
+  var found:i64=find_bytes(data,needle,position);
+  while found>=0 {
+    fields=fields+1;
+    position=found+len(needle);
+    found=find_bytes(data,needle,position);
+  }
+  return split_fields(data,needle,0,fields).values;
+}
+pub fn replace(value:str, needle:str, replacement:str)->str {
+  if len(needle)==0 {
+    if len(value)==0 { return replacement; }
+    return replacement+join(split(value,""),replacement)+replacement;
+  }
+  return join(split(value,needle),replacement);
+}
+fn scalar_number(data:bytes, start:i64)->i64 {
+  let first:i64=data[start];
+  let width:i64=scalar_width(first);
+  if width==1 { return first; }
+  if width==2 { return (first-192)*64+data[start+1]-128; }
+  if width==3 { return (first-224)*4096+(data[start+1]-128)*64+data[start+2]-128; }
+  return (first-240)*262144+(data[start+1]-128)*4096+(data[start+2]-128)*64+data[start+3]-128;
+}
+fn whitespace(scalar:i64)->bool {
+  // White_Space, Unicode17.0.0; no locale, BOM or zero-width-space removal.
+  return (scalar>=9 && scalar<=13) || scalar==32 || scalar==133 || scalar==160 ||
+    scalar==5760 || (scalar>=8192 && scalar<=8202) || scalar==8232 ||
+    scalar==8233 || scalar==8239 || scalar==8287 || scalar==12288;
+}
+pub fn trim(value:str)->str {
+  let data:bytes=utf8_bytes(value);
+  var start:i64=0;
+  var end:i64=len(data);
+  while start<end && whitespace(scalar_number(data,start)) { start=start+scalar_width(data[start]); }
+  var trimming:bool=true;
+  while trimming && end>start {
+    var previous:i64=end-1;
+    while previous>start && data[previous]>=128 && data[previous]<192 { previous=previous-1; }
+    if whitespace(scalar_number(data,previous)) { end=previous; }
+    else { trimming=false; }
+  }
+  return unwrap(decode_utf8(slice(data,start,end-start)));
 }
 
 test fn text_test() -> unit {
   assert(starts_with("Привет 🦊", "При"));
   assert(ends_with("Привет 🦊", "🦊"));
   assert(join(["a", "b"], ",") == "a,b");
+  assert(split("Я🌍Я","Я")==["","🌍",""]);
+  assert(split("xЯ🌍","")==["x","Я","🌍"]);
+  assert(find("xЯ🌍","🌍")==2);
+  assert(replace("aaa","aa","X")=="Xa");
+  assert(trim("\u2003 Я🌍\u00a0")=="Я🌍");
 }

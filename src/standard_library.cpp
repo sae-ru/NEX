@@ -1,0 +1,40 @@
+#include "nex/standard_library.h"
+namespace nex {
+llvm::json::Object standardLibraryCapability(){
+  return llvm::json::Object{{"status","checked_source_modules"},{"language",languageVersion},
+    {"introduced_toolchain","0.167.0"},{"guide","docs/stdlib.md"},{"guide_kind","stdlib"},
+    {"source_language_changed",false},{"language_migration_required",false},
+    {"source_pin_algorithm","SHA256"},{"lock_command","nex lock --json"},
+    {"existing_dependency_pins_enforced",true},{"automatic_lock_updates",false},
+    {"callback_effects",llvm::json::Array{}},{"implicit_worker_threads",false},
+    {"modules",llvm::json::Object{
+      {"text",llvm::json::Object{{"import","std/text.nex"},{"module","std::text"},
+        {"resource","lib/text.nex"},{"sha256",NEX_STDLIB_TEXT_SHA256},
+        {"functions",llvm::json::Array{"starts_with","ends_with","join","find","split","replace","trim"}},
+        {"indices","Unicode scalars"},{"trim_White_Space","Unicode17.0.0;25 code points"},
+        {"empty_separator","split into scalars; empty input gives an empty list"},
+        {"replace_empty_needle","insert before, between and after scalars; once for empty input"},
+        {"overlap","left-to-right non-overlapping occurrences"},
+        {"search","Two-Way byte search over validated UTF-8; O(n+m) comparisons, constant search state"},
+        {"construction","split O(n+m+k log(k+1)); join/replace O(k+B log(k+1)); n,m,B bytes;k fields"}}},
+      {"list",llvm::json::Object{{"import","std/list.nex"},{"module","std::lists"},
+        {"resource","lib/list.nex"},{"sha256",NEX_STDLIB_LIST_SHA256},
+        {"alias_note","list is a reserved word; import as seq or lists"},
+        {"functions",llvm::json::Array{"map","filter","fold","any","all","find_index","reverse","sort_by","sort"}},
+        {"map_filter_callbacks","once per element, left-to-right"},
+        {"fold","left fold"},{"any_all","short-circuit; any([])=false,all([])=true"},
+        {"sort","stable; sort_by requires a pure strict weak ordering"},
+        {"sort_bound","ordered; numeric i64/f64"},{"mutation",false},
+        {"copy_complexity","map/filter/reverse O(n log(n+1)); sort O(n log^2(n+1)); excludes callback cost"},
+        {"comparison_complexity","stable mergesort O(n log(n+1))"},
+        {"recursion_depth","O(log(n+1))"},{"linear_bulk_construction",false}}},
+      {"math",llvm::json::Object{{"import","std/math.nex"},{"module","std::math"},
+        {"resource","lib/math.nex"},{"sha256",NEX_STDLIB_MATH_SHA256},
+        {"functions",llvm::json::Array{"min","max","clamp","abs","sign","floor_div","ceil_div","pow_i64","gcd","lcm"}},
+        {"integer_arithmetic","checked i64"},{"gcd_lcm","nonnegative result<i64>; E_MATH_OVERFLOW for an unrepresentable magnitude"},
+        {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
+        {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
+    {"example","examples/stdlib/nex.json"},
+    {"pending",llvm::json::Array{"linear-time immutable bulk construction","effect-polymorphic callbacks","containers beyond immutable lists","complete matching SDK/platform qualification"}}};
+}
+}

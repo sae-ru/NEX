@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "@std/list.nex": {
+      "module": "std::lists",
+      "source_hash": "01215bd1bcaae9e3255b815eca12e32201d9216006c9a0d0713cfa84edd241c6"
+    },
+    "@std/math.nex": {
+      "module": "std::math",
+      "source_hash": "dfab4c8422b466effccf0fbd619289e41c112b3c8b45f43ce35dd6ac51520ff1"
+    },
+    "@std/text.nex": {
+      "module": "std::text",
+      "source_hash": "07ca6c290054a0adf7c5be8aa953f5d1ca5c5e19e4f586c4e57dbd5fe0e87060"
+    }
+  },
+  "language": "0.28",
+  "schema": "nex.lock/1"
+}

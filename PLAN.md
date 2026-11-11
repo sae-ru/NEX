@@ -1,4 +1,4 @@
-# Current implementation and remaining roadmap — development0.166.0
+# Current implementation and remaining roadmap — development0.167.0
 
 The working language remains0.28 (task ABI7, C ABI1). The public CUDA compiler
 now emits fixed values, bounded immutable lists and packed immutable bytes from
@@ -65,8 +65,11 @@ and final delivery work are:
   cache split/monetary cost remain unknown and no cross-model claim is made.
 - [x] Implement compiler-validated bounded language entry and diagnostic examples
   in response to observed failures, without changing the original study.
-- [ ] Continue standard helpers and later versioned model observations; preserve this
-  original result and use the user-selected local model under a new versioned protocol.
+- [x] Expand source text/list/math helpers with checked Unicode/integers, stable
+  ordering and explicit nonquadratic copy costs; retain locks and archived source.
+- [ ] Linear immutable bulk builders, wider containers and effect-polymorphic
+  callbacks remain required standard-library work. Later versioned model studies
+  preserve the original negative result and use only the selected local model.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across
   the supported platform/device matrix, then publish the latest main/release
   and remove obsolete branches/build artifacts with retained useful evidence.

@@ -29,6 +29,9 @@ import importlib.util as _host_import
 _host_spec = _host_import.spec_from_file_location('nex_sdk_host', Path(__file__).with_name('sdk_host.py'))
 sdk_host = _host_import.module_from_spec(_host_spec)
 _host_spec.loader.exec_module(sdk_host)
+_stdlib_spec = _host_import.spec_from_file_location('nex_sdk_stdlib', Path(__file__).with_name('sdk_stdlib.py'))
+sdk_stdlib = _host_import.module_from_spec(_stdlib_spec)
+_stdlib_spec.loader.exec_module(sdk_stdlib)
 
 
 NETWORK_PROFILES = ('full', 'windows-ipv6-denied')
@@ -1298,6 +1301,8 @@ def validate_completed_report(report, *, expected_network_profile='full'):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,167,0):
+        sdk_stdlib.validate(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,166,0):
         validate_bounded_language_entry_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,163,0):
@@ -2268,6 +2273,9 @@ test fn examples() -> unit {
         version = tuple(map(int, report['version'].split('.')))
         if version >= (0, 166, 0):
             report['evidence']['bounded_language_entry'] = exercise_bounded_language_entry(
+                cli=cli, run=run, compiler=compiler, resources=resources, root=root, browser=args.browser)
+        if version >= (0, 167, 0):
+            report['evidence']['standard_library'] = sdk_stdlib.exercise(
                 cli=cli, run=run, compiler=compiler, resources=resources, root=root, browser=args.browser)
 
     def baseline_failure():

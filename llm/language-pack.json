@@ -51,6 +51,7 @@
       "source_exception_prototype",
       "source_exceptions",
       "source_resources",
+      "standard_library",
       "structured_tasks_runtime",
       "task_debugging",
       "task_execution_limits",
@@ -83,6 +84,7 @@
     "recommended_fields": [
       "llm_entry",
       "diagnostic_catalogue",
+      "standard_library",
       "types",
       "numeric_features",
       "generic_features",
@@ -568,7 +570,11 @@
     "quick_reference": "llm/QUICK_REFERENCE.md",
     "diagnostic_catalogue": "docs/diagnostics.md",
     "diagnostic_explanation_schema": "llm/diagnostic-explanation.schema.json",
-    "diagnostic_catalogue_index_schema": "llm/diagnostic-catalogue-index.schema.json"
+    "diagnostic_catalogue_index_schema": "llm/diagnostic-catalogue-index.schema.json",
+    "standard_library": "docs/stdlib.md",
+    "standard_text_source": "lib/text.nex",
+    "standard_list_source": "lib/list.nex",
+    "standard_math_source": "lib/math.nex"
   },
   "document_access": "nex guide --kind source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -673,7 +679,10 @@
     "cuda_fixed_values": "examples/gpu-values.nex",
     "llm_quick_project": "examples/llm-quick/nex.json",
     "llm_quick_source": "examples/llm-quick/src/main.nex",
-    "llm_quick_import": "examples/llm-quick/src/values.nex"
+    "llm_quick_import": "examples/llm-quick/src/values.nex",
+    "standard_library_project": "examples/stdlib/nex.json",
+    "standard_library_source": "examples/stdlib/main.nex",
+    "standard_library_lock": "examples/stdlib/nex.lock.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4524,5 +4533,104 @@
     "language_migration_required": false,
     "status": "bounded_language_entry",
     "token_savings_demonstrated": false
+  },
+  "standard_library": {
+    "automatic_lock_updates": false,
+    "callback_effects": [],
+    "example": "examples/stdlib/nex.json",
+    "existing_dependency_pins_enforced": true,
+    "guide": "docs/stdlib.md",
+    "guide_kind": "stdlib",
+    "implicit_worker_threads": false,
+    "introduced_toolchain": "0.167.0",
+    "language": "0.28",
+    "language_migration_required": false,
+    "lock_command": "nex lock --json",
+    "modules": {
+      "list": {
+        "alias_note": "list is a reserved word; import as seq or lists",
+        "any_all": "short-circuit; any([])=false,all([])=true",
+        "comparison_complexity": "stable mergesort O(n log(n+1))",
+        "copy_complexity": "map/filter/reverse O(n log(n+1)); sort O(n log^2(n+1)); excludes callback cost",
+        "fold": "left fold",
+        "functions": [
+          "map",
+          "filter",
+          "fold",
+          "any",
+          "all",
+          "find_index",
+          "reverse",
+          "sort_by",
+          "sort"
+        ],
+        "import": "std/list.nex",
+        "linear_bulk_construction": false,
+        "map_filter_callbacks": "once per element, left-to-right",
+        "module": "std::lists",
+        "mutation": false,
+        "recursion_depth": "O(log(n+1))",
+        "resource": "lib/list.nex",
+        "sha256": "c609c8a42b88f2879e3bf0e290b1da00bfd4c84f353dc0daf07c6e532d78b1df",
+        "sort": "stable; sort_by requires a pure strict weak ordering",
+        "sort_bound": "ordered; numeric i64/f64"
+      },
+      "math": {
+        "functions": [
+          "min",
+          "max",
+          "clamp",
+          "abs",
+          "sign",
+          "floor_div",
+          "ceil_div",
+          "pow_i64",
+          "gcd",
+          "lcm"
+        ],
+        "gcd_lcm": "nonnegative result<i64>; E_MATH_OVERFLOW for an unrepresentable magnitude",
+        "gcd_zero_zero": 0,
+        "import": "std/math.nex",
+        "integer_arithmetic": "checked i64",
+        "lcm_zero": 0,
+        "module": "std::math",
+        "pow_complexity": "O(log(exponent+1)) multiplications",
+        "pow_negative_exponent": "fatal E_ASSERT",
+        "pow_zero_zero": 1,
+        "resource": "lib/math.nex",
+        "sha256": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e"
+      },
+      "text": {
+        "construction": "split O(n+m+k log(k+1)); join/replace O(k+B log(k+1)); n,m,B bytes;k fields",
+        "empty_separator": "split into scalars; empty input gives an empty list",
+        "functions": [
+          "starts_with",
+          "ends_with",
+          "join",
+          "find",
+          "split",
+          "replace",
+          "trim"
+        ],
+        "import": "std/text.nex",
+        "indices": "Unicode scalars",
+        "module": "std::text",
+        "overlap": "left-to-right non-overlapping occurrences",
+        "replace_empty_needle": "insert before, between and after scalars; once for empty input",
+        "resource": "lib/text.nex",
+        "search": "Two-Way byte search over validated UTF-8; O(n+m) comparisons, constant search state",
+        "sha256": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+        "trim_White_Space": "Unicode17.0.0;25 code points"
+      }
+    },
+    "pending": [
+      "linear-time immutable bulk construction",
+      "effect-polymorphic callbacks",
+      "containers beyond immutable lists",
+      "complete matching SDK/platform qualification"
+    ],
+    "source_language_changed": false,
+    "source_pin_algorithm": "SHA256",
+    "status": "checked_source_modules"
   }
 }
