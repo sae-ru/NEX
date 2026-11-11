@@ -98,7 +98,8 @@ def plan(config, source, output):
             raise ValueError(flag + ' must be boolean')
     if target.startswith('linux') and value.get('live'):
         raise ValueError('portable Linux workflow does not qualify a live debugger')
-    if git(source, 'rev-parse', '--show-toplevel').decode().strip() != str(source):
+    git_root = Path(git(source, 'rev-parse', '--show-toplevel').decode().strip()).resolve(strict=True)
+    if git_root != source or not git_root.samefile(source):
         raise ValueError('source must be the Git checkout root')
     commit = git(source, 'rev-parse', 'HEAD').decode().strip()
     if not re.fullmatch('[0-9a-f]{40}', commit):
