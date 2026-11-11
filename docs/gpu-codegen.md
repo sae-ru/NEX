@@ -118,6 +118,11 @@ a CPU. The host harness is external; the compiler remains source-only and does
 not initialize a driver. See the
 [scoped Mali evidence](evidence/opencl-mali-cix-0.185.0-2026-11-11.json).
 
+The same emitted scalar kernel executed on RK3588's **Mali-G610 r0p0** under
+OpenCL 3.0: `(20,2)->42/error 0` and `(INT64_MAX,1)->0/error 1`, again with
+`CL_DEVICE_TYPE_GPU` and no CPU fallback. See the
+[RK3588 Mali-G610 evidence](evidence/opencl-mali610-rk3588-0.185.0-2026-11-11.json).
+
 ## CUDA source emission
 
 The same compiler also accepts `--kind cuda`. Discover its own subset with

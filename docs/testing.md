@@ -247,6 +247,10 @@ harness: `(20,2)->42/error 0` and `(INT64_MAX,1)->0/error 1`, with
 `CL_DEVICE_TYPE_GPU` selected and no CPU fallback. Source-only dispatch and full
 SDK acceptance remain pending.
 
+The 0.185 OpenCL scalar kernel also ran on RK3588's physical
+**Mali-G610 r0p0** GPU under OpenCL 3.0: `(20,2)->42/error 0` and
+`(INT64_MAX,1)->0/error 1`, with `CL_DEVICE_TYPE_GPU` and no CPU fallback.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

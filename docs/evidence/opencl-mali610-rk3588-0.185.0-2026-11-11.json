@@ -1,0 +1,52 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical Mali-G610 execution of emitted 0.185 OpenCL scalar kernel",
+  "source_commit": "953e06a",
+  "compiler": {
+    "toolchain": "0.185.0",
+    "language": "0.28",
+    "sha256": "6e22b209734fbf2b35cf2c0b43eb106d063461b8d0a9f81ad0e07790ee334bcd",
+    "source_modified": true,
+    "modification": "stand-only -fno-rtti for language.cpp; LLVM/MLIR GROUP linker scripts"
+  },
+  "host": {
+    "uname": "Linux orangepi5pro 6.1.43-rockchip-rk3588 aarch64",
+    "os": "Orange Pi 1.0.6 Jammy",
+    "opencl": "3.0",
+    "device": "Mali-G610 r0p0",
+    "device_type": "GPU",
+    "cpu_fallback": false
+  },
+  "kernel": {
+    "sha256": "5352d0c4e063921c236793f0af807aea744f834aea0d1e689d80d89dad559bae",
+    "schema": "nex.opencl-emission/1",
+    "kernel": "nex_generated_map",
+    "host_source_sha256": "7990a6f10928bf9b3f109a1ac91094aa1d5a0d2ddefdcc7ab5dfcc451649cae3"
+  },
+  "results": {
+    "normal": {
+      "output": 42,
+      "error": 0,
+      "exit": 0
+    },
+    "overflow": {
+      "output": 0,
+      "error": 1,
+      "exit": 1
+    }
+  },
+  "limits": [
+    "one scalar i64/bool/unit kernel; host harness external to NEX CLI",
+    "no full CTest/SDK, no NPU, no other OpenCL devices/control flow",
+    "stand-only RTTI build flag; language semantics unchanged"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/mali610-evidence/mali610-report.json",
+    "kernel": "/Users/sae/projects/NEX/build/mali610-evidence/kernel.cl",
+    "host_source": "/Users/sae/projects/NEX/build/mali610-evidence/ocl_host.c",
+    "normal_log": "/Users/sae/projects/NEX/build/mali610-evidence/normal.log",
+    "overflow_log": "/Users/sae/projects/NEX/build/mali610-evidence/overflow.log",
+    "emit_report": "/Users/sae/projects/NEX/build/mali610-evidence/emit.json",
+    "clinfo": "/Users/sae/projects/NEX/build/mali610-evidence/clinfo.log"
+  }
+}
