@@ -585,6 +585,16 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_qualified_enum_case_completion(self):
+        text='module app;\nenum Event { Set(value: i64); Reset(); }\nfn main()->unit !{io}{let event:Event=Event::Set(1);print("x");}\n'
+        line=text.splitlines()[2];start=line.index('Event::')+len('Event::')
+        client=self.client();client.initialize();client.open(self.file,text)
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start}})
+        variants={item['label'] for item in result['items']}
+        self.assertEqual(variants,{'Set','Reset'})
+        self.assertTrue(all(item['kind']==20 for item in result['items']))
+
     def test_member_completion_returns_struct_fields(self):
         text='module app;\nstruct Point { x: i64; y: i64; }\nfn main()->unit !{io}{let point:Point=Point(1,2);print(point.x);}\n'
         line=text.splitlines()[2];start=line.index('point.x')+len('point.')

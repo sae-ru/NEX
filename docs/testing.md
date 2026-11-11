@@ -310,6 +310,9 @@ function and declarations before the cursor; `language_server` passed in
 Toolchain 0.198 adds struct-field completion after `.` using the checked
 receiver type; `language_server` passed in 20.30 s.
 
+Toolchain 0.199 adds `Enum::` case completion with LSP kind 20;
+`language_server` passed in 20.36 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

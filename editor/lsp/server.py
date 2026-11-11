@@ -514,6 +514,30 @@ class Server:
         before = source.encode('utf-8')[:offset].decode('utf-8')
         prefix_match = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', before)
         prefix = '' if prefix_match is None else prefix_match.group(0).lower()
+        qualified = re.search(r'([A-Za-z_][A-Za-z0-9_]*)::\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
+        if qualified is not None:
+            qualifier = qualified.group(1)
+            current_index = next((index for index in cache['indices']
+                if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
+            if current_index is not None:
+                owner = next((symbol for symbol in current_index.get('symbols', [])
+                    if symbol.get('kind') == 'enum' and (symbol.get('name') == qualifier or
+                        str(symbol.get('symbol', '')).endswith('::' + qualifier))), None)
+                if owner is not None:
+                    fields = []
+                    for record in current_index.get('identifiers', []):
+                        if record.get('kind') != 'variant':continue
+                        at = record['range']
+                        if not owner['range']['begin'] <= at['begin'] < owner['range']['end']:continue
+                        unit = next((f for f in current_index.get('files', [])
+                            if Path(f['path']).resolve() == path), None)
+                        if unit is None:continue
+                        name = unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8')
+                        if not name or (prefix and not name.lower().startswith(prefix)):continue
+                        fields.append({'label': name, 'kind': 20, 'detail': record.get('detail'),
+                            'sortText': name.lower(), 'filterText': name})
+                    if fields:
+                        return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: item['sortText'])}
         member = re.search(r'\.\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
         if member is not None:
             dot_offset = offset - len(member.group(0).encode('utf-8'))
