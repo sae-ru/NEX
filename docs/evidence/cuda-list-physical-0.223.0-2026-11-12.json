@@ -1,0 +1,73 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical CUDA bounded-list generated root execution",
+  "implementation_commit": "623786f",
+  "build_source_base_commit": "956df74",
+  "compiler": {
+    "toolchain": "0.218.0",
+    "language": "0.28",
+    "windows_binary": "F:/sae/NEX-0.218-20261112/build/stand/nex.exe"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "list_root": {
+    "prepared_project": "cuda-list-prepared",
+    "root": "transform(list<i64>)->list<i64>",
+    "list_capacity": 32,
+    "input": [
+      1,
+      2,
+      21
+    ],
+    "expected": [
+      2,
+      4,
+      42
+    ],
+    "run_stdout": "42\n",
+    "run_exit_code": 0,
+    "trace_rows": 18,
+    "kernel_completions": 1,
+    "last_event": "module_unloaded",
+    "ledger": {
+      "acceptance_gate_launches": 0,
+      "allocations": 3,
+      "cleanup_errors": 0,
+      "context_frees": 1,
+      "contexts": 1,
+      "event_frees": 2,
+      "events": 2,
+      "frees": 3,
+      "kernel_launches": 1,
+      "live_bytes": 0,
+      "module_frees": 1,
+      "modules": 1,
+      "peak_bytes": 131600,
+      "stream_frees": 1,
+      "streams": 1
+    },
+    "trace_sha256": "7f75057561cf3c4ad71d0060fd0aa1e3d6c4697f2c7cfec4ba17d31b7b691b8a",
+    "run_sha256": "bd8d5386d42b95a622bdc1069d7db88df20278a3ca89c676d7726612b52a399b"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "single bounded-list root; bytes/text and other roots remain",
+    "complete owned-CUDA/public SDK acceptance remains false",
+    "run used the 0.218 Windows compiler; current source toolchain is 0.223"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "run": "/Users/sae/projects/NEX/build/cuda-list-0224/cuda-list-run2.utf8.json",
+    "trace": "/Users/sae/projects/NEX/build/cuda-list-0224/cuda-list-run2.trace.jsonl",
+    "guide": "docs/testing.md"
+  }
+}

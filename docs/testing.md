@@ -426,6 +426,10 @@ Physical CUDA f64 root: a prepared `transform(f64,f64)->f64` provider ran on
 RTX 3090 with stdout 42, one kernel completion and a balanced trace ledger
 (4 allocations/frees, 1 context, 1 kernel launch).
 
+Physical CUDA bounded-list root: a prepared `transform(list<i64>)->list<i64>`
+provider with capacity 32 ran on RTX 3090 with `[1,2,21] -> [2,4,42]`, one
+kernel completion and a balanced trace ledger.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
