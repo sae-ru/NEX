@@ -1,0 +1,63 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Checked list-backed std/priority_queue container",
+  "implementation_commit": "a1a35a5288097d09a023299fc55f652325782bdf",
+  "build_source_base_commit": "1413a3a",
+  "compiler": {
+    "toolchain": "0.214.0",
+    "language": "0.28",
+    "sha256": "b155cc38ca602262bcab7467abe8876fb26e28d5bef91dfc39a6e937ed2a9d72",
+    "compiler_build": "340bd086622b514de34287b076f3830e77de931640fbf270feb07f50f05e1d2e",
+    "descriptor_hash": "fa14201d1f3f62182775cbbe3cab2449e8f476d32c7aca751ba1ea46838b0cac"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "module": "std/priority_queue.nex",
+    "type": "PriorityQueue<T: ordered>",
+    "functions": [
+      "empty",
+      "push_value",
+      "pop",
+      "peek",
+      "size",
+      "is_empty"
+    ],
+    "ordering": "ascending minimum",
+    "empty_error": "E_EMPTY",
+    "payload": "Popped<T>",
+    "immutable": true,
+    "list_backed": true,
+    "complexity": "O(n) insertion/pop/peek"
+  },
+  "observations": {
+    "registered_groups": 344,
+    "stdlib_priority_queue_seconds": 5.22834,
+    "standard_library_seconds": 43.4504,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.29,
+    "docs_documents": 179,
+    "docs_links": 1232,
+    "cuda_native_preparation_attempt": "blocked by explicit toolchain requirement for nex doctor; no CUDA evidence claimed"
+  },
+  "limits": [
+    "priority queue is sorted-list-backed O(n), not a binary heap",
+    "full CTest remains unqualified (serial/-j4/-j16 attempts aborted)",
+    "CUDA native provider preparation on Windows remains blocked"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/stdlib-pq-0214-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/stdlib-pq-0214-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/stdlib-pq-0214-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/stdlib-pq-0214-v1/nex.sha256",
+    "test": "tests/stdlib_priority_queue.py",
+    "guide": "docs/containers.md"
+  }
+}
