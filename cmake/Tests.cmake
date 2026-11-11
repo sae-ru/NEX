@@ -675,6 +675,10 @@ add_test(NAME enums COMMAND ${Python3_EXECUTABLE}
 
 add_test(NAME generics COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/generics.py $<TARGET_FILE:nex>)
+
+add_test(NAME type_defaults COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/type_defaults.py $<TARGET_FILE:nex>)
+set_tests_properties(type_defaults PROPERTIES TIMEOUT 300)
 add_test(NAME constraints COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/constraints.py $<TARGET_FILE:nex>)
 add_test(NAME matching COMMAND ${Python3_EXECUTABLE}

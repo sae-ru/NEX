@@ -137,6 +137,7 @@ struct Structure {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  std::vector<Type> typeDefaults;
   // Non-semantic physical name origin. In particular, the contextual word in
   // `server resource resource;` is not the declaration's identifier token.
   std::optional<Span> nameOrigin;

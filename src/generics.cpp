@@ -163,9 +163,29 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.kind==Type::Record){
     auto sep=type.name.rfind("::");
     if(sep!=std::string::npos)for(const auto &trait:p.traits)if(trait.name==type.name.substr(0,sep)&&trait.associated.contains(type.name.substr(sep+2)))type.kind=Type::Projection;
-    if(type.kind==Type::Record&&type.arguments.empty()){
-      if((type.name=="list"||type.name=="result")&&!p.hasStructure(type.name))return Type::constructor(type.name,1);
-      auto found=p.structureTemplates.find(type.name);if(found!=p.structureTemplates.end())return Type::constructor(type.name,found->second.typeParameters.size());
+    if(type.kind==Type::Record){
+      auto found=p.structureTemplates.find(type.name);
+      if(found!=p.structureTemplates.end()){
+        const auto &source=found->second;
+        const bool hasDefault=std::any_of(source.typeDefaults.begin(),source.typeDefaults.end(),[](const Type &value){return value!=Type::Unknown;});
+        if(type.arguments.size()<source.typeParameters.size()&&hasDefault){
+          std::map<std::string,Type> bound;
+          for(size_t i=0;i<type.arguments.size();++i)bound[source.typeParameters[i]]=type.arguments[i];
+          for(size_t i=type.arguments.size();i<source.typeParameters.size();++i){
+            if(i>=source.typeDefaults.size()||source.typeDefaults[i]==Type::Unknown){
+              if(type.arguments.empty())break;
+              throw Error("E_GENERIC_ARITY","missing type argument for "+source.typeParameters[i],span);
+            }
+            auto value=substituteType(source.typeDefaults[i],bound);
+            value=resolveType(p,value,span,depth+1);
+            if(value==Type::Unit)throw Error("E_TYPE","type default cannot be unit",span);
+            type.arguments.push_back(value);bound[source.typeParameters[i]]=value;
+          }
+        }
+        if(type.arguments.empty())return Type::constructor(type.name,source.typeParameters.size());
+      }else if(type.arguments.empty()){
+        if((type.name=="list"||type.name=="result")&&!p.hasStructure(type.name))return Type::constructor(type.name,1);
+      }
     }
   }
   if(type.kind==Type::Projection)return resolveProjection(p,type,span,depth);
@@ -174,7 +194,26 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
     for(auto &argument:type.arguments){argument=resolveType(p,argument,span,depth+1);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);if(argumentKind(p,argument,span)!=0)throw Error("E_GENERIC_KIND","constructor argument must be a value type",span);}
     if(!type.arguments.empty()&&type.arguments.size()!=found->second)throw Error("E_GENERIC_KIND","wrong constructor parameter arity",span);return type;
   }
-  if(type.kind==Type::Constructor){argumentKind(p,type,span);return type;}
+  if(type.kind==Type::Constructor){
+    auto found=p.structureTemplates.find(type.name);
+    if(found!=p.structureTemplates.end()){
+      const auto &source=found->second;
+      const bool completeDefaults=source.typeDefaults.size()==source.typeParameters.size()&&std::all_of(source.typeDefaults.begin(),source.typeDefaults.end(),[](const Type &value){return value!=Type::Unknown;});
+      if(completeDefaults){
+        std::map<std::string,Type> bound;std::vector<Type> arguments;
+        for(size_t i=0;i<source.typeParameters.size();++i){
+          auto value=source.typeDefaults[i];
+          if(value==Type::Unknown)throw Error("E_GENERIC_ARITY","missing type argument for "+source.typeParameters[i],span);
+          value=substituteType(value,bound);value=resolveType(p,value,span,depth+1);
+          if(value==Type::Unit)throw Error("E_TYPE","type default cannot be unit",span);
+          arguments.push_back(value);bound[source.typeParameters[i]]=value;
+        }
+        auto value=Type::record(type.name);value.arguments=std::move(arguments);
+        return resolveType(p,value,span,depth+1);
+      }
+    }
+    argumentKind(p,type,span);return type;
+  }
   if(type.element){type.element=std::make_shared<Type>(resolveType(p,*type.element,span,depth+1));if(*type.element==Type::Unit&&type.kind!=Type::Function&&type.kind!=Type::Task)throw Error("E_TYPE","aggregate payload cannot have type unit",span);}
   for(auto &argument:type.arguments)argument=resolveType(p,argument,span,depth+1);
   if(type.kind==Type::Function){

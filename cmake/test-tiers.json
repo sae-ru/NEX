@@ -76,6 +76,7 @@
     "function_debug": ["extended", "browser", "platform"],
     "function_values": ["extended", "browser"],
     "generics": ["extended", "browser"],
+    "type_defaults": ["extended", "browser"],
     "graph_identities": ["extended", "browser"],
     "graph_queries": ["extended", "browser", "scale"],
     "graph_snapshots": ["extended", "browser", "scale"],

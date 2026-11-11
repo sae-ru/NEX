@@ -24,6 +24,7 @@
       "effect_parameters",
       "features_scope",
       "foreign_trap_reporting",
+      "generic_features",
       "gpu_codegen",
       "http_client_provider",
       "http_response_streams",
@@ -4943,5 +4944,26 @@
       "bool",
       "unit"
     ]
-  }
+  },
+  "generic_features": [
+    "parametric_body_checking",
+    "generic_functions",
+    "generic_structures",
+    "generic_enums",
+    "expected_type_inference",
+    "argument_type_inference",
+    "checked_monomorphization",
+    "derived_instance_context",
+    "source_template_patches",
+    "builtin_type_constraints",
+    "constraint_implication",
+    "constrained_numeric_literals",
+    "user_traits",
+    "coherent_implementations",
+    "associated_types",
+    "constructor_parameters",
+    "generic_trait_methods",
+    "static_trait_dispatch",
+    "type_defaults"
+  ]
 }
