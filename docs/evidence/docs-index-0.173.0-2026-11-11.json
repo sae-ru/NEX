@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:24:59.521886+00:00",
+  "scope": "Generated documentation index with local-link and current-version checks",
+  "implementation_commit": "665be03c85dcaa34a540f4b6a003b49ba6af1f9f",
+  "build_source_base_commit": "b97e0ea",
+  "compiler": {
+    "toolchain": "0.173.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "d75675e439b199307fc83a9496e5ec9472027d19624dccd9ef454aacb4471013",
+    "compiler_build": "7d0434441b7fc2edd52a7dfac0094fbe6c58ca93ac2b61e1e3ab7206bb568cd1",
+    "descriptor_hash": "e78838c3e66d2583cb5feb091e427dc9638575a1cbb86bb0e2eb3106a1de79d0",
+    "built_from_clean_committed_export": false
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64"
+  },
+  "observations": {
+    "registered_Mac_groups": 329,
+    "documents_indexed": 174,
+    "local_links_checked": 1209,
+    "missing_local_links": 0,
+    "current_contracts": 8,
+    "deferred_documents": 1,
+    "unclassified_reference_or_history": 165,
+    "docs_index_seconds": 0.09,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.86,
+    "current_status_check": true,
+    "external_URLs_fetched": false,
+    "index_is_navigation_not_capability_authority": true
+  },
+  "limits": [
+    "older documents without front matter remain reference/history rather than being rewritten",
+    "external URLs are not fetched; only local targets are verified",
+    "the index does not replace compiler discovery or platform/SDK acceptance",
+    "no source-language semantics or canonical identities changed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "binary_sha256": "/Users/sae/projects/NEX/build/docs-index-0173-v1/nex.sha256",
+    "docs_check": "/Users/sae/projects/NEX/build/docs-index-0173-v1/docs-check.json",
+    "docs_index_junit": "/Users/sae/projects/NEX/build/docs-index-0173-v1/docs-index.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/docs-index-0173-v1/core.xml",
+    "describe_index": "/Users/sae/projects/NEX/build/docs-index-0173-v1/describe-index.json",
+    "doctor": "/Users/sae/projects/NEX/build/docs-index-0173-v1/doctor.json",
+    "index": "docs/INDEX.md",
+    "tool": "tools/docs_index.py"
+  }
+}
