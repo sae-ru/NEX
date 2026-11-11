@@ -416,6 +416,12 @@ build and observe checks and to pass a trusted toolchain catalog. On Windows the
 task check and capture then passed; packaging stopped at missing provenance for
 `libcrypto.dll.a`, so delivery acceptance remains pending.
 
+Toolchain 0.223 completes the Windows CUDA delivery gate: source-deleted
+capture/replay, relocated standalone package execution and actual GPU kernel
+completions passed with the pinned explicit toolchain. The relocated standalone
+ran with original project/resources/authority OS reads denied. Public compiler/
+immutable SDK acceptance and other generated roots remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

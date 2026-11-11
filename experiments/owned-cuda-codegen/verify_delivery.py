@@ -213,7 +213,7 @@ def main():
         package.rename(moved)
         receipt = Path(captured["output"])
         denied_trace = out / "unauthorized-replay.trace.jsonl"
-        denied = json.loads(run("replay-without-authority", [compiler, "task", receipt, "--kind", "replay", "--directory", out / "denied-replay", "--json"], expected=1, trace=denied_trace).stdout)
+        denied = json.loads(run("replay-without-authority", [compiler, "task", receipt, "--kind", "replay", *toolchain_args, "--directory", out / "denied-replay", "--json"], expected=1, trace=denied_trace).stdout)
         assert denied["code"] == "E_TASK_FOREIGN" and not denied_trace.exists()
         replay_trace = out / "replay.trace.jsonl"
         replay = json.loads(run("source-deleted-replay", [compiler, "task", receipt, "--kind", "replay", "--foreign", authority / "foreign.json", *toolchain_args, "--directory", out / "replay", "--json"], trace=replay_trace).stdout)
