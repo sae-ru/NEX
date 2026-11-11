@@ -276,6 +276,12 @@ otherwise unbound, and function values use defaults without an explicit
 context. Non-trailing/unit defaults remain rejected. The focused
 resolution/reference/native/TypeScript test passed in 5.35 s.
 
+Toolchain 0.191 extends `nex fmt` to directory trees. It recursively checks or
+writes `.nex` files, skips `.nex`/`.git`/`build`/`node_modules`/`dist`, symlinks
+and non-NEX files, reports `nex.format-directory/1`, and rejects directory
+preview or simultaneous check/write. The focused directory test passed in 0.24 s.
+Width wrapping and editor requests remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

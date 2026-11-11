@@ -233,6 +233,7 @@
     "source_task_foreign_prototype": ["extended", "platform"],
     "source_task_resource_prototype": ["extended", "platform", "scale"],
     "source_formatting": ["extended", "browser", "platform"],
+    "fmt_directory": ["extended", "platform"],
     "standard_library": ["extended", "browser", "platform", "sdk"],
     "containers": ["extended", "browser", "platform", "sdk"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],

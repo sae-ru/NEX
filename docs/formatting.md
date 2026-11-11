@@ -6,7 +6,7 @@ owner: repository
 
 # Formatting NEX source
 
-`nex fmt` formats one explicitly selected UTF-8 source file. It uses the actual
+`nex fmt` formats one explicitly selected UTF-8 source file or a directory tree. It uses the actual
 current-language parser and preserves ordered line comments and the spelling of
 every literal. It does not load imports, type-check, execute code or open a graph
 Store. A missing imported file or an unresolved name does not prevent formatting.
@@ -17,6 +17,9 @@ nex fmt src/main.nex                 # preview source on stdout
 nex fmt src/main.nex --check         # no writes; exit 1 if formatting differs
 nex fmt src/main.nex --write         # replace this source file
 nex fmt src/main.nex --check --json  # machine-readable nex.format/1 result
+
+nex fmt src --check --json           # recursive directory check; nex.format-directory/1
+nex fmt src --write --json           # format every .nex file under src
 nex guide --kind format --json
 ```
 

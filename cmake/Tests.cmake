@@ -1545,6 +1545,10 @@ set_tests_properties(effect_parameters PROPERTIES TIMEOUT 300)
 add_test(NAME source_formatting COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_formatting.py $<TARGET_FILE:nex>)
 set_tests_properties(source_formatting PROPERTIES TIMEOUT 240)
+
+add_test(NAME fmt_directory COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fmt_directory.py $<TARGET_FILE:nex>)
+set_tests_properties(fmt_directory PROPERTIES TIMEOUT 120)
 add_test(NAME cli_interface COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_interface.py $<TARGET_FILE:nex>)
 set_tests_properties(cli_interface PROPERTIES TIMEOUT 240)

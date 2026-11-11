@@ -294,7 +294,43 @@ int run(const Options &o) {
        (o.has("--check")&&o.has("--write"))||
        std::any_of(o.flags.begin(),o.flags.end(),[](const auto &flag){return flag!="--json"&&flag!="--check"&&flag!="--write";}))
       throw Error("E_OPTION","fmt requires FILE [--check|--write] [--json]");
-    auto file=fs::absolute(o.positional.front()).lexically_normal().string();
+    auto target=fs::absolute(o.positional.front()).lexically_normal();
+    if(fs::is_directory(target)){
+      if(o.has("--write")==o.has("--check"))throw Error("E_OPTION","fmt directory requires exactly one of --check or --write");
+      std::vector<fs::path> files;size_t total=0;
+      for(fs::recursive_directory_iterator it(target,fs::directory_options::skip_permission_denied),end;it!=end;++it){
+        const auto &entry=*it;auto name=entry.path().filename().string();
+        if(entry.is_symlink()){if(entry.is_directory())it.disable_recursion_pending();continue;}
+        if(entry.is_directory()){
+          if(name==".nex"||name==".git"||name=="build"||name=="node_modules"||name=="dist"||name=="__pycache__")it.disable_recursion_pending();
+          continue;
+        }
+        if(!entry.is_regular_file()||entry.path().extension()!=".nex")continue;
+        if(files.size()>=10000)throw Error("E_LIMIT","directory format exceeds10000 source files");
+        files.push_back(entry.path());
+      }
+      std::sort(files.begin(),files.end());
+      llvm::json::Array rows;bool anyChanged=false;size_t written=0;
+      for(const auto &path:files){
+        auto file=path.lexically_normal().string();
+        auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
+        total+=original.size();if(total>64*1024*1024)throw Error("E_LIMIT","directory format exceeds64MiB of source");
+        auto formatted=formatSource(original,file);const bool changed=original!=formatted;anyChanged|=changed;
+        if(o.has("--write")&&changed){replaceFormattedSource(file,original,formatted);++written;}
+        rows.push_back(llvm::json::Object{{"file",file},{"changed",changed},{"written",o.has("--write")&&changed},
+          {"source_hash",hash(original)},{"formatted_hash",hash(formatted)}});
+      }
+      if(o.has("--json"))print(llvm::json::Object{{"schema","nex.format-directory/1"},{"ok",!o.has("--check")||!anyChanged},
+        {"directory",target.string()},{"language",languageVersion},{"style","nex/1"},
+        {"mode",o.has("--write")?"write":"check"},{"files",std::move(rows)},{"file_count",int64_t(files.size())},
+        {"changed",anyChanged},{"written_files",int64_t(written)},
+        {"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}}});
+      else if(o.has("--check")&&anyChanged)std::cerr<<"Needs formatting: "<<target.string()<<'\n';
+      else if(o.has("--write"))std::cout<<"Formatted "<<files.size()<<" files; wrote "<<written <<'\n';
+      return o.has("--check")&&anyChanged?1:0;
+    }
+    if(!fs::is_regular_file(target))throw Error("E_OPTION","fmt requires a regular source file or directory");
+    auto file=target.string();
     auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
     auto formatted=formatSource(original,file);const bool changed=original!=formatted;
     const bool writing=o.has("--write"),checking=o.has("--check");

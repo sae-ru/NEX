@@ -242,7 +242,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("project","[DIRECTORY|nex.build.json]","Plan/build/package/run/test/debug/profile project components.","project","--kind --component --configuration --build-directory --output --workload --foreign --adapter --profile-output --events --timeout --scenario --symbol --directory --notices --dpkg-notices --task-debug");
     add("describe","[--kind full|index | --field PATH]","Discover the selected compiled capability descriptor.","discovery","--kind --field");
     add("analyze","[FILE]","Read-only editor analysis with optional overlays/references.","editor","--overlay --references --details");
-    add("fmt","FILE [--check|--write]","Format current syntax, retaining comments and graph history.","format","--check --write");
+    add("fmt","FILE|DIRECTORY [--check|--write]","Format current syntax, retaining comments and graph history.","format","--check --write");
     add("lsp","","Run the installed language server on standard input/output.","lsp","");
     add("guide","[--kind KIND]","Read one selected source/SDK guide.","discovery","--kind");
     add("doctor","","Report the selected host/compiler/runtime configuration.","build","");
