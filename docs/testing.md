@@ -379,6 +379,12 @@ acceptance is claimed.
 Toolchain 0.218 fixes the owned-CUDA context probe's manual buffer bookkeeping:
 it set `bytes` but not `allocationBytes`, so its destructor freed zero ledger bytes.
 
+Toolchain 0.218's probe fix made the physical CUDA context probe pass on
+RTX 3090: 3 contexts, 1 allocation, caller/reentry/rollback/cleanup checks.
+The subsequent corpus then failed a source check (`expected std::device::Buffer,
+found owned_cuda_codegen::Dispatch`), so physical kernel acceptance is still
+pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

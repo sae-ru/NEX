@@ -1,0 +1,62 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Fixed owned-CUDA context probe allocation ledger; physical probe result",
+  "implementation_commit": "cd580ce",
+  "build_source_base_commit": "44ef997",
+  "compiler": {
+    "toolchain": "0.218.0",
+    "language": "0.28",
+    "sha256": "899bc2e615147b66a0ac514162023341955b2cf439b108e8e2c0fb0b30cad6cc",
+    "compiler_build": "0a65e8a4abe2fa5c0f924a72131febfe8def1de8d081b8179d8d85135c6d56e1",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "physical_context_probe": {
+    "ok": true,
+    "contexts": 3,
+    "device_allocations": 1,
+    "caller_context_preserved": true,
+    "source_reentry_rejected_before_poll": true,
+    "nested_cleanup_restores_context": true,
+    "constructor_trap_rolls_back": true,
+    "physical_cleanup_verified": true,
+    "stdout_sha256": "3f3f8bcb89b277ed9b252e343594122e14b9301676ee23dc491c70424bc01186"
+  },
+  "corpus": {
+    "source_check_failed": true,
+    "case": "small_and_i64_codec",
+    "error": "expected std::device::Buffer, found owned_cuda_codegen::Dispatch",
+    "kernel_executed": false
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 20.27,
+    "cuda_source_seconds": 76.12,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "physical context probe passes; the corpus source check failed before physical kernel execution",
+    "no CUDA value/error/cancellation/memcheck/delivery acceptance",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "probe_stdout": "/Users/sae/projects/NEX/build/cuda-physical-0218/physical-context-probe.stdout",
+    "probe_stderr": "/Users/sae/projects/NEX/build/cuda-physical-0218/physical-context-probe.stderr",
+    "case_source": "/Users/sae/projects/NEX/build/cuda-physical-0218/main.nex",
+    "focused_junit": "/Users/sae/projects/NEX/build/cuda-physical-0218/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-physical-0218/core.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-physical-0218/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-physical-0218/nex.sha256",
+    "probe_source": "experiments/owned-cuda-codegen/context_probe.cpp"
+  }
+}
