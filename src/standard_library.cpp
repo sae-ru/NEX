@@ -47,6 +47,12 @@ llvm::json::Object standardLibraryCapability(){
         {"functions",llvm::json::Array{"empty","push_back","push_front","pop_front","pop_back","peek_front","peek_back","size","is_empty"}},
         {"ordering","double-ended; immutable"},{"empty_result","E_EMPTY"},
         {"complexity","push/pop/peek O(n); size/is_empty O(1); list-backed, no ring buffer or hash table"},{"mutation",false}}},
+      {"priority_queue",llvm::json::Object{{"import","std/priority_queue.nex"},{"module","std::priority_queue"},
+        {"resource","lib/priority_queue.nex"},{"sha256",NEX_STDLIB_PRIORITY_QUEUE_SHA256},{"introduced_toolchain","0.214.0"},
+        {"types",llvm::json::Array{"PriorityQueue<T>","Popped<T>"}},
+        {"functions",llvm::json::Array{"empty","push_value","pop","peek","size","is_empty"}},
+        {"ordering","ascending minimum first; insertion keeps list sorted; immutable"},{"empty_result","E_EMPTY"},
+        {"complexity","push_value O(n); pop/peek O(n); size/is_empty O(1); sorted list-backed, no binary heap"},{"mutation",false}}},
       {"queue",llvm::json::Object{{"import","std/queue.nex"},{"module","std::queue"},
         {"resource","lib/queue.nex"},{"sha256",NEX_STDLIB_QUEUE_SHA256},{"introduced_toolchain","0.209.0"},
         {"types",llvm::json::Array{"Queue<T>","Popped<T>"}},
@@ -66,6 +72,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque/priority_queue","complete matching SDK/platform qualification"}}};
 }
 }

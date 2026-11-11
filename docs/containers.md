@@ -71,5 +71,8 @@ return `result` and empty operations use `E_EMPTY`. `std/stack.nex`
 (`std::stack`) provides immutable LIFO `Stack<T>` with `empty`, `push_value`,
 `pop`, `peek`, `size` and `is_empty`. `std/deque.nex` (`std::deque`) provides
 `Deque<T>` with `push_back`/`push_front`, `pop_front`/`pop_back` and
-`peek_front`/`peek_back`. All three are list-backed and therefore O(n) per
-element operation; none is a ring buffer, hash table or language primitive.
+`peek_front`/`peek_back`. `std/priority_queue.nex` (`std::priority_queue`)
+provides an immutable ascending minimum `PriorityQueue<T: ordered>` with
+`empty`, `push_value`, `pop`, `peek`, `size` and `is_empty`. All four are
+list-backed and therefore O(n) per element operation; none is a ring buffer,
+binary heap, hash table or language primitive.

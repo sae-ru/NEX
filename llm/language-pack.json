@@ -4692,6 +4692,29 @@
         "resource": "lib/math.nex",
         "sha256": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e"
       },
+      "priority_queue": {
+        "complexity": "push_value O(n); pop/peek O(n); size/is_empty O(1); sorted list-backed, no binary heap",
+        "empty_result": "E_EMPTY",
+        "functions": [
+          "empty",
+          "push_value",
+          "pop",
+          "peek",
+          "size",
+          "is_empty"
+        ],
+        "import": "std/priority_queue.nex",
+        "introduced_toolchain": "0.214.0",
+        "module": "std::priority_queue",
+        "mutation": false,
+        "ordering": "ascending minimum first; insertion keeps list sorted; immutable",
+        "resource": "lib/priority_queue.nex",
+        "sha256": "9d12846107f282ea9b49d98341efd04ccb809dc16868dda5d05ba8d95dea67ca",
+        "types": [
+          "PriorityQueue<T>",
+          "Popped<T>"
+        ]
+      },
       "queue": {
         "complexity": "enqueue O(n); dequeue/peek O(n); size/is_empty O(1); list-backed, no ring or hash table",
         "empty_result": "E_EMPTY",
@@ -4783,7 +4806,7 @@
       }
     },
     "pending": [
-      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque",
+      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque/priority_queue",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

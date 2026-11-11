@@ -1,0 +1,63 @@
+module std::priority_queue;
+
+// Immutable min-priority queue backed by an ordered list. Insertion keeps the
+// list sorted; every insertion is O(n). This is a checked source container,
+// not a binary heap, hash table or new language primitive.
+pub struct PriorityQueue<T> {
+  items: list<T>;
+}
+pub struct Popped<T> {
+  queue: PriorityQueue<T>;
+  value: T;
+}
+
+pub fn empty<T: ordered>() -> PriorityQueue<T> {
+  return PriorityQueue([]);
+}
+
+pub fn push_value<T: ordered>(queue: PriorityQueue<T>, value: T) -> PriorityQueue<T> {
+  var output: list<T> = [];
+  var inserted: bool = false;
+  var i: i64 = 0;
+  while i < len(queue.items) {
+    let item: T = queue.items[i];
+    if !inserted && value < item {
+      output = push(output, value);
+      inserted = true;
+    }
+    output = push(output, item);
+    i = i + 1;
+  }
+  if !inserted {
+    output = push(output, value);
+  }
+  return PriorityQueue(output);
+}
+
+pub fn pop<T: ordered>(queue: PriorityQueue<T>) -> result<Popped<T>> {
+  if len(queue.items) == 0 {
+    return err<Popped<T>>("E_EMPTY", "priority queue is empty");
+  }
+  var output: list<T> = [];
+  var i: i64 = 1;
+  while i < len(queue.items) {
+    output = push(output, queue.items[i]);
+    i = i + 1;
+  }
+  return ok(Popped(PriorityQueue(output), queue.items[0]));
+}
+
+pub fn peek<T: ordered>(queue: PriorityQueue<T>) -> result<T> {
+  if len(queue.items) == 0 {
+    return err<T>("E_EMPTY", "priority queue is empty");
+  }
+  return ok(queue.items[0]);
+}
+
+pub fn size<T: ordered>(queue: PriorityQueue<T>) -> i64 {
+  return len(queue.items);
+}
+
+pub fn is_empty<T: ordered>(queue: PriorityQueue<T>) -> bool {
+  return len(queue.items) == 0;
+}

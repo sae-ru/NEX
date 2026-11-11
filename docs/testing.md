@@ -358,6 +358,9 @@ Toolchain 0.212 adds list-backed `std/deque.nex` with front/back push/pop and
 Toolchain 0.213 adds LSP local-type inlay hints; `language_server` passed in
 21.05 s.
 
+Toolchain 0.214 adds ordered `std/priority_queue.nex` with `E_EMPTY`; the
+focused priority-queue test covers reference/native/TypeScript.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
