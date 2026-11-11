@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP prepareRename and rename source edits",
+  "implementation_commit": "501c4f6d942581ec3a729bb9d1edf7e0d8b1c021",
+  "build_source_base_commit": "3a26fc6",
+  "compiler": {
+    "toolchain": "0.193.0",
+    "language": "0.28",
+    "sha256": "3186f6d4428df29f7afa38f1fb7a1698897e5de40544e1035d8050537ce5da91",
+    "compiler_build": "f1e7ed39de2630aec30e0500ed606546b4913ca9580dc830377f096ece591dbe",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capabilities": [
+      "renameProvider.prepareProvider",
+      "textDocument/prepareRename",
+      "textDocument/rename"
+    ],
+    "workspace_edit": true,
+    "declaration_and_references": true,
+    "identifier_validation": "ASCII NEX identifier",
+    "source_write": false,
+    "graph_identity_preserving_rename": false
+  },
+  "observations": {
+    "registered_groups": 340,
+    "language_server_seconds": 19.05,
+    "editor_language_client_seconds": 1.10368,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.3,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "rename is an editor WorkspaceEdit; explicit graph identity-preserving source rename remains pending",
+    "no semantic duplicate-name check beyond the compiler's later check",
+    "completion/parser recovery/incremental indexing and full IDE matrix remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-rename-0193-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-rename-0193-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-rename-0193-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-rename-0193-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
