@@ -1,0 +1,67 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Finite f64 arguments, results and checks in the scalar Wasm ABI",
+  "implementation_commit": "1dc0cb8a27cbfc3ef3c124974fd6dbf937d70cc3",
+  "build_source_base_commit": "c17ee66",
+  "compiler": {
+    "toolchain": "0.187.0",
+    "language": "0.28",
+    "sha256": "418eb839786a28f31d785efd6f1948ed94710536633b8376a2e95799e33f75e4",
+    "compiler_build": "44ced55db2aef8249ccadf3444c5371fee07a12df07b92686829d08e1472970f",
+    "descriptor_hash": "676f1eca85bd0b030d655fe96d6c83a4d60306cf33629c656c89aed9de312bcd"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4",
+    "wasm_ld": "/opt/homebrew/opt/lld@22/bin/wasm-ld",
+    "node": "22.22.3"
+  },
+  "feature": {
+    "types": [
+      "i64",
+      "f64",
+      "bool",
+      "unit"
+    ],
+    "wrapper_f64": "finite JS numbers only",
+    "nonfinite_input": "E_WASM_INPUT",
+    "nonfinite_result": "E_FLOAT",
+    "runtime": "runtime/wasm_runtime.c",
+    "tests": [
+      "value",
+      "bool comparison",
+      "NaN/Infinity input",
+      "non-finite result"
+    ]
+  },
+  "observations": {
+    "registered_groups": 337,
+    "wasm_seconds": 17.8657,
+    "wasm_f64_seconds": 0.837881,
+    "typed_scalar_wasm_seconds": 1.98699,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.99,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "scalar f64/i64/bool/unit only; heap values, effects, exceptions and general Wasm applications remain unsupported",
+    "Node/Wasm tests only; full regression, installed/portable SDK and browser matrix remain pending",
+    "Wasm toolchain was LLVM 22.1 wasm-ld configured locally; no new SDK delivery"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "wasm_junit": "/Users/sae/projects/NEX/build/wasm-0187-v1/wasm.json",
+    "core_junit": "/Users/sae/projects/NEX/build/wasm-0187-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/wasm-0187-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/wasm-0187-v1/nex.sha256",
+    "runtime": "runtime/wasm_runtime.c",
+    "wrapper": "web/wasm_module.mjs",
+    "test": "tests/wasm_f64.py",
+    "guide": "docs/wasm.md"
+  }
+}
