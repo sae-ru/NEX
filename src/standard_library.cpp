@@ -41,6 +41,18 @@ llvm::json::Object standardLibraryCapability(){
         {"functions",llvm::json::Array{"empty","add","remove","has","items","size"}},
         {"ordering","insertion order; add of an existing value is a no-op; immutable"},
         {"complexity","add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table"},{"mutation",false}}},
+      {"queue",llvm::json::Object{{"import","std/queue.nex"},{"module","std::queue"},
+        {"resource","lib/queue.nex"},{"sha256",NEX_STDLIB_QUEUE_SHA256},{"introduced_toolchain","0.209.0"},
+        {"types",llvm::json::Array{"Queue<T>","Popped<T>"}},
+        {"functions",llvm::json::Array{"empty","enqueue","dequeue","peek","size","is_empty"}},
+        {"ordering","FIFO; immutable"},{"empty_result","E_EMPTY"},
+        {"complexity","enqueue O(n); dequeue/peek O(n); size/is_empty O(1); list-backed, no ring or hash table"},{"mutation",false}}},
+      {"stack",llvm::json::Object{{"import","std/stack.nex"},{"module","std::stack"},
+        {"resource","lib/stack.nex"},{"sha256",NEX_STDLIB_STACK_SHA256},{"introduced_toolchain","0.209.0"},
+        {"types",llvm::json::Array{"Stack<T>","Popped<T>"}},
+        {"functions",llvm::json::Array{"empty","push_value","pop","peek","size","is_empty"}},
+        {"ordering","LIFO; immutable"},{"empty_result","E_EMPTY"},
+        {"complexity","push_value O(n); pop/peek O(n); size/is_empty O(1); list-backed, no ring or hash table"},{"mutation",false}}},
       {"math",llvm::json::Object{{"import","std/math.nex"},{"module","std::math"},
         {"resource","lib/math.nex"},{"sha256",NEX_STDLIB_MATH_SHA256},
         {"functions",llvm::json::Array{"min","max","clamp","abs","sign","floor_div","ceil_div","pow_i64","gcd","lcm"}},
@@ -48,6 +60,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set/queue/stack","complete matching SDK/platform qualification"}}};
 }
 }

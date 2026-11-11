@@ -1,0 +1,48 @@
+module std::queue;
+
+// Immutable FIFO queue backed by a list. Every operation is linear in the
+// current size; this is a checked source container, not a hash table or a new
+// language primitive.
+pub struct Queue<T> {
+  items: list<T>;
+}
+pub struct Popped<T> {
+  queue: Queue<T>;
+  value: T;
+}
+
+pub fn empty<T>() -> Queue<T> {
+  return Queue([]);
+}
+
+pub fn enqueue<T>(queue: Queue<T>, value: T) -> Queue<T> {
+  return Queue(push(queue.items, value));
+}
+
+pub fn dequeue<T>(queue: Queue<T>) -> result<Popped<T>> {
+  if len(queue.items) == 0 {
+    return err<Popped<T>>("E_EMPTY", "queue is empty");
+  }
+  var output: list<T> = [];
+  var i: i64 = 1;
+  while i < len(queue.items) {
+    output = push(output, queue.items[i]);
+    i = i + 1;
+  }
+  return ok(Popped(Queue(output), queue.items[0]));
+}
+
+pub fn peek<T>(queue: Queue<T>) -> result<T> {
+  if len(queue.items) == 0 {
+    return err<T>("E_EMPTY", "queue is empty");
+  }
+  return ok(queue.items[0]);
+}
+
+pub fn size<T>(queue: Queue<T>) -> i64 {
+  return len(queue.items);
+}
+
+pub fn is_empty<T>(queue: Queue<T>) -> bool {
+  return len(queue.items) == 0;
+}

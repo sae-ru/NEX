@@ -4666,6 +4666,29 @@
         "resource": "lib/math.nex",
         "sha256": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e"
       },
+      "queue": {
+        "complexity": "enqueue O(n); dequeue/peek O(n); size/is_empty O(1); list-backed, no ring or hash table",
+        "empty_result": "E_EMPTY",
+        "functions": [
+          "empty",
+          "enqueue",
+          "dequeue",
+          "peek",
+          "size",
+          "is_empty"
+        ],
+        "import": "std/queue.nex",
+        "introduced_toolchain": "0.209.0",
+        "module": "std::queue",
+        "mutation": false,
+        "ordering": "FIFO; immutable",
+        "resource": "lib/queue.nex",
+        "sha256": "375660dd44765cc99784f03fd7b9a74f82ad32d8f6cfef51cd5ee7f89789b0ed",
+        "types": [
+          "Queue<T>",
+          "Popped<T>"
+        ]
+      },
       "set": {
         "complexity": "add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table",
         "functions": [
@@ -4685,6 +4708,29 @@
         "sha256": "a281f9356cdf550a2bee35cb28d097a03ee8bb814a9b40f6a1019c68209ec931",
         "types": [
           "Set<T>"
+        ]
+      },
+      "stack": {
+        "complexity": "push_value O(n); pop/peek O(n); size/is_empty O(1); list-backed, no ring or hash table",
+        "empty_result": "E_EMPTY",
+        "functions": [
+          "empty",
+          "push_value",
+          "pop",
+          "peek",
+          "size",
+          "is_empty"
+        ],
+        "import": "std/stack.nex",
+        "introduced_toolchain": "0.209.0",
+        "module": "std::stack",
+        "mutation": false,
+        "ordering": "LIFO; immutable",
+        "resource": "lib/stack.nex",
+        "sha256": "93e068c4844698c0409fed925d0c6ad8ff021edb85f3f392ceb82eba2e225106",
+        "types": [
+          "Stack<T>",
+          "Popped<T>"
         ]
       },
       "text": {
@@ -4711,7 +4757,7 @@
       }
     },
     "pending": [
-      "hash-based or balanced-tree containers beyond list-backed map/set",
+      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

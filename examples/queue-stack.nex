@@ -1,0 +1,19 @@
+module queue_stack_demo;
+import "std/queue.nex" as queue;
+import "std/stack.nex" as stack;
+
+fn main() -> unit !{io} {
+  var q: queue::Queue<i64> = queue::empty();
+  q = queue::enqueue(q, 1);
+  q = queue::enqueue(q, 2);
+  let first: queue::Popped<i64> = unwrap(queue::dequeue(q));
+  assert(first.value == 1);
+  assert(queue::peek(first.queue) == ok(2));
+  var s: stack::Stack<i64> = stack::empty();
+  s = stack::push_value(s, 3);
+  s = stack::push_value(s, 4);
+  let top: stack::Popped<i64> = unwrap(stack::pop(s));
+  assert(top.value == 4);
+  assert(stack::peek(top.stack) == ok(3));
+  print("queue-stack-ok");
+}

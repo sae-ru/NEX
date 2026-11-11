@@ -341,6 +341,11 @@ Toolchain 0.207 adds LSP pull diagnostics; `language_server` passed in
 Toolchain 0.208 adds LSP folding ranges from brace blocks; `language_server`
 passed in 21.40 s.
 
+Toolchain 0.209 adds list-backed `std/queue.nex` and `std/stack.nex` with
+`E_EMPTY` results. `stdlib_queue_stack` covers reference/native and optional
+TypeScript in 5.81 s; the full standard-library pin/catalogue test passed in
+45.18 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -1,0 +1,49 @@
+module std::stack;
+
+// Immutable LIFO stack backed by a list. Every operation is linear in the
+// current size; this is a checked source container, not a hash table or a new
+// language primitive.
+pub struct Stack<T> {
+  items: list<T>;
+}
+pub struct Popped<T> {
+  stack: Stack<T>;
+  value: T;
+}
+
+pub fn empty<T>() -> Stack<T> {
+  return Stack([]);
+}
+
+pub fn push_value<T>(stack: Stack<T>, value: T) -> Stack<T> {
+  return Stack(push(stack.items, value));
+}
+
+pub fn pop<T>(stack: Stack<T>) -> result<Popped<T>> {
+  if len(stack.items) == 0 {
+    return err<Popped<T>>("E_EMPTY", "stack is empty");
+  }
+  let last: i64 = len(stack.items) - 1;
+  var output: list<T> = [];
+  var i: i64 = 0;
+  while i < last {
+    output = push(output, stack.items[i]);
+    i = i + 1;
+  }
+  return ok(Popped(Stack(output), stack.items[last]));
+}
+
+pub fn peek<T>(stack: Stack<T>) -> result<T> {
+  if len(stack.items) == 0 {
+    return err<T>("E_EMPTY", "stack is empty");
+  }
+  return ok(stack.items[len(stack.items) - 1]);
+}
+
+pub fn size<T>(stack: Stack<T>) -> i64 {
+  return len(stack.items);
+}
+
+pub fn is_empty<T>(stack: Stack<T>) -> bool {
+  return len(stack.items) == 0;
+}
