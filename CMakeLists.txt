@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.169.0 LANGUAGES C CXX)
+project(NEX VERSION 0.170.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -88,6 +88,7 @@ target_sources(nex_frontend PRIVATE src/diagnostic_catalogue.cpp)
 target_sources(nex_frontend PRIVATE src/standard_library.cpp)
 target_sources(nex_frontend PRIVATE src/formatting.cpp)
 target_sources(nex_frontend PRIVATE src/cli_catalogue.cpp src/cli_help.cpp)
+target_sources(nex_frontend PRIVATE src/list_build.cpp)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   lib/text.nex lib/list.nex lib/math.nex)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex" NEX_STDLIB_TEXT_SHA256)
@@ -1751,4 +1752,7 @@ set_tests_properties(source_formatting PROPERTIES TIMEOUT 240)
 add_test(NAME cli_interface COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_interface.py $<TARGET_FILE:nex>)
 set_tests_properties(cli_interface PROPERTIES TIMEOUT 240)
+add_test(NAME list_construction COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/list_construction.py $<TARGET_FILE:nex>)
+set_tests_properties(list_construction PROPERTIES TIMEOUT 600)
 include(cmake/TestTiers.cmake)

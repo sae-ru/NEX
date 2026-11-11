@@ -1,0 +1,11 @@
+{
+  "schema": "nex.compatibility-source-graph/1",
+  "source": "module compatibility;\nstruct Item {value:i64;}\nfn square(x:i64)->i64{return x*x;}\nfn main()->i64{let original:list<Item>=[Item(3)];let alias:list<Item>=original;\n let f:fn(i64)->i64=fn(x:i64)->i64{return square(x)+alias[0].value;};return f(4);}\n",
+  "language": "0.28",
+  "toolchain": "0.169.0",
+  "source_commit": "991849da3c6996dfc495015b0d67043f15e7d99c",
+  "compiler_sha256": "7aba5d583dcc453beb155f01c2971388c6fa78cf8c243b6dabeee977758090e6",
+  "revision": "af10845ccb365de96fc5995d924a72e9cf8760a133d645f5c69014f4b7e7276e",
+  "sql_sha256": "0abccb5fb499b4190c10c60c056240bf2b8e82d6d229285fb9fed37b26f6bcd5",
+  "user_version": 0
+}

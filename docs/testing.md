@@ -104,6 +104,16 @@ The original failed attempt and later metadata refinements remain separate.
 See the [CLI receipt](evidence/cli-interface-0.169.0-2026-11-11.json) for exact
 source/binary identities, shell observations and limits.
 
+Toolchain 0.170 adds `list_construction` (326 registered Mac groups, 331 explicit
+catalogue entries). Eight constructor methods passed in 58.020 s, two additional
+Result/task-budget methods in 45.076 s, six affected standard-library methods in
+44.066 s and 12 core groups in 22.84 s. Reference/native Debug/Release and strict
+executed TypeScript cover values/effects/suspension. Native profile reports show
+balanced managed allocation/free counts after checked and task-budget exits.
+The lexical-shadow regression has a retained failing witness and a passing fix.
+Earlier test-driver/fixture errors remain separate; no whole platform/SDK claim
+follows from this focused source block.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

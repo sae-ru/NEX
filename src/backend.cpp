@@ -707,6 +707,13 @@ class Emitter {
           if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);
           else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(scalarTag(args[i].type))},Type::Unit,e->span);
         }
+      }else if(e->text=="$list_start")result=call("nex_list_new",{},e->type,e->span);
+      else if(e->text=="$list_append"){
+        if(args[1].type.heap())call("nex_list_append_heap",args,Type::Unit,e->span);
+        else call("nex_list_append_i64",{args[0],asI64(args[1],e->span),c(scalarTag(args[1].type))},Type::Unit,e->span);
+        result={"",Type::Unit};
+      }else if(e->text=="$list_finish"){
+        result=args[0];args.clear();
       }else if(e->text=="parallel_map"){
         auto symbol="nex_parallel_bridge_"+hash(selectedFunction->name+":"+sites.at(e.get()));
         parallelThunks.emplace(symbol,ParallelThunk{selectedFunction,e});

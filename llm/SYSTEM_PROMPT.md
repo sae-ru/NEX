@@ -76,6 +76,12 @@ libraries; `nex.build.json` describes components/configurations/edges;
 Query `standard_library` before reimplementing text/list/math helpers. If
 advertised, read `nex guide --kind stdlib --json` for exact empty/Unicode, callback
 and complexity rules. Import `std/list.nex` as `seq`/`lists` (`list` is reserved).
+When `list_construction` is advertised, read `nex guide --kind list-build --json`.
+Use `list(count,make)` for indexed generation, `list(values,transform)` for map,
+the predicate/transform form for filtering and count/state/next/emit for unfold.
+Callbacks run sequentially with their inferred effects, ordinary task suspension,
+realm/grants and errors. The constructor publishes one immutable result; it adds
+no workers or authority. GPU/Wasm constructor lowering remains pending.
 When `source_formatting` is advertised, use `nex fmt FILE` for a preview,
 `--check` for a read-only style check and `--write` only for an intended source
 edit. This checks syntax, not types or imports; run ordinary affected functional

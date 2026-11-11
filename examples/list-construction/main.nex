@@ -1,0 +1,28 @@
+module bulk;
+struct Pair {left:i64;right:i64;}
+enum Choice {None();Some(value:i64);}
+fn identity<T>(value:T)->T{return value;}
+fn main()->unit!{io}{
+  let original:list<i64>=[3,1,2];let alias:list<i64>=original;
+  assert(list(0,fn(i:i64)->i64{return 1/i;})==[]);
+  assert(list(4,fn(i:i64)->i64{return i*i;})==[0,1,4,9]);
+  assert(list(original,identity)==original);
+  let empty:list<i64>=list([],identity);assert(empty==[]);
+  assert(list(original,fn(x:i64)->bool{return x>1;},fn(x:i64)->str{return str(x);})==["3","2"]);
+  assert(original==alias && alias==[3,1,2]);
+  var offset:i64=7;let transform:fn(i64)->i64=fn(x:i64)->i64{return x+offset;};
+  offset=99;assert(list(original,transform)==[10,8,9]);
+  let matrix:list<list<i64>>=list(3,fn(i:i64)->list<i64>{return [i,i+1];});
+  assert(matrix==[[0,1],[1,2],[2,3]]);
+  assert(list(3,fn(i:i64)->f64{return as_f64(i)+0.5;})==[0.5,1.5,2.5]);
+  let choices:list<Choice>=list(original,fn(x:i64)->Choice{return Choice::Some(x);});
+  assert(choices[0]==Choice::Some(3));
+  let octets:list<bytes>=list(2,fn(i:i64)->bytes{return utf8_bytes("Я🌍\u0000"+str(i));});
+  assert(unwrap(decode_utf8(octets[1]))=="Я🌍\u00001");
+  let closures:list<fn(i64)->i64>=list(3,fn(i:i64)->(fn(i64)->i64){return fn(x:i64)->i64{return x+i;};});
+  assert(closures[2](5)==7);
+  let states:list<i64>=list(4,Pair(1,2),fn(p:Pair)->Pair{return Pair(p.right,p.left+p.right);},fn(p:Pair)->i64{return p.left;});
+  assert(states==[1,2,3,5]);
+  assert(list(2,9223372036854775806,fn(x:i64)->i64{return x+1;},identity)==[9223372036854775806,9223372036854775807]);
+  print("bulk-values-ok");
+}

@@ -62,9 +62,13 @@ addition      = product, { ( "+" | "-" ), product } ;
 product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" | "(", [ arguments ], ")" | "?" } ;
-primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | generic_builtin | qualified_name,
+primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | list_constructor | generic_builtin | qualified_name,
                 [ type_arguments, [ "::", identifier, [ type_arguments ] ] ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
+(* Toolchain 0.170 also accepts the already-reserved list in call position:
+   list(count,make), list(values,transform), list(values,predicate,transform),
+   list(count,initial,next,emit). Arity/type/effect rules are semantic. *)
+list_constructor = "list", "(", arguments, ")" ;
 lambda        = [ realm ], "fn", "(", [ parameters ], ")", "->", type, [ effects ], block ;
 list_literal  = "[", [ arguments ], "]" ;
 generic_builtin = ( "decode_json" | "err" ), "<", type, ">", "(", [ arguments ], ")" ;

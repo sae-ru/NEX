@@ -211,6 +211,14 @@ export function bytesSet(value: ByteBuffer, at: bigint, item: bigint, site?: Sit
 export function bytesSlice(value: ByteBuffer, start: bigint, count: bigint, site?: Site): ByteBuffer { return byteOperation(() => value.slice(start, count), site); }
 export function bytesConcat(left: ByteBuffer, right: ByteBuffer, site?: Site): ByteBuffer { return byteOperation(() => left.concat(right), site); }
 export function list<T extends Value>(items: ReadonlyArray<T>): ReadonlyArray<T> { return Object.freeze([...items]); }
+// Compiler-only construction primitives. Source callbacks never receive the
+// unpublished buffer. Publication freezes that same array without a full copy.
+export function listBuilderStart<T extends Value>(): ReadonlyArray<T> { return []; }
+export function listBuilderAppend<T extends Value>(items: ReadonlyArray<T>, value: T): void {
+  if (Object.isFrozen(items)) fail('E_RUNTIME', 'cannot append to a published list');
+  (items as T[]).push(value);
+}
+export function listBuilderFinish<T extends Value>(items: ReadonlyArray<T>): ReadonlyArray<T> { return Object.freeze(items); }
 export function record<T extends RecordValue>(name: string, fields: ReadonlyArray<readonly [string, Value]>): T {
   const result = Object.create(null) as Record<string | symbol, Value>;
   Object.defineProperty(result, TYPE, { value: name });

@@ -81,9 +81,14 @@ and final delivery work are:
   callbacks have local execution evidence. Fish/PowerShell execution is pending.
 - [ ] Extend formatting to editor requests, directory selection and width-based
   wrapping; these are not part of the current single-file command.
-- [ ] Linear immutable bulk builders, wider containers and effect-polymorphic
-  callbacks remain required standard-library work. Later versioned model studies
-  preserve the original negative result and use only the selected local model.
+- [x] Implement sequential immutable list construction (count/map/filter/state),
+  inferred callback effects and suspension through the existing task machinery.
+  Toolchain 0.170 source list generation/map/filter/reverse and stable merge
+  outputs now build linearly, without changing existing valid 0.28 identities.
+- [ ] Linear text construction, wider containers, named source-library effect
+  parameters and GPU/Wasm constructor lowering remain required work. Later
+  versioned model studies preserve the original negative result and use only
+  the selected local model.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across
   the supported platform/device matrix, then publish the latest main/release
   and remove obsolete branches/build artifacts with retained useful evidence.

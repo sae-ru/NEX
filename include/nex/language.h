@@ -162,6 +162,8 @@ struct Function {
   std::string traitOwner;
   bool traitSignature=false;
   bool closure=false;std::string closureOwner;std::vector<Param> captures;
+  // Set only by compiler-owned list-constructor lowering, never from source.
+  bool compilerListBuilder=false;
   std::optional<ForeignBinding> foreign;
   // Generated contract helpers have no editable physical declaration.
   std::string sourceContractOrigin;

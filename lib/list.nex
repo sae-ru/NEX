@@ -1,31 +1,14 @@
 module std::lists;
 
-// Immutable concatenations are balanced; see docs/stdlib.md for copy costs.
-fn map_range<T, U>(values:list<T>, transform:fn(T)->U, start:i64, count:i64)->list<U> {
-  if count==0 { return []; }
-  if count==1 { return [transform(values[start])]; }
-  let half:i64=count/2;
-  let left:list<U>=map_range(values,transform,start,half);
-  let right:list<U>=map_range(values,transform,start+half,count-half);
-  return left+right;
+// Construction is sequential and linear in result references; callbacks remain pure.
+pub fn generate<T>(count:i64, make:fn(i64)->T)->list<T> {
+  return list(count,make);
 }
 pub fn map<T, U>(values:list<T>, transform:fn(T)->U)->list<U> {
-  return map_range(values,transform,0,len(values));
-}
-
-fn filter_range<T>(values:list<T>, predicate:fn(T)->bool, start:i64, count:i64)->list<T> {
-  if count==0 { return []; }
-  if count==1 {
-    if predicate(values[start]) { return [values[start]]; }
-    return [];
-  }
-  let half:i64=count/2;
-  let left:list<T>=filter_range(values,predicate,start,half);
-  let right:list<T>=filter_range(values,predicate,start+half,count-half);
-  return left+right;
+  return list(values,transform);
 }
 pub fn filter<T>(values:list<T>, predicate:fn(T)->bool)->list<T> {
-  return filter_range(values,predicate,0,len(values));
+  return list(values,predicate,fn(value:T)->T{return value;});
 }
 
 pub fn fold<T, U>(values:list<T>, initial:U, combine:fn(U,T)->U)->U {
@@ -62,32 +45,24 @@ pub fn find_index<T>(values:list<T>, predicate:fn(T)->bool)->i64 {
   return -1;
 }
 
-fn reverse_range<T>(values:list<T>, start:i64, count:i64)->list<T> {
-  if count==0 { return []; }
-  if count==1 { return [values[start]]; }
-  let half:i64=count/2;
-  let right:list<T>=reverse_range(values,start+half,count-half);
-  let left:list<T>=reverse_range(values,start,half);
-  return right+left;
-}
 pub fn reverse<T>(values:list<T>)->list<T> {
-  return reverse_range(values,0,len(values));
+  return list(len(values),fn(index:i64)->T{return values[len(values)-index-1];});
 }
 
-struct Merged<T> { values:list<T>; left:i64; right:i64; }
-fn merge_count<T>(left:list<T>, right:list<T>, less:fn(T,T)->bool, a:i64, b:i64, count:i64)->Merged<T> {
-  if count==0 { return Merged<T>([],a,b); }
-  if count==1 {
-    if a==len(left) { return Merged<T>([right[b]],a,b+1); }
-    if b==len(right) { return Merged<T>([left[a]],a+1,b); }
-    // Left wins ties: sort_by is stable for a strict weak ordering.
-    if less(right[b],left[a]) { return Merged<T>([right[b]],a,b+1); }
-    return Merged<T>([left[a]],a+1,b);
-  }
-  let half:i64=count/2;
-  let first:Merged<T>=merge_count(left,right,less,a,b,half);
-  let second:Merged<T>=merge_count(left,right,less,first.left,first.right,count-half);
-  return Merged<T>(first.values+second.values,second.left,second.right);
+struct MergeCursor<T> { left:i64; right:i64; value:T; }
+fn take_next<T>(left:list<T>, right:list<T>, less:fn(T,T)->bool, a:i64, b:i64)->MergeCursor<T> {
+  if a==len(left) { return MergeCursor<T>(a,b+1,right[b]); }
+  if b==len(right) { return MergeCursor<T>(a+1,b,left[a]); }
+  // Left wins ties: sort_by is stable for a strict weak ordering.
+  if less(right[b],left[a]) { return MergeCursor<T>(a,b+1,right[b]); }
+  return MergeCursor<T>(a+1,b,left[a]);
+}
+fn merge<T>(left:list<T>, right:list<T>, less:fn(T,T)->bool)->list<T> {
+  let count:i64=len(left)+len(right);
+  if count==0 {return [];}
+  return list(count,take_next(left,right,less,0,0),
+    fn(cursor:MergeCursor<T>)->MergeCursor<T>{return take_next(left,right,less,cursor.left,cursor.right);},
+    fn(cursor:MergeCursor<T>)->T{return cursor.value;});
 }
 fn sort_range<T>(values:list<T>, less:fn(T,T)->bool, start:i64, count:i64)->list<T> {
   if count==0 { return []; }
@@ -95,7 +70,7 @@ fn sort_range<T>(values:list<T>, less:fn(T,T)->bool, start:i64, count:i64)->list
   let half:i64=count/2;
   let left:list<T>=sort_range(values,less,start,half);
   let right:list<T>=sort_range(values,less,start+half,count-half);
-  return merge_count(left,right,less,0,0,count).values;
+  return merge(left,right,less);
 }
 pub fn sort_by<T>(values:list<T>, less:fn(T,T)->bool)->list<T> {
   return sort_range(values,less,0,len(values));

@@ -1,0 +1,8 @@
+emit0
+next0
+emit1
+next1
+emit2
+2
+drained
+task-bulk-ok

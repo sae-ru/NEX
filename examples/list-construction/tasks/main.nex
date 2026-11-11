@@ -1,0 +1,16 @@
+module task_bulk;
+struct Stopped {value:i64;}
+fn main()->unit!{task,io,throw}{
+  let output:list<i64>=list(3,0,
+    fn(x:i64)->i64!{task,io}{task_yield();print("next"+str(x));return x+1;},
+    fn(x:i64)->i64!{task,io}{task_yield();print("emit"+str(x));return x;});
+  assert(output==[0,1,2]);
+  try {let stopped:list<i64>=list(4,fn(i:i64)->i64!{task,throw}{task_yield();if i==2{throw(Stopped(i));}return i;});}
+  catch(error:Stopped){print(error.value);}finally{print("drained");}
+  let total:i64=with_tasks(2,fn(scope:task_scope)->i64!{task,throw}{
+    let jobs:list<task<i64>>=list(4,fn(i:i64)->task<i64>!{task}{return task_spawn(scope,fn()->i64{return i*2;});});
+    let values:list<i64>=list(jobs,fn(job:task<i64>)->i64!{task,throw}{return task_wait(job);});
+    assert(values==[0,2,4,6]);return values[3];
+  });
+  assert(total==6);print("task-bulk-ok");
+}

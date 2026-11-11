@@ -308,6 +308,15 @@ struct Analysis {
     if(p.hasStructure(e->text)||p.variant(e->text))return aggregate(std::move(args));
     if(e->text=="ok"||e->text=="err"){auto value=std::make_shared<Value>(*aggregate(std::move(args)));value->resultSuccess=e->text=="ok";return value;}
     if(e->text=="unwrap")return field(args[0],0,e->type);
+    if(e->text=="$list_start")return aggregate({});
+    if(e->text=="$list_finish")return args[0];
+    if(e->text=="$list_append"){
+      V value;
+      if(args[0]->shape&&args[0]->fields.size()<64){auto fields=args[0]->fields;fields.push_back(args[1]);value=aggregate(std::move(fields));}
+      else{auto widened=std::make_shared<Value>(*join(args[0],args[1]));widened->shape=false;widened->fields.clear();widened->opaque=true;value=std::move(widened);}
+      if(e->args[0]->kind!=Expr::Name)throw Error("E_INTERNAL","list accumulator lost its private binding",e->span);
+      assign(env,e->args[0]->text,std::move(value));return plain();
+    }
     if(e->text=="push"){
       if(args[0]->shape&&args[0]->fields.size()<64){auto fields=args[0]->fields;fields.push_back(args[1]);return aggregate(std::move(fields));}
       auto value=std::make_shared<Value>(*join(args[0],args[1]));value->shape=false;value->fields.clear();value->opaque=true;return value;

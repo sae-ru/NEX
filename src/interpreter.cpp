@@ -100,6 +100,11 @@ class Interpreter {
         auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
       }
+      if(e->text=="$list_start")return V(std::make_shared<nexrt::Data>(nexrt::Data::List));
+      if(e->text=="$list_append"){
+        auto target=full(args[0]);target.object->values.push_back(args[1]);return V();
+      }
+      if(e->text=="$list_finish")return args[0];
       if(e->text=="parallel_map"){
         auto items=full(args[0]);auto callback=watch?watch->callable(args[1]):args[1];auto workers=full(args[2]).scalar;
         if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);

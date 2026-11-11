@@ -20,14 +20,14 @@ llvm::json::Object standardLibraryCapability(){
       {"list",llvm::json::Object{{"import","std/list.nex"},{"module","std::lists"},
         {"resource","lib/list.nex"},{"sha256",NEX_STDLIB_LIST_SHA256},
         {"alias_note","list is a reserved word; import as seq or lists"},
-        {"functions",llvm::json::Array{"map","filter","fold","any","all","find_index","reverse","sort_by","sort"}},
+        {"functions",llvm::json::Array{"generate","map","filter","fold","any","all","find_index","reverse","sort_by","sort"}},
         {"map_filter_callbacks","once per element, left-to-right"},
         {"fold","left fold"},{"any_all","short-circuit; any([])=false,all([])=true"},
         {"sort","stable; sort_by requires a pure strict weak ordering"},
         {"sort_bound","ordered; numeric i64/f64"},{"mutation",false},
-        {"copy_complexity","map/filter/reverse O(n log(n+1)); sort O(n log^2(n+1)); excludes callback cost"},
+        {"copy_complexity","generate/map/filter/reverse amortized O(n); sort O(n log(n+1)); excludes callbacks/state/value construction"},
         {"comparison_complexity","stable mergesort O(n log(n+1))"},
-        {"recursion_depth","O(log(n+1))"},{"linear_bulk_construction",false}}},
+        {"recursion_depth","sort O(log(n+1)); generate/map/filter/reverse O(1) excluding callbacks"},{"linear_bulk_construction",true}}},
       {"math",llvm::json::Object{{"import","std/math.nex"},{"module","std::math"},
         {"resource","lib/math.nex"},{"sha256",NEX_STDLIB_MATH_SHA256},
         {"functions",llvm::json::Array{"min","max","clamp","abs","sign","floor_div","ceil_div","pow_i64","gcd","lcm"}},
@@ -35,6 +35,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"linear-time immutable bulk construction","effect-polymorphic callbacks","containers beyond immutable lists","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"effect-polymorphic named source-library signatures (constructor callbacks already infer effects)","containers beyond immutable lists","linear text construction","complete matching SDK/platform qualification"}}};
 }
 }

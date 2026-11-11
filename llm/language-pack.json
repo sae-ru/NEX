@@ -27,6 +27,7 @@
       "http_response_streams",
       "http_storage_transactions",
       "language_pack_contract",
+      "list_construction",
       "llm_cost",
       "llm_entry",
       "model",
@@ -89,6 +90,7 @@
       "standard_library",
       "source_formatting",
       "cli_interface",
+      "list_construction",
       "types",
       "numeric_features",
       "generic_features",
@@ -580,7 +582,8 @@
     "standard_list_source": "lib/list.nex",
     "standard_math_source": "lib/math.nex",
     "source_formatting": "docs/formatting.md",
-    "cli": "docs/cli.md"
+    "cli": "docs/cli.md",
+    "list_construction": "docs/list-construction.md"
   },
   "document_access": "nex guide --kind format|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -688,7 +691,10 @@
     "llm_quick_import": "examples/llm-quick/src/values.nex",
     "standard_library_project": "examples/stdlib/nex.json",
     "standard_library_source": "examples/stdlib/main.nex",
-    "standard_library_lock": "examples/stdlib/nex.lock.json"
+    "standard_library_lock": "examples/stdlib/nex.lock.json",
+    "list_construction": "examples/list-construction/nex.json",
+    "list_construction_effects": "examples/list-construction/effects/nex.json",
+    "list_construction_tasks": "examples/list-construction/tasks/nex.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4557,9 +4563,10 @@
         "alias_note": "list is a reserved word; import as seq or lists",
         "any_all": "short-circuit; any([])=false,all([])=true",
         "comparison_complexity": "stable mergesort O(n log(n+1))",
-        "copy_complexity": "map/filter/reverse O(n log(n+1)); sort O(n log^2(n+1)); excludes callback cost",
+        "copy_complexity": "generate/map/filter/reverse amortized O(n); sort O(n log(n+1)); excludes callbacks/state/value construction",
         "fold": "left fold",
         "functions": [
+          "generate",
           "map",
           "filter",
           "fold",
@@ -4571,13 +4578,13 @@
           "sort"
         ],
         "import": "std/list.nex",
-        "linear_bulk_construction": false,
+        "linear_bulk_construction": true,
         "map_filter_callbacks": "once per element, left-to-right",
         "module": "std::lists",
         "mutation": false,
-        "recursion_depth": "O(log(n+1))",
+        "recursion_depth": "sort O(log(n+1)); generate/map/filter/reverse O(1) excluding callbacks",
         "resource": "lib/list.nex",
-        "sha256": "c609c8a42b88f2879e3bf0e290b1da00bfd4c84f353dc0daf07c6e532d78b1df",
+        "sha256": "0eb0917634895fa64fe97bf07bde3caa1c41072b8e00132bd07342da38fb7ea7",
         "sort": "stable; sort_by requires a pure strict weak ordering",
         "sort_bound": "ordered; numeric i64/f64"
       },
@@ -4630,9 +4637,9 @@
       }
     },
     "pending": [
-      "linear-time immutable bulk construction",
-      "effect-polymorphic callbacks",
+      "effect-polymorphic named source-library signatures (constructor callbacks already infer effects)",
       "containers beyond immutable lists",
+      "linear text construction",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,
@@ -4688,5 +4695,39 @@
     "filesystem_completion": "delegated to shell",
     "shell_profiles_modified": false,
     "value_combination_validation": "existing command handlers"
+  },
+  "list_construction": {
+    "source_name": "list",
+    "guide": "docs/list-construction.md",
+    "language": "0.28",
+    "previously_reserved_name": true,
+    "source_version_changed": false,
+    "forms": [
+      "list(count,make)",
+      "list(values,transform)",
+      "list(values,predicate,transform)",
+      "list(count,initial,next,emit)"
+    ],
+    "sequential": true,
+    "callback_effects": "inferred union; ordinary caller/realm/task rules",
+    "task_callbacks": true,
+    "source_errors": true,
+    "input_aliases_preserved": true,
+    "private_accumulator": true,
+    "published_output_immutable": true,
+    "negative_count": "E_ASSERT",
+    "state_advance_calls": "max(0,count-1); emit precedes next",
+    "construction_cost": "one iteration per input/count and one append per result; native/reference amortized O(iterations+results), excluding callbacks/state/value construction",
+    "new_worker_threads": false,
+    "new_authority": false,
+    "runtime_ABI_changed": false,
+    "extra_parallel_limits": false,
+    "limits": "existing allocation, steps, deadlines and list representation",
+    "backends": [
+      "reference",
+      "native",
+      "TypeScript"
+    ],
+    "GPU_Wasm_constructor_support": false
   }
 }

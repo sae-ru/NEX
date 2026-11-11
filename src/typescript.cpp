@@ -148,6 +148,9 @@ class Generator {
       return "("+a+" "+op+" "+b+")";
     }
     case Expr::Call:{
+      if(e->text=="$list_start")return "nex.listBuilderStart<"+type(*e->type.element)+">()";
+      if(e->text=="$list_append")return "nex.listBuilderAppend("+expr(e->args[0])+", "+expr(e->args[1])+")";
+      if(e->text=="$list_finish")return "nex.listBuilderFinish("+expr(e->args[0])+")";
       if(taskMode&&taskBuiltins().contains(e->text)){
         std::string args="[";for(size_t i=0;i<e->args.size();++i){if(i)args+=", ";args+=expr(e->args[i]);}
         return "((yield task.request("+quote(e->text)+", "+args+"], "+site(e)+")) as "+type(e->type)+")";

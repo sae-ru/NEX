@@ -1,0 +1,15 @@
+module ordered;
+struct Stopped {index:i64;}
+fn count()->i64!{io}{print("count");return 4;}
+fn maker()->fn(i64)->i64!{io} !{io}{print("factory");return fn(i:i64)->i64!{io}{print(i);return i;};}
+fn main()->unit!{io,throw}{
+  let made:list<i64>=list(count(),maker());assert(made==[0,1,2,3]);
+  let chosen:list<i64>=list([0,1,2],fn(x:i64)->bool!{io}{print("p"+str(x));return x%2==0;},fn(x:i64)->i64!{io}{print("m"+str(x));return x+10;});
+  assert(chosen==[10,12]);
+  try {
+    let stopped:list<str>=list(5,fn(i:i64)->str!{io,throw}{print("s"+str(i));if i==2 {throw(Stopped(i));}return str(i);});
+    print(stopped);
+  } catch(error:Stopped) {print(error.index);} finally {print("finally");}
+  let values:list<i64>=list(3,0,fn(x:i64)->i64!{io}{print("n"+str(x));return x+1;},fn(x:i64)->i64!{io}{print("e"+str(x));return x;});
+  assert(values==[0,1,2]);
+}

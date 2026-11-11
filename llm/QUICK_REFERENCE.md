@@ -31,6 +31,9 @@ fn main()->unit !{io} {
   syntax. Use `while` for ordinary loops.
 - `var` does not make aggregates mutable. `set`, `push` and `slice` produce new
   values. Reassign a `var` to keep an update; old aliases/captures stay snapshots.
+- If `list_construction` is advertised, use `list(3,fn(i:i64)->i64{return i*i;})` or
+  `list(values,transform)` for sequential bulk construction; callbacks retain
+  their effects. See `nex guide --kind list-build`.
 - Strings are strict UTF-8. `len(text)`, `text[index]` and
   `slice(text,start,count)` use Unicode scalars; the third slice argument is a
   **count**, not an end index. Scalars are not grapheme clusters. Bytes preserve

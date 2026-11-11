@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.169.0"
+applies_to: "language 0.28; toolchain 0.170.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.169.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.170.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
@@ -23,13 +23,14 @@ The [source formatter](formatting.md) provides parser-aware preview/check/write,
 retaining comments and literal spelling without opening graph history.
 The [compiled CLI](cli.md) adds bounded per-command help, shell completion
 and quiet success summaries while preserving JSON and program output.
+The [sequential list constructor](list-construction.md) builds one immutable
+result with inferred callback effects, including source errors and task suspension.
+List map/filter/reverse and merge outputs now use this path; backend qualification
+and measured throughput remain separate.
 The [current learning labels](../llm/corpus.json) cover nine0.28 projects and six
 counterexamples with actual reference/native Release/TypeScript observations.
-[Discovery and corpus tools](learning-corpus.md) check all shared capability
-contracts. [`nex cost`](../experiments/quality/llm_cost.md) now summarizes pinned
-trial records offline; a [ten-task comparison protocol](../experiments/quality/llm-campaign-v1/protocol.md)
-has [qualified cross-language host controls](../experiments/quality/llm-campaign-v1/README.md).
-Local Qwen task collection, bounded tool access and counted source review are implemented.
+[Discovery tools](learning-corpus.md) check shared contracts; [`nex cost`](../experiments/quality/llm_cost.md)
+summarizes recorded trials offline.
 The [completed60-slot Qwen comparison](llm-cost-qwen38-27b-2026-11-11.en.md)
 accepted4/20 NEX,14/20 C++ and20/20 Python trials, with no NEX token saving.
 Original failures and earlier pilots are retained separately.
@@ -49,10 +50,9 @@ workflows; hosted executions remain pending.
 | RK3588 ARM64 | [Snapshot `2172b35`: all targets, ten selected groups across the retained failure/recovery, 63 GPU and 30 NPU calls](evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression and portable SDK |
 | Other architectures and mobile devices | Earlier records retain their own versions in [STATUS](../STATUS.md) | Matching current platform and device acceptance |
 
-The earlier [`61fbd21` macOS SDK baseline](evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
-passed 82 maintained phases, 184 additional cases and 4000 C++ host calls with
-cleanup checks across read-only moved/restored installations. Its post stages
-and the later SDK containing the new public Metal tools remain separate gates.
+The earlier [macOS SDK baseline](evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
+passed 82 phases, 184 additional cases and 4000 C++ host calls. Its results do not
+qualify the later SDK or its added Metal tools.
 
 The compiler now also provides `nex emit --kind cuda` for reachable shared pure
 `i64`/`f64`/`bool`/`unit` functions, fixed records/enums/Results, nested matches

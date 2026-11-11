@@ -1,9 +1,10 @@
 # Checked source standard library
 
-Toolchain0.167 extends the ordinary0.28 source modules. These functions compile
+Toolchain 0.170 extends the ordinary 0.28 source modules with linear list construction. These functions compile
 through the same checker/reference/native/TypeScript pipeline as application
-source. No new syntax, builtin operation, authority or language migration is
-introduced. Discover the selected compiler before importing:
+source. The 0.167 additions remain ordinary source helpers; 0.170 list helpers use
+the separately advertised [list constructor](list-construction.md). No authority
+or automatic language migration is introduced. Discover the selected compiler before importing:
 
 This capability indexes the text/list/math helpers in this stage. Network, UI,
 compute, model and provider modules retain their separate descriptor sections;
@@ -68,6 +69,7 @@ claim a linear-time text builder or a measured throughput improvement.
 
 | Function | Contract |
 | --- | --- |
+| `generate<T>(count,fn(i64)->T)` | Generate count elements in index order; negative count traps E_ASSERT. |
 | `map<T,U>(values,fn(T)->U)` | One call per input, left-to-right; ordered output. |
 | `filter<T>(values,fn(T)->bool)` | One call per input, left-to-right; preserve selected order. |
 | `fold<T,U>(values,initial,fn(U,T)->U)` | Left fold; empty input returns initial. |
@@ -81,15 +83,19 @@ Callbacks have no declared effects. These are sequential helpers and create no
 worker threads, channels or implicit IO grants. Ordinary instantiated value,
 realm, capture and ownership checks still apply. Use the separate `parallel_map`
 operation only when its concurrency limits/semantics are intended. Effect
-polymorphism and linear bulk builders remain pending.
+polymorphism in named source-library signatures remains pending. The direct
+list constructor already infers callback effects, including task suspension.
 
-The immutable representation copies references on concatenation. Balanced
-map/filter/reverse cost O(n log(n+1)) copies, with O(log(n+1)) recursion depth.
-Fold/any/all/find_index traverse at most n elements, excluding callback cost.
-Sort performs O(n log(n+1)) comparisons and O(n log²(n+1)) reference copies:
-each merge itself builds a balanced output rather than a quadratic push loop.
-These bounds are explicit limitations, not a claim of C++ vector throughput.
-Callback work, value construction and comparison costs are additional.
+The constructor appends to one unpublished buffer, then publishes it immutable.
+Generate/map/filter/reverse need O(n) source traversal and amortized O(n) native/
+reference element construction. TypeScript avoids full-prefix array copies;
+its array storage cost is engine-dependent. Fold/any/all/find_index still visit
+at most n elements. Stable sort now performs O(n log(n+1)) comparisons and
+reference construction: each merge uses an immutable cursor and one bulk output,
+with O(log(n+1)) sort recursion. Callback and state/value costs are additional.
+The earlier 0.167 balanced-concatenation implementation and its scoped O(n log n)
+map / O(n log² n) sort copy bounds remain historical evidence, not current costs.
+These structural bounds do not establish C++ vector throughput or token savings.
 
 ## Integer math
 

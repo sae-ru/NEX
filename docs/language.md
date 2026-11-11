@@ -64,6 +64,13 @@ Toolchain 0.169 adds compiled [command help and completion](cli.md) and a quiet
 success-status option. These are CLI contracts; source grammar, execution
 semantics, effects, canonical identities and language 0.28 remain unchanged.
 
+Toolchain 0.170 adds the [sequential list constructor](list-construction.md) under
+the previously reserved name `list`. Its count/map/filter/state forms infer the
+union of callback effects and lower into ordinary checked closures/loops. There
+is no identifier conflict, changed meaning for existing valid source, runtime
+ABI or source-language promotion. Earlier builds must advertise `list_construction`
+before this operation is used. Retained source languages before 0.28 reject it.
+
 Toolchain0.74 project `shared_library` components and `dynamic` edges are external
 build metadata. They preserve language0.16, checked ownership, effects, realms
 and canonical identities. They require matching private native ABIs and source
