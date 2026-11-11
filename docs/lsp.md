@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.197
+# NEX language server: development toolchain 0.198
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -72,9 +72,9 @@ edit, not the separate graph identity-preserving rename. Toolchain 0.195 adds `t
 struct/enum/resource/trait declarations plus local, parameter and field values,
 filtered by the ASCII identifier prefix at the cursor and bounded to 1000
 items. Value completion is name-deduplicated and filtered to the enclosing function
-and declarations before the cursor; nested-block precision and member completion
-after `::`/`.`, parser recovery/incremental indexing and the broader IDE matrix
-remain pending.
+and declarations before the cursor; nested-block precision remains pending. Member completion after `.` returns
+checked struct fields; `::` member completion, parser recovery/incremental
+indexing and the broader IDE matrix remain pending.
 
 ## Checked references
 

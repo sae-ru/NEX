@@ -307,6 +307,9 @@ Toolchain 0.197 filters LSP local/parameter completion to the enclosing
 function and declarations before the cursor; `language_server` passed in
 20.14 s.
 
+Toolchain 0.198 adds struct-field completion after `.` using the checked
+receiver type; `language_server` passed in 20.30 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

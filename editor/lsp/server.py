@@ -511,8 +511,36 @@ class Server:
         if source is None:
             raise RPCError(-32602, 'Document is not part of the checked project')
         offset = byte_offset(source, params.get('position'))
-        prefix = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', source.encode('utf-8')[:offset].decode('utf-8'))
-        prefix = '' if prefix is None else prefix.group(0).lower()
+        before = source.encode('utf-8')[:offset].decode('utf-8')
+        prefix_match = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', before)
+        prefix = '' if prefix_match is None else prefix_match.group(0).lower()
+        member = re.search(r'\.\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
+        if member is not None:
+            dot_offset = offset - len(member.group(0).encode('utf-8'))
+            current_index = next((index for index in cache['indices']
+                if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
+            if current_index is not None:
+                receivers = [expression for expression in current_index.get('expressions', [])
+                    if Path(expression.get('file', '')).resolve() == path and expression['range']['end'] <= dot_offset]
+                receiver = max(receivers, key=lambda expression: expression['range']['end'], default=None)
+                if receiver is not None and dot_offset - receiver['range']['end'] <= 64:
+                    type_name = receiver.get('type')
+                    owner = next((symbol for symbol in current_index.get('symbols', [])
+                        if symbol.get('kind') == 'struct' and (symbol.get('symbol') == type_name or
+                            (isinstance(type_name, str) and type_name.endswith('::' + str(symbol.get('name')))))), None)
+                    if owner is not None:
+                        fields = []
+                        for record in current_index.get('identifiers', []):
+                            if record.get('kind') != 'field':continue
+                            if Path(record.get('file', '')).resolve() != path:continue
+                            at = record['range']
+                            if not owner['range']['begin'] <= at['begin'] < owner['range']['end']:continue
+                            name = source.encode('utf-8')[at['begin']:at['end']].decode('utf-8')
+                            if not name or (prefix and not name.lower().startswith(prefix)):continue
+                            fields.append({'label': name, 'kind': 5, 'detail': record.get('detail'),
+                                'sortText': name.lower(), 'filterText': name})
+                        if fields:
+                            return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: item['sortText'])}
         kinds = {'function': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8, 'endpoint': 3}
         items = {}
         for index in cache['indices']:

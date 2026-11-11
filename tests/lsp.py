@@ -585,6 +585,16 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_member_completion_returns_struct_fields(self):
+        text='module app;\nstruct Point { x: i64; y: i64; }\nfn main()->unit !{io}{let point:Point=Point(1,2);print(point.x);}\n'
+        line=text.splitlines()[2];start=line.index('point.x')+len('point.')
+        client=self.client();client.initialize();client.open(self.file,text)
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start}})
+        fields={item['label'] for item in result['items']}
+        self.assertEqual(fields,{'x','y'})
+        self.assertTrue(all(item['kind']==5 for item in result['items']))
+
     def test_completion_filters_values_to_the_enclosing_function(self):
         text='module app;\nfn one()->unit !{io}{let alpha:i64=1;print(alpha);}\nfn two()->unit !{io}{let beta:i64=2;print(beta);}\n'
         line=text.splitlines()[2];start=line.rindex('beta')
