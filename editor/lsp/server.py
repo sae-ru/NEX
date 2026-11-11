@@ -696,6 +696,25 @@ class Server:
                 if len(result) >= 1000:return result
         return result
 
+    def document_highlights(self, path, params, cache, cancelled=None):
+        current_index = next((index for index in cache['indices']
+            if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
+        if current_index is None:return []
+        unit = next((f for f in current_index.get('files', []) if Path(f['path']).resolve() == path), None)
+        if unit is None:return []
+        offset = byte_offset(unit['text'], params.get('position'))
+        selected = next((occurrence for occurrence in current_index.get('occurrences', [])
+            if Path(occurrence['file']).resolve() == path and occurrence['range']['begin'] <= offset < occurrence['range']['end']), None)
+        if selected is None:return []
+        target = selected['definition']
+        highlights = []
+        for occurrence in current_index.get('occurrences', []):
+            if occurrence.get('definition') != target:continue
+            if Path(occurrence['file']).resolve() != path:continue
+            highlights.append({'range': source_range(unit['text'], occurrence['range']),
+                'kind': 3 if occurrence.get('role') == 'declaration' else 1})
+        return highlights
+
     def signature_help(self, path, params, cache, cancelled=None):
         current_index = next((index for index in cache['indices']
             if any(Path(f['path']).resolve() == path for f in index.get('files', []))), None)
@@ -741,6 +760,8 @@ class Server:
         if method == 'workspace/symbol':
             return self.workspace_symbol(params, cache, cancelled)
         path, _ = self.document(params)
+        if method == 'textDocument/documentHighlight':
+            return self.document_highlights(path, params, cache, cancelled)
         if method == 'textDocument/signatureHelp':
             return self.signature_help(path, params, cache, cancelled)
         if method == 'textDocument/completion':
@@ -865,7 +886,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'workspace/symbol']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion', 'textDocument/signatureHelp', 'textDocument/documentHighlight', 'workspace/symbol']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -924,7 +945,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}, 'signatureHelpProvider': {'triggerCharacters': ['(', ',']}, 'workspaceSymbolProvider': True, 'documentHighlightProvider': True},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:

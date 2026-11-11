@@ -650,6 +650,17 @@ class LanguageServer(harness.ToolchainCase):
         self.assertEqual(len(items),1)
         self.assertEqual(items[0]['kind'],6)
 
+    def test_document_highlights_for_checked_occurrences(self):
+        text='module app;\nfn helper(x: i64) -> i64 { return x; }\nfn main()->unit !{io}{print(helper(1));}\n'
+        line=text.splitlines()[2];start=line.index('helper')
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['documentHighlightProvider'])
+        client.open(self.file,text)
+        result=client.request('textDocument/documentHighlight', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start}})
+        self.assertEqual(len(result),2)
+        self.assertTrue(any(item['kind']==3 for item in result))
+
     def test_workspace_symbol_search(self):
         text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x; }\nfn main()->unit !{io}{print(helper(1));}\n'
         client=self.client();capabilities=client.initialize()['capabilities']

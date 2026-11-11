@@ -329,6 +329,9 @@ Toolchain 0.203 adds LSP signature help for checked function calls;
 Toolchain 0.204 adds LSP workspace symbol search; `language_server` passed in
 20.23 s.
 
+Toolchain 0.205 adds LSP document highlights; `language_server` passed in
+20.07 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
