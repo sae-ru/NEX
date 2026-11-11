@@ -1,0 +1,54 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP qualified enum-case completion",
+  "implementation_commit": "ff753b4447271db7a4096075b6927b7cb502e554",
+  "build_source_base_commit": "058c377",
+  "compiler": {
+    "toolchain": "0.199.0",
+    "language": "0.28",
+    "sha256": "5165a3b1dcfa13c0d8ee2eb1e6e18a7f65908adfbc9cdbe71c128ac4aba8e6ae",
+    "compiler_build": "309b6b995faf7a643a9197c1dcabc6cb09a0c0b660f505766fda4b899970ac58",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "trigger": "Type::",
+    "owner": "checked enum",
+    "result": "variants",
+    "kind": 20,
+    "prefix_filter": "ASCII identifier",
+    "fallback": "general completion",
+    "module_member_completion": false
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.3576,
+    "editor_language_client_seconds": 1.09325,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.89,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "qualified enum cases only; import/module :: members remain pending",
+    "nested-block scope/parser recovery/incremental indexing and broader IDE matrix pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-enum-0199-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-enum-0199-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-enum-0199-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-enum-0199-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
