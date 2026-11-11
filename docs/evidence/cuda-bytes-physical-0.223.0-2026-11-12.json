@@ -1,0 +1,75 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical CUDA bounded-bytes generated root execution",
+  "implementation_commit": "bd20b45",
+  "build_source_base_commit": "956df74",
+  "compiler": {
+    "toolchain": "0.218.0",
+    "language": "0.28",
+    "windows_binary": "F:/sae/NEX-0.218-20261112/build/stand/nex.exe"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "bytes_root": {
+    "prepared_project": "cuda-bytes-prepared",
+    "root": "transform(bytes)->bytes",
+    "byte_capacity": 256,
+    "input_bytes": [
+      0,
+      255,
+      128,
+      65
+    ],
+    "expected_bytes": [
+      255,
+      0,
+      127,
+      190
+    ],
+    "run_stdout": "42\n",
+    "run_exit_code": 0,
+    "trace_rows": 18,
+    "kernel_completions": 1,
+    "last_event": "module_unloaded",
+    "ledger": {
+      "acceptance_gate_launches": 0,
+      "allocations": 3,
+      "cleanup_errors": 0,
+      "context_frees": 1,
+      "contexts": 1,
+      "event_frees": 2,
+      "events": 2,
+      "frees": 3,
+      "kernel_launches": 1,
+      "live_bytes": 0,
+      "module_frees": 1,
+      "modules": 1,
+      "peak_bytes": 131600,
+      "stream_frees": 1,
+      "streams": 1
+    },
+    "trace_sha256": "e5290148ac647bc8ffc88205077fabbd7ba9556129e6ecebfeb284049b59a6fd",
+    "run_sha256": "3144f5914a870b9ef1f8e24f9469a9e7bfda32474ae44432d37c2d6a6a6ccc93"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "single bounded-bytes root; text and other roots remain",
+    "complete owned-CUDA/public SDK acceptance remains false",
+    "run used the 0.218 Windows compiler; current source toolchain is 0.223"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "run": "/Users/sae/projects/NEX/build/cuda-bytes-0224/cuda-bytes-run4.utf8.json",
+    "trace": "/Users/sae/projects/NEX/build/cuda-bytes-0224/cuda-bytes-run4.trace.jsonl",
+    "guide": "docs/testing.md"
+  }
+}
