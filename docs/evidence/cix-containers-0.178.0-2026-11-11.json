@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "CIX P1 ARM64 Linux functional check of 0.178 map/set source containers",
+  "source_commit": "36e8b51",
+  "source_archive_sha256": "3e6c07861eff80a9b433e9e4492b654f378b8c592776444e00cd870ca7b9f128",
+  "compiler": {
+    "toolchain": "0.178.0",
+    "language": "0.28",
+    "llvm": "22.1.8",
+    "sha256": "3a1af03163a52203d09a52b442696ee530db39f1cef2b6937971860e637d31fc",
+    "source_modified": true,
+    "modification": "set_source_files_properties(src/language.cpp PROPERTIES COMPILE_OPTIONS \"-fno-rtti\")"
+  },
+  "host": {
+    "uname": "Linux orangepi6plus 6.6.89-cix aarch64",
+    "os": "Debian GNU/Linux 12 (bookworm)"
+  },
+  "results": {
+    "containers_run_ok": true,
+    "containers_stdout": "containers-example-ok\n",
+    "containers_test_ok": true,
+    "tests": [
+      {
+        "name": "std::map::map_test",
+        "native": true,
+        "ok": true
+      },
+      {
+        "name": "std::set::set_test",
+        "native": true,
+        "ok": true
+      }
+    ]
+  },
+  "limits": [
+    "functional run, not full CTest or SDK acceptance",
+    "no Node/TypeScript, GPU, NPU or SDK install check",
+    "official LLVM release lacks RTTI; language.cpp compiled with a stand-only -fno-rtti source property",
+    "the macOS 0.178 evidence remains separate"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/cix-0178-evidence/cix178-report.json",
+    "doctor": "/Users/sae/projects/NEX/build/cix-0178-evidence/doctor178.json",
+    "describe": "/Users/sae/projects/NEX/build/cix-0178-evidence/describe178.json",
+    "run": "/Users/sae/projects/NEX/build/cix-0178-evidence/containers178-run.json",
+    "test": "/Users/sae/projects/NEX/build/cix-0178-evidence/containers178-test.json",
+    "build_log": "/Users/sae/projects/NEX/build/cix-0178-evidence/build178.log"
+  }
+}
