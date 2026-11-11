@@ -135,6 +135,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--task-debug","","Prepare task debugging for project plan/build/package.");
     add("--check","","Check formatting without writing; exit 1 if it differs.");
     add("--write","","Replace the explicitly selected source with formatted bytes.");
+    add("--width","COUNT","Wrap long unquoted formatter lines to this display width.");
     add("--details","","Request analysis/3 identifier details.");
     add("--references","","Request analysis/2 symbol references.");
     add("--workload","FILE","Project profile/plan workload contract.");
@@ -208,6 +209,7 @@ const std::vector<CliOption> &cliOptions(){
       if(o.name=="--help")o.aliases={"-h"};
       if(o.name=="--output")o.aliases={"-o"};
       if(o.name=="--check"||o.name=="--write"){o.restrictedCommands={"fmt"};o.unique=true;o.restrictionMessage=o.name+" requires fmt and may occur only once";}
+      if(o.name=="--width"){o.restrictedCommands={"fmt"};o.unique=true;o.restrictionMessage="--width requires fmt and may occur only once";}
       if(o.name=="--task-debug"){o.restrictedCommands={"project"};o.restrictionMessage="--task-debug requires project plan/build/package";}
       if(o.name=="--candidate"){o.restrictedCommands={"migrate"};o.unique=true;o.restrictionMessage="--candidate requires migrate and one reviewed candidate file";}
       if(o.name=="--overlay"){o.restrictedCommands={"analyze"};o.restrictionMessage="--overlay requires analyze and a JSON file";}
@@ -242,7 +244,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("project","[DIRECTORY|nex.build.json]","Plan/build/package/run/test/debug/profile project components.","project","--kind --component --configuration --build-directory --output --workload --foreign --adapter --profile-output --events --timeout --scenario --symbol --directory --notices --dpkg-notices --task-debug");
     add("describe","[--kind full|index | --field PATH]","Discover the selected compiled capability descriptor.","discovery","--kind --field");
     add("analyze","[FILE]","Read-only editor analysis with optional overlays/references.","editor","--overlay --references --details");
-    add("fmt","FILE|DIRECTORY [--check|--write]","Format current syntax, retaining comments and graph history.","format","--check --write");
+    add("fmt","FILE|DIRECTORY [--check|--write] [--width N]","Format current syntax, retaining comments and graph history.","format","--check --write --width");
     add("lsp","","Run the installed language server on standard input/output.","lsp","");
     add("guide","[--kind KIND]","Read one selected source/SDK guide.","discovery","--kind");
     add("doctor","","Report the selected host/compiler/runtime configuration.","build","");

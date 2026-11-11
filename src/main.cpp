@@ -256,6 +256,26 @@ int fixSource(const Options &o,const fs::path &root){
     throw Error("E_FIX_REJECTED","applied fix did not check: "+failure.message,failure.span);
   }
 }
+static std::string wrapFormatted(std::string formatted,int width){
+  if(width<=0)return formatted;
+  std::string result;size_t begin=0;
+  while(begin<formatted.size()){
+    auto end=formatted.find('\n',begin);if(end==std::string::npos)end=formatted.size();
+    auto line=formatted.substr(begin,end-begin);begin=end+1;
+    if(line.size()<=size_t(width)||line.find("//")!=std::string::npos||line.find('"')!=std::string::npos||line.find('\'')!=std::string::npos){result+=line+'\n';continue;}
+    auto indent=line.find_first_not_of(' ');if(indent==std::string::npos)indent=0;
+    auto current=line;
+    while(current.size()>size_t(width)){
+      auto split=current.rfind(',',size_t(width));
+      if(split==std::string::npos||split<=indent)break;
+      result+=current.substr(0,split+1)+'\n';
+      current=std::string(indent+2,' ')+current.substr(split+1);
+    }
+    result+=current+'\n';
+  }
+  return result;
+}
+
 int run(const Options &o) {
   if(o.command=="help"||o.helpRequested){
     std::string selected=o.command=="help"?(o.positional.empty()?(o.helpRequested?"help":""):o.positional.front()):o.command;
@@ -290,10 +310,17 @@ int run(const Options &o) {
     return 0;
   }
   if(o.command=="fmt"){
-    if(o.positional.size()!=1||o.positional.front().empty()||!o.values.empty()||!o.extra.empty()||
+    if(o.positional.size()!=1||o.positional.front().empty()||!o.extra.empty()||
        (o.has("--check")&&o.has("--write"))||
+       o.values.size()>1||(o.values.size()==1&&!o.values.contains("--width"))||
        std::any_of(o.flags.begin(),o.flags.end(),[](const auto &flag){return flag!="--json"&&flag!="--check"&&flag!="--write";}))
-      throw Error("E_OPTION","fmt requires FILE [--check|--write] [--json]");
+      throw Error("E_OPTION","fmt requires FILE|DIRECTORY [--check|--write] [--width N] [--json]");
+    int width=-1;
+    if(o.values.contains("--width")){
+      const auto &text=o.values.at("--width");
+      try{size_t used=0;auto parsed=std::stoi(text,&used);if(used!=text.size()||parsed<20||parsed>1000)throw std::invalid_argument("width");width=parsed;}
+      catch(const std::exception &){throw Error("E_OPTION","--width requires an integer from20 to1000");}
+    }
     auto target=fs::absolute(o.positional.front()).lexically_normal();
     if(fs::is_directory(target)){
       if(o.has("--write")==o.has("--check"))throw Error("E_OPTION","fmt directory requires exactly one of --check or --write");
@@ -315,14 +342,14 @@ int run(const Options &o) {
         auto file=path.lexically_normal().string();
         auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
         total+=original.size();if(total>64*1024*1024)throw Error("E_LIMIT","directory format exceeds64MiB of source");
-        auto formatted=formatSource(original,file);const bool changed=original!=formatted;anyChanged|=changed;
+        auto formatted=wrapFormatted(formatSource(original,file),width);const bool changed=original!=formatted;anyChanged|=changed;
         if(o.has("--write")&&changed){replaceFormattedSource(file,original,formatted);++written;}
         rows.push_back(llvm::json::Object{{"file",file},{"changed",changed},{"written",o.has("--write")&&changed},
           {"source_hash",hash(original)},{"formatted_hash",hash(formatted)}});
       }
       if(o.has("--json"))print(llvm::json::Object{{"schema","nex.format-directory/1"},{"ok",!o.has("--check")||!anyChanged},
         {"directory",target.string()},{"language",languageVersion},{"style","nex/1"},
-        {"mode",o.has("--write")?"write":"check"},{"files",std::move(rows)},{"file_count",int64_t(files.size())},
+        {"mode",o.has("--write")?"write":"check"},{"width",width},{"files",std::move(rows)},{"file_count",int64_t(files.size())},
         {"changed",anyChanged},{"written_files",int64_t(written)},
         {"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}}});
       else if(o.has("--check")&&anyChanged)std::cerr<<"Needs formatting: "<<target.string()<<'\n';
@@ -332,13 +359,13 @@ int run(const Options &o) {
     if(!fs::is_regular_file(target))throw Error("E_OPTION","fmt requires a regular source file or directory");
     auto file=target.string();
     auto original=readBoundedText(file,4*1024*1024,"format source","E_LIMIT",false);
-    auto formatted=formatSource(original,file);const bool changed=original!=formatted;
+    auto formatted=wrapFormatted(formatSource(original,file),width);const bool changed=original!=formatted;
     const bool writing=o.has("--write"),checking=o.has("--check");
     if(writing)replaceFormattedSource(file,original,formatted);
     if(o.has("--json")){
       llvm::json::Object result{{"schema","nex.format/1"},{"ok",!checking||!changed},
         {"file",file},{"language",languageVersion},{"style","nex/1"},
-        {"mode",writing?"write":checking?"check":"preview"},{"changed",changed},{"written",writing&&changed},
+        {"mode",writing?"write":checking?"check":"preview"},{"width",width},{"changed",changed},{"written",writing&&changed},
         {"source_hash",hash(original)},{"formatted_hash",hash(formatted)},
         {"compiler",llvm::json::Object{{"version",NEX_VERSION},{"build",NEX_BUILD_ID}}}};
       if(!writing&&!checking)result["source"]=formatted;

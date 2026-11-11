@@ -299,6 +299,10 @@ for helper/main/Point.
 Toolchain 0.195 extends LSP completion to local/parameter/field values with
 name deduplication; `language_server` passed in 19.25 s.
 
+Toolchain 0.196 adds `nex fmt --width N` for conservative wrapping of long
+unquoted lines at commas; quoted/comment lines are unchanged and invalid widths
+are rejected. `fmt_width` passed in 0.24 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

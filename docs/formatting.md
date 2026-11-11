@@ -8,7 +8,10 @@ owner: repository
 
 `nex fmt` formats one explicitly selected UTF-8 source file or a directory tree. It uses the actual
 current-language parser and preserves ordered line comments and the spelling of
-every literal. It does not load imports, type-check, execute code or open a graph
+every literal. `--width N` (20..1000) conservatively wraps formatter output
+lines longer than N at commas, but never rewrites lines containing comments,
+string/character literals or an empty split. It is not a general reflow and
+leaves overlong quoted lines intact. It does not load imports, type-check, execute code or open a graph
 Store. A missing imported file or an unresolved name does not prevent formatting.
 Run ordinary `nex check` and the affected tests to validate program behavior.
 
@@ -20,6 +23,8 @@ nex fmt src/main.nex --check --json  # machine-readable nex.format/1 result
 
 nex fmt src --check --json           # recursive directory check; nex.format-directory/1
 nex fmt src --write --json           # format every .nex file under src
+
+nex fmt src/main.nex --width 80      # conservative wrap of long unquoted lines
 nex guide --kind format --json
 ```
 
