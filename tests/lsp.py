@@ -585,6 +585,24 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_formatting_returns_full_replace_without_writing(self):
+        text='module app;\nfn main()->unit{print(1);}\n'
+        physical=self.file.read_bytes()
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['documentFormattingProvider'])
+        client.open(self.file,text)
+        result=client.request('textDocument/formatting', {'textDocument': {'uri': self.file.as_uri()},
+            'options': {'tabSize': 2, 'insertSpaces': True}})
+        self.assertEqual(len(result),1)
+        self.assertIn('fn main() -> unit {',result[0]['newText'])
+        self.assertEqual(result[0]['range']['start'],{'line':0,'character':0})
+        self.assertEqual(self.file.read_bytes(),physical)
+        client.change(self.file,result[0]['newText'],2)
+        self.assertEqual(client.request('textDocument/formatting', {'textDocument': {'uri':self.file.as_uri()},
+            'options': {'tabSize': 2, 'insertSpaces': True}}), [])
+        self.assertEqual(self.file.read_bytes(),physical)
+        client.close()
+
     def test_lifecycle_fragmented_messages_and_method_errors(self):
         client=self.client()
         first=client.response(client.send('textDocument/hover',{},request=True))

@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.70
+# NEX language server: development toolchain 0.192
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -61,8 +61,11 @@ server requires matching0.70 compiler/resources and analysis/3; retain the
 matching older SDK/extension for an older installation. The earlier0.67 actual installed IDE
 checks retain their exact scope in STATUS.md; current0.68 full SDK/platform/IDE
 acceptance is separate. This adapter does not add Windows compiler-host support.
-Completion, rename, parser recovery/incremental indexing and the broader IDE
-matrix remain pending.
+Toolchain 0.192 adds `textDocument/formatting`: the server formats the open
+document through the same checked source formatter, returns one full-document
+`TextEdit`, returns an empty array when already formatted, and never writes the
+physical file. Completion, rename, parser recovery/incremental indexing and the
+broader IDE matrix remain pending.
 
 ## Checked references
 

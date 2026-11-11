@@ -561,7 +561,46 @@ class Server:
             return []
         return [] if method != 'textDocument/hover' else None
 
+    def formatting(self, params):
+        path, _ = self.document(params)
+        with self.lock:
+            document = self.documents.get(path)
+            if document is None:
+                raise RPCError(-32602, 'Document is not open')
+            text = document['text']
+        with tempfile.NamedTemporaryFile('w', suffix='.nex', encoding='utf-8', newline='', delete=False) as temporary:
+            temporary.write(text)
+            name = temporary.name
+        try:
+            result = subprocess.run([self.compiler, 'fmt', name, '--json'],
+                capture_output=True, text=True, timeout=30)
+        finally:
+            with contextlib.suppress(OSError):
+                os.unlink(name)
+        if result.returncode:
+            raise RPCError(-32804, 'NEX formatter rejected the document')
+        try:
+            formatted = json.loads(result.stdout)['source']
+        except (ValueError, KeyError, TypeError):
+            raise RPCError(-32804, 'NEX formatter returned an invalid result')
+        if formatted == text:
+            return []
+        lines = text.split('\n')
+        end = {'line': len(lines) - 1,
+            'character': len(lines[-1].encode('utf-16-le')) // 2}
+        return [{'range': {'start': {'line': 0, 'character': 0}, 'end': end},
+            'newText': formatted}]
+
     def request(self, ident, method, params):
+        if method == 'textDocument/formatting':
+            try:
+                self.respond(ident, self.formatting(params))
+            except RPCError as error:
+                self.respond(ident, error=error)
+            except Exception as error:
+                self.log(str(error))
+                self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
+            return
         if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
@@ -621,8 +660,8 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True},
-                'serverInfo': {'name': 'NEX Language Server', 'version': '0.70.0'}})
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True},
+                'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
                 self.respond(ident, error=RPCError(-32002, 'Server is not initialized'))

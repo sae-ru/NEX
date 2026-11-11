@@ -282,6 +282,11 @@ and non-NEX files, reports `nex.format-directory/1`, and rejects directory
 preview or simultaneous check/write. The focused directory test passed in 0.24 s.
 Width wrapping and editor requests remain pending.
 
+Toolchain 0.192 adds LSP `textDocument/formatting` as a full-document edit
+through `nex fmt`; the server advertises `documentFormattingProvider`, never
+writes the source file and returns an empty edit list for formatted text.
+`language_server` passed in 18.98 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
