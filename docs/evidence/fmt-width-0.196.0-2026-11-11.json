@@ -1,0 +1,65 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Conservative nex fmt --width wrapping",
+  "implementation_commit": "d13ba7d08e7641b4b42a2bda92504ad31c070b77",
+  "build_source_base_commit": "788c532",
+  "compiler": {
+    "toolchain": "0.196.0",
+    "language": "0.28",
+    "sha256": "0709c2bb8516263b7eef8a41b702cbc522e19582d47af531beec82355030530a",
+    "compiler_build": "eecf2b22e0074cf43a00ef2933c887f2e3b11c63f1b70fab2a1aab6506bc93df",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "option": "--width N",
+    "range": [
+      20,
+      1000
+    ],
+    "scope": [
+      "single file",
+      "directory"
+    ],
+    "split": "comma",
+    "skips": [
+      "lines with //",
+      "lines with double quotes",
+      "lines with single quotes",
+      "lines without comma"
+    ],
+    "not_general_reflow": true,
+    "json_width": true
+  },
+  "observations": {
+    "registered_groups": 341,
+    "fmt_width_seconds": 0.243785,
+    "fmt_directory_seconds": 0.244627,
+    "source_formatting_seconds": 9.29118,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.99,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "width wrapping is conservative comma splitting, not full layout reflow",
+    "quoted/comment lines may exceed the requested width",
+    "LSP formatting has no width option; language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/fmt-width-0196-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/fmt-width-0196-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/fmt-width-0196-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/fmt-width-0196-v1/nex.sha256",
+    "test": "tests/fmt_width.py",
+    "guide": "docs/formatting.md"
+  }
+}
