@@ -1,0 +1,68 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Exact 0.179 source on Fedora 45 x86-64 with LLVM/MLIR 23.1.4 and OpenSSL 4.0.3",
+  "source_commit": "9bfba2a",
+  "source_archive_sha256": "3c921f21cae4aee33007bc6985cf69d52e82a04ad240a9e789f9efaafbe7e947",
+  "compiler": {
+    "toolchain": "0.179.0",
+    "language": "0.28",
+    "llvm": "23.1.4",
+    "openssl": "4.0.3",
+    "sha256": "ddeeab716afd62412a0a4c14f44b69502d79a79104285db72039e01813cb67b3",
+    "source_modified": false
+  },
+  "host": {
+    "os": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "uname": {
+      "system": "Linux",
+      "node": "fedora",
+      "release": "7.2.15-300.fc45.x86_64",
+      "version": "#1 SMP PREEMPT_DYNAMIC Sun Nov  1 16:11:16 UTC 2026",
+      "machine": "x86_64",
+      "processor": ""
+    }
+  },
+  "results": {
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 11.56,
+    "app_check_ok": true,
+    "app_test_ok": true,
+    "app_native_stdout": "55\n",
+    "containers_run_ok": true,
+    "containers_stdout": "containers-example-ok\n",
+    "containers_test_ok": true,
+    "tests": [
+      {
+        "name": "std::map::map_test",
+        "native": true,
+        "ok": true
+      },
+      {
+        "name": "std::set::set_test",
+        "native": true,
+        "ok": true
+      }
+    ]
+  },
+  "disk": {
+    "before_cleanup_free": "6.0G",
+    "removed_old_nex": "/var/tmp/nex-* (40G, including 15G/16G old builds)",
+    "after_build_free": "17G",
+    "filesystem": "btrfs /dev/nvme0n1p4 36.1G; disk 40G total with boot/swap"
+  },
+  "limits": [
+    "core and focused containers, not full CTest or SDK acceptance",
+    "Fedora 45 x86-64 only; no GPU/NPU, browser/TypeScript or full matrix in this run",
+    "LLVM 23 acceptance does not replace the macOS 22.1.8 qualification"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/fedora-0179-evidence/fedora179-report.json",
+    "doctor": "/Users/sae/projects/NEX/build/fedora-0179-evidence/doctor.json",
+    "core_log": "/Users/sae/projects/NEX/build/fedora-0179-evidence/core.log",
+    "containers_run": "/Users/sae/projects/NEX/build/fedora-0179-evidence/containers-run.json",
+    "containers_test": "/Users/sae/projects/NEX/build/fedora-0179-evidence/containers-test.json",
+    "build_log": "/Users/sae/projects/NEX/build/fedora-0179-evidence/build.log",
+    "app_run": "/Users/sae/projects/NEX/build/fedora-0179-evidence/app/run.json"
+  }
+}

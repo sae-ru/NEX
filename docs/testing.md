@@ -192,6 +192,13 @@ on macOS; the pinned `standard_library` workflow passed in 44.90 s and the
 unchanged 12-group core in 21.76 s. Descriptor hashes pin both sources. Hash/balanced-tree containers and
 effect-polymorphic named signatures remain pending.
 
+Toolchain 0.179 accepts LLVM/MLIR 22.1.x and 23.1.x plus OpenSSL 3 and 4. On
+Fedora 45 x86-64 the exact `9bfba2a` source built with LLVM/MLIR 23.1.4 and
+OpenSSL 4.0.3 without source patches: core 12/12 in 11.56 s, fresh app
+check/test/native run and map/set containers all passed. macOS LLVM 22.1.8 /
+OpenSSL 3.6.3 remains green. Full Linux CTest/SDK and GPU/NPU/web matrices
+remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
