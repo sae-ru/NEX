@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Owned-CUDA corpus dispatch helper and explicit build toolchain; physical RTX 3090 corpus",
+  "implementation_commit": "7323e458ecede4d03ac2e8b65d283086fbe30de7",
+  "build_source_base_commit": "cd580ce",
+  "compiler": {
+    "toolchain": "0.220.0",
+    "language": "0.28",
+    "sha256": "eaebd567d2e587b2c78676a6a2bae96a546e2b567dc8d82ae3249e7222e9c209",
+    "compiler_build": "d46fdb9997f6c32e70fce81aa7d83ea6bb654eabcc5fdc53da6b105274cea6ba",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "corpus": {
+    "schema": "nex.experimental-owned-CUDA-scalar-parent-verification/2",
+    "ok": true,
+    "source_cases_checked": 15,
+    "actual_GPU_execution": true,
+    "physical_GPU_kernel_events": 24,
+    "complete_owned_CUDA_acceptance": false,
+    "required_additional_gates": [
+      "source-deleted replay/standalone",
+      "Compute Sanitizer",
+      "remaining generated scalar roots and public SDK delivery"
+    ],
+    "report_sha256": "fa6ddbb8482af2c68e16db7cc064bce1e0b0f6c6477a4074285d4926d01bed7b",
+    "context_probe_passed": true
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.03,
+    "cuda_source_seconds": 78.05,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "the scalar/parent corpus passes with actual GPU executions; complete owned-CUDA acceptance is explicitly false",
+    "source-deleted replay/standalone, Compute Sanitizer, remaining generated scalar roots and public SDK delivery remain pending",
+    "full CTest remains unqualified"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "hardware_report": "/Users/sae/projects/NEX/build/cuda-physical-0220/report.json",
+    "focused_junit": "/Users/sae/projects/NEX/build/cuda-physical-0220/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/cuda-physical-0220/core.json",
+    "describe": "/Users/sae/projects/NEX/build/cuda-physical-0220/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/cuda-physical-0220/nex.sha256",
+    "verify": "experiments/owned-cuda-codegen/verify.py",
+    "guide": "docs/testing.md"
+  }
+}
