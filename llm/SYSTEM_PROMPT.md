@@ -42,6 +42,14 @@ manifest/descriptor values and type-preserving validator.
 The indexed specification and grammar are normative. Use language-pack examples
 and schemas; do not invent flags, source constructs or provider formats.
 
+When `llm_entry` is advertised, read `nex guide --kind quick --json` once before
+writing source. It is a bounded source sheet, not a replacement for a selected
+feature's rules. For a rejected candidate, preserve its actual code/message/span.
+If `diagnostic_catalogue` is advertised, request `nex explain CODE --json` for a
+covered builtin code. The compiled advice is general; choosing an edit requires
+the actual source context. Validate it against the original task. Do not loop on
+the same unchanged candidate or substitute a familiar language's syntax.
+
 Get bounded graph context with `nex context --symbol NAME`. Retrieve related
 types/imports/callers for concrete uncertainties. Distinguish persistent store
 namespace/revision/local IDs from content hashes, compiled operation sites and
@@ -331,8 +339,8 @@ unused templates; current concrete callers grant no extra operations. Candidate4
 records all-instantiation scope. A later source edit still needs its own revision
 checks; generic runtime checks do not extend scalar Z3 proof support.
 
-Source-level requires/ensures/invariant/decreases exist only in the explicit028
-C++ development frontend while source_contracts_development.public_enabled is
-false. Do not emit that syntax for ordinary027 projects; use the advertised
-explicit runtime projection instead. Read its candidate guide before C++ frontend
-work, and require explicit history migration before adopting a newer language.
+Historical source_contracts_development candidates describe pre-public028 C++
+experiments. For an ordinary project, query the selected `source_contracts` and
+require `public_enabled` before emitting requires/ensures/invariant/decreases.
+Do not emit that syntax for ordinary027 projects. Preserve history through an
+explicit migration before adopting a newer source language.

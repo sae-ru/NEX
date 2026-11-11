@@ -8,8 +8,11 @@ designs are not implemented features. Preserve the project's language version.
    sections; keep compiler_build/descriptor_hash consistent across lookups.
    The legacy `features` array is partial; use the indexed capability sections,
    not absence from that summary, to decide support.
-2. Follow `llm/SYSTEM_PROMPT.md` and the normative language/grammar. Retrieve
-   guides for the selected features. Never invent syntax, effects or support.
+2. Follow `llm/SYSTEM_PROMPT.md` and the normative language/grammar. If `llm_entry`
+   is advertised, retrieve `nex guide --kind quick --json` once for actual source
+   syntax. Retrieve feature guides for concrete uncertainties. Never invent syntax,
+   effects or support. For a covered rejection, use `nex explain CODE --json`
+   when `diagnostic_catalogue` is advertised; preserve the original message/span.
 3. State behavior, constraints and acceptance criteria. Get bounded graph
    context with `nex context --symbol NAME`; fetch dependencies when needed.
 4. Make small changes with exact source/revision guards. Preserve checked

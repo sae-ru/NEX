@@ -54,7 +54,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.165.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.166.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Ordinary fatal diagnostics now preserve embedded NUL and Unicode through source,
@@ -72,8 +72,10 @@ Local Qwen task collection, bounded tool access and counted source review are im
 The [completed60-slot Qwen comparison](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
 accepted4/20 NEX,14/20 C++ and20/20 Python trials, with no NEX token saving.
 Original failures and earlier pilots are retained separately.
-The [11-group core layer](docs/testing.md) passed in12.36s; broader layers retain
-their own dependencies and final qualification gates.
+The new [bounded language entry](docs/diagnostics.md) provides `nex guide --kind quick`
+and compiled `nex explain CODE` guidance with checked examples; new token savings
+have not been measured. The [12-group core layer](docs/testing.md) adds diagnostic
+controls to the earlier11-group baseline; broader layers retain their own gates.
 [Development CI](docs/ci.md) now defines macOS/Linux core and separate Linux full
 workflows; hosted executions remain pending.
 

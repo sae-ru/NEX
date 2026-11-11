@@ -19,9 +19,9 @@ The [development presets](development-build.md) also provide
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
 JUnit, exit code and logs for core/full selections.
 
-The selected11 groups cover frontend checking, typed reference evaluation,
+The selected12 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
-accounting/collection/CTest metadata. They require Python3.10+, the configured
+accounting/collection/CTest metadata and compiled diagnostic explanations. They require Python3.10+, the configured
 compiler and its selected native dependencies. They require no Node/npm, browser
 installation, model inference, SDK packaging or device access. Collector controls
 in this layer use a synthetic provider.
@@ -54,7 +54,7 @@ CTest may add fixture setup/cleanup groups outside an area selection. The tier
 inventory reports that closure using the existing [JUnit/fixture verifier](ctest-results.md).
 Core rejects any added fixture group.
 
-The current11-group core command passed in **12.36 seconds** on the development
+The earlier11-group core command passed in **12.36 seconds** on the development
 Mac (one sequential CTest observation, toolchain0.165.0/language0.28). Its
 selected PATH/NEX_NODE/NEX_TSC guard observed no Node/npm/npx/tsc requests, and
 the complete318-group registry retained every earlier command and non-label
@@ -64,12 +64,20 @@ unmeasured on the current source until the agreed full milestone. Inventory
 reports declared timeout sums separately; those are upper budgets, not runtime
 measurements. Historical timings retain their own source/hardware scope.
 
-The later CI block adds the extended `ci_ctest_receipts` group:319 groups are now
+The later CI block added the extended `ci_ctest_receipts` group:319 groups were
 registered on this Mac, with all318 earlier commands/properties preserved. Its
 three methods execute small real CTest projects, including failure and skip
 controls. The new receipt path also ran all11 real core groups in13.61s;
 [local CI evidence](evidence/ci-workflows-0.165.0-2026-11-11.json) retains that
 separate observation. It does not claim a GitHub or Linux container execution.
+
+Toolchain0.166 adds `diagnostic_catalogue` to core and the separate
+`llm_quick_reference` integration group:322 groups are registered on this Mac.
+One sequential12-group core workflow passed in20.78s, including receipt validation.
+After correcting a JSON context-advice flag, the two affected new groups passed
+again. The quick example compares reference/native Debug/Release, executes
+TypeScript and passes the locked7.0.2 strict compiler. These are focused source
+observations, not complete SDK or platform qualification.
 
 ## Maintain the catalogue
 

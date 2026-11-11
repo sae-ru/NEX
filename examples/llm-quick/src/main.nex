@@ -1,0 +1,52 @@
+module quick::app;
+import "./values.nex" as values;
+
+enum Signal { Number(value:i64); Empty; }
+
+fn number(signal:Signal)->i64 {
+  return match signal {
+    Signal::Number(value) => value,
+    Signal::Empty() => 0
+  };
+}
+
+fn recovered()->i64 !{throw} {
+  var observed:i64=0;
+  try { throw("note"); }
+  catch(message:str) { observed=len(message); }
+  finally { observed=observed+1; }
+  return observed;
+}
+
+fn joined()->i64 !{task,throw} {
+  return with_tasks(2,fn(scope:task_scope)->i64 !{task,throw} {
+    let child:task<i64>=task_spawn(scope,fn()->i64 !{task} {
+      task_yield();
+      return 8;
+    });
+    return task_wait(child);
+  });
+}
+
+fn main()->unit !{io,task,throw} {
+  var index:i64=0;
+  while index<4 { index=index+1; }
+  let original:list<i64>=[3,5];
+  let changed:list<i64>=set(original,0,9);
+  assert(original[0]==3 && changed[0]==9);
+  let text:str="xЯ🌍";
+  assert(len(text)==3 && slice(text,1,1)=="Я");
+  assert(unwrap(decode_utf8(utf8_bytes(text)))==text);
+  let result:result<i64>=ok(values::identity<i64>(index));
+  assert(unwrap(result)==4);
+  assert(number(Signal::Number(9))==9);
+  assert(recovered()==5);
+  assert(joined()==8);
+  print("quick-reference-ok");
+}
+
+test fn preserves_original()->unit {
+  let values:list<i64>=[3,5];
+  let changed:list<i64>=set(values,0,9);
+  assert(values[0]==3 && changed[0]==9);
+}

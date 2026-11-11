@@ -1,4 +1,4 @@
-# Current implementation and remaining roadmap — development0.165.0
+# Current implementation and remaining roadmap — development0.166.0
 
 The working language remains0.28 (task ABI7, C ABI1). The public CUDA compiler
 now emits fixed values, bounded immutable lists and packed immutable bytes from
@@ -30,7 +30,7 @@ execution isolation now have host evidence and one benign readiness response.
 Restricted collection, runtime/template/budget freeze and counted fresh-context
 local source review are implemented. Infrastructure pilots retain all failures;
 repaired diagnostic feedback passed its real pilot and the60-slot matched study is complete.
-The11-group core test layer is implemented (12.36s on the development Mac), with
+The core test layer is implemented (the earlier11 groups took12.36s on the development Mac), with
 explicit browser/platform/sdk/scale labels and the original complete registry
 preserved. Shared Debug/Release presets and macOS/Linux core/separate Linuxfull
 CI definitions are implemented with local evidence. The [SDK build driver](docs/sdk-build.md)
@@ -39,6 +39,11 @@ its full source-to-archive execution, hosted CI and final matching SDK acceptanc
 remain pending.
 The user selected only local Qwen3.8 27B Q8_0:60 matched trials, without paid
 APIs. Conclusions are scoped to that model; savings were not demonstrated.
+The [bounded language entry](docs/diagnostics.md) now adds a compiled103-code
+`nex explain` catalogue, a6144-byte quick guide and checked source examples,
+without changing language0.28. The new diagnostic controls extend core to12 groups.
+Its SDK sub-workflow is part of matching0.166 acceptance; whole-SDK qualification
+and a new versioned model observation remain separate gates.
 
 The original objective remains intact. The main unfinished implementation areas
 and final delivery work are:
@@ -58,8 +63,9 @@ and final delivery work are:
 - [x] Complete the user-selected local Qwen3.8 27B Q8_0 study:60 trials/479 requests,
   with every failed/budget/review request counted. The result is negative for NEX;
   cache split/monetary cost remain unknown and no cross-model claim is made.
-- [ ] Improve compiler-validated bounded language entry, diagnostics and standard
-  helpers in response to the observed failures; later studies must preserve this
+- [x] Implement compiler-validated bounded language entry and diagnostic examples
+  in response to observed failures, without changing the original study.
+- [ ] Continue standard helpers and later versioned model observations; preserve this
   original result and use the user-selected local model under a new versioned protocol.
 - [ ] At the final functional milestone, qualify one matching compiler/SDK across
   the supported platform/device matrix, then publish the latest main/release

@@ -116,6 +116,123 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def exercise_bounded_language_entry(*, cli, run, compiler, resources, root, browser):
+    """Actual bounded-entry sub-workflow, also usable by focused source controls.
+
+    Its result proves this sub-workflow only, never the complete SDK acceptance.
+    Callbacks retain the real commands/stdout/stderr in the owning workflow.
+    """
+    descriptor = cli('describe')
+    index = cli('describe', '--kind', 'index')
+    cap = descriptor.get('diagnostic_catalogue', {})
+    entry = descriptor.get('llm_entry', {})
+    require(cap.get('status') == 'compiled_reviewed_catalogue' and
+            entry.get('status') == 'bounded_language_entry', 'SDK lacks bounded language entry')
+    catalogue = cli('explain', '--kind', 'index')
+    detail = cli('explain', 'E_PARSE')
+    for value in (catalogue, detail):
+        require(all(value.get(key) == index.get(key) for key in
+                    ('compiler_build', 'descriptor_hash', 'toolchain', 'language')) and
+                value.get('catalogue_hash') == cap.get('catalogue_hash'),
+                'SDK bounded explanation identities differ')
+    require(catalogue['codes'] == sorted(set(catalogue['codes'])) and
+            len(catalogue['codes']) == cap['covered_codes'] and
+            catalogue['complete_code_registry'] is False and
+            detail['automatic_fix'] is False and detail['context_specific'] is False and detail['code'] == 'E_PARSE' and
+            cap['response_bytes_max'] == 8192,
+            'SDK bounded catalogue contract differs')
+    guide = cli('guide', '--kind', 'quick')['text']
+    require(guide.encode() == (resources / entry['guide']).read_bytes() and
+            len(guide.encode()) <= entry['guide_utf8_bytes_max'] == 6144,
+            'SDK bounded source guide differs or exceeds its limit')
+    programs = re.findall(r'```nex\n(.*?)```', guide, re.S)
+    require(len(programs) == 1, 'SDK quick guide needs one complete checked source')
+    sheet = root / 'bounded-entry-sheet'; sheet.mkdir()
+    (sheet / 'nex.json').write_text(json.dumps({'schema': 'nex.project/1',
+        'language': index['language'], 'entry': 'main.nex'}) + '\n', encoding='utf-8')
+    (sheet / 'main.nex').write_text(programs[0], encoding='utf-8')
+    cli('check', cwd=sheet)
+    require(cli('eval', cwd=sheet)['stdout'] == '4\n', 'SDK quick guide behavior differs')
+    directory = root / 'bounded-entry-project'
+    origin = resources / Path(entry['example_project']).parent
+    files = {path.relative_to(origin).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+             for path in sorted(origin.rglob('*')) if path.is_file()}
+    require(set(files) == {'nex.json', 'src/main.nex', 'src/values.nex'},
+            'SDK quick project inventory differs')
+    shutil.copytree(origin, directory)
+    revision = cli('check', cwd=directory)['revision']
+    cli('test', '--interpreter-only', cwd=directory)
+    expected = 'quick-reference-ok\n'
+    reference = cli('eval', cwd=directory)
+    require(reference['stdout'] == expected, 'SDK quick reference behavior differs')
+    native = {}
+    for profile in ('debug', 'release'):
+        observed = cli('run', '--profile', profile, cwd=directory, timeout=240)
+        require(observed['stdout'] == expected, 'SDK quick native behavior differs: ' + profile)
+        native[profile] = {'stdout': observed['stdout']}
+    typescript = {'requested': browser, 'executed': False}
+    if browser:
+        folder = root / 'bounded-entry-typescript'
+        cli('emit', '--kind', 'typescript', '--entry', 'main', '--directory', folder, cwd=directory)
+        require(json.loads((folder / 'nex-map.json').read_text())['execution'] == 'task-generator',
+                'SDK quick TypeScript executor differs')
+        (folder / 'package.json').write_text('{"type":"module"}\n', encoding='utf-8')
+        runner = folder / 'runner.mjs'
+        runner.write_text("import * as p from './program.ts';\nimport * as t from './nex-task-runtime.ts';\n"
+            "let stats;await t.runTypedSourceErrors(t.call(()=>p.entry()),p.sourceErrorContracts,"
+            "{complete:s=>{stats=s;}});\n"
+            "if(!stats?.completed||stats.activeCalls||stats.retainedFrames)throw Error('quick task cleanup');\n",
+            encoding='utf-8')
+        output = run([os.environ.get('NEX_NODE') or 'node', '--experimental-strip-types', runner])
+        require(output == expected, 'SDK quick TypeScript behavior differs')
+        typescript.update(executed=True, stdout=output, task_cleanup=True)
+    return {'schema': 'nex.bounded-language-entry/1', 'ok': True,
+        'compiler_sha256': hashlib.sha256(compiler.read_bytes()).hexdigest(),
+        'language': index['language'], 'toolchain': index['toolchain'],
+        'compiler_build': index['compiler_build'], 'descriptor_hash': index['descriptor_hash'],
+        'catalogue_hash': catalogue['catalogue_hash'], 'covered_codes': len(catalogue['codes']),
+        'response_bytes_max': cap['response_bytes_max'], 'unknown_codes_invented': False,
+        'guide': entry['guide'], 'guide_sha256': hashlib.sha256(guide.encode()).hexdigest(),
+        'guide_bytes': len(guide.encode()), 'sheet_checked': True, 'sheet_stdout': '4\n',
+        'project': entry['example_project'], 'source_sha256': files, 'revision': revision,
+        'reference_stdout': reference['stdout'], 'native': native, 'typescript': typescript,
+        'source_language_changed': False, 'model_token_savings_measured': False,
+        'complete_SDK_workflow_claimed': False}
+
+
+def validate_bounded_language_entry_evidence(report):
+    value = report.get('evidence', {}).get('bounded_language_entry', {})
+    require(isinstance(value, dict) and value.get('schema') == 'nex.bounded-language-entry/1' and
+            value.get('ok') is True and value.get('compiler_sha256') == report.get('compiler_sha256') and
+            value.get('language') == report.get('language') and value.get('toolchain') == report.get('version') and
+            value.get('covered_codes') == 103 and type(value.get('covered_codes')) is int and
+            value.get('response_bytes_max') == 8192 and value.get('unknown_codes_invented') is False and
+            value.get('guide') == 'llm/QUICK_REFERENCE.md' and
+            type(value.get('guide_bytes')) is int and 0 < value['guide_bytes'] <= 6144 and
+            value.get('sheet_checked') is True and value.get('sheet_stdout') == '4\n' and
+            value.get('project') == 'examples/llm-quick/nex.json' and
+            value.get('reference_stdout') == 'quick-reference-ok\n' and
+            value.get('native') == {profile: {'stdout': 'quick-reference-ok\n'} for profile in ('debug', 'release')} and
+            value.get('source_language_changed') is False and value.get('model_token_savings_measured') is False and
+            value.get('complete_SDK_workflow_claimed') is False,
+            'SDK acceptance lacks actual bounded language-entry execution')
+    hashes = report.get('resource_hashes', {})
+    require(value.get('guide_sha256') == hashes.get(value['guide']) and
+            all(isinstance(value.get(key), str) and re.fullmatch('[0-9a-f]{64}', value[key])
+                for key in ('compiler_build', 'descriptor_hash', 'catalogue_hash', 'revision', 'guide_sha256')) and
+            isinstance(value.get('source_sha256'), dict) and
+            set(value['source_sha256']) == {'nex.json', 'src/main.nex', 'src/values.nex'} and
+            all(isinstance(digest, str) and re.fullmatch('[0-9a-f]{64}', digest) and
+                hashes.get('examples/llm-quick/' + name) == digest for name, digest in value['source_sha256'].items()),
+            'SDK bounded-entry resources or identities differ')
+    browser = report.get('evidence', {}).get('browser_build')
+    ts = value.get('typescript', {})
+    require(type(browser) is bool and isinstance(ts, dict) and ts.get('requested') is browser and
+            ts.get('executed') is browser and (not browser or
+                ts.get('stdout') == 'quick-reference-ok\n' and ts.get('task_cleanup') is True),
+            'SDK bounded-entry TypeScript execution differs from requested browser scope')
+
+
 EDITOR_BACKEND_UNAVAILABLE = 'NEX requires its matching native SDK, Python and an available lldb-dap backend.'
 
 
@@ -1181,6 +1298,8 @@ def validate_completed_report(report, *, expected_network_profile='full'):
     if report.get('version') is not None and doctor_version is not None:
         require(report['version']==doctor_version,'SDK acceptance version identities differ')
     version = (doctor_version or report.get('version', '0.0.0')).split('.')
+    if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,166,0):
+        validate_bounded_language_entry_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,163,0):
         validate_owned_metal_evidence(report)
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,151,0):
@@ -2146,6 +2265,10 @@ test fn examples() -> unit {
         cli('check', cwd=directory)
         cli('test', cwd=directory)
         cli('run', cwd=directory)
+        version = tuple(map(int, report['version'].split('.')))
+        if version >= (0, 166, 0):
+            report['evidence']['bounded_language_entry'] = exercise_bounded_language_entry(
+                cli=cli, run=run, compiler=compiler, resources=resources, root=root, browser=args.browser)
 
     def baseline_failure():
         (project / 'model.nex').write_text(model)

@@ -2,12 +2,22 @@
   "schema": "nex.language-pack/1",
   "language_version": "0.28",
   "language_pack_contract": {
-    "schema": "nex.language-pack-contract/1",
     "authority": "selected compiled descriptor",
+    "command": "python3 tools/llm/language_pack.py --compiler NEX --resources RESOURCES --check",
+    "comparison": "exact JSON values and types; every declared shared field required",
+    "excluded_shared_fields": [
+      "schema"
+    ],
+    "language_alias": {
+      "descriptor": "version",
+      "manifest": "language_version"
+    },
+    "schema": "nex.language-pack-contract/1",
     "shared_fields": [
       "browser_workers",
       "compute",
       "device",
+      "diagnostic_catalogue",
       "dns_provider",
       "features_scope",
       "foreign_trap_reporting",
@@ -17,6 +27,7 @@
       "http_storage_transactions",
       "language_pack_contract",
       "llm_cost",
+      "llm_entry",
       "model",
       "native_application_lifetime",
       "native_core",
@@ -63,22 +74,15 @@
       "tcp_provider",
       "wasm_features"
     ],
-    "excluded_shared_fields": [
-      "schema"
-    ],
-    "language_alias": {
-      "manifest": "language_version",
-      "descriptor": "version"
-    },
-    "comparison": "exact JSON values and types; every declared shared field required",
-    "validator": "tools/llm/language_pack.py",
-    "command": "python3 tools/llm/language_pack.py --compiler NEX --resources RESOURCES --check"
+    "validator": "tools/llm/language_pack.py"
   },
   "features_scope": {
-    "status": "legacy_partial_summary",
-    "complete": false,
     "capability_authority": "nex describe --kind index --json",
+    "complete": false,
+    "legacy_entries_preserved": true,
     "recommended_fields": [
+      "llm_entry",
+      "diagnostic_catalogue",
       "types",
       "numeric_features",
       "generic_features",
@@ -89,7 +93,7 @@
       "project_build",
       "gpu_codegen"
     ],
-    "legacy_entries_preserved": true
+    "status": "legacy_partial_summary"
   },
   "foreign_trap_reporting": {
     "status": "development",
@@ -560,7 +564,11 @@
     "gpu_codegen": "docs/gpu-codegen.md",
     "metal_emission_schema": "llm/metal-emission.schema.json",
     "cuda_emission_schema": "llm/cuda-emission.schema.json",
-    "llm_cost": "experiments/quality/llm_cost.md"
+    "llm_cost": "experiments/quality/llm_cost.md",
+    "quick_reference": "llm/QUICK_REFERENCE.md",
+    "diagnostic_catalogue": "docs/diagnostics.md",
+    "diagnostic_explanation_schema": "llm/diagnostic-explanation.schema.json",
+    "diagnostic_catalogue_index_schema": "llm/diagnostic-catalogue-index.schema.json"
   },
   "document_access": "nex guide --kind source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -662,7 +670,10 @@
     "runtime_value_contract": "examples/runtime-value-contracts/contracts.json",
     "source_contracts": "examples/source-contracts/main.nex",
     "cuda_scalar": "examples/gpu-cuda.nex",
-    "cuda_fixed_values": "examples/gpu-values.nex"
+    "cuda_fixed_values": "examples/gpu-values.nex",
+    "llm_quick_project": "examples/llm-quick/nex.json",
+    "llm_quick_source": "examples/llm-quick/src/main.nex",
+    "llm_quick_import": "examples/llm-quick/src/values.nex"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4481,5 +4492,37 @@
       "incomplete": 1,
       "invalid": 2
     }
+  },
+  "diagnostic_catalogue": {
+    "automatic_fix": false,
+    "catalogue_hash": "ea0195e04bcc5b41e2048954bb52da6a6eb48240d9aed121c4fb9579ead99a4d",
+    "catalogue_hash_algorithm": "BLAKE3/256",
+    "checked_example_pairs": 9,
+    "code_bytes_max": 128,
+    "command": "nex explain CODE [--json]",
+    "complete_code_registry": false,
+    "covered_codes": 103,
+    "graph_store_opened": false,
+    "guide": "docs/diagnostics.md",
+    "index_command": "nex explain --kind index [--json]",
+    "index_schema": "nex.diagnostic-catalogue-index/1",
+    "python_required": false,
+    "response_bytes_max": 8192,
+    "schema": "nex.diagnostic-explanation/1",
+    "source_executed": false,
+    "source_files_read": false,
+    "status": "compiled_reviewed_catalogue",
+    "unknown_codes_invented": false
+  },
+  "llm_entry": {
+    "example_project": "examples/llm-quick/nex.json",
+    "examples_require_validation": true,
+    "guide": "llm/QUICK_REFERENCE.md",
+    "guide_command": "nex guide --kind quick --json",
+    "guide_utf8_bytes_max": 6144,
+    "language": "0.28",
+    "language_migration_required": false,
+    "status": "bounded_language_entry",
+    "token_savings_demonstrated": false
   }
 }

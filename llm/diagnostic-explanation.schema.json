@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nex.diagnostic-explanation/1",
+  "title": "Compiled context-independent diagnostic guidance",
+  "type": "object",
+  "required": ["schema", "language", "toolchain", "compiler_build", "descriptor_hash", "catalogue_hash", "code", "category", "meaning", "action", "guide_command", "context_specific", "automatic_fix", "examples"],
+  "properties": {
+    "schema": {"const": "nex.diagnostic-explanation/1"},
+    "language": {"type": "string", "minLength": 1, "maxLength": 32},
+    "toolchain": {"type": "string", "minLength": 1},
+    "compiler_build": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "descriptor_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "catalogue_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "code": {"type": "string", "pattern": "^E_[A-Z0-9_]+$", "maxLength": 128},
+    "category": {"enum": ["syntax", "type", "name", "effect", "generic", "runtime", "control", "limit", "tool", "debug", "gpu", "api", "ffi", "provider", "version"]},
+    "meaning": {"type": "string", "minLength": 1},
+    "action": {"type": "string", "minLength": 1},
+    "guide_command": {"type": "string", "pattern": "^nex guide --kind [a-z-]+ --json$"},
+    "context_specific": {"const": false},
+    "automatic_fix": {"const": false},
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["invalid", "corrected", "rejection_code", "kind", "applies_to_user_source"],
+        "properties": {
+          "invalid": {"type": "string", "minLength": 1},
+          "corrected": {"type": "string", "minLength": 1},
+          "rejection_code": {"type": "string", "pattern": "^E_[A-Z0-9_]+$"},
+          "kind": {"const": "illustrative_program_pair"},
+          "applies_to_user_source": {"const": false}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
