@@ -116,6 +116,7 @@ const std::map<std::string,std::string> &cliGuides(){
     {"list-build","docs/list-construction.md"},
     {"text-construction","docs/text-construction.md"},
     {"bench","docs/bench.md"},
+    {"fixes","docs/fixes.md"},
     {"bytes-construction","docs/bytes-construction.md"},
   };return files;
 }
@@ -160,6 +161,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--auth","FILE","Operator-selected authentication configuration.");
     add("--events","COUNT","Profiling event limit.");
     add("--timeout","SECONDS","Command-specific wall timeout.");
+    add("--apply","","Apply the unique compiler-checked fix.");
     add("--repetitions","COUNT","Measured benchmark repetitions.");
     add("--warmup","COUNT","Unmeasured benchmark warmup runs.");
     add("--baseline","FILE","Earlier nex.bench/1 report for comparison.");
@@ -212,6 +214,7 @@ const std::vector<CliOption> &cliOptions(){
       if(o.name=="--details"||o.name=="--references"){o.restrictedCommands={"analyze"};o.restrictionMessage=o.name+" requires analyze";}
       if(o.name=="--capsule"||o.name=="--export"){o.restrictedCommands={"core"};o.restrictionMessage="--capsule/--export require core and a directory";}
       if(o.name=="--thread"||o.name=="--frame"){o.restrictedCommands={"core"};o.restrictionMessage="--thread/--frame require core and an index";}
+      if(o.name=="--apply"){o.restrictedCommands={"fix"};o.unique=true;o.restrictionMessage="--apply requires fix";}
       if(o.name=="--repetitions"||o.name=="--warmup"||o.name=="--baseline"){o.restrictedCommands={"bench"};o.restrictionMessage=o.name+" requires bench";}
     }
     return v;
@@ -255,6 +258,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("package","[FILE] --directory NEW","Build/package a native application with its notices.","build",native+" --directory --notices --dpkg-notices --foreign");
     add("profile","[FILE]","Profile actual native work with a bounded event budget.","profile",native+" --foreign --events --timeout --scenario --output");
     add("bench","[FILE]","Measure repeated native runtime of one checked program.","bench",native+" --kind --repetitions --warmup --baseline --output");
+    add("fix","[FILE]","Apply or preview one compiler-checked diagnostic fix.","fixes","--apply");
     add("debug","[FILE] [-- DEBUGGER_ARGS...]","Launch native LLDB/DAP debugging with matching source metadata.","debug",native+" --kind --foreign");
     add("contract","[FILE]","Generate proof/runtime/intent contracts as explicitly selected.","verify","--kind --revision --symbol --output --contracts --directory");
     add("verify","[FILE] --contracts FILE","Check explicitly supplied bounded proof contracts.","verify","--revision --contracts --symbol --solver-timeout --resource-limit --timeout --output");

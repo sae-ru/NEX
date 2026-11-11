@@ -34,8 +34,11 @@ struct Span { unsigned line = 1, column = 1; size_t begin = 0, end = 0; std::str
 // Generated semantic nodes leave valid=false; ranges never affect identities.
 struct SourceRange {size_t begin=0,end=0;bool valid=false;};
 struct SourceToken {std::string text;Span span;bool identifier=false;};
+struct Fix {
+  size_t begin=0,end=0;std::string replacement,safety;
+};
 struct Error : std::runtime_error {
-  std::string code, message, output, operationSite, operationId, operationRevision, operationSource; Span span;
+  std::string code, message, output, operationSite, operationId, operationRevision, operationSource; Span span;std::vector<Fix> fixes;
   llvm::json::Value frontend=nullptr;
   Error(std::string code, std::string message, Span span = {})
       : std::runtime_error(""), code(std::move(code)), message(std::move(message)), span(span) {}

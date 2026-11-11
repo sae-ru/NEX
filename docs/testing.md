@@ -154,7 +154,13 @@ revision and host/CPU identity; an earlier `nex.bench/1` report supplies
 `delta_seconds` and `ratio`. The command test passed in 3.86 s and the unchanged
 12-group core in 23.60 s. Only runtime measurement is implemented; cold/warm/edit
 build timing, cross-host normalization and statistical significance remain
-pending.
+
+Toolchain 0.176 adds `fix_command` (333 registered Mac groups). `E_NAME` and
+`E_FIELD` diagnostics carry a unique checked `nex.fix/1` interval when a close
+visible identifier exists; preview, apply, unavailable-fix and rollback paths
+passed in 0.54 s, and the unchanged 12-group core in 23.94 s. Applying a fix
+rechecks the whole file and restores the original bytes on rejection. Other
+diagnostic families, multi-fix batches and editor protocols remain pending.
 
 ## Maintain the catalogue
 

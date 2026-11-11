@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.175.0 LANGUAGES C CXX)
+project(NEX VERSION 0.176.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1778,4 +1778,8 @@ set_tests_properties(agreement_generator PROPERTIES TIMEOUT 300)
 add_test(NAME bench_command COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/bench.py $<TARGET_FILE:nex>)
 set_tests_properties(bench_command PROPERTIES TIMEOUT 300)
+
+add_test(NAME fix_command COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixes.py $<TARGET_FILE:nex>)
+set_tests_properties(fix_command PROPERTIES TIMEOUT 120)
 include(cmake/TestTiers.cmake)

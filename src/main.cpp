@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <functional>
 #include <array>
+#include <memory>
 #include <chrono>
 #include <cerrno>
 #include <fcntl.h>
@@ -205,6 +206,54 @@ void migrate(const Options &o,const fs::path &root){
     {"origin_language",originLanguage},{"origin_verified",verified},{"origin_source_hash",originSourceHash},{"candidate_used",candidateUsed},{"previous_revision",previous},
     {"revision",selected},{"language",programLanguage(program)},{"source_hash",sourceHash},
     {"changed",previous!=selected},{"materialized",false}});
+}
+int fixSource(const Options &o,const fs::path &root){
+  if(o.positional.size()>1||!o.extra.empty()||
+     std::any_of(o.flags.begin(),o.flags.end(),[](const auto &flag){return flag!="--json"&&flag!="--apply";})||
+     std::any_of(o.values.begin(),o.values.end(),[](const auto &item){return item.first!="--revision";}))
+    throw Error("E_OPTION","fix requires FILE [--apply] [--json]");
+  if(!o.get("--revision").empty())throw Error("E_OPTION","fix edits physical source; --revision is not supported");
+  auto file=fs::absolute(o.positional.empty()?defaultSource(root):o.positional.front()).lexically_normal();
+  auto original=readFile(file.string());
+  std::unique_ptr<Error> diagnostic;
+  try{(void)loadProgram(file.string(),root.string());}
+  catch(Error &error){diagnostic=std::make_unique<Error>(error);}
+  if(!diagnostic)throw Error("E_FIX","source already checks; no pending diagnostic");
+  auto expectedFile=file.filename().string();
+  auto reported=fs::path(diagnostic->span.file).filename().string();
+  if(!diagnostic->span.file.empty()&&reported!=expectedFile)
+    throw Error("E_FIX_FILE","checked fix is outside the selected file",diagnostic->span);
+  if(diagnostic->fixes.empty())
+    throw Error("E_FIX_UNAVAILABLE","no checked fix is available for "+diagnostic->code,diagnostic->span);
+  if(diagnostic->fixes.size()!=1)
+    throw Error("E_FIX_AMBIGUOUS","more than one checked fix is available; select a single diagnostic",diagnostic->span);
+  const auto &fix=diagnostic->fixes.front();
+  if(fix.begin>fix.end||fix.end>original.size())
+    throw Error("E_FIX_RANGE","checked fix range is outside the source snapshot",diagnostic->span);
+  auto updated=original;updated.replace(fix.begin,fix.end-fix.begin,fix.replacement);
+  llvm::json::Object preview{{"schema","nex.fix/1"},{"ok",true},{"applied",false},{"file",file.string()},
+    {"diagnostic",llvm::json::Object{{"code",diagnostic->code},{"message",diagnostic->message},
+      {"line",int64_t(diagnostic->span.line)},{"column",int64_t(diagnostic->span.column)}}},
+    {"fix",llvm::json::Object{{"begin",int64_t(fix.begin)},{"end",int64_t(fix.end)},
+      {"replacement",fix.replacement},{"safety",fix.safety}}},
+    {"source_hash",hash(original)}};
+  if(!o.has("--apply")){
+    if(o.has("--json"))print(std::move(preview));
+    else std::cout<<diagnostic->code<<": "<<diagnostic->message<<"\nreplace ["<<fix.begin<<","<<fix.end<<") with '"<<fix.replacement<<"' ("<<fix.safety<<")\n";
+    return 0;
+  }
+  writeFile(file.string(),updated);
+  try{
+    auto checked=loadProgram(file.string(),root.string());
+    llvm::json::Value applied=std::move(preview);auto *object=applied.getAsObject();
+    (*object)["applied"]=true;(*object)["revision"]=revision(checked);(*object)["source_hash"]=hash(updated);
+    if(o.has("--json"))print(std::move(applied));
+    else std::cout<<"Applied "<<diagnostic->code<<" fix to "<<file.string()<<"\n";
+    return 0;
+  }catch(Error &failure){
+    writeFile(file.string(),original);
+    throw Error("E_FIX_REJECTED","applied fix did not check: "+failure.message,failure.span);
+  }
 }
 int run(const Options &o) {
   if(o.command=="help"||o.helpRequested){
@@ -587,7 +636,7 @@ int run(const Options &o) {
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
   }
-  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","bench","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose","search","subgraph"};
+  const std::set<std::string> commands={"check","eval","build","package","run","test","emit","bench","fix","graph","declarations","identities","operations","context","history","changes","restore","apply","import","export","debug","migrate","lock","web","api","profile","contract","verify","ffi","diagnose","search","subgraph"};
   if(!commands.contains(o.command))throw Error("E_COMMAND","unknown command '"+o.command+"'");
   if(o.has("--library")&&o.command!="build"&&o.command!="emit")throw Error("E_OPTION","--library is supported by native build/emit");
   if(o.has("--library")&&o.get("--target")=="web")throw Error("E_OPTION","--library is a native archive target; use emit --kind typescript for a web module");
@@ -607,6 +656,7 @@ int run(const Options &o) {
     if(!previous.empty()&&retained.revisionLanguage(previous)!=languageVersion)
       throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
   }
+  if(o.command=="fix"){return fixSource(o,root);}
   Store store(root/".nex");
   if(o.command=="history"){print(store.history());return 0;}
   if(o.command=="changes"){

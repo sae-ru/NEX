@@ -97,6 +97,15 @@ JSON diagnosticJSON(const Error &error,const std::string &toolchain,const std::s
     if(!toolchain.empty()&&!build.empty())frontend["compiler"]=Object{{"version",toolchain},{"build",build}};
     result["frontend"]=std::move(frontend);
   }
+  if(!error.fixes.empty()){
+    Array fixes;
+    for(const auto &fix:error.fixes){
+      if(fix.begin>fix.end)continue;
+      fixes.push_back(Object{{"schema","nex.fix/1"},{"begin",int64_t(fix.begin)},{"end",int64_t(fix.end)},
+        {"replacement",safe("fix_replacement",fix.replacement)},{"safety",safe("fix_safety",fix.safety)}});
+    }
+    if(!fixes.empty())result["fixes"]=std::move(fixes);
+  }
   if(!escaped.empty())result["escaped_fields"]=std::move(escaped);
   return result;
 }
