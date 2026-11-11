@@ -1,0 +1,66 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T13:30:27.702440+00:00",
+  "scope": "Full maintained macOS SDK workflow attempt: incomplete, not acceptance",
+  "implementation_commit": "491808a4e612d909a4a6451aaf0f41a32359a8c8",
+  "source_export_commit": "491808a",
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "config": {
+    "path": "/Users/sae/projects/NEX/build/sdk-config-0177.json",
+    "sha256": "d7ff162876f847d7833d8a40ab59b6d64030d9f483f7ee2318c17632d278a3f9",
+    "target": "macos-native",
+    "live": false,
+    "jobs": 4,
+    "tracked_files": 2419
+  },
+  "phases": [
+    {
+      "name": "configure",
+      "status": "passed",
+      "seconds": 2.368
+    },
+    {
+      "name": "build",
+      "status": "passed",
+      "seconds": 267.687
+    },
+    {
+      "name": "locked-web",
+      "status": "passed",
+      "seconds": 0.395
+    },
+    {
+      "name": "source-tests",
+      "status": "incomplete",
+      "completed": 10,
+      "selected": 325,
+      "elapsed_seconds": 1563,
+      "projected_seconds": 50750
+    }
+  ],
+  "reason": "The maintained full CTest selection ran sequentially (-j1) and reached 10/325 tests in 26 minutes; the projected duration is about 14 hours. The run was stopped to preserve the session and host capacity.",
+  "not_acceptance": true,
+  "archive_created": false,
+  "distribution_run": false,
+  "local_smoke_evidence": "docs/evidence/sdk-local-smoke-0.177.0-2026-11-11.json",
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/report.json",
+    "build_stdout": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/build.stdout",
+    "configure_stdout": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/configure.stdout",
+    "ctest_stdout": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/source-tests/ctest.stdout",
+    "source_tests_report": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/source-tests/report.json",
+    "registry": "/Users/sae/projects/NEX/build/sdk-full-0177-v1/source-tests/tiers.json"
+  },
+  "limits": [
+    "no source-test completion, JUnit closure, install, distribution or moved/restored acceptance from this attempt",
+    "the earlier local install/move/archive/restore smoke remains a separate scoped result",
+    "full maintained SDK/ platform qualification requires a dedicated quiet-host final run"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true
+}
