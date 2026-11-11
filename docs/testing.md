@@ -214,6 +214,13 @@ TypeScript test now covers both direct calls and `seq::map` function values and
 passed in 9.08 s. Explicit effect witnesses, higher-rank effects and a
 language-version migration remain pending.
 
+Toolchain 0.182 accepts explicit effect witnesses after type arguments
+(`seq::map<i64,i64>!{io}(...)`, including contextual function values). A witness
+requires exactly one effect parameter and must match every callable argument;
+mismatches are `E_EFFECT`. The focused checker/reference/native/TypeScript test
+passed in 8.77 s. Higher-rank effects and a language-version migration remain
+pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

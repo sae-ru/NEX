@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.181.0"
+applies_to: "language 0.28; toolchain 0.182.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.181.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.182.0 / language 0.28 / task ABI 7**, in development.
 Complete matching portable SDK qualification is still pending. Source support,
 physical device checks and portable delivery have separate acceptance records.
 Fatal diagnostics [preserve NUL/Unicode](evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);

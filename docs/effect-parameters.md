@@ -49,6 +49,20 @@ let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
 ```
 
 The expected type supplies the effect context; without one, a bare generic
-reference is rejected. Explicit effect-witness arguments, higher-rank effects
-and a language-version migration remain pending. Callable effect/realm equality
+reference is rejected.
+
+An explicit witness can be written after the type arguments:
+
+```nex
+let explicit: list<i64> = seq::map<i64, i64>!{io}(
+    [1, 2],
+    fn(x: i64) -> i64 !{io} { print(x); return x; });
+
+let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io}
+    = seq::map<i64, i64>!{io};
+```
+
+A witness is accepted only for a function with exactly one effect parameter and
+must equal the effects of every callable argument. Higher-rank effects and a
+language-version migration remain pending. Callable effect/realm equality
 remains exact after substitution.

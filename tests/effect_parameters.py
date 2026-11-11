@@ -42,6 +42,13 @@ fn main() -> unit !{io} {
   assert(pure == [11, 12]);
   let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
   assert(mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
+  let explicit: list<i64> = seq::map<i64, i64>!{io}([1], fn(x: i64) -> i64 !{io} {
+      print(x);
+      return x;
+    });
+  assert(explicit == [1]);
+  let explicit_mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map<i64, i64>!{io};
+  assert(explicit_mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
   let pure_mapper: fn(list<i64>, fn(i64)->i64) -> list<i64> = seq::map;
   assert(pure_mapper([1], fn(x: i64) -> i64 { return x + 1; }) == [2]);
   print("effect-parameters-ok");
@@ -60,12 +67,19 @@ test fn effect_test() -> unit !{io} {
   assert(applied == 2);
   let mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map;
   assert(mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
+  let explicit: list<i64> = seq::map<i64, i64>!{io}([1], fn(x: i64) -> i64 !{io} {
+      print(x);
+      return x;
+    });
+  assert(explicit == [1]);
+  let explicit_mapper: fn(list<i64>, fn(i64)->i64 !{io}) -> list<i64> !{io} = seq::map<i64, i64>!{io};
+  assert(explicit_mapper([1], fn(x: i64) -> i64 !{io} { print(x); return x; }) == [1]);
 }
 '''
 REJECT='''module effect_reject;
 import "std/list.nex" as seq;
-fn main() -> unit {
-  let values: list<i64> = seq::map([1], fn(x: i64) -> i64 !{io} {
+fn main() -> unit !{io} {
+  let values: list<i64> = seq::map<i64, i64>!{task}([1], fn(x: i64) -> i64 !{io} {
       print(x);
       return x;
     });
@@ -115,6 +129,7 @@ class EffectParameters(unittest.TestCase):
             self.assertEqual(descriptor['schema'],'nex.effect-parameters/1')
             self.assertIn('?E',descriptor['syntax'])
             self.assertTrue(descriptor['function_values'])
+            self.assertTrue(descriptor['explicit_effect_witnesses'])
 
     def test_missing_caller_effect_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix='nex effect reject ') as temporary:
@@ -123,7 +138,7 @@ class EffectParameters(unittest.TestCase):
             self.assertNotEqual(checked.returncode,0)
             diagnostic=json.loads(checked.stdout)
             self.assertEqual(diagnostic['code'],'E_EFFECT')
-            self.assertIn('io',diagnostic['message'])
+            self.assertIn('witness',diagnostic['message'])
 
 
 if __name__=='__main__':unittest.main()

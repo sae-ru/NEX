@@ -96,7 +96,7 @@ struct Expr {
   Span span;SourceRange sourceRange;unsigned syntaxHeight=1; std::string text; int64_t number = 0; Type type = Type::Unknown, annotation = Type::Unknown;
   std::string localName;std::shared_ptr<Function> lambda;
   std::vector<std::shared_ptr<Expr>> args;
-  std::vector<Type> typeArguments;
+  std::vector<Type> typeArguments;std::set<std::string> effectArguments;
   std::vector<Type> methodArguments;
   std::vector<Type> traitArguments;
   std::string traitContract,implementation;

@@ -66,6 +66,7 @@ and final delivery work are:
 - [x] Add checked source `std/map.nex` and `std/set.nex` immutable list-backed containers.
 - [x] Add inferred effect parameters `?E` to named generic functions and `std/list` callbacks.
 - [x] Infer effect parameters for function values with an expected function type.
+- [x] Add explicit effect witnesses for single-parameter generic calls.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).
