@@ -1,0 +1,52 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical Mali-G720 execution of emitted 0.185 OpenCL scalar kernel",
+  "source_commit": "953e06a",
+  "compiler": {
+    "toolchain": "0.185.0",
+    "language": "0.28",
+    "sha256": "4f7b0ee0881d7b56cf80e485abde547bb109825d72fd4043b3daf492f2a61ade",
+    "source_modified": true,
+    "modification": "stand-only -fno-rtti for language.cpp; LLVM/MLIR GROUP linker scripts"
+  },
+  "host": {
+    "uname": "Linux orangepi6plus 6.6.89-cix aarch64",
+    "os": "Debian GNU/Linux 12 (bookworm)",
+    "opencl": "3.0",
+    "device": "Mali-G720-Immortalis r0p0",
+    "device_type": "GPU",
+    "cpu_fallback": false
+  },
+  "kernel": {
+    "sha256": "5352d0c4e063921c236793f0af807aea744f834aea0d1e689d80d89dad559bae",
+    "schema": "nex.opencl-emission/1",
+    "kernel": "nex_generated_map",
+    "host_source_sha256": "7990a6f10928bf9b3f109a1ac91094aa1d5a0d2ddefdcc7ab5dfcc451649cae3"
+  },
+  "results": {
+    "normal": {
+      "output": 42,
+      "error": 0,
+      "exit": 0
+    },
+    "overflow": {
+      "output": 0,
+      "error": 1,
+      "exit": 1
+    }
+  },
+  "limits": [
+    "one scalar i64/bool/unit kernel; host harness is external to the NEX CLI",
+    "no full CTest/SDK, no NPU, no other OpenCL device/control-flow qualification",
+    "compiler source used a stand-only RTTI build flag; language semantics unchanged"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/mali-0185-evidence/mali-report.json",
+    "kernel": "/Users/sae/projects/NEX/build/mali-0185-evidence/kernel.cl",
+    "host_source": "/Users/sae/projects/NEX/build/mali-0185-evidence/ocl_host.c",
+    "normal_log": "/Users/sae/projects/NEX/build/mali-0185-evidence/normal.log",
+    "overflow_log": "/Users/sae/projects/NEX/build/mali-0185-evidence/overflow.log",
+    "emit_report": "/Users/sae/projects/NEX/build/mali-0185-evidence/opencl-emit.json",
+    "clinfo": "/Users/sae/projects/NEX/build/mali-0185-evidence/clinfo.log"
+  }
+}

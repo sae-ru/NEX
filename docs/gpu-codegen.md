@@ -110,6 +110,14 @@ report schema is [nex.opencl-emission/1](../llm/opencl-emission.schema.json).
 The focused test compiles the emitted source with Clang's OpenCL frontend when
 available and rejects unsupported f64.
 
+On CIX P1, the emitted scalar kernel executed on the **Mali-G720-Immortalis
+r0p0** GPU under OpenCL 3.0. Inputs `(20, 2)` produced `42` with error `0`;
+`(INT64_MAX, 1)` produced output `0` with overflow error `1`. The host selected
+`CL_DEVICE_TYPE_GPU`, recorded the physical device name and did not fall back to
+a CPU. The host harness is external; the compiler remains source-only and does
+not initialize a driver. See the
+[scoped Mali evidence](evidence/opencl-mali-cix-0.185.0-2026-11-11.json).
+
 ## CUDA source emission
 
 The same compiler also accepts `--kind cuda`. Discover its own subset with
