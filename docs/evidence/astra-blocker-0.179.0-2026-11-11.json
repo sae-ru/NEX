@@ -1,0 +1,16 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Astra Linux 1.7 x86-64 availability and build prerequisite check",
+  "source_commit": "8516139",
+  "host": {
+    "uname": "Linux astra 5.15.0-70-generic #astra2 SMP x86_64",
+    "os": "Astra Linux 1.7_x86-64",
+    "glibc": "2.28",
+    "disk": "39G root, 16G free",
+    "tools": {"cmake": "missing", "ninja": "missing", "g++": "missing", "clang++": "missing", "node": "missing", "python3": "present", "git": "present"}
+  },
+  "blocker": "Astra has glibc 2.28 and no C++/CMake/LLVM toolchain. The official LLVM 22.1.8 Linux x86-64 release is built against a newer glibc; building LLVM/MLIR 22 from source on 4 cores and 16G free is not a bounded acceptance step. No source transfer or compiler build was attempted.",
+  "status": "pending",
+  "not_acceptance": true,
+  "artifacts": {}
+}

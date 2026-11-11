@@ -1,0 +1,67 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "RK3588 ARM64 Linux functional check of exact 0.179 source",
+  "source_commit": "8516139",
+  "source_archive_sha256": "f7bc69c05e38ed690d7cfc5812401a7d791fcc5f8f0089c0147149c20e07f458",
+  "compiler": {
+    "toolchain": "0.179.0",
+    "language": "0.28",
+    "llvm": "22.1.8",
+    "sha256": "046ec691187f7a3cde4f642a4966e757f62ae5d0bb301abebfcb11fecd5bb867",
+    "source_modified": true,
+    "modification": "set_source_files_properties(src/language.cpp PROPERTIES COMPILE_OPTIONS \"-fno-rtti\"); NEX_CLANG wrapper adds --gcc-install-dir",
+    "link_workaround": "GROUP libLLVM/libMLIR scripts; -Wl,--start-group -lLLVM -lMLIR -Wl,--end-group"
+  },
+  "host": {
+    "uname": {
+      "system": "Linux",
+      "node": "orangepi5pro",
+      "release": "6.1.43-rockchip-rk3588",
+      "version": "#1.0.6 SMP Wed Nov 13 00:19:29 CST 2024",
+      "machine": "aarch64",
+      "processor": "aarch64"
+    },
+    "os": "Linux-6.1.43-rockchip-rk3588-aarch64-with-glibc2.35",
+    "disk_after_cleanup": "56G root, 31G free"
+  },
+  "results": {
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.97,
+    "app_run_stdout": "55\n",
+    "containers_run_ok": true,
+    "containers_stdout": "containers-example-ok\n",
+    "containers_test_ok": true,
+    "tests": [
+      {
+        "name": "std::map::map_test",
+        "native": true,
+        "ok": true
+      },
+      {
+        "name": "std::set::set_test",
+        "native": true,
+        "ok": true
+      }
+    ]
+  },
+  "cleanup": {
+    "removed": "/tmp/nex-* (4.4G old NEX artifacts)",
+    "before_root_free": "6G",
+    "after_root_free": "31G",
+    "not_removed": "/home/orangepi non-NEX data (autonavigation, CLion, video)"
+  },
+  "limits": [
+    "native functional check, not full CTest or SDK acceptance",
+    "no GPU (Mali/OpenCL), NPU (RKNN), browser/TypeScript or full platform matrix",
+    "official LLVM release lacks RTTI; language.cpp uses a stand-only -fno-rtti build flag"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/rk-0179-evidence/rk179-report.json",
+    "doctor": "/Users/sae/projects/NEX/build/rk-0179-evidence/doctor.json",
+    "core_log": "/Users/sae/projects/NEX/build/rk-0179-evidence/core.log",
+    "containers_run": "/Users/sae/projects/NEX/build/rk-0179-evidence/containers-run.json",
+    "containers_test": "/Users/sae/projects/NEX/build/rk-0179-evidence/containers-test.json",
+    "app_run": "/Users/sae/projects/NEX/build/rk-0179-evidence/app/run.json"
+  }
+}
