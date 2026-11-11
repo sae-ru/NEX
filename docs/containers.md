@@ -49,9 +49,11 @@ compared with `==`; the key type must support it.
 ## Set
 
 `Set<T>` exposes `items: list<T>`. Functions `empty<T>()`, `add(set,value)`,
-`remove(set,value)`, `has(set,value)`, `items(set)`, and `size(set)`. `add` of
-an existing value is a no-op. Removal preserves order and removes matching
-values; duplicates are not produced by `add`.
+`remove(set,value)`, `has(set,value)`, `union(left,right)`,
+`intersection(left,right)`, `difference(left,right)`, `items(set)`, and
+`size(set)`. `add` of an existing value is a no-op. Removal preserves order and
+removes matching values; duplicates are not produced by `add`. Set operations
+preserve the left insertion order and remain immutable list-backed O(n).
 
 ## Limits
 

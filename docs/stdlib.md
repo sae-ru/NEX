@@ -104,6 +104,7 @@ These structural bounds do not establish C++ vector throughput or token savings.
 
 [`std/map.nex`](containers.md) and [`std/set.nex`](containers.md) provide
 immutable insertion-ordered `Map<K,V>` and `Set<T>` source containers.
+`std/set.nex` includes `union`, `intersection` and `difference` helpers.
 [`std/queue.nex`](containers.md), [`std/stack.nex`](containers.md) and
 [`std/deque.nex`](containers.md) provide FIFO `Queue<T>`, LIFO `Stack<T>` and
 double-ended `Deque<T>` with `E_EMPTY` results, and

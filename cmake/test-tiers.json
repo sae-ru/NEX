@@ -239,6 +239,7 @@
     "stdlib_queue_stack": ["extended", "browser", "platform"],
     "stdlib_deque": ["extended", "browser", "platform"],
     "stdlib_priority_queue": ["extended", "browser", "platform"],
+    "stdlib_set_ops": ["extended", "browser", "platform"],
     "containers": ["extended", "browser", "platform", "sdk"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],

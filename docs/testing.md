@@ -361,6 +361,10 @@ Toolchain 0.213 adds LSP local-type inlay hints; `language_server` passed in
 Toolchain 0.214 adds ordered `std/priority_queue.nex` with `E_EMPTY`; the
 focused priority-queue test covers reference/native/TypeScript.
 
+Toolchain 0.215 adds `std/set.nex` union/intersection/difference;
+`stdlib_set_ops` covers reference/native/TypeScript in 5.52 s and the standard
+library pin/catalogue test passed in 39.99 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

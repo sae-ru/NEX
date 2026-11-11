@@ -44,6 +44,40 @@ pub fn remove<T>(set: Set<T>, value: T) -> Set<T> {
   return Set(output);
 }
 
+pub fn union<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  var output: Set<T> = left;
+  var i: i64 = 0;
+  while i < len(right.items) {
+    output = add(output, right.items[i]);
+    i = i + 1;
+  }
+  return output;
+}
+
+pub fn intersection<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  var output: Set<T> = empty();
+  var i: i64 = 0;
+  while i < len(left.items) {
+    if has(right, left.items[i]) {
+      output = add(output, left.items[i]);
+    }
+    i = i + 1;
+  }
+  return output;
+}
+
+pub fn difference<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  var output: Set<T> = empty();
+  var i: i64 = 0;
+  while i < len(left.items) {
+    if !has(right, left.items[i]) {
+      output = add(output, left.items[i]);
+    }
+    i = i + 1;
+  }
+  return output;
+}
+
 pub fn items<T>(set: Set<T>) -> list<T> {
   return set.items;
 }

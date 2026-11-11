@@ -38,7 +38,7 @@ llvm::json::Object standardLibraryCapability(){
       {"set",llvm::json::Object{{"import","std/set.nex"},{"module","std::set"},
         {"resource","lib/set.nex"},{"sha256",NEX_STDLIB_SET_SHA256},{"introduced_toolchain","0.178.0"},
         {"types",llvm::json::Array{"Set<T>"}},
-        {"functions",llvm::json::Array{"empty","add","remove","has","items","size"}},
+        {"functions",llvm::json::Array{"empty","add","remove","has","union","intersection","difference","items","size"}},
         {"ordering","insertion order; add of an existing value is a no-op; immutable"},
         {"complexity","add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table"},{"mutation",false}}},
       {"deque",llvm::json::Object{{"import","std/deque.nex"},{"module","std::deque"},

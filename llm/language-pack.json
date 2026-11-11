@@ -4745,6 +4745,9 @@
           "add",
           "remove",
           "has",
+          "union",
+          "intersection",
+          "difference",
           "items",
           "size"
         ],
@@ -4754,7 +4757,7 @@
         "mutation": false,
         "ordering": "insertion order; add of an existing value is a no-op; immutable",
         "resource": "lib/set.nex",
-        "sha256": "a281f9356cdf550a2bee35cb28d097a03ee8bb814a9b40f6a1019c68209ec931",
+        "sha256": "202902eddd8fe9fb8995e422387f553e591de9e26f8ab969f1afb24434d435ba",
         "types": [
           "Set<T>"
         ]
