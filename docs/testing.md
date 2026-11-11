@@ -270,6 +270,12 @@ NVIDIA RTX 3090 OpenCL 3.0 (`42.0`, error 0; infinity input error 7); Mali
 remains i64/bool because it has no fp64. The OpenCL focused suite passed in
 0.24 s. Full device/SDK acceptance remains pending.
 
+Toolchain 0.190 extends type-parameter defaults to generic functions. Calls may
+omit trailing type arguments, inference fills defaults when a parameter is
+otherwise unbound, and function values use defaults without an explicit
+context. Non-trailing/unit defaults remain rejected. The focused
+resolution/reference/native/TypeScript test passed in 5.35 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

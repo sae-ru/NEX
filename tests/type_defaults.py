@@ -58,7 +58,6 @@ class TypeDefaults(unittest.TestCase):
             root=Path(temporary)
             for source,code in [
                 ('module bad;\nstruct Bad<T = i64, U> { a: T; b: U; }\nfn main()->unit{}\n','E_GENERIC_DEFAULT'),
-                ('module bad;\nfn bad<T = i64>() -> i64 { return 1; }\nfn main()->unit{}\n','E_GENERIC_DEFAULT'),
                 ('module bad;\nstruct Bad<T = unit> { a: T; }\nfn main()->unit{}\n','E_TYPE')]:
                 self.project(root,source);result=run(['check','--json'],root);self.assertNotEqual(result.returncode,0)
                 self.assertEqual(json.loads(result.stdout)['code'],code,result.stdout)

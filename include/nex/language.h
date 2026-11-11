@@ -163,6 +163,7 @@ struct Function {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  std::vector<Type> typeDefaults;
   std::string traitOwner;
   bool traitSignature=false;
   bool closure=false;std::string closureOwner;std::vector<Param> captures;

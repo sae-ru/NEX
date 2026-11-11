@@ -746,7 +746,7 @@ public:
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
-      bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities);expect("(");
+      bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities,false,&f.typeDefaults);expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->");auto resultBegin=peek().span.begin;f.result=type();
       f.resultTypeSource={resultBegin,peek().span.begin,true};
@@ -870,12 +870,13 @@ class Checker {
       for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],actual.arguments[i],bound,span);unify(*formal.element,*actual.element,bound,span);return;}
     if(formal.element){unify(*formal.element,*actual.element,bound,span);return;}same(actual,formal,span);
   }
-  std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected,bool partial=false,std::map<std::string,std::set<std::string>> *effectArgs=nullptr){
+  std::vector<Type> infer(const std::vector<std::string> &parameters,const std::vector<Param> &formals,Type result,E call,Type expected,bool partial=false,std::map<std::string,std::set<std::string>> *effectArgs=nullptr,const std::vector<Type> *defaults=nullptr){
     if(formals.size()!=call->args.size())throw Error("E_ARITY","incorrect number of value arguments",call->span);
     struct EffectGuard{std::map<std::string,std::set<std::string>> *&slot;std::map<std::string,std::set<std::string>> *old;bool &witness;bool oldWitness;EffectGuard(std::map<std::string,std::set<std::string>> *&s,std::map<std::string,std::set<std::string>> *v,bool &w,bool witnessValue):slot(s),old(s),witness(w),oldWitness(w){slot=v;witness=witnessValue;}~EffectGuard(){slot=old;witness=oldWitness;}} guard(effectUnify,effectArgs,effectWitness,!call->effectArguments.empty());
     std::map<std::string,Type> bound;
     if(!call->typeArguments.empty()){
-      if(parameters.size()!=call->typeArguments.size()&&!(partial&&call->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
+      bool partialDefaults=defaults&&std::any_of(defaults->begin(),defaults->end(),[](const Type &value){return value!=Type::Unknown;});
+      if(call->typeArguments.size()>parameters.size()||(call->typeArguments.size()!=parameters.size()&&!(partial&&call->typeArguments.size()==1)&&!partialDefaults))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
       for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);bound[parameters[i]]=argument;}
     }
     if(expected!=Type::Unknown){
@@ -890,7 +891,17 @@ class Checker {
       catch(const Error &error){if(error.code!="E_INFER"&&error.code!="E_GENERIC_INFER")throw;}
     }
       if(!progress)throw Error("E_GENERIC_INFER","cannot infer generic arguments; provide explicit types",call->span);}
-    std::vector<Type> types;for(const auto &parameter:parameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","type parameter has no argument or expected-type constraint; provide explicit types",call->span);types.push_back(bound.at(parameter));}
+    std::vector<Type> types;
+    for(size_t index=0;index<parameters.size();++index){const auto &parameter=parameters[index];
+      if(!bound.contains(parameter)){
+        if(defaults&&index<defaults->size()&&(*defaults)[index]!=Type::Unknown){
+          auto value=substituteType((*defaults)[index],bound);value=resolveType(p,value,call->span);
+          if(value==Type::Unit)throw Error("E_TYPE","type default cannot be unit",call->span);
+          bound[parameter]=value;
+        }else throw Error("E_GENERIC_INFER","type parameter has no argument or expected-type constraint; provide explicit types",call->span);
+      }
+      types.push_back(bound.at(parameter));
+    }
     return types;
   }
   bool matching(E e,Type expected,bool statements){
@@ -935,14 +946,14 @@ class Checker {
       const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,Type> bound;std::map<std::string,std::set<std::string>> effectArguments;std::set<std::string> effectVariables;for(const auto &effect:raw.effects)if(effectParameter(effect))effectVariables.insert(effect);for(const auto &parameter:raw.params)collectEffectParameters(parameter.type,effectVariables);collectEffectParameters(raw.result,effectVariables);
       if(!e->effectArguments.empty()){if(effectVariables.size()!=1)throw Error("E_EFFECT","explicit effect witness requires exactly one effect parameter",e->span);effectArguments[*effectVariables.begin()]=e->effectArguments;}
       if(!effectVariables.empty()&&effectArguments.empty()&&expected.kind!=Type::Function)throw Error("E_GENERIC_INFER","effect-polymorphic function value requires a function-type context or explicit effects",e->span);
-      if(!e->typeArguments.empty()){if(e->typeArguments.size()!=raw.typeParameters.size()&&!(raw.traitSignature&&e->typeArguments.size()==1))throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<e->typeArguments.size();++i){auto type=resolveType(p,e->typeArguments[i],e->span);if(type==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",e->span);if(argumentKind(p,type,e->span)!=p.parameterKinds.at(raw.typeParameters[i]))throw Error("E_GENERIC_KIND","reference argument has the wrong constructor kind",e->span);bound[raw.typeParameters[i]]=type;}}
+      if(!e->typeArguments.empty()){if(e->typeArguments.size()>raw.typeParameters.size()||(e->typeArguments.size()!=raw.typeParameters.size()&&!(raw.traitSignature&&e->typeArguments.size()==1)))throw Error("E_GENERIC_ARITY","incorrect number of function-reference type arguments",e->span);for(size_t i=0;i<e->typeArguments.size();++i){auto type=resolveType(p,e->typeArguments[i],e->span);if(type==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",e->span);if(argumentKind(p,type,e->span)!=p.parameterKinds.at(raw.typeParameters[i]))throw Error("E_GENERIC_KIND","reference argument has the wrong constructor kind",e->span);bound[raw.typeParameters[i]]=type;}}
       if(expected.kind==Type::Function){
         auto *oldEffects=effectUnify;bool oldWitness=effectWitness;effectUnify=&effectArguments;effectWitness=!e->effectArguments.empty();
         try{unify(signature(raw),expected,bound,e->span);}catch(...){effectUnify=oldEffects;effectWitness=oldWitness;throw;}
         effectUnify=oldEffects;effectWitness=oldWitness;
       }
       for(const auto &effect:effectVariables)if(!effectArguments.contains(effect))throw Error("E_GENERIC_INFER","cannot infer effect parameter "+effect+" from the function-type context",e->span);
-      std::vector<Type> arguments;for(const auto &parameter:raw.typeParameters){if(!bound.contains(parameter))throw Error("E_GENERIC_INFER","generic function value requires explicit types or a function-type context",e->span);arguments.push_back(bound.at(parameter));}
+      std::vector<Type> arguments;for(size_t index=0;index<raw.typeParameters.size();++index){const auto &parameter=raw.typeParameters[index];if(!bound.contains(parameter)){if(index<raw.typeDefaults.size()&&raw.typeDefaults[index]!=Type::Unknown){auto value=substituteType(raw.typeDefaults[index],bound);value=resolveType(p,value,e->span);if(value==Type::Unit)throw Error("E_TYPE","type default cannot be unit",e->span);bound[parameter]=value;}else throw Error("E_GENERIC_INFER","generic function value requires explicit types or a function-type context",e->span);}arguments.push_back(bound.at(parameter));}
       target=&instantiateFunction(p,*target,arguments,e->span,effectArguments);if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
     }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
     if(target->test)throw Error("E_TEST","test functions cannot be function values",e->span);
@@ -1415,7 +1426,7 @@ class Checker {
         if(!owner->typeParameters.empty()){
           const auto &raw=p.structureTemplates.at(owner->name);const Variant *source=nullptr;for(const auto &v:raw.variants)if(v.name==variant->name)source=&v;
           auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
-          auto arguments=infer(raw.typeParameters,source->fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);
+          auto arguments=infer(raw.typeParameters,source->fields,result,e,expected,false,nullptr,&raw.typeDefaults);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);
           e->text=instance.name+"::"+source->name;e->typeArguments=arguments;variant=p.variant(e->text,&owner);
         }else if(!e->typeArguments.empty()&&owner->templateName.empty())throw Error("E_GENERIC_ARITY","enum is not generic",e->span);
         arity(variant->fields.size());for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],variant->fields[i].type),variant->fields[i].type,e->args[i]->span);
@@ -1426,7 +1437,7 @@ class Checker {
         if(declaration.opaqueResource)throw Error("E_RESOURCE_CONSTRUCTOR","opaque resources have no source constructor; use a granted external factory",e->span);
         if(!declaration.typeParameters.empty()){
           const auto &raw=p.structureTemplates.at(declaration.name);auto result=Type::record(raw.name);for(const auto &parameter:raw.typeParameters){Type t(Type::Parameter);t.name=parameter;result.arguments.push_back(t);}
-          auto arguments=infer(raw.typeParameters,raw.fields,result,e,expected);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);e->text=instance.name;e->typeArguments=arguments;
+          auto arguments=infer(raw.typeParameters,raw.fields,result,e,expected,false,nullptr,&raw.typeDefaults);auto instance=Type::record(raw.name);instance.arguments=arguments;instance=resolveType(p,instance,e->span);e->text=instance.name;e->typeArguments=arguments;
         }else if(!e->typeArguments.empty()&&declaration.templateName.empty())throw Error("E_GENERIC_ARITY","structure is not generic",e->span);
         const auto &s=p.structure(e->text);if(s.enumeration)throw Error("E_CONSTRUCTOR","construct an enum through its named variant",e->span);arity(s.fields.size());
         for(size_t i=0;i<e->args.size();++i)same(expr(e->args[i],s.fields[i].type),s.fields[i].type,e->args[i]->span);
@@ -1465,7 +1476,7 @@ class Checker {
       }
       const Function *target=&p.function(e->text,e->span);
       if(!target->typeParameters.empty()){
-        const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,std::set<std::string>> effectArguments;std::set<std::string> effectVariables;for(const auto &effect:raw.effects)if(effectParameter(effect))effectVariables.insert(effect);for(const auto &parameter:raw.params)collectEffectParameters(parameter.type,effectVariables);collectEffectParameters(raw.result,effectVariables);if(!e->effectArguments.empty()){if(effectVariables.size()!=1)throw Error("E_EFFECT","explicit effect witness requires exactly one effect parameter",e->span);effectArguments[*effectVariables.begin()]=e->effectArguments;}auto arguments=infer(raw.typeParameters,raw.params,raw.result,e,expected,raw.traitSignature,&effectArguments);for(const auto &effect:effectVariables)if(!effectArguments.contains(effect))throw Error("E_GENERIC_INFER","cannot infer effect parameter "+effect+"; pass an effectful callable or witness",e->span);target=&instantiateFunction(p,*target,arguments,e->span,effectArguments);e->text=target->name;if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
+        const auto &raw=p.functionTemplates.at(target->name);std::map<std::string,std::set<std::string>> effectArguments;std::set<std::string> effectVariables;for(const auto &effect:raw.effects)if(effectParameter(effect))effectVariables.insert(effect);for(const auto &parameter:raw.params)collectEffectParameters(parameter.type,effectVariables);collectEffectParameters(raw.result,effectVariables);if(!e->effectArguments.empty()){if(effectVariables.size()!=1)throw Error("E_EFFECT","explicit effect witness requires exactly one effect parameter",e->span);effectArguments[*effectVariables.begin()]=e->effectArguments;}auto arguments=infer(raw.typeParameters,raw.params,raw.result,e,expected,raw.traitSignature,&effectArguments,&raw.typeDefaults);for(const auto &effect:effectVariables)if(!effectArguments.contains(effect))throw Error("E_GENERIC_INFER","cannot infer effect parameter "+effect+"; pass an effectful callable or witness",e->span);target=&instantiateFunction(p,*target,arguments,e->span,effectArguments);e->text=target->name;if(raw.traitSignature){e->traitContract=raw.name;e->traitArguments=arguments;e->implementation=containsParameter(arguments[0])?"":selectedImplementation(p,arguments[0],raw.traitOwner,e->span);e->typeArguments=target->typeArguments;}else e->typeArguments=arguments;
       }else if(!e->typeArguments.empty()&&target->templateName.empty())throw Error("E_GENERIC_ARITY","function is not generic",e->span);
       const auto &callee=*target;
       if(callee.test)throw Error("E_TEST","test functions cannot be called",e->span);
@@ -1731,6 +1742,7 @@ llvm::json::Value canonical(const Function &f) {
   for(const auto &e:f.effects)effects.push_back(e);
   llvm::json::Array generic,arguments;for(const auto &parameter:f.typeParameters)generic.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
   llvm::json::Object result{{"format","nex.function/13"},{"name",f.name},{"owner",f.owner},{"public",f.exported},{"realm",f.realm},{"parameters",std::move(params)},{"result",typeName(f.result)},{"effects",std::move(effects)},{"test",f.test},{"type_parameters",std::move(generic)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"body",blockJSON(f.body)}};
+  if(std::any_of(f.typeDefaults.begin(),f.typeDefaults.end(),[](const Type &value){return value!=Type::Unknown;})){llvm::json::Array defaults;for(const auto &value:f.typeDefaults)defaults.push_back(value==Type::Unknown?"":typeName(value));result["type_defaults"]=std::move(defaults);}
   if(!f.sourceContractOrigin.empty()||f.sourceRequires||f.sourceEnsures){
     result["format"]="nex.function/14";
     result["source_contract"]=llvm::json::Object{{"origin",f.sourceContractOrigin},{"requires",f.sourceRequires},{"ensures",f.sourceEnsures}};
@@ -2162,7 +2174,7 @@ llvm::json::Value describe() {
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","generic_trait_methods","static_trait_dispatch","type_defaults"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
     {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values or file types, including phantom file arguments"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},

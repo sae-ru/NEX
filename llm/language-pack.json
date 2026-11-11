@@ -4964,6 +4964,7 @@
     "constructor_parameters",
     "generic_trait_methods",
     "static_trait_dispatch",
-    "type_defaults"
+    "type_defaults",
+    "function_type_defaults"
   ]
 }
