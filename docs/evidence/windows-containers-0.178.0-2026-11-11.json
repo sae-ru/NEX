@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Windows x86-64 functional check of exact 0.178 source with native map/set",
+  "source_commit": "36e8b51",
+  "source_archive_sha256": "3e6c07861eff80a9b433e9e4492b654f378b8c592776444e00cd870ca7b9f128",
+  "compiler": {
+    "toolchain": "0.178.0",
+    "language": "0.28",
+    "compiler_build": "1f4c15148920b9623efa22435b9280c969e0bdd93a5324cac79af9333a021efe",
+    "descriptor_hash": "f571118dccf47a12ef86b143200d0e289956ca5499ba5d5e68c2bfcbe922b0a9",
+    "sha256": "bdc4b062a906f2c5efb0745d6ba0055b6849cc14ac82780346ec4cfd2a2e9c4b",
+    "source_modified": false
+  },
+  "host": {
+    "os": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090, 621.14, 24576 MiB",
+    "cuda": [
+      "11.8",
+      "12.1"
+    ]
+  },
+  "results": {
+    "check_ok": true,
+    "test_ok": true,
+    "native_stdout": "55\n",
+    "containers_run_ok": true,
+    "containers_stdout": "containers-example-ok\n",
+    "containers_test_ok": true,
+    "tests": [
+      {
+        "name": "std::map::map_test",
+        "native": true,
+        "ok": true
+      },
+      {
+        "name": "std::set::set_test",
+        "native": true,
+        "ok": true
+      }
+    ]
+  },
+  "build": {
+    "toolchain_config": "F:/sae/NEX-0.178-20261111/windows-toolchain-normal.json",
+    "sysroot_workaround": "copied x86_64-w64-mingw32 sysroot without the include junction",
+    "doctor_note": "E_TARGET without explicit Windows toolchain; doctor does not accept --toolchain"
+  },
+  "limits": [
+    "functional native check/test/run, not full CTest or SDK acceptance",
+    "no web/TypeScript, CUDA/NPU lowering execution or full Windows SDK qualification",
+    "the Windows sysroot was copied to remove an include junction; source and compiler semantics were not changed",
+    "Astra .78 unreachable; Fedora .55 lacks MLIR 22 and enough free disk for the LLVM 22 release"
+  ],
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/win-0178-evidence/win178-report.json",
+    "containers_run": "/Users/sae/projects/NEX/build/win-0178-evidence/containers-run.json",
+    "containers_test": "/Users/sae/projects/NEX/build/win-0178-evidence/containers-test.json",
+    "describe": "/Users/sae/projects/NEX/build/win-0178-evidence/describe.json"
+  }
+}

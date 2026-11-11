@@ -178,6 +178,13 @@ This is an install/move/archive/restore smoke, not the maintained `sdk_build.py`
 sequence, full CTest, source-free/denied-read acceptance, live debugging or a
 portable platform matrix.
 
+Windows x86-64 also built the exact 0.178 source with LLVM/MLIR 22.1.8 and ran
+the fresh app plus the map/set example natively (`containers-example-ok`,
+`std::map::map_test`/`std::set::set_test` native). The Windows sysroot's
+`include` junction was replaced by a copied directory before the toolchain was
+accepted. Full Windows CTest, web, CUDA/NPU lowering and SDK qualification were
+not run.
+
 Toolchain 0.178 adds checked source `std/map.nex` and `std/set.nex`: immutable,
 insertion-ordered, list-backed `Map<K,V>`/`Set<T>` with O(n) lookup/update.
 `containers` passed its checker, reference/native and TypeScript paths in 7.43 s
