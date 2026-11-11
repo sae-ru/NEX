@@ -1,0 +1,55 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP brace-block folding ranges",
+  "implementation_commit": "3a08d52b5a806a7d4e15128ca3b2c428085f5539",
+  "build_source_base_commit": "f7040fe",
+  "compiler": {
+    "toolchain": "0.208.0",
+    "language": "0.28",
+    "sha256": "73da268fef7b5bb919059912b976a8cc2c59a64c97eae1e939912bdc01c72f89",
+    "compiler_build": "d9fc9bcbf7d615bc6d21f464085db39f7e43d7d327c08844a59ba98fbc3d15f4",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "foldingRangeProvider",
+    "method": "textDocument/foldingRange",
+    "scope": "multi-line brace blocks",
+    "kind": "region",
+    "brace_scanning": "ignores strings/comments"
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 21.3968,
+    "editor_language_client_seconds": 1.11358,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.59,
+    "docs_documents": 179,
+    "docs_links": 1228,
+    "full_ctest_attempted": true,
+    "full_ctest_completed": false,
+    "full_ctest_stall": "task_foreign"
+  },
+  "limits": [
+    "fold ranges cover brace blocks only; comments/imports are not folded",
+    "full CTest was attempted twice and did not complete (stalled at task_foreign); no full-suite claim",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-folding-0208-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-folding-0208-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-folding-0208-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-folding-0208-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
