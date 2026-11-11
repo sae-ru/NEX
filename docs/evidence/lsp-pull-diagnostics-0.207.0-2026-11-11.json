@@ -1,0 +1,55 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP pull diagnostics",
+  "implementation_commit": "5b67f8310754e2c3d3f6d0e05719b1cf30e97273",
+  "build_source_base_commit": "e650452",
+  "compiler": {
+    "toolchain": "0.207.0",
+    "language": "0.28",
+    "sha256": "7859aba4fb437f65d6cffeae77cafe97287e04db066332485e8347da5766eec5",
+    "compiler_build": "279c12e89193c39c659007a8e3840848da4229ed97a97458cd889e3c0ab908c2",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "capability": "diagnosticProvider",
+    "method": "textDocument/diagnostic",
+    "kind": "full",
+    "items": "last published diagnostics",
+    "published_pull_agreement": true,
+    "empty_after_fix": true,
+    "interFileDependencies": true,
+    "workspaceDiagnostics": false
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.9854,
+    "editor_language_client_seconds": 1.1287,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.61,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "pull diagnostics reuse the last published full list; partial/range results are not implemented",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-pull-0207-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-pull-0207-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-pull-0207-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-pull-0207-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
