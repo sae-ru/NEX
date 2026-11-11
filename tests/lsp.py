@@ -585,6 +585,21 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_completion_returns_checked_declarations(self):
+        text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x + 1; }\nfn main() -> unit !{io} { print(helper(1)); }\n'
+        line=text.splitlines()[3];start=line.index('helper')
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertIn('completionProvider',capabilities)
+        client.open(self.file,text)
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':3,'character':start+2}})
+        labels={item['label'] for item in result['items']}
+        self.assertIn('helper',labels)
+        self.assertEqual(result['items'][0]['kind'],3)
+        all_items=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':3,'character':start}})
+        self.assertTrue({'helper','main','Point'} <= {item['label'] for item in all_items['items']})
+
     def test_prepare_rename_and_rename_edits(self):
         text='module app;\nfn helper()->i64{return 1;}\nfn main()->i64{return helper();}\n'
         line=text.splitlines()[2];position={'line':2,'character':line.index('helper')}

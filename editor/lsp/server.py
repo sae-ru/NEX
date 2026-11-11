@@ -501,6 +501,36 @@ class Server:
                 return at, text, unit['text']
         raise RPCError(-32602, 'No renameable identifier at the position')
 
+    def completion(self, path, params, cache, cancelled=None):
+        source = None
+        for index in cache['indices']:
+            for unit in index['files']:
+                if Path(unit['path']).resolve() == path:
+                    source = unit['text'];break
+            if source is not None:break
+        if source is None:
+            raise RPCError(-32602, 'Document is not part of the checked project')
+        offset = byte_offset(source, params.get('position'))
+        prefix = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', source.encode('utf-8')[:offset].decode('utf-8'))
+        prefix = '' if prefix is None else prefix.group(0).lower()
+        kinds = {'function': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8, 'endpoint': 3}
+        items = {}
+        for index in cache['indices']:
+            if cancelled is not None and cancelled.is_set():
+                raise RPCError(-32800, 'Request cancelled')
+            for symbol in index.get('symbols', []):
+                name = symbol.get('name')
+                if not isinstance(name, str) or not name or (prefix and not name.lower().startswith(prefix)):
+                    continue
+                identity = symbol.get('symbol') or name
+                if identity in items:continue
+                items[identity] = {'label': name, 'kind': kinds.get(symbol.get('kind'), 1),
+                    'detail': symbol.get('detail'), 'sortText': name.lower(),
+                    'filterText': name}
+                if len(items) >= 1000:break
+            if len(items) >= 1000:break
+        return {'isIncomplete': False, 'items': sorted(items.values(), key=lambda item: (item['sortText'], item['label']))}
+
     def prepare_rename(self, path, params, cache, cancelled=None):
         at, text, source = self.symbol_at(path, params, cache, cancelled)
         return {'range': source_range(source, at), 'placeholder': text}
@@ -521,6 +551,8 @@ class Server:
 
     def query(self, method, params, cache, cancelled=None):
         path, _ = self.document(params)
+        if method == 'textDocument/completion':
+            return self.completion(path, params, cache, cancelled)
         if method == 'textDocument/prepareRename':
             return self.prepare_rename(path, params, cache, cancelled)
         if method == 'textDocument/rename':
@@ -641,7 +673,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename', 'textDocument/completion']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -700,7 +732,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}, 'completionProvider': {'triggerCharacters': [':']}},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
