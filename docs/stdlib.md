@@ -104,9 +104,10 @@ These structural bounds do not establish C++ vector throughput or token savings.
 
 [`std/map.nex`](containers.md) and [`std/set.nex`](containers.md) provide
 immutable insertion-ordered `Map<K,V>` and `Set<T>` source containers.
-[`std/queue.nex`](containers.md) and [`std/stack.nex`](containers.md) provide
-FIFO `Queue<T>` and LIFO `Stack<T>` with `E_EMPTY` results. All four are
-list-backed: operations are O(n), not hash/ring structures. See
+[`std/queue.nex`](containers.md), [`std/stack.nex`](containers.md) and
+[`std/deque.nex`](containers.md) provide FIFO `Queue<T>`, LIFO `Stack<T>` and
+double-ended `Deque<T>` with `E_EMPTY` results. All five are list-backed:
+operations are O(n), not hash/ring structures. See
 [Container APIs](containers.md) for limits.
 
 `std/list.nex` `generate`, `map`, `filter`, `fold`, `any`, `all`, `find_index` and `sort_by` use inferred effect parameter `?E`:

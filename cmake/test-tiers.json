@@ -237,6 +237,7 @@
     "fmt_width": ["extended", "platform"],
     "standard_library": ["extended", "browser", "platform", "sdk"],
     "stdlib_queue_stack": ["extended", "browser", "platform"],
+    "stdlib_deque": ["extended", "browser", "platform"],
     "containers": ["extended", "browser", "platform", "sdk"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],

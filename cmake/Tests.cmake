@@ -1539,6 +1539,10 @@ set_tests_properties(standard_library PROPERTIES TIMEOUT 800)
 add_test(NAME stdlib_queue_stack COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/stdlib_queue_stack.py $<TARGET_FILE:nex>)
 set_tests_properties(stdlib_queue_stack PROPERTIES TIMEOUT 300)
+
+add_test(NAME stdlib_deque COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/stdlib_deque.py $<TARGET_FILE:nex>)
+set_tests_properties(stdlib_deque PROPERTIES TIMEOUT 300)
 add_test(NAME containers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/containers.py $<TARGET_FILE:nex>)
 set_tests_properties(containers PROPERTIES TIMEOUT 300)

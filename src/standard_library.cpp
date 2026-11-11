@@ -41,6 +41,12 @@ llvm::json::Object standardLibraryCapability(){
         {"functions",llvm::json::Array{"empty","add","remove","has","items","size"}},
         {"ordering","insertion order; add of an existing value is a no-op; immutable"},
         {"complexity","add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table"},{"mutation",false}}},
+      {"deque",llvm::json::Object{{"import","std/deque.nex"},{"module","std::deque"},
+        {"resource","lib/deque.nex"},{"sha256",NEX_STDLIB_DEQUE_SHA256},{"introduced_toolchain","0.212.0"},
+        {"types",llvm::json::Array{"Deque<T>","Popped<T>"}},
+        {"functions",llvm::json::Array{"empty","push_back","push_front","pop_front","pop_back","peek_front","peek_back","size","is_empty"}},
+        {"ordering","double-ended; immutable"},{"empty_result","E_EMPTY"},
+        {"complexity","push/pop/peek O(n); size/is_empty O(1); list-backed, no ring buffer or hash table"},{"mutation",false}}},
       {"queue",llvm::json::Object{{"import","std/queue.nex"},{"module","std::queue"},
         {"resource","lib/queue.nex"},{"sha256",NEX_STDLIB_QUEUE_SHA256},{"introduced_toolchain","0.209.0"},
         {"types",llvm::json::Array{"Queue<T>","Popped<T>"}},
@@ -60,6 +66,6 @@ llvm::json::Object standardLibraryCapability(){
         {"gcd_zero_zero",0},{"lcm_zero",0},{"pow_zero_zero",1},
         {"pow_negative_exponent","fatal E_ASSERT"},{"pow_complexity","O(log(exponent+1)) multiplications"}}}}},
     {"example","examples/stdlib/nex.json"},
-    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set/queue/stack","complete matching SDK/platform qualification"}}};
+    {"pending",llvm::json::Array{"hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque","complete matching SDK/platform qualification"}}};
 }
 }

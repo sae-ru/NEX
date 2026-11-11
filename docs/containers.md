@@ -63,12 +63,13 @@ pending. Import aliases such as `maps`/`sets` avoid the reserved `list` name and
 the `std/list` `map` helper.
 
 
-## Queue and stack
+## Queue, stack and deque
 
 `std/queue.nex` (`std::queue`) provides immutable FIFO `Queue<T>` with
 `empty`, `enqueue`, `dequeue`, `peek`, `size` and `is_empty`; `dequeue`/`peek`
 return `result` and empty operations use `E_EMPTY`. `std/stack.nex`
 (`std::stack`) provides immutable LIFO `Stack<T>` with `empty`, `push_value`,
-`pop`, `peek`, `size` and `is_empty`. Both are list-backed and therefore O(n)
-per element operation; neither is a ring buffer, hash table or language
-primitive.
+`pop`, `peek`, `size` and `is_empty`. `std/deque.nex` (`std::deque`) provides
+`Deque<T>` with `push_back`/`push_front`, `pop_front`/`pop_back` and
+`peek_front`/`peek_back`. All three are list-backed and therefore O(n) per
+element operation; none is a ring buffer, hash table or language primitive.

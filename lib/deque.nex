@@ -1,0 +1,79 @@
+module std::deque;
+
+// Immutable double-ended queue backed by a list. Every operation is linear in
+// the current size; this is a checked source container, not a ring buffer,
+// hash table or new language primitive.
+pub struct Deque<T> {
+  items: list<T>;
+}
+pub struct Popped<T> {
+  deque: Deque<T>;
+  value: T;
+}
+
+pub fn empty<T>() -> Deque<T> {
+  return Deque([]);
+}
+
+pub fn push_back<T>(deque: Deque<T>, value: T) -> Deque<T> {
+  return Deque(push(deque.items, value));
+}
+
+pub fn push_front<T>(deque: Deque<T>, value: T) -> Deque<T> {
+  var output: list<T> = [value];
+  var i: i64 = 0;
+  while i < len(deque.items) {
+    output = push(output, deque.items[i]);
+    i = i + 1;
+  }
+  return Deque(output);
+}
+
+pub fn pop_front<T>(deque: Deque<T>) -> result<Popped<T>> {
+  if len(deque.items) == 0 {
+    return err<Popped<T>>("E_EMPTY", "deque is empty");
+  }
+  var output: list<T> = [];
+  var i: i64 = 1;
+  while i < len(deque.items) {
+    output = push(output, deque.items[i]);
+    i = i + 1;
+  }
+  return ok(Popped(Deque(output), deque.items[0]));
+}
+
+pub fn pop_back<T>(deque: Deque<T>) -> result<Popped<T>> {
+  if len(deque.items) == 0 {
+    return err<Popped<T>>("E_EMPTY", "deque is empty");
+  }
+  let last: i64 = len(deque.items) - 1;
+  var output: list<T> = [];
+  var i: i64 = 0;
+  while i < last {
+    output = push(output, deque.items[i]);
+    i = i + 1;
+  }
+  return ok(Popped(Deque(output), deque.items[last]));
+}
+
+pub fn peek_front<T>(deque: Deque<T>) -> result<T> {
+  if len(deque.items) == 0 {
+    return err<T>("E_EMPTY", "deque is empty");
+  }
+  return ok(deque.items[0]);
+}
+
+pub fn peek_back<T>(deque: Deque<T>) -> result<T> {
+  if len(deque.items) == 0 {
+    return err<T>("E_EMPTY", "deque is empty");
+  }
+  return ok(deque.items[len(deque.items) - 1]);
+}
+
+pub fn size<T>(deque: Deque<T>) -> i64 {
+  return len(deque.items);
+}
+
+pub fn is_empty<T>(deque: Deque<T>) -> bool {
+  return len(deque.items) == 0;
+}

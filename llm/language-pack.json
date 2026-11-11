@@ -4586,6 +4586,32 @@
     "language_migration_required": false,
     "lock_command": "nex lock --json",
     "modules": {
+      "deque": {
+        "complexity": "push/pop/peek O(n); size/is_empty O(1); list-backed, no ring buffer or hash table",
+        "empty_result": "E_EMPTY",
+        "functions": [
+          "empty",
+          "push_back",
+          "push_front",
+          "pop_front",
+          "pop_back",
+          "peek_front",
+          "peek_back",
+          "size",
+          "is_empty"
+        ],
+        "import": "std/deque.nex",
+        "introduced_toolchain": "0.212.0",
+        "module": "std::deque",
+        "mutation": false,
+        "ordering": "double-ended; immutable",
+        "resource": "lib/deque.nex",
+        "sha256": "41ae77cbd0f722e34dcafba8786e8d7b052436ac296d07080e7a41ccb92d8da1",
+        "types": [
+          "Deque<T>",
+          "Popped<T>"
+        ]
+      },
       "list": {
         "alias_note": "list is a reserved word; import as seq or lists",
         "any_all": "short-circuit; any([])=false,all([])=true",
@@ -4757,7 +4783,7 @@
       }
     },
     "pending": [
-      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack",
+      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

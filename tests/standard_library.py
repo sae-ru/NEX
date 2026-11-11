@@ -152,7 +152,7 @@ class StandardLibrary(h.ToolchainCase):
         for module in cap['modules'].values():
             names=re.findall(r'\bpub\s+fn\s+(\w+)',(h.REPO/module['resource']).read_text())
             self.assertEqual(set(names),set(module['functions']));total+=len(names)
-        self.assertEqual(total,53);self.assertFalse(cap['source_language_changed'])
+        self.assertEqual(total,62);self.assertFalse(cap['source_language_changed'])
         self.assertTrue(cap['modules']['list']['linear_bulk_construction'])
         self.assertEqual(self.cli('guide','--kind','stdlib')['text'],(h.REPO/'docs/stdlib.md').read_text())
         self.assertFalse((self.root/'.nex').exists())

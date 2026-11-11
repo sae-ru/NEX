@@ -352,6 +352,9 @@ Toolchain 0.210 adds LSP selection ranges; `language_server` passed in
 Toolchain 0.211 adds LSP import document links; `language_server` passed in
 21.04 s.
 
+Toolchain 0.212 adds list-backed `std/deque.nex` with front/back push/pop and
+`E_EMPTY`; `stdlib_deque` covers reference/native/TypeScript in 5.43 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
