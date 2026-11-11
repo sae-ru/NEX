@@ -1,0 +1,94 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:53:42.314790+00:00",
+  "scope": "CMake test-target decomposition and single toolchain version source",
+  "implementation_commit": "e180190c1cf1a57f6f1f15cc2f059dcc97499495",
+  "build_source_base_commit": "3501c0d",
+  "compiler": {
+    "toolchain": "0.177.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "1e63248c6a521ecbbf8f47dc6ccfeb10b2ace91bed502cdecec36cccb6a0adea",
+    "compiler_build": "87745f70cc28e95b0e43d73f508827837a486f6ebdd89edf3b76828c67ed7bac",
+    "descriptor_hash": "4d411b955a5ddcc993dc429da1e53552f2d41eaf8130b4fce0bbbff351af92e0",
+    "built_from_clean_committed_export": false,
+    "changed_compiler_input_sha256": {
+      "VERSION": "5dcba13f7687cb7817f4a960b394021e2dc7e3663d94b4758b9e6f133c41b244",
+      "CMakeLists.txt": "a87b084a21573ea82df54e70f6ba1d112dca02cf2be22d8b3cd24e0395118399",
+      "cmake/Tests.cmake": "b1482700631aa5903987acaea3e2af138128727943b10a092cc82943d1408a2a",
+      "cmake/TestTiers.cmake": "99b6fe7632544d7ec832f6cf6a653e5b171fa039942228d43ef102960cb85519",
+      "tools/current_status.py": "14aaa9cea0ad22cac2b9ee16db71fe534ac5cfd582a6fbb0d1bbe126f070b9be",
+      "tools/docs_index.py": "a79046005217ba202774966ccf9f267ebbdf14335c0c3e9df374e2b626e3e2d0",
+      "tools/sdk_build.py": "d8e0757c9af3733e2a6cb68e8938aa4bcaac27be4b97a1a039a5341f0f9a1a05"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "cmake": {
+    "version_file": "VERSION",
+    "version": "0.177.0",
+    "version_single_source": true,
+    "cmake_lists_lines": 160,
+    "tests_module": "cmake/Tests.cmake",
+    "tests_module_lines": 1639,
+    "registered_groups": 333,
+    "all_target_build": true,
+    "configure_dependency_added": true,
+    "fallback_readers": [
+      "tools/current_status.py",
+      "tools/docs_index.py",
+      "tools/sdk_build.py"
+    ]
+  },
+  "observations": {
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.26,
+    "focused_seconds": 5.51,
+    "focused_tests": [
+      "language_pack_contract",
+      "test_tiers",
+      "sdk_build_workflow",
+      "docs_index",
+      "bench_command",
+      "fix_command"
+    ],
+    "docs_index_documents": 177,
+    "docs_index_links": 1217,
+    "language_pack_ok": true
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "VERSION change did not trigger CMake reconfigure",
+      "resolution": "added an explicit CMAKE_CONFIGURE_DEPENDS entry for VERSION; the rebuilt compiler reports 0.177.0"
+    },
+    {
+      "attempt": "docs/testing.md paragraph lost its final sentence during insertion",
+      "resolution": "restored the pending editor-protocol text; diff check is clean"
+    }
+  ],
+  "limits": [
+    "cmake/Tests.cmake remains a large test-only module; further build-logic decomposition is optional",
+    "no test semantics, language 0.28 semantics or canonical identities changed",
+    "full regression, installed SDK and platform qualification remain pending",
+    "the VERSION reader fallbacks retain older fixture compatibility"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "core_junit": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/core.xml",
+    "focused_junit": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/focused.xml",
+    "describe_index": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/describe-index.json",
+    "doctor": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/doctor.json",
+    "cmake_lines": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/cmake-lines.txt",
+    "language_pack_check": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/language-pack-check.json",
+    "binary_sha256": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/nex.sha256",
+    "version": "/Users/sae/projects/NEX/build/cmake-decomposition-0177-v1/version.txt"
+  }
+}
