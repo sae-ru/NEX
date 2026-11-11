@@ -1,0 +1,75 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Inferred effect parameters on named generic functions and std/list callbacks",
+  "implementation_commit": "4fea4994bb1acf2208f9b0ab298371afb9ce6d80",
+  "build_source_base_commit": "5dd2752",
+  "compiler": {
+    "toolchain": "0.180.0",
+    "language": "0.28",
+    "sha256": "c3dc31ec3725844b00b2f40a8732d193208a5f9cce7817eb8c6b1f9e38637914",
+    "compiler_build": "e9164059d531a1dc0164cc9677dee587f55e1f03ecb484395c921d0d0a0ec3d9",
+    "descriptor_hash": "292c3322dd3fb111b799fcc7521b7b042dd312f593a75bd35dfd12f1d53a51b3"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "syntax": "fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}",
+    "inference": "callable argument effect set",
+    "union": "repeated uses union their effect sets",
+    "caller_requirement": "must declare the inferred effects",
+    "pure_callbacks": "empty set; existing instance name preserved",
+    "stdlib": [
+      "map",
+      "filter",
+      "fold"
+    ],
+    "function_values": false,
+    "explicit_effect_witnesses": false,
+    "higher_rank": false
+  },
+  "observations": {
+    "registered_groups": 335,
+    "focused_tests": 3,
+    "focused_seconds": 63.94,
+    "effect_parameters_seconds": 8.7203,
+    "standard_library_seconds": 47.5607,
+    "containers_seconds": 7.64931,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.63,
+    "docs_documents": 179,
+    "docs_links": 1225
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "an effectful callback in a pure caller expected E_TYPE",
+      "resolution": "now correctly reports E_EFFECT because the inferred effect is missing from the caller"
+    },
+    {
+      "attempt": "examples/stdlib/nex.lock.json pinned the old std/list source",
+      "resolution": "regenerated with nex lock after the effect-parameter signatures"
+    }
+  ],
+  "limits": [
+    "direct named generic calls only; effect-polymorphic function values, explicit effect witnesses and higher-rank effects are rejected",
+    "language 0.28 remains the semantic version; the syntax is additive to the 0.180 toolchain",
+    "no full CTest/full SDK regression; the 0.180 compiler has not yet been deployed to the CIX/RK/Windows stands",
+    "no GPU/NPU, browser UI, mobile/native UI, Studio or converter work in this block"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/effect-0180-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/effect-0180-v1/core.json",
+    "effect_manual": "/Users/sae/projects/NEX/build/effect-0180-v1/effect-manual.log",
+    "describe": "/Users/sae/projects/NEX/build/effect-0180-v1/describe.json",
+    "docs": "/Users/sae/projects/NEX/build/effect-0180-v1/docs.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/effect-0180-v1/nex.sha256",
+    "guide": "docs/effect-parameters.md",
+    "test": "tests/effect_parameters.py"
+  }
+}
