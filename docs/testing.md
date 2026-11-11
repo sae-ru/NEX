@@ -287,6 +287,11 @@ through `nex fmt`; the server advertises `documentFormattingProvider`, never
 writes the source file and returns an empty edit list for formatted text.
 `language_server` passed in 18.98 s.
 
+Toolchain 0.193 adds LSP `textDocument/prepareRename` and
+`textDocument/rename`; declaration and references produce a WorkspaceEdit,
+invalid identifiers are rejected, and the physical file is untouched.
+`language_server` passed in 19.05 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

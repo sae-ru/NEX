@@ -74,6 +74,7 @@ and final delivery work are:
 - [x] Add trailing type-parameter defaults to nominal declarations and generic functions.
 - [x] Add directory-scoped `nex fmt --check/--write`.
 - [x] Add LSP `textDocument/formatting` full-document edits.
+- [x] Add LSP prepareRename/rename source edits.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

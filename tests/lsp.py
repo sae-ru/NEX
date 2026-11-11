@@ -585,6 +585,21 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_prepare_rename_and_rename_edits(self):
+        text='module app;\nfn helper()->i64{return 1;}\nfn main()->i64{return helper();}\n'
+        line=text.splitlines()[2];position={'line':2,'character':line.index('helper')}
+        client=self.client();capabilities=client.initialize()['capabilities']
+        self.assertTrue(capabilities['renameProvider']['prepareProvider'])
+        client.open(self.file,text)
+        prepare=client.request('textDocument/prepareRename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position})
+        self.assertEqual(prepare['placeholder'],'helper')
+        renamed=client.request('textDocument/rename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position, 'newName':'renamed'})
+        edits=[edit for edits in renamed['changes'].values() for edit in edits]
+        self.assertEqual(len(edits),2)
+        self.assertTrue(all(edit['newText']=='renamed' for edit in edits))
+        invalid=client.response(client.send('textDocument/rename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position, 'newName':'bad-name'}, request=True))
+        self.assertEqual(invalid['error']['code'],-32602)
+
     def test_formatting_returns_full_replace_without_writing(self):
         text='module app;\nfn main()->unit{print(1);}\n'
         physical=self.file.read_bytes()

@@ -483,8 +483,48 @@ class Server:
         check()
         return True, result
 
+    def symbol_at(self, path, params, cache, cancelled=None):
+        for index in cache['indices']:
+            if cancelled is not None and cancelled.is_set():
+                raise RPCError(-32800, 'Request cancelled')
+            files = {f['key']: f for f in index['files']}
+            paths = {key: Path(f['path']).resolve() for key, f in files.items()}
+            unit = next((f for key, f in files.items() if paths[key] == path), None)
+            if unit is None:
+                continue
+            offset = byte_offset(unit['text'], params.get('position'))
+            for occurrence in index['occurrences']:
+                at = occurrence['range']
+                if paths[occurrence['file']] != path or not at['begin'] <= offset < at['end']:
+                    continue
+                text = unit['text'].encode('utf-8')[at['begin']:at['end']].decode('utf-8')
+                return at, text, unit['text']
+        raise RPCError(-32602, 'No renameable identifier at the position')
+
+    def prepare_rename(self, path, params, cache, cancelled=None):
+        at, text, source = self.symbol_at(path, params, cache, cancelled)
+        return {'range': source_range(source, at), 'placeholder': text}
+
+    def rename(self, path, params, cache, cancelled=None):
+        new_name = params.get('newName')
+        if not isinstance(new_name, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', new_name):
+            raise RPCError(-32602, 'newName must be a NEX identifier')
+        _, text, _ = self.symbol_at(path, params, cache, cancelled)
+        if not text:
+            raise RPCError(-32602, 'Cannot rename an empty identifier')
+        reference_params = {**params, 'context': {'includeDeclaration': True}}
+        locations = self.references(path, reference_params, cache, cancelled)
+        changes = {}
+        for location in locations:
+            changes.setdefault(location['uri'], []).append({'range': location['range'], 'newText': new_name})
+        return {'changes': changes}
+
     def query(self, method, params, cache, cancelled=None):
         path, _ = self.document(params)
+        if method == 'textDocument/prepareRename':
+            return self.prepare_rename(path, params, cache, cancelled)
+        if method == 'textDocument/rename':
+            return self.rename(path, params, cache, cancelled)
         if method == 'textDocument/references':
             return self.references(path, params, cache, cancelled)
         if method in ('textDocument/hover', 'textDocument/definition'):
@@ -601,7 +641,7 @@ class Server:
                 self.log(str(error))
                 self.respond(ident, error=RPCError(-32603, 'NEX formatting failed'))
             return
-        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references']:
+        if method not in ['textDocument/hover', 'textDocument/definition', 'textDocument/documentSymbol', 'textDocument/references', 'textDocument/prepareRename', 'textDocument/rename']:
             self.respond(ident, error=RPCError(-32601, 'Method not supported: ' + method))
             return
         cancelled = threading.Event()
@@ -660,7 +700,7 @@ class Server:
             self.initialized = True
             self.respond(ident, {'capabilities': {'positionEncoding': 'utf-16',
                 'textDocumentSync': {'openClose': True, 'change': 1, 'save': {'includeText': True}},
-                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True},
+                'hoverProvider': True, 'definitionProvider': True, 'documentSymbolProvider': True, 'referencesProvider': True, 'documentFormattingProvider': True, 'renameProvider': {'prepareProvider': True}},
                 'serverInfo': {'name': 'NEX Language Server', 'version': '0.192.0'}})
         elif not self.initialized:
             if request:
