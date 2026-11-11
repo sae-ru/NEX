@@ -1,0 +1,67 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Checked scalar OpenCL C source emission",
+  "implementation_commit": "777f501282f96323144ca8fffaa9339993e71f26",
+  "build_source_base_commit": "86dba00",
+  "compiler": {
+    "toolchain": "0.185.0",
+    "language": "0.28",
+    "sha256": "3d4b601885e0ad88ef24e02173dc18ae398402892250657417d90ee1c12e104a",
+    "compiler_build": "975ddf2124cf750b79da33abed5a3e74636220dd99695b72a52115289a475a47",
+    "descriptor_hash": "4a713862b56681cb9b7b30906ce5a3a99873223e118be06fbbd61d7bec01d728"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "command": "nex emit --kind opencl --entry NAME --input-layout rows|columns",
+    "schema": "nex.opencl-emission/1",
+    "backend": "OpenCL C 1.2",
+    "kernel": "nex_generated_map",
+    "source_types": [
+      "i64",
+      "bool",
+      "unit"
+    ],
+    "input_layouts": [
+      "rows",
+      "columns"
+    ],
+    "checked_arithmetic": true,
+    "assert_if_while": true,
+    "source_only": true,
+    "driver_initialized": false,
+    "device_executed": false,
+    "float_rejection": "E_GPU_TYPE"
+  },
+  "observations": {
+    "registered_groups": 336,
+    "opencl_seconds": 0.236197,
+    "opencl_manual_clang_seconds": 1.394,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.24,
+    "docs_documents": 179,
+    "docs_links": 1226
+  },
+  "limits": [
+    "source emission only; no device dispatch, Mali/OpenCL or NPU hardware acceptance",
+    "scalar i64/bool/unit only; no f64, lists, bytes, text or additional control flow",
+    "no full CTest/full SDK; 0.185 not yet deployed to CIX/RK/Windows stands",
+    "no browser UI, mobile/native UI, Studio or converter work"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "opencl_junit": "/Users/sae/projects/NEX/build/opencl-0185-v1/opencl.json",
+    "core_junit": "/Users/sae/projects/NEX/build/opencl-0185-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/opencl-0185-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/opencl-0185-v1/nex.sha256",
+    "guide": "docs/gpu-codegen.md",
+    "schema": "llm/opencl-emission.schema.json",
+    "test": "tests/opencl_emission.py"
+  }
+}
