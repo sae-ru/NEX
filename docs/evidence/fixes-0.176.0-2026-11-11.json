@@ -1,0 +1,101 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:50:16.086574+00:00",
+  "scope": "Compiler-checked nex.fix/1 diagnostic edits for unknown identifiers and fields",
+  "implementation_commit": "40c401909b8c160d909623447e4599b364cf13fb",
+  "build_source_base_commit": "c939447",
+  "compiler": {
+    "toolchain": "0.176.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "c667cdf0a8c38525797a76418c830bd68c3342e1959c43f5f0f158efd7f80ae4",
+    "compiler_build": "8d7cf40d35e443376f89c449604f2460a8a8cf212f95f89e47f478a31f6e4e5c",
+    "descriptor_hash": "4d411b955a5ddcc993dc429da1e53552f2d41eaf8130b4fce0bbbff351af92e0",
+    "built_from_clean_committed_export": false,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "764fa6233e66f77fdd7d3eb05d9ba75bfbc35c1b925c8a817b01e63bd6b3402a",
+      "include/nex/language.h": "be20a3ecb49f32baa5eebce77ac18cc6b135dc48443d789466c4e9afebdbafd2",
+      "src/language.cpp": "47ed534b367a331fa72bd7c91a4d0d2262fbe484bf0d1ffc4007a910495819b7",
+      "src/frontend_diagnostics.cpp": "7adc885c34871e1448a56e3edf270159ad7832f8baa42d9c3963073f7f916513",
+      "src/main.cpp": "0ecb07964b4accf37533961eccd513fcd79d50c51c9e4e803b88caa7aa54187d",
+      "src/cli_catalogue.cpp": "72f52dd02c963c15d23335d2651e635b0be518a171a1fd5026b21d55c91623b6",
+      "tests/fixes.py": "60f63d08f220345d363ffdc53bb9b32445547ec3aaa89a1682889c1649035917",
+      "docs/fixes.md": "2d2735b3bfe041f1ecd1d13f446844451e9f29892126c1293d925fb510d47b3d",
+      "cmake/test-tiers.json": "f8fcb31690cae9c065fe5f0f70f4f46f2bed34a891469dec55b34aa4541e060f",
+      "llm/language-pack.json": "c563d55957e11208bd70b965a9735e2375ca16e985a01b7937b436e6a14fbe05"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "fixes": {
+    "schema": "nex.fix/1",
+    "command": "nex fix [FILE] [--apply] [--json]",
+    "codes": [
+      "E_NAME",
+      "E_FIELD"
+    ],
+    "unique_only": true,
+    "compiler_recheck": true,
+    "rollback_on_rejection": true,
+    "preview_writes": false,
+    "source_edit_only": true,
+    "revision_selection": false,
+    "refusals": [
+      "E_FIX_UNAVAILABLE",
+      "E_FIX_AMBIGUOUS",
+      "E_FIX_FILE",
+      "E_FIX_RANGE",
+      "E_FIX_REJECTED"
+    ],
+    "sample": {
+      "diagnostic": "E_NAME",
+      "replacement": "total",
+      "preview_applied": false
+    }
+  },
+  "observations": {
+    "registered_Mac_groups": 333,
+    "fix_command_seconds": 0.536349,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.94,
+    "docs_index_documents": 177,
+    "docs_index_links": 1217
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "test read help options as strings",
+      "resolution": "help options are objects; test now reads option.name; no compiler or language rule changed"
+    },
+    {
+      "attempt": "descriptor was queried before rebuilding the compiler after adding it",
+      "resolution": "rebuilt and reran; final descriptor and test agree"
+    }
+  ],
+  "limits": [
+    "only E_NAME and E_FIELD currently produce fixes",
+    "no multi-diagnostic batches, effect/type/arity rewrites or editor/LSP application",
+    "apply edits physical source only; graph history is synchronized by a later check",
+    "rollback restores bytes after a rejected recheck but is not a crash-durability guarantee",
+    "no source-language semantics or canonical identities changed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "fix_junit": "/Users/sae/projects/NEX/build/fixes-0176-v1/fix.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/fixes-0176-v1/core.xml",
+    "sample_diagnostic": "/Users/sae/projects/NEX/build/fixes-0176-v1/diagnostic.json",
+    "sample_preview": "/Users/sae/projects/NEX/build/fixes-0176-v1/fix-preview.json",
+    "describe_index": "/Users/sae/projects/NEX/build/fixes-0176-v1/describe-index.json",
+    "doctor": "/Users/sae/projects/NEX/build/fixes-0176-v1/doctor.json",
+    "binary_sha256": "/Users/sae/projects/NEX/build/fixes-0176-v1/nex.sha256",
+    "guide": "docs/fixes.md",
+    "test": "tests/fixes.py"
+  }
+}

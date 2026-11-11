@@ -30,3 +30,7 @@ history is synchronized by the ordinary later `nex check`. It does not apply
 batches, effect/type/arity rewrites or editor LSP edits. Those remain pending.
 The JSON report records the original diagnostic, fix interval, replacement,
 safety label, source hashes and the checked revision after a successful apply.
+
+[Recorded 0.176 validation](evidence/fixes-0.176.0-2026-11-11.json) pins the
+compiler, checked intervals, preview/apply/rollback test, retained corrections
+and remaining limits.
