@@ -1,0 +1,99 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Checked source map/set containers with generic types and map/set pins",
+  "implementation_commit": "36e8b5145a1ede9c77a76b2109bf0de97555fc11",
+  "build_source_base_commit": "27f5136",
+  "compiler": {
+    "toolchain": "0.178.0",
+    "language": "0.28",
+    "sha256": "1362c12b7570aa3aa28cfb4397091378d9dd13903109ad47a79ab15e1956eb43",
+    "compiler_build": "e1f321d955a57f832a64af3ef2b96d78cab4d78c13137a613738cd4ad73d4da9",
+    "descriptor_hash": "f571118dccf47a12ef86b143200d0e289956ca5499ba5d5e68c2bfcbe922b0a9"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "containers": {
+    "modules": [
+      "std/map.nex",
+      "std/set.nex"
+    ],
+    "source_pins": {
+      "lib/map.nex": "2110da38741970f3ccc815e804ef1e000e39fb06b93a7483b972396f3361ea6d",
+      "lib/set.nex": "a281f9356cdf550a2bee35cb28d097a03ee8bb814a9b40f6a1019c68209ec931"
+    },
+    "map_functions": [
+      "empty",
+      "put",
+      "remove",
+      "get",
+      "has",
+      "keys",
+      "values",
+      "size"
+    ],
+    "set_functions": [
+      "empty",
+      "add",
+      "remove",
+      "has",
+      "items",
+      "size"
+    ],
+    "immutable": true,
+    "ordering": "insertion",
+    "backing": "list",
+    "lookup_complexity": "O(n)",
+    "not_hash_or_tree": true
+  },
+  "observations": {
+    "focused_tests": 3,
+    "focused_seconds": 52.42,
+    "standard_library_seconds": 44.8972,
+    "containers_seconds": 7.43128,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.76,
+    "registered_groups": 334,
+    "docs_documents": 178,
+    "docs_links": 1222,
+    "stdlib_functions": 41
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "contains as a public function name",
+      "resolution": "reserved builtin; renamed to has in both modules, tests and descriptor"
+    },
+    {
+      "attempt": "standard_library pin inventory and function-count assertion expected only text/list/math",
+      "resolution": "extended pins to map/set and count from 27 to 41"
+    },
+    {
+      "attempt": "default CTest run had no NEX_TSC",
+      "resolution": "focused TypeScript run used the pinned tsc; the test remains conditional on NEX_TSC"
+    }
+  ],
+  "limits": [
+    "list-backed O(n) containers, not hash or balanced-tree containers",
+    "no generic ordering constraints or effect-polymorphic named signatures",
+    "no new language version or canonical-identity change",
+    "CIX stand functional evidence covers 0.177, not this 0.178 map/set block",
+    "no GPU/NPU, browser UI, mobile/native UI, Studio/converter or full SDK qualification"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/containers-0178-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/containers-0178-v1/core.json",
+    "manual_containers": "/Users/sae/projects/NEX/build/containers-0178-v1/containers-manual.log",
+    "describe": "/Users/sae/projects/NEX/build/containers-0178-v1/describe.json",
+    "docs": "/Users/sae/projects/NEX/build/containers-0178-v1/docs.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/containers-0178-v1/nex.sha256",
+    "guide": "docs/containers.md",
+    "example": "examples/containers/main.nex",
+    "test": "tests/containers.py"
+  }
+}
