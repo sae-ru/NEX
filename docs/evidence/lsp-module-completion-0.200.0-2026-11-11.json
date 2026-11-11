@@ -1,0 +1,53 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP import-alias member completion",
+  "implementation_commit": "f0d20f22112cd2b0b4a2e89c58524b365a787dbd",
+  "build_source_base_commit": "a667f47",
+  "compiler": {
+    "toolchain": "0.200.0",
+    "language": "0.28",
+    "sha256": "6e1582935ae6a70e9ddc1db0d4cbf7ad9d2e4b01ca8b21275998b7276ed6211a",
+    "compiler_build": "636564a517a1d679a162f8daa686d1a30880e96d4bdc2600e714d2f3a17a8965",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "trigger": "alias::",
+    "alias_resolution": "import \"path\" as alias",
+    "result": "checked symbols from imported file",
+    "prefix_filter": "ASCII identifier",
+    "public_filter": false,
+    "module_name_trigger": false
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.3783,
+    "editor_language_client_seconds": 1.10229,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.5,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "imported symbols are not yet filtered by public visibility",
+    "direct module-name qualification, nested-block scope, parser recovery/incremental indexing remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-module-0200-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-module-0200-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-module-0200-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-module-0200-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
