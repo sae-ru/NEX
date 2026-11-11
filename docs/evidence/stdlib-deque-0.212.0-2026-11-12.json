@@ -1,0 +1,68 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Checked list-backed std/deque container",
+  "implementation_commit": "ff1908f0aa72ae90e74dc421a2fc26fd18c8c39a",
+  "build_source_base_commit": "fadfd4f",
+  "compiler": {
+    "toolchain": "0.212.0",
+    "language": "0.28",
+    "sha256": "3eab7c0f9d0836d93ea0b97fda59a41d7a73a63e8462c62fe89e9dc7335c494f",
+    "compiler_build": "63146b105676f81d2cd4c81cd5d7a83e5fc5f08c7ed559429b2ae37e6976f3db",
+    "descriptor_hash": "e74e4fc4f9c68abb18a1d11fd64111c548e4f20805964eaeaf4454301d9cf26b"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "module": "std/deque.nex",
+    "functions": [
+      "empty",
+      "push_back",
+      "push_front",
+      "pop_front",
+      "pop_back",
+      "peek_front",
+      "peek_back",
+      "size",
+      "is_empty"
+    ],
+    "empty_error": "E_EMPTY",
+    "payload": "deque::Popped<T>",
+    "immutable": true,
+    "list_backed": true,
+    "complexity": "O(n) element operations"
+  },
+  "observations": {
+    "registered_groups": 343,
+    "stdlib_deque_seconds": 5.434,
+    "standard_library_seconds": 42.6186,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.72,
+    "docs_documents": 179,
+    "docs_links": 1231,
+    "full_ctest_attempts": [
+      "serial 0.209: 11/342 in 30 min",
+      "-j4 0.210: 4/342 in 10 min",
+      "-j16 0.211: 21/342 in 10 min"
+    ]
+  },
+  "limits": [
+    "deque is list-backed O(n); no ring buffer or hash table",
+    "full CTest remains unqualified; all long-running attempts were aborted",
+    "no full SDK/platform qualification"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/stdlib-deque-0212-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/stdlib-deque-0212-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/stdlib-deque-0212-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/stdlib-deque-0212-v1/nex.sha256",
+    "test": "tests/stdlib_deque.py",
+    "guide": "docs/containers.md"
+  }
+}
