@@ -8,6 +8,9 @@ the existing platform helper. It never overwrites an SDK or previous attempt.
 
 This is a source development tool. Current local qualification covers its
 snapshot/configuration/failure controls, not a complete new SDK execution.
+The [scoped evidence](evidence/sdk-build-driver-0.165.0-2026-11-11.json) records
+five control methods, actual macOS/Linux plans and an exact2302-file source
+export. It also records the three actual kernel read-denial controls.
 The final matching platform/device/SDK milestone remains pending. The command
 does not publish a release or call an LLM; `release_qualification` stays false
 because one host archive does not qualify every requested platform/device.
