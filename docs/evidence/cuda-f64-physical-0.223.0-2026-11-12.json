@@ -1,0 +1,64 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Physical CUDA f64 generated root execution",
+  "implementation_commit": "623786f",
+  "build_source_base_commit": "dc1ff9a",
+  "compiler": {
+    "toolchain": "0.218.0",
+    "language": "0.28",
+    "windows_binary": "F:/sae/NEX-0.218-20261112/build/stand/nex.exe"
+  },
+  "host": {
+    "system": "Windows 11 Pro",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "cuda": "12.1"
+  },
+  "f64_root": {
+    "prepared_project": "cuda-f64-prepared",
+    "root": "transform(f64,f64)->f64",
+    "expected": 42.0,
+    "run_stdout": "42\n",
+    "run_exit_code": 0,
+    "trace_rows": 22,
+    "kernel_completions": 1,
+    "last_event": "module_unloaded",
+    "ledger": {
+      "acceptance_gate_launches": 0,
+      "allocations": 4,
+      "cleanup_errors": 0,
+      "context_frees": 1,
+      "contexts": 1,
+      "event_frees": 2,
+      "events": 2,
+      "frees": 4,
+      "kernel_launches": 1,
+      "live_bytes": 0,
+      "module_frees": 1,
+      "modules": 1,
+      "peak_bytes": 131096,
+      "stream_frees": 1,
+      "streams": 1
+    },
+    "trace_sha256": "f90535f98819d519765d696d4cfb73f5e16f67b47f4f141c3c307cda43b09a56",
+    "run_sha256": "0a127fb5f7c1daddb79b845cf5df26718091cae301b3efa32be65e52e559f4e8"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "single f64 root, not the remaining generated scalar roots",
+    "complete owned-CUDA/public SDK acceptance remains false",
+    "run used the 0.218 Windows compiler; current source toolchain is 0.223"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "run": "/Users/sae/projects/NEX/build/cuda-f64-0224/cuda-f64-run2.utf8.json",
+    "trace": "/Users/sae/projects/NEX/build/cuda-f64-0224/cuda-f64-run2.trace.jsonl",
+    "preparer": "experiments/owned-cuda-codegen/prepare.py",
+    "guide": "docs/testing.md"
+  }
+}
