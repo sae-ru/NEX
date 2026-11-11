@@ -1,0 +1,86 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:57:14.568696+00:00",
+  "scope": "Local macOS ARM64 Release SDK install, move, archive and restore smoke",
+  "implementation_commit": "c947b3c83572bc8e6e2a7011a42cdb69b6feb567",
+  "build_source_base_commit": "7450cec",
+  "compiler": {
+    "toolchain": "0.177.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "release_binary_sha256": "326643e3765a20c06aea4059a5eef194f6c96ed7617899a09b55710ad74ab595",
+    "compiler_build": "bc6d5701fbd6ff9dafeec2e13da1709dc4787351fd4101312adfcf1c5f3dca7a",
+    "descriptor_hash": "4d411b955a5ddcc993dc429da1e53552f2d41eaf8130b4fce0bbbff351af92e0",
+    "build_type": "Release",
+    "built_from_clean_committed_export": false
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "cmake": {
+    "CMakeLists_lines": 161,
+    "Tests_lines": 1556,
+    "Install_lines": 87,
+    "install_module": "cmake/Install.cmake",
+    "registered_groups": 333
+  },
+  "sdk": {
+    "installed_prefix": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/sdk",
+    "moved_prefix": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/sdk-moved",
+    "restored_prefix": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/restored/sdk-moved",
+    "install_runtime": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/sdk/share/nex/runtime/runtime.cpp",
+    "moved_runtime": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/sdk-moved/share/nex/runtime/runtime.cpp",
+    "restored_runtime": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/restored/sdk-moved/share/nex/runtime/runtime.cpp",
+    "runtime_path_followed_sdk": true,
+    "archive": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/nex-sdk-0.177.0-local.tar.gz",
+    "archive_sha256": "288e24a2b40f8e1c2ffe9e1a8c7c3a38996701d1ed303f06c4ce7cf75a786086",
+    "archive_bytes": 11153645,
+    "installed_tree_bytes": 39014400,
+    "fresh_application": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/app",
+    "app_check_ok": true,
+    "app_test_ok": true,
+    "app_eval_stdout": "55\n",
+    "app_native_stdout": "55\n",
+    "commands": [
+      "cmake --install build/release-0177 --prefix ...",
+      "nex init APP",
+      "nex check --json",
+      "nex test --json",
+      "nex eval --entry main --json",
+      "nex run --profile release --json",
+      "move SDK",
+      "tar -czf",
+      "tar -xzf",
+      "repeat doctor/test"
+    ]
+  },
+  "limits": [
+    "local install/move/archive/restore smoke, not the maintained tools/sdk_build.py sequence",
+    "only the nex target was built in Release; full all-target build, full CTest/JUnit closure and installed 41/82-phase workflows were not run",
+    "no source-free/denied-read or dependency-denial acceptance",
+    "no live LLDB/DAP, browser, device, portable archive or other-platform qualification",
+    "host Apple SDK/toolchain and system dependencies remain prerequisites",
+    "toolchain stays 0.177.0; no source-language semantics or canonical identities changed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "smoke": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/smoke.json",
+    "doctor_installed": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/doctor.json",
+    "doctor_moved": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/doctor-moved.json",
+    "doctor_restored": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/doctor-restored.json",
+    "describe_index": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/describe-index.json",
+    "sdk_binary_sha256": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/sdk-nex.sha256",
+    "archive_sha256": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/archive.sha256",
+    "cmake_lines": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/cmake-lines.txt",
+    "app_check": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/app-check.json",
+    "app_test": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/app-test.json",
+    "app_eval": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/app-eval.json",
+    "app_run": "/Users/sae/projects/NEX/build/sdk-local-0177-v1/app-run.json"
+  }
+}
