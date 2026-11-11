@@ -1,0 +1,117 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T12:35:48.330186+00:00",
+  "scope": "Checked three-backend agreement corpus with deterministic seed/reproducer generator",
+  "implementation_commit": "80059b358f78959b6734c7a3381a8a3eb81d09f2",
+  "build_source_base_commit": "47ac1a9",
+  "compiler": {
+    "toolchain": "0.174.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "bc75c9a9e02ccdaa24b05d38f512d70a49a7f312c1c6fd12eaf546ea3800e1bb",
+    "compiler_build": "1fa764a6c91c9397970bd3fdba060fc196330f34d3783fec7bd6a40fa8088fdc",
+    "descriptor_hash": "e78838c3e66d2583cb5feb091e427dc9638575a1cbb86bb0e2eb3106a1de79d0",
+    "built_from_clean_committed_export": false,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "c34246f6865e0c7a930132464b79ee72f87a5852e0527dbd199ad585abbba3fa",
+      "tools/agreement.py": "fda273e2a5754c40a2ad09c01e4813489771efc560be071cd31ec9e569bc1440",
+      "tools/agreement_generate.py": "9575c5ef2b064ffc7d28051ac82450dd9a9b1e616208b080295bf8d87d4e0594",
+      "tests/agreement_generator.py": "7b4cfc7687a84ff13c6bb2f4ff9dee660376c7f0bf0abfbde3b430e9b7197c38",
+      "tests/agreement/cases.json": "856f651a7a3eb8b7a3544d233b35f7eb2a039bbaf96668b878855424e8fb7397",
+      "docs/agreement.md": "a6b15563ad91fc976038ba8fb20222b19862506ed0bec07f829bb7f9b7d2bcc4",
+      "cmake/test-tiers.json": "a8cce5ebb0a3b39b64c54efd6e36d6d8bc20de43f50be860d7c8e737248bc476"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2"
+  },
+  "corpus": {
+    "schema": "nex.agreement/1",
+    "cases": [
+      "arith",
+      "unicode",
+      "lists",
+      "text",
+      "bytes",
+      "match",
+      "result",
+      "generics",
+      "rejected_type",
+      "rejected_effect",
+      "overflow",
+      "bounds"
+    ],
+    "valid": 8,
+    "rejected": 2,
+    "trap": 2,
+    "backends": [
+      "reference",
+      "native-debug",
+      "native-release",
+      "TypeScript"
+    ],
+    "typescript_executed": true,
+    "strict_typescript": true,
+    "retained_artifacts": "per-case commands, stdout/stderr, exit codes and failures in report.json"
+  },
+  "generator": {
+    "tool": "tools/agreement_generate.py",
+    "same_seed_byte_identical": true,
+    "different_seed_differs": true,
+    "generated_programs": 3,
+    "independent_oracle": "Python i64 arithmetic for small total expressions",
+    "manifest_records": [
+      "seed",
+      "count",
+      "per-program SHA256",
+      "reproducer command"
+    ]
+  },
+  "observations": {
+    "registered_Mac_groups": 331,
+    "backend_agreement_seconds": 55.0046,
+    "agreement_generator_seconds": 15.5508,
+    "docs_index_seconds": 0.0898,
+    "documents_indexed": 175,
+    "local_links_checked": 1212,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.63
+  },
+  "test_authoring_corrections": [
+    {
+      "attempt": "native trap code was read only from a top-level diagnostic code",
+      "resolution": "runner now reads native_diagnostics.diagnostics[].report.code; the original failing run remains in the development output"
+    },
+    {
+      "attempt": "generated module names contained a hyphen",
+      "resolution": "generator sanitizes the module identifier; the generated corpus then compiled and agreed"
+    }
+  ],
+  "limits": [
+    "bounded semantic smoke matrix, not proof of language equivalence",
+    "no tasks, effects, realms, files, FFI, JSON edge cases or performance coverage",
+    "generator covers small total i64 arithmetic only",
+    "external platforms and SDK acceptance remain separate",
+    "no source-language semantics or canonical identities changed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "agreement_junit": "/Users/sae/projects/NEX/build/agreement-0174-v1/agreement.xml",
+    "core_junit": "/Users/sae/projects/NEX/build/agreement-0174-v1/core.xml",
+    "agreement_report": "/Users/sae/projects/NEX/build/agreement-0174-v1/agreement-report.json",
+    "docs_check": "/Users/sae/projects/NEX/build/agreement-0174-v1/docs-check.json",
+    "describe_index": "/Users/sae/projects/NEX/build/agreement-0174-v1/describe-index.json",
+    "doctor": "/Users/sae/projects/NEX/build/agreement-0174-v1/doctor.json",
+    "binary_sha256": "/Users/sae/projects/NEX/build/agreement-0174-v1/nex.sha256",
+    "guide": "docs/agreement.md",
+    "runner": "tools/agreement.py",
+    "generator": "tools/agreement_generate.py"
+  }
+}

@@ -52,3 +52,6 @@ equivalence. It does not cover tasks, effects, realms, files, FFI, JSON edge
 cases, performance or every rejected program. Those retain their dedicated
 tests. External URLs and network access are not used. Running the same corpus on
 another platform or SDK is a separate acceptance claim.
+
+[Recorded 0.174 validation](evidence/agreement-0.174.0-2026-11-11.json) pins the
+compiler, corpus, generator, test scope, retained corrections and limits.
