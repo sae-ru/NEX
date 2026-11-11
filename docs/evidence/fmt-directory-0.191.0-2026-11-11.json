@@ -1,0 +1,67 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Directory-scoped nex fmt check/write",
+  "implementation_commit": "008b7c2b295de4f41aa88013265d64c2f461be92",
+  "build_source_base_commit": "25f3613",
+  "compiler": {
+    "toolchain": "0.191.0",
+    "language": "0.28",
+    "sha256": "b5599988fbdf67fb9033f6ca0b2a400740d3439e3b8211960ad6f771e3726365",
+    "compiler_build": "ae9965f48a6959f3b31ad178fbd9294eddbde5739df20090fb62d21295daf6b1",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "command": "nex fmt DIRECTORY --check|--write --json",
+    "schema": "nex.format-directory/1",
+    "recursive": true,
+    "extensions": [
+      ".nex"
+    ],
+    "skipped": [
+      ".nex",
+      ".git",
+      "build",
+      "node_modules",
+      "dist",
+      "symlinks",
+      "non-NEX"
+    ],
+    "limits": {
+      "files": 10000,
+      "source_bytes": 67108864
+    },
+    "preview_directory": "E_OPTION",
+    "simultaneous_check_write": "E_OPTION"
+  },
+  "observations": {
+    "registered_groups": 340,
+    "fmt_directory_seconds": 0.242111,
+    "source_formatting_seconds": 9.35729,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.1,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "width-based wrapping and editor/LSP formatting remain pending",
+    "directory writes are per-file atomic replacements; a later failure can leave earlier files formatted",
+    "single-file nex.format/1 behavior is unchanged; no full SDK qualification"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/fmt-dir-0191-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/fmt-dir-0191-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/fmt-dir-0191-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/fmt-dir-0191-v1/nex.sha256",
+    "test": "tests/fmt_directory.py",
+    "guide": "docs/formatting.md"
+  }
+}
