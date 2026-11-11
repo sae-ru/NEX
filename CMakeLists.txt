@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.173.0 LANGUAGES C CXX)
+project(NEX VERSION 0.174.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -1765,4 +1765,13 @@ set_tests_properties(bytes_construction PROPERTIES TIMEOUT 600)
 add_test(NAME docs_index COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/docs_index.py --check)
 set_tests_properties(docs_index PROPERTIES TIMEOUT 120)
+
+add_test(NAME backend_agreement COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tools/agreement.py --compiler $<TARGET_FILE:nex>
+  --output ${CMAKE_CURRENT_BINARY_DIR}/backend-agreement)
+set_tests_properties(backend_agreement PROPERTIES TIMEOUT 900)
+
+add_test(NAME agreement_generator COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/agreement_generator.py $<TARGET_FILE:nex>)
+set_tests_properties(agreement_generator PROPERTIES TIMEOUT 300)
 include(cmake/TestTiers.cmake)

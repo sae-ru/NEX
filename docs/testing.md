@@ -138,9 +138,15 @@ Toolchain 0.173 adds `docs_index` (329 registered Mac groups). The generated
 index covers 174 documents and checks 1209 local links with zero missing targets;
 eight current contracts and one deferred document are version-checked against
 the compiler, and `STATUS.current.md` is regenerated/checked by the same test.
-`docs_index` passed in 0.09 s and the unchanged 12-group core in 21.86 s. Most
-older documents remain unclassified reference/history rather than being rewritten;
-external URLs are not fetched.
+
+Toolchain 0.174 adds `backend_agreement` and `agreement_generator` (331 groups).
+The 12-case corpus (8 valid, 2 rejected, 2 trap) passed in 55.00 s across the
+reference interpreter, native Debug/Release and executed/strict TypeScript. The
+generator reproduced three byte-identical corpora for one seed, rejected a
+different seed's corpus identity and ran its generated programs in 15.55 s.
+`docs_index` passed in 0.09 s and the unchanged 12-group core in 22.63 s. This is
+a bounded semantic smoke matrix, not proof of language equivalence or full
+platform/SDK acceptance.
 
 ## Maintain the catalogue
 

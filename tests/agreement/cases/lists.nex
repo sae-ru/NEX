@@ -1,0 +1,13 @@
+module agreement_lists;
+fn main() -> unit !{io} {
+  let original: list<i64> = [3, 1, 2];
+  let pushed: list<i64> = push(original, 4);
+  let changed: list<i64> = set(pushed, 0, 9);
+  print(len(changed));
+  print(changed[0]);
+  print(original == [3, 1, 2]);
+  print(changed == [9, 1, 2, 4]);
+  let squares: list<i64> = list(3, fn(i: i64) -> i64 { return i * i; });
+  print(len(squares));
+  print(squares[2]);
+}

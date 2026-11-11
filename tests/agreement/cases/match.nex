@@ -1,0 +1,16 @@
+module agreement_match;
+enum Shape { Empty(); Dot(value: i64); Pair(left: i64, right: i64); }
+fn area(shape: Shape) -> i64 {
+  return match shape { Shape::Empty() => 0, Shape::Dot(value) => value, Shape::Pair(left, right) => left * right };
+}
+fn label(value: i64) -> str {
+  return match value { 0 => "zero", n if n < 0 => "negative", _ => "positive" };
+}
+fn main() -> unit !{io} {
+  print(area(Shape::Empty()));
+  print(area(Shape::Dot(7)));
+  print(area(Shape::Pair(3, 4)));
+  print(label(0));
+  print(label(-2));
+  print(label(5));
+}

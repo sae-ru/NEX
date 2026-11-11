@@ -1,0 +1,5 @@
+module agreement_overflow;
+fn main() -> unit !{io} {
+  let value: i64 = 9223372036854775807 + 1;
+  print(value);
+}

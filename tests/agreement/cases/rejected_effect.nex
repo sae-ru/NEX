@@ -1,0 +1,4 @@
+module agreement_rejected_effect;
+fn main() -> unit {
+  print("x");
+}

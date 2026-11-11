@@ -1,0 +1,9 @@
+module agreement_unicode;
+fn main() -> unit !{io} {
+  let text: str = "Я🌍\u0000!";
+  print(len(text));
+  print(text[1]);
+  print(slice(text, 0, 2));
+  print(len(utf8_bytes(text)));
+  print(unwrap(decode_utf8(utf8_bytes(text))) == text);
+}

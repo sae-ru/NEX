@@ -1,0 +1,7 @@
+module agreement_text;
+fn main() -> unit !{io} {
+  print(str(3, fn(i: i64) -> str { return str(i); }));
+  print(str(["a", "bb"], fn(x: str) -> str { return x + x; }));
+  print(str(["a", "bb"], fn(x: str) -> bool { return len(x) > 1; }, fn(x: str) -> str { return x; }));
+  print(str(3, 0, fn(s: i64) -> i64 { return s + 1; }, fn(s: i64) -> str { return str(s); }));
+}

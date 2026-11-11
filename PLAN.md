@@ -59,6 +59,7 @@ and final delivery work are:
   advanced type-constructor inference/effect handling, graph identity-preserving
   edits and complete source/optimized-machine/core/profile attribution.
 - [x] Add a generated documentation index with local-link and current-version checks.
+- [x] Add a checked three-backend agreement corpus with valid/rejected/trap cases and a deterministic seed/reproducer generator.
 - [ ] Remaining browser adapter integration, application components/styles,
   asynchronous UI boundaries and browser/debug/profile qualification described
   in [the web contract](docs/web.md).

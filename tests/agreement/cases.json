@@ -1,0 +1,88 @@
+{
+  "schema": "nex.agreement/1",
+  "language": "0.28",
+  "cases": [
+    {
+      "name": "arith",
+      "kind": "valid",
+      "source": "cases/arith.nex",
+      "entry": "main",
+      "expected_stdout": "0\n1\n2\n20\nfalse\ndone\n"
+    },
+    {
+      "name": "unicode",
+      "kind": "valid",
+      "source": "cases/unicode.nex",
+      "entry": "main",
+      "expected_stdout": "4\n\ud83c\udf0d\n\u042f\ud83c\udf0d\n8\ntrue\n"
+    },
+    {
+      "name": "lists",
+      "kind": "valid",
+      "source": "cases/lists.nex",
+      "entry": "main",
+      "expected_stdout": "4\n9\ntrue\ntrue\n3\n4\n"
+    },
+    {
+      "name": "text",
+      "kind": "valid",
+      "source": "cases/text.nex",
+      "entry": "main",
+      "expected_stdout": "012\naabbbb\nbb\n012\n"
+    },
+    {
+      "name": "bytes",
+      "kind": "valid",
+      "source": "cases/bytes.nex",
+      "entry": "main",
+      "expected_stdout": "3\n0\n2\n\u042f\ntrue\n"
+    },
+    {
+      "name": "match",
+      "kind": "valid",
+      "source": "cases/match.nex",
+      "entry": "main",
+      "expected_stdout": "0\n7\n12\nzero\nnegative\npositive\n"
+    },
+    {
+      "name": "result",
+      "kind": "valid",
+      "source": "cases/result.nex",
+      "entry": "main",
+      "expected_stdout": "true\n7\nfalse\nE_NEG\nnegative\n"
+    },
+    {
+      "name": "generics",
+      "kind": "valid",
+      "source": "cases/generics.nex",
+      "entry": "main",
+      "expected_stdout": "42\n2\nx\n"
+    },
+    {
+      "name": "rejected_type",
+      "kind": "rejected",
+      "source": "cases/rejected_type.nex",
+      "expected_check_code": "E_TYPE"
+    },
+    {
+      "name": "rejected_effect",
+      "kind": "rejected",
+      "source": "cases/rejected_effect.nex",
+      "expected_check_code": "E_EFFECT"
+    },
+    {
+      "name": "overflow",
+      "kind": "trap",
+      "source": "cases/overflow.nex",
+      "entry": "main",
+      "expected_code": "E_OVERFLOW"
+    },
+    {
+      "name": "bounds",
+      "kind": "trap",
+      "source": "cases/bounds.nex",
+      "entry": "main",
+      "expected_code": "E_BOUNDS"
+    }
+  ]
+}

@@ -48,6 +48,8 @@
     "diagnostic_text": ["extended", "browser"],
     "diagnostic_catalogue": ["core"],
     "docs_index": ["extended", "platform"],
+    "backend_agreement": ["extended", "browser", "platform"],
+    "agreement_generator": ["extended", "platform"],
     "discovery": ["core"],
     "dns_library": ["extended", "browser", "platform"],
     "dns_policy": ["extended", "platform"],

@@ -1,0 +1,5 @@
+module agreement_bounds;
+fn main() -> unit !{io} {
+  let values: list<i64> = [1];
+  print(values[2]);
+}

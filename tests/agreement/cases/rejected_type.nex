@@ -1,0 +1,4 @@
+module agreement_rejected_type;
+fn main() -> unit {
+  let value: i64 = "text";
+}

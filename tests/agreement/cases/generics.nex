@@ -1,0 +1,10 @@
+module agreement_generics;
+struct Box<T> { value: T; }
+fn identity<T>(value: T) -> T { return value; }
+fn main() -> unit !{io} {
+  let boxed: Box<i64> = Box(41);
+  print(identity<i64>(boxed.value + 1));
+  let boxes: list<Box<i64>> = [Box(1), Box(2)];
+  print(boxes[1].value);
+  print(identity<str>("x"));
+}

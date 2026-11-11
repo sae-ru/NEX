@@ -1,0 +1,18 @@
+module agreement_result;
+fn parse(n: i64) -> result<i64> {
+  if n < 0 { return err<i64>("E_NEG", "negative"); }
+  return ok(n * 2);
+}
+fn twice(n: i64) -> result<i64> {
+  let value: i64 = parse(n)?;
+  return ok(value + 1);
+}
+fn main() -> unit !{io} {
+  let good: result<i64> = twice(3);
+  print(is_ok(good));
+  print(unwrap(good));
+  let bad: result<i64> = twice(-1);
+  print(is_ok(bad));
+  print(error_code(bad));
+  print(error_message(bad));
+}
