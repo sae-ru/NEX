@@ -376,6 +376,9 @@ Toolchain 0.217 prepared a native owned-CUDA provider on Windows with NVRTC
 failed with `nested cleanup retained device memory`, so no CUDA hardware
 acceptance is claimed.
 
+Toolchain 0.218 fixes the owned-CUDA context probe's manual buffer bookkeeping:
+it set `bytes` but not `allocationBytes`, so its destructor freed zero ledger bytes.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

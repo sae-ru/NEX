@@ -34,7 +34,7 @@ int main(int argc,char **argv){
         nex_ffi_api_v1 api{};
         api.poll=[](nex_ffi_call token)->nex_ffi_status{++*reinterpret_cast<unsigned*>(uintptr_t(token));return NEX_FFI_OK;};
         {
-          Context outer(a);auto buffer=std::make_unique<Buffer>();buffer->session=&a;buffer->bytes=4;
+          Context outer(a);auto buffer=std::make_unique<Buffer>();buffer->session=&a;buffer->bytes=4;buffer->allocationBytes=4;
           a.driver.check(a.driver.p_cuMemAlloc(&buffer->pointer,4),"cuMemAlloc probe");ledger.allocate(4);
           {
             Context inner(b);

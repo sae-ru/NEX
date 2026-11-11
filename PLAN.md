@@ -98,6 +98,7 @@ and final delivery work are:
 - [x] Add checked list-backed `std/priority_queue.nex`.
 - [x] Allow `nex doctor --toolchain FILE` on explicit native hosts.
 - [x] Teach owned CUDA preparation to pass explicit Windows toolchains.
+- [x] Fix owned-CUDA context-probe buffer ledger bookkeeping.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,
