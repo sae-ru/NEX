@@ -1,0 +1,132 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T06:24:24.855610+00:00",
+  "scope": "Parser-aware single-file source formatter; optional instrumentation deferred by user",
+  "implementation_commit": "54292db0684d1701b6a4bf82b3e0d893d5096398",
+  "build_source_base_commit": "2c29fdc621d9b3f0d0e5d503e2b8ef800468afc6",
+  "compiler": {
+    "toolchain": "0.168.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "63e4ddb105946d4179416125319b9cca86e3f89c9b002a3f48c2cbe21134fc33",
+    "compiler_build": "457c0470b9c9cc69749b029f48e29e67cafef4c5a675d310f42c4d728822d802",
+    "descriptor_hash": "c82c7a3c37863fd8ac79de879601e612f9e662594c526308a2b038f19053e0a6",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "c5ce8f74cfb2b5294e48a093f4f032a36da4004d9bc0221f26f3fc2583bacd08",
+      "src/formatting.cpp": "c0c9d9ca96c0ae0b7ed00eec504ccf8d0decca0a2327498f823c49e30ba28463",
+      "include/nex/formatting.h": "b183ccc0eedc9526a6a8b95b9d4212df5b63f9fbbc35c6a860563c1893537c76",
+      "src/language.cpp": "c62b636ae95eddb62efc8b0b34ec50223d5fb99573e8414424f0ed76a3427175",
+      "src/main.cpp": "1ee0a4d63df9103a0fe6124949c367180d582b8fe8489de4e9c3366dfa252add"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2",
+    "power": "AC and open lid observed for freshly owned child processes",
+    "exclusive_host_latency_claimed": false
+  },
+  "formatting": {
+    "command": "nex fmt FILE [--check|--write] [--json]",
+    "style": "nex/1",
+    "default_mode": "preview",
+    "syntax_checked": true,
+    "type_checked": false,
+    "imports_loaded": false,
+    "graph_store_opened": false,
+    "comments_and_literal_spelling_preserved": true,
+    "token_role_equivalence_checked": true,
+    "idempotence_checked": true,
+    "source_grammar_changed": false,
+    "language_migration_required": false,
+    "directories_or_width_wrapping": false
+  },
+  "observations": {
+    "build_all_targets": true,
+    "functional_methods": 7,
+    "functional_seconds": 15.104,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_CTest_seconds": 29.03,
+    "registered_Mac_groups": 324,
+    "explicit_catalogue_entries": 329,
+    "shared_capability_fields": 61,
+    "compared_JSON_values": 3504,
+    "coverage": [
+      "exact fixed layout and no-op writes",
+      "20 named comment boundaries",
+      "Unicode/CRLF/trailing comments and raw string escape spelling",
+      "nested generics, compact type >= and comparisons",
+      "11 actual current source files",
+      "invalid source/options do not write",
+      "syntax-only missing imports",
+      "existing graph rows and semantic revision",
+      "reference/native Debug/Release output",
+      "strict and executed TypeScript 7.0.2",
+      "manifest/descriptor/guide agreement"
+    ],
+    "initial_attempt": {
+      "build_passed": true,
+      "functional_methods_passed": 6,
+      "functional_method_errors": 1,
+      "cause": "New test read output instead of the established stdout CLI field; corrected test retained original failure.",
+      "later_source_adjustments": "Spaces before keyword-following list literals; reject formatted output above the same 4 MiB bound."
+    }
+  },
+  "deferred_checks": {
+    "user_requested": true,
+    "document": "docs/deferred-checks.ru.md",
+    "archive_sha256": "7ff6dd8771f2ece7b1989bb62dc1d9a1255fa3069c09624684ff072f13ff23ea",
+    "archived_owned_source_files": 40,
+    "archived_from_base_commit": "2c29fdc621d9b3f0d0e5d503e2b8ef800468afc6",
+    "new_security_checks_started_this_milestone": false,
+    "new_instrumented_CI_active": false,
+    "resume_requires_new_explicit_user_instruction": true
+  },
+  "limitations": {
+    "complete_regression": false,
+    "installed_portable_SDK_qualified": false,
+    "new_platform_or_device_qualification": false,
+    "GitHub_pushed": false,
+    "main_promoted": false,
+    "whole_original_goal_complete": false,
+    "new_model_calls": false,
+    "token_savings_measured": false
+  },
+  "local_receipt_sha256": {
+    "report.json": "3372e099fb9ac8383605122268472e0700b02f7a84d04a64aa9297215c13656c",
+    "formatting.stderr": "6769386d7ea62c856b28afc5d3ce4d223ab38b4f38a7a8dab3e3f421a5a55a99",
+    "core.stdout": "cf6ff64b37c8a233bef789dc42508457a95ba94cac4d59cda827dd04642dc70a",
+    "core.xml": "e758a8da4cd39964e4938afc35b2f692dfb2f0487b67155cfe398cd469b05c3e",
+    "language-pack.stdout": "05ee714a5ee696a7e000a77baac7d588848e9ef5f5b7c6f58b7a0f6e2144557d",
+    "tiers.json": "87a787e04217a4ce5dd1c958a25ac069cd1504b0ccde8441ce948a17057a25ad",
+    "registry.json": "1014fb9d8cd58df7105a15c3b5f0dd146242e6ddd3eb0dfbfb4a5710395d04c2"
+  },
+  "initial_failure_report_sha256": "d644b416e3efb122c04936803383aa22fe388ef6b2e69e501748bd7a41da8cd7",
+  "changed_implementation_file_sha256": {
+    "CMakeLists.txt": "c5ce8f74cfb2b5294e48a093f4f032a36da4004d9bc0221f26f3fc2583bacd08",
+    "PLAN.md": "f02e7072c72b19c2ed81e06ff4afa117d1d18f21afd1b679afb8a8edf13a4c96",
+    "README.md": "5aa8293dbbe622dc12283787188f03d76e818bed22f11c48c4fc83ed7024b63d",
+    "README.ru.md": "c6db7bc1d137b741ffb3a54f98fd1f94521255b46a047fff915456d841da0345",
+    "cmake/test-tiers.json": "cdf83f7720bbd06c4cf0f6213868f0deae5489f6d3d870b14fd7fee5d429498f",
+    "docs/STATUS.current.md": "2b65ed4d2307e326d524f5d5b2b102d39bfb0bfcaf44ea4b448f13b504423bb3",
+    "docs/deferred-checks.ru.md": "0eec07d59a2457fb036eaf0b1a9e9215c88cca5062489bad62647ee7fc1e3c7e",
+    "docs/development-priorities.md": "93e86d82ec4767aa8dfb1bc0fdd93fccf2a0b70be3c7b93ac585fcac5810aff1",
+    "docs/formatting.md": "05b8b36e884dac1085805e1e122c4a11e1d05069d0a874c52cad63127421260b",
+    "docs/grammar.ebnf": "00bb7019b827149037ae895ef75d109fb354b31c4684e2ac026ceb3912892485",
+    "docs/language.md": "8ff247548b4603989ffa852b743431dc35513901cef1e6cba375fd6e5a90fcfa",
+    "docs/testing.md": "e8c8c0b31cac3eddca5fdda00478106fd9002c8133d4d2fae4b6129bef6665e4",
+    "include/nex/formatting.h": "b183ccc0eedc9526a6a8b95b9d4212df5b63f9fbbc35c6a860563c1893537c76",
+    "llm/SYSTEM_PROMPT.md": "ee6c58c1a219f49e5e38143bc552315c76bae0fc493097c68777f062af13ab81",
+    "llm/language-pack.json": "431ee72976fa655f15478696b43b78e1a154fcafde2c6a68fbe7b2a25ee74d06",
+    "llms.txt": "deae9e0cc5a29ca2c143916a2f7edeaa8314beaeefd7d37420157f634cd07142",
+    "src/formatting.cpp": "c0c9d9ca96c0ae0b7ed00eec504ccf8d0decca0a2327498f823c49e30ba28463",
+    "src/language.cpp": "c62b636ae95eddb62efc8b0b34ec50223d5fb99573e8414424f0ed76a3427175",
+    "src/main.cpp": "1ee0a4d63df9103a0fe6124949c367180d582b8fe8489de4e9c3366dfa252add",
+    "tests/source_formatting.py": "5bf85cd26666612050d6ac449d114121905fc47b5193aabde3684165255d11d2"
+  }
+}

@@ -92,6 +92,8 @@ conditional groups. Its seven methods passed in 15.104 s, including unchanged
 graph rows/revision and reference/native Debug/Release/strict executed TypeScript.
 The same source's 12 core groups passed in 29.03 s. These are single local
 observations; no full layer, SDK or additional platform was qualified.
+The [scoped receipt](evidence/source-formatting-0.168.0-2026-11-11.json)
+pins the implementation, binary, original failure and later successful reports.
 
 ## Maintain the catalogue
 

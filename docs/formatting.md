@@ -80,3 +80,8 @@ comments/literal bytes, nested generics and comparisons, current source examples
 rejected input without writes, retained graph rows, semantic revision, reference
 execution, native Debug/Release and strict executed TypeScript. A test definition
 alone is not a current platform or SDK acceptance receipt.
+
+The [recorded 0.168 source observation](evidence/source-formatting-0.168.0-2026-11-11.json)
+passed all seven methods (15.104 s), 12 core groups (29.03 s) and the shared
+language-pack comparison. It preserves the initial test-protocol error separately.
+These local observations do not qualify a complete SDK or another platform.
