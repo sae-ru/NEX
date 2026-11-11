@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Trailing type-parameter defaults on nominal declarations",
+  "implementation_commit": "1579d44000f6b1e844472a7de7bfe381d2c4d39b",
+  "build_source_base_commit": "a8e2b96",
+  "compiler": {
+    "toolchain": "0.189.0",
+    "language": "0.28",
+    "sha256": "0108f7bd97e6ffa9d75d2deb6c59058bf9ceac3d3659bfe46552eed205b09902",
+    "compiler_build": "8b19f346ca4789b2cbd48dc4a97dd20784ecd8feee1ca640855afa6310c5da68",
+    "descriptor_hash": "20ee64960db02c39d028c84a0f4d1402630f7f46e548432aa4cc5c03b4dca53b"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "syntax": "struct Box<T = i64>",
+    "bare": "Box",
+    "partial": "Pair<i64> with trailing str default",
+    "explicit": "Box<str>",
+    "defaults_resolve_prior_parameters": true,
+    "rejections": [
+      "non-trailing default E_GENERIC_DEFAULT",
+      "function default E_GENERIC_DEFAULT",
+      "unit default E_TYPE"
+    ],
+    "higher_kinded_without_defaults_stays_constructor": true
+  },
+  "observations": {
+    "registered_groups": 338,
+    "type_defaults_seconds": 5.22005,
+    "focused_tests": 3,
+    "focused_seconds": 149.48,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.41,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "only nominal declarations support defaults; function defaults and type lambdas remain pending",
+    "higher-kinded constructor parameters without defaults are not materialized",
+    "no full CTest/full SDK; 0.189 not deployed to CIX/RK/Windows stands"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/type-defaults-0189-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/type-defaults-0189-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/type-defaults-0189-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/type-defaults-0189-v1/nex.sha256",
+    "test": "tests/type_defaults.py",
+    "guide": "docs/language.md",
+    "grammar": "docs/grammar.ebnf"
+  }
+}
