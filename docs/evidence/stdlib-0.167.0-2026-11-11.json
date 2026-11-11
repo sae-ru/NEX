@@ -1,0 +1,184 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T02:42:19.792080+00:00",
+  "scope": "Source text/list/math standard library and matching SDK consumption sub-workflow",
+  "implementation_commit": "1fe089aac42c284d8a32f494ecd8ad505b078fa9",
+  "build_source_base_commit": "dbae7426abd0b5b6182f8a0812d09f0f564c69a0",
+  "compiler": {
+    "toolchain": "0.167.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "867e7d2e91ca24c177d6fa503f9a6e19dd4a47e7a6b830c8be81fd6714f19a61",
+    "compiler_build": "cfb7ab008b651a5819f629581739058d56c46c47d1cccb453ca4b0de8c982588",
+    "descriptor_hash": "96b9e1d43098c2c71ae1ef899fe86b95815e53180aeac8575cd264863952c39e",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "node": "v22.22.3",
+    "strict_typescript": "7.0.2",
+    "power": "AC and open lid observed for freshly owned child processes",
+    "exclusive_host_latency_claimed": false
+  },
+  "library": {
+    "public_functions": 26,
+    "text_functions": 7,
+    "list_functions": 9,
+    "math_functions": 10,
+    "added_public_functions": 19,
+    "compiled_source_pins": {
+      "lib/list.nex": "c609c8a42b88f2879e3bf0e290b1da00bfd4c84f353dc0daf07c6e532d78b1df",
+      "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e",
+      "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64"
+    },
+    "source_pin_algorithm": "SHA256",
+    "source_grammar_changed": false,
+    "language_migration_required": false,
+    "existing_signatures_preserved": true,
+    "new_intrinsics_or_foreign_authority": false,
+    "linear_immutable_bulk_construction": false,
+    "implicit_threads": false,
+    "map_filter_copy_complexity": "O(n log(n+1)) excluding callback work",
+    "sort_comparison_complexity": "O(n log(n+1))",
+    "sort_reference_copy_complexity": "O(n log^2(n+1))",
+    "search_comparisons": "Two-Way O(n+m) with constant search state; conversion storage is separate",
+    "measured_runtime_speedup_claimed": false
+  },
+  "observations": {
+    "core": {
+      "groups": 12,
+      "seconds": 20.582
+    },
+    "initial_library_suite": {
+      "methods": 6,
+      "seconds": 35.8886
+    },
+    "initial_binary_pairs": 945,
+    "oracle_assertions": 340,
+    "initial_core_failed_or_skipped": 0,
+    "initial_library_methods": 6,
+    "existing_module_compatibility_test": "passed",
+    "initial_library_suite_covers": [
+      "compiled/default source SHA256 pins and all26 actual public names",
+      "actual matching SDK sub-workflow and10 receipt rejection controls",
+      "reference/native Debug/Release/strict and executed TypeScript7.0.2",
+      "Unicode scalars, combining sequence, NUL, all25 pinned White_Space values and exclusions",
+      "stable sort, immutable aliases/captures, empty lists and short-circuit callbacks",
+      "Python arbitrary-precision integer oracles including MIN/MAX and Result overflow",
+      "four rejected type/effect/visibility programs",
+      "six fatal-control cases agree in reference/native Release/TypeScript, including callback order",
+      "fixed1M-step search accepts Two-Way and rejects a distinct naive algorithm with E_LIMIT",
+      "explicit dependency update and retained source export"
+    ],
+    "expanded_correctness_matrix": {
+      "oracle_assertions": 340,
+      "exhaustive_binary_search_pairs": 16065,
+      "oracle_matrix_version": 2,
+      "aggregate_oracle_step_budget": 170000000,
+      "case_expansion_factor": 17,
+      "adversarial_step_budget_unchanged": 1000000,
+      "reference_native_debug_release_TypeScript": true,
+      "UTF8_White_Space_codepoints": 25
+    },
+    "historical_graph_IDs_after_dependency_update": "passed in the graph subtest of final-delta; that overall attempt failed only the enlarged matrix budget",
+    "final_matrix_exit_code": 0,
+    "full_SDK_workflow_executed": false,
+    "SDK_subworkflow": {
+      "stdlib_SDK_subworkflow": {
+        "schema": "nex.standard-library-consumption/1",
+        "ok": true,
+        "compiler_sha256": "867e7d2e91ca24c177d6fa503f9a6e19dd4a47e7a6b830c8be81fd6714f19a61",
+        "language": "0.28",
+        "toolchain": "0.167.0",
+        "compiler_build": "cfb7ab008b651a5819f629581739058d56c46c47d1cccb453ca4b0de8c982588",
+        "descriptor_hash": "96b9e1d43098c2c71ae1ef899fe86b95815e53180aeac8575cd264863952c39e",
+        "compiled_source_pins": {
+          "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+          "lib/list.nex": "c609c8a42b88f2879e3bf0e290b1da00bfd4c84f353dc0daf07c6e532d78b1df",
+          "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e"
+        },
+        "example_hashes": {
+          "main.nex": "c5fc3e7476d5f798504c7c29bed54f01286ec0eea17bd0e0d0c159803e8dc2c2",
+          "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30",
+          "nex.lock.json": "02d98fa88c86f61e1107693938d6a6b044f852085170b15f2ba801491de1e14c"
+        },
+        "revision": "61b994bf2df18775d7f291e0ffa2248e6e50008e15231aa041723be94efcbd25",
+        "reference_stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+        "native": {
+          "debug": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+          "release": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+        },
+        "typescript": {
+          "requested": true,
+          "executed": true,
+          "stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+        },
+        "existing_lock_enforced": true,
+        "lock_unchanged": true,
+        "complete_SDK_workflow_claimed": false
+      },
+      "strict_typescript": true,
+      "receipt_rejection_controls": 10,
+      "complete_SDK_executed": false
+    },
+    "registered_Mac_groups": 323,
+    "all_platform_catalogue_entries": 328
+  },
+  "retained_failures": [
+    {
+      "kind": "preflight_alias",
+      "result": "E_PARSE",
+      "cause": "list is a reserved type word; module uses std::lists and imports use seq/lists"
+    },
+    {
+      "kind": "expanded_matrix_first_attempt",
+      "result": "E_LIMIT",
+      "aggregate_budget": 10000000,
+      "old_pairs": 945,
+      "new_pairs": 16065,
+      "case_expansion_factor": 17,
+      "resolution": "Version2 correctness matrix uses17x aggregate budget; fixed1M adversarial guard unchanged. Original failed attempt retained."
+    }
+  ],
+  "original_Qwen_study": {
+    "new_requests": 0,
+    "original_sealed_files_reverified": 4382,
+    "negative_result_replaced": false,
+    "new_token_savings_claimed": false
+  },
+  "limits": [
+    "No full CTest, remote/physical device, installed/relocated portable SDK cohort.",
+    "Source helper implementation is not a complete replacement for Python/C++ libraries.",
+    "Linear builders, effect-polymorphic callbacks, wider containers and remaining original PLAN are pending.",
+    "Focused SDK helper evidence is not complete SDK acceptance.",
+    "Expanded correctness budget is not a matched runtime performance measurement."
+  ],
+  "references": [
+    "https://www.unicode.org/Public/17.0.0/ucd/PropList.txt",
+    "https://monge.univ-mlv.fr/~mac/Articles-PDF/CP-1991-jacm.pdf",
+    "https://raw.githubusercontent.com/python/cpython/main/Objects/stringlib/stringlib_find_two_way_notes.txt"
+  ],
+  "local_evidence_root": "build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/stdlib-v1",
+  "local_artifact_sha256": {
+    "build-observation.json": "8995dfe0beac6f8d18f93d093f2d4bdc19c454eed975ac5238ec07998e30aaef",
+    "core-receipt/report.json": "9ea5ac454572f3940b217f5e4779caf7f55aae32a75b336f7d3fe80e7f8be6a3",
+    "stdlib-junit.xml": "ac86d3d5adbcf22fcf9fb1701ec060a5ac5f5d0c70649c4f0e6c5b344aa0ac44",
+    "stdlib-LastTest.log": "4225d3bddd429648228d5d8cbf56fb90837b2aecd383c93a7694b151af579851",
+    "actual-test-proofs.json": "bc31ebd4e3630f0d7efa35fc6f85fe9cadeddeeec7fc7a7936ceb0edabff9884",
+    "final-delta.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final-delta.stderr": "94f76414bccb570fb85d1b41ae6e77f34381545d41d7ee63d0be1ad7d4c996d5",
+    "final-delta-observation.json": "3f7a07df8b648d0ffbcd7a5a5faa4e126f23ef1841214ba8465c06b8a28b635a",
+    "final-matrix.stdout": "4cbceabfb1a915d34fc312e8e085289cd798f92f89e551e4eb37151dc1f3de1d",
+    "final-matrix.stderr": "9b897c8129acac953755a43088f948cb4388d3728f4b9f18c50de64dfe7517d5",
+    "final-matrix-observation.json": "aa6798ac039ee72992e92c2107515c10bcfe3db03ea8a9111137d08cc28dcbd5",
+    "existing-module.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "existing-module.stderr": "a64c5c278c50451bd8fe4498fc50fadb896de9e01084f63032e624d8ee98c333",
+    "preflight-check.stdout": "08788868c93f83eacad9d6ab24bd99b2439f9adfe7808d9e37ca9a57afcddc61",
+    "audit122.json": "b00c9dc51f5c68dca8ee311f28bed07b06ed745a7c1c6bc38e32757eb9c17226",
+    "source-inventory-before-commit.json": "2d82b3dffa604e85256d7873dac41a217794b0c96a78db83dda990b8ef2a79a3"
+  }
+}

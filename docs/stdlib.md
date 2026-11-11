@@ -121,3 +121,5 @@ stable ordering/immutability, integer extremes, rejected effects/types and a
 guarded dependency update. Reference/native Debug+Release and strict/executed
 TypeScript are separate observations. Complete SDK/platform qualification and a
 new versioned local-Qwen efficiency study remain pending.
+
+[Recorded0.167 validation](evidence/stdlib-0.167.0-2026-11-11.json) pins the compiler, source commit, test scope and retained failures.

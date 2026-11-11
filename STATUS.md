@@ -1,3 +1,23 @@
+# Source standard helpers — development0.167.0
+
+Text7/list9/math10 source functions now include split/replace/trim/find, ordered
+map/filter/fold/search, stable sort and checked integer division/power/gcd/lcm.
+The source language0.28, taskABI7 and CABI1 are unchanged. CMake-generated SHA256
+resource pins are exposed in standard_library; nex lock remains an explicit update.
+Locks retain archived source, original graph IDs and frozen exports.
+
+Core12 passed20.58s; the initial six library scenarios passed35.89s. The expanded
+16065-pair/340-assertion correctness matrix passed reference/native Debug+Release/
+strict executed TypeScript after its total interpreter budget was scaled with17x
+cases. The prior E_LIMIT is retained; the separate1M-step adversarial guard stays
+fixed and rejects the naive control. Existing module compatibility also passed.
+[Exact scope and failures](docs/evidence/stdlib-0.167.0-2026-11-11.json).
+
+Immutable copy costs are explicit: map/filter O(n log n), sort O(n log² n).
+Linear builders/effect polymorphism/wider containers and complete SDK/platform
+acceptance remain pending. No new model requests; original negative Qwen result
+and all4382 sealed files remain unchanged. The whole original PLAN stays active.
+
 # Bounded language entry — development0.166.0
 
 `nex explain CODE` now gives compiled bounded guidance for103 builtin diagnostics,
