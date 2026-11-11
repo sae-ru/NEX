@@ -1,0 +1,54 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Enclosing-function filtering for LSP value completion",
+  "implementation_commit": "de1ba0e32195a3d7950c23847aa3b4996a60f6c2",
+  "build_source_base_commit": "871ba16",
+  "compiler": {
+    "toolchain": "0.197.0",
+    "language": "0.28",
+    "sha256": "e2bfb55c0a6e838a659fe356141b697360f6b39611282c213d82dc04afa5f190",
+    "compiler_build": "195c90ee9d35b945bdcb5a3564a78b4a963049494057f14061a22357c2aee560",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "filter": "innermost enclosing function",
+    "declaration_before_cursor": true,
+    "locals_and_parameters": true,
+    "fields": "still declaration-wide",
+    "nested_blocks": false,
+    "member_completion": false
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.1448,
+    "editor_language_client_seconds": 1.09254,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 23.37,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "function-level filtering only; nested block scope is not modeled",
+    "field values remain declaration-wide",
+    "member completion after ::/. remains pending",
+    "no parser recovery/incremental indexing or broader IDE matrix"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-scope-0197-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-scope-0197-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-scope-0197-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-scope-0197-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
