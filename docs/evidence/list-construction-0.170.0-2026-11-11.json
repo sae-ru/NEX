@@ -1,0 +1,161 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T11:00:47.183286+00:00",
+  "scope": "Sequential immutable list construction and linear std/list builders",
+  "implementation_commit": "1be63b9eca658bf2f590f659df1de4e45c13de2a",
+  "build_source_base_commit": "991849da3c6996dfc495015b0d67043f15e7d99c",
+  "compiler": {
+    "toolchain": "0.170.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "4c70deb596ce800b62d83ed62fb7cb12a17fa06d1a6d5524fd362fa89de40edb",
+    "compiler_build": "5a909907e6f16bb21c5e104fa6650c5b40cdd4560ccdbc19cd420d43a0b7b396",
+    "descriptor_hash": "e04fe4672dc4ec72c68b1368f4ca87b65f7ef4b6cf8800a698b7728674caa496",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "767946d2d9f615bf28477ca2e77237c7a05d42006d14cafe9c29e770ea062050",
+      "include/nex/language.h": "d17617dd31d1741132a013fe068336e7958cc9683b63eb63000df311dd131010",
+      "include/nex/list_build.h": "3449a55c4ed9acabd0f16c23bbe5bf2a5f9d0cb46f4568bf70e2b17636d82d04",
+      "src/language.cpp": "8c2637b66943029df4ad79c308b21ca6062a7de96d5bb3c09aaad0ea794911a7",
+      "src/list_build.cpp": "6edb2508ec6b04570803b64fc31cb79578f2965ad3986e0024a3970ed6937158",
+      "src/interpreter.cpp": "dcbdeb5945966e9e2ee87bb356c8d0ffa7626027bbb79044a1221a261c54d856",
+      "src/backend.cpp": "b949fdf71dd6622ac3dcf28072d75b0e01088d0ee8edf7222acb9291a568cc04",
+      "src/typescript.cpp": "f668471e14e4cabcd7b227ff07a0b762a0b42979cf4732349da811295d027c95",
+      "src/task_lifetime.cpp": "5557512fe97dfa95d23f718280736e142c4f229f690c0892b197ba21f2f6f304",
+      "src/standard_library.cpp": "98bf0206caf76e234440773d25bb227c593b6ad0d20464076bc6c8001b71371f",
+      "lib/list.nex": "0eb0917634895fa64fe97bf07bde3caa1c41072b8e00132bd07342da38fb7ea7",
+      "llm/language-pack.json": "36a7a16122bd6c6b809557247ea8d287f7787cc905879d01e6ccc856c4bea176"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2",
+    "power": "AC and open lid observed for freshly owned child processes",
+    "exclusive_host_latency_claimed": false
+  },
+  "constructor": {
+    "source_name": "list",
+    "previously_reserved_name": true,
+    "forms": [
+      "list(count,make)",
+      "list(values,transform)",
+      "list(values,predicate,transform)",
+      "list(count,initial,next,emit)"
+    ],
+    "backends": [
+      "reference",
+      "native",
+      "TypeScript"
+    ],
+    "callback_effects": "inferred union",
+    "source_errors": true,
+    "task_callbacks": true,
+    "private_accumulator": true,
+    "published_output_immutable": true,
+    "sequential": true,
+    "new_worker_threads": false,
+    "new_authority": false,
+    "runtime_ABI_changed": false,
+    "source_version_changed": false,
+    "GPU_Wasm_constructor_support": false
+  },
+  "observations": {
+    "all_target_build_passed": true,
+    "build_seconds": 36.585,
+    "constructor_methods": 8,
+    "constructor_seconds": 58.02,
+    "extra_methods": 2,
+    "extra_seconds": 45.076,
+    "stdlib_methods": 6,
+    "stdlib_seconds": 44.665,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_CTest_seconds": 24.349,
+    "language_pack_check": true,
+    "language_pack_seconds": 2.045,
+    "registered_Mac_groups": 326,
+    "unlabelled_groups": 0,
+    "coverage": [
+      "all four forms, nested values, generics and immutable aliases",
+      "callback effect order, typed source errors, result propagation boundaries",
+      "suspending callbacks and genuine task/future lists",
+      "rejected types, effects and borrowed-scope escapes",
+      "negative count, native exit cleanup and 65537-element inputs",
+      "generated binding hygiene against caller lexical shadows",
+      "existing 0.28 graph revision and local IDs preserved",
+      "reference, native Debug/Release, strict TypeScript and actual TypeScript execution"
+    ]
+  },
+  "allocation_comparison": {
+    "input_elements": 4096,
+    "same_latest_compiler_for_both": true,
+    "structural_baseline": "old balanced concatenation algorithm, not an older SDK",
+    "legacy": {
+      "NEX_handles": 36869,
+      "NEX_objects_shallow": 8195,
+      "live": 0
+    },
+    "bulk": {
+      "NEX_handles": 20494,
+      "NEX_objects_shallow": 7,
+      "live": 0
+    },
+    "throughput_claimed": false,
+    "vector_backing_bytes_or_RSS_measured": false
+  },
+  "hygiene_control": {
+    "observed_regression": true,
+    "expected_stdout": "hygiene-ok",
+    "observed_stdout": "wrong",
+    "fixed_in_v4": true
+  },
+  "preserved_failures": [
+    {
+      "run": "list-construction-v1",
+      "result": "constructor exit 1: tests assumed no throw for callers with typed catch and invoked a task generator as an ordinary entry; tests corrected, language rules unchanged"
+    },
+    {
+      "run": "list-construction-v2",
+      "result": "compatibility fixture omitted user_version; real SQLite schema version is 0; fixture metadata corrected"
+    },
+    {
+      "run": "list-construction-v3",
+      "result": "passed on an earlier 0.170 candidate and was superseded by v4; not rewritten"
+    },
+    {
+      "run": "list-construction-v4",
+      "result": "report field same_compiler_sha256 inherited the pre-build value; final binary identity is compiler_sha256; original report retained with report-annotation.json"
+    }
+  ],
+  "limits": [
+    "not a full regression, portable SDK or platform qualification",
+    "core tier alone is not complete acceptance",
+    "allocation comparison counts managed/shallow objects, not RSS or vector backing bytes",
+    "no throughput or 1000x speedup claim",
+    "GPU/Wasm lowering for the constructor remains pending",
+    "named std/list wrappers still accept pure callbacks; generic effect parameters are pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "constructor_report": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/report.json",
+    "constructor_stdout": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/constructor.stdout",
+    "constructor_stderr": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/constructor.stderr",
+    "core_junit": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/core.xml",
+    "registry": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/registry.json",
+    "tiers": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/tiers.json",
+    "allocation_comparison": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/allocation-comparison/report.json",
+    "extra_report": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-extra-v1/report.json",
+    "hygiene_control": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-hygiene-control-v1/proof.json",
+    "report_annotation": "/Users/sae/projects/NEX/build/windows-platform-discovery162-v1/stands-returned-current028-v1/stands-return-20261109-v1/list-construction-v4/report-annotation.json"
+  },
+  "related_scoped_runs": {
+    "bounded_instrumentation_rerun": "/Users/sae/projects/NEX/build/deferred-rerun-0170-v1/results/REPORT.md",
+    "note": "Separate bounded ASan/TSan/fuzz/replay run on a copy of the uncommitted 0.170 source; not 0.170 release qualification, not CI and not part of the deferred block's acceptance."
+  }
+}
