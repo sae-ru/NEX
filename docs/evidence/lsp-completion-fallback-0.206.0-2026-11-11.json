@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "LSP completion fallback for unparsed source",
+  "implementation_commit": "7b9de15c3e1d30ad16023f8a6a48e0c4dc0c98bf",
+  "build_source_base_commit": "6343895",
+  "compiler": {
+    "toolchain": "0.206.0",
+    "language": "0.28",
+    "sha256": "7b0e4dc8279592eec8e28062f513895b3d6c2095225ef6e693dc454e00489ca7",
+    "compiler_build": "14060d84a7ae20e500337e9f8bb27ca9fa7e2a3bd8d18e5573c2f7e6b8e0ce29",
+    "descriptor_hash": "1252585f5dd7093a12dc7a32d08fa90d67c724cd3c5aef1fb5d2944a4b1fbd53"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "trigger": "no checked index for current document",
+    "scan": "lexical declaration regex",
+    "kinds": [
+      "fn",
+      "struct",
+      "enum",
+      "resource",
+      "trait"
+    ],
+    "detail": "unchecked declaration",
+    "prefix_filter": "ASCII identifier",
+    "checked_path_unchanged": true
+  },
+  "observations": {
+    "registered_groups": 341,
+    "language_server_seconds": 20.4043,
+    "editor_language_client_seconds": 1.13475,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 22.27,
+    "docs_documents": 179,
+    "docs_links": 1228
+  },
+  "limits": [
+    "fallback is lexical and does not recover types, scopes or diagnostic metadata",
+    "parser recovery/incremental indexing and broader IDE matrix remain pending",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "focused_junit": "/Users/sae/projects/NEX/build/lsp-fallback-0206-v1/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/lsp-fallback-0206-v1/core.json",
+    "describe": "/Users/sae/projects/NEX/build/lsp-fallback-0206-v1/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/lsp-fallback-0206-v1/nex.sha256",
+    "test": "tests/lsp.py",
+    "server": "editor/lsp/server.py",
+    "guide": "docs/lsp.md"
+  }
+}
