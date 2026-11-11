@@ -621,11 +621,9 @@ class LanguageServer(harness.ToolchainCase):
         client=self.client();client.initialize();client.open(self.file,text)
         inside=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
             'position': {'line':1,'character':inner}})
-        print('DEBUG',[(item['label'],item['detail']) for item in inside['items']])
         self.assertTrue({'inner','outer'} <= {item['label'] for item in inside['items']})
         outside=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
             'position': {'line':1,'character':outer}})
-        print('DEBUGOUT',[(item['label'],item['detail']) for item in outside['items']])
         labels={item['label'] for item in outside['items']}
         self.assertIn('outer',labels)
         self.assertNotIn('inner',labels)
@@ -687,6 +685,16 @@ class LanguageServer(harness.ToolchainCase):
         second=client.request('textDocument/signatureHelp', {'textDocument': {'uri': self.file.as_uri()},
             'position': {'line':2,'character':start+2}})
         self.assertEqual(second['activeParameter'],1)
+
+    def test_completion_falls_back_on_unparsed_source(self):
+        text='module app;\nfn helper() -> i64 { return 1; }\nfn main()->unit !{io}{print(helper())}\n'
+        client=self.client();client.initialize();client.open(self.file,text)
+        aim=text.splitlines()[2].index('print')
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':aim}})
+        labels={item['label'] for item in result['items']}
+        self.assertTrue({'helper','main'} <= labels)
+        self.assertTrue(all(item['detail']=='unchecked declaration' for item in result['items']))
 
     def test_completion_returns_checked_declarations(self):
         text='module app;\nstruct Point { x: i64; }\nfn helper(x: i64) -> i64 { return x + 1; }\nfn main() -> unit !{io} { print(helper(1)); }\n'

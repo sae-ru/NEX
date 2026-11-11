@@ -1,4 +1,4 @@
-# NEX language server: development toolchain 0.205
+# NEX language server: development toolchain 0.206
 
 `nex lsp` runs a stdio [Language Server Protocol 3.17](https://github.com/microsoft/language-server-protocol/blob/gh-pages/_specifications/lsp/3.17/specification.md)
 adapter using Python 3.9+ and the selected compiler. Its standard output contains
@@ -82,8 +82,10 @@ from commas before the cursor. Toolchain 0.204 adds `workspace/symbol` with
 `workspaceSymbolProvider`: checked declarations are filtered by name and returned
 with source locations. Toolchain 0.205 adds `textDocument/documentHighlight` with
 `documentHighlightProvider` for the current binding's occurrences (declaration
-kind 3, reads kind 1). Parser recovery/incremental indexing and the broader IDE
-matrix remain pending.
+kind 3, reads kind 1). Toolchain 0.206 lets completion fall back to a bounded lexical declaration scan
+when the current document has no checked index, so `fn`/`struct`/`enum`/
+`resource`/`trait` names still appear while source is unparsed. Parser recovery
+metadata, incremental indexing and the broader IDE matrix remain pending.
 
 ## Checked references
 

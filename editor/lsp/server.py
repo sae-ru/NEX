@@ -529,12 +529,24 @@ class Server:
                     source = unit['text'];break
             if source is not None:break
         if source is None:
+            with self.lock:
+                document = self.documents.get(path)
+            source = None if document is None else document['text']
+        if source is None:
             raise RPCError(-32602, 'Document is not part of the checked project')
         offset = byte_offset(source, params.get('position'))
         before = source.encode('utf-8')[:offset].decode('utf-8')
         prefix_match = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', before)
         prefix = '' if prefix_match is None else prefix_match.group(0).lower()
         kinds = {'function': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8, 'endpoint': 3}
+        if not any(any(Path(f['path']).resolve() == path for f in index.get('files', [])) for index in cache['indices']):
+            items = {}
+            for declaration in re.finditer(r'\b(fn|struct|enum|resource|trait)\s+([A-Za-z_][A-Za-z0-9_]*)', source):
+                name = declaration.group(2)
+                if prefix and not name.lower().startswith(prefix):continue
+                kind = {'fn': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8}[declaration.group(1)]
+                items[name] = {'label': name, 'kind': kind, 'detail': 'unchecked declaration', 'sortText': name.lower(), 'filterText': name}
+            return {'isIncomplete': False, 'items': sorted(items.values(), key=lambda item: (item['sortText'], item['label']))}
         qualified = re.search(r'([A-Za-z_][A-Za-z0-9_]*)::\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
         if qualified is not None:
             qualifier = qualified.group(1)
