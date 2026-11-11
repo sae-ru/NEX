@@ -14,6 +14,9 @@ cmake --build build --target nex_core_tests -j 4
 ctest --test-dir build -L '^core$' -j 1 --output-on-failure
 ```
 
+The [development presets](development-build.md) also provide
+`cmake --workflow --preset dev-core` for configure/build/core-test orchestration.
+
 The selected11 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
 accounting/collection/CTest metadata. They require Python3.10+, the configured

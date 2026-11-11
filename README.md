@@ -69,7 +69,7 @@ trial records offline; a [ten-task comparison protocol](experiments/quality/llm-
 has [qualified cross-language host controls](experiments/quality/llm-campaign-v1/README.md).
 Local Qwen task collection, bounded tool access and counted source review are implemented.
 [Infrastructure pilots](docs/evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json)
-retain failures. [Repaired feedback](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is next.
+retain failures. [Repaired feedback](docs/evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
 The [11-group core layer](docs/testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
 
@@ -128,7 +128,12 @@ ctest --test-dir build -L '^core$' --output-on-failure
 
 It needs the selected compiler build and Python, with no Node/npm preparation.
 The [tier inventory](cmake/test-tiers.json) also labels browser, platform, SDK and
-scale groups. Use the complete workflow below at the agreed milestone:
+scale groups.
+
+Shared [development presets](docs/development-build.md) also provide
+`cmake --workflow --preset dev-core` with separate Debug/Release build directories.
+
+Use the complete workflow below at the agreed milestone:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release

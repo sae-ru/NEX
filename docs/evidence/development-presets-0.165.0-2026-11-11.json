@@ -1,0 +1,63 @@
+{
+  "schema": "nex.development-evidence/1",
+  "ok": true,
+  "date": "2026-11-11",
+  "utc": "2026-11-11T00:00:02.275042+00:00",
+  "toolchain": "0.165.0",
+  "language": "0.28",
+  "source_parent_commit": "67da05c",
+  "compiler_sha256": "63cd6b70baedeea537e3ba84ce5c7186700c726be4436f495150856bcddbf992",
+  "compiler_changed": false,
+  "language_or_ABIs_changed": false,
+  "preset_schema": 6,
+  "declared_minimum_CMake": "3.25",
+  "actual_CMake_list_presets_accepted": true,
+  "configure_presets": [
+    "dev-debug",
+    "dev-release"
+  ],
+  "build_presets": [
+    "core",
+    "dev",
+    "release"
+  ],
+  "test_presets": [
+    "core",
+    "full",
+    "release-full"
+  ],
+  "workflow_presets": [
+    "dev-core"
+  ],
+  "fresh_Debug_configure_with_explicit_actual_dependency_selectors_passed": true,
+  "core_preset_selected_exactly11_groups": [
+    "bytes_runtime_native",
+    "ctest_report_validation",
+    "discovery",
+    "float_runtime_native",
+    "frontend_diagnostics_native",
+    "language_pack_contract",
+    "llm_cost_ledger",
+    "llm_local_collector",
+    "task_frontend_native",
+    "test_tiers",
+    "typed_source_frontend_reference"
+  ],
+  "fresh_profile_full_build_or_test_execution_claimed": false,
+  "previous_real_core_build_and_execution_evidence": "test-tiers-0.165.0-2026-11-11.json",
+  "Linux_existing_container_reused_in_design": true,
+  "new_container_build_or_platform_execution_claimed": false,
+  "complete_dependency_closure_or_reproducible_portable_SDK_claimed": false,
+  "active_Qwen_comparison_compiler_preserved": true,
+  "full_regression_or_device_suite_run": false,
+  "main_or_push": false,
+  "input_pins": {
+    "CMakePresets.json": "e53cecdb975df58abecaf87c6a808c4e7b9d78554c28039bf0951cdc2f87cf7b",
+    ".gitignore": "e2aa142269c9a0258c1a479bd3e434c556ba004ecc43008c2ab754696cc6140c",
+    "docs/development-build.md": "ca237e6ad6733376b4c2f037b889e4f1c3a3be0aef64088496222c771b160cb1"
+  },
+  "configure_log_sha256": "c656772b8e3850c0c4a6673208f19ad6c7790c9386b48329cc8157a6541f7b89",
+  "core_selection_sha256": "53baf4c2ce0d6520aff5c0bc3756233f3024af3cb31c9cf56ea7224d2e77c034",
+  "actual_CMake_version": "3.31.12",
+  "schema_reference": "https://cmake.org/cmake/help/v3.25/manual/cmake-presets.7.html"
+}

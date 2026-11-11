@@ -1,0 +1,65 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "dev-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/presets/${presetName}",
+      "cacheVariables": {"CMAKE_EXPORT_COMPILE_COMMANDS": true}
+    },
+    {
+      "name": "dev-debug",
+      "displayName": "Debug compiler development",
+      "description": "Use the selected host generator/compiler and installed LLVM/MLIR22.1 dependencies.",
+      "inherits": "dev-base",
+      "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug"}
+    },
+    {
+      "name": "dev-release",
+      "displayName": "Release compiler development",
+      "inherits": "dev-base",
+      "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
+    }
+  ],
+  "buildPresets": [
+    {"name": "core", "configurePreset": "dev-debug", "configuration": "Debug", "targets": ["nex_core_tests"], "jobs": 4},
+    {"name": "dev", "configurePreset": "dev-debug", "configuration": "Debug", "jobs": 4},
+    {"name": "release", "configurePreset": "dev-release", "configuration": "Release", "jobs": 4}
+  ],
+  "testPresets": [
+    {
+      "name": "core",
+      "configurePreset": "dev-debug",
+      "configuration": "Debug",
+      "output": {"outputOnFailure": true},
+      "filter": {"include": {"label": "^core$"}},
+      "execution": {"jobs": 1, "noTestsAction": "error"}
+    },
+    {
+      "name": "full",
+      "configurePreset": "dev-debug",
+      "configuration": "Debug",
+      "output": {"outputOnFailure": true},
+      "execution": {"jobs": 1, "noTestsAction": "error"}
+    },
+    {
+      "name": "release-full",
+      "configurePreset": "dev-release",
+      "configuration": "Release",
+      "output": {"outputOnFailure": true},
+      "execution": {"jobs": 1, "noTestsAction": "error"}
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "dev-core",
+      "displayName": "Configure, build and check the small core layer",
+      "steps": [
+        {"type": "configure", "name": "dev-debug"},
+        {"type": "build", "name": "core"},
+        {"type": "test", "name": "core"}
+      ]
+    }
+  ]
+}

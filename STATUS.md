@@ -1,3 +1,23 @@
+# Shared development presets — development0.165.0
+
+`CMakePresets.json` now selects separate Debug/Release caches, core/all build
+targets, core/full test scopes and a dev-core configure/build/test workflow.
+Personal CMakeUserPresets.json stays ignored. Actual CMake accepted every preset,
+a fresh Debug configure passed with explicitly selected installed dependencies,
+and the real core test preset selected exactly11 groups. The previous compiler
+and comparison inputs remain unchanged. The fresh profile itself has not been
+fully rebuilt/executed while the independent comparison runs; earlier core build
+and12.36s execution retain their own proof. [Guide](docs/development-build.md) and
+[scope](docs/evidence/development-presets-0.165.0-2026-11-11.json).
+
+The existing Linux toolchain container already pins LLVM/MLIR22.1.8 plus selected
+base/Z3/Node artifacts. Its established full/source-free SDK driver remains a
+separate path. Presets are configuration reuse, not a completed hermetic SDK or
+current cross-platform delivery claim. CI and further reproducible preparation
+remain open. The one-model60-slot Qwen study is running on frozen67da05c inputs;
+its partial outcomes are not a token-saving conclusion. Full regression/stands/
+devices/SDK/main/push remain deferred to the agreed final milestone.
+
 # Explicit test layers and measured core loop — development0.165.0
 
 All318 configured Mac CTest groups now have explicit labels. The catalogue also

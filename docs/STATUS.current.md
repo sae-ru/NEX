@@ -28,7 +28,7 @@ trial records offline; a [ten-task comparison protocol](../experiments/quality/l
 has [qualified cross-language host controls](../experiments/quality/llm-campaign-v1/README.md).
 Local Qwen task collection, bounded tool access and counted source review are implemented.
 [Infrastructure pilots](evidence/llm-local-collector-pilots-0.165.0-2026-11-11.json)
-retain failures. [Repaired feedback](evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is next.
+retain failures. [Repaired feedback](evidence/llm-feedback-pilot-0.165.0-2026-11-11.json) passed its own pilot; the60-slot comparison is in progress.
 The [11-group core layer](testing.md) passed in12.36s; broader layers retain
 their own dependencies and final qualification gates.
 
