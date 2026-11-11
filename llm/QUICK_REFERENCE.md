@@ -38,6 +38,10 @@ fn main()->unit !{io} {
   `str(values,transform)`, filtered and state/next/emit forms build text
   sequentially; one-argument `str(value)` still formats. See
   `nex guide --kind text-construction`.
+- If `bytes_construction` is advertised, `bytes(count,fn(i:i64)->i64{...})`,
+  `bytes(values,transform)`, filtered and state/next/emit forms build bytes
+  linearly; one-argument `bytes(list<i64>)` remains `result<bytes>`, and an
+  octet outside 0..255 traps `E_RANGE`. See `nex guide --kind bytes-construction`.
 - Strings are strict UTF-8. `len(text)`, `text[index]` and
   `slice(text,start,count)` use Unicode scalars; the third slice argument is a
   **count**, not an end index. Scalars are not grapheme clusters. Bytes preserve

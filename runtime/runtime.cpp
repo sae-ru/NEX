@@ -905,6 +905,14 @@ static Handle * impl_nex_bytes_from_integers(Handle *value,nexrt::SourceLocation
 }
 Handle * nex_bytes_from_integers(Handle *value,int64_t line){return impl_nex_bytes_from_integers(value, line);}
 Handle * nex_bytes_from_integers_at(Handle *value,int64_t line, const nexrt::NativeSite *nex_site){return impl_nex_bytes_from_integers(value, nexrt::SourceLocation{line,nex_site});}
+static Handle * impl_nex_bytes_from_octets(Handle *list,nexrt::SourceLocation location){
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{
+    if(!list||!list->data||list->data->kind!=nexrt::Data::List)throw nexrt::DataError("E_RUNTIME","byte construction requires an i64 list");
+    return owned(nexrt::bytes(nexrt::ByteData::fromList(list->data->values)));
+  });});
+}
+Handle * nex_bytes_from_octets(Handle *list){return impl_nex_bytes_from_octets(list, nexrt::SourceLocation{});}
+Handle * nex_bytes_from_octets_at(Handle *list, const nexrt::NativeSite *nex_site){return impl_nex_bytes_from_octets(list, nexrt::SourceLocation{0,nex_site});}
 static Handle * impl_nex_utf8_bytes(Handle *value,nexrt::SourceLocation line){
   return nexrt::hostOperation(line,[&]() -> Handle * {return nexrt::hostValue(line,[&]{return nexrt::Value(nexrt::utf8Bytes(value->data->text));});});
 }

@@ -89,6 +89,10 @@ and final delivery work are:
   four-argument forms of the reserved `str` builtin: inferred callback effects,
   source errors, task suspension, one private buffer and one final join.
   Toolchain 0.171 keeps language 0.28 and existing valid identities.
+- [x] Implement sequential linear byte construction through two-, three- and
+  four-argument `bytes(...)` forms: inferred callback effects, typed source
+  errors, task suspension, a private `list<i64>` and one validated conversion.
+  Toolchain 0.172 keeps language 0.28, identities and the public C ABI.
 - [ ] Wider containers, named source-library effect parameters and GPU/Wasm
   constructor lowering remain required work. Later
   versioned model studies preserve the original negative result and use only

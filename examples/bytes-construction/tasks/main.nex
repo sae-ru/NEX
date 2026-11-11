@@ -1,0 +1,16 @@
+module byte_tasks;
+fn main() -> unit !{task, io} {
+  let output: bytes = bytes(3, 0,
+    fn(x: i64) -> i64 !{task, io} {
+      task_yield();
+      print("next" + str(x));
+      return x + 1;
+    },
+    fn(x: i64) -> i64 !{task, io} {
+      task_yield();
+      print("emit" + str(x));
+      return x;
+    });
+  assert(len(output) == 3 && output[0] == 0 && output[2] == 2);
+  print("byte-task-ok");
+}

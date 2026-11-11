@@ -281,3 +281,9 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    overloads of the already reserved builtin. The one-argument formatting form
    keeps its meaning. Language0.28, canonical identities and the public C ABI
    remain unchanged; one private native runtime join symbol is used. *)
+
+(* Toolchain0.172 byte construction reuses the existing bytes(...) call and adds
+   no production or keyword. Two-, three- and four-argument forms are checked
+   overloads of the already reserved builtin; one-argument bytes(list<i64>)
+   conversion is unchanged. Language0.28, identities and the public C ABI stay
+   unchanged; one private native runtime conversion symbol is used. *)

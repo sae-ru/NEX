@@ -1,0 +1,28 @@
+module byte_effects;
+struct Stopped {
+  index: i64;
+}
+fn main() -> unit !{io, throw} {
+  let chosen: bytes = bytes([0, 1, 2], fn(x: i64) -> bool !{io} {
+      print("p" + str(x));
+      return x % 2 == 0;
+    }, fn(x: i64) -> i64 !{io} {
+      print("m" + str(x));
+      return x + 10;
+    });
+  assert(len(chosen) == 2 && chosen[0] == 10 && chosen[1] == 12);
+  try {
+    let stopped: bytes = bytes(3, fn(i: i64) -> i64 !{io, throw} {
+        print("s" + str(i));
+        if i == 1 {
+          throw(Stopped(i));
+        }
+        return i;
+      });
+    print(stopped);
+  } catch(error: Stopped) {
+    print(error.index);
+  } finally {
+    print("finally");
+  }
+}

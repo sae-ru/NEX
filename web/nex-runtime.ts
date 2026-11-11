@@ -174,6 +174,11 @@ function byteOperation<T>(operation: () => T, site?: Site): T {
   try { return operation(); }
   catch (error) { if (error instanceof ByteError) fail(error.code, error.message, site); throw error; }
 }
+// Compiler-only construction primitive. Invalid octets trap E_RANGE; the
+// published buffer is ordinary immutable NEX bytes.
+export function bytesBuilderFinish(values: ReadonlyArray<bigint>, site?: Site): ByteBuffer {
+  return byteOperation(() => ByteBuffer.fromIntegers(values), site);
+}
 export function bytesFromIntegers(values: ReadonlyArray<bigint>): Result<ByteBuffer> {
   try { return ok(ByteBuffer.fromIntegers(values)); }
   catch (error) { if (error instanceof ByteError && error.code === 'E_RANGE') return err(error.code, error.message); throw error; }

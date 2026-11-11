@@ -17,7 +17,9 @@ fn main() -> unit !{io} {
 ```
 
 `bytes(list<i64>) -> result<bytes>` copies checked octets in 0..255, returning
-`E_RANGE` otherwise. Empty construction uses `bytes([])`. Text stays a distinct
+`E_RANGE` otherwise. Toolchain 0.172 adds two-, three- and four-argument
+[sequential byte construction](bytes-construction.md) forms; the one-argument
+conversion above keeps its `result<bytes>` contract. Empty construction uses `bytes([])`. Text stays a distinct
 Unicode scalar string: use `utf8_bytes(str)` and `decode_utf8(bytes)`. Decoding
 returns `E_UTF8` for malformed sequences, preserves BOM/NUL and never normalizes.
 There are no implicit conversions, byte literals, pointers or mutable views.

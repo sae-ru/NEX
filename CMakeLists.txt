@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(NEX VERSION 0.171.0 LANGUAGES C CXX)
+project(NEX VERSION 0.172.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -88,7 +88,7 @@ target_sources(nex_frontend PRIVATE src/diagnostic_catalogue.cpp)
 target_sources(nex_frontend PRIVATE src/standard_library.cpp)
 target_sources(nex_frontend PRIVATE src/formatting.cpp)
 target_sources(nex_frontend PRIVATE src/cli_catalogue.cpp src/cli_help.cpp)
-target_sources(nex_frontend PRIVATE src/list_build.cpp src/text_build.cpp)
+target_sources(nex_frontend PRIVATE src/list_build.cpp src/text_build.cpp src/bytes_build.cpp)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   lib/text.nex lib/list.nex lib/math.nex)
 file(SHA256 "${CMAKE_CURRENT_SOURCE_DIR}/lib/text.nex" NEX_STDLIB_TEXT_SHA256)
@@ -1758,4 +1758,7 @@ set_tests_properties(list_construction PROPERTIES TIMEOUT 600)
 add_test(NAME text_construction COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/text_construction.py $<TARGET_FILE:nex>)
 set_tests_properties(text_construction PROPERTIES TIMEOUT 600)
+add_test(NAME bytes_construction COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/bytes_construction.py $<TARGET_FILE:nex>)
+set_tests_properties(bytes_construction PROPERTIES TIMEOUT 600)
 include(cmake/TestTiers.cmake)

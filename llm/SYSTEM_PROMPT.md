@@ -87,6 +87,11 @@ When `text_construction` is advertised, read `nex guide --kind text-construction
 count/state/next/emit build text sequentially over an unpublished buffer and
 join once. One-argument `str(value)` still formats; `std::text::join` retains
 its separate balanced bound.
+When `bytes_construction` is advertised, read `nex guide --kind bytes-construction --json`.
+`bytes(count,make)`, `bytes(values,transform)`, its filtered form and
+count/state/next/emit build immutable octets linearly over an unpublished
+`list<i64>`. One-argument `bytes(list<i64>)` remains `result<bytes>`; constructor
+octets outside0..255 trap `E_RANGE`.
 When `source_formatting` is advertised, use `nex fmt FILE` for a preview,
 `--check` for a read-only style check and `--write` only for an intended source
 edit. This checks syntax, not types or imports; run ordinary affected functional

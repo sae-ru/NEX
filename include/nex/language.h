@@ -165,6 +165,7 @@ struct Function {
   // Set only by compiler-owned list/text-constructor lowering, never from source.
   bool compilerListBuilder=false;
   bool compilerTextBuilder=false;
+  bool compilerBytesBuilder=false;
   std::optional<ForeignBinding> foreign;
   // Generated contract helpers have no editable physical declaration.
   std::string sourceContractOrigin;

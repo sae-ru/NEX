@@ -125,6 +125,17 @@ language pack checked 3596 JSON values across 64 shared fields, and the new form
 are rejected by retired source languages. This is one focused source block, not a
 full regression, installed-SDK or platform qualification.
 
+Toolchain 0.172 adds `bytes_construction` (328 registered Mac groups). Seven
+byte-constructor methods passed in 61.78 s; the affected text-constructor, list
+and standard-library groups passed in 61.98 s, 112.95 s and 48.36 s, and the
+unchanged 12-group core in 23.32 s. Reference/native
+Debug/Release and strict executed TypeScript cover all four forms, empty and
+20,000-octet inputs, generic references, effect order, typed errors and finally,
+task suspension, lexical-shadow hygiene, `E_RANGE` for invalid octets and partial
+native cleanup. The compiled language pack checked 3633 JSON values across 65
+shared fields. This is one focused source block, not a full regression,
+installed-SDK or platform qualification.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

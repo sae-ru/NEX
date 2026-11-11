@@ -15,6 +15,7 @@
     "schema": "nex.language-pack-contract/1",
     "shared_fields": [
       "browser_workers",
+      "bytes_construction",
       "cli_interface",
       "compute",
       "device",
@@ -93,6 +94,7 @@
       "cli_interface",
       "list_construction",
       "text_construction",
+      "bytes_construction",
       "types",
       "numeric_features",
       "generic_features",
@@ -586,9 +588,10 @@
     "source_formatting": "docs/formatting.md",
     "cli": "docs/cli.md",
     "list_construction": "docs/list-construction.md",
-    "text_construction": "docs/text-construction.md"
+    "text_construction": "docs/text-construction.md",
+    "bytes_construction": "docs/bytes-construction.md"
   },
-  "document_access": "nex guide --kind format|text-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
+  "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
   "examples": {
     "binary_browser": "examples/bytes-web.nex",
@@ -698,7 +701,8 @@
     "list_construction": "examples/list-construction/nex.json",
     "list_construction_effects": "examples/list-construction/effects/nex.json",
     "list_construction_tasks": "examples/list-construction/tasks/nex.json",
-    "text_construction": "examples/text-construction/nex.json"
+    "text_construction": "examples/text-construction/nex.json",
+    "bytes_construction": "examples/bytes-construction/nex.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4765,6 +4769,44 @@
     "sequential": true,
     "source_errors": true,
     "source_name": "str",
+    "source_version_changed": false,
+    "state_advance_calls": "max(0,count-1); emit precedes next",
+    "task_callbacks": true
+  },
+  "bytes_construction": {
+    "GPU_Wasm_constructor_support": false,
+    "backends": [
+      "reference",
+      "native",
+      "TypeScript"
+    ],
+    "callback_effects": "inferred union; ordinary caller/realm/task rules",
+    "construction_cost": "one iteration per input/count, one private append per emitted octet and one final single-allocation conversion; O(iterations+octets), excluding callbacks/state/value construction",
+    "extra_parallel_limits": false,
+    "forms": [
+      "bytes(count,make)",
+      "bytes(values,transform)",
+      "bytes(values,predicate,transform)",
+      "bytes(count,initial,next,emit)"
+    ],
+    "guide": "docs/bytes-construction.md",
+    "input_aliases_preserved": true,
+    "language": "0.28",
+    "limits": "existing allocation, steps, deadlines and byte representation",
+    "linear_in_octets": true,
+    "negative_count": "E_ASSERT",
+    "new_authority": false,
+    "new_native_runtime_symbol": "nex_bytes_from_octets",
+    "new_worker_threads": false,
+    "one_argument_conversion_preserved": true,
+    "out_of_range_octet": "E_RANGE",
+    "previously_reserved_name": true,
+    "private_accumulator": "list<i64> octets",
+    "published_output_immutable": true,
+    "runtime_ABI_changed": false,
+    "sequential": true,
+    "source_errors": true,
+    "source_name": "bytes",
     "source_version_changed": false,
     "state_advance_calls": "max(0,count-1); emit precedes next",
     "task_callbacks": true

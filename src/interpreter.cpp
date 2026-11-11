@@ -118,6 +118,11 @@ class Interpreter {
         for(const auto &value:list.object->values)text+=value.object->text;
         return V(nexrt::string(std::move(text)));
       }
+      if(e->text=="$bytes_finish"){
+        auto list=full(args[0]);
+        if(!list.object||list.object->kind!=nexrt::Data::List)throw Error("E_INTERNAL","bytes builder requires its private list",e->span);
+        return V(nexrt::bytes(nexrt::ByteData::fromList(list.object->values)));
+      }
       if(e->text=="parallel_map"){
         auto items=full(args[0]);auto callback=watch?watch->callable(args[1]):args[1];auto workers=full(args[2]).scalar;
         if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);

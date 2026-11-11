@@ -115,6 +115,7 @@ const std::map<std::string,std::string> &cliGuides(){
     {"cli","docs/cli.md"},
     {"list-build","docs/list-construction.md"},
     {"text-construction","docs/text-construction.md"},
+    {"bytes-construction","docs/bytes-construction.md"},
   };return files;
 }
 const std::vector<CliOption> &cliOptions(){

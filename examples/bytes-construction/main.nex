@@ -1,0 +1,41 @@
+module byte_builder;
+struct Pair {
+  left: i64;
+  right: i64;
+}
+fn identity<T>(value: T) -> T {
+  return value;
+}
+fn main() -> unit !{io} {
+  assert(bytes(4, fn(i: i64) -> i64 {
+        return i;
+      }) == unwrap(bytes([0, 1, 2, 3])));
+  assert(bytes([0, 1], identity) == unwrap(bytes([0, 1])));
+  let empty: bytes = bytes([], fn(x: i64) -> i64 {
+      return x;
+    });
+  assert(len(empty) == 0);
+  let original: list<i64> = [0, 1, 2];
+  let alias: list<i64> = original;
+  assert(bytes(original, fn(x: i64) -> i64 {
+        return x + 1;
+      }) == unwrap(bytes([1, 2, 3])));
+  assert(bytes([0, 1, 2, 3], fn(x: i64) -> bool {
+        return x % 2 == 0;
+      }, fn(x: i64) -> i64 {
+        return x + 10;
+      }) == unwrap(bytes([10, 12])));
+  assert(bytes(3, 0, fn(s: i64) -> i64 {
+        return s + 1;
+      }, fn(s: i64) -> i64 {
+        return s;
+      }) == unwrap(bytes([0, 1, 2])));
+  assert(bytes(4, Pair(1, 2), fn(p: Pair) -> Pair {
+        return Pair(p.right, p.left + p.right);
+      }, fn(p: Pair) -> i64 {
+        return p.left;
+      }) == unwrap(bytes([1, 2, 3, 5])));
+  assert(original == alias && alias == [0, 1, 2]);
+  assert(is_ok(bytes([0, 255])) && !is_ok(bytes([256])));
+  print("byte-values-ok");
+}
