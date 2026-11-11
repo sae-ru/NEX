@@ -303,7 +303,7 @@ const std::vector<CliCommand> &cliCommands(){
       if(c.name=="describe")c.choices["--kind"]={"full","index"};
       if(c.name=="explain")c.choices["--kind"]={"index"};
       if(c.name=="completion")c.choices["--kind"]={"bash","zsh","fish","powershell"};
-      if(c.name=="emit")c.choices["--kind"]={"mlir","llvm","typescript","metal","cuda"};
+      if(c.name=="emit")c.choices["--kind"]={"mlir","llvm","typescript","metal","cuda","opencl"};
       if(c.name=="debug")c.choices["--kind"]={"lldb","dap","nex-dap"};
       if(c.name=="project")c.choices["--kind"]={"plan","build","package","run","test","build-test","debug","profile"};
       if(c.name=="migrate")c.choices["--kind"]={"plan","apply"};

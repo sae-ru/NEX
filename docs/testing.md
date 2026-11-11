@@ -234,6 +234,13 @@ instantiate it with the inferred set. Pure and `io` factory instances receive
 distinct names; the focused checker/reference/native/TypeScript test passed in
 11.09 s. Higher-rank effects and a language-version migration remain pending.
 
+Toolchain 0.185 adds `nex emit --kind opencl` for the checked scalar subset
+(i64/bool/unit, shared pure functions, checked arithmetic, assert/if/while).
+Rows/columns kernels are source-only (`driver_initialized`/`device_executed`
+false); the focused test compiles emitted OpenCL C with Clang's OpenCL frontend
+and rejects f64 in 0.24 s (the standalone Clang syntax run took 1.39 s). Device dispatch and Mali/NPU hardware acceptance
+remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -236,6 +236,10 @@ add_test(NAME compute_contract COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOU
 set_tests_properties(compute_contract PROPERTIES TIMEOUT 1200)
 add_test(NAME metal_codegen COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/metal_codegen.py $<TARGET_FILE:nex>)
 set_tests_properties(metal_codegen PROPERTIES TIMEOUT 480)
+
+add_test(NAME opencl_emission COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/opencl_emission.py $<TARGET_FILE:nex>)
+set_tests_properties(opencl_emission PROPERTIES TIMEOUT 180)
 add_test(NAME cuda_codegen COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_codegen.py $<TARGET_FILE:nex>)
 set_tests_properties(cuda_codegen PROPERTIES TIMEOUT 180)
 add_test(NAME cuda_outcomes COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/cuda_outcomes.py $<TARGET_FILE:nex>)

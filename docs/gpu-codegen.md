@@ -93,6 +93,23 @@ remain pending. GPU operation debugging
 and profiling, further types/backends and device-loss recovery are also pending.
 Emitting a shader alone does not establish device execution or speedup.
 
+## OpenCL C source emission
+
+`nex emit --kind opencl --entry NAME --input-layout rows|columns -o FILE --json`
+emits OpenCL C 1.2 for the checked scalar subset: `i64`, `bool`, `unit`,
+shared pure functions, checked arithmetic, `assert`, `if`, `while` and helper
+calls. The kernel is `nex_generated_map`; rows use an interleaved input buffer,
+columns use `input_0...`, and every dispatch writes `output` plus per-lane
+`errors` (0 success, 1 overflow, 2 divide-by-zero, 3 assertion, 4 step limit,
+5 fallthrough, 6 invalid bool input). The host supplies explicit device and
+buffer authority; `driver_initialized` and `device_executed` remain false.
+
+The emitter is source-only: device dispatch, Mali/NPU hardware acceptance,
+bounded lists/bytes/text, f64 and additional control flow are pending. The
+report schema is [nex.opencl-emission/1](../llm/opencl-emission.schema.json).
+The focused test compiles the emitted source with Clang's OpenCL frontend when
+available and rejects unsupported f64.
+
 ## CUDA source emission
 
 The same compiler also accepts `--kind cuda`. Discover its own subset with

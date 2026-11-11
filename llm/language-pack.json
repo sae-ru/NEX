@@ -41,6 +41,7 @@
       "native_entry_abi",
       "native_runtime_search",
       "native_tool_arguments",
+      "opencl_codegen",
       "patch_entities",
       "project_capture_layout",
       "resource_executor",
@@ -105,7 +106,8 @@
       "source_contracts",
       "source_concurrency",
       "project_build",
-      "gpu_codegen"
+      "gpu_codegen",
+      "opencl_codegen"
     ],
     "status": "legacy_partial_summary"
   },
@@ -597,7 +599,8 @@
     "standard_map_source": "lib/map.nex",
     "standard_set_source": "lib/set.nex",
     "containers": "docs/containers.md",
-    "effect_parameters": "docs/effect-parameters.md"
+    "effect_parameters": "docs/effect-parameters.md",
+    "opencl_emission_schema": "llm/opencl-emission.schema.json"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -4889,5 +4892,52 @@
     "syntax": "fn f<T,U>(..., cb: fn(T)->U !{?E}) -> U !{?E}",
     "witness_syntax": "f<T,U>!{io}(...)",
     "witness_toolchain": "0.182.0"
+  },
+  "opencl_codegen": {
+    "backend": "OpenCL C 1.2",
+    "checked_i64": true,
+    "command": "nex emit --kind opencl --entry NAME --input-layout rows|columns -o FILE --json",
+    "device_execution": false,
+    "diagnostic_codes": [
+      "E_GPU_TYPE",
+      "E_GPU_REALM",
+      "E_GPU_RECURSION",
+      "E_GPU_LIMIT",
+      "E_GPU_UNSUPPORTED"
+    ],
+    "driver_required_for_emission": false,
+    "effects": [],
+    "function_source_map": true,
+    "guide": "docs/gpu-codegen.md",
+    "guide_kind": "gpu",
+    "input_layouts": [
+      "rows",
+      "columns"
+    ],
+    "introduced_toolchain": "0.185.0",
+    "kernel": "nex_generated_map",
+    "language": "0.28",
+    "language_migration_required": false,
+    "left_to_right_evaluation": true,
+    "pending": [
+      "device dispatch and physical Mali/NPU acceptance",
+      "bounded lists/bytes/text",
+      "f64",
+      "additional control flow"
+    ],
+    "realm": "shared",
+    "root_parameter_types": [
+      "i64",
+      "bool"
+    ],
+    "schema": "nex.opencl-emission/1",
+    "schema_file": "llm/opencl-emission.schema.json",
+    "short_circuiting": true,
+    "source_support": true,
+    "source_types": [
+      "i64",
+      "bool",
+      "unit"
+    ]
   }
 }

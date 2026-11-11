@@ -9,6 +9,7 @@
 #include "nex/wasm.h"
 #include "nex/metal.h"
 #include "nex/cuda.h"
+#include "nex/opencl.h"
 #include "nex/frontend_diagnostics.h"
 #include "nex/executable_path.h"
 #include "nex/editor.h"
@@ -476,6 +477,7 @@ int run(const Options &o) {
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
   const bool metalSource=o.command=="emit"&&o.get("--kind")=="metal";
   const bool cudaSource=o.command=="emit"&&o.get("--kind")=="cuda";
+  const bool openclSource=o.command=="emit"&&o.get("--kind")=="opencl";
   unsigned cudaListCapacity=32;
   unsigned cudaByteCapacity=256;
   unsigned cudaTextCapacity=0;
@@ -497,9 +499,9 @@ int run(const Options &o) {
     for(char c:value){if(c<'0'||c>'9'||cudaTextCapacity>(32760-unsigned(c-'0'))/10)throw Error("E_OPTION","CUDA text capacity must be1..32760");cudaTextCapacity=cudaTextCapacity*10+unsigned(c-'0');}
     if(!cudaTextCapacity)throw Error("E_OPTION","CUDA text capacity must be1..32760");
   }
-  if(o.values.contains("--input-layout")&&!metalSource&&!cudaSource)throw Error("E_OPTION","--input-layout requires emit --kind metal or cuda");
-  if(metalSource||cudaSource){
-    const std::string backend=cudaSource?"CUDA":"Metal";
+  if(o.values.contains("--input-layout")&&!metalSource&&!cudaSource&&!openclSource)throw Error("E_OPTION","--input-layout requires emit --kind metal, cuda or opencl");
+  if(metalSource||cudaSource||openclSource){
+    const std::string backend=cudaSource?"CUDA":openclSource?"OpenCL":"Metal";
     const std::set<std::string> allowed={"--kind","--entry","--revision","--output","--input-layout","--list-capacity","--byte-capacity","--text-capacity"};
     for(const auto &[key,value]:o.values){(void)value;if(!allowed.contains(key))throw Error("E_OPTION","unsupported "+backend+" source option: "+key);}
     for(const auto &flag:o.flags)if(flag!="--json")throw Error("E_OPTION","unsupported "+backend+" source flag: "+flag);
@@ -948,7 +950,7 @@ int run(const Options &o) {
     if(!directory.empty()){writeWebModule(module,directory);print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",revision(p)}});}
     else if(output.empty())std::cout<<module.source;else writeFile(output,module.source);return 0;
   }
-  if(metalSource||cudaSource){
+  if(metalSource||cudaSource||openclSource){
     auto publish=[&](const auto &generated,bool floatingPoint=false){
     auto output=o.get("--output");if(!output.empty())writeFile(output,generated.source);
     if(o.has("--json")){
@@ -961,7 +963,7 @@ int run(const Options &o) {
           {"generated_first_line",int64_t(function.firstLine)},{"generated_last_line",int64_t(function.lastLine)}});
       }
       auto shaderDigest=llvm::SHA256::hash(llvm::ArrayRef<uint8_t>(reinterpret_cast<const uint8_t*>(generated.source.data()),generated.source.size()));
-      llvm::json::Object response{{"schema",cudaSource?"nex.cuda-emission/1":"nex.metal-emission/1"},{"ok",true},{"kind",cudaSource?"cuda":"metal"},{"language",languageVersion},{"toolchain",NEX_VERSION},
+      llvm::json::Object response{{"schema",cudaSource?"nex.cuda-emission/1":openclSource?"nex.opencl-emission/1":"nex.metal-emission/1"},{"ok",true},{"kind",cudaSource?"cuda":openclSource?"opencl":"metal"},{"language",languageVersion},{"toolchain",NEX_VERSION},
         {"compiler_build",NEX_BUILD_ID},{"descriptor_hash",hash(json(describe(),false))},{"revision",revision(p)},{"entry",generated.entry},
         {"kernel",cudaSource?"nex_generated_cuda_map":"nex_generated_map"},{"input_layout",generated.inputLayout},{"parameter_types",std::move(parameters)},{"result_type",generated.resultType},
         {"functions",std::move(functions)},{"function_map",std::move(mapping)},{"shader_sha256",llvm::toHex(shaderDigest,true)},
@@ -976,6 +978,7 @@ int run(const Options &o) {
     }else if(output.empty())std::cout<<generated.source;
     };
     if(cudaSource){auto generated=emitCuda(p,o.get("--entry","main"),o.get("--input-layout","rows"),cudaListCapacity,cudaByteCapacity,cudaTextCapacity);publish(generated,generated.floatingPoint);}
+    else if(openclSource){auto generated=emitOpenCL(p,o.get("--entry","main"),o.get("--input-layout","rows"));publish(generated,false);}
     else publish(emitMetal(p,o.get("--entry","main"),o.get("--input-layout","rows")));
     return 0;
   }

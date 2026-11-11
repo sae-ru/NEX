@@ -106,6 +106,7 @@
     "logical_resource_regions": ["extended", "platform"],
     "matching": ["extended", "browser"],
     "metal_codegen": ["extended", "browser"],
+    "opencl_emission": ["extended", "platform"],
     "mobile_projects": ["extended", "browser", "platform"],
     "model_contract": ["extended", "browser", "scale"],
     "modules": ["extended", "browser"],
