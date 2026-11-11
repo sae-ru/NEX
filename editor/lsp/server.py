@@ -514,6 +514,7 @@ class Server:
         before = source.encode('utf-8')[:offset].decode('utf-8')
         prefix_match = re.search(r'[A-Za-z_][A-Za-z0-9_]*$', before)
         prefix = '' if prefix_match is None else prefix_match.group(0).lower()
+        kinds = {'function': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8, 'endpoint': 3}
         qualified = re.search(r'([A-Za-z_][A-Za-z0-9_]*)::\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
         if qualified is not None:
             qualifier = qualified.group(1)
@@ -538,6 +539,18 @@ class Server:
                             'sortText': name.lower(), 'filterText': name})
                     if fields:
                         return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: item['sortText'])}
+                for imported in re.finditer(r'import\s+"([^"]+)"\s+as\s+([A-Za-z_][A-Za-z0-9_]*)\s*;', source):
+                    if imported.group(2) != qualifier:continue
+                    target = (Path(path).parent / imported.group(1)).resolve()
+                    fields = []
+                    for symbol in current_index.get('symbols', []):
+                        if Path(symbol['file']).resolve() != target:continue
+                        name = symbol.get('name')
+                        if not isinstance(name, str) or not name or (prefix and not name.lower().startswith(prefix)):continue
+                        fields.append({'label': name, 'kind': kinds.get(symbol.get('kind'), 1), 'detail': symbol.get('detail'),
+                            'sortText': name.lower(), 'filterText': name})
+                    if fields:
+                        return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: (item['sortText'], item['label']))}
         member = re.search(r'\.\s*([A-Za-z_][A-Za-z0-9_]*)?$', before)
         if member is not None:
             dot_offset = offset - len(member.group(0).encode('utf-8'))
@@ -565,7 +578,6 @@ class Server:
                                 'sortText': name.lower(), 'filterText': name})
                         if fields:
                             return {'isIncomplete': False, 'items': sorted(fields, key=lambda item: item['sortText'])}
-        kinds = {'function': 3, 'struct': 22, 'enum': 13, 'resource': 7, 'trait': 8, 'endpoint': 3}
         items = {}
         for index in cache['indices']:
             if cancelled is not None and cancelled.is_set():

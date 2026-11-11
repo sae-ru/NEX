@@ -313,6 +313,9 @@ receiver type; `language_server` passed in 20.30 s.
 Toolchain 0.199 adds `Enum::` case completion with LSP kind 20;
 `language_server` passed in 20.36 s.
 
+Toolchain 0.200 adds import-alias `h::` completion from checked imported
+files; `language_server` passed in 20.38 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

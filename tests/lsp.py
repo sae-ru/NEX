@@ -585,6 +585,16 @@ class LanguageServer(harness.ToolchainCase):
         value=self.cli('analyze',self.file,'--details',ok=False);self.assertEqual(value['code'],'E_ANALYSIS_LIMIT');self.assertIn('8 MiB',value['message']);self.assertNotIn('identifiers',value)
         self.assertFalse((self.root/'.nex').exists())
 
+    def test_import_alias_member_completion(self):
+        (self.root/'helper.nex').write_text('module helper;\npub fn add(left: i64, right: i64) -> i64 { return left + right; }\n')
+        text='module app;\nimport "./helper.nex" as h;\nfn main()->unit !{io}{print(h::add(1,2));}\n'
+        line=text.splitlines()[2];start=line.index('h::')+len('h::')
+        client=self.client();client.initialize();client.open(self.file,text)
+        result=client.request('textDocument/completion', {'textDocument': {'uri': self.file.as_uri()},
+            'position': {'line':2,'character':start}})
+        self.assertIn('add',{item['label'] for item in result['items']})
+        self.assertTrue(all(item['kind']==3 for item in result['items']))
+
     def test_qualified_enum_case_completion(self):
         text='module app;\nenum Event { Set(value: i64); Reset(); }\nfn main()->unit !{io}{let event:Event=Event::Set(1);print("x");}\n'
         line=text.splitlines()[2];start=line.index('Event::')+len('Event::')
