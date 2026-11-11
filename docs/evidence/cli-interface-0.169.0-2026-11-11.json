@@ -1,0 +1,162 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "observed_utc": "2026-11-11T07:04:07.321679+00:00",
+  "scope": "Compiled per-command CLI help, shared option catalogue, completion and quiet status",
+  "implementation_commit": "dc834d80cefe9eac1fc7d3c19e7cb9520ac51f69",
+  "build_source_base_commit": "3b7f403a7f97c237e42484e7060fb1ca28bae478",
+  "compiler": {
+    "toolchain": "0.169.0",
+    "language": "0.28",
+    "task_ABI": 7,
+    "C_ABI_major": 1,
+    "program_format": 16,
+    "sha256": "7aba5d583dcc453beb155f01c2971388c6fa78cf8c243b6dabeee977758090e6",
+    "compiler_build": "57dcb47b1a7e616f67a196a20c29bac67c85eebffcb20f699296fdffa8c29b20",
+    "descriptor_hash": "566a3aeedba224fb7306a2c3c03d485213f772d8d7b1514b034d1100c56c7a2c",
+    "built_from_clean_committed_export": false,
+    "implementation_file_hashes_match_commit": true,
+    "changed_compiler_input_sha256": {
+      "CMakeLists.txt": "3e3b575556562faa337f45d15909bcb7897b38870d4be5f237e9ef555fa6d072",
+      "include/nex/cli.h": "abd18e5dc0f6c5647d7cc717b8239193ad969a2420661554634e6ce5f9e29bb5",
+      "src/cli_catalogue.cpp": "92c9f10240e97281eee6e9b1cdb7c87c4a8cd0034210beeebd41a608ad0d9e6a",
+      "src/cli_help.cpp": "82e0cad0f13f7059127b57f5ddfaa85d100f3bac800c76f732dee6e0fc9cea7f",
+      "src/main.cpp": "381aaca5a64e797e0ea3edd89b1bf10bdca396975c40bdc69a1ffaa9909595a1",
+      "src/language.cpp": "f7f21e165ffcfc111ec406af70fd43b61972b3feff7c38c3ef12be0325617ea8"
+    }
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "strict_typescript": "7.0.2",
+    "power": "AC and open lid observed for freshly owned child processes",
+    "exclusive_host_latency_claimed": false
+  },
+  "CLI": {
+    "catalogue_commands": 52,
+    "public_index_commands": 50,
+    "catalogue_options": 74,
+    "earlier_option_names_and_value_types_preserved": 72,
+    "guide_names": 108,
+    "new_common_flags": [
+      "--help",
+      "--quiet"
+    ],
+    "parser_types_and_aliases_from_catalogue": true,
+    "help_opens_project": false,
+    "completion_opens_project_or_filesystem": false,
+    "unknown_option_diagnostics_retained": true,
+    "application_separator_respected": true,
+    "quiet_preserves_JSON_results_errors_and_program_stdout": true,
+    "source_grammar_or_ABI_changed": false,
+    "shell_profiles_modified": false
+  },
+  "observations": {
+    "all_target_build_passed": true,
+    "CLI_methods": 6,
+    "CLI_seconds": 15.248,
+    "affected_formatter_methods": 7,
+    "affected_formatter_seconds": 9.31,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_CTest_seconds": 22.78,
+    "registered_Mac_groups": 325,
+    "explicit_catalogue_entries": 330,
+    "shared_capability_fields": 62,
+    "compared_JSON_values": 3528,
+    "shell_versions": {
+      "/bin/bash": "GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)",
+      "/opt/local/bin/bash": "GNU bash, version 5.3.9(1)-release (aarch64-apple-darwin25.2.0)",
+      "/bin/zsh": "zsh 5.9 (arm64-apple-darwin26.0)"
+    },
+    "executed_shell_callbacks": [
+      "/opt/local/bin/bash",
+      "/bin/bash",
+      "/bin/zsh"
+    ],
+    "fish_execution": false,
+    "PowerShell_execution": false,
+    "coverage": [
+      "all52 command help projections and bounds, aliases and no project/resource/Python access",
+      "unknown commands/options and original option/value parsing",
+      "contextual commands, flags, known values, consumed aliases and duplicate exclusion",
+      "literal query words, empty prefixes and application -- passthrough",
+      "quiet success/error/JSON/source/IR and reference/native Release stdout behavior",
+      "actual Bash3.2/Bash5.3/zsh5.9 callbacks and available shell syntax validation",
+      "generated fish/PowerShell script protocols without execution claims",
+      "affected formatter retains graph/revision and reference/native Debug/Release/strict TypeScript agreement"
+    ],
+    "attempts": [
+      {
+        "directory": "cli-interface-v1",
+        "build_passed": true,
+        "CLI_methods": 6,
+        "failed_methods": 2,
+        "causes": [
+          "help --help selected index rather than help command",
+          "new test appended --json after a deliberately missing option value",
+          "new test expected JSON from legacy raw LLVM emission"
+        ]
+      },
+      {
+        "directory": "cli-interface-v2",
+        "all_stages_passed": true,
+        "not_final_source": "Later corrected help/completion hints for profile/test/native targets and compacted unknown guide advice."
+      },
+      {
+        "directory": "cli-interface-v3",
+        "all_stages_passed": true,
+        "matches_this_compiler": true
+      }
+    ]
+  },
+  "limitations": {
+    "complete_regression": false,
+    "installed_portable_SDK_qualified": false,
+    "new_platform_or_device_qualification": false,
+    "fish_or_PowerShell_execution_qualified": false,
+    "new_security_checks_started": false,
+    "new_instrumented_CI_active": false,
+    "GitHub_pushed": false,
+    "main_promoted": false,
+    "new_model_calls": false,
+    "token_savings_measured": false,
+    "whole_original_goal_complete": false
+  },
+  "local_receipt_sha256": {
+    "report.json": "64ca0edd404fff56e94ebb75b673533fb63619ef60437e23e754929b03dbf21e",
+    "CLI.stdout": "f8805e0e53297f0de4b35e2c1ad73dc9eef0a751a03623f7dc82d978cd9a92ed",
+    "CLI.stderr": "235197eebc5e96aecb38f0fdc91cb814137964e04c2efbfb2489161cc066eb7e",
+    "formatting.stderr": "4ca98a4931e72212722af5f2fbf5ca8fdbc4c6ae35acf014897f4d909a9f6017",
+    "core.stdout": "20f484d4ed3304cb841720eb67ca677779032c79db37b83b526e7e8dd6785df8",
+    "core.xml": "21d9d96ad7335df490ce3d5416f3502eaf37b72520829479c63d097c160e134b",
+    "language-pack.stdout": "951503f0dfd0539cc115fdd93ac7984c1e2a4e93b87edf52b5f5d6d6172772d0",
+    "registry.json": "8f56a060cc9904c19e5604e9fd49e3d2b3463e709870a651f2278011148e6111",
+    "tiers.json": "1312fbfc7307e183334ce8ffd91e0cc83c2a6454d6883b9f39b1a3393bd5ff1b",
+    "option-inventory-audit.json": "e850cc864ca7e9d57b6b18b6e29d6cc830b19f6803a6b7c619a08e27c643a7fb",
+    "shell-versions.json": "535e0915ad162a37d7cb9019c2d5d3fca79fb88f070628b1befc3cef4bd8ed07"
+  },
+  "initial_failure_report_sha256": "ead6bfde61f74f8813456e09db9f96edbbc42681b36e1758ef511333f45fa460",
+  "intermediate_passed_report_sha256": "b5e0318d95926e92b73d14075177fdf1a5f3257b4be8f8eb0da197afac2ae825",
+  "changed_implementation_file_sha256": {
+    "CMakeLists.txt": "3e3b575556562faa337f45d15909bcb7897b38870d4be5f237e9ef555fa6d072",
+    "PLAN.md": "467539cf294958ce9b7c848144af8d66a52a9bd2c8e2ade48a9813d8e578165e",
+    "README.md": "01b891f7a29cf7df5bd8ff2e12a46bb6a6239d54b1d299a07d973ca77941bb09",
+    "README.ru.md": "c69629336295e2efae255f9ee08805f9b76157da0bf4856186e41111a0744fe7",
+    "cmake/test-tiers.json": "2b92d18a4fb74bfafa4ddf7bb83addb4447c41ac69dce0c5e674a43ce1d4462c",
+    "docs/STATUS.current.md": "7bbd6e6649fe0fe345e5d5d675d90749409c83957482887e4a82a0c454e6704f",
+    "docs/cli.md": "5341588066758b315cf3fd71efc2c37b16b6fda566e794847d7575bad1ed8021",
+    "docs/development-priorities.md": "3a02314c63633be7cc960cdb3e5931d5e25db7a59c49993f91cc3bcdc5ecd9c5",
+    "docs/language.md": "1e968c58f612b24eb6c72d790859ffec7313c09f661639b83579445d7911e2b8",
+    "docs/testing.md": "d268b22d5043614150ad13ae5a1dddd4af5bc0b5720a90bf8d817261bddec0cb",
+    "include/nex/cli.h": "abd18e5dc0f6c5647d7cc717b8239193ad969a2420661554634e6ce5f9e29bb5",
+    "llm/BOOTSTRAP.md": "feb902f1e1dd17768fb08086bbe1d6ce10883839a6eaa84b272d3bd724989911",
+    "llm/SYSTEM_PROMPT.md": "ed537df6f94192603a88fb5d5495895a862384a166e2f4b70fb3d2050204d9e6",
+    "llm/language-pack.json": "6c98bba2e93897fbaf38d4a33ff09a51b655473676c10f377f954dd323de625f",
+    "llms.txt": "ed571ab2addf86128ffa2bdd579b2bda1956edb6614aab53436a335247d43974",
+    "src/cli_catalogue.cpp": "92c9f10240e97281eee6e9b1cdb7c87c4a8cd0034210beeebd41a608ad0d9e6a",
+    "src/cli_help.cpp": "82e0cad0f13f7059127b57f5ddfaa85d100f3bac800c76f732dee6e0fc9cea7f",
+    "src/language.cpp": "f7f21e165ffcfc111ec406af70fd43b61972b3feff7c38c3ef12be0325617ea8",
+    "src/main.cpp": "381aaca5a64e797e0ea3edd89b1bf10bdca396975c40bdc69a1ffaa9909595a1",
+    "tests/cli_interface.py": "ebfe6c1bf756e9a61f5735ad041ce9750d804fe79068f173da01dae2e589a568"
+  }
+}

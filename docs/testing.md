@@ -101,6 +101,8 @@ six methods passed in 15.248 s, the affected formatter's seven methods in 9.310 
 and the unchanged 12-group core in 22.78 s. Bash 3.2.57/5.3.9 and zsh 5.9
 callbacks executed; generated fish/PowerShell adapters have no execution claim.
 The original failed attempt and later metadata refinements remain separate.
+See the [CLI receipt](evidence/cli-interface-0.169.0-2026-11-11.json) for exact
+source/binary identities, shell observations and limits.
 
 ## Maintain the catalogue
 

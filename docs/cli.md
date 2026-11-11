@@ -125,3 +125,5 @@ formatter methods (9.310 s) and 12 core groups (22.78 s). Available callbacks ra
 in Bash 3.2.57, Bash 5.3.9 and zsh 5.9. Fish/PowerShell generation was checked;
 execution in those shells is still pending. These single-host observations are
 not SDK or wider platform qualification.
+The [scoped receipt](evidence/cli-interface-0.169.0-2026-11-11.json) pins the
+implementation/compiler and retains the initial failures and later refinements.
