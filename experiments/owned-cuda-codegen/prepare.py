@@ -97,6 +97,7 @@ def main():
     parser.add_argument("--cxx", type=Path)
     parser.add_argument("--nvrtc", type=Path)
     parser.add_argument("--compute", type=int, default=52)
+    parser.add_argument("--toolchain", type=Path, help="Explicit native toolchain for doctor on Windows hosts")
     parser.add_argument("--index", type=int, default=0)
     args = parser.parse_args()
     if args.list_capacity is not None and not 1 <= args.list_capacity <= 1024:
@@ -148,7 +149,10 @@ def main():
     try:
         index = json.loads(run("index", [compiler, "describe", "--kind", "index", "--json"]))
         descriptor = json.loads(run("descriptor", [compiler, "describe", "--json"]))
-        doctor = json.loads(run("doctor", [compiler, "doctor", "--json"]))
+        doctor_command = [compiler, "doctor", "--json"]
+        if args.toolchain:
+            doctor_command += ["--toolchain", args.toolchain.resolve(strict=True)]
+        doctor = json.loads(run("doctor", doctor_command))
         assert index["language"] == "0.28" and doctor["language"] == "0.28"
         assert descriptor["source_resources"]["source_task_bridge"]
         assert descriptor["resource_regions"]["dependency_graph"]["C_table_parent_creation"]

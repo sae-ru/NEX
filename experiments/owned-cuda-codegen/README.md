@@ -85,6 +85,9 @@ precedes publication; the lowest failed lane determines the error. This design
 still requires actual GPU tests for success, errors, parent lifetimes, context
 restoration, cancellation, deadlines, resource limits, replay and memory checking.
 
+On Windows, pass `--toolchain FILE` so the preparer's `nex doctor`
+discovery uses the same explicit native toolchain as builds.
+
 `NEX_OWNED_CUDA_MAP_TRACE` enables JSONL identity, allocation, enqueue,
 completion and cleanup events. Kernel timing uses CUDA events. GPU stepping,
 operation-level attribution and public profiling integration remain pending.

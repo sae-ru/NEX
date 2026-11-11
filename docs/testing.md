@@ -368,6 +368,9 @@ library pin/catalogue test passed in 39.99 s.
 Toolchain 0.216 lets `nex doctor --toolchain FILE` report an explicit native
 toolchain instead of rejecting the selector; invalid files return E_TOOLCHAIN.
 
+Toolchain 0.217 lets the owned CUDA preparer pass an explicit `--toolchain`
+file to `nex doctor` on Windows hosts.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
