@@ -1,0 +1,52 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest qualification of toolchain 0.234.0",
+  "implementation_commit": "78559a8369fb7fbbe1f460a91f4f15a3fa1aad28",
+  "build_source_base_commit": "4e06ce28",
+  "compiler": {
+    "toolchain": "0.234.0",
+    "language": "0.28",
+    "sha256": "1ee2fe2e3e68ca12be5ad7251468760a6934f1f92221f3083953d475bb03df2b",
+    "compiler_build": "543c6f6dd3a8f021f619191d0c49d18872b450030549acad2d47b47cfff403e8",
+    "descriptor_hash": "5114d1560e072f36b5aa51b7344ed8b39fd120569c256a7fcdc2357dba91e0bc"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2493.963,
+    "ctest_exit_code": 0,
+    "groups": 350,
+    "passed": 350,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "653dd1d804aebc878e05359eafe019291c1df0b44b628660801418493123145e",
+    "results_sha256": "e09cdc0c371960f5226ff7d81fd4f8bcc8543fccddd1ebf8a5a024399dd68e38",
+    "environment": {
+      "NEX_NODE": "/Users/sae/.local/bin/node",
+      "NEX_TSC": "locked TypeScript compiler",
+      "NEX_NPM_CACHE": "/Users/sae/.npm"
+    }
+  },
+  "regression_note": "An earlier 0.234 full run timed out task/foreign-heavy groups because every explicit generic argument built a fresh kind context. The final run restricts depth checks to higher-order slots; task-foreign and runtime-contract groups pass again.",
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "requires the locked TypeScript/Node environment for browser-tagged groups",
+    "release_qualification remains false because this is a test receipt",
+    "macOS ARM64 host only; Fedora/platform matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0234b/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0234b/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0234b.log",
+    "describe": "/Users/sae/projects/NEX/build/ci-full-0234b/describe.json",
+    "guide": "docs/testing.md"
+  }
+}

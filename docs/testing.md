@@ -565,6 +565,10 @@ including the type-lambda inference group.
 Full CTest qualification of 0.233.0 passed all 349 groups in 2589.81 s,
 including cross-module source rename.
 
+Full CTest qualification of 0.234.0 passed all 350 groups in 2493.963 s,
+including higher-order kind signatures. Higher-order depth checks are limited to
+non-zero slot kinds to keep ordinary monomorphization cheap.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
