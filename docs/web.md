@@ -124,7 +124,7 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-Generation requires a new or empty directory. Make program changes in NEX and regenerate. The default CSS is a small application stylesheet; asset packaging and an extension mechanism for application-specific CSS/components are pending.
+Generation requires a new or empty directory. Make program changes in NEX and regenerate. The default CSS is a small application stylesheet; a project may replace it with `web/app.css` (up to 262144 bytes). The file participates in the generated file hashes. Component/asset packaging remains pending.
 
 The compiler's build cache checks every produced asset's hash, including source maps; modified or missing assets trigger a rebuild. Stored-revision builds use the archived NEX source bundle. Browser builds additionally need the matching installed web adapter, Node/npm and locked development packages. `NEX_NODE` selects the Node tool used for TypeScript tests, `NEX_NPM` selects npm, and `NEX_NPM_CACHE` selects its package cache. Browser runtime needs none of those development tools. `debug` disables Vite minification; `profile` and `release` retain the default production minification. All three emit source maps for generated TypeScript; the profile mode does not add a profiler.
 

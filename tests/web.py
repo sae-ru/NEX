@@ -193,6 +193,17 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertEqual(len(tests), 2)
         self.assertTrue(all(t["web"] for t in tests))
 
+    def test_application_css_override_is_generated_and_hashed(self):
+        self.source(self.app_source())
+        directory=self.root/"web";directory.mkdir(exist_ok=True)
+        css="body{background:#123456;color:#abcdef}\n"
+        (directory/"app.css").write_text(css,newline="\n")
+        output=self.root/"web output css"
+        generated=self.cli("web","--directory",output)
+        self.assertEqual((output/"src/app.css").read_text(),css)
+        self.assertIn("src/app.css",generated["files"])
+        self.assertNotEqual(generated["files"]["src/app.css"],"69c5357717c050c4ad37cbf665273ffff27f5e744d3597c9af7e1a6ab42b600a")
+
     def test_application_contract_rejects_wrong_state_and_effects(self):
         original = self.app_source()
         for invalid in [

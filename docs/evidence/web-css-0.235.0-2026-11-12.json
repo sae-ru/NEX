@@ -1,0 +1,48 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Application-specific CSS generation",
+  "implementation_commit": "29cbcb0fc6cc1c482ddecdef4f10e94a09e0301c",
+  "build_source_base_commit": "29cbcb0f",
+  "compiler": {
+    "toolchain": "0.235.0",
+    "language": "0.28",
+    "sha256": "c74388eab347a71fb55ecb1bcc6fe48c511409b18ea92613734bb2c2e72db295",
+    "compiler_build": "a2125c8f0cbe6840d273dcede70e2aa298cc417c5f1e2534fb97f9ea553b1029",
+    "descriptor_hash": "5114d1560e072f36b5aa51b7344ed8b39fd120569c256a7fcdc2357dba91e0bc"
+  },
+  "feature": {
+    "project_file": "web/app.css",
+    "limit_bytes": 262144,
+    "output": "src/app.css",
+    "participates_in_generated_file_hashes": true,
+    "custom_css": "body{background:#123456;color:#abcdef}"
+  },
+  "generation": {
+    "schema": "nex.web/2",
+    "language": "0.28",
+    "files": 22,
+    "app_css_sha256": "0407d437354be33ed7de8a62bef23d1cb101db752e5383238cbd748435c6355e"
+  },
+  "coverage": {
+    "test": "tests/web.py",
+    "test_seconds": 10.24,
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "browser component packaging remains pending",
+    "full CTest was not repeated for this CSS-only change"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "generated": "/Users/sae/projects/NEX/build/web-css-0235/generated",
+    "web": "/Users/sae/projects/NEX/build/web-css-0235/web.json",
+    "guide": "docs/web.md"
+  }
+}
