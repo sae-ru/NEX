@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Cross-module source rename with module declaration move",
+  "implementation_commit": "155e569c0dbdc5aa6d84d2fea14e43a89412d8c0",
+  "build_source_base_commit": "98af8698",
+  "compiler": {
+    "toolchain": "0.233.0",
+    "language": "0.28",
+    "sha256": "e0736d9afae0bca2d451e349a441a50af2e467d49bc133383c50e6817d2665af",
+    "compiler_build": "0175cbe7cdcdf8dc3ff08212e5a27c7a63b6ddab66817c5cbc0b0dd6b746fadc",
+    "descriptor_hash": "9cd65c6069c5439ed259464242a20ecfc7f9d2bb89f41b3d75a1b8789ae0c5ae"
+  },
+  "rename": {
+    "from": "app::old",
+    "to": "lib::new",
+    "files": [
+      "app.nex",
+      "main.nex"
+    ],
+    "module_declaration": "module app; -> module lib;",
+    "import_path": "unchanged",
+    "import_alias": "unchanged",
+    "identity_before": "1bde461284343bfc6acc641e5bb3fb64",
+    "identity_after": "1bde461284343bfc6acc641e5bb3fb64",
+    "identity_preserved": true
+  },
+  "coverage": {
+    "test": "tests/rename_source.py",
+    "test_seconds": 1.64,
+    "cases": [
+      "cross-module function source move",
+      "module declaration rewrite",
+      "qualified reference rewrite",
+      "identity survival"
+    ]
+  },
+  "observations": {
+    "registered_groups": 349,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "the whole source file's module moves; split files manually to move one declaration",
+    "import paths and aliases are not rewritten",
+    "full CTest was not repeated; focused rename/graph/CLI/core checks passed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "before": "/Users/sae/projects/NEX/build/source-module-rename-0233/modev-before.json",
+    "after": "/Users/sae/projects/NEX/build/source-module-rename-0233/modev-after.json",
+    "rename": "/Users/sae/projects/NEX/build/source-module-rename-0233/modev-rename.json",
+    "guide": "docs/graph.md"
+  }
+}
