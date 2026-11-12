@@ -449,6 +449,10 @@ locked-web preparation passed; the full `source-tests` phase did not complete in
 Toolchain 0.224 passes the SDK workflow's configured `jobs` to the full
 source-test runner instead of always using one worker.
 
+Physical CUDA source-error Result path: `Measurement(42.75,false)` produced
+the error-tagged result with code id 1 and message id 4 on RTX 3090, with one
+kernel completion and a balanced ledger.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
