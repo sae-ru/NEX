@@ -47,4 +47,19 @@ fn main()->unit !{io}{print("old");print(old(old(40)));}
             _,after=self.identity(root,'new');self.assertEqual(after,before)
             run(root,'--from','old','--to','app::other',ok=False)
 
+    def test_cross_file_references_are_rewritten(self):
+        temporary=tempfile.TemporaryDirectory(prefix='nex source rename cross ');root=Path(temporary.name)
+        with temporary:
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+            (root/'main.nex').write_text('module app;\nimport "./util.nex" as util;\nfn main()->unit !{io}{print(util::old(41));}\n')
+            (root/'util.nex').write_text('module util;\npub fn old(x:i64)->i64{return x+1;}\n')
+            nex(root,'check','--json')
+            before=nex(root,'identities','--entity','function','--json')['nodes']
+            before_id=next(node['id'] for node in before if node['symbol']=='util::old')
+            result=run(root,'--from','util::old','--to','util::new')
+            self.assertEqual(set(result['files']),{'main.nex','util.nex'})
+            self.assertIn('util::new(41)',(root/'main.nex').read_text())
+            self.assertIn('fn new',(root/'util.nex').read_text())
+            after=nex(root,'identities','--entity','function','--json')['nodes']
+            self.assertEqual(next(node['id'] for node in after if node['symbol']=='util::new'),before_id)
 if __name__=='__main__':unittest.main()
