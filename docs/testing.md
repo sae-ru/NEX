@@ -457,6 +457,11 @@ Physical CUDA zero-argument root: a prepared `transform()->i64` provider ran on
 RTX 3090 with empty columns, output 42, one kernel completion and a balanced
 trace ledger.
 
+Locally installed SDK assembly: `cmake --install` produced `bin/nex` plus
+resources; the installed compiler reported 0.224.0/0.28, ran a project
+(`sdk-ok`), passed native tests and exposed all 9 standard-library modules.
+Immutable/versioned SDK release and full SDK source-tests remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
