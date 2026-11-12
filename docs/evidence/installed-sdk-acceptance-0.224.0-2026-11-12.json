@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Installed-SDK acceptance for the 0.224 local chain",
+  "implementation_commit": "9d79c5680d62e5d05abb3d23fea0a998d587c827",
+  "build_source_base_commit": "feecbda",
+  "compiler": {
+    "toolchain": "0.224.0",
+    "language": "0.28",
+    "binary_sha256": "a9e7e6724349294d02e920fe6fe95f6eba0e08d3d41e512e2a697721f54983ed"
+  },
+  "installation": {
+    "prefix": "/Users/sae/projects/NEX/build/sdk-install-0224"
+  },
+  "acceptance": {
+    "schema": "nex.sdk-acceptance/1",
+    "ok": true,
+    "phases": 41,
+    "network_profile": "full",
+    "network_scope": {
+      "TCP_IPv4": "executed",
+      "TCP_IPv6": "executed",
+      "positive_TCP_IPv6_accepted": true
+    },
+    "resource_executor_cases": 22,
+    "standard_library_pins": [
+      "lib/text.nex",
+      "lib/list.nex",
+      "lib/math.nex",
+      "lib/map.nex",
+      "lib/set.nex",
+      "lib/queue.nex",
+      "lib/stack.nex",
+      "lib/deque.nex",
+      "lib/priority_queue.nex"
+    ],
+    "browser": true,
+    "project_build": true,
+    "report_sha256": "46ee97e4fc7b73ca9d1857ddb35f2eb63f81f451541ff173b9a694ed4abb5a1e"
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "local installed-chain acceptance only; immutable/versioned SDK release remains pending",
+    "full SDK source-tests and additional platforms remain pending",
+    "the validated report was re-run through the acceptance validator after correcting stale executor/stdlib inventory expectations"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "validated_report": "/Users/sae/projects/NEX/build/sdk-accept-0224d/report-validated.json",
+    "installed_binary": "/Users/sae/projects/NEX/build/sdk-install-0224/bin/nex",
+    "tool": "tools/sdk_acceptance.py",
+    "guide": "docs/testing.md"
+  }
+}
