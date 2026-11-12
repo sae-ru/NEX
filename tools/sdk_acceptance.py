@@ -405,6 +405,8 @@ def language_resource_inventory(resources, resource_names, language):
     resources = Path(resources).resolve()
     names = list(resource_names)
     if language in ('0.27','0.28'):
+        names.extend(path for path in sdk_stdlib.FILES if path not in names)
+    if language in ('0.27','0.28'):
         names.extend(path for _, path in TYPED_SOURCE_RESOURCE_PINS if path not in names)
     if language == '0.28':
         from sdk_source_contracts import SOURCE_CONTRACT_RESOURCE_PINS
@@ -1474,7 +1476,7 @@ def validate_completed_report(report, *, expected_network_profile='full'):
                 'SDK acceptance lacks installed logical resource region lifetime evidence')
     if len(version)==3 and all(part.isascii() and part.isdigit() for part in version) and tuple(map(int,version))>=(0,125,0):
         executor=report.get('evidence',{}).get('source_resources',{}).get('resource_executor',{})
-        require(executor.get('cases')==21 and all(executor.get(key) is True for key in
+        require(executor.get('cases')==22 and all(executor.get(key) is True for key in
                 ('ok','owning_thread_factory_cleanup','physical_fence_and_quota_retention','queued_running_cancellation',
                  'actual_module_destructor_unload','module_exceptions_destroyed_before_unload')),
                 'SDK acceptance lacks installed physical resource executor lifetime evidence')

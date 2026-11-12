@@ -462,6 +462,13 @@ resources; the installed compiler reported 0.224.0/0.28, ran a project
 (`sdk-ok`), passed native tests and exposed all 9 standard-library modules.
 Immutable/versioned SDK release and full SDK source-tests remain pending.
 
+Installed-SDK acceptance now validates successfully after aligning the resource
+executor's current 22 physical cases and including every standard-library source
+in the SDK resource inventory. The 0.224 installed SDK passed all 41 required
+phases, including browser, project build and the resource executor. This is a
+local installed-chain acceptance; immutable/versioned release and full source
+tests remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

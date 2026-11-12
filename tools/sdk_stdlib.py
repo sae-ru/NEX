@@ -7,7 +7,7 @@ import re
 import shutil
 
 EXPECTED='1,1,2,3\nЯ + 🌍\n5\n6\n'
-FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/priority_queue.nex')
+FILES=('lib/text.nex','lib/list.nex','lib/math.nex','lib/map.nex','lib/set.nex','lib/queue.nex','lib/stack.nex','lib/deque.nex','lib/priority_queue.nex')
 
 
 def require(condition,message):

@@ -17,7 +17,7 @@ def check_installed_resource_executor(run,root,resources,driver):
     run(args,cwd=out)
     output=run([probe,module],cwd=out,timeout=90)
     cases=[line for line in output.splitlines() if line.startswith('PASS ')]
-    _require(len(cases)==len(set(cases))==21 and output.rstrip().endswith('RESOURCE EXECUTOR CASES 21'),
+    _require(len(cases)==len(set(cases))==22 and output.rstrip().endswith('RESOURCE EXECUTOR CASES 22'),
              'installed resource executor did not finish all physical lifetime cases')
     return {'ok':True,'cases':len(cases),'owning_thread_factory_cleanup':True,
             'physical_fence_and_quota_retention':True,'queued_running_cancellation':True,

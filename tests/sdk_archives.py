@@ -1693,7 +1693,7 @@ THE SOFTWARE.
             acceptance.validate_completed_report(current)
         fields=('ok','owning_thread_factory_cleanup','physical_fence_and_quota_retention',
                 'queued_running_cancellation','actual_module_destructor_unload','module_exceptions_destroyed_before_unload')
-        current['evidence']={'source_resources':{'resource_executor':{**{name:True for name in fields},'cases':21}}}
+        current['evidence']={'source_resources':{'resource_executor':{**{name:True for name in fields},'cases':22}}}
         for name in fields:
             for value in (False,None,'true'):
                 damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_executor'][name]=value
