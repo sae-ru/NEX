@@ -1,0 +1,85 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Higher-order constructor kind signatures",
+  "implementation_commit": "b3b4731092189dea7f7ad3cdeb3475b01322ba41",
+  "build_source_base_commit": "d48ad34f",
+  "compiler": {
+    "toolchain": "0.234.0",
+    "language": "0.28",
+    "sha256": "f2c9efad83ef3747b45a7d6e455eeaa63855a863ef56d347e094255b8efe7811",
+    "compiler_build": "9209b5ea3d839c1013ca13cb60b3a0a4087a61a73ffdbb7a0d0f1a39719618e6",
+    "descriptor_hash": "5114d1560e072f36b5aa51b7344ed8b39fd120569c256a7fcdc2357dba91e0bc",
+    "generic_features": [
+      "parametric_body_checking",
+      "generic_functions",
+      "generic_structures",
+      "generic_enums",
+      "expected_type_inference",
+      "argument_type_inference",
+      "checked_monomorphization",
+      "derived_instance_context",
+      "source_template_patches",
+      "builtin_type_constraints",
+      "constraint_implication",
+      "constrained_numeric_literals",
+      "user_traits",
+      "coherent_implementations",
+      "associated_types",
+      "constructor_parameters",
+      "partial_type_lambdas",
+      "whole_type_lambda_inference",
+      "higher_order_kind_signatures",
+      "generic_trait_methods",
+      "static_trait_dispatch",
+      "type_defaults",
+      "function_type_defaults"
+    ]
+  },
+  "feature": {
+    "syntax": "F<_<_>>",
+    "example": [
+      "Wrap<F<_>>",
+      "H<F<_<_>>,G<_>>",
+      "hold<F<_<_>>,G<_>>"
+    ],
+    "kind_depth_checked": true,
+    "value_constructor_rejected_for_higher_slot": "Box<T> is rejected for F<_<_>>"
+  },
+  "agreement": {
+    "reference": true,
+    "native_release": true,
+    "tests": true,
+    "typescript": true,
+    "typescript_cases": 1
+  },
+  "coverage": {
+    "test": "tests/higher_kinds.py",
+    "test_seconds": 5.62,
+    "focused": [
+      "higher_kinds",
+      "type_lambdas",
+      "traits",
+      "generics"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "language version remains 0.28",
+    "kind-depth representation is one-level per slot; deeper nested signatures are approximated by depth codes",
+    "full CTest was not repeated; focused higher_kinds/type_lambdas/traits/generics/core checks passed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "typescript": "/Users/sae/projects/NEX/build/higher-kinds-0234/typescript-test.json",
+    "describe": "/Users/sae/projects/NEX/build/higher-kinds-0234/describe.json",
+    "generic_features": "/Users/sae/projects/NEX/build/higher-kinds-0234/generic-features.json",
+    "guide": "docs/language.md"
+  }
+}
