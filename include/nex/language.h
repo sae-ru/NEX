@@ -137,6 +137,8 @@ struct Structure {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  std::vector<unsigned> typeParameterCodes;
+  std::vector<std::vector<unsigned>> typeParameterSlots;
   std::vector<Type> typeDefaults;
   // Non-semantic physical name origin. In particular, the contextual word in
   // `server resource resource;` is not the declaration's identifier token.
@@ -163,6 +165,8 @@ struct Function {
   std::vector<std::string> typeParameters; std::vector<Type> typeArguments; std::string templateName; bool checked=false;
   TypeBounds typeBounds;
   std::vector<unsigned> typeArities;
+  std::vector<unsigned> typeParameterCodes;
+  std::vector<std::vector<unsigned>> typeParameterSlots;
   std::vector<Type> typeDefaults;
   std::string traitOwner;
   bool traitSignature=false;
@@ -184,7 +188,8 @@ struct Endpoint {
 struct SourceUnit { std::string key,module,source,path; std::vector<Import> imports; bool taskPrototype=false; SourceLanguage sourceLanguage=SourceLanguage::Language018; };
 struct Trait {
   std::string name,localName,owner,unit;Span span;bool exported=false;
-  unsigned selfArity=0;
+  unsigned selfArity=0;unsigned selfCode=0;
+  std::vector<unsigned> selfSlots;
   std::map<std::string,std::set<std::string>> associated;
   std::vector<Function> methods;
 };
@@ -193,6 +198,7 @@ struct Implementation {
   std::string name,localName,owner,unit,trait;Span span;bool exported=false;
   Type self;
   std::vector<std::string> typeParameters;TypeBounds typeBounds;std::vector<unsigned> typeArities;
+  std::vector<unsigned> typeParameterCodes;std::vector<std::vector<unsigned>> typeParameterSlots;
   std::map<std::string,Type> associated;
   std::map<std::string,ImplementationMethod> methods;
 };
@@ -221,6 +227,8 @@ struct Program {
   std::map<std::string,Structure> structureTemplates;
   std::map<std::string,std::set<std::string>> parameterBounds;
   std::map<std::string,unsigned> parameterKinds;
+  std::map<std::string,unsigned> parameterCodes;
+  std::map<std::string,std::vector<unsigned>> parameterSlotCodes;
   const Function &function(const std::string &name,Span span={}) const;
   const Structure &structure(const std::string &name) const;
   bool hasStructure(const std::string &name) const;

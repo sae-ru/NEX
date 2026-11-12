@@ -429,18 +429,28 @@ class Parser {
   }
   std::string qualified(){auto result=name().text;while(accept("::"))result+="::"+name().text;return result;}
   void typeEnd(){if(formatHints)formatHints->genericCloses.insert(peek().span.begin);if(peek().text==">="){tokens[i].text="=";++tokens[i].span.begin;++tokens[i].span.column;}else expect(">");}
-  unsigned constructorArity(){
+  unsigned constructorArity(std::vector<unsigned> *slots=nullptr){
     if(!accept("<"))return 0;unsigned count=0;
-    do{expect("_");if(++count>64)throw Error("E_GENERIC_LIMIT","constructor arity exceeds64",peek().span);}while(accept(","));typeEnd();return count;
+    do{expect("_");unsigned code=0;
+      if(peek().text=="<"){
+        std::vector<unsigned> inner;auto innerArity=constructorArity(&inner);
+        if(!innerArity)throw Error("E_GENERIC_KIND","higher-order slot requires a constructor",peek().span);
+        code=1;for(auto value:inner)code=std::max(code,value+1);
+      }
+      if(slots)slots->push_back(code);
+      if(++count>64)throw Error("E_GENERIC_LIMIT","constructor arity exceeds64",peek().span);
+    }while(accept(","));typeEnd();return count;
   }
   std::set<std::string> constraintNames(){
     std::set<std::string> result;
     do{auto span=peek().span;auto value=qualified();if(!std::set<std::string>{"add","ordered","integer","number","wire"}.contains(value))editorName("trait",value,head(span));else if(captureDetails)editorName("builtin_bound",value,head(span));if(!result.insert(value).second)throw Error("E_GENERIC_BOUND","duplicate generic constraint '"+value+"'",span);}while(accept("+"));return result;
   }
-  std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false,std::vector<Type> *defaults=nullptr){
-    if(!keep)clearParameters();bounds.clear();arities.clear();if(defaults)defaults->clear();std::vector<std::string> result;if(!accept("<"))return result;
+  std::vector<std::string> templateParameters(TypeBounds &bounds,std::vector<unsigned> &arities,bool keep=false,std::vector<Type> *defaults=nullptr,std::vector<unsigned> *codes=nullptr,std::vector<std::vector<unsigned>> *slotSets=nullptr){
+    if(!keep)clearParameters();bounds.clear();arities.clear();if(defaults)defaults->clear();if(codes)codes->clear();if(slotSets)slotSets->clear();std::vector<std::string> result;if(!accept("<"))return result;
     bool sawDefault=false;
-    do{auto parameter=name();auto arity=constructorArity();
+    do{auto parameter=name();std::vector<unsigned> slots;auto arity=constructorArity(&slots);
+      unsigned code=0;for(auto value:slots)code=std::max(code,value+1);
+      if(codes)codes->push_back(code);if(slotSets)slotSets->push_back(slots);
       if(parameter.text=="bytes"||parameter.text=="file"||(p.taskPrototype&&std::set<std::string>{"task","channel","task_scope"}.contains(parameter.text))||!parameters.emplace(parameter.text,arity).second)throw Error("E_DUPLICATE","duplicate or reserved generic parameter",parameter.span);
       if(result.size()>=64)throw Error("E_GENERIC_LIMIT","generic declarations support at most64 parameters",parameter.span);
       if(captureNames){parameterOrigins[parameter.text]=parameter.span;editorName("parameter_declaration",parameter.text,parameter.span,parameter.span);}
@@ -704,12 +714,12 @@ public:
       if(supportsExternalResources(p)&&(peek().text=="resource"||((peek().text=="server"||peek().text=="client"||peek().text=="shared")&&peek(1).text=="resource"))){
         auto realm=peek().text=="resource"?"shared":take().text;expect("resource");
         if(realm!="server")throw Error("E_REALM","opaque resource declarations require server realm",start);
-        Structure s;s.span=start;s.exported=exported;s.opaqueResource=true;auto identifier=name();s.name=identifier.text;s.nameOrigin=identifier.span;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults);s.span.end=expect(";").span.end;
+        Structure s;s.span=start;s.exported=exported;s.opaqueResource=true;auto identifier=name();s.name=identifier.text;s.nameOrigin=identifier.span;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults,&s.typeParameterCodes,&s.typeParameterSlots);s.span.end=expect(";").span.end;
         p.structures.push_back(std::move(s));clearParameters();continue;
       }
       if(accept("trait")){
         Trait value;value.span=start;value.exported=exported;auto traitName=name();value.name=traitName.text;auto selfOrigin=traitName.span;
-        if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity();typeEnd();}
+        if(accept("<")){auto self=expect("Self");selfOrigin=self.span;editorName("parameter_declaration","Self",self.span,self.span);value.selfArity=constructorArity(&value.selfSlots);for(auto slot:value.selfSlots)value.selfCode=std::max(value.selfCode,slot+1);typeEnd();}
         clearParameters();parameters["Self"]=value.selfArity;if(captureNames)parameterOrigins["Self"]=selfOrigin;expect("{");
         while(!accept("}")){
           if(accept("type")){auto item=name();editorName("member_declaration",value.name+"::"+item.text,item.span);std::set<std::string> bounds;if(accept(":"))bounds=constraintNames();expect(";");if(!value.associated.emplace(item.text,std::move(bounds)).second)throw Error("E_DUPLICATE","duplicate associated type",item.span);continue;}
@@ -723,7 +733,7 @@ public:
       }
       if(accept("impl")){
         Implementation value;value.span=start;value.exported=exported;value.name=name().text;
-        value.typeParameters=templateParameters(value.typeBounds,value.typeArities);expect(":");auto traitSpan=peek().span;value.trait=qualified();editorName("trait",value.trait,head(traitSpan));expect("for");value.self=type();expect("{");
+        value.typeParameters=templateParameters(value.typeBounds,value.typeArities,false,nullptr,&value.typeParameterCodes,&value.typeParameterSlots);expect(":");auto traitSpan=peek().span;value.trait=qualified();editorName("trait",value.trait,head(traitSpan));expect("for");value.self=type();expect("{");
         while(!accept("}")){
           if(peek().text=="type"&&peek(1).kind==Token::Id&&accept("type")){auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");auto typeValue=type();expect(";");if(!value.associated.emplace(item.text,std::move(typeValue)).second)throw Error("E_DUPLICATE","duplicate associated type binding",item.span);continue;}
           auto item=name();editorName("member_binding",value.trait+"::"+item.text,item.span);expect("=");ImplementationMethod method;method.span=item.span;auto targetSpan=peek().span;method.target=qualified();editorName("function",method.target,head(targetSpan));if(peek().text=="<")method.typeArguments=typeArguments();expect(";");
@@ -732,7 +742,7 @@ public:
         value.span.end=tokens.at(i-1).span.end;p.implementations.push_back(std::move(value));clearParameters();continue;
       }
       if(peek().text=="enum") {
-        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults);expect("{");if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
+        Structure s;take();s.span=start;s.exported=exported;s.enumeration=true;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults,&s.typeParameterCodes,&s.typeParameterSlots);expect("{");if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){
           auto tag=name();Variant v;v.name=tag.text;v.span=tag.span;v.ordinal=s.variants.size();
           if(accept("(")){if(!accept(")")){do{auto field=name();expect(":");v.fields.push_back({field.text,type(),field.span});}while(accept(","));expect(")");}}
@@ -741,13 +751,13 @@ public:
         s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       if(peek().text=="struct") {
-        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults);expect("{");if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
+        Structure s;take();s.span=start;s.exported=exported;s.name=name().text;s.typeParameters=templateParameters(s.typeBounds,s.typeArities,false,&s.typeDefaults,&s.typeParameterCodes,&s.typeParameterSlots);expect("{");if(s.name=="result"&&!s.typeParameters.empty())throw Error("E_GENERIC_NAME","generic nominal name conflicts with builtin result<T>",s.span);
         while(!accept("}")){auto field=name();expect(":");auto t=type();expect(";");s.fields.push_back({field.text,t,field.span});}
         s.span.end=tokens.at(i-1).span.end;p.structures.push_back(std::move(s));clearParameters();continue;
       }
       Function f; f.span=start;f.exported=exported;
       if(peek().text=="shared"||peek().text=="server"||peek().text=="client")f.realm=take().text;
-      bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities,false,&f.typeDefaults);expect("(");
+      bool external=accept("extern");f.test=accept("test");expect("fn");f.name=name().text;f.typeParameters=templateParameters(f.typeBounds,f.typeArities,false,&f.typeDefaults,&f.typeParameterCodes,&f.typeParameterSlots);expect("(");
       if(!accept(")")) {do {auto n=name();expect(":");f.params.push_back({n.text,type(),n.span});}while(accept(","));expect(")");}
       expect("->");auto resultBegin=peek().span.begin;f.result=type();
       f.resultTypeSource={resultBegin,peek().span.begin,true};
@@ -888,7 +898,8 @@ class Checker {
     if(!call->typeArguments.empty()){
       bool partialDefaults=defaults&&std::any_of(defaults->begin(),defaults->end(),[](const Type &value){return value!=Type::Unknown;});
       if(call->typeArguments.size()>parameters.size()||(call->typeArguments.size()!=parameters.size()&&!(partial&&call->typeArguments.size()==1)&&!partialDefaults))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
-      for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);bound[parameters[i]]=argument;}
+      for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);
+        if(p.parameterCodes.contains(parameters[i])&&!parameters[i].ends_with("::Self")&&typeKindCode(argument,programKinds(p),call->span)!=p.parameterCodes.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong constructor kind",call->span);bound[parameters[i]]=argument;}
     }
     if(expected!=Type::Unknown){
       std::function<bool(const Type&)> projected=[&](const Type &type){if(type.kind==Type::Projection)return true;if(type.element&&projected(*type.element))return true;for(const auto &a:type.arguments)if(projected(a))return true;return false;};
@@ -2185,7 +2196,7 @@ llvm::json::Value describe() {
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","partial_type_lambdas","whole_type_lambda_inference","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","partial_type_lambdas","whole_type_lambda_inference","higher_order_kind_signatures","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
     {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values or file types, including phantom file arguments"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},

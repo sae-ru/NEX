@@ -8,12 +8,18 @@ struct KindContext {
   std::map<std::string,unsigned> parameters;
   std::map<std::string,unsigned> constructors{{"list",1},{"result",1}};
   std::map<std::string,std::vector<unsigned>> constructorParameters;
+  // One-level constructor-kind codes: 0 value, 1 constructor of values, 2 constructor of such constructors, ...
+  std::map<std::string,unsigned> parameterCodes;
+  std::map<std::string,std::vector<unsigned>> parameterSlots;
+  std::map<std::string,unsigned> constructorCodes;
+  std::map<std::string,std::vector<unsigned>> constructorSlots;
 };
 using TypeSubstitution = std::map<std::string,Type>;
 
 // A kind is the number of value-type arguments required to produce a value
 // type. Constructor parameters are fully applied; no type lambdas are inferred.
 unsigned typeKind(const Type &,const KindContext &,Span={});
+unsigned typeKindCode(const Type &,const KindContext &,Span={});
 Type applyTypeConstructor(const Type &,std::vector<Type>,const KindContext &,Span={});
 Type substituteConstructorTypes(const Type &,const TypeSubstitution &,const KindContext &,Span={});
 

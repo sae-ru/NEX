@@ -15,8 +15,10 @@ struct ProofScope {
   ~ProofScope(){activeProof=previous;}
 };
 KindContext implementationKinds(const Program &p,const Implementation &value){
-  auto result=programKinds(p);result.parameters.clear();
-  for(size_t i=0;i<value.typeParameters.size();++i)result.parameters[value.typeParameters[i]]=i<value.typeArities.size()?value.typeArities[i]:0;return result;
+  auto result=programKinds(p);result.parameters.clear();result.parameterCodes.clear();result.parameterSlots.clear();
+  for(size_t i=0;i<value.typeParameters.size();++i){result.parameters[value.typeParameters[i]]=i<value.typeArities.size()?value.typeArities[i]:0;
+    if(i<value.typeParameterCodes.size())result.parameterCodes[value.typeParameters[i]]=value.typeParameterCodes[i];
+    if(i<value.typeParameterSlots.size())result.parameterSlots[value.typeParameters[i]]=value.typeParameterSlots[i];}return result;
 }
 Type renameParameters(Type value,const std::string &prefix){
   if(value.kind==Type::Parameter)value.name=prefix+value.name;
@@ -62,9 +64,10 @@ Type implementationType(Program &p,Type type,const Trait &trait,const Implementa
 }
 const Trait &traitDefinition(const Program &p,const std::string &name,Span span){for(const auto &value:p.traits)if(value.name==name)return value;throw Error("E_GENERIC_BOUND","unknown trait '"+name+"'",span);}
 KindContext programKinds(const Program &p){
-  KindContext result;result.parameters=p.parameterKinds;
+  KindContext result;result.parameters=p.parameterKinds;result.parameterCodes=p.parameterCodes;result.parameterSlots=p.parameterSlotCodes;
   if(p.taskPrototype){result.constructors["task"]=1;result.constructors["channel"]=1;}
-  for(const auto &s:p.structures){result.constructors[s.name]=s.typeParameters.size();auto slots=s.typeArities;slots.resize(s.typeParameters.size());result.constructorParameters[s.name]=std::move(slots);}return result;
+  for(const auto &s:p.structures){result.constructors[s.name]=s.typeParameters.size();auto slots=s.typeArities;slots.resize(s.typeParameters.size());result.constructorParameters[s.name]=std::move(slots);
+    auto codes=s.typeParameterCodes;codes.resize(s.typeParameters.size());unsigned code=0;for(auto value:codes)code=std::max(code,value+1);result.constructorCodes[s.name]=s.typeParameters.empty()?0:code;result.constructorSlots[s.name]=std::move(codes);}return result;
 }
 Type constructorPattern(const Program &p,Type value){
   if(value.kind==Type::Record&&p.hasStructure(value.name)){const auto &s=p.structure(value.name);if(!s.templateName.empty()){value.name=s.templateName;value.arguments=s.typeArguments;}}
@@ -76,7 +79,7 @@ void prepareTraits(Program &p){
   if(p.traitsPrepared)return;p.traitsPrepared=true;
   for(const auto &value:p.traits){
     if(value.methods.size()+value.associated.size()>1024)throw Error("E_TRAIT_LIMIT","trait member count exceeds1024",value.span);
-    auto self=value.name+"::Self";p.parameterKinds[self]=value.selfArity;p.parameterBounds[self]={value.name};std::set<std::string> methods;
+    auto self=value.name+"::Self";p.parameterKinds[self]=value.selfArity;p.parameterCodes[self]=value.selfArity?(value.selfCode?value.selfCode:1):0;p.parameterSlotCodes[self]=value.selfSlots.empty()&&value.selfArity?std::vector<unsigned>(value.selfArity,0):value.selfSlots;p.parameterBounds[self]={value.name};std::set<std::string> methods;
     for(const auto &[name,bounds]:value.associated)for(const auto &bound:bounds)if(!builtin(bound)&&traitDefinition(p,bound,value.span).selfArity!=0)throw Error("E_GENERIC_KIND","associated value type bound requires a value-kind trait",value.span);
     for(const auto &original:value.methods){
       if(!methods.insert(original.name).second)throw Error("E_DUPLICATE","duplicate trait method",original.span);

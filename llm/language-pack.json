@@ -5062,6 +5062,7 @@
     "constructor_parameters",
     "partial_type_lambdas",
     "whole_type_lambda_inference",
+    "higher_order_kind_signatures",
     "generic_trait_methods",
     "static_trait_dispatch",
     "type_defaults",

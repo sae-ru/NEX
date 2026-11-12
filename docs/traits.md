@@ -69,8 +69,9 @@ fn convert<F<_>: Mapper, A, B>(values: F<A>, apply: fn(A)->B) -> F<B> {
 Applications such as `F<A>` are value types. A bare constructor cannot be a
 local/parameter/result value. Generic structures/enums can also take constructor
 parameters and store fully applied fields. A constructor whose own slots accept
-constructors has a different kind from `F<_>`; higher-order kind signatures
-remain unsupported. Partial applications such as `Pair<i64,_>` are accepted as
+constructors has a different kind from `F<_>`; signatures such as `F<_<_>>`
+accept only a constructor of the matching depth, for example `Wrap<F<_>>` for
+`F<_<_>>` but not `Box<T>`. Partial applications such as `Pair<i64,_>` are accepted as
 explicit constructor arguments and fill their holes when applied. Inference from
 an applied argument uses its trailing arguments for the explicit value parameters
 and fixes the leading arguments as holes; ambiguous positions still need an

@@ -13,6 +13,22 @@ struct Work {
       throw Error("E_GENERIC_LIMIT","constructor type matching exceeds its depth/work budget",span);
   }
 };
+unsigned code(const Type &t,const KindContext &c,Work &work,unsigned depth) {
+  work.enter(depth);
+  if(t.kind==Type::Constructor){
+    if(!t.arguments.empty()){unsigned holes=0;for(const auto &argument:t.arguments)if(argument.kind==Type::Unknown)++holes;return holes?1:0;}
+    auto found=c.constructorCodes.find(t.name);if(found!=c.constructorCodes.end())return found->second;
+    if(t.name=="list"||t.name=="result"||t.name=="task"||t.name=="channel")return 1;
+    return t.constructorArity?1:0;
+  }
+  if(t.kind==Type::Parameter){
+    if(!t.arguments.empty())return 0;
+    auto found=c.parameterCodes.find(t.name);if(found!=c.parameterCodes.end())return found->second;
+    auto arity=c.parameters.find(t.name);return arity!=c.parameters.end()&&arity->second?1:0;
+  }
+  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel)return 0;
+  return 0;
+}
 unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool unit=false) {
   work.enter(depth);
   auto fail=[&](const std::string &why)->unsigned {throw Error("E_GENERIC_KIND",why,work.span);};
@@ -32,9 +48,7 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
       if(!holes||holes>maxArity)return fail("partial type constructor requires placeholder arguments");
       return holes;
     }
-    auto slots=c.constructorParameters.find(t.name);
     if(found->second!=t.constructorArity)return fail("invalid or unknown type constructor '"+t.name+"'");
-    if(slots!=c.constructorParameters.end()&&std::any_of(slots->second.begin(),slots->second.end(),[](auto n){return n!=0;}))return maxArity+1;
     return t.constructorArity;
   }
   if(t.kind==Type::Parameter) {
@@ -43,15 +57,21 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
     if(found->second>maxArity)return fail("constructor parameter arity exceeds 64");
     if(t.arguments.empty())return found->second;
     if(t.arguments.size()!=found->second)return fail("incorrect constructor parameter arity for '"+t.name+"'");
-    for(const auto &a:t.arguments)if(kind(a,c,work,depth+1)!=0)return fail("constructor applications require value-type arguments");
+    auto slots=c.parameterSlots.find(t.name);
+    if(slots!=c.parameterSlots.end()&&slots->second.size()==t.arguments.size()){
+      for(size_t i=0;i<t.arguments.size();++i)if(code(t.arguments[i],c,work,depth+1)!=slots->second[i])return fail("constructor parameter argument has the wrong kind");
+    }else for(const auto &a:t.arguments)if(kind(a,c,work,depth+1)!=0)return fail("constructor applications require value-type arguments");
     return 0;
   }
   if(t.kind==Type::Record) {
     auto found=c.constructors.find(t.name);
     if(found==c.constructors.end()||found->second!=t.arguments.size())
       return fail("unknown nominal type or incorrect nominal arity for '"+t.name+"'");
-    auto slots=c.constructorParameters.find(t.name);
-    for(size_t i=0;i<t.arguments.size();++i){auto expected=slots==c.constructorParameters.end()?0:slots->second.at(i);if(kind(t.arguments[i],c,work,depth+1)!=expected)return fail("nominal argument has the wrong constructor kind");}
+    auto signatures=c.constructorSlots.find(t.name);
+    if(signatures!=c.constructorSlots.end()&&signatures->second.size()==t.arguments.size()){
+      for(size_t i=0;i<t.arguments.size();++i)if(code(t.arguments[i],c,work,depth+1)!=signatures->second[i])return fail("nominal argument has the wrong constructor kind");
+    }else{auto slots=c.constructorParameters.find(t.name);
+      for(size_t i=0;i<t.arguments.size();++i){auto expected=slots==c.constructorParameters.end()?0:slots->second.at(i);if(kind(t.arguments[i],c,work,depth+1)!=expected)return fail("nominal argument has the wrong constructor kind");}}
     return 0;
   }
   if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel) {
@@ -83,8 +103,12 @@ Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Wo
   }
   if((constructor.kind==Type::Constructor?constructor.constructorArity:constructorKind)!=args.size()||args.empty())
     throw Error("E_GENERIC_KIND","incorrect number of type constructor arguments",work.span);
-  auto slots=constructor.kind==Type::Constructor?context.constructorParameters.find(constructor.name):context.constructorParameters.end();
-  for(size_t i=0;i<args.size();++i){auto expected=slots==context.constructorParameters.end()?0:slots->second.at(i);if(kind(args[i],context,work,depth+1)!=expected)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",work.span);}
+  auto signatures=constructor.kind==Type::Constructor?context.constructorSlots.find(constructor.name):context.parameterSlots.find(constructor.name);
+  for(size_t i=0;i<args.size();++i){
+    if(signatures!=context.constructorSlots.end()&&signatures->second.size()==args.size()){if(code(args[i],context,work,depth+1)!=signatures->second[i])throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",work.span);}
+    else if(constructor.kind==Type::Constructor){auto slots=context.constructorParameters.find(constructor.name);auto expected=slots==context.constructorParameters.end()?0:slots->second.at(i);if(kind(args[i],context,work,depth+1)!=expected)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",work.span);}
+    else if(kind(args[i],context,work,depth+1)!=0)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",work.span);
+  }
   if(constructor.kind==Type::Parameter){constructor.arguments=std::move(args);return constructor;}
   if(constructor.kind!=Type::Constructor)
     throw Error("E_GENERIC_KIND","expected an unapplied type constructor",work.span);
@@ -167,6 +191,7 @@ void mergeConstructors(KindContext &to,const KindContext &from,Span span) {
 }
 }
 unsigned typeKind(const Type &t,const KindContext &c,Span span){Work w{span};return kind(t,c,w,0);}
+unsigned typeKindCode(const Type &t,const KindContext &c,Span span){Work w{span};return code(t,c,w,0);}
 Type applyTypeConstructor(const Type &t,std::vector<Type> a,const KindContext &c,Span span){Work w{span};return apply(t,std::move(a),c,w,0);}
 Type substituteConstructorTypes(const Type &t,const TypeSubstitution &b,const KindContext &c,Span span){Work w{span};kind(t,c,w,0);auto result=substitute(t,b,c,w);kind(result,c,w,0);return result;}
 std::optional<TypeSubstitution> matchImplementationType(const Type &pattern,const Type &actual,const KindContext &c,Span span) {
