@@ -1,0 +1,52 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Fedora x86_64 platform build and core CTest of toolchain 0.226.0",
+  "implementation_commit": "5e2841e8",
+  "build_source_base_commit": "0d50b9de",
+  "compiler": {
+    "toolchain": "0.226.0",
+    "language": "0.28"
+  },
+  "host": {
+    "system": "Fedora 45",
+    "architecture": "x86_64",
+    "cpu": "alderlake",
+    "llvm": "23.1.4",
+    "openssl": "/usr/lib64/libcrypto.so.4.0.3",
+    "sqlite": "/usr/lib64/libsqlite3.so.3.53.4",
+    "z3": "5.3.2.0"
+  },
+  "build": {
+    "configure_and_full_build": true,
+    "dependency_installed": "zlib-ng-compat-devel"
+  },
+  "platform_checks": {
+    "doctor": true,
+    "run_stdout": "fedora-ok\n",
+    "test_ok": true,
+    "core_ctest_ok": true,
+    "core_ctest_seconds": 5.251,
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 347,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "core tier only on Fedora; extended/browser/sdk groups were not run there",
+    "stand build uses clang 23.1.4/OpenSSL 4.0.3, not the macOS LLVM 22 matrix",
+    "no package/install or Fedora SDK acceptance"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "doctor": "/Users/sae/projects/NEX/build/fedora-0226/doctor.json",
+    "run": "/Users/sae/projects/NEX/build/fedora-0226/run.json",
+    "test": "/Users/sae/projects/NEX/build/fedora-0226/test.json",
+    "core_report": "/Users/sae/projects/NEX/build/fedora-0226/core-report.json",
+    "describe": "/Users/sae/projects/NEX/build/fedora-0226/describe.json",
+    "guide": "docs/testing.md"
+  }
+}
