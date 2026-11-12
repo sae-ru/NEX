@@ -1,0 +1,46 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest qualification of toolchain 0.235.0",
+  "implementation_commit": "34d9c2a6488deab6bdd1e0f8c44b82f3b8cc3103",
+  "build_source_base_commit": "34d9c2a6",
+  "compiler": {
+    "toolchain": "0.235.0",
+    "language": "0.28",
+    "sha256": "c74388eab347a71fb55ecb1bcc6fe48c511409b18ea92613734bb2c2e72db295",
+    "compiler_build": "a2125c8f0cbe6840d273dcede70e2aa298cc417c5f1e2534fb97f9ea553b1029",
+    "descriptor_hash": "5114d1560e072f36b5aa51b7344ed8b39fd120569c256a7fcdc2357dba91e0bc"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2522.547,
+    "ctest_exit_code": 0,
+    "groups": 350,
+    "passed": 350,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "1ddf735bc1229cd07073ba3e5b1e03fca7b297b0073b7c49cddd72d462a0dfda",
+    "results_sha256": "ce2b0ce41079b4354df33b370919f051db40fd787797477378207983d8413676"
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "requires the locked TypeScript/Node environment for browser groups",
+    "release_qualification remains false because this is a test receipt",
+    "macOS ARM64 host only; Fedora/Astra/Windows extended matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0235/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0235/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0235.log",
+    "describe": "/Users/sae/projects/NEX/build/ci-full-0235/describe.json",
+    "guide": "docs/testing.md"
+  }
+}

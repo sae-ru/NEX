@@ -591,6 +591,9 @@ Application CSS: `nex web` copies a project's `web/app.css` over the default
 `src/app.css` and includes it in the generated file hashes; size limit is 262144
 bytes. Covered by the `web` test.
 
+Full CTest qualification of 0.235.0 passed all 350 groups in 2522.547 s,
+including application-specific CSS generation.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
