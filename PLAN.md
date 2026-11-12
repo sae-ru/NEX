@@ -104,6 +104,7 @@ and final delivery work are:
 - [x] Preserve NEX_RESOURCE_DIR through CUDA memcheck.
 - [x] Pin explicit toolchains through CUDA delivery tasks.
 - [x] Complete owned-CUDA source-deleted replay/relocated delivery.
+- [x] Pass configured jobs to SDK source tests.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.
 - [ ] Remaining browser adapter integration, application components/styles,

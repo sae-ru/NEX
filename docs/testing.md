@@ -446,6 +446,9 @@ SDK build 0.223 was attempted with the maintained workflow: configure, build and
 locked-web preparation passed; the full `source-tests` phase did not complete in
 30 minutes and was stopped. No complete SDK acceptance is claimed.
 
+Toolchain 0.224 passes the SDK workflow's configured `jobs` to the full
+source-test runner instead of always using one worker.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

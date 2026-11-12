@@ -318,8 +318,8 @@ class Build:
                     '--cache', self.plan['npm_cache'], '--ignore-scripts', '--no-audit', '--no-fund'])
                 self.environment['NEX_TSC'] = str(dependencies / 'node_modules/typescript/bin/tsc')
                 self.command('source-tests', [python, '-B', source / 'tools/ci/ctest.py', '--build', build,
-                    '--output', self.output / 'source-tests', '--tier', 'full', '--ctest',
-                    Path(self.plan['cmake']).with_name('ctest')])
+                    '--output', self.output / 'source-tests', '--tier', 'full', '--jobs', str(self.plan['jobs']),
+                    '--ctest', Path(self.plan['cmake']).with_name('ctest')])
                 self.command('install', [self.plan['cmake'], '--install', build, '--prefix', installed])
                 # Installed acceptance prepares its own locked TypeScript tool.
                 # The source-test compiler can be inside a denied source root.
