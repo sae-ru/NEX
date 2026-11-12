@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.227.0"
+applies_to: "language 0.28; toolchain 0.228.0"
 owner: repository
 ---
 

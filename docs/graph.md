@@ -95,7 +95,12 @@ reuses the old identity. Fully qualified symbols select the exact module and
 name; a qualified target may move the node to another module because the logical
 module is part of its new name. Existing targets, absent sources and a stale
 `--expected-revision` are rejected. The transaction does not move HEAD or rewrite
-source; operator edits and a following check remain explicit.
+source.
+
+`tools/nex_rename.py --compiler BUILD/nex --project ROOT --from app::old --to
+app::new` combines a same-module lexical source rewrite with the identity move;
+the scanner skips comments and string literals. It runs the following check and
+is dry-runnable. Imports and cross-module source edits remain operator work.
 
 ## Transfer and resolution
 
