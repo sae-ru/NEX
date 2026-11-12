@@ -599,6 +599,9 @@ including application-specific CSS generation.
 Full CTest qualification of 0.237.0 passed all 350 groups in 2528.363 s,
 including the language 0.29 opt-in gate.
 
+Full CTest qualification of 0.238.0 passed all 351 groups in 2311.469 s,
+including explicit 0.29 migration.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

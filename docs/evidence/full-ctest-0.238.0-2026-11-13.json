@@ -1,0 +1,45 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest qualification of toolchain 0.238.0",
+  "implementation_commit": "0eb023c43e15476a5dec0212ea054dcac349f0b7",
+  "build_source_base_commit": "0eb023c4",
+  "compiler": {
+    "toolchain": "0.238.0",
+    "default_language": "0.28",
+    "development_language": "0.29",
+    "sha256": "ebeddcaf9707576304fa4b4ed3ea9a2ffdc55fd33e4a533701383a5c6828b0c2",
+    "compiler_build": "eded9977d19361a5a98080e95a1c5db0ef19377dcd91d815365145f9d271649b",
+    "descriptor_hash": "8efa96aceafd7427f40d6869a9dc167e524bf256cdfddeb0e40916f666983571"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2311.469,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "7f0749c35d0c17f70b9ec852edaace38154e44be552d8e409795b350534bd47b"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "0.29 remains explicit opt-in; default/new projects are 0.28",
+    "release_qualification remains false because this is a test receipt",
+    "macOS ARM64 host only; non-macOS extended matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0238/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0238/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0238.log",
+    "guide": "docs/testing.md"
+  }
+}
