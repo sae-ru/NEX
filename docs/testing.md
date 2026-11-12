@@ -579,8 +579,13 @@ full 350-group receipt.
 
 SDK workflow 0.234: configure, build, locked-web, full source-tests and install
 passed; the full tier ran 342 selected groups in 3997.5 s. The automated
-distribution phase failed on deny-read coverage, and an explicit-root manual
-distribution was still running. No complete SDK acceptance is claimed.
+distribution phase failed because its `deny_read` list did not cover the
+installed SDK and copied host sources. Re-running the macOS distribution with
+explicit roots (`/opt/homebrew`, `/opt/local`, the source checkout) completed:
+renamed and restored 41-phase browser acceptances passed, negative read/write
+probes were denied, and the relocatable archive was produced with SHA-256
+`00a8ef1d...640892f9` (3987 inventory files, 124,113,900 bytes, 6042 s). No
+signed/public release is claimed.
 
 ## Maintain the catalogue
 

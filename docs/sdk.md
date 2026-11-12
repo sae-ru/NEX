@@ -564,6 +564,9 @@ python3 tools/macos/bundle.py --sdk /absolute/installed-sdk \
   --notices /absolute/notices.json --output /absolute/new-distribution \
   --npm-cache /absolute/npm-cache --deny-read /absolute/source-checkout \
   --deny-read /opt/homebrew --deny-read /opt/local --live
+
+The deny-read roots must cover the **input SDK** and every copied host-component
+source. An empty list is rejected before relocation.
 ```
 
 The helper assembles copies, moves the SDK to a temporary comma/Unicode/percent

@@ -1,0 +1,147 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "SDK 0.234 full source-tests and relocatable macOS distribution",
+  "implementation_commit": "bfe9b39a",
+  "build_source_base_commit": "a00cfab3",
+  "compiler": {
+    "toolchain": "0.234.0",
+    "language": "0.28"
+  },
+  "workflow": {
+    "phases": [
+      [
+        "configure",
+        "passed",
+        2.594
+      ],
+      [
+        "build",
+        "passed",
+        278.026
+      ],
+      [
+        "locked-web",
+        "passed",
+        0.393
+      ],
+      [
+        "source-tests",
+        "passed",
+        3997.539
+      ],
+      [
+        "install",
+        "passed",
+        0.596
+      ],
+      [
+        "distribution",
+        "failed",
+        6.556
+      ]
+    ],
+    "source_tests": {
+      "ok": true,
+      "tier": "full",
+      "seconds": 3997.513,
+      "groups": 342
+    }
+  },
+  "distribution": {
+    "schema": "nex.sdk-distribution/2",
+    "ok": true,
+    "browser_build": true,
+    "live_debugger": false,
+    "seconds": 6042.063,
+    "denied_read_roots": [
+      "/opt/homebrew",
+      "/opt/local",
+      "/Users/sae/projects/NEX"
+    ],
+    "archive": {
+      "path": "/private/tmp/sdk-dist-0234/nex-sdk-0.234.0-macos-arm64-development.tar.gz",
+      "sha256": "00a8ef1dd172e01a88dcc94526a3838fc531b5e945e15f8b6bd0539c640892f9",
+      "bytes": 124113900,
+      "files_in_inventory": 3987,
+      "excluded_python_cache_files": []
+    },
+    "commands": [
+      [
+        "apple-sdk",
+        "passed",
+        0
+      ],
+      [
+        "assemble",
+        "passed",
+        0
+      ],
+      [
+        "moved-deny-read-0",
+        "passed",
+        77
+      ],
+      [
+        "moved-deny-read-1",
+        "passed",
+        77
+      ],
+      [
+        "moved-deny-read-2",
+        "passed",
+        77
+      ],
+      [
+        "moved-deny-write",
+        "passed",
+        77
+      ],
+      [
+        "moved-workflow",
+        "passed",
+        0
+      ],
+      [
+        "restored-deny-read-0",
+        "passed",
+        77
+      ],
+      [
+        "restored-deny-read-1",
+        "passed",
+        77
+      ],
+      [
+        "restored-deny-read-2",
+        "passed",
+        77
+      ],
+      [
+        "restored-deny-write",
+        "passed",
+        77
+      ],
+      [
+        "restored-workflow",
+        "passed",
+        0
+      ]
+    ],
+    "report_sha256": "2a291c5fbdd2d7f28caac311e550081ed5eb7f19c2914ef1076da27ccd366b23"
+  },
+  "limits": [
+    "the automated sdk_build distribution failed due deny_read coverage; the successful distribution was invoked manually with explicit roots",
+    "live_debugger was not requested; browser build/acceptance was requested",
+    "the archive is not a signed/public release"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "distribution": "/Users/sae/projects/NEX/build/sdk-dist-0234-evidence/distribution.json",
+    "log": "/Users/sae/projects/NEX/build/sdk-dist-0234-evidence/distribution.log",
+    "workflow": "/Users/sae/projects/NEX/build/sdk-dist-0234-evidence/workflow-report.json",
+    "source_tests": "/Users/sae/projects/NEX/build/sdk-dist-0234-evidence/source-tests-report.json",
+    "guide": "docs/testing.md"
+  }
+}
