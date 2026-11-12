@@ -38,7 +38,7 @@ def run(args,cwd,environment=None):
 
 class TypeLambdas(unittest.TestCase):
     def project(self,root,source):
-        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.29','entry':'main.nex'})+'\n')
         (root/'main.nex').write_text(source)
 
     def test_partial_application_reference_native_and_optional_web(self):
@@ -70,4 +70,10 @@ fn bad(value:Pair<i64,_>)->unit{}
             result=run(['check','--json'],root);self.assertNotEqual(result.returncode,0)
             self.assertIn(json.loads(result.stdout)['code'],{'E_GENERIC_ARITY','E_TYPE','E_GENERIC_KIND'})
 
+    def test_partial_lambdas_are_rejected_in_0_28(self):
+        with tempfile.TemporaryDirectory(prefix='nex type lambdas 028 ') as temporary:
+            root=Path(temporary);(root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+            (root/'main.nex').write_text('module app;\nstruct Pair<A,B>{first:A;second:B;}\nfn forward<F<_>,T>(value:F<T>)->F<T>{return value;}\nfn main()->unit !{io}{let p:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(1,"x"));print(p.first);}')
+            result=run(['check','--json'],root);self.assertNotEqual(result.returncode,0)
+            self.assertEqual(json.loads(result.stdout)['code'],'E_LANGUAGE_VERSION')
 if __name__=='__main__':unittest.main()

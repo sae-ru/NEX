@@ -140,15 +140,16 @@ llvm::json::Value graphSources(const llvm::json::Object &object){
 ChangeInfo changeInfo(const Options &o,const std::string &action,const std::string &request=""){return {action,o.command,o.get("--actor"),o.get("--note"),request};}
 Program load(const Options &o,const fs::path &root,Store &store,bool saved=false) {
   auto rev=o.get("--revision",saved?"HEAD":"");
+  const auto selectedLanguage=projectSourceLanguage(root.string());
   if(rev.empty()){
     const auto previous=store.headRevision();
-    if(!previous.empty()&&store.revisionLanguage(previous)!=languageVersion)
+    if(!previous.empty()&&store.revisionLanguage(previous)!=programLanguage(selectedLanguage))
       throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
     auto path=fs::absolute(o.positional.empty()?defaultSource(root):o.positional[0]).string();
     auto p=loadProgram(path,root.string(),o.command!="lock");store.save(p,"",true,changeInfo(o,"synchronize"));return p;
   }
   auto selected=rev=="HEAD"?store.headRevision():rev;
-  if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
+  if(store.revisionLanguage(selected)!=programLanguage(selectedLanguage))throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
   auto p=loadBundle(store.bundle(selected),root.string());
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
@@ -717,11 +718,11 @@ int run(const Options &o) {
   auto root=projectRoot(sourceCommands.contains(o.command)&&!o.positional.empty()?fs::absolute(o.positional[0]).parent_path():fs::current_path());
   bool physical=sourceCommands.contains(o.command)&&o.get("--revision").empty()&&
     ((o.command!="declarations"&&o.command!="identities")||!o.positional.empty());
-  if(physical)validateProjectMetadata(root.string());
+  if(physical)validateProjectMetadata(root.string(),projectSourceLanguage(root.string()));
   if(o.command=="migrate"){migrate(o,root);return 0;}
   if(physical&&fs::is_regular_file(root/".nex/graph.db")){
     Store retained(root/".nex",StoreOpenMode::ReadOnly);const auto previous=retained.headRevision();
-    if(!previous.empty()&&retained.revisionLanguage(previous)!=languageVersion)
+    if(!previous.empty()&&retained.revisionLanguage(previous)!=programLanguage(projectSourceLanguage(root.string())))
       throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
   }
   if(o.command=="fix"){return fixSource(o,root);}

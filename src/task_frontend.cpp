@@ -16,6 +16,7 @@ const char *programLanguage(SourceLanguage language){
   case SourceLanguage::ExceptionHandlers026:return "0.26";
   case SourceLanguage::TypedErrors027:return "0.27";
   case SourceLanguage::Contracts028:return "0.28";
+  case SourceLanguage::Contracts029:return "0.29";
   }
   throw Error("E_LANGUAGE_VERSION","unknown checked program source language");
 }

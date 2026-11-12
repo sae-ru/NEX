@@ -255,7 +255,7 @@ public:
   Emitter(const Program &program,const std::string &entry,const std::string &inputLayout)
       :root(program.function(entry)),layout(inputLayout),where(root.span){
     if(layout!="rows"&&layout!="columns")throw Error("E_OPTION","OpenCL input layout must be rows or columns");
-    if(std::string(programLanguage(program))!="0.28")throw Error("E_GPU_UNSUPPORTED","OpenCL emission requires checked language0.28",root.span);
+    if(std::string(programLanguage(program))!="0.28"&&std::string(programLanguage(program))!="0.29")throw Error("E_GPU_UNSUPPORTED","OpenCL emission requires checked language0.28",root.span);
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
     discover(root,root.span);
     if(root.params.size()>8)throw Error("E_GPU_LIMIT","OpenCL root has more than8 scalar arguments",root.span);

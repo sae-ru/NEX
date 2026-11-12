@@ -2521,7 +2521,7 @@ BuildResult build(const Program &p,const std::string &directory,const BuildOptio
   std::string coreABI;for(const auto &file:{"runtime.cpp","nex_host.h","nex_source_error.h","nex_value.h","nex_bytes.h","nex_file_resource.h","nex_resource.h","nex_external_resource.h","nex_resource_executor.h","nex_resource_region.h","nex_error.h","nex_float.h","nex_io.h","nex_platform.h","nex_profile.h"})coreABI+=file+hash(runtimeFiles.at(file));
   // Contracts028 is an independently versioned source cohort, even though
   // its lowered checks reuse the typed source/task ABI7 packet representation.
-  if(p.sourceLanguage==SourceLanguage::Contracts028)coreABI+=":source_language=0.28";
+  if(p.sourceLanguage==SourceLanguage::Contracts029)coreABI+=":source_language=0.29";else if(p.sourceLanguage==SourceLanguage::Contracts028)coreABI+=":source_language=0.28";
   result.libraryABI=hash(nativeSeed+coreABI+(tasks?runtimeIdentity:std::string()));
   if(taskProviders){
     std::string cohort=coreABI;for(const auto &file:taskCohortFiles)cohort+=file+hash(runtimeFiles.at(file));if(profiling)for(const auto &[file,data]:runtimeFiles)if(file=="nex_profile.cpp"||file=="nex_task_profile.cpp"||file=="nex_task_profile.h"||file.starts_with("third_party/tracy/"))cohort+=file+hash(data);if(profiling)cohort+=":instrumentation=task-profile/1:registry=1";if(options.taskDebug){for(const auto &file:{"nex_task_debug.h","nex_task_debug_site.h","nex_task_debug.cpp"})cohort+=file+hash(runtimeFiles.at(file));cohort+=":instrumentation=task-debug/1:registry=1:catalog=2";}

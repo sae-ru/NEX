@@ -267,13 +267,24 @@ std::string materialized(const std::string &key,const std::string &prefix){
   return key;
 }
 }
+SourceLanguage manifestSourceLanguage(const std::string &root){
+  auto path=fs::path(root)/"nex.json";
+  if(!fs::is_regular_file(path))return currentSourceLanguage;
+  auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
+  if(!object)return currentSourceLanguage;
+  auto language=object->getString("language");
+  if(language&&*language=="0.29")return SourceLanguage::Contracts029;
+  if(language&&*language=="0.28")return SourceLanguage::Contracts028;
+  return currentSourceLanguage;
+}
+SourceLanguage projectSourceLanguage(const std::string &root){return manifestSourceLanguage(root);}
 void validateProjectMetadata(const std::string &root,SourceLanguage language){
   auto path=fs::path(root)/"nex.json";if(!fs::is_regular_file(path))return;
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
   if(!object)throw Error("E_MANIFEST","nex.json must be an object",Span{1,1,0,0,"nex.json"});projectVersion(*object,"nex.json",language);
 }
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
-  return loadVersionedProgram(entry,root,currentSourceLanguage,enforceLock,overlays,editorNames,editorDetails);
+  return loadVersionedProgram(entry,root,projectSourceLanguage(root),enforceLock,overlays,editorNames,editorDetails);
 }
 Program loadVersionedProgram(const std::string &entry,const std::string &root,SourceLanguage language,bool enforceLock,const std::map<std::string,std::string> &overlays,bool editorNames,bool editorDetails){
   (void)programLanguage(language);
@@ -309,7 +320,8 @@ Program loadVersionedBundle(const llvm::json::Value &bundle,const std::string &r
   if(language=="0.26")return bundleProgram(bundle,root,true,true,SourceLanguage::ExceptionHandlers026);
   if(language=="0.27")return bundleProgram(bundle,root,true,true,SourceLanguage::TypedErrors027);
   if(language=="0.28")return bundleProgram(bundle,root,true,true,SourceLanguage::Contracts028);
-  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27 and0.28");
+  if(language=="0.29")return bundleProgram(bundle,root,true,true,SourceLanguage::Contracts029);
+  throw Error("E_LANGUAGE_VERSION","versioned source recheck supports explicit languages0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28 and0.29");
 }
 Program bindBundle(const llvm::json::Value &bundle,const std::string &root){return bundleProgram(bundle,root,false);}
 llvm::json::Object sourceExceptionTaskContext(const Program &p){

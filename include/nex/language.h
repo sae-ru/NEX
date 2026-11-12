@@ -14,16 +14,20 @@ namespace nexrt { struct TaskExecutionLimits;struct SourceErrorPayload;struct Va
 namespace nex {
 inline constexpr const char *languageVersion = "0.28";
 inline constexpr const char *taskCandidateLanguageVersion = "0.28";
+inline constexpr const char *developmentLanguageVersion = "0.29";
 // Append semantic versions: retained ordinal values and archived interpretation
 // must never change when the public compiler default advances.
-enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028 };
+enum class SourceLanguage { Language018, Tasks019, TaskFiles020, OwnedResources021, TaskForeign022, TaskWrites023, TaskStreams024, SourceExceptions025Prototype, SourceExceptions025, ExceptionHandlers026, TypedErrors027, Contracts028, Contracts029 };
 inline constexpr SourceLanguage currentSourceLanguage=SourceLanguage::Contracts028;
+inline bool isContractsLanguage(SourceLanguage language){
+  return language==SourceLanguage::Contracts028||language==SourceLanguage::Contracts029;
+}
 inline bool isTypedSourceErrorLanguage(SourceLanguage language){
-  return language==SourceLanguage::TypedErrors027||language==SourceLanguage::Contracts028;
+  return language==SourceLanguage::TypedErrors027||isContractsLanguage(language);
 }
 // A shared typed packet ABI still retains the exact source version in records.
 inline bool isTypedSourceErrorVersion(llvm::StringRef language){
-  return language=="0.27"||language=="0.28";
+  return language=="0.27"||language=="0.28"||language=="0.29";
 }
 inline bool isPublicSourceExceptionLanguage(SourceLanguage language){
   return language==SourceLanguage::SourceExceptions025||language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language);
@@ -273,6 +277,7 @@ llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &,E,const 
     const llvm::json::Object &,uint64_t,const llvm::json::Array *captures=nullptr,bool demand=false,
     const std::set<std::string> *compiledCallables=nullptr);
 // Check explicit physical-project version/format without opening its graph store.
+SourceLanguage projectSourceLanguage(const std::string &root);
 void validateProjectMetadata(const std::string &root,SourceLanguage language=currentSourceLanguage);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
     const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);

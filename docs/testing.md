@@ -555,9 +555,10 @@ application. Trailing-argument
 inference also derives a partial constructor for calls such as
 `forward(Pair<i64,str>)`; ambiguous positions need an explicit lambda.
 Reference/native execution, tests and the descriptor features are covered by
-`type_lambdas`. Higher-order kind signatures (`F<_<_>>`, `H<F<_<_>>,G<_>>`) and
-the rejection of value-only constructors for higher-order slots are covered by
-`higher_kinds`.
+`type_lambdas` under explicit language 0.29; a 0.28 project rejects partial
+lambdas with `E_LANGUAGE_VERSION`. Higher-order kind signatures (`F<_<_>>`,
+`H<F<_<_>>,G<_>>`) and the rejection of value-only constructors for higher-order
+slots are covered by `higher_kinds`.
 
 Full CTest qualification of 0.231.0 passed all 349 groups in 2690.715 s,
 including the type-lambda inference group.

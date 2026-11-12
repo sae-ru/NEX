@@ -327,7 +327,7 @@ public:
     for(const auto &[alias,name]:entries)write("export { "+symbol(p.function(name).name)+" as "+alias+" };\n");
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-exception-map/1"},{"language",programLanguage(p)},{"source_support",false},{"public_revision",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"task_source_exceptions",taskMode}},taskMode,true};
     if(privateSource)return {out.str(),llvm::json::Object{{"schema","nex.private-typescript-task-map/1"},{"language",programLanguage(p)},{"public_source_tasks",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)}},taskMode};
-    if(isTypedSourceErrorLanguage(p.sourceLanguage))return {out.str(),llvm::json::Object{{"schema",p.sourceLanguage==SourceLanguage::Contracts028?"nex.development-typescript/028-1":"nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};
+    if(isTypedSourceErrorLanguage(p.sourceLanguage))return {out.str(),llvm::json::Object{{"schema",isContractsLanguage(p.sourceLanguage)?"nex.development-typescript/028-1":"nex.development-typescript/027-3"},{"language",programLanguage(p)},{"public_revision",false},{"source027_delivery_accepted",false},{"entry_text_hash",hash(p.source)},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"},{"source_exceptions","nex.source-errors/2"},{"source_transfer_contracts",int64_t(sourceContracts.size())}},taskMode,true};
     auto mapping=llvm::json::Object{{"schema","nex.typescript-map/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"functions",std::move(included)},{"statements",std::move(mappings)},{"execution",taskMode?"task-generator":"synchronous"}};
     if(exceptionPrototype){mapping["source_exceptions"]="nex.source-errors/1";mapping["task_source_exceptions"]=taskMode;}
     return {out.str(),std::move(mapping),taskMode,exceptionPrototype};
@@ -354,7 +354,7 @@ WebModule emitTypeScriptDelivery(const Program &p,const std::map<std::string,std
   auto module=emitTypeScript(p,entries);
   if(!isTypedSourceErrorLanguage(p.sourceLanguage))return module;
   const auto *old=module.mapping.getAsObject();
-  if(!old||old->getString("schema")!=(p.sourceLanguage==SourceLanguage::Contracts028?"nex.development-typescript/028-1":"nex.development-typescript/027-3")||
+  if(!old||old->getString("schema")!=(isContractsLanguage(p.sourceLanguage)?"nex.development-typescript/028-1":"nex.development-typescript/027-3")||
      old->getString("language")!=programLanguage(p)||!old->getArray("functions")||
      !old->getArray("statements")||!old->getInteger("source_transfer_contracts"))
     throw Error("E_INTERNAL","checked027 delivery requires its matching generated source map");

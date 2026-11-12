@@ -86,7 +86,7 @@ std::string Store::save(const Program &p,const std::string &expected,bool makeHe
     if(makeHead&&!previous.empty()){
       Statement current(db,"SELECT language FROM revisions WHERE hash=?");current.bind(1,previous);
       if(!current.row())throw Error("E_REVISION","graph HEAD revision is missing");
-      if(current.text(0)!=programLanguage(p)&&(change.action=="synchronize"||((isTypedSourceErrorLanguage(p.sourceLanguage)||(current.text(0)=="0.27"||current.text(0)=="0.28"))&&change.action!="migrate")))
+      if(current.text(0)!=programLanguage(p)&&(change.action=="synchronize"||((isTypedSourceErrorLanguage(p.sourceLanguage)||(current.text(0)=="0.27"||current.text(0)=="0.28"||current.text(0)=="0.29"))&&change.action!="migrate")))
         throw Error("E_LANGUAGE_VERSION","graph HEAD uses another language version; run nex migrate explicitly");
     }
     {Statement existing(db,"SELECT language FROM revisions WHERE hash=?");existing.bind(1,rev);

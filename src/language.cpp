@@ -277,7 +277,7 @@ public:
 class Parser {
   SourceFormatHints *formatHints=nullptr;
   Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
-  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false;std::map<std::string,Span> parameterOrigins;
+  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false,contracts029=false;std::map<std::string,Span> parameterOrigins;
   std::set<std::string> generatedNames;
   unsigned contractLoopCounter=0;
   std::map<const Stmt*,std::vector<S>> loopPrefixes;
@@ -433,6 +433,7 @@ class Parser {
     if(!accept("<"))return 0;unsigned count=0;
     do{expect("_");unsigned code=0;
       if(peek().text=="<"){
+        if(!contracts029)throw Error("E_LANGUAGE_VERSION","higher-order kind signatures require language0.29",peek().span);
         std::vector<unsigned> inner;auto innerArity=constructorArity(&inner);
         if(!innerArity)throw Error("E_GENERIC_KIND","higher-order slot requires a constructor",peek().span);
         code=1;for(auto value:inner)code=std::max(code,value+1);
@@ -466,7 +467,7 @@ class Parser {
   Type type() {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
-    if(peek().text=="_"){take();return Type::Unknown;}
+    if(peek().text=="_"){if(!contracts029)throw Error("E_LANGUAGE_VERSION","partial type lambdas require language0.29",peek().span);take();return Type::Unknown;}
     auto t = take();
     if(captureDetails&&(std::set<std::string>{"i64","f64","bool","unit","str","list"}.contains(t.text)||
         ((t.text=="bytes"||t.text=="file")&&peek().text!="::")||(t.text=="result"&&peek().text=="<")))editorName("builtin_type",t.text,t.span);
@@ -680,7 +681,7 @@ class Parser {
   }
 public:
   void formatting(SourceFormatHints &hints){formatHints=&hints;}
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false,bool contracts29=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed),contracts029(contracts29) {
     sourceContracts=contracts;
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
@@ -1085,7 +1086,7 @@ class Checker {
     return Type::Bool;
   }
   Type listConstructor(E e,Type expected){
-    if(p.sourceLanguage!=SourceLanguage::Contracts028)throw Error("E_LANGUAGE_VERSION","bulk list construction requires language0.28",e->span);
+    if(!isContractsLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","bulk list construction requires language0.28",e->span);
     if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","list constructor infers types from its callbacks and context",e->span);
     if(e->args.size()<2||e->args.size()>4)throw Error("E_ARITY","list constructor requires 2, 3 or 4 arguments",e->span);
     auto callback=[&](size_t index,const std::vector<Type> &parameters,Type output){
@@ -1139,7 +1140,7 @@ class Checker {
     e->args.insert(e->args.end(),args.begin(),args.end());return expr(e,expected);
   }
   Type textConstructor(E e,Type expected){
-    if(p.sourceLanguage!=SourceLanguage::Contracts028)throw Error("E_LANGUAGE_VERSION","text construction requires language0.28",e->span);
+    if(!isContractsLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","text construction requires language0.28",e->span);
     if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","str constructor infers types from its callbacks and input",e->span);
     if(e->args.size()<2||e->args.size()>4)throw Error("E_ARITY","str constructor requires 2, 3 or 4 arguments",e->span);
     auto callback=[&](size_t index,const std::vector<Type> &parameters,Type output){
@@ -1191,7 +1192,7 @@ class Checker {
     e->args.insert(e->args.end(),args.begin(),args.end());return expr(e,expected);
   }
   Type bytesConstructor(E e,Type expected){
-    if(p.sourceLanguage!=SourceLanguage::Contracts028)throw Error("E_LANGUAGE_VERSION","byte construction requires language0.28",e->span);
+    if(!isContractsLanguage(p.sourceLanguage))throw Error("E_LANGUAGE_VERSION","byte construction requires language0.28",e->span);
     if(!e->typeArguments.empty())throw Error("E_GENERIC_ARITY","bytes constructor infers types from its callbacks and input",e->span);
     if(e->args.size()<2||e->args.size()>4)throw Error("E_ARITY","bytes constructor requires 2, 3 or 4 arguments",e->span);
     auto callback=[&](size_t index,const std::vector<Type> &parameters,Type output){
@@ -1717,11 +1718,11 @@ void sourceUTF8(const std::string &source,const std::string &path,const std::str
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
   case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
-  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:break;
+  case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:case SourceLanguage::Contracts029:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
   sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),language==SourceLanguage::Contracts028).run();
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),isContractsLanguage(language),language==SourceLanguage::Contracts029).run();
   p.sourceLanguage=language;return p;
 }
 Program parseSourceExceptionsPrototype(std::string source,std::string path){
@@ -1805,11 +1806,11 @@ std::string revision(const Program &p) {
   for(const auto &[key,unit]:p.units){std::set<std::string> targets;for(const auto &import:unit.imports)targets.insert(p.units.at(import.target).module);llvm::json::Array deps;for(const auto &target:targets)deps.push_back(target);modules[unit.module]=std::move(deps);}
   llvm::json::Object endpoints;for(const auto &endpoint:p.endpoints)endpoints[endpoint.name]=canonical(endpoint);
   llvm::json::Object traits,implementations;for(const auto &value:p.traits)traits[value.name]=canonical(value);for(const auto &value:p.implementations)implementations[value.name]=canonical(value);
-  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::Contracts028?"nex.program/16":p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
+  return hash(json(llvm::json::Object{{"format",p.sourceLanguage==SourceLanguage::Contracts029?"nex.program/17":p.sourceLanguage==SourceLanguage::Contracts028?"nex.program/16":p.sourceLanguage==SourceLanguage::TypedErrors027?"nex.program/15":"nex.program/14"},{"language",programLanguage(p)},{"module",p.module},{"functions",std::move(functions)},{"structures",std::move(structures)},{"modules",std::move(modules)},{"endpoints",std::move(endpoints)},{"traits",std::move(traits)},{"implementations",std::move(implementations)}},false));
 }
 llvm::json::Value describe() {
   auto result=llvm::json::Object{
-    {"schema","nex.language/1"},{"version",languageVersion},
+    {"schema","nex.language/1"},{"version",languageVersion},{"development_language_version",developmentLanguageVersion},{"language_versions",llvm::json::Array{"0.18","0.19","0.20","0.21","0.22","0.23","0.24","0.25","0.26","0.27","0.28","0.29"}},
     {"standard_library",standardLibraryCapability()},
     {"source_formatting",sourceFormattingCapability()},
     {"cli_interface",cliCapability()},

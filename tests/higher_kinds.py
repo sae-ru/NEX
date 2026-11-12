@@ -30,7 +30,7 @@ def run(args,cwd,environment=None):
 
 class HigherKinds(unittest.TestCase):
     def project(self,root,source):
-        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+        (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.29','entry':'main.nex'})+'\n')
         (root/'main.nex').write_text(source)
 
     def test_higher_order_kinds_reference_native_and_optional_web(self):
