@@ -537,10 +537,11 @@ Full CTest qualification of 0.226.0 (including the new graph identity rename)
 passed all 347 groups in 2578.127 s with the locked Node/TypeScript environment.
 The prior 0.225 receipt covered 346 groups.
 
-Source rename tool: `tools/nex_rename.py` rewrites same-module identifiers
-across project files while skipping comments and strings, records the graph
-identity move before the next check and verifies the ID survives. Dry runs,
-cross-file references and error handling are covered by `rename_source`.
+Source rename tool: `tools/nex_rename.py` rewrites same-module function and type
+identifiers across project files while skipping comments and strings, records the
+graph identity move before the next check and verifies the ID survives. Dry runs,
+cross-file references, type identity and error handling are covered by
+`rename_source`.
 
 Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
 including the source rename group.

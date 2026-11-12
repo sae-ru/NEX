@@ -62,4 +62,16 @@ fn main()->unit !{io}{print("old");print(old(old(40)));}
             self.assertIn('fn new',(root/'util.nex').read_text())
             after=nex(root,'identities','--entity','function','--json')['nodes']
             self.assertEqual(next(node['id'] for node in after if node['symbol']=='util::new'),before_id)
+    def test_type_rename_preserves_declaration_identity(self):
+        temporary,root=self.project()
+        with temporary:
+            (root/'main.nex').write_text('module app;\npub struct Old{v:i64;}\nfn main()->unit !{io}{print(Old(7).v);}\n')
+            nex(root,'check','--json')
+            before=nex(root,'identities','--entity','type','--json')['nodes'][0]
+            result=run(root,'--from','app::Old','--to','app::New')
+            self.assertEqual(result['moved'][0]['id'],before['id'])
+            self.assertIn('struct New',(root/'main.nex').read_text())
+            self.assertIn('New(7)',(root/'main.nex').read_text())
+            after=nex(root,'identities','--entity','type','--json')['nodes'][0]
+            self.assertEqual(after['symbol'],'app::New');self.assertEqual(after['id'],before['id'])
 if __name__=='__main__':unittest.main()
