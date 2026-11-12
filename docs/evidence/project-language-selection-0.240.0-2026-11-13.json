@@ -1,0 +1,45 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Project build language selection from nex.json",
+  "implementation_commit": "f596472022c56a4fe7b4b7ed3d4d978ca90d9c87",
+  "build_source_base_commit": "a27317e2",
+  "compiler": {
+    "toolchain": "0.240.0",
+    "default_language": "0.28",
+    "sha256": "c43b12c9e4a71bb98e31436ef9929e5c0afea1d58d8a71fde41ee8eec17440db"
+  },
+  "project": {
+    "language": "0.29",
+    "plan_ok": true,
+    "plan_language": "0.29",
+    "components": [
+      "app"
+    ]
+  },
+  "coverage": {
+    "tests": [
+      "source_exceptions_projects",
+      "typed_error_history_migration",
+      "type_lambdas",
+      "higher_kinds",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "default compiler language remains 0.28",
+    "full CTest was not rerun for this fix"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "plan": "/Users/sae/projects/NEX/build/project-029-0240/plan029.json",
+    "guide": "docs/testing.md"
+  }
+}
