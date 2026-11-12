@@ -104,8 +104,10 @@ is dry-runnable. `--import-alias util --to u` renames a file-local import alias
 and its `util::` references without changing the import path; the checked
 revision is unchanged because aliases are not semantic identity. The LSP
 `textDocument/prepareRename`/`textDocument/rename` handlers provide the same
-import-alias rename as workspace edits. Cross-module source moves remain operator
-work.
+import-alias rename as workspace edits. A qualified source target with a new
+module rewrites the owning `module` declaration as well, moving the whole file's
+module and preserving the renamed node ID; imports still address the file path
+and keep their local aliases.
 
 ## Transfer and resolution
 

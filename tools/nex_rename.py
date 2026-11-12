@@ -91,16 +91,21 @@ def main():
     from_module,old_name=qualified(args.source)
     if '::' not in args.to:raise SystemExit('source rename target must be fully qualified')
     to_module,new_name=args.to.rsplit('::',1)
-    if from_module!=to_module:raise SystemExit('nex_rename source mode currently requires the same module')
     check=invoke(compiler,root,['check','--json'])[1];head=check['revision']
     files=[p for p in root.rglob('*.nex') if '.nex' not in p.relative_to(root).parts]
-    plan=[]
+    plan=[];module_moved=False
     for path in sorted(files):
-        text=path.read_text(encoding='utf-8');spans=identifier_spans(text,old_name)
+        text=path.read_text(encoding='utf-8')
+        if from_module!=to_module:
+            pattern=re.compile(r'(?m)^(\s*module\s+)'+re.escape(from_module)+r'(\s*;)')
+            if pattern.search(text):
+                text=pattern.sub(lambda match:match.group(1)+to_module+match.group(2),text,count=1);module_moved=True
+        spans=identifier_spans(text,old_name)
         if not spans:continue
         pieces=[];last=0
         for first,lastspan in spans:pieces.append(text[last:first]);pieces.append(new_name);last=lastspan
         pieces.append(text[last:]);plan.append((path,text,''.join(pieces)))
+    if from_module!=to_module and not module_moved:raise SystemExit('no module declaration for '+from_module)
     if not plan:raise SystemExit('no source identifier occurrences for '+old_name)
     if args.dry_run:
         print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':True,'from':args.source,'to':args.to,'head':head,

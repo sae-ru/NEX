@@ -543,7 +543,8 @@ graph identity move before the next check and verifies the ID survives. Dry runs
 cross-file references, type identity and error handling are covered by
 `rename_source`. Import-alias mode rewrites `as ALIAS` plus `ALIAS::` references
 without touching import paths, and the LSP prepare/rename handlers cover the same
-file-local alias case.
+file-local alias case. A qualified target with a new module also rewrites the
+file's `module` declaration while preserving the node ID.
 
 Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
 including the source rename group.

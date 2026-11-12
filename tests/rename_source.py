@@ -88,4 +88,20 @@ fn main()->unit !{io}{print("old");print(old(old(40)));}
             self.assertIn('import "./util.nex" as u;',text);self.assertIn('u::helper()',text)
             self.assertEqual(result['revision'],head)
             nex(root,'check','--json')
+    def test_cross_module_source_move_preserves_identity(self):
+        temporary=tempfile.TemporaryDirectory(prefix='nex module rename ');root=Path(temporary.name)
+        with temporary:
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+            (root/'app.nex').write_text('module app;\npub fn old(x:i64)->i64{return x+1;}\n')
+            (root/'main.nex').write_text('module root;\nimport "./app.nex" as app;\nfn main()->unit !{io}{print(app::old(41));}\n')
+            nex(root,'check','--json')
+            before=nex(root,'identities','--entity','function','--json')['nodes']
+            before_id=next(node['id'] for node in before if node['symbol']=='app::old')
+            result=run(root,'--from','app::old','--to','lib::new')
+            self.assertEqual(set(result['files']),{'app.nex','main.nex'})
+            self.assertIn('module lib;',(root/'app.nex').read_text())
+            self.assertIn('fn new',(root/'app.nex').read_text())
+            self.assertIn('app::new(41)',(root/'main.nex').read_text())
+            after=nex(root,'identities','--entity','function','--json')['nodes']
+            self.assertEqual(next(node['id'] for node in after if node['symbol']=='lib::new'),before_id)
 if __name__=='__main__':unittest.main()
