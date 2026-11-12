@@ -596,6 +596,9 @@ including both in file hashes. Limits: CSS 262144 bytes; assets 256 files,
 Full CTest qualification of 0.235.0 passed all 350 groups in 2522.547 s,
 including application-specific CSS generation.
 
+Full CTest qualification of 0.237.0 passed all 350 groups in 2528.363 s,
+including the language 0.29 opt-in gate.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
