@@ -501,6 +501,11 @@ Physical CUDA formatting root: a prepared `render(Sample)->str` provider
 formatted `Sample(1.25,"🌍",[0,255])` to the exact 45-byte JSON string on
 RTX 3090, one kernel completion and a balanced ledger.
 
+The relocatable bundle also passed the full 41-phase acceptance with
+`--browser --live`: actual Vite browser build, LLDB/DAP live debugger, full
+TCP/IPv6 and project build, in 2872.132 s. Immutable release and full
+source-tests remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
