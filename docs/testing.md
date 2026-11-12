@@ -479,6 +479,10 @@ acceptance in 2744.66 s (network profile full, TCP IPv6 accepted). The run used
 `SDKROOT`; `--forbid-source` was not used because the source worktree exists on
 this host. Immutable/versioned release and full source-tests remain pending.
 
+With the development worktree denied by `sandbox-exec`, the relocatable bundle
+still passed doctor, ran `sandbox-ok` and passed native tests. This is a
+source-read-denied relocation control; full immutable release remains pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
