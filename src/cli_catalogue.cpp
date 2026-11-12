@@ -185,6 +185,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--origin","NAMESPACE","Original graph namespace for identity resolution.");
     add("--node","ID","Original local graph node identity.");
     add("--from-revision","HASH","Original revision for identity resolution.");
+    add("--to","SYMBOL","Target symbol for identity-preserving rename.");
     add("--expected-revision","HASH|EMPTY","Guard graph mutation against the observed HEAD.");
     add("--log","FILE","Captured native diagnostic log.");
     add("--note","TEXT","Change-history annotation.");
@@ -275,7 +276,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("context","--symbol NAME | --operation ID | --site KEY","Read bounded archived context.","graph","--symbol --operation --site --entity --revision --offset --limit");
     add("operations","--symbol NAME","Read operation identities/source ranges for one function.","operation","--symbol --revision --offset --limit");
     add("declarations","[FILE]","Read module/type/trait/implementation declarations.","graph","--entity --symbol --revision --offset --limit");
-    add("identities","[FILE]","Read/reconcile/resolve retained graph local identities.","graph","--kind --entity --symbol --output --manifest --expected-revision --revision --origin --from-revision --node");
+    add("identities","[FILE]","Read/reconcile/resolve/rename retained graph local identities.","graph","--kind --entity --symbol --output --manifest --expected-revision --revision --origin --from-revision --node --to");
     add("changes","","Read graph change history.","history","--offset --limit --output");
     add("restore","--revision HASH --expected-revision HASH|EMPTY","Restore a revision under an explicit HEAD guard.","history","--revision --expected-revision --note --actor");
     add("apply","--patch FILE","Apply a reviewed graph patch with revision/source guards.","protocol","--patch --note --actor");

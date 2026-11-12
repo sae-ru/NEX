@@ -518,6 +518,11 @@ The opencl_dispatch group is included. Twelve newly exposed stale expectations
 (CLI command set/completion, SDK executor count, SDK inventory scope, retained
 0.26 web projection) were corrected; no language semantics changed.
 
+Identity-preserving rename: `nex identities --kind rename` moves function
+`node_ids` and nominal `declaration_ids` rows without changing IDs; the next
+check reuses them. Function and type round trips, conflicts and stale-head
+rejection are covered by `graph_identity_rename`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

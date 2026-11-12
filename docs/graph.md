@@ -77,6 +77,25 @@ limit is 100; the maximum is 1000. Page a single retained revision consistently.
 endpoint, structure and operation projections retain their meanings. Complete
 graph export is intentionally unpaged and does not apply context preview caps.
 
+## Explicit identity-preserving rename
+
+After editing source names, bind the new logical names to the existing local IDs
+before checking the renamed source:
+
+```sh
+nex check --json
+nex identities --kind rename --symbol app::old --to app::new \
+  --expected-revision OLD_HEAD_HASH --json
+nex check --json
+```
+
+The command moves `node_ids` rows for functions and `declaration_ids` rows for
+nominal declarations without changing their IDs, so the next checked revision
+reuses the old identity. Fully qualified symbols are required when a name is not
+unique; moving between modules is rejected, as are existing targets, absent
+sources and a stale `--expected-revision`. The transaction does not move HEAD or
+rewrite source; operator edits and a following check remain explicit.
+
 ## Transfer and resolution
 
 Import or independently check source in the destination first. Graph import

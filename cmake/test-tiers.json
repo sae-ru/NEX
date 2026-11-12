@@ -79,6 +79,7 @@
     "type_defaults": ["extended", "browser"],
     "function_type_defaults": ["extended", "browser"],
     "graph_identities": ["extended", "browser"],
+    "graph_identity_rename": ["extended", "browser"],
     "graph_queries": ["extended", "browser", "scale"],
     "graph_snapshots": ["extended", "browser", "scale"],
     "http": ["extended", "browser", "platform"],

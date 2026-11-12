@@ -130,6 +130,14 @@ llvm::json::Value Store::subgraph(const Program &p,const GraphQueryOptions &opti
 llvm::json::Value Store::identities(const Program &p,const std::string &kind,const std::string &symbol,unsigned offset,unsigned limit){
   if(!graphDeclarationsReady(impl->db,p))save(p,"",false);return graphIdentities(impl->db,p,kind,symbol,offset,limit);
 }
+llvm::json::Value Store::renameIdentity(const Program &p,const std::string &from,const std::string &to,const std::string &expectedHead){
+  if(expectedHead.empty())throw Error("E_OPTION","identity rename requires an expected graph HEAD");
+  sql(impl->db,"BEGIN IMMEDIATE");
+  try{
+    if(head(impl->db)!=(expectedHead=="EMPTY"?"":expectedHead))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
+    auto result=renameGraphIdentity(impl->db,p,from,to);sql(impl->db,"COMMIT");return result;
+  }catch(...){sql(impl->db,"ROLLBACK");throw;}
+}
 llvm::json::Value Store::reconcileIdentities(const Program &p,const llvm::json::Value &manifest,const std::string &expectedHead){
   if(expectedHead.empty())throw Error("E_OPTION","identity reconciliation requires an expected graph HEAD");
   sql(impl->db,"BEGIN IMMEDIATE");

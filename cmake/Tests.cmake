@@ -595,6 +595,10 @@ add_test(NAME operations COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/operations.py $<TARGET_FILE:nex>)
 add_test(NAME graph_identities COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/graph_identities.py $<TARGET_FILE:nex>)
+
+add_test(NAME graph_identity_rename COMMAND ${Python3_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/graph_identity_rename.py $<TARGET_FILE:nex>)
+set_tests_properties(graph_identity_rename PROPERTIES TIMEOUT 300)
 add_test(NAME type_patches COMMAND ${Python3_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/type_patches.py $<TARGET_FILE:nex>)
 add_test(NAME dap_transport COMMAND ${Python3_EXECUTABLE}

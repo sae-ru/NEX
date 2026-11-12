@@ -18,5 +18,7 @@ llvm::json::Value subgraphGraph(sqlite3 *db,const Program &program,const GraphQu
 llvm::json::Value reconcileGraphIdentities(sqlite3 *db,const Program &program,const llvm::json::Value &manifest);
 llvm::json::Value resolveGraphIdentity(sqlite3 *db,const Program &program,
     const std::string &origin,const std::string &sourceRevision,const std::string &id);
+llvm::json::Value renameGraphIdentity(sqlite3 *db,const Program &program,
+    const std::string &from,const std::string &to);
 std::string graphIdentityNamespace(sqlite3 *db);
 }

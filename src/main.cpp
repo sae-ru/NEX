@@ -528,13 +528,15 @@ int run(const Options &o) {
   if(o.values.contains("--entity")&&o.command!="context"&&o.command!="declarations"&&o.command!="identities"&&!graphQuery)throw Error("E_OPTION","--entity selects graph declarations/identities or typed context");
   for(const auto &name:{"--origin","--node","--from-revision","--expected-revision"})if(o.values.contains(name)&&o.command!="identities"&&!((o.command=="restore"||o.command=="migrate")&&std::string(name)=="--expected-revision"))throw Error("E_OPTION",std::string(name)+" is for graph identities or guarded restore/migrate");
   if(o.command=="identities"){
-    auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve")throw Error("E_OPTION","identities kind must be export, reconcile or resolve");
+    auto kind=o.get("--kind","export");if(kind!="export"&&kind!="reconcile"&&kind!="resolve"&&kind!="rename")throw Error("E_OPTION","identities kind must be export, reconcile, resolve or rename");
     if(kind!="export"&&!o.positional.empty())throw Error("E_OPTION","identity mutation/lookup selects an archived graph, without source-file synchronization");
     if(kind=="reconcile"&&(o.get("--expected-revision").empty()||o.get("--manifest").empty()))throw Error("E_OPTION","reconcile requires --manifest FILE and --expected-revision HEAD_HASH");
     if(kind=="resolve"&&(o.get("--origin").empty()||o.get("--node").empty()||o.get("--from-revision").empty()))throw Error("E_OPTION","resolve requires --origin NAMESPACE --from-revision SOURCE_HASH --node ID");
-    if(kind!="export")for(const auto &name:{"--entity","--symbol","--offset","--limit"})if(o.values.contains(name))throw Error("E_OPTION","identity reconciliation/lookup uses complete references, without export filters");
+    if(kind=="rename"&&(o.get("--symbol").empty()||o.get("--to").empty()||o.get("--expected-revision").empty()))throw Error("E_OPTION","rename requires --symbol FROM --to TO --expected-revision HEAD_HASH");
+    if(kind!="export"&&kind!="rename")for(const auto &name:{"--entity","--symbol","--offset","--limit"})if(o.values.contains(name))throw Error("E_OPTION","identity reconciliation/lookup uses complete references, without export filters");
     for(const auto &name:{"--origin","--node","--from-revision"})if(kind!="resolve"&&o.values.contains(name))throw Error("E_OPTION",std::string(name)+" requires identities --kind resolve");
-    for(const auto &name:{"--manifest","--expected-revision"})if(kind!="reconcile"&&o.values.contains(name))throw Error("E_OPTION",std::string(name)+" requires identities --kind reconcile");
+    for(const auto &name:{"--manifest","--expected-revision"})if((kind!="reconcile"&&kind!="rename")&&o.values.contains(name))throw Error("E_OPTION",std::string(name)+" requires identities --kind reconcile or rename");
+    if(kind=="rename"&&o.values.contains("--manifest"))throw Error("E_OPTION","--manifest is for identities --kind reconcile");
   }
   if(o.command=="context"&&o.values.contains("--entity")&&(o.values.contains("--operation")||o.values.contains("--site")))throw Error("E_OPTION","--entity requires declaration context with --symbol");
   if((o.values.contains("--notices")||o.has("--dpkg-notices"))&&o.command!="package")throw Error("E_OPTION","--notices and --dpkg-notices are for native package");
@@ -867,6 +869,8 @@ int run(const Options &o) {
       else result=store.identities(p,o.get("--entity","all"),o.get("--symbol"),offset,limit);
     }else if(kind=="reconcile"){
       result=store.reconcileIdentities(p,readIdentityManifest(o.get("--manifest")),o.get("--expected-revision"));
+    }else if(kind=="rename"){
+      result=store.renameIdentity(p,o.get("--symbol"),o.get("--to"),o.get("--expected-revision"));
     }else result=store.resolveIdentity(p,o.get("--origin"),o.get("--from-revision"),o.get("--node"));
     auto output=o.get("--output");if(output.empty())print(std::move(result));else {writeFile(output,json(result)+"\n");print(llvm::json::Object{{"ok",true},{"output",fs::absolute(output).string()},{"revision",revision(p)}});}return 0;
   }

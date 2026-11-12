@@ -21,6 +21,7 @@ public:
   llvm::json::Value identities(const Program &program,const std::string &kind="all",const std::string &symbol="",unsigned offset=0,unsigned limit=100);
   llvm::json::Value reconcileIdentities(const Program &program,const llvm::json::Value &manifest,const std::string &expectedHead);
   llvm::json::Value resolveIdentity(const Program &program,const std::string &origin,const std::string &sourceRevision,const std::string &id);
+  llvm::json::Value renameIdentity(const Program &program,const std::string &from,const std::string &to,const std::string &expectedHead);
   llvm::json::Value operations(const Program &program,const std::string &symbol="",const std::string &selector="",unsigned offset=0,unsigned limit=100,bool context=false);
   llvm::json::Value history();
   llvm::json::Value changes(unsigned offset=0,unsigned limit=100);

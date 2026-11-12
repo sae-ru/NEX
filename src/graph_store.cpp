@@ -300,6 +300,43 @@ Value graphIdentities(sqlite3 *db,const Program &p,const std::string &kind,const
     {"revision",revision(p)},{"source_hash",hash(json(sourceBundle(p),false))},{"selection",Object{{"entity",kind},{"symbol",selection.symbol}}},
     {"offset",int64_t(offset)},{"total",int64_t(total)},{"truncated",offset+rows.size()<total},{"nodes",std::move(rows)}};
 }
+llvm::json::Value renameGraphIdentity(sqlite3 *db,const Program &p,const std::string &from,const std::string &to){
+  if(from.empty()||to.empty())throw Error("E_IDENTITY","identity rename requires non-empty from/to symbols");
+  if(from==to)throw Error("E_IDENTITY","identity rename target must differ from its source");
+  auto split=[](const std::string &symbol){auto at=symbol.rfind("::");return at==std::string::npos?std::pair<std::string,std::string>{"",symbol}:std::pair<std::string,std::string>{symbol.substr(0,at),symbol.substr(at+2)};};
+  auto [fromModule,fromName]=split(from);auto [toModule,toName]=split(to);
+  if((!fromModule.empty()&&!toModule.empty()&&fromModule!=toModule)||(!toModule.empty()&&toModule!=fromModule))throw Error("E_IDENTITY","identity rename cannot move a node between modules");
+  auto module=fromModule.empty()?toModule:fromModule;
+  Array moved;
+  auto moveNode=[&](const std::string &rowModule,const std::string &rowName,const std::string &id){
+    if(!toModule.empty()&&toModule!=rowModule)throw Error("E_IDENTITY","identity rename target module differs");
+    if(rowModule==module||module.empty()){
+      {Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,rowModule);q.bind(2,toName);if(q.row())throw Error("E_IDENTITY","identity rename target already exists: "+rowModule+"::"+toName);}
+      {Query q(db,"UPDATE node_ids SET name=? WHERE module=? AND name=?");q.bind(1,toName);q.bind(2,rowModule);q.bind(3,rowName);q.row();}
+      moved.push_back(Object{{"table","node_ids"},{"module",rowModule},{"id",id},{"symbol",rowModule+"::"+toName}});
+    }
+  };
+  if(module.empty()){
+    Query q(db,"SELECT module,name,id FROM node_ids WHERE name=?");q.bind(1,fromName);
+    while(q.row())moveNode(q.text(0),q.text(1),q.text(2));
+  }else{
+    Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,module);q.bind(2,fromName);
+    if(q.row())moveNode(module,fromName,q.text(0));
+  }
+  // Qualified nominal declarations use the fully qualified symbol in declaration_ids.
+  const std::string fromDecl=fromModule.empty()?from:fromModule+"::"+fromName;
+  const std::string toDecl=toModule.empty()?toName:toModule+"::"+toName;
+  std::vector<std::pair<std::string,std::string>> declarations;
+  {Query q(db,"SELECT kind,id FROM declaration_ids WHERE symbol=? ORDER BY kind");q.bind(1,fromDecl);while(q.row())declarations.emplace_back(q.text(0),q.text(1));}
+  for(const auto &[kind,id]:declarations){
+    {Query q(db,"SELECT id FROM declaration_ids WHERE kind=? AND symbol=?");q.bind(1,kind);q.bind(2,toDecl);if(q.row())throw Error("E_IDENTITY","identity rename target already exists: "+toDecl);}
+    {Query q(db,"UPDATE declaration_ids SET symbol=? WHERE kind=? AND symbol=?");q.bind(1,toDecl);q.bind(2,kind);q.bind(3,fromDecl);q.row();}
+    moved.push_back(Object{{"table","declaration_ids"},{"kind",kind},{"id",id},{"symbol",toDecl}});
+  }
+  if(moved.empty())throw Error("E_IDENTITY","identity rename source is not registered: "+from);
+  return Object{{"schema","nex.identities-rename/1"},{"language",programLanguage(p)},{"identity_policy","nex.graph-identity/1"},
+    {"namespace",graphIdentityNamespace(db)},{"from",from},{"to",to},{"moved",std::move(moved)}};
+}
 void validateGraphQuery(const GraphQueryOptions &o,bool subgraph){
   const std::set<std::string> kinds={"module","type","trait","impl","function","endpoint"};
   if((!subgraph&&o.entity!="all"&&!kinds.contains(o.entity))||(subgraph&&!kinds.contains(o.entity)))throw Error("E_QUERY_OPTION","graph query entity must be module, type, function or endpoint; search also accepts all");
