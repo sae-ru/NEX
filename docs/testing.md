@@ -530,6 +530,10 @@ is currently blocked by `native_runtime_paths`' explicit LLVM/LLD 22.1.x ELF
 fixture gate and a separate `task_file_stream_mixed` failure; Fedora extended,
 browser, SDK and packaging remain pending.
 
+Full CTest qualification of 0.226.0 (including the new graph identity rename)
+passed all 347 groups in 2578.127 s with the locked Node/TypeScript environment.
+The prior 0.225 receipt covered 346 groups.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
