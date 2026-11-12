@@ -560,6 +560,9 @@ Reference/native execution, tests and the descriptor features are covered by
 Full CTest qualification of 0.231.0 passed all 349 groups in 2690.715 s,
 including the type-lambda inference group.
 
+Full CTest qualification of 0.233.0 passed all 349 groups in 2589.81 s,
+including cross-module source rename.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
