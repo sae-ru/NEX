@@ -1,0 +1,51 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Immutable versioned SDK release assembly",
+  "implementation_commit": "ff94087e5d1940729dca94458ebacb4c0efaec03",
+  "build_source_base_commit": "5b66eac",
+  "compiler": {
+    "toolchain": "0.224.0",
+    "language": "0.28"
+  },
+  "release": {
+    "path": "/Users/sae/projects/NEX/build/nex-release-0.224/nex-0.224.0-macos",
+    "schema": "nex.sdk-release/1",
+    "name": "nex-0.224.0-macos",
+    "archive_sha256": "44e2aaa7cfbf1499db9315c5ac9065392d2efaff23c74bb9d5ea5deb42b3ae71",
+    "archive_bytes": 126856287,
+    "bundle_manifest_sha256": "b369ef422c0a418dd079c5d39beaa3b8a25780113012924936d38955666aac98",
+    "notices_sha256": "772d1b53605f59af9dd296fb219a892e500e5d1707cf6e5a2d7c579d42054c61",
+    "acceptance_sha256": "914af9b051557c8a5b2dd0cea78269f2cd4f9a5ce45459fd0e35646b4cbc9617",
+    "acceptance_phases": 41,
+    "browser_build": true,
+    "live_debugger": true,
+    "read_only_permissions": {
+      "acceptance.json": "0o444",
+      "release.json": "0o444",
+      "nex-0.224.0-macos-arm64.tar.gz": "0o444",
+      "THIRD_PARTY_NOTICES.json": "0o444",
+      "SHA256SUMS": "0o444"
+    },
+    "SHA256SUMS_verified": true,
+    "release_json_sha256": "98dd271e65bbf71e79ba497ecfbf1f4e2405ddc84d700024ee1906a69138bdd8"
+  },
+  "observations": {
+    "registered_groups": 346,
+    "docs_documents": 179,
+    "docs_links": 1232,
+    "bundle_acceptance_seconds": 2872.132
+  },
+  "limits": [
+    "local macOS release; source-absence acceptance and full SDK source-tests remain pending",
+    "immutable directory is read-only locally, not a published/signed distribution"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "release": "/Users/sae/projects/NEX/build/nex-release-0.224/nex-0.224.0-macos",
+    "release_json": "/Users/sae/projects/NEX/build/nex-release-0.224/nex-0.224.0-macos/release.json",
+    "tool": "tools/sdk_release.py",
+    "guide": "docs/testing.md"
+  }
+}
