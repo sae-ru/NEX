@@ -453,6 +453,10 @@ Physical CUDA source-error Result path: `Measurement(42.75,false)` produced
 the error-tagged result with code id 1 and message id 4 on RTX 3090, with one
 kernel completion and a balanced ledger.
 
+Physical CUDA zero-argument root: a prepared `transform()->i64` provider ran on
+RTX 3090 with empty columns, output 42, one kernel completion and a balanced
+trace ledger.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
