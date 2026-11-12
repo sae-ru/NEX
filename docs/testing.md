@@ -497,6 +497,10 @@ OpenCL dispatch on Mali hardware: the pre-emitted scalar kernel ran through
 41 with error 0 and no CPU fallback. Apple M5 Max passed i64/status-2; its fp64
 enqueue is unsupported.
 
+Physical CUDA formatting root: a prepared `render(Sample)->str` provider
+formatted `Sample(1.25,"🌍",[0,255])` to the exact 45-byte JSON string on
+RTX 3090, one kernel completion and a balanced ledger.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
