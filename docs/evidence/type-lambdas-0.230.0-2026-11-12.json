@@ -1,0 +1,81 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Partial type-lambda applications",
+  "implementation_commit": "0763bba163ac076785ce2093909c2d19732ff055",
+  "build_source_base_commit": "5bc4bdd4",
+  "compiler": {
+    "toolchain": "0.230.0",
+    "language": "0.28",
+    "sha256": "3930abadd3ffab14a17f3eb34099486689847adfd5daeb1eda5d7168ad62453c",
+    "compiler_build": "9b9039660d4ef824efb7ba447d69516fe99c1e50d43debad077fbcbe4112c717",
+    "descriptor_hash": "18ccdb05a977cfeba626c5f51c66e124d61ddb8a6d0b3af2de72fb31e1b817fd",
+    "generic_features": [
+      "parametric_body_checking",
+      "generic_functions",
+      "generic_structures",
+      "generic_enums",
+      "expected_type_inference",
+      "argument_type_inference",
+      "checked_monomorphization",
+      "derived_instance_context",
+      "source_template_patches",
+      "builtin_type_constraints",
+      "constraint_implication",
+      "constrained_numeric_literals",
+      "user_traits",
+      "coherent_implementations",
+      "associated_types",
+      "constructor_parameters",
+      "partial_type_lambdas",
+      "generic_trait_methods",
+      "static_trait_dispatch",
+      "type_defaults",
+      "function_type_defaults"
+    ]
+  },
+  "feature": {
+    "syntax": "Pair<i64,_>",
+    "explicit_constructor_arguments": true,
+    "hole_filling": "source order",
+    "whole_constructor_inference": "still requires an explicit lambda",
+    "higher_order_kind_signatures": "pending"
+  },
+  "agreement": {
+    "reference": true,
+    "native_release": true,
+    "tests": true,
+    "typescript": true,
+    "typescript_cases": 1,
+    "typescript_stdout": null
+  },
+  "coverage": {
+    "test": "tests/type_lambdas.py",
+    "test_seconds": 5.48,
+    "cases": [
+      "Pair<i64,_> application",
+      "Wrapped<Pair<i64,_>,str>",
+      "reference/native/web",
+      "descriptor feature",
+      "unknown value type rejected"
+    ]
+  },
+  "observations": {
+    "registered_groups": 349,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "language version remains 0.28; no new versioned migration is introduced for the additive hole syntax",
+    "whole-constructor inference and higher-order kind signatures remain pending",
+    "full CTest was not repeated for this change; focused generics/traits/type_defaults/type_lambdas/core checks passed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "typescript": "/Users/sae/projects/NEX/build/type-lambdas-0230/typescript-test.json",
+    "describe": "/Users/sae/projects/NEX/build/type-lambdas-0230/describe.json",
+    "generic_features": "/Users/sae/projects/NEX/build/type-lambdas-0230/generic-features.json",
+    "guide": "docs/language.md"
+  }
+}
