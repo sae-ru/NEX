@@ -1,0 +1,44 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Immutable SDK archive creation, checksum restore and source-denied execution",
+  "implementation_commit": "9d79c56",
+  "build_source_base_commit": "c099fe8",
+  "compiler": {
+    "toolchain": "0.224.0",
+    "language": "0.28"
+  },
+  "archive": {
+    "path": "/Users/sae/projects/NEX/build/nex-0.224.0-macos-arm64.tar.gz",
+    "sha256": "44e2aaa7cfbf1499db9315c5ac9065392d2efaff23c74bb9d5ea5deb42b3ae71",
+    "bytes": 126856287,
+    "files_in_inventory": 3969,
+    "restore_destination": "/Users/sae/projects/NEX/build/sdk-restored-0224/nex-0.224.0-macos-arm64",
+    "restored_doctor": "0.224.0/0.28",
+    "restored_run_stdout": "restored-ok\n",
+    "restored_test_ok": true,
+    "source_worktree_read_denied": true,
+    "requires_SDKROOT": true
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232,
+    "bundle_acceptance_phases": 41,
+    "bundle_acceptance_seconds": 2744.66
+  },
+  "limits": [
+    "archive/restore smoke and source-denied run/test; full acceptance was run on the bundle before archiving",
+    "immutable/versioned release process and full SDK source-tests remain pending",
+    "platform macOS SDK remains an external prerequisite"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "archive_report": "/Users/sae/projects/NEX/build/sdk-archive-0224/sdk-archive-report.json",
+    "restored_run": "/Users/sae/projects/NEX/build/sdk-archive-0224/restored-run.json",
+    "restored_test": "/Users/sae/projects/NEX/build/sdk-archive-0224/restored-test.json",
+    "archive": "/Users/sae/projects/NEX/build/nex-0.224.0-macos-arm64.tar.gz",
+    "guide": "docs/testing.md"
+  }
+}

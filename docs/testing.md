@@ -483,6 +483,10 @@ With the development worktree denied by `sandbox-exec`, the relocatable bundle
 still passed doctor, ran `sandbox-ok` and passed native tests. This is a
 source-read-denied relocation control; full immutable release remains pending.
 
+SDK archive/restore: `sdk_archive.create` produced a 121 MiB immutable tar.gz
+(3969 inventory files); checksum restore and a source-worktree-read-denied
+sandbox both ran doctor/`restored-ok`/native tests successfully.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
