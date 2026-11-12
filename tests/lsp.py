@@ -785,6 +785,18 @@ class LanguageServer(harness.ToolchainCase):
         invalid=client.response(client.send('textDocument/rename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position, 'newName':'bad-name'}, request=True))
         self.assertEqual(invalid['error']['code'],-32602)
 
+    def test_rename_import_alias_updates_qualified_references(self):
+        (self.root/'util.nex').write_text('module util;\npub fn helper()->i64{return 42;}\n', newline="\n")
+        text='module app;\nimport "./util.nex" as util;\nfn main()->i64{return util::helper();}\n'
+        line=text.splitlines()[1];position={'line':1,'character':line.rindex('util')}
+        client=self.client();client.initialize();client.open(self.file,text)
+        prepare=client.request('textDocument/prepareRename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position})
+        self.assertEqual(prepare['placeholder'],'util')
+        renamed=client.request('textDocument/rename', {'textDocument': {'uri': self.file.as_uri()}, 'position': position, 'newName':'u'})
+        edits=[edit for values in renamed['changes'].values() for edit in values]
+        self.assertEqual(len(edits),2)
+        self.assertTrue(all(edit['newText']=='u' for edit in edits))
+
     def test_formatting_returns_full_replace_without_writing(self):
         text='module app;\nfn main()->unit{print(1);}\n'
         physical=self.file.read_bytes()

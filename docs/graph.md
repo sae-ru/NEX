@@ -100,7 +100,12 @@ source.
 `tools/nex_rename.py --compiler BUILD/nex --project ROOT --from app::old --to
 app::new` combines a same-module lexical source rewrite with the identity move;
 the scanner skips comments and string literals. It runs the following check and
-is dry-runnable. Imports and cross-module source edits remain operator work.
+is dry-runnable. `--import-alias util --to u` renames a file-local import alias
+and its `util::` references without changing the import path; the checked
+revision is unchanged because aliases are not semantic identity. The LSP
+`textDocument/prepareRename`/`textDocument/rename` handlers provide the same
+import-alias rename as workspace edits. Cross-module source moves remain operator
+work.
 
 ## Transfer and resolution
 

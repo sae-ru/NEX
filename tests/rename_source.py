@@ -74,4 +74,18 @@ fn main()->unit !{io}{print("old");print(old(old(40)));}
             self.assertIn('New(7)',(root/'main.nex').read_text())
             after=nex(root,'identities','--entity','type','--json')['nodes'][0]
             self.assertEqual(after['symbol'],'app::New');self.assertEqual(after['id'],before['id'])
+    def test_import_alias_rename_updates_only_alias_and_qualified_references(self):
+        temporary=tempfile.TemporaryDirectory(prefix='nex alias rename ');root=Path(temporary.name)
+        with temporary:
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+'\n')
+            (root/'util.nex').write_text('module util;\npub fn helper()->i64{return 42;}\n')
+            (root/'main.nex').write_text('module app;\nimport "./util.nex" as util;\nfn main()->i64{return util::helper();}\n')
+            head=nex(root,'check','--json')['revision']
+            planned=run(root,'--import-alias','util','--to','u','--dry-run')
+            self.assertTrue(planned['dry_run']);self.assertIn('as util',(root/'main.nex').read_text())
+            result=run(root,'--import-alias','util','--to','u')
+            text=(root/'main.nex').read_text()
+            self.assertIn('import "./util.nex" as u;',text);self.assertIn('u::helper()',text)
+            self.assertEqual(result['revision'],head)
+            nex(root,'check','--json')
 if __name__=='__main__':unittest.main()

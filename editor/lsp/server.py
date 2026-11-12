@@ -752,23 +752,70 @@ class Server:
         return {'signatures': [{'label': detail, 'parameters': parameters}], 'activeSignature': 0,
             'activeParameter': min(arguments.count(','), max(0, len(parameters) - 1))}
 
+    def import_alias_at(self, path, params, cache, cancelled=None):
+        """Locate a file-local import alias when the checked occurrence index has none."""
+        for index in cache['indices']:
+            files = {f['key']: f for f in index['files']}
+            paths = {key: Path(f['path']).resolve() for key, f in files.items()}
+            for key, f in files.items():
+                if paths[key] != path:
+                    continue
+                text = f['text']
+                offset = byte_offset(text, params.get('position'))
+                for match in re.finditer(r'\bimport\b[^;]*\bas\s+([A-Za-z_][A-Za-z0-9_]*)\s*;', text):
+                    begin = len(text[:match.start(1)].encode('utf-8'))
+                    end = begin + len(match.group(1).encode('utf-8'))
+                    if begin <= offset < end:
+                        return begin, end, match.group(1), text
+        raise RPCError(-32602, 'No renameable identifier at the position')
+
+    def import_alias_ranges(self, text, alias):
+        begin = 0
+        values = []
+        for line in text.splitlines(keepends=True):
+            if re.search(r'\bimport\b[^;]*\bas\s+' + re.escape(alias) + r'\s*;', line):
+                for match in re.finditer(r'\b' + re.escape(alias) + r'\b', line):
+                    values.append((begin + len(line[:match.start()].encode('utf-8')),
+                                   begin + len(line[:match.end()].encode('utf-8'))))
+            else:
+                for match in re.finditer(r'\b' + re.escape(alias) + r'\b\s*::', line):
+                    values.append((begin + len(line[:match.start()].encode('utf-8')),
+                                   begin + len(line[:match.end()].encode('utf-8')) - 2))
+            begin += len(line.encode('utf-8'))
+        return values
+
     def prepare_rename(self, path, params, cache, cancelled=None):
-        at, text, source = self.symbol_at(path, params, cache, cancelled)
+        try:
+            at, text, source = self.symbol_at(path, params, cache, cancelled)
+        except RPCError as error:
+            if error.code != -32602:
+                raise
+            begin, end, text, source = self.import_alias_at(path, params, cache, cancelled)
+            at = {'begin': begin, 'end': end}
         return {'range': source_range(source, at), 'placeholder': text}
 
     def rename(self, path, params, cache, cancelled=None):
         new_name = params.get('newName')
         if not isinstance(new_name, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', new_name):
             raise RPCError(-32602, 'newName must be a NEX identifier')
-        _, text, _ = self.symbol_at(path, params, cache, cancelled)
-        if not text:
-            raise RPCError(-32602, 'Cannot rename an empty identifier')
-        reference_params = {**params, 'context': {'includeDeclaration': True}}
-        locations = self.references(path, reference_params, cache, cancelled)
-        changes = {}
-        for location in locations:
-            changes.setdefault(location['uri'], []).append({'range': location['range'], 'newText': new_name})
-        return {'changes': changes}
+        try:
+            _, text, _ = self.symbol_at(path, params, cache, cancelled)
+            reference_params = {**params, 'context': {'includeDeclaration': True}}
+            locations = self.references(path, reference_params, cache, cancelled)
+            changes = {}
+            for location in locations:
+                changes.setdefault(location['uri'], []).append({'range': location['range'], 'newText': new_name})
+            return {'changes': changes}
+        except RPCError as error:
+            if error.code != -32602:
+                raise
+        begin, end, alias, text = self.import_alias_at(path, params, cache, cancelled)
+        ranges = self.import_alias_ranges(text, alias)
+        if not ranges:
+            raise RPCError(-32602, 'Cannot rename this import alias')
+        return {'changes': {path.as_uri(): [
+            {'range': source_range(text, {'begin': first, 'end': last}), 'newText': new_name}
+            for first, last in ranges]}}
 
     def query(self, method, params, cache, cancelled=None):
         if method == 'textDocument/inlayHint':
