@@ -548,8 +548,9 @@ file-local alias case.
 Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
 including the source rename group.
 
-Partial type lambdas (0.230.0): `Pair<i64,_>` is accepted as a constructor
-argument and its holes are filled by the next application. Trailing-argument
+Partial type lambdas (0.230.0): `Pair<i64,_>`, `Pair<_,str>` and `Pair<_,_>` are
+accepted as constructor arguments and their holes are filled by the next
+application. Trailing-argument
 inference also derives a partial constructor for calls such as
 `forward(Pair<i64,str>)`; ambiguous positions need an explicit lambda.
 Reference/native execution, tests and the descriptor features are covered by
