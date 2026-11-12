@@ -32,5 +32,5 @@ struct ProjectBuildOptions {
 // A checked physical build description. Planning never opens a Store, invokes
 // an external tool, executes source, or creates a cache/output directory.
 llvm::json::Value buildProject(const std::string &root,const std::string &manifest,
-                              const std::string &text,const ProjectBuildOptions &options);
+                              const std::string &text,ProjectBuildOptions options);
 }

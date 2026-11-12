@@ -117,7 +117,7 @@ void boundTestResult(Object &row,const fs::path &cache){
 }
 
 llvm::json::Value buildProject(const std::string &directory,const std::string &manifest,
-                              const std::string &source,const ProjectBuildOptions &options) {
+                              const std::string &source,ProjectBuildOptions options) {
   const bool withWorkload=!options.workload.empty();
   if(withWorkload&&options.kind!="plan"&&options.kind!="profile")fail("--workload requires project plan or profile","E_OPTION");
   const bool execution=options.kind=="run"||options.kind=="debug"||options.kind=="profile",buildTest=options.kind=="build-test",testing=options.kind=="test"||buildTest;
@@ -142,6 +142,7 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(text(*top,"schema","",true)!="nex.project-build/1")fail("expected nex.project-build/1");
   auto root=fs::canonical(directory);
   if(!fs::is_regular_file(root/"nex.json"))fail("project builds require nex.json beside the build description");
+  options.sourceLanguage=projectSourceLanguage(root.string());
   validateProjectMetadata(root.string(),options.sourceLanguage);
   auto sourceManifest=readFile((root/"nex.json").string());
   auto sourceLock=fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt;

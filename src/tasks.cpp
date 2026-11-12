@@ -93,6 +93,14 @@ bool supported(const Prepared &p,const Object &c){
 Object foreignValues(const Prepared &p){return p.foreign?Object{{"hash",p.foreign->hash},{"platform",p.foreign->platform}}:Object{};}
 Object toolchainValues(const Prepared &p){Object result;for(const auto &[id,s]:p.toolchains)result[id]=Object{{"hash",s.hash},{"target",s.target},{"host_compatible",s.hostCompatible}};return result;}
 std::set<std::string> reach(const Program &p,const std::set<std::string> &roots){std::set<std::string> found;std::function<void(const std::string&)> visit=[&](const auto &name){if(found.insert(name).second){const auto &f=p.function(name);if(!f.templateName.empty())visit(f.templateName);for(const auto &d:f.dependencies)visit(d);}};for(const auto &r:roots)visit(r);return found;}
+SourceLanguage captureLanguage(const JSON &capture){
+  auto language=object(capture).getString("language");
+  if(language=="0.28")return SourceLanguage::Contracts028;
+  if(language=="0.29")return SourceLanguage::Contracts029;
+  if(language=="0.27")return SourceLanguage::TypedErrors027;
+  if(language=="0.26")return SourceLanguage::ExceptionHandlers026;
+  throw Error("E_PROJECT_CAPTURE","unsupported captured project language");
+}
 std::set<std::string> types(const Program &p,const std::set<std::string> &functions){std::set<std::string> found;std::function<void(Type)> visit=[&](auto t){if(t.element)visit(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)visit(argument);if(t.kind==Type::Record&&found.insert(t.name).second){const auto &s=p.structure(t.name);if(!s.templateName.empty())visit(Type::record(s.templateName));for(const auto &argument:s.typeArguments)visit(argument);for(auto field:s.members())visit(field->type);}};std::function<void(E)> expr=[&](E e){if(e){visit(e->type);for(auto a:e->args)expr(a);}};std::function<void(const std::vector<S>&)> block=[&](const auto &b){for(auto s:b){visit(s->type);expr(s->expr);childBlocks(s,block);}};for(const auto &name:functions){const auto &f=p.function(name);visit(f.result);for(const auto &v:f.params)visit(v.type);for(const auto &capture:f.captures)visit(capture.type);block(f.body);}return found;}
 uint64_t decimal(const JSON &v){auto s=v.getAsString();if(!s||s->empty()||s->size()>20||(s->size()>1&&(*s)[0]=='0'))invalid("budget must be a canonical unsigned decimal string");uint64_t n=0;for(char c:*s){if(c<'0'||c>'9'||n>(UINT64_MAX-unsigned(c-'0'))/10)invalid("budget exceeds uint64");n=n*10+unsigned(c-'0');}return n;}
 void validateShape(const JSON &task){
@@ -163,7 +171,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
   if(!options.revision.empty()&&array(t,"programs").size()!=1)invalid("--revision requires a single program; use --candidates for multiple programs");
   if(frozen.empty())for(const auto &value:array(t,"programs")){
     auto id=text(object(value),"id"),selected=options.revision;if(options.candidates.contains(id))selected=options.candidates.at(id);
-    if(selected.empty()){validateProjectMetadata(options.root);break;}
+    if(selected.empty()){validateProjectMetadata(options.root,projectSourceLanguage(options.root));break;}
   }
   if(frozen.empty()){
     std::unique_ptr<Store> archived;
@@ -174,7 +182,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
       auto directory=fs::path(options.root)/".nex";
       if(!fs::exists(directory/"graph.db"))throw Error("E_REVISION","task candidate requires an existing archived revision");
       if(!archived)archived=std::make_unique<Store>(directory,StoreOpenMode::ReadOnly);
-      if(archived->revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
+      if(archived->revisionLanguage(selected)!=programLanguage(projectSourceLanguage(options.root)))throw Error("E_LANGUAGE_VERSION","task candidate requires an explicit language migration");
     }
   }
   Store store(fs::path(options.root)/".nex");std::map<std::string,std::string> shared;
@@ -204,7 +212,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
         auto overlays=selected.empty()?std::map<std::string,std::string>{}:projectOverlays(result.programs.at(id).bundle,options.root);
         captured=captureProject(options.root,manifest.string(),source,text(*project,"component"),configurations,overlays,debugConfigurations);
       }
-      validateProjectCaptureData(captured);const auto &capture=object(captured);
+      validateProjectCaptureData(captured,captureLanguage(captured));const auto &capture=object(captured);
       if(capture.getString("schema")!="nex.project-capture/1"||capture.getString("component")!=project->getString("component")||capture.getString("architecture_hash")!=project->getString("architecture_hash")||capture.getString("manifest")!=project->getString("manifest"))throw Error("E_TASK_PROJECT","captured architecture identity differs from the task");
       for(const auto &configuration:configurations)if(projectComponent(captured,configuration).getString("source_bundle_hash")!=result.programs.at(id).sourceHash)throw Error("E_TASK_PROJECT","architecture sources disagree with the selected graph candidate");
       result.projects.insert_or_assign(id,std::move(captured));
@@ -304,7 +312,7 @@ Prepared prepare(const JSON &task,const TaskOptions &options,const fs::path &fro
   for(const auto &[id,capture]:result.projects){
     auto temporary=fs::path(createTemporaryDirectory("nex-task-project"));
     try{
-      auto container=temporary/"capture";auto root=materializeProjectCapture(capture,container.string());validateProjectCapturePlans(capture,container.string());
+      auto container=temporary/"capture";auto root=materializeProjectCapture(capture,container.string(),captureLanguage(capture));validateProjectCapturePlans(capture,container.string(),captureLanguage(capture));
       for(const auto &value:array(t,"checks")){
         const auto &check=object(value);if(check.getString("program")!=id||check.getString("kind")!="test")continue;
         auto entries=object(capture).getObject("expectations")->getArray(text(check,"configuration"));
@@ -456,7 +464,7 @@ struct Runner {
   fs::path workspace(const std::string &program){
     auto found=projectRoots.find(program);return found==projectRoots.end()?directory/"workspaces"/program:found->second;
   }
-  void verifyProject(const std::string &program){auto found=p.projects.find(program);if(found!=p.projects.end())validateProjectCapturePlans(found->second,(directory/"workspaces"/program).string());}
+  void verifyProject(const std::string &program){auto found=p.projects.find(program);if(found!=p.projects.end())validateProjectCapturePlans(found->second,(directory/"workspaces"/program).string(),captureLanguage(found->second));}
   void verifyNotices(const std::string &id){auto found=p.packageNotices.find(id);if(found!=p.packageNotices.end())verifyTaskPackageNotices(found->second,(directory/"inputs/package-notices"/id).string());}
   ServerWorkload checkedWorkload(const std::string &id){
     const auto &expected=p.workloads.at(id);auto selected=inspectServerWorkload((directory/"inputs/workloads"/id).string(),"workload.json");
@@ -789,7 +797,7 @@ struct Runner {
   JSON run(const std::string &replayOf=""){
     Store store(fs::path(options.root)/".nex");auto inputs=readFile((directory/"inputs/manifest.json").string());report=Object{{"schema","nex.task-receipt/1"},{"run_id","run-"+nonce()},{"task",p.id},{"task_hash",p.taskHash},{"language",languageVersion},{"toolchain",NEX_VERSION},{"compiler_build",NEX_BUILD_ID},{"input_hash",hash(inputs)},{"status","running"},{"ok",false},{"checks",Array{}},{"bindings",Object(p.linkage)},{"programs",*object(summary(p)).get("programs")},{"replay_of",replayOf},{"toolchains",toolchainValues(p)},{"foreign_catalogue",foreignValues(p)},{"workloads",workloadValues(p)},{"hardware",Object{{"cpu",llvm::sys::getHostCPUName().str()},{"target",llvm::sys::getDefaultTargetTriple()}}}};
     for(const auto &[id,candidate]:p.programs){
-      if(auto project=p.projects.find(id);project!=p.projects.end()){projectRoots[id]=materializeProjectCapture(project->second,(directory/"workspaces"/id).string());verifyProject(id);}
+      if(auto project=p.projects.find(id);project!=p.projects.end()){projectRoots[id]=materializeProjectCapture(project->second,(directory/"workspaces"/id).string(),captureLanguage(project->second));verifyProject(id);}
       else writeFile((workspace(id)/"nex.json").string(),json(Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry",candidate.program.entryUnit}})+"\n");
       Store local(workspace(id)/".nex");local.save(loadBundle(candidate.bundle,workspace(id).string()));
     }

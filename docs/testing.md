@@ -602,6 +602,11 @@ including the language 0.29 opt-in gate.
 Full CTest qualification of 0.238.0 passed all 351 groups in 2311.469 s,
 including explicit 0.29 migration.
 
+Project builds select the source language from `nex.json`: a 0.28 project under
+the 0.29-capable compiler still builds as 0.28, while a 0.29 project builds as
+0.29. Covered by `source_exceptions_projects` and the explicit 0.29 project
+plan receipt.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

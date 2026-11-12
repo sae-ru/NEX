@@ -163,7 +163,7 @@ Layout existingLayout(const Shape &s,const fs::path &base){
 
 JSON captureProject(const std::string &directory,const std::string &manifest,const std::string &source,const std::string &component,const std::set<std::string> &configurations,const std::map<std::string,std::string> &overlays,const std::set<std::string> &debugConfigurations,SourceLanguage language){
   if(configurations.empty()||configurations.size()>32)fail("capture requires1..32 configurations");
-  auto root=fs::canonical(directory);fs::path manifestName=fs::path(manifest).filename();
+  auto root=fs::canonical(directory);language=projectSourceLanguage(root.string());fs::path manifestName=fs::path(manifest).filename();
   if(fs::canonical(manifest).parent_path()!=root)fail("task architecture manifest must be beside nex.json");
   ProjectBuildOptions preflight;preflight.kind="plan";preflight.component=component;preflight.configuration=*configurations.begin();preflight.compilerVersion=NEX_VERSION;preflight.compilerBuild=NEX_BUILD_ID;
   preflight.sourceLanguage=language;preflight.taskDebug=debugConfigurations.contains(preflight.configuration);preflight.sourceOverlays=overlays;preflight.archivedSources=!overlays.empty();
