@@ -1,0 +1,43 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit 0.29 project initialization",
+  "implementation_commit": "8e8dafcefcc62af9dea6941fd1263392199982ee",
+  "build_source_base_commit": "8e8dafce",
+  "compiler": {
+    "toolchain": "0.239.0",
+    "default_language": "0.28",
+    "sha256": "0e571d94dca8c1bb5562402ae22134cc0ab8ccf77d76d830fb69f7dba6e03ccc"
+  },
+  "init": {
+    "command": "nex init project029 --language-version 0.29",
+    "ok": true,
+    "manifest_language": "0.29",
+    "manifest": "nex.project/1"
+  },
+  "coverage": {
+    "tests": [
+      "cli_interface",
+      "type_lambdas",
+      "higher_kinds",
+      "language_029_migration"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "default init language remains 0.28",
+    "0.29 remains explicit opt-in; full CTest was not rerun"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "init": "/Users/sae/projects/NEX/build/init-029-0239/init.json",
+    "manifest": "/Users/sae/projects/NEX/build/init-029-0239/project029/nex.json",
+    "guide": "docs/language.md"
+  }
+}

@@ -117,6 +117,11 @@ class CLI(h.ToolchainCase):
         self.assertEqual(self.raw('init',created,'--quiet').stdout,'')
         self.assertTrue((created/'nex.json').is_file())
         self.assertEqual(self.cli('init',created,'--quiet',ok=False)['code'],'E_EXISTS')
+        selected=self.root/'init-029'
+        self.assertEqual(self.raw('init',selected,'--quiet','--language-version','0.29').returncode,0)
+        self.assertEqual(json.loads((selected/'nex.json').read_text())['language'],'0.29')
+        self.assertEqual(self.cli('check',cwd=selected)['ok'],True)
+        self.assertEqual(self.raw('init',self.root/'init-bad','--quiet','--language-version','0.30',ok=False).returncode,1)
 
     def test_shell_scripts_and_actual_bash_zsh_callbacks(self):
         scripts={shell:self.cli('completion','--kind',shell)['script']

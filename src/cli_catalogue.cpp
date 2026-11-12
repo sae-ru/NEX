@@ -242,7 +242,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("help","[COMMAND]","Show the command index or one bounded command contract.","cli","");
     add("completion","--kind SHELL","Print a shell completion script without installing it.","cli","--kind");
     add("complete","-- WORDS...","Query completion candidates; the last word is the current prefix.","cli","");
-    add("init","[DIRECTORY]","Create a new current-language project without overwriting files.","bootstrap","");
+    add("init","[DIRECTORY]","Create a new current-language project without overwriting files.","bootstrap","--language-version");
     add("project","[DIRECTORY|nex.build.json]","Plan/build/package/run/test/debug/profile project components.","project","--kind --component --configuration --build-directory --output --workload --foreign --adapter --profile-output --events --timeout --scenario --symbol --directory --notices --dpkg-notices --task-debug");
     add("describe","[--kind full|index | --field PATH]","Discover the selected compiled capability descriptor.","discovery","--kind --field");
     add("analyze","[FILE]","Read-only editor analysis with optional overlays/references.","editor","--overlay --references --details");

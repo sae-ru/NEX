@@ -703,7 +703,9 @@ int run(const Options &o) {
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
     if(fs::exists(root/"nex.json")||fs::exists(root/"src/main.nex"))throw Error("E_EXISTS","project already exists; refusing to overwrite");
-    writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",languageVersion},{"entry","src/main.nex"}})+"\n");
+    auto requested=o.get("--language-version");if(requested.empty())requested=languageVersion;
+    if(requested!="0.28"&&requested!="0.29")throw Error("E_OPTION","init language-version must be 0.28 or 0.29");
+    writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",requested},{"entry","src/main.nex"}})+"\n");
     writeFile((root/"src/main.nex").string(),
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;
