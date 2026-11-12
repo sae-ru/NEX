@@ -474,6 +474,11 @@ Relocatable SDK bundle: `sdk_bundle.py` assembled a macOS bundle from the
 the host macOS SDK, the bundled compiler passed doctor, ran `bundle-ok` and
 passed native tests. Full bundle acceptance/immutable release remain pending.
 
+The relocatable macOS SDK bundle then passed the full 41-phase installed-chain
+acceptance in 2744.66 s (network profile full, TCP IPv6 accepted). The run used
+`SDKROOT`; `--forbid-source` was not used because the source worktree exists on
+this host. Immutable/versioned release and full source-tests remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
