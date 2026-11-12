@@ -1,0 +1,52 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit 0.28 to 0.29 language migration",
+  "implementation_commit": "327004f4d3ecf9e33a46009e9a74e468c8517ef1",
+  "build_source_base_commit": "327004f4",
+  "compiler": {
+    "toolchain": "0.238.0",
+    "default_language": "0.28",
+    "sha256": "ebeddcaf9707576304fa4b4ed3ea9a2ffdc55fd33e4a533701383a5c6828b0c2"
+  },
+  "migration": {
+    "command": "nex migrate --language-version 0.29",
+    "origin_language": "0.29",
+    "target_language": "0.29",
+    "target_valid": true,
+    "target_revision": "0d2ba4dcac07c18ac8453312fa6e25ee7efb049d608d247f2155503b9cf68cc7",
+    "post_migration_check_ok": true
+  },
+  "gate": {
+    "0.28_new_syntax": "rejected by language_029_migration and type_lambdas",
+    "0.29_new_syntax": "accepted after manifest update"
+  },
+  "coverage": {
+    "tests": [
+      "language_029_migration",
+      "typed_error_history_migration",
+      "source_contract_history_migration",
+      "type_lambdas",
+      "higher_kinds",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "default compiler language remains 0.28; migration target is explicit",
+    "full CTest for 0.238 was not rerun; focused migration/gate groups and core pass"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "plan": "/Users/sae/projects/NEX/build/migration-029-0238/plan.json",
+    "check": "/Users/sae/projects/NEX/build/migration-029-0238/check.json",
+    "version": "/Users/sae/projects/NEX/build/migration-029-0238/version.json",
+    "guide": "docs/language.md"
+  }
+}

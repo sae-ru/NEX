@@ -82,6 +82,7 @@
     "graph_identity_rename": ["extended", "browser"],
     "type_lambdas": ["extended", "browser"],
     "higher_kinds": ["extended", "browser"],
+    "language_029_migration": ["extended", "platform"],
     "rename_source": ["extended", "platform"],
     "graph_queries": ["extended", "browser", "scale"],
     "graph_snapshots": ["extended", "browser", "scale"],

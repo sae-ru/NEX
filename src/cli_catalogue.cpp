@@ -145,6 +145,7 @@ const std::vector<CliOption> &cliOptions(){
     add("--configuration","NAME","Select a project build configuration.");
     add("--profile","NAME","Native optimization/debug profile.");
     add("--target","TARGET","Native target/triple or a supported adapter target.");
+    add("--language-version","VERSION","Explicit source-language target for migration.");
     add("--toolchain","FILE","Explicit native toolchain configuration.");
     add("--toolchains","FILE","Task replay toolchain catalogue.");
     add("--entry","NAME","Select an executable/emitted entry function.");
@@ -282,7 +283,7 @@ const std::vector<CliCommand> &cliCommands(){
     add("apply","--patch FILE","Apply a reviewed graph patch with revision/source guards.","protocol","--patch --note --actor");
     add("export","[--revision HASH|HEAD]","Export archived graph JSON or materialize source.","graph","--revision --output --directory");
     add("import","FILE","Import an integrity-checked archived graph.","graph","--note --actor");
-    add("migrate","[GRAPH.json]","Plan/apply an explicit history-preserving language migration.","source-contract-migration","--kind --revision --candidate --expected-revision --note --actor");
+    add("migrate","[GRAPH.json]","Plan/apply an explicit history-preserving language migration.","source-contract-migration","--kind --revision --candidate --expected-revision --note --actor --language-version");
     add("lock","[FILE]","Explicitly update reviewed dependency source pins.","build","--output");
     add("web","[FILE] --directory PATH","Generate the browser adapter from checked reachable code.","web","--revision --directory --output");
     add("api","[FILE]","Describe or generate checked HTTP API code.","api","--revision --directory");

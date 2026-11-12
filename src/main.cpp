@@ -155,6 +155,9 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
 }
 void migrate(const Options &o,const fs::path &root){
   const auto kind=o.get("--kind","apply");if(kind!="apply"&&kind!="plan")throw Error("E_OPTION","migration kind must be apply or plan");
+  const auto requested=o.get("--language-version");SourceLanguage target=currentSourceLanguage;
+  if(!requested.empty()){if(requested=="0.28")target=SourceLanguage::Contracts028;else if(requested=="0.29")target=SourceLanguage::Contracts029;else throw Error("E_OPTION","migration language-version must be 0.28 or 0.29");}
+  const auto targetLanguage=programLanguage(target);
   std::unique_ptr<Store> archive;
   if(fs::exists(root/".nex/graph.db"))archive=std::make_unique<Store>(root/".nex",StoreOpenMode::ReadOnly);
   auto previous=archive?archive->headRevision():std::string{};
@@ -165,17 +168,17 @@ void migrate(const Options &o,const fs::path &root){
   if(o.positional.empty()){
     if(!archive)throw Error("E_REVISION","migration requires an existing archived revision or graph JSON");
     original=o.get("--revision","HEAD");if(original=="HEAD")original=previous;
-    originLanguage=archive->revisionLanguage(original);validateMigrationLanguage(originLanguage);
-    bundle=archive->bundle(original);verified=verifyMigrationOrigin(bundle,root,originLanguage,original);
+    originLanguage=archive->revisionLanguage(original);validateMigrationLanguage(originLanguage,target);
+    bundle=archive->bundle(original);verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
   }else{
     auto value=parseJSON(readFile(o.positional[0]));auto object=value.getAsObject();
     if(!object||(required(*object,"schema")!="nex.graph/1"&&required(*object,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
-    original=required(*object,"revision");originLanguage=required(*object,"language");validateMigrationLanguage(originLanguage);
+    original=required(*object,"revision");originLanguage=required(*object,"language");validateMigrationLanguage(originLanguage,target);
     bundle=graphSources(*object);
     if(archive&&archive->containsRevision(original)){
       if(archive->revisionLanguage(original)!=originLanguage)throw Error("E_REVISION","graph origin language differs from the retained revision");
       verified=verifyMigrationOrigin(archive->bundle(original),root,originLanguage,original);
-    }else verified=verifyMigrationOrigin(bundle,root,originLanguage,original);
+    }else verified=verifyMigrationOrigin(bundle,root,originLanguage,original,target);
   }
   // No writable Store, schema upgrade or destination creation before both the
   // origin integrity check and complete current-language target preflight.
@@ -187,21 +190,21 @@ void migrate(const Options &o,const fs::path &root){
     auto value=parseJSON(text);auto object=value.getAsObject();
     if(!object||object->size()!=6||object->getString("schema")!="nex.migration-candidate/1"||
        object->getString("origin_revision")!=original||object->getString("origin_language")!=originLanguage||
-       object->getString("origin_source_hash")!=originSourceHash||object->getString("target_language")!=languageVersion||!object->getObject("sources"))
+       object->getString("origin_source_hash")!=originSourceHash||object->getString("target_language")!=targetLanguage||!object->getObject("sources"))
       throw Error("E_MIGRATION_CANDIDATE","reviewed candidate origin/source/target guards differ");
     bundle=llvm::json::Object(*object->getObject("sources"));candidateUsed=true;
   }
   if(kind=="plan"){
     llvm::json::Object response{{"schema","nex.migration-plan/1"},{"ok",true},{"graph_read_only",true},
       {"origin_revision",original},{"origin_language",originLanguage},{"origin_verified",verified},
-      {"expected_revision",expected},{"target_language",languageVersion},{"candidate_used",candidateUsed},
+      {"expected_revision",expected},{"target_language",targetLanguage},{"candidate_used",candidateUsed},
       {"candidate",llvm::json::Object{{"schema","nex.migration-candidate/1"},{"origin_revision",original},
-        {"origin_language",originLanguage},{"origin_source_hash",originSourceHash},{"target_language",languageVersion},{"sources",bundle}}}};
-    try{auto target=preflightMigrationTarget(bundle,root);response["target_valid"]=true;response["target_revision"]=revision(target);}
+        {"origin_language",originLanguage},{"origin_source_hash",originSourceHash},{"target_language",targetLanguage},{"sources",bundle}}}};
+    try{auto checkedTarget=preflightMigrationTarget(bundle,root,target);response["target_valid"]=true;response["target_revision"]=revision(checkedTarget);}
     catch(const Error &error){response["target_valid"]=false;response["target_diagnostic"]=diagnosticJSON(error,NEX_VERSION,NEX_BUILD_ID);}
     print(std::move(response));return;
   }
-  auto program=preflightMigrationTarget(bundle,root);auto sourceHash=hash(json(bundle,false));
+  auto program=preflightMigrationTarget(bundle,root,target);auto sourceHash=hash(json(bundle,false));
   archive.reset();
   Store store(root/".nex");auto selected=store.save(program,expected,true,changeInfo(o,"migrate",sourceHash));
   print(llvm::json::Object{{"schema","nex.migration/1"},{"ok",true},{"declared_original_revision",original},
