@@ -1,0 +1,53 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Application public asset packaging for web generation",
+  "implementation_commit": "ac6e4a224dcd857df1d86bfed385e0c523288884",
+  "build_source_base_commit": "ac6e4a22",
+  "compiler": {
+    "toolchain": "0.236.0",
+    "language": "0.28",
+    "sha256": "e5083416802bda4591f570219a28b3f50ac7fd69e7552cb4bfee5ce0c9ad278a",
+    "compiler_build": "4374d7d62742d33a1e18214483aefc5de87827338bfb256ce2c1e9fbe8a8a932",
+    "descriptor_hash": "5114d1560e072f36b5aa51b7344ed8b39fd120569c256a7fcdc2357dba91e0bc"
+  },
+  "feature": {
+    "source": "web/public/",
+    "output": "public/",
+    "limits": {
+      "files": 256,
+      "bytes_each": 1048576,
+      "bytes_total": 4194304
+    },
+    "symlinks": "rejected",
+    "collisions": "rejected",
+    "hashed": true
+  },
+  "generation": {
+    "schema": "nex.web/2",
+    "files": 23,
+    "asset": "public/assets/logo.txt",
+    "asset_sha256": "09e5c79340e2e1ea6b78213a7675d2aeed9c616a09b307c66e5fb3b67e85538b"
+  },
+  "coverage": {
+    "test": "tests/web.py",
+    "test_seconds": 10.28,
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "browser component packaging remains pending",
+    "full CTest was not repeated for this asset-only change"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "generated": "/Users/sae/projects/NEX/build/web-assets-0236/generated",
+    "web": "/Users/sae/projects/NEX/build/web-assets-0236/web.json",
+    "guide": "docs/web.md"
+  }
+}

@@ -587,9 +587,10 @@ probes were denied, and the relocatable archive was produced with SHA-256
 `00a8ef1d...640892f9` (3987 inventory files, 124,113,900 bytes, 6042 s). No
 signed/public release is claimed.
 
-Application CSS: `nex web` copies a project's `web/app.css` over the default
-`src/app.css` and includes it in the generated file hashes; size limit is 262144
-bytes. Covered by the `web` test.
+Application CSS/assets: `nex web` copies a project's `web/app.css` over the
+default `src/app.css` and `web/public/` into the generated `public/` tree,
+including both in file hashes. Limits: CSS 262144 bytes; assets 256 files,
+1 MiB each, 4 MiB total. Covered by the `web` test.
 
 Full CTest qualification of 0.235.0 passed all 350 groups in 2522.547 s,
 including application-specific CSS generation.

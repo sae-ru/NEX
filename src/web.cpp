@@ -151,6 +151,23 @@ Project prepare(const Program &p){
       if(css.size()>262144)throw Error("E_UI","application stylesheet exceeds 262144 bytes");
       files["src/app.css"]=std::move(css);
     }
+    auto publicRoot=root/"web"/"public";
+    if(std::filesystem::is_directory(publicRoot)){
+      size_t count=0,total=0;
+      for(const auto &entry:std::filesystem::recursive_directory_iterator(publicRoot)){
+        auto status=entry.symlink_status();
+        if(std::filesystem::is_symlink(status))throw Error("E_UI","application asset may not be a symlink");
+        if(!std::filesystem::is_regular_file(status))continue;
+        if(++count>256)throw Error("E_UI","application asset count exceeds 256");
+        auto relative=entry.path().lexically_relative(publicRoot).generic_string();
+        if(relative.empty()||relative.find("..")!=std::string::npos)throw Error("E_UI","invalid application asset path");
+        auto name="public/"+relative;
+        if(files.contains(name)||name=="public/THIRD_PARTY_NOTICES.txt")throw Error("E_UI","application asset collides with a generated file");
+        auto bytes=readFile(entry.path().string());
+        if(bytes.size()>1048576||total+bytes.size()>4194304)throw Error("E_UI","application assets exceed their size limit");
+        total+=bytes.size();files[name]=std::move(bytes);
+      }
+    }
   }
   files["tests/smoke.spec.js"]=readFile(resourceFile("web/smoke.spec.js"));
   files["public/THIRD_PARTY_NOTICES.txt"]=readFile(resourceFile("web/THIRD_PARTY_NOTICES.txt"));

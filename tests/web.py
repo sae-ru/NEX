@@ -204,6 +204,16 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertIn("src/app.css",generated["files"])
         self.assertNotEqual(generated["files"]["src/app.css"],"69c5357717c050c4ad37cbf665273ffff27f5e744d3597c9af7e1a6ab42b600a")
 
+    def test_application_public_assets_are_copied_and_hashed(self):
+        self.source(self.app_source())
+        directory=self.root/"web"/"public"/"assets";directory.mkdir(parents=True)
+        content="NEX asset 🧠\n"
+        (directory/"logo.txt").write_text(content,newline="\n")
+        output=self.root/"web output assets"
+        generated=self.cli("web","--directory",output)
+        self.assertEqual((output/"public/assets/logo.txt").read_text(),content)
+        self.assertIn("public/assets/logo.txt",generated["files"])
+
     def test_application_contract_rejects_wrong_state_and_effects(self):
         original = self.app_source()
         for invalid in [
