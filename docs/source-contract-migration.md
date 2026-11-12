@@ -13,7 +13,14 @@ From an existing archived project, inspect a read-only plan:
 
 ```sh
 nex migrate --kind plan --json
+# Explicit opt-in to the retained 0.29 development language:
+nex migrate --language-version 0.29 --kind plan --json
 ```
+
+`--language-version 0.29` targets the explicit 0.29 language (program/17);
+without it the compiler's current default remains 0.28 (program/16). After applying
+a 0.29 migration, update the project manifest to `"language":"0.29"`; 0.28 still
+rejects 0.29-only partial type lambdas and higher-order kind signatures.
 
 Check `origin_language`, `origin_verified`, `expected_revision`, `target_language`
 and `target_valid`. Save the returned `candidate` object when source repairs or
