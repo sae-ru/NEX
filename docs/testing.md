@@ -469,6 +469,11 @@ phases, including browser, project build and the resource executor. This is a
 local installed-chain acceptance; immutable/versioned release and full source
 tests remain pending.
 
+Relocatable SDK bundle: `sdk_bundle.py` assembled a macOS bundle from the
+0.224 installed SDK after adding explicit LLD provenance. With `SDKROOT` set to
+the host macOS SDK, the bundled compiler passed doctor, ran `bundle-ok` and
+passed native tests. Full bundle acceptance/immutable release remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

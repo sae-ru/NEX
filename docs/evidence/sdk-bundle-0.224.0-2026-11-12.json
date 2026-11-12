@@ -1,0 +1,51 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Relocatable SDK bundle assembly and smoke execution",
+  "implementation_commit": "9d79c56",
+  "build_source_base_commit": "3b6ef5a",
+  "compiler": {
+    "toolchain": "0.224.0",
+    "language": "0.28",
+    "bundled_binary_sha256": "fd5fece3726c17125d477a97255358328b1633f6b090b5bfd31b3374e8d51efd"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "sdkroot": "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+  },
+  "bundle": {
+    "path": "/Users/sae/projects/NEX/build/sdk-bundle-0224",
+    "report": {
+      "ok": true,
+      "platform": "macos",
+      "toolchain": "0.224.0",
+      "language": "0.28",
+      "host": "arm64-apple-darwin27.0.0",
+      "acceptance_passed": false
+    },
+    "doctor": true,
+    "run_stdout": "bundle-ok",
+    "test_ok": true,
+    "requires_SDKROOT": true,
+    "source_paths_rewritten": true
+  },
+  "observations": {
+    "registered_groups": 345,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "relocatable bundle smoke only; sdk_acceptance on the bundle and immutable/versioned release remain pending",
+    "bundle execution requires the platform C/C++ SDK via SDKROOT",
+    "no complete SDK/platform acceptance is claimed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "bundle": "/Users/sae/projects/NEX/build/sdk-bundle-0224",
+    "probe_project": "/Users/sae/projects/NEX/build/sdk-bundle-probe",
+    "bundle_report": "/tmp/bundle-report.json",
+    "guide": "docs/testing.md"
+  }
+}
