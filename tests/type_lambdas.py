@@ -15,11 +15,13 @@ fn forward<F<_>,T>(value:F<T>)->F<T>{return value;}
 fn hold<F<_>,T>(value:F<T>)->Wrapped<F,T>{return Wrapped<F,T>(value);}
 fn main()->unit !{io}{
  let pair:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(1,"x"));
+ let inferred:Pair<i64,str>=forward(Pair<i64,str>(3,"z"));
  let held:Wrapped<Pair<i64,_>,str>=hold<Pair<i64,_>,str>(pair);
- print(held.value.second);
+ print(held.value.second+inferred.second);
 }
 test fn values()->unit{
  assert(forward<Pair<i64,_>,str>(Pair<i64,str>(1,"x")).second=="x");
+ assert(forward(Pair<i64,str>(3,"z")).second=="z");
  assert(hold<Pair<i64,_>,str>(Pair<i64,str>(2,"y")).value.first==2);
 }
 '''
@@ -38,11 +40,11 @@ class TypeLambdas(unittest.TestCase):
             root=Path(temporary);self.project(root,SOURCE)
             checked=run(['check','--json'],root);self.assertEqual(checked.returncode,0,checked.stdout+checked.stderr)
             evaluated=run(['eval','--entry','main','--json'],root);self.assertEqual(evaluated.returncode,0,evaluated.stdout+evaluated.stderr)
-            self.assertEqual(json.loads(evaluated.stdout)['stdout'],'x\n')
+            self.assertEqual(json.loads(evaluated.stdout)['stdout'],'xz\n')
             native=run(['test','--json'],root);self.assertEqual(native.returncode,0,native.stdout+native.stderr)
             native=json.loads(native.stdout);self.assertTrue(native['ok']);self.assertTrue(all(t['native'] for t in native['tests']))
             ran=run(['run','--profile','release','--json'],root);self.assertEqual(ran.returncode,0,ran.stdout+ran.stderr)
-            self.assertEqual(json.loads(ran.stdout)['stdout'],'x\n')
+            self.assertEqual(json.loads(ran.stdout)['stdout'],'xz\n')
             tsc=os.environ.get('NEX_TSC')
             if tsc:
                 web=run(['test','--target','web','--json'],root,{'NEX_TSC':tsc});self.assertEqual(web.returncode,0,web.stdout+web.stderr)

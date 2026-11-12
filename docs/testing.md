@@ -549,10 +549,11 @@ Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
 including the source rename group.
 
 Partial type lambdas (0.230.0): `Pair<i64,_>` is accepted as a constructor
-argument and its holes are filled by the next application. Reference/native
-execution, tests and the descriptor feature are covered by `type_lambdas`;
-whole-constructor inference still requires an explicit lambda and higher-order
-kind signatures remain pending.
+argument and its holes are filled by the next application. Trailing-argument
+inference also derives a partial constructor for calls such as
+`forward(Pair<i64,str>)`; ambiguous positions need an explicit lambda.
+Reference/native execution, tests and the descriptor features are covered by
+`type_lambdas`; higher-order kind signatures remain pending.
 
 ## Maintain the catalogue
 

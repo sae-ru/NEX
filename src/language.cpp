@@ -849,8 +849,17 @@ class Checker {
       else if(shape.kind==Type::Record&&!shape.arguments.empty()){head=Type::constructor(shape.name,shape.arguments.size());args=shape.arguments;}
       else if(shape.kind==Type::Parameter&&!shape.arguments.empty()){head=shape;head.arguments.clear();args=shape.arguments;}
       else throw Error("E_GENERIC_INFER","cannot infer an applied constructor from this type",span);
-      if(args.size()!=formal.arguments.size())throw Error("E_GENERIC_KIND","constructor application arities differ",span);
-      auto base=formal;base.arguments.clear();unify(base,head,bound,span);for(size_t i=0;i<args.size();++i)unify(formal.arguments[i],args[i],bound,span);return;
+      const size_t formalCount=formal.arguments.size(),actualCount=args.size();
+      if(actualCount<formalCount)throw Error("E_GENERIC_KIND","constructor application arities differ",span);
+      if(actualCount>formalCount){
+        if(head.kind!=Type::Constructor)throw Error("E_GENERIC_INFER","cannot infer a partial constructor from this applied parameter",span);
+        std::vector<Type> slots=args;for(size_t i=actualCount-formalCount;i<actualCount;++i)slots[i]=Type::Unknown;
+        auto partial=Type::constructor(head.name,formalCount);partial.arguments=std::move(slots);
+        auto base=formal;base.arguments.clear();unify(base,partial,bound,span);
+      }else{
+        auto base=formal;base.arguments.clear();unify(base,head,bound,span);
+      }
+      for(size_t i=0;i<formalCount;++i)unify(formal.arguments[i],args[actualCount-formalCount+i],bound,span);return;
     }
     if(formal.kind==Type::Parameter){auto found=bound.find(formal.name);if(found==bound.end()){if(actual==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);if(argumentKind(p,actual,span)!=p.parameterKinds.at(formal.name))throw Error("E_GENERIC_KIND","inferred generic argument has the wrong kind",span);bound[formal.name]=actual;}else same(actual,found->second,span);return;}
     if(formal.kind==Type::Record&&!formal.arguments.empty()){
@@ -2176,7 +2185,7 @@ llvm::json::Value describe() {
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","partial_type_lambdas","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","partial_type_lambdas","whole_type_lambda_inference","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
     {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values or file types, including phantom file arguments"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},

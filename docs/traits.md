@@ -71,8 +71,10 @@ local/parameter/result value. Generic structures/enums can also take constructor
 parameters and store fully applied fields. A constructor whose own slots accept
 constructors has a different kind from `F<_>`; higher-order kind signatures
 remain unsupported. Partial applications such as `Pair<i64,_>` are accepted as
-explicit constructor arguments and fill their holes when applied; this does not
-infer an unprovided lambda.
+explicit constructor arguments and fill their holes when applied. Inference from
+an applied argument uses its trailing arguments for the explicit value parameters
+and fixes the leading arguments as holes; ambiguous positions still need an
+explicit lambda.
 
 For a generic trait method the implementation binding supplies any target
 prefix arguments, followed implicitly by the trait method's parameters in
