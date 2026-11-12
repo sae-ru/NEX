@@ -7,7 +7,7 @@ import subprocess
 import unittest
 import support as h
 
-PUBLIC=set('analyze api apply build changes check context contract core cost debug declarations describe diagnose doctor emit eval explain export ffi fmt foreign graph guide help history identities import init inspect lock lsp migrate operations package profile project recover restore run search snapshot subgraph task test token toolchain verify web completion'.split())
+PUBLIC=set('analyze api apply build changes check context contract core cost debug declarations describe diagnose doctor emit eval explain export ffi fmt foreign graph guide help fix bench history identities import init inspect lock lsp migrate operations package profile project recover restore run search snapshot subgraph task test token toolchain verify web completion'.split())
 
 
 class CLI(h.ToolchainCase):
@@ -72,8 +72,8 @@ class CLI(h.ToolchainCase):
 
     def test_contextual_completion_and_literal_passthrough(self):
         self.assertEqual(set(self.candidates('')),PUBLIC)
-        self.assertEqual(self.candidates('b'),['build'])
-        self.assertEqual(self.candidates('help','b'),['build'])
+        self.assertEqual(self.candidates('b'),['bench','build'])
+        self.assertEqual(self.candidates('help','b'),['bench','build'])
         self.assertEqual(self.candidates('build','--pr'),['--profile'])
         self.assertEqual(self.candidates('project','--profile'),['--profile-output'])
         self.assertEqual(self.candidates('build','--profile',''),['debug','profile','release'])

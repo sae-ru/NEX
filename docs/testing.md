@@ -511,6 +511,13 @@ verified bundle archive, its bundle manifest, notices and a successful 41-phase
 acceptance report into a read-only `nex.sdk-release/1` directory with
 `SHA256SUMS`. The 0.224 macOS release has browser/live evidence recorded.
 
+Full CTest qualification (2026-11-12): `tools/ci/ctest.py --tier full --jobs 8`
+passed all 346 registered groups in 2245.605 s when run with
+`NEX_NODE`, `NEX_TSC` and `NEX_NPM_CACHE` set for the locked TypeScript corpus.
+The opencl_dispatch group is included. Twelve newly exposed stale expectations
+(CLI command set/completion, SDK executor count, SDK inventory scope, retained
+0.26 web projection) were corrected; no language semantics changed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

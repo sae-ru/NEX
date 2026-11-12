@@ -400,11 +400,11 @@ TYPED_SOURCE_RESOURCE_PINS = (
 )
 
 
-def language_resource_inventory(resources, resource_names, language):
+def language_resource_inventory(resources, resource_names, language, include_stdlib=False):
     """Capture real text bytes required by both discovery and final validation."""
     resources = Path(resources).resolve()
     names = list(resource_names)
-    if language in ('0.27','0.28'):
+    if include_stdlib and language in ('0.27','0.28'):
         names.extend(path for path in sdk_stdlib.FILES if path not in names)
     if language in ('0.27','0.28'):
         names.extend(path for _, path in TYPED_SOURCE_RESOURCE_PINS if path not in names)
@@ -2210,7 +2210,7 @@ test fn examples() -> unit {
             origin = source_errors['handler_migration_fixture']
             resource_names += [source_errors['handler_sdk_helper'], source_errors['handler_test_source'],
                                origin['metadata'], origin['sql']]
-        inventory = language_resource_inventory(resources, resource_names, doctor['language'])
+        inventory = language_resource_inventory(resources, resource_names, doctor['language'], include_stdlib=True)
         for kind in ('tasks-runtime', 'browser-worker', 'prompt', 'language', 'grammar', 'protocol', 'web', 'server', 'api',
                      'debug', 'build', 'profile', 'verify', 'task', 'expression', 'operation', 'graph', 'history', 'snapshot', 'compatibility', 'frontend', 'query', 'string-debug', 'linux', 'match', 'function', 'files', 'bytes', 'resources', 'ffi', 'editor', 'lsp', 'core', 'wasm', 'project', 'server-workload', 'task-workload'):
             require(cli('guide', '--kind', kind)['text'], 'empty guide: ' + kind)

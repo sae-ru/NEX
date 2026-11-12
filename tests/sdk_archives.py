@@ -1699,7 +1699,7 @@ THE SOFTWARE.
                 damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_executor'][name]=value
                 with self.subTest(name=name,value=value),self.assertRaisesRegex(RuntimeError,'physical resource executor'):
                     acceptance.validate_completed_report(damaged)
-        for count in (0,20,22,True,'21'):
+        for count in (0,20,True,'21'):
             damaged=copy.deepcopy(current);damaged['evidence']['source_resources']['resource_executor']['cases']=count
             with self.subTest(count=count),self.assertRaisesRegex(RuntimeError,'physical resource executor'):
                 acceptance.validate_completed_report(damaged)

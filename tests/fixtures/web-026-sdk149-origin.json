@@ -18,7 +18,7 @@
       "src/app.tsx": "f63046326de075cf843f8caadceb9ecb6ee488ef7b5f1787227cc2a046cb2ddb",
       "src/net.ts": "f81f1e90ad7ead850cd701b0353bd545a709e5ca68483e099fb9ffdb7e4cd18e",
       "src/nex-bytes.ts": "9f309062fbab0920197247a656b6f02187fff8130052dadf4cbce6ee5cedb468",
-      "src/nex-runtime.ts": "b53d1284ebc68579c4005982a4b0aa72c200252d807e9eca1c0c0d2f2bf82b3c",
+      "src/nex-runtime.ts": "eb12a7b0df3a8c5d2cacf6eed25c81a725a79d43d8b9f3a449bbc47db9160d3f",
       "src/nex-source-exception-runtime.ts": "75996eed8459abb5f379e2afb51297f748b75cbaa6d49df03ac10455e24826c1",
       "src/nex-task-runtime.ts": "c3fa591559d433d468a7faf22e1dd8b6e11cae1bdd09c60bc9261628bd5868b9",
       "src/program.ts": "5fce4981f342e8d07e949c0ac68e6820485e7d0bd103dd3bc74462121f995547",
@@ -33,7 +33,7 @@
       "tsconfig.json": "b949c54ebde83f598ece63176fe66dd1de3ccfc6d434205092fd1ccfe305e896",
       "vite.config.js": "43f2cae8dbc18677684afff8c77df7c938a7147e84a7733dc879ffd06b3ae792"
     },
-    "key": "679bba538127f4a1a30675b76ab460e39c8ccb64ad831e05605834e40a431153",
+    "key": "56cd539d02086910f5e7c61ddfcb63c15d1df199a8da84b63e2aedc36ff806c2",
     "language": "0.26",
     "revision": "7d483de59ef99e81b5566756820ad12431ce40f912ce03fac2077aa34e0a6191",
     "schema": "nex.web/1"
