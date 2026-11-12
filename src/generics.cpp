@@ -44,7 +44,9 @@ std::map<std::string,Type> bindTypeArguments(const Program &program,const std::v
   if(parameters.size()!=arguments.size())throw Error("E_GENERIC_ARITY","incorrect number of generic type arguments",span);
   std::map<std::string,Type> bound;for(size_t i=0;i<parameters.size();++i){if(arguments[i]==Type::Unit||arguments[i]==Type::Unknown)throw Error("E_TYPE","generic arguments must be non-unit types",span);
     if(argumentKind(program,arguments[i],span)!=program.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","generic argument has the wrong constructor kind",span);
-    if(program.parameterCodes.contains(parameters[i])&&!parameters[i].ends_with("::Self")&&typeKindCode(arguments[i],programKinds(program),span)!=program.parameterCodes.at(parameters[i]))throw Error("E_GENERIC_KIND","generic argument has the wrong constructor depth",span);
+    auto slotCodes=program.parameterSlotCodes.find(parameters[i]);
+    bool higher=slotCodes!=program.parameterSlotCodes.end()&&std::any_of(slotCodes->second.begin(),slotCodes->second.end(),[](unsigned value){return value!=0;});
+    if(higher&&!parameters[i].ends_with("::Self")&&typeKindCode(arguments[i],programKinds(program),span)!=program.parameterCodes.at(parameters[i]))throw Error("E_GENERIC_KIND","generic argument has the wrong constructor depth",span);
     if(i<bounds.size())for(const auto &constraint:bounds[i])if(!satisfiesConstraint(program,arguments[i],constraint))throw Error("E_GENERIC_BOUND",typeName(arguments[i])+" does not satisfy '"+constraint+"' for "+parameters[i],span);
     bound[parameters[i]]=arguments[i];}return bound;
 }
@@ -199,11 +201,13 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
   if(type.kind==Type::Projection)return resolveProjection(p,type,span,depth);
   if(type.kind==Type::Parameter){
     auto found=p.parameterKinds.find(type.name);if(found==p.parameterKinds.end())throw Error("E_GENERIC_SCOPE","unknown scoped type parameter",span);
-    auto slots=p.parameterSlotCodes.find(type.name);auto kinds=programKinds(p);
+    auto slots=p.parameterSlotCodes.find(type.name);
+    bool higher=slots!=p.parameterSlotCodes.end()&&std::any_of(slots->second.begin(),slots->second.end(),[](unsigned value){return value!=0;});
+    auto kinds=higher?programKinds(p):KindContext{};
     for(auto &argument:type.arguments){argument=resolveType(p,argument,span,depth+1);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);
-      size_t index=size_t(&argument-&type.arguments.front());
-      unsigned expected=slots!=p.parameterSlotCodes.end()&&index<slots->second.size()?slots->second[index]:0;
-      if(typeKindCode(argument,kinds,span)!=expected)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",span);}
+      if(higher){size_t index=size_t(&argument-&type.arguments.front());unsigned expected=index<slots->second.size()?slots->second[index]:0;
+        if(typeKindCode(argument,kinds,span)!=expected)throw Error("E_GENERIC_KIND","constructor argument has the wrong kind",span);}
+      else if(argumentKind(p,argument,span)!=0)throw Error("E_GENERIC_KIND","constructor argument must be a value type",span);}
     if(!type.arguments.empty()&&type.arguments.size()!=found->second)throw Error("E_GENERIC_KIND","wrong constructor parameter arity",span);return type;
   }
   if(type.kind==Type::Constructor){

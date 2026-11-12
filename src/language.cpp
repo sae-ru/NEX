@@ -899,7 +899,9 @@ class Checker {
       bool partialDefaults=defaults&&std::any_of(defaults->begin(),defaults->end(),[](const Type &value){return value!=Type::Unknown;});
       if(call->typeArguments.size()>parameters.size()||(call->typeArguments.size()!=parameters.size()&&!(partial&&call->typeArguments.size()==1)&&!partialDefaults))throw Error("E_GENERIC_ARITY","incorrect number of generic arguments",call->span);
       for(size_t i=0;i<call->typeArguments.size();++i){auto argument=resolveType(p,call->typeArguments[i],call->span);if(argument==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",call->span);if(argumentKind(p,argument,call->span)!=p.parameterKinds.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong kind",call->span);
-        if(p.parameterCodes.contains(parameters[i])&&!parameters[i].ends_with("::Self")&&typeKindCode(argument,programKinds(p),call->span)!=p.parameterCodes.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong constructor kind",call->span);bound[parameters[i]]=argument;}
+        auto slotCodes=p.parameterSlotCodes.find(parameters[i]);
+        bool higher=slotCodes!=p.parameterSlotCodes.end()&&std::any_of(slotCodes->second.begin(),slotCodes->second.end(),[](unsigned value){return value!=0;});
+        if(higher&&!parameters[i].ends_with("::Self")&&typeKindCode(argument,programKinds(p),call->span)!=p.parameterCodes.at(parameters[i]))throw Error("E_GENERIC_KIND","explicit generic argument has the wrong constructor kind",call->span);bound[parameters[i]]=argument;}
     }
     if(expected!=Type::Unknown){
       std::function<bool(const Type&)> projected=[&](const Type &type){if(type.kind==Type::Projection)return true;if(type.element&&projected(*type.element))return true;for(const auto &a:type.arguments)if(projected(a))return true;return false;};
