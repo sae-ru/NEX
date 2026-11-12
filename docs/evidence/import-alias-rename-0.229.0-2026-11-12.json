@@ -1,0 +1,61 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Import alias rename in CLI and LSP",
+  "implementation_commit": "b6c6e6950de6eb8466d7f1abf2acf66431737aee",
+  "build_source_base_commit": "ad69a015",
+  "compiler": {
+    "toolchain": "0.229.0",
+    "language": "0.28",
+    "sha256": "c1254b8f96a6bbe58693e6b47b1b6b9b86029f992d62fac7e084edfeb488bc1f",
+    "compiler_build": "d25f9ca6df9c2d8f7254f821dfbd047430118f7ce39ac3cdadcb53b4832d2967",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "rename": {
+    "schema": "nex.rename/1",
+    "import_alias": "util",
+    "to": "u",
+    "files": [
+      "main.nex"
+    ],
+    "revision_before": "397cf2ccf5ab236d159aa215678a1c2bb80e9a720e22433ef46ab9f72ae20d05",
+    "revision_after": "397cf2ccf5ab236d159aa215678a1c2bb80e9a720e22433ef46ab9f72ae20d05",
+    "semantic_revision_unchanged": true,
+    "alias_and_qualified_references_rewritten": true,
+    "import_path_unchanged": true
+  },
+  "lsp": {
+    "method": "textDocument/prepareRename/textDocument/rename",
+    "alias_edits": 2,
+    "test": "language_server"
+  },
+  "coverage": {
+    "cli_test": "rename_source",
+    "cli_seconds": 1.18,
+    "lsp_seconds": 22.87,
+    "cases": [
+      "dry run",
+      "alias declaration + util:: references",
+      "import path retained",
+      "revision identity unchanged"
+    ]
+  },
+  "observations": {
+    "registered_groups": 348,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "file-local import aliases only",
+    "no automatic cross-module source move",
+    "full CTest was not repeated for this server/tool addition"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "rename": "/Users/sae/projects/NEX/build/import-alias-rename-0229/alias-rename2.json",
+    "before": "/Users/sae/projects/NEX/build/import-alias-rename-0229/alias-check.json",
+    "after_source": "/Users/sae/projects/NEX/build/import-alias-rename-0229/after-main.nex",
+    "guide": "docs/graph.md"
+  }
+}
