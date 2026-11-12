@@ -1,0 +1,76 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit graph identity-preserving rename",
+  "implementation_commit": "5e2841e850e12ee49e42738a5a6fa078c5491358",
+  "build_source_base_commit": "9e3f67e",
+  "compiler": {
+    "toolchain": "0.226.0",
+    "language": "0.28",
+    "sha256": "a87dfaf4a0c75aee76ae76d9a72bf263eaa9ccae5c7ae4603ab6b4f6da84f0f5",
+    "compiler_build": "6c2c64bfaa37a6299d77eecc25feb20399cf8f4e6ea53e6d9d304a9ed8d2e84b",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "rename": {
+    "schema": "nex.identities-rename/1",
+    "function": {
+      "from": "app::old",
+      "to": "app::new",
+      "moved": [
+        {
+          "id": "a7a8610e098fdd1a339721c547ccb49a",
+          "module": "app",
+          "symbol": "app::new",
+          "table": "node_ids"
+        }
+      ]
+    },
+    "type": {
+      "from": "app::Old",
+      "to": "app::New",
+      "moved": [
+        {
+          "id": "5832d925a307f7105f0d8acf29576e38",
+          "kind": "type",
+          "symbol": "app::New",
+          "table": "declaration_ids"
+        }
+      ]
+    },
+    "identity_preserved": true,
+    "same_module_only": true,
+    "transactional": true
+  },
+  "coverage": {
+    "test": "tests/graph_identity_rename.py",
+    "test_seconds": 0.63,
+    "cases": [
+      "function round trip",
+      "type round trip",
+      "existing target conflict",
+      "stale HEAD rejection"
+    ]
+  },
+  "observations": {
+    "registered_groups": 347,
+    "core_groups": 12,
+    "core_seconds": 21.68,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "the graph command preserves local IDs; source edits and check remain operator actions",
+    "no LSP rename, cross-module move or automatic reference rewrite",
+    "full CTest was last run at 0.225 and was not repeated for this additive graph command"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "function_rename": "/Users/sae/projects/NEX/build/identity-rename-0226/rename.json",
+    "function_ids_after": "/Users/sae/projects/NEX/build/identity-rename-0226/ids2.json",
+    "type_rename": "/Users/sae/projects/NEX/build/identity-rename-0226/type-r.json",
+    "type_ids_after": "/Users/sae/projects/NEX/build/identity-rename-0226/type-i2.json",
+    "describe": "/Users/sae/projects/NEX/build/identity-rename-0226/describe.json",
+    "guide": "docs/graph.md"
+  }
+}
