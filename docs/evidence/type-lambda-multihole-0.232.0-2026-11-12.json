@@ -1,0 +1,86 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Leading and multiple partial type-lambda holes",
+  "implementation_commit": "0c7a00ad5d75b92ece026bb10e37e39a53d25396",
+  "build_source_base_commit": "44f6fefb",
+  "compiler": {
+    "toolchain": "0.232.0",
+    "language": "0.28",
+    "sha256": "540d05af86fa89664ff31da84bf32a2d3cab862bc8c48481218c5c90f6cc0649",
+    "compiler_build": "d4ca4eb5e20b6a79bea2f7f0dde3c98481711b0ebc214f2145065932eea1434c",
+    "descriptor_hash": "9cd65c6069c5439ed259464242a20ecfc7f9d2bb89f41b3d75a1b8789ae0c5ae",
+    "generic_features": [
+      "parametric_body_checking",
+      "generic_functions",
+      "generic_structures",
+      "generic_enums",
+      "expected_type_inference",
+      "argument_type_inference",
+      "checked_monomorphization",
+      "derived_instance_context",
+      "source_template_patches",
+      "builtin_type_constraints",
+      "constraint_implication",
+      "constrained_numeric_literals",
+      "user_traits",
+      "coherent_implementations",
+      "associated_types",
+      "constructor_parameters",
+      "partial_type_lambdas",
+      "whole_type_lambda_inference",
+      "generic_trait_methods",
+      "static_trait_dispatch",
+      "type_defaults",
+      "function_type_defaults"
+    ]
+  },
+  "feature": {
+    "forms": [
+      "Pair<i64,_>",
+      "Pair<_,str>",
+      "Pair<_,_>"
+    ],
+    "holes": "value-type placeholders",
+    "fill_order": "source order",
+    "explicit_parameters_required": true
+  },
+  "agreement": {
+    "reference": true,
+    "native_release": true,
+    "tests": true,
+    "typescript": true,
+    "typescript_cases": 1
+  },
+  "coverage": {
+    "test": "tests/type_lambdas.py",
+    "test_seconds": 5.99,
+    "focused": [
+      "generics",
+      "traits",
+      "type_defaults",
+      "type_lambdas",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 349,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "language version remains 0.28",
+    "higher-order kind signatures remain pending",
+    "ambiguous inference without explicit parameters remains limited to trailing-argument inference",
+    "full CTest was not repeated; focused generics/traits/type_defaults/type_lambdas/core checks passed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "typescript": "/Users/sae/projects/NEX/build/type-lambda-multihole-0232/typescript-test.json",
+    "describe": "/Users/sae/projects/NEX/build/type-lambda-multihole-0232/describe.json",
+    "generic_features": "/Users/sae/projects/NEX/build/type-lambda-multihole-0232/generic-features.json",
+    "guide": "docs/language.md"
+  }
+}
