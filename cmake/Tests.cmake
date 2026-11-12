@@ -1566,6 +1566,10 @@ add_test(NAME fmt_directory COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/fmt_directory.py $<TARGET_FILE:nex>)
 set_tests_properties(fmt_directory PROPERTIES TIMEOUT 120)
 
+add_test(NAME opencl_dispatch COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/opencl_dispatch.py $<TARGET_FILE:nex>)
+set_tests_properties(opencl_dispatch PROPERTIES TIMEOUT 300)
+
 add_test(NAME fmt_width COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/fmt_width.py $<TARGET_FILE:nex>)
 set_tests_properties(fmt_width PROPERTIES TIMEOUT 120)

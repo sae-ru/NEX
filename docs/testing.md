@@ -487,6 +487,11 @@ SDK archive/restore: `sdk_archive.create` produced a 121 MiB immutable tar.gz
 (3969 inventory files); checksum restore and a source-worktree-read-denied
 sandbox both ran doctor/`restored-ok`/native tests successfully.
 
+Toolchain 0.225 adds an owned OpenCL ctypes dispatch runner for checked scalar
+i64/f64/bool kernels. On Apple M5 Max, i64 `20*2+1 -> 41` and division-by-zero
+status 2 passed; f64 was skipped because the Apple OpenCL device could not
+enqueue the fp64 kernel.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -105,6 +105,7 @@ and final delivery work are:
 - [x] Pin explicit toolchains through CUDA delivery tasks.
 - [x] Complete owned-CUDA source-deleted replay/relocated delivery.
 - [x] Pass configured jobs to SDK source tests.
+- [x] Add an owned OpenCL scalar dispatch runner.
 - [x] Validate installed-SDK acceptance with current executor/stdlib inventory.
 - [x] Implement real checked i64 arithmetic in the scalar Wasm runtime.
 - [x] Add finite f64 arguments/results and E_FLOAT checks to scalar Wasm.

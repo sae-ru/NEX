@@ -104,7 +104,9 @@ columns use `input_0...`, and every dispatch writes `output` plus per-lane
 5 fallthrough, 6 invalid bool input). The host supplies explicit device and
 buffer authority; `driver_initialized` and `device_executed` remain false.
 
-The emitter is source-only: device dispatch, Mali/NPU hardware acceptance,
+`tools/owned-opencl/run.py` provides an optional ctypes dispatch runner for
+checked scalar kernels on an actual GPU; the compiler remains source-only. The
+emitter is source-only: device dispatch, Mali/NPU hardware acceptance,
 bounded lists/bytes/text and additional control flow are pending. Finite `f64`
 is supported through `cl_khr_fp64`; non-finite inputs/results use lane status 7
 (`E_FLOAT`). Mali does not advertise fp64; the f64 path was executed on

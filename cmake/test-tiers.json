@@ -234,6 +234,7 @@
     "source_task_resource_prototype": ["extended", "platform", "scale"],
     "source_formatting": ["extended", "browser", "platform"],
     "fmt_directory": ["extended", "platform"],
+    "opencl_dispatch": ["extended", "platform"],
     "fmt_width": ["extended", "platform"],
     "standard_library": ["extended", "browser", "platform", "sdk"],
     "stdlib_queue_stack": ["extended", "browser", "platform"],
