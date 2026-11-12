@@ -442,6 +442,10 @@ Physical CUDA fixed-record/result root: a prepared `transform(Measurement)->
 result<Count>` provider ran on RTX 3090 with `Measurement(42.75,true)` producing
 `ok(Count(42,true))`, one kernel completion and a balanced trace ledger.
 
+SDK build 0.223 was attempted with the maintained workflow: configure, build and
+locked-web preparation passed; the full `source-tests` phase did not complete in
+30 minutes and was stopped. No complete SDK acceptance is claimed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
