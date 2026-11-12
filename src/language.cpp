@@ -55,7 +55,7 @@ std::string typeName(Type t) {
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     case Type::Parameter:return t.arguments.empty()?"$"+t.name:genericName("$"+t.name,t.arguments);
     case Type::Projection:return genericName(t.name,t.arguments);
-    case Type::Constructor:return t.name;
+    case Type::Constructor:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(bool tasks,bool resources){
@@ -456,6 +456,7 @@ class Parser {
   Type type() {
     if(typeDepth>=128)throw Error("E_GENERIC_LIMIT","source type nesting exceeds limit",peek().span);
     struct Depth {unsigned &value;Depth(unsigned &v):value(v){++value;}~Depth(){--value;}} guard(typeDepth);
+    if(peek().text=="_"){take();return Type::Unknown;}
     auto t = take();
     if(captureDetails&&(std::set<std::string>{"i64","f64","bool","unit","str","list"}.contains(t.text)||
         ((t.text=="bytes"||t.text=="file")&&peek().text!="::")||(t.text=="result"&&peek().text=="<")))editorName("builtin_type",t.text,t.span);
@@ -479,7 +480,7 @@ class Parser {
       typeEnd();
       return t.text=="list"?Type::list(std::move(item)):Type::result(std::move(item));
     }
-    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text))value.kind=Type::Parameter;editorName(value.kind==Type::Parameter?"parameter":"type",text,head(t.span),parameterOrigins.contains(text)?std::optional<Span>(parameterOrigins.at(text)):std::nullopt);if(peek().text=="<")value.arguments=typeArguments();return value;}
+    if(t.kind==Token::Id){auto text=t.text;while(accept("::"))text+="::"+name().text;auto value=Type::record(text);if(parameters.contains(text))value.kind=Type::Parameter;editorName(value.kind==Type::Parameter?"parameter":"type",text,head(t.span),parameterOrigins.contains(text)?std::optional<Span>(parameterOrigins.at(text)):std::nullopt);if(peek().text=="<"){auto arguments=typeArguments();unsigned holes=0;for(const auto &argument:arguments)if(argument.kind==Type::Unknown)++holes;if(holes){value=Type::constructor(text,holes);value.arguments=std::move(arguments);}else value.arguments=std::move(arguments);}return value;}
     throw Error("E_TYPE", "unknown type '"+t.text+"'",t.span);
   }
   static int precedence(const std::string &op) {
@@ -840,6 +841,7 @@ class Checker {
   }
   std::map<std::string,std::set<std::string>> *effectUnify=nullptr;bool effectWitness=false;
   void unify(Type formal,Type actual,std::map<std::string,Type> &bound,Span span){
+    if(!bound.empty())formal=substituteType(formal,bound);
     if(formal.kind==Type::Projection){auto resolved=resolveType(p,substituteType(formal,bound),span);if(resolved==actual)return;if(resolved.kind==Type::Projection)throw Error("E_GENERIC_INFER","associated projections do not infer their Self type",span);unify(resolved,actual,bound,span);return;}
     if(formal.kind==Type::Parameter&&!formal.arguments.empty()){
       auto shape=constructorPattern(p,actual);Type head;std::vector<Type> args;
@@ -853,7 +855,7 @@ class Checker {
     if(formal.kind==Type::Parameter){auto found=bound.find(formal.name);if(found==bound.end()){if(actual==Type::Unit)throw Error("E_TYPE","generic argument cannot be unit",span);if(argumentKind(p,actual,span)!=p.parameterKinds.at(formal.name))throw Error("E_GENERIC_KIND","inferred generic argument has the wrong kind",span);bound[formal.name]=actual;}else same(actual,found->second,span);return;}
     if(formal.kind==Type::Record&&!formal.arguments.empty()){
       if(actual.kind!=Type::Record)throw Error("E_TYPE","expected nominal generic type "+typeName(formal),span);
-      const auto &instance=p.structure(actual.name);if(instance.templateName!=formal.name||instance.typeArguments.size()!=formal.arguments.size())throw Error("E_TYPE","generic nominal types differ",span);
+      const auto &instance=p.structure(actual.name);if(instance.templateName!=formal.name||instance.typeArguments.size()!=formal.arguments.size())throw Error("E_TYPE","generic nominal types differ: formal="+typeName(formal)+" actual="+typeName(actual)+" template="+instance.templateName,span);
       for(size_t i=0;i<formal.arguments.size();++i)unify(formal.arguments[i],instance.typeArguments[i],bound,span);return;
     }
     if(formal.kind!=actual.kind)throw Error("E_TYPE","expected "+typeName(formal)+", found "+typeName(actual),span);
@@ -2174,7 +2176,7 @@ llvm::json::Value describe() {
     {"match_guide","docs/matching.md"},
     {"match_features",llvm::json::Array{"typed_nested_patterns","match_expressions","ordered_guards","result_patterns","record_patterns","exact_list_patterns","literal_patterns","wildcards","checked_coverage","checked_unreachable_arms","lazy_watch_patterns"}},
     {"match_limits",llvm::json::Object{{"arms",4096},{"pattern_nodes",10000},{"pattern_depth",64},{"pattern_payload",1024},{"coverage_states",100000},{"coverage_depth",128}}},
-    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
+    {"generic_features",llvm::json::Array{"parametric_body_checking","generic_functions","generic_structures","generic_enums","expected_type_inference","argument_type_inference","checked_monomorphization","derived_instance_context","source_template_patches","builtin_type_constraints","constraint_implication","constrained_numeric_literals","user_traits","coherent_implementations","associated_types","constructor_parameters","partial_type_lambdas","generic_trait_methods","static_trait_dispatch","type_defaults","function_type_defaults"}},
     {"generic_constraints",llvm::json::Object{{"add",llvm::json::Array{"i64","f64","str","bytes","list<T>"}},{"ordered",llvm::json::Array{"i64","f64"}},{"integer",llvm::json::Array{"i64"}},{"number",llvm::json::Array{"i64","f64"}},{"wire","recursive scalar/list/result/nominal payloads without function values or file types, including phantom file arguments"},{"implications",llvm::json::Object{{"integer",llvm::json::Array{"number","add","ordered","wire"}},{"number",llvm::json::Array{"add","ordered","wire"}},{"ordered",llvm::json::Array{"wire"}}}}}},
     {"function_value_features",llvm::json::Array{"typed_named_references","generic_reference_inference","higher_order_calls","snapshot_closures","transitive_captures","identity_equality","native_indirect_calls","typescript_closures","owned_capture_cleanup","lazy_callable_watches"}},
     {"function_value_limits",llvm::json::Object{{"parameters",1024},{"captures",1024},{"closure_nesting",64},{"closure_instances",4096},{"signature_bytes",4096},{"target_name_bytes",4096}}},

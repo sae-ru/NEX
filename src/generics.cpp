@@ -141,6 +141,13 @@ Type substituteType(Type type,const std::map<std::string,Type> &arguments){
     if(type.arguments.empty())return found->second;
     auto constructor=found->second;
     if(constructor.kind==Type::Parameter&&constructor.arguments.empty()){constructor.arguments=type.arguments;return constructor;}
+    if(constructor.kind==Type::Constructor&&!constructor.arguments.empty()){
+      unsigned holes=0;for(const auto &argument:constructor.arguments)if(argument.kind==Type::Unknown)++holes;
+      if(holes!=type.arguments.size())throw Error("E_GENERIC_KIND","cannot apply a partial type constructor with a different arity");
+      std::vector<Type> filled;filled.reserve(constructor.arguments.size());size_t index=0;
+      for(const auto &argument:constructor.arguments)filled.push_back(argument.kind==Type::Unknown?type.arguments[index++]:argument);
+      auto value=Type::record(constructor.name);value.arguments=std::move(filled);return value;
+    }
     if(constructor.kind!=Type::Constructor||constructor.constructorArity!=type.arguments.size())throw Error("E_GENERIC_KIND","cannot apply a substituted value type as a constructor");
     if(constructor.name=="list")return Type::list(type.arguments.at(0));if(constructor.name=="result")return Type::result(type.arguments.at(0));if(constructor.name=="task")return Type::task(type.arguments.at(0));if(constructor.name=="channel")return Type::channel(type.arguments.at(0));auto value=Type::record(constructor.name);value.arguments=std::move(type.arguments);return value;
   }
@@ -195,6 +202,9 @@ Type resolveType(Program &p,Type type,Span span,unsigned depth){
     if(!type.arguments.empty()&&type.arguments.size()!=found->second)throw Error("E_GENERIC_KIND","wrong constructor parameter arity",span);return type;
   }
   if(type.kind==Type::Constructor){
+    if(!type.arguments.empty()&&p.structureTemplates.find(type.name)==p.structureTemplates.end()){
+      for(const auto &[name,source]:p.structureTemplates)if(source.localName==type.name||source.name.ends_with("::"+type.name)){type.name=name;break;}
+    }
     auto found=p.structureTemplates.find(type.name);
     if(found!=p.structureTemplates.end()){
       const auto &source=found->second;

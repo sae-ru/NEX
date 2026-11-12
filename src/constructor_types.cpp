@@ -20,10 +20,20 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
   if(t.kind==Type::Unit)return unit?0:fail("unit is not a value-type argument");
   if(t.kind==Type::Constructor) {
     auto found=c.constructors.find(t.name);
-    if(found==c.constructors.end()||!t.constructorArity||t.constructorArity>maxArity||
-       found->second!=t.constructorArity||!t.arguments.empty()||t.element)
+    if(found==c.constructors.end()||t.constructorArity>maxArity||(!t.constructorArity&&t.arguments.empty())||t.element)
       return fail("invalid or unknown type constructor '"+t.name+"'");
+    if(!t.arguments.empty()){
+      if(t.arguments.size()!=found->second)return fail("partial type constructor arity differs");
+      unsigned holes=0;
+      for(const auto &argument:t.arguments){
+        if(argument.kind==Type::Unknown){++holes;continue;}
+        if(kind(argument,c,work,depth+1)!=0)return fail("partial type constructor arguments must be value types");
+      }
+      if(!holes||holes>maxArity)return fail("partial type constructor requires placeholder arguments");
+      return holes;
+    }
     auto slots=c.constructorParameters.find(t.name);
+    if(found->second!=t.constructorArity)return fail("invalid or unknown type constructor '"+t.name+"'");
     if(slots!=c.constructorParameters.end()&&std::any_of(slots->second.begin(),slots->second.end(),[](auto n){return n!=0;}))return maxArity+1;
     return t.constructorArity;
   }
@@ -64,6 +74,13 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
 Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Work &work,unsigned depth) {
   work.enter(depth);
   auto constructorKind=kind(constructor,context,work,depth+1);
+  if(constructor.kind==Type::Constructor&&!constructor.arguments.empty()){
+    if(constructorKind!=args.size()||args.empty())throw Error("E_GENERIC_KIND","incorrect number of type constructor arguments",work.span);
+    std::vector<Type> filled;filled.reserve(args.size());size_t index=0;
+    for(const auto &argument:constructor.arguments)filled.push_back(argument.kind==Type::Unknown?args[index++]:argument);
+    if(index!=args.size())throw Error("E_GENERIC_KIND","partial type constructor arity differs",work.span);
+    auto value=Type::record(constructor.name);value.arguments=std::move(filled);std::fprintf(stderr,"PARTIAL name=%s source_args=%zu filled=%zu result=%s\n",constructor.name.c_str(),constructor.arguments.size(),value.arguments.size(),typeName(value).c_str());return value;
+  }
   if((constructor.kind==Type::Constructor?constructor.constructorArity:constructorKind)!=args.size()||args.empty())
     throw Error("E_GENERIC_KIND","incorrect number of type constructor arguments",work.span);
   auto slots=constructor.kind==Type::Constructor?context.constructorParameters.find(constructor.name):context.constructorParameters.end();
@@ -85,7 +102,7 @@ Type substitute(const Type &source,const TypeSubstitution &bindings,const KindCo
   if(source.kind!=Type::Parameter)return value;
   auto found=bindings.find(source.name);if(found==bindings.end())return value;
   if(!active.insert(source.name).second)throw Error("E_GENERIC_OCCURS","recursive type substitution",work.span);
-  auto target=substitute(found->second,bindings,context,work,depth+1,active);active.erase(source.name);
+  auto target=substitute(found->second,bindings,context,work,depth+1,active);active.erase(source.name);std::fprintf(stderr,"SUB %s target_kind=%d target_args=%zu source_args=%zu target=%s\n",source.name.c_str(),int(target.kind),target.arguments.size(),value.arguments.size(),typeName(target).c_str());
   auto expected=context.parameters.find(source.name);
   if(expected==context.parameters.end()||kind(target,context,work,depth+1)!=expected->second)
     throw Error("E_GENERIC_KIND","type substitution changes the kind of '"+source.name+"'",work.span);

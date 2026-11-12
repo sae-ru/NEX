@@ -5060,6 +5060,7 @@
     "coherent_implementations",
     "associated_types",
     "constructor_parameters",
+    "partial_type_lambdas",
     "generic_trait_methods",
     "static_trait_dispatch",
     "type_defaults",
