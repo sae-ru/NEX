@@ -1,0 +1,64 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Owned OpenCL scalar dispatch runner",
+  "implementation_commit": "41e0e1ac136a25c8903fab7822582ca8ff3d56cc",
+  "build_source_base_commit": "5cc06e6",
+  "compiler": {
+    "toolchain": "0.225.0",
+    "language": "0.28",
+    "sha256": "0798cf8bc6a3dcd1961d6e7c80f249b411e5e70fc3aab217cfc25a128de41a52",
+    "compiler_build": "fde1e173b0956aaa809c9b8d33702b39bcb956314a7a8483f1813ccda0bd064b",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "device": "Apple M5 Max",
+    "opencl": "OpenCL 1.2 ",
+    "device_type": "GPU"
+  },
+  "dispatch": {
+    "multiply": {
+      "ok": true,
+      "result": 41,
+      "error": 0,
+      "cpu_fallback": false
+    },
+    "divide_by_zero": {
+      "ok": false,
+      "result": 0,
+      "error": 2,
+      "cpu_fallback": false
+    },
+    "f64": "skipped: Apple OpenCL device could not enqueue fp64 kernel",
+    "runner": "tools/owned-opencl/run.py",
+    "schema": "nex.opencl-run/1"
+  },
+  "observations": {
+    "registered_groups": 346,
+    "opencl_dispatch_seconds": 0.432866,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.28,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "scalar i64/f64/bool/unit only; containers/text effects are not dispatched",
+    "Apple OpenCL device lacks fp64 enqueue support; f64 hardware was qualified on NVIDIA OpenCL separately",
+    "the compiler remains source-only; this is an external host runner"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "runner": "tools/owned-opencl/run.py",
+    "test": "tests/opencl_dispatch.py",
+    "multiply": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/multiply.json",
+    "divide": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/divide.json",
+    "focused_junit": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/focused.json",
+    "core_junit": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/core.json",
+    "describe": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/opencl-dispatch-0225/nex.sha256"
+  }
+}
