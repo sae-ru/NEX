@@ -1,0 +1,83 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Trailing-argument partial-constructor inference",
+  "implementation_commit": "6be6ea4249ca451a2d57b98277ed74e9094a9c16",
+  "build_source_base_commit": "52066a27",
+  "compiler": {
+    "toolchain": "0.231.0",
+    "language": "0.28",
+    "sha256": "75cf248f757624dfc5c19c35c367cb33c2c6b09e64a94c8ea7886b33fd00e8f3",
+    "compiler_build": "f167616c445e50263af069139ea1f2d356b13ce59bf22d0ebee6900bd568a74b",
+    "descriptor_hash": "9cd65c6069c5439ed259464242a20ecfc7f9d2bb89f41b3d75a1b8789ae0c5ae",
+    "generic_features": [
+      "parametric_body_checking",
+      "generic_functions",
+      "generic_structures",
+      "generic_enums",
+      "expected_type_inference",
+      "argument_type_inference",
+      "checked_monomorphization",
+      "derived_instance_context",
+      "source_template_patches",
+      "builtin_type_constraints",
+      "constraint_implication",
+      "constrained_numeric_literals",
+      "user_traits",
+      "coherent_implementations",
+      "associated_types",
+      "constructor_parameters",
+      "partial_type_lambdas",
+      "whole_type_lambda_inference",
+      "generic_trait_methods",
+      "static_trait_dispatch",
+      "type_defaults",
+      "function_type_defaults"
+    ]
+  },
+  "inference": {
+    "call": "forward(Pair<i64,str>(1,\"x\"))",
+    "inferred": "F=Pair<i64,_>, T=str",
+    "trailing_arguments": "explicit parameters",
+    "leading_arguments": "fixed holes",
+    "explicit_partial_application_still_supported": true
+  },
+  "agreement": {
+    "reference": true,
+    "native_release": true,
+    "tests": true,
+    "typescript": true,
+    "typescript_cases": 1
+  },
+  "coverage": {
+    "test": "tests/type_lambdas.py",
+    "test_seconds": 5.45,
+    "focused": [
+      "generics",
+      "traits",
+      "type_defaults",
+      "type_lambdas",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 349,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "language version remains 0.28",
+    "ambiguous/leading-only positions still need an explicit lambda",
+    "higher-order kind signatures remain pending",
+    "full CTest was not repeated; focused generics/traits/type_defaults/type_lambdas/core checks passed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "typescript": "/Users/sae/projects/NEX/build/type-lambda-infer-0231/typescript-test.json",
+    "describe": "/Users/sae/projects/NEX/build/type-lambda-infer-0231/describe.json",
+    "generic_features": "/Users/sae/projects/NEX/build/type-lambda-infer-0231/generic-features.json",
+    "guide": "docs/language.md"
+  }
+}
