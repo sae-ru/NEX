@@ -1,0 +1,71 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full SDK workflow 0.234 with full source-test tier",
+  "implementation_commit": "67d567473942bb26a1738c999c94e47c37d2eadd",
+  "build_source_base_commit": "67d56747",
+  "compiler": {
+    "toolchain": "0.234.0",
+    "language": "0.28"
+  },
+  "workflow": {
+    "output": "/Users/sae/projects/NEX/build/sdk-full-0234-v1",
+    "phases": [
+      [
+        "configure",
+        "passed",
+        2.594
+      ],
+      [
+        "build",
+        "passed",
+        278.026
+      ],
+      [
+        "locked-web",
+        "passed",
+        0.393
+      ],
+      [
+        "source-tests",
+        "passed",
+        3997.539
+      ],
+      [
+        "install",
+        "passed",
+        0.596
+      ],
+      [
+        "distribution",
+        "failed",
+        6.556
+      ]
+    ],
+    "source_tests": {
+      "ok": true,
+      "tier": "full",
+      "seconds": 3997.513,
+      "groups": 342,
+      "ctest_ok": true
+    },
+    "distribution_error": "configured deny_read did not cover the installed SDK/host sources; manual distribution with explicit roots is running"
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "source-tests used the SDK workflow's jobs=4 and passed; distribution in the automated report failed",
+    "a manual apple bundle with explicit deny-read roots is still running at recording time",
+    "no complete SDK acceptance is claimed"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/sdk-full-0234-v1/report.json",
+    "source_tests": "/Users/sae/projects/NEX/build/sdk-full-0234-v1/source-tests/report.json",
+    "log": "/Users/sae/projects/NEX/build/sdk-full-0234-v1.log"
+  }
+}

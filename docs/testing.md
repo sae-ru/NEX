@@ -577,6 +577,11 @@ native run and tests. Windows core fixtures need `PYTHONUTF8=1` and
 Mali-G720 and RK3588 Mali-G610 (41/error 0, no CPU fallback). Only macOS has a
 full 350-group receipt.
 
+SDK workflow 0.234: configure, build, locked-web, full source-tests and install
+passed; the full tier ran 342 selected groups in 3997.5 s. The automated
+distribution phase failed on deny-read coverage, and an explicit-root manual
+distribution was still running. No complete SDK acceptance is claimed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
