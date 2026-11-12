@@ -1,0 +1,51 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "SDK source-test jobs propagation",
+  "implementation_commit": "60d05e0fca69d1755ca1623a9f4545c2d512fb12",
+  "build_source_base_commit": "8020d53",
+  "compiler": {
+    "toolchain": "0.224.0",
+    "language": "0.28",
+    "sha256": "a9e7e6724349294d02e920fe6fe95f6eba0e08d3d41e512e2a697721f54983ed",
+    "compiler_build": "73cd90a770a06b0e64a58dc46d80563dacb79461a588c6c773941658867f9e15",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "host": {
+    "system": "Darwin",
+    "architecture": "arm64",
+    "cpu": "apple-m4"
+  },
+  "feature": {
+    "sdk_workflow_source_tests": "tools/ci/ctest.py",
+    "jobs_from_config": true,
+    "core_tier_jobs4_control": {
+      "ok": true,
+      "tier": "core",
+      "seconds": 10.143
+    }
+  },
+  "observations": {
+    "registered_groups": 345,
+    "core_groups": 12,
+    "core_failed_or_skipped": 0,
+    "core_seconds": 21.19,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "full SDK source-tests were not completed; only the jobs propagation and a core-tier control are verified",
+    "no SDK acceptance is claimed",
+    "language 0.28 semantics unchanged"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "core_ci_report": "/Users/sae/projects/NEX/build/sdk-jobs-0224/core-ci-report.json",
+    "core_junit": "/Users/sae/projects/NEX/build/sdk-jobs-0224/core.json",
+    "describe": "/Users/sae/projects/NEX/build/sdk-jobs-0224/describe.json",
+    "nex_sha256": "/Users/sae/projects/NEX/build/sdk-jobs-0224/nex.sha256",
+    "tool": "tools/sdk_build.py",
+    "guide": "docs/testing.md"
+  }
+}
