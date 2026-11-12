@@ -1,0 +1,62 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Module-qualified graph identity-preserving rename move",
+  "implementation_commit": "4d61d7546231527db7888f73176bcb52f840a61d",
+  "build_source_base_commit": "ce22039a",
+  "compiler": {
+    "toolchain": "0.227.0",
+    "language": "0.28",
+    "sha256": "a771a1c98ef66a9e0e38ee4f346a1d6e3b77dbfda609000fc2e60b78ebcaaf69",
+    "compiler_build": "6e1b3a6f88d00744776223f2bb4d8b6a2eb6c3c34c766ab30cba07fb4a05a4a9",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "rename": {
+    "schema": "nex.identities-rename/1",
+    "from": "app::old",
+    "to": "lib::new",
+    "moved": [
+      {
+        "id": "9df45dbaeff72ef02a2a3762c582361b",
+        "module": "lib",
+        "symbol": "lib::new",
+        "table": "node_ids"
+      }
+    ],
+    "source_head": "e7e2fa3e90ba9390876d4bc3fa3217e32cb86a34934db61bed1935afa5582512",
+    "identity_after_move": "9df45dbaeff72ef02a2a3762c582361b",
+    "identity_preserved": true
+  },
+  "coverage": {
+    "test": "tests/graph_identity_rename.py",
+    "test_seconds": 0.89,
+    "cases": [
+      "function same-module round trip",
+      "type same-module round trip",
+      "cross-module function move",
+      "conflict",
+      "stale HEAD"
+    ]
+  },
+  "observations": {
+    "registered_groups": 347,
+    "core_groups": 12,
+    "core_seconds": 22.72,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "source edits and the following check remain operator actions",
+    "full CTest was last run at 0.226 and was not repeated for this additive graph command",
+    "no automatic reference rewrite/LSP rename"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "rename": "/Users/sae/projects/NEX/build/identity-rename-cross-0227/r.json",
+    "before": "/Users/sae/projects/NEX/build/identity-rename-cross-0227/c1.json",
+    "after": "/Users/sae/projects/NEX/build/identity-rename-cross-0227/c2.json",
+    "identities": "/Users/sae/projects/NEX/build/identity-rename-cross-0227/i2.json",
+    "guide": "docs/graph.md"
+  }
+}
