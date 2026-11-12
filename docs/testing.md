@@ -492,6 +492,11 @@ i64/f64/bool kernels. On Apple M5 Max, i64 `20*2+1 -> 41` and division-by-zero
 status 2 passed; f64 was skipped because the Apple OpenCL device could not
 enqueue the fp64 kernel.
 
+OpenCL dispatch on Mali hardware: the pre-emitted scalar kernel ran through
+`tools/owned-opencl/run.py` on CIX Mali-G720 and RK3588 Mali-G610, both returning
+41 with error 0 and no CPU fallback. Apple M5 Max passed i64/status-2; its fp64
+enqueue is unsupported.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

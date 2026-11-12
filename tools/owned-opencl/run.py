@@ -50,15 +50,23 @@ def decode(kind,word):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--compiler',required=True);parser.add_argument('--project',required=True,type=Path)
-    parser.add_argument('--entry',required=True);parser.add_argument('--args',default='')
+    parser.add_argument('--compiler');parser.add_argument('--project',type=Path)
+    parser.add_argument('--entry');parser.add_argument('--args',default='')
+    parser.add_argument('--kernel',type=Path);parser.add_argument('--parameter-types',default='')
+    parser.add_argument('--result-type',choices=['i64','f64','bool','unit']);parser.add_argument('--source-sha256',default='')
     parser.add_argument('--count',type=int,default=1);parser.add_argument('--steps',type=int,default=65536)
     parser.add_argument('--layout',choices=['rows','columns'],default='columns')
     parser.add_argument('--library',default=None,help='OpenCL loader path')
     args=parser.parse_args()
     if not 1<=args.count<=32768 or not 1<=args.steps<=65536 or args.count*args.steps>16777216:raise SystemExit('geometry out of bounds')
-    emission,source=emit(args.compiler,args.project,args.entry,args.layout)
-    params=emission.get('parameter_types',[]);result_type=emission.get('result_type')
+    if args.kernel:
+        if not args.parameter_types or not args.result_type:raise SystemExit('--kernel requires --parameter-types and --result-type')
+        source=args.kernel.read_bytes();params=args.parameter_types.split(',');result_type=args.result_type
+        emission={'shader_sha256':args.source_sha256 or __import__('hashlib').sha256(source).hexdigest()}
+    else:
+        if not (args.compiler and args.project and args.entry):raise SystemExit('--compiler/--project/--entry or --kernel are required')
+        emission,source=emit(args.compiler,args.project,args.entry,args.layout)
+        params=emission.get('parameter_types',[]);result_type=emission.get('result_type')
     if any(p not in ('i64','f64','bool') for p in params) or result_type not in ('i64','f64','bool','unit'):
         raise SystemExit('owned OpenCL dispatch currently supports scalar i64/f64/bool/unit only')
     raw=args.args.split(',') if args.args else []
