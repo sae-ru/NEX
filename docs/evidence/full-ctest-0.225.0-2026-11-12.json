@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest qualification of toolchain 0.225.0",
+  "implementation_commit": "9e3f67eafc9b3b147cf31e92720c7727d3ac7768",
+  "build_source_base_commit": "5b66eac",
+  "compiler": {
+    "toolchain": "0.225.0",
+    "language": "0.28",
+    "sha256": "0798cf8bc6a3dcd1961d6e7c80f249b411e5e70fc3aab217cfc25a128de41a52",
+    "compiler_build": "fde1e173b0956aaa809c9b8d33702b39bcb956314a7a8483f1813ccda0bd064b",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2245.605,
+    "ctest_exit_code": 0,
+    "groups": 346,
+    "passed": 346,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "6a51fd5da081f046c8d72cdd5d2fe15ecb47e5d0ab1860358909306bfb2af09d",
+    "results_sha256": "e5cee918af7654468d0ab68b1b1b869945129c695490a1efb3c2189e7e151bec",
+    "environment": {
+      "NEX_NODE": "/Users/sae/.local/bin/node",
+      "NEX_TSC": "locked TypeScript compiler",
+      "NEX_NPM_CACHE": "/Users/sae/.npm"
+    }
+  },
+  "corrections": [
+    "CLI PUBLIC command set and completion for fix/bench",
+    "SDK executor count 22 in the sdk_archives fixture",
+    "standard-library inventory extension scoped to SDK discovery",
+    "retained 0.26 web projection updated for the current runtime template"
+  ],
+  "observations": {
+    "registered_groups": 346,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "requires the locked TypeScript/Node environment for browser-tagged groups",
+    "release_qualification flag remains false because this receipt is not a release publication",
+    "macOS ARM64 host only; other platform matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0225b/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0225b/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0225b.log",
+    "describe": "/tmp/full-describe.json",
+    "guide": "docs/testing.md"
+  }
+}
