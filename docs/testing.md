@@ -555,6 +555,9 @@ inference also derives a partial constructor for calls such as
 Reference/native execution, tests and the descriptor features are covered by
 `type_lambdas`; higher-order kind signatures remain pending.
 
+Full CTest qualification of 0.231.0 passed all 349 groups in 2690.715 s,
+including the type-lambda inference group.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

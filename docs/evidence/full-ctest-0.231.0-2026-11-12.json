@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest qualification of toolchain 0.231.0",
+  "implementation_commit": "1c75bfa5",
+  "build_source_base_commit": "6be6ea42",
+  "compiler": {
+    "toolchain": "0.231.0",
+    "language": "0.28",
+    "sha256": "75cf248f757624dfc5c19c35c367cb33c2c6b09e64a94c8ea7886b33fd00e8f3",
+    "compiler_build": "f167616c445e50263af069139ea1f2d356b13ce59bf22d0ebee6900bd568a74b",
+    "descriptor_hash": "9cd65c6069c5439ed259464242a20ecfc7f9d2bb89f41b3d75a1b8789ae0c5ae"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2690.715,
+    "ctest_exit_code": 0,
+    "groups": 349,
+    "passed": 349,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "1fdbeb51d8a9298c76907af9eba064a7b424b20b2bdb95c7941bb29821a45915",
+    "results_sha256": "8a0af930ad6d51aa6118bffd7ccc13f938836d67ed6b225ff3781202ea758cb8",
+    "environment": {
+      "NEX_NODE": "/Users/sae/.local/bin/node",
+      "NEX_TSC": "locked TypeScript compiler",
+      "NEX_NPM_CACHE": "/Users/sae/.npm"
+    }
+  },
+  "observations": {
+    "registered_groups": 349,
+    "groups_by_label": {
+      "browser": 143,
+      "core": 12,
+      "extended": 337,
+      "platform": 192,
+      "scale": 131,
+      "sdk": 21
+    },
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "requires the locked TypeScript/Node environment for browser-tagged groups",
+    "release_qualification remains false because this is a test receipt",
+    "macOS ARM64 host only; Fedora/platform matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0231/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0231/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0231.log",
+    "describe": "/Users/sae/projects/NEX/build/ci-full-0231/describe.json",
+    "guide": "docs/testing.md"
+  }
+}
