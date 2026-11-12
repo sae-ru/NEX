@@ -1,0 +1,84 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Toolchain 0.234 cross-compiler/platform build and core CTest matrix",
+  "implementation_commit": "67d56747",
+  "build_source_base_commit": "78559a83",
+  "compiler": {
+    "toolchain": "0.234.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "architecture": "x86_64",
+      "libc": "glibc2.28",
+      "compiler": "/opt/nex-toolchain/bin/clang++",
+      "llvm": "22.1.8",
+      "doctor_version": "0.234.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "run_stdout": "astra-ok\n",
+      "tests_ok": true
+    },
+    {
+      "name": "Fedora 45",
+      "architecture": "x86_64",
+      "compiler": "/usr/bin/clang++",
+      "llvm": "23.1.4",
+      "doctor_version": "0.234.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "run_stdout": "fedora234-ok\n",
+      "tests_ok": true
+    },
+    {
+      "name": "Windows 11",
+      "architecture": "x86_64",
+      "compiler": "F:\\sae\\NEX\\build\\deps\\windows-host\\clang64\\bin\\clang++.exe",
+      "llvm": "22.1.8",
+      "doctor_version": "0.234.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "core_environment": [
+        "PYTHONUTF8=1",
+        "CMAKE_GENERATOR=Ninja"
+      ],
+      "run_stdout": "windows234-ok\n",
+      "tests_ok": true
+    }
+  ],
+  "mali_opencl": {
+    "kernel_sha256": "2480d5c690a8556c1a536e1cf0e3a62503c5f2035658121b504c4079d377566f",
+    "CIX": "Mali-G720 result 41 error 0",
+    "RK3588": "Mali-G610 result 41 error 0",
+    "cpu_fallback": false
+  },
+  "limits": [
+    "core tier only on Astra/Fedora/Windows; extended/browser/SDK/package remain pending there",
+    "Astra uses the vendored /opt/nex-toolchain LLVM22.1.8/Clang22 and glibc2.28",
+    "Windows core tests require PYTHONUTF8=1 and CMAKE_GENERATOR=Ninja for the Python/CMake fixtures",
+    "macOS full CTest 350/350 remains the only full-tier platform receipt"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "directory": "/Users/sae/projects/NEX/build/platform-0234",
+    "astra": "/Users/sae/projects/NEX/build/platform-0234/astra",
+    "fedora": "/Users/sae/projects/NEX/build/platform-0234/fedora",
+    "windows": "/Users/sae/projects/NEX/build/platform-0234/windows",
+    "guide": "docs/testing.md"
+  }
+}
