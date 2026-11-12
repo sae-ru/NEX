@@ -527,8 +527,10 @@ Fedora x86_64 platform build: toolchain 0.226.0 configured and built with
 clang 23.1.4, OpenSSL 4.0.3, SQLite 3.53.4 and Z3 5.3.2; doctor, a native run,
 native tests and the 12-group core CTest passed. The extended non-browser subset
 remains blocked by native fixture tests pinning LLVM/LLD 22.1.x and by
-`task_file_stream_mixed`; Fedora ships LLVM22/LLD22 but no MLIR22, so an LLVM22
-rebuild is unavailable without building MLIR22 from source. Fedora extended,
+`task_file_stream_mixed`; Fedora ships LLVM22/LLD22 but no MLIR22. Building MLIR22 from
+the 22.1.8 source against the distro LLVM22 headers also fails in TableGen
+(`format_adapter`/`PHKindInfo` API mismatch), so a Fedora LLVM22 rebuild remains
+unavailable. Fedora extended,
 browser, SDK and packaging remain pending.
 
 Full CTest qualification of 0.226.0 (including the new graph identity rename)

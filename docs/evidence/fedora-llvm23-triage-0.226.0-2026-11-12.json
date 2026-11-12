@@ -2,18 +2,48 @@
   "schema": "nex.scoped-implementation-evidence/1",
   "scope": "Fedora LLVM23 extended platform triage for toolchain 0.226.0",
   "implementation_commit": "2b903a0f",
-  "host": {"system": "Fedora 45", "architecture": "x86_64", "llvm": "23.1.4"},
-  "packages": {"llvm22": "22.1.8 installed", "clang22": "22.1.8 installed", "lld22": "22.1.8 installed",
-    "mlir22": "not available (Fedora ships MLIR 23 only)"},
-  "filtered_extended": {"selected": 189, "passed_before_stop": 39,
-    "excluded": ["native_runtime_paths", "native_runtime_loader", "task_file_stream_mixed"],
-    "failures_seen": ["source_task_foreign_prototype", "source_task_resource_prototype",
-      "native_diagnostics", "public_task_foreign_source"],
-    "status": "blocked_partial"},
+  "host": {
+    "system": "Fedora 45",
+    "architecture": "x86_64",
+    "llvm": "23.1.4"
+  },
+  "packages": {
+    "llvm22": "22.1.8 installed",
+    "clang22": "22.1.8 installed",
+    "lld22": "22.1.8 installed",
+    "mlir22": "not available (Fedora ships MLIR 23 only)"
+  },
+  "filtered_extended": {
+    "selected": 189,
+    "passed_before_stop": 39,
+    "excluded": [
+      "native_runtime_paths",
+      "native_runtime_loader",
+      "task_file_stream_mixed"
+    ],
+    "failures_seen": [
+      "source_task_foreign_prototype",
+      "source_task_resource_prototype",
+      "native_diagnostics",
+      "public_task_foreign_source"
+    ],
+    "status": "blocked_partial"
+  },
   "conclusion": "The Linux stand cannot complete the extended matrix: native fixture producers and diagnostics are pinned to LLVM/LLD 22.1.x, while the available NEX build is LLVM23 and MLIR22 is not packaged.",
-  "limits": ["core tier on Fedora passes", "extended/browser/SDK/packaging remain pending",
-    "relaxing the LLVM22 fixture gate was not attempted"],
+  "limits": [
+    "core tier on Fedora passes",
+    "extended/browser/SDK/packaging remain pending",
+    "relaxing the LLVM22 fixture gate was not attempted"
+  ],
   "full_regression_or_SDK_qualification": false,
   "new_security_checks_started": false,
-  "deferred_checks_untouched": true
+  "deferred_checks_untouched": true,
+  "mlir22_source_build": {
+    "attempted": true,
+    "source": "llvm-project-22.1.8.src",
+    "status": "failed",
+    "error": "TableGen Format.h API mismatch against distro LLVM22 headers",
+    "configure": "passed",
+    "build_progress": "8/2343"
+  }
 }
