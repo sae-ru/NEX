@@ -525,8 +525,10 @@ rejection are covered by `graph_identity_rename`.
 
 Fedora x86_64 platform build: toolchain 0.226.0 configured and built with
 clang 23.1.4, OpenSSL 4.0.3, SQLite 3.53.4 and Z3 5.3.2; doctor, a native run,
-native tests and the 12-group core CTest passed. Extended/browser/SDK groups and
-Fedora packaging remain pending.
+native tests and the 12-group core CTest passed. The extended non-browser subset
+is currently blocked by `native_runtime_paths`' explicit LLVM/LLD 22.1.x ELF
+fixture gate and a separate `task_file_stream_mixed` failure; Fedora extended,
+browser, SDK and packaging remain pending.
 
 ## Maintain the catalogue
 

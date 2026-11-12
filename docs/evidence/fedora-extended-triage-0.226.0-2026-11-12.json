@@ -1,0 +1,17 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Fedora extended CTest triage for toolchain 0.226.0",
+  "implementation_commit": "555a3d97",
+  "build_source_base_commit": "9a2ad427",
+  "host": {"system": "Fedora 45", "architecture": "x86_64", "llvm": "23.1.4"},
+  "extended_subset": {"selected": 192, "completed_before_stop": 24, "passed": 22,
+    "failed": ["native_runtime_paths", "native_runtime_loader", "task_file_stream_mixed"],
+    "native_runtime_gate": "tests/native_runtime_paths.py requires LLVM/LLD 22.1.x; Fedora provides 23.1.4",
+    "status": "blocked_partial"},
+  "core": {"tier": "core", "groups": 12, "ok": true, "seconds": 5.251},
+  "limits": ["extended/browser/SDK/packaging not qualified on Fedora",
+    "the runtime ELF fixture gate pins LLVM/LLD 22.1.x and is not relaxed for the LLVM23 stand"],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true
+}
