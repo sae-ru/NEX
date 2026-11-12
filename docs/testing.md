@@ -569,6 +569,14 @@ Full CTest qualification of 0.234.0 passed all 350 groups in 2493.963 s,
 including higher-order kind signatures. Higher-order depth checks are limited to
 non-zero slot kinds to keep ordinary monomorphization cheap.
 
+Cross-compiler/platform matrix 0.234.0: Astra Linux 1.7 (glibc2.28, Clang
+22.1.8), Fedora 45 (Clang 23.1.4) and Windows 11 x86-64 (LLVM-MinGW Clang
+22.1.8) each built the current source and passed the 12-group core CTest,
+native run and tests. Windows core fixtures need `PYTHONUTF8=1` and
+`CMAKE_GENERATOR=Ninja`. The current OpenCL kernel also dispatched on CIX
+Mali-G720 and RK3588 Mali-G610 (41/error 0, no CPU fallback). Only macOS has a
+full 350-group receipt.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
