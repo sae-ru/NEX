@@ -506,6 +506,11 @@ The relocatable bundle also passed the full 41-phase acceptance with
 TCP/IPv6 and project build, in 2872.132 s. Immutable release and full
 source-tests remain pending.
 
+Versioned immutable release assembly: `tools/sdk_release.py` now binds a
+verified bundle archive, its bundle manifest, notices and a successful 41-phase
+acceptance report into a read-only `nex.sdk-release/1` directory with
+`SHA256SUMS`. The 0.224 macOS release has browser/live evidence recorded.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
