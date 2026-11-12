@@ -1,0 +1,57 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Source rename with graph identity preservation",
+  "implementation_commit": "520d852d19d1734cd61946f22bd9311bda3e4a23",
+  "build_source_base_commit": "0d50b9de",
+  "compiler": {
+    "toolchain": "0.228.0",
+    "language": "0.28",
+    "sha256": "84568873ee61d1c6ca5cbe8fc5e1362cc2e082a709aa1f4e45ff5f6234618a9a",
+    "compiler_build": "a921ddf001425caec2b4249a6822f3a1c55aa43e7f301f507924dea7e5b675ef",
+    "descriptor_hash": "3b9fe68a711dacb40aa6cb4a57d30cd9114715d7d93737ea54ecc1c7e0af0ae1"
+  },
+  "rename": {
+    "schema": "nex.rename/1",
+    "dry_run_tested": true,
+    "source_mode": "same module",
+    "skips_comments_and_strings": true,
+    "identity_before": "f1b1a467af6a277642aedc07959360c4",
+    "identity_after": "f1b1a467af6a277642aedc07959360c4",
+    "identity_preserved": true,
+    "files": [
+      "main.nex"
+    ],
+    "revision": "67f689136749f852780a4dc32670b444c6634c8e013deeb167f7f9e02aee7df1"
+  },
+  "coverage": {
+    "test": "tests/rename_source.py",
+    "test_seconds": 0.43,
+    "cases": [
+      "dry run",
+      "source/comment/string bytes",
+      "identity survival",
+      "non-qualified rejection"
+    ]
+  },
+  "observations": {
+    "registered_groups": 348,
+    "core_groups": 12,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "same-module source rename only; imports and cross-module source moves remain operator work",
+    "the lexical scanner does not perform semantic reference resolution",
+    "full CTest was not repeated for this tool-only addition"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "rename": "/Users/sae/projects/NEX/build/rename-source-0228/rs-rename.json",
+    "identity_before": "/Users/sae/projects/NEX/build/rename-source-0228/rs-ids.json",
+    "identity_after": "/Users/sae/projects/NEX/build/rename-source-0228/rs-ids2.json",
+    "after_source": "/Users/sae/projects/NEX/build/rename-source-0228/after-main.nex",
+    "guide": "docs/graph.md"
+  }
+}
