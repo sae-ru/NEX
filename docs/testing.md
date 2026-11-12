@@ -542,6 +542,9 @@ across project files while skipping comments and strings, records the graph
 identity move before the next check and verifies the ID survives. Dry runs,
 cross-file references and error handling are covered by `rename_source`.
 
+Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
+including the source rename group.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
