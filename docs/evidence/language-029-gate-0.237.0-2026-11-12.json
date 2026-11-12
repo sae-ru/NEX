@@ -1,0 +1,59 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit language 0.29 gate for partial type lambdas and higher-order kinds",
+  "implementation_commit": "bc366c1de36526c45d07820748fe209b71a64435",
+  "build_source_base_commit": "1e811e86",
+  "compiler": {
+    "toolchain": "0.237.0",
+    "default_language": "0.28",
+    "development_language": "0.29",
+    "sha256": "204cfd6659703b1ab475695607d662da5e68311cf6c381fb9d799648ec54089d"
+  },
+  "defaults": {
+    "compiler_default": "0.28",
+    "development_opt_in": "0.29",
+    "program_formats": {
+      "0.28": "nex.program/16",
+      "0.29": "nex.program/17"
+    }
+  },
+  "acceptance": {
+    "0.29_check_ok": true,
+    "0.29_revision": "8db83a706a9813d0c70546e45c6f6a13d3008a8866478aa4a231f797ebde3c51",
+    "0.29_run_stdout": "3\n3\n",
+    "0.29_tests_ok": true,
+    "0.28_reject_code": "E_LANGUAGE_VERSION",
+    "0.28_reject_message": "partial type lambdas require language0.29"
+  },
+  "coverage": {
+    "tests": [
+      "type_lambdas",
+      "higher_kinds",
+      "traits",
+      "generics",
+      "type_defaults",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 350,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "0.29 is explicit opt-in; default/new project language remains 0.28",
+    "full CTest for 0.237 was not rerun; focused groups and core pass",
+    "migration defaults and SDK acceptance still target 0.28"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "check": "/Users/sae/projects/NEX/build/language-029-0237/check.json",
+    "run": "/Users/sae/projects/NEX/build/language-029-0237/run.json",
+    "test": "/Users/sae/projects/NEX/build/language-029-0237/test.json",
+    "reject": "/Users/sae/projects/NEX/build/language-029-0237/reject028.json",
+    "guide": "docs/language.md"
+  }
+}
