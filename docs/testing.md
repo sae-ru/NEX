@@ -523,6 +523,11 @@ Identity-preserving rename: `nex identities --kind rename` moves function
 check reuses them. Function and type round trips, conflicts and stale-head
 rejection are covered by `graph_identity_rename`.
 
+Fedora x86_64 platform build: toolchain 0.226.0 configured and built with
+clang 23.1.4, OpenSSL 4.0.3, SQLite 3.53.4 and Z3 5.3.2; doctor, a native run,
+native tests and the 12-group core CTest passed. Extended/browser/SDK groups and
+Fedora packaging remain pending.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
