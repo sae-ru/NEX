@@ -305,26 +305,21 @@ llvm::json::Value renameGraphIdentity(sqlite3 *db,const Program &p,const std::st
   if(from==to)throw Error("E_IDENTITY","identity rename target must differ from its source");
   auto split=[](const std::string &symbol){auto at=symbol.rfind("::");return at==std::string::npos?std::pair<std::string,std::string>{"",symbol}:std::pair<std::string,std::string>{symbol.substr(0,at),symbol.substr(at+2)};};
   auto [fromModule,fromName]=split(from);auto [toModule,toName]=split(to);
-  if((!fromModule.empty()&&!toModule.empty()&&fromModule!=toModule)||(!toModule.empty()&&toModule!=fromModule))throw Error("E_IDENTITY","identity rename cannot move a node between modules");
-  auto module=fromModule.empty()?toModule:fromModule;
   Array moved;
   auto moveNode=[&](const std::string &rowModule,const std::string &rowName,const std::string &id){
-    if(!toModule.empty()&&toModule!=rowModule)throw Error("E_IDENTITY","identity rename target module differs");
-    if(rowModule==module||module.empty()){
-      {Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,rowModule);q.bind(2,toName);if(q.row())throw Error("E_IDENTITY","identity rename target already exists: "+rowModule+"::"+toName);}
-      {Query q(db,"UPDATE node_ids SET name=? WHERE module=? AND name=?");q.bind(1,toName);q.bind(2,rowModule);q.bind(3,rowName);q.row();}
-      moved.push_back(Object{{"table","node_ids"},{"module",rowModule},{"id",id},{"symbol",rowModule+"::"+toName}});
-    }
+    if(!fromModule.empty()&&fromModule!=rowModule)throw Error("E_IDENTITY","identity rename source module differs");
+    const std::string targetModule=toModule.empty()?rowModule:toModule;
+    {Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,targetModule);q.bind(2,toName);if(q.row())throw Error("E_IDENTITY","identity rename target already exists: "+targetModule+"::"+toName);}
+    {Query q(db,"UPDATE node_ids SET module=?,name=? WHERE module=? AND name=?");q.bind(1,targetModule);q.bind(2,toName);q.bind(3,rowModule);q.bind(4,rowName);q.row();}
+    moved.push_back(Object{{"table","node_ids"},{"module",targetModule},{"id",id},{"symbol",targetModule+"::"+toName}});
   };
-  if(module.empty()){
-    Query q(db,"SELECT module,name,id FROM node_ids WHERE name=?");q.bind(1,fromName);
-    while(q.row())moveNode(q.text(0),q.text(1),q.text(2));
+  if(fromModule.empty()){
+    Query q(db,"SELECT module,name,id FROM node_ids WHERE name=?");q.bind(1,fromName);while(q.row())moveNode(q.text(0),q.text(1),q.text(2));
   }else{
-    Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,module);q.bind(2,fromName);
-    if(q.row())moveNode(module,fromName,q.text(0));
+    Query q(db,"SELECT id FROM node_ids WHERE module=? AND name=?");q.bind(1,fromModule);q.bind(2,fromName);
+    if(q.row())moveNode(fromModule,fromName,q.text(0));
   }
-  // Qualified nominal declarations use the fully qualified symbol in declaration_ids.
-  const std::string fromDecl=fromModule.empty()?from:fromModule+"::"+fromName;
+  const std::string fromDecl=fromModule.empty()?fromName:fromModule+"::"+fromName;
   const std::string toDecl=toModule.empty()?toName:toModule+"::"+toName;
   std::vector<std::pair<std::string,std::string>> declarations;
   {Query q(db,"SELECT kind,id FROM declaration_ids WHERE symbol=? ORDER BY kind");q.bind(1,fromDecl);while(q.row())declarations.emplace_back(q.text(0),q.text(1));}

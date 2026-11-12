@@ -91,10 +91,11 @@ nex check --json
 
 The command moves `node_ids` rows for functions and `declaration_ids` rows for
 nominal declarations without changing their IDs, so the next checked revision
-reuses the old identity. Fully qualified symbols are required when a name is not
-unique; moving between modules is rejected, as are existing targets, absent
-sources and a stale `--expected-revision`. The transaction does not move HEAD or
-rewrite source; operator edits and a following check remain explicit.
+reuses the old identity. Fully qualified symbols select the exact module and
+name; a qualified target may move the node to another module because the logical
+module is part of its new name. Existing targets, absent sources and a stale
+`--expected-revision` are rejected. The transaction does not move HEAD or rewrite
+source; operator edits and a following check remain explicit.
 
 ## Transfer and resolution
 

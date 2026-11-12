@@ -52,6 +52,24 @@ fn main()->unit !{io}{print(old(Old(1).v));}
             self.assertEqual(new_type,type_id)
             self.rename(root,'app::old','app::other',head,ok=False)
 
+    def test_cross_module_move_preserves_function_identity(self):
+        temporary,root=self.project('''module app;
+fn old(x:i64)->i64{return x+1;}
+fn main()->unit !{io}{print(old(41));}
+''')
+        with temporary:
+            head,function_id=self.checked(root,'function','old')
+            (root/'main.nex').write_text('''module lib;
+fn new(x:i64)->i64{return x+1;}
+fn main()->unit !{io}{print(new(41));}
+''')
+            result=self.rename(root,'app::old','lib::new',head)
+            self.assertEqual(result['moved'][0]['symbol'],'lib::new')
+            self.assertEqual(result['moved'][0]['id'],function_id)
+            run(root,'check','--json')
+            _,moved=self.checked(root,'function','new')
+            self.assertEqual(moved,function_id)
+
     def test_conflict_and_stale_head_are_rejected(self):
         temporary,root=self.project('''module app;
 fn old(x:i64)->i64{return x;}
