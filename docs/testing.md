@@ -698,6 +698,11 @@ CIX current 0.245.0 compiler: built natively on CIX, eval/run/test passed with
 CIX current 0.245.0: native build, core 12/12, 12 Mali-G720 GPU + 8 Zhouyi NPU
 calls with CPU fallback disabled.
 
+Cross-compiler/platform matrix 0.245.0: Astra Linux 1.7 (glibc2.28, Clang
+22.1.8), Fedora 45 (Clang 23.1.4) and Windows 11 x86-64 (LLVM-MinGW Clang
+22.1.8) built the current source, passed core 12/12 and ran
+`examples/arithmetic.nex`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

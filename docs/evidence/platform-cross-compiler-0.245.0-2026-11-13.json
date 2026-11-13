@@ -1,0 +1,79 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Toolchain 0.245 cross-compiler/platform build, core CTest and native smoke",
+  "implementation_commit": "f49763d1",
+  "build_source_base_commit": "f49763d1",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "architecture": "x86_64",
+      "libc": "glibc2.28",
+      "compiler": "/opt/nex-toolchain/bin/clang++",
+      "llvm": "22.1.8",
+      "doctor_version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "run_stdout": "55\n3628800\n"
+    },
+    {
+      "name": "Fedora 45",
+      "architecture": "x86_64",
+      "compiler": "/usr/bin/clang++",
+      "llvm": "23.1.4",
+      "doctor_version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "run_stdout": "55\n3628800\n"
+    },
+    {
+      "name": "Windows 11",
+      "architecture": "x86_64",
+      "compiler": "F:\\sae\\NEX\\build\\deps\\windows-host\\clang64\\bin\\clang++.exe",
+      "llvm": "22.1.8",
+      "doctor_version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "core_environment": [
+        "PYTHONUTF8=1",
+        "CMAKE_GENERATOR=Ninja",
+        "toolchain JSON"
+      ],
+      "run_stdout": "55\n3628800\n"
+    }
+  ],
+  "macos_full_ctest": {
+    "toolchain": "0.245.0",
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "seconds": 2631.307,
+    "evidence": "docs/evidence/full-ctest-0.245.0-2026-11-13.json"
+  },
+  "limits": [
+    "core tier only on Astra/Fedora/Windows; extended/browser/SDK/package remain pending there",
+    "Windows native run requires an explicit toolchain JSON"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "directory": "/Users/sae/projects/NEX/build/platform-0245",
+    "guide": "docs/testing.md"
+  }
+}
