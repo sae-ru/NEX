@@ -607,6 +607,11 @@ the 0.29-capable compiler still builds as 0.28, while a 0.29 project builds as
 0.29. Covered by `source_exceptions_projects` and the explicit 0.29 project
 plan receipt.
 
+Full CTest 0.240.0 passed all 351 groups in 2525.389 s. Project/task builds
+now select 0.28/0.29 from the manifest while retaining the explicit-language
+path for internal 0.18–0.27 project probes; ordinary CLI still refuses old
+projects until migration.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -278,6 +278,7 @@ llvm::json::Value evaluateSourceExceptionWatchPrototype(const Program &,E,const 
     const std::set<std::string> *compiledCallables=nullptr);
 // Check explicit physical-project version/format without opening its graph store.
 SourceLanguage projectSourceLanguage(const std::string &root);
+SourceLanguage projectBuildLanguage(const std::string &root);
 void validateProjectMetadata(const std::string &root,SourceLanguage language=currentSourceLanguage);
 Program loadProgram(const std::string &entry,const std::string &root,bool enforceLock=true,
     const std::map<std::string,std::string> &overlays={},bool editorNames=false,bool editorDetails=false);

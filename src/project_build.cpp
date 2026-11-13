@@ -142,7 +142,8 @@ llvm::json::Value buildProject(const std::string &directory,const std::string &m
   if(text(*top,"schema","",true)!="nex.project-build/1")fail("expected nex.project-build/1");
   auto root=fs::canonical(directory);
   if(!fs::is_regular_file(root/"nex.json"))fail("project builds require nex.json beside the build description");
-  options.sourceLanguage=projectSourceLanguage(root.string());
+  auto manifestLanguage=projectBuildLanguage(root.string());
+  if(isContractsLanguage(manifestLanguage))options.sourceLanguage=manifestLanguage;
   validateProjectMetadata(root.string(),options.sourceLanguage);
   auto sourceManifest=readFile((root/"nex.json").string());
   auto sourceLock=fs::is_regular_file(root/"nex.lock.json")?std::optional<std::string>(readFile((root/"nex.lock.json").string())):std::nullopt;

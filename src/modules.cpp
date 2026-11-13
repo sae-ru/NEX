@@ -274,10 +274,33 @@ SourceLanguage manifestSourceLanguage(const std::string &root){
   if(!object)return currentSourceLanguage;
   auto language=object->getString("language");
   if(language&&*language=="0.29")return SourceLanguage::Contracts029;
-  if(language&&*language=="0.28")return SourceLanguage::Contracts028;
+  return currentSourceLanguage;
+}
+SourceLanguage buildSourceLanguage(const std::string &root){
+  auto path=fs::path(root)/"nex.json";
+  if(!fs::is_regular_file(path))return currentSourceLanguage;
+  auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
+  if(!object)return currentSourceLanguage;
+  auto language=object->getString("language");
+  if(language){
+    if(*language=="0.29")return SourceLanguage::Contracts029;
+    if(*language=="0.28")return SourceLanguage::Contracts028;
+    if(*language=="0.27")return SourceLanguage::TypedErrors027;
+    if(*language=="0.26")return SourceLanguage::ExceptionHandlers026;
+    if(*language=="0.25")return SourceLanguage::SourceExceptions025;
+    if(*language=="0.25-prototype")return SourceLanguage::SourceExceptions025Prototype;
+    if(*language=="0.24")return SourceLanguage::TaskStreams024;
+    if(*language=="0.23")return SourceLanguage::TaskWrites023;
+    if(*language=="0.22")return SourceLanguage::TaskForeign022;
+    if(*language=="0.21")return SourceLanguage::OwnedResources021;
+    if(*language=="0.20")return SourceLanguage::TaskFiles020;
+    if(*language=="0.19")return SourceLanguage::Tasks019;
+    if(*language=="0.18")return SourceLanguage::Language018;
+  }
   return currentSourceLanguage;
 }
 SourceLanguage projectSourceLanguage(const std::string &root){return manifestSourceLanguage(root);}
+SourceLanguage projectBuildLanguage(const std::string &root){return buildSourceLanguage(root);}
 void validateProjectMetadata(const std::string &root,SourceLanguage language){
   auto path=fs::path(root)/"nex.json";if(!fs::is_regular_file(path))return;
   auto value=decoded(readFile(path.string()));auto object=value.getAsObject();
