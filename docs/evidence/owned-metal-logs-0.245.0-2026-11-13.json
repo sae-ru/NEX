@@ -1,0 +1,158 @@
+{
+  "schema": "nex.owned-metal-log-isolation/1",
+  "ok": true,
+  "state": "passed",
+  "commands": [
+    {
+      "label": "build",
+      "argv": [
+        "/private/tmp/nex-sdk-0245/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal245-logs/native",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "cache9MiB-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0245/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "cache9MiB-native",
+      "argv": [
+        "/tmp/metal245-logs/native/d9714caf0d9565cf779f52f01070643b6b90198ff6bba3c7470447e17aae8584/app",
+        "--nex-foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "stdout9MiB-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0245/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "stdout9MiB-native",
+      "argv": [
+        "/tmp/metal245-logs/native/d9714caf0d9565cf779f52f01070643b6b90198ff6bba3c7470447e17aae8584/app",
+        "--nex-foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "cache_and_stdout9MiB-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0245/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "cache_and_stdout9MiB-native",
+      "argv": [
+        "/tmp/metal245-logs/native/d9714caf0d9565cf779f52f01070643b6b90198ff6bba3c7470447e17aae8584/app",
+        "--nex-foreign",
+        "/private/tmp/metal245-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "cases": [
+    {
+      "name": "cache9MiB",
+      "native_reference": true,
+      "observed": {
+        "reference": {
+          "received_log_bytes": 166,
+          "saved_log_bytes": 166,
+          "cache_bytes": 9437184,
+          "physical_GPU_kernel": true
+        },
+        "native": {
+          "received_log_bytes": 165,
+          "saved_log_bytes": 165,
+          "cache_bytes": 9437184,
+          "physical_GPU_kernel": true
+        }
+      }
+    },
+    {
+      "name": "stdout9MiB",
+      "native_reference": true,
+      "observed": {
+        "reference": {
+          "received_log_bytes": 9437350,
+          "saved_log_bytes": 65500,
+          "cache_bytes": 0,
+          "physical_GPU_kernel": true
+        },
+        "native": {
+          "received_log_bytes": 9437349,
+          "saved_log_bytes": 65500,
+          "cache_bytes": 0,
+          "physical_GPU_kernel": true
+        }
+      }
+    },
+    {
+      "name": "cache_and_stdout9MiB",
+      "native_reference": true,
+      "observed": {
+        "reference": {
+          "received_log_bytes": 9437411,
+          "saved_log_bytes": 65500,
+          "cache_bytes": 9437184,
+          "physical_GPU_kernel": true
+        },
+        "native": {
+          "received_log_bytes": 9437411,
+          "saved_log_bytes": 65500,
+          "cache_bytes": 9437184,
+          "physical_GPU_kernel": true
+        }
+      }
+    }
+  ],
+  "compiler_sha256": "84157e322f5abe32e38fa0751234f412981fe5cbe16a6f1757607f629875a36e",
+  "module_sha256": "6687c645ac2e65cb19fbc4fcbf9f9e46da2825ecc9617d3d633b2f53335c03a0",
+  "worker_sha256": "3a3a5f17606cf505966eefd9d7608a42f1fb423f5eb9c2ef45bbf92f44d44ee8",
+  "old_limit_red": false,
+  "installed_SDK_accepted": false,
+  "full_objective_complete": false,
+  "seconds": 34.965,
+  "native_reference_pairs": 3,
+  "physical_GPU_kernels": 6,
+  "executable": "/tmp/metal245-logs/native/d9714caf0d9565cf779f52f01070643b6b90198ff6bba3c7470447e17aae8584/app"
+}

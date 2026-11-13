@@ -1,0 +1,50 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Owned Metal provider physical hardware at toolchain 0.245.0",
+  "implementation_commit": "94e92f268db6f48f1bdc9e64bd488dfb01fe4e53",
+  "build_source_base_commit": "e96bd206",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28"
+  },
+  "host": {
+    "machine": "Apple M5 Max",
+    "metal": "Metal 4",
+    "sdk": "/tmp/nex-sdk-0245",
+    "provider": "/tmp/metal245-project"
+  },
+  "results": {
+    "hardware": {
+      "schema": "nex.owned-metal-hardware/1",
+      "ok": true,
+      "commands": 45
+    },
+    "reply_faults": {
+      "schema": "nex.owned-metal-reply-faults/1",
+      "ok": true,
+      "commands": 36
+    },
+    "logs": {
+      "schema": "nex.owned-metal-log-isolation/1",
+      "ok": true
+    }
+  },
+  "coverage": {
+    "hardware_scenarios": 15,
+    "reply_faults": 12,
+    "log_isolation": true
+  },
+  "limits": [
+    "installed SDK acceptance and signed/public publication remain separate gates",
+    "Apple NPU, general GPU compilation, matmul and profiling remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "hardware": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-hardware-0.245.0-2026-11-13.json",
+    "faults": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-faults-0.245.0-2026-11-13.json",
+    "logs": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-logs-0.245.0-2026-11-13.json",
+    "guide": "docs/gpu-codegen.md"
+  }
+}
