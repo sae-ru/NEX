@@ -145,6 +145,12 @@ Project prepare(const Program &p){
   if(!p.path.empty()){
     auto base=std::filesystem::path(p.path);
     auto root=base.has_parent_path()?base.parent_path():std::filesystem::current_path();
+    auto customIndex=root/"web"/"index.html";
+    if(std::filesystem::is_regular_file(customIndex)){
+      auto html=readFile(customIndex.string());
+      if(html.size()>262144)throw Error("E_UI","application index.html exceeds 262144 bytes");
+      files["index.html"]=std::move(html);
+    }
     auto custom=root/"web"/"app.css";
     if(std::filesystem::is_regular_file(custom)){
       auto css=readFile(custom.string());

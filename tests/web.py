@@ -204,6 +204,16 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertIn("src/app.css",generated["files"])
         self.assertNotEqual(generated["files"]["src/app.css"],"69c5357717c050c4ad37cbf665273ffff27f5e744d3597c9af7e1a6ab42b600a")
 
+    def test_application_html_override_is_generated_and_hashed(self):
+        self.source(self.app_source())
+        directory=self.root/"web";directory.mkdir(exist_ok=True)
+        html='<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>\n'
+        (directory/"index.html").write_text(html,newline="\n")
+        output=self.root/"web output html"
+        generated=self.cli("web","--directory",output)
+        self.assertEqual((output/"index.html").read_text(),html)
+        self.assertIn("index.html",generated["files"])
+
     def test_application_public_assets_are_copied_and_hashed(self):
         self.source(self.app_source())
         directory=self.root/"web"/"public"/"assets";directory.mkdir(parents=True)

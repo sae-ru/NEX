@@ -1,0 +1,46 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Application index.html override for web generation",
+  "implementation_commit": "28fbff14493baeecc3dbb97e428285f159a42971",
+  "build_source_base_commit": "28fbff14",
+  "compiler": {
+    "toolchain": "0.241.0",
+    "language": "0.28",
+    "sha256": "05ef614a63b9c6aa00a1784cd24ad661d79539eab842b60050828a551af81b21"
+  },
+  "feature": {
+    "source": "web/index.html",
+    "output": "index.html",
+    "limit_bytes": 262144,
+    "hashed": true
+  },
+  "generation": {
+    "schema": "nex.web/2",
+    "files": 22,
+    "index_sha256": "0154dabecfe88a5a85f1edab4d55ee80615892aeca8b2638c2c191f68f3de342"
+  },
+  "coverage": {
+    "tests": [
+      "web",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "browser component packaging remains pending",
+    "full CTest was not rerun for this HTML-only change"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "generated": "/Users/sae/projects/NEX/build/web-html-0241/generated",
+    "web": "/Users/sae/projects/NEX/build/web-html-0241/web.json",
+    "guide": "docs/web.md"
+  }
+}
