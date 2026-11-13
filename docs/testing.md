@@ -617,6 +617,9 @@ Browser components: a project `web/components.tsx` (262144 bytes) replaces
 `src/components.tsx`; the renderer resolves unknown view tags through its
 exported `components` map. Covered by the `web` test.
 
+Full CTest 0.242.0 passed all 351 groups in 2493.353 s, including
+application-provided browser components and the refreshed 0.26 web golden.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
