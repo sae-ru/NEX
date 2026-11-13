@@ -706,6 +706,9 @@ Cross-compiler/platform matrix 0.245.0: Astra Linux 1.7 (glibc2.28, Clang
 RK3588 current 0.245.0: source built natively, eval passed with 6 actual RKNPU
 calls; language.cpp builds RTTI-free for retained static LLVM22 archives.
 
+RK3588 current 0.245.0: JSON formatter isolated in an RTTI-free TU so the
+retained static LLVM22 archive links; eval passed with 6 RKNPU calls.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

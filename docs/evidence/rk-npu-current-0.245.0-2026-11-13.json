@@ -7,7 +7,7 @@
     "toolchain": "0.245.0",
     "language": "0.28",
     "llvm": "22.1.8",
-    "build": "current source built natively on RK3588; language.cpp compiled without RTTI to link the retained static LLVM22 archive"
+    "build": "current source built natively on RK3588; json_value.cpp is RTTI-free for the retained static LLVM22 archive"
   },
   "host": {
     "board": "RK3588",
@@ -24,7 +24,7 @@
   "execution": {
     "eval_ok": true,
     "stdout": "NEX RK3588 NPU OK",
-    "steps": 993170,
+    "steps": 993174,
     "npu_calls": 6,
     "cpu_fallback_allowed": false,
     "rknpu_fd_open": true,

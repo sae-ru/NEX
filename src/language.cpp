@@ -161,9 +161,6 @@ std::string resourceFile(const std::string &relative) {
   for(const auto &root:roots)if(std::filesystem::is_regular_file(root/relative))return (root/relative).string();
   throw Error("E_RESOURCE","cannot find NEX resource "+relative+"; check installation or NEX_RESOURCE_DIR");
 }
-std::string json(const llvm::json::Value &v, bool pretty) {
-  return pretty ? llvm::formatv("{0:2}", v).str() : llvm::formatv("{0}", v).str();
-}
 std::string hash(const std::string &text) {
   llvm::BLAKE3 h; h.update(llvm::StringRef(text)); auto digest = h.final();
   const char *hex = "0123456789abcdef"; std::string out;

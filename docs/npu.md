@@ -20,8 +20,9 @@ portable SDK installation or a general NPU compiler. RK3588 RKNN was exercised w
 compiler (**3 RKNPU calls**) and the **current 0.245 compiler** (**6 RKNPU calls**):
 `provider: RKNN`, `rknpu_fd_open: true`, CPU fallback disabled. The current
 compiler was built on RK3588 against the retained static LLVM22 archive; a
-portability fix compiles `language.cpp` without RTTI because that archive omits
-`format_adapter` typeinfo. Native run/test remain blocked by native libstdc++
+portability fix isolates the JSON formatter in its own RTTI-free translation
+unit because that archive omits `format_adapter` typeinfo. The runtime keeps
+dynamic_cast. Native run/test remain blocked by native libstdc++
 include discovery, so only eval is claimed
 ([current receipt](evidence/rk-npu-current-0.245.0-2026-11-13.json),
 [retained receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
