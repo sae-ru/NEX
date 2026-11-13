@@ -1,0 +1,84 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Curated extended-language platform subset at toolchain 0.245.0",
+  "implementation_commit": "657ecb21",
+  "build_source_base_commit": "657ecb21",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "tests": [
+        "type_lambdas",
+        "higher_kinds",
+        "generics",
+        "traits",
+        "language_029_migration",
+        "fmt_width"
+      ],
+      "passed": 6,
+      "failed": 0,
+      "environment": [
+        "PATH=/opt/nex-toolchain/bin",
+        "NEX_NODE=/opt/nex-toolchain/bin/node"
+      ]
+    },
+    {
+      "name": "Fedora 45",
+      "tests": [
+        "type_lambdas",
+        "higher_kinds",
+        "generics",
+        "traits",
+        "language_029_migration",
+        "fmt_width"
+      ],
+      "passed": 6,
+      "failed": 0,
+      "excluded": [
+        "source_contract_CLI: scalar Wasm requires LLVM22 wasm-ld"
+      ]
+    },
+    {
+      "name": "Windows 11",
+      "tests": [
+        "type_lambdas",
+        "higher_kinds",
+        "generics",
+        "traits",
+        "language_029_migration",
+        "source_contract_CLI",
+        "fmt_width"
+      ],
+      "passed": 7,
+      "failed": 0,
+      "environment": [
+        "NEX_DEFAULT_TOOLCHAIN=win-toolchain.json",
+        "NEX_NODE=node.exe",
+        "PYTHONUTF8=1"
+      ]
+    }
+  ],
+  "macos_full_ctest": {
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "evidence": "docs/evidence/full-ctest-0.245.0-json-split-2026-11-13.json"
+  },
+  "limits": [
+    "curated subset only, not the complete extended tier",
+    "Fedora source_contract_CLI excluded because LLVM22 wasm-ld is absent",
+    "Windows build must be configured with NEX_DEFAULT_TOOLCHAIN for native tests without --toolchain"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "astra": "/Users/sae/projects/NEX/build/platform-ext-0245/astra/ext.log",
+    "fedora": "/Users/sae/projects/NEX/build/platform-ext-0245/fedora/ext.log",
+    "windows": "/Users/sae/projects/NEX/build/platform-ext-0245/windows/ext.log",
+    "guide": "docs/testing.md"
+  }
+}

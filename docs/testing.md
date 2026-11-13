@@ -719,6 +719,10 @@ explicit GCC-install-dir wrapper for the retained clang++.
 Owned Metal 0.245.0 on Apple M5 Max: 15 hardware scenarios, 12 reply faults and
 log isolation passed with the current compiler.
 
+Curated extended subset 0.245.0: Astra (6), Fedora (6, excluding the absent
+LLVM22 wasm-ld case) and Windows (7, with NEX_DEFAULT_TOOLCHAIN) passed
+type_lambdas, higher_kinds, generics, traits, migration and fmt cases.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
