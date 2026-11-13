@@ -726,6 +726,10 @@ type_lambdas, higher_kinds, generics, traits, migration and fmt cases.
 Immutable SDK 0.245.0: relocatable macOS bundle accepted end-to-end (41 phases,
 browser builds, full network), release record `docs/releases/0.245.0.json`.
 
+Current 0.245 source after the JSON split: Astra, Fedora and Windows each
+rebuilt from the same tree and passed core 12/12; Windows used the configured
+default toolchain.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

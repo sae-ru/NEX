@@ -1,0 +1,64 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current 0.245 source on Astra/Fedora/Windows after JSON formatter split",
+  "implementation_commit": "bf0c6b05",
+  "build_source_base_commit": "bf0c6b05",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "compiler": "/opt/nex-toolchain/bin/clang++",
+      "llvm": "22.1.8",
+      "version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    },
+    {
+      "name": "Fedora 45",
+      "compiler": "/usr/bin/clang++",
+      "llvm": "23.1.4",
+      "version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    },
+    {
+      "name": "Windows 11",
+      "compiler": "F:\\sae\\NEX\\build\\deps\\windows-host\\clang64\\bin\\clang++.exe",
+      "llvm": "22.1.8",
+      "version": "0.245.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "native_run_ok": true,
+      "build_option": "NEX_DEFAULT_TOOLCHAIN=win-toolchain.json"
+    }
+  ],
+  "limits": [
+    "core tier only on Astra/Fedora/Windows",
+    "current build includes the RTTI-free json_value.cpp split",
+    "Astra/Fedora native smoke from the same 0.245 source remains recorded in the earlier platform receipt"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "astra": "/Users/sae/projects/NEX/build/platform-current-0245/astra",
+    "fedora": "/Users/sae/projects/NEX/build/platform-current-0245/fedora",
+    "windows": "/Users/sae/projects/NEX/build/platform-current-0245/windows",
+    "guide": "docs/testing.md"
+  }
+}
