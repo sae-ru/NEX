@@ -43,7 +43,7 @@ final class Delegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard let path = ProcessInfo.processInfo.environment["NEX_DESKTOP_SNAPSHOT"] else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        func capture() {
             webView.takeSnapshot(with: nil) { image, error in
                 if let image = image, let data = image.tiffRepresentation,
                    let rep = NSBitmapImageRep(data: data), let png = rep.representation(using: .png, properties: [:]) {
@@ -51,6 +51,29 @@ final class Delegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
                 }
                 NSApp.terminate(nil)
             }
+        }
+        if ProcessInfo.processInfo.environment["NEX_DESKTOP_ACTION"] == "add-task" {
+            let script = """
+            const marker = document.createElement('div');
+            marker.textContent = 'ACTION-RAN';
+            marker.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;z-index:99999;padding:8px';
+            document.body.appendChild(marker);
+            const input = document.querySelector('input[type=text]') || document.querySelector('input');
+            marker.textContent = 'ACTION-RAN ' + (input ? input.tagName : 'NO-INPUT');
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+            setter.call(input, 'DesktopNEX');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            const add = [...document.querySelectorAll('button')].find(b => b.textContent.includes('Add task'));
+            setTimeout(() => { add.click(); marker.remove(); }, 500);
+            """
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                webView.evaluateJavaScript(script) { _, error in
+                    if let error = error { fputs("action error: \(error)\n", stderr) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { capture() }
+                }
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { capture() }
         }
     }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

@@ -1,0 +1,50 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Actual native macOS desktop UI input and state transition",
+  "implementation_commit": "db4c3add7ce725fcede0005e9351c9fab7529bb9",
+  "build_source_base_commit": "5b8acdef",
+  "compiler": {
+    "toolchain": "0.244.0",
+    "language": "0.28"
+  },
+  "host": {
+    "app": "standalone WKWebView .app",
+    "url": "nex://app/index.html",
+    "embedded_web": true,
+    "server_required": false
+  },
+  "interaction": {
+    "action": "NEX_DESKTOP_ACTION=add-task",
+    "script": "wait for mount; set text input through HTMLInputElement setter; dispatch input; click Add task after 500ms; remove marker",
+    "added": "DesktopNEX",
+    "active_before": 1,
+    "active_after": 2,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.png",
+    "screenshot_sha256": "0d95f51d92b5df356fb88d65794f4bd8f07ea80b26b0637a3937426259d8b1cc"
+  },
+  "coverage": {
+    "tests": [
+      "web",
+      "mobile_projects",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "action hook is an evidence driver, not a general UI automation API",
+    "ad-hoc signed/not notarized; no Developer ID or external distribution"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "source": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/main.swift",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.png",
+    "guide": "docs/desktop.md"
+  }
+}
