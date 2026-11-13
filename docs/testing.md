@@ -662,6 +662,9 @@ Desktop macOS bundle 0.244.0: embedded web resources served through `nex://app/`
 render the actual NEX Tasks UI without an external server. URL policy covers the
 desktop origin.
 
+Full CTest 0.244.0 passed all 351 groups in 2529.157 s, including the
+standalone desktop bundle URL policy and refreshed 0.26 web golden.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
