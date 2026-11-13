@@ -251,7 +251,7 @@ test fn branches() -> unit {
         self.assertEqual(raw, escaped)
 
     def test_llm_context_patch_conflict_export_and_import(self):
-        self.cli("init", ".")
+        self.cli("init", ".", "--language-version", "0.28")
         self.cli("check")
         before = (self.root / "src/main.nex").read_text()
         context = self.cli("context", "--symbol", "sum")

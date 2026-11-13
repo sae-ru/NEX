@@ -27,7 +27,7 @@ assert descriptor['source_exceptions']['current_delivery']['language']=='0.28' a
 assert not descriptor['source_exceptions']['public027_CLI_enabled'] and descriptor['source_exceptions']['public028_CLI_enabled']
 for kind,path in [('source-contract','docs/source-contracts.md'),('source-contract-migration','docs/source-contract-migration.md')]:assert cli('guide-'+kind,O,'guide','--kind',kind)['text']==(W/path).read_text()
 passed('actual028_discovery_guides_and_retained027_boundary')
-project=O/'project';cli('init',O,'init',project);assert json.loads((project/'nex.json').read_text())['language']=='0.28'
+project=O/'project';cli('init',O,'init',project,'--language-version','0.28');assert json.loads((project/'nex.json').read_text())['language']=='0.28'
 source='''module contract_cli;
 fn advance(x:i64)->i64 requires(x>=0) ensures(value=>value==x+1){return x+1;}
 fn repeat<T>(item:T,n:i64)->list<T> requires(n>=0 && n<=8) ensures(value=>len(value)==n){

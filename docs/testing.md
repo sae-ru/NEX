@@ -683,6 +683,9 @@ install/launch and actual UI passed.
 Immutable SDK 0.244.0: relocatable macOS bundle accepted end-to-end (41 phases,
 browser builds, full network), release record `docs/releases/0.244.0.json`.
 
+Full CTest 0.245.0 passed all 351 groups in 2631.307 s, including the
+0.29 new-project default and legacy 0.28 project paths.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
