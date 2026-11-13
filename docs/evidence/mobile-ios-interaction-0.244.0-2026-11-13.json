@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Actual iOS simulator UI input and state transition",
+  "implementation_commit": "6e649e326bedc0eeff18dc47608e16fbd31be12a",
+  "build_source_base_commit": "9c888a14",
+  "compiler": {
+    "toolchain": "0.243.0 (iOS project generation)",
+    "language": "0.28",
+    "current_tree": "0.244.0"
+  },
+  "host": {
+    "device": "iPhone Duo",
+    "runtime": "iOS 27.1",
+    "bundle_id": "dev.nex.mobile243",
+    "installation": "simulator"
+  },
+  "action": {
+    "driver": "test-only script injected into the generated public/index.html",
+    "behavior": "poll for text input, set iOSNEX through the native setter, dispatch input, click Add task after 500ms"
+  },
+  "result": {
+    "added": "iOSNEX",
+    "active_before": 1,
+    "active_after": 2,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-interaction-0.244.0-2026-11-13.png",
+    "screenshot_sha256": "19fe0e5a1ad7048a5f029df5ecd75f7baeb7f78755cbe9c0cc3cabcb4ccdfd39",
+    "actual_ui": "NEX Tasks with iOSNEX task"
+  },
+  "coverage": {
+    "build": "Xcode iOS Simulator Debug",
+    "install_launch": true
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "the script is an evidence driver injected into this test build, not a reusable UI automation API",
+    "no device signing or store delivery"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-interaction-0.244.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}

@@ -674,6 +674,9 @@ app passed; spctl correctly rejects it without Developer ID/notarization.
 Desktop macOS interaction 0.244.0: the standalone WKWebView app adds
 `DesktopNEX` through the live input/button path (1→2 active).
 
+Mobile iOS interaction 0.244.0: test-driver input adds `iOSNEX` in the live
+simulator UI (1→2 active).
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

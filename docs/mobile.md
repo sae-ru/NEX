@@ -10,7 +10,9 @@ Android project, built `app-debug.apk` with JDK21/API36 and launched
 NEX Tasks UI. An additional
 [Android interaction receipt](evidence/mobile-android-interaction-0.243.0-2026-11-13.json)
 uses adb input to add `ShipNEX` (2 active) and mark it complete (1 active, struck
-through with Mark active), proving the typed update path in the living app.
+through with Mark active), proving the typed update path in the living app. The
+[iOS interaction receipt](evidence/mobile-ios-interaction-0.244.0-2026-11-13.json)
+drives the same input/Add path in the simulator (`iOSNEX`, 1→2 active).
 Device signing and store delivery remain separate pending steps. A local
 [signed release APK receipt](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
 builds `assembleRelease`, zipaligns/apksigns with an ephemeral self-signed
