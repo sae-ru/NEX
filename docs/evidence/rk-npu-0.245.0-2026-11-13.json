@@ -1,0 +1,77 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current experiments/rk3588 NPU source executed on RK3588 RKNN",
+  "implementation_commit": "568b8f62b0f78e526dc3d703737d74322e088ef8",
+  "build_source_base_commit": "568b8f62",
+  "compiler": {
+    "toolchain": "0.185.0 (retained Linux ARM64)",
+    "language": "0.28",
+    "note": "current source prepared/executed with retained 0.185 compiler; not current 0.245 SDK acceptance"
+  },
+  "host": {
+    "board": "RK3588",
+    "npu": "RKNN/RKNPU",
+    "vendor_include": "/home/orangepi/Documents/oir/bpla/src/rknn_infer/include",
+    "vendor_license": "/home/orangepi/rknpu2-1.5.2/LICENSE"
+  },
+  "prepare": {
+    "module_sha256": "ad5b22720aa98bec06571fc52fb4459d75eae66f70dde194952540996b0b9df1",
+    "worker_sha256": "3bf8f1faf849c07d96e9cf2df200193e5ed0145598c1a4f16987e5d56caa0a14",
+    "manifest_sha256": "dcdcf8a9ba558074e2c3ef75eb9455fbce1bdce645fae3c7a4c5780cd39d49c0",
+    "runtime_sha256": "73993ed4b440460825f21611731564503cc1d5a0c123746477da6cd574f34885"
+  },
+  "execution": {
+    "eval_ok": true,
+    "stdout": "NEX RK3588 NPU OK",
+    "steps": 993167,
+    "npu_calls": 3,
+    "cpu_fallback_allowed": false,
+    "rknpu_fd_open": true,
+    "provider": "RKNN",
+    "device_driver": "RKNPU",
+    "cleanup_verified": true,
+    "calls": [
+      {
+        "m": 4,
+        "k": 64,
+        "n": 32,
+        "elements": 128,
+        "host_call_ns": 216122
+      },
+      {
+        "m": 8,
+        "k": 32,
+        "n": 32,
+        "elements": 256,
+        "host_call_ns": 133872
+      },
+      {
+        "m": 4,
+        "k": 32,
+        "n": 64,
+        "elements": 256,
+        "host_call_ns": 171206
+      }
+    ]
+  },
+  "limits": [
+    "only eval was executed with real NPU; native run/test were blocked by the retained compiler's libstdc++ include discovery, not by NPU",
+    "fixed RKNN matmul fixture; no general NPU model compiler",
+    "current 0.245 compiler and portable SDK are not qualified on RK3588"
+  ],
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 181,
+    "docs_links": 1232
+  },
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "eval": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-eval-0.245.0-2026-11-13.json",
+    "trace": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-trace-0.245.0-2026-11-13.jsonl",
+    "prepare": "/Users/sae/projects/NEX/build/rk-npu-0245/prepare.log",
+    "verification": "/Users/sae/projects/NEX/build/rk-npu-0245/report.json",
+    "guide": "docs/npu.md"
+  }
+}

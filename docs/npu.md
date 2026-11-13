@@ -15,5 +15,9 @@ Linux ARM64 SDK (language 0.28) and executed on a CIX P1 CD8160:
 
 See the [CIX NPU receipt](evidence/cix-npu-0.245.0-2026-11-13.json). The receipt
 does **not** qualify the current 0.245 compiler on CIX, a portable SDK, or a
-general NPU compiler. RK3588 RKNN and Apple NPU remain pending current-toolchain
-acceptance.
+general NPU compiler. RK3588 RKNN was also exercised with the current fixture source and the retained
+0.185 compiler: `nex eval` passed with **3 actual RKNPU calls**, `provider:
+RKNN`, `rknpu_fd_open: true`, CPU fallback disabled. Native run/test were blocked
+by the retained compiler's libstdc++ include discovery, so only eval is claimed
+([RK3588 receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
+pending current-toolchain acceptance.
