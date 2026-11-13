@@ -1,0 +1,70 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Android signed release APK build, verification, install and actual UI",
+  "implementation_commit": "ea6378589d950f2999a6c6042b6776f819b30e7b",
+  "build_source_base_commit": "ea637858",
+  "compiler": {
+    "toolchain": "0.243.0 (mobile project generation)",
+    "language": "0.28",
+    "current_tree": "0.244.0"
+  },
+  "build": {
+    "command": "./gradlew :app:assembleRelease",
+    "result": "app-release-unsigned.apk",
+    "zipalign": "4-byte page alignment",
+    "signer": "apksigner",
+    "key": "ephemeral RSA-2048, 3650-day self-signed release key"
+  },
+  "apk": {
+    "name": "mobile243-release-signed.apk",
+    "sha256": "e8359a3908f844516370b58ddccdc2fe600fa7322bff9e53e74ef16fe61ddaeb",
+    "bytes": 3563069,
+    "certificate_dn": "CN=NEX Release, O=NEX, C=RU",
+    "certificate_sha256": "d3f4f5218db39f0b5b708d4bd45ac6507ce80bfb6bf76aa4fac8e924740ba484",
+    "verification": [
+      "Signer #1 certificate DN: CN=NEX Release, O=NEX, C=RU",
+      "Signer #1 certificate SHA-256 digest: d3f4f5218db39f0b5b708d4bd45ac6507ce80bfb6bf76aa4fac8e924740ba484",
+      "Signer #1 certificate SHA-1 digest: 5740e2337857d31390a00c04cb5f1954d136a0e4",
+      "Signer #1 certificate MD5 digest: 70df39af0a804e7a3b01012311c7590f"
+    ]
+  },
+  "device": {
+    "avd": "NEX_Mobile_062",
+    "android": "16",
+    "api": 36,
+    "abi": "arm64-v8a",
+    "bundle_id": "dev.nex.mobile243",
+    "installed": true,
+    "launched": true,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.png",
+    "screenshot_sha256": "c602199f98cf38a8104ed03e5e5307b4b278def239f7661089b9c9a6119331a6",
+    "actual_ui": "NEX Tasks rendered from the signed release APK"
+  },
+  "coverage": {
+    "tests": [
+      "mobile_projects",
+      "web",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "self-signed local release key; no Play Store upload or account provisioning",
+    "the signing key and password are not committed",
+    "mobile project was generated with the 0.243 SDK"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "apk": "/tmp/mobile243-release-signed.apk",
+    "certificates": "/tmp/mobile243-verify-certs.txt",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}

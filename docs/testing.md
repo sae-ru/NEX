@@ -665,6 +665,9 @@ desktop origin.
 Full CTest 0.244.0 passed all 351 groups in 2529.157 s, including the
 standalone desktop bundle URL policy and refreshed 0.26 web golden.
 
+Android signed release 0.244.0: assembleRelease + zipalign + apksigner, verified
+certificate, install/launch of the signed APK with actual UI.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

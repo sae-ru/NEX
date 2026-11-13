@@ -11,7 +11,11 @@ NEX Tasks UI. An additional
 [Android interaction receipt](evidence/mobile-android-interaction-0.243.0-2026-11-13.json)
 uses adb input to add `ShipNEX` (2 active) and mark it complete (1 active, struck
 through with Mark active), proving the typed update path in the living app.
-Device signing and store delivery remain separate pending steps.
+Device signing and store delivery remain separate pending steps. A local
+[signed release APK receipt](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
+builds `assembleRelease`, zipaligns/apksigns with an ephemeral self-signed
+release key, verifies the certificate, installs and launches the actual UI.
+Play Store upload and account provisioning are not performed.
 
 ## Historical toolchain0.63 receipt
 
