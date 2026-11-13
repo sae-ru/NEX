@@ -96,6 +96,13 @@ endforeach()
 string(SHA256 NEX_BUILD_ID "${NEX_BUILD_INPUTS}")
 
 add_library(nex_frontend src/frontend_diagnostics.cpp src/language.cpp src/generics.cpp src/matching.cpp src/interpreter.cpp src/watch_values.cpp src/debug_values.cpp src/operations.cpp src/modules.cpp src/wire_schema.cpp src/foreign_schema.cpp runtime/nex_foreign.cpp runtime/nex_ffi_loader.cpp runtime/nex_ffi.cpp runtime/nex_ffi_types.cpp runtime/nex_ffi_resources.cpp runtime/nex_external_resource.cpp runtime/nex_resource_region.cpp runtime/nex_resource_executor.cpp runtime/nex_json.cpp runtime/nex_store.cpp runtime/nex_files.cpp)
+# language.cpp's JSON formatter does not need RTTI. Some retained LLVM
+# distributions omit the format_adapter typeinfo from static archives; keeping
+# this translation unit RTTI-free preserves those builds without weakening the
+# runtime's dynamic_cast checks.
+if(NOT MSVC)
+  set_source_files_properties(src/language.cpp PROPERTIES COMPILE_OPTIONS "-fno-rtti")
+endif()
 target_sources(nex_frontend PRIVATE src/constructor_types.cpp src/traits.cpp src/source_errors.cpp)
 target_sources(nex_frontend PRIVATE src/migration.cpp)
 target_sources(nex_frontend PRIVATE src/diagnostic_catalogue.cpp)

@@ -1,0 +1,6 @@
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":128,"host_call_ns":300704,"k":64,"m":4,"n":32,"provider":"RKNN","rknpu_fd_open":true}
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":256,"host_call_ns":64166,"k":32,"m":8,"n":32,"provider":"RKNN","rknpu_fd_open":true}
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":256,"host_call_ns":69415,"k":32,"m":4,"n":64,"provider":"RKNN","rknpu_fd_open":true}
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":128,"host_call_ns":168289,"k":64,"m":4,"n":32,"provider":"RKNN","rknpu_fd_open":true}
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":256,"host_call_ns":143790,"k":32,"m":8,"n":32,"provider":"RKNN","rknpu_fd_open":true}
+{"backend":"npu","cleanup_verified":true,"cpu_fallback_allowed":false,"device_driver":"RKNPU","elements":256,"host_call_ns":83415,"k":32,"m":4,"n":64,"provider":"RKNN","rknpu_fd_open":true}

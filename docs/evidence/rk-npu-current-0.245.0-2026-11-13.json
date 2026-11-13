@@ -1,0 +1,55 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current toolchain 0.245.0 source built and executed on RK3588 RKNN NPU",
+  "implementation_commit": "2be2b25d6036876883ed337095bdb74561338062",
+  "build_source_base_commit": "f49763d1",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28",
+    "llvm": "22.1.8",
+    "build": "current source built natively on RK3588; language.cpp compiled without RTTI to link the retained static LLVM22 archive"
+  },
+  "host": {
+    "board": "RK3588",
+    "npu": "RKNN/RKNPU",
+    "vendor_include": "/home/orangepi/Documents/oir/bpla/src/rknn_infer/include",
+    "vendor_license": "/home/orangepi/rknpu2-1.5.2/LICENSE"
+  },
+  "prepare": {
+    "module_sha256": "ad5b22720aa98bec06571fc52fb4459d75eae66f70dde194952540996b0b9df1",
+    "worker_sha256": "3bf8f1faf849c07d96e9cf2df200193e5ed0145598c1a4f16987e5d56caa0a14",
+    "manifest_sha256": "c13a0c7e1b9a7d489a84c23514e0fa5e38092da09e66ab58a70c37469793f6eb",
+    "runtime_sha256": "73993ed4b440460825f21611731564503cc1d5a0c123746477da6cd574f34885"
+  },
+  "execution": {
+    "eval_ok": true,
+    "stdout": "NEX RK3588 NPU OK",
+    "steps": 993170,
+    "npu_calls": 6,
+    "cpu_fallback_allowed": false,
+    "rknpu_fd_open": true,
+    "provider": "RKNN",
+    "device_driver": "RKNPU",
+    "cleanup_verified": true
+  },
+  "limits": [
+    "native run/test were blocked by the retained native libstdc++ include discovery, not by the NPU",
+    "only eval is claimed",
+    "fixed RKNN matmul fixture; no general NPU compiler",
+    "portable SDK installation on RK3588 remains pending"
+  ],
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 182,
+    "docs_links": 1232
+  },
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "eval": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-current-eval-0.245.0-2026-11-13.json",
+    "trace": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-current-trace-0.245.0-2026-11-13.jsonl",
+    "doctor": "/Users/sae/projects/NEX/build/rk-npu-current-0245/doctor.json",
+    "guide": "docs/npu.md"
+  }
+}

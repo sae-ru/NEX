@@ -16,9 +16,13 @@ and execute the current `experiments/cix-p1` source on a CIX P1 CD8160:
 See the [current CIX NPU receipt](evidence/cix-npu-current-0.245.0-2026-11-13.json)
 and the earlier retained-SDK [receipt](evidence/cix-npu-0.245.0-2026-11-13.json).
 The current receipt qualifies this fixed fixture on the actual board, but not a
-portable SDK installation or a general NPU compiler. RK3588 RKNN was also exercised with the current fixture source and the retained
-0.185 compiler: `nex eval` passed with **3 actual RKNPU calls**, `provider:
-RKNN`, `rknpu_fd_open: true`, CPU fallback disabled. Native run/test were blocked
-by the retained compiler's libstdc++ include discovery, so only eval is claimed
-([RK3588 receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
+portable SDK installation or a general NPU compiler. RK3588 RKNN was exercised with current source at both the retained 0.185
+compiler (**3 RKNPU calls**) and the **current 0.245 compiler** (**6 RKNPU calls**):
+`provider: RKNN`, `rknpu_fd_open: true`, CPU fallback disabled. The current
+compiler was built on RK3588 against the retained static LLVM22 archive; a
+portability fix compiles `language.cpp` without RTTI because that archive omits
+`format_adapter` typeinfo. Native run/test remain blocked by native libstdc++
+include discovery, so only eval is claimed
+([current receipt](evidence/rk-npu-current-0.245.0-2026-11-13.json),
+[retained receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
 pending current-toolchain acceptance.
