@@ -14,8 +14,9 @@ through with Mark active), proving the typed update path in the living app.
 Device signing and store delivery remain separate pending steps. A local
 [signed release APK receipt](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
 builds `assembleRelease`, zipaligns/apksigns with an ephemeral self-signed
-release key, verifies the certificate, installs and launches the actual UI.
-Play Store upload and account provisioning are not performed.
+release key, verifies the certificate, installs and launches the actual UI,
+and adds `SignedNEX` through the live UI (1→2 active). Play Store upload and
+account provisioning are not performed.
 
 ## Historical toolchain0.63 receipt
 

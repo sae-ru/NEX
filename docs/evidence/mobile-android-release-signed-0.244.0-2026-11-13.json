@@ -66,5 +66,17 @@
     "certificates": "/tmp/mobile243-verify-certs.txt",
     "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.png",
     "guide": "docs/mobile.md"
+  },
+  "interaction": {
+    "commands": [
+      "adb shell input tap 400 970",
+      "adb shell input text SignedNEX",
+      "adb shell input tap 850 970"
+    ],
+    "added": "SignedNEX",
+    "active_before": 1,
+    "active_after": 2,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-release-signed-interaction-0.244.0-2026-11-13.png",
+    "screenshot_sha256": "348f24276ce87dfa1c83eff908f5634b38a52a9cbd68bcd1eeebe15c92b1266d"
   }
 }
