@@ -677,6 +677,9 @@ Desktop macOS interaction 0.244.0: the standalone WKWebView app adds
 Mobile iOS interaction 0.244.0: test-driver input adds `iOSNEX` in the live
 simulator UI (1→2 active).
 
+iOS Release configuration 0.244.0: Xcode Release simulator build,
+install/launch and actual UI passed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

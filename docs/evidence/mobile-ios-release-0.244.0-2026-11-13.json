@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "iOS Release-configuration simulator build, install, launch and actual UI",
+  "implementation_commit": "2fe7930980ef68b7db2d6b4c950d3084c74b1171",
+  "build_source_base_commit": "2fe79309",
+  "compiler": {
+    "toolchain": "0.243.0 (iOS project generation)",
+    "language": "0.28",
+    "current_tree": "0.244.0"
+  },
+  "build": {
+    "configuration": "Release",
+    "sdk": "iphonesimulator",
+    "command": "xcodebuild ... -configuration Release ... CODE_SIGNING_ALLOWED=NO",
+    "result": "BUILD SUCCEEDED",
+    "log_sha256": "b82a32beee44a1ac6a47b5c39d5fcc6db220ec3766a3598d42da14d7e57512ed"
+  },
+  "simulator": {
+    "device": "iPhone Duo",
+    "runtime": "iOS 27.1",
+    "bundle_id": "dev.nex.mobile243",
+    "installed": true,
+    "launched": true,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-release-0.244.0-2026-11-13.png",
+    "screenshot_sha256": "7bd96d52e31e771398d9c0ddebb04c1f2e82f6758ee8ffea0345ae754d3bb308",
+    "actual_ui": "NEX Tasks Release build, 1 active"
+  },
+  "coverage": {
+    "debug_build": true,
+    "release_build": true,
+    "actual_ui": true
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "simulator Release build is not a signed device build",
+    "no provisioning, App Store upload or device installation"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-release-0.244.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}

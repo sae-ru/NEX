@@ -13,7 +13,9 @@ uses adb input to add `ShipNEX` (2 active) and mark it complete (1 active, struc
 through with Mark active), proving the typed update path in the living app. The
 [iOS interaction receipt](evidence/mobile-ios-interaction-0.244.0-2026-11-13.json)
 drives the same input/Add path in the simulator (`iOSNEX`, 1→2 active).
-Device signing and store delivery remain separate pending steps. A local
+A [Release-configuration iOS receipt](evidence/mobile-ios-release-0.244.0-2026-11-13.json)
+builds with Xcode Release for the simulator, installs/launches and captures the
+actual UI. Device signing and store delivery remain separate pending steps. A local
 [signed release APK receipt](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
 builds `assembleRelease`, zipaligns/apksigns with an ephemeral self-signed
 release key, verifies the certificate, installs and launches the actual UI,
