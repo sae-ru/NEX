@@ -671,6 +671,9 @@ certificate, install/launch of the signed APK with actual UI.
 Desktop macOS signing 0.244.0: ad-hoc codesign verification and zipped stand-alone
 app passed; spctl correctly rejects it without Developer ID/notarization.
 
+Desktop macOS interaction 0.244.0: the standalone WKWebView app adds
+`DesktopNEX` through the live input/button path (1→2 active).
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -16,4 +16,7 @@ ad-hoc signs, verifies and zips the app and renders the actual UI. `codesign`
 verification passes, but `spctl` rejects it for distribution because it has no
 Developer ID signature or notarization. This is not a complete desktop UI
 toolkit: native menus, a native widget toolkit, Developer ID signing,
-notarization and external distribution remain pending.
+notarization and external distribution remain pending. A
+[desktop interaction receipt](evidence/desktop-macos-interaction-0.244.0-2026-11-13.json)
+drives the live text input and Add task button in the standalone app, changing
+the actual UI from 1 to 2 active tasks.
