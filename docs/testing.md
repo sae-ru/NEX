@@ -627,6 +627,11 @@ ran `examples/arithmetic.nex` (55/3628800). Windows needs the explicit
 toolchain JSON, `PYTHONUTF8=1` and `CMAKE_GENERATOR=Ninja`; macOS retains the
 full 351-group receipt.
 
+Explicit 0.29 provider sources: DNS, HTTP, HTTP-stream and TCP preparation now
+accept language0.29 as an explicit project language. Default provider runs
+remain 0.28. A 0.28 `nex.json` under a 0.29-capable compiler keeps loading as
+0.28 instead of falling back to the compiler default.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

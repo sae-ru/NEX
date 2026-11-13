@@ -1,0 +1,40 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Explicit language 0.29 provider acceptance and explicit 0.28 project loading",
+  "implementation_commit": "5174f165d491484fc68bbae5943fef5a1a93a465",
+  "build_source_base_commit": "5174f165",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "default_language": "0.28",
+    "sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6"
+  },
+  "language": {
+    "0.29": "explicit project language accepted by DNS/HTTP/HTTP-stream/TCP provider preparation",
+    "0.28": "explicit 0.28 project keeps loading as 0.28 under a 0.29-capable compiler"
+  },
+  "coverage": {
+    "tests": [
+      "task_dns_source",
+      "task_http_client_source",
+      "task_tcp_source"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "default language remains 0.28",
+    "provider receipts here were generated at default 0.28; explicit 0.29 provider receipts remain pending",
+    "full CTest for 0.243 was not rerun"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "allowlists": "/Users/sae/projects/NEX/build/provider-029-0243/allowlists.txt",
+    "guide": "docs/testing.md"
+  }
+}

@@ -100,7 +100,7 @@ def main():
     report={'schema':'nex.dns-provider-preparation/1','ok':False,'network_executed':False,'module_initialized':False,'native_provider_built':False,'commands':commands}
     try:
         descriptor=json.loads(run('describe',[compiler,'describe','--json']));doctor=json.loads(run('doctor',[compiler,'doctor','--json']));language=descriptor['version'];pack=json.loads((resources/'llm/language-pack.json').read_text())
-        if language not in ('0.24','0.25','0.26','0.27', '0.28') or doctor.get('language')!=language or pack.get('language_version')!=language:raise RuntimeError('compiler/doctor/pack must agree on a supported public language0.24,0.25,0.26 or0.27')
+        if language not in ('0.24','0.25','0.26','0.27','0.28','0.29') or doctor.get('language')!=language or pack.get('language_version')!=language:raise RuntimeError('compiler/doctor/pack must agree on a supported public language0.24,0.25,0.26,0.27 or0.28')
         if descriptor.get('foreign_boundary',{}).get('source_support') is not True or descriptor.get('structured_tasks_runtime',{}).get('source_support') is not True:raise RuntimeError('SDK needs checked source task/ffi')
         (out/'stdlib').mkdir();shutil.copy2(ROOT/'lib/dns.nex',out/'stdlib/dns.nex');write(out/'nex.json',{'schema':'nex.project/1','language':language,'entry':'main.nex','libraries':{'std':'./stdlib'}})
         first=configuration['authorities'][0];example=first['domain'] if first['domain']!='*' else 'example.test'

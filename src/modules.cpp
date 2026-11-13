@@ -274,6 +274,7 @@ SourceLanguage manifestSourceLanguage(const std::string &root){
   if(!object)return currentSourceLanguage;
   auto language=object->getString("language");
   if(language&&*language=="0.29")return SourceLanguage::Contracts029;
+  if(language&&*language=="0.28")return SourceLanguage::Contracts028;
   return currentSourceLanguage;
 }
 SourceLanguage buildSourceLanguage(const std::string &root){
