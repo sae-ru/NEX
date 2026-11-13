@@ -1,0 +1,67 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current toolchain 0.245.0 source compiled and executed GPU+NPU on CIX P1",
+  "implementation_commit": "cbe7fb41fc127246d54c794f316144205dd06998",
+  "build_source_base_commit": "cbe7fb41fc127246d54c794f316144205dd06998",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "language": "0.28",
+    "llvm": "22.1.8",
+    "build": "current source compiled natively on CIX with local LLVM22/MLIR22"
+  },
+  "host": {
+    "board": "CIX P1 CD8160",
+    "gpu": "Mali-G720-Immortalis r0p0",
+    "npu": "ZhouyiExecutionProvider",
+    "onnxruntime": "1.20.0"
+  },
+  "prepare": {
+    "module_sha256": "ffef9224c54ef96770c0c1c257791ab1781bdbc309ca3374403e2e4a6c9ffc0b",
+    "manifest_sha256": "40c8f0ae1740283a8dde9bd7466bf177db138b5c58a2afc29436e03aa4819574"
+  },
+  "execution": {
+    "eval_ok": true,
+    "run_ok": true,
+    "test_ok": true,
+    "stdout": "NEX CIX GPU/NPU OK",
+    "steps": 169614,
+    "gpu_calls": 12,
+    "npu_calls": 8,
+    "cpu_fallback_allowed": false,
+    "aipu_open": true,
+    "providers": [
+      "ZhouyiExecutionProvider"
+    ],
+    "gpu_devices": [
+      "Mali-G720-Immortalis r0p0"
+    ]
+  },
+  "coverage": {
+    "native_profiles": [
+      "release"
+    ],
+    "tests": 1,
+    "trace_records": 20
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 181,
+    "docs_links": 1232
+  },
+  "limits": [
+    "fixed CIX fixture operations; no general NPU model compiler",
+    "runtime/driver files are external platform dependencies",
+    "not a portable SDK installation/acceptance on CIX"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "eval": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-current-eval-0.245.0-2026-11-13.json",
+    "run": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-current-run-0.245.0-2026-11-13.json",
+    "test": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-current-test-0.245.0-2026-11-13.json",
+    "trace": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-current-trace-0.245.0-2026-11-13.jsonl",
+    "doctor": "/Users/sae/projects/NEX/build/cix-npu-current-0245/doctor.json",
+    "guide": "docs/npu.md"
+  }
+}

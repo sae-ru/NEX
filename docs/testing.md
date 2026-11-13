@@ -692,6 +692,9 @@ CIX NPU 0.245 tree: current experiments/cix-p1 source, retained 0.165 compiler
 RK3588 NPU 0.245 tree: current experiments/rk3588 source, retained 0.185
 compiler, 3 actual RKNPU calls via eval, CPU fallback disabled.
 
+CIX current 0.245.0 compiler: built natively on CIX, eval/run/test passed with
+12 Mali-G720 GPU + 8 Zhouyi NPU calls, CPU fallback disabled.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

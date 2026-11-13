@@ -1,0 +1,15 @@
+{
+  "build_key": "4cdf9206c506e0e73c053957e4127ef353b646d2b8b6f2ba984a57f9fb9286ba",
+  "exit_code": 0,
+  "native_diagnostics": {
+    "diagnostics": [],
+    "ignored": 0,
+    "limit": 32,
+    "omitted": 0,
+    "schema": "nex.native-diagnostics/1",
+    "total": 0
+  },
+  "ok": true,
+  "stderr": "Total errors: 0,  warnings: 0\n",
+  "stdout": "NEX CIX GPU/NPU OK\n"
+}

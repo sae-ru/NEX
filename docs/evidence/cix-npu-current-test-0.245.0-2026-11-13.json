@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "tests": [
+    {
+      "name": "cix_compute::accelerators",
+      "native": true,
+      "ok": true,
+      "web": false
+    }
+  ]
+}
