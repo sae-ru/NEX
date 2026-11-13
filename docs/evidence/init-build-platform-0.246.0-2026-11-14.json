@@ -1,0 +1,34 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "nex init build manifest on Astra and Windows",
+  "implementation_commit": "3226272c71ed70a95f6238947ea28031e724fa6c",
+  "compiler": {
+    "toolchain": "0.246.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "init": true,
+      "plan_ok": true,
+      "architecture_hash": "23a48f91fd960c2970af1e63b9b4cacd93989eff08a8d9a2e016d9ac1f3f398f"
+    },
+    {
+      "name": "Windows 11",
+      "init": true,
+      "plan_ok": true,
+      "architecture_hash": "23a48f91fd960c2970af1e63b9b4cacd93989eff08a8d9a2e016d9ac1f3f398f"
+    }
+  ],
+  "limits": [
+    "scaffold plan only; native project build coverage is in core receipts"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "astra": "/Users/sae/projects/NEX/build/init-platform-0246/astra-plan.json",
+    "windows": "/Users/sae/projects/NEX/build/init-platform-0246/windows-plan.json",
+    "guide": "docs/getting-started.en.md"
+  }
+}
