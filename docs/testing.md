@@ -709,6 +709,10 @@ calls; language.cpp builds RTTI-free for retained static LLVM22 archives.
 RK3588 current 0.245.0: JSON formatter isolated in an RTTI-free TU so the
 retained static LLVM22 archive links; eval passed with 6 RKNPU calls.
 
+Full CTest after the RTTI-free JSON formatter split passed all 351 groups in
+2751.835 s; the earlier RTTI-wide language.cpp experiment was discarded because
+it broke exception handling and is not committed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

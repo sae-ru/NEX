@@ -1,0 +1,45 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest after RTTI-free JSON formatter split",
+  "implementation_commit": "8b952033c15d1270f2cb5b7ffc2d7e1b0c1277ae",
+  "build_source_base_commit": "8b952033",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "default_language": "0.28",
+    "new_project_default_language": "0.29",
+    "sha256": "84157e322f5abe32e38fa0751234f412981fe5cbe16a6f1757607f629875a36e",
+    "compiler_build": "67020f1142f902498fdc4d6095b6648fb53835fa5c5803d3ae35d986f47f3fa0",
+    "descriptor_hash": "8efa96aceafd7427f40d6869a9dc167e524bf256cdfddeb0e40916f666983571"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "seconds": 2751.835,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "3232270266db8a24fc799cb168e2e0a7b95233a9d082a39092c3bc0c96ea1aeb"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 182,
+    "docs_links": 1232
+  },
+  "limits": [
+    "compiler default for projects without explicit language remains 0.28",
+    "release_qualification is false because this is a test receipt",
+    "macOS ARM64 host only; non-macOS extended matrices remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0245c/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0245c/results.xml",
+    "log": "/Users/sae/projects/NEX/build/ci-full-0245c.log",
+    "guide": "docs/testing.md"
+  }
+}
