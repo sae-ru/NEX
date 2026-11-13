@@ -695,6 +695,9 @@ compiler, 3 actual RKNPU calls via eval, CPU fallback disabled.
 CIX current 0.245.0 compiler: built natively on CIX, eval/run/test passed with
 12 Mali-G720 GPU + 8 Zhouyi NPU calls, CPU fallback disabled.
 
+CIX current 0.245.0: native build, core 12/12, 12 Mali-G720 GPU + 8 Zhouyi NPU
+calls with CPU fallback disabled.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

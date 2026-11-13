@@ -89,7 +89,7 @@ and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.
 | iOS Simulator | [Debug/Release, install/launch, actual UI, test-driver input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
 | Android emulator | [signed release APK, launch, add interaction](docs/evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
 | macOS desktop app | [standalone embedded app, live input](docs/evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID, notarization |
-| CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, CPU fallback disabled](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
+| CIX ARM64 | [current 0.245 core 12/12 + 12 Mali GPU/8 Zhouyi NPU](docs/evidence/cix-current-0.245.0-2026-11-13.json) | portable SDK installation |
 | RK3588 ARM64 | [Snapshot `2172b35`: 63 GPU and 30 NPU calls](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
 
 CUDA and OpenCL source emitters remain bounded checked-AST paths; CUDA device
