@@ -1,0 +1,60 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Standalone native macOS NEX desktop bundle",
+  "implementation_commit": "130451ae9633d15330f0cb44aaac4ce81f67ae9c",
+  "build_source_base_commit": "130451ae",
+  "compiler": {
+    "toolchain": "0.244.0",
+    "language": "0.28"
+  },
+  "bundle": {
+    "path": "/tmp/nexdesktop243-bundle/NEXDesktop.app",
+    "embedded_web": "Contents/Resources/web",
+    "url": "nex://app/index.html",
+    "server_required": false,
+    "handler": "WKURLSchemeHandler",
+    "app_binary_sha256": "03240ff384940d51428d5ab5f9e8ea503ac354807508d79b30be45f9eeebe420"
+  },
+  "source": {
+    "main": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/main.swift",
+    "main_sha256": "1761ee626a9e2d56ac8793b62d1b7ef47e01b075430edaf48dcfe7844f3b716d",
+    "build": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/build.sh",
+    "build_sha256": "ddce0a5b68e3bc4afd1de4c8bea3faff1efa4e0fc61247ebaf94ce8147c6581f"
+  },
+  "application": {
+    "source": "examples/web/main.nex",
+    "web_dist": "/tmp/desktop243-web",
+    "rendered": "NEX Tasks"
+  },
+  "snapshot": {
+    "path": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-bundle-0.244.0-2026-11-13.png",
+    "sha256": "a345652312ebd4aa71d9945620d337afeb60985b0b4da0f406fa4045fa2cef2a",
+    "actual_ui": "NEX Tasks header, tabs, input, Add/Mark complete/Delete buttons"
+  },
+  "coverage": {
+    "tests": [
+      "web",
+      "mobile_projects",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "experimental desktop host; no native menus/toolkit",
+    "no signing, notarization or distribution",
+    "custom nex:// scheme is application-local only"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "source": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/main.swift",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-bundle-0.244.0-2026-11-13.png",
+    "guide": "docs/desktop.md"
+  }
+}

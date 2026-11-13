@@ -658,6 +658,10 @@ Cross-compiler/platform matrix 0.243.0: Astra Linux 1.7 (glibc2.28, Clang
 Full CTest of the current 0.243.0 tree passed all 351 groups in 2612.210 s,
 including the current status/docs, desktop experiment and probe changes.
 
+Desktop macOS bundle 0.244.0: embedded web resources served through `nex://app/`
+render the actual NEX Tasks UI without an external server. URL policy covers the
+desktop origin.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 const {safeViewURL, sameApplicationOrigin} = await import(pathToFileURL(process.argv[2]));
 const mobile = new URL('capacitor://localhost/start');
+const desktop = new URL('nex://app/index.html');
 const web = new URL('https://example.test/start');
 for (const value of ['/', '/active?filter=a#end', './item', '../item', '?a=1', '#end', 'assets/main.png', '']) {
   assert.equal(safeViewURL(value, 'href', mobile), value);
   assert.equal(safeViewURL(value, 'src', mobile), value);
   assert.equal(safeViewURL(value, 'href', web), value);
+  assert.equal(safeViewURL(value, 'href', desktop), value);
+  assert.equal(safeViewURL(value, 'src', desktop), value);
 }
 for (const base of [mobile, web, new URL('file:///tmp/index.html'), new URL('capacitor://evil/index'),
                     new URL('capacitor://user@localhost/'), new URL('capacitor://localhost:8080/')]) {
@@ -19,12 +22,14 @@ for (const value of ['//localhost/active', '//evil/active', '\\active'])
   assert.throws(() => safeViewURL(value, 'href', mobile), e => e.code === 'E_UI');
 for (const value of ['/', './item', 'asset.png']) {
   assert.throws(() => safeViewURL(value, 'href', new URL('file:///private/index.html')), e => e.code === 'E_UI');
+  assert.throws(() => safeViewURL('nex://app/active', 'href', desktop), e => e.code === 'E_UI');
   assert.throws(() => safeViewURL(value, 'href', new URL('capacitor://evil/')), e => e.code === 'E_UI');
 }
 for (const value of ['https://example.test/path', 'http://example.test/path', 'mailto:a@example.test', 'tel:123'])
   assert.equal(safeViewURL(value, 'href', mobile), value);
 assert.throws(() => safeViewURL('mailto:a@example.test', 'src', mobile), e => e.code === 'E_UI');
 assert(sameApplicationOrigin(new URL('/active', mobile), mobile));
+assert(sameApplicationOrigin(new URL('/active', desktop), desktop));
 assert(sameApplicationOrigin(new URL('/active', web), web));
 for (const value of ['capacitor://evil/', 'file:///private', 'mailto:a@example.test', 'data:text/html,x',
                      'https://localhost/', 'capacitor://localhost:8080/', 'capacitor://a@localhost/'])
