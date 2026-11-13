@@ -79,7 +79,6 @@ language and toolchain by the same script.
 | [Development0.120 acceptance and physical stands](stand-acceptance-0.120.md) | — | — |
 | [Development0.129: request-parent and per-task resource ownership](request-resource-regions.md) | — | — |
 | [Executable pre/post contracts](runtime-contracts.md) | — | — |
-| [Experimental mobile projects — toolchain0.63](mobile.md) | — | — |
 | [Experimental scalar WebAssembly modules](wasm.md) | — | — |
 | [Explicit HTTPS API hosting — toolchain0.63](mobile-api.md) | — | — |
 | [Explicit task execution limits](task-limits.md) | — | — |
@@ -111,6 +110,7 @@ language and toolchain by the same script.
 | [macOS SDK and LLVM22 float headers](macos-float-header-compatibility.md) | — | — |
 | [Matching — language 0.9](matching.md) | — | — |
 | [Mixed source File and external-resource ownership](task-stream-mixed.md) | — | — |
+| [Mobile projects — toolchain0.243.0](mobile.md) | — | — |
 | [Named model contract](models.md) | — | — |
 | [Native application packages](packaging.md) | — | — |
 | [Native Bookworm debugger](linux-native-debugger.md) | — | — |

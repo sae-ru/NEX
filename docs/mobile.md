@@ -1,4 +1,12 @@
-# Experimental mobile projects — toolchain0.63
+# Mobile projects — toolchain0.243.0
+
+The current receipt [mobile iOS 0.243.0](evidence/mobile-ios-0.243.0-2026-11-13.json)
+generated an iOS Capacitor project from checked NEX web output, built it with
+Xcode for the iOS 27.1 simulator, installed and launched `dev.nex.mobile243`,
+and captured the actual NEX Tasks UI. Android native build/launch, device
+signing and store delivery remain separate pending steps.
+
+## Historical toolchain0.63 receipt
 
 `tools/mobile_project.py` generates iOS and Android projects from the existing
 checked NEX web application contract. Business state, transitions and views stay

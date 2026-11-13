@@ -1,0 +1,71 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current iOS mobile project generation, native simulator build and actual UI launch",
+  "implementation_commit": "48fbe9e24c1d79ad695d4cf5d96eaf7fa1e748ad",
+  "build_source_base_commit": "48fbe9e2",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "language": "0.28",
+    "sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6"
+  },
+  "generation": {
+    "schema": "nex.mobile-project/1",
+    "ok": true,
+    "platform": "ios",
+    "app_id": "dev.nex.mobile243",
+    "capacitor_version": "8.5.3",
+    "source_backend": "typescript-react",
+    "web_assets": {
+      "NEX_MOBILE_NOTICES.txt": "f33cae078e2c88c46b1f11f38f8cd9e1006b2175ae069184b734d27d07854516",
+      "index.html": "9649756c02bb1d183436ef0151aea531cc22c6c0013b5406cd9c7be841f78b90",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-dhVjOzBx.js": "82e1c66d7e31c1f6abbd243c4658bb4e932ca94a310e37ba8b66e0f30401fde2",
+      "assets/index-dhVjOzBx.js.map": "5f4a21ef5387082b7b5273269d47acccad0560f298abf19cdef0d1cbe9f19e4d"
+    },
+    "project_files": {
+      "ios": "ios/App/App.xcodeproj"
+    },
+    "native_application_built": false,
+    "target_executed": false
+  },
+  "native_build": {
+    "command": "xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug -derivedDataPath /tmp/mobile243-derived -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build",
+    "build_succeeded": true,
+    "log_sha256": "1eb21c8c68d257109fdeca3e51758820c30f053fae802e12d4d2da5f154409fc"
+  },
+  "simulator": {
+    "device": "iPhone Duo",
+    "runtime": "iOS 27.1",
+    "bundle_id": "dev.nex.mobile243",
+    "installed": true,
+    "launched": true,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-0.243.0-2026-11-13.png",
+    "screenshot_sha256": "4c8d5c39e17a07a7c2deb20ff84ef7f091750e48dee5175c425e97cd5364e132",
+    "actual_ui": "NEX Tasks app rendered; tabs, input, buttons visible"
+  },
+  "coverage": {
+    "generator_commands": 4,
+    "ios_artifacts": 2
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "simulator screenshot covers actual UI launch, not scripted input/navigation assertions",
+    "Android native build/launch remains pending",
+    "device signing, provisioning and store delivery remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "receipt": "/tmp/mobile243-receipt.json",
+    "project": "/tmp/mobile243",
+    "xcodebuild_log": "/tmp/mobile243-xcodebuild.log",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-ios-0.243.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}

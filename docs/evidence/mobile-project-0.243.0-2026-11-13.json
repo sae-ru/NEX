@@ -1,0 +1,116 @@
+{
+  "schema": "nex.mobile-project/1",
+  "ok": true,
+  "directory": "/tmp/mobile243",
+  "platform": "ios",
+  "app_id": "dev.nex.mobile243",
+  "name": "NEX 243",
+  "capacitor_version": "8.5.3",
+  "commands": [
+    {
+      "command": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/examples/web/main.nex",
+        "--target",
+        "web",
+        "--profile",
+        "release",
+        "-o",
+        "/tmp/mobile243/www",
+        "--json"
+      ],
+      "cwd": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/examples/web",
+      "stdout": "/tmp/mobile243/logs/000-nex-web.stdout",
+      "stderr": "/tmp/mobile243/logs/000-nex-web.stderr",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/Users/sae/.local/bin/npm",
+        "ci",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        "--cache",
+        "/Users/sae/.npm"
+      ],
+      "cwd": "/tmp/mobile243",
+      "stdout": "/tmp/mobile243/logs/001-locked-mobile-dependencies.stdout",
+      "stderr": "/tmp/mobile243/logs/001-locked-mobile-dependencies.stderr",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/Users/sae/.local/bin/node",
+        "/tmp/mobile243/node_modules/@capacitor/cli/bin/capacitor",
+        "add",
+        "ios",
+        "--packagemanager",
+        "SPM"
+      ],
+      "cwd": "/tmp/mobile243",
+      "stdout": "/tmp/mobile243/logs/002-generate-ios.stdout",
+      "stderr": "/tmp/mobile243/logs/002-generate-ios.stderr",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/Users/sae/.local/bin/node",
+        "/tmp/mobile243/node_modules/@capacitor/cli/bin/capacitor",
+        "copy"
+      ],
+      "cwd": "/tmp/mobile243",
+      "stdout": "/tmp/mobile243/logs/003-copy-final-assets.stdout",
+      "stderr": "/tmp/mobile243/logs/003-copy-final-assets.stderr",
+      "exit_code": 0
+    }
+  ],
+  "compiler_sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6",
+  "native_application_built": false,
+  "target_executed": false,
+  "source_backend": "typescript-react",
+  "native_archive_target": false,
+  "api_origin": null,
+  "nex_web_build": {
+    "build_key": "0d0eb0f16b0e5d91569d5e6be66cd9809624ed22f2c89f9044bf42770882443b",
+    "cached": true,
+    "directory": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/.nex/build/0d0eb0f16b0e5d91569d5e6be66cd9809624ed22f2c89f9044bf42770882443b/web",
+    "dist": "/tmp/mobile243/www",
+    "node": "v22.22.3\n",
+    "npm": "10.9.8\n",
+    "ok": true,
+    "profile": "release",
+    "revision": "197758c4f99554ed6bd60b90911914c06536400b02db9d84cd0abd082dfd2845",
+    "schema": "nex.web-build/1"
+  },
+  "ios_artifacts": [
+    {
+      "name": "Capacitor",
+      "url": "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.3/Capacitor.xcframework.zip",
+      "sha256": "9316f568444411d362dcb4d1946e7572d4aef5d690c122ff6f1cb8a44a920c9f",
+      "bytes": 6611663
+    },
+    {
+      "name": "Cordova",
+      "url": "https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.3/Cordova.xcframework.zip",
+      "sha256": "bdcd8eab2d62a077efd76c3c8b9629e65ae7043c1462289a1e55de9be19bbf1f",
+      "bytes": 1842445
+    }
+  ],
+  "platforms": [
+    "ios"
+  ],
+  "web_assets": {
+    "NEX_MOBILE_NOTICES.txt": "f33cae078e2c88c46b1f11f38f8cd9e1006b2175ae069184b734d27d07854516",
+    "index.html": "9649756c02bb1d183436ef0151aea531cc22c6c0013b5406cd9c7be841f78b90",
+    "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+    "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+    "assets/index-dhVjOzBx.js": "82e1c66d7e31c1f6abbd243c4658bb4e932ca94a310e37ba8b66e0f30401fde2",
+    "assets/index-dhVjOzBx.js.map": "5f4a21ef5387082b7b5273269d47acccad0560f298abf19cdef0d1cbe9f19e4d"
+  },
+  "project_files": {
+    "ios": "ios/App/App.xcodeproj"
+  },
+  "npm_lock_sha256": "c4513dce954d4904d9ec045d5fa4736c2d563c8827d09564ac0915f6e4cf60d9"
+}
