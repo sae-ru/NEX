@@ -16,7 +16,8 @@ int main(int argc,char **argv){try{
   else if(*retained=="0.26")sourceLanguage=SourceLanguage::ExceptionHandlers026;
   else if(*retained=="0.27")sourceLanguage=SourceLanguage::TypedErrors027;
   else if(*retained=="0.28")sourceLanguage=SourceLanguage::Contracts028;
-  else throw Error("E_LANGUAGE_VERSION","project probe accepts explicit retained023/024/026/027 or candidate028");
+  else if(*retained=="0.29")sourceLanguage=SourceLanguage::Contracts029;
+  else throw Error("E_LANGUAGE_VERSION","project probe accepts explicit retained023/024/026/027/028/029");
  }
  const auto action=text("action","plan"),root=text("root"),manifest=text("manifest",(std::filesystem::path(root)/"nex.build.json").string());
  llvm::json::Value output=nullptr;
@@ -28,6 +29,14 @@ int main(int argc,char **argv){try{
   output=captureProject(root,manifest,readFile(manifest),text("component","app"),configurations,{},debug,sourceLanguage);
  }else if(action=="restore"||action=="validate"||action=="verify"){
   auto value=llvm::json::parse(readFile(text("capture")));if(!value)throw Error("E_JSON",llvm::toString(value.takeError()));
+  if(o.getBoolean("public_api").value_or(false)){
+   auto language=value->getAsObject()->getString("language");
+   if(language=="0.28")sourceLanguage=SourceLanguage::Contracts028;
+   else if(language=="0.29")sourceLanguage=SourceLanguage::Contracts029;
+   else if(language=="0.27")sourceLanguage=SourceLanguage::TypedErrors027;
+   else if(language=="0.26")sourceLanguage=SourceLanguage::ExceptionHandlers026;
+   else throw Error("E_PROJECT_CAPTURE","unsupported public capture language");
+  }
   validateProjectCaptureData(*value,sourceLanguage);
   if(action=="restore"){
    auto restored=materializeProjectCapture(*value,text("directory"),sourceLanguage);validateProjectCapturePlans(*value,text("directory"),sourceLanguage);
