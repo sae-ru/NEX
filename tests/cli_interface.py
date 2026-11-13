@@ -116,6 +116,7 @@ class CLI(h.ToolchainCase):
         created=self.root/'new'
         self.assertEqual(self.raw('init',created,'--quiet').stdout,'')
         self.assertTrue((created/'nex.json').is_file())
+        self.assertEqual(json.loads((created/'nex.json').read_text())['language'],'0.29')
         self.assertEqual(self.cli('init',created,'--quiet',ok=False)['code'],'E_EXISTS')
         selected=self.root/'init-029'
         self.assertEqual(self.raw('init',selected,'--quiet','--language-version','0.29').returncode,0)

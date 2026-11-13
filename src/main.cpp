@@ -703,7 +703,7 @@ int run(const Options &o) {
   if(o.command=="init") {
     fs::path root=fs::absolute(o.positional.empty()?".":o.positional[0]);
     if(fs::exists(root/"nex.json")||fs::exists(root/"src/main.nex"))throw Error("E_EXISTS","project already exists; refusing to overwrite");
-    auto requested=o.get("--language-version");if(requested.empty())requested=languageVersion;
+    auto requested=o.get("--language-version");if(requested.empty())requested=developmentLanguageVersion;
     if(requested!="0.28"&&requested!="0.29")throw Error("E_OPTION","init language-version must be 0.28 or 0.29");
     writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",requested},{"entry","src/main.nex"}})+"\n");
     writeFile((root/"src/main.nex").string(),

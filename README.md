@@ -55,13 +55,13 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.244.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.245.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
 
 The 0.243 full macOS regression passed **351/351 groups**. The immutable
-[macOS SDK 0.244.0](docs/releases/0.244.0.json) was accepted end-to-end: 4015
+[macOS SDK 0.245.0](docs/releases/0.244.0.json) was accepted end-to-end: 4015
 inventory files, 41 phases, real locked browser builds and the full network
 profile. The relocatable archive is `nex-sdk-0.244-macos-arm64.tar.gz`
 (SHA-256 `b243952b...a01e6`). The owned Metal provider also ran on an Apple
