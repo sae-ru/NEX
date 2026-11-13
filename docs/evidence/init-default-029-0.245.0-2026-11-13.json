@@ -1,0 +1,45 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "New projects default to language 0.29",
+  "implementation_commit": "07177d3106ab12af7f0de25e37458fa9d4d77448",
+  "build_source_base_commit": "ca206435",
+  "compiler": {
+    "toolchain": "0.245.0",
+    "compiler_default_language": "0.28",
+    "init_default_language": "0.29",
+    "sha256": "883d6e0251af022de575f6ce91c68c5ffe73eb5767b7b352b0dbe0327feae80d"
+  },
+  "init": {
+    "command": "nex init project",
+    "manifest_language": "0.29",
+    "manifest_schema": "nex.project/1"
+  },
+  "coverage": {
+    "tests": [
+      "cli_interface",
+      "type_lambdas",
+      "higher_kinds",
+      "language_029_migration",
+      "web",
+      "mobile_projects"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "compiler default for projects without explicit language remains 0.28",
+    "full CTest 0.245 was not rerun"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "init": "/Users/sae/projects/NEX/build/init-default-0245/init.log",
+    "manifest": "/Users/sae/projects/NEX/build/init-default-0245/project/nex.json",
+    "guide": "docs/language.md"
+  }
+}
