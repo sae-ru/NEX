@@ -1,0 +1,63 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Standalone native macOS NEX desktop bundle signed ad hoc, verified and snapshotted",
+  "implementation_commit": "9c888a14220953163184ead9230ec67c00fb56e9",
+  "build_source_base_commit": "9c888a14",
+  "compiler": {
+    "toolchain": "0.244.0",
+    "language": "0.28"
+  },
+  "bundle": {
+    "path": "/tmp/nexdesktop244-signed/NEXDesktop.app",
+    "zip": "/tmp/NEXDesktop-0.244-signed.zip",
+    "zip_sha256": "e4cbf094037ed71e1c2007092d9b248b72f47e407b419105a4d978c056ff76c2",
+    "zip_bytes": 383671,
+    "embedded_web": "Contents/Resources/web",
+    "url": "nex://app/index.html",
+    "server_required": false
+  },
+  "signing": {
+    "command": "codesign --force --deep --sign - NEXDesktop.app",
+    "signature": "adhoc",
+    "team_identifier": "not set",
+    "cdhash_sha256": "8e360ffa0744f67ea7e64718bd28eaad2d339923",
+    "verify": [
+      "/tmp/nexdesktop244-signed/NEXDesktop.app: valid on disk",
+      "/tmp/nexdesktop244-signed/NEXDesktop.app: satisfies its Designated Requirement"
+    ],
+    "spctl_exit": 3,
+    "spctl": "/tmp/nexdesktop244-signed/NEXDesktop.app: rejected"
+  },
+  "snapshot": {
+    "path": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-signed-0.244.0-2026-11-13.png",
+    "sha256": "a345652312ebd4aa71d9945620d337afeb60985b0b4da0f406fa4045fa2cef2a",
+    "actual_ui": "NEX Tasks rendered from the signed application bundle"
+  },
+  "coverage": {
+    "tests": [
+      "web",
+      "mobile_projects",
+      "cli_interface"
+    ],
+    "core_groups": 12
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "ad-hoc signature, not Developer ID and not notarized",
+    "spctl assessment rejects the app for distribution",
+    "no Apple Developer account, store upload or install on a clean external machine"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "app": "/tmp/nexdesktop244-signed/NEXDesktop.app",
+    "zip": "/tmp/NEXDesktop-0.244-signed.zip",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-signed-0.244.0-2026-11-13.png",
+    "guide": "docs/desktop.md"
+  }
+}

@@ -11,5 +11,9 @@ Tasks UI without an external HTTP server
 ([receipt](evidence/desktop-macos-bundle-0.244.0-2026-11-13.json)). The host
 builds with `experiments/desktop-macos/build.sh`.
 
-This is not a complete desktop UI toolkit: native menus, a native widget
-toolkit, notarization/signing and distribution remain pending.
+A local [signed bundle receipt](evidence/desktop-macos-signed-0.244.0-2026-11-13.json)
+ad-hoc signs, verifies and zips the app and renders the actual UI. `codesign`
+verification passes, but `spctl` rejects it for distribution because it has no
+Developer ID signature or notarization. This is not a complete desktop UI
+toolkit: native menus, a native widget toolkit, Developer ID signing,
+notarization and external distribution remain pending.

@@ -668,6 +668,9 @@ standalone desktop bundle URL policy and refreshed 0.26 web golden.
 Android signed release 0.244.0: assembleRelease + zipalign + apksigner, verified
 certificate, install/launch of the signed APK with actual UI.
 
+Desktop macOS signing 0.244.0: ad-hoc codesign verification and zipped stand-alone
+app passed; spctl correctly rejects it without Developer ID/notarization.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
