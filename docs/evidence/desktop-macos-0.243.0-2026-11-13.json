@@ -1,0 +1,50 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Native macOS WKWebView host rendering a checked NEX application",
+  "implementation_commit": "f2dec1c2f1318e47844770913ee5804bc9d5f0f2",
+  "build_source_base_commit": "f2dec1c2",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "language": "0.28"
+  },
+  "host": {
+    "framework": "AppKit + WKWebView",
+    "swift_source": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/main.swift",
+    "swift_source_sha256": "7ea0eafc87c5115d37561b542c5a27828b61cf6b790a70628e5db331675f446a",
+    "app_binary_sha256": "8008c25d6bc883817688be9749837591d57f0f55d7d8d7ffa35cfcabb79ca13f",
+    "url": "http://127.0.0.1:8765/"
+  },
+  "application": {
+    "source": "examples/web/main.nex",
+    "web_dist": "/tmp/mobile243/www",
+    "rendered": "NEX Tasks"
+  },
+  "snapshot": {
+    "path": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-0.243.0-2026-11-13.png",
+    "sha256": "a345652312ebd4aa71d9945620d337afeb60985b0b4da0f406fa4045fa2cef2a",
+    "actual_ui": "NEX Tasks header, tabs, input, Add/Mark complete/Delete buttons"
+  },
+  "coverage": {
+    "build": "swiftc -O -framework Cocoa -framework WebKit",
+    "snapshot": "WKWebView.takeSnapshot after navigation",
+    "ui": "actual rendered NEX application"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "experimental host, not a complete desktop UI toolkit",
+    "no native menus, packaging, bundled server, notarization or signing",
+    "local HTTP server is an external prerequisite"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "source": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/desktop-macos/main.swift",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/desktop-macos-0.243.0-2026-11-13.png",
+    "guide": "docs/desktop.md"
+  }
+}

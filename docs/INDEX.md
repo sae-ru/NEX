@@ -38,7 +38,7 @@ language and toolchain by the same script.
 |---|---|---|
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
 
-## Reference and history (164)
+## Reference and history (165)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -118,6 +118,7 @@ language and toolchain by the same script.
 | [Native core reports and capsules](core-debugging.md) | — | — |
 | [Native Debian ARM64 compiler dependencies](linux-native-compiler.md) | — | — |
 | [Native debugging — NEX language 0.28](debugging.md) | — | — |
+| [Native desktop host](desktop.md) | — | — |
 | [Native failure diagnostics](native-diagnostics.md) | — | — |
 | [Native iOS Simulator execution, SDK 0.159](evidence/0.159.0-ios-native/README.md) | — | — |
 | [Native library entry ABI](native-entry-abi.md) | — | — |
@@ -209,4 +210,4 @@ language and toolchain by the same script.
 
 ## Totals
 
-179 documents: 13 current, 1 deferred, 1 historical, 164 reference/unclassified.
+180 documents: 13 current, 1 deferred, 1 historical, 165 reference/unclassified.
