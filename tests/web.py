@@ -181,7 +181,7 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertEqual(generated["language"], harness.CURRENT_LANGUAGE)
         self.assertEqual(set(generated["files"]), {
             "README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", "vite.config.js", "playwright.config.js",
-            "nex-map.json", "src/program.ts", "src/nex-runtime.ts", "src/nex-bytes.ts", "src/nex-source-exception-runtime.ts", "src/nex-task-runtime.ts", "src/renderer.tsx", "src/urls.ts", "src/net.ts", "src/workers.ts", "src/app.tsx", "src/app.css", "src/vite-env.d.ts", "tests/smoke.spec.js", "public/THIRD_PARTY_NOTICES.txt"})
+            "nex-map.json", "src/program.ts", "src/nex-runtime.ts", "src/nex-bytes.ts", "src/nex-source-exception-runtime.ts", "src/nex-task-runtime.ts", "src/renderer.tsx", "src/urls.ts", "src/net.ts", "src/workers.ts", "src/app.tsx", "src/components.tsx", "src/app.css", "src/vite-env.d.ts", "tests/smoke.spec.js", "public/THIRD_PARTY_NOTICES.txt"})
         self.assertEqual((output / "src/nex-bytes.ts").read_text(), (harness.REPO / "web/nex-bytes.ts").read_text())
         for file in generated["files"]:
             self.assertNotIn("API_SECRET_NOT_IN_CLIENT", (output / file).read_text())
@@ -203,6 +203,16 @@ assert.equal(nex.representation(value), '{"__proto__":[1,2]}');
         self.assertEqual((output/"src/app.css").read_text(),css)
         self.assertIn("src/app.css",generated["files"])
         self.assertNotEqual(generated["files"]["src/app.css"],"69c5357717c050c4ad37cbf665273ffff27f5e744d3597c9af7e1a6ab42b600a")
+
+    def test_application_components_override_is_generated_and_hashed(self):
+        self.source(self.app_source())
+        directory=self.root/"web";directory.mkdir(exist_ok=True)
+        source="import { createElement } from 'react';\nexport const components = { Badge: (props: any) => createElement('strong', props, props.children) };\n"
+        (directory/"components.tsx").write_text(source,newline="\n")
+        output=self.root/"web output components"
+        generated=self.cli("web","--directory",output)
+        self.assertEqual((output/"src/components.tsx").read_text(),source)
+        self.assertIn("src/components.tsx",generated["files"])
 
     def test_application_html_override_is_generated_and_hashed(self):
         self.source(self.app_source())

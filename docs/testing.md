@@ -613,6 +613,10 @@ now select 0.28/0.29 from the manifest while retaining the explicit-language
 path for internal 0.18–0.27 project probes; ordinary CLI still refuses old
 projects until migration.
 
+Browser components: a project `web/components.tsx` (262144 bytes) replaces
+`src/components.tsx`; the renderer resolves unknown view tags through its
+exported `components` map. Covered by the `web` test.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

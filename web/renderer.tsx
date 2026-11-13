@@ -4,6 +4,7 @@ import type { View, Event } from './program.ts';
 import { makeEvent } from './program.ts';
 import { NexError } from './nex-runtime.ts';
 import { safeViewURL, sameApplicationOrigin } from './urls.ts';
+import { components } from './components.tsx';
 
 const tags = new Set(['main', 'header', 'footer', 'section', 'article', 'aside', 'nav', 'div', 'span', 'p',
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'button', 'form', 'label', 'input',
@@ -33,7 +34,8 @@ export function renderView(root: View, dispatch: (event: Event) => void): ReactN
       if (view.attributes.length || view.events.length || view.children.length) invalid('Text view cannot have attributes/events/children');
       return view.text;
     }
-    if (!tags.has(view.tag)) invalid('Unsupported element: ' + view.tag);
+    const custom = tags.has(view.tag) ? undefined : components[view.tag];
+    if (!tags.has(view.tag) && !custom) invalid('Unsupported element: ' + view.tag);
     if (view.text !== '') invalid('Element text must be represented by text children');
     if (voidTags.has(view.tag) && view.children.length) invalid('Void element cannot have children');
     const props: Record<string, unknown> = { key: fallbackKey };
@@ -71,6 +73,7 @@ export function renderView(root: View, dispatch: (event: Event) => void): ReactN
     }
     if ((view.tag === 'input' || view.tag === 'textarea') && !bound.has('onChange') && (seen.has('value') || seen.has('checked'))) props.readOnly = true;
     const children = view.children.map((child, index) => render(child, depth + 1, index));
+    if (custom) return createElement(custom, props, children);
     return voidTags.has(view.tag) ? createElement(view.tag, props) : createElement(view.tag, props, children);
   }
   return render(root, 0, 0);

@@ -141,7 +141,7 @@ Project prepare(const Program &p){
   files["nex-map.json"]=json(module.mapping)+"\n";
   const std::vector<std::string> rootFiles={"package.json","package-lock.json","tsconfig.json","vite.config.js","playwright.config.js","index.html"};
   for(const auto &file:rootFiles)files[file]=readFile(resourceFile("web/"+file));
-  for(const auto &file:{"app.tsx","renderer.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
+  for(const auto &file:{"app.tsx","renderer.tsx","components.tsx","net.ts","urls.ts","app.css","vite-env.d.ts"})files["src/"+std::string(file)]=readFile(resourceFile("web/"+std::string(file)));
   if(!p.path.empty()){
     auto base=std::filesystem::path(p.path);
     auto root=base.has_parent_path()?base.parent_path():std::filesystem::current_path();
@@ -150,6 +150,12 @@ Project prepare(const Program &p){
       auto html=readFile(customIndex.string());
       if(html.size()>262144)throw Error("E_UI","application index.html exceeds 262144 bytes");
       files["index.html"]=std::move(html);
+    }
+    auto customComponents=root/"web"/"components.tsx";
+    if(std::filesystem::is_regular_file(customComponents)){
+      auto source=readFile(customComponents.string());
+      if(source.size()>262144)throw Error("E_UI","application components exceed 262144 bytes");
+      files["src/components.tsx"]=std::move(source);
     }
     auto custom=root/"web"/"app.css";
     if(std::filesystem::is_regular_file(custom)){

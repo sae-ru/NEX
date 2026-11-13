@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.241.0 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.242.0 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
