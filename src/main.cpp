@@ -706,6 +706,11 @@ int run(const Options &o) {
     auto requested=o.get("--language-version");if(requested.empty())requested=developmentLanguageVersion;
     if(requested!="0.28"&&requested!="0.29")throw Error("E_OPTION","init language-version must be 0.28 or 0.29");
     writeFile((root/"nex.json").string(),json(llvm::json::Object{{"schema","nex.project/1"},{"language",requested},{"entry","src/main.nex"}})+"\n");
+    writeFile((root/"nex.build.json").string(),json(llvm::json::Object{
+      {"schema","nex.project-build/1"},{"default_configuration","debug"},
+      {"configurations",llvm::json::Object{{"debug",llvm::json::Object{{"profile","debug"},{"target","native"}}},{"release",llvm::json::Object{{"profile","release"},{"target","native"}}}}},
+      {"components",llvm::json::Object{{"app",llvm::json::Object{{"kind","executable"},{"root","."},{"entry","src/main.nex"}}}}}
+    })+"\n");
     writeFile((root/"src/main.nex").string(),
       "module app;\n\nfn sum(n: i64) -> i64 {\n  var total: i64 = 0;\n  var i: i64 = 1;\n  while i <= n {\n    total = total + i;\n    i = i + 1;\n  }\n  return total;\n}\n\nfn main() -> i64 !{io} {\n  print(sum(10));\n  return 0;\n}\n\ntest fn sum_test() -> unit {\n  assert(sum(10) == 55);\n  assert(sum(0) == 0);\n}\n");
     print(llvm::json::Object{{"ok",true},{"directory",root.string()}});return 0;

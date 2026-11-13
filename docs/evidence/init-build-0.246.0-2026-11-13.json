@@ -1,0 +1,48 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "nex init scaffolding includes a project build manifest",
+  "implementation_commit": "e7043a2090f69e015b907ec6e3bb223f2524e5ad",
+  "build_source_base_commit": "e7043a20",
+  "compiler": {
+    "toolchain": "0.246.0",
+    "language": "0.28",
+    "sha256": "d86ba450fc9980c2c294fcf4c759e6279c4cdf62edd5e5fdf613e3c2814bb9e6"
+  },
+  "init": {
+    "command": "nex init project",
+    "files": [
+      "nex.json",
+      "nex.build.json",
+      "src/main.nex"
+    ],
+    "language": "0.29",
+    "build_component": {
+      "entry": "src/main.nex",
+      "kind": "executable",
+      "root": "."
+    },
+    "plan_ok": true,
+    "plan_language": "0.29"
+  },
+  "coverage": {
+    "tests": [
+      "cli_interface",
+      "fmt_width",
+      "type_lambdas",
+      "language_029_migration"
+    ],
+    "core_groups": 12
+  },
+  "limits": [
+    "full CTest 0.246 was not rerun",
+    "default compiler language for unversioned projects remains 0.28"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "plan": "/Users/sae/projects/NEX/build/init-build-0246/plan.json",
+    "manifest": "/Users/sae/projects/NEX/build/init-build-0246/project/nex.build.json",
+    "guide": "docs/getting-started.en.md"
+  }
+}

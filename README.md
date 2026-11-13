@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.245.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.246.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
@@ -83,7 +83,7 @@ and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
 | macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.243.0-current-2026-11-13.json); [immutable SDK 0.245](docs/releases/0.245.0.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
-| Astra Linux 1.7 x86-64 | [0.245 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.245.0-2026-11-13.json) | extended/browser/SDK groups |
+| Astra Linux 1.7 x86-64 | [0.245 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-current-0.245.0-2026-11-13.json) | extended/browser/SDK groups |
 | Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | iOS Simulator | [Debug/Release, install/launch, actual UI, test-driver input](docs/evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |

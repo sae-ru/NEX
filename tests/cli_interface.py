@@ -122,6 +122,8 @@ class CLI(h.ToolchainCase):
         self.assertEqual(self.raw('init',selected,'--quiet','--language-version','0.29').returncode,0)
         self.assertEqual(json.loads((selected/'nex.json').read_text())['language'],'0.29')
         self.assertEqual(self.cli('check',cwd=selected)['ok'],True)
+        self.assertTrue((selected/'nex.build.json').is_file())
+        self.assertEqual(self.cli('project','--kind','plan',cwd=selected)['ok'],True)
         self.assertEqual(self.raw('init',self.root/'init-bad','--quiet','--language-version','0.30',ok=False).returncode,1)
 
     def test_shell_scripts_and_actual_bash_zsh_callbacks(self):
