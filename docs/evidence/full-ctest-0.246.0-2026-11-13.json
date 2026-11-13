@@ -1,0 +1,42 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest at toolchain 0.246.0 after nex init build manifest",
+  "implementation_commit": "d38df60ae01e3f18149e3d47602a29c662642b3e",
+  "build_source_base_commit": "d38df60a",
+  "compiler": {
+    "toolchain": "0.246.0",
+    "default_language": "0.28",
+    "new_project_default_language": "0.29",
+    "sha256": "d86ba450fc9980c2c294fcf4c759e6279c4cdf62edd5e5fdf613e3c2814bb9e6",
+    "compiler_build": "3883f70d8972ac8e1f6286698383fe0e1dab8ad4e990d429b14707c41b330760",
+    "descriptor_hash": "8efa96aceafd7427f40d6869a9dc167e524bf256cdfddeb0e40916f666983571"
+  },
+  "full_ctest": {
+    "ok": true,
+    "seconds": 2640.139,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "release_qualification": false,
+    "report_sha256": "908d8e39c22e7dfd0e5302f79b11e77c594f96eff265ba39e342b133db2409f6"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 182,
+    "docs_links": 1235
+  },
+  "limits": [
+    "compiler default for unversioned projects remains 0.28",
+    "release_qualification is false for this test receipt",
+    "macOS ARM64 host; full extended tiers on other platforms remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-0246/report.json",
+    "junit": "/Users/sae/projects/NEX/build/ci-full-0246/results.xml",
+    "guide": "docs/testing.md"
+  }
+}

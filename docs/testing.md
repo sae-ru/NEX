@@ -733,6 +733,8 @@ default toolchain.
 Apple CoreML/ANE 0.245.0: compute plan preferred MLNeuralEngineComputeDevice;
 CPU_AND_NE ReLU prediction passed. Device experiment only, not a NEX provider.
 
+Full CTest 0.246.0 after the init build manifest: 351/351 in 2640.139 s.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
