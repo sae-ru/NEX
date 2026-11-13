@@ -738,6 +738,9 @@ Full CTest 0.246.0 after the init build manifest: 351/351 in 2640.139 s.
 Toolchain 0.246.0 on Astra/Fedora/Windows: all three rebuilt, core 12/12;
 Windows native run passed with NEX_DEFAULT_TOOLCHAIN.
 
+Immutable SDK 0.246.0: accepted end-to-end (41 phases, browser builds, full
+network); release record `docs/releases/0.246.0.json`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
