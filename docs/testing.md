@@ -686,6 +686,9 @@ browser builds, full network), release record `docs/releases/0.244.0.json`.
 Full CTest 0.245.0 passed all 351 groups in 2631.307 s, including the
 0.29 new-project default and legacy 0.28 project paths.
 
+CIX NPU 0.245 tree: current experiments/cix-p1 source, retained 0.165 compiler
+(language 0.28), 9 Mali-G720 GPU + 6 Zhouyi NPU calls, no CPU fallback.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

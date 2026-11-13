@@ -1,0 +1,60 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current experiments/cix-p1 source executed on CIX P1 Mali-G720 + Zhouyi NPU",
+  "implementation_commit": "a385d5b8081192174519724a2981eba12d3d6a58",
+  "build_source_base_commit": "8dbbe47e",
+  "compiler": {
+    "toolchain": "0.165.0 (retained Linux ARM64 SDK)",
+    "language": "0.28",
+    "note": "the current source tree was prepared with the retained matching-0.28 compiler; this does not qualify toolchain 0.245"
+  },
+  "host": {
+    "board": "CIX P1 CD8160",
+    "gpu": "Mali-G720-Immortalis r0p0",
+    "npu": "ZhouyiExecutionProvider",
+    "onnxruntime": "1.20.0"
+  },
+  "prepare": {
+    "command": "python3 experiments/cix-p1/prepare.py --sdk <retained 0.165 SDK> --output /tmp/cix-npu-head",
+    "module_sha256": "21044009abcf0e2f2ea83ac84833795ceab71e7061efb459e7552a6567c82d2c",
+    "manifest_sha256": "3efc3f8582daddc770aae7b041ce60f0efa939ef8f8619afeb155913ee985d3b"
+  },
+  "execution": {
+    "eval_ok": true,
+    "run_ok": true,
+    "test_ok": true,
+    "stdout": "NEX CIX GPU/NPU OK",
+    "steps": 169614,
+    "gpu_calls": 9,
+    "npu_calls": 6,
+    "cpu_fallback_allowed": false,
+    "aipu_open": true,
+    "npu_providers": [
+      "ZhouyiExecutionProvider"
+    ],
+    "npu_runtime_library": "/opt/afar-npu/lib/python3.11/site-packages/onnxruntime/capi/libonnxruntime.so.1.20.0",
+    "npu_elements": 6,
+    "npu_model_sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 180,
+    "docs_links": 1232
+  },
+  "limits": [
+    "retained 0.165 compiler; current 0.245 compiler was not built for this board",
+    "fixed CIX fixture operations only; no general NPU model compiler",
+    "runtime/driver files are external and not authenticated by the module manifest",
+    "no installable current SDK acceptance on CIX"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "eval": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-eval-0.245.0-2026-11-13.json",
+    "run": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-run-0.245.0-2026-11-13.json",
+    "test": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-test-0.245.0-2026-11-13.json",
+    "trace": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/cix-npu-trace-0.245.0-2026-11-13.jsonl",
+    "guide": "docs/npu.md"
+  }
+}

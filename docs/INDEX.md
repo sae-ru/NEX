@@ -38,7 +38,7 @@ language and toolchain by the same script.
 |---|---|---|
 | [Architecture decisions for the implemented core](history/architecture-before-2026-11-10.md) | mixed earlier milestones | repository |
 
-## Reference and history (165)
+## Reference and history (166)
 
 | Document | Applies to | Owner |
 |---|---|---|
@@ -132,6 +132,7 @@ language and toolchain by the same script.
 | [NEX language server: development toolchain 0.208](lsp.md) | — | — |
 | [NEX language specification 0.28](language.md) | — | — |
 | [NEX source errors (language0.27)](exceptions.md) | — | — |
+| [NPU status](npu.md) | — | — |
 | [One command for a committed SDK build](sdk-build.md) | — | — |
 | [Operation graph, source edits and attribution](operations.md) | — | — |
 | [Owned device resources](device.md) | — | — |
@@ -210,4 +211,4 @@ language and toolchain by the same script.
 
 ## Totals
 
-180 documents: 13 current, 1 deferred, 1 historical, 165 reference/unclassified.
+181 documents: 13 current, 1 deferred, 1 historical, 166 reference/unclassified.
