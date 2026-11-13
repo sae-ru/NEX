@@ -1,0 +1,63 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Toolchain 0.246 build, core CTest and native smoke on Astra/Fedora/Windows",
+  "implementation_commit": "24abd3ee",
+  "build_source_base_commit": "24abd3ee",
+  "compiler": {
+    "toolchain": "0.246.0",
+    "language": "0.28"
+  },
+  "platforms": [
+    {
+      "name": "Astra Linux 1.7",
+      "compiler": "/opt/nex-toolchain/bin/clang++",
+      "llvm": "22.1.8",
+      "doctor_version": "0.246.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    },
+    {
+      "name": "Fedora 45",
+      "compiler": "/usr/bin/clang++",
+      "llvm": "23.1.4",
+      "doctor_version": "0.246.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      }
+    },
+    {
+      "name": "Windows 11",
+      "compiler": "F:\\sae\\NEX\\build\\deps\\windows-host\\clang64\\bin\\clang++.exe",
+      "llvm": "22.1.8",
+      "doctor_version": "0.246.0",
+      "build": true,
+      "core_ctest": {
+        "groups": 12,
+        "passed": 12,
+        "failed": 0
+      },
+      "native_run_ok": true,
+      "build_option": "NEX_DEFAULT_TOOLCHAIN=win-toolchain.json"
+    }
+  ],
+  "limits": [
+    "core tier only on Astra/Fedora/Windows",
+    "full CTest 0.246 is recorded on macOS only"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "astra": "/Users/sae/projects/NEX/build/platform246/astra",
+    "fedora": "/Users/sae/projects/NEX/build/platform246/fedora",
+    "windows": "/Users/sae/projects/NEX/build/platform246/windows",
+    "guide": "docs/testing.md"
+  }
+}

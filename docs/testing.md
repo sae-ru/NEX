@@ -735,6 +735,9 @@ CPU_AND_NE ReLU prediction passed. Device experiment only, not a NEX provider.
 
 Full CTest 0.246.0 after the init build manifest: 351/351 in 2640.139 s.
 
+Toolchain 0.246.0 on Astra/Fedora/Windows: all three rebuilt, core 12/12;
+Windows native run passed with NEX_DEFAULT_TOOLCHAIN.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
