@@ -56,65 +56,43 @@ platform acceptance.
 ## Development status
 
 Current source: **toolchain 0.243.0 / language 0.28 / task ABI 7**, in development.
-Complete matching portable SDK qualification is still pending. Source support,
-physical device checks and portable delivery have separate acceptance records.
-Fatal diagnostics [preserve NUL/Unicode](docs/evidence/runtime-diagnostic-text-0.165.0-2026-11-10.json);
-CUDA [formats finite f64/aggregates](docs/evidence/cuda-formatting-0.165.0-2026-11-10.json) within explicit text capacity.
-The [source standard library](docs/stdlib.md) adds Unicode split/replace/trim,
-ordered list helpers/stable sort and checked integer math, with explicit copy costs.
-The [source formatter](docs/formatting.md) provides parser-aware preview/check/write,
-retaining comments and literal spelling without opening graph history.
-The [compiled CLI](docs/cli.md) adds bounded per-command help, shell completion
-and quiet success summaries while preserving JSON and program output.
-The [sequential list constructor](docs/list-construction.md) builds one immutable
-result with inferred callback effects, including source errors and task suspension.
-List map/filter/reverse and merge outputs now use this path; backend qualification
-and measured throughput remain separate.
-The [current learning labels](llm/corpus.json) cover nine0.28 projects and six
-counterexamples with actual reference/native Release/TypeScript observations.
-[Discovery tools](docs/learning-corpus.md) check shared contracts; [`nex cost`](experiments/quality/llm_cost.md)
-summarizes recorded trials offline.
-The [completed60-slot Qwen comparison](docs/llm-cost-qwen38-27b-2026-11-11.en.md)
-accepted4/20 NEX,14/20 C++ and20/20 Python trials, with no NEX token saving.
-Original failures and earlier pilots are retained separately.
-The new [bounded language entry](docs/diagnostics.md) provides `nex guide --kind quick`
-and compiled `nex explain CODE` guidance with checked examples; new token savings
-have not been measured. The [12-group core layer](docs/testing.md) adds diagnostic
-controls to the earlier11-group baseline; broader layers retain their own gates.
-[Development CI](docs/ci.md) now defines macOS/Linux core and separate Linux full
-workflows; hosted executions remain pending.
+Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
+0.28 remains the default and rejects those constructs. The compiler default is not
+a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
+
+The 0.243 full macOS regression passed **351/351 groups**. The immutable
+[macOS SDK 0.243.0](docs/releases/0.243.0.json) was accepted end-to-end: 4015
+inventory files, 41 phases, real locked browser builds and the full network
+profile. The relocatable archive is `nex-sdk-0.243-macos-arm64.tar.gz`
+(SHA-256 `72d093d5...e37417`). The owned Metal provider also ran on an Apple
+**M5 Max** with 15 hardware scenarios, 12 reply faults, log isolation and 27+1
+source checks; see the [Metal receipt](docs/evidence/owned-metal-0.243.0-2026-11-13.json).
+
+Browser applications support workers, `web/app.css`, `web/public/` assets,
+`web/index.html`, application-provided `web/components.tsx` and generated file
+hashes. iOS and Android projects are generated from the same checked web output:
+iOS built in Xcode for the iOS 27.1 simulator, and Android built `app-debug.apk`
+with JDK21/API36; both were installed/launched with actual UI, and Android input
+added and completed a task. See the [iOS receipt](docs/evidence/mobile-ios-0.243.0-2026-11-13.json)
+and [Android receipt](docs/evidence/mobile-android-interaction-0.243.0-2026-11-13.json).
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [302 groups for `0abc5d7`, nine current delta groups and a moved/restored `53634a5` SDK candidate](docs/evidence/macos-installed-Metal-full302-SDK-candidate-0.165.0-2026-11-10.json); [ordinary installed Metal tools: 15 pairs, 24 physical kernels](docs/evidence/macos-installed-public-Metal-tools-0.165.0-2026-11-10.json) | Complete workflows and physical Metal acceptance for the new immutable SDK |
-| Windows x86-64 / RTX 3090 | [Snapshot `2172b35`: all targets, 11 groups, 35 physical CUDA cases, 36 Compute Sanitizer cases](docs/evidence/windows-latest-build-CUDA-0.165.0-2026-11-10.json) | Complete source regression and portable SDK; positive IPv6 remains unverified under the operator's restriction |
-| Fedora x86-64 | [304 source groups and ordinary installed smoke, snapshot `61fbd21`](docs/evidence/fedora-public-Metal-full304-0.165.0-2026-11-10.json) | Later changes and portable SDK |
-| CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, NPU CPU fallback disabled](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression, later changes and portable SDK |
-| RK3588 ARM64 | [Snapshot `2172b35`: all targets, ten selected groups across the retained failure/recovery, 63 GPU and 30 NPU calls](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | Full matching source regression and portable SDK |
-| Other architectures and mobile devices | Earlier records retain their own versions in [STATUS](STATUS.md) | Matching current platform and device acceptance |
+| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.243.0-2026-11-13.json); [immutable SDK 0.243](docs/releases/0.243.0.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
+| Astra Linux 1.7 x86-64 | [0.242 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
+| Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
+| Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
+| iOS Simulator | [generation, Xcode build, install/launch, actual UI](docs/evidence/mobile-ios-0.243.0-2026-11-13.json) | scripted input, device signing/store delivery |
+| Android emulator | [APK build, launch, add/complete interaction](docs/evidence/mobile-android-interaction-0.243.0-2026-11-13.json) | device matrix, signing/store delivery |
+| CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, CPU fallback disabled](docs/evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
+| RK3588 ARM64 | [Snapshot `2172b35`: 63 GPU and 30 NPU calls](docs/evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
 
-The earlier [macOS SDK baseline](docs/evidence/macos-baseline-SDK-82-184-0.165.0-2026-11-10.json)
-passed 82 phases, 184 additional cases and 4000 C++ host calls. Its results do not
-qualify the later SDK or its added Metal tools.
-
-The compiler now also provides `nex emit --kind cuda` for reachable shared pure
-`i64`/`f64`/`bool`/`unit` functions, fixed records/enums/Results, nested matches
-bounded immutable lists/bytes, explicit dynamic UTF-8 text and bounded contracts. The value ABI also supports checked `as_i64` and `?`. The
-[CUDA guide](docs/gpu-codegen.md#cuda-source-emission) describes finite binary64,
-source maps and explicit provider preparation. Source generation grants no
-device access; matching current hardware and SDK acceptance remain pending.
-
-The [scalar Metal backend](docs/gpu-codegen.md) emits reachable shared pure
-`i64`/`bool`/`unit` functions from the checked AST. Its explicit owned-task
-provider is experimental; the SDK installs its preparation tools and advertises
-`gpu_codegen.owned_provider`. GPU stepping/profiling, broader GPU/NPU compilation,
-Apple NPU, complete mobile/native UI, NEX Studio, project conversion and measured
-cross-model token/cost savings remain [planned work](PLAN.md).
-
-The independent [checked-AST CUDA corpus](docs/evidence/windows-checked-AST-CUDA-physical-0.165.0-2026-11-10.json)
-also passed32 generated kernels/186 lane outcomes on RTX3090 with actual NVRTC12.1.
-Its sanitizer attachment failed before GPU work; f64 and owned CUDA hardware
-qualification remain pending.
+CUDA and OpenCL source emitters remain bounded checked-AST paths; CUDA device
+execution and provider phases retain their own earlier receipts. General GPU/NPU
+compilation, Apple NPU, complete native-desktop UI, NEX Studio, project conversion,
+signed/public upload, device signing and measured cross-model token savings remain
+[planned work](PLAN.md). Retained CIX/RK NPU results are real hardware receipts but
+do not qualify the current compiler/archive.
 
 [STATUS.md](STATUS.md) and [versioned evidence](docs/evidence/) retain the
 history, exact source/compiler/archive identities, original failures and scope
