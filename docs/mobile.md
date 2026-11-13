@@ -7,7 +7,11 @@ project, built it with Xcode for the iOS 27.1 simulator, installed/launched
 [mobile Android](evidence/mobile-android-0.243.0-2026-11-13.json) generated the
 Android project, built `app-debug.apk` with JDK21/API36 and launched
 `dev.nex.mobile243/.MainActivity` on an arm64 Android 16 emulator with the actual
-NEX Tasks UI. Device signing and store delivery remain separate pending steps.
+NEX Tasks UI. An additional
+[Android interaction receipt](evidence/mobile-android-interaction-0.243.0-2026-11-13.json)
+uses adb input to add `ShipNEX` (2 active) and mark it complete (1 active, struck
+through with Mark active), proving the typed update path in the living app.
+Device signing and store delivery remain separate pending steps.
 
 ## Historical toolchain0.63 receipt
 

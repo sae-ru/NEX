@@ -647,6 +647,9 @@ actual UI screenshot passed; Android/device signing remain pending.
 Mobile Android 0.243.0: generated project, JDK21/API36 `assembleDebug`, APK
 install/launch on Android 16 arm64 emulator and actual UI screenshot passed.
 
+Android mobile interaction 0.243.0: adb input added a task (1→2 active) and
+marked it complete (2→1 active, struck-through state).
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

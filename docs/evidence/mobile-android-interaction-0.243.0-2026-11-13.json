@@ -1,0 +1,56 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Actual Android mobile UI input and state transition",
+  "implementation_commit": "354202be8cd8ecccbf604acd315431a17da9343d",
+  "build_source_base_commit": "354202be",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "language": "0.28"
+  },
+  "device": {
+    "avd": "NEX_Mobile_062",
+    "android": "16",
+    "api": 36,
+    "abi": "arm64-v8a",
+    "bundle_id": "dev.nex.mobile243"
+  },
+  "interaction": {
+    "commands": [
+      "adb shell input tap 400 970",
+      "adb shell input text ShipNEX",
+      "adb shell input tap 850 970",
+      "adb shell input tap 280 1660"
+    ],
+    "add": {
+      "before_active": 1,
+      "after_active": 2,
+      "new_item": "ShipNEX",
+      "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-interaction-add-0.243.0-2026-11-13.png",
+      "screenshot_sha256": "d32b11eb9ab08d62a095ae4f72e23a20a50578dd609d8d0cc9f184e0e7b0f599"
+    },
+    "complete": {
+      "before_active": 2,
+      "after_active": 1,
+      "item_state": "struck through with Mark active",
+      "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-interaction-complete-0.243.0-2026-11-13.png",
+      "screenshot_sha256": "c1d29bce44eea60b7a1e6cdae71d54f5660a892276ac474231c1ad8100bd31fe"
+    }
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "coordinates are emulator-specific; the receipt demonstrates actual UI behavior rather than a reusable automation suite",
+    "device signing/store delivery remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "add": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-interaction-add-0.243.0-2026-11-13.png",
+    "complete": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-interaction-complete-0.243.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}
