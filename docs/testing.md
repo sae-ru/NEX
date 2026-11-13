@@ -638,6 +638,9 @@ Full CTest 0.243.0 passed all 351 groups in 2656.545 s, including explicit
 Owned Metal 0.243.0 on Apple M5 Max: 15 hardware scenarios, 12 reply faults,
 log isolation and 27+1 source checks passed.
 
+Immutable SDK 0.243.0: relocatable macOS bundle accepted end-to-end (41 phases,
+browser builds, full network), release record `docs/releases/0.243.0.json`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
