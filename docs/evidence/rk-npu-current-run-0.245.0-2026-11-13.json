@@ -1,0 +1,15 @@
+{
+  "build_key": "1f746d717d583f1cc1fb479288b59eaca6e0d4cd2e6126ea90c63cdad8d9ea0f",
+  "exit_code": 0,
+  "native_diagnostics": {
+    "diagnostics": [],
+    "ignored": 0,
+    "limit": 32,
+    "omitted": 0,
+    "schema": "nex.native-diagnostics/1",
+    "total": 0
+  },
+  "ok": true,
+  "stderr": "",
+  "stdout": "NEX RK3588 NPU OK\n"
+}

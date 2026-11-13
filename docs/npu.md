@@ -22,8 +22,9 @@ compiler (**3 RKNPU calls**) and the **current 0.245 compiler** (**6 RKNPU calls
 compiler was built on RK3588 against the retained static LLVM22 archive; a
 portability fix isolates the JSON formatter in its own RTTI-free translation
 unit because that archive omits `format_adapter` typeinfo. The runtime keeps
-dynamic_cast. Native run/test remain blocked by native libstdc++
-include discovery, so only eval is claimed
+dynamic_cast. Native run/test also pass with an explicit `NEX_CLANG` wrapper adding
+`--gcc-install-dir=/usr/lib/gcc/aarch64-linux-gnu/11`, so the retained clang++
+finds libstdc++ headers; the fixed native test `rk_npu::npu_test` passed
 ([current receipt](evidence/rk-npu-current-0.245.0-2026-11-13.json),
 [retained receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
 pending current-toolchain acceptance.

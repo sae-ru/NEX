@@ -713,6 +713,9 @@ Full CTest after the RTTI-free JSON formatter split passed all 351 groups in
 2751.835 s; the earlier RTTI-wide language.cpp experiment was discarded because
 it broke exception handling and is not committed.
 
+RK3588 current 0.245.0: eval 6 RKNPU calls and native run/test pass with an
+explicit GCC-install-dir wrapper for the retained clang++.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

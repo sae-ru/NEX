@@ -30,13 +30,15 @@
     "rknpu_fd_open": true,
     "provider": "RKNN",
     "device_driver": "RKNPU",
-    "cleanup_verified": true
+    "cleanup_verified": true,
+    "run_ok": true,
+    "test_ok": true,
+    "native_test": "rk_npu::npu_test"
   },
   "limits": [
-    "native run/test were blocked by the retained native libstdc++ include discovery, not by the NPU",
-    "only eval is claimed",
     "fixed RKNN matmul fixture; no general NPU compiler",
-    "portable SDK installation on RK3588 remains pending"
+    "portable SDK installation on RK3588 remains pending",
+    "native runs require NEX_CLANG wrapper with the installed GCC libstdc++ directory"
   ],
   "observations": {
     "registered_groups": 351,
@@ -50,6 +52,13 @@
     "eval": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-current-eval-0.245.0-2026-11-13.json",
     "trace": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/rk-npu-current-trace-0.245.0-2026-11-13.jsonl",
     "doctor": "/Users/sae/projects/NEX/build/rk-npu-current-0245/doctor.json",
-    "guide": "docs/npu.md"
+    "guide": "docs/npu.md",
+    "run": "docs/evidence/rk-npu-current-run-0.245.0-2026-11-13.json",
+    "test": "docs/evidence/rk-npu-current-test-0.245.0-2026-11-13.json"
+  },
+  "native_toolchain": {
+    "compiler_wrapper": "/tmp/rk-clangxx",
+    "flag": "--gcc-install-dir=/usr/lib/gcc/aarch64-linux-gnu/11",
+    "reason": "retained clang++ otherwise fails to find libstdc++ cstdint"
   }
 }

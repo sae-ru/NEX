@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "tests": [
+    {
+      "name": "rk_npu::npu_test",
+      "native": true,
+      "ok": true,
+      "web": false
+    }
+  ]
+}
