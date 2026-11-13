@@ -632,6 +632,9 @@ accept language0.29 as an explicit project language. Default provider runs
 remain 0.28. A 0.28 `nex.json` under a 0.29-capable compiler keeps loading as
 0.28 instead of falling back to the compiler default.
 
+Full CTest 0.243.0 passed all 351 groups in 2656.545 s, including explicit
+0.29 provider source acceptance.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
