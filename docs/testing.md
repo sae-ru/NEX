@@ -723,6 +723,9 @@ Curated extended subset 0.245.0: Astra (6), Fedora (6, excluding the absent
 LLVM22 wasm-ld case) and Windows (7, with NEX_DEFAULT_TOOLCHAIN) passed
 type_lambdas, higher_kinds, generics, traits, migration and fmt cases.
 
+Immutable SDK 0.245.0: relocatable macOS bundle accepted end-to-end (41 phases,
+browser builds, full network), release record `docs/releases/0.245.0.json`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

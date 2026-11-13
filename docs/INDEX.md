@@ -169,7 +169,7 @@ language and toolchain by the same script.
 | [Public025 provider integration candidate](task-provider-profiling.md) | — | — |
 | [Public025 provider integration candidate](task-providers.md) | — | — |
 | [Public025 provider integration candidate](task-shared-providers.md) | — | — |
-| [Qualified SDK: 0.244.0 / language 0.28 / task ABI 7](sdk.md) | — | — |
+| [Qualified SDK: 0.245.0 / language 0.28 / task ABI 7](sdk.md) | — | — |
 | [Repeatable development configuration](development-build.md) | — | — |
 | [Scalar WebAssembly design history](wasm-design.md) | — | — |
 | [Scoped compiler discovery](discovery.md) | — | — |

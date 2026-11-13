@@ -1,0 +1,41 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope",
+  "verified_at_utc": "2026-11-13T21:33:00Z",
+  "toolchain": "0.245.0",
+  "language": "0.28",
+  "source_task_ABI": 7,
+  "license": "MIT",
+  "SDK_source_commit": "119adbb7fddf2175880c6e600aa9fd3cf02e043f",
+  "SDK_source_files": 4076,
+  "archive": {
+    "name": "nex-sdk-0.245-macos-arm64.tar.gz",
+    "sha256": "636299cec31bf02d9e80b327918eb53ac4d9d70ea9f5e31b3a28fd157ad1ef12",
+    "bytes": 129489847,
+    "files_in_inventory": 4076,
+    "public_binary_upload_performed_by_this_commit": false
+  },
+  "release": {
+    "path": "/tmp/nex-sdk-release-0245/nex-0.245.0-macos",
+    "immutable": true,
+    "acceptance_phases": 41,
+    "browser_build": true,
+    "live_debugger": false,
+    "notices_sha256": "33fd07162f701f6a923abd1abbed8432dfeb32786251935e48f1d28e8660696a"
+  },
+  "acceptance": {
+    "schema": "nex.sdk-acceptance/1",
+    "ok": true,
+    "seconds": 3058.676,
+    "network_profile": "full",
+    "commands": 851,
+    "browser_build": null
+  },
+  "host": {
+    "platform": "macos",
+    "host": "arm64-apple-darwin27.0.0",
+    "minimum_macos": "27.0"
+  },
+  "notes": "Relocatable bundle accepted with SDKROOT set; browser builds and full network profile passed. Signed/public upload is not performed by this record.",
+  "previous_published_binary_release": "0.244.0"
+}
