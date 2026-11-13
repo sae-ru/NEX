@@ -680,6 +680,9 @@ simulator UI (1→2 active).
 iOS Release configuration 0.244.0: Xcode Release simulator build,
 install/launch and actual UI passed.
 
+Immutable SDK 0.244.0: relocatable macOS bundle accepted end-to-end (41 phases,
+browser builds, full network), release record `docs/releases/0.244.0.json`.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

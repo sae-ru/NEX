@@ -1,0 +1,18 @@
+{
+  "acceptance_phases": 41,
+  "acceptance_sha256": "7a084c1268e304313c29eebf4eeae25a324876e2996649eb3729fccaba6bee12",
+  "archive": "nex-sdk-0.244-macos-arm64.tar.gz",
+  "archive_bytes": 129474236,
+  "archive_sha256": "b243952bc97c79a6053e239cad0d00dd00f5c24e5d9f95b62c432f903d9a01e6",
+  "browser_build": true,
+  "bundle_manifest_sha256": "e079ff721ec100f0ecc792ac66c01592d82d54c0d68dbe860b86a9be56492fb1",
+  "immutable": true,
+  "language": "0.28",
+  "live_debugger": false,
+  "name": "nex-0.244.0-macos",
+  "notices_sha256": "33fd07162f701f6a923abd1abbed8432dfeb32786251935e48f1d28e8660696a",
+  "ok": true,
+  "platform": "macos",
+  "schema": "nex.sdk-release/1",
+  "version": "0.244.0"
+}

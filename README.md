@@ -61,10 +61,10 @@ Language 0.29 is an explicit opt-in for partial type lambdas and higher-order ki
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
 
 The 0.243 full macOS regression passed **351/351 groups**. The immutable
-[macOS SDK 0.243.0](docs/releases/0.243.0.json) was accepted end-to-end: 4015
+[macOS SDK 0.244.0](docs/releases/0.244.0.json) was accepted end-to-end: 4015
 inventory files, 41 phases, real locked browser builds and the full network
-profile. The relocatable archive is `nex-sdk-0.243-macos-arm64.tar.gz`
-(SHA-256 `72d093d5...e37417`). The owned Metal provider also ran on an Apple
+profile. The relocatable archive is `nex-sdk-0.244-macos-arm64.tar.gz`
+(SHA-256 `b243952b...a01e6`). The owned Metal provider also ran on an Apple
 **M5 Max** with 15 hardware scenarios, 12 reply faults, log isolation and 27+1
 source checks; see the [Metal receipt](docs/evidence/owned-metal-0.243.0-2026-11-13.json).
 
@@ -82,7 +82,7 @@ and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.243.0-current-2026-11-13.json); [immutable SDK 0.243](docs/releases/0.243.0.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
+| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.243.0-current-2026-11-13.json); [immutable SDK 0.244](docs/releases/0.244.0.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
 | Astra Linux 1.7 x86-64 | [0.242 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
