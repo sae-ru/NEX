@@ -650,6 +650,11 @@ install/launch on Android 16 arm64 emulator and actual UI screenshot passed.
 Android mobile interaction 0.243.0: adb input added a task (1→2 active) and
 marked it complete (2→1 active, struck-through state).
 
+Cross-compiler/platform matrix 0.243.0: Astra Linux 1.7 (glibc2.28, Clang
+22.1.8), Fedora 45 (Clang 23.1.4) and Windows 11 x86-64 (LLVM-MinGW Clang
+22.1.8) each built the current source, passed core 12/12 and ran
+`examples/arithmetic.nex` (55/3628800).
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
