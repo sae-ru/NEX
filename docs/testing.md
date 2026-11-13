@@ -655,6 +655,9 @@ Cross-compiler/platform matrix 0.243.0: Astra Linux 1.7 (glibc2.28, Clang
 22.1.8) each built the current source, passed core 12/12 and ran
 `examples/arithmetic.nex` (55/3628800).
 
+Full CTest of the current 0.243.0 tree passed all 351 groups in 2612.210 s,
+including the current status/docs, desktop experiment and probe changes.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
