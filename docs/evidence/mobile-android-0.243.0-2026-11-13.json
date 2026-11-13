@@ -1,0 +1,76 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Current Android mobile project generation, native APK build and actual emulator UI",
+  "implementation_commit": "62ce2f551ffbc854524c7401e39d3a0ebfb5e8cd",
+  "build_source_base_commit": "62ce2f55",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "language": "0.28",
+    "sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6"
+  },
+  "generation": {
+    "schema": "nex.mobile-project/1",
+    "ok": true,
+    "platform": "android",
+    "app_id": "dev.nex.mobile243",
+    "capacitor_version": "8.5.3",
+    "source_backend": "typescript-react",
+    "web_assets": {
+      "NEX_MOBILE_NOTICES.txt": "f33cae078e2c88c46b1f11f38f8cd9e1006b2175ae069184b734d27d07854516",
+      "index.html": "9649756c02bb1d183436ef0151aea531cc22c6c0013b5406cd9c7be841f78b90",
+      "THIRD_PARTY_NOTICES.txt": "a274c9eda972cced27204e9065a09b529b0e7b84f01e0e2153ab2a7f77e6b433",
+      "assets/index-CaNkoEgt.css": "0dd3a5d138e41887bc14152ed5a6a688ac42e1c64e842e9f55357e5227534628",
+      "assets/index-dhVjOzBx.js": "82e1c66d7e31c1f6abbd243c4658bb4e932ca94a310e37ba8b66e0f30401fde2",
+      "assets/index-dhVjOzBx.js.map": "5f4a21ef5387082b7b5273269d47acccad0560f298abf19cdef0d1cbe9f19e4d"
+    },
+    "project_files": {
+      "android": "android"
+    },
+    "native_application_built": false,
+    "target_executed": false
+  },
+  "native_build": {
+    "tool": "./gradlew :app:assembleDebug",
+    "java": "JDK21",
+    "android_sdk": "api36",
+    "build_succeeded": true,
+    "apk": "/tmp/mobile243-android/android/app/build/outputs/apk/debug/app-debug.apk",
+    "apk_sha256": "dc0b7138b64da3514b2b901d9c13248fc983c9edd36749f642d6c135b84dd1b7",
+    "apk_bytes": 4567060,
+    "log_sha256": "24c26e082a3d9ece0b8d0f9d963b7d3da363a5ba03ab5df444a27e092d4ed290"
+  },
+  "emulator": {
+    "avd": "NEX_Mobile_062",
+    "android_release": "16",
+    "api": 36,
+    "abi": "arm64-v8a",
+    "bundle_id": "dev.nex.mobile243",
+    "activity": "dev.nex.mobile243/.MainActivity",
+    "installed": true,
+    "launched": true,
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-0.243.0-2026-11-13.png",
+    "screenshot_sha256": "1c5f412de87cc135ab79c73802d873324d9ec47904968e004ddf81933970165b",
+    "actual_ui": "NEX Tasks app rendered; tabs, input, buttons visible"
+  },
+  "coverage": {
+    "generator_commands": 4
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "emulator screenshot covers actual UI launch, not scripted input/navigation assertions",
+    "device signing and store delivery remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "receipt": "/tmp/mobile243-android-receipt.json",
+    "project": "/tmp/mobile243-android",
+    "screenshot": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/mobile-android-0.243.0-2026-11-13.png",
+    "guide": "docs/mobile.md"
+  }
+}

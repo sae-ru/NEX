@@ -1,10 +1,13 @@
 # Mobile projects — toolchain0.243.0
 
-The current receipt [mobile iOS 0.243.0](evidence/mobile-ios-0.243.0-2026-11-13.json)
-generated an iOS Capacitor project from checked NEX web output, built it with
-Xcode for the iOS 27.1 simulator, installed and launched `dev.nex.mobile243`,
-and captured the actual NEX Tasks UI. Android native build/launch, device
-signing and store delivery remain separate pending steps.
+The current receipts for 0.243.0 cover both mobile hosts. iOS:
+[mobile iOS](evidence/mobile-ios-0.243.0-2026-11-13.json) generated a Capacitor
+project, built it with Xcode for the iOS 27.1 simulator, installed/launched
+`dev.nex.mobile243` and captured the actual NEX Tasks UI. Android:
+[mobile Android](evidence/mobile-android-0.243.0-2026-11-13.json) generated the
+Android project, built `app-debug.apk` with JDK21/API36 and launched
+`dev.nex.mobile243/.MainActivity` on an arm64 Android 16 emulator with the actual
+NEX Tasks UI. Device signing and store delivery remain separate pending steps.
 
 ## Historical toolchain0.63 receipt
 

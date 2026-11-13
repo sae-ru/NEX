@@ -644,6 +644,9 @@ browser builds, full network), release record `docs/releases/0.243.0.json`.
 Mobile iOS 0.243.0: generated project, Xcode simulator build, install/launch and
 actual UI screenshot passed; Android/device signing remain pending.
 
+Mobile Android 0.243.0: generated project, JDK21/API36 `assembleDebug`, APK
+install/launch on Android 16 arm64 emulator and actual UI screenshot passed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
