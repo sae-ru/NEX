@@ -1,0 +1,18 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Public GitHub release binary for SDK 0.246.0",
+  "release_url": "https://github.com/sae-ru/NEX/releases/tag/v0.246.0",
+  "asset_url": "https://github.com/sae-ru/NEX/releases/download/v0.246.0/nex-sdk-0.246-macos-arm64.tar.gz",
+  "asset_id": 745364613,
+  "asset_bytes": 129490015,
+  "archive_sha256": "d8ec3adf690ed50d947e0c380dce93aafc4fbc3649cd6295f12b3f05f32fdef5",
+  "tag": "v0.246.0",
+  "limits": [
+    "macOS development scope only",
+    "not Developer ID signed or notarized",
+    "not an App Store/Play Store delivery"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true
+}

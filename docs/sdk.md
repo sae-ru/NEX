@@ -1,10 +1,12 @@
 # Qualified SDK: 0.246.0 / language 0.28 / task ABI 7
 
 The current immutable macOS development release is
-[0.246.0](releases/0.246.0.json): relocatable archive `nex-sdk-0.246-macos-arm64.tar.gz`
+[0.246.0](releases/0.246.0.json): relocatable archive
+[`nex-sdk-0.246-macos-arm64.tar.gz`](https://github.com/sae-ru/NEX/releases/download/v0.246.0/nex-sdk-0.246-macos-arm64.tar.gz)
 (SHA-256 `d8ec3adf...32fdef5`), 4015 inventory files, 41 acceptance phases with
 real locked browser builds and full network profile. The bundle requires the
-host macOS SDK through `SDKROOT`; live debugger was not requested.
+host macOS SDK through `SDKROOT`; live debugger was not requested. The archive is
+published as a GitHub Release asset; it is not Developer ID signed or notarized.
 
 ## Historical record: 0.162.0
 
