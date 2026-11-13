@@ -1,0 +1,64 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Owned Metal provider physical hardware at toolchain 0.243.0",
+  "implementation_commit": "b042660cd6dbd16e93adb2d7f5f5c235993f8fe1",
+  "build_source_base_commit": "b042660c",
+  "compiler": {
+    "toolchain": "0.243.0",
+    "language": "0.28",
+    "sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6"
+  },
+  "host": {
+    "machine": "Apple M5 Max",
+    "metal": "Metal 4",
+    "sdk": "/tmp/nex-sdk-0243",
+    "metal_provider": "/tmp/metal243-project"
+  },
+  "results": {
+    "hardware": {
+      "schema": "nex.owned-metal-hardware/1",
+      "ok": true,
+      "cases": 45
+    },
+    "reply_faults": {
+      "schema": "nex.owned-metal-reply-faults/1",
+      "ok": true,
+      "cases": 36
+    },
+    "logs": {
+      "schema": "nex.owned-metal-log-isolation/1",
+      "ok": true,
+      "cases": 7
+    },
+    "source_checks": {
+      "schema": "nex.owned-metal-source-check/1",
+      "ok": true,
+      "accepted_programs": 27,
+      "rejected_programs": 1
+    }
+  },
+  "coverage": {
+    "hardware_scenarios": 15,
+    "reply_faults": 12,
+    "source_checks": "27 accepted + 1 rejected"
+  },
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 179,
+    "docs_links": 1232
+  },
+  "limits": [
+    "installed SDK acceptance and the signed/public release remain separate gates",
+    "Apple NPU, general GPU compilation, matmul and GPU debugging/profiling remain pending"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "hardware": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-hardware-0.243.0-2026-11-13.json",
+    "faults": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-faults-0.243.0-2026-11-13.json",
+    "logs": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-logs-0.243.0-2026-11-13.json",
+    "sources": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/owned-metal-sources-0.243.0-2026-11-13.json",
+    "local": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX"
+  }
+}

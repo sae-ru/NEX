@@ -635,6 +635,9 @@ remain 0.28. A 0.28 `nex.json` under a 0.29-capable compiler keeps loading as
 Full CTest 0.243.0 passed all 351 groups in 2656.545 s, including explicit
 0.29 provider source acceptance.
 
+Owned Metal 0.243.0 on Apple M5 Max: 15 hardware scenarios, 12 reply faults,
+log isolation and 27+1 source checks passed.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

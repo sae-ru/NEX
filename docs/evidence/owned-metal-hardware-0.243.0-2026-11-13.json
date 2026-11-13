@@ -1,0 +1,1397 @@
+{
+  "schema": "nex.owned-metal-hardware/1",
+  "ok": true,
+  "commands": [
+    {
+      "label": "small_cpu_oracle-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 0.606
+    },
+    {
+      "label": "small_cpu_oracle-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 31.102
+    },
+    {
+      "label": "small_cpu_oracle-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/cc2ea1e124a6810de9574881b7deb9aa883d62228a3cada18de890a20d7410c9/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/small_cpu_oracle",
+      "exit_code": 0,
+      "seconds": 0.33
+    },
+    {
+      "label": "all_octets-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 0.376
+    },
+    {
+      "label": "all_octets-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 2.447
+    },
+    {
+      "label": "all_octets-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/63f2efcf5476d452c201588dda395071a384b2da3a226d766a6a541f03d2c85e/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/all_octets",
+      "exit_code": 0,
+      "seconds": 0.374
+    },
+    {
+      "label": "persistent_session_scales-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 0.436
+    },
+    {
+      "label": "persistent_session_scales-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 2.45
+    },
+    {
+      "label": "persistent_session_scales-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/6e31687505db3c3554e2c80613ffe5172e71c8ef617530b9757a5ec688f91fb3/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/persistent_session_scales",
+      "exit_code": 0,
+      "seconds": 0.275
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 0.394
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 2.426
+    },
+    {
+      "label": "overflow_is_not_fallback_and_session_recovers-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/facee7fbf3c85cfc33af6c069a710b2a47eadc23a6dd7c5b107bf338cfe934b2/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_is_not_fallback_and_session_recovers",
+      "exit_code": 0,
+      "seconds": 0.702
+    },
+    {
+      "label": "maximum_262144_elements-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 0.443
+    },
+    {
+      "label": "maximum_262144_elements-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 2.432
+    },
+    {
+      "label": "maximum_262144_elements-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/224b1f7eb9f04ad6b6d7302825d8392e8029935afa32911d6c07d5d38b2b75de/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/maximum_262144_elements",
+      "exit_code": 0,
+      "seconds": 0.361
+    },
+    {
+      "label": "overflow_only_last_of_262144-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 0.416
+    },
+    {
+      "label": "overflow_only_last_of_262144-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 2.46
+    },
+    {
+      "label": "overflow_only_last_of_262144-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/0685f5b0200e500780007bab2b8a25a9684d4b0f8f7aa8c8a07232d5a8d8f812/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/overflow_only_last_of_262144",
+      "exit_code": 0,
+      "seconds": 0.294
+    },
+    {
+      "label": "hidden_session_after_scope_return-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 0.359
+    },
+    {
+      "label": "hidden_session_after_scope_return-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 1.783
+    },
+    {
+      "label": "hidden_session_after_scope_return-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/f7eeb3f3918b1d7207810acec738e5ede0b3025f6541957b70d10d78c07b2539/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/hidden_session_after_scope_return",
+      "exit_code": 0,
+      "seconds": 0.306
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 0.353
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 1.785
+    },
+    {
+      "label": "closed_context_existing_buffer_still_reads-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/cedbc9cad301fe13ee553209c0d81583aa195ed430230f483dc18e730a5a7521/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/closed_context_existing_buffer_still_reads",
+      "exit_code": 0,
+      "seconds": 0.312
+    },
+    {
+      "label": "sibling_channel_hidden_session-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 0.358
+    },
+    {
+      "label": "sibling_channel_hidden_session-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 1.796
+    },
+    {
+      "label": "sibling_channel_hidden_session-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/453c6cb2a7ff1c5adf2c053a11124b740cbfbd8926f232117daec9e5bcffb0b9/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/sibling_channel_hidden_session",
+      "exit_code": 0,
+      "seconds": 0.306
+    },
+    {
+      "label": "cross_session_buffers_rejected-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 0.388
+    },
+    {
+      "label": "cross_session_buffers_rejected-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 1.728
+    },
+    {
+      "label": "cross_session_buffers_rejected-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/3078640511149082a2cc50d50e88692fa10c0c1aa1fa4f6766ad0d2d2f1bda4d/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/cross_session_buffers_rejected",
+      "exit_code": 0,
+      "seconds": 0.34
+    },
+    {
+      "label": "malformed_request_never_uploads-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 0.351
+    },
+    {
+      "label": "malformed_request_never_uploads-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 2.388
+    },
+    {
+      "label": "malformed_request_never_uploads-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/834b16086d0711ec61c66f9ee9a6fb46595fb0e9db4295997d04b95ae4a72439/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/malformed_request_never_uploads",
+      "exit_code": 0,
+      "seconds": 0.316
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 0.392
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 2.492
+    },
+    {
+      "label": "explicit_placement_and_cpu_fallback-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/5dcd8c47eb4dea5ce4089155262bb3d362be4f7986e4c9560c3f56b6e54bf008/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/explicit_placement_and_cpu_fallback",
+      "exit_code": 0,
+      "seconds": 0.291
+    },
+    {
+      "label": "unsupported_matmul_fallback-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "30000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 0.379
+    },
+    {
+      "label": "unsupported_matmul_fallback-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 2.53
+    },
+    {
+      "label": "unsupported_matmul_fallback-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/55db27f6210b75c9eed65505ff3f21bbbf59bea0ddb5472d2f8ddbfe1c28c4a4/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-hardware/unsupported_matmul_fallback",
+      "exit_code": 0,
+      "seconds": 0.365
+    },
+    {
+      "label": "cancel_enqueued_GPU-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "5000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/cancel_enqueued_GPU",
+      "exit_code": 1,
+      "seconds": 1.877
+    },
+    {
+      "label": "cancel_enqueued_GPU-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/cancel_enqueued_GPU",
+      "exit_code": 0,
+      "seconds": 2.445
+    },
+    {
+      "label": "cancel_enqueued_GPU-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/42b3b844865e1da780e7dcf9827eb98c9c7a1f82e3b6449fb55603ac793af75b/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1",
+        "--nex-task-timeout-ms",
+        "5000"
+      ],
+      "cwd": "/tmp/metal243-hardware/cancel_enqueued_GPU",
+      "exit_code": 70,
+      "seconds": 1.795
+    },
+    {
+      "label": "deadline_enqueued_GPU-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--task-workers",
+        "1",
+        "--task-timeout-ms",
+        "2000",
+        "--task-steps",
+        "16000000",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/deadline_enqueued_GPU",
+      "exit_code": 1,
+      "seconds": 3.415
+    },
+    {
+      "label": "deadline_enqueued_GPU-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-hardware/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-hardware/deadline_enqueued_GPU",
+      "exit_code": 0,
+      "seconds": 2.405
+    },
+    {
+      "label": "deadline_enqueued_GPU-native",
+      "argv": [
+        "/tmp/metal243-hardware/native/7ca235757a2d6b8a8a84ac1f145dc44315994eaf9fc4d158086561e321c4b32c/app",
+        "--nex-foreign",
+        "/private/tmp/metal243-project/foreign.json",
+        "--nex-task-workers",
+        "1",
+        "--nex-task-timeout-ms",
+        "2000"
+      ],
+      "cwd": "/tmp/metal243-hardware/deadline_enqueued_GPU",
+      "exit_code": 70,
+      "seconds": 3.261
+    }
+  ],
+  "cases": [
+    {
+      "name": "small_cpu_oracle",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            11625,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            3,
+            3,
+            10499,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/cc2ea1e124a6810de9574881b7deb9aa883d62228a3cada18de890a20d7410c9/app"
+    },
+    {
+      "name": "all_octets",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            9499,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            256,
+            1,
+            10249,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/63f2efcf5476d452c201588dda395071a384b2da3a226d766a6a541f03d2c85e/app"
+    },
+    {
+      "name": "persistent_session_scales",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 15,
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            9999,
+            0
+          ],
+          [
+            1,
+            1,
+            10624,
+            0
+          ],
+          [
+            1,
+            2,
+            11541,
+            0
+          ],
+          [
+            1,
+            127,
+            10458,
+            0
+          ],
+          [
+            1,
+            255,
+            9250,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 15,
+        "actual_kernel_events": [
+          [
+            1,
+            0,
+            10333,
+            0
+          ],
+          [
+            1,
+            1,
+            9958,
+            0
+          ],
+          [
+            1,
+            2,
+            9833,
+            0
+          ],
+          [
+            1,
+            127,
+            9750,
+            0
+          ],
+          [
+            1,
+            255,
+            9499,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/6e31687505db3c3554e2c80613ffe5172e71c8ef617530b9757a5ec688f91fb3/app"
+    },
+    {
+      "name": "overflow_is_not_fallback_and_session_recovers",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 5,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            10750,
+            1
+          ],
+          [
+            1,
+            1,
+            10250,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 5,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            9874,
+            1
+          ],
+          [
+            1,
+            1,
+            10249,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/facee7fbf3c85cfc33af6c069a710b2a47eadc23a6dd7c5b107bf338cfe934b2/app"
+    },
+    {
+      "name": "maximum_262144_elements",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            262144,
+            3,
+            26541,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            262144,
+            3,
+            26999,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/224b1f7eb9f04ad6b6d7302825d8392e8029935afa32911d6c07d5d38b2b75de/app"
+    },
+    {
+      "name": "overflow_only_last_of_262144",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 2,
+        "actual_kernel_events": [
+          [
+            262144,
+            1,
+            29791,
+            1
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 2,
+        "actual_kernel_events": [
+          [
+            262144,
+            1,
+            26749,
+            1
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/0685f5b0200e500780007bab2b8a25a9684d4b0f8f7aa8c8a07232d5a8d8f812/app"
+    },
+    {
+      "name": "hidden_session_after_scope_return",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            13333,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            13124,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/f7eeb3f3918b1d7207810acec738e5ede0b3025f6541957b70d10d78c07b2539/app"
+    },
+    {
+      "name": "closed_context_existing_buffer_still_reads",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            9750,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            9750,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/cedbc9cad301fe13ee553209c0d81583aa195ed430230f483dc18e730a5a7521/app"
+    },
+    {
+      "name": "sibling_channel_hidden_session",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            9750,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            12458,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/453c6cb2a7ff1c5adf2c053a11124b740cbfbd8926f232117daec9e5bcffb0b9/app"
+    },
+    {
+      "name": "cross_session_buffers_rejected",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 2,
+        "buffers": 2,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 2,
+        "buffers": 2,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/3078640511149082a2cc50d50e88692fa10c0c1aa1fa4f6766ad0d2d2f1bda4d/app"
+    },
+    {
+      "name": "malformed_request_never_uploads",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/834b16086d0711ec61c66f9ee9a6fb46595fb0e9db4295997d04b95ae4a72439/app"
+    },
+    {
+      "name": "explicit_placement_and_cpu_fallback",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/5dcd8c47eb4dea5ce4089155262bb3d362be4f7986e4c9560c3f56b6e54bf008/app"
+    },
+    {
+      "name": "unsupported_matmul_fallback",
+      "native_reference": true,
+      "reference_capacity_after_scope": 0,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 0,
+        "actual_kernel_events": [],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": null
+      },
+      "executable": "/tmp/metal243-hardware/native/55db27f6210b75c9eed65505ff3f21bbbf59bea0ddb5472d2f8ddbfe1c28c4a4/app"
+    },
+    {
+      "name": "cancel_enqueued_GPU",
+      "native_reference": true,
+      "expected_error": "E_CANCELLED",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            10166,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 1.5143145
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            15791,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 1.50890325
+      },
+      "executable": "/tmp/metal243-hardware/native/42b3b844865e1da780e7dcf9827eb98c9c7a1f82e3b6449fb55603ac793af75b/app"
+    },
+    {
+      "name": "deadline_enqueued_GPU",
+      "native_reference": true,
+      "expected_error": "E_TIMEOUT",
+      "physical_settlement_before_error_exit": true,
+      "reference": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            9875,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 3.010250042
+      },
+      "native": {
+        "devices": [
+          "Apple M5 Max"
+        ],
+        "sessions": 1,
+        "buffers": 3,
+        "actual_kernel_events": [
+          [
+            1,
+            1,
+            10041,
+            0
+          ]
+        ],
+        "all_buffers_released": true,
+        "session_after_children": true,
+        "private_stdout_isolation": true,
+        "enqueued_to_completion_seconds": 3.01106175
+      },
+      "executable": "/tmp/metal243-hardware/native/7ca235757a2d6b8a8a84ac1f145dc44315994eaf9fc4d158086561e321c4b32c/app"
+    }
+  ],
+  "compiler_sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6",
+  "module_sha256": "313959eafc7783ae8f9742cf2e019aaa6e1d8397d1744f5f0eaf0d4bc313690c",
+  "worker_sha256": "3a3a5f17606cf505966eefd9d7608a42f1fb423f5eb9c2ef45bbf92f44d44ee8",
+  "manifest_sha256": "5ed877081410d17d04a857725561999773d39e25a50b194ee7393b05a59866ef",
+  "actual_GPU_execution": true,
+  "installed_SDK_accepted": false,
+  "general_GPU_codegen_accepted": false,
+  "standard_installed_Metal_provider": false,
+  "full_objective_complete": false,
+  "seconds": 82.893,
+  "state": "passed",
+  "native_reference_cases": 15,
+  "full_hardware_suite": true,
+  "actual_kernel_events": 32
+}

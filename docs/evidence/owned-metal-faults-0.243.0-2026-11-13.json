@@ -1,0 +1,907 @@
+{
+  "schema": "nex.owned-metal-reply-faults/1",
+  "ok": true,
+  "state": "passed",
+  "commands": [
+    {
+      "label": "upload_truncated-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/upload_truncated/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_truncated-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_truncated-native",
+      "argv": [
+        "/tmp/metal243-faults/native/8788f211fa0aa15f649587d358f78c54283b7879dcbefffbba3976418c331ab8/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/upload_truncated/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_wrong_size-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/upload_wrong_size/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_wrong_size-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_wrong_size-native",
+      "argv": [
+        "/tmp/metal243-faults/native/00b88c78252dea65488857feee167058aa5471bad7c38d6d29460b148a1fe01e/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/upload_wrong_size/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_reused_id-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/upload_reused_id/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_reused_id-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "upload_reused_id-native",
+      "argv": [
+        "/tmp/metal243-faults/native/82ec3b41f01a46d155f4e8d3154328e7ea66054251c30d376b7e8d686a351063/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/upload_reused_id/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/upload_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_truncated-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/affine_truncated/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_truncated-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_truncated-native",
+      "argv": [
+        "/tmp/metal243-faults/native/616b9f76b18ec7815e1256c83b3a867a6567cd6c7c562e68f1525f44e8c054c0/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/affine_truncated/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_trailing-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/affine_trailing/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_trailing-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_trailing-native",
+      "argv": [
+        "/tmp/metal243-faults/native/b9d00cd5ad4b4d6d2dc5b2e15266a0ead5d70e649575628c709d32cad7fd999d/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/affine_trailing/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_reused_id-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/affine_reused_id/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_reused_id-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "affine_reused_id-native",
+      "argv": [
+        "/tmp/metal243-faults/native/52a5a1fdcbcfd91e434fc8777ffc6304f7c7ec51fc73fc47514bf964b0a24343/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/affine_reused_id/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/affine_reused_id",
+      "exit_code": 0
+    },
+    {
+      "label": "download_truncated-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/download_truncated/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/download_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "download_truncated-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/download_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "download_truncated-native",
+      "argv": [
+        "/tmp/metal243-faults/native/b5247d0e07d39d29604ad747cccc95abefd224d9ebccb0044f5bc10e85b0c442/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/download_truncated/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/download_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "download_wrong_size-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/download_wrong_size/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/download_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "download_wrong_size-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/download_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "download_wrong_size-native",
+      "argv": [
+        "/tmp/metal243-faults/native/4e949e6ac516e8fc1ec9c2e4a4b217b2c09a58d2317dd20c47dfb17605692e70/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/download_wrong_size/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/download_wrong_size",
+      "exit_code": 0
+    },
+    {
+      "label": "free_trailing-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/free_trailing/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/free_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "free_trailing-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/free_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "free_trailing-native",
+      "argv": [
+        "/tmp/metal243-faults/native/556d40ffca84af38c1230f17a81a2773b9251ccd1daf3839255e8f5c47fd5a7e/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/free_trailing/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/free_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "close_truncated-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/close_truncated/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/close_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "close_truncated-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/close_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "close_truncated-native",
+      "argv": [
+        "/tmp/metal243-faults/native/1d453922350d459ea354d570ee85b4b0eb7f96fb820cb065b88e6303fe9d0150/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/close_truncated/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/close_truncated",
+      "exit_code": 0
+    },
+    {
+      "label": "open_trailing-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/open_trailing/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/open_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "open_trailing-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/open_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "open_trailing-native",
+      "argv": [
+        "/tmp/metal243-faults/native/5220f6981cbad101b02952037ef4226a186ceee93c9c933a7144140fa4739a0d/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/open_trailing/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/open_trailing",
+      "exit_code": 0
+    },
+    {
+      "label": "execute_fallback_never_masks_protocol-reference",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "eval",
+        "--foreign",
+        "/tmp/metal243-faults/execute_fallback_never_masks_protocol/foreign.json",
+        "--task-workers",
+        "1",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/execute_fallback_never_masks_protocol",
+      "exit_code": 0
+    },
+    {
+      "label": "execute_fallback_never_masks_protocol-build",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "build",
+        "--profile",
+        "release",
+        "--build-directory",
+        "/tmp/metal243-faults/native",
+        "--json"
+      ],
+      "cwd": "/tmp/metal243-faults/execute_fallback_never_masks_protocol",
+      "exit_code": 0
+    },
+    {
+      "label": "execute_fallback_never_masks_protocol-native",
+      "argv": [
+        "/tmp/metal243-faults/native/99ed660e0256235bec078129f82c77b7bae55c507cb06827306d999abb2abd80/app",
+        "--nex-foreign",
+        "/tmp/metal243-faults/execute_fallback_never_masks_protocol/foreign.json",
+        "--nex-task-workers",
+        "1"
+      ],
+      "cwd": "/tmp/metal243-faults/execute_fallback_never_masks_protocol",
+      "exit_code": 0
+    }
+  ],
+  "cases": [
+    {
+      "name": "upload_truncated",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/8788f211fa0aa15f649587d358f78c54283b7879dcbefffbba3976418c331ab8/app"
+    },
+    {
+      "name": "upload_wrong_size",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/00b88c78252dea65488857feee167058aa5471bad7c38d6d29460b148a1fe01e/app"
+    },
+    {
+      "name": "upload_reused_id",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              2,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              2,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/82ec3b41f01a46d155f4e8d3154328e7ea66054251c30d376b7e8d686a351063/app"
+    },
+    {
+      "name": "affine_truncated",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/616b9f76b18ec7815e1256c83b3a867a6567cd6c7c562e68f1525f44e8c054c0/app"
+    },
+    {
+      "name": "affine_trailing",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/b9d00cd5ad4b4d6d2dc5b2e15266a0ead5d70e649575628c709d32cad7fd999d/app"
+    },
+    {
+      "name": "affine_reused_id",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 1,
+          "worker_drained_buffers": [
+            [
+              3,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/52a5a1fdcbcfd91e434fc8777ffc6304f7c7ec51fc73fc47514bf964b0a24343/app"
+    },
+    {
+      "name": "download_truncated",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/b5247d0e07d39d29604ad747cccc95abefd224d9ebccb0044f5bc10e85b0c442/app"
+    },
+    {
+      "name": "download_wrong_size",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/4e949e6ac516e8fc1ec9c2e4a4b217b2c09a58d2317dd20c47dfb17605692e70/app"
+    },
+    {
+      "name": "free_trailing",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 2,
+          "released": 2,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/556d40ffca84af38c1230f17a81a2773b9251ccd1daf3839255e8f5c47fd5a7e/app"
+    },
+    {
+      "name": "close_truncated",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              0,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              0,
+              1
+            ]
+          ],
+          "created": 1,
+          "released": 1,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/1d453922350d459ea354d570ee85b4b0eb7f96fb820cb065b88e6303fe9d0150/app"
+    },
+    {
+      "name": "open_trailing",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              0,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              0,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/5220f6981cbad101b02952037ef4226a186ceee93c9c933a7144140fa4739a0d/app"
+    },
+    {
+      "name": "execute_fallback_never_masks_protocol",
+      "native_reference": true,
+      "regression_reproduced": false,
+      "physical": {
+        "reference": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        },
+        "native": {
+          "Metal_registryID": 4294969123,
+          "kernel_events": 0,
+          "worker_drained_buffers": [
+            [
+              1,
+              1
+            ]
+          ],
+          "created": 0,
+          "released": 0,
+          "physical_session_retirement": true
+        }
+      },
+      "executable": "/tmp/metal243-faults/native/99ed660e0256235bec078129f82c77b7bae55c507cb06827306d999abb2abd80/app"
+    }
+  ],
+  "compiler_sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6",
+  "worker_sha256": "3a3a5f17606cf505966eefd9d7608a42f1fb423f5eb9c2ef45bbf92f44d44ee8",
+  "module_sha256": "313959eafc7783ae8f9742cf2e019aaa6e1d8397d1744f5f0eaf0d4bc313690c",
+  "manifest_sha256": "5ed877081410d17d04a857725561999773d39e25a50b194ee7393b05a59866ef",
+  "expect_regression": false,
+  "installed_SDK_accepted": false,
+  "full_objective_complete": false,
+  "seconds": 55.197,
+  "native_reference_pairs": 12,
+  "actual_GPU_execution": true
+}

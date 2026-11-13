@@ -1,0 +1,328 @@
+{
+  "schema": "nex.owned-metal-source-check/1",
+  "ok": true,
+  "source_language": "0.28",
+  "compiler_sha256": "7d3b5ed758062f9d1fbf420db8da89f9a6b68e454ac3db177cc8723fff38b7b6",
+  "checks": [
+    {
+      "name": "normal-small_cpu_oracle",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "dc712e390b8e5f56bc0cd6174a8992c29b1ebef5ec3940254506e901938dae4a"
+    },
+    {
+      "name": "normal-all_octets",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "1f81d248b392b3b30c549cb0349e8d97dd9e9b6851bb8b62fb7c88aa4a5c2e6e"
+    },
+    {
+      "name": "normal-persistent_session_scales",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "e1ce07564f83da2c805326a7d87f4aab070432fbf06f8b636b62b91094b78200"
+    },
+    {
+      "name": "normal-overflow_is_not_fallback_and_session_recovers",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "de7d3cf36e3035fedb7acfa47587e05b4856c6a0b8ef287cb124c3903e754746"
+    },
+    {
+      "name": "normal-maximum_262144_elements",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "9044a6b70112213dd23d8548381eb92a738364c4827e67f7ff25950ce47a2e23"
+    },
+    {
+      "name": "normal-overflow_only_last_of_262144",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "231ff5e671d9bd3ea27bc93d33c2e4a0be28b771666d74109184110bb987acfa"
+    },
+    {
+      "name": "normal-hidden_session_after_scope_return",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "6e9c29b2d29c54ea730215ff5125d624a8b8307e7598354ec881d5a2a6b79ba2"
+    },
+    {
+      "name": "normal-closed_context_existing_buffer_still_reads",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "8a497323ef99255257326142f74f6a311bd2ba8c3664f72a6c463a6c3f662c9c"
+    },
+    {
+      "name": "normal-sibling_channel_hidden_session",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "7196e9e829c550a5518dfae78b948a2183734e272dcc840ced5e60ffafd91446"
+    },
+    {
+      "name": "normal-cross_session_buffers_rejected",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "7ddecd8d31316b0f165e9e33a63d4c754d66077f96b148fda48b68b35b541065"
+    },
+    {
+      "name": "normal-malformed_request_never_uploads",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "1a0c2a3edb64c1e5e36c6b082c84ab5dabbe54579930180ba36a813dd2ef71cd"
+    },
+    {
+      "name": "normal-explicit_placement_and_cpu_fallback",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "6841e52ba8723d358ab45795282f7da2791ef3153a53f60db9168764511fc9f7"
+    },
+    {
+      "name": "normal-unsupported_matmul_fallback",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "0fec048291a821896011c080bcb38064bba6d5786e763b443db5ed2b549c98c4"
+    },
+    {
+      "name": "error-cancel_enqueued_GPU",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "26aaef8099d90f915c51feb4d6af487d17f5bd047d904faa6eae7282c82effad"
+    },
+    {
+      "name": "error-deadline_enqueued_GPU",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "68cf42d2d4105755b90b203cbf294e78d52701e31dd46c63697e279cd6aad2ee"
+    },
+    {
+      "name": "fault-upload_truncated",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "63cecb30a002ab134f9eeb6a56603eecb083b67f1015ca7c042ed560eddcc19e"
+    },
+    {
+      "name": "fault-upload_wrong_size",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "63cecb30a002ab134f9eeb6a56603eecb083b67f1015ca7c042ed560eddcc19e"
+    },
+    {
+      "name": "fault-upload_reused_id",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "c5e9303195ee3a72021c9e22c5faa4f1e939570267331d9418fb18a2c2c07e07"
+    },
+    {
+      "name": "fault-affine_truncated",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "30d0ba9b557dca705bcc3ad7fe215c439c229e5516869a0c1810dedacb821dc5"
+    },
+    {
+      "name": "fault-affine_trailing",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "30d0ba9b557dca705bcc3ad7fe215c439c229e5516869a0c1810dedacb821dc5"
+    },
+    {
+      "name": "fault-affine_reused_id",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "30d0ba9b557dca705bcc3ad7fe215c439c229e5516869a0c1810dedacb821dc5"
+    },
+    {
+      "name": "fault-download_truncated",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "c3ad8b237d1a56ae356c62544b06432726115841c70bd89f2d2cfefa34519e18"
+    },
+    {
+      "name": "fault-download_wrong_size",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "c3ad8b237d1a56ae356c62544b06432726115841c70bd89f2d2cfefa34519e18"
+    },
+    {
+      "name": "fault-free_trailing",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "723f30169d1e00a77217d85dbb1531c938c768a40409352252907775780b4db2"
+    },
+    {
+      "name": "fault-close_truncated",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "5290709c9166935fb892d4f587033f2cf0e7ed75ee3835dbc5a9a4abd4d6523a"
+    },
+    {
+      "name": "fault-open_trailing",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "c57d756037eda71c6d57d4555fb5c2276d33768014d03cc1305ef41b2ced14e3"
+    },
+    {
+      "name": "fault-execute_fallback_never_masks_protocol",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 0,
+      "diagnostic": null,
+      "source_sha256": "4523345cf0164332ba01c7ebe9cf1c69fe00abe6d36c22110672d9172b79935c"
+    },
+    {
+      "name": "missing-source-error-effect",
+      "argv": [
+        "/private/tmp/nex-sdk-0243/bin/nex",
+        "check",
+        "--json"
+      ],
+      "exit_code": 1,
+      "diagnostic": "E_EFFECT",
+      "source_sha256": "c15978248d36a6337707196efb0c2e5cca3611dc8be08301f028cdfeba537ee0"
+    }
+  ],
+  "fixture_sha256": {
+    "verify.py": "90672a8c6f37d8dda3e632ff4b4170e2cc6b36d0bc39412dfa1d4bf2f78ef447",
+    "faults.py": "49a6d45b9391dbaaea0fff6a0b2d657fb7e429d7c3fa1441db813d0684ad02a4",
+    "main.nex.in": "0db28213bcaea78802973bf0aba9bde48795a69d297ff0aef0e8f29eb480617d"
+  },
+  "native_provider_built": false,
+  "driver_initialized": false,
+  "hardware_executed": false,
+  "seconds": 7.411378624849021,
+  "state": "passed",
+  "accepted_programs": 27,
+  "rejected_programs": 1
+}
