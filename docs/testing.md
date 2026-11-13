@@ -716,6 +716,9 @@ it broke exception handling and is not committed.
 RK3588 current 0.245.0: eval 6 RKNPU calls and native run/test pass with an
 explicit GCC-install-dir wrapper for the retained clang++.
 
+Owned Metal 0.245.0 on Apple M5 Max: 15 hardware scenarios, 12 reply faults and
+log isolation passed with the current compiler.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

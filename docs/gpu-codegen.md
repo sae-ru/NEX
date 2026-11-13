@@ -109,7 +109,8 @@ checked scalar kernels on an actual GPU; the compiler remains source-only. The
 The owned Metal provider was exercised on an Apple M5 Max at toolchain
 0.243.0: 15 hardware scenarios (45 native/reference/oracle commands), 12 reply
 fault cases, log isolation and 27 accepted + 1 rejected source checks passed.
-See [the Metal receipt](evidence/owned-metal-0.243.0-2026-11-13.json); installed
+See [the current Metal receipt](evidence/owned-metal-0.245.0-2026-11-13.json) and
+the earlier [0.243 receipt](evidence/owned-metal-0.243.0-2026-11-13.json); installed
 SDK acceptance and a signed/public release remain separate gates.
 
 emitter is source-only: device dispatch, Mali/NPU hardware acceptance,
