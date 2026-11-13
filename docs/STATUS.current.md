@@ -27,11 +27,15 @@ source checks; see the [Metal receipt](evidence/owned-metal-0.243.0-2026-11-13.j
 
 Browser applications support workers, `web/app.css`, `web/public/` assets,
 `web/index.html`, application-provided `web/components.tsx` and generated file
-hashes. iOS and Android projects are generated from the same checked web output:
-iOS built in Xcode for the iOS 27.1 simulator, and Android built `app-debug.apk`
-with JDK21/API36; both were installed/launched with actual UI, and Android input
-added and completed a task. See the [iOS receipt](evidence/mobile-ios-0.243.0-2026-11-13.json)
-and [Android receipt](evidence/mobile-android-interaction-0.243.0-2026-11-13.json).
+hashes. iOS and Android projects are generated from the same checked web output.
+iOS Debug and Release configurations build in Xcode for the iOS 27.1 simulator
+and launch the actual UI; a test driver adds `iOSNEX` through the live input.
+Android builds debug and signed release APKs with JDK21/API36; the signed release
+installs/launches and adds `SignedNEX` through the live UI. A standalone macOS
+`.app` embeds the web resources, serves them through `nex://app/`, and its live
+input adds `DesktopNEX`. See the [iOS Release receipt](evidence/mobile-ios-release-0.244.0-2026-11-13.json),
+[Android signed receipt](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json)
+and [desktop interaction receipt](evidence/desktop-macos-interaction-0.244.0-2026-11-13.json).
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
@@ -39,8 +43,9 @@ and [Android receipt](evidence/mobile-android-interaction-0.243.0-2026-11-13.jso
 | Astra Linux 1.7 x86-64 | [0.242 build, core 12/12, native smoke](evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
-| iOS Simulator | [generation, Xcode build, install/launch, actual UI](evidence/mobile-ios-0.243.0-2026-11-13.json) | scripted input, device signing/store delivery |
-| Android emulator | [APK build, launch, add/complete interaction](evidence/mobile-android-interaction-0.243.0-2026-11-13.json) | device matrix, signing/store delivery |
+| iOS Simulator | [Debug/Release, install/launch, actual UI, test-driver input](evidence/mobile-ios-release-0.244.0-2026-11-13.json) | device signing/store delivery |
+| Android emulator | [signed release APK, launch, add interaction](evidence/mobile-android-release-signed-0.244.0-2026-11-13.json) | Play Store delivery |
+| macOS desktop app | [standalone embedded app, live input](evidence/desktop-macos-interaction-0.244.0-2026-11-13.json) | Developer ID, notarization |
 | CIX ARM64 | [Snapshot `979ef54`: 36 GPU and 26 NPU calls, CPU fallback disabled](evidence/cix-current-source-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
 | RK3588 ARM64 | [Snapshot `2172b35`: 63 GPU and 30 NPU calls](evidence/rk3588-current-GPU-NPU-0.165.0-2026-11-10.json) | matching current source regression and portable SDK |
 
