@@ -1,0 +1,29 @@
+{
+  "schema": "nex.apple-coreml-device/1",
+  "ok": true,
+  "model": "relu",
+  "shape": [
+    1,
+    4,
+    1
+  ],
+  "compute_units": "CPU_AND_NE",
+  "preferred_compute_device": "MLNeuralEngineComputeDevice",
+  "supported_compute_devices": [
+    "MLCPUComputeDevice",
+    "MLGPUComputeDevice",
+    "MLNeuralEngineComputeDevice"
+  ],
+  "input": [
+    -1.0,
+    0.0,
+    2.0,
+    3.0
+  ],
+  "output": [
+    0.0,
+    0.0,
+    2.0,
+    3.0
+  ]
+}

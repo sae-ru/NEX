@@ -730,6 +730,9 @@ Current 0.245 source after the JSON split: Astra, Fedora and Windows each
 rebuilt from the same tree and passed core 12/12; Windows used the configured
 default toolchain.
 
+Apple CoreML/ANE 0.245.0: compute plan preferred MLNeuralEngineComputeDevice;
+CPU_AND_NE ReLU prediction passed. Device experiment only, not a NEX provider.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known

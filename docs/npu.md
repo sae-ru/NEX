@@ -26,5 +26,8 @@ dynamic_cast. Native run/test also pass with an explicit `NEX_CLANG` wrapper add
 `--gcc-install-dir=/usr/lib/gcc/aarch64-linux-gnu/11`, so the retained clang++
 finds libstdc++ headers; the fixed native test `rk_npu::npu_test` passed
 ([current receipt](evidence/rk-npu-current-0.245.0-2026-11-13.json),
-[retained receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple NPU remains
-pending current-toolchain acceptance.
+[retained receipt](evidence/rk-npu-0.245.0-2026-11-13.json)). Apple Neural Engine: a CoreML ReLU model's compute plan selected
+`MLNeuralEngineComputeDevice` and executed with `CPU_AND_NE`, producing the
+correct output on the M5 Max ([receipt](evidence/apple-coreml-ane-0.245.0-2026-11-13.json)).
+This is a device experiment, not yet a NEX `std/device` provider; fixed-model
+transport and general NPU compilation remain pending.

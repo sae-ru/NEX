@@ -1,0 +1,62 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Apple Neural Engine CoreML device execution",
+  "implementation_commit": "82b1145f1baf7297f35e53bc0efa45193745a714",
+  "build_source_base_commit": "82b1145f",
+  "host": {
+    "machine": "Apple M5 Max",
+    "metal": "Metal 4",
+    "os": "macOS"
+  },
+  "experiment": {
+    "script": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/apple-npu/run.py",
+    "script_sha256": "4fb7c2387ff4dc71a12e2cb2ece391561b1d9830da9d05d59636cfc376cf3583",
+    "model": "relu",
+    "shape": [
+      1,
+      4,
+      1
+    ],
+    "compute_units": "CPU_AND_NE"
+  },
+  "result": {
+    "schema": "nex.apple-coreml-device/1",
+    "ok": true,
+    "preferred_compute_device": "MLNeuralEngineComputeDevice",
+    "supported_compute_devices": [
+      "MLCPUComputeDevice",
+      "MLGPUComputeDevice",
+      "MLNeuralEngineComputeDevice"
+    ],
+    "input": [
+      -1.0,
+      0.0,
+      2.0,
+      3.0
+    ],
+    "output": [
+      0.0,
+      0.0,
+      2.0,
+      3.0
+    ]
+  },
+  "limits": [
+    "fixed ReLU CoreML model; not a NEX std/device NPU provider",
+    "coremltools and coremlcompiler are external experiment prerequisites",
+    "general NPU compilation and model transport remain pending"
+  ],
+  "observations": {
+    "registered_groups": 351,
+    "docs_documents": 183,
+    "docs_links": 1232
+  },
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/docs/evidence/apple-coreml-device-0.245.0-2026-11-13.json",
+    "script": "/Users/sae/.codex/worktrees/runtime-loop-contracts/NEX/experiments/apple-npu/run.py",
+    "guide": "docs/npu.md"
+  }
+}
