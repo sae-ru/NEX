@@ -1,0 +1,38 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full CTest after rename-tool and effect-specialization fixes",
+  "implementation_commit": "6ffe0b3993964da0ae2af2c4846551fd104919d2",
+  "build_source_base_commit": "6ffe0b39",
+  "compiler": {
+    "toolchain": "0.246.0",
+    "language": "0.28",
+    "sha256": "ecc1cc09aad4dca3096a9c1c43aea18b412ff5100da567018d1385ce14ee8fe3",
+    "compiler_build": "eeedeff0153481eb078a261eefdd554b68dbc27db5d0b35fe99b6b57dab42196",
+    "descriptor_hash": "8efa96aceafd7427f40d6869a9dc167e524bf256cdfddeb0e40916f666983571"
+  },
+  "full_ctest": {
+    "ok": true,
+    "seconds": 2626.062,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "report_sha256": "82300bb97b263f83a097fc1c751708c6674ec65cbeca277f3bd04435ed560a67"
+  },
+  "fixes": [
+    "rename rollback restores pre-rewrite source",
+    "rename only rewrites the selected module/import-bound symbols",
+    "effect specialization cache distinguishes parameter-to-effect mappings"
+  ],
+  "limits": [
+    "this receipt postdates the published 0.246 SDK archive",
+    "compiler version string remains 0.246.0; next SDK release will capture these fixes"
+  ],
+  "full_regression_or_SDK_qualification": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/ci-full-fixes/report.json",
+    "guide": "docs/testing.md"
+  }
+}

@@ -744,6 +744,9 @@ network); release record `docs/releases/0.246.0.json`.
 nex init build manifest 0.246: Astra and Windows both scaffolded and produced a
 project plan.
 
+Post-0.246 fixes: full CTest 351/351 after rename rollback/binding fixes and
+distinct effect-parameter specializations.
+
 ## Maintain the catalogue
 
 [cmake/test-tiers.json](../cmake/test-tiers.json) explicitly classifies all known
