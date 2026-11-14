@@ -547,6 +547,8 @@ cross-file references, type identity and error handling are covered by
 without touching import paths, and the LSP prepare/rename handlers cover the same
 file-local alias case. A qualified target with a new module also rewrites the
 file's `module` declaration while preserving the node ID.
+The installed SDK includes this helper at `share/nex/tools/nex_rename.py`;
+pass its `bin/nex` through `--compiler` and the application root through `--project`.
 
 Full CTest qualification of 0.228.0 passed all 348 groups in 2374.405 s,
 including the source rename group.

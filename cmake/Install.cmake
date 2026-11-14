@@ -21,6 +21,7 @@ install(DIRECTORY tools/http_stream_provider DESTINATION share/nex/tools PATTERN
 install(DIRECTORY tools/macos DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(FILES tools/sdk_acceptance.py tools/sdk_host.py tools/sdk_stdlib.py tools/sdk_source_contracts.py tools/sdk_typed_source.py tools/sdk_task_limits.py tools/sdk_source_exceptions.py tools/sdk_source_handlers.py tools/server_workload.py tools/provider_sdk.py DESTINATION share/nex/tools)
 install(FILES tools/compiler_cohort.py DESTINATION share/nex/tools)
+install(FILES tools/nex_rename.py DESTINATION share/nex/tools)
 install(FILES tools/ctest_report.py DESTINATION share/nex/tools)
 install(DIRECTORY tools/llm/ DESTINATION share/nex/tools/llm PATTERN __pycache__ EXCLUDE)
 install(FILES tests/task_http_server.py DESTINATION share/nex/tests)
