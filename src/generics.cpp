@@ -266,12 +266,32 @@ Function &instantiateFunction(Program &p,const Function &source,const std::vecto
   auto effects=substituteEffects(raw.effects,effectArguments);
   std::set<std::string> concreteEffectArguments;for(const auto &[name,value]:effectArguments){if(!value.empty())concreteEffectArguments.insert(value.begin(),value.end());}
   std::string suffix;if(!concreteEffectArguments.empty()){suffix="!{";for(const auto &effect:concreteEffectArguments){if(suffix.back()!='{')suffix+=",";suffix+=effect;}suffix+="}";}
-  auto name=genericName(raw.name,types)+suffix;
-  for(auto &f:p.functions)if(f.name==name)return f;
+  auto base=genericName(raw.name,types)+suffix;
+  auto name=base;
+  std::vector<Param> parameters=raw.params;
+  for(auto &parameter:parameters)parameter.type=resolveType(p,substituteEffectTypes(substituteType(parameter.type,arguments),effectArguments),parameter.span);
+  auto result=resolveType(p,substituteEffectTypes(substituteType(raw.result,arguments),effectArguments),span);
+  bool collided=false;
+  for(auto &f:p.functions)if(f.name==name){
+    bool same=f.effects==effects&&f.result==result&&f.params.size()==parameters.size();
+    if(same)for(size_t i=0;i<parameters.size();++i)if(!(f.params[i].type==parameters[i].type)){same=false;break;}
+    if(same)return f;
+    collided=true;
+  }
+  if(collided){
+    std::string mapping;
+    for(const auto &[effect,values]:effectArguments){
+      if(!mapping.empty())mapping+=",";mapping+=effect;mapping+="=";
+      for(auto it=values.begin();it!=values.end();++it){if(it!=values.begin())mapping+="|";mapping+=*it;}
+    }
+    name=base+"!{"+mapping+"}";
+    for(size_t sequence=2;std::any_of(p.functions.begin(),p.functions.end(),[&](const Function &f){return f.name==name;});++sequence)
+      name=base+"!{"+mapping+"#"+std::to_string(sequence)+"}";
+  }
   size_t instances=0;for(const auto &f:p.functions)instances+=!f.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic function instance limit exceeded",span);
-  auto instance=raw;instance.name=name;instance.localName=genericName(raw.localName.empty()?raw.name:raw.localName,types)+suffix;instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.typeArities.clear();instance.dependencies.clear();instance.checked=false;instance.effects=effects;
-  instance.result=resolveType(p,substituteEffectTypes(substituteType(raw.result,arguments),effectArguments),span);
-  for(auto &parameter:instance.params)parameter.type=resolveType(p,substituteEffectTypes(substituteType(parameter.type,arguments),effectArguments),parameter.span);
+  auto localBase=genericName(raw.localName.empty()?raw.name:raw.localName,types)+suffix;
+  auto instance=raw;instance.name=name;instance.localName=localBase+(name==base?"":name.substr(base.size()));instance.templateName=raw.name;instance.typeArguments=types;instance.typeParameters.clear();instance.typeBounds.clear();instance.typeArities.clear();instance.dependencies.clear();instance.checked=false;instance.effects=effects;
+  instance.result=std::move(result);instance.params=std::move(parameters);
   instance.body=cloneBlock(raw.body,arguments,effectArguments);p.functions.push_back(std::move(instance));return p.functions.back();
 }
 }

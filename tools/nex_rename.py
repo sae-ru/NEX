@@ -47,6 +47,23 @@ def qualified(symbol):
     if not module or not name:raise ValueError('invalid qualified symbol')
     return module,name
 
+def declared_module(text):
+    match=re.search(r'(?m)^\s*module\s+([A-Za-z_][A-Za-z0-9_]*)\s*;',text)
+    return match.group(1) if match else None
+
+def imported_modules(path,text,root):
+    modules={}
+    for match in re.finditer(r'\bimport\s+"([^"]+)"\s+as\s+([A-Za-z_][A-Za-z0-9_]*)\s*;',text):
+        target=(path.parent/match.group(1)).resolve()
+        if not target.is_file() or root not in target.parents:continue
+        module=declared_module(target.read_text(encoding='utf-8'))
+        if module:modules[match.group(2)]=module
+    return modules
+
+def qualifier_before(text,offset):
+    match=re.search(r'([A-Za-z_][A-Za-z0-9_]*)\s*::\s*$',text[:offset].rstrip())
+    return match.group(1) if match else None
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler',required=True,type=Path)
@@ -82,10 +99,14 @@ def main():
         backups={}
         try:
             for path,original,updated in plan:
-                backups[path]=original;temporary=path.with_name(path.name+'.rename-tmp');temporary.write_text(updated,encoding='utf-8',newline='');os.replace(temporary,path)
+                backups[path]=original
+                temporary=path.with_name(path.name+'.rename-tmp')
+                with temporary.open('w',encoding='utf-8',newline='') as output:output.write(updated)
+                os.replace(temporary,path)
             _,after=invoke(compiler,root,['check','--json'])
         except Exception:
-            for path,original in backups.items():path.write_text(original,encoding='utf-8',newline='')
+            for path,original in backups.items():
+                with path.open('w',encoding='utf-8',newline='') as output:output.write(original)
             raise
         print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':False,'import_alias':args.import_alias,'to':args.to,'head':head,'revision':after['revision'],'files':[str(p.relative_to(root)) for p,_,_ in plan]},indent=2));return 0
     from_module,old_name=qualified(args.source)
@@ -95,35 +116,44 @@ def main():
     files=[p for p in root.rglob('*.nex') if '.nex' not in p.relative_to(root).parts]
     plan=[];module_moved=False
     for path in sorted(files):
-        text=path.read_text(encoding='utf-8')
+        original=path.read_text(encoding='utf-8')
+        text=original;module=declared_module(text);aliases=imported_modules(path,text,root)
         if from_module!=to_module:
             pattern=re.compile(r'(?m)^(\s*module\s+)'+re.escape(from_module)+r'(\s*;)')
             if pattern.search(text):
                 text=pattern.sub(lambda match:match.group(1)+to_module+match.group(2),text,count=1);module_moved=True
         spans=identifier_spans(text,old_name)
         if not spans:continue
-        pieces=[];last=0
-        for first,lastspan in spans:pieces.append(text[last:first]);pieces.append(new_name);last=lastspan
-        pieces.append(text[last:]);plan.append((path,text,''.join(pieces)))
+        pieces=[];last=0;changed=False
+        for first,lastspan in spans:
+            qualifier=qualifier_before(text,first)
+            if qualifier:
+                owner=aliases.get(qualifier,qualifier if qualifier==from_module else None)
+                if owner!=from_module:continue
+            elif module!=from_module:continue
+            pieces.append(text[last:first]);pieces.append(new_name);last=lastspan;changed=True
+        if not changed:continue
+        pieces.append(text[last:]);plan.append((path,original,text,''.join(pieces)))
     if from_module!=to_module and not module_moved:raise SystemExit('no module declaration for '+from_module)
     if not plan:raise SystemExit('no source identifier occurrences for '+old_name)
     if args.dry_run:
         print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':True,'from':args.source,'to':args.to,'head':head,
-            'files':[str(path.relative_to(root)) for path,_,_ in plan]},indent=2));return 0
+            'files':[str(path.relative_to(root)) for path,_,_,_ in plan]},indent=2));return 0
     backups={}
     try:
-        for path,original,updated in plan:
+        for path,original,_,updated in plan:
             backups[path]=original
             temporary=path.with_name(path.name+'.rename-tmp')
-            temporary.write_text(updated,encoding='utf-8',newline='')
+            with temporary.open('w',encoding='utf-8',newline='') as output:output.write(updated)
             os.replace(temporary,path)
         _,renamed=invoke(compiler,root,['identities','--kind','rename','--symbol',args.source,'--to',args.to,'--expected-revision',head,'--json'])
         _,after=invoke(compiler,root,['check','--json'])
     except Exception:
-        for path,original in backups.items():path.write_text(original,encoding='utf-8',newline='')
+        for path,original in backups.items():
+            with path.open('w',encoding='utf-8',newline='') as output:output.write(original)
         raise
     print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':False,'from':args.source,'to':args.to,
         'head':head,'revision':after['revision'],'moved':renamed['moved'],
-        'files':[str(path.relative_to(root)) for path,_,_ in plan]},indent=2));return 0
+        'files':[str(path.relative_to(root)) for path,_,_,_ in plan]},indent=2));return 0
 
 if __name__=='__main__':sys.exit(main())

@@ -108,6 +108,20 @@ test fn effect_test() -> unit !{io} {
   assert(sorted == [1, 2]);
 }
 '''
+MULTI_EFFECT='''module effect_multi;
+server fn both<T>(value: T, f: server fn() -> unit !{?A}, g: server fn() -> unit !{?B}) -> unit !{?A, ?B} {
+  f();
+  g();
+}
+server fn io_touch() -> unit !{io} { return; }
+server fn db_touch() -> unit !{db} { return; }
+server fn main() -> unit !{io, db} {
+  both(0, io_touch, db_touch);
+  both(1, db_touch, io_touch);
+}
+'''
+
+
 REJECT='''module effect_reject;
 import "std/list.nex" as seq;
 fn main() -> unit !{io} {
@@ -162,6 +176,16 @@ class EffectParameters(unittest.TestCase):
             self.assertIn('?E',descriptor['syntax'])
             self.assertTrue(descriptor['function_values'])
             self.assertTrue(descriptor['explicit_effect_witnesses'])
+
+    def test_two_effect_parameters_keep_distinct_specializations(self):
+        with tempfile.TemporaryDirectory(prefix='nex effect multi ') as temporary:
+            root=Path(temporary);self.project(root,MULTI_EFFECT)
+            checked=run(['check','--json'],root)
+            self.assertEqual(checked.returncode,0,checked.stdout+checked.stderr)
+            self.assertTrue(json.loads(checked.stdout)['ok'])
+            evaluated=run(['eval','--entry','main','--json'],root)
+            self.assertEqual(evaluated.returncode,0,evaluated.stdout+evaluated.stderr)
+            self.assertTrue(json.loads(evaluated.stdout)['ok'])
 
     def test_missing_caller_effect_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix='nex effect reject ') as temporary:

@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 NEX=Path(sys.argv.pop(1)).resolve()
+TOOL=Path(__file__).resolve().parent.parent/'tools'/'nex_rename.py'
 
 def run(root,*args,ok=True):
     result=subprocess.run([str(NEX),*args],cwd=root,capture_output=True,text=True,timeout=180)
@@ -84,5 +85,41 @@ fn main()->unit !{io}{print(old(1)+other(1));}
             stale=self.rename(root,'app::old','app::new','0'*64,ok=False)
             self.assertEqual(stale['code'],'E_CONFLICT')
             self.assertEqual((root/'main.nex').read_text(),before)
+
+class RenameTool(unittest.TestCase):
+    def invoke(self,root,*args):
+        return subprocess.run([sys.executable,str(TOOL),'--compiler',str(NEX),'--project',str(root),*args],capture_output=True,text=True,timeout=180)
+
+    def test_failed_rename_restores_original_source(self):
+        with tempfile.TemporaryDirectory(prefix='nex rename rollback ') as temporary:
+            root=Path(temporary)
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+chr(10))
+            original='''module app;
+fn old(x:i64)->i64{return x+1;}
+fn new(x:i64)->i64{return x+2;}
+fn main()->unit !{io}{print(old(1)+new(2));}
+'''
+            (root/'main.nex').write_text(original)
+            result=self.invoke(root,'--from','app::old','--to','changed::new')
+            self.assertNotEqual(result.returncode,0)
+            self.assertIn('E_DUPLICATE',result.stdout+result.stderr)
+            self.assertEqual((root/'main.nex').read_text(),original)
+
+    def test_rename_does_not_touch_same_name_in_another_module(self):
+        with tempfile.TemporaryDirectory(prefix='nex rename modules ') as temporary:
+            root=Path(temporary)
+            (root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':'0.28','entry':'main.nex'})+chr(10))
+            (root/'left.nex').write_text('module left;'+chr(10)+'pub fn old(x:i64)->i64{return x+1;}'+chr(10))
+            (root/'right.nex').write_text('module right;'+chr(10)+'pub fn old(x:i64)->i64{return x+2;}'+chr(10))
+            (root/'main.nex').write_text('module app;'+chr(10)+'import "./left.nex" as left;'+chr(10)+'import "./right.nex" as right;'+chr(10)+'fn main()->unit !{io}{print(left::old(1)+right::old(2));}'+chr(10))
+            right=(root/'right.nex').read_text()
+            result=self.invoke(root,'--from','left::old','--to','left::renamed')
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            self.assertEqual((root/'right.nex').read_text(),right)
+            self.assertIn('renamed',(root/'left.nex').read_text())
+            main=(root/'main.nex').read_text()
+            self.assertIn('left::renamed',main)
+            self.assertIn('right::old',main)
+            run(root,'check','--json')
 
 if __name__=='__main__':unittest.main()
