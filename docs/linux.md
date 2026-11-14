@@ -39,7 +39,7 @@ inside the moved package; omission of provenance still failed. Canonical path
 validation retains the original assertion that incorrectly compared the textual
 `bin/../lib` path. This minimal package result does not replace full SDK acceptance.
 
-The maintained environment uses an independently pinned **LLDB23.1.5 APT
+The maintained environment uses an independently pinned **LLDB23.1.6 APT
 snapshot** for debugging, while **LLVM/MLIR/Clang/LLD remain22.1.8** for NEX
 compilation. Only `lldb`, `lldb-dap` and `lldb-server` are added ahead of the
 compiler directory in PATH. The exact package versions, repository key and
@@ -47,6 +47,9 @@ observed archive hashes are recorded in
 [`tools/linux/debugger-packages.json`](../tools/linux/debugger-packages.json).
 APT validates downloads against its signed index; other Ubuntu packages still
 follow their repositories.
+The November 14 dependency refresh replaces the removed 23.1.5 package snapshot.
+Both architecture indices and the unchanged upstream event-guard source hash
+were checked; execution of the refreshed hosted image remains pending.
 
 For native Debian 12 ARM64, the separate [Bookworm package pin](../tools/linux/debugger-bookworm-arm64.json)
 records signature-verified LLDB 23.1.6 packages compatible with glibc 2.36 and

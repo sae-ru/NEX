@@ -34,6 +34,14 @@ are retained. Homebrew dependencies are rolling installations, not a pinned
 portable SDK; a changed/unavailable dependency is a visible job failure.
 No npm preparation is performed by the macOS core job.
 
+The November 14 hosted run failed before tests: macOS used Apple's older C++
+library without `std::stop_token`, and Linux could no longer download the pinned
+LLDB23.1.5 packages. The macOS job now explicitly selects the LLVM22 compiler,
+headers and libc++ runtime. The Linux debugger pin and package inventory now
+select the available23.1.6 snapshot for both architectures. Local C++20
+compile/run and package-index checks cover these corrections; a successful
+hosted run of the updated workflows remains a separate check.
+
 The two external actions are fixed to full commit SHAs from the official
 [checkout release](https://github.com/actions/checkout/releases/tag/v7.0.1)
 and [artifact release](https://github.com/actions/upload-artifact/releases/tag/v7.0.2).

@@ -1,7 +1,7 @@
 # Optional live-debugger overlay. The compiler/toolchain image is unchanged.
 ARG TOOLCHAIN_IMAGE=nex-linux-toolchain:arm64
 FROM ${TOOLCHAIN_IMAGE} AS debugger-build
-ARG LLDB_APT_VERSION=1:23.1.5~++20261028083854+a738f2737189-1~exp1~20261028203912.92
+ARG LLDB_APT_VERSION=1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96
 ARG LLDB_SOURCE_COMMIT=a738f2737189bcc1de75c25e8cd1d4b466c9526e
 ARG LLDB_SOURCE_SHA256=5407c03d902d188a67638aa10ceec05d94950e83d0dfaab4ad3769dd1b0ad048
 RUN apt-get update && apt-get install -y --no-install-recommends \

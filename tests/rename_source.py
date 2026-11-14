@@ -74,6 +74,64 @@ fn main()->unit !{io}{print("old");print(old(old(40)));}
             self.assertIn('New(7)',(root/'main.nex').read_text())
             after=nex(root,'identities','--entity','type','--json')['nodes'][0]
             self.assertEqual(after['symbol'],'app::New');self.assertEqual(after['id'],before['id'])
+
+    def test_function_rename_preserves_fields_and_lexical_bindings(self):
+        temporary,root=self.project()
+        with temporary:
+            source='''module app;
+// Привязки old: строки, поля и локальные имена остаются прежними.
+struct Box{old:i64;}
+fn old()->i64{return 10;}
+fn parameter(old:i64)->i64{return old;}
+fn local()->i64{let old:i64=20;return old;}
+fn callback()->fn()->i64{return fn()->i64{return old();};}
+fn main()->unit !{io}{
+  print(old());print(str(Box(3)));print(Box(3).old);
+  print(parameter(4));print(local());let f:fn()->i64=callback();print(f());
+}
+'''
+            (root/'main.nex').write_text(source)
+            before=nex(root,'eval','--json')['stdout']
+            self.assertEqual(before,'10\n{"old":3}\n3\n4\n20\n10\n')
+            _,identity=self.identity(root,'old')
+            run(root,'--from','app::old','--to','app::renamed')
+            text=(root/'main.nex').read_text()
+            self.assertIn('struct Box{old:i64;}',text)
+            self.assertIn('fn parameter(old:i64)->i64{return old;}',text)
+            self.assertIn('let old:i64=20;return old;',text)
+            self.assertIn('fn callback()->fn()->i64{return fn()->i64{return renamed();};}',text)
+            self.assertIn('// Привязки old:',text)
+            self.assertEqual(nex(root,'eval','--json')['stdout'],before)
+            self.assertEqual(nex(root,'run','--profile','release','--json')['stdout'],before)
+            self.assertEqual(self.identity(root,'renamed')[1],identity)
+
+    def test_type_rename_preserves_same_named_values(self):
+        temporary,root=self.project()
+        with temporary:
+            (root/'main.nex').write_text('''module app;
+struct Old{value:i64;}
+struct Holder{Old:i64;}
+fn keep(Old:i64)->i64{return Old;}
+fn main()->unit !{io}{let value:Old=Old(42);print(value.value);print(Holder(7).Old);print(keep(9));}
+''')
+            before=nex(root,'eval','--json')['stdout']
+            run(root,'--from','app::Old','--to','app::New')
+            text=(root/'main.nex').read_text()
+            self.assertIn('struct New{value:i64;}',text)
+            self.assertIn('value:New=New(42)',text)
+            self.assertIn('struct Holder{Old:i64;}',text)
+            self.assertIn('fn keep(Old:i64)->i64{return Old;}',text)
+            self.assertEqual(nex(root,'eval','--json')['stdout'],before)
+
+    def test_rename_does_not_modify_unreachable_files(self):
+        temporary,root=self.project()
+        with temporary:
+            unused=root/'unused.nex'
+            source='module unused;\nfn old()->i64{return 99;}\n'
+            unused.write_text(source)
+            run(root,'--from','app::old','--to','app::renamed')
+            self.assertEqual(unused.read_text(),source)
+
     def test_import_alias_rename_updates_only_alias_and_qualified_references(self):
         temporary=tempfile.TemporaryDirectory(prefix='nex alias rename ');root=Path(temporary.name)
         with temporary:

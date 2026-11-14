@@ -15,54 +15,47 @@ def invoke(compiler,root,args,ok=True):
         raise RuntimeError('nex failed: '+repr(args)+'\n'+result.stdout+result.stderr)
     return result,value
 
-def identifier_spans(text,needle):
-    spans=[];i=0;n=len(text)
-    def ident(c):return c.isalpha() or c=='_' or (c.isdigit() and False)
-    while i<n:
-        c=text[i]
-        if c=='/' and i+1<n and text[i+1]=='/':
-            j=text.find('\n',i+2);i=n if j<0 else j+1;continue
-        if c=='/' and i+1<n and text[i+1]=='*':
-            j=text.find('*/',i+2)
-            if j<0:raise ValueError('unterminated comment');i=j+2;continue
-        if c=='"':
-            j=i+1
-            while j<n:
-                if text[j]=='\\':j+=2;continue
-                if text[j]=='"':break
-                j+=1
-            if j>=n:raise ValueError('unterminated string')
-            i=j+1;continue
-        if c.isalpha() or c=='_':
-            j=i+1
-            while j<n and (text[j].isalnum() or text[j]=='_'):j+=1
-            if text[i:j]==needle:spans.append((i,j))
-            i=j;continue
-        i+=1
-    return spans
-
 def qualified(symbol):
     if '::' not in symbol:raise ValueError('rename requires a fully qualified symbol')
     module,name=symbol.rsplit('::',1)
     if not module or not name:raise ValueError('invalid qualified symbol')
     return module,name
 
-def declared_module(text):
-    match=re.search(r'(?m)^\s*module\s+([A-Za-z_][A-Za-z0-9_]*)\s*;',text)
-    return match.group(1) if match else None
-
-def imported_modules(path,text,root):
-    modules={}
-    for match in re.finditer(r'\bimport\s+"([^"]+)"\s+as\s+([A-Za-z_][A-Za-z0-9_]*)\s*;',text):
-        target=(path.parent/match.group(1)).resolve()
-        if not target.is_file() or root not in target.parents:continue
-        module=declared_module(target.read_text(encoding='utf-8'))
-        if module:modules[match.group(2)]=module
-    return modules
-
-def qualifier_before(text,offset):
-    match=re.search(r'([A-Za-z_][A-Za-z0-9_]*)\s*::\s*$',text[:offset].rstrip())
-    return match.group(1) if match else None
+def source_plan(compiler,root,source,target,head):
+    from_module,old_name=qualified(source)
+    to_module,new_name=qualified(target)
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',new_name):
+        raise ValueError('new name must be a NEX identifier')
+    _,analysis=invoke(compiler,root,['analyze','--references','--json'])
+    if analysis['revision']!=head:raise RuntimeError('source changed while planning rename')
+    selected=[symbol for symbol in analysis['symbols'] if symbol['symbol']==source]
+    if len(selected)!=1:raise ValueError('rename requires one checked source declaration: '+source)
+    symbol=selected[0]
+    definition={'file':symbol['file'],'range':symbol['selection']}
+    files={file['key']:file for file in analysis['files']}
+    edits={}
+    for occurrence in analysis['occurrences']:
+        if occurrence['definition']==definition:
+            span=occurrence['range']
+            edits.setdefault(occurrence['file'],set()).add((span['begin'],span['end'],new_name.encode('utf-8')))
+    if from_module!=to_module:
+        data=files[symbol['file']]['text'].encode('utf-8')
+        declaration=re.search(rb'(?m)^\s*module\s+('+re.escape(from_module.encode('utf-8'))+rb')\s*;',data)
+        if not declaration:raise ValueError('no module declaration for '+from_module)
+        edits.setdefault(symbol['file'],set()).add((*declaration.span(1),to_module.encode('utf-8')))
+    plan=[]
+    for key,ranges in sorted(edits.items()):
+        file=files[key];path=Path(file['path']).resolve()
+        if root not in path.parents:raise ValueError('rename would change a source outside the project: '+str(path))
+        original=file['text'].encode('utf-8')
+        if path.read_bytes()!=original:raise RuntimeError('source changed while planning rename: '+str(path))
+        updated=original;end=len(original)
+        for first,last,replacement in sorted(ranges,reverse=True):
+            if not 0<=first<last<=end:raise ValueError('overlapping or invalid compiler reference ranges')
+            updated=updated[:first]+replacement+updated[last:];end=first
+        plan.append((path,original.decode('utf-8'),updated.decode('utf-8')))
+    if not plan:raise ValueError('no checked source references for '+source)
+    return plan
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -109,39 +102,16 @@ def main():
                 with path.open('w',encoding='utf-8',newline='') as output:output.write(original)
             raise
         print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':False,'import_alias':args.import_alias,'to':args.to,'head':head,'revision':after['revision'],'files':[str(p.relative_to(root)) for p,_,_ in plan]},indent=2));return 0
-    from_module,old_name=qualified(args.source)
-    if '::' not in args.to:raise SystemExit('source rename target must be fully qualified')
-    to_module,new_name=args.to.rsplit('::',1)
+    qualified(args.source)
+    qualified(args.to)
     check=invoke(compiler,root,['check','--json'])[1];head=check['revision']
-    files=[p for p in root.rglob('*.nex') if '.nex' not in p.relative_to(root).parts]
-    plan=[];module_moved=False
-    for path in sorted(files):
-        original=path.read_text(encoding='utf-8')
-        text=original;module=declared_module(text);aliases=imported_modules(path,text,root)
-        if from_module!=to_module:
-            pattern=re.compile(r'(?m)^(\s*module\s+)'+re.escape(from_module)+r'(\s*;)')
-            if pattern.search(text):
-                text=pattern.sub(lambda match:match.group(1)+to_module+match.group(2),text,count=1);module_moved=True
-        spans=identifier_spans(text,old_name)
-        if not spans:continue
-        pieces=[];last=0;changed=False
-        for first,lastspan in spans:
-            qualifier=qualifier_before(text,first)
-            if qualifier:
-                owner=aliases.get(qualifier,qualifier if qualifier==from_module else None)
-                if owner!=from_module:continue
-            elif module!=from_module:continue
-            pieces.append(text[last:first]);pieces.append(new_name);last=lastspan;changed=True
-        if not changed:continue
-        pieces.append(text[last:]);plan.append((path,original,text,''.join(pieces)))
-    if from_module!=to_module and not module_moved:raise SystemExit('no module declaration for '+from_module)
-    if not plan:raise SystemExit('no source identifier occurrences for '+old_name)
+    plan=source_plan(compiler,root,args.source,args.to,head)
     if args.dry_run:
         print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':True,'from':args.source,'to':args.to,'head':head,
-            'files':[str(path.relative_to(root)) for path,_,_,_ in plan]},indent=2));return 0
+            'files':[str(path.relative_to(root)) for path,_,_ in plan]},indent=2));return 0
     backups={}
     try:
-        for path,original,_,updated in plan:
+        for path,original,updated in plan:
             backups[path]=original
             temporary=path.with_name(path.name+'.rename-tmp')
             with temporary.open('w',encoding='utf-8',newline='') as output:output.write(updated)
@@ -154,6 +124,6 @@ def main():
         raise
     print(json.dumps({'schema':'nex.rename/1','ok':True,'dry_run':False,'from':args.source,'to':args.to,
         'head':head,'revision':after['revision'],'moved':renamed['moved'],
-        'files':[str(path.relative_to(root)) for path,_,_,_ in plan]},indent=2));return 0
+        'files':[str(path.relative_to(root)) for path,_,_ in plan]},indent=2));return 0
 
 if __name__=='__main__':sys.exit(main())

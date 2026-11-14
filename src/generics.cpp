@@ -285,8 +285,9 @@ Function &instantiateFunction(Program &p,const Function &source,const std::vecto
       for(auto it=values.begin();it!=values.end();++it){if(it!=values.begin())mapping+="|";mapping+=*it;}
     }
     name=base+"!{"+mapping+"}";
-    for(size_t sequence=2;std::any_of(p.functions.begin(),p.functions.end(),[&](const Function &f){return f.name==name;});++sequence)
-      name=base+"!{"+mapping+"#"+std::to_string(sequence)+"}";
+    // The complete mapping distinguishes the collision from the readable base.
+    // Reuse it before charging another instance against the generic limit.
+    for(auto &f:p.functions)if(f.name==name)return f;
   }
   size_t instances=0;for(const auto &f:p.functions)instances+=!f.templateName.empty();if(instances>=maxInstances)throw Error("E_GENERIC_LIMIT","generic function instance limit exceeded",span);
   auto localBase=genericName(raw.localName.empty()?raw.name:raw.localName,types)+suffix;

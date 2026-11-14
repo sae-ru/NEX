@@ -196,5 +196,38 @@ class EffectParameters(unittest.TestCase):
             self.assertEqual(diagnostic['code'],'E_EFFECT')
             self.assertIn('witness',diagnostic['message'])
 
+    def test_repeated_effect_mapping_reuses_its_specialization(self):
+        with tempfile.TemporaryDirectory(prefix='nex effect reuse ') as temporary:
+            root=Path(temporary)
+            source='''module reuse;
+fn pure(x:i64)->i64{return x+1;}
+fn noisy(x:i64)->i64 !{io}{print(x);return x+2;}
+fn apply2<T>(a:fn(T)->T !{?A},b:fn(T)->T !{?B},x:T)->T !{?A,?B}{return a(b(x));}
+fn main()->unit !{io}{
+  print(apply2<i64>(pure,noisy,1));
+  print(apply2<i64>(noisy,pure,1));
+  print(apply2<i64>(noisy,pure,1));
+  print(apply2<i64>(pure,noisy,1));
+}
+test fn repeated()->unit !{io}{main();}
+'''
+            self.project(root,source)
+            checked=run(['check','--json'],root)
+            self.assertEqual(checked.returncode,0,checked.stdout+checked.stderr)
+            identities=run(['identities','--entity','function','--json'],root)
+            self.assertEqual(identities.returncode,0,identities.stdout+identities.stderr)
+            instances=[node for node in json.loads(identities.stdout)['nodes']
+                if node['symbol'].startswith('reuse::apply2<')]
+            self.assertEqual(len(instances),2,[node['symbol'] for node in instances])
+            expected='1\n4\n2\n4\n2\n4\n1\n4\n'
+            for command in (['eval','--json'],['run','--profile','release','--json']):
+                result=run(command,root)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertEqual(json.loads(result.stdout)['stdout'],expected)
+            if os.environ.get('NEX_TSC'):
+                result=run(['test','--target','web','--json'],root)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertTrue(all(test['web'] for test in json.loads(result.stdout)['tests']))
+
 
 if __name__=='__main__':unittest.main()

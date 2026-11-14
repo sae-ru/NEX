@@ -34,9 +34,16 @@ jobs:
         env:
           CMAKE_GENERATOR: Ninja
         run: |
+          nex_llvm="$(brew --prefix llvm@22)"
+          nex_libcxx="$nex_llvm/lib/c++"
           cmake --preset dev-debug \
-            -DLLVM_DIR="$(brew --prefix llvm@22)/lib/cmake/llvm" \
-            -DMLIR_DIR="$(brew --prefix llvm@22)/lib/cmake/mlir" \
+            -DCMAKE_C_COMPILER="$nex_llvm/bin/clang" \
+            -DCMAKE_CXX_COMPILER="$nex_llvm/bin/clang++" \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++ -nostdinc++ -isystem$nex_llvm/include/c++/v1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-L$nex_libcxx -Wl,-rpath,$nex_libcxx" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-L$nex_libcxx -Wl,-rpath,$nex_libcxx" \
+            -DLLVM_DIR="$nex_llvm/lib/cmake/llvm" \
+            -DMLIR_DIR="$nex_llvm/lib/cmake/mlir" \
             -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
             -DNEX_Z3_ROOT="$(brew --prefix z3)" \
             -DNEX_ELF_TEST_LD="$(brew --prefix lld@22)/bin/ld.lld" \
