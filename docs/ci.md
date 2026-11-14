@@ -41,6 +41,11 @@ headers and libc++ runtime. The Linux debugger pin and package inventory now
 select the available23.1.6 snapshot for both architectures. Local C++20
 compile/run and package-index checks cover these corrections; a successful
 hosted run of the updated workflows remains a separate check.
+The subsequent macOS attempt exposed an additional include-order failure:
+system SQLite injected the Apple SDK's entire `usr/include` ahead of Clang's
+builtin headers. The job now explicitly selects Homebrew SQLite headers/library
+without adding that SDK directory. A local negative/positive compile control
+reproduces the SDK-include failure and passes with the selected include layout.
 
 The two external actions are fixed to full commit SHAs from the official
 [checkout release](https://github.com/actions/checkout/releases/tag/v7.0.1)

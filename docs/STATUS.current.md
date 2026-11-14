@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.246.0"
+applies_to: "language 0.28; toolchain 0.246.1"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,7 +12,7 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.246.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.246.1 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.

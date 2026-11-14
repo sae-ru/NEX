@@ -36,6 +36,7 @@ jobs:
         run: |
           nex_llvm="$(brew --prefix llvm@22)"
           nex_libcxx="$nex_llvm/lib/c++"
+          nex_sqlite="$(brew --prefix sqlite)"
           cmake --preset dev-debug \
             -DCMAKE_C_COMPILER="$nex_llvm/bin/clang" \
             -DCMAKE_CXX_COMPILER="$nex_llvm/bin/clang++" \
@@ -44,6 +45,8 @@ jobs:
             -DCMAKE_SHARED_LINKER_FLAGS="-L$nex_libcxx -Wl,-rpath,$nex_libcxx" \
             -DLLVM_DIR="$nex_llvm/lib/cmake/llvm" \
             -DMLIR_DIR="$nex_llvm/lib/cmake/mlir" \
+            -DSQLite3_INCLUDE_DIR="$nex_sqlite/include" \
+            -DSQLite3_LIBRARY="$nex_sqlite/lib/libsqlite3.dylib" \
             -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
             -DNEX_Z3_ROOT="$(brew --prefix z3)" \
             -DNEX_ELF_TEST_LD="$(brew --prefix lld@22)/bin/ld.lld" \
