@@ -273,7 +273,7 @@ public:
 };
 class Parser {
   SourceFormatHints *formatHints=nullptr;
-  Program p; std::string inputKind; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
+  Program p; std::string inputKind,diagnosticLanguage; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
   bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false,contracts029=false;std::map<std::string,Span> parameterOrigins;
   std::set<std::string> generatedNames;
   unsigned contractLoopCounter=0;
@@ -401,7 +401,7 @@ class Parser {
     SyntaxDepth(unsigned &value,const Span &span):depth(value){if(depth>=256)throw Error("E_PARSE_LIMIT","syntax recursion exceeds 256 levels",span);++depth;}
     ~SyntaxDepth(){--depth;}
   };
-  void annotate(Error &error)const{attachFrontendDiagnostic(error,{{p.path,p.source}},p.path,inputKind,"parse",true);}
+  void annotate(Error &error)const{attachFrontendDiagnostic(error,{{p.path,p.source}},p.path,inputKind,"parse",true,diagnosticLanguage);}
   const Token &peek(size_t n=0) const { return tokens.at(std::min(i+n,tokens.size()-1)); }
   Token take() { return tokens.at(i++); }
   SourceRange syntaxRange(size_t begin)const{return {begin,tokens.at(i-1).span.end,true};}
@@ -678,7 +678,7 @@ class Parser {
   }
 public:
   void formatting(SourceFormatHints &hints){formatHints=&hints;}
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false,bool contracts29=false):inputKind(std::move(kind)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed),contracts029(contracts29) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false,bool contracts29=false,std::string selectedLanguage=languageVersion):inputKind(std::move(kind)),diagnosticLanguage(std::move(selectedLanguage)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed),contracts029(contracts29) {
     sourceContracts=contracts;
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
@@ -1704,22 +1704,22 @@ llvm::json::Array blockJSON(const std::vector<S> &body) {
 }
 }
 namespace {
-void sourceUTF8(const std::string &source,const std::string &path,const std::string &kind){
+void sourceUTF8(const std::string &source,const std::string &path,const std::string &kind,const std::string &sourceLanguage=languageVersion){
   try{nexrt::unicodeOffsets(source,false);}catch(const nexrt::DataError &error){
     Span span;span.begin=span.end=error.offset;span.file=path;
     for(size_t i=0;i<error.offset;++i){if(source[i]=='\n'){++span.line;span.column=1;}else ++span.column;}
-    Error diagnostic(error.code,error.message,span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true);throw diagnostic;
+    Error diagnostic(error.code,error.message,span);attachFrontendDiagnostic(diagnostic,{{path,source}},path,kind,"parse",true,sourceLanguage);throw diagnostic;
   }
 }
 }
 Program parseVersioned(std::string source,std::string path,SourceLanguage language,bool editorNames,bool editorDetails){
   switch(language){
-  case SourceLanguage::Language018:return parseLegacy018(std::move(source),std::move(path),editorNames,editorDetails);
+  case SourceLanguage::Language018:break;
   case SourceLanguage::Tasks019:case SourceLanguage::TaskFiles020:case SourceLanguage::OwnedResources021:case SourceLanguage::TaskForeign022:case SourceLanguage::TaskWrites023:case SourceLanguage::TaskStreams024:case SourceLanguage::SourceExceptions025:case SourceLanguage::ExceptionHandlers026:case SourceLanguage::TypedErrors027:case SourceLanguage::Contracts028:case SourceLanguage::Contracts029:break;
   default:throw Error("E_LANGUAGE_VERSION","unknown source language selected for parsing");
   }
-  sourceUTF8(source,path,"unit");
-  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,true,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),isContractsLanguage(language),language==SourceLanguage::Contracts029).run();
+  sourceUTF8(source,path,"unit",programLanguage(language));
+  auto p=Parser(std::move(source),std::move(path),0,"unit",editorNames,editorDetails,language!=SourceLanguage::Language018,language==SourceLanguage::OwnedResources021||language==SourceLanguage::TaskForeign022||language==SourceLanguage::TaskWrites023||language==SourceLanguage::TaskStreams024||isPublicSourceExceptionLanguage(language),isPublicSourceExceptionLanguage(language),language==SourceLanguage::ExceptionHandlers026||isTypedSourceErrorLanguage(language),isTypedSourceErrorLanguage(language),isContractsLanguage(language),language==SourceLanguage::Contracts029,programLanguage(language)).run();
   p.sourceLanguage=language;return p;
 }
 Program parseSourceExceptionsPrototype(std::string source,std::string path){
@@ -1748,7 +1748,7 @@ void check(Program &p){
     std::map<std::string,std::string> sources;
     for(const auto &[key,unit]:p.units)sources[key]=unit.source;
     if(sources.empty())sources[p.path]=p.source;
-    attachFrontendDiagnostic(error,sources,p.units.empty()?p.path:p.entryUnit,p.units.empty()?"unit":"project","check",true);throw;
+    attachFrontendDiagnostic(error,sources,p.units.empty()?p.path:p.entryUnit,p.units.empty()?"unit":"project","check",true,programLanguage(p));throw;
   }
 }
 Type checkExpression(Program &p,const std::string &function,E expression,const std::map<std::string,Type> &locals){return Checker(p).watch(function,expression,locals);}

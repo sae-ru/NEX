@@ -1,0 +1,21 @@
+module java_int_example;
+import "std/java_int.nex" as ints;
+
+fn exercise() -> unit !{throw} {
+  let maximum: ints::Int32 = ints::from_i64(2147483647);
+  let minimum: ints::Int32 = ints::from_i64(-2147483648);
+  assert(ints::to_i64(ints::add(maximum, ints::from_i64(1))) == -2147483648);
+  assert(ints::to_i64(ints::divide(minimum, ints::from_i64(-1))) == -2147483648);
+  assert(ints::to_i64(ints::remainder(minimum, ints::from_i64(-1))) == 0);
+  assert(ints::to_i64(ints::unsigned_shift_right(ints::from_i64(-1), 1)) == 2147483647);
+  assert(ints::to_i64(ints::shift_left(ints::from_i64(1), 32)) == 1);
+  assert(ints::to_i64(ints::narrow_char(ints::from_i64(-1))) == 65535);
+  var caught: bool = false;
+  var finalized: bool = false;
+  try { ints::divide(maximum, ints::from_i64(0)); }
+  catch(error: ints::ArithmeticError) { assert(error.operation == "divide"); caught = true; }
+  finally { finalized = true; }
+  assert(caught && finalized);
+}
+test fn integer_contract() -> unit !{throw} { exercise(); }
+fn main() -> unit !{io,throw} { exercise(); print("java-int-ok"); }

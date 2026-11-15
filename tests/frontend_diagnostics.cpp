@@ -24,6 +24,14 @@ int main(int argc,char **argv){
     };
     auto unit=failure([]{parse("module bad;fn main()->unit{ return }","<unit>");});context(unit,"unit","parse");
     auto checked=failure([]{auto p=parse("module bad;fn main()->i64{return true;}","<checked>");check(p);});context(checked,"unit","check");
+    for(const auto language:{SourceLanguage::Contracts028,SourceLanguage::Contracts029}){
+      auto parsed=failure([&]{parseVersioned("module bad;fn main()->unit{return }","<versioned>",language);});
+      require(context(parsed,"unit","parse")->getString("language")==programLanguage(language),"unit parse diagnostic lost its selected language");
+      auto utf=failure([&]{parseVersioned(std::string("\n")+char(0xff),"<versioned>",language);});
+      require(context(utf,"unit","parse")->getString("language")==programLanguage(language),"UTF-8 diagnostic lost its selected language");
+      auto typed=failure([&]{auto p=parseVersioned("module bad;fn main()->i64{return true;}","<versioned>",language);check(p);});
+      require(context(typed,"unit","check")->getString("language")==programLanguage(language),"unit check diagnostic lost its selected language");
+    }
     auto expression=failure([]{parseExpression("1 +","<expression>");});context(expression,"expression","parse");
     auto statement=failure([]{parseStatement("return; extra","<statement>");});context(statement,"statement","parse");
     auto pattern=failure([]{parsePattern("(","<pattern>");});context(pattern,"pattern","parse");

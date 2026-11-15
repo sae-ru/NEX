@@ -1,0 +1,405 @@
+{
+  "schema": "nex.java-int32-language-preparation/1",
+  "recorded_utc": "2026-11-15",
+  "ok": true,
+  "toolchain": "0.248.0",
+  "compiler_default_language": "0.28",
+  "new_domain_tested_project_language": "0.29",
+  "source_baseline_commit": "4b5ba60fd3614617dd30907bbe050695791add23",
+  "compiler_build": "78a78bb6d78cf430c5c55bd27c631dcde786d327676b620feac0cc98b6aa926b",
+  "descriptor_hash": "da2605111adda2d3aaf38b7e07d26d8cba7ffc4b785a6fc4f6799d894cf67431",
+  "source_delta_inputs_sha256": {
+    "VERSION": "238e80768b746588281e50661c4845697ee4fae188b1bc99a6eab472a7194146",
+    "CMakeLists.txt": "4e31f84751405a8d647e74e60ab24352519578eed2d1741f202042757ae29ade",
+    "cmake/Install.cmake": "0c39b7eaeff25b708463bb67b5ba935ec4f19eefbbcb492cfd03b45151b20dac",
+    "src/language.cpp": "66fbded5fcc91a7951106afaf48e9f1ddadcca53fb7e4f380905f556b334221f",
+    "src/modules.cpp": "945cf60776cd1600a09925c67fd59e298e62453fd1fce507fc862d6b0f598f47",
+    "src/main.cpp": "b7862b2e0bdeae66c2130a31e0ab6033c728a90a1975481ddfa0eb6e8353bdf4",
+    "src/standard_library.cpp": "71a160cb27ad270bc50ba494c01a038aee874306e5e1a7a9fbbf9d0ead8fa389",
+    "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+    "llm/language-pack.json": "ba83d8b87f4e2d2ede069aa040d63e03ed5fdd2fec9526a1da37b8ce1fec4dd0",
+    "tests/java_int.py": "c5f52b8816851ccfeb2920a8063e99cf91ecfc823030de96757c01c65224453b",
+    "tests/frontend_diagnostics.cpp": "b5230b1849af067fce3ad9eecc2ce60d1cb5b2f65bbdee9ceec504902dd5cfec",
+    "tests/frontend_diagnostics.py": "c13692fffbc5d8cb5f72a954faa39684dc661b2ea5d0a05f694a481916033642",
+    "tests/language_029_migration.py": "f061071c088875dcb8496db92cd7052ca36de9ca87aa6b61b520e77fce623609",
+    "tests/fixtures/java-int32/Oracle.java": "dffa79e46953929b8afde081d06c821cfe15f5f0c5684662d655fccbfa12d8d5",
+    "tests/fixtures/java-int32/oracle.json": "68d04e807e2da0f4271b063dc539b7ce52555c3337eeb4d18616bd802ae2d1fc",
+    "tools/sdk_stdlib.py": "2af67b80035e8f6f0b099e3e77c57faa3f452166fd9947afa0ed281cc31e804c",
+    "llm/frontend-diagnostics.schema.json": "1fe4ca291ca8f8c30a315ba44ce1ab495b52faaa4e62e6edb20efd9a8b44721b"
+  },
+  "representation": "ordinary nominal Int32 backed by checked i64; native i32 pending",
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "implementation_log_sha256": "106905bc055ef4933afbb2f4cda258d0aae9e46bb32a47a2fe45a856281185be"
+  },
+  "core": {
+    "groups": [
+      {
+        "name": "llm_cost_ledger",
+        "seconds": 0.248014,
+        "skipped": false
+      },
+      {
+        "name": "llm_local_collector",
+        "seconds": 0.134695,
+        "skipped": false
+      },
+      {
+        "name": "ctest_report_validation",
+        "seconds": 0.188834,
+        "skipped": false
+      },
+      {
+        "name": "discovery",
+        "seconds": 10.6108,
+        "skipped": false
+      },
+      {
+        "name": "language_pack_contract",
+        "seconds": 0.368238,
+        "skipped": false
+      },
+      {
+        "name": "task_frontend_native",
+        "seconds": 0.663231,
+        "skipped": false
+      },
+      {
+        "name": "frontend_diagnostics_native",
+        "seconds": 0.017814,
+        "skipped": false
+      },
+      {
+        "name": "bytes_runtime_native",
+        "seconds": 0.00209513,
+        "skipped": false
+      },
+      {
+        "name": "float_runtime_native",
+        "seconds": 0.00967492,
+        "skipped": false
+      },
+      {
+        "name": "typed_source_frontend_reference",
+        "seconds": 0.61349,
+        "skipped": false
+      },
+      {
+        "name": "test_tiers",
+        "seconds": 0.146259,
+        "skipped": false
+      },
+      {
+        "name": "diagnostic_catalogue",
+        "seconds": 10.4615,
+        "skipped": false
+      }
+    ],
+    "junit_sha256": "68909bf5a3787c124deea84aff1d46eb09bb49df26274aac1cdbe1a2ab94f5d9"
+  },
+  "affected": {
+    "groups": [
+      {
+        "name": "language_pack_contract",
+        "seconds": 0.386511,
+        "skipped": false
+      },
+      {
+        "name": "java_int",
+        "seconds": 14.6029,
+        "skipped": false
+      },
+      {
+        "name": "docs_index",
+        "seconds": 0.0888428,
+        "skipped": false
+      }
+    ],
+    "junit_sha256": "740fa297893868d94104f97471a13a92fd57be11cf0cb25780529b2e751ff38b"
+  },
+  "diagnostics_and_versioned_graphs": {
+    "groups": [
+      {
+        "name": "frontend_diagnostics",
+        "seconds": 5.76379,
+        "skipped": false
+      },
+      {
+        "name": "language_029_migration",
+        "seconds": 0.806353,
+        "skipped": false
+      }
+    ],
+    "junit_sha256": "e66a21245f9e14f33052aac0b77beffed74c2ddaf2a5f5ab25765b4a3b4fa74a"
+  },
+  "frontend_python_methods": {
+    "passed": 21,
+    "skipped": 1,
+    "note": "non-UTF-8 filename case skipped on macOS because its filesystem requires UTF-8 names"
+  },
+  "live_JDK": {
+    "live_JDK": true,
+    "cases": 524,
+    "version": "openjdk 21.0.12.1 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)\n"
+  },
+  "numeric_backend_agreement": {
+    "schema": "nex.java-int32-agreement/1",
+    "ok": true,
+    "compiler_sha256": "84d7ce1bcd433f695d8a8cd2d72eb579ff8c2a73ea2eae20f495b379bbaa6419",
+    "revision": "cb0942aead3b5cdbd1790c0b2b192f863a4d44a5dddd51e5f5de94e2ba9ab00d",
+    "program_sha256": "b941513931f43245f4e27fd569331737f74a021c3618332db246b732fdf0cad8",
+    "cases": 524,
+    "oracle_sha256": "68d04e807e2da0f4271b063dc539b7ce52555c3337eeb4d18616bd802ae2d1fc",
+    "reference": {
+      "ok": true,
+      "stdout": "java-int-oracle-ok\n",
+      "steps": 290490,
+      "value": null
+    },
+    "native": {
+      "debug": {
+        "build_key": "637ab7bfbc7448a57816db81e4068eaa5fcfda0538695bc29690ceb10ea662f0",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-int-oracle-ok\n"
+      },
+      "release": {
+        "build_key": "29ff4a086c5db059af22e228594c04e004bc967456c37d46f16a9e11acc0b07b",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-int-oracle-ok\n"
+      }
+    },
+    "strict_executed_typescript": true,
+    "checked_NEX_overflow_preserved": true
+  },
+  "installed_consumption": {
+    "schema": "nex.java-int32-installed-consumption/1",
+    "ok": true,
+    "scope": "local CMake install and relocation; not full portable SDK acceptance",
+    "complete_SDK_workflow_claimed": false,
+    "installed_runtime_relative": "share/nex/runtime/runtime.cpp",
+    "proof": {
+      "schema": "nex.standard-library-consumption/1",
+      "ok": true,
+      "compiler_sha256": "84d7ce1bcd433f695d8a8cd2d72eb579ff8c2a73ea2eae20f495b379bbaa6419",
+      "language": "0.28",
+      "toolchain": "0.248.0",
+      "compiler_build": "78a78bb6d78cf430c5c55bd27c631dcde786d327676b620feac0cc98b6aa926b",
+      "descriptor_hash": "da2605111adda2d3aaf38b7e07d26d8cba7ffc4b785a6fc4f6799d894cf67431",
+      "compiled_source_pins": {
+        "lib/text.nex": "e5df668d9fd6bea6bf248eb26a79da892576753622e16382bb74292da1b55d64",
+        "lib/list.nex": "04be7257ced138fc83cb67cb9c220eac8ded09ccdfaa2a71861a02dda3beb63a",
+        "lib/math.nex": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e",
+        "lib/map.nex": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
+        "lib/set.nex": "041f1df46cca9862478914154dde4496867998b63e40c9fee1acb725522d5bb9",
+        "lib/queue.nex": "375660dd44765cc99784f03fd7b9a74f82ad32d8f6cfef51cd5ee7f89789b0ed",
+        "lib/stack.nex": "93e068c4844698c0409fed925d0c6ad8ff021edb85f3f392ceb82eba2e225106",
+        "lib/deque.nex": "41ae77cbd0f722e34dcafba8786e8d7b052436ac296d07080e7a41ccb92d8da1",
+        "lib/priority_queue.nex": "9d12846107f282ea9b49d98341efd04ccb809dc16868dda5d05ba8d95dea67ca",
+        "lib/ordered_map.nex": "695126c45d32a5d1877e1d8882af70b9525efd1acf6796c8f4044cf0c83ec473",
+        "lib/ordered_set.nex": "85456b1f28c78f7596778c88cf48dcae31d5a931bfc8d1c3c42001004ce6ed3c",
+        "lib/java_int.nex": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7"
+      },
+      "example_hashes": {
+        "main.nex": "be00535c40d218f97950e037f485cd2f750541d0cece5576a19f58a42dc226b1",
+        "nex.json": "91bb9bdac372f0dd9bf34d3572ba7deef425bd121e603b3cac4a6bc296e3ed30",
+        "nex.lock.json": "cda0ba2380a9697576e02872bce57c7b70fe76b332a501bf27857b97750addd3"
+      },
+      "revision": "f5dc5a9ee54a382947ae80bfa1996a6c0531d9c29c821ada453437d0cc686c86",
+      "reference_stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+      "native": {
+        "debug": "1,1,2,3\nЯ + 🌍\n5\n6\n",
+        "release": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "typescript": {
+        "requested": true,
+        "executed": true,
+        "stdout": "1,1,2,3\nЯ + 🌍\n5\n6\n"
+      },
+      "existing_lock_enforced": true,
+      "lock_unchanged": true,
+      "complete_SDK_workflow_claimed": false
+    },
+    "strict_typescript": true,
+    "oracle_resources_match": true,
+    "explicit_029_example_revision": "cbe6a93d17569653bca5838f43d2b584fc1fa07af24bb559d60aa5bb80f70516",
+    "explicit_029_context_language": "0.29",
+    "commands": [
+      {
+        "args": [
+          "doctor"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "describe",
+          "--field",
+          "standard_library"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "check"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "test",
+          "--interpreter-only"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "eval"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "run",
+          "--profile",
+          "debug"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "run",
+          "--profile",
+          "release"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "emit",
+          "--kind",
+          "typescript",
+          "--entry",
+          "main",
+          "--directory",
+          "/Users/sae/projects/NEX/build/java-int32-0.248-v1/installed-consumption/standard-library-typescript"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "$NODE",
+          "--experimental-strip-types",
+          "$WORK/installed-consumption/standard-library-typescript/runner.mjs"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "$NODE",
+          "$TSC",
+          "--noEmit",
+          "--strict",
+          "--target",
+          "ES2022",
+          "--module",
+          "ESNext",
+          "--moduleResolution",
+          "bundler",
+          "--allowImportingTsExtensions",
+          "--lib",
+          "ES2022,DOM",
+          "$WORK/installed-consumption/standard-library-typescript/program.ts"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "check"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "context",
+          "--symbol",
+          "std::java_int::divide"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "eval"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "same_version_resource_completion_after_relocation": [
+      {
+        "resource": "llm/frontend-diagnostics.schema.json",
+        "sha256": "1fe4ca291ca8f8c30a315ba44ce1ab495b52faaa4e62e6edb20efd9a8b44721b"
+      },
+      {
+        "resource": "docs/frontend-diagnostics.md",
+        "sha256": "43759f2c74f58e24d6136e45bf6dac710c58d14606a32acdafe9f3e72554773a"
+      }
+    ],
+    "installed_selected_language_diagnostic": {
+      "code": "E_TYPE",
+      "language": "0.29",
+      "schema_language_admitted": true
+    }
+  },
+  "catalogue_methods_passed": 2,
+  "stdlib_source_modules": 12,
+  "stdlib_public_functions": 113,
+  "typescript_version": "7.0.2",
+  "observed_retained_029_revision": "cbe6a93d17569653bca5838f43d2b584fc1fa07af24bb559d60aa5bb80f70516",
+  "retained_revision_behavior": "0.247 context failed with E_REVISION; 0.248 context reads the same 0.29 archived revision without resetting or migrating it",
+  "development_observations": [
+    {
+      "result": "E_EFFECT",
+      "scope": "first numeric oracle caller omitted its conservative outward throw declaration",
+      "resolution": "corrected source declaration; effect checking retained",
+      "log_sha256": "ae12bf626f369ab43efd6fce70cf2726c3551341ee221d103767bc7847919d96"
+    },
+    {
+      "result": "test expectation failures",
+      "scope": "new diagnostic test incorrectly expected an unqualified unknown call in bind phase and no initialized store directory",
+      "resolution": "use an actual qualified binding failure; verify no revisions committed; final selected-language test and frontend group pass",
+      "log_sha256": "f870ad353713e149d9add5c2a29b8d23da2fd659bb554e5e89ff296899eabb64"
+    }
+  ],
+  "converter_implemented": false,
+  "native_machine_i32_implemented": false,
+  "general_Java_Python_migration_claimed": false,
+  "complete_source_CTest_claimed": false,
+  "complete_portable_SDK_claimed": false,
+  "device_execution_claimed": false,
+  "next_language_requirements": "docs/migration-readiness.md",
+  "frontend_schema_language_selections_checked": [
+    "0.28",
+    "0.29"
+  ],
+  "full_JSON_schema_campaign_claimed": false
+}

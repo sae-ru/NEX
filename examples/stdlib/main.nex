@@ -4,11 +4,14 @@ import "std/list.nex" as seq;
 import "std/math.nex" as math;
 import "std/ordered_map.nex" as maps;
 import "std/ordered_set.nex" as sets;
+import "std/java_int.nex" as java_int;
 
 fn compare(a:i64,b:i64)->i64 {
   if a<b{return -1;}if a>b{return 1;}return 0;
 }
 fn ordered_helpers()->unit {
+  assert(java_int::to_i64(java_int::add(java_int::from_i64(2147483647),java_int::from_i64(1)))==-2147483648);
+  assert(java_int::to_i64(java_int::unsigned_shift_right(java_int::from_i64(-1),1))==2147483647);
   var table:maps::Map<i64,str>=maps::empty(compare);
   table=maps::put(maps::put(maps::put(table,3,"three"),1,"one"),2,"two");
   let old:maps::Map<i64,str>=table;

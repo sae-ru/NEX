@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.247.0"
+applies_to: "language 0.28; toolchain 0.248.0"
 owner: repository
 ---
 
@@ -10,7 +10,9 @@ User authorization: 2026-11-15. Continue the language, library, backends,
 developer tools and platform delivery. The original [PLAN](../PLAN.md) remains
 the full objective. Studio, model studies and project conversion follow this
 sequence; Java conversion has priority over Python, with C++ retained afterward.
-Additional sanitizer/fuzz/security work remains explicitly deferred.
+Additional sanitizer/fuzz/security work remains explicitly deferred. Subsequent
+user direction puts [language migration prerequisites](migration-readiness.md)
+first; converter implementation is deferred until these foundations are ready.
 
 ## Evidence baseline
 
@@ -65,6 +67,17 @@ the original interpreter/JVM is a transitional boundary, not a completed port.
 See the [conversion design](project-porting-design.md).
 
 ## Work and verification cadence
+
+The 0.248 language-readiness block supplies explicit Java int semantics and
+correct 0.29 diagnostic/archived-graph language selection. Converter code remains
+deferred. General typed mutable references/identity, object dispatch, machine
+integer/IEEE domains and Python dynamic/big-integer support remain open in the
+[prerequisite matrix](migration-readiness.md).
+
+[0.248 focused evidence](evidence/java-int32-language-0.248.0-2026-11-15.json)
+records the numerical and selected-language graph/diagnostic block. The earlier
+[0.247 hosted core CI](evidence/core-ci-0.247.0-2026-11-15.json) passed on macOS
+and Linux at its exact source commit; it does not qualify the later block.
 
 Implement complete functional blocks, build with `cmake --build build -j 4`,
 then execute affected semantic/backend/descriptor tests. Do not rerun already

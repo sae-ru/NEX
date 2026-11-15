@@ -1,0 +1,85 @@
+module std::java_int;
+
+// Explicit Java int value domain, represented by a nominal checked-i64 value.
+// This source module does not change ordinary NEX integer arithmetic.
+pub struct Int32 { value: i64; }
+pub struct ArithmeticError { operation: str; }
+
+fn checked(value: Int32) -> i64 {
+  assert(value.value >= -2147483648 && value.value <= 2147483647);
+  return value.value;
+}
+pub fn from_i64(value: i64) -> Int32 {
+  var reduced: i64 = value % 4294967296;
+  if reduced < -2147483648 { reduced = reduced + 4294967296; }
+  if reduced > 2147483647 { reduced = reduced - 4294967296; }
+  return Int32(reduced);
+}
+pub fn to_i64(value: Int32) -> i64 { return checked(value); }
+pub fn add(left: Int32, right: Int32) -> Int32 { return from_i64(checked(left) + checked(right)); }
+pub fn subtract(left: Int32, right: Int32) -> Int32 { return from_i64(checked(left) - checked(right)); }
+pub fn multiply(left: Int32, right: Int32) -> Int32 { return from_i64(checked(left) * checked(right)); }
+pub fn negate(value: Int32) -> Int32 { return from_i64(-checked(value)); }
+pub fn divide(left: Int32, right: Int32) -> Int32 !{throw} {
+  let a: i64 = checked(left); let b: i64 = checked(right);
+  if b == 0 { throw(ArithmeticError("divide")); }
+  return from_i64(a / b);
+}
+pub fn remainder(left: Int32, right: Int32) -> Int32 !{throw} {
+  let a: i64 = checked(left); let b: i64 = checked(right);
+  if b == 0 { throw(ArithmeticError("remainder")); }
+  return from_i64(a % b);
+}
+fn unsigned(value: Int32) -> i64 {
+  let scalar: i64 = checked(value);
+  if scalar < 0 { return scalar + 4294967296; }
+  return scalar;
+}
+fn bit_operation(left: Int32, right: Int32, mode: i64) -> Int32 {
+  var a: i64 = unsigned(left); var b: i64 = unsigned(right);
+  var place: i64 = 1; var result: i64 = 0; var index: i64 = 0;
+  while index < 32 {
+    let first: bool = a % 2 == 1; let second: bool = b % 2 == 1;
+    var include: bool = false;
+    if mode == 0 { include = first && second; }
+    if mode == 1 { include = first || second; }
+    if mode == 2 { include = first != second; }
+    if include { result = result + place; }
+    a = a / 2; b = b / 2; place = place * 2; index = index + 1;
+  }
+  return from_i64(result);
+}
+pub fn bit_and(left: Int32, right: Int32) -> Int32 { return bit_operation(left, right, 0); }
+pub fn bit_or(left: Int32, right: Int32) -> Int32 { return bit_operation(left, right, 1); }
+pub fn bit_xor(left: Int32, right: Int32) -> Int32 { return bit_operation(left, right, 2); }
+pub fn bit_not(value: Int32) -> Int32 { return Int32(-checked(value) - 1); }
+fn shift_factor(distance: i64) -> i64 {
+  var count: i64 = distance % 32;
+  if count < 0 { count = count + 32; }
+  var factor: i64 = 1;
+  while count > 0 { factor = factor * 2; count = count - 1; }
+  return factor;
+}
+pub fn shift_left(value: Int32, distance: i64) -> Int32 {
+  return from_i64(unsigned(value) * shift_factor(distance));
+}
+pub fn shift_right(value: Int32, distance: i64) -> Int32 {
+  let scalar: i64 = checked(value); let factor: i64 = shift_factor(distance);
+  var result: i64 = scalar / factor;
+  if scalar < 0 && scalar % factor != 0 { result = result - 1; }
+  return Int32(result);
+}
+pub fn unsigned_shift_right(value: Int32, distance: i64) -> Int32 {
+  return from_i64(unsigned(value) / shift_factor(distance));
+}
+pub fn narrow_byte(value: Int32) -> Int32 {
+  var narrowed: i64 = unsigned(value) % 256;
+  if narrowed >= 128 { narrowed = narrowed - 256; }
+  return Int32(narrowed);
+}
+pub fn narrow_short(value: Int32) -> Int32 {
+  var narrowed: i64 = unsigned(value) % 65536;
+  if narrowed >= 32768 { narrowed = narrowed - 65536; }
+  return Int32(narrowed);
+}
+pub fn narrow_char(value: Int32) -> Int32 { return Int32(unsigned(value) % 65536); }

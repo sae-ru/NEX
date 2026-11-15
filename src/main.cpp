@@ -150,7 +150,7 @@ Program load(const Options &o,const fs::path &root,Store &store,bool saved=false
   }
   auto selected=rev=="HEAD"?store.headRevision():rev;
   if(store.revisionLanguage(selected)!=programLanguage(selectedLanguage))throw Error("E_LANGUAGE_VERSION","stored revision uses another language version; run nex migrate or export its source and check it");
-  auto p=loadBundle(store.bundle(selected),root.string());
+  auto p=loadVersionedBundle(store.bundle(selected),root.string(),store.revisionLanguage(selected));
   if(revision(p)!=selected)throw Error("E_REVISION","stored source does not match its semantic revision");return p;
 }
 void migrate(const Options &o,const fs::path &root){
@@ -746,8 +746,9 @@ int run(const Options &o) {
   if(o.command=="restore"){
     auto target=o.get("--revision"),expected=o.get("--expected-revision"),previous=store.headRevision();
     if(previous!=(expected=="EMPTY"?"":expected))throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
-    if(store.revisionLanguage(target)!=languageVersion)throw Error("E_LANGUAGE_VERSION","restore requires a current-language revision; migrate older source explicitly");
-    auto archived=store.bundle(target);auto candidate=loadBundle(archived,root.string());if(revision(candidate)!=target)throw Error("E_REVISION","stored source does not match the selected restore revision");
+    const auto selectedLanguage=programLanguage(projectSourceLanguage(root.string()));
+    if(store.revisionLanguage(target)!=selectedLanguage)throw Error("E_LANGUAGE_VERSION","restore requires the project's selected language; migrate older source explicitly");
+    auto archived=store.bundle(target);auto candidate=loadVersionedBundle(archived,root.string(),selectedLanguage);if(revision(candidate)!=target)throw Error("E_REVISION","stored source does not match the selected restore revision");
     auto request=llvm::json::Object{{"revision",target},{"expected_revision",expected}};
     auto rev=store.save(candidate,expected,true,changeInfo(o,"restore",hash(json(std::move(request),false))));
     print(llvm::json::Object{{"schema","nex.restore/1"},{"ok",true},{"previous_revision",previous},{"revision",rev},{"source_hash",hash(json(archived,false))},{"changed",previous!=rev},{"materialized",false}});return 0;
@@ -757,7 +758,7 @@ int run(const Options &o) {
     auto bundle=store.bundle(selected);auto directory=o.get("--directory");
     if(!directory.empty()){
       llvm::json::Value lock=nullptr;auto language=store.revisionLanguage(selected);
-      if(language==languageVersion){auto p=loadBundle(bundle,root.string());if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");lock=dependencyLock(p);}
+      if(language=="0.28"||language=="0.29"){auto p=loadVersionedBundle(bundle,root.string(),language);if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");lock=dependencyLock(p);}
       exportProject(bundle,directory,language);
       if(!lock.getAsNull())writeFile((fs::path(directory)/"nex.lock.json").string(),json(lock)+"\n");
       print(llvm::json::Object{{"ok",true},{"directory",fs::absolute(directory).string()},{"revision",selected}});return 0;
@@ -771,9 +772,10 @@ int run(const Options &o) {
     if(o.positional.empty())throw Error("E_OPTION","import requires a graph JSON file");
     auto value=parseJSON(readFile(o.positional[0]));auto obj=value.getAsObject();
     if(!obj||(required(*obj,"schema")!="nex.graph/1"&&required(*obj,"schema")!="nex.graph/2"))throw Error("E_SCHEMA","expected an exported NEX graph");
-    if(required(*obj,"language")!=languageVersion)throw Error("E_LANGUAGE_VERSION","graph uses another language version; use nex migrate GRAPH.json to recheck its source");
+    const auto selectedLanguage=programLanguage(projectSourceLanguage(root.string()));
+    if(required(*obj,"language")!=selectedLanguage)throw Error("E_LANGUAGE_VERSION","graph uses another language version; use nex migrate GRAPH.json to recheck its source");
     if(required(*obj,"schema")!="nex.graph/2"||!obj->get("bundle"))throw Error("E_SCHEMA","current graphs require nex.graph/2 and a source bundle");
-    auto p=loadBundle(*obj->get("bundle"),root.string());
+    auto p=loadVersionedBundle(*obj->get("bundle"),root.string(),selectedLanguage);
     if(required(*obj,"source")!=p.source)throw Error("E_BUNDLE","root source and source bundle disagree");
     if(revision(p)!=required(*obj,"revision"))throw Error("E_REVISION","graph revision does not match checked source");
     auto rev=store.save(p,"",true,changeInfo(o,"import",hash(json(value,false))));print(llvm::json::Object{{"ok",true},{"revision",rev}});return 0;
@@ -790,8 +792,9 @@ int run(const Options &o) {
 
     auto selected=store.headRevision();
     if(selected!=expected)throw Error("E_CONFLICT","graph HEAD changed; read context and retry");
-    if(store.revisionLanguage(selected)!=languageVersion)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to an older graph");
-    auto p=loadBundle(store.bundle(selected),root.string());
+    const auto selectedLanguage=programLanguage(projectSourceLanguage(root.string()));
+    if(store.revisionLanguage(selected)!=selectedLanguage)throw Error("E_LANGUAGE_VERSION","run nex migrate before applying patches to a different-language graph");
+    auto p=loadVersionedBundle(store.bundle(selected),root.string(),selectedLanguage);
     if(revision(p)!=selected)throw Error("E_REVISION","stored source snapshot is corrupt");
     auto selectedSource=hash(json(sourceBundle(p),false));if(!expectedSource.empty()&&expectedSource!=selectedSource)throw Error("E_SOURCE_CONFLICT","exact archived source changed; request operation context for the selected revision");
     struct Replacement{size_t begin,end;std::string source;};
@@ -837,7 +840,7 @@ int run(const Options &o) {
       if(type&&!type->templateName.empty())throw Error("E_PATCH_SPECIALIZATION","replace the source template '"+type->templateName+"'; specializations are derived",type->span);
       if(function&&function->traitSignature)throw Error("E_PATCH_TRAIT","replace source trait '"+function->traitOwner+"'",function->span);
       if(function&&!function->sourceContractOrigin.empty())throw Error("E_PATCH_TARGET","replace the original declaration '"+function->sourceContractOrigin+"'; source contract helpers are derived",function->span);
-      auto fragment=parse("module fragment;\n"+source,"<patch>");
+      auto fragment=parseVersioned("module fragment;\n"+source,"<patch>",p.sourceLanguage);
       std::vector<const Function*> sourceFunctions;for(const auto &function:fragment.functions)if(function.sourceContractOrigin.empty())sourceFunctions.push_back(&function);
       if(sourceFunctions.size()+fragment.structures.size()+fragment.endpoints.size()+fragment.traits.size()+fragment.implementations.size()!=1||!fragment.imports.empty())throw Error("E_PATCH","replacement must define exactly one existing declaration");
       if(trait){if(fragment.traits.size()!=1||fragment.traits[0].name!=trait->localName)throw Error("E_PATCH","replacement must define the named source trait");edits[trait->unit].push_back({trait->span.begin,trait->span.end,source+"\n"});}
@@ -863,7 +866,7 @@ int run(const Options &o) {
       for(const auto &e:changes){if(e.begin>e.end||e.end>source.size()||e.end>previous)throw Error("E_PATCH_OVERLAP","replacement intervals overlap or exceed the source snapshot");previous=e.begin;}
       for(const auto &e:changes)source.replace(e.begin,e.end-e.begin,e.source);(*files)[key]=source;
     }
-    auto candidate=loadBundle(bundle,root.string());auto rev=store.save(candidate,expected,true,changeInfo(o,"apply",hash(json(value,false))));
+    auto candidate=loadVersionedBundle(bundle,root.string(),programLanguage(p));auto rev=store.save(candidate,expected,true,changeInfo(o,"apply",hash(json(value,false))));
     print(llvm::json::Object{{"schema","nex.patch-result/1"},{"ok",true},{"revision",rev},{"materialized",false},{"next","build --revision HEAD; export to materialize the source snapshot"}});return 0;
   }
   bool saved=graphQuery||o.command=="graph"||o.command=="context"||o.command=="operations"||((o.command=="declarations"||o.command=="identities")&&o.positional.empty());auto p=load(o,root,store,saved);
@@ -892,9 +895,9 @@ int run(const Options &o) {
       throw Error("E_OPTION","runtime contracts require --contracts FILE --directory NEW; selection comes from the contract document");
     auto contract=parseJSON(readBoundedText(file,1048576,"runtime contract","E_CONTRACT"));
     auto receipt=runtimeContractCandidate(p,contract,root.string());auto object=receipt.getAsObject();
-    const auto &bundle=*object->get("bundle");auto candidate=loadBundle(bundle,root.string());
+    const auto &bundle=*object->get("bundle");auto candidate=loadVersionedBundle(bundle,root.string(),programLanguage(p));
     auto lock=dependencyLock(candidate);
-    exportProject(bundle,directory,languageVersion);
+    exportProject(bundle,directory,programLanguage(p));
     writeFile((fs::path(directory)/"nex.lock.json").string(),json(lock)+"\n");
     (*object)["toolchain"]=NEX_VERSION;(*object)["compiler_build"]=NEX_BUILD_ID;
     auto output=(fs::path(directory)/"runtime-contracts.receipt.json").string();
@@ -944,7 +947,7 @@ int run(const Options &o) {
     auto entity=o.get("--entity");
     if(entity=="module"||entity=="type"||entity=="trait"||entity=="impl"){
       auto value=store.declarations(p,entity,name,0,1);auto object=value.getAsObject();auto nodes=object->getArray("nodes");if(nodes->empty())throw Error("E_IDENTITY_SYMBOL","declaration is not in the selected graph");
-      print(llvm::json::Object{{"schema","nex.declaration-context/1"},{"language",languageVersion},{"revision",revision(p)},{"namespace",object->getString("namespace")->str()},{"node",(*nodes)[0]}});return 0;
+      print(llvm::json::Object{{"schema","nex.declaration-context/1"},{"language",programLanguage(p)},{"revision",revision(p)},{"namespace",object->getString("namespace")->str()},{"node",(*nodes)[0]}});return 0;
     }
     if(!entity.empty()&&entity!="function"&&entity!="endpoint")throw Error("E_OPTION","context entity must be module, type, function or endpoint");
     for(const auto &endpoint:p.endpoints)if(entity!="function"&&(endpoint.name==name||(endpoint.owner==p.module&&endpoint.localName==name))){
@@ -954,7 +957,7 @@ int run(const Options &o) {
       std::function<void(const Type&)> include=[&](const Type &t){if(t.element)include(*t.element);if(t.kind==Type::Function)for(const auto &argument:t.arguments)include(argument);if(t.kind==Type::Record&&seen.insert(t.name).second){const auto &s=p.structure(t.name);structures.push_back(llvm::json::Object{{"name",s.name},{"source",p.definition(s)},{"file",s.unit}});for(const auto &argument:s.typeArguments)include(argument);for(auto field:s.members())include(field->type);}};
       for(const auto &param:handler.params)include(param.type);include(handler.result);
       llvm::json::Array imports;for(const auto &dependency:p.units.at(endpoint.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"file",dependency.target},{"module",p.units.at(dependency.target).module}});
-      print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",languageVersion},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
+      print(llvm::json::Object{{"schema","nex.context/2"},{"kind","endpoint"},{"language",programLanguage(p)},{"revision",revision(p)},{"symbol",endpoint.name},{"local_name",endpoint.localName},{"module",endpoint.owner},{"file",endpoint.unit},{"source",p.definition(endpoint)},{"definition",canonical(endpoint)},{"contract",std::move(contract)},{"imports",std::move(imports)},{"handler",llvm::json::Object{{"name",handler.name},{"source",p.definition(handler)},{"file",handler.unit}}},{"structures",std::move(structures)}});return 0;
     }
     if(entity=="endpoint")throw Error("E_IDENTITY_SYMBOL","endpoint is not in the selected graph");
     const auto &f=p.function(name);llvm::json::Array callees,callers;
@@ -971,7 +974,7 @@ int run(const Options &o) {
     llvm::json::Array imports;for(const auto &dependency:p.units.at(f.unit).imports)imports.push_back(llvm::json::Object{{"alias",dependency.alias},{"module",p.units.at(dependency.target).module},{"file",dependency.target}});
     llvm::json::Array parameters,arguments;for(const auto &parameter:f.typeParameters)parameters.push_back(parameter);for(const auto &argument:f.typeArguments)arguments.push_back(typeName(argument));
     llvm::json::Array captures;for(const auto &capture:f.captures)captures.push_back(llvm::json::Object{{"name",capture.name},{"type",typeName(capture.type)}});
-    print(llvm::json::Object{{"schema","nex.context/2"},{"language",languageVersion},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure&&!f.traitSignature&&f.sourceContractOrigin.empty()},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
+    print(llvm::json::Object{{"schema","nex.context/2"},{"language",programLanguage(p)},{"revision",revision(p)},{"symbol",f.name},{"local_name",f.localName},{"module",f.owner},{"file",f.unit},{"native_symbol",nativeSymbol(f.name)},{"source",p.definition(f)},{"type_parameters",std::move(parameters)},{"type_bounds",canonicalBounds(f.typeParameters,f.typeBounds)},{"template",f.templateName},{"type_arguments",std::move(arguments)},{"editable",f.templateName.empty()&&!f.closure&&!f.traitSignature&&f.sourceContractOrigin.empty()},{"closure_owner",f.closureOwner},{"captures",std::move(captures)},{"foreign",f.foreign?llvm::json::Value(llvm::json::Object{{"library",f.foreign->library},{"export",f.foreign->symbol},{"manifest_sha256",f.foreign->manifest}}):llvm::json::Value(nullptr)},{"imports",std::move(imports)},{"callees",std::move(callees)},{"callers",std::move(callers)},{"structures",std::move(structures)}});return 0;
   }
   if(o.command=="diagnose"){
     if(o.get("--manifest").empty()||o.get("--log").empty())throw Error("E_OPTION","diagnose requires --manifest and --log");

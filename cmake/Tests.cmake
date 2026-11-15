@@ -1577,6 +1577,9 @@ set_tests_properties(containers PROPERTIES TIMEOUT 300)
 add_test(NAME ordered_containers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ordered_containers.py $<TARGET_FILE:nex>)
 set_tests_properties(ordered_containers PROPERTIES TIMEOUT 600)
+add_test(NAME java_int COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/java_int.py $<TARGET_FILE:nex>)
+set_tests_properties(java_int PROPERTIES TIMEOUT 600)
 
 add_test(NAME effect_parameters COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/effect_parameters.py $<TARGET_FILE:nex>)

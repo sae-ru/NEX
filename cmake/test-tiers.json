@@ -248,6 +248,7 @@
     "stdlib_set_ops": ["extended", "browser", "platform"],
     "containers": ["extended", "browser", "platform", "sdk"],
     "ordered_containers": ["extended", "browser", "platform", "sdk"],
+    "java_int": ["extended", "browser", "platform", "sdk"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],
     "store_transactions_native": ["extended", "platform"],

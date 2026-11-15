@@ -1,0 +1,99 @@
+{
+  "schema": "nex.hosted-core-ci/1",
+  "toolchain_source": "0.247.0",
+  "source_commit": "4b5ba60fd3614617dd30907bbe050695791add23",
+  "workflow": {
+    "id": 43747239367,
+    "name": "Core development checks",
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43747239367",
+    "status": "completed",
+    "conclusion": "success",
+    "event": "push",
+    "attempt": 1
+  },
+  "jobs": [
+    {
+      "id": 132913132122,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T18:31:33Z",
+      "completed_at": "2026-11-15T18:35:55Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43747239367/job/132913132122",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build pinned toolchain and execute core offline",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain results including failures",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 132913132358,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T18:31:34Z",
+      "completed_at": "2026-11-15T18:35:35Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43747239367/job/132913132358",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Prepare native dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure selected Debug profile",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build core compiler and probes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check core and retain complete CTest evidence",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain results including failures",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "scope": "GitHub API status; no full-source or full-SDK acceptance claimed"
+}

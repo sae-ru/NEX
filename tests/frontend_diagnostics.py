@@ -16,6 +16,33 @@ import expressions as expression_harness
 SOURCE='module frontend;\nfn value()->i64{return 42;}\nfn main()->unit!{io}{print(value());}\n'
 
 class FrontendDiagnostics(harness.ToolchainCase):
+    def test_project_diagnostics_bind_selected_language(self):
+        schema=json.loads((harness.REPO/'llm/frontend-diagnostics.schema.json').read_text())
+        allowed=schema['$defs']['frontend']['properties']['language']['enum']
+        samples=[(b'module broken;fn main()->unit{return }','parse'),
+                 (b'module broken;import "./dependency.nex" as dep;fn main()->unit{dep::missing();}','bind'),
+                 (b'module broken;fn main()->unit{let x:i64=true;}','check'),
+                 (b'module broken;\xff','parse')]
+        (self.root/'dependency.nex').write_text('module dependency;pub fn known()->unit{}')
+        for text,phase in samples:
+            previous=None
+            for language in ('0.28','0.29'):
+                with self.subTest(language=language,phase=phase,text=text):
+                    (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':language,'entry':'main.nex'}))
+                    self.file.write_bytes(text)
+                    context=self.cli('check',ok=False)['frontend']
+                    self.assertEqual(context['language'],language);self.assertEqual(context['phase'],phase)
+                    self.assertIn(context['language'],allowed)
+                    self.assertEqual(context['input_kind'],'project')
+                    if previous:
+                        self.assertEqual(previous['source_inputs_hash'],context['source_inputs_hash'])
+                        self.assertNotEqual(previous['id'],context['id'])
+                    previous=context
+        database=self.root/'.nex/graph.db'
+        if database.exists():
+            with sqlite_connection(database) as db:
+                self.assertEqual(db.execute('SELECT count(*) FROM revisions').fetchone()[0],0)
+
     def ready(self):
         (self.root/'nex.json').write_text(json.dumps({'schema':'nex.project/1','language':harness.CURRENT_LANGUAGE,'entry':'main.nex'}), newline="\n")
         self.source(SOURCE);return self.cli('check')['revision']

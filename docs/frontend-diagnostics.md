@@ -1,7 +1,15 @@
+---
+status: current
+applies_to: "language 0.28; toolchain 0.248.0"
+owner: repository
+---
+
 # Captured-source frontend diagnostics
 
-Toolchain 0.52 keeps language 0.15, graph schema 4 and the existing source and
-operation identities. Query `frontend_diagnostic_features` and
+Toolchain 0.248 binds captured diagnostics to the selected source language,
+including explicit 0.29 projects. Diagnostic metadata does not change existing
+program revisions or graph identities. The frontend object was introduced in
+0.52; retained language snapshots keep their own semantics. Query `frontend_diagnostic_features` and
 `frontend_diagnostic_limits`; retrieve this guide with
 `nex guide --kind frontend --json`. The matching language pack indexes
 `llm/frontend-diagnostics.schema.json`.
@@ -41,6 +49,10 @@ that a preview is identical to the literal patch field.
 
 `phase` is `load`, `parse`, `bind` or `check`. `input_files`, `input_bytes` and
 `source_inputs_hash` summarize the captured NEX source buffers.
+`frontend.language` identifies the selected project or versioned parser/checker
+language. It can differ from the compiler's default language. The diagnostic ID
+also binds that language; identical source buffers under 0.28 and 0.29 therefore
+have distinct IDs. The schema admits both current project selections.
 `source_inputs_complete:true` means the project's source closure was loaded, or
 the declared unit/fragment was fully supplied. It never means the program passed
 checking. A parse/import/discovery failure can report an incomplete closure;

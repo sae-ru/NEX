@@ -257,7 +257,7 @@ public:
     }catch(Error &error){
       if(phase=="check")if(auto context=error.frontend.getAsObject();context&&context->getString("input_kind")=="project")throw;
       if(phase=="load")if(auto context=error.frontend.getAsObject())if(auto value=context->getString("phase"))phase=value->str();
-      attachFrontendDiagnostic(error,texts,entry,"project",phase,complete);throw;
+      attachFrontendDiagnostic(error,texts,entry,"project",phase,complete,programLanguage(sourceVersion));throw;
     }
   }
 };

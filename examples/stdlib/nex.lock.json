@@ -1,5 +1,9 @@
 {
   "dependencies": {
+    "@std/java_int.nex": {
+      "module": "std::java_int",
+      "source_hash": "e406721decf207828ce4838f314ef3a349bf06a718b488cbf7f71ec3bf69aaa2"
+    },
     "@std/list.nex": {
       "module": "std::lists",
       "source_hash": "1e30ef7a99d7422cc0badf1f5c5cb6b204355bb7ec1920f25e3b717a35c40bbf"

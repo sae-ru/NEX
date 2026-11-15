@@ -604,7 +604,10 @@
     "opencl_emission_schema": "llm/opencl-emission.schema.json",
     "standard_ordered_map_source": "lib/ordered_map.nex",
     "standard_ordered_set_source": "lib/ordered_set.nex",
-    "ordered_containers": "docs/ordered-containers.md"
+    "ordered_containers": "docs/ordered-containers.md",
+    "standard_java_int_source": "lib/java_int.nex",
+    "java_integers": "docs/java-integers.md",
+    "migration_readiness": "docs/migration-readiness.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -721,7 +724,10 @@
     "containers": "examples/containers/nex.json",
     "ordered_containers_project": "examples/ordered-containers/nex.json",
     "ordered_containers_source": "examples/ordered-containers/main.nex",
-    "ordered_containers_lock": "examples/ordered-containers/nex.lock.json"
+    "ordered_containers_lock": "examples/ordered-containers/nex.lock.json",
+    "java_int_project": "examples/java-int/nex.json",
+    "java_int_source": "examples/java-int/main.nex",
+    "java_int_lock": "examples/java-int/nex.lock.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4616,6 +4622,46 @@
         "types": [
           "Deque<T>",
           "Popped<T>"
+        ]
+      },
+      "java_int": {
+        "arithmetic": "explicit signed 32-bit wraparound; ordinary NEX checked arithmetic unchanged",
+        "construction": "from_i64 performs Java narrowing; public manually constructed values must be canonical; operations check their inputs",
+        "cost": "i64 source arithmetic over nominal values; bit operations scan 32 positions; no native-i32 throughput claim",
+        "division": "truncate toward zero; MIN/-1 wraps; remainder follows dividend; zero divisor throws typed ArithmeticError",
+        "effects": "divide/remainder require throw; all other operations pure",
+        "example": "examples/java-int/nex.json",
+        "functions": [
+          "from_i64",
+          "to_i64",
+          "add",
+          "subtract",
+          "multiply",
+          "negate",
+          "divide",
+          "remainder",
+          "bit_and",
+          "bit_or",
+          "bit_xor",
+          "bit_not",
+          "shift_left",
+          "shift_right",
+          "unsigned_shift_right",
+          "narrow_byte",
+          "narrow_short",
+          "narrow_char"
+        ],
+        "import": "std/java_int.nex",
+        "introduced_toolchain": "0.248.0",
+        "module": "std::java_int",
+        "mutation": false,
+        "representation": "nominal Int32{value:i64}; canonical range -2147483648..2147483647; native i32 lowering pending",
+        "resource": "lib/java_int.nex",
+        "sha256": "b747c50707dd8a3da43dc181b75c411effb63728f01b4f2dc4b892944938e7f7",
+        "shifts": "mask the distance to five low bits; arithmetic or unsigned right shift explicitly selected",
+        "types": [
+          "Int32",
+          "ArithmeticError"
         ]
       },
       "list": {

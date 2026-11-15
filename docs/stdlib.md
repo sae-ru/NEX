@@ -119,6 +119,12 @@ comparators, O(log(n+1)) lookup/update and O(n) ordered enumeration. Existing
 list-backed modules preserve their API and insertion order. Hash tables and
 efficient queue/deque/heap structures remain pending.
 
+Toolchain 0.248 adds [`std/java_int.nex`](java-integers.md), an explicit nominal
+32-bit Java integer domain with wrapping arithmetic, bits/shifts, narrowing
+and typed division errors. Its representation uses checked i64 source arithmetic;
+machine i32 and general Java/Python compatibility remain pending. This prepares
+language semantics without implementing a project converter.
+
 `std/list.nex` `generate`, `map`, `filter`, `fold`, `any`, `all`, `find_index` and `sort_by` use inferred effect parameter `?E`:
 a callback's effects flow into the named function's result and must be declared
 by the caller. Pure callbacks infer the empty set, so existing calls keep their

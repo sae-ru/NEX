@@ -16,6 +16,41 @@ def run(root,*args,ok=True):
     return value
 
 class Language029Migration(unittest.TestCase):
+    def test_029_context_patch_restore_export_and_import_use_archived_language(self):
+        with tempfile.TemporaryDirectory(prefix='nex 029 graph ') as temporary:
+            root=Path(temporary)
+            manifest={'schema':'nex.project/1','language':'0.29','entry':'main.nex'}
+            (root/'nex.json').write_text(json.dumps(manifest)+'\n')
+            original='''module app;
+struct Pair<A,B>{first:A;second:B;}
+fn forward<F<_>,T>(value:F<T>)->F<T>{return value;}
+fn value()->i64{return 42;}
+fn main()->unit!{io}{let p:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(value(),"x"));print(p.first);}
+'''
+            (root/'main.nex').write_text(original)
+            checked=run(root,'check','--json');first=checked['revision']
+            context=run(root,'context','--symbol','value','--json')
+            self.assertEqual(context['language'],'0.29');self.assertEqual(context['revision'],first)
+            declared=run(root,'context','--entity','type','--symbol','Pair','--json')
+            self.assertEqual(declared['language'],'0.29')
+            graph=run(root,'graph','--json');self.assertEqual(graph['language'],'0.29')
+            patch=root/'patch.json';patch.write_text(json.dumps({'expected_revision':first,
+                'replacements':[{'name':'main','source':'fn main()->unit!{io}{let p:Pair<i64,str>=forward<Pair<i64,_>,str>(Pair<i64,str>(43,"x"));print(p.first);}'}]}))
+            changed=run(root,'apply','--patch',str(patch),'--json')['revision'];self.assertNotEqual(changed,first)
+            self.assertEqual((root/'main.nex').read_text(),original)
+            self.assertEqual(run(root,'eval','--revision','HEAD','--json')['stdout'],'43\n')
+            exported=root/'exported';run(root,'export','--directory',str(exported),'--json')
+            self.assertEqual(json.loads((exported/'nex.lock.json').read_text())['language'],'0.29')
+            self.assertEqual(run(exported,'check','--json')['revision'],changed)
+            restored=run(root,'restore','--revision',first,'--expected-revision',changed,'--json')
+            self.assertEqual(restored['revision'],first)
+            self.assertEqual(run(root,'eval','--revision','HEAD','--json')['stdout'],'42\n')
+            imported=root/'imported';imported.mkdir();(imported/'nex.json').write_text(json.dumps(manifest)+'\n')
+            graph_path=root/'graph.json';graph_path.write_text(json.dumps(graph)+'\n')
+            self.assertEqual(run(imported,'import',str(graph_path),'--json')['revision'],first)
+            self.assertEqual(run(imported,'context','--symbol','value','--json')['revision'],first)
+            self.assertEqual(run(root,'context','--symbol','value','--revision',changed,'--json')['revision'],changed)
+
     def test_028_project_migrates_to_029_and_gate_changes(self):
         with tempfile.TemporaryDirectory(prefix='nex 029 migration ') as temporary:
             root=Path(temporary)
