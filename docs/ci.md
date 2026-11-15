@@ -10,11 +10,13 @@ nightly at03:23 UTC on the default branch. It uses the existing Linux source,
 installed smoke and source-free installed workflow. It runs all configured
 CTest groups without a label filter. It does not run after every patch.
 
-These definitions are not observations of successful GitHub runs. They remain
-local until pushed; the current Qwen experiment uses its frozen compiler and
-inputs throughout. Hosted-runner qualification, Windows CI, macOS full CI,
-physical GPU/NPU acceptance and final immutable portable SDK delivery remain
-pending. A green core job is development feedback, not release acceptance.
+The [November 14 core run](https://github.com/sae-ru/NEX/actions/runs/43625795419)
+passed on both hosted platforms for source `c949180175a428bfeb8373ce9f2bffaf787ee311`.
+This qualifies the core workflow for that source. Windows CI, hosted macOS full
+CI and new physical GPU/NPU acceptance remain separate work. A green core job
+is development feedback; the matching [SDK release record](sdk.md) records
+source regression and portable archive acceptance separately. The Qwen experiment
+keeps its frozen compiler and inputs.
 
 ## Dependencies and provenance
 
@@ -39,13 +41,28 @@ library without `std::stop_token`, and Linux could no longer download the pinned
 LLDB23.1.5 packages. The macOS job now explicitly selects the LLVM22 compiler,
 headers and libc++ runtime. The Linux debugger pin and package inventory now
 select the available23.1.6 snapshot for both architectures. Local C++20
-compile/run and package-index checks cover these corrections; a successful
-hosted run of the updated workflows remains a separate check.
+compile/run and package-index checks cover these corrections; the linked hosted
+run passed with the updated workflows.
 The subsequent macOS attempt exposed an additional include-order failure:
 system SQLite injected the Apple SDK's entire `usr/include` ahead of Clang's
 builtin headers. The job now explicitly selects Homebrew SQLite headers/library
 without adding that SDK directory. A local negative/positive compile control
 reproduces the SDK-include failure and passes with the selected include layout.
+
+The first complete Linux run at `c9491801` built every target, then passed
+331 of 344 configured groups. Thirteen failed: Git was absent from the image,
+the OpenCL loader was absent, and real logical LLDB/DAP tests lacked the
+container debugger syscall configuration. The toolchain image now includes
+Git and the OpenCL loader. Full source and source-free SDK containers use
+`SYS_PTRACE` and the existing debugger seccomp setting because their maintained
+phases exercise debugger helpers even when the additional `--live` matrix is
+not selected. The core tier keeps its ordinary container configuration.
+A [local control](evidence/linux-ci-container-fixes-0.246.1-2026-11-15.json)
+reproduces `configurationDone: process already running` and
+passes with the debugger configuration using the same NEX and LLDB binaries.
+Complete hosted qualification of the replacement remains pending.
+The full job uses four parallel jobs on the public Ubuntu runner, matching its
+[four CPU cores and 16 GB RAM](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories).
 
 The two external actions are fixed to full commit SHAs from the official
 [checkout release](https://github.com/actions/checkout/releases/tag/v7.0.1)

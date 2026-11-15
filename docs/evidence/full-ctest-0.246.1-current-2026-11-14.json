@@ -1,0 +1,48 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full macOS CTest of the frozen NEX 0.246.1 SDK source",
+  "implementation_commit": "c949180175a428bfeb8373ce9f2bffaf787ee311",
+  "verified_at_utc": "2026-11-14T19:53:27.170969+00:00",
+  "compiler": {
+    "toolchain": "0.246.1",
+    "default_language": "0.28",
+    "development_language": "0.29",
+    "sha256": "ba248e641636f06f919a34a6dba66d8112996e105e0f6b2251830f3b201eac78",
+    "LLVM": "22.1.8",
+    "host": "arm64-apple-darwin27.2.0"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "jobs": 4,
+    "seconds": 4358.99,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "skipped": 0,
+    "release_qualification": false,
+    "registry_sha256": "4c31fb20a5687a319114625e86209ed400c1785bd8db5eb2ec6e8538069cfe51",
+    "junit_sha256": "148388d97330547c02528a4a18e5e5137683667dd0dc34a82ad850da45e9065b",
+    "report_sha256": "182b27b6b67a814e61002c5a9fed9ffcf01771e96e433b694839228d686d55cc",
+    "receipt_sha256": "d3201c2ecef9cb5d59dfce210feed652dc9bef4bf0925634a9dc05af21bafffe"
+  },
+  "frozen_source_inventory_checked_after_tests": true,
+  "source_files": 2653,
+  "portable_SDK_qualification": false,
+  "physical_devices_qualified": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v2/source-tests-recovery-v1/report.json",
+    "junit": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v2/source-tests-recovery-v1/results.xml",
+    "receipt": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v2/source-tests-recovery-v1/ctest-receipt.json",
+    "log": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v2/source-tests-recovery-v1/LastTest.log"
+  },
+  "notes": [
+    "Explicit c-ares/HTTP dependency prefixes retain all eight optional network groups.",
+    "Original interrupted SDK-driver attempts are preserved; this is a fresh complete test invocation.",
+    "The matching portable SDK archive has separate moved/restored acceptance."
+  ]
+}

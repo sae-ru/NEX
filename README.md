@@ -60,8 +60,9 @@ Language 0.29 is an explicit opt-in for partial type lambdas and higher-order ki
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
 
-The 0.243 full macOS regression passed **351/351 groups**. The immutable
-[macOS SDK 0.245.0](docs/releases/0.244.0.json) was accepted end-to-end: 4015
+The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-14.json)
+passed **351/351 groups** at `c9491801`. The recorded immutable
+[macOS SDK 0.246.0](docs/releases/0.246.0.json) was accepted end-to-end: 4089
 inventory files, 41 phases, real locked browser builds and the full network
 profile. The relocatable archive is `nex-sdk-0.246-macos-arm64.tar.gz`
 (SHA-256 `d8ec3adf...32fdef5`). The owned Metal provider also ran on an Apple
@@ -95,7 +96,7 @@ and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.
 CUDA and OpenCL source emitters remain bounded checked-AST paths; CUDA device
 execution and provider phases retain their own earlier receipts. General GPU/NPU
 compilation, Apple NPU, complete native-desktop UI, NEX Studio, project conversion,
-signed/public upload, device signing and measured cross-model token savings remain
+signed installers, device signing and measured cross-model token savings remain
 [planned work](PLAN.md). Retained CIX/RK NPU results are real hardware receipts but
 do not qualify the current compiler/archive.
 

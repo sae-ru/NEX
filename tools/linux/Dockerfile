@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
        lld-22="${LLVM_APT_VERSION}" libclang-rt-22-dev="${LLVM_APT_VERSION}" \
        lldb-23="${LLDB_APT_VERSION}" python3-lldb-23="${LLDB_APT_VERSION}" \
        liblldb-23="${LLDB_APT_VERSION}" libllvm23="${LLDB_APT_VERSION}" libclang-cpp23="${LLDB_APT_VERSION}" \
-       cmake make g++ python3 libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
+       cmake make g++ python3 git ocl-icd-libopencl1 \
+       libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
     && mkdir -p /opt/nex-debugger/bin \
     && ln -s /usr/lib/llvm-23/bin/lldb /opt/nex-debugger/bin/lldb \
     && ln -s /usr/lib/llvm-23/bin/lldb-dap /opt/nex-debugger/bin/lldb-dap \

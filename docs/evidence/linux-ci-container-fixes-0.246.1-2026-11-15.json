@@ -1,0 +1,85 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Linux CI dependency and debugger container corrections",
+  "source_base_commit": "c949180175a428bfeb8373ce9f2bffaf787ee311",
+  "verified_at_utc": "2026-11-15T05:33:02.043132+00:00",
+  "changed_runtime_or_language_code": false,
+  "toolchain": "0.246.1",
+  "language": "0.28",
+  "Linux_test_host": "ARM64 Docker on macOS",
+  "image": {
+    "id": "sha256:34a98f1aad00ad2e71e3c77db7aac6fa1cc8e539acd5e2d9251ace2a306a8f82",
+    "LLVM": "22.1.8",
+    "LLDB": "23.1.6"
+  },
+  "compiler_sha256": "e9d98197afe68031a44116c3cdc93030cb3be70110f2de89b44df27bca48cfd7",
+  "CI_files_sha256": {
+    ".github/workflows/full.yml": "2b889f3173fbadd50eac469aa9880fc4fce7fdbbc837cc92dad0800808e6ee63",
+    "tools/linux/Dockerfile": "4ebe54ef72e668a126d37c33faee0e60fb4ea7c11d1fa833357b42709ef22723",
+    "tools/linux/check.py": "35e59ac8283ed6877ab6917c633a3e456565f6383ade52ff475e3346d935baae"
+  },
+  "original_hosted_run": {
+    "id": 43628120045,
+    "source": "c949180175a428bfeb8373ce9f2bffaf787ee311",
+    "groups": 344,
+    "passed": 331,
+    "failed": 13,
+    "logs_zip_sha256": "998587bf3be183a1e3816d26e419c2bb2fda792c344949522c363396df32e911",
+    "artifact_zip_sha256": "aac6430e802768b3caeb4d9d44ed12a8455244fbcd57d835183e9696b1f7ddff"
+  },
+  "DAP_control": {
+    "same_NEX_and_LLDB_binaries": true,
+    "ordinary_container": "configurationDone failed: resume request failed - process already running",
+    "SYS_PTRACE_only": "same failure",
+    "SYS_PTRACE_and_existing_debugger_seccomp_setting": "passed complete logical stack/locals/watch/step/stale-reference test",
+    "logs": {
+      "dap-base": "5ce339ec4088f36734648dc587ee5478beac5583c67a31a7a22f6f85f4c09dfa",
+      "dap-base-cap": "05587fcc05b0548065eb9dd69e937c07b537e047debbd261d7d945a9eca1d04e",
+      "dap-ptrace-only": "eb77d982fb41b4186f916c97f162dc9163aa9524f3bd0b450c94ab1c4475a015"
+    }
+  },
+  "all_target_build": {
+    "ok": true,
+    "jobs": 4,
+    "log_sha256": "823f2c9677f5fd0c48a9f4264eb7d431bebec5d64948d2ed43c96dcbc39e2c79"
+  },
+  "affected_groups": {
+    "resolved": [
+      "opencl_dispatch",
+      "public_task_write_observability",
+      "sdk_archives",
+      "sdk_build_workflow",
+      "source_contract_debugging",
+      "source_exception_module_debug",
+      "source_exception_module_http_debug",
+      "source_exception_task_lldb",
+      "source_exception_task_watch",
+      "task_debugging_native",
+      "task_provider_debugging_native",
+      "task_stream_project",
+      "typed_error_debugging"
+    ],
+    "count": 13,
+    "initial_run": {
+      "passed": 12,
+      "failed": [
+        "source_exception_task_watch"
+      ],
+      "failure_reason": "Local control invocation omitted NEX_TSC; hosted workflow already selects it.",
+      "junit_sha256": "4557be1c3fcfb56f9fec1c0f7af44e158a696460f919944955caf30019bb1ab1"
+    },
+    "single_group_repeat": {
+      "name": "source_exception_task_watch",
+      "ok": true,
+      "locked_TypeScript": "7.0.2",
+      "junit_sha256": "885bb967e6f14c194cf68f19c8d96b814cfae3a6619f35920dde67037b0f8a4c"
+    }
+  },
+  "limits": [
+    "Local affected-group controls are ARM64; replacement hosted x86-64 full workflow is pending.",
+    "OpenCL loader is present; no physical OpenCL GPU was available in the container.",
+    "Mac SDK release acceptance and full Linux hosted acceptance retain separate identities."
+  ],
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true
+}

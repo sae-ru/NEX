@@ -25,7 +25,9 @@ def verify_installed_sdk(output,image,arch,live=False):
     isolated=['docker','run','--rm','--platform','linux/'+arch,'--network','none',
         *mount(output/'sdk', '/sdk'),
         *mount(evidence, '/evidence', readonly=False), '--workdir', '/tmp']
-    if live:isolated+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
+    # Maintained source-free phases exercise debugger-backed resource helpers
+    # even without the additional opt-in live debugger matrix.
+    isolated+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
     isolated += [image,'python3','/sdk/share/nex/tools/sdk_acceptance.py','/sdk',
                  '--output','/evidence/workflow','--forbid-source','/src','--browser']
     if live:isolated.append('--live')
@@ -94,7 +96,10 @@ def main():
     (output/'environment.json').write_text(json.dumps(metadata,indent=2)+'\n')
     command=['docker','run','--rm','--platform','linux/'+args.arch,'--network','none',
         *mount(source, '/src'), *mount(output, '/build', readonly=False), '--workdir', '/build']
-    if args.live:command+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
+    # The full source tier contains real LLDB/DAP tests independently of --live.
+    # Match the existing debugger container settings: without them logical
+    # breakpoint setup fails at configurationDone in the pinned LLDB cohort.
+    if args.tier=='full':command+=['--cap-add=SYS_PTRACE','--security-opt','seccomp=unconfined']
     command += [image_id,'python3','/src/tools/linux/verify.py','--jobs',str(args.jobs),'--tier',args.tier]
     if args.live:command.append('--live')
     subprocess.run(command,check=True)

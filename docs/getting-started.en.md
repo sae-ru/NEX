@@ -1,6 +1,6 @@
 # Start with NEX
 
-Current source uses **toolchain 0.246.0 / language 0.28 / task ABI 7**, in development.
+Current source uses **toolchain 0.246.1 / language 0.28 / task ABI 7**, in development.
 Readable source, runtime contracts and explicit history-preserving migrations
 are available through the ordinary CLI.
 
@@ -53,10 +53,15 @@ find the selected dependencies. Optional DNS/HTTP groups need the explicit
 operator-selected `NEX_PACKAGE_NOTICES_FILE` where automatic ownership discovery
 is unavailable. Test counts depend on configuration. See [SDK](sdk.md),
 [Linux](linux.md) and [Windows](windows-handoff-current.md) for platform recipes.
-Use a matching OpenSSL 3 or 4 installation; both ranges are accepted, with OpenSSL 4 qualified on Fedora 45. Current portable
-SDK qualification remains pending; see the [current platform evidence](../README.md#development-status).
+Use a matching OpenSSL 3 or 4 installation; both ranges are accepted, with OpenSSL 4 qualified on Fedora 45.
+SDK delivery is recorded per archive; see the [SDK guide](sdk.md) and
+[current platform evidence](../README.md#development-status).
 
 ## Older SDK archives
+
+Select a matching prebuilt archive from [GitHub Releases](https://github.com/sae-ru/NEX/releases)
+and verify its published SHA256 before extracting it. Each release records its
+source revision, supported host and acceptance scope.
 
 The [qualified0.162 macOS ARM64 record](releases/0.162.0.json) identifies the exact
 archive `nex-sdk-0.162.0-macos-arm64-development.tar.gz`, minimum macOS27.0:
@@ -65,10 +70,9 @@ archive `nex-sdk-0.162.0-macos-arm64-development.tar.gz`, minimum macOS27.0:
 SHA256 c1393c94709d3e3290d39b1a60da7ad78e28705bfa6cea539e74ff7e40bc6208
 ```
 
-This is a historical 0.162.0 archive, not a 0.165 SDK. Current 0.165 portable
-SDK qualification is still pending. To use the current implementation, build a
-matching source revision above and verify its actual `doctor` and `describe`
-output. Cloning `main` selects the published branch head; its version can differ
+This is a historical 0.162.0 archive. To use the current implementation, select
+a matching published SDK or build the source revision above and verify its
+actual `doctor` and `describe` output. Cloning `main` selects the published branch head; its version can differ
 from an unpublished development checkout. The [0.159 release](https://github.com/sae-ru/NEX/releases/tag/v0.159.0)
 also retains its separate historical scope.
 
