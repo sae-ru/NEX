@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.249.0"
+applies_to: "language 0.28; toolchain 0.250.0"
 owner: repository
 ---
 
@@ -83,6 +83,17 @@ execution-context ownership across calls/returns before public promotion.
 [Focused kernel evidence](evidence/managed-references-runtime-0.249.0-2026-11-15.json)
 records 19 C++ scenarios, 12 core groups and three affected groups. Its scope
 does not include source-reference execution or a matching complete SDK.
+
+The 0.250 [private checked candidate](managed-references-prototype.md) adds
+`cell<T>`, explicit `state` effects, generic/closure behavior and sequential
+reference execution in one context. Its distinct internal identity is not an
+ordinary CLI/project version and cannot be archived. Native/TypeScript lowering,
+cross-module/host ownership and history-preserving public migration remain next.
+[Focused source-candidate evidence](evidence/managed-reference-source-0.250.0-2026-11-15.json)
+records its reference behavior and rejection gates. Core now includes this
+no-Node probe (13 groups); eight additional affected groups pass. The earlier
+[0.249 hosted core](evidence/core-ci-0.249.0-2026-11-15.json) passed on macOS/Linux
+with the previous 12-group scope and does not qualify the new candidate.
 
 [0.248 focused evidence](evidence/java-int32-language-0.248.0-2026-11-15.json)
 records the numerical and selected-language graph/diagnostic block. The earlier

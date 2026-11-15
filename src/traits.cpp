@@ -65,6 +65,7 @@ Type implementationType(Program &p,Type type,const Trait &trait,const Implementa
 const Trait &traitDefinition(const Program &p,const std::string &name,Span span){for(const auto &value:p.traits)if(value.name==name)return value;throw Error("E_GENERIC_BOUND","unknown trait '"+name+"'",span);}
 KindContext programKinds(const Program &p){
   KindContext result;result.parameters=p.parameterKinds;result.parameterCodes=p.parameterCodes;result.parameterSlots=p.parameterSlotCodes;
+  if(supportsManagedReferences(p))result.constructors["$cell"]=1;
   if(p.taskPrototype){result.constructors["task"]=1;result.constructors["channel"]=1;}
   for(const auto &s:p.structures){result.constructors[s.name]=s.typeParameters.size();auto slots=s.typeArities;slots.resize(s.typeParameters.size());result.constructorParameters[s.name]=std::move(slots);
     auto codes=s.typeParameterCodes;codes.resize(s.typeParameters.size());unsigned code=0;for(auto value:codes)code=std::max(code,value+1);result.constructorCodes[s.name]=s.typeParameters.empty()?0:code;result.constructorSlots[s.name]=std::move(codes);}return result;

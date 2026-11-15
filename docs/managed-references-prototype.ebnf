@@ -1,0 +1,14 @@
+(* Compiler-private 0.30-refs-prototype additions to the 0.29 parser.
+   Selected only by parseManagedReferencesPrototype in C++.
+   Not an ordinary CLI source version; no archival or migration contract.
+   No imports, endpoints, task/parallel execution or owned payload capabilities. *)
+private_cell_type = "cell", "<", type, ">" ;
+private_cell_constructor = "cell" ; (* Unary higher-kinded type argument. *)
+private_effect = "state" ;
+private_cell_new = "cell_new", [ "<", type, ">" ], "(", expression, ")" ;
+private_cell_read = "cell_read", "(", expression, ")" ;
+private_cell_write = "cell_write", "(", expression, ",", expression, ")" ;
+private_cell_collect = "cell_collect", "(", ")" ;
+(* All four operations require state. read returns T; write/collect return unit.
+   Creation infers T from its value or a contextual cell<T>; the explicit form
+   supplies T. The payload must be a supported non-unit value type. *)

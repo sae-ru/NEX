@@ -1,0 +1,269 @@
+{
+  "schema": "nex.managed-reference-source-candidate-evidence/1",
+  "recorded_utc": "2026-11-15",
+  "ok": true,
+  "toolchain": "0.250.0",
+  "ordinary_default_language": "0.28",
+  "explicit_public_language_029_preserved": true,
+  "private_candidate_identity": "0.30-refs-prototype",
+  "source_baseline_commit": "9e1487ce81304f980c738869df54e7032b946344",
+  "compiler_sha256": "2d51e1e735439343aacff1d0dcb63e6366edbd1a05b961100bcb93cbea0ad9ad",
+  "compiler_build": "9b460d18a690ce602867355fb7d17e7e5bb98b24f93cc9c26176c0333476015e",
+  "descriptor_hash": "a27c0a9860ffea191ffa892d410a00d852b61e649e8b3e94fa78322eabfe81ef",
+  "private_probe_sha256": "fca9beff374085c38c6957e6d07407fa4d540fffee436469b4759d591118ff84",
+  "platform": {
+    "system": "Darwin",
+    "release": "27.2.0",
+    "machine": "arm64"
+  },
+  "source_delta_inputs_sha256": {
+    "VERSION": "772300ef027572c0bedcf6e9766a492f59cda9b9f5aaf8117d7098299a251050",
+    "include/nex/language.h": "6f579939e55b4b3848968031e0d460d50b7a6640ca67ac54a65b1f502d685e02",
+    "include/nex/managed_references.h": "bc1de941cd37c492dbbfa6bceaaecc8dfc767c7938263d666a19c7516e2d2e16",
+    "src/language.cpp": "36d7e802e1e250ef41041d2f9dd4cf57d04568fc56a0844fb14aa6b4d58fb949",
+    "src/managed_references.cpp": "7375432ee989168fdf6edcf825f52f6690ec808dc719f53204535d8cf24803ca",
+    "src/interpreter.cpp": "c4be3a653eb552e8af6b65905712eb2261e5c08ebbbb6913373dc07a93ea22de",
+    "src/generics.cpp": "8eb736c096244846e2c83d49e3625fd41766aa4b1375d62254caf9f6e6e1dac2",
+    "src/constructor_types.cpp": "4caea60d97182e5e2d97ce42e95d4a5015610645037bbcf5dc316444f29f1297",
+    "src/traits.cpp": "f8c2f5cd74f05e30a5568f0fbe12b2a47fc1ec6a30fbf157fbf85a916534c4d7",
+    "src/source_errors.cpp": "4c5f18b1b37564d035f8da9dbe3cf493589a500370f690779732ed83cf600934",
+    "src/task_frontend.cpp": "f953d57ee368d0b1100ad646070460161579f28bb7a46cb361922d656d10987c",
+    "src/wire_schema.cpp": "fe3530ed02fc6763ff35984d34c2ba62ce7ca5297e96316f31d4a37e92c0f00a",
+    "runtime/nex_cells.h": "8f27ef513630726e408b031ca54143db1d390115a8a430fe1baa7b8421ce4fd0",
+    "runtime/nex_cells.cpp": "807be557dbf434503409c13a8a27ff59278eaaed957ca682bf569f83a1793bb8",
+    "tests/managed_references.cpp": "150da5d9864cf9d424f1b6a52f4719fb262f5d453065a2ba3ed07139bb28cdaa",
+    "tests/fixtures/managed-references/public-baseline.json": "31d175df33bf300560e9918915fcea367c47a05237b9d7f30eb0ed158b6371d7",
+    "cmake/Tests.cmake": "d682ff5185372e4c4cd3eb66ae7c42ed2c5d39a8815769e81e09233efd27b720",
+    "cmake/test-tiers.json": "25c3cf5c2f2b66f75127f746a3f41d7e169b03079eeb72e8936bcc7f21545ef6",
+    "cmake/Install.cmake": "98286143114111d0198afb07476ccc374ecd5e68040924227027831419b8633c",
+    "llm/language-pack.json": "073df042ca32d925ce4bb88b5b6aed2aa13cd52e1fbf689bbd8186dc44f7b974"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "log": "build-complete.log",
+    "core_target": "cmake --build build --target nex_core_tests -j 4",
+    "core_target_exit_code": 0
+  },
+  "candidate_probe": {
+    "ok": true,
+    "accepted_scenarios": 13,
+    "rejected_scenarios": 38,
+    "public_source_enabled": false,
+    "live_value_delta": 0
+  },
+  "candidate_behavior": [
+    "identity and shared writes",
+    "once/left-to-right evaluation and short circuiting",
+    "immutable snapshots and captures",
+    "references and closures returned across source calls",
+    "parametric cells/higher-kinded constructors/inferred state effects",
+    "record/list/enum/closure cycles",
+    "source errors, finally, return and Result propagation",
+    "bounded 1024-cycle churn and 2048-node chain",
+    "source host scalar/immutable snapshot returns",
+    "heap exhaustion and fatal/source-error cleanup",
+    "typed/effect/wire/owned-payload rejections",
+    "ordinary parser/backend/evaluation/archival gates"
+  ],
+  "preserved_public_baseline": {
+    "fixture": "tests/fixtures/managed-references/public-baseline.json",
+    "recorded_compiler_sha256": "a3b42b1a36e2f8e27e86a72e78c3862e3bdc8980691be5046479772878862d5f",
+    "recorded_source_commit": "9e1487ce81304f980c738869df54e7032b946344",
+    "current_results": [
+      {
+        "language": "0.28",
+        "revision": "86ca9e2ec103087e1c2778ba6297e1557a40eb7a3cb325465c1550c9fec7c369",
+        "value": 42
+      },
+      {
+        "language": "0.29",
+        "revision": "cba976696fae960a13142500b0cd171a2ff17cc03c402d84cb0973e336f1ff02",
+        "value": 42
+      }
+    ],
+    "nominal_user_cell_constructor_and_cell_new_preserved": true,
+    "revision_unchanged": true
+  },
+  "final_core": {
+    "groups": [
+      {
+        "name": "llm_cost_ledger",
+        "seconds": 0.229798,
+        "passed": true
+      },
+      {
+        "name": "llm_local_collector",
+        "seconds": 0.133209,
+        "passed": true
+      },
+      {
+        "name": "ctest_report_validation",
+        "seconds": 0.182634,
+        "passed": true
+      },
+      {
+        "name": "discovery",
+        "seconds": 9.95187,
+        "passed": true
+      },
+      {
+        "name": "language_pack_contract",
+        "seconds": 0.344916,
+        "passed": true
+      },
+      {
+        "name": "task_frontend_native",
+        "seconds": 0.041225,
+        "passed": true
+      },
+      {
+        "name": "frontend_diagnostics_native",
+        "seconds": 0.0164847,
+        "passed": true
+      },
+      {
+        "name": "managed_references_frontend_reference",
+        "seconds": 0.0642515,
+        "passed": true
+      },
+      {
+        "name": "bytes_runtime_native",
+        "seconds": 0.00201421,
+        "passed": true
+      },
+      {
+        "name": "float_runtime_native",
+        "seconds": 0.00685096,
+        "passed": true
+      },
+      {
+        "name": "typed_source_frontend_reference",
+        "seconds": 0.0496414,
+        "passed": true
+      },
+      {
+        "name": "test_tiers",
+        "seconds": 0.130138,
+        "passed": true
+      },
+      {
+        "name": "diagnostic_catalogue",
+        "seconds": 9.92416,
+        "passed": true
+      }
+    ],
+    "junit_sha256": "983286fd0f4f2cae1834e9d1746d8bea16140ce2dedd886571224f9be4b5b698",
+    "wall_seconds": 21.09,
+    "new_probe_in_core_build_and_selection": true,
+    "probe_stdout_source": "JUnit system-out; nested CTest registry queries can replace LastTest.log"
+  },
+  "affected": {
+    "groups": [
+      {
+        "name": "constructor_types_native",
+        "seconds": 0.529885,
+        "passed": true
+      },
+      {
+        "name": "source_error_native_packet",
+        "seconds": 0.477029,
+        "passed": true
+      },
+      {
+        "name": "managed_cells_runtime",
+        "seconds": 0.84217,
+        "passed": true
+      },
+      {
+        "name": "higher_kinds",
+        "seconds": 4.92736,
+        "passed": true
+      },
+      {
+        "name": "language_029_migration",
+        "seconds": 0.723534,
+        "passed": true
+      },
+      {
+        "name": "generics",
+        "seconds": 72.6448,
+        "passed": true
+      },
+      {
+        "name": "source_error_owned_payload",
+        "seconds": 0.624768,
+        "passed": true
+      },
+      {
+        "name": "docs_index",
+        "seconds": 0.0892355,
+        "passed": true
+      }
+    ],
+    "junit_sha256": "fa9f65ce5464bc2a820b2984f2c4c88da080fc86ed94d7c7b9c028107a9bd7bf",
+    "wall_seconds": 80.87,
+    "native_and_TypeScript_scope": "existing generics/higher-kinded public language only; not source cells"
+  },
+  "language_pack": {
+    "ok": true,
+    "shared_fields": 69,
+    "compared_JSON_values": 4036,
+    "manifest_sha256": "073df042ca32d925ce4bb88b5b6aed2aa13cd52e1fbf689bbd8186dc44f7b974"
+  },
+  "retained_kernel_probe_cases": 19,
+  "constructor_diagnostic_cleanup": "removed internal SUB/PARTIAL fprintf tracing; constructor/higher-kinded/generic checks pass",
+  "local_log_directory": "build/managed-reference-source-v1",
+  "local_log_sha256": {
+    "build.log": "fdd0da733d1fbafe4a6553f27c2695ea8efef556e94bc508a8b455e54fac272f",
+    "build-complete.log": "b8bd9c81ea0f8d0ce7690182f86feb6d4ee798e2295a2b1798e793bc34bf2b85",
+    "core-target-build.log": "3b475cb364506656b45d867ad21916a3a04c1ac520a772beba233373911dc80f",
+    "candidate-ctest-first.log": "0b74ec5f5d4bf5668f66f6b1568ec85d0f349bf5644404a9875c0931359e5382",
+    "candidate-ctest-v3.log": "3cb46fd81379e52e979172fa456fbac971d76d7a61d0c159b81189f772d97c0a",
+    "candidate-ctest-v4.log": "29b33dddcec35268c1c2550e126d9055a62c70d9b86fbd46f57dc2da3faef6bf",
+    "candidate-ctest-v5.log": "de001b0892468199ab5524fbe396292d50a5f1778daeaaa4ecb595b20bfbbff5",
+    "candidate-ctest-final.log": "de001b0892468199ab5524fbe396292d50a5f1778daeaaa4ecb595b20bfbbff5",
+    "core-ctest.log": "a02f8aecd3e235131ac72fc379bbb80e8cc14bb4c2c15e02fba971d2c549e016",
+    "core13-ctest.log": "ce439fba229a6ab9a0d8f763ce50e4eda05971000b551275b50039f0cbeddf5d",
+    "affected-ctest.log": "6806b884585cacee88a82a49385c62cdbd2972f871119be5e76f23ebdf2cf5fc",
+    "affected-probe-output.log": "4981c74d2e196cb04f213e7dd287e128d03710a3763fb26e7dd65e8bb8b1205c"
+  },
+  "development_observations": [
+    {
+      "result": "link error in new probe",
+      "reason": "test called public TypeScript rejection entry without linking src/typescript.cpp",
+      "resolution": "added existing implementation to probe target; public emission remains blocked for private references"
+    },
+    {
+      "result": "E_PARSE in new candidate inputs",
+      "reason": "reserved shared identifier and unnamed enum field in handwritten fixtures",
+      "resolution": "corrected fixtures to existing grammar; parser rules retained"
+    },
+    {
+      "result": "E_GENERIC_ARITY for unsupported public cell<i64>",
+      "reason": "negative fixture expected E_TYPE",
+      "resolution": "preserved actual diagnostic and corrected expected rejection code"
+    }
+  ],
+  "public_reference_type_implemented": false,
+  "public_state_effect_implemented": false,
+  "private_reference_interpreter": true,
+  "native_reference_execution_implemented": false,
+  "typescript_reference_execution_implemented": false,
+  "private_source_archival_enabled": false,
+  "public_migration_implemented": false,
+  "public_source_language_changed": false,
+  "complete_source_CTest_claimed": false,
+  "complete_matching_SDK_claimed": false,
+  "device_execution_claimed": false,
+  "converter_implemented": false,
+  "general_Java_Python_migration_claimed": false,
+  "pending": [
+    "native/TypeScript reference lowering and agreement",
+    "module/entry/host context ownership",
+    "public grammar/canonical formats and explicit history-preserving migration",
+    "owned capabilities, synchronization, ABI/wire/debug/profile integration",
+    "matching source/platform/SDK integration gates"
+  ],
+  "guide": "docs/managed-references-prototype.md"
+}

@@ -559,6 +559,11 @@ add_executable(nex_cells_probe tests/cells.cpp)
 target_link_libraries(nex_cells_probe PRIVATE nex_frontend)
 add_test(NAME managed_cells_runtime COMMAND nex_cells_probe)
 set_tests_properties(managed_cells_runtime PROPERTIES TIMEOUT 120)
+add_executable(nex_managed_references_probe tests/managed_references.cpp src/typescript.cpp)
+target_link_libraries(nex_managed_references_probe PRIVATE nex_native_backend nex_frontend)
+add_test(NAME managed_references_frontend_reference COMMAND nex_managed_references_probe
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/managed-references/public-baseline.json)
+set_tests_properties(managed_references_frontend_reference PROPERTIES TIMEOUT 120)
 target_include_directories(nex_bytes_runtime_probe PRIVATE runtime)
 target_compile_options(nex_bytes_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME bytes_runtime_native COMMAND nex_bytes_runtime_probe)
@@ -1537,7 +1542,8 @@ endif()
 # Build only the existing compiler/probes needed by the fast CTest layer.
 # This target does not execute tests or prepare browser/package dependencies.
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
-  nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe)
+  nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
+  nex_managed_references_probe)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

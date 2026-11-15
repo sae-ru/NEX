@@ -1,5 +1,5 @@
 #pragma once
-// Compiler-private managed-reference foundation. No source type/ABI is enabled.
+// Compiler-private managed-reference foundation. No public source type/ABI is enabled.
 #include "nex_value.h"
 #include <cstddef>
 

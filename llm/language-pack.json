@@ -609,7 +609,9 @@
     "standard_java_int_source": "lib/java_int.nex",
     "java_integers": "docs/java-integers.md",
     "migration_readiness": "docs/migration-readiness.md",
-    "managed_references": "docs/managed-references-design.md"
+    "managed_references": "docs/managed-references-design.md",
+    "managed_references_prototype": "docs/managed-references-prototype.md",
+    "managed_references_prototype_grammar": "docs/managed-references-prototype.ebnf"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5221,9 +5223,9 @@
       "same-heap cell"
     ],
     "pending": [
-      "checked reference types and state effect",
-      "versioned grammar and explicit history-preserving migration",
-      "reference/native/TypeScript lowering",
+      "public reference types and state effect",
+      "versioned public grammar and explicit history-preserving migration",
+      "native/TypeScript lowering and source backend agreement",
       "native entry/module/ABI ownership",
       "owned capability integration",
       "cross-thread sharing, monitors and atomics",
@@ -5231,6 +5233,41 @@
       "weak references and finalization semantics",
       "matching complete compiler/platform/SDK qualification"
     ],
+    "private_candidate": {
+      "archival": false,
+      "effect": "state required for create, read, write and explicit collection",
+      "entry_result": "unit or immutable wire value; cells/closures cannot escape the host context",
+      "frontend": true,
+      "function_effects": [
+        "io",
+        "state",
+        "throw",
+        "inferred effect parameters"
+      ],
+      "grammar": "docs/managed-references-prototype.ebnf",
+      "guide": "docs/managed-references-prototype.md",
+      "input": "one unarchived source unit; no imports or endpoints",
+      "introduced_toolchain": "0.250.0",
+      "language": "0.30-refs-prototype",
+      "migration": false,
+      "native": false,
+      "operations": [
+        "cell_new(value)",
+        "cell_new<T>(value)",
+        "cell_read(cell)",
+        "cell_write(cell,value)",
+        "cell_collect()"
+      ],
+      "ordinary_CLI": false,
+      "reference_interpreter": true,
+      "selection": "parseManagedReferencesPrototype; check; evaluateManagedReferencesPrototype",
+      "test": "tests/managed_references.cpp",
+      "threading": "sequential; no task or parallel execution",
+      "type": "cell<T>; identity aliases with immutable payload snapshots",
+      "typescript": false,
+      "uncaught_source_errors": "E_SOURCE_EXCEPTION diagnostic; payload remains within the context"
+    },
+    "public_flag_scope": "ordinary published source languages; private candidate has its own selection",
     "public_source_enabled": false,
     "reference_interpreter_source_enabled": false,
     "schema": "nex.managed-references/1",
@@ -5238,7 +5275,7 @@
     "source_language_changed": false,
     "source_type_enabled": false,
     "state_effect_enabled": false,
-    "status": "private_runtime_kernel",
+    "status": "private_checked_reference_candidate",
     "task_transfer": false,
     "teardown": "detach mutable edges and release registry in reverse immutable-adoption order; no collector graph workspace allocated at close",
     "test": "tests/cells.cpp",

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.249.0; no source-language extension"
+applies_to: "toolchain 0.250.0; no public source-language extension"
 owner: repository
 ---
 
@@ -11,11 +11,12 @@ mutable containers faithfully. Ordinary NEX records, lists, bytes and closure
 captures remain immutable values. A reference will provide explicit identity and
 mutation without changing those value semantics.
 
-Toolchain 0.249 supplies a **compiler-private C++ heap kernel**, not a source
-reference type. Discover `managed_references` in `nex describe --json`:
+Toolchain 0.249 introduced a **compiler-private C++ heap kernel**. Toolchain
+0.250 adds an unarchived [checked/reference candidate](managed-references-prototype.md)
+through dedicated C++ entry points. Discover `managed_references` in `nex describe --json`:
 `public_source_enabled`, `source_type_enabled` and `state_effect_enabled` are
-false. The checker, reference interpreter, MLIR and TypeScript source paths do
-not accept or construct cells. There is no public cell syntax, state effect,
+false for ordinary published source languages. Ordinary project checking,
+evaluation, MLIR and TypeScript paths do not enable the candidate. There is no public cell syntax, state effect,
 wire representation, C ABI or new source-language version. Converters remain
 deferred. This kernel alone does not establish Java/Python compatibility.
 
@@ -72,7 +73,8 @@ not mutate an adopted ordinary `Data::values` graph, forge a `Data::kind`, or
 acquire an otherwise dead graph through a weak pointer during collection.
 Weak observations in tests detect destruction; weak-reference acquisition,
 resurrection and user finalizers are not a language contract. Native execution
-contexts, libraries and source backends have not yet been integrated.
+contexts and libraries have not yet been integrated. The private reference
+interpreter has its own sequential context; native/TypeScript lowering is pending.
 Deep immutable snapshots released after their heap has closed still use the
 ordinary value cleanup path. The deep-registry teardown checks do not qualify
 that separate external-root lifetime; public integration must address it.
@@ -128,7 +130,7 @@ Keep the matching evidence and earlier SDK receipts separate.
 
 ## Before public reference support
 
-1. Define a checked generic reference type, explicit mutation/read effects,
+1. Qualify the private checked generic reference type, explicit mutation/read effects,
    equality, nullability, closure capture and observable evaluation order.
    Existing immutable values and checked arithmetic keep their rules.
 2. Add versioned grammar, canonical graph formats and an explicit migration

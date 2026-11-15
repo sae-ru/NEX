@@ -18,7 +18,7 @@ unsigned code(const Type &t,const KindContext &c,Work &work,unsigned depth) {
   if(t.kind==Type::Constructor){
     if(!t.arguments.empty()){unsigned holes=0;for(const auto &argument:t.arguments)if(argument.kind==Type::Unknown)++holes;return holes?1:0;}
     auto found=c.constructorCodes.find(t.name);if(found!=c.constructorCodes.end())return found->second;
-    if(t.name=="list"||t.name=="result"||t.name=="task"||t.name=="channel")return 1;
+    if(t.name=="list"||t.name=="result"||t.name=="task"||t.name=="channel"||t.name=="$cell")return 1;
     return t.constructorArity?1:0;
   }
   if(t.kind==Type::Parameter){
@@ -26,7 +26,7 @@ unsigned code(const Type &t,const KindContext &c,Work &work,unsigned depth) {
     auto found=c.parameterCodes.find(t.name);if(found!=c.parameterCodes.end())return found->second;
     auto arity=c.parameters.find(t.name);return arity!=c.parameters.end()&&arity->second?1:0;
   }
-  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel)return 0;
+  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel||t.kind==Type::Cell)return 0;
   return 0;
 }
 unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool unit=false) {
@@ -74,7 +74,7 @@ unsigned kind(const Type &t,const KindContext &c,Work &work,unsigned depth,bool 
       for(size_t i=0;i<t.arguments.size();++i){auto expected=slots==c.constructorParameters.end()?0:slots->second.at(i);if(kind(t.arguments[i],c,work,depth+1)!=expected)return fail("nominal argument has the wrong constructor kind");}}
     return 0;
   }
-  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel) {
+  if(t.kind==Type::List||t.kind==Type::Result||t.kind==Type::Task||t.kind==Type::Channel||t.kind==Type::Cell) {
     if(!t.element||!t.arguments.empty()||kind(*t.element,c,work,depth+1,t.kind==Type::Task)!=0)
       return fail("aggregate payload must be a value type");
     return 0;
@@ -99,7 +99,7 @@ Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Wo
     std::vector<Type> filled;filled.reserve(args.size());size_t index=0;
     for(const auto &argument:constructor.arguments)filled.push_back(argument.kind==Type::Unknown?args[index++]:argument);
     if(index!=args.size())throw Error("E_GENERIC_KIND","partial type constructor arity differs",work.span);
-    auto value=Type::record(constructor.name);value.arguments=std::move(filled);std::fprintf(stderr,"PARTIAL name=%s source_args=%zu filled=%zu result=%s\n",constructor.name.c_str(),constructor.arguments.size(),value.arguments.size(),typeName(value).c_str());return value;
+    auto value=Type::record(constructor.name);value.arguments=std::move(filled);return value;
   }
   if((constructor.kind==Type::Constructor?constructor.constructorArity:constructorKind)!=args.size()||args.empty())
     throw Error("E_GENERIC_KIND","incorrect number of type constructor arguments",work.span);
@@ -116,6 +116,7 @@ Type apply(Type constructor,std::vector<Type> args,const KindContext &context,Wo
   if(constructor.name=="result")return Type::result(std::move(args.front()));
   if(constructor.name=="task")return Type::task(std::move(args.front()));
   if(constructor.name=="channel")return Type::channel(std::move(args.front()));
+  if(constructor.name=="$cell")return Type::cell(std::move(args.front()));
   auto value=Type::record(constructor.name);value.arguments=std::move(args);return value;
 }
 Type substitute(const Type &source,const TypeSubstitution &bindings,const KindContext &context,
@@ -126,7 +127,7 @@ Type substitute(const Type &source,const TypeSubstitution &bindings,const KindCo
   if(source.kind!=Type::Parameter)return value;
   auto found=bindings.find(source.name);if(found==bindings.end())return value;
   if(!active.insert(source.name).second)throw Error("E_GENERIC_OCCURS","recursive type substitution",work.span);
-  auto target=substitute(found->second,bindings,context,work,depth+1,active);active.erase(source.name);std::fprintf(stderr,"SUB %s target_kind=%d target_args=%zu source_args=%zu target=%s\n",source.name.c_str(),int(target.kind),target.arguments.size(),value.arguments.size(),typeName(target).c_str());
+  auto target=substitute(found->second,bindings,context,work,depth+1,active);active.erase(source.name);
   auto expected=context.parameters.find(source.name);
   if(expected==context.parameters.end()||kind(target,context,work,depth+1)!=expected->second)
     throw Error("E_GENERIC_KIND","type substitution changes the kind of '"+source.name+"'",work.span);
@@ -142,8 +143,8 @@ bool occurs(const std::string &name,const Type &type,Work &work,unsigned depth=0
 }
 struct Application {Type constructor;std::vector<Type> arguments;};
 std::optional<Application> application(const Type &type) {
-  if(type.kind==Type::List||type.kind==Type::Result||type.kind==Type::Task||type.kind==Type::Channel)
-    return Application{Type::constructor(type.kind==Type::List?"list":type.kind==Type::Result?"result":type.kind==Type::Task?"task":"channel",1),{*type.element}};
+  if(type.kind==Type::List||type.kind==Type::Result||type.kind==Type::Task||type.kind==Type::Channel||type.kind==Type::Cell)
+    return Application{Type::constructor(type.kind==Type::List?"list":type.kind==Type::Result?"result":type.kind==Type::Task?"task":type.kind==Type::Channel?"channel":"$cell",1),{*type.element}};
   if(type.kind==Type::Record&&!type.arguments.empty())
     return Application{Type::constructor(type.name,type.arguments.size()),type.arguments};
   if(type.kind==Type::Parameter&&!type.arguments.empty()) {

@@ -51,12 +51,13 @@ std::string typeName(Type t) {
     case Type::Result:return "result<"+typeName(*t.element)+">";
     case Type::Task:return "task<"+typeName(*t.element)+">";
     case Type::Channel:return "channel<"+typeName(*t.element)+">";
+    case Type::Cell:return "cell<"+typeName(*t.element)+">";
     case Type::TaskScope:return "task_scope";
     case Type::Function:{std::string result=t.realm=="shared"?"fn(":t.realm+" fn(";for(size_t i=0;i<t.arguments.size();++i){if(i)result+=",";result+=typeName(t.arguments[i]);}result+=")->"+(t.element->kind==Type::Function?"("+typeName(*t.element)+")":typeName(*t.element));if(!t.effects.empty()){result+="!{";for(const auto &effect:t.effects){if(result.back()!='{')result+=",";result+=effect;}result+="}";}return result;}
     case Type::Record:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
     case Type::Parameter:return t.arguments.empty()?"$"+t.name:genericName("$"+t.name,t.arguments);
     case Type::Projection:return genericName(t.name,t.arguments);
-    case Type::Constructor:return t.arguments.empty()?t.name:genericName(t.name,t.arguments);
+    case Type::Constructor:{auto name=t.name=="$cell"?"cell":t.name;return t.arguments.empty()?name:genericName(name,t.arguments);}
     default: return "unknown"; }
 }
 const std::set<std::string> &builtinNames(bool tasks,bool resources){
@@ -275,7 +276,7 @@ public:
 class Parser {
   SourceFormatHints *formatHints=nullptr;
   Program p; std::string inputKind,diagnosticLanguage; std::vector<Token> tokens; size_t i = 0; unsigned typeDepth=0,lambdaCounter=0,lambdaDepth=0,syntaxDepth=0;std::map<std::string,unsigned> parameters;
-  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false,contracts029=false;std::map<std::string,Span> parameterOrigins;
+  bool captureNames=false,captureDetails=false,sourceExceptions=false,handlerFilters=false,typedErrors=false,contracts029=false,sourceCells=false;std::map<std::string,Span> parameterOrigins;
   std::set<std::string> generatedNames;
   unsigned contractLoopCounter=0;
   std::map<const Stmt*,std::vector<S>> loopPrefixes;
@@ -477,6 +478,10 @@ class Parser {
     if(t.text=="f64")return Type::F64;
     if(t.text=="bytes"&&peek().text!="::")return Type::Bytes;
     if(t.text=="file"&&peek().text!="::")return Type::File;
+    if(sourceCells&&t.text=="cell"&&peek().text!="::"){
+      if(peek().text!="<")return Type::constructor("$cell",1);
+      expect("<");auto item=type();typeEnd();return Type::cell(std::move(item));
+    }
     if(p.taskPrototype&&t.text=="task_scope"&&peek().text!="::")return Type::TaskScope;
     if(p.taskPrototype&&(t.text=="task"||t.text=="channel")&&peek().text!="::"){
       if(peek().text!="<")return Type::constructor(t.text,1);
@@ -575,7 +580,7 @@ class Parser {
       while(accept("::"))e->text+="::"+name().text;
       if(genericAhead()){
         e->typeArguments=typeArguments();
-        if(e->text=="decode_json"||e->text=="err"){if(e->typeArguments.size()!=1)throw Error("E_GENERIC_ARITY","builtin requires one type argument",e->span);e->annotation=e->typeArguments[0];e->typeArguments.clear();}
+        if(e->text=="decode_json"||e->text=="err"||(sourceCells&&e->text=="cell_new")){if(e->typeArguments.size()!=1)throw Error("E_GENERIC_ARITY","builtin requires one type argument",e->span);e->annotation=e->typeArguments[0];e->typeArguments.clear();}
         while(accept("::"))e->text+="::"+name().text;
         if(genericAhead())e->methodArguments=typeArguments();
       }
@@ -679,7 +684,7 @@ class Parser {
   }
 public:
   void formatting(SourceFormatHints &hints){formatHints=&hints;}
-  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false,bool contracts29=false,std::string selectedLanguage=languageVersion):inputKind(std::move(kind)),diagnosticLanguage(std::move(selectedLanguage)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed),contracts029(contracts29) {
+  Parser(std::string source,std::string path,unsigned maxTokens=0,std::string kind="unit",bool names=false,bool details=false,bool tasks=false,bool resources=false,bool exceptions=false,bool filters=false,bool typed=false,bool contracts=false,bool contracts29=false,std::string selectedLanguage=languageVersion,bool cells=false):inputKind(std::move(kind)),diagnosticLanguage(std::move(selectedLanguage)),captureNames(names||details),captureDetails(details),sourceExceptions(exceptions),handlerFilters(filters),typedErrors(typed),contracts029(contracts29),sourceCells(cells) {
     sourceContracts=contracts;
     p.source=std::move(source);p.path=std::move(path);p.taskPrototype=tasks;
     if(resources)p.sourceLanguage=SourceLanguage::OwnedResources021;
@@ -819,6 +824,8 @@ class Checker {
   bool allowsEffect(const std::string &effect)const{return f->effects.contains(effect)||(exceptionPrototype()&&effect=="throw"&&exceptionHandlers);}
   static bool effectParameter(const std::string &effect){return effect.size()>1&&effect[0]=='?';}
   void prototypeEffects(const Function &fn)const{
+    if(supportsManagedReferences(p))for(const auto &effect:fn.effects)if(effect!="io"&&effect!="state"&&effect!="throw"&&!effectParameter(effect))
+      throw Error("E_CELL_STAGE","private reference evaluation supports sequential pure/io/state/throw functions",fn.span);
     if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)for(const auto &effect:fn.effects)if(effect!="io"&&effect!="throw"&&!(p.taskPrototype&&(effect=="task"||effect=="fs"||effect=="ffi")))
       throw Error("E_EXCEPTION_STAGE","private source exception prototype supports pure/io/throw; task/fs/ffi require its dedicated task parser",fn.span);
   }
@@ -854,7 +861,7 @@ class Checker {
     if(formal.kind==Type::Projection){auto resolved=resolveType(p,substituteType(formal,bound),span);if(resolved==actual)return;if(resolved.kind==Type::Projection)throw Error("E_GENERIC_INFER","associated projections do not infer their Self type",span);unify(resolved,actual,bound,span);return;}
     if(formal.kind==Type::Parameter&&!formal.arguments.empty()){
       auto shape=constructorPattern(p,actual);Type head;std::vector<Type> args;
-      if(shape.kind==Type::List||shape.kind==Type::Result||shape.kind==Type::Task||shape.kind==Type::Channel){head=Type::constructor(shape.kind==Type::List?"list":shape.kind==Type::Result?"result":shape.kind==Type::Task?"task":"channel",1);args={*shape.element};}
+      if(shape.kind==Type::List||shape.kind==Type::Result||shape.kind==Type::Task||shape.kind==Type::Channel||shape.kind==Type::Cell){head=Type::constructor(shape.kind==Type::List?"list":shape.kind==Type::Result?"result":shape.kind==Type::Task?"task":shape.kind==Type::Channel?"channel":"$cell",1);args={*shape.element};}
       else if(shape.kind==Type::Record&&!shape.arguments.empty()){head=Type::constructor(shape.name,shape.arguments.size());args=shape.arguments;}
       else if(shape.kind==Type::Parameter&&!shape.arguments.empty()){head=shape;head.arguments.clear();args=shape.arguments;}
       else throw Error("E_GENERIC_INFER","cannot infer an applied constructor from this type",span);
@@ -1330,6 +1337,24 @@ class Checker {
       }
       if(!e->typeArguments.empty()&&builtinNames(p.taskPrototype,supportsExternalResources(p)).contains(e->text)&&!(p.taskPrototype&&e->text=="channel_new"))throw Error("E_GENERIC_ARITY","this builtin does not accept explicit type arguments",e->span);
       auto arity=[&](size_t count){if(e->args.size()!=count)throw Error("E_ARITY",e->text+" expects "+std::to_string(count)+" arguments",e->span);};
+      if(supportsManagedReferences(p)&&managedReferenceBuiltins().contains(e->text)){
+        if(e->text=="cell")throw Error("E_CELL_TYPE","cell is a type constructor; create an identity with cell_new",e->span);
+        if(!e->typeArguments.empty()||!e->effectArguments.empty())throw Error("E_GENERIC_ARITY","cell operation does not accept these generic arguments",e->span);
+        if(!allowsEffect("state"))throw Error("E_EFFECT",e->text+" requires declared effect state",e->span);
+        if(e->text=="cell_collect"){arity(0);e->type=Type::Unit;break;}
+        if(e->text=="cell_new"){
+          arity(1);auto item=e->annotation;
+          if(item==Type::Unknown&&expected.kind==Type::Cell)item=*expected.element;
+          if(item!=Type::Unknown)validType(item,e->span);
+          auto actual=expr(e->args[0],item);if(item!=Type::Unknown)same(actual,item,e->span);else item=actual;
+          e->type=Type::cell(item);validType(e->type,e->span);break;
+        }
+        arity(e->text=="cell_write"?2:1);auto receiver=expr(e->args[0]);
+        if(receiver.kind!=Type::Cell)throw Error("E_CELL_TYPE",e->text+" requires cell<T>",e->args[0]->span);
+        if(e->text=="cell_write"){same(expr(e->args[1],*receiver.element),*receiver.element,e->args[1]->span);e->type=Type::Unit;}
+        else e->type=*receiver.element;
+        break;
+      }
       if(p.taskPrototype&&taskBuiltins().contains(e->text)){e->type=taskCall(e,expected);break;}
       if(supportsExternalResources(p)&&externalResourceBuiltins().contains(e->text)){
         arity(1);auto type=expr(e->args[0]);
@@ -1362,6 +1387,7 @@ class Checker {
         e->type=Type::Bytes;break;
       }
       if(e->text=="parallel_map"){
+        if(supportsManagedReferences(p))throw Error("E_CELL_STAGE","private reference evaluation has no parallel execution context",e->span);
         arity(3);Type items,callback;bool callbackTyped=false;
         auto checkCallback=[&](Type value){
           if(value.kind!=Type::Function||value.arguments.size()!=1||*value.element==Type::Unit)
@@ -1614,7 +1640,8 @@ public:
   void run() {
     prepareTraits(p);prepareGenerics(p);
     std::set<std::string> names;
-    const auto &builtins=builtinNames(p.taskPrototype,supportsExternalResources(p));
+    auto builtins=builtinNames(p.taskPrototype,supportsExternalResources(p));
+    if(supportsManagedReferences(p))builtins.insert(managedReferenceBuiltins().begin(),managedReferenceBuiltins().end());
     for(size_t index=0;index<p.structures.size();++index){auto &s=p.structures[index];
       if(s.opaqueResource&&(!supportsExternalResources(p)||s.enumeration||!s.fields.empty()||!s.variants.empty()))throw Error("E_RESOURCE_DECLARATION","invalid opaque resource declaration or source version",s.span);
       if(builtins.contains(s.localName.empty()?s.name:s.localName)||!names.insert(s.name).second)throw Error("E_DUPLICATE","duplicate or reserved structure '"+s.name+"'",s.span);
@@ -1634,7 +1661,7 @@ public:
       if(fn.foreign&&(fn.effects.contains("task")||containsTaskAuthority(p,fn.result)||std::any_of(fn.params.begin(),fn.params.end(),[&](const auto &param){return containsTaskAuthority(p,param.type);})))throw Error("E_TASK_TYPE","foreign declarations cannot carry task authority or suspend",fn.span);
       validType(fn.result,fn.span,true);
       for(auto &parameter:fn.params)validType(parameter.type,parameter.span);
-      for(const auto &effect:fn.effects)if(!effectParameter(effect)&&effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(exceptionPrototype()&&effect=="throw"))throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
+      for(const auto &effect:fn.effects)if(!effectParameter(effect)&&effect!="io"&&effect!="db"&&effect!="fs"&&effect!="ffi"&&!(p.taskPrototype&&effect=="task")&&!(exceptionPrototype()&&effect=="throw")&&!(supportsManagedReferences(p)&&effect=="state"))throw Error("E_EFFECT","unsupported effect '"+effect+"'",fn.span);
       if(std::any_of(fn.effects.begin(),fn.effects.end(),effectParameter)&&fn.typeParameters.empty())throw Error("E_EFFECT","an inferred effect parameter requires a generic function",fn.span);
       if(fn.effects.contains("ffi")&&fn.realm!="server")throw Error("E_REALM","ffi effect requires a server function",fn.span);
       if(fn.effects.contains("db")&&fn.realm!="server")throw Error("E_REALM","db effect requires a server function",fn.span);
@@ -1730,6 +1757,13 @@ Program parseSourceExceptionTasksPrototype(std::string source,std::string path){
   sourceUTF8(source,path,"unit");return Parser(std::move(source),std::move(path),0,"unit",false,false,true,false,true).run();
 }
 Program parse(std::string source,std::string path,bool editorNames,bool editorDetails){return parseVersioned(std::move(source),std::move(path),currentSourceLanguage,editorNames,editorDetails);}
+Program parseManagedReferencesPrototype(std::string source,std::string path){
+  const auto language=SourceLanguage::ManagedReferencesPrototype;sourceUTF8(source,path,"unit",programLanguage(language));
+  auto p=Parser(std::move(source),std::move(path),0,"unit",false,false,false,false,true,true,true,true,true,programLanguage(language),true).run();
+  p.sourceLanguage=language;
+  if(!p.imports.empty()||!p.endpoints.empty())throw Error("E_CELL_STAGE","private reference candidate is one unarchived source unit without endpoints");
+  return p;
+}
 SourceFormatHints sourceFormatHints(const std::string &source,const std::string &file){
   sourceUTF8(source,file,"unit");SourceFormatHints hints;
   Parser parser(source,file,0,"unit",false,false,true,true,true,true,true,true);

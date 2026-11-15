@@ -250,6 +250,7 @@
     "ordered_containers": ["extended", "browser", "platform", "sdk"],
     "java_int": ["extended", "browser", "platform", "sdk"],
     "managed_cells_runtime": ["extended", "platform"],
+    "managed_references_frontend_reference": ["core"],
     "effect_parameters": ["extended", "browser", "platform", "sdk"],
     "storage": ["extended", "browser"],
     "store_transactions_native": ["extended", "platform"],

@@ -1,0 +1,31 @@
+{
+  "schema": "nex.hosted-core-evidence/1",
+  "recorded_at": "2026-11-15",
+  "toolchain": "0.249.0",
+  "source_commit": "9e1487ce81304f980c738869df54e7032b946344",
+  "scope": "source core CI only; kernel probe was extended and not executed by this core run; no later private reference candidate or SDK qualification",
+  "run_id": 43757660162,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43757660162",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-15T20:21:59Z",
+  "updated_at": "2026-11-15T20:26:34Z",
+  "jobs": [
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43757660162/job/132945184450",
+      "started_at": "2026-11-15T20:22:02Z",
+      "completed_at": "2026-11-15T20:26:33Z"
+    },
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43757660162/job/132945184724",
+      "started_at": "2026-11-15T20:22:01Z",
+      "completed_at": "2026-11-15T20:24:44Z"
+    }
+  ]
+}

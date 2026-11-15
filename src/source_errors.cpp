@@ -20,6 +20,7 @@ nexrt::Value checkedSourceErrorValue(const Program &program,const SourceExceptio
     case Type::TaskScope:return payload.getObject(key,nexrt::Data::TaskScope);
     case Type::Task:return payload.getObject(key,nexrt::Data::Task);
     case Type::Channel:return payload.getObject(key,nexrt::Data::Channel);
+    case Type::Cell:return payload.getObject(key,nexrt::Data::Cell);
     case Type::Record:return payload.getObject(key,isExternalResource(program,type)?nexrt::Data::External:program.structure(type.name).enumeration?nexrt::Data::Enum:nexrt::Data::Record);
     case Type::Result:{
       const auto &v=payload.get(key);
@@ -78,7 +79,7 @@ std::string sourceErrorTypeKey(const Program &program,const Type &root){
     if(type.kind==Type::Unknown||type.kind==Type::Parameter||type.kind==Type::Projection)
       throw Error("E_SOURCE_TYPE","source error type must be fully concrete before computing its identity");
     if(type.kind==Type::Constructor){
-      if(type.name=="list"||type.name=="result"||type.name=="task"||type.name=="channel"){
+      if(type.name=="list"||type.name=="result"||type.name=="task"||type.name=="channel"||(supportsManagedReferences(program)&&type.name=="$cell")){
         if(type.constructorArity!=1)throw Error("E_SOURCE_TYPE","invalid built-in source error type constructor");
       }else{if(!type.constructorArity)throw Error("E_SOURCE_TYPE","invalid source error constructor arity");addTemplate(type.name,type.constructorArity);}
       return;

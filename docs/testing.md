@@ -19,12 +19,22 @@ The [development presets](development-build.md) also provide
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
 JUnit, exit code and logs for core/full selections.
 
-The selected12 groups cover frontend checking, typed reference evaluation,
+The selected 13 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
 accounting/collection/CTest metadata and compiled diagnostic explanations. They require Python3.10+, the configured
 compiler and its selected native dependencies. They require no Node/npm, browser
 installation, model inference, SDK packaging or device access. Collector controls
-in this layer use a synthetic provider.
+in this layer use a synthetic provider. Toolchain 0.250 adds the private managed
+reference frontend/interpreter probe, including effect/ownership failures and
+preserved 0.28/0.29 revision identities. It runs without Node and is built by
+`nex_core_tests`, so hosted core CI executes the same new source semantics.
+Earlier 11/12-group receipts below retain their original scopes.
+
+[0.250 focused evidence](evidence/managed-reference-source-0.250.0-2026-11-15.json)
+records 13 core groups in 21.09 s, the candidate's 13 accepted/38 rejected
+scenarios and eight affected groups in 80.87 s. Its cell/source coverage is the
+private reference interpreter; native/TypeScript reference execution and a
+matching complete SDK remain pending.
 
 ## Select a broader scope
 

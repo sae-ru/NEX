@@ -119,7 +119,7 @@ indices differ from byte offsets. Aggregates and closure captures are immutable
 snapshots; aliases to genuine resources share identity.
 
 If `managed_references` reports `public_source_enabled:false`, its cell heap is
-a private C++ kernel. Do not emit cell/ref syntax or a state effect on its basis.
+a private C++ candidate. Do not emit cell/ref syntax or a state effect in ordinary projects on its basis.
 It does not provide Java/Python object compatibility or override immutable source
 values; discover the actual source type/effect before using a future extension.
 

@@ -1,0 +1,19 @@
+{
+  "schema": "nex.managed-reference-public-baseline/1",
+  "recorded_toolchain": "0.249.0",
+  "recorded_source_commit": "9e1487ce81304f980c738869df54e7032b946344",
+  "compiler_sha256": "a3b42b1a36e2f8e27e86a72e78c3862e3bdc8980691be5046479772878862d5f",
+  "source": "module public_cells;\nstruct cell<T> {value:T;}\nfn cell_new(x:i64)->i64{return x+1;}\nfn identity<F<_>,T>(value:F<T>)->F<T>{return value;}\nfn main()->i64{let original:cell<i64>=cell(41);return identity<cell,i64>(original).value+cell_new(0);}\n",
+  "cases": [
+    {
+      "language": "0.28",
+      "revision": "86ca9e2ec103087e1c2778ba6297e1557a40eb7a3cb325465c1550c9fec7c369",
+      "value": 42
+    },
+    {
+      "language": "0.29",
+      "revision": "cba976696fae960a13142500b0cd171a2ff17cc03c402d84cb0973e336f1ff02",
+      "value": 42
+    }
+  ]
+}
