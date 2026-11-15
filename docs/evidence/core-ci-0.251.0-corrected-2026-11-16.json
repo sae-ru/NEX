@@ -1,0 +1,39 @@
+{
+  "schema": "nex.hosted-core-evidence/1",
+  "recorded_at": "2026-11-16 Europe/Moscow",
+  "toolchain": "0.251.0",
+  "source_commit": "279c15db95c8e4ca1f789de00615ed8374145b94",
+  "scope": "hosted 14-group core scope plus Linux image-log controls; not TypeScript heap/source-reference/SDK qualification",
+  "run_id": 43768196154,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43768196154",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-15T22:14:41Z",
+  "updated_at": "2026-11-15T22:18:07Z",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T22:14:44Z",
+      "completed_at": "2026-11-15T22:17:33Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43768196154/job/132977946872"
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T22:14:44Z",
+      "completed_at": "2026-11-15T22:18:06Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43768196154/job/132977947157"
+    }
+  ],
+  "previous_failure": {
+    "run_id": 43766696580,
+    "receipt": "docs/evidence/core-ci-0.251.0-network-failure-2026-11-16.json",
+    "phase": "Docker dependency image preparation; no NEX tests started"
+  },
+  "correction": "bounded retries for upstream downloads/APT and bounded console tail with complete build-log artifact; dependency versions/digests/key fingerprint unchanged",
+  "verification": "GitHub run/job API completion and exact workflow/test-tier source; current artifact archives not read",
+  "release_qualification": false
+}

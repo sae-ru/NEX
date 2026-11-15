@@ -5271,7 +5271,16 @@
       "threading": "sequential; no task or parallel execution",
       "type": "cell<T>; identity aliases with immutable payload snapshots",
       "typescript": false,
-      "uncaught_source_errors": "E_SOURCE_EXCEPTION diagnostic; payload remains within the context"
+      "uncaught_source_errors": "E_SOURCE_EXCEPTION diagnostic; payload remains within the context",
+      "typescript_heap_kernel": {
+        "introduced_toolchain": "0.252.0",
+        "implementation": "web/nex-managed-heap.ts",
+        "guide": "docs/managed-reference-typescript-heap.md",
+        "test": "tests/managed_heap_typescript.py",
+        "source_lowering": false,
+        "rooting": "explicit binding, operand, builder and transfer roots; no dependency on host GC timing",
+        "representation": "explicit identity for every immutable data node, including strings; boxed payload facade pending"
+      }
     },
     "public_flag_scope": "ordinary published source languages; private candidate has its own selection",
     "public_source_enabled": false,

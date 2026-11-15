@@ -39,6 +39,13 @@ native/context recheck. Its 26 O0/O2 cases execute both matching host images and
 separate applications with independently compiled runtime objects. The private
 reference candidate still has no ordinary project/SDK publication or migration.
 
+Toolchain 0.252 adds the extended/browser/platform `managed_heap_typescript`
+group: strict TypeScript and actual Node graph traces agree with the C++ kernel,
+with separate explicit-root checks. It runs outside the no-Node core and does
+not qualify checked TypeScript reference-source lowering. Its
+[focused receipt](evidence/managed-heap-typescript-0.252.0-2026-11-16.json)
+keeps the trace inputs, runtime/tool hashes and actual group results.
+
 [0.250 focused evidence](evidence/managed-reference-source-0.250.0-2026-11-15.json)
 records 13 core groups in 21.09 s, the candidate's 13 accepted/38 rejected
 scenarios and eight affected groups in 80.87 s. Its cell/source coverage is the

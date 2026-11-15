@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.251.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.252.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -22,6 +22,8 @@ MLIR/native, Wasm and TypeScript emission reject it. The dedicated 0.251
 entry point. Public promotion still
 requires all source backends, execution-context/ABI ownership and an explicit
 history-preserving migration. No converter is implemented.
+The [private TypeScript heap](managed-reference-typescript-heap.md) is a runtime
+foundation, not a source emitter; it does not remove the TypeScript rejection.
 
 ## Checked source behavior
 

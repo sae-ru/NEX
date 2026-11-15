@@ -1,0 +1,220 @@
+{
+  "schema": "nex.managed-heap-typescript-evidence/1",
+  "recorded_at": "2026-11-16 Europe/Moscow",
+  "toolchain": "0.252.0",
+  "ordinary_language": "0.28",
+  "task_abi": 7,
+  "base_commit": "279c15db95c8e4ca1f789de00615ed8374145b94",
+  "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "scope": "private explicit-root TypeScript managed graph kernel; no source lowering, public language migration or matching SDK qualification",
+  "source_language_changed": false,
+  "typescript_source_lowering": false,
+  "public_reference_source_enabled": false,
+  "compiler": {
+    "compiler_sha256": "7f95c75ab326c3a063e94ec2a2cde61a90b0d9a4a38a346593798b9ef101ff44",
+    "compiler_build": "ff2c9083da46c633dd81f70c945cd063df7fe23ab9f1db78f820db6400d862ea",
+    "descriptor_hash": "3805145b63b753987d1a96f06360dc4c9dcb6ed91ade9354320214c4176f7318"
+  },
+  "language_pack": {
+    "ok": true,
+    "shared_fields": 69,
+    "compared_JSON_values": 4049,
+    "manifest_sha256": "c99c7c147eeee1f6c2e2ac258d74448335e6d32d122ca7de796190f792757da4"
+  },
+  "validation": {
+    "all_target_build": {
+      "exit_code": 0,
+      "log_sha256": "c6198f91c42c7fcf58aea06be98fda33f7f6faf5d1272beaffb399e901568c34"
+    },
+    "core": {
+      "groups": 14,
+      "names": [
+        "llm_cost_ledger",
+        "llm_local_collector",
+        "ctest_report_validation",
+        "discovery",
+        "language_pack_contract",
+        "task_frontend_native",
+        "frontend_diagnostics_native",
+        "managed_references_frontend_reference",
+        "managed_reference_native_context",
+        "bytes_runtime_native",
+        "float_runtime_native",
+        "typed_source_frontend_reference",
+        "test_tiers",
+        "diagnostic_catalogue"
+      ],
+      "junit_sha256": "9e093683859d89bdd837c381952ea8a312041b36110332c021e87b14fea9e532",
+      "log_sha256": "12ab00e28dd9d8484b12a519895773f932e8a5f4aa864032dd66eafb4352ace7",
+      "junit_seconds_rounded": 24.0,
+      "wall_seconds": 24.24
+    },
+    "affected": {
+      "groups": 2,
+      "names": [
+        "managed_cells_runtime",
+        "managed_heap_typescript"
+      ],
+      "junit_sha256": "d218476273b3fd993821b445fe39a1328f889278a9d16a83abe2338e01d36c3d",
+      "log_sha256": "7b5af2fbf152354b7ff45e57e1f550c4280bc4b48034d9b7c37c02a4d7e0554c",
+      "junit_seconds_rounded": 2.0,
+      "wall_seconds": 2.53
+    },
+    "documentation": {
+      "groups": 1,
+      "passed": true,
+      "log_sha256": "fc6ee10eb18cf2e600125bb7672d1182b238ed9f326f95792f14a8d6346fd004",
+      "junit_sha256": "fa9a83552819c2da667429808b3b76e54f7b1342bd140bfaa3b4d67b06f6cd45"
+    }
+  },
+  "heap_agreement": {
+    "schema": "nex.managed-heap-typescript/1",
+    "ok": true,
+    "scope": "private runtime graph API; not source TypeScript lowering",
+    "source_type_enabled": false,
+    "node_version": "v22.22.3",
+    "tsc_version": "Version 7.0.2",
+    "native_probe_sha256": "a4c1be1d2547f8d29fb0e2d8db6d688d1802001bcd78015c0e9ae49b4f0c60af",
+    "typescript_runtime_sha256": "03e1d29488e1ddd21dadf4d24d6b2d91d1f0d7dd3376ce9fa892481069520920",
+    "typescript_driver_sha256": "025e1f21615b11e4aa0910bf9fa41e4897663982a7f8ca439c5a533c5ae502c3",
+    "native_kernel_sha256": "807be557dbf434503409c13a8a27ff59278eaaed957ca682bf569f83a1793bb8",
+    "native_probe_source_sha256": "b196e32a2524bd8b4ac571f3e9c4c469409fce3a067082113070bb20cea8cf75",
+    "fixture_generator_sha256": "f33544209a447a6a2a879643a278279aeb96e98b8067ed6235b87f58b22433eb",
+    "node_sha256": "5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c",
+    "tsc_sha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+    "root_checks": 10,
+    "traces": [
+      {
+        "name": "alias-snapshot",
+        "steps": 15,
+        "trace_sha256": "701a2cd74311a72b1c4809cb249908a5686b90f220c44c5097a098cfdb931aa7",
+        "result_sha256": "3971194fbc408afd55ae2b2c679dacde7e33120af2a018d6f12ce972de4df937",
+        "passed": true
+      },
+      {
+        "name": "self-cycle",
+        "steps": 5,
+        "trace_sha256": "c352c17b0b2a7840d7d36f8421d00332a313b92207ae45fefceb81d92554ce68",
+        "result_sha256": "e6f0171dfbd56e4b99651a52a67f7e1cf6ae8d3aba87873dee4c448969bde362",
+        "passed": true
+      },
+      {
+        "name": "external-container",
+        "steps": 7,
+        "trace_sha256": "c56d023ce575229ad4b6e3739403dc982b246f72a82e718e889668f2cf3cddab",
+        "result_sha256": "74358b994a9f16a71293f250f85883ccb6bfc8bbfdee4aaaa08d516123736cdf",
+        "passed": true
+      },
+      {
+        "name": "closure-cycle",
+        "steps": 7,
+        "trace_sha256": "aedc8df2bb05bd78e252bd94b35f5b0b4c7e9e260d8144c86d867ee4ad3ee628",
+        "result_sha256": "5c355eb34fa8853a712723da788cefa37c82602192a6749ae3bf1e2e4ac62181",
+        "passed": true
+      },
+      {
+        "name": "shared-string",
+        "steps": 4,
+        "trace_sha256": "bf365e992db65bb7e5f783629511836f0de22f059240adedd21b0623f67d0654",
+        "result_sha256": "8ed3f9673e599dd0210ff7ebdb7af24f844bc20f194c299f495ef81daaf39410",
+        "passed": true
+      },
+      {
+        "name": "distinct-equal-strings",
+        "steps": 5,
+        "trace_sha256": "002c1afcf09806d23581274fa4c230ac2504ebfd5a8bb019cebe3674004552c3",
+        "result_sha256": "dcdc5465d056feff923fb569e7dc4e025ad03b98d2aa2706209ca930165a89a2",
+        "passed": true
+      },
+      {
+        "name": "cells-limit",
+        "steps": 6,
+        "trace_sha256": "462319b289781389e1a9bdafad354ac91959da53f535140f372c741bfdacd017",
+        "result_sha256": "92bd0c50082d1d4ba4665904e276768a4dce8e425def4e09537e3b5daaf33de7",
+        "passed": true
+      },
+      {
+        "name": "slots-limit",
+        "steps": 12,
+        "trace_sha256": "fc2dd7719c1d6d554227b5192bce126205f79e52fe64c9f59e767350d0f0167a",
+        "result_sha256": "c437e8cd85f66e4c71645e0561325f2e94f3c81d7defb8c6e08f705f169a8ac4",
+        "passed": true
+      },
+      {
+        "name": "rejected-write",
+        "steps": 9,
+        "trace_sha256": "d2b4e33ee9f94e8476239bb280fece4b5c9597108f1ddfc55cdb5c36052863f0",
+        "result_sha256": "047cf86949de7ebe67fe9e0b0bf4dc9d6db14f10d03493369341f8d9fd3f70f1",
+        "passed": true
+      },
+      {
+        "name": "payload-kinds",
+        "steps": 16,
+        "trace_sha256": "df29b9b9f3244e7333f583ab11872c4bd260f05cb83360d3997840d8719975e1",
+        "result_sha256": "df616b74598b3cba3822ecc25445b7151722437ba7401ee41092b5fbb5e4d9ec",
+        "passed": true
+      },
+      {
+        "name": "deep-cells",
+        "steps": 4,
+        "trace_sha256": "56c57e47bb09984c50e5abeb749a36e7fda7033e33b619f0f4b69b16fff39f2f",
+        "result_sha256": "ec9f98f80ee2646f27da219c94ea24254f0a47170b19c2982885ed8ca014ee46",
+        "passed": true
+      },
+      {
+        "name": "deep-immutable",
+        "steps": 4,
+        "trace_sha256": "42bac69ec90aeafe6c4758106d7d2e13b652e11cb9a176d801e9ad564e365e22",
+        "result_sha256": "e653aaac0c3fc7853245f6944d39d8826929e0f5d1e05fa5cd4fab5eac87da7b",
+        "passed": true
+      },
+      {
+        "name": "deep-close",
+        "steps": 4,
+        "trace_sha256": "6828b63a5a91cd3c21106df355db66a63b82cf0e0e0ad0575387b773385b58c3",
+        "result_sha256": "476f6b4851921a33dc71697f8341b7e352fa3edd6e875a9c3c4b0fb0851b40e2",
+        "passed": true
+      },
+      {
+        "name": "rooted-rings",
+        "steps": 387,
+        "trace_sha256": "2895ca8ce6fb8ce9aedc9a965bd7b213315731b0ad3e6286ea623307f594c97c",
+        "result_sha256": "0ee43bb9ea2e248d995f8ac1964e130e9e12036ce40446eca7814fcdead34665",
+        "passed": true
+      }
+    ],
+    "comparisons": 14,
+    "steps": 485,
+    "typescript_host_memory_measured": false
+  },
+  "manual_expectations": [
+    "aliased cell identity, distinct cells, old/new immutable snapshot object identity",
+    "shared source string is one node; distinct equal source strings retain two node identities",
+    "failed write leaves scalar42 unchanged",
+    "rooted cycles retained and unreachable cycles/registries reclaimed",
+    "96 cyclic objects with four retained roots leave48 reachable cells",
+    "65536-cell chain and65536-level immutable payload collect iteratively",
+    "32768-cell close invalidates outstanding aliases and leaves an empty registry"
+  ],
+  "root_api_checks": [
+    "temporary operand retention/release and stale-cell rejection",
+    "initial allocation operand rooted through cell-limit collection",
+    "receiver/next value retained through write threshold collection",
+    "binding getter follows current value",
+    "heap reentry during root traversal rejected without registry mutation",
+    "another registry is an external immutable-node owner",
+    "foreign-heap cells rejected",
+    "unsupported payloads and invalid limits rejected",
+    "unpublished builder contents retained/released",
+    "return root transferred before callee frame closes"
+  ],
+  "hosted_preceding_block": "docs/evidence/core-ci-0.251.0-corrected-2026-11-16.json",
+  "limits": [
+    "graph counts are not byte-memory bounds",
+    "host JS GC/RSS reclamation not measured; empty logical registry is the TS cleanup observation",
+    "source value/exception facade and root placement not implemented",
+    "native/public modules, history-preserving migration, concurrency, debugger, platform and SDK gates remain open",
+    "published SDK0.246.1 unchanged"
+  ],
+  "release_qualification": false
+}

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.251.0"
+applies_to: "language 0.28; toolchain 0.252.0"
 owner: repository
 ---
 
@@ -43,6 +43,10 @@ and sequential reference execution; 0.251 adds dedicated private native emission
 and an application-owned heap. Public source versions, complete native/TypeScript
 agreement, migration and the ownership/concurrency/ABI contracts below stay open.
 No ordinary source version or converter is introduced by this candidate.
+The 0.252 [TypeScript heap kernel](managed-reference-typescript-heap.md) adds
+explicit roots and matching graph-count/collection behavior. The checked
+TypeScript source emitter and boxed value facade remain next; ordinary clients
+still reject reference source.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

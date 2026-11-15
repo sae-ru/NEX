@@ -569,6 +569,12 @@ target_link_libraries(nex_managed_reference_native_probe PRIVATE nex_native_back
 set_target_properties(nex_managed_reference_native_probe PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME managed_reference_native_context COMMAND nex_managed_reference_native_probe context)
 set_tests_properties(managed_reference_native_context PROPERTIES TIMEOUT 30)
+add_executable(nex_managed_heap_trace_probe tests/managed_heap_trace.cpp)
+target_link_libraries(nex_managed_heap_trace_probe PRIVATE nex_frontend)
+add_test(NAME managed_heap_typescript COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_heap_typescript.py $<TARGET_FILE:nex_managed_heap_trace_probe>
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-heap-typescript-acceptance)
+set_tests_properties(managed_heap_typescript PROPERTIES TIMEOUT 300)
 add_test(NAME managed_references_native COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_native.py $<TARGET_FILE:nex_managed_reference_native_probe>
   ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
