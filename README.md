@@ -58,14 +58,19 @@ platform acceptance.
 Current source: **toolchain 0.246.1 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
-a project default: `nex.json` selects 0.28 or 0.29 explicitly per project.
+a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
+new `nex init` projects select 0.29.
 
-The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-14.json)
-passed **351/351 groups** at `c9491801`. The recorded immutable
-[macOS SDK 0.246.0](docs/releases/0.246.0.json) was accepted end-to-end: 4089
-inventory files, 41 phases, real locked browser builds and the full network
-profile. The relocatable archive is `nex-sdk-0.246-macos-arm64.tar.gz`
-(SHA-256 `d8ec3adf...32fdef5`). The owned Metal provider also ran on an Apple
+The [0.246.1 macOS source regression](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json)
+passed **351/351 groups** at `3b008a4e`. The immutable
+[macOS ARM64 SDK 0.246.1](docs/releases/0.246.1.json) passed the complete
+source-to-archive command: 4091 inventory files and **41 phases each** after
+relocation and archive restoration, with locked browser builds and the full
+network profile. [Download](https://github.com/sae-ru/NEX/releases/tag/v0.246.1)
+and [install](docs/getting-started.en.md#install-the-macos-arm64-sdk).
+[Core CI](docs/ci.md) passed. The full Linux test step passed; its artifact
+retention fix passed a separate CI check.
+The owned Metal provider previously ran on an Apple
 **M5 Max** with 15 hardware scenarios, 12 reply faults, log isolation and 27+1
 source checks; see the [Metal receipt](docs/evidence/owned-metal-0.243.0-2026-11-13.json).
 
@@ -83,7 +88,7 @@ and [desktop interaction receipt](docs/evidence/desktop-macos-interaction-0.244.
 
 | Platform | Recorded evidence | Remaining qualification |
 |---|---|---|
-| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.243.0-current-2026-11-13.json); [immutable SDK 0.246](docs/releases/0.246.0.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
+| macOS ARM64 | [351/351 full CTest](docs/evidence/full-ctest-0.246.1-current-2026-11-15.json); [immutable SDK 0.246.1](docs/releases/0.246.1.json); [physical Metal M5 Max](docs/evidence/owned-metal-0.243.0-2026-11-13.json) | extended interactive web/mobile matrices, signing |
 | Astra Linux 1.7 x86-64 | [0.245 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-current-0.245.0-2026-11-13.json) | extended/browser/SDK groups |
 | Fedora 45 x86-64 | [0.242 Clang 23 build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
 | Windows 11 x86-64 | [0.242 LLVM-MinGW build, core 12/12, native smoke](docs/evidence/platform-cross-compiler-0.242.0-2026-11-13.json) | extended/browser/SDK groups |
@@ -113,7 +118,7 @@ requires Node.js 22.18+, npm and the repository's locked web dependencies.
 On Unix, the ELF fixture tests also require matching LLVM `ld.lld` and `llvm-ar`;
 use `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` when LLD has a separate prefix.
 
-For a short development loop after configuring, use the [11-group core layer](docs/testing.md):
+For a short development loop after configuring, use the [12-group core layer](docs/testing.md):
 
 ```sh
 cmake --build build --target nex_core_tests -j 4
@@ -128,7 +133,8 @@ Shared [development presets](docs/development-build.md) also provide
 `cmake --workflow --preset dev-core` with separate Debug/Release build directories.
 See [CI receipts and workflow scope](docs/ci.md) for the automated checks.
 The [source-to-archive SDK driver](docs/sdk-build.md) joins the maintained
-macOS/Linux workflows; complete execution of the new driver remains pending.
+macOS/Linux workflows; [0.246.1 completed the full macOS sequence](docs/evidence/sdk-current-0.246.1-2026-11-15.json).
+Portable Linux/Windows SDK qualification remains separate.
 
 Use the complete workflow below at the agreed milestone:
 

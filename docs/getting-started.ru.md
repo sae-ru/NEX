@@ -6,6 +6,33 @@
 
 [English](getting-started.en.md) · [Описание](overview.ru.md)
 
+## Установить SDK для macOS ARM64
+
+[SDK 0.246.1](releases/0.246.1.json) требует macOS 27.0+ на ARM64, Apple command-line
+tools с macOS SDK и Python 3.10+. Для веб-сборок нужны также Node.js 22.18+ и npm.
+Переносимый архив для разработки включает выбранный компилятор и зависимости
+библиотек. Храните весь распакованный каталог вместе.
+
+Скачайте, проверьте SHA256 и распакуйте:
+
+```sh
+curl -fL -o nex-sdk-0.246.1-macos-arm64-development.tar.gz \
+  https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz
+echo 'd583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa  nex-sdk-0.246.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
+mkdir -p "$HOME/.local/nex"
+tar -xzf nex-sdk-0.246.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
+export PATH="$HOME/.local/nex/nex-sdk-0.246.1-macos-arm64-development/bin:$PATH"
+export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+nex doctor --json
+nex describe --kind index --json
+```
+
+[Результаты приёмки](evidence/sdk-current-0.246.1-2026-11-15.json) закрепляют
+исходный коммит, архив и проверки перенесённой/восстановленной установок.
+Подписи ad-hoc; Developer ID, notarization и полная матрица живой отладки SDK
+остаются отдельными этапами. Для Windows/Linux используйте сборку исходников
+ниже и руководство соответствующей платформы.
+
 ## Собрать актуальную версию
 
 Установите C++20, CMake3.25+, LLVM **и MLIR22.1.x или 23.1.x**, SQLite3.37+, OpenSSL **3**,

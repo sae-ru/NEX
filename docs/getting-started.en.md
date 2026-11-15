@@ -6,6 +6,33 @@ are available through the ordinary CLI.
 
 [Русский](getting-started.ru.md) · [Overview](overview.en.md)
 
+## Install the macOS ARM64 SDK
+
+[SDK 0.246.1](releases/0.246.1.json) requires macOS 27.0+ on ARM64, Apple command-line
+tools with a macOS SDK and Python 3.10+. Web builds also require Node.js 22.18+
+and npm. This portable development archive includes its selected compiler and
+library dependencies. Keep its entire directory together.
+
+Download, verify and extract it:
+
+```sh
+curl -fL -o nex-sdk-0.246.1-macos-arm64-development.tar.gz \
+  https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz
+echo 'd583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa  nex-sdk-0.246.1-macos-arm64-development.tar.gz' | shasum -a 256 -c -
+mkdir -p "$HOME/.local/nex"
+tar -xzf nex-sdk-0.246.1-macos-arm64-development.tar.gz -C "$HOME/.local/nex"
+export PATH="$HOME/.local/nex/nex-sdk-0.246.1-macos-arm64-development/bin:$PATH"
+export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+nex doctor --json
+nex describe --kind index --json
+```
+
+The [release receipts](evidence/sdk-current-0.246.1-2026-11-15.json) identify the
+exact source, archive and moved/restored acceptance. Signatures are ad-hoc;
+Developer ID signing/notarization and the full live SDK debugger matrix remain
+separate work. For Windows/Linux, use the source instructions below and the
+matching platform guide.
+
 ## Build the current version
 
 Install C++20, CMake 3.25+, LLVM **and MLIR 22.1.x or 23.1.x**, SQLite 3.37+, OpenSSL **3**,

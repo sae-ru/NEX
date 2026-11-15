@@ -1,12 +1,30 @@
-# Qualified SDK: 0.246.0 / language 0.28 / task ABI 7
+# Qualified SDK: 0.246.1 / language 0.28 / task ABI 7
 
-The current immutable macOS development release is
-[0.246.0](releases/0.246.0.json): relocatable archive
-[`nex-sdk-0.246-macos-arm64.tar.gz`](https://github.com/sae-ru/NEX/releases/download/v0.246.0/nex-sdk-0.246-macos-arm64.tar.gz)
-(SHA-256 `d8ec3adf...32fdef5`), 4089 inventory files, 41 acceptance phases with
-real locked browser builds and full network profile. The bundle requires the
-host macOS SDK through `SDKROOT`; live debugger was not requested. The archive is
-published as a GitHub Release asset; it is not Developer ID signed or notarized.
+The current immutable macOS ARM64 development release is
+[0.246.1](releases/0.246.1.json), built from source `3b008a4e618e8ee6d8789a39b3105928c36d35d6`.
+Download [`nex-sdk-0.246.1-macos-arm64-development.tar.gz`](https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz).
+
+```text
+SHA256 d583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa
+```
+
+The archive contains **4091 inventory files** (125,504,440 bytes).
+The complete source-to-archive command passed all **351/351** configured macOS
+source test groups. Relocated and archive-restored installations each passed
+**41 phases / 851 commands**, including real locked browser builds and the full
+network profile. [Exact receipts](evidence/sdk-current-0.246.1-2026-11-15.json)
+also record installed semantic-rename, generic-effect and new-project regressions.
+
+Requires macOS **27.0+ on ARM64**, an Apple command-line tools/SDK installation,
+Python 3.10+ and Node.js 22.18+/npm for web builds. Keep `bin/nex` and `share/nex`
+together and set `SDKROOT` for native builds; follow the
+[installation commands](getting-started.en.md#install-the-macos-arm64-sdk).
+The archive is ad-hoc signed; Developer ID signing/notarization and the full live
+SDK debugger matrix are not qualified. Complete portable Windows/Linux SDK
+delivery and new physical GPU/NPU acceptance retain separate scopes.
+
+The prior [0.246.0 release](releases/0.246.0.json) keeps its original archive and
+receipts. No earlier binary was silently repacked.
 
 ## Historical record: 0.162.0
 

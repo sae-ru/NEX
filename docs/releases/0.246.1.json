@@ -1,0 +1,143 @@
+{
+  "schema": "nex.delivery-record/1",
+  "status": "accepted_macos_development_scope_public_binary",
+  "verified_at_utc": "2026-11-15T13:15:46.240380+00:00",
+  "toolchain": "0.246.1",
+  "language": "0.28",
+  "explicit_project_languages": [
+    "0.28",
+    "0.29"
+  ],
+  "new_project_language": "0.29",
+  "source_task_ABI": 7,
+  "C_ABI": 1,
+  "license": "MIT",
+  "SDK_source_commit": "3b008a4e618e8ee6d8789a39b3105928c36d35d6",
+  "tracked_source_files": 2655,
+  "source_tree": "97b282214cfc4f5059657174c94d5ca819a40eb1",
+  "archive": {
+    "name": "nex-sdk-0.246.1-macos-arm64-development.tar.gz",
+    "sha256": "d583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa",
+    "bytes": 125504440,
+    "files_in_inventory": 4091,
+    "public_url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz",
+    "asset_id": 751053904,
+    "anonymous_download_verified": true,
+    "anonymous_download_sha256": "d583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa"
+  },
+  "release": {
+    "path": "/Users/sae/projects/NEX/build/releases/0.246.1/nex-0.246.1-macos",
+    "immutable": true,
+    "acceptance_phases_per_installation": 41,
+    "browser_build": true,
+    "live_debugger": false,
+    "network_profile": "full",
+    "notices_sha256": "33fd07162f701f6a923abd1abbed8432dfeb32786251935e48f1d28e8660696a",
+    "html_url": "https://github.com/sae-ru/NEX/releases/tag/v0.246.1",
+    "github_release_id": 446071775,
+    "published_at": "2026-11-15T13:13:57Z",
+    "tag_commit": "48464ca7d9a218524485c9745b9629458c30e2bf",
+    "assets": [
+      {
+        "name": "nex-sdk-0.246.1-macos-arm64-development.tar.gz",
+        "id": 751053904,
+        "bytes": 125504440,
+        "sha256": "d583cb214f4831207253a14a84927386195cecd652ffd4744a8b3bd4f0aae2aa",
+        "url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/nex-sdk-0.246.1-macos-arm64-development.tar.gz"
+      },
+      {
+        "name": "SHA256SUMS",
+        "id": 751054542,
+        "bytes": 365,
+        "sha256": "a863afc448fcd8acc4e3ca4331bb27175cc8e44319e9bf24dc62014edc98bf3a",
+        "url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/SHA256SUMS"
+      },
+      {
+        "name": "release.json",
+        "id": 751054624,
+        "bytes": 705,
+        "sha256": "3f98496a4bdf08e0363f71812464c4d73c18ff603ca8e617dd502ff89396e9e8",
+        "url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/release.json"
+      },
+      {
+        "name": "acceptance.json",
+        "id": 751054693,
+        "bytes": 1927587,
+        "sha256": "94cfe763860183ca0cc1b90bc49757bfbcf8f1d7d75967ccf00668de352d6249",
+        "url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/acceptance.json"
+      },
+      {
+        "name": "THIRD_PARTY_NOTICES.json",
+        "id": 751054793,
+        "bytes": 2411,
+        "sha256": "33fd07162f701f6a923abd1abbed8432dfeb32786251935e48f1d28e8660696a",
+        "url": "https://github.com/sae-ru/NEX/releases/download/v0.246.1/THIRD_PARTY_NOTICES.json"
+      }
+    ]
+  },
+  "source_acceptance": {
+    "macos_configured_groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "evidence": "../evidence/full-ctest-0.246.1-current-2026-11-15.json"
+  },
+  "acceptance": {
+    "moved_sdk": {
+      "phases": 41,
+      "seconds": 2927.161,
+      "compiler_sha256": "bf8f7c39323a3a41714fcd54fb36625a3a7f1f6cf9faf9acbfd698ecbc701cc8",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 7,
+      "ok": true,
+      "commands": 851,
+      "network_profile": "full",
+      "browser_build": true,
+      "live_debugger": false,
+      "report_sha256": "120df13108dcb13bd35e7bb927540fad720931de3ca2691fbc5170dabdce29a1"
+    },
+    "restored_sdk": {
+      "phases": 41,
+      "seconds": 2981.724,
+      "compiler_sha256": "bf8f7c39323a3a41714fcd54fb36625a3a7f1f6cf9faf9acbfd698ecbc701cc8",
+      "configured_read_roots_denied": true,
+      "sdk_write_denied": true,
+      "negative_read_controls": 7,
+      "ok": true,
+      "commands": 851,
+      "network_profile": "full",
+      "browser_build": true,
+      "live_debugger": false,
+      "report_sha256": "94cfe763860183ca0cc1b90bc49757bfbcf8f1d7d75967ccf00668de352d6249"
+    }
+  },
+  "host": {
+    "platform": "macos",
+    "host": "arm64-apple-darwin27.2.0",
+    "minimum_macos": "27.0"
+  },
+  "external_prerequisites": [
+    "Apple command line tools/SDK and system C++ runtime/linker",
+    "Python 3.10+",
+    "Node.js/npm for browser builds",
+    "host LLDB/lldb-dap for live debugging"
+  ],
+  "CI": {
+    "core": "https://github.com/sae-ru/NEX/actions/runs/43681621197",
+    "core_run_attempt": 2,
+    "current_core": "https://github.com/sae-ru/NEX/actions/runs/43717414285",
+    "linux_test_step": "https://github.com/sae-ru/NEX/actions/runs/43693616418",
+    "linux_test_step_conclusion": "success",
+    "original_linux_workflow_conclusion": "failure during artifact upload",
+    "artifact_export_check": "https://github.com/sae-ru/NEX/actions/runs/43717414295",
+    "evidence": "../evidence/sdk-current-0.246.1-2026-11-15.json"
+  },
+  "limits": [
+    "Development SDK; ad-hoc signatures, no Developer ID signing or notarization",
+    "Full live SDK debugger matrix was not selected",
+    "Portable Windows/Linux SDK and new physical GPU/NPU acceptance have separate scopes",
+    "Linux full test step passed; original artifact upload failed. Export fix tested separately, no complete rerun with it claimed.",
+    "The x86-64 raw installed SDK receipt was not uploaded; test-step console and API conclusions are retained."
+  ],
+  "previous_published_binary_release": "0.246.0"
+}

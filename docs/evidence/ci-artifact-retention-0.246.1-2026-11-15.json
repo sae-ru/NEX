@@ -34,7 +34,22 @@
     "manifest": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/ci-artifacts-real-v1/export/evidence-export.json",
     "manifest_sha256": "5a5edc0eba7e8d367489a8e3a15a5d60035a9b0038f8dbd868ce63ba8511b68e"
   },
-  "hosted_export_regression": "pending the dedicated CI evidence export checks; no full compiler suite repeat is needed for this report-copying change",
+  "hosted_export_regression": {
+    "schema": "nex.hosted-export-regression/1",
+    "ok": true,
+    "scope": "CI artifact export regression, not compiler or full pipeline qualification",
+    "run_id": 43717414295,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43717414295",
+    "source_commit": "48464ca7d9a218524485c9745b9629458c30e2bf",
+    "artifact_id": 14162178843,
+    "artifact_sha256": "3dc029b29ee8d93b823fed1a7e82260e25f7fd0a6ee74a6410c7bea4c02fdef9",
+    "exported_files": 7,
+    "nonroot_runner_guard_passed": true,
+    "root_owned_source_with_unreadable_probe": true,
+    "original_diagnostics_preserved": true,
+    "probe_not_uploaded": true,
+    "compiler_tests_executed": false
+  },
   "limits": [
     "The original whole workflow remains failed because its upload failed. Its actual test step passed. The new export is verified separately; a whole rerun with that export is not claimed.",
     "The complete x86-64 raw SDK receipt was not uploaded. Successful test-step console output and API step conclusions are preserved; macOS and ARM64 retain their full raw receipts."

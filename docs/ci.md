@@ -10,9 +10,29 @@ nightly at03:23 UTC on the default branch. It uses the existing Linux source,
 installed smoke and source-free installed workflow. It runs all configured
 CTest groups without a label filter. It does not run after every patch.
 
-The [November 14 core run](https://github.com/sae-ru/NEX/actions/runs/43625795419)
-passed on both hosted platforms for source `c949180175a428bfeb8373ce9f2bffaf787ee311`.
-This qualifies the core workflow for that source. Windows CI, hosted macOS full
+The [current core run](https://github.com/sae-ru/NEX/actions/runs/43717414285) passed on macOS and Linux
+for `48464ca7d9a218524485c9745b9629458c30e2bf`. The SDK's exact source `3b008a4e` also passed core CI and
+**344/344 configured Linux source groups**; its raw CTest receipt is retained.
+The [later integrated run](https://github.com/sae-ru/NEX/actions/runs/43693616418) completed its entire compiler,
+source, install/smoke and source-free SDK **test step successfully** at `576ee8ad`.
+Its overall workflow failed afterward, during artifact upload. The uploader
+recursively encountered an intentionally unreadable test project. The x86-64
+SDK JSON receipt could not be uploaded; the successful test-step API conclusion
+and console result are preserved. This is not recorded as a green full workflow.
+
+The workflow now exports selected receipts and captured command stdout/stderr
+to a new readable directory before uploading. It does not traverse test projects
+or change their permissions. [Export CI](https://github.com/sae-ru/NEX/actions/runs/43717414295) passed three
+regressions and a real ordinary-user upload of root-owned evidence containing an
+unreadable probe. A separate export also preserved all 1708 selected files from
+the actual completed ARM64 installed SDK run. See the
+[retention receipt](evidence/ci-artifact-retention-0.246.1-2026-11-15.json) and
+[combined SDK evidence](evidence/sdk-current-0.246.1-2026-11-15.json).
+
+The compiler tests were not repeated for this CI-only report-copying change.
+The complete pipeline with the corrected export has not been rerun; its next
+manual/nightly execution remains separate from these focused checks. Linux
+installed acceptance does not qualify a portable Linux archive. Windows CI, hosted macOS full
 CI and new physical GPU/NPU acceptance remain separate work. A green core job
 is development feedback; the matching [SDK release record](sdk.md) records
 source regression and portable archive acceptance separately. The Qwen experiment
@@ -60,7 +80,13 @@ not selected. The core tier keeps its ordinary container configuration.
 A [local control](evidence/linux-ci-container-fixes-0.246.1-2026-11-15.json)
 reproduces `configurationDone: process already running` and
 passes with the debugger configuration using the same NEX and LLDB binaries.
-Complete hosted qualification of the replacement remains pending.
+The next [attempt](evidence/linux-ci-output-ownership-0.246.1-2026-11-15.json)
+passed all 344 source groups and installed smoke, then stopped before the
+source-free workflow: the host could not update the root-owned Docker receipt.
+The hosted full job now runs its host orchestrator with `sudo`, matching the
+ownership of its disposable Docker output. The subsequent test step passed;
+its artifact retention failure and targeted export correction are described
+above. Original failures and local controls are preserved.
 The full job uses four parallel jobs on the public Ubuntu runner, matching its
 [four CPU cores and 16 GB RAM](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories).
 

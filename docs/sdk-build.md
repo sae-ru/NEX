@@ -6,14 +6,18 @@ new owned directory, builds/tests/installs it, then delegates relocation,
 source-free acceptance, normalized archive creation and restored acceptance to
 the existing platform helper. It never overwrites an SDK or previous attempt.
 
-This is a source development tool. Current local qualification covers its
-snapshot/configuration/failure controls, not a complete new SDK execution.
-The [scoped evidence](evidence/sdk-build-driver-0.165.0-2026-11-11.json) records
-five control methods, actual macOS/Linux plans and an exact2302-file source
-export. It also records the three actual kernel read-denial controls.
-The final matching platform/device/SDK milestone remains pending. The command
-does not publish a release or call an LLM; `release_qualification` stays false
-because one host archive does not qualify every requested platform/device.
+The [0.246.1 macOS execution](evidence/sdk-current-0.246.1-2026-11-15.json)
+completed this command from committed source `3b008a4e`: 2655 tracked source
+files, a fresh all-target Release build, all 351 configured source test groups,
+installation and 41 phases each after relocation and archive restoration.
+The [published archive](releases/0.246.1.json) retains its exact identity.
+
+Earlier [control evidence](evidence/sdk-build-driver-0.165.0-2026-11-11.json)
+retains snapshot/configuration/failure methods, platform plans and read-denial
+controls. Complete Linux orchestration and Windows-native distribution remain
+separate work. The command does not publish a release or call an LLM;
+`release_qualification` stays false because one host archive does not qualify
+every requested platform/device.
 
 ## Linux
 
@@ -70,8 +74,9 @@ requires real working LLDB/DAP; omitting it does not qualify live debugging.
 Python/Node/npm must remain outside denied source/build/dependency roots. The
 source and build copies receive explicit readable control files; the existing
 kernel read/write denial checks remain active. Host Apple SDK/system tools are
-declared prerequisites. Complete source-test and newly assembled archive
-execution through this joining command remain pending.
+declared prerequisites. The 0.246.1 macOS run completed this full sequence;
+its source, configuration, notices, source-test and distribution hashes are
+preserved in the linked receipts. `live` was false for that archive.
 
 ## Local 0.177 macOS smoke
 

@@ -1,0 +1,49 @@
+{
+  "schema": "nex.scoped-implementation-evidence/1",
+  "scope": "Full macOS CTest of the final NEX 0.246.1 SDK source",
+  "implementation_commit": "3b008a4e618e8ee6d8789a39b3105928c36d35d6",
+  "source_tree": "97b282214cfc4f5059657174c94d5ca819a40eb1",
+  "verified_at_utc": "2026-11-15T06:53:14.420480+00:00",
+  "compiler": {
+    "toolchain": "0.246.1",
+    "default_language": "0.28",
+    "development_language": "0.29",
+    "sha256": "f1deaec202fd741a7507a7f271d46b603586c60b22454c0258f13801890abd6b",
+    "LLVM": "22.1.8",
+    "host": "arm64-apple-darwin27.2.0"
+  },
+  "full_ctest": {
+    "schema": "nex.ci-ctest/1",
+    "tier": "full",
+    "ok": true,
+    "jobs": 4,
+    "seconds": 4336.097,
+    "ctest_exit_code": 0,
+    "groups": 351,
+    "passed": 351,
+    "failed": 0,
+    "skipped": 0,
+    "release_qualification": false,
+    "registry_sha256": "f0a08f0539840ae9ebf1183c7fe740c823950452c806edccd4873f3a988997c3",
+    "junit_sha256": "82e6317a5cba402d883c417f51981831fb839d8560dc72749c867c1241ea6f54",
+    "report_sha256": "55fcc8c9d0536213dc14cd516fcd9ae56d20b4a0189d1de431c4ecc3ecf649f3",
+    "receipt_sha256": "caa7db5d83fc95d677758cf0171e23fa73870c05ba32af1e0dcab46efc0a22bc"
+  },
+  "source_files": 2655,
+  "frozen_source_inventory_checked_after_tests": true,
+  "portable_SDK_qualification": false,
+  "physical_devices_qualified": false,
+  "new_security_checks_started": false,
+  "deferred_checks_untouched": true,
+  "artifacts": {
+    "report": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/source-tests/report.json",
+    "junit": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/source-tests/results.xml",
+    "receipt": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/source-tests/ctest-receipt.json",
+    "log": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/source-tests/LastTest.log"
+  },
+  "notes": [
+    "Includes the committed Linux CI corrections at 3b008a4e.",
+    "All eight optional DNS/HTTP groups are enabled.",
+    "Matching moved/restored SDK acceptance has separate receipts."
+  ]
+}
