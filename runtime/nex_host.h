@@ -86,6 +86,13 @@ std::optional<std::chrono::steady_clock::time_point> currentRequestDeadline() no
 void pollHostOperation(int64_t line);
 void registerRuntimeCleanup(void (*cleanup)() noexcept);
 void cleanupRuntimeResources();
+// Private application-owned reference attachment. Creation is synchronous;
+// its no-throw destructor runs after source handles retire on every exit.
+// Creation cannot reenter; reuse requires the same factory/destructor pair;
+// a closed attachment cannot be revived, including during its destructor.
+// Requests, threads and module/host reference-return ABIs remain separate.
+void *managedReferenceContext(void *(*create)(void *),void *argument,
+    void (*destroy)(void *)noexcept,bool exclusive=false);
 template<class F> auto hostOperation(SourceLocation line,F operation)->decltype(operation()){
   try{return operation();}
   catch(const NativeSourceException &){throw;}

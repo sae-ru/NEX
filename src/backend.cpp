@@ -6,6 +6,7 @@
 #include "nex_task_profile_site.h"
 #include "nex_task_debug_site.h"
 #include "nex/backend.h"
+#include "nex/managed_references.h"
 #include "nex_source_error.h"
 #include "nex/task_provider_debug.h"
 #include "nex/native_images.h"
@@ -128,6 +129,7 @@ int64_t sourceErrorHeapKind(const Program &p,const Type &t,Span span){
     case Type::List:return nexrt::Data::List;case Type::Result:return -1;
     case Type::Function:return nexrt::Data::Closure;case Type::File:return nexrt::Data::File;
     case Type::TaskScope:return nexrt::Data::TaskScope;case Type::Task:return nexrt::Data::Task;case Type::Channel:return nexrt::Data::Channel;
+    case Type::Cell:return nexrt::Data::Cell;
     case Type::Record:{const auto &record=p.structure(t.name);return record.opaqueResource?nexrt::Data::External:record.enumeration?nexrt::Data::Enum:nexrt::Data::Record;}
     default:throw Error("E_INTERNAL","typed handler has no native heap kind",span);
   }
@@ -269,6 +271,7 @@ class Emitter {
   const NativeEmissionContext *context;
   Value ownedToken;
   bool exceptionPrototype=false;
+  nexrt::CellHeapLimits cellLimits;
   Value exceptionOutput;
   std::string exceptionScratch;
   std::vector<Value> exceptionOwners,caughtErrors;
@@ -707,7 +710,18 @@ class Emitter {
           if(args[i].type.heap())call("nex_record_init_heap",{result,c(i),args[i]},Type::Unit,e->span);
           else call("nex_record_init_i64",{result,c(i),asI64(args[i],e->span),c(scalarTag(args[i].type))},Type::Unit,e->span);
         }
-      }else if(e->text=="$list_start")result=call("nex_list_new",{},e->type,e->span);
+      }else if(supportsManagedReferences(p)&&e->text=="cell_new"){
+        if(args[0].type.heap())result=call("nex_cell_new_heap",{args[0],c(e->span.line)},e->type,e->span);
+        else result=call("nex_cell_new_i64",{asI64(args[0],e->span),c(scalarTag(args[0].type)),c(e->span.line)},e->type,e->span);
+      }else if(supportsManagedReferences(p)&&e->text=="cell_read"){
+        if(e->type.heap())result=call("nex_cell_read_heap",{args[0],c(e->span.line)},e->type,e->span);
+        else result=fromScalar(call("nex_cell_read_i64",{args[0],c(scalarTag(e->type)),c(e->span.line)},Type::I64,e->span),e->type,e->span);
+      }else if(supportsManagedReferences(p)&&e->text=="cell_write"){
+        if(args[1].type.heap())call("nex_cell_write_heap",{args[0],args[1],c(e->span.line)},Type::Unit,e->span);
+        else call("nex_cell_write_i64",{args[0],asI64(args[1],e->span),c(scalarTag(args[1].type)),c(e->span.line)},Type::Unit,e->span);
+        result={"",Type::Unit};
+      }else if(supportsManagedReferences(p)&&e->text=="cell_collect")result=call("nex_cell_collect",{c(e->span.line)},Type::Unit,e->span);
+      else if(e->text=="$list_start")result=call("nex_list_new",{},e->type,e->span);
       else if(e->text=="$list_append"){
         if(args[1].type.heap())call("nex_list_append_heap",args,Type::Unit,e->span);
         else call("nex_list_append_i64",{args[0],asI64(args[1],e->span),c(scalarTag(args[1].type))},Type::Unit,e->span);
@@ -1123,7 +1137,7 @@ class Emitter {
     out<<"  }\n";ownedToken={};
   }
 public:
-  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false,bool exceptionPrototype=false):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context),exceptionPrototype(exceptionPrototype||(isPublicSourceExceptionLanguage(p.sourceLanguage)&&!wasm)){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
+  explicit Emitter(const Program &p,bool optimized=false,bool profiling=false,const OperationIndex *sharedSites=nullptr,bool wasm=false,const NativeEmissionContext *context=nullptr,bool taskDebug=false,bool exceptionPrototype=false,const nexrt::CellHeapLimits *limits=nullptr):p(p),debug(p,optimized),profiling(profiling),wasm(wasm),taskDebug(taskDebug),sites(sharedSites?*sharedSites:ownedSites),context(context),exceptionPrototype(exceptionPrototype||(isPublicSourceExceptionLanguage(p.sourceLanguage)&&!wasm)),cellLimits(limits?*limits:nexrt::CellHeapLimits{}){if(!sharedSites)for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)ownedSites[o.ast]=o.site;}
   std::string run(const std::string &entry,bool testEntry,bool libraryEntry,const std::set<std::string> *selected=nullptr,const std::set<std::string> *closure=nullptr,bool allCallableBridges=false,bool parallelScopes=false,const std::vector<TaskFunctionIR> *tasks=nullptr,const nexrt::TaskExecutionLimits &taskLimits={},const std::map<std::string,NativeTaskExport> *taskImports=nullptr,const std::set<std::string> *taskExports=nullptr,bool taskImageFileReads=false,bool taskInternalSteps=false,const std::string &profileRegistryAccessor={},const std::string &profileComponent={},const std::string &debugRegistryAccessor={},const std::string &debugComponent={},bool taskImageFileWrites=false,bool taskImageFileStreams=false,bool taskImageForeign=false,int64_t forcedExceptionABI=0){
     importedTaskCodes=taskImports;internalTaskSteps=taskInternalSteps;privateTaskModule=sourceExceptionTasksPrototype(p)&&forcedExceptionABI;
     const auto &main=nativeEntry(p,entry,testEntry,libraryEntry,wasm,exceptionPrototype);
@@ -1139,6 +1153,13 @@ public:
     declaration("nex_neg","i64, i64","i64");declaration("nex_print_i64","i64");declaration("nex_print_bool","i64");declaration("nex_assert","i64, i64");declaration("nex_match_fail","i64");
     declaration("nex_retain","!llvm.ptr","!llvm.ptr");declaration("nex_release","!llvm.ptr");declaration("nex_runtime_finish","");
     declaration("nex_poll","i64");
+    if(supportsManagedReferences(p)){
+      declaration("nex_cell_context_limits","i64, i64, i64, i64");
+      declaration("nex_cell_new_i64","i64, i64, i64","!llvm.ptr");declaration("nex_cell_new_heap","!llvm.ptr, i64","!llvm.ptr");
+      declaration("nex_cell_read_i64","!llvm.ptr, i64, i64","i64");declaration("nex_cell_read_heap","!llvm.ptr, i64","!llvm.ptr");
+      declaration("nex_cell_write_i64","!llvm.ptr, i64, i64, i64");declaration("nex_cell_write_heap","!llvm.ptr, !llvm.ptr, i64");
+      declaration("nex_cell_collect","i64");
+    }
     if(parallelEnabled){
       declaration("nex_parallel_enter","");declaration("nex_parallel_leave","");
       declaration("nex_parallel_map","!llvm.ptr, !llvm.ptr, i64, !llvm.ptr, i64, i64, i64","!llvm.ptr");
@@ -1312,6 +1333,7 @@ public:
     // C++ owns the application boundary so a runtime failure can unwind host
     // temporaries and release every live managed handle, including caller scopes.
     out<<"  func.func private @nex_application_entry(%nex_argc64: i64, %nex_argv: !llvm.ptr) -> i64 {\n";
+    if(supportsManagedReferences(p))call("nex_cell_context_limits",{constant(cellLimits.maximumCells,Type::I64,main.span),constant(cellLimits.maximumNodes,Type::I64,main.span),constant(cellLimits.maximumEdges,Type::I64,main.span),constant(main.span.line,Type::I64,main.span)},Type::Unit,main.span);
     if(tasks&&profiling){
       if(!profileRegistryAccessor.empty())call("nex_task_profile_prepare_application_v1",{},Type::Unit,main.span);else{auto registry=fresh();line(registry+" = llvm.mlir.addressof @"+taskProfileTable+" : !llvm.ptr",main.span);
       call("nex_task_profile_prepare",{{registry,Type::Str},constant(tasks->size(),Type::I64,main.span)},Type::Unit,main.span);}
@@ -1740,6 +1762,14 @@ std::string emitSourceExceptionsPrototypeMLIR(const Program &p,const std::string
   if(p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype)throw Error("E_LANGUAGE_VERSION","experimental exception emitter requires the private identity");
   for(const auto &f:p.functions)if(f.foreign||usesParallelMap(f)||std::any_of(f.effects.begin(),f.effects.end(),[](const auto &effect){return effect!="io"&&effect!="throw";}))throw Error("E_EXCEPTION_STAGE","native exception experiment supports sequential pure/io/throw functions",f.span);
   return Emitter(p,optimized,false,nullptr,false,nullptr,false,true).run(entry,false,false);
+}
+std::string emitManagedReferencesPrototypeMLIR(const Program &p,const std::string &entry,bool optimized,nexrt::CellHeapLimits limits){
+  if(!supportsManagedReferences(p))throw Error("E_LANGUAGE_VERSION","private reference emission requires its dedicated frontend");
+  for(const auto &f:p.functions)if(!f.checked&&!f.traitSignature)throw Error("E_CELL_STATE","private reference emission requires a fully checked program",f.span);
+  const auto &main=p.function(entry);
+  if(main.result!=Type::Unit&&main.result!=Type::I64)throw Error("E_CELL_ENTRY","private native application entry must return unit or an i64 process status",main.span);
+  for(auto value:{limits.maximumCells,limits.maximumNodes,limits.maximumEdges})if(!value||value>uint64_t(std::numeric_limits<int64_t>::max()))throw Error("E_CELL_LIMIT","native managed heap limits must be positive i64 values");
+  return Emitter(p,optimized,false,nullptr,false,nullptr,false,true,&limits).run(entry,false,false);
 }
 std::string emitWasmMLIR(const Program &p,const std::string &entry,bool optimized){
   if(p.sourceLanguage==SourceLanguage::SourceExceptions025Prototype)throw Error("E_EXCEPTION_BACKEND","private source exceptions have no Wasm lowering");

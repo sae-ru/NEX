@@ -564,6 +564,16 @@ target_link_libraries(nex_managed_references_probe PRIVATE nex_native_backend ne
 add_test(NAME managed_references_frontend_reference COMMAND nex_managed_references_probe
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/managed-references/public-baseline.json)
 set_tests_properties(managed_references_frontend_reference PROPERTIES TIMEOUT 120)
+add_executable(nex_managed_reference_native_probe tests/managed_reference_native.cpp)
+target_link_libraries(nex_managed_reference_native_probe PRIVATE nex_native_backend ${CMAKE_DL_LIBS})
+set_target_properties(nex_managed_reference_native_probe PROPERTIES ENABLE_EXPORTS ON)
+add_test(NAME managed_reference_native_context COMMAND nex_managed_reference_native_probe context)
+set_tests_properties(managed_reference_native_context PROPERTIES TIMEOUT 30)
+add_test(NAME managed_references_native COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_native.py $<TARGET_FILE:nex_managed_reference_native_probe>
+  ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-native-acceptance)
+set_tests_properties(managed_references_native PROPERTIES TIMEOUT 600)
 target_include_directories(nex_bytes_runtime_probe PRIVATE runtime)
 target_compile_options(nex_bytes_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME bytes_runtime_native COMMAND nex_bytes_runtime_probe)
@@ -1543,7 +1553,7 @@ endif()
 # This target does not execute tests or prepare browser/package dependencies.
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
-  nex_managed_references_probe)
+  nex_managed_references_probe nex_managed_reference_native_probe)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

@@ -13,4 +13,6 @@ struct ManagedReferenceEvaluation {
 };
 ManagedReferenceEvaluation evaluateManagedReferencesPrototype(const Program &program,
     const std::string &entry="main",uint64_t stepLimit=1000000,nexrt::CellHeapLimits limits={});
+std::string emitManagedReferencesPrototypeMLIR(const Program &program,
+    const std::string &entry="main",bool optimized=false,nexrt::CellHeapLimits limits={});
 }

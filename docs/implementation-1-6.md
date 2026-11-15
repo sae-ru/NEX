@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.250.0"
+applies_to: "language 0.28; toolchain 0.251.0"
 owner: repository
 ---
 
@@ -94,6 +94,16 @@ records its reference behavior and rejection gates. Core now includes this
 no-Node probe (13 groups); eight additional affected groups pass. The earlier
 [0.249 hosted core](evidence/core-ci-0.249.0-2026-11-15.json) passed on macOS/Linux
 with the previous 12-group scope and does not qualify the new candidate.
+
+The 0.251 [native candidate](managed-reference-native-prototype.md) shares one
+application-owned heap across generated source calls. Its
+[focused receipt](evidence/managed-reference-native-0.251.0-2026-11-16.json)
+records 26 reference/O0/O2 comparisons through matching host images and separate
+executables, including cleanup and reported source locations. Core now has
+14 no-Node groups, adding context lifecycle/reentry checks. Public native
+project/module ownership, TypeScript, migration and complete SDK qualification
+remain open. [Hosted 0.250 core](evidence/core-ci-0.250.0-2026-11-16.json) passed
+on macOS/Linux at its own 13-group source commit.
 
 [0.248 focused evidence](evidence/java-int32-language-0.248.0-2026-11-15.json)
 records the numerical and selected-language graph/diagnostic block. The earlier

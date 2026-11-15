@@ -50,6 +50,12 @@ thread_local RequestScope *currentRequest=nullptr;
 struct ApplicationState {
   Handle *head=nullptr;ApplicationState *parent=nullptr;int64_t token=0;
   RequestScope *request=nullptr;ApplicationState *application=nullptr;
+  enum class ReferencePhase {Inactive,Creating,Active,Closed} referencePhase=ReferencePhase::Inactive;
+  void *references=nullptr;void *(*createReferences)(void *)=nullptr;void (*destroyReferences)(void *)noexcept=nullptr;
+  void closeReferences()noexcept{
+    auto value=references;auto destroy=destroyReferences;references=nullptr;createReferences=nullptr;destroyReferences=nullptr;referencePhase=ReferencePhase::Closed;
+    if(destroy)destroy(value);
+  }
 };
 thread_local ApplicationState *currentApplication=nullptr;
 struct FunctionOwners {
@@ -75,6 +81,22 @@ void registerRuntimeCleanup(void (*cleanup)() noexcept){
   if(std::find(resourceCleanups.begin(),resourceCleanups.end(),cleanup)==resourceCleanups.end())resourceCleanups.push_back(cleanup);
 }
 void cleanupRuntimeResources(){while(!resourceCleanups.empty()){auto cleanup=resourceCleanups.back();resourceCleanups.pop_back();cleanup();}}
+void *managedReferenceContext(void *(*create)(void *),void *argument,void (*destroy)(void *)noexcept,bool exclusive){
+  if(!currentApplication||currentRequest)throw DataError("E_CELL_CONTEXT","managed references require a standalone application context");
+  auto &state=*currentApplication;
+  if(state.referencePhase==ApplicationState::ReferencePhase::Closed||state.referencePhase==ApplicationState::ReferencePhase::Creating)throw DataError("E_CELL_CONTEXT","managed reference context has ended or is being created");
+  if(!create||!destroy)throw DataError("E_CELL_CONTEXT","managed reference context requires an owned factory");
+  if(state.references){
+    if(exclusive)throw DataError("E_CELL_CONTEXT","managed reference context is already initialized");
+    if(create!=state.createReferences||destroy!=state.destroyReferences)throw DataError("E_CELL_CONTEXT","managed reference context belongs to another factory");
+    return state.references;
+  }
+  state.referencePhase=ApplicationState::ReferencePhase::Creating;void *value;
+  try{value=create(argument);}catch(...){if(state.referencePhase==ApplicationState::ReferencePhase::Creating)state.referencePhase=ApplicationState::ReferencePhase::Inactive;throw;}
+  if(state.referencePhase!=ApplicationState::ReferencePhase::Creating){if(value)destroy(value);throw DataError("E_CELL_CONTEXT","managed reference context ended during creation");}
+  if(!value){state.referencePhase=ApplicationState::ReferencePhase::Inactive;throw DataError("E_CELL_CONTEXT","managed reference context factory returned no owner");}
+  state.references=value;state.createReferences=create;state.destroyReferences=destroy;state.referencePhase=ApplicationState::ReferencePhase::Active;return value;
+}
 struct Handle {
   std::shared_ptr<Data> data;
   RequestScope *owner=currentRequest;
@@ -137,6 +159,7 @@ struct ApplicationScope {
     profileUnwind();
     functionOwners.unwind(functionBaseline);
     while(state.head)delete state.head;
+    state.closeReferences();
     cleanupRuntimeResources();currentApplication=previous;
   }
 };
@@ -641,7 +664,7 @@ static Handle *impl_nex_source_error_heap(Handle *error,Handle *key,int64_t kind
   return nexrt::hostOperation(location,[&]{
     sourceError(error);auto payload=nexrt::sourceErrorRecordPayload(nexrt::readHandle(error),sourceTypeString(key));
     if(kind==-1){const auto &v=payload.get(payload.typeKey);if(v.tag!=nexrt::Value::Object||!v.object||(v.object->kind!=nexrt::Data::Success&&v.object->kind!=nexrt::Data::Failure))throw nexrt::DataError("E_SOURCE_TYPE","source result payload kind differs");kind=v.object->kind;}
-    if(kind<0||kind>nexrt::Data::External)throw nexrt::DataError("E_SOURCE_TYPE","invalid checked source heap kind");
+    if(kind<0||kind>nexrt::Data::Cell)throw nexrt::DataError("E_SOURCE_TYPE","invalid checked source heap kind");
     return nexrt::makeHandle(payload.getObject(payload.typeKey,static_cast<nexrt::Data::Kind>(kind)));
   });
 }
@@ -961,6 +984,7 @@ void nex_print_heap_at(Handle *p, const nexrt::NativeSite *nex_site){return impl
 static void impl_nex_runtime_finish(nexrt::SourceLocation location){
   return nexrt::hostOperation(location,[&]() -> void {
     if(nexrt::functionOwners.depth)fail("E_INTERNAL_SCOPE","compiler did not close every function ownership scope",location);
+    if(nexrt::currentApplication)nexrt::currentApplication->closeReferences();
     nexrt::cleanupRuntimeResources();if(nexrt::liveHandles||nexrt::liveObjects)fail("E_INTERNAL_LEAK","compiler did not release all managed values",location);
   });
 }
@@ -983,7 +1007,14 @@ static int64_t impl_nex_application_run(void *entry,int64_t argc,const char *con
   try{
     nexrt::ApplicationScope scope;
     if(!entry)nexrt::runtimeFail("E_ENTRY","application entry is absent",location);
-    auto result=reinterpret_cast<int64_t(*)(int64_t,const char *const *)>(entry)(argc,argv);
+    int64_t result;
+    try{result=reinterpret_cast<int64_t(*)(int64_t,const char *const *)>(entry)(argc,argv);}
+    catch(NativeSourceException &error){
+      // The private reference application has no host payload lifetime ABI.
+      // Retire an uncaught packet while its heap/context is still alive.
+      if(scope.state.references)error.payload.reset();
+      throw;
+    }
     impl_nex_runtime_finish(location);
     return result;
   }catch(const NativeSourceException &error){

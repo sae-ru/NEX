@@ -611,7 +611,8 @@
     "migration_readiness": "docs/migration-readiness.md",
     "managed_references": "docs/managed-references-design.md",
     "managed_references_prototype": "docs/managed-references-prototype.md",
-    "managed_references_prototype_grammar": "docs/managed-references-prototype.ebnf"
+    "managed_references_prototype_grammar": "docs/managed-references-prototype.ebnf",
+    "managed_reference_native": "docs/managed-reference-native-prototype.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5250,7 +5251,12 @@
       "introduced_toolchain": "0.250.0",
       "language": "0.30-refs-prototype",
       "migration": false,
-      "native": false,
+      "native": true,
+      "native_context": "one opaque application-owned heap; source handles retire before heap close on every exit",
+      "native_entry": "sequential application: unit or i64 process status; same-runtime generated-code fixture",
+      "native_guide": "docs/managed-reference-native-prototype.md",
+      "native_introduced_toolchain": "0.251.0",
+      "native_selection": "emitManagedReferencesPrototypeMLIR",
       "operations": [
         "cell_new(value)",
         "cell_new<T>(value)",

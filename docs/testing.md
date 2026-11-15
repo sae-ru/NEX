@@ -19,7 +19,7 @@ The [development presets](development-build.md) also provide
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
 JUnit, exit code and logs for core/full selections.
 
-The selected 13 groups cover frontend checking, typed reference evaluation,
+The selected 14 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
 accounting/collection/CTest metadata and compiled diagnostic explanations. They require Python3.10+, the configured
 compiler and its selected native dependencies. They require no Node/npm, browser
@@ -29,6 +29,15 @@ reference frontend/interpreter probe, including effect/ownership failures and
 preserved 0.28/0.29 revision identities. It runs without Node and is built by
 `nex_core_tests`, so hosted core CI executes the same new source semantics.
 Earlier 11/12-group receipts below retain their original scopes.
+Toolchain 0.251 also includes the application-context lifecycle probe, making
+the current core 14 groups. Native generated-code/executable agreement remains
+an additional compiler/platform check.
+
+[0.251 native evidence](evidence/managed-reference-native-0.251.0-2026-11-16.json)
+records 14 core groups in 23.84 s, eight affected groups in 39.85 s and a final
+native/context recheck. Its 26 O0/O2 cases execute both matching host images and
+separate applications with independently compiled runtime objects. The private
+reference candidate still has no ordinary project/SDK publication or migration.
 
 [0.250 focused evidence](evidence/managed-reference-source-0.250.0-2026-11-15.json)
 records 13 core groups in 21.09 s, the candidate's 13 accepted/38 rejected

@@ -1,0 +1,32 @@
+{
+  "schema": "nex.hosted-core-evidence/1",
+  "recorded_at": "2026-11-16 Europe/Moscow",
+  "toolchain": "0.250.0",
+  "source_commit": "65b59d48e15f4cab0a7964e3bd3b5b669e20650d",
+  "scope": "hosted core CI with private reference probe; not native/TypeScript reference execution or SDK qualification",
+  "run_id": 43760908270,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43760908270",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-15T20:57:10Z",
+  "updated_at": "2026-11-15T21:00:57Z",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43760908270/job/132955284908",
+      "started_at": "2026-11-15T20:57:12Z",
+      "completed_at": "2026-11-15T21:00:56Z"
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43760908270/job/132955285221",
+      "started_at": "2026-11-15T20:57:12Z",
+      "completed_at": "2026-11-15T20:59:31Z"
+    }
+  ],
+  "verification": "GitHub run/job API completion and exact workflow source; artifact archives returned HTTP401 and were not read"
+}

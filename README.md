@@ -55,7 +55,7 @@ platform acceptance.
 
 ## Development status
 
-Current source: **toolchain 0.250.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.251.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
@@ -64,7 +64,7 @@ new `nex init` projects select 0.29.
 Recent source blocks add persistent AVL [ordered map/set](docs/ordered-containers.md)
 and an explicit [Java int domain](docs/java-integers.md). The
 [managed-reference candidate](docs/managed-references-prototype.md) has private
-C++ checking/reference execution; public references/state effects, machine i32 and other
+C++ checking/reference/native candidates; public references/state effects, machine i32 and other
 [migration prerequisites](docs/migration-readiness.md) remain open.
 The [implementation sequence](docs/implementation-1-6.md) tracks current
 work. [Focused acceptance](docs/evidence/containers-0.247.0-2026-11-15.json) covers
@@ -131,7 +131,7 @@ requires Node.js 22.18+, npm and the repository's locked web dependencies.
 On Unix, the ELF fixture tests also require matching LLVM `ld.lld` and `llvm-ar`;
 use `-DNEX_ELF_TEST_LD=/absolute/path/to/ld.lld` when LLD has a separate prefix.
 
-For a short development loop after configuring, use the [13-group core layer](docs/testing.md):
+For a short development loop after configuring, use the [14-group core layer](docs/testing.md):
 
 ```sh
 cmake --build build --target nex_core_tests -j 4

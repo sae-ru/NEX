@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.250.0"
+applies_to: "language 0.28; toolchain 0.251.0"
 owner: repository
 ---
 
@@ -39,7 +39,8 @@ The 0.249 [managed-reference kernel](managed-references-design.md) establishes a
 private C++ foundation for identity, aliased mutation, retained immutable
 snapshots and collection of unreachable cycles. The 0.250
 [private candidate](managed-references-prototype.md) adds checked `cell<T>`/`state`
-and sequential reference execution. Public source versions, native/TypeScript
+and sequential reference execution; 0.251 adds dedicated private native emission
+and an application-owned heap. Public source versions, complete native/TypeScript
 agreement, migration and the ownership/concurrency/ABI contracts below stay open.
 No ordinary source version or converter is introduced by this candidate.
 

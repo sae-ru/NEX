@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.250.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.251.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -17,7 +17,9 @@ Its identity is **`0.30-refs-prototype`**, not public language 0.30. Ordinary
 `parseVersioned`, `nex.json`, CLI language selection and existing projects still
 support their advertised versions. The private candidate cannot create stored
 revisions, source bundles or dependency locks. Ordinary reference evaluation,
-MLIR/native, Wasm and TypeScript emission reject it. Public promotion still
+MLIR/native, Wasm and TypeScript emission reject it. The dedicated 0.251
+[native candidate](managed-reference-native-prototype.md) has a separate C++
+entry point. Public promotion still
 requires all source backends, execution-context/ABI ownership and an explicit
 history-preserving migration. No converter is implemented.
 

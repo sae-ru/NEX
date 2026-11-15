@@ -14,6 +14,7 @@ install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.m
 install(FILES tests/sqlite_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
 install(FILES tests/fixtures/java-int32/Oracle.java tests/fixtures/java-int32/oracle.json DESTINATION share/nex/tests/fixtures/java-int32)
 install(FILES tests/cells.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
+install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/managed-references/public-baseline.json DESTINATION share/nex/tests/fixtures/managed-references)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)

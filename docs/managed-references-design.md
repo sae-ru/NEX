@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.250.0; no public source-language extension"
+applies_to: "toolchain 0.251.0; no public source-language extension"
 owner: repository
 ---
 
@@ -13,7 +13,9 @@ mutation without changing those value semantics.
 
 Toolchain 0.249 introduced a **compiler-private C++ heap kernel**. Toolchain
 0.250 adds an unarchived [checked/reference candidate](managed-references-prototype.md)
-through dedicated C++ entry points. Discover `managed_references` in `nex describe --json`:
+through dedicated C++ entry points; 0.251 adds a
+[private native candidate](managed-reference-native-prototype.md).
+Discover `managed_references` in `nex describe --json`:
 `public_source_enabled`, `source_type_enabled` and `state_effect_enabled` are
 false for ordinary published source languages. Ordinary project checking,
 evaluation, MLIR and TypeScript paths do not enable the candidate. There is no public cell syntax, state effect,
@@ -74,7 +76,8 @@ acquire an otherwise dead graph through a weak pointer during collection.
 Weak observations in tests detect destruction; weak-reference acquisition,
 resurrection and user finalizers are not a language contract. Native execution
 contexts and libraries have not yet been integrated. The private reference
-interpreter has its own sequential context; native/TypeScript lowering is pending.
+interpreter and native candidate each own their sequential execution context;
+TypeScript and public native module/host integration remain pending.
 Deep immutable snapshots released after their heap has closed still use the
 ordinary value cleanup path. The deep-registry teardown checks do not qualify
 that separate external-root lifetime; public integration must address it.
