@@ -18,6 +18,7 @@ template<class Poll> void validateParallelValue(const Value &value,Poll poll){
     if(!seen.insert(next.object.get()).second)continue;
     if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","parallel value graph exceeds its object limit");
     if((seen.size()%64)==0)poll();
+    if(next.object->kind==Data::Cell)throw DataError("E_PARALLEL_VALUE","managed cells do not support parallel transfer yet");
     if(next.object->kind==Data::External)throw DataError("E_PARALLEL_VALUE","parallel values cannot contain external resource authority");
     if(next.object->kind==Data::File||next.object->kind==Data::TaskScope||next.object->kind==Data::Task||next.object->kind==Data::Channel)throw DataError("E_PARALLEL_VALUE","parallel values cannot contain file or task authority");
     if(next.object->values.size()>parallelMaximumNodes-members)throw DataError("E_LIMIT","parallel value graph exceeds its member limit");

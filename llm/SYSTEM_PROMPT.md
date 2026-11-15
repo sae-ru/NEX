@@ -118,6 +118,11 @@ UTF-8 and Unicode scalar operations; bytes preserve arbitrary octets. Scalar
 indices differ from byte offsets. Aggregates and closure captures are immutable
 snapshots; aliases to genuine resources share identity.
 
+If `managed_references` reports `public_source_enabled:false`, its cell heap is
+a private C++ kernel. Do not emit cell/ref syntax or a state effect on its basis.
+It does not provide Java/Python object compatibility or override immutable source
+values; discover the actual source type/effect before using a future extension.
+
 Evaluate expressions once, left to right; preserve lazy boolean branches and
 the selected match arm. Use checked exhaustive patterns, actual generic bounds,
 traits and exact callable signatures/effects/realms. Retrieve the relevant guide

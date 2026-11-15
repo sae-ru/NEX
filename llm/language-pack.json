@@ -33,6 +33,7 @@
       "list_construction",
       "llm_cost",
       "llm_entry",
+      "managed_references",
       "model",
       "native_application_lifetime",
       "native_core",
@@ -607,7 +608,8 @@
     "ordered_containers": "docs/ordered-containers.md",
     "standard_java_int_source": "lib/java_int.nex",
     "java_integers": "docs/java-integers.md",
-    "migration_readiness": "docs/migration-readiness.md"
+    "migration_readiness": "docs/migration-readiness.md",
+    "managed_references": "docs/managed-references-design.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5186,5 +5188,60 @@
     "static_trait_dispatch",
     "type_defaults",
     "function_type_defaults"
-  ]
+  ],
+  "managed_references": {
+    "collection": "trace external strong roots after subtracting registry/graph ownership; reclaim unreachable cycles",
+    "defaults": {
+      "maximum_cells": 1048576,
+      "maximum_edges": 16777216,
+      "maximum_nodes": 4194304
+    },
+    "guide": "docs/managed-references-design.md",
+    "header": "runtime/nex_cells.h",
+    "heap_lifetime": "one execution context; close invalidates its cells",
+    "identity": "same live cell object; structural payload equality does not identify cells",
+    "implementation": "runtime/nex_cells.cpp",
+    "introduced_toolchain": "0.249.0",
+    "limit_accounting": "registered cells, all adopted data nodes, and all Value payload slots; includes retired payloads until collection; not a byte-memory bound",
+    "mutation": "thread-affine; foreign heap and thread operations rejected",
+    "native_source_enabled": false,
+    "owned_capability_payloads": false,
+    "parallel_transfer": false,
+    "payloads": [
+      "i64",
+      "bool",
+      "finite f64",
+      "str",
+      "bytes",
+      "list",
+      "record",
+      "result",
+      "enum",
+      "closure",
+      "same-heap cell"
+    ],
+    "pending": [
+      "checked reference types and state effect",
+      "versioned grammar and explicit history-preserving migration",
+      "reference/native/TypeScript lowering",
+      "native entry/module/ABI ownership",
+      "owned capability integration",
+      "cross-thread sharing, monitors and atomics",
+      "source debugger/profile integration",
+      "weak references and finalization semantics",
+      "matching complete compiler/platform/SDK qualification"
+    ],
+    "public_source_enabled": false,
+    "reference_interpreter_source_enabled": false,
+    "schema": "nex.managed-references/1",
+    "snapshots": "read retains an immutable value snapshot; write replaces only the cell payload",
+    "source_language_changed": false,
+    "source_type_enabled": false,
+    "state_effect_enabled": false,
+    "status": "private_runtime_kernel",
+    "task_transfer": false,
+    "teardown": "detach mutable edges and release registry in reverse immutable-adoption order; no collector graph workspace allocated at close",
+    "test": "tests/cells.cpp",
+    "typescript_source_enabled": false
+  }
 }

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.248.0"
+applies_to: "language 0.28; toolchain 0.249.0"
 owner: repository
 ---
 
@@ -35,11 +35,18 @@ must use the stored/selected language instead of the compiler's 0.28 default.
 These corrections preserve canonical program formats and existing revisions;
 they do not automatically migrate or reset a graph.
 
+The 0.249 [managed-reference kernel](managed-references-design.md) establishes a
+private C++ foundation for identity, aliased mutation, retained immutable
+snapshots and collection of unreachable cycles. It is not integrated into the
+checker, interpreter or source backends: the source type/state effect and the
+remaining ownership/concurrency/ABI contracts below stay open. No source version
+or converter is introduced by this kernel.
+
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and ordinary nominal values | Exact wrapping operations, narrow-width types/conversions and efficient native lowering |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
-| Java object references and identity | Immutable values; owned opaque host-resource identities | Typed mutable references, aliasing, nullable references, lifetime/collection policy including cycles |
+| Java object references and identity | Immutable values; owned opaque resources; private C++ cell/cycle-collection kernel | Source types/effects, nullability, execution-context/backend/ABI integration and qualified collection/lifetime rules |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |

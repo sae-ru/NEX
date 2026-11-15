@@ -442,6 +442,7 @@ struct Reference {
       if(!seen.insert(v.object.get()).second)continue;
       if(seen.size()>262144||v.object->values.size()>262144-members)throw Error("E_LIMIT","reference snapshot graph exceeds262144 members");
       auto kind=v.object->kind;
+      if(kind==RD::Cell)throw Error("E_TASK_VALUE","managed cells do not support reference task transfer yet");
       if(kind==RD::External){
         if(!supportsTaskForeignCalls(program))throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
         const auto &owner=nexrt::externalResource(v.object);

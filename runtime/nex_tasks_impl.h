@@ -558,6 +558,7 @@ struct TaskGroup::Impl {
       if(!seen.insert(next.object.get()).second)continue;
       if(seen.size()>parallelMaximumNodes)throw DataError("E_LIMIT","source snapshot exceeds its object limit");
       const auto kind=next.object->kind;
+      if(kind==Data::Cell)throw DataError("E_TASK_VALUE","managed cells do not support source task transfer yet");
       if(kind==Data::External){
         if(!transfer.resources)throw DataError("E_TASK_VALUE","source snapshot cannot carry external resource authority");
         const auto &owner=externalResource(next.object);

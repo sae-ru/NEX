@@ -1,0 +1,242 @@
+{
+  "schema": "nex.managed-references-runtime-evidence/1",
+  "recorded_utc": "2026-11-15",
+  "ok": true,
+  "toolchain": "0.249.0",
+  "compiler_default_language": "0.28",
+  "explicit_source_language_029_preserved": true,
+  "source_baseline_commit": "8b48310b931055187828f6578ebdbf933729a227",
+  "compiler_sha256": "a3b42b1a36e2f8e27e86a72e78c3862e3bdc8980691be5046479772878862d5f",
+  "compiler_build": "6bf404ca137e8d634f5d6e3701d0595336535cdba3619ee61cbb46fdedae12e8",
+  "descriptor_hash": "05efba2a89e07fcf254032cf85f17fa98d2dd00ff8d80d46a4ed7c9192ddb186",
+  "platform": {
+    "system": "Darwin",
+    "release": "27.2.0",
+    "machine": "arm64"
+  },
+  "source_delta_inputs_sha256": {
+    "VERSION": "bda04753f62f322d9f9aff62f3c800fb09407e661857b55c6d70aa67d55fb92a",
+    "CMakeLists.txt": "8119310d01799ab1b7579e380df5be505fdba246fe2b24e56bad505b10056aa6",
+    "cmake/Tests.cmake": "7f59d039e64ae1d9482c69b11d6fe8c130ac00a72439b62555d1b288ad9cd31d",
+    "cmake/test-tiers.json": "aa3781edb03ae0328b5e4482658a9a04860f13c6eedbf8ae8c3379a06f1cba40",
+    "cmake/Install.cmake": "6923b59a51452a95ea26457e445fa6213af49cc632c0270e2fb81ebbee063def",
+    "include/nex/managed_references.h": "1cd8fab87855c53088cde3e26fbf55ed9e51087de82508790e860891b12c4e31",
+    "src/managed_references.cpp": "ae7074722516b412d33a5d34e5ab1627b2aedbdb93df26719d216f0c37ffdd1b",
+    "src/language.cpp": "a12664fec3a5fbb8f3edff35e023be82cca3d008e7e2db2608e921f7dbea1bf2",
+    "src/task_reference.cpp": "112806910ff94330e789305442146650ace4c529c9dfc6bf2072cb794fd290ed",
+    "runtime/nex_cells.h": "f6716e7a951ee5a78c83323ba5d467af733e1f7823387612b8b0d22cea714954",
+    "runtime/nex_cells.cpp": "807be557dbf434503409c13a8a27ff59278eaaed957ca682bf569f83a1793bb8",
+    "runtime/nex_value.h": "e9235af9880a9b29a69d9fc6871ddac19dbde9328442831a5addab3acb499ced",
+    "runtime/nex_parallel_value.h": "9f12ee19dc284204bf3d7c3bf0233aa35aab8127b55293dc73b037ab62b0cd31",
+    "runtime/nex_task_values_impl.h": "a4349cc0a3ee01a483a4eff76a579fe50768beeedc0c10e971f47d6f35498441",
+    "runtime/nex_tasks_impl.h": "34715d79b63e52c44184e865ae94a4f16e32ffe0f923ff06771a89d5f5acc853",
+    "tests/cells.cpp": "16cc91fddb3fd40913df975a6b76dd2286d188915ec0e949b5490b0a09b250b4",
+    "llm/language-pack.json": "8f56e450bb43cd77bf6739fb59cec7af4035032ee4760e786a1c64aa93ac1daa"
+  },
+  "build": {
+    "command": "cmake --build build -j 4",
+    "exit_code": 0,
+    "follow_up": "CMake install-resource registration; compiler binary unchanged"
+  },
+  "private_runtime_probe": {
+    "ok": true,
+    "cases": 19,
+    "source_type_enabled": false,
+    "live_value_delta": 0
+  },
+  "kernel_checks": {
+    "cycles": [
+      "self",
+      "mutual record/list with duplicate edges",
+      "closure capture",
+      "rooted immutable snapshot"
+    ],
+    "reachability_oracle": {
+      "nodes": 96,
+      "mutable_roots": 4,
+      "mutation_collection_rounds": 80,
+      "model": "independent object-ID graph with retained payload snapshots"
+    },
+    "maximum_checked_cell_chain": 65536,
+    "close_checked_cell_chain": 32768,
+    "close_checked_immutable_depth": 65536,
+    "heap_wide_node_and_payload_slot_limits": true,
+    "foreign_heap_and_thread_rejection": true,
+    "parallel_transfer_rejected": true,
+    "task_transfer_guards_added_not_source_qualified": true,
+    "rejected_owned_base_constructor_accounting": true
+  },
+  "core_groups": [
+    {
+      "name": "llm_cost_ledger",
+      "seconds": 0.24,
+      "passed": true
+    },
+    {
+      "name": "llm_local_collector",
+      "seconds": 0.15,
+      "passed": true
+    },
+    {
+      "name": "ctest_report_validation",
+      "seconds": 0.19,
+      "passed": true
+    },
+    {
+      "name": "discovery",
+      "seconds": 9.87,
+      "passed": true
+    },
+    {
+      "name": "language_pack_contract",
+      "seconds": 0.34,
+      "passed": true
+    },
+    {
+      "name": "task_frontend_native",
+      "seconds": 0.63,
+      "passed": true
+    },
+    {
+      "name": "frontend_diagnostics_native",
+      "seconds": 0.55,
+      "passed": true
+    },
+    {
+      "name": "bytes_runtime_native",
+      "seconds": 0.01,
+      "passed": true
+    },
+    {
+      "name": "float_runtime_native",
+      "seconds": 0.46,
+      "passed": true
+    },
+    {
+      "name": "typed_source_frontend_reference",
+      "seconds": 0.63,
+      "passed": true
+    },
+    {
+      "name": "test_tiers",
+      "seconds": 0.14,
+      "passed": true
+    },
+    {
+      "name": "diagnostic_catalogue",
+      "seconds": 9.69,
+      "passed": true
+    }
+  ],
+  "affected_groups": [
+    {
+      "name": "task_value_retirement",
+      "seconds": 0.52,
+      "passed": true
+    },
+    {
+      "name": "resources_runtime_native",
+      "seconds": 0.51,
+      "passed": true
+    },
+    {
+      "name": "java_int",
+      "seconds": 12.9,
+      "passed": true
+    }
+  ],
+  "docs_groups": [
+    {
+      "name": "docs_index",
+      "seconds": 0.08,
+      "passed": true
+    }
+  ],
+  "language_pack": {
+    "ok": true,
+    "shared_fields": 69,
+    "compared_JSON_values": 4004,
+    "manifest_sha256": "8f56e450bb43cd77bf6739fb59cec7af4035032ee4760e786a1c64aa93ac1daa"
+  },
+  "existing_java_int_backend_regression": {
+    "schema": "nex.java-int32-agreement/1",
+    "ok": true,
+    "compiler_sha256": "a3b42b1a36e2f8e27e86a72e78c3862e3bdc8980691be5046479772878862d5f",
+    "revision": "cb0942aead3b5cdbd1790c0b2b192f863a4d44a5dddd51e5f5de94e2ba9ab00d",
+    "program_sha256": "b941513931f43245f4e27fd569331737f74a021c3618332db246b732fdf0cad8",
+    "cases": 524,
+    "oracle_sha256": "68d04e807e2da0f4271b063dc539b7ce52555c3337eeb4d18616bd802ae2d1fc",
+    "reference": {
+      "ok": true,
+      "stdout": "java-int-oracle-ok\n",
+      "steps": 290490,
+      "value": null
+    },
+    "native": {
+      "debug": {
+        "build_key": "1d0f958c45966debb2d4274936f9070ba5470cc4bc611e2e15d9f86e5ad5647c",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-int-oracle-ok\n"
+      },
+      "release": {
+        "build_key": "9ce906a46c7d810fdd212d3d3ac01c44d2d864dac98061d18c365d7c85a7bd42",
+        "exit_code": 0,
+        "native_diagnostics": {
+          "diagnostics": [],
+          "ignored": 0,
+          "limit": 32,
+          "omitted": 0,
+          "schema": "nex.native-diagnostics/1",
+          "total": 0
+        },
+        "ok": true,
+        "stderr": "",
+        "stdout": "java-int-oracle-ok\n"
+      }
+    },
+    "strict_executed_typescript": true,
+    "checked_NEX_overflow_preserved": true
+  },
+  "live_JDK_rerun": false,
+  "JDK_golden": "tests/fixtures/java-int32/oracle.json; live JDK comparison retained in 0.248 evidence",
+  "local_log_directory": "build/managed-cells-kernel-v1",
+  "local_log_sha256": {
+    "build-0.249.log": "e35275cd8eeb68ba817108525024157ec4c2debbe5c713967ea7cf203be348fd",
+    "install-config-build.log": "1be521133298adc06e86b99befa0b49b0229376edc8c18bce75ed9a63f11e8eb",
+    "cells-ctest.log": "44529dd52c5c1b0ec6c712fb0830d5dd170276e0070912eb17e35496adcf40af",
+    "cells-probe-output.log": "b4663819a512a4cb9ec1ac9809834fc1134806706fbeb6c87d5b1b13a0b605e9",
+    "core-ctest.log": "c971314732f254556da643bedbbf0ce3f081ec35862a8e31679ca11b5c13d874",
+    "core-probe-output.log": "1e9bc4e674a17328b54f77cfbbc27e40de124dee591269e01c6b6fdea58a2024",
+    "affected-ctest.log": "539efdf36926b8cac3109920a8a088756865a0b1a343e1e8bd93c003ec0c980f",
+    "affected-probe-output.log": "4f1f0bc81288dd751cc5512e3927342934c30083018591f60f14ade921acf981",
+    "docs-ctest.log": "8046effff27e5f3de6357646fbe959ea78fc1556a3c16f117f501fd15f4a08fb"
+  },
+  "public_reference_type_implemented": false,
+  "source_state_effect_implemented": false,
+  "source_reference_backend_agreement_claimed": false,
+  "source_language_changed": false,
+  "class_object_model_implemented": false,
+  "converter_implemented": false,
+  "complete_source_CTest_claimed": false,
+  "complete_matching_SDK_claimed": false,
+  "device_execution_claimed": false,
+  "pending": [
+    "checked source reference type/effects and explicit migration",
+    "whole execution-context ownership across functions/modules/returns",
+    "interpreter/native/TypeScript source integration",
+    "deep external immutable snapshot release after heap close",
+    "owned payloads, synchronization and public ABI/wire/debug/profile semantics",
+    "matching integration/platform/SDK qualification"
+  ],
+  "design": "docs/managed-references-design.md"
+}

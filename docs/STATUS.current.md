@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.248.0"
+applies_to: "language 0.28; toolchain 0.249.0"
 owner: repository
 generated_from: README.md#development-status
 ---
@@ -12,22 +12,24 @@ It reports recorded evidence, not a live observation of devices or remote jobs.
 For syntax and capabilities, query the selected compiler. For detailed history,
 use [STATUS](../STATUS.md); for next work, use [development priorities](development-priorities.md).
 
-Current source: **toolchain 0.248.0 / language 0.28 / task ABI 7**, in development.
+Current source: **toolchain 0.249.0 / language 0.28 / task ABI 7**, in development.
 Language 0.29 is an explicit opt-in for partial type lambdas and higher-order kinds;
 0.28 remains the default and rejects those constructs. The compiler default is not
 a project default: `nex.json` selects 0.28 or 0.29 explicitly per project;
 new `nex init` projects select 0.29.
 
 Recent source blocks add persistent AVL [ordered map/set](ordered-containers.md)
-and an explicit [Java int domain](java-integers.md). General reference objects,
-machine i32 and other [migration prerequisites](migration-readiness.md) remain
-open. The [implementation sequence](implementation-1-6.md) tracks current
+and an explicit [Java int domain](java-integers.md). The 0.249
+[managed-reference kernel](managed-references-design.md) is private C++:
+source references/state effects, machine i32 and other
+[migration prerequisites](migration-readiness.md) remain open.
+The [implementation sequence](implementation-1-6.md) tracks current
 work. [Focused acceptance](evidence/containers-0.247.0-2026-11-15.json) covers
 12 core groups, the affected containers and relocated local installation;
 the published 0.246.1 SDK and its full acceptance remain version-specific.
 [0.248 language checks](evidence/java-int32-language-0.248.0-2026-11-15.json)
 compare 524 JDK cases and verify 0.29 diagnostics, saved graph workflows and local
-installation. Complete matching SDK/platform qualification remains pending.
+installation. Matching full SDK/platform qualification remains pending.
 
 The [0.246.1 macOS source regression](evidence/full-ctest-0.246.1-current-2026-11-15.json)
 passed **351/351 groups** at `3b008a4e`. The immutable

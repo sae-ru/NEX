@@ -392,6 +392,11 @@ Lists use `[a, b]`; nested lists are supported. An empty list needs an element t
 
 Heap-backed values have automatic reference-counted ownership. Parameters borrow values during a call; returned values remain valid independently of the caller's temporaries. Assignment releases the previous owned value; block exit and return release local values. Immutable aggregates can share their children, and source programs cannot form mutable reference cycles. Native application/test wrappers verify that normal execution released all managed values. This is the implemented ownership model; a future mutable/resource/concurrent model needs additional rules.
 
+The toolchain's private [managed-reference kernel](managed-references-design.md)
+does not extend this source contract. It enables no reference type, mutation
+effect or source cycle construction; those require versioned checker/backend
+integration and an explicit history-preserving migration.
+
 ### Enums and exhaustive matching
 
 ```nex

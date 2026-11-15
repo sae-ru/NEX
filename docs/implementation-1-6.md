@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.248.0"
+applies_to: "language 0.28; toolchain 0.249.0"
 owner: repository
 ---
 
@@ -74,10 +74,21 @@ deferred. General typed mutable references/identity, object dispatch, machine
 integer/IEEE domains and Python dynamic/big-integer support remain open in the
 [prerequisite matrix](migration-readiness.md).
 
+The 0.249 [managed-reference kernel](managed-references-design.md) supplies
+private C++ cell identity, snapshot-preserving writes, root/cycle collection,
+deep registry teardown and heap/thread/transfer rejection. It enables no source
+reference type or state effect. The next integration must cover checked types,
+an explicit history-preserving version migration, all source backends and whole
+execution-context ownership across calls/returns before public promotion.
+[Focused kernel evidence](evidence/managed-references-runtime-0.249.0-2026-11-15.json)
+records 19 C++ scenarios, 12 core groups and three affected groups. Its scope
+does not include source-reference execution or a matching complete SDK.
+
 [0.248 focused evidence](evidence/java-int32-language-0.248.0-2026-11-15.json)
 records the numerical and selected-language graph/diagnostic block. The earlier
-[0.247 hosted core CI](evidence/core-ci-0.247.0-2026-11-15.json) passed on macOS
-and Linux at its exact source commit; it does not qualify the later block.
+[0.247 hosted core CI](evidence/core-ci-0.247.0-2026-11-15.json) and
+[0.248 hosted core CI](evidence/core-ci-0.248.0-2026-11-15.json) passed on macOS
+and Linux at their exact source commits; neither qualifies the later kernel.
 
 Implement complete functional blocks, build with `cmake --build build -j 4`,
 then execute affected semantic/backend/descriptor tests. Do not rerun already
