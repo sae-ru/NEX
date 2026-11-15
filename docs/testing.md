@@ -46,6 +46,15 @@ not qualify checked TypeScript reference-source lowering. Its
 [focused receipt](evidence/managed-heap-typescript-0.252.0-2026-11-16.json)
 keeps the trace inputs, runtime/tool hashes and actual group results.
 
+Toolchain 0.253 adds `managed_references_typescript` outside core and shares its
+source corpus with `managed_references_native`. The private source emitter has
+expression/lexical/builder roots and owned return/error completions; successful
+reference/TS executions compare graph counts as well as values/output. The
+[0.253 receipt](evidence/managed-reference-typescript-0.253.0-2026-11-16.json)
+records native O0/O2 matching images/standalone applications, strict executed
+TypeScript, host results, API gates and original fixture failures. Ordinary
+TypeScript expression/enum/contract regressions remain a separate affected set.
+
 [0.250 focused evidence](evidence/managed-reference-source-0.250.0-2026-11-15.json)
 records 13 core groups in 21.09 s, the candidate's 13 accepted/38 rejected
 scenarios and eight affected groups in 80.87 s. Its cell/source coverage is the

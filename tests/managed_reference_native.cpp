@@ -40,11 +40,20 @@ int main(int argc,char **argv){try{
     // Pull/export this exact cohort's cell helpers as well as its base runtime.
     if(nexrt::inRequestScope())nex_cell_collect(0);
     nex_runtime_finish();
+#ifdef _WIN32
+    auto library=LoadLibraryW(std::filesystem::absolute(argv[2]).c_str());
+    if(!library)throw std::runtime_error("cannot load managed fixture image: "+std::to_string(GetLastError()));
+    struct CloseImage{HMODULE value;~CloseImage(){FreeLibrary(value);}} closeImage{library};
+    auto entry=reinterpret_cast<int(*)(int,const char *const*)>(GetProcAddress(library,"main"));
+    if(!entry)throw std::runtime_error("cannot find managed fixture main: "+std::to_string(GetLastError()));
+#else
     auto library=dlopen(argv[2],RTLD_NOW|RTLD_LOCAL);if(!library)throw std::runtime_error(dlerror());
+    struct CloseImage{void *value;~CloseImage(){dlclose(value);}} closeImage{library};
     auto entry=reinterpret_cast<int(*)(int,const char *const*)>(dlsym(library,"main"));if(!entry)throw std::runtime_error(dlerror());
+#endif
     auto status=entry(0,nullptr);
     if(nexrt::liveObjects.load()!=baseline)throw std::runtime_error("native reference context left live values");
-    nex_runtime_finish();dlclose(library);return status;
+    nex_runtime_finish();return status;
   }
   const auto mode=argc>1?std::string(argv[1]):std::string{};
   if(!((mode=="reference"&&argc==6)||(mode=="emit"&&argc==10)))throw std::runtime_error("expected reference source cells nodes edges, or emit source out triple layout optimized cells nodes edges");
@@ -52,10 +61,13 @@ int main(int argc,char **argv){try{
   nexrt::CellHeapLimits limits{std::stoull(argv[start]),std::stoull(argv[start+1]),std::stoull(argv[start+2])};
   auto path=std::filesystem::absolute(argv[2]);auto p=parseManagedReferencesPrototype(readFile(path.string()),path.string());check(p);
   if(!emit){
+    const auto baseline=nexrt::liveObjects.load();
     try{
       auto result=evaluateManagedReferencesPrototype(p,"main",4000000,limits);
-      std::cout<<json(llvm::json::Object{{"kind","return"},{"value",std::move(result.evaluation.value)},{"output",result.evaluation.output},{"remaining_cells",int64_t(result.afterCollection.cells)},{"remaining_nodes",int64_t(result.afterCollection.nodes)}})<<'\n';
-    }catch(const Error &error){std::cout<<json(llvm::json::Object{{"kind","trap"},{"code",error.code},{"message",error.message},{"output",error.output},{"line",int64_t(error.span.line)}})<<'\n';}
+      auto stats=[](const nexrt::CellHeapStats &s){return llvm::json::Object{{"cells",int64_t(s.cells)},{"nodes",int64_t(s.nodes)},{"edges",int64_t(s.edges)},{"collections",int64_t(s.collections)}};};
+      std::cout<<json(llvm::json::Object{{"kind","return"},{"value",std::move(result.evaluation.value)},{"output",result.evaluation.output},{"remaining_cells",int64_t(result.afterCollection.cells)},{"remaining_nodes",int64_t(result.afterCollection.nodes)},
+        {"heap_before",stats(result.beforeCollection)},{"heap_after",stats(result.afterCollection)},{"live_delta",nexrt::liveObjects.load()-baseline}})<<'\n';
+    }catch(const Error &error){std::cout<<json(llvm::json::Object{{"kind","trap"},{"code",error.code},{"message",error.message},{"output",error.output},{"line",int64_t(error.span.line)},{"live_delta",nexrt::liveObjects.load()-baseline}})<<'\n';}
     return 0;
   }
   auto folder=std::filesystem::absolute(argv[3]);std::filesystem::create_directories(folder);

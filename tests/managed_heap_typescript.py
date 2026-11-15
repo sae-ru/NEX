@@ -105,7 +105,7 @@ assert by_name['deep-immutable']['events'][1]['stats']['nodes']==65537
 assert by_name['rooted-rings']['events'][-6]['stats']['cells']==48
 assert by_name['deep-close']['events'][2]['stats']['nodes']==0
 assert by_name['deep-close']['events'][3]['code']=='E_CELL_CLOSED'
-assert ts['root_checks']==10
+assert ts['root_checks']==11
 assert sha(args.probe)==report['native_probe_sha256'] and sha(root/'web/nex-managed-heap.ts')==report['typescript_runtime_sha256'],'heap tools changed during acceptance'
 report.update(ok=True,comparisons=len(cases),steps=sum(len(c['commands']) for c in cases))
 (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')

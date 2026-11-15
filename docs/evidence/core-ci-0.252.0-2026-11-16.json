@@ -1,0 +1,33 @@
+{
+  "schema": "nex.hosted-core-evidence/1",
+  "recorded_at": "2026-11-16 Europe/Moscow",
+  "toolchain": "0.252.0",
+  "source_commit": "7c6d766d28fd04691dcc166c0c089409bb48d4bc",
+  "scope": "hosted14-group core; not TypeScript managed heap/source execution or SDK qualification",
+  "run_id": 43770312948,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43770312948",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-15T22:37:20Z",
+  "updated_at": "2026-11-15T22:41:14Z",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T22:37:22Z",
+      "completed_at": "2026-11-15T22:40:52Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43770312948/job/132984524052"
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T22:37:24Z",
+      "completed_at": "2026-11-15T22:41:13Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43770312948/job/132984524183"
+    }
+  ],
+  "verification": "GitHub run/job API completion and exact workflow/test-tier source; artifact archives not read",
+  "release_qualification": false
+}

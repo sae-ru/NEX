@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.252.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.253.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -9,7 +9,8 @@ owner: repository
 `emitManagedReferencesPrototypeMLIR` extends the
 [private checked reference candidate](managed-references-prototype.md) with
 MLIR/LLVM generation through its dedicated C++ entry. Ordinary source versions,
-CLI builds, stored graph formats and migration remain separate. TypeScript,
+CLI builds, stored graph formats and migration remain separate. The dedicated
+[TypeScript candidate](managed-reference-typescript-prototype.md) is implemented;
 Wasm/device reference lowering and native reference module/host ABIs remain
 pending. This candidate does not qualify a public SDK.
 

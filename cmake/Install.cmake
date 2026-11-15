@@ -16,6 +16,7 @@ install(FILES tests/fixtures/java-int32/Oracle.java tests/fixtures/java-int32/or
 install(FILES tests/cells.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
 install(FILES tests/managed_heap_trace.cpp tests/managed_heap_typescript.py tests/managed_heap_driver.ts DESTINATION share/nex/tests)
+install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typescript.py tests/managed_reference_cases.py DESTINATION share/nex/tests)
 install(FILES tests/fixtures/managed-references/public-baseline.json DESTINATION share/nex/tests/fixtures/managed-references)
 install(DIRECTORY tools/linux DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)
 install(DIRECTORY tools/accelerators DESTINATION share/nex/tools PATTERN __pycache__ EXCLUDE)

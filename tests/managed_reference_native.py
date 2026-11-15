@@ -1,5 +1,6 @@
 """Private reference/native cell semantics and context cleanup, Debug/Release."""
 from host_fixture import run_native,exit_code,probe_dll_inputs
+from managed_reference_cases import source_cases
 from pathlib import Path
 import argparse,hashlib,json,os,platform,re,subprocess,tempfile
 
@@ -21,29 +22,15 @@ def error_agrees(stderr,reference):
         assert record['code']==reference['code']and record['reported_line']==reference['line'],(record,reference)
 layout=folder/'host.ll';run([compiler,'-x','c','-S','-emit-llvm',os.devnull,'-o',layout])
 host=layout.read_text();triple=re.search(r'target triple = "(.*?)"',host)[1];layout_text=re.search(r'target datalayout = "(.*?)"',host)[1]
-# Reuse the same hand-written sources/expected outputs as the core reference
-# probe, rather than maintaining a second translation of these scenarios.
-source=(root/'tests/managed_references.cpp').read_text()
-pattern=r'runs\(R"nex\((.*?)\)nex",("(?:[^"\\]|\\.)*"(?:\s*"(?:[^"\\]|\\.)*")*)(?:,\{([^}]*)\})?\);'
-cases=[]
-for index,match in enumerate(re.finditer(pattern,source,re.S)):
-    expected=''.join(json.loads(part) for part in re.findall(r'"(?:[^"\\]|\\.)*"',match[2]))
-    limits=[int(value)for value in match[3].split(',')]if match[3]else[1048576,4194304,16777216]
-    cases.append({'name':'core-'+str(index+1),'source':match[1],'output':expected,'limits':limits})
-assert len(cases)==9,('core reference source extraction changed',len(cases))
-cases.extend([
- {'name':'bool-float-bytes','source':'fn main()->unit!{state,io}{let flag:cell<bool>=cell_new(false);cell_write(flag,true);print(cell_read(flag));let real:cell<f64>=cell_new(1.25);cell_write(real,cell_read(real)+0.5);assert(cell_read(real)==1.75);let octets:cell<bytes>=cell_new(utf8_bytes("Я🌍"));let old:bytes=cell_read(octets);cell_write(octets,utf8_bytes("new"));assert(unwrap(decode_utf8(old))=="Я🌍");print("scalar-octets-ok");}','output':'true\nscalar-octets-ok\n'},
- {'name':'uncaught-cell','source':'fn main()->unit!{state,throw}{let value:cell<i64>=cell_new(1);throw(value);}','error':'E_SOURCE_EXCEPTION'},
- {'name':'overflow-cleanup','source':'struct Node{next:list<cell<Node>>;}fn main()->unit!{state,io}{let value:cell<Node>=cell_new(Node([]));cell_write(value,Node([value]));try{let bad:i64=9223372036854775807+1;}finally{print("wrong-finalizer");}}','error':'E_OVERFLOW'},
- {'name':'limit-cleanup','source':'fn main()->unit!{state}{let a:cell<i64>=cell_new(1);let b:cell<i64>=cell_new(2);let c:cell<i64>=cell_new(3);}','limits':[2,8,16],'error':'E_CELL_LIMIT'},
-])
+# The same source/expected observations feed the TypeScript acceptance path.
+cases=source_cases(root)
 runtime_inputs=sorted(path for path in (root/'runtime').rglob('*')if path.is_file()and path.suffix in ['.h','.hpp','.c','.cpp','.manifest'])
 runtime_identity=''.join(path.relative_to(root).as_posix()+':'+sha(path)+'\n'for path in runtime_inputs)
-report={'schema':'nex.managed-reference-native-agreement/1','ok':False,'private_language':'0.30-refs-prototype','public_source_enabled':False,'platform':platform.platform(),'probe_sha256':sha(probe),'compiler_sha256':sha(compiler),'compiler_version':run([compiler,'--version']).stdout,'core_fixture_sha256':sha(root/'tests/managed_references.cpp'),'runtime_source_tree_sha256':hashlib.sha256(runtime_identity.encode()).hexdigest(),'cases':[]}
+report={'schema':'nex.managed-reference-native-agreement/1','ok':False,'private_language':'0.30-refs-prototype','public_source_enabled':False,'platform':platform.platform(),'probe_sha256':sha(probe),'compiler_sha256':sha(compiler),'compiler_version':run([compiler,'--version']).stdout,'core_fixture_sha256':sha(root/'tests/managed_references.cpp'),'shared_corpus_sha256':sha(root/'tests/managed_reference_cases.py'),'runtime_source_tree_sha256':hashlib.sha256(runtime_identity.encode()).hexdigest(),'cases':[]}
 runtime_objects={}
 for optimization in ['0','2']:
     objects=[];build=folder/('standalone-runtime-O'+optimization);build.mkdir(exist_ok=True)
-    for name in ['runtime.cpp','nex_cells.cpp','nex_cell_host.cpp']:
+    for name in ['runtime.cpp','nex_cells.cpp','nex_cell_host.cpp','nex_json.cpp','wire_runtime.cpp']:
         target=build/(name+'.o')
         run([compiler,'-std=c++20','-O'+optimization,'-pthread','-I',root/'runtime','-c',root/'runtime'/name,'-o',target]);objects.append(target)
     runtime_objects[optimization]=objects
@@ -57,7 +44,7 @@ for case in cases:
     for optimization in ['0','2']:
         build=directory/('O'+optimization);build.mkdir(exist_ok=True)
         run([probe,'emit',path,build,triple,layout_text,str(optimization=='2').lower(),*limits])
-        library=build/('program.dylib'if platform.system()=='Darwin'else'program.so')
+        library=build/('program.dylib'if platform.system()=='Darwin'else'program.dll'if os.name=='nt'else'program.so')
         flags=['-dynamiclib','-undefined','dynamic_lookup']if platform.system()=='Darwin'else(['-shared',*probe_dll_inputs(str(probe),folder)]if os.name=='nt'else['-shared','-fPIC'])
         run([compiler,'-O'+optimization,*flags,build/'program.ll','-o',library])
         actual=run_native([str(probe),'run',str(library)],text=True,capture_output=True,timeout=45)

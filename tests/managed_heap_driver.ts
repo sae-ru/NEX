@@ -146,5 +146,13 @@ export function rootChecks(): number {
     require(heap.read(next) === 2n, 'return-to-caller roots did not release after their use');
     caller.close(); heap.close(); ++checked;
   }
+  {
+    const items: HeapValue[] = [1n, true], node = HeapNode.publish('list', items);
+    require(node.values === items && Object.isFrozen(items), 'builder publication copied or left its vector mutable');
+    const heap = new CellHeap(), frame = heap.frame(), cell = frame.keep(heap.create(node));
+    heap.collect(); require(heap.read(cell) === node && heap.stats().edges === 3, 'published vector adoption differs');
+    frame.close(); heap.collect(); require(heap.stats().nodes === 0, 'published builder graph remained rooted');
+    heap.close(); ++checked;
+  }
   return checked;
 }

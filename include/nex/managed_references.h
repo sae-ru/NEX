@@ -2,6 +2,7 @@
 #include "nex/language.h"
 #include "nex_cells.h"
 namespace nex {
+struct WebModule;
 llvm::json::Object managedReferencesCapability();
 const std::set<std::string> &managedReferenceBuiltins();
 // Unarchived C++ development entry points. Ordinary CLI versions do not select
@@ -15,4 +16,6 @@ ManagedReferenceEvaluation evaluateManagedReferencesPrototype(const Program &pro
     const std::string &entry="main",uint64_t stepLimit=1000000,nexrt::CellHeapLimits limits={});
 std::string emitManagedReferencesPrototypeMLIR(const Program &program,
     const std::string &entry="main",bool optimized=false,nexrt::CellHeapLimits limits={});
+WebModule emitManagedReferencesPrototypeTypeScript(const Program &program,
+    const std::string &entry="main",nexrt::CellHeapLimits limits={});
 }

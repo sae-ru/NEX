@@ -15,6 +15,8 @@ struct WebModule {
   // Source-error helper requested by public025 and retained private emitters.
   // The historical member name is retained for existing C++ callers.
   bool privateSourceExceptions=false;
+  // Dedicated unarchived managed candidate; ordinary emitters never select it.
+  bool managedReferences=false;
 };
 // Only the reachable client/shared closure is emitted. Export names are caller supplied.
 WebModule emitTypeScript(const Program &program,const std::map<std::string,std::string> &entries);

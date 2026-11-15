@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.252.0"
+applies_to: "language 0.28; toolchain 0.253.0"
 owner: repository
 ---
 
@@ -101,7 +101,7 @@ application-owned heap across generated source calls. Its
 records 26 reference/O0/O2 comparisons through matching host images and separate
 executables, including cleanup and reported source locations. Core now has
 14 no-Node groups, adding context lifecycle/reentry checks. Public native
-project/module ownership, TypeScript, migration and complete SDK qualification
+project/module ownership, public TypeScript integration, migration and complete SDK qualification
 remain open. [Hosted 0.250 core](evidence/core-ci-0.250.0-2026-11-16.json) passed
 on macOS/Linux at its own 13-group source commit.
 
@@ -109,13 +109,22 @@ The 0.252 [TypeScript heap kernel](managed-reference-typescript-heap.md) adds
 explicit root frames, operand/builder/return roots, allocation identities and
 bounded collection/admission behavior. It is compared step-by-step with the
 actual C++ kernel, including deep graphs and distinct/shared string nodes.
-Checked TypeScript source lowering and its value/exception facade remain next;
-the private candidate still reports `typescript: false`. The
+At that milestone the private candidate still reported `typescript: false`. The
 [focused kernel receipt](evidence/managed-heap-typescript-0.252.0-2026-11-16.json)
 keeps these results separate from source-backend/SDK acceptance.
 [Corrected 0.251 hosted core](evidence/core-ci-0.251.0-corrected-2026-11-16.json)
 passed macOS/Linux after bounded dependency-download retries and clearer failure
 logging; the original network failure remains recorded.
+
+The 0.253 [private TypeScript source candidate](managed-reference-typescript-prototype.md)
+adds the boxed facade, expression/lexical/builder roots and ownership of pending
+return/source-error completions. A shared source corpus feeds reference,
+native O0/O2 and strict executed TypeScript; host results preserve decimal i64
+and immutable snapshots. [Focused acceptance](evidence/managed-reference-typescript-0.253.0-2026-11-16.json)
+records the actual comparisons, exact heap accounting, API rejection gates and
+the preceding fixture failures. Ordinary languages/graph histories remain
+unchanged; public migration, entry/module/host lifetimes and matching complete
+SDK/platform qualification remain next.
 
 [0.248 focused evidence](evidence/java-int32-language-0.248.0-2026-11-15.json)
 records the numerical and selected-language graph/diagnostic block. The earlier

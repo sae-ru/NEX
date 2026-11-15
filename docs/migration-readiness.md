@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.252.0"
+applies_to: "language 0.28; toolchain 0.253.0"
 owner: repository
 ---
 
@@ -44,15 +44,17 @@ and an application-owned heap. Public source versions, complete native/TypeScrip
 agreement, migration and the ownership/concurrency/ABI contracts below stay open.
 No ordinary source version or converter is introduced by this candidate.
 The 0.252 [TypeScript heap kernel](managed-reference-typescript-heap.md) adds
-explicit roots and matching graph-count/collection behavior. The checked
-TypeScript source emitter and boxed value facade remain next; ordinary clients
-still reject reference source.
+explicit roots and matching graph-count/collection behavior. The 0.253
+[private source emitter](managed-reference-typescript-prototype.md) adds boxed
+values, expression/lexical roots and return/error ownership. Ordinary clients
+still reject reference source; public migration and entry/module/ABI integration
+remain next.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|
 | Java `int`/`long`, casts, bits and shifts | Checked i64 and ordinary nominal values | Exact wrapping operations, narrow-width types/conversions and efficient native lowering |
 | Java `float`/`double` | Finite f64; zero normalization | Binary32, IEEE special values, signed zero, casts and specified rounding in an explicit domain |
-| Java object references and identity | Immutable values; owned opaque resources; private C++ cell/collection kernel and checked reference candidate | Public types/effects/migration, nullability, native/TypeScript/context/ABI integration and qualified collection/lifetime rules |
+| Java object references and identity | Immutable values; owned opaque resources; private checked/reference/native/TypeScript cell candidate | Public types/effects/migration, nullability, entry/module/ABI integration and qualified collection/lifetime rules |
 | Java classes and interfaces | Records, enums, generics, coherent static traits | Constructors/class initialization, virtual/interface dispatch, subtyping and runtime type tests; generic erasure/boxing rules |
 | Exceptions | Nominal typed throw/catch, filters, finally, task propagation | Exception subtyping/identity, causes/suppression/stack data and source-specific abrupt-completion rules |
 | Java strings/arrays | Scalar-indexed strict UTF-8 strings; immutable lists/bytes | UTF-16 code-unit representation including lone surrogates; mutable aliased arrays and bounds/error mapping |

@@ -564,7 +564,7 @@ target_link_libraries(nex_managed_references_probe PRIVATE nex_native_backend ne
 add_test(NAME managed_references_frontend_reference COMMAND nex_managed_references_probe
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/managed-references/public-baseline.json)
 set_tests_properties(managed_references_frontend_reference PROPERTIES TIMEOUT 120)
-add_executable(nex_managed_reference_native_probe tests/managed_reference_native.cpp)
+add_executable(nex_managed_reference_native_probe tests/managed_reference_native.cpp runtime/wire_runtime.cpp)
 target_link_libraries(nex_managed_reference_native_probe PRIVATE nex_native_backend ${CMAKE_DL_LIBS})
 set_target_properties(nex_managed_reference_native_probe PROPERTIES ENABLE_EXPORTS ON)
 add_test(NAME managed_reference_native_context COMMAND nex_managed_reference_native_probe context)
@@ -573,12 +573,19 @@ add_executable(nex_managed_heap_trace_probe tests/managed_heap_trace.cpp)
 target_link_libraries(nex_managed_heap_trace_probe PRIVATE nex_frontend)
 add_test(NAME managed_heap_typescript COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_heap_typescript.py $<TARGET_FILE:nex_managed_heap_trace_probe>
-  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-heap-typescript-acceptance)
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-heap-typescript-${PROJECT_VERSION}-acceptance)
 set_tests_properties(managed_heap_typescript PROPERTIES TIMEOUT 300)
+add_executable(nex_managed_reference_typescript_probe tests/managed_reference_typescript.cpp src/typescript.cpp)
+target_link_libraries(nex_managed_reference_typescript_probe PRIVATE nex_native_backend nex_frontend)
+add_test(NAME managed_references_typescript COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_typescript.py
+  $<TARGET_FILE:nex_managed_reference_typescript_probe> $<TARGET_FILE:nex_managed_reference_native_probe>
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-typescript-${PROJECT_VERSION}-acceptance)
+set_tests_properties(managed_references_typescript PROPERTIES TIMEOUT 600)
 add_test(NAME managed_references_native COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/managed_reference_native.py $<TARGET_FILE:nex_managed_reference_native_probe>
   ${LLVM_TOOLS_BINARY_DIR}/clang++${CMAKE_EXECUTABLE_SUFFIX}
-  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-native-acceptance)
+  --output ${CMAKE_CURRENT_BINARY_DIR}/managed-reference-native-${PROJECT_VERSION}-acceptance)
 set_tests_properties(managed_references_native PROPERTIES TIMEOUT 600)
 target_include_directories(nex_bytes_runtime_probe PRIVATE runtime)
 target_compile_options(nex_bytes_runtime_probe PRIVATE -Wall -Wextra -Wpedantic)

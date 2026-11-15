@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.252.0; no public source-language extension"
+applies_to: "toolchain 0.253.0; no public source-language extension"
 owner: repository
 ---
 
@@ -77,9 +77,9 @@ Weak observations in tests detect destruction; weak-reference acquisition,
 resurrection and user finalizers are not a language contract. Native execution
 contexts and libraries have not yet been integrated. The private reference
 interpreter and native candidate each own their sequential execution context;
-The private [TypeScript heap kernel](managed-reference-typescript-heap.md) now
-implements explicit roots and logical collection; checked TypeScript source
-lowering and public native module/host integration remain pending.
+The private [TypeScript source candidate](managed-reference-typescript-prototype.md)
+now implements boxed values, explicit roots and logical collection. Public
+entry/module/host integration and migration remain pending.
 Deep immutable snapshots released after their heap has closed still use the
 ordinary value cleanup path. The deep-registry teardown checks do not qualify
 that separate external-root lifetime; public integration must address it.

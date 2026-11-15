@@ -201,6 +201,7 @@ llvm::json::Value distHashes(const std::filesystem::path &directory){
 }
 }
 ProcessResult runTypeScriptTest(const WebModule &module,const std::string &directory,unsigned timeout,const nexrt::TaskExecutionLimits *limits){
+  if(module.managedReferences)throw Error("E_CELL_BACKEND","private managed modules use their dedicated main evaluation envelope, not the public entry test adapter");
   namespace fs=std::filesystem;
   if(limits&&!nexrt::validTaskExecutionLimits(*limits))throw Error("E_OPTION","invalid TypeScript task execution limits");
   std::string taskOptions;

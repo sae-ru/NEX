@@ -1,17 +1,18 @@
 ---
 status: current
-applies_to: "toolchain 0.252.0; no public source-language extension"
+applies_to: "toolchain 0.253.0; no public source-language extension"
 owner: repository
 ---
 
 # Private TypeScript managed heap
 
 [`web/nex-managed-heap.ts`](../web/nex-managed-heap.ts) adds a private graph
-kernel matching the C++ [managed heap](managed-references-design.md). It is a
-runtime prerequisite for TypeScript source lowering, which remains unfinished.
-No ordinary generated client imports this file. The checked private source
-candidate still advertises `typescript: false`; public reference flags remain
-false. This is not a public JavaScript SDK or a Java/Python compatibility layer.
+kernel matching the C++ [managed heap](managed-references-design.md). The 0.253
+[private source candidate](managed-reference-typescript-prototype.md) uses it
+with a boxed-value facade and explicit source roots. No ordinary generated
+client imports this file. The private source candidate advertises
+`typescript: true`; public reference flags remain false. This is not a public
+JavaScript SDK or a Java/Python compatibility layer.
 
 ## Representation and ownership
 
@@ -25,11 +26,12 @@ Even strings have explicit node identity. Reusing one source string allocation
 in two cell payloads must count one string node; allocating two equal strings
 must count two. JavaScript primitive string equality cannot recover that
 distinction. This kernel therefore does not accept raw JS strings or ordinary
-host objects as payloads. Text, byte content, nominal fields, result layout and
-callable/capture metadata still need a checked value facade before source
-lowering. For example, the C++ failure node contains one message-string child;
-its error code is metadata, not another payload slot. The facade must preserve
-that layout rather than adopt the ordinary JS result representation blindly.
+host objects as payloads. The checked value facade attaches text/byte content,
+nominal fields, result layout and callable/capture metadata through weak maps.
+For example, the C++ failure node contains one message-string child; its error
+code is metadata, not another payload slot. The facade preserves that layout.
+`HeapNode.publish` consumes a compiler-owned builder vector and freezes it in
+place; ordinary construction keeps its defensive vector copy.
 
 Creation adopts previously unregistered immutable nodes in child-first order.
 Read returns the current payload alias. Write adopts the next immutable graph
@@ -55,13 +57,13 @@ uses explicit roots and its own registry instead.
   `clearTemporaries()` or frame close, and returns the same value.
 - `close()` releases that frame's callbacks and temporaries. It is idempotent.
 
-The later emitter must bracket lexical/function frames with cleanup, register
-parameters/locals/pattern/catch bindings, and retain every evaluated heap operand
+The private emitter brackets lexical/function frames with cleanup, registers
+parameters/locals/pattern/catch bindings, and retains every evaluated heap operand
 until its consumer owns it. In `f(make_cell(), collect_then_value())`, the first
 argument remains a root while the second evaluates. Returns and pending source
-error payloads need explicit transfer roots across frame cleanup. Closure
-captures must be actual graph edges, not an uninspectable JS closure environment.
-These obligations are **not yet implemented by the source emitter**.
+error payloads have explicit transfer roots across frame cleanup. Closure
+captures are actual graph edges. The [source execution guide](managed-reference-typescript-prototype.md)
+describes their implementation and remaining public integration.
 
 Root callbacks are compiler-owned observations, not source callbacks. Mutating,
 collecting or closing the heap during root traversal is rejected. A failed root
@@ -107,20 +109,21 @@ each trace step with the independently executed C++ kernel in
 observations cover identity/snapshots, cells and slot limits, two distinct versus
 one shared string allocation, failed-write preservation, external containers,
 closure cycles, 96 cyclic objects with four retained roots, deep collection and
-close. Ten separate TS root checks cover temporaries, binding updates, builder
+close. Eleven separate TS root checks cover temporaries, binding updates, builder
 contents, return transfer, foreign heaps, retired frames and rejected values.
 The C++ probe also requires native live-object accounting to return to baseline;
 TS requires empty logical registries, without claiming host-GC byte measurements.
 
-The [focused receipt](evidence/managed-heap-typescript-0.252.0-2026-11-16.json)
-records the actual tools, fixture hashes and results. The
+The [0.252 focused receipt](evidence/managed-heap-typescript-0.252.0-2026-11-16.json)
+records the original ten-root-check kernel scope. The
+[0.253 source receipt](evidence/managed-reference-typescript-0.253.0-2026-11-16.json)
+adds in-place owned-vector publication and source execution. The
 [corrected 0.251 core run](evidence/core-ci-0.251.0-corrected-2026-11-16.json)
 passed macOS/Linux after the separate dependency-download correction; it did
 not execute this new TypeScript kernel.
 
-Next implement the boxed value facade, complete private checked TypeScript
-lowering/root placement and source-error payload handling. Compare the same
-source programs against reference/native O0/O2, including lazy branches,
-builders, catches/filters, propagation, returns and fatal cleanup. Public source
+The private boxed facade, source lowering/root placement and source-error
+payload handling are implemented and compared with reference/native O0/O2.
+Public source
 migration, module/host ownership, debugger/ABI/SDK and platform qualification
 remain separate gates. Do not promote the private language identity yet.

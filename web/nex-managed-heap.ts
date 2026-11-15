@@ -13,6 +13,7 @@ export const defaultLimits: HeapLimits = Object.freeze({maximumCells: 1048576, m
 function fail(code: string, message: string): never { throw new NexError(code, message); }
 const kinds = new Set<NodeKind>(['string', 'bytes', 'list', 'record', 'success', 'failure', 'enum', 'closure']);
 const ordinaryNodes = new WeakSet<HeapNode>();
+const ownedVector: unique symbol = Symbol('NEX.private.owned-vector');
 type Owner = {closed: boolean};
 type CellState = {owner: Owner; identity: bigint; values: HeapValue[]};
 const cells = new WeakMap<Cell, CellState>();
@@ -40,12 +41,15 @@ function children(value: Node): ReadonlyArray<HeapValue> {
 export class HeapNode {
   readonly kind: NodeKind;
   readonly values: ReadonlyArray<HeapValue>;
-  constructor(kind: NodeKind, values: ReadonlyArray<HeapValue> = []) {
+  constructor(kind: NodeKind, values: ReadonlyArray<HeapValue> = [], ownership?: typeof ownedVector) {
     if (!kinds.has(kind)) fail('E_CELL_VALUE', 'unsupported managed payload node kind');
     for (const value of values) validValue(value);
-    this.kind = kind; this.values = Object.freeze([...values]);
+    this.kind = kind; this.values = ownership === ownedVector ? Object.freeze(values) : Object.freeze([...values]);
     ordinaryNodes.add(this); Object.freeze(this);
   }
+  // The compiler owns the unpublished builder vector and gives it up here.
+  // Freeze that vector in place rather than copy the completed list.
+  static publish(kind: NodeKind, values: HeapValue[]): HeapNode { return new HeapNode(kind, values, ownedVector); }
 }
 export class Cell {
   declare private readonly cellBrand: void;
