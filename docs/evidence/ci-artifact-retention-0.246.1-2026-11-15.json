@@ -1,0 +1,42 @@
+{
+  "schema": "nex.ci-artifact-retention/1",
+  "verified_at_utc": "2026-11-15T13:06:10.508866+00:00",
+  "original_run": {
+    "id": 43693616418,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43693616418",
+    "source_commit": "576ee8ad01828a52908538e77c8b3eab4f66d265",
+    "workflow_conclusion": "failure",
+    "build_source_and_installed_sdk_step_conclusion": "success",
+    "artifact_upload_conclusion": "failure",
+    "logs_zip_sha256": "0a46e4161f2f7f51080a1b31bfa3c515dcbceab99b1933ef61fedda07f8b3206",
+    "raw_sdk_report_recovered": false
+  },
+  "failure": "The artifact uploader recursively scanned an intentionally unreadable test project left under SDK evidence. The compiler/source/installed SDK step had already returned success.",
+  "correction": "A root export step copies selected receipts and captured command logs into a new readable directory; the ordinary runner uploads that directory without traversing test projects. No original test project permissions are changed.",
+  "local_regressions": {
+    "passed": 3,
+    "failed": 0,
+    "command": "python3 -I -B tests/ci_artifacts.py",
+    "seconds": 0.007
+  },
+  "real_arm64_sdk_export": {
+    "ok": true,
+    "compiler_tests_repeated": false,
+    "source_commit": "3b008a4e618e8ee6d8789a39b3105928c36d35d6",
+    "input_acceptance_phases": 41,
+    "input_acceptance_commands": 851,
+    "exported_files": 1708,
+    "all_exported_bytes_match_originals": true,
+    "exported_files_mode": "0644",
+    "exported_directories_mode": "0755",
+    "probe_not_traversed": true,
+    "original_probe_mode_preserved_during_export": true,
+    "manifest": "/Users/sae/projects/NEX/build/sdk-0.246.1-macos-v3/ci-artifacts-real-v1/export/evidence-export.json",
+    "manifest_sha256": "5a5edc0eba7e8d367489a8e3a15a5d60035a9b0038f8dbd868ce63ba8511b68e"
+  },
+  "hosted_export_regression": "pending the dedicated CI evidence export checks; no full compiler suite repeat is needed for this report-copying change",
+  "limits": [
+    "The original whole workflow remains failed because its upload failed. Its actual test step passed. The new export is verified separately; a whole rerun with that export is not claimed.",
+    "The complete x86-64 raw SDK receipt was not uploaded. Successful test-step console output and API step conclusions are preserved; macOS and ARM64 retain their full raw receipts."
+  ]
+}
