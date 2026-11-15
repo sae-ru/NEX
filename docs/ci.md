@@ -50,6 +50,19 @@ The base image still contains Node and its prepared npm cache. The full mode
 keeps locked offline web dependency preparation and installed workflow stages.
 `--live` requires full mode and is not enabled on hosted runners.
 
+The [0.251 native-candidate core run](https://github.com/sae-ru/NEX/actions/runs/43766696580)
+passed on macOS. Linux failed while downloading the LLVM repository key:
+`curl: (7) Failed to connect to apt.llvm.org port 443`. Docker image preparation
+stopped before any NEX configure/build/test command. The original downloaded
+artifact and its digest are recorded in the
+[failure receipt](evidence/core-ci-0.251.0-network-failure-2026-11-16.json).
+Dependency downloads now use bounded curl retries, and APT uses three retries
+with 30-second connection timeouts. Package versions, archive digests and the
+LLVM key fingerprint stay pinned. An exhausted download still fails the job;
+the helper prints the last 16 KiB of its complete saved build log to the console.
+Two offline subprocess checks verify successful logging and failure-code/log
+preservation. Hosted retry acceptance is recorded separately after execution.
+
 macOS selects native Homebrew `llvm@22`, `lld@22`, OpenSSL3, SQLite, Z3,
 Python3.14, Ninja and CMake. The package inventory and configure/build logs
 are retained. Homebrew dependencies are rolling installations, not a pinned

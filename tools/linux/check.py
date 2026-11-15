@@ -14,6 +14,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nex_docker_mount import mount
 
 
+def prepare_image(command, log_path):
+    """Keep the complete build log and expose its failure in the job console."""
+    with log_path.open('wb') as log:
+        result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
+    if result.returncode:
+        # Read only the tail: image-build logs can grow without bound. The
+        # complete original remains in the always-uploaded artifact.
+        with log_path.open('rb') as log:
+            log.seek(0, 2)
+            log.seek(max(0, log.tell() - 16384))
+            tail = log.read().decode('utf-8', errors='replace')
+        print(f'Linux dependency image preparation failed; NEX checks have not started. Full log: {log_path}', file=sys.stderr)
+        print(tail, file=sys.stderr, flush=True)
+        raise subprocess.CalledProcessError(result.returncode, command)
+
+
 def verify_installed_sdk(output,image,arch,live=False):
     # A second container sees only the installed SDK and a new evidence directory.
     # The earlier /src mount cannot accidentally satisfy missing SDK resources.
@@ -78,16 +94,14 @@ def main():
     if args.live and args.tier=='core':parser.error('--live requires --tier full')
     output.mkdir(parents=True,exist_ok=True);image=args.image or 'nex-linux-toolchain:'+args.arch
     if not args.skip_image_build:
-        with (output/'image.log').open('w') as log:
-            subprocess.run(['docker','build','--platform','linux/'+args.arch,'--progress','plain','-f',str(source/'tools/linux/Dockerfile'),'-t',image,str(source)],stdout=log,stderr=subprocess.STDOUT,check=True)
+        prepare_image(['docker','build','--platform','linux/'+args.arch,'--progress','plain','-f',str(source/'tools/linux/Dockerfile'),'-t',image,str(source)],output/'image.log')
         if args.live:
             base_image=image
             image+='-paged-debugger'
-            with (output/'debugger-image.log').open('w') as log:
-                subprocess.run(['docker','build','--platform','linux/'+args.arch,'--progress','plain',
-                    '--build-arg','TOOLCHAIN_IMAGE='+base_image,
-                    '-f',str(source/'tools/linux/Debugger.Dockerfile'),'-t',image,str(source)],
-                    stdout=log,stderr=subprocess.STDOUT,check=True)
+            prepare_image(['docker','build','--platform','linux/'+args.arch,'--progress','plain',
+                '--build-arg','TOOLCHAIN_IMAGE='+base_image,
+                '-f',str(source/'tools/linux/Debugger.Dockerfile'),'-t',image,str(source)],
+                output/'debugger-image.log')
     inspected=json.loads(subprocess.check_output(['docker','image','inspect',image]))[0]
     if inspected['Architecture']!=args.arch:raise RuntimeError('toolchain image architecture differs from selection')
     server=json.loads(subprocess.check_output(['docker','version','--format','{{json .Server}}']))

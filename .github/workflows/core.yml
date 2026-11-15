@@ -78,7 +78,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Build pinned toolchain and execute core offline
-        run: python3 -B tools/linux/check.py --arch amd64 --tier core --jobs 2 --output build/ci-linux
+        run: |
+          python3 -B tests/linux_preparation.py
+          python3 -B tools/linux/check.py --arch amd64 --tier core --jobs 2 --output build/ci-linux
       - name: Retain results including failures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

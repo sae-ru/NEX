@@ -1,0 +1,54 @@
+{
+  "schema": "nex.hosted-core-evidence/1",
+  "recorded_at": "2026-11-16 Europe/Moscow",
+  "toolchain": "0.251.0",
+  "source_commit": "22b7cc74d4b8be54a4176522f2141ad5f5f8819b",
+  "scope": "macOS core passed; Linux dependency image failed before NEX configure/build/tests",
+  "run_id": 43766696580,
+  "url": "https://github.com/sae-ru/NEX/actions/runs/43766696580",
+  "status": "completed",
+  "conclusion": "failure",
+  "started_at": "2026-11-15T21:59:22Z",
+  "updated_at": "2026-11-15T22:05:35Z",
+  "jobs": [
+    {
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-11-15T21:59:24Z",
+      "completed_at": "2026-11-15T21:59:43Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43766696580/job/132973337159"
+    },
+    {
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-15T21:59:25Z",
+      "completed_at": "2026-11-15T22:05:35Z",
+      "url": "https://github.com/sae-ru/NEX/actions/runs/43766696580/job/132973337414"
+    }
+  ],
+  "linux_failure": {
+    "phase": "Docker dependency image preparation",
+    "command": "curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o /tmp/llvm.asc",
+    "error": "curl: (7) Failed to connect to apt.llvm.org port 443 after 258 ms: Couldn't connect to server",
+    "nex_configured": false,
+    "nex_built": false,
+    "nex_tests_executed": false,
+    "artifact_id": 14182631680,
+    "artifact_name": "linux-core-43766696580-1.zip",
+    "artifact_bytes": 5637,
+    "artifact_sha256": "307bc41a7c125b8e05432fb6ea23d3049dabc165bbcca619900dccfb61661ccf",
+    "image_log_sha256": "fb81be9624f06f9884c3838911d59cf08d842b78eb1e88cfeaae272a9c457e65",
+    "retrieval": "Downloaded original GitHub Actions artifact through the authenticated Firefox UI; ZIP SHA256 equals displayed GitHub digest. Anonymous API log access was unavailable."
+  },
+  "correction": {
+    "downloads": "curl: 4 retries, all errors, retry window180s, connect timeout15s, per-attempt timeout120s; APT: 3 retries, http/https timeout30s",
+    "identity": "base/package/archive pins and repository key fingerprint unchanged",
+    "failure_behavior": "nonzero dependency build still fails; complete binary log retained; last16KiB printed in console",
+    "local_checks": "2 subprocess controls: successful log; original error7, invalid UTF8 and complete100029-byte log with bounded console tail; all-target incremental build; 3/3 focused CTest groups (linux_image_preparation, test_tiers, docs_index); actionlint1.7.12 on changed core workflow",
+    "hosted_acceptance": "pending corrected source run",
+    "local_ctest_junit_sha256": "48199affa128449b4da82cd702d56d3cbfff191f5602c3ea5d6e0aeb47e173e9"
+  },
+  "release_qualification": false
+}

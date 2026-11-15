@@ -27,6 +27,7 @@
     "change_history": ["extended", "browser", "scale"],
     "cli_interface": ["extended", "platform"],
     "ci_ctest_receipts": ["extended"],
+    "linux_image_preparation": ["extended"],
     "compiled_workers_native": ["extended", "platform"],
     "compute_contract": ["extended", "browser", "scale"],
     "constraints": ["extended", "browser"],

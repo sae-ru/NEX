@@ -1562,6 +1562,9 @@ add_test(NAME ci_ctest_receipts COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/ci_ctest.py
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})
 set_tests_properties(ci_ctest_receipts PROPERTIES TIMEOUT 60)
+add_test(NAME linux_image_preparation COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/linux_preparation.py)
+set_tests_properties(linux_image_preparation PROPERTIES TIMEOUT 30)
 add_test(NAME sdk_build_workflow COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/sdk_build_workflow.py)
 set_tests_properties(sdk_build_workflow PROPERTIES TIMEOUT 90)

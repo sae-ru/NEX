@@ -4,8 +4,10 @@ ARG LLVM_APT_VERSION=1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~2026071413501
 ARG LLDB_APT_VERSION=1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96
 ARG PATCHELF_VERSION=0.18.0-1.1build1
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg xz-utils unzip \
-    && curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o /tmp/llvm.asc \
+RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80nex-retries \
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg xz-utils unzip \
+    && curl -fsSL --retry 4 --retry-all-errors --retry-max-time 180 --connect-timeout 15 --max-time 120 \
+       https://apt.llvm.org/llvm-snapshot.gpg.key -o /tmp/llvm.asc \
     && gpg --show-keys --with-colons /tmp/llvm.asc | awk -F: '$1 == "fpr" {print $10}' | grep -qx '6084F3CF814B57C1CF12EFD515CF4D18AF4F7421' \
     && gpg --dearmor -o /usr/share/keyrings/llvm.gpg /tmp/llvm.asc \
     && echo 'deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-22 main' > /etc/apt/sources.list.d/llvm.list \
@@ -29,10 +31,12 @@ RUN case "$TARGETARCH" in \
       amd64) node_arch=x64; node_hash=2e5d13569282d016861fae7c8f935e741693c269101a5bebcf761a5376d1f99f; \
              z3_name=z3-5.3.1-x64-glibc-2.39; z3_hash=acca9625e8cc8edeb9647b653a1bd696544ddeb5d1c2970a4576734a0c175b40 ;; \
       *) exit 1 ;; esac \
-    && curl -fsSL "https://nodejs.org/dist/v22.22.3/node-v22.22.3-linux-${node_arch}.tar.xz" -o /tmp/node.tar.xz \
+    && curl -fsSL --retry 4 --retry-all-errors --retry-max-time 180 --connect-timeout 15 --max-time 120 \
+       "https://nodejs.org/dist/v22.22.3/node-v22.22.3-linux-${node_arch}.tar.xz" -o /tmp/node.tar.xz \
     && echo "$node_hash  /tmp/node.tar.xz" | sha256sum -c - \
     && tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 \
-    && curl -fsSL "https://github.com/Z3Prover/z3/releases/download/z3-5.3.1/${z3_name}.zip" -o /tmp/z3.zip \
+    && curl -fsSL --retry 4 --retry-all-errors --retry-max-time 180 --connect-timeout 15 --max-time 120 \
+       "https://github.com/Z3Prover/z3/releases/download/z3-5.3.1/${z3_name}.zip" -o /tmp/z3.zip \
     && echo "$z3_hash  /tmp/z3.zip" | sha256sum -c - \
     && unzip -q /tmp/z3.zip -d /opt && mv "/opt/${z3_name}" /opt/z3 \
     && rm /tmp/node.tar.xz /tmp/z3.zip
