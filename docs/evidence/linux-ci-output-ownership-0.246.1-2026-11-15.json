@@ -1,0 +1,37 @@
+{
+  "schema": "nex.ci-output-ownership/1",
+  "verified_at_utc": "2026-11-15T08:14:12.081271+00:00",
+  "source_commit": "3b008a4e618e8ee6d8789a39b3105928c36d35d6",
+  "run": {
+    "id": 43681694091,
+    "url": "https://github.com/sae-ru/NEX/actions/runs/43681694091",
+    "conclusion": "failure"
+  },
+  "source_tests": {
+    "ok": true,
+    "configured": 344,
+    "passed": 344,
+    "failed": 0,
+    "skipped_groups": 0,
+    "registry_sha256": "1230da5cec7491132b13936aa475ae76f01c10a17e1cad91c07287be9d694be1",
+    "junit_sha256": "934425b38d6f51ee7570dc3d04a84ed00d773fcf52f56825c3a5f52a8dfa43fd"
+  },
+  "source_install_and_smoke": {
+    "ok": true,
+    "seconds": 9083.619
+  },
+  "failure": "The root container created verification.json; the non-root host orchestrator received PermissionError when appending the source-free SDK phase. The installed workflow had not started.",
+  "correction": {
+    "path": ".github/workflows/full.yml",
+    "command": "sudo python3 -B tools/linux/check.py --arch amd64 --tier full --jobs 4 --output build/ci-linux-full",
+    "scope": "Only the disposable hosted runner orchestrator executes with the same ownership as its Docker output; no source compiler, runtime or installed resource changes"
+  },
+  "evidence": {
+    "artifact_id": 14153018386,
+    "artifact_zip_sha256": "f423fd507837cb3e77754830faa10eece40387836cfbaf01c70f62cd3f250c52",
+    "local_directory": "build/sdk-0.246.1-macos-v3/full-ci-download-v1"
+  },
+  "limits": [
+    "This failed full workflow is preserved and does not count as complete Linux acceptance. A fresh hosted full run must also pass source-free installed SDK phases."
+  ]
+}
