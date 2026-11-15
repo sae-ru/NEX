@@ -601,7 +601,10 @@
     "standard_set_source": "lib/set.nex",
     "containers": "docs/containers.md",
     "effect_parameters": "docs/effect-parameters.md",
-    "opencl_emission_schema": "llm/opencl-emission.schema.json"
+    "opencl_emission_schema": "llm/opencl-emission.schema.json",
+    "standard_ordered_map_source": "lib/ordered_map.nex",
+    "standard_ordered_set_source": "lib/ordered_set.nex",
+    "ordered_containers": "docs/ordered-containers.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -715,7 +718,10 @@
     "list_construction_tasks": "examples/list-construction/tasks/nex.json",
     "text_construction": "examples/text-construction/nex.json",
     "bytes_construction": "examples/bytes-construction/nex.json",
-    "containers": "examples/containers/nex.json"
+    "containers": "examples/containers/nex.json",
+    "ordered_containers_project": "examples/ordered-containers/nex.json",
+    "ordered_containers_source": "examples/ordered-containers/main.nex",
+    "ordered_containers_lock": "examples/ordered-containers/nex.lock.json"
   },
   "patch_command": "nex apply --patch FILE --json",
   "validation_commands": [
@@ -4643,7 +4649,7 @@
         "sort_bound": "ordered; numeric i64/f64"
       },
       "map": {
-        "complexity": "put/remove/get/has O(n); keys/values O(n); list-backed, no hash table",
+        "complexity": "put/remove/get/has O(n); keys/values O(n); size O(1); excludes key comparison/value construction; list-backed, no hash table",
         "functions": [
           "empty",
           "put",
@@ -4656,12 +4662,13 @@
         ],
         "import": "std/map.nex",
         "introduced_toolchain": "0.178.0",
+        "linear_bulk_construction": true,
         "lookup": "result<V>; E_NOT_FOUND",
         "module": "std::map",
         "mutation": false,
         "ordering": "insertion order; put replaces in place; immutable",
         "resource": "lib/map.nex",
-        "sha256": "2110da38741970f3ccc815e804ef1e000e39fb06b93a7483b972396f3361ea6d",
+        "sha256": "22f69d9a69081b5ccf9642266e74007245fe740c72161d9403d9a7540afaf4c1",
         "types": [
           "Map<K,V>",
           "Entry<K,V>"
@@ -4691,6 +4698,71 @@
         "pow_zero_zero": 1,
         "resource": "lib/math.nex",
         "sha256": "6d073810efde8aabc2823db47f26f4493d431041bff87e25b16be8fadf23630e"
+      },
+      "ordered_map": {
+        "complexity": "valid API-produced trees: get/has/put/remove O(log(n+1)); size/height/is_empty O(1); entries/keys/values/validate O(n); excludes comparator/value construction and reclamation of unreachable versions",
+        "example": "examples/ordered-containers/nex.json",
+        "functions": [
+          "empty",
+          "put",
+          "remove",
+          "get",
+          "has",
+          "size",
+          "is_empty",
+          "height",
+          "entries",
+          "keys",
+          "values",
+          "validate"
+        ],
+        "import": "std/ordered_map.nex",
+        "introduced_toolchain": "0.247.0",
+        "lookup": "result<V>; E_NOT_FOUND",
+        "module": "std::ordered_map",
+        "mutation": false,
+        "ordering": "pure fn(K,K)->i64; sign defines a strict weak ordering; zero defines key equivalence; comparator-order enumeration",
+        "replacement": "retain the first key representative; replace its value",
+        "representation": "persistent AVL tree",
+        "resource": "lib/ordered_map.nex",
+        "sha256": "695126c45d32a5d1877e1d8882af70b9525efd1acf6796c8f4044cf0c83ec473",
+        "types": [
+          "Map<K,V>",
+          "Entry<K,V>",
+          "Node<K,V>"
+        ],
+        "update_allocation": "O(log(n+1)) path nodes; unchanged subtrees shared",
+        "validation": "checks public tree representation, cached counts/heights, ordering and AVL balance; does not prove arbitrary comparator laws"
+      },
+      "ordered_set": {
+        "algebra": "left comparator defines equivalence; retain left representatives; normalize right for intersection/difference",
+        "complexity": "valid API-produced trees: add/remove/has O(log(n+1)); size/height/is_empty O(1); items/validate O(n); union O(m log(n+m+1)); intersection/difference O((n+m) log(n+m+1)); excludes comparator/value construction and reclamation of unreachable versions",
+        "example": "examples/ordered-containers/nex.json",
+        "functions": [
+          "empty",
+          "add",
+          "remove",
+          "has",
+          "items",
+          "size",
+          "is_empty",
+          "height",
+          "validate",
+          "union",
+          "intersection",
+          "difference"
+        ],
+        "import": "std/ordered_set.nex",
+        "introduced_toolchain": "0.247.0",
+        "module": "std::ordered_set",
+        "mutation": false,
+        "ordering": "pure fn(T,T)->i64; comparator-order enumeration; zero defines equivalence",
+        "representation": "persistent AVL tree",
+        "resource": "lib/ordered_set.nex",
+        "sha256": "85456b1f28c78f7596778c88cf48dcae31d5a931bfc8d1c3c42001004ce6ed3c",
+        "types": [
+          "Set<T>"
+        ]
       },
       "priority_queue": {
         "complexity": "push_value O(n); pop/peek O(n); size/is_empty O(1); sorted list-backed, no binary heap",
@@ -4739,7 +4811,7 @@
         ]
       },
       "set": {
-        "complexity": "add/remove/has O(n); items/size O(1)/O(n); list-backed, no hash table",
+        "complexity": "add/remove/has O(n); items/size O(1); union O(m(n+m)); intersection/difference O(n(n+m)); excludes value comparison/construction; list-backed, no hash table",
         "functions": [
           "empty",
           "add",
@@ -4753,11 +4825,12 @@
         ],
         "import": "std/set.nex",
         "introduced_toolchain": "0.178.0",
+        "linear_bulk_construction": true,
         "module": "std::set",
         "mutation": false,
         "ordering": "insertion order; add of an existing value is a no-op; immutable",
         "resource": "lib/set.nex",
-        "sha256": "202902eddd8fe9fb8995e422387f553e591de9e26f8ab969f1afb24434d435ba",
+        "sha256": "041f1df46cca9862478914154dde4496867998b63e40c9fee1acb725522d5bb9",
         "types": [
           "Set<T>"
         ]
@@ -4809,7 +4882,7 @@
       }
     },
     "pending": [
-      "hash-based or balanced-tree containers beyond list-backed map/set/queue/stack/deque/priority_queue",
+      "hash containers; efficient queue/deque/heap beyond list-backed modules",
       "complete matching SDK/platform qualification"
     ],
     "source_language_changed": false,

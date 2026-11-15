@@ -15,36 +15,20 @@ pub fn empty<K, V>() -> Map<K, V> {
 }
 
 pub fn put<K, V>(map: Map<K, V>, key: K, value: V) -> Map<K, V> {
-  var output: list<Entry<K, V>> = [];
-  var found: bool = false;
-  var i: i64 = 0;
-  while i < len(map.entries) {
-    let entry: Entry<K, V> = map.entries[i];
+  let output: list<Entry<K, V>> = list(map.entries, fn(entry: Entry<K, V>) -> Entry<K, V> {
     if entry.key == key {
-      output = push(output, Entry(key, value));
-      found = true;
-    } else {
-      output = push(output, entry);
+      return Entry(key, value);
     }
-    i = i + 1;
-  }
-  if !found {
-    output = push(output, Entry(key, value));
-  }
-  return Map(output);
+    return entry;
+  });
+  if has(map, key) { return Map(output); }
+  return Map(push(output, Entry(key, value)));
 }
 
 pub fn remove<K, V>(map: Map<K, V>, key: K) -> Map<K, V> {
-  var output: list<Entry<K, V>> = [];
-  var i: i64 = 0;
-  while i < len(map.entries) {
-    let entry: Entry<K, V> = map.entries[i];
-    if entry.key != key {
-      output = push(output, entry);
-    }
-    i = i + 1;
-  }
-  return Map(output);
+  return Map(list(map.entries,
+    fn(entry: Entry<K, V>) -> bool { return entry.key != key; },
+    fn(entry: Entry<K, V>) -> Entry<K, V> { return entry; }));
 }
 
 pub fn get<K, V>(map: Map<K, V>, key: K) -> result<V> {
@@ -64,23 +48,11 @@ pub fn has<K, V>(map: Map<K, V>, key: K) -> bool {
 }
 
 pub fn keys<K, V>(map: Map<K, V>) -> list<K> {
-  var output: list<K> = [];
-  var i: i64 = 0;
-  while i < len(map.entries) {
-    output = push(output, map.entries[i].key);
-    i = i + 1;
-  }
-  return output;
+  return list(map.entries, fn(entry: Entry<K, V>) -> K { return entry.key; });
 }
 
 pub fn values<K, V>(map: Map<K, V>) -> list<V> {
-  var output: list<V> = [];
-  var i: i64 = 0;
-  while i < len(map.entries) {
-    output = push(output, map.entries[i].value);
-    i = i + 1;
-  }
-  return output;
+  return list(map.entries, fn(entry: Entry<K, V>) -> V { return entry.value; });
 }
 
 pub fn size<K, V>(map: Map<K, V>) -> i64 {

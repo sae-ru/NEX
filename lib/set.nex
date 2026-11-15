@@ -33,15 +33,9 @@ pub fn has<T>(set: Set<T>, value: T) -> bool {
 }
 
 pub fn remove<T>(set: Set<T>, value: T) -> Set<T> {
-  var output: list<T> = [];
-  var i: i64 = 0;
-  while i < len(set.items) {
-    if set.items[i] != value {
-      output = push(output, set.items[i]);
-    }
-    i = i + 1;
-  }
-  return Set(output);
+  return Set(list(set.items,
+    fn(item: T) -> bool { return item != value; },
+    fn(item: T) -> T { return item; }));
 }
 
 pub fn union<T>(left: Set<T>, right: Set<T>) -> Set<T> {

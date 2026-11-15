@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@std/ordered_map.nex": {
+      "module": "std::ordered_map",
+      "source_hash": "1c1825fefc5161c84af11b5d588aa3ed5f31872eb3ea62d296cf41cf8d283d1f"
+    },
+    "@std/ordered_set.nex": {
+      "module": "std::ordered_set",
+      "source_hash": "1119108eed15850ac7c9b45a9bf1245b63e53ad16812ad1b67f8706bccbbaacd"
+    }
+  },
+  "language": "0.29",
+  "schema": "nex.lock/1"
+}

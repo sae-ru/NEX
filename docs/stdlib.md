@@ -6,7 +6,7 @@ source. The 0.167 additions remain ordinary source helpers; 0.170 list helpers u
 the separately advertised [list constructor](list-construction.md). No authority
 or automatic language migration is introduced. Discover the selected compiler before importing:
 
-This capability indexes the text/list/math helpers in this stage. Network, UI,
+This capability indexes text/list/math and collection helpers. Network, UI,
 compute, model and provider modules retain their separate descriptor sections;
 absence from this small index does not disable those libraries.
 
@@ -112,6 +112,12 @@ double-ended `Deque<T>` with `E_EMPTY` results, and
 `PriorityQueue<T: ordered>`. All six are list-backed: operations are O(n), not
 hash/ring/heap structures. See
 [Container APIs](containers.md) for limits.
+
+Toolchain 0.247 also provides [`std/ordered_map.nex` and
+`std/ordered_set.nex`](ordered-containers.md): persistent AVL trees with pure
+comparators, O(log(n+1)) lookup/update and O(n) ordered enumeration. Existing
+list-backed modules preserve their API and insertion order. Hash tables and
+efficient queue/deque/heap structures remain pending.
 
 `std/list.nex` `generate`, `map`, `filter`, `fold`, `any`, `all`, `find_index` and `sort_by` use inferred effect parameter `?E`:
 a callback's effects flow into the named function's result and must be declared

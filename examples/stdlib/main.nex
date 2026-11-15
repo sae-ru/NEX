@@ -2,11 +2,29 @@ module stdlib_example;
 import "std/text.nex" as text;
 import "std/list.nex" as seq;
 import "std/math.nex" as math;
+import "std/ordered_map.nex" as maps;
+import "std/ordered_set.nex" as sets;
+
+fn compare(a:i64,b:i64)->i64 {
+  if a<b{return -1;}if a>b{return 1;}return 0;
+}
+fn ordered_helpers()->unit {
+  var table:maps::Map<i64,str>=maps::empty(compare);
+  table=maps::put(maps::put(maps::put(table,3,"three"),1,"one"),2,"two");
+  let old:maps::Map<i64,str>=table;
+  table=maps::remove(table,2);
+  assert(maps::keys(table)==[1,3] && maps::keys(old)==[1,2,3]);
+  assert(unwrap(maps::get(old,2))=="two" && maps::validate(table));
+  let left:sets::Set<i64>=sets::add(sets::empty(compare),1);
+  let right:sets::Set<i64>=sets::add(sets::empty(compare),2);
+  assert(sets::items(sets::union(left,right))==[1,2] && sets::validate(left));
+}
 
 fn total(values:list<i64>)->i64 {
   return seq::fold(values,0,fn(sum:i64,value:i64)->i64{return sum+value;});
 }
 fn main()->unit !{io} {
+  ordered_helpers();
   let original:list<i64>=[3,1,2,1];
   let sorted:list<i64>=seq::sort(original);
   let mapped:list<str>=seq::map(sorted,fn(value:i64)->str{return str(value);});
@@ -17,6 +35,7 @@ fn main()->unit !{io} {
   assert(original==[3,1,2,1]);
 }
 test fn helpers_test()->unit {
+  ordered_helpers();
   assert(total([3,1,2,1])==7);
   assert(text::split("Я🌍Я","Я")==["","🌍",""]);
 }

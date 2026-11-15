@@ -27,8 +27,9 @@ type          = "i64" | "f64" | "bool" | "unit" | "str" | "bytes" | "file" | "ta
 function_type = [ realm ], "fn", "(", [ types ], ")", "->", type, [ effects ] ;
 types         = type, { ",", type } ;
 type_parameters = "<", type_parameter, { ",", type_parameter }, ">" ;
-type_parameter = identifier, [ constructor_parameters ], [ ":", constraint, { "+", constraint } ] ;
-constructor_parameters = "<", "_", { ",", "_" }, ">" ;
+type_parameter = identifier, [ constructor_parameters ], [ ":", constraint, { "+", constraint } ], [ "=", type ] ;
+constructor_parameters = "<", constructor_slot, { ",", constructor_slot }, ">" ;
+constructor_slot = "_", [ constructor_parameters ] ; (* Nested signatures require language 0.29. *)
 constraint    = "add" | "ordered" | "integer" | "number" | "wire" | qualified_name ;
 type_arguments = "<", type_argument, { ",", type_argument }, ">" ;
 type_argument = type | "_" ;  (* "_" is language 0.29 opt-in *)
@@ -66,7 +67,7 @@ product       = unary, { ( "*" | "/" | "%" ), unary } ;
 unary         = ( "-" | "!" ), unary | postfix ;
 postfix       = primary, { ".", identifier | "[", expression, "]" | "(", [ arguments ], ")" | "?" } ;
 primary       = match_expression | lambda | floating | integer | "true" | "false" | string | list_literal | list_constructor | generic_builtin | qualified_name,
-                [ type_arguments, [ "::", identifier, [ type_arguments ] ] ] | "str", "(", [ arguments ], ")" |
+                [ type_arguments, [ "::", identifier, [ type_arguments ] ] ], [ effects ] | "str", "(", [ arguments ], ")" |
                 "(", expression, ")" ;
 (* Toolchain 0.170 also accepts the already-reserved list in call position:
    list(count,make), list(values,transform), list(values,predicate,transform),
@@ -117,8 +118,14 @@ digit         = "0" .. "9" ;
    function. Free lexical values are immutable snapshots captured on creation.
    Generic named references infer from an expected function type or use explicit
    type arguments. Builtin/nominal constructors and tests are not function values.
-   User traits, associated projections and fixed constructor kinds follow
-   traits.md; type defaults and type lambdas remain pending. Bounds are checked also for unused declarations.
+   User traits and associated projections follow traits.md. Trailing defaults
+   are accepted on nominal types and ordinary named functions; trait method
+   and implementation type parameters reject defaults. Defaults must satisfy
+   ordinary kind/bound rules and cannot be unit. Language0.29 adds partial
+   applications such as Pair<i64,_> and nested constructor-slot signatures;
+   language0.28 rejects them. The optional effects after a named expression
+   are an explicit effect witness, not an ambient grant to the caller; see
+   effect-parameters.md. Bounds are checked also for unused declarations.
    Generic test declarations and unspecialized executable entries are rejected. *)
 
 (* Toolchain 0.11 verification contracts are detached JSON metadata. They reuse
@@ -269,8 +276,9 @@ method_binding = identifier, "=", qualified_name, [ type_arguments ], ";" ;
    parameters, bounds, constructor kinds, ordinary calls and assertions. Pure
    predicates check parametrically; no source keyword or language change. *)
 
-(* Explicit C++028 source-contract development has its separate candidate grammar
-   in source-contracts-028.ebnf; the ordinary grammar above remains027. *)
+(* Historical explicit C++028 source-contract development used the separate
+   candidate grammar in source-contracts-028.ebnf before public language0.28.
+   The ordinary grammar above now includes the public source contracts. *)
 
 (* Language0.28 source contracts are contextual, not reserved names. Requires and
    ensures apply only to ordinary named source functions, including generic

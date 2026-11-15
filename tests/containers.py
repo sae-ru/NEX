@@ -32,6 +32,16 @@ fn main() -> unit !{io} {
   assert(!maps::has(shorter, "a"));
   assert(maps::size(maps::remove(shorter, "missing")) == 1);
 
+  let duplicates: maps::Map<str,i64> = maps::Map([maps::Entry("a",1),maps::Entry("b",2),maps::Entry("a",3)]);
+  let updated: maps::Map<str,i64> = maps::put(duplicates,"a",9);
+  assert(maps::keys(updated)==["a","b","a"] && maps::values(updated)==[9,2,9]);
+  assert(maps::values(duplicates)==[1,2,3]);
+  assert(maps::keys(maps::remove(updated,"a"))==["b"]);
+  let appended: maps::Map<str,i64> = maps::put(updated,"c",4);
+  assert(maps::keys(appended)==["a","b","a","c"] && maps::values(appended)==[9,2,9,4]);
+  let nested: maps::Map<list<i64>,list<str>> = maps::put(maps::empty(),[1,2],["Я","🌍"]);
+  assert(maps::values(nested)==[["Я","🌍"]] && is_ok(maps::get(nested,[1,2])));
+
   let empty_set: sets::Set<i64> = sets::empty();
   let s1: sets::Set<i64> = sets::add(empty_set, 2);
   let s2: sets::Set<i64> = sets::add(s1, 1);
@@ -41,8 +51,11 @@ fn main() -> unit !{io} {
   assert(sets::items(s2) == [2, 1]);
   assert(sets::items(sets::remove(s2, 2)) == [1]);
   assert(sets::size(sets::remove(s2, 99)) == 2);
+  let repeated: sets::Set<i64> = sets::Set([3,1,3,2]);
+  assert(sets::items(sets::remove(repeated,3))==[1,2] && sets::items(repeated)==[3,1,3,2]);
   print("containers-ok");
 }
+test fn app_test()->unit !{io}{main();}
 '''
 
 

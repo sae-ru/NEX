@@ -1,0 +1,170 @@
+module std::ordered_map;
+
+// Persistent AVL tree. Every child list has zero or one node, so rebuilding
+// the changed search path does not copy the whole collection.
+pub struct Node<K, V> {
+  key: K;
+  value: V;
+  left: list<Node<K, V>>;
+  right: list<Node<K, V>>;
+  height: i64;
+  count: i64;
+}
+pub struct Map<K, V> {
+  root: list<Node<K, V>>;
+  compare: fn(K, K) -> i64;
+}
+pub struct Entry<K, V> { key: K; value: V; }
+struct Frame<K, V> { node: Node<K, V>; rest: list<Frame<K, V>>; }
+
+fn tree_height<K, V>(root: list<Node<K, V>>) -> i64 {
+  if len(root) == 0 { return 0; }
+  return root[0].height;
+}
+fn tree_size<K, V>(root: list<Node<K, V>>) -> i64 {
+  if len(root) == 0 { return 0; }
+  return root[0].count;
+}
+fn make_node<K, V>(key: K, value: V, left: list<Node<K, V>>, right: list<Node<K, V>>) -> Node<K, V> {
+  var height: i64 = tree_height(left);
+  if tree_height(right) > height { height = tree_height(right); }
+  return Node(key, value, left, right, height + 1, 1 + tree_size(left) + tree_size(right));
+}
+fn balance<K, V>(key: K, value: V, left: list<Node<K, V>>, right: list<Node<K, V>>) -> list<Node<K, V>> {
+  let delta: i64 = tree_height(left) - tree_height(right);
+  if delta > 1 {
+    let child: Node<K, V> = left[0];
+    if tree_height(child.left) >= tree_height(child.right) {
+      let next: Node<K, V> = make_node(key, value, child.right, right);
+      return [make_node(child.key, child.value, child.left, [next])];
+    }
+    let pivot: Node<K, V> = child.right[0];
+    let first: Node<K, V> = make_node(child.key, child.value, child.left, pivot.left);
+    let second: Node<K, V> = make_node(key, value, pivot.right, right);
+    return [make_node(pivot.key, pivot.value, [first], [second])];
+  }
+  if delta < -1 {
+    let child: Node<K, V> = right[0];
+    if tree_height(child.right) >= tree_height(child.left) {
+      let next: Node<K, V> = make_node(key, value, left, child.left);
+      return [make_node(child.key, child.value, [next], child.right)];
+    }
+    let pivot: Node<K, V> = child.left[0];
+    let first: Node<K, V> = make_node(key, value, left, pivot.left);
+    let second: Node<K, V> = make_node(child.key, child.value, pivot.right, child.right);
+    return [make_node(pivot.key, pivot.value, [first], [second])];
+  }
+  return [make_node(key, value, left, right)];
+}
+fn insert<K, V>(root: list<Node<K, V>>, key: K, value: V, compare: fn(K, K) -> i64) -> list<Node<K, V>> {
+  if len(root) == 0 { return [make_node(key, value, [], [])]; }
+  let node: Node<K, V> = root[0];
+  let order: i64 = compare(key, node.key);
+  if order < 0 { return balance(node.key, node.value, insert(node.left, key, value, compare), node.right); }
+  if order > 0 { return balance(node.key, node.value, node.left, insert(node.right, key, value, compare)); }
+  // Comparator equality defines a key. Retain the original key representative.
+  return [make_node(node.key, value, node.left, node.right)];
+}
+fn first_node<K, V>(root: list<Node<K, V>>) -> Node<K, V> {
+  var current: Node<K, V> = root[0];
+  while len(current.left) != 0 { current = current.left[0]; }
+  return current;
+}
+fn remove_first<K, V>(root: list<Node<K, V>>) -> list<Node<K, V>> {
+  let node: Node<K, V> = root[0];
+  if len(node.left) == 0 { return node.right; }
+  return balance(node.key, node.value, remove_first(node.left), node.right);
+}
+fn erase<K, V>(root: list<Node<K, V>>, key: K, compare: fn(K, K) -> i64) -> list<Node<K, V>> {
+  if len(root) == 0 { return root; }
+  let node: Node<K, V> = root[0];
+  let order: i64 = compare(key, node.key);
+  if order < 0 { return balance(node.key, node.value, erase(node.left, key, compare), node.right); }
+  if order > 0 { return balance(node.key, node.value, node.left, erase(node.right, key, compare)); }
+  if len(node.left) == 0 { return node.right; }
+  if len(node.right) == 0 { return node.left; }
+  let next: Node<K, V> = first_node(node.right);
+  return balance(next.key, next.value, node.left, remove_first(node.right));
+}
+
+pub fn empty<K, V>(compare: fn(K, K) -> i64) -> Map<K, V> { return Map([], compare); }
+pub fn put<K, V>(map: Map<K, V>, key: K, value: V) -> Map<K, V> {
+  return Map(insert(map.root, key, value, map.compare), map.compare);
+}
+pub fn remove<K, V>(map: Map<K, V>, key: K) -> Map<K, V> {
+  return Map(erase(map.root, key, map.compare), map.compare);
+}
+pub fn get<K, V>(map: Map<K, V>, key: K) -> result<V> {
+  var root: list<Node<K, V>> = map.root;
+  while len(root) != 0 {
+    let node: Node<K, V> = root[0];
+    let order: i64 = map.compare(key, node.key);
+    if order == 0 { return ok(node.value); }
+    if order < 0 { root = node.left; } else { root = node.right; }
+  }
+  return err<V>("E_NOT_FOUND", "ordered map key not found");
+}
+pub fn has<K, V>(map: Map<K, V>, key: K) -> bool { return is_ok(get(map, key)); }
+pub fn size<K, V>(map: Map<K, V>) -> i64 { return tree_size(map.root); }
+pub fn is_empty<K, V>(map: Map<K, V>) -> bool { return size(map) == 0; }
+pub fn height<K, V>(map: Map<K, V>) -> i64 { return tree_height(map.root); }
+
+fn left_path<K, V>(root: list<Node<K, V>>, stack: list<Frame<K, V>>) -> list<Frame<K, V>> {
+  var current: list<Node<K, V>> = root;
+  var output: list<Frame<K, V>> = stack;
+  while len(current) != 0 {
+    let node: Node<K, V> = current[0];
+    output = [Frame(node, output)];
+    current = node.left;
+  }
+  return output;
+}
+fn advance<K, V>(stack: list<Frame<K, V>>) -> list<Frame<K, V>> {
+  let frame: Frame<K, V> = stack[0];
+  return left_path(frame.node.right, frame.rest);
+}
+pub fn entries<K, V>(map: Map<K, V>) -> list<Entry<K, V>> {
+  let initial: list<Frame<K, V>> = left_path(map.root, []);
+  return list(size(map), initial,
+    fn(stack: list<Frame<K, V>>) -> list<Frame<K, V>> { return advance(stack); },
+    fn(stack: list<Frame<K, V>>) -> Entry<K, V> { return Entry(stack[0].node.key, stack[0].node.value); });
+}
+pub fn keys<K, V>(map: Map<K, V>) -> list<K> {
+  let initial: list<Frame<K, V>> = left_path(map.root, []);
+  return list(size(map), initial,
+    fn(stack: list<Frame<K, V>>) -> list<Frame<K, V>> { return advance(stack); },
+    fn(stack: list<Frame<K, V>>) -> K { return stack[0].node.key; });
+}
+pub fn values<K, V>(map: Map<K, V>) -> list<V> {
+  let initial: list<Frame<K, V>> = left_path(map.root, []);
+  return list(size(map), initial,
+    fn(stack: list<Frame<K, V>>) -> list<Frame<K, V>> { return advance(stack); },
+    fn(stack: list<Frame<K, V>>) -> V { return stack[0].node.value; });
+}
+
+fn valid_tree<K, V>(root: list<Node<K, V>>, compare: fn(K, K) -> i64,
+  lower: result<K>, upper: result<K>, depth: i64) -> bool {
+  // No valid AVL tree with an i64 element count can have height above 90.
+  if len(root) > 1 { return false; }
+  if len(root) == 0 { return true; }
+  if depth > 90 { return false; }
+  let node: Node<K, V> = root[0];
+  if is_ok(lower) { if compare(node.key, unwrap(lower)) <= 0 { return false; } }
+  if is_ok(upper) { if compare(node.key, unwrap(upper)) >= 0 { return false; } }
+  if !valid_tree(node.left, compare, lower, ok(node.key), depth + 1) { return false; }
+  if !valid_tree(node.right, compare, ok(node.key), upper, depth + 1) { return false; }
+  let left_height: i64 = tree_height(node.left);
+  let right_height: i64 = tree_height(node.right);
+  let delta: i64 = left_height - right_height;
+  if delta < -1 || delta > 1 { return false; }
+  var expected: i64 = left_height + 1;
+  if right_height > left_height { expected = right_height + 1; }
+  if node.height != expected { return false; }
+  let left_count: i64 = tree_size(node.left);
+  let right_count: i64 = tree_size(node.right);
+  if right_count > 9223372036854775807 - left_count - 1 { return false; }
+  return node.count == 1 + left_count + right_count;
+}
+pub fn validate<K, V>(map: Map<K, V>) -> bool {
+  return valid_tree(map.root, map.compare, err<K>("E_BOUND", "unbounded"), err<K>("E_BOUND", "unbounded"), 1);
+}

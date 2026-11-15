@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.178; language 0.28"
+applies_to: "toolchain 0.247.0; language 0.28 and 0.29"
 owner: repository
 ---
 
@@ -10,6 +10,9 @@ owner: repository
 insertion-ordered, and backed by a list: lookup and update are **O(n)**, not a
 hash table or a balanced tree. They do not add a language primitive or change
 language semantics.
+
+For logarithmic lookup/update with explicit comparator order, use the separate
+[persistent AVL map/set](ordered-containers.md) modules introduced in 0.247.
 
 ```nex
 module inventory;
@@ -53,15 +56,20 @@ compared with `==`; the key type must support it.
 `intersection(left,right)`, `difference(left,right)`, `items(set)`, and
 `size(set)`. `add` of an existing value is a no-op. Removal preserves order and
 removes matching values; duplicates are not produced by `add`. Set operations
-preserve the left insertion order and remain immutable list-backed O(n).
+preserve the left insertion order. For left/right sizes n/m, union is
+O(m(n+m)); intersection/difference are O(n(n+m)), including duplicate checks
+and output construction. `items` and `size` are O(1).
 
 ## Limits
 
-Operations scan the backing list and allocate a new list, so `put`, `remove`,
-`get`, and `has` are O(n). This is suitable for checked small and medium
-collections, not a replacement for a hash or balanced-tree container. Those,
-generic ordering constraints, and effect-polymorphic named signatures remain
-pending. Import aliases such as `maps`/`sets` avoid the reserved `list` name and
+Operations scan the backing list. In 0.247, map updates/enumeration and set
+removal use the linear bulk constructor instead of repeatedly copying a growing
+list; `put`, `remove`, `get`, and `has` are O(n), excluding key/value comparison
+and construction. This is suitable for checked small and medium
+collections. Hash containers remain pending; balanced-tree collections are
+available through the separate ordered modules. Generic numeric ordering and
+[inferred effect parameters](effect-parameters.md) are implemented features.
+Import aliases such as `maps`/`sets` avoid the reserved `list` name and
 the `std/list` `map` helper.
 
 

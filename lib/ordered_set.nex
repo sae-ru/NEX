@@ -1,0 +1,42 @@
+module std::ordered_set;
+import "./ordered_map.nex" as trees;
+
+pub struct Set<T> { tree: trees::Map<T, bool>; }
+pub fn empty<T>(compare: fn(T, T) -> i64) -> Set<T> { return Set(trees::empty(compare)); }
+pub fn add<T>(set: Set<T>, value: T) -> Set<T> { return Set(trees::put(set.tree, value, true)); }
+pub fn remove<T>(set: Set<T>, value: T) -> Set<T> { return Set(trees::remove(set.tree, value)); }
+pub fn has<T>(set: Set<T>, value: T) -> bool { return trees::has(set.tree, value); }
+pub fn items<T>(set: Set<T>) -> list<T> { return trees::keys(set.tree); }
+pub fn size<T>(set: Set<T>) -> i64 { return trees::size(set.tree); }
+pub fn is_empty<T>(set: Set<T>) -> bool { return trees::is_empty(set.tree); }
+pub fn height<T>(set: Set<T>) -> i64 { return trees::height(set.tree); }
+pub fn validate<T>(set: Set<T>) -> bool { return trees::validate(set.tree); }
+pub fn union<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  var output: Set<T> = left;
+  let values: list<T> = items(right);
+  var index: i64 = 0;
+  while index < len(values) { output = add(output, values[index]); index = index + 1; }
+  return output;
+}
+pub fn intersection<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  let normalized: Set<T> = union(empty(left.tree.compare), right);
+  var output: Set<T> = empty(left.tree.compare);
+  let values: list<T> = items(left);
+  var index: i64 = 0;
+  while index < len(values) {
+    if has(normalized, values[index]) { output = add(output, values[index]); }
+    index = index + 1;
+  }
+  return output;
+}
+pub fn difference<T>(left: Set<T>, right: Set<T>) -> Set<T> {
+  let normalized: Set<T> = union(empty(left.tree.compare), right);
+  var output: Set<T> = empty(left.tree.compare);
+  let values: list<T> = items(left);
+  var index: i64 = 0;
+  while index < len(values) {
+    if !has(normalized, values[index]) { output = add(output, values[index]); }
+    index = index + 1;
+  }
+  return output;
+}

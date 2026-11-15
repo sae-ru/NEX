@@ -1,8 +1,9 @@
 # Why NEX exists
 
-Current source is **toolchain 0.246.0 / language 0.28 / task ABI 7**, in
+Current source is **toolchain 0.247.0 / language 0.28 / task ABI 7**, in
 development. It includes ordinary source contracts and experimental checked
-scalar Metal emission. Complete matching portable SDK qualification remains
+scalar Metal emission. The published [0.246.1 macOS SDK](releases/0.246.1.json)
+has its own completed acceptance; matching 0.247 SDK qualification remains
 pending. The [current platform summary](../README.md#development-status) links
 exact source and hardware records; [STATUS](../STATUS.md) retains the history.
 Older SDK archives keep their own source, compiler and acceptance identities.
