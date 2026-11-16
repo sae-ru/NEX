@@ -1,0 +1,35 @@
+{
+  "id": 43793833727,
+  "name": "Core development checks",
+  "head_sha": "a81edc81d1f63e70259482e32d0a0510c8ab24b3",
+  "html_url": "https://github.com/sae-ru/NEX/actions/runs/43793833727",
+  "status": "completed",
+  "conclusion": "success",
+  "created_at": "2026-11-16T02:42:59Z",
+  "updated_at": "2026-11-16T02:47:53Z",
+  "schema": "nex.core-ci-evidence/1",
+  "toolchain": "0.255.0",
+  "scope": "Core development checks after LLDB APT snapshot/cache repair; not full source/platform/SDK qualification",
+  "raw_sha256": "9e58820886623a2dc26f764a8791020a88bea3221b9d13ef2cbe61a66d2c99c2",
+  "core_groups_per_job": 16,
+  "jobs": [
+    {
+      "id": 133058048106,
+      "name": "macos-core",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sae-ru/NEX/actions/runs/43793833727/job/133058048106",
+      "started_at": "2026-11-16T02:43:03Z",
+      "completed_at": "2026-11-16T02:47:52Z"
+    },
+    {
+      "id": 133058048354,
+      "name": "linux-core",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/sae-ru/NEX/actions/runs/43793833727/job/133058048354",
+      "started_at": "2026-11-16T02:43:02Z",
+      "completed_at": "2026-11-16T02:46:10Z"
+    }
+  ]
+}

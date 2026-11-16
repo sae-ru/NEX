@@ -1762,6 +1762,7 @@ Program parseManagedReferencesPrototype(std::string source,std::string path){
   auto p=Parser(std::move(source),std::move(path),0,"unit",false,false,false,false,true,true,true,true,true,programLanguage(language),true).run();
   p.sourceLanguage=language;
   if(!p.imports.empty()||!p.endpoints.empty())throw Error("E_CELL_STAGE","private reference candidate is one unarchived source unit without endpoints");
+  bindManagedReferencePrototypeTypes(p);
   return p;
 }
 SourceFormatHints sourceFormatHints(const std::string &source,const std::string &file){

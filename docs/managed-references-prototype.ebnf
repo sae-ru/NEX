@@ -2,6 +2,9 @@
    Selected only by parseManagedReferencesPrototype in C++.
    Not an ordinary CLI source version; no archival or migration contract.
    No imports, endpoints, task/parallel execution or owned payload capabilities. *)
+(* Toolchain0.256 scopes declaration-local generic binders and trait Self before
+   checking. 0.29 partial type lambdas/higher-order kinds retain their grammar;
+   trait method argument lists are bound before specialization. No new token. *)
 private_cell_type = "cell", "<", type, ">" ;
 private_cell_constructor = "cell" ; (* Unary higher-kinded type argument. *)
 private_effect = "state" ;

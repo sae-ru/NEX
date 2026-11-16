@@ -108,6 +108,89 @@ fn main()->unit!{state,io}{var head:list<cell<Node>>=[];var i:i64=0;
  while i<2048{head=[cell_new(Node(i,head))];i=i+1;}cell_collect();print(cell_read(head[0]).value);
 }
 )nex","2047\n");
+  runs(R"nex(
+
+struct Pair<A,B>{first:A;second:B;}
+struct Wrapped<F<_>,T>{value:F<T>;}
+fn forward<F<_>,T>(value:F<T>)->F<T>{return value;}
+fn forward2<F<_,_>,A,B>(value:F<A,B>)->F<A,B>{return value;}
+fn hold<F<_>,T>(value:F<T>)->Wrapped<F,T>{return Wrapped<F,T>(value);}
+fn main()->unit!{state,io}{
+ let anchor:cell<i64>=cell_new(1);
+ let pair:Pair<cell<i64>,str>=forward<Pair<cell<i64>,_>,str>(Pair(anchor,"old"));
+ let inferred:Pair<cell<i64>,str>=forward(pair);
+ let leading:Pair<cell<i64>,str>=forward<Pair<_,str>,cell<i64>>(pair);
+ let multi:Pair<cell<i64>,str>=forward2<Pair<_,_>,cell<i64>,str>(pair);
+ let held:Wrapped<Pair<cell<i64>,_>,str>=hold<Pair<cell<i64>,_>,str>(pair);
+ let stored:cell<Pair<cell<i64>,str>>=cell_new(held.value);
+ let old:Pair<cell<i64>,str>=cell_read(stored);
+ cell_write(stored,Pair(anchor,"new"));cell_write(anchor,42);cell_collect();
+ assert(old.second=="old");assert(cell_read(stored).second=="new");
+ assert(inferred.first==anchor&&leading.first==anchor&&multi.first==anchor);
+ print(cell_read(old.first));print(old.second);print(cell_read(stored).second);
+}
+)nex","42\nold\nnew\n");
+  runs(R"nex(
+
+struct Wrap<F<_>>{value:F<i64>;}
+struct H<F<_<_>>,G<_>>{value:F<G>;}
+fn hold<F<_<_>>,G<_>>(value:F<G>)->F<G>{return value;}
+fn main()->unit!{state,io}{
+ let anchor:cell<i64>=cell_new(1);
+ let wrap:Wrap<cell>=Wrap<cell>(anchor);
+ let held:Wrap<cell>=hold<Wrap,cell>(wrap);
+ let nested:H<Wrap,cell>=H<Wrap,cell>(held);
+ let slot:cell<H<Wrap,cell>>=cell_new(nested);
+ let reader:fn()->i64!{state}=fn()->i64!{state}{cell_collect();return cell_read(cell_read(slot).value.value);};
+ cell_write(anchor,42);cell_collect();print(reader());
+ assert(cell_read(slot).value.value==anchor);
+}
+)nex","42\n");
+  runs(R"nex(
+
+trait Content{type Item;fn get(value:Self)->Content::Item<Self>!{state};}
+fn extract<T>(value:cell<T>)->T!{state}{return cell_read(value);}
+impl cells<T>:Content for cell<T>{type Item=T;get=extract<T>;}
+fn read<T:Content>(value:T)->Content::Item<T>!{state}{return Content<T>::get(value);}
+fn main()->unit!{state,io}{
+ let anchor:cell<str>=cell_new("old");
+ let getter:fn(cell<str>)->str!{state}=Content<cell<str>>::get;
+ let slot:cell<fn(cell<str>)->str!{state}>=cell_new(getter);
+ cell_write(anchor,"Я🌍");cell_collect();print(read(anchor));print(cell_read(slot)(anchor));
+}
+)nex","Я🌍\nЯ🌍\n");
+  runs(R"nex(
+
+struct Pair<A,B>{first:A;second:B;}
+fn raise<F<_>,T>(value:F<T>)->unit!{throw}{match true{true=>{let alias:F<T>=value;throw(alias);}false=>{throw(value);}}}
+fn apply<T>(callback:fn()->T!{?e})->T!{?e}{return callback();}
+fn relay(value:cell<i64>)->unit!{state,throw}{
+ try{apply(fn()->i64!{throw}{raise<Pair<cell<i64>,_>,str>(Pair(value,"caught"));return 0;});}
+ finally{cell_collect();cell_write(value,42);}
+}
+fn main()->unit!{state,io,throw}{
+ let anchor:cell<i64>=cell_new(0);
+ try{relay(anchor);}catch(packet:Pair<cell<i64>,str>){cell_collect();assert(packet.first==anchor);print(packet.second);print(cell_read(packet.first));}
+}
+)nex","caught\n42\n");
+  runs(R"nex(
+trait Mapper<Self<_>>{fn map<A,B>(value:Self<A>,apply:fn(A)->B)->Self<B>!{state};}
+fn map_cell<A,B>(value:cell<A>,apply:fn(A)->B)->cell<B>!{state}{return cell_new(apply(cell_read(value)));}
+impl cell_mapper:Mapper for cell{map=map_cell;}
+fn convert<F<_>:Mapper,A,B>(value:F<A>,apply:fn(A)->B)->F<B>!{state}{return Mapper<F>::map<A,B>(value,apply);}
+fn main()->unit!{state,io}{
+ let anchor:cell<i64>=cell_new(41);
+ let mapped:cell<str>=convert<cell,i64,str>(anchor,fn(value:i64)->str{return str(value+1);});
+ let direct:cell<i64>=Mapper<cell>::map<i64,i64>(anchor,fn(value:i64)->i64{return value+2;});
+ cell_write(anchor,0);cell_collect();print(cell_read(mapped));print(cell_read(direct));print(cell_read(anchor));
+}
+)nex","42\n43\n0\n");
+  runs(R"nex(
+struct Box<T=i64>{value:T;}
+fn keep<T>(value:T)->T requires(value==value) ensures(result=>result==value){return value;}
+fn make<T=i64>(value:T)->Box<T>{return Box<T>(value);}
+fn main()->unit!{state,io}{let anchor:cell<i64>=cell_new(41);let same:cell<i64>=keep(anchor);let wrapped:Box<cell<i64>>=make(same);cell_write(anchor,42);cell_collect();print(cell_read(wrapped.value));let simple:Box=make(7);print(simple.value);}
+)nex","42\n7\n");
   {
     auto scalar=checked("fn main()->i64!{state}{let x:cell<i64>=cell_new(42);return cell_read(x);}");
     auto value=evaluateManagedReferencesPrototype(scalar);require(value.evaluation.value.getAsInteger()==42&&value.afterCollection.nodes==0,"host scalar result retained its source cell");++accepted;
@@ -131,6 +214,9 @@ fn main()->unit!{state,io}{var head:list<cell<Node>>=[];var i:i64=0;
     {"server fn read(x:file)->cell<file>!{state}{return cell_new(x);}fn main()->unit{}","E_CELL_VALUE"},
     {"fn main()->unit!{state}{let x:cell<i64>=cell_new(1);encode_json(x);}","E_GENERIC_BOUND"},
     {"struct Marker<T>{}fn wire(x:Marker<cell<i64>>)->str{return encode_json(x);}fn main()->unit{}","E_GENERIC_BOUND"},
+    {"struct Wrap<F<_>>{value:F<i64>;}struct Marker<F<_<_>>,G<_>>{}fn main()->unit{let marker:Marker<Wrap,cell>=Marker<Wrap,cell>();encode_json(marker);}","E_GENERIC_BOUND"},
+    {"trait Content{type Item;fn get(value:Self)->Content::Item<Self>!{state};}fn extract<T>(value:cell<T>)->T!{state}{return cell_read(value);}impl cells<T>:Content for cell<T>{type Item=T;get=extract<T>;}fn read<T:Content>(value:T)->Content::Item<T>{return Content<T>::get(value);}fn main()->unit{}","E_EFFECT"},
+    {"struct Wrap<F<_>>{value:F<i64>;}fn hold<F<_<_>>,G<_>>(value:F<G>)->F<G>{return value;}fn main()->unit!{state}{let stored:cell<i64>=cell_new(1);hold<cell,cell>(stored);}","E_GENERIC_KIND"},
     {"fn main()->unit{parallel_map([1],fn(x:i64)->i64{return x;},1);}","E_CELL_STAGE"},
     {"server fn main()->unit!{fs}{}","E_CELL_STAGE"},
     {"import \"other.nex\" as other;fn main()->unit{}","E_CELL_STAGE"}

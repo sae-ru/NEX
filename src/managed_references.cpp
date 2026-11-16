@@ -20,6 +20,68 @@ bool containsManagedReference(const Program &program,const Type &type){
 const std::set<std::string> &managedReferenceBuiltins(){
   static const std::set<std::string> names={"cell","cell_new","cell_read","cell_write","cell_collect"};return names;
 }
+void bindManagedReferencePrototypeTypes(Program &program){
+  if(!supportsManagedReferences(program))throw Error("E_LANGUAGE_VERSION","private reference type binding requires its explicit frontend");
+  // The public module loader scopes these binders while resolving modules. The
+  // private parser has no loader: sharing a raw F/T between declarations lets a
+  // later kind or bound overwrite an earlier one, and leaves trait Self unbound.
+  std::map<std::string,std::string> parameters;
+  std::set<std::string> traitMethods;
+  std::set<std::string> projections;
+  for(const auto &trait:program.traits)for(const auto &[name,bounds]:trait.associated)projections.insert(trait.name+"::"+name);
+  auto scope=[&](auto &declaration,const std::string &name){
+    parameters.clear();
+    for(auto &parameter:declaration.typeParameters){auto local=parameter;parameter=program.module+"::"+name+"::"+local;parameters.emplace(local,parameter);}
+  };
+  std::function<void(Type&)> type=[&](Type &value){
+    if(value.kind==Type::Parameter){
+      auto found=parameters.find(value.name);
+      if(found==parameters.end())throw Error("E_GENERIC_SCOPE","type parameter is outside its declaration");
+      value.name=found->second;
+    }
+    if(value.kind==Type::Record&&projections.contains(value.name))value.kind=Type::Projection;
+    if(value.element){value.element=std::make_shared<Type>(*value.element);type(*value.element);}
+    for(auto &argument:value.arguments)type(argument);
+  };
+  std::function<void(E)> expression;
+  std::function<void(const std::vector<S>&)> block;
+  expression=[&](E value){if(value){
+    type(value->annotation);
+    for(auto &argument:value->typeArguments)type(argument);
+    for(auto &argument:value->methodArguments)type(argument);
+    if(!value->methodArguments.empty()){
+      if(!traitMethods.contains(value->text))throw Error("E_GENERIC_ARITY","second type argument list requires a trait method",value->span);
+      value->typeArguments.insert(value->typeArguments.end(),value->methodArguments.begin(),value->methodArguments.end());value->methodArguments.clear();
+    }
+    if(value->lambda){auto &lambda=*value->lambda;type(lambda.result);for(auto &parameter:lambda.params)type(parameter.type);block(lambda.body);}
+    for(auto &argument:value->args)expression(argument);
+    for(auto &arm:value->arms)block(arm->body);
+  }};
+  block=[&](const std::vector<S> &body){for(auto &statement:body){
+    type(statement->type);expression(statement->expr);
+    // A block match shares its arms with its expression; bind them only once.
+    if(statement->kind!=Stmt::Match)childBlocks(statement,block);
+  }};
+  auto signature=[&](Function &function){
+    type(function.result);for(auto &parameter:function.params)type(parameter.type);
+    for(auto &value:function.typeDefaults)type(value);
+  };
+  for(auto &trait:program.traits)for(auto &method:trait.methods){
+    method.name=trait.name+"::"+method.name;
+    traitMethods.insert(method.name);
+    scope(method,method.name);parameters["Self"]=trait.name+"::Self";signature(method);
+  }
+  for(auto &implementation:program.implementations){
+    scope(implementation,implementation.name);type(implementation.self);
+    for(auto &[name,value]:implementation.associated)type(value);
+    for(auto &[name,method]:implementation.methods)for(auto &argument:method.typeArguments)type(argument);
+  }
+  for(auto &function:program.functions){scope(function,function.name);signature(function);block(function.body);}
+  for(auto &structure:program.structures){
+    scope(structure,structure.name);for(auto field:structure.members())type(field->type);
+    for(auto &value:structure.typeDefaults)type(value);
+  }
+}
 llvm::json::Object managedReferencesCapability(){
   const nexrt::CellHeapLimits limits;
   return llvm::json::Object{{"schema","nex.managed-references/1"},{"status","private_checked_reference_candidate"},
@@ -54,6 +116,12 @@ llvm::json::Object managedReferencesCapability(){
       {"selection","parseManagedReferencesPrototype; check; evaluateManagedReferencesPrototype"},
       {"guide","docs/managed-references-prototype.md"},{"grammar","docs/managed-references-prototype.ebnf"},
       {"test","tests/managed_references.cpp"},{"frontend",true},{"reference_interpreter",true},
+      {"generic_composition",llvm::json::Object{{"introduced_toolchain","0.256.0"},
+        {"type_binders","declaration-local identities; same-spelled parameters keep independent kinds and bounds"},
+        {"language029",llvm::json::Array{"partial type lambdas","whole-type constructor inference","higher-order kind signatures"}},
+        {"traits",llvm::json::Array{"associated projections","static dispatch","method references","generic constructor methods"}},
+        {"source_effects","state and typed throws compose with inferred callback effects"},
+        {"public_source_enabled",false}}},
       {"native",true},{"typescript",true},{"ordinary_CLI",false},{"archival",false},{"migration",false},
       {"native_introduced_toolchain","0.251.0"},{"native_selection","emitManagedReferencesPrototypeMLIR"},
       {"native_guide","docs/managed-reference-native-prototype.md"},

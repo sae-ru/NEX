@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.255.0"
+applies_to: "language 0.28; toolchain 0.256.0"
 owner: repository
 ---
 
@@ -33,6 +33,10 @@ deep values and snapshots released after heap close. The 0.255
 retirement across module boundaries. Public reference migration and the shared
 mutable memory model remain open; the private candidate's thread/task
 restrictions are unchanged.
+
+The0.256 private frontend scopes independent type binders and trait Self before
+checking, composing cells with 0.29 kinds, projections and static methods. Its
+public version/history migration and module/host lifetime work remain next.
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

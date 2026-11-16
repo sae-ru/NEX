@@ -1,3 +1,24 @@
+# Private reference generic composition — development0.256.0
+
+The single-unit reference frontend now scopes each declaration's type binders
+and trait Self before checking. Independent F/T kinds and bounds, associated
+projections, static methods/references and method type arguments compose with
+cell snapshots, closures, 0.29 partial/higher-order kinds and typed source errors.
+Statement-match arms are visited once. Public languages0.28/0.29 and graph
+formats remain unchanged; the candidate is still private and unarchived.
+
+Final checks passed16 core groups (19 accepted/41 rejected reference scenarios),
+84 native O0/O2 comparisons with matching-host images and independent executables,
+and44 strict executed TypeScript scenarios. Eleven affected groups passed;
+the final two backend groups include additional generic match/contracts/defaults
+coverage. Earlier intermediate results are retained in the
+[focused receipt](docs/evidence/managed-reference-generics-0.256.0-2026-11-16.json).
+[Core CI0.255](docs/evidence/core-ci-0.255.0-2026-11-16.json) passed on Mac/Linux
+after the pinned LLDB package-cache repair. These are bounded source checks;
+public references/migration/modules/host ABI, the remaining Java/Python semantics,
+full source/platform qualification and a matching new portable SDK remain open.
+Published SDK0.246.1 is unchanged.
+
 # Current implementation and remaining roadmap — development0.167.0
 
 User instruction,2026-11-11: additional security/instrumentation/fuzz work is

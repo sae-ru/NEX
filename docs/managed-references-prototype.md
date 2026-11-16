@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.253.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.256.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -81,6 +81,26 @@ becomes an `E_SOURCE_EXCEPTION` diagnostic at the private host entry. Its owned
 payload does not escape that context: the host lifetime ABI remains unfinished.
 Fatal traps keep their existing cleanup/skip-finally rules.
 
+### Generic composition in 0.256
+
+The single-unit frontend gives each declaration's type parameters its own
+identity before checking. Reusing `T` or `F` in another declaration cannot
+overwrite the first declaration's kind or bounds. Trait methods bind their own
+parameters and `Self`; associated projections and the second type-argument list
+in `Mapper<cell>::map<i64,str>(...)` are resolved before specialization.
+
+This composes the private cell candidate with 0.29 partial type lambdas,
+whole-type constructor inference and higher-order signatures. Examples include
+`Pair<cell<i64>,_>`, `Wrap<cell>` and `H<Wrap,cell>` when `H` declares
+`F<_<_>>,G<_>`. Static trait methods can read/create cells with declared `state`,
+and their method references can be stored in cells. Generic typed throws keep
+cell identity through inferred callback effects and `finally`.
+
+The source corpus checks these combinations in reference, native O0/O2 and
+strict executed TypeScript, including retained snapshots, explicit collection,
+effect rejection and phantom constructor arguments that must not enter JSON.
+This binding correction changes no public source version or graph format.
+
 There are no tasks, parallel execution, imported projects, endpoints or
 fs/db/ffi execution in this candidate. These are pending integration work,
 not newly removed capabilities of ordinary NEX. The private host entry can
@@ -127,3 +147,10 @@ records 13 accepted and 38 rejected probe scenarios with no residual live values
 the 13-group core selection and eight affected groups. The final core took
 21.09 s; affected public-language checks took 80.87 s on the recorded Mac.
 These are bounded development checks, not full compiler/SDK qualification.
+
+[Focused 0.256 evidence](evidence/managed-reference-generics-0.256.0-2026-11-16.json)
+records 19 accepted and 41 rejected reference scenarios, 16 core groups,
+84 native O0/O2 comparisons and 44 strict executed TypeScript scenarios.
+Each native comparison also runs an independently linked executable. The final
+corpus includes generic statement matches, contracts and defaults. Full current
+SDK/platform qualification and public source promotion remain pending.

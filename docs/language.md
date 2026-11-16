@@ -397,6 +397,11 @@ does not extend this source contract. It enables no reference type, mutation
 effect or source cycle construction; those require versioned checker/backend
 integration and an explicit history-preserving migration.
 
+The separately selected [private source candidate](managed-references-prototype.md)
+in toolchain0.256 composes cells with 0.29 generic kinds and static traits using
+declaration-local type binders. This is an unarchived C++ development entry;
+ordinary 0.28/0.29 projects retain the immutable source contract above.
+
 ### Enums and exhaustive matching
 
 ```nex

@@ -5285,7 +5285,24 @@
       "typescript_selection": "emitManagedReferencesPrototypeTypeScript",
       "typescript_guide": "docs/managed-reference-typescript-prototype.md",
       "typescript_entry": "sequential execution context: no arguments; unit or immutable wire result in a private JSON-text evaluation envelope",
-      "typescript_context": "explicit expression/lexical/builder/completion roots; one heap across source calls; closed on every exit"
+      "typescript_context": "explicit expression/lexical/builder/completion roots; one heap across source calls; closed on every exit",
+      "generic_composition": {
+        "introduced_toolchain": "0.256.0",
+        "language029": [
+          "partial type lambdas",
+          "whole-type constructor inference",
+          "higher-order kind signatures"
+        ],
+        "public_source_enabled": false,
+        "source_effects": "state and typed throws compose with inferred callback effects",
+        "traits": [
+          "associated projections",
+          "static dispatch",
+          "method references",
+          "generic constructor methods"
+        ],
+        "type_binders": "declaration-local identities; same-spelled parameters keep independent kinds and bounds"
+      }
     },
     "public_flag_scope": "ordinary published source languages; private candidate has its own selection",
     "public_source_enabled": false,

@@ -11,7 +11,7 @@ def source_cases(root):
         expected = ''.join(json.loads(part) for part in re.findall(r'"(?:[^"\\]|\\.)*"',match[2]))
         limits = [int(value) for value in match[3].split(',')] if match[3] else [1048576,4194304,16777216]
         cases.append({'name':'core-'+str(index+1),'source':match[1],'output':expected,'limits':limits})
-    assert len(cases)==9,('core reference source extraction changed',len(cases))
+    assert len(cases)==15,('core reference source extraction changed',len(cases))
     cases += [
         {'name':'bool-float-bytes','source':'fn main()->unit!{state,io}{let flag:cell<bool>=cell_new(false);cell_write(flag,true);print(cell_read(flag));let real:cell<f64>=cell_new(1.25);cell_write(real,cell_read(real)+0.5);assert(cell_read(real)==1.75);let octets:cell<bytes>=cell_new(utf8_bytes("Я🌍"));let old:bytes=cell_read(octets);cell_write(octets,utf8_bytes("new"));assert(unwrap(decode_utf8(old))=="Я🌍");print("scalar-octets-ok");}','output':'true\nscalar-octets-ok\n'},
         {'name':'uncaught-cell','source':'fn main()->unit!{state,throw}{let value:cell<i64>=cell_new(1);throw(value);}','error':'E_SOURCE_EXCEPTION'},

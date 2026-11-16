@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.255.0"
+applies_to: "language 0.28; toolchain 0.256.0"
 owner: repository
 ---
 
@@ -55,6 +55,12 @@ snapshots dropped after the cell heap closes. The 0.255
 [atomic owner](value-owners.md) removes the concurrent last-release race and
 carries synchronous retirement across modules, preserving genuine typed
 destructors. Public promotion and a shared mutable memory model remain open.
+
+Toolchain0.256 fixes declaration-local type binding in the private candidate:
+0.29 partial/higher-order constructors, static traits and associated projections
+compose with cell identity, snapshot payloads and typed errors. This remains one
+unarchived sequential unit. Public version/migration, modules, host-returned
+references and Java/Python object semantics are still pending.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

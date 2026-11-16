@@ -8,6 +8,9 @@ const std::set<std::string> &managedReferenceBuiltins();
 // Unarchived C++ development entry points. Ordinary CLI versions do not select
 // this identity, and ordinary backends/evaluation reject it.
 Program parseManagedReferencesPrototype(std::string source,std::string path);
+// Give declaration-local type binders distinct identities before checking the
+// unarchived single unit. This does not select ordinary module/graph loading.
+void bindManagedReferencePrototypeTypes(Program &);
 struct ManagedReferenceEvaluation {
   Evaluation evaluation;
   nexrt::CellHeapStats beforeCollection,afterCollection;
