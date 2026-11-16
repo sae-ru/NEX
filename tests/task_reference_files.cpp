@@ -105,7 +105,7 @@ void astTests(){
   auto old=source("server fn main()->unit !{task,fs}{task_yield();}",SourceLanguage::Tasks019);
   rejects("E_TASK_UNIMPLEMENTED",[&]{TaskAstMachine oldMachine(old,"main");});
   auto callable=source("server fn ordinary()->result<str> !{fs}{return file_read_text(\"text\");} server fn main(f:server fn()->result<str> !{task,fs})->result<str> !{task,fs}{return f();}");
-  auto closure=std::make_shared<nexrt::Data>(nexrt::Data::Closure);closure->text="ordinary";
+  auto closure=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Closure);closure->text="ordinary";
   rejects("E_FUNCTION",[&]{TaskAstMachine forged(callable,"main",{nexrt::Value(closure)});forged.advance();});
 }
 void referenceTests(){

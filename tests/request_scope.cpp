@@ -8,7 +8,7 @@ void request(int64_t mode,const char *expected){
   bool trapped=false;
   {
     nexrt::RequestScope scope(30,10000);
-    auto input=std::make_shared<nexrt::Data>(nexrt::Data::Record);input->text="scope::Input";
+    auto input=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Record);input->text="scope::Input";
     input->names={"mode","text"};input->values={nexrt::Value(mode),nexrt::Value(nexrt::string("owned input"))};
     auto parameter=nexrt::makeHandle(nexrt::Value(input));
     try{

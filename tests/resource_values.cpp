@@ -61,8 +61,8 @@ int main(){try{
     auto value=fileValue(files.open("input",FileMode::Read));require(value->kind==Data::File,"wrong kind");
     require(allocations.at(value.get())==std::pair{sizeof(FileData),1},"wrong subtype allocation size");
     require(fileResource(value).isOpen()&&descriptors()==before+1,"file payload missing");
-    error("E_RUNTIME",[]{(void)std::make_shared<Data>(Data::File);});
-    error("E_RUNTIME",[&]{(void)std::make_shared<Data>(*value);});
+    error("E_RUNTIME",[]{(void)nexrt::makeValueOwner<Data>(Data::File);});
+    error("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<Data>(*value);});
     error("E_RUNTIME",[]{fileResource(string("wrong"));});error("E_RUNTIME",[]{fileResource({});});
     value.reset();require(descriptors()==before,"last value did not close descriptor");
   });
@@ -75,15 +75,15 @@ int main(){try{
   });
   run("aggregate result and closure captures retain file owner",[]{
     Fixture f;raw(f.root/"input","data");TextFiles files(f.root.string(),false);auto before=descriptors();
-    Value file(fileValue(files.open("input",FileMode::Read)));auto list=std::make_shared<Data>(Data::List);list->values={file};
-    auto record=std::make_shared<Data>(Data::Record);record->names={"items"};record->values={Value(list)};
-    auto closure=std::make_shared<Data>(Data::Closure);closure->values={success(Value(record))};file={};list.reset();record.reset();
+    Value file(fileValue(files.open("input",FileMode::Read)));auto list=nexrt::makeValueOwner<Data>(Data::List);list->values={file};
+    auto record=nexrt::makeValueOwner<Data>(Data::Record);record->names={"items"};record->values={Value(list)};
+    auto closure=nexrt::makeValueOwner<Data>(Data::Closure);closure->values={success(Value(record))};file={};list.reset();record.reset();
     auto retained=unwrap(closure->values[0]).object->values[0].object->values[0];require(text(fileResource(retained.object).read(10))=="data","capture lost resource");
     closure.reset();require(descriptors()==before+1,"borrowed managed value did not retain owner");retained={};require(descriptors()==before,"aggregate release leaked file");
   });
   run("file values are rejected at every JSON nesting boundary",[]{
     Fixture f;raw(f.root/"input","data");TextFiles files(f.root.string(),false);Value file(fileValue(files.open("input",FileMode::Read)));
-    for(auto kind:{Data::List,Data::Record,Data::Enum}){auto data=std::make_shared<Data>(kind);data->values={file};data->names={"resource"};data->text="model::Some";error("E_JSON",[&]{encodeJSON(Value(data));});}
+    for(auto kind:{Data::List,Data::Record,Data::Enum}){auto data=nexrt::makeValueOwner<Data>(kind);data->values={file};data->names={"resource"};data->text="model::Some";error("E_JSON",[&]{encodeJSON(Value(data));});}
     error("E_JSON",[&]{encodeJSON(file);});error("E_JSON",[&]{encodeJSON(success(file));});
     require(fileResource(file.object).isOpen(),"failed JSON consumed resource");
   });

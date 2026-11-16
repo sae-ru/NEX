@@ -42,7 +42,7 @@ int64_t readStep(void *pointer){
   auto &frame=*static_cast<NativeTaskFrame*>(pointer);
   if(skip){nex_task_frame_return_i64(pointer,42,0);return 0;}
   if(frame.pc==0){
-    auto arguments=makeHandle(Value(std::make_shared<Data>(Data::List)));
+    auto arguments=makeHandle(Value(nexrt::makeValueOwner<Data>(Data::List)));
     readHandle(arguments).object->values.push_back(Value(string(selectedPath)));
     nex_task_frame_pause_at(pointer,int64_t(text?TaskRequestKind::FileReadText:TaskRequestKind::FileReadBytes),arguments,0,3,17,nullptr);
     nex_release(arguments);nex_task_frame_set_pc(pointer,1);return 3;
@@ -127,7 +127,7 @@ void tests(){
   }clean();
   {
     RequestScope request;auto plain=descriptor;plain.requirements=0;NativeTaskFrame frame(plain,{},{});
-    auto arguments=makeHandle(Value(std::make_shared<Data>(Data::List)));readHandle(arguments).object->values.push_back(Value(string("data")));
+    auto arguments=makeHandle(Value(nexrt::makeValueOwner<Data>(Data::List)));readHandle(arguments).object->values.push_back(Value(string("data")));
     rejects("E_TASK_STATE",[&]{nex_task_frame_pause_at(&frame,int64_t(TaskRequestKind::FileReadBytes),arguments,0,3,1,nullptr);});
     auto bad=descriptor;bad.requirements=taskCodeFileRead;rejects("E_TASK_STATE",[&]{NativeTaskFrame invalid(bad,{},{});});
     bad=descriptor;bad.requirements=taskCodeDeclaredFs|taskCodeServer;rejects("E_TASK_STATE",[&]{NativeTaskFrame invalid(bad,{},{});});

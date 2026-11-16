@@ -47,7 +47,7 @@ struct AuditedData final:Data {
     ++state->destroyed;
   }
 };
-Value audited(const std::shared_ptr<State> &state){return Value(std::make_shared<AuditedData>(state));}
+Value audited(const std::shared_ptr<State> &state){return Value(nexrt::makeValueOwner<AuditedData>(state));}
 TaskBody sendTask(TaskGroup &group,std::shared_ptr<State> state){
   auto result=co_await group.send(state->channel,audited(state));co_return Value(result.present,true);
 }

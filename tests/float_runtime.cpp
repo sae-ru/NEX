@@ -115,14 +115,14 @@ void selfCheck(){
     require(bits(nexrt::floatArithmetic(-0.0,1.0,'*'))=="0000000000000000","zero was not normalized");
     require(nexrt::floatArithmetic(0x1p-1022,2.0,'/')==0x0.8p-1022,"subnormal was flushed");
     require(nexrt::floatArithmetic(0x0.0000000000001p-1022,2.0,'/')==0.0,"underflow tie did not round to zero");
-    auto list=std::make_shared<nexrt::Data>(nexrt::Data::List);auto handle=nexrt::makeHandle(Value(list));
+    auto list=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List);auto handle=nexrt::makeHandle(Value(list));
     nex_list_append_i64(handle,nexrt::floatBits(1.25),2);nex_release(handle);
     require(list->values[0].tag==Value::Floating&&list->values[0].floating()==1.25,"aggregate storage lost floating tag");
-    auto alias=list;auto copied=std::make_shared<nexrt::Data>(*list);copied->values[0]=Value::floating(2.5);
+    auto alias=list;auto copied=nexrt::makeValueOwner<nexrt::Data>(*list);copied->values[0]=Value::floating(2.5);
     require(alias->values[0].floating()==1.25,"floating aggregate mutation escaped copied value");
     auto result=nex_ok_i64(nexrt::floatBits(1.25),2);auto payload=nexrt::unwrap(nexrt::readHandle(result));nex_release(result);
     require(payload.tag==Value::Floating&&payload.floating()==1.25,"result storage lost floating tag");
-    auto record=std::make_shared<nexrt::Data>(nexrt::Data::Record);record->names={"value"};record->values.resize(1);
+    auto record=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Record);record->names={"value"};record->values.resize(1);
     handle=nexrt::makeHandle(Value(record));nex_record_init_i64(handle,0,nexrt::floatBits(1.25),2);nex_release(handle);
     require(record->values[0].tag==Value::Floating,"record storage lost floating tag");
     require(nexrt::equal(Value::floating(-0.0),Value::floating(0.0)),"normalized zero equality failed");

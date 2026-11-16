@@ -25,7 +25,7 @@ static void close(ResourceRegion &region){auto retirement=region.beginClose();re
 static TaskBody mixedSnapshot(TaskGroup &group,Value,Value,const void *context){
   auto &host=*static_cast<Host*>(const_cast<void*>(context));
   auto outer=group.openScope(1),inner=group.openScope(1);auto owner=host.make(group.resourceAuthority());
-  auto record=std::make_shared<Data>(Data::Record);record->text="test::Mixed";
+  auto record=nexrt::makeValueOwner<Data>(Data::Record);record->text="test::Mixed";
   // The walker sees the resource first, then discovers an escaping task scope.
   record->values={taskScopeValue(group,inner),Value(externalValue(owner))};
   expect("E_TASK_SCOPE",[&]{validateTaskSnapshot(group,Value(record),outer);});

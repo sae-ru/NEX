@@ -21,7 +21,7 @@ struct CellHeapState {
   size_t cells=0,edges=0,collections=0,nextCollection=256;
   // Immutable children precede parents. Mutable cell edges are detached before
   // reclamation; reverse order then releases even long graphs without recursion.
-  std::vector<std::shared_ptr<Data>> nodes;
+  std::vector<nexrt::ValueOwner<Data>> nodes;
   std::unordered_map<const Data*,size_t> index;
   explicit CellHeapState(CellHeapLimits selected):limits(selected){
     if(!limits.maximumCells||!limits.maximumNodes||!limits.maximumEdges)
@@ -40,7 +40,7 @@ struct CellHeapState {
     if(!index.contains(&result)||result.values.size()!=1)throw DataError("E_CELL_CLOSED","managed cell is no longer live");
     return result;
   }
-  void payloadKind(const std::shared_ptr<Data> &value)const {
+  void payloadKind(const nexrt::ValueOwner<Data> &value)const {
     if(!value)throw DataError("E_CELL_VALUE","managed payload contains a missing object");
     if(value->kind==Data::Cell){(void)cell(Value(value));return;}
     switch(value->kind){
@@ -49,12 +49,12 @@ struct CellHeapState {
     default:throw DataError("E_CELL_VALUE","owned capabilities need a separate managed-reference integration");
     }
   }
-  std::vector<std::shared_ptr<Data>> pending(const Value &root)const {
-    std::vector<std::shared_ptr<Data>> result;
+  std::vector<nexrt::ValueOwner<Data>> pending(const Value &root)const {
+    std::vector<nexrt::ValueOwner<Data>> result;
     if(root.tag!=Value::Object)return result;
-    struct Frame {std::shared_ptr<Data> value;size_t next=0;};
+    struct Frame {nexrt::ValueOwner<Data> value;size_t next=0;};
     std::vector<Frame> stack;std::unordered_map<const Data*,bool> visited;size_t edges=0;
-    auto enter=[&](const std::shared_ptr<Data> &value){
+    auto enter=[&](const nexrt::ValueOwner<Data> &value){
       payloadKind(value);if(index.contains(value.get()))return;
       auto [found,inserted]=visited.emplace(value.get(),false);
       if(!inserted){if(!found->second)throw DataError("E_CELL_GRAPH","immutable payload has a cycle outside managed cells");return;}
@@ -74,7 +74,7 @@ struct CellHeapState {
     }
     return result;
   }
-  void append(const std::shared_ptr<Data> &value){
+  void append(const nexrt::ValueOwner<Data> &value){
     auto [where,inserted]=index.emplace(value.get(),nodes.size());
     if(!inserted)throw DataError("E_CELL_GRAPH","managed node registered twice");
     try{nodes.push_back(value);}catch(...){index.erase(where);throw;}
@@ -121,7 +121,7 @@ struct CellHeapState {
     nextCollection=std::min(limits.maximumNodes,std::max(size_t(256),doubled));
     report.afterCells=cells;return report;
   }
-  std::vector<std::shared_ptr<Data>> prepare(const Value &value,size_t extra){
+  std::vector<nexrt::ValueOwner<Data>> prepare(const Value &value,size_t extra){
     if(nodes.size()>=nextCollection)collect();
     auto additions=pending(value);
     auto fits=[&]{
@@ -149,7 +149,7 @@ Value CellHeap::create(Value initial){
   auto additions=state->prepare(initial,1);const auto begin=state->nodes.size();
   try{
     for(const auto &node:additions)state->append(node);
-    auto created=std::make_shared<CellData>(state,int64_t(state->nextIdentity),std::move(initial));state->append(created);
+    auto created=nexrt::makeValueOwner<CellData>(state,int64_t(state->nextIdentity),std::move(initial));state->append(created);
     ++state->cells;++state->nextIdentity;return Value(std::move(created));
   }catch(...){state->rollback(begin);throw;}
 }

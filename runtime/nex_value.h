@@ -14,13 +14,14 @@
 #include "nex_bytes.h"
 #include "nex_file_resource.h"
 #include "nex_external_resource.h"
+#include "nex_value_owner.h"
 
 namespace nexrt {
 struct Data;
 struct Value {
   enum Tag { Integer, Boolean, Object, Floating } tag = Integer;
   int64_t scalar = 0;
-  std::shared_ptr<Data> object;
+  ValueOwner<Data> object;
   Value()=default;
   Value(int64_t v,bool boolean=false):tag(boolean?Boolean:Integer),scalar(v){}
   static Value floating(double value){Value result;result.tag=Floating;result.scalar=floatBits(value);return result;}
@@ -30,18 +31,14 @@ struct Value {
     return Value(value,tag==1);
   }
   double floating()const{return floatValue(scalar);}
-  explicit Value(std::shared_ptr<Data> v):tag(Object),object(std::move(v)){}
+  explicit Value(ValueOwner<Data> v):tag(Object),object(std::move(v)){}
 };
 inline std::atomic<int64_t> liveObjects{0};
 struct Data {
   enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel, External, Cell } kind;
   enum class TaskOwnerFamily { None, Native, Reference };
 private:
-  // Only allocations made by make() are known to be the exact base Data type.
-  // Host subclasses keep their genuine destructor before child retirement.
-  enum class AllocationFamily { Host, Ordinary, Owned, NativeTask, ReferenceTask };
-  const AllocationFamily allocationFamily=AllocationFamily::Host;
-  struct OrdinaryAllocation {};
+  const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
 public:
   int64_t ordinal=0;
   std::string text;
@@ -50,13 +47,16 @@ public:
   void *code=nullptr;
   const void *taskCode=nullptr;
 private:
+  friend class ValueOwnerFactory;
+  value_owner_detail::Control *valueOwnerControl=nullptr;
+  void attachValueOwner(value_owner_detail::Control *owner)noexcept{if(valueOwnerControl)std::terminate();valueOwnerControl=owner;}
   friend struct ByteData;
   friend struct FileData;
   friend struct ExternalData;
   friend struct TaskData;
   friend struct ReferenceTaskData;
   friend struct CellData;
-  Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),allocationFamily(family==TaskOwnerFamily::Native?AllocationFamily::NativeTask:family==TaskOwnerFamily::Reference?AllocationFamily::ReferenceTask:AllocationFamily::Owned){profileAllocate(this,allocatedSize,1);++liveObjects;}
+  Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),taskFamily(family){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
     if(other.kind==External||other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel||other.kind==Cell)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
@@ -65,37 +65,22 @@ private:
     if(kind==External||kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel||kind==Cell)throw DataError("E_RUNTIME","value requires an owned payload");
     return kind;
   }
-  Data(const Data &other,AllocationFamily family):kind(copyKind(other)),allocationFamily(family),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  void retireValues(value_owner_detail::Retirement &context)noexcept {
+    // Transfer only dying payload edges to the explicit queue. Genuine derived
+    // destructors/members have already run; no live shared child is modified.
+    // Forward admission and LIFO draining retain reverse child retirement.
+    for(auto &value:values)value.object.resetDeferred(context);
+  }
   void retireValues()noexcept {
-    // Traverse uniquely owned, exact-base immutable nodes before dropping their
-    // last owner. Each suspended edge lends its otherwise unused Object scalar
-    // to the parent link. Live/shared nodes and host/owned subtypes are untouched.
-    // No recursion workspace, allocator call, object field or layout is added.
-    static_assert(sizeof(Value*)<=sizeof(Value::scalar));
-    Value sentinel;Value *owner=&sentinel;Data *current=this;
-    for(;;){
-      if(current->values.empty()){
-        if(owner==&sentinel)return;
-        Value *previous=nullptr;std::memcpy(&previous,&owner->scalar,sizeof(previous));
-        auto *parent=previous==&sentinel?this:previous->object.get();
-        parent->values.pop_back(); // The child's now-empty destructor has fixed depth.
-        owner=previous;current=parent;
-      }else{
-        auto &edge=current->values.back();auto *child=edge.object.get();
-        if(child&&child->allocationFamily==AllocationFamily::Ordinary&&edge.object.use_count()==1&&!child->values.empty()){
-          std::memcpy(&edge.scalar,&owner,sizeof(owner));owner=&edge;current=child;
-        }else current->values.pop_back();
-      }
-    }
+    if(valueOwnerControl)retireValues(valueOwnerControl->retirement());
+    else{value_owner_detail::Retirement context;retireValues(context);}
   }
 public:
-  TaskOwnerFamily taskOwnerFamily()const{return allocationFamily==AllocationFamily::NativeTask?TaskOwnerFamily::Native:allocationFamily==AllocationFamily::ReferenceTask?TaskOwnerFamily::Reference:TaskOwnerFamily::None;}
+  TaskOwnerFamily taskOwnerFamily()const{return taskFamily;}
   explicit Data(Kind kind):kind(ordinaryKind(kind)){profileAllocate(this,sizeof(Data),1);++liveObjects;}
-  Data(const Data &other):Data(other,AllocationFamily::Host){}
-  Data(Kind kind,OrdinaryAllocation):kind(ordinaryKind(kind)),allocationFamily(AllocationFamily::Ordinary){profileAllocate(this,sizeof(Data),1);++liveObjects;}
-  Data(const Data &other,OrdinaryAllocation):Data(other,AllocationFamily::Ordinary){}
-  static std::shared_ptr<Data> make(Kind kind){return std::make_shared<Data>(kind,OrdinaryAllocation{});}
-  static std::shared_ptr<Data> make(const Data &other){return std::make_shared<Data>(other,OrdinaryAllocation{});}
+  Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  static ValueOwner<Data> make(Kind kind){return makeValueOwner<Data>(kind);}
+  static ValueOwner<Data> make(const Data &other){return makeValueOwner<Data>(other);}
   Data &operator=(const Data&)=delete;
   ~Data(){profileFree(this);--liveObjects;retireValues();}
 };
@@ -113,11 +98,11 @@ struct ByteData final : Data {
     return ByteBuffer::owned(std::move(storage));
   }
 };
-inline const ByteBuffer &byteBuffer(const std::shared_ptr<Data> &data){
+inline const ByteBuffer &byteBuffer(const nexrt::ValueOwner<Data> &data){
   if(!data||data->kind!=Data::Bytes)throw DataError("E_RUNTIME","expected an immutable byte value");
   return static_cast<const ByteData&>(*data).buffer;
 }
-inline std::shared_ptr<Data> bytes(ByteBuffer buffer){return std::make_shared<ByteData>(std::move(buffer));}
+inline nexrt::ValueOwner<Data> bytes(ByteBuffer buffer){return nexrt::makeValueOwner<ByteData>(std::move(buffer));}
 // The shared-pointer control block retains the complete FileData destructor;
 // ordinary values keep the same base layout and never contain an unused owner.
 struct FileData final : Data {
@@ -125,30 +110,30 @@ struct FileData final : Data {
   const uint64_t diagnosticIdentity;
   explicit FileData(FileResource resource,uint64_t diagnosticIdentity=0):Data(File,sizeof(FileData)),resource(std::move(resource)),diagnosticIdentity(diagnosticIdentity){}
 };
-inline const FileResource &fileResource(const std::shared_ptr<Data> &data){
+inline const FileResource &fileResource(const nexrt::ValueOwner<Data> &data){
   if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
   if(static_cast<const FileData&>(*data).diagnosticIdentity)throw DataError("E_RUNTIME","debug file values cannot authorize IO");
   return static_cast<const FileData&>(*data).resource;
 }
-inline std::shared_ptr<Data> fileValue(FileResource resource){return std::make_shared<FileData>(std::move(resource));}
-inline std::shared_ptr<Data> diagnosticFile(uint64_t identity){
+inline nexrt::ValueOwner<Data> fileValue(FileResource resource){return nexrt::makeValueOwner<FileData>(std::move(resource));}
+inline nexrt::ValueOwner<Data> diagnosticFile(uint64_t identity){
   if(!identity)throw DataError("E_DEBUG_VALUE","file debug identity must be nonzero");
-  return std::make_shared<FileData>(FileResource(),identity);
+  return nexrt::makeValueOwner<FileData>(FileResource(),identity);
 }
-inline uint64_t fileIdentity(const std::shared_ptr<Data> &data){
+inline uint64_t fileIdentity(const nexrt::ValueOwner<Data> &data){
   if(!data||data->kind!=Data::File)throw DataError("E_RUNTIME","expected a file resource value");
   const auto &value=static_cast<const FileData&>(*data);return value.diagnosticIdentity?value.diagnosticIdentity:value.resource.identity();
 }
 struct ExternalData final:Data {
 private:
-  friend std::shared_ptr<Data> externalValue(ExternalResource);
+  friend nexrt::ValueOwner<Data> externalValue(ExternalResource);
   explicit ExternalData(ExternalResource value):Data(External,sizeof(ExternalData)),resource(std::move(value)){}
 public:
   const ExternalResource resource;
   ~ExternalData()=default;
 };
-std::shared_ptr<Data> externalValue(ExternalResource resource);
-inline const ExternalResource &externalResource(const std::shared_ptr<Data> &value){
+nexrt::ValueOwner<Data> externalValue(ExternalResource resource);
+inline const ExternalResource &externalResource(const nexrt::ValueOwner<Data> &value){
   if(!value||value->kind!=Data::External)throw DataError("E_RUNTIME","expected an external resource value");
   return static_cast<const ExternalData&>(*value).resource;
 }
@@ -165,7 +150,7 @@ inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=t
   }
   if(collect)offsets.push_back(text.size());return offsets;
 }
-inline std::shared_ptr<Data> string(std::string text) {
+inline nexrt::ValueOwner<Data> string(std::string text) {
   unicodeOffsets(text,false);auto d=Data::make(Data::String);d->text=std::move(text);return d;
 }
 inline Value success(Value value){auto d=Data::make(Data::Success);d->values.push_back(std::move(value));return Value(d);}
@@ -178,7 +163,7 @@ inline Value bytesFromIntegers(const Value &list){
   try{return success(Value(bytes(ByteData::fromList(list.object->values))));}
   catch(const DataError &error){if(error.code!="E_RANGE")throw;return failure(error.code,error.message);}
 }
-inline std::shared_ptr<Data> utf8Bytes(const std::string &text){
+inline nexrt::ValueOwner<Data> utf8Bytes(const std::string &text){
   unicodeOffsets(text,false);
   return bytes(ByteBuffer::copy({reinterpret_cast<const uint8_t*>(text.data()),text.size()}));
 }
@@ -234,19 +219,19 @@ inline std::string decodeLiteral(const std::string &token) {
   }
   return out;
 }
-inline int64_t length(const std::shared_ptr<Data> &d) {
+inline int64_t length(const nexrt::ValueOwner<Data> &d) {
   if(d->kind==Data::Bytes)return byteBuffer(d).length();
   return d->kind==Data::String?int64_t(unicodeOffsets(d->text).size()-1):int64_t(d->values.size());
 }
 inline void bounds(int64_t index,size_t size) {
   if(index<0||static_cast<uint64_t>(index)>=size)throw DataError("E_BOUNDS","index is outside collection bounds");
 }
-inline Value get(const std::shared_ptr<Data> &d,int64_t index) {
+inline Value get(const nexrt::ValueOwner<Data> &d,int64_t index) {
   if(d->kind==Data::Bytes)return Value(byteBuffer(d).at(index));
   if(d->kind==Data::String){auto offsets=unicodeOffsets(d->text);bounds(index,offsets.size()-1);return Value(string(d->text.substr(offsets[index],offsets[index+1]-offsets[index])));}
   bounds(index,d->values.size());return d->values[index];
 }
-inline std::shared_ptr<Data> slice(const std::shared_ptr<Data> &d,int64_t start,int64_t count) {
+inline nexrt::ValueOwner<Data> slice(const nexrt::ValueOwner<Data> &d,int64_t start,int64_t count) {
   if(d->kind==Data::Bytes)return bytes(byteBuffer(d).slice(start,count));
   auto offsets=unicodeOffsets(d->text);auto size=offsets.size()-1;
   if(start<0||count<0||static_cast<uint64_t>(start)>size||static_cast<uint64_t>(count)>size-static_cast<uint64_t>(start))throw DataError("E_BOUNDS","slice is outside string bounds");

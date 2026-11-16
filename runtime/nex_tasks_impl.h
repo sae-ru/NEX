@@ -84,7 +84,7 @@ struct TaskGroup::Impl {
     bool queued=false,started=false,requested=false,inFlight=false;
   };
   struct Job {
-    TaskBody::Handle body;Value result,pending;TaskGroup *group=nullptr;std::weak_ptr<Data> capability;SourceLocation location;TaskEvent event;
+    TaskBody::Handle body;Value result,pending;TaskGroup *group=nullptr;nexrt::WeakValueOwner<Data> capability;SourceLocation location;TaskEvent event;
     RetiredValue retiredResult,retiredPending,retiredEvent;
     ValueFence suspendedValues;
     size_t valueRetirementNext=none,valueRetirementPrevious=none,valueRetirementsInFlight=0,retiredResultScope=none;
@@ -117,7 +117,7 @@ struct TaskGroup::Impl {
     RetirementLink retirementLink;
     bool valueRetirementQueued=false;
     size_t sendHead=none,sendTail=none,receiveHead=none,receiveTail=none;
-    bool closed=false;size_t scope=none;std::weak_ptr<Data> capability;
+    bool closed=false;size_t scope=none;nexrt::WeakValueOwner<Data> capability;
     explicit Pipe(size_t capacity):buffer(capacity){}
     void push(Value value){buffer[(start+count)%buffer.size()]=std::move(value);++count;}
     Value pop(){auto value=std::move(*buffer[start]);buffer[start].reset();start=(start+1)%buffer.size();--count;return value;}
@@ -129,7 +129,7 @@ struct TaskGroup::Impl {
     bool valuesRetirementStarted=false;
     size_t valueRetirementsPending=0;
     std::vector<size_t> members,pipes,children;
-    std::exception_ptr failure,externalFatal,sourceFailure;std::weak_ptr<Data> capability;
+    std::exception_ptr failure,externalFatal,sourceFailure;nexrt::WeakValueOwner<Data> capability;
     std::optional<ResourceRegion> resources;
     std::optional<ResourceRegionRetirement> resourceRetirement;
     bool resourceRetirementStarted=false,resourceRetirementRequested=false,resourceRetirementInFlight=false;

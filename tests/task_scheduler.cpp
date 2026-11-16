@@ -181,8 +181,8 @@ TaskBody capIdentity(TaskGroup &group,Value,Value){
 }
 TaskBody capHiddenEscape(TaskGroup &group,Value,Value){
   auto outer=group.openScope(1),inner=group.openScope(1);auto value=nexrt::taskScopeValue(group,inner);
-  auto record=std::make_shared<nexrt::Data>(nexrt::Data::Record);record->values={value};record->names={"scope"};
-  auto closure=std::make_shared<nexrt::Data>(nexrt::Data::Closure);closure->values={Value(record)};
+  auto record=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Record);record->values={value};record->names={"scope"};
+  auto closure=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Closure);closure->values={Value(record)};
   expect("E_TASK_SCOPE",[&]{group.spawn(outer,checkpoint,{},Value(closure));});
   auto channel=group.channel(outer,1);bool rejected=false;try{co_await group.send(channel,Value(closure));}catch(const nexrt::Trap &e){require(e.code=="E_TASK_SCOPE","hidden channel authority failure changed");rejected=true;}require(rejected,"descendant authority escaped through channel");
   bool excluded=false;try{nexrt::validateParallelValue(Value(closure),[]{});}catch(const nexrt::DataError &e){require(e.code=="E_PARALLEL_VALUE","wrong task/parallel exclusion");excluded=true;}require(excluded,"hidden task capability crossed synchronous mapping boundary");

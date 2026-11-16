@@ -14,6 +14,7 @@ install(FILES AGENTS.md README.md README.ru.md LICENSE llms.txt STATUS.md PLAN.m
 install(FILES tests/sqlite_fixture.py tests/host_test.h tests/ffi_marker.h DESTINATION share/nex/tests)
 install(FILES tests/fixtures/java-int32/Oracle.java tests/fixtures/java-int32/oracle.json DESTINATION share/nex/tests/fixtures/java-int32)
 install(FILES tests/cells.cpp tests/managed_references.cpp DESTINATION share/nex/tests)
+install(FILES tests/value_owner.cpp tests/value_owner_module.cpp tests/value_retirement.cpp tests/value_retirement.py DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_native.cpp tests/managed_reference_native.py DESTINATION share/nex/tests)
 install(FILES tests/managed_heap_trace.cpp tests/managed_heap_typescript.py tests/managed_heap_driver.ts DESTINATION share/nex/tests)
 install(FILES tests/managed_reference_typescript.cpp tests/managed_reference_typescript.py tests/managed_reference_cases.py DESTINATION share/nex/tests)

@@ -19,7 +19,7 @@ std::string digest(std::string_view text){std::array<unsigned char,32> bytes{};u
 int descriptors(){int count=0;for(int fd=0;fd<1024;++fd)if(::fcntl(fd,F_GETFD)>=0)++count;return count;}
 template<class P>void waitFor(P ready){auto end=std::chrono::steady_clock::now()+std::chrono::seconds(12);while(!ready()){require(std::chrono::steady_clock::now()<end,"test observation timeout");std::this_thread::sleep_for(std::chrono::milliseconds(1));}}
 template<class F>void error(const char *code,F action,const char *message=nullptr){try{action();}catch(const DataError &e){require(e.code==code,std::string("expected ")+code+", got "+e.code);if(message)require(e.what()==std::string(message),"original host error message changed");return;}throw DataError("E_TEST",std::string("expected failure ")+code);}
-Value aggregate(Data::Kind kind,std::vector<Value> values){auto data=std::make_shared<Data>(kind);data->values=std::move(values);return Value(std::move(data));}
+Value aggregate(Data::Kind kind,std::vector<Value> values){auto data=nexrt::makeValueOwner<Data>(kind);data->values=std::move(values);return Value(std::move(data));}
 Value octets(const std::vector<uint8_t> &value){return Value(bytes(ByteBuffer::copy(value)));}
 void ordinary(const Value &value,const char *code){require(!isSuccess(value)&&value.object&&value.object->text==code,std::string("ordinary failure differs: ")+code);}
 void expectResponse(const Value &value,int64_t status=200,const std::vector<uint8_t> &body={52,50},const std::string &protocol=""){
@@ -29,7 +29,7 @@ struct Calls {
  CapturedForeignScope scope;std::string send,statistics;TaskExternalPool pool;uint64_t id=0;fs::path gates;std::string run;J config,type;
  Calls(CapturedForeignScope scope,const J &config,fs::path gates,std::string run):scope(std::move(scope)),send(config.at("send").dump()),statistics(config.at("statistics").dump()),gates(std::move(gates)),run(std::move(run)),config(config),type(config.at("send").at("signature").at("types").at(0)){}
  Value request(const std::string &path="/ok",const std::string &transport="http",int64_t timeout=3000,int64_t limit=262144){
-  auto data=std::make_shared<Data>(Data::Record);data->text=type.at("name");for(const auto &field:type.at("fields"))data->names.push_back(field.at("name"));
+  auto data=nexrt::makeValueOwner<Data>(Data::Record);data->text=type.at("name");for(const auto &field:type.at("fields"))data->names.push_back(field.at("name"));
   data->values={Value(string(transport=="ipv6"?"ip6":transport=="ipv4"?"ip4":"backend")),Value(string("GET")),Value(string(config.at(transport).get<std::string>()+path)),aggregate(Data::List,{}),octets({}),Value(limit),Value(timeout),Value(int64_t(0)),Value(string("auto"))};return Value(std::move(data));
  }
  PreparedTaskForeignCall prepare(Value request){std::array<Value,1> args{std::move(request)};return PreparedTaskForeignCall(scope,send,args);}

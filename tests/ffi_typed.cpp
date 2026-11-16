@@ -96,7 +96,7 @@ int main(int argc,char **argv){try{
   typed([](auto c,auto a,auto,auto o){nex_ffi_type type=0;ok(api->result_type(c,&type));nex_ffi_ref bad=0,out=77;ok(api->make_bool(c,1,&bad));require(api->make_nominal(c,type,0,&bad,1,&out)==NEX_FFI_TYPE&&out==77,"wrong field accepted");require(api->make_nominal(c,type,0,nullptr,0,&out)==NEX_FFI_TYPE&&out==77,"wrong arity accepted");return api->make_nominal(c,type,0,a,1,o);},s,{Value(42)});
  });
  run("different and phantom nominal identities cannot be interchanged",[]{
-  auto s=signature(J::array({record("Tag<i64>",J::array()),record("Tag<str>",J::array())}),J::array({0}),1);auto original=std::make_shared<Data>(Data::Record);original->text="Tag<i64>";
+  auto s=signature(J::array({record("Tag<i64>",J::array()),record("Tag<str>",J::array())}),J::array({0}),1);auto original=nexrt::makeValueOwner<Data>(Data::Record);original->text="Tag<i64>";
   error("E_FFI_TYPE",[&]{typed(echo,s,{Value(original)});});
   auto v=typed([](auto c,auto,auto,auto o){nex_ffi_type type=0;ok(api->result_type(c,&type));return api->make_nominal(c,type,0,nullptr,0,o);},s,{Value(original)});require(v.object->text=="Tag<str>","phantom identity was erased");
  });
@@ -106,7 +106,7 @@ int main(int argc,char **argv){try{
   auto v=typed([](auto c,auto,auto,auto o){nex_ffi_type t=0;ok(api->result_type(c,&t));return api->make_nominal(c,t,0,nullptr,0,o);},s,{},{},{4096,8,65536});require(v.object->text=="LongName","exact nominal label quota failed");
  });
  run("wrong record labels are rejected before C entry",[]{
-  auto s=signature(J::array({primitive("i64"),record("Box",J::array({field("value",0)}))}),J::array({1}),1);auto data=std::make_shared<Data>(Data::Record);data->text="Box";data->names={"wrong"};data->values={Value(42)};
+  auto s=signature(J::array({primitive("i64"),record("Box",J::array({field("value",0)}))}),J::array({1}),1);auto data=nexrt::makeValueOwner<Data>(Data::Record);data->text="Box";data->names={"wrong"};data->values={Value(42)};
   error("E_FFI_TYPE",[&]{typed(echo,s,{Value(data)});});
  });
  run("enum builders and discriminants follow the declared cases",[]{
@@ -121,11 +121,11 @@ int main(int argc,char **argv){try{
   auto value=unwrap(invokeForeignTyped(nex_example_c_nominal,args,s));auto packet=value.object->values[0];require(value.object->text=="interop::Reply<bytes>::Ready"&&packet.object->text=="interop::Packet<bytes>"&&byteBuffer(packet.object->values[0].object).toVector()==bytes&&packet.object->values[1].object->text==std::string("Я\0",3)+"🧠","C typed composition differs");
  });
  run("borrowed function signatures cannot be relabelled",[]{
-  auto types=J::array({J{{"kind","function"},{"name","fn()->i64"}},J{{"kind","function"},{"name","fn()->str"}}});auto wrong=signature(types,J::array({0}),1);auto fn=std::make_shared<Data>(Data::Closure);fn->text="target";
+  auto types=J::array({J{{"kind","function"},{"name","fn()->i64"}},J{{"kind","function"},{"name","fn()->str"}}});auto wrong=signature(types,J::array({0}),1);auto fn=nexrt::makeValueOwner<Data>(Data::Closure);fn->text="target";
   error("E_FFI_TYPE",[&]{typed(echo,wrong,{Value(fn)});});auto correct=signature(J::array({types[0]}),J::array({0}),0);require(typed(echo,correct,{Value(fn)}).object==fn,"function owner lost");
  });
  run("nested callable authorities are discovered through aggregates",[]{
-  auto s=signature(J::array({J{{"kind","function"},{"name","server fn()->i64"}},J{{"kind","list"},{"item",0}}}),J::array({1}),0);auto fn=std::make_shared<Data>(Data::Closure);auto list=std::make_shared<Data>(Data::List);list->values={Value(fn)};
+  auto s=signature(J::array({J{{"kind","function"},{"name","server fn()->i64"}},J{{"kind","list"},{"item",0}}}),J::array({1}),0);auto fn=nexrt::makeValueOwner<Data>(Data::Closure);auto list=nexrt::makeValueOwner<Data>(Data::List);list->values={Value(fn)};
   require(typed([](auto c,auto a,auto,auto o){return api->child(c,a[0],0,o);},s,{Value(list)}).object==fn,"nested function owner lost");
  });
  run("file owners preserve aliases while diagnostic identities are rejected",[]{
@@ -134,11 +134,11 @@ int main(int argc,char **argv){try{
  });
  run("recursive nominal schemas accept finite graphs and reject cycles",[]{
   auto s=signature(J::array({record("Node",J::array({field("children",1)})),J{{"kind","list"},{"item",0}}}),J::array({0}),0);
-  auto node=std::make_shared<Data>(Data::Record),list=std::make_shared<Data>(Data::List);node->text="Node";node->names={"children"};node->values={Value(list)};typed(echo,s,{Value(node)});
+  auto node=nexrt::makeValueOwner<Data>(Data::Record),list=nexrt::makeValueOwner<Data>(Data::List);node->text="Node";node->names={"children"};node->values={Value(list)};typed(echo,s,{Value(node)});
   list->values={Value(node)};error("E_FFI_TYPE",[&]{typed(echo,s,{Value(node)});});list->values.clear();
  });
  run("value validation limits bound large graphs before C entry",[]{
-  auto s=signature(J::array({primitive("i64"),J{{"kind","list"},{"item",0}}}),J::array({1}),1);auto list=std::make_shared<Data>(Data::List);list->values.resize(100000,Value(1));bool entered=false;unsigned polls=0;
+  auto s=signature(J::array({primitive("i64"),J{{"kind","list"},{"item",0}}}),J::array({1}),1);auto list=nexrt::makeValueOwner<Data>(Data::List);list->values.resize(100000,Value(1));bool entered=false;unsigned polls=0;
   error("E_FFI_LIMIT",[&]{typed([&](auto,auto,auto,auto){entered=true;return NEX_FFI_OK;},s,{Value(list)},[&]{++polls;});});require(!entered&&polls>1000,"validation skipped node limits or cooperative polling");
  });
  run("expired cross-call and value tokens cannot name types",[]{

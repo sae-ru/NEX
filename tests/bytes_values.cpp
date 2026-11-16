@@ -43,7 +43,7 @@ std::string hex(const ByteBuffer &value){
   for(auto byte:value.view()){result+=digits[byte>>4];result+=digits[byte&15];}return result;
 }
 const std::string schema=R"({"schema":"nex.wire/2","root":"bytes","records":{},"enums":{}})";
-Value list(const std::vector<int64_t> &values){auto d=std::make_shared<nexrt::Data>(nexrt::Data::List);for(auto v:values)d->values.emplace_back(v);return Value(d);}
+Value list(const std::vector<int64_t> &values){auto d=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List);for(auto v:values)d->values.emplace_back(v);return Value(d);}
 struct Fixture {
   fs::path path;
   Fixture(){auto pattern=(fs::temp_directory_path()/"nex-binary-XXXXXX").string();auto p=::mkdtemp(pattern.data());require(p,"cannot create fixture");path=fs::canonical(p);}
@@ -91,8 +91,8 @@ void selfTest(){
     auto text=nexrt::string("x");require(allocations.at(text.get())==std::pair{sizeof(nexrt::Data),1},"ordinary value size changed");
     static_assert(nexrt::Data::String==0&&nexrt::Data::Closure==6&&nexrt::Data::Bytes==7);
     static_assert(!std::is_polymorphic_v<nexrt::Data>);
-    error("E_RUNTIME",[&]{(void)std::make_shared<nexrt::Data>(*value);});
-    error("E_RUNTIME",[]{(void)std::make_shared<nexrt::Data>(nexrt::Data::Bytes);});
+    error("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<nexrt::Data>(*value);});
+    error("E_RUNTIME",[]{(void)nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Bytes);});
   });
   run("empty byte value and copied host boundaries",[]{
     auto empty=nexrt::bytes({});require(nexrt::length(empty)==0&&nexrt::representation(Value(empty))=="\"\"","empty value differs");
@@ -109,7 +109,7 @@ void selfTest(){
     Value sliced;{auto owner=nexrt::bytes(unhex("00010203ff"));sliced=Value(nexrt::slice(owner,1,3));}
     auto same=Value(nexrt::bytes(unhex("010203")));require(nexrt::equal(sliced,same),"binary equality differs");
     require(!nexrt::equal(same,Value(nexrt::bytes(unhex("010204")))),"unequal bytes compared equal");
-    auto a=std::make_shared<nexrt::Data>(nexrt::Data::List),b=std::make_shared<nexrt::Data>(nexrt::Data::List);
+    auto a=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List),b=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List);
     a->values={sliced,nexrt::success(sliced)};b->values={same,nexrt::success(same)};require(nexrt::equal(Value(a),Value(b)),"nested binary equality differs");
     require(nexrt::get(sliced.object,2).scalar==3&&!nexrt::equal(same,Value(nexrt::string("AQID"))),"byte and string domains overlap");
   });

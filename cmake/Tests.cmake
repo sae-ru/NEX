@@ -558,6 +558,15 @@ add_executable(nex_bytes_runtime_probe tests/bytes_runtime.cpp)
 add_executable(nex_cells_probe tests/cells.cpp)
 target_link_libraries(nex_cells_probe PRIVATE nex_frontend)
 add_executable(nex_value_retirement_probe tests/value_retirement.cpp)
+add_library(nex_value_owner_module MODULE tests/value_owner_module.cpp)
+target_include_directories(nex_value_owner_module PRIVATE runtime)
+set_target_properties(nex_value_owner_module PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN YES)
+add_executable(nex_value_owner_probe tests/value_owner.cpp)
+target_include_directories(nex_value_owner_probe PRIVATE runtime)
+target_link_libraries(nex_value_owner_probe PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+target_compile_options(nex_value_owner_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME value_owner_runtime COMMAND nex_value_owner_probe $<TARGET_FILE:nex_value_owner_module>)
+set_tests_properties(value_owner_runtime PROPERTIES TIMEOUT 120)
 target_link_libraries(nex_value_retirement_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_value_retirement_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME value_retirement_runtime COMMAND ${Python3_EXECUTABLE} -B
@@ -1573,7 +1582,8 @@ endif()
 # This target does not execute tests or prepare browser/package dependencies.
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
-  nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe)
+  nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe
+  nex_value_owner_probe nex_value_owner_module)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

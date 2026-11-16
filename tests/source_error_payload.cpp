@@ -75,17 +75,17 @@ int main(){try{
   rejectedValue([&]{nexrt::SourceErrorPayload payload("short",nexrt::Value(42));});
   rejectedValue([&]{nexrt::SourceErrorPayload payload(std::string(64,'A'),nexrt::Value(42));});
   rejectedValue([&]{nexrt::SourceErrorPayload payload(scalarKey,nexrt::Value(2,true));});
-  rejectedValue([&]{nexrt::SourceErrorPayload payload(scalarKey,nexrt::Value(std::shared_ptr<nexrt::Data>{}));});
-  {unsigned releases=0;std::weak_ptr<nexrt::Data> weakFailure;
-   auto value=std::shared_ptr<nexrt::Data>(new nexrt::Data(nexrt::Data::String),[&](nexrt::Data *p){++releases;delete p;});weakFailure=value;
+  rejectedValue([&]{nexrt::SourceErrorPayload payload(scalarKey,nexrt::Value(nexrt::ValueOwner<nexrt::Data>{}));});
+  {unsigned releases=0;nexrt::WeakValueOwner<nexrt::Data> weakFailure;
+   auto value=nexrt::ValueOwner<nexrt::Data>(new nexrt::Data(nexrt::Data::String),[&](nexrt::Data *p){++releases;delete p;});weakFailure=value;
    rejectedValue([&]{nexrt::SourceErrorPayload invalid("bad",nexrt::Value(std::move(value)));});
    require(weakFailure.expired()&&releases==1&&nexrt::liveObjects.load()==baseline,"rejected packet leaked its already-owned input");}
   {nexrt::SourceErrorPayload payload(scalarKey,nexrt::Value(42));require(payload.get(scalarKey).scalar==42,"typed scalar changed");
    rejectedValue([&]{payload.get(sourceErrorTypeKey(p,Type::Bool));});}
   {nexrt::SourceErrorPayload payload(sourceErrorTypeKey(p,Type::F64),nexrt::Value::floating(1.25));require(payload.value.floating()==1.25,"finite floating payload changed");}++cases;
-  std::weak_ptr<nexrt::Data> weak;unsigned destroyed=0;
+  nexrt::WeakValueOwner<nexrt::Data> weak;unsigned destroyed=0;
   {
-    auto data=std::shared_ptr<nexrt::Data>(new nexrt::Data(nexrt::Data::String),[&](nexrt::Data *value){++destroyed;delete value;});
+    auto data=nexrt::ValueOwner<nexrt::Data>(new nexrt::Data(nexrt::Data::String),[&](nexrt::Data *value){++destroyed;delete value;});
     data->text=std::string("λ\0🙂",7);weak=data;
     auto payload=std::make_shared<const nexrt::SourceErrorPayload>(sourceErrorTypeKey(p,Type::Str),nexrt::Value(data));
     SourceException ref("TYPED","generic",Span{47,3,10,20,"origin.nex"},payload);

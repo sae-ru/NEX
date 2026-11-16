@@ -13,7 +13,7 @@ std::atomic<unsigned> checks{0};
 void require(bool value,const char *message){++checks;if(!value)throw std::runtime_error(message);}
 const std::string body("A🌍\0β",8);
 Handle *request(std::string path="/ok",std::string user="alice"){
- auto record=std::make_shared<Data>(Data::Record);record->text="std::http::Request";
+ auto record=nexrt::makeValueOwner<Data>(Data::Record);record->text="std::http::Request";
  record->names={"method","path","query","body","user","request_id"};
  for(const auto &field:std::vector<std::string>{"POST",path,"",body,user,"request-1"})record->values.emplace_back(string(field));
  return makeHandle(Value(record));

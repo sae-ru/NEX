@@ -10,7 +10,7 @@ class WatchValues {
   using V=nexrt::Value;
   using JSON=llvm::json::Value;
   using Array=llvm::json::Array;
-  struct Ref { std::shared_ptr<nexrt::Data> owner; std::string binding; Type type; Array path; std::string identity;Array relative; std::vector<std::string> lineage; };
+  struct Ref { nexrt::ValueOwner<nexrt::Data> owner; std::string binding; Type type; Array path; std::string identity;Array relative; std::vector<std::string> lineage; };
   const Program &program;
   const std::map<std::string,Type> &types;
   const llvm::json::Object &values;

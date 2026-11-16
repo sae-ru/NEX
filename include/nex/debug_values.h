@@ -18,7 +18,7 @@ class DebugValues {
   using Array=llvm::json::Array;
   const Program &program;
   const std::set<std::string> *compiled;
-  std::map<const nexrt::Data*,std::pair<std::shared_ptr<nexrt::Data>,std::string>> identities;
+  std::map<const nexrt::Data*,std::pair<nexrt::ValueOwner<nexrt::Data>,std::string>> identities;
   std::map<std::string,std::string> targets,observations;
   std::map<std::string,nexrt::ByteBuffer> binaryValues;
   std::map<std::string,std::map<int64_t,int64_t>> binaryOctets;

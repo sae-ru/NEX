@@ -202,7 +202,7 @@ TaskReferenceExternalStats TaskReferenceExternalMailbox::stats()const{
 }
 struct TaskReferenceAccess {
   static RV create(RD::Kind kind,const std::shared_ptr<const void> &owner,size_t scope,size_t index){
-    return RV(std::shared_ptr<RD>(new nexrt::ReferenceTaskData(kind,owner,scope,index)));
+    return RV(nexrt::ValueOwnerFactory::build<nexrt::ReferenceTaskData>([&](nexrt::ReferenceTaskData *address){return ::new(address)nexrt::ReferenceTaskData(kind,owner,scope,index);}));
   }
   static const nexrt::ReferenceTaskData &get(const RV &value,RD::Kind kind,const std::shared_ptr<const void> &owner){
     if(value.tag!=RV::Object||!value.object||value.object->kind!=kind||
@@ -267,7 +267,7 @@ struct Reference {
     RV result,pending;
     std::shared_ptr<Error> failure;
     std::shared_ptr<SourceException> sourceFailure;
-    std::weak_ptr<RD> capability;
+    nexrt::WeakValueOwner<RD> capability;
     std::vector<size_t> owned;
     std::optional<nexrt::ResourceRegion> resources;
     std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
@@ -286,7 +286,7 @@ struct Reference {
     std::shared_ptr<Error> failure;
     std::shared_ptr<SourceException> sourceFailure;
     bool sourcePayloadTransferred=false;
-    std::weak_ptr<RD> capability;
+    nexrt::WeakValueOwner<RD> capability;
     std::unique_ptr<nexrt::ResourceRegion> resources;
     std::optional<nexrt::ResourceRegionRetirement> resourceRetirement;
   };
@@ -296,7 +296,7 @@ struct Reference {
     bool closed=false;
     std::deque<RV> buffer;
     std::deque<size_t> senders,receivers;
-    std::weak_ptr<RD> capability;
+    nexrt::WeakValueOwner<RD> capability;
   };
   const Program &program;
   std::shared_ptr<const void> identity=std::make_shared<const int>(0);
@@ -417,7 +417,7 @@ struct Reference {
   size_t capability(const RV &v,RD::Kind kind,size_t current)const{
     const auto &cap=TaskReferenceAccess::get(v,kind,identity);
     auto s=TaskReferenceAccess::scope(cap),i=TaskReferenceAccess::index(cap);access(s,current);
-    std::shared_ptr<RD> canonical;
+    nexrt::ValueOwner<RD> canonical;
     if(kind==RD::TaskScope&&i==s)canonical=regions[s].capability.lock();
     else if(kind==RD::Task&&i<jobs.size()&&jobs[i]->member==s)canonical=jobs[i]->capability.lock();
     else if(kind==RD::Channel&&i<pipes.size()&&pipes[i].scope==s)canonical=pipes[i].capability.lock();

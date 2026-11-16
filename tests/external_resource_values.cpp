@@ -67,12 +67,12 @@ int main(int argc,char **argv){try{
     require(owner.identity()!=0&&owner.isOpen()&&owner.capacityBytes()==64,"missing resource metadata");
     require(equal(a,b)&&a.object!=b.object,"aliases differ");require(printable(a)=="<resource>"&&representation(a)=="\"<resource>\"","resource display leaked data");
     require(allocations.at(a.object.get())==std::pair{sizeof(ExternalData),1},"wrong subtype allocation");
-    error("E_RUNTIME",[]{(void)std::make_shared<Data>(Data::External);});error("E_RUNTIME",[&]{(void)std::make_shared<Data>(*a.object);});error("E_RUNTIME",[]{(void)externalValue({});});
+    error("E_RUNTIME",[]{(void)nexrt::makeValueOwner<Data>(Data::External);});error("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<Data>(*a.object);});error("E_RUNTIME",[]{(void)externalValue({});});
     require(owner.close()&&!externalResource(a.object).close()&&!owner.isOpen(),"close not shared");require(destroyed==1&&domain.used()==0&&budgets[0].used()==0,"closed resource retained capacity");require(equal(a,b),"close changed identity");
   });
   run("aggregate and callable capture ownership",[]{
     ResourceDomain domain;std::array budgets{ResourceByteBudget(4)};auto t=type();int destroyed=0;
-    auto closure=std::make_shared<Data>(Data::Closure);
+    auto closure=nexrt::makeValueOwner<Data>(Data::Closure);
     {auto owner=make(domain,t,budgets,4,destroyed);closure->values.push_back(success(Value(externalValue(owner))));}
     require(destroyed==0&&budgets[0].used()==4,"capture lost physical owner");closure.reset();require(destroyed==1&&budgets[0].used()==0,"capture leaked owner");
   });
@@ -127,11 +127,11 @@ int main(int argc,char **argv){try{
     error("E_FFI_TYPE",[&]{invokeForeignTyped(callback,args,signature,&entered);});require(!entered&&externalResource(resource.object).isOpen(),"typed resource mismatch entered producer or consumed owner");
   });
   run("JSON and parallel boundaries traverse hidden owners",[]{
-    ResourceDomain domain;std::array budgets{ResourceByteBudget(1)};auto t=type();int destroyed=0;Value resource(externalValue(make(domain,t,budgets,1,destroyed)));auto capture=std::make_shared<Data>(Data::Closure);capture->values={success(resource)};
+    ResourceDomain domain;std::array budgets{ResourceByteBudget(1)};auto t=type();int destroyed=0;Value resource(externalValue(make(domain,t,budgets,1,destroyed)));auto capture=nexrt::makeValueOwner<Data>(Data::Closure);capture->values={success(resource)};
     error("E_PARALLEL_VALUE",[&]{validateParallelValue(Value(capture),[]{});});error("E_JSON",[&]{encodeJSON(success(resource));});require(externalResource(resource.object).isOpen(),"rejected transfer consumed owner");
   });
   run("native task snapshot rejects hidden external authority",[]{
-    ResourceDomain domain;std::array budgets{ResourceByteBudget(1)};auto t=type();int destroyed=0;Value resource(externalValue(make(domain,t,budgets,1,destroyed)));auto capture=std::make_shared<Data>(Data::Closure);capture->values={success(resource)};RequestScope request(1000,5000);TaskGroup group(1);
+    ResourceDomain domain;std::array budgets{ResourceByteBudget(1)};auto t=type();int destroyed=0;Value resource(externalValue(make(domain,t,budgets,1,destroyed)));auto capture=nexrt::makeValueOwner<Data>(Data::Closure);capture->values={success(resource)};RequestScope request(1000,5000);TaskGroup group(1);
     error("E_TASK_VALUE",[&]{validateTaskSnapshot(group,Value(capture),{});});require(externalResource(resource.object).isOpen(),"task rejection consumed resource");
   });
   run("factory requires code owner and valid class metadata",[]{

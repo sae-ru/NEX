@@ -56,7 +56,7 @@ void selfTest(){
   rejects("E_LIMIT",[&]{evaluateTaskReference(source("fn main()->unit !{task}{with_tasks(1,fn(s:task_scope)->unit !{task}{channel_new<i64>(s,65536);channel_new<i64>(s,1);});}"));});
   rejects("E_LIMIT",[&]{evaluateTaskReference(source("fn main()->unit !{task}{with_tasks(1,fn(s:task_scope)->unit !{task}{var i:i64=0;while i<4096{task_spawn(s,fn()->unit{});i=i+1;}});}"));});
   rejects("E_TASK_VALUE",[&]{auto file=nexrt::Value(nexrt::diagnosticFile(1));evaluateTaskReference(source("server fn main(f:file)->unit{}"),"main",{file});});
-  auto forged=std::make_shared<nexrt::Data>(nexrt::Data::Record);forged->kind=nexrt::Data::TaskScope;
+  auto forged=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Record);forged->kind=nexrt::Data::TaskScope;
   rejects("E_TASK_VALUE",[&]{nexrt::taskData(nexrt::Value(forged),nexrt::Data::TaskScope);});
   rejects("E_TASK_VALUE",[&]{evaluateTaskReference(source("fn main(s:task_scope)->unit{}"),"main",{nexrt::Value(forged)});});forged.reset();
   {nexrt::RequestScope request;nexrt::TaskGroup group(1);require(group.join(group.spawn(captureNative)).scalar==42,"native family fixture failed");group.finish();}
@@ -70,11 +70,11 @@ void selfTest(){
   evaluateTaskReference(p,"main",{},1000000,[&](size_t,const TaskTransition &r){if(r.operation=="task_spawn"){
     captured=r.arguments[0];require(captured.object->taskOwnerFamily()==nexrt::Data::TaskOwnerFamily::Reference,"reference owner family missing");
     rejects("E_TASK_VALUE",[&]{nexrt::taskData(captured,nexrt::Data::TaskScope);});
-    rejects("E_RUNTIME",[&]{auto sliced=std::make_shared<nexrt::Data>(*captured.object);(void)sliced;});
+    rejects("E_RUNTIME",[&]{auto sliced=nexrt::makeValueOwner<nexrt::Data>(*captured.object);(void)sliced;});
     rejects("E_TASK_SCOPE",[&]{evaluateTaskReference(source("fn main(s:task_scope)->unit{}"),"main",{captured});});
   }});
   rejects("E_TASK_SCOPE",[&]{evaluateTaskReference(source("fn main(s:task_scope)->i64 !{task}{return 42;}"),"main",{captured});});
-  auto box=std::make_shared<nexrt::Data>(nexrt::Data::List);box->values.push_back(captured);
+  auto box=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List);box->values.push_back(captured);
   rejects("E_TASK_SCOPE",[&]{evaluateTaskReference(source("fn main(s:list<task_scope>)->i64 !{task}{return 42;}"),"main",{nexrt::Value(box)});});
   box.reset();captured={};
   require(nexrt::liveObjects.load()==0,"self-tests left owned reference/native payloads");

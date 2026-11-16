@@ -60,7 +60,7 @@ int main(int argc,char **argv){try{
   {
    nexrt::RequestScope request(limit,30000);nexrt::FileScope files(true);std::unique_ptr<nexrt::ForeignScope> foreign;
    if(std::string(argv[5])!="-"){libraries=nexrt::loadForeignLibraries(argv[5]);foreign=std::make_unique<nexrt::ForeignScope>(libraries);}
-   auto data=std::make_shared<nexrt::Data>(nexrt::Data::Record);data->text="std::http::Request";data->names={"method","path","query","body","user","request_id"};
+   auto data=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Record);data->text="std::http::Request";data->names={"method","path","query","body","user","request_id"};
    for(const auto &name:data->names){auto text=decoded->getAsObject()->getString(name);if(!text)throw std::runtime_error("missing request field");data->values.emplace_back(nexrt::string(text->str()));}
    nexrt::TaskExecutionLimits limits;limits.steps=limit;limits.timeoutMs=30000;limits.workers=2;
    try{auto r=std::string(argv[1])=="http-task-ir"?evaluateSourceExceptionTaskIRPrototype(p,"handle",{nexrt::Value(data)},limit,{},&limits):evaluateTaskReference(p,"handle",{nexrt::Value(data)},limit,{},&limits);

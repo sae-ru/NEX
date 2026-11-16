@@ -27,8 +27,8 @@ struct Call {
     {std::lock_guard lock(mutex);threads.insert(std::this_thread::get_id());}++calls;if(rendezvous)rendezvous->arrive_and_wait();}
   ~Call(){--active;}
 };
-Value list(std::initializer_list<Value> values){auto data=std::make_shared<Data>(Data::List);data->values=values;return Value(std::move(data));}
-Value integers(int count){auto data=std::make_shared<Data>(Data::List);for(int i=0;i<count;++i)data->values.emplace_back(i);return Value(std::move(data));}
+Value list(std::initializer_list<Value> values){auto data=nexrt::makeValueOwner<Data>(Data::List);data->values=values;return Value(std::move(data));}
+Value integers(int count){auto data=nexrt::makeValueOwner<Data>(Data::List);for(int i=0;i<count;++i)data->values.emplace_back(i);return Value(std::move(data));}
 Value closure(H *bundle,int index){return nexrt::readHandle(nex_collection_get_heap(bundle,index,0));}
 void i64Heap(H *environment,int64_t scalar,H *heap,void *result){
   Call call;require(!heap,"i64 bridge received a heap argument");

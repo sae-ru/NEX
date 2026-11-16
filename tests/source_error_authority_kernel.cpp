@@ -47,7 +47,7 @@ TaskBody direct(TaskGroup &group,Value mode,Value,const void *opaque){
  auto shared=taskChannelValue(group,group.channel(outer,1),0);auto inner=group.openScope(2);
  bool expectedTrap=mode.scalar==1||mode.scalar==3;Value payload;ExternalResource resource;
  if(mode.scalar>=2){resource=host.make(group);payload=Value(externalValue(resource));
-  if(mode.scalar==3){auto record=std::make_shared<Data>(Data::Record);record->values={taskScopeValue(group,inner),payload};payload=Value(record);}}
+  if(mode.scalar==3){auto record=nexrt::makeValueOwner<Data>(Data::Record);record->values={taskScopeValue(group,inner),payload};payload=Value(record);}}
  else payload=mode.scalar==1?taskScopeValue(group,inner):shared;
  Value result;bool trapped=false;
  try{co_await group.leaveSourceExceptionScope(inner,std::make_exception_ptr(error(payload)));}

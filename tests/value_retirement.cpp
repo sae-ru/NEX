@@ -23,7 +23,7 @@ namespace {
 thread_local bool allocationForbidden=false;
 constexpr size_t depth=65536,stackBytes=256*1024;
 void require(bool value,const char *message){if(!value)throw std::runtime_error(message);}
-std::shared_ptr<Data> plain(Data::Kind kind){return Data::make(kind);}
+nexrt::ValueOwner<Data> plain(Data::Kind kind){return Data::make(kind);}
 Value chain(Value leaf,size_t count=depth){
   const Data::Kind kinds[]={Data::List,Data::Record,Data::Enum,Data::Success,Data::Closure};
   for(size_t i=0;i<count;++i){auto node=plain(kinds[i%5]);node->values.push_back(std::move(leaf));leaf=Value(std::move(node));}
@@ -63,7 +63,7 @@ void scenario(const std::string &name){
     require(copy.object->values.size()==4&&copy.object->values[0].scalar==int64_t(depth-1),"copy changed during cleanup");release(copy);
   }else if(name=="host_destructor"){
     unsigned calls=0;auto child=plain(Data::List);child->values.emplace_back(int64_t(42));
-    auto host=Value(std::make_shared<Observed>(calls,Value(std::move(child))));
+    auto host=Value(nexrt::makeValueOwner<Observed>(calls,Value(std::move(child))));
     auto root=chain(std::move(host));release(root);require(calls==1,"host destructor count differs");
   }else if(name=="owned_file"){
     namespace fs=std::filesystem;
@@ -71,7 +71,7 @@ void scenario(const std::string &name){
     require(fs::create_directory(directory),"cannot create file fixture");
     struct Remove {fs::path path;~Remove(){std::error_code ignored;fs::remove_all(path,ignored);}}remove{directory};
     {std::ofstream out(directory/"input");out<<"retained";require(bool(out),"cannot write file fixture");}
-    TextFiles files(directory.string(),false);std::weak_ptr<Data> weak;
+    TextFiles files(directory.string(),false);nexrt::WeakValueOwner<Data> weak;
     {auto resource=fileValue(files.open("input",FileMode::Read));weak=resource;auto root=chain(Value(std::move(resource)));release(root);}
     require(weak.expired(),"deep graph retained file wrapper");
   }else if(name=="unwind"){

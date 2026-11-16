@@ -1,3 +1,21 @@
+# Atomic runtime value ownership — development0.255.0
+
+Runtime Data now uses typed atomic strong/weak owners and explicit stack-owned
+retirement contexts. Only the atomic last release queues deletion; payload edges
+do not recurse. Hidden-image disposal and synchronous nested root cleanup no
+longer depend on TLS or symbol coalescing. Value remains32bytes; Data adds8bytes
+on this Mac. Known owned wrappers now coallocate their control/object.
+
+Sixteen core and23 affected groups pass, including72 native and38 strict executed
+TypeScript comparisons. Six integration groups passed initially; two LLDB/DAP
+launch failures passed unchanged outside the restricted context. The original
+failures are retained. Local installation/Unicode relocation rebuilds both owner
+probes and consumes the standard library in reference/native Debug+Release.
+Two small same-source O2 measurements record no slowdown in their sample medians.
+[Full scope, layout, samples and failures](docs/evidence/value-owners-0.255.0-2026-11-16.json).
+This is not public reference promotion or complete portable-SDK/platform
+qualification. Class/memory-model/migration work and the original PLAN remain.
+
 # Iterative sequential value retirement — development0.254.0
 
 Ordinary runtime factories now identify exact base allocations, allowing deep

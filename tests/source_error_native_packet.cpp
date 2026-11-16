@@ -70,12 +70,12 @@ int main(){try{
     rejected("E_SOURCE_TYPE",[&]{(void)after.payload->getObject(key,Data::String);});
     ++cases;
   }empty();
-  std::weak_ptr<Data> retained;
+  nexrt::WeakValueOwner<Data> retained;
   std::exception_ptr escaped;
   {
     RequestScope request;
     auto parent=nex_owned_enter(),child=nex_owned_enter();
-    auto nested=std::make_shared<Data>(Data::Record);nested->text="LoadError::Missing";
+    auto nested=nexrt::makeValueOwner<Data>(Data::Record);nested->text="LoadError::Missing";
     nested->values={Value(string(text)),Value(int64_t(42))};retained=nested;
     auto original=packet(Value(nested));auto handle=makeSourceErrorHandle(original);
     original.payload.reset();nested.reset();
@@ -129,7 +129,7 @@ int main(){try{
   }empty();++cases;
   // Reject malformed trusted-host records before field access or kind casts.
   rejected("E_RUNTIME",[]{(void)nativeSourceErrorException(Value(int64_t(1)));});
-  rejected("E_RUNTIME",[]{(void)nativeSourceErrorException(Value(std::shared_ptr<Data>()));});
+  rejected("E_RUNTIME",[]{(void)nativeSourceErrorException(Value(nexrt::ValueOwner<Data>()));});
   {
     auto record=nativeSourceErrorRecord(packet(Value(int64_t(1))));
     record.object->values[0]=Value(int64_t(3));
@@ -148,7 +148,7 @@ int main(){try{
   {
     RequestScope request;
     rejected("E_RUNTIME",[]{(void)readSourceErrorHandle(nullptr);});
-    auto invalid=std::make_shared<Data>(Data::Record);invalid->text=sourceErrorRecordV1;
+    auto invalid=nexrt::makeValueOwner<Data>(Data::Record);invalid->text=sourceErrorRecordV1;
     invalid->values={Value(int64_t(0)),Value(string("message"))};
     auto handle=makeHandle(Value(invalid));
     try{(void)nex_source_error_code(handle);throw std::runtime_error("malformed legacy code accepted");}
@@ -179,7 +179,7 @@ int main(){try{
     trapped("E_FLOAT",[&]{(void)nex_source_error_typed_scalar(k,name,std::bit_cast<int64_t>(std::numeric_limits<double>::infinity()),2,31);});
     trapped("E_SOURCE_TYPE",[&]{(void)nex_source_error_typed_heap(k,name,nullptr,31);});
     for(auto kind:{Data::List,Data::Record,Data::Enum,Data::Success,Data::Failure}){
-      auto object=std::make_shared<Data>(kind);object->values={Value(int64_t(42))};auto value=makeHandle(Value(object));
+      auto object=nexrt::makeValueOwner<Data>(kind);object->values={Value(int64_t(42))};auto value=makeHandle(Value(object));
       auto packet=nex_source_error_typed_heap(k,name,value,47);nex_release(value);
       auto result=nex_source_error_heap(packet,k,kind==Data::Success||kind==Data::Failure?-1:kind,48);
       require(readHandle(result).object==object,"typed ABI cloned/lost aggregate ownership");

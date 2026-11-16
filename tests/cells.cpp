@@ -23,7 +23,7 @@ int main(){try{
   const auto baseline=liveObjects.load();unsigned cases=0;
   {
     for(auto kind:{Data::Cell,Data::File,Data::External,Data::Bytes,Data::TaskScope,Data::Task,Data::Channel}){
-      rejects("E_RUNTIME",[&]{(void)std::make_shared<Data>(kind);});
+      rejects("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<Data>(kind);});
       rejects("E_RUNTIME",[&]{(void)Data::make(kind);});
     }
     require(liveObjects.load()==baseline,"rejected constructor changed live-value accounting");++cases;
@@ -47,13 +47,13 @@ int main(){try{
   }
   require(liveObjects.load()==baseline,"snapshot heap leaked");
   {
-    CellHeap heap;auto self=heap.create(Value(int64_t(0)));std::weak_ptr<Data> dead=self.object;
+    CellHeap heap;auto self=heap.create(Value(int64_t(0)));nexrt::WeakValueOwner<Data> dead=self.object;
     heap.write(self,self);self=Value();auto result=heap.collect();
     require(result.reclaimedCells==1&&dead.expired()&&heap.stats().nodes==0,"self-cycle was not reclaimed");++cases;
   }
   {
     CellHeap heap;auto left=heap.create(Value(int64_t(0))),right=heap.create(Value(int64_t(0)));
-    std::weak_ptr<Data> a=left.object,b=right.object;
+    nexrt::WeakValueOwner<Data> a=left.object,b=right.object;
     heap.write(left,record({right}));heap.write(right,list({left,left}));
     auto alias=left;left=Value();right=Value();heap.collect();
     require(!a.expired()&&!b.expired(),"reachable cyclic graph reclaimed");
@@ -61,7 +61,7 @@ int main(){try{
   }
   {
     CellHeap heap;auto cell=heap.create(Value(int64_t(0)));auto closure=Data::make(Data::Closure);
-    closure->values={cell};heap.write(cell,Value(closure));std::weak_ptr<Data> weak=closure;
+    closure->values={cell};heap.write(cell,Value(closure));nexrt::WeakValueOwner<Data> weak=closure;
     cell=Value();heap.collect();require(!weak.expired(),"external callable root lost");
     closure.reset();heap.collect();require(weak.expired()&&heap.stats().cells==0,"callable capture cycle leaked");++cases;
   }
@@ -81,7 +81,7 @@ int main(){try{
     // An independent object-ID graph predicts reachability while immutable
     // payload snapshots outlive writes and registry compaction repeats.
     CellHeap heap;constexpr size_t count=96;
-    std::vector<Value> roots;std::vector<std::weak_ptr<Data>> observed;
+    std::vector<Value> roots;std::vector<nexrt::WeakValueOwner<Data>> observed;
     std::vector<std::vector<size_t>> links(count);
     for(size_t i=0;i<count;++i){roots.push_back(heap.create(Value(int64_t(i))));observed.push_back(roots.back().object);}
     for(size_t i=0;i<count;++i){links[i]={i,(i/12)*12+(i+1)%12};heap.write(roots[i],list({roots[links[i][0]],roots[links[i][1]]}));}
@@ -109,7 +109,7 @@ int main(){try{
     rejects("E_PARALLEL_VALUE",[&]{validateParallelValue(cell,[]{});});
     auto nested=record({list({cell})});rejects("E_PARALLEL_VALUE",[&]{validateParallelValue(nested,[]{});});
     rejects("E_RUNTIME",[&]{(void)Data::make(*cell.object);});
-    rejects("E_RUNTIME",[&]{(void)std::make_shared<Data>(*cell.object);});
+    rejects("E_RUNTIME",[&]{(void)nexrt::makeValueOwner<Data>(*cell.object);});
     require(heap.read(cell).scalar==1,"rejected transfer/clone changed cell");++cases;
   }
   {

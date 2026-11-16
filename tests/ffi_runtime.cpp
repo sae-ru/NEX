@@ -167,7 +167,7 @@ int main(){try{
   require(byteBuffer(value.object).toVector()==std::vector<uint8_t>({0,255,128}),"import retained mutable C memory");
  });
  run("record enum result metadata is copied and closures stay opaque",[]{
-  auto record=std::make_shared<Data>(Data::Record),tag=std::make_shared<Data>(Data::Enum),closure=std::make_shared<Data>(Data::Closure);
+  auto record=nexrt::makeValueOwner<Data>(Data::Record),tag=nexrt::makeValueOwner<Data>(Data::Enum),closure=nexrt::makeValueOwner<Data>(Data::Closure);
   tag->text="model::Some";tag->values={Value(42)};record->names={"tag"};record->values={Value(tag)};
   call([](auto c,auto a,auto,auto o){uint64_t n=0;nex_ffi_ref tag=0,message=0;uint32_t k=0;
    ok(api->child_count(c,a[0],&n));require(n==1&&copiedLabel(c,a[0],0)=="tag","record metadata lost");

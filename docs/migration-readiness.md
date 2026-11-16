@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.254.0"
+applies_to: "language 0.28; toolchain 0.255.0"
 owner: repository
 ---
 
@@ -50,10 +50,11 @@ values, expression/lexical roots and return/error ownership. Ordinary clients
 still reject reference source; public migration and entry/module/ABI integration
 remain next.
 
-Toolchain 0.254 makes ordinary sequential graph retirement iterative, including
-snapshots dropped after the cell heap closes. The [cleanup contract](value-retirement.md)
-retains genuine host/resource destructors and records the still-open universal
-concurrent-release bound. This is a lifetime prerequisite, not public promotion.
+Toolchain 0.254 made ordinary sequential graph retirement iterative, including
+snapshots dropped after the cell heap closes. The 0.255
+[atomic owner](value-owners.md) removes the concurrent last-release race and
+carries synchronous retirement across modules, preserving genuine typed
+destructors. Public promotion and a shared mutable memory model remain open.
 
 | Required behavior | Existing foundation | Missing language/runtime result |
 |---|---|---|

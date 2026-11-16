@@ -9,10 +9,10 @@ namespace {
 std::atomic<unsigned> checks{0};
 void require(bool value,const char *message){++checks;if(!value)throw std::runtime_error(message);}
 Handle *request(const std::string &path="/ok",const std::string &user="alice"){
- auto data=std::make_shared<Data>(Data::Record);data->text="std::http::Request";data->names={"method","path","query","body","user","request_id"};
+ auto data=nexrt::makeValueOwner<Data>(Data::Record);data->text="std::http::Request";data->names={"method","path","query","body","user","request_id"};
  for(const auto &s:std::vector<std::string>{"POST",path,"",std::string("λ\0🙂",7),user,"1"})data->values.emplace_back(string(s));return makeHandle(Value(data));
 }
-Value response(const Value &input){auto data=std::make_shared<Data>(Data::Record);data->text="std::http::Response";data->names={"status","body","content_type"};data->values={Value(int64_t(200)),Value(string(input.object->values[4].object->text+":"+input.object->values[3].object->text)),Value(string("text/plain"))};return Value(data);}
+Value response(const Value &input){auto data=nexrt::makeValueOwner<Data>(Data::Record);data->text="std::http::Response";data->names={"status","body","content_type"};data->values={Value(int64_t(200)),Value(string(input.object->values[4].object->text+":"+input.object->values[3].object->text)),Value(string("text/plain"))};return Value(data);}
 int64_t step(void *opaque){
  auto &frame=*static_cast<NativeTaskFrame*>(opaque);auto input=frame.read(0,3);auto path=input.object->values[1].object->text;
  if(!frame.pc){frame.pc=1;return 1;}

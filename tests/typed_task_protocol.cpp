@@ -10,11 +10,11 @@ std::mutex allocationMutex;
 std::map<const void *, int> allocations;
 unsigned checks=0;
 const std::string key(64,'a');
-std::weak_ptr<Data> payloadOwner;
+nexrt::WeakValueOwner<Data> payloadOwner;
 void require(bool value,const char *message){++checks;if(!value)throw std::runtime_error(message);}
 int64_t leafStep(void *frame){
   if(!nex_task_frame_pc(frame)){nex_task_frame_set_pc(frame,1);return 1;}
-  auto data=std::make_shared<Data>(Data::List);data->values={Value(int64_t(42))};
+  auto data=nexrt::makeValueOwner<Data>(Data::List);data->values={Value(int64_t(42))};
   payloadOwner=data;
   NativeSourceException error("Problem","typed source error","original-source-site",37,
       std::make_shared<const SourceErrorPayload>(key,Value(std::move(data))));
@@ -29,7 +29,7 @@ int64_t rootStep(void *frame){
     case 0:{
       nex_task_frame_handler_push_at(frame,2,0,nullptr);
       nex_task_frame_set_pc(frame,1);
-      auto args=makeHandle(Value(std::make_shared<Data>(Data::List)));
+      auto args=makeHandle(Value(nexrt::makeValueOwner<Data>(Data::List)));
       nex_task_frame_call_at(frame,const_cast<TaskCodeDescriptor*>(&leaf),nullptr,args,-1,0,nullptr);
       nex_release(args);return 2;
     }

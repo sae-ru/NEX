@@ -27,7 +27,7 @@ int64_t childStep(void *pointer){auto &frame=*static_cast<NativeTaskFrame*>(poin
 int64_t mainStep(void *pointer){
   auto &frame=*static_cast<NativeTaskFrame*>(pointer);
   if(frame.pc==0){helper();auto value=makeHandle(Value(string("parked🧠")));nex_task_frame_put_heap(pointer,0,value);nex_release(value);frame.pc=1;return 1;}
-  if(frame.pc==1){auto args=makeHandle(Value(std::make_shared<Data>(Data::List)));nex_task_frame_call_at(pointer,&childCode,nullptr,args,1,1,nullptr);nex_release(args);frame.pc=2;return 2;}
+  if(frame.pc==1){auto args=makeHandle(Value(nexrt::makeValueOwner<Data>(Data::List)));nex_task_frame_call_at(pointer,&childCode,nullptr,args,1,1,nullptr);nex_release(args);frame.pc=2;return 2;}
   helper();nex_task_frame_return_i64(pointer,frame.read(1,0).scalar+2,0);return 0;
 }
 int64_t trapStep(void *pointer){

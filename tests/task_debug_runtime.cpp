@@ -30,7 +30,7 @@ TaskDebugCodeSite metadata[4];
 int64_t childStep(void *pointer){auto &frame=*static_cast<NativeTaskFrame*>(pointer);if(frame.pc==0){nex_task_debug_checkpoint(pointer,0);frame.pc=1;return 1;}nex_task_debug_checkpoint(pointer,1);nex_task_frame_return_i64(pointer,frame.read(0,0).scalar+2,0);return 0;}
 int64_t mainStep(void *pointer){auto &frame=*static_cast<NativeTaskFrame*>(pointer);
  if(frame.pc==0){nex_task_debug_checkpoint(pointer,0);frame.write(0,Value(string(std::string("retained\0🧠",13))),3);nex_task_debug_checkpoint(pointer,1);frame.pc=1;return 1;}
- if(frame.pc==1){nex_task_debug_checkpoint(pointer,2);auto args=makeHandle(Value(std::make_shared<Data>(Data::List)));readHandle(args).object->values.push_back(Value(40));nex_task_debug_checkpoint(pointer,3);nex_task_frame_call_at(pointer,&childCode,nullptr,args,1,4,nullptr);nex_release(args);frame.pc=2;return 2;}
+ if(frame.pc==1){nex_task_debug_checkpoint(pointer,2);auto args=makeHandle(Value(nexrt::makeValueOwner<Data>(Data::List)));readHandle(args).object->values.push_back(Value(40));nex_task_debug_checkpoint(pointer,3);nex_task_frame_call_at(pointer,&childCode,nullptr,args,1,4,nullptr);nex_release(args);frame.pc=2;return 2;}
  nex_task_debug_checkpoint(pointer,4);require(frame.read(1,0).scalar==42,"child result differs");nex_task_frame_return_i64(pointer,42,0);return 0;
 }
 int64_t trapStep(void *pointer){nex_task_debug_checkpoint(pointer,0);(void)makeHandle(Value(string("trap-owned")));throw Trap("E_ITEM","controlled debug trap",8);}
@@ -51,7 +51,7 @@ TaskDebugFrameRecord *frames(){return reinterpret_cast<TaskDebugFrameRecord*>(lo
 void terminal(){for(size_t i=0;i<load(nex_task_debug_catalog_v1.task_count);++i){auto &task=tasks()[i];require(load(task.state)==uint64_t(TaskDebugState::Terminal),"task terminal was not published");require(load(task.frame_count)==0,"terminal task retained frame addresses");}require(!load(nex_task_debug_catalog_v1.live_frames),"debug frame pool did not retire");}
 struct Gate {std::promise<void> entered,release;std::shared_future<void> released=release.get_future().share();std::atomic<bool> retired{false};bool memory=false;};
 struct Held final:TaskExternalOperation {std::shared_ptr<Gate> gate;explicit Held(std::shared_ptr<Gate> gate):gate(std::move(gate)){}TaskExternalResult run(const TaskExternalControl &)override{gate->entered.set_value();gate->released.wait();gate->retired=true;if(gate->memory)throw std::bad_alloc();return {};}};
-std::weak_ptr<Data> parkedValue;
+nexrt::WeakValueOwner<Data> parkedValue;
 TaskBody park(TaskGroup &group,std::shared_ptr<Gate> gate){
  std::vector<NativeTaskFrame> stack;stack.emplace_back(parkCode,std::vector<Value>{},Value{});TaskDebugStackRegistration registration(&stack);stack.back().debugActivation=TaskDebugFrame(3);
  auto data=string("only source owns parked payload");parkedValue=data;stack.back().write(0,Value(std::move(data)),3);nex_task_debug_checkpoint(&stack.back(),0);

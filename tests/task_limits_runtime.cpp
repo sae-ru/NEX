@@ -28,7 +28,7 @@ int64_t expired(void *pointer){
 }
 nexrt::TaskCodeDescriptor childCode{},scopeCode{};
 nexrt::Value closure(const nexrt::TaskCodeDescriptor &code){
-  auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->taskCode=&code;return nexrt::Value(std::move(data));
+  auto data=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::Closure);data->taskCode=&code;return nexrt::Value(std::move(data));
 }
 int64_t child(void *pointer){
   auto count=++active;auto maximum=maximumActive.load();

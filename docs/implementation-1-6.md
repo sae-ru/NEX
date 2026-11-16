@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.254.0"
+applies_to: "language 0.28; toolchain 0.255.0"
 owner: repository
 ---
 
@@ -27,10 +27,12 @@ The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
 
-The 0.254 runtime block adds [iterative sequential value retirement](value-retirement.md)
-for ordinary deep values and snapshots released after heap close. Public reference
-migration and a universal concurrent-release stack bound remain open; the private
-candidate's thread/task restrictions are unchanged.
+The 0.254 runtime block added iterative sequential value retirement for ordinary
+deep values and snapshots released after heap close. The 0.255
+[atomic owner](value-owners.md) removes its check-then-drop race and carries
+retirement across module boundaries. Public reference migration and the shared
+mutable memory model remain open; the private candidate's thread/task
+restrictions are unchanged.
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

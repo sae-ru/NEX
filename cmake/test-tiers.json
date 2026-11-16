@@ -252,6 +252,7 @@
     "java_int": ["extended", "browser", "platform", "sdk"],
     "managed_cells_runtime": ["extended", "platform"],
     "value_retirement_runtime": ["core"],
+    "value_owner_runtime": ["core"],
     "managed_references_frontend_reference": ["core"],
     "managed_references_native": ["extended", "platform"],
     "managed_reference_native_context": ["core"],

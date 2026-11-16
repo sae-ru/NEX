@@ -9,21 +9,21 @@ struct TaskValueAccess {
   static Value scope(TaskGroup &group,const TaskGroup::Scope &scope){
     group.requireScope(scope);auto index=group.scopeIndex(scope);std::lock_guard lock(group.impl->mutex);
     auto &cached=group.impl->regions[index]->capability;
-    auto value=cached.lock();if(!value){value=std::shared_ptr<Data>(new TaskData(scope,{}, {},Data::TaskScope,-1));cached=value;}
+    auto value=cached.lock();if(!value){value=ValueOwnerFactory::build<TaskData>([&](TaskData *address){return ::new(address)TaskData(scope,{}, {},Data::TaskScope,-1);});cached=value;}
     return Value(std::move(value));
   }
   static Value ticket(TaskGroup &group,const TaskGroup::Ticket &ticket,int64_t kind){
     if(kind<0||kind>4)throw DataError("E_TASK_STATE","invalid compiled task outcome kind");
     group.impl->require();auto index=group.taskIndex(ticket);std::lock_guard lock(group.impl->mutex);auto &job=*group.impl->jobs[index];
     if(job.memberScope==TaskGroup::none)throw DataError("E_TASK_SCOPE","source task requires a logical owner scope");
-    auto value=job.capability.lock();if(!value){value=std::shared_ptr<Data>(new TaskData(TaskGroup::Scope(group.impl,job.memberScope),ticket,{},Data::Task,kind));job.capability=value;}
+    auto value=job.capability.lock();if(!value){value=ValueOwnerFactory::build<TaskData>([&](TaskData *address){return ::new(address)TaskData(TaskGroup::Scope(group.impl,job.memberScope),ticket,{},Data::Task,kind);});job.capability=value;}
     if(static_cast<const TaskData&>(*value).payloadKind!=kind)throw DataError("E_TASK_STATE","compiled task outcome schema differs");return Value(std::move(value));
   }
   static Value channel(TaskGroup &group,const TaskGroup::Channel &channel,int64_t kind){
     if(kind<0||kind>3)throw DataError("E_TASK_STATE","invalid compiled channel payload kind");
     group.impl->require();auto index=group.channelIndex(channel);std::lock_guard lock(group.impl->mutex);auto &pipe=*group.impl->pipes[index];
     if(pipe.scope==TaskGroup::none)throw DataError("E_TASK_SCOPE","source channel requires a logical owner scope");
-    auto value=pipe.capability.lock();if(!value){value=std::shared_ptr<Data>(new TaskData(TaskGroup::Scope(group.impl,pipe.scope),{},channel,Data::Channel,kind));pipe.capability=value;}
+    auto value=pipe.capability.lock();if(!value){value=ValueOwnerFactory::build<TaskData>([&](TaskData *address){return ::new(address)TaskData(TaskGroup::Scope(group.impl,pipe.scope),{},channel,Data::Channel,kind);});pipe.capability=value;}
     if(static_cast<const TaskData&>(*value).payloadKind!=kind)throw DataError("E_TASK_STATE","compiled channel payload schema differs");return Value(std::move(value));
   }
 };

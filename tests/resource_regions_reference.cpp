@@ -128,7 +128,7 @@ int main(){try{
    for(bool nested:{false,true}){
      Host host;ResourceRegion caller(ResourceRegionFamily::Reference);auto owner=host.make(caller.authority());
      Value input(externalValue(owner));
-     if(nested){auto aggregate=std::make_shared<Data>(Data::List);aggregate->values.push_back(input);input=Value(std::move(aggregate));}
+     if(nested){auto aggregate=nexrt::makeValueOwner<Data>(Data::List);aggregate->values.push_back(input);input=Value(std::move(aggregate));}
      auto p=source("fn main(input:i64)->i64 !{task}{task_yield();return input;}");
      sourceRejected("E_TASK_VALUE",[&]{evaluateTaskReference(p,"main",{input},1000000,{},nullptr,&host);});
      require(owner.isOpen()&&host.prepared==0&&*host.destroyed==0,"rejected input was admitted or caller's region was revoked");

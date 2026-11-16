@@ -33,8 +33,8 @@ struct Running {
   Running(){auto count=++running;auto maximum=maximumRunning.load();while(maximum<count&&!maximumRunning.compare_exchange_weak(maximum,count)){};recordThread();}
   ~Running(){--running;}
 };
-Value list(std::initializer_list<Value> values){auto data=std::make_shared<Data>(Data::List);data->values=values;return Value(std::move(data));}
-Value integers(size_t count){auto data=std::make_shared<Data>(Data::List);for(size_t i=0;i<count;++i)data->values.emplace_back(int64_t(i));return Value(std::move(data));}
+Value list(std::initializer_list<Value> values){auto data=nexrt::makeValueOwner<Data>(Data::List);data->values=values;return Value(std::move(data));}
+Value integers(size_t count){auto data=nexrt::makeValueOwner<Data>(Data::List);for(size_t i=0;i<count;++i)data->values.emplace_back(int64_t(i));return Value(std::move(data));}
 template<class F> void expect(const char *code,F action){
   bool caught=false;try{action();}catch(const nexrt::Trap &error){require(error.code==code,"wrong checked error");caught=true;}
   require(caught,"checked error was not raised");require(running==0,"callback survived a failed group");
@@ -90,7 +90,7 @@ Value registeredCleanup(const Value &item,const Value &){
 }
 using K=nexrt::ParallelValueKind;
 Value callable(void *code,std::vector<Value> captures={}){
-  auto data=std::make_shared<Data>(Data::Closure);data->code=code;data->values=std::move(captures);return Value(std::move(data));
+  auto data=nexrt::makeValueOwner<Data>(Data::Closure);data->code=code;data->values=std::move(captures);return Value(std::move(data));
 }
 nexrt::Handle *capturedTarget(nexrt::Handle *environment,int64_t input){
   Running active;++calls;rendezvous->arrive_and_wait();
@@ -175,7 +175,7 @@ int main(){
   unsigned cases=0;
   {
     nexrt::RequestScope scope;auto input=integers(16);
-    auto capture=std::make_shared<Data>(Data::Closure);capture->values.emplace_back(nexrt::string("Я🧠:"));
+    auto capture=nexrt::makeValueOwner<Data>(Data::Closure);capture->values.emplace_back(nexrt::string("Я🧠:"));
     std::barrier barrier(4);rendezvous=&barrier;
     auto *parentHandle=nex_string_new("parent",6,10);
     auto output=nexrt::parallelValues(input,Value(capture),4,ordered);
@@ -229,7 +229,7 @@ int main(){
   }clean();++cases;
   {
     nexrt::RequestScope scope;auto file=Value(nexrt::diagnosticFile(5));
-    auto capture=std::make_shared<Data>(Data::Closure);capture->values.push_back(list({file}));
+    auto capture=nexrt::makeValueOwner<Data>(Data::Closure);capture->values.push_back(list({file}));
     expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelValues(integers(2),Value(capture),2,identity);});
     expect("E_PARALLEL_VALUE",[&]{(void)nexrt::parallelValues(list({list({file})}),Value(),2,identity);});
     require(calls==0,"resource-bearing input reached a worker");scope.poll();
@@ -262,7 +262,7 @@ int main(){
     require(calls==0,"preflight failure started a callback");
   }clean();++cases;
   {
-    nexrt::RequestScope scope;auto data=std::make_shared<Data>(Data::List);data->values.resize(nexrt::parallelMaximumNodes);
+    nexrt::RequestScope scope;auto data=nexrt::makeValueOwner<Data>(Data::List);data->values.resize(nexrt::parallelMaximumNodes);
     expect("E_LIMIT",[&]{(void)nexrt::parallelValues(integers(1),Value(data),1,identity);});require(calls==0,"oversized value graph reached a worker");
   }clean();++cases;
   {

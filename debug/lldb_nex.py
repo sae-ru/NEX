@@ -246,9 +246,9 @@ def _member(value, name):
 
 def _shared(value):
     raw = value.GetNonSyntheticValue()
-    # libc++, libstdc++, and MSVC use distinct shared_ptr member names. The
+    # ValueOwner and libc++/libstdc++/MSVC shared_ptr use distinct names. The
     # actual field type and pointee layout come from this build's DWARF.
-    for name in ("__ptr_", "_M_ptr", "_Ptr"):
+    for name in ("pointer_", "__ptr_", "_M_ptr", "_Ptr"):
         pointer = raw.GetChildMemberWithName(name)
         if pointer.IsValid() and pointer.GetType().IsPointerType():
             address = pointer.GetValueAsUnsigned()

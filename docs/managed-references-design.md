@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.254.0; no public source-language extension"
+applies_to: "toolchain 0.255.0; no public source-language extension"
 owner: repository
 ---
 
@@ -80,11 +80,12 @@ interpreter and native candidate each own their sequential execution context;
 The private [TypeScript source candidate](managed-reference-typescript-prototype.md)
 now implements boxed values, explicit roots and logical collection. Public
 entry/module/host integration and migration remain pending.
-Toolchain 0.254 adds [iterative ordinary value retirement](value-retirement.md),
-including sequential snapshots released after heap close. Its exact-base factory
-keeps genuine host/owned destructors intact without enlarging `Data`. Universal
-concurrent retirement bounds and the public host-entry lifetime contract remain
-separate integration requirements.
+Toolchain 0.254 added iterative sequential value retirement. The 0.255
+[atomic owner](value-owners.md) removes its check-then-drop race, preserves
+genuine complete-type destructors and carries retirement across module images.
+Runtime value graph edges no longer add destructor call depth. Public host-entry
+lifetimes and shared mutable reference behavior remain separate integration
+requirements.
 
 ## Limits, costs and failures
 

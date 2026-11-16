@@ -90,7 +90,7 @@ int main(){
   auto closure=nex_task_closure_new_at(&d,0,nullptr);
   trapped("E_FUNCTION",[&]{nex_closure_code(closure);});
   auto ordinary=nex_closure_new(reinterpret_cast<void*>(step),0);
-  auto arguments=nexrt::makeHandle(nexrt::Value(std::make_shared<nexrt::Data>(nexrt::Data::List)));
+  auto arguments=nexrt::makeHandle(nexrt::Value(nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List)));
   nexrt::NativeTaskFrame caller(d,{},{});
   trapped("E_TASK_STATE",[&]{nex_task_frame_call_at(&caller,nullptr,ordinary,arguments,-1,1,nullptr);});
   nex_task_closure_bind_at(ordinary,&d,nullptr);require(nex_closure_code(ordinary)==reinterpret_cast<void*>(step));

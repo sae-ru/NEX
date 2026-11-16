@@ -65,7 +65,10 @@ preservation. The [corrected run](evidence/core-ci-0.251.0-corrected-2026-11-16.
 passed macOS/Linux at `279c15db`, including the unchanged 14-group core scope.
 The [0.253 run](evidence/core-ci-0.253.0-2026-11-16.json) subsequently passed
 both hosted jobs at `52a2f169`, retaining that 14-group scope. Toolchain 0.254
-adds the deep-value retirement probe to core; matching CI is a separate run.
+adds the deep-value retirement probe to core. Its
+[matching run](evidence/core-ci-0.254.0-2026-11-16.json) passed both hosted jobs
+at `1632eb1f` with 15 groups. Toolchain 0.255 adds atomic/weak ownership and the
+hidden-module fixture as the 16th core group; matching CI is a separate run.
 
 macOS selects native Homebrew `llvm@22`, `lld@22`, OpenSSL3, SQLite, Z3,
 Python3.14, Ninja and CMake. The package inventory and configure/build logs

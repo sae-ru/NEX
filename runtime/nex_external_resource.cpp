@@ -206,8 +206,8 @@ void *ExternalResourceBorrow::data(const ExternalResourceClass &expected)const{
   check();if(impl->type!=expected.state)throw DataError("E_RESOURCE_TYPE","external borrow class differs");
   return impl->lease.value().object.pointer;
 }
-std::shared_ptr<Data> externalValue(ExternalResource resource){
+nexrt::ValueOwner<Data> externalValue(ExternalResource resource){
   if(!resource.identity())throw DataError("E_RUNTIME","external value requires a genuine resource identity");
-  return std::shared_ptr<Data>(new ExternalData(std::move(resource)));
+  return ValueOwnerFactory::build<ExternalData>([&](ExternalData *address){return ::new(address)ExternalData(std::move(resource));});
 }
 }

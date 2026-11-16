@@ -21,7 +21,7 @@ int main(){try{
  auto reject=[&](TaskCodeDescriptor d){try{NativeTaskFrame frame(d,{},Value{});}catch(const DataError &e){check(e.code=="E_TASK_STATE");return;}throw std::runtime_error("invalid stream descriptor accepted");};
  for(auto absent:{taskCodeDeclaredTask,taskCodeServer,taskCodeDeclaredFs}){auto d=code;d.requirements&=~absent;reject(d);}
  for(auto abi:{taskCodeABI,taskCodeWriteABI}){auto d=code;d.abi=abi;reject(d);}
- RequestScope request;auto values=std::make_shared<Data>(Data::List);values->values={Value(string("never-opened"))};auto *arguments=makeHandle(Value(values));
+ RequestScope request;auto values=nexrt::makeValueOwner<Data>(Data::List);values->values={Value(string("never-opened"))};auto *arguments=makeHandle(Value(values));
  auto rejectedPause=[&](TaskCodeDescriptor d,int64_t operation,int64_t kind){
   NativeTaskFrame frame(d,{},Value{});
   try{nex_task_frame_pause_at(&frame,operation,arguments,0,kind,1,nullptr);}

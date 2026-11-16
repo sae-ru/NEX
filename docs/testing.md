@@ -19,7 +19,7 @@ The [development presets](development-build.md) also provide
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
 JUnit, exit code and logs for core/full selections.
 
-The selected 15 groups cover frontend checking, typed reference evaluation,
+The selected 16 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
 accounting/collection/CTest metadata and compiled diagnostic explanations. They require Python3.10+, the configured
 compiler and its selected native dependencies. They require no Node/npm, browser
@@ -40,6 +40,12 @@ see [the cleanup contract and concurrency limit](value-retirement.md).
 Its [focused receipt](evidence/value-retirement-0.254.0-2026-11-16.json) includes
 the old-runtime small/large-stack controls, nine passing post-change scenarios,
 72 native and 38 TypeScript source comparisons and affected ownership checks.
+
+Toolchain 0.255 adds the no-Node `value_owner_runtime` group and its hidden-symbol
+module fixture. Atomic/weak ownership, synchronous nested cleanup and concurrent
+bounded-stack graph retirement replace the former unique-owner decision. See
+the [owner contract](value-owners.md); full SDK/platform qualification remains
+a separate integration gate.
 
 [0.251 native evidence](evidence/managed-reference-native-0.251.0-2026-11-16.json)
 records 14 core groups in 23.84 s, eight affected groups in 39.85 s and a final

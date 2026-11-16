@@ -32,7 +32,7 @@ int main(int argc,char **argv){try{
     const auto &c=*command.getAsObject();auto op=field(c,"op");llvm::json::Object event{{"op",op}};
     try{
       if(op=="node"){
-        auto kind=kinds.at(field(c,"kind"));auto data=kind==nexrt::Data::Bytes?nexrt::bytes(nexrt::ByteBuffer::copy({})):std::make_shared<nexrt::Data>(kind);
+        auto kind=kinds.at(field(c,"kind"));auto data=kind==nexrt::Data::Bytes?nexrt::bytes(nexrt::ByteBuffer::copy({})):nexrt::makeValueOwner<nexrt::Data>(kind);
         if(auto fields=c.getArray("values"))for(const auto &v:*fields)data->values.push_back(resolve(v));
         values[field(c,"id")]=V(std::move(data));
       }else if(op=="literal")values[field(c,"id")]=resolve(*c.get("value"));
@@ -49,7 +49,7 @@ int main(int argc,char **argv){try{
           {"reclaimedCells",int64_t(r.reclaimedCells)},{"reclaimedNodes",int64_t(r.reclaimedNodes)}};
       }else if(op=="chain"||op=="deep"){
         V head(int64_t(0));const auto count=c.getInteger("count").value();
-        for(int64_t i=0;i<count;++i){auto node=std::make_shared<nexrt::Data>(nexrt::Data::List);node->values.push_back(std::move(head));head=V(std::move(node));if(op=="chain")head=heap.create(std::move(head));}
+        for(int64_t i=0;i<count;++i){auto node=nexrt::makeValueOwner<nexrt::Data>(nexrt::Data::List);node->values.push_back(std::move(head));head=V(std::move(node));if(op=="chain")head=heap.create(std::move(head));}
         if(op=="deep")head=heap.create(std::move(head));
         values[field(c,"id")]=std::move(head);
       }else if(op=="close")heap.close();

@@ -9,13 +9,13 @@ namespace {
 std::atomic<unsigned> checks{0},turns{0};
 void require(bool v,const char *message){++checks;if(!v)throw std::runtime_error(message);}
 Handle *request(std::string path="/ok",std::string user="alice"){
- auto record=std::make_shared<Data>(Data::Record);record->text="std::http::Request";
+ auto record=nexrt::makeValueOwner<Data>(Data::Record);record->text="std::http::Request";
  record->names={"method","path","query","body","user","request_id"};
  for(const auto &field:std::vector<std::string>{"GET",path,"",std::string("A🌍\0β",8),user,"1"})record->values.emplace_back(string(field));
  return makeHandle(Value(record));
 }
 Value response(const Value &input,bool invalid=false){
- auto record=std::make_shared<Data>(Data::Record);record->text="std::http::Response";record->names={"status","body","content_type"};
+ auto record=nexrt::makeValueOwner<Data>(Data::Record);record->text="std::http::Response";record->names={"status","body","content_type"};
  record->values={Value(int64_t(200)),Value(string(input.object->values[4].object->text+":"+input.object->values[3].object->text)),Value(string("text/plain"))};
  if(invalid)record->values[1]=Value(int64_t(5));return Value(record);
 }

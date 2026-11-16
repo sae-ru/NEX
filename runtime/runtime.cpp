@@ -98,11 +98,11 @@ void *managedReferenceContext(void *(*create)(void *),void *argument,void (*dest
   state.references=value;state.createReferences=create;state.destroyReferences=destroy;state.referencePhase=ApplicationState::ReferencePhase::Active;return value;
 }
 struct Handle {
-  std::shared_ptr<Data> data;
+  nexrt::ValueOwner<Data> data;
   RequestScope *owner=currentRequest;
   ApplicationState *applicationOwner=ownershipState();
   Handle *previous=nullptr,*next=nullptr;
-  explicit Handle(std::shared_ptr<Data> data):data(std::move(data)){
+  explicit Handle(nexrt::ValueOwner<Data> data):data(std::move(data)){
     // Profiling and request registration can allocate. Never leave a failed
     // constructor registered as a live handle in either ownership boundary.
     profileAllocate(this,sizeof(Handle),0);
@@ -512,7 +512,7 @@ template<class F> auto guarded(SourceLocation line,F operation)->decltype(operat
   catch(const std::bad_alloc &){fail("E_MEMORY","allocation failed",line);}
   catch(const std::exception &e){fail("E_RUNTIME",e.what(),line);}
 }
-Handle *owned(std::shared_ptr<nexrt::Data> data){return new Handle(std::move(data));}
+Handle *owned(nexrt::ValueOwner<nexrt::Data> data){return new Handle(std::move(data));}
 Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
   if(list->data->kind==nexrt::Data::Bytes){
     if(value.tag!=nexrt::Value::Integer)throw nexrt::DataError("E_RUNTIME","byte update requires an i64 value");
