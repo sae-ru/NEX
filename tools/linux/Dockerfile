@@ -1,10 +1,12 @@
 FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 ARG TARGETARCH
 ARG LLVM_APT_VERSION=1:22.1.8~++20260714014902+ca7933e47d3a-1~exp1~20260714135019.80
-ARG LLDB_APT_VERSION=1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96
+ARG LLDB_APT_VERSION=1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97
 ARG PATCHELF_VERSION=0.18.0-1.1build1
 ENV DEBIAN_FRONTEND=noninteractive
-RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80nex-retries \
+COPY tools/linux/debugger-packages.json tools/linux/debugger_packages.py /opt/nex-linux/
+RUN --mount=type=bind,source=build/linux-debugger-packages,target=/tmp/nex-lldb-packages,readonly \
+    printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80nex-retries \
     && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg xz-utils unzip \
     && curl -fsSL --retry 4 --retry-all-errors --retry-max-time 180 --connect-timeout 15 --max-time 120 \
        https://apt.llvm.org/llvm-snapshot.gpg.key -o /tmp/llvm.asc \
@@ -16,10 +18,11 @@ RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https:
        clang-22="${LLVM_APT_VERSION}" llvm-22-dev="${LLVM_APT_VERSION}" \
        libmlir-22-dev="${LLVM_APT_VERSION}" mlir-22-tools="${LLVM_APT_VERSION}" \
        lld-22="${LLVM_APT_VERSION}" libclang-rt-22-dev="${LLVM_APT_VERSION}" \
-       lldb-23="${LLDB_APT_VERSION}" python3-lldb-23="${LLDB_APT_VERSION}" \
-       liblldb-23="${LLDB_APT_VERSION}" libllvm23="${LLDB_APT_VERSION}" libclang-cpp23="${LLDB_APT_VERSION}" \
        cmake make g++ python3 git ocl-icd-libopencl1 \
        libsqlite3-dev libssl-dev openssl zlib1g-dev libzstd-dev patchelf="${PATCHELF_VERSION}" \
+    && python3 /opt/nex-linux/debugger_packages.py --arch "$TARGETARCH" \
+       --lock /opt/nex-linux/debugger-packages.json --cache /tmp/nex-lldb-packages \
+       --expected-version "$LLDB_APT_VERSION" --install \
     && mkdir -p /opt/nex-debugger/bin \
     && ln -s /usr/lib/llvm-23/bin/lldb /opt/nex-debugger/bin/lldb \
     && ln -s /usr/lib/llvm-23/bin/lldb-dap /opt/nex-debugger/bin/lldb-dap \

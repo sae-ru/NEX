@@ -1,94 +1,95 @@
 {
   "schema": "nex.linux-debugger-packages/1",
   "debugger_version": "23.1.6",
-  "apt_version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
+  "apt_version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
   "repository": "https://apt.llvm.org/noble/",
   "distribution": "llvm-toolchain-noble-23",
   "signing_key_fingerprint": "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421",
   "compiler_llvm_mlir_version": "22.1.8",
-  "source_commit": "c47d7823685a0e7048795e0cd2d58ad35e454ee9",
+  "source_commit": "551bf48cf74f5aa587924a38f2cb29f72e7c9497",
   "source_event_guard_file": "lldb/source/Target/Process.cpp",
   "source_event_guard_sha256": "9eb46a476d39b8e22bbe3ce1dd3a244e31fb2a5c3cb4127ef3ff06bf3a5c4fd9",
   "index_snapshot_sha256": {
-    "arm64": "5320d7b9c8e2a999694277a081306335d6ccbcb1474a3894b592e095f9ff4990",
-    "amd64": "7edcd3884e33e6e6bfd767efe2079729fdb36aad3e6021fe3197a9f328f09ab9"
+    "amd64": "76447bea85555e1384bd17885a18057d31733ecf98c2ac6c8042f711b7b46fda",
+    "arm64": "65e317af95075564069f0b9f95da5103214c5f7e431fbd0b3a31cf65b5aec51e"
   },
   "packages": {
-    "arm64": {
+    "amd64": {
       "libclang-cpp23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "arm64",
-        "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_arm64.deb",
-        "SHA256": "2515ea1950f5dc7dc80fcb45662ea05ef2732db9d9c62309e360c1659eaeeba6",
-        "Size": "14527108"
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "amd64",
+        "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_amd64.deb",
+        "SHA256": "83f00fdc58827233dfad76e5a28777117661e2c78238d1873dad557a2b2897c3",
+        "Size": "14895110"
       },
       "liblldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "arm64",
-        "Filename": "pool/main/l/llvm-toolchain-23/liblldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_arm64.deb",
-        "SHA256": "ae5f11e036a44fa15fcd51b98f5ffe854a8c224c8d39df61743419146364ef31",
-        "Size": "5147254"
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "amd64",
+        "Filename": "pool/main/l/llvm-toolchain-23/liblldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_amd64.deb",
+        "SHA256": "c58587935e378fb8b65bf0f64c1bf7399e3ad137159a81c844109dced2c5d561",
+        "Size": "5283416"
       },
       "libllvm23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "arm64",
-        "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_arm64.deb",
-        "SHA256": "494b4ccc022ec2ad6bf6d06151b15f1eae6a4be7e4162c9fbc105c66e9510251",
-        "Size": "32265542"
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "amd64",
+        "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_amd64.deb",
+        "SHA256": "8a2584267f3accfc27211cb3cd036e8d80b1247a73994484c31031ed319890cc",
+        "Size": "33746302"
       },
       "lldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "amd64",
+        "Filename": "pool/main/l/llvm-toolchain-23/lldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_amd64.deb",
+        "SHA256": "043cd04f7d96d0ccdabe9d1f7f44494dc53f592502e1189a13198499036489dd",
+        "Size": "1779698"
+      },
+      "python3-lldb-23": {
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "amd64",
+        "Filename": "pool/main/l/llvm-toolchain-23/python3-lldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_amd64.deb",
+        "SHA256": "beb51dba002b5b3d53b0349ceeb4b7d3521bcee2889df7ef0aa2ed80f65162d6",
+        "Size": "208472"
+      }
+    },
+    "arm64": {
+      "libclang-cpp23": {
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
         "Architecture": "arm64",
-        "Filename": "pool/main/l/llvm-toolchain-23/lldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_arm64.deb",
-        "SHA256": "5503aadfb59d9bca1d05429f52b7dc9018049cd2886b5cc6c1ee41c162746304",
+        "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_arm64.deb",
+        "SHA256": "bcd418f7d42a966876487a8cd02d0eae43d696d25958e98b494b93ac35bbada5",
+        "Size": "14542140"
+      },
+      "liblldb-23": {
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "arm64",
+        "Filename": "pool/main/l/llvm-toolchain-23/liblldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_arm64.deb",
+        "SHA256": "1bac3bd6173a0c8cf0d40d2b99685edcb98ca99dfed0cd69740728144a8b34d9",
+        "Size": "5147258"
+      },
+      "libllvm23": {
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "arm64",
+        "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_arm64.deb",
+        "SHA256": "902847c23f8e339860ac3d97d5a49a7ce71d464dedf8f688570907b450b702a5",
+        "Size": "32245890"
+      },
+      "lldb-23": {
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
+        "Architecture": "arm64",
+        "Filename": "pool/main/l/llvm-toolchain-23/lldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_arm64.deb",
+        "SHA256": "70f95e31205c981cc70d1a68a52b48a365a96d4a86e06f04a047967d22470f71",
         "Size": "1816528"
       },
       "python3-lldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
+        "Version": "1:23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97",
         "Architecture": "arm64",
-        "Filename": "pool/main/l/llvm-toolchain-23/python3-lldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_arm64.deb",
-        "SHA256": "9a059d8ecca863b1a814b59e4249bb6ed145b985a3b7252bd45365e6e2ac437f",
-        "Size": "208476"
-      }
-    },
-    "amd64": {
-      "libclang-cpp23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "amd64",
-        "Filename": "pool/main/l/llvm-toolchain-23/libclang-cpp23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_amd64.deb",
-        "SHA256": "97153f8bee42de6bf342cff34b09b59021809199d0d2deddbd4e80dc4d56561a",
-        "Size": "14889644"
-      },
-      "liblldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "amd64",
-        "Filename": "pool/main/l/llvm-toolchain-23/liblldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_amd64.deb",
-        "SHA256": "69f6f674e66cf259a36d85e209985f4321ed3f0b6f7501aa2ec3b5a6fbf22b12",
-        "Size": "5283336"
-      },
-      "libllvm23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "amd64",
-        "Filename": "pool/main/l/llvm-toolchain-23/libllvm23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_amd64.deb",
-        "SHA256": "332ba668de23216ff9f1e4625b03b2d0e6a3f13b603e2df3abfc3f795b5ede05",
-        "Size": "33758372"
-      },
-      "lldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "amd64",
-        "Filename": "pool/main/l/llvm-toolchain-23/lldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_amd64.deb",
-        "SHA256": "9c5ea3b403dbb69c63fb8569dca6d5da4a676635017165f52ace22a03b12f68e",
-        "Size": "1779592"
-      },
-      "python3-lldb-23": {
-        "Version": "1:23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96",
-        "Architecture": "amd64",
-        "Filename": "pool/main/l/llvm-toolchain-23/python3-lldb-23_23.1.6~++20261108033755+c47d7823685a-1~exp1~20261108153854.96_amd64.deb",
-        "SHA256": "eb93ce86248a82102433d1009d88d3192124025da706341f85dab71c66051076",
-        "Size": "208476"
+        "Filename": "pool/main/l/llvm-toolchain-23/python3-lldb-23_23.1.6~++20261115084006+551bf48cf74f-1~exp1~20261115204016.97_arm64.deb",
+        "SHA256": "cd160b58cd7c915e5d8df7f1703f373d4d017aea8cbc301b05eeff9ffd3de56f",
+        "Size": "208468"
       }
     }
   },
-  "download_validation": "Docker pins the package version; APT verifies its signed repository index and package hashes. Listed digests record this observed index snapshot.",
-  "execution_evidence": "Package availability is not execution acceptance; retain actual image IDs and functional reports."
+  "download_validation": "Pinned filenames, sizes and SHA256 verified on cache restore and again inside Docker before installing exact package files; cache survives rolling-index replacement.",
+  "execution_evidence": "Package availability is not execution acceptance; retain actual image IDs and functional reports.",
+  "index_snapshot_encoding": "gzip bytes"
 }

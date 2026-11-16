@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the pinned Linux environment, then verify NEX without external network."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import platform
@@ -12,6 +13,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from nex_docker_mount import mount
+from debugger_packages import prepare as prepare_debugger_packages
 
 
 def prepare_image(command, log_path):
@@ -94,6 +96,11 @@ def main():
     if args.live and args.tier=='core':parser.error('--live requires --tier full')
     output.mkdir(parents=True,exist_ok=True);image=args.image or 'nex-linux-toolchain:'+args.arch
     if not args.skip_image_build:
+        lock=source/'tools/linux/debugger-packages.json'
+        packages=prepare_debugger_packages(json.loads(lock.read_text()),source/'build/linux-debugger-packages',args.arch)
+        packages['lock_sha256']=hashlib.sha256(lock.read_bytes()).hexdigest()
+        (output/'debugger-packages.json').write_text(json.dumps(packages,indent=2)+'\n')
+        print('Verified pinned LLDB packages: '+str(sum(row['cached']for row in packages['packages']))+' cached, '+str(sum(not row['cached']for row in packages['packages']))+' fetched',flush=True)
         prepare_image(['docker','build','--platform','linux/'+args.arch,'--progress','plain','-f',str(source/'tools/linux/Dockerfile'),'-t',image,str(source)],output/'image.log')
         if args.live:
             base_image=image

@@ -70,6 +70,34 @@ adds the deep-value retirement probe to core. Its
 at `1632eb1f` with 15 groups. Toolchain 0.255 adds atomic/weak ownership and the
 hidden-module fixture as the 16th core group; matching CI is a separate run.
 
+The [first 0.255 run](evidence/ci-debugger-cache-0.255.0-2026-11-16.json)
+passed macOS. Linux stopped before NEX configuration because the locked LLDB
+23.1.6 package revision disappeared from the rolling APT index and pool. The
+replacement remains 23.1.6, at upstream `551bf48cf74f`; `Process.cpp` has the
+same hash as the previously recorded event-guard source. The lock records exact
+amd64/arm64 filenames, sizes, digests and index snapshots.
+
+Core/full CI now share a lock-derived cache of the five public LLDB packages.
+`tools/linux/check.py` prepares it before image construction. Every restored or
+downloaded file is checked against the lock, then checked again inside Docker
+before APT receives only the five explicit filenames. A read-only build mount
+keeps package archives out of image layers. This avoids requiring a still-live
+APT index entry for every later build of the same snapshot. Cache misses still
+need upstream bytes; cache retention is not an immutable public mirror.
+
+Five offline preparation cases pass. The actual amd64 packages installed in a
+disposable, network-disabled Linux container and LLDB reported 23.1.6. Docker's
+build check passed without warnings. Those checks qualify preparation; they do
+not repeat or replace NEX runtime or full debugger/SDK acceptance. The original
+failed run and all results remain in the linked receipt.
+
+For a direct image build, first prepare the same input cache:
+
+```sh
+python3 -B tools/linux/debugger_packages.py --arch amd64 --cache build/linux-debugger-packages
+docker build --platform linux/amd64 -f tools/linux/Dockerfile -t nex-linux-toolchain:amd64 .
+```
+
 macOS selects native Homebrew `llvm@22`, `lld@22`, OpenSSL3, SQLite, Z3,
 Python3.14, Ninja and CMake. The package inventory and configure/build logs
 are retained. Homebrew dependencies are rolling installations, not a pinned

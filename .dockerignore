@@ -2,6 +2,11 @@
 !tools/
 !tools/linux/
 !tools/linux/Dockerfile
+!tools/linux/debugger_packages.py
+!tools/linux/debugger-packages.json
+!build/
+!build/linux-debugger-packages/
+!build/linux-debugger-packages/**
 !tools/linux/Debugger.Dockerfile
 !tools/linux/lldb23-indexed-pages.patch
 !tools/linux/lldb23-za-registers.patch
