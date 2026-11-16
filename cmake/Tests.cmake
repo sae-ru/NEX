@@ -393,6 +393,16 @@ target_compile_definitions(nex_task_reference_probe PRIVATE NEX_STRUCTURED_WORKE
 target_link_libraries(nex_task_reference_probe PRIVATE nex_frontend Threads::Threads)
 target_compile_options(nex_task_reference_probe PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME task_reference_native COMMAND nex_task_reference_probe)
+add_executable(nex_reference_tasks_probe tests/reference_tasks.cpp runtime/runtime.cpp)
+target_include_directories(nex_reference_tasks_probe PRIVATE runtime)
+target_compile_definitions(nex_reference_tasks_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
+target_link_libraries(nex_reference_tasks_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_reference_tasks_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME reference_tasks_development COMMAND nex_reference_tasks_probe)
+set_tests_properties(reference_tasks_development PROPERTIES TIMEOUT 120)
+add_test(NAME reference_tasks_boundaries COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_tasks_boundaries.py $<TARGET_FILE:nex>)
+set_tests_properties(reference_tasks_boundaries PROPERTIES TIMEOUT 600)
 add_executable(nex_task_reference_limits_probe tests/task_reference_limits.cpp runtime/runtime.cpp)
 target_include_directories(nex_task_reference_limits_probe PRIVATE runtime)
 target_compile_definitions(nex_task_reference_limits_probe PRIVATE NEX_STRUCTURED_WORKERS NEX_ASYNC_TASKS)
@@ -1025,7 +1035,7 @@ add_test(NAME task_external_typescript COMMAND ${Python3_EXECUTABLE} ${CMAKE_CUR
 set_tests_properties(task_external_typescript PROPERTIES TIMEOUT 180)
 target_link_libraries(nex_frontend PUBLIC Threads::Threads)
 
-foreach(NEX_TASK_KERNEL_TARGET IN ITEMS nex_task_migration_probe nex_task_application_runtime_probe nex_task_http_request_probe nex_task_limits_runtime_probe nex_task_reference_probe nex_task_reference_limits_probe nex_task_scheduler_probe nex_task_reference_external_probe)
+foreach(NEX_TASK_KERNEL_TARGET IN ITEMS nex_task_migration_probe nex_task_application_runtime_probe nex_task_http_request_probe nex_task_limits_runtime_probe nex_task_reference_probe nex_reference_tasks_probe nex_task_reference_limits_probe nex_task_scheduler_probe nex_task_reference_external_probe)
   target_sources(${NEX_TASK_KERNEL_TARGET} PRIVATE runtime/nex_task_external.cpp)
 endforeach()
 add_executable(nex_task_external_probe tests/task_external.cpp runtime/runtime.cpp runtime/nex_files.cpp runtime/nex_task_external.cpp)
@@ -1663,7 +1673,8 @@ endif()
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
   nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe
-  nex_value_owner_probe nex_value_owner_module nex_scoped_host_example nex_ieee_numeric_probe)
+  nex_value_owner_probe nex_value_owner_module nex_scoped_host_example nex_ieee_numeric_probe
+  nex_reference_tasks_probe)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

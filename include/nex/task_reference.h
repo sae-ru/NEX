@@ -2,6 +2,7 @@
 #include "nex/task_ast.h"
 #include "nex/task_reference_external.h"
 #include "nex_task_limits.h"
+#include "nex_cells.h"
 #include <functional>
 
 namespace nexrt {class FileReadGrant;class FileWriteGrant;}
@@ -28,6 +29,19 @@ TaskReferenceResult evaluateTaskReference(const Program &,const std::string &ent
     // Without it,020 owns an evaluation scope and captures current authority.
     const nexrt::FileReadGrant *fileGrant=nullptr,
     const nexrt::FileWriteGrant *writeGrant=nullptr);
+// Private source030 integration: one thread-affine heap across AST task frames,
+// waits, channels and typed errors. Ordinary CLI/native/TypeScript task gates
+// remain unchanged. Entry results must be unit/immutable wire values; no live
+// cell escapes the owned heap. The heap closes before task-resource teardown.
+struct ManagedTaskReferenceResult {
+  TaskReferenceResult task;
+  nexrt::CellHeapStats beforeClose,afterClose;
+};
+ManagedTaskReferenceResult evaluateManagedTaskReferencePrototype(const Program &,
+    const std::string &entry="main",uint64_t limit=1000000,
+    nexrt::CellHeapLimits cells={},const nexrt::TaskExecutionLimits *taskLimits=nullptr,
+    TaskReferenceObserver observer={},TaskReferenceExternalHost *externalHost=nullptr,
+    const nexrt::FileReadGrant *fileGrant=nullptr,const nexrt::FileWriteGrant *writeGrant=nullptr);
 // Internal semantic comparison for a checked source-exception task program.
 // This uses the serial coordinator and TaskIR machine, with no native workers.
 TaskReferenceResult evaluateTaskIRReference(const Program &,

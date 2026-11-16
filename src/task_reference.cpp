@@ -234,9 +234,10 @@ struct Continuation {
   std::unique_ptr<TaskAstMachine> ast;
   std::unique_ptr<TaskMachine> ir;
   Continuation(bool taskIR,const Program &p,const std::string &entry,const std::vector<RV> &args,
-      uint64_t limit,RV closure,unsigned outerDepth,size_t maximumState,TaskControlPoll poll){
+      uint64_t limit,RV closure,unsigned outerDepth,size_t maximumState,TaskControlPoll poll,nexrt::CellHeap *cells=nullptr){
+    if(taskIR&&cells)throw Error("E_CELL_TARGET","managed task prototype requires its independent AST machine");
     if(taskIR)ir=std::make_unique<TaskMachine>(p,entry,args,limit,std::move(closure),outerDepth,maximumState,std::move(poll));
-    else ast=std::make_unique<TaskAstMachine>(p,entry,args,limit,std::move(closure),outerDepth,maximumState,std::move(poll));
+    else ast=std::make_unique<TaskAstMachine>(p,entry,args,limit,std::move(closure),outerDepth,maximumState,std::move(poll),cells);
   }
   TaskTransition advance(){return ir?ir->advance():ast->advance();}
   void restrictBudget(uint64_t n){if(ir)ir->restrictBudget(n);else ast->restrictBudget(n);}
@@ -315,6 +316,8 @@ struct Reference {
   Span rootSpan;
   TaskReferenceObserver observer;
   bool taskIR=false;
+  nexrt::CellHeap *cells;
+  nexrt::CellHeapStats *cellsBeforeClose;
   TaskReferenceExternalHost *externalHost;
   std::unique_ptr<nexrt::ResourceRegion> resourceRoot;
   std::shared_ptr<nexrt::ResourceExecutor> foreignCleanup;
@@ -333,9 +336,9 @@ struct Reference {
     nexrt::TaskExecutionLimits result;result.steps=legacy;return result;
   }
   Reference(const Program &p,uint64_t legacy,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *requested,
-      TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant,const nexrt::FileWriteGrant *writes,bool taskIR=false)
+      TaskReferenceExternalHost *host,const nexrt::FileReadGrant *grant,const nexrt::FileWriteGrant *writes,bool taskIR=false,nexrt::CellHeap *cells=nullptr,nexrt::CellHeapStats *cellsBeforeClose=nullptr)
     :program(p),limits(selectedLimits(legacy,requested)),limit(limits.steps),
-     deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),taskIR(taskIR),externalHost(host){
+     deadline(Clock::now()+std::chrono::milliseconds(limits.timeoutMs)),observer(std::move(observer)),taskIR(taskIR),cells(cells),cellsBeforeClose(cellsBeforeClose),externalHost(host){
     if(supportsTaskFileReads(program)||supportsSourceExceptionTasks(program))if(auto inherited=nexrt::currentRequestDeadline())deadline=std::min(deadline,*inherited);
     controlPoll=[this](Span span){checkControl(span);};
     if(supportsTaskForeignCalls(program))foreignScope=nexrt::captureForeignScope(true);
@@ -355,8 +358,8 @@ struct Reference {
   ~Reference(){
     if(resourceRoot){
       if(external)external->drain();
-      jobs.clear();pipes.clear();retireRootResources();
-    }
+      jobs.clear();pipes.clear();if(cells)cells->close();retireRootResources();
+    }else if(cells){jobs.clear();pipes.clear();cells->close();}
   }
   const nexrt::ResourceRegion &resourceContext(const Job &job)const{
     if(!resourceRoot)throw Error("E_RESOURCE_SCOPE","reference resource regions are not enabled");
@@ -442,7 +445,13 @@ struct Reference {
       if(!seen.insert(v.object.get()).second)continue;
       if(seen.size()>262144||v.object->values.size()>262144-members)throw Error("E_LIMIT","reference snapshot graph exceeds262144 members");
       auto kind=v.object->kind;
-      if(kind==RD::Cell)throw Error("E_TASK_VALUE","managed cells do not support reference task transfer yet");
+      if(kind==RD::Cell){
+        if(!cells)throw Error("E_TASK_VALUE","managed cells do not support reference task transfer yet");
+        // Validate heap identity/thread before traversing the current payload.
+        // Admission shares identity and captures resource authority at this
+        // transfer point; later writes do not silently grant new authority.
+        (void)cells->read(v);
+      }
       if(kind==RD::External){
         if(!supportsTaskForeignCalls(program))throw Error("E_TASK_VALUE","reference task cannot transport external resource authority");
         const auto &owner=nexrt::externalResource(v.object);
@@ -636,7 +645,7 @@ struct Reference {
     snapshot(r.arguments.at(1),s,parent,&j);
     j.current=s;
     Activation a;a.region=s;a.parent=parent;a.depth=outer;a.returnTicket=r.ticket;a.scopeSpan=r.span;
-    a.machine=std::make_unique<Continuation>(taskIR,program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll);
+    a.machine=std::make_unique<Continuation>(taskIR,program,fn.name,std::vector<RV>{value(RD::TaskScope,s)},limit-used,r.arguments[1],unsigned(outer),262144-pending,controlPoll,cells);
     j.stack.push_back(std::move(a));j.request={};enqueue(i);
   }
   void spawn(size_t i,const TaskTransition &r){
@@ -644,7 +653,7 @@ struct Reference {
     auto closure=r.arguments.at(1);const auto &fn=callback(closure,0);snapshot(closure,s,parent.current,&parent);
     if(jobs.size()>=maximumTasks||parent.depth>=256)throw Error("E_LIMIT","reference task slot/nesting limit exceeded",r.span);
     auto job=std::make_unique<Job>();job->member=job->current=s;job->parent=i;job->depth=parent.depth+1;
-    Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<Continuation>(taskIR,program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll);job->stack.push_back(std::move(a));
+    Activation a;a.scopeSpan=fn.span;a.machine=std::make_unique<Continuation>(taskIR,program,fn.name,std::vector<RV>{},limit-used,closure,0,262144,controlPoll,cells);job->stack.push_back(std::move(a));
     if(resourceRoot)job->resources.emplace(regions[s].resources->taskChild());
     auto id=jobs.size();jobs.push_back(std::move(job));regions[s].members.push_back(id);enqueue(id);answer(i,value(RD::Task,id));
   }
@@ -973,7 +982,7 @@ struct Reference {
         (function.effects.contains("task")||function.foreign);
       if(supportsTaskFileReads(program)&&function.effects.contains("fs")&&!function.effects.contains("task"))
         throw Error("E_EFFECT","reference task calls require an explicitly resumable task/fs helper",function.span);
-      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
+      for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(cells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(reads&&effect=="fs")&&!(foreign&&effect=="ffi"))
         throw Error("E_TASK_UNIMPLEMENTED","reference task execution has no bridge for effect "+effect,function.span);
       std::function<void(E)> expression=[&](E e){if(!e)return;
         if(e->kind==Expr::Call&&taskFileBuiltin(e->text)){
@@ -990,7 +999,7 @@ struct Reference {
     validateEntry(entry);
     rootSpan=program.function(entry).span;
     for(const auto &v:arguments)snapshot(v,none,none);
-    auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<Continuation>(taskIR,program,entry,arguments,limit-used,RV{},0,262144,controlPoll);root->stack.push_back(std::move(a));
+    auto root=std::make_unique<Job>();Activation a;a.scopeSpan=rootSpan;a.machine=std::make_unique<Continuation>(taskIR,program,entry,arguments,limit-used,RV{},0,262144,controlPoll,cells);root->stack.push_back(std::move(a));
     if(resourceRoot)root->resources.emplace(resourceRoot->taskChild());
     jobs.push_back(std::move(root));enqueue(0);
     while(jobs[0]->state!=Done){
@@ -1020,6 +1029,9 @@ struct Reference {
         throw Error("E_TASK_DEADLOCK","reference tasks are parked with no possible progress");
       }
     }
+    // No live cell may leave this owned entry. Release its registry before
+    // root resource retirement waits for physical cleanup, including cycles.
+    if(cells){if(cellsBeforeClose)*cellsBeforeClose=cells->stats();cells->close();}
     retireRootResources();
     try{checkControl();}catch(const Error &){finishControl();}
     if(jobs[0]->failure){auto error=*jobs[0]->failure;error.output=output;throw error;}
@@ -1031,7 +1043,7 @@ struct Reference {
   }
 };
 }
-static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
+static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant,nexrt::CellHeap *cells=nullptr,nexrt::CellHeapStats *beforeClose=nullptr){
   try{
     std::unique_ptr<nexrt::RequestScope> request;
     std::unique_ptr<nexrt::FileScope> files;
@@ -1052,7 +1064,7 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
         writeGrant=&capturedWrite;
       }
     }
-    Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,taskIR);
+    Reference scheduler(p,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,taskIR,cells,beforeClose);
     try{return scheduler.run(entry,arguments);}catch(SourceException &e){e.output=scheduler.output;throw;}catch(Error &e){e.output=scheduler.output;annotateReferenceError(p,e);throw;}
   }catch(const nexrt::DataError &error){throw Error(error.code,error.message,p.function(entry).span);}
   catch(const nexrt::Trap &error){throw Error(error.code,std::string(nexrt::trapMessage(error)),p.function(entry).span);}
@@ -1060,6 +1072,22 @@ static TaskReferenceResult evaluateTaskReferenceImpl(bool taskIR,const Program &
 }
 TaskReferenceResult evaluateTaskReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
   return evaluateTaskReferenceImpl(false,p,entry,arguments,limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant);
+}
+ManagedTaskReferenceResult evaluateManagedTaskReferencePrototype(const Program &p,const std::string &entry,uint64_t limit,nexrt::CellHeapLimits bounds,const nexrt::TaskExecutionLimits *taskLimits,TaskReferenceObserver observer,TaskReferenceExternalHost *externalHost,const nexrt::FileReadGrant *fileGrant,const nexrt::FileWriteGrant *writeGrant){
+  if(p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","managed task reference prototype requires source0.30");
+  for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","managed task reference requires a checked program",function.span);
+  const auto &function=p.function(entry);
+  if(!function.params.empty())throw Error("E_ENTRY","managed task reference entry must take no arguments",function.span);
+  if(function.result!=Type::Unit&&!satisfiesConstraint(p,function.result,"wire"))throw Error("E_CELL_ENTRY","managed task entry result must be unit or an immutable wire value",function.span);
+  nexrt::CellHeap cells(bounds);ManagedTaskReferenceResult result;
+  try{
+    result.task=evaluateTaskReferenceImpl(false,p,entry,{},limit,std::move(observer),taskLimits,externalHost,fileGrant,writeGrant,&cells,&result.beforeClose);
+    result.afterClose=cells.stats();return result;
+  }catch(SourceException &error){
+    // Typed packets remain live inside the coordinator. Copy uncaught host
+    // diagnostics before the owned context disappears; no cell packet escapes.
+    Error flat("E_SOURCE_EXCEPTION",error.code+": "+error.message,error.span);flat.output=error.output;throw flat;
+  }
 }
 TaskReferenceResult evaluateTaskIRReference(const Program &p,const std::string &entry,const std::vector<RV> &arguments,uint64_t limit,TaskReferenceObserver observer,const nexrt::TaskExecutionLimits *taskLimits){
   if(!supportsSourceExceptionTasks(p))throw Error("E_LANGUAGE_VERSION","TaskIR source-error comparison requires checked source-exception tasks");

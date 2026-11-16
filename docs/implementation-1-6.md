@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.267.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.268.0"
 owner: repository
 ---
 
@@ -54,6 +54,14 @@ It preserves signed zero and special values while ordinary NEX f64 stays finite.
 The fixed31,748-observation JDK/mathematical corpus qualifies its stated runtime
 scope. Source types, all backend/wire/debugger/ABI bindings, explicit versioned
 migration and complete SDK/platform qualification remain open.
+
+Toolchain0.268 starts the first practical block with a private
+[reference-task context](reference-tasks.md). Checked030 stateful callbacks,
+suspended frames, future/channel/error transfers and genuine file owners share
+one cooperative heap. The21-scenario source-build probe covers cleanup/control
+and ownership, including unexpected host failures. It is the17th core group.
+Ordinary reference/native/TypeScript execution of cells with tasks remains
+`E_CELL_CONCURRENCY`; native/TypeScript/app/UI integration is the next work.
 
 Toolchain0.266 adds an explicit [Java long domain](java-long.md), including
 wrapping64 arithmetic, bits/shifts, narrowing/sign extension and typed division

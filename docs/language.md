@@ -1,5 +1,10 @@
 # NEX language specification 0.28
 
+Toolchain0.268 accepts source0.30 task callbacks declaring `state` when their
+caller declares it. Normal reference/task execution remains `E_CELL_CONCURRENCY`;
+the [private C++ reference-task entry](reference-tasks.md) provides an independent
+development oracle. This adds no syntax, public source version or archive format.
+
 Toolchain0.267's internal [IEEE numeric kernel](ieee-numeric.md) adds no source
 type, operator, literal or grammar production. Source f64 remains the finite,
 zero-normalized domain specified below. Discover `ieee_numeric_kernel` for its

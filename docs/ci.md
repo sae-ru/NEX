@@ -60,6 +60,10 @@ CTest step was skipped; the cancelled Linux helper has no complete accepted
 CTest result here. The API responses do not establish the cancellation cause.
 Local repair evidence remains separate; this run is not recorded as green and
 was not automatically rerun.
+The subsequent [0.267 run](evidence/core-ci-0.267.0-2026-11-16.json) passed
+Linux and macOS at `906b3943`, with the16-group core. Toolchain0.268 adds the
+private reference-task source/control/resource probe as the17th core group;
+its hosted result belongs to its own later commit.
 
 ## Dependencies and provenance
 

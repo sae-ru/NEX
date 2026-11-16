@@ -29,6 +29,7 @@ class Interpreter {
   const Program &p; uint64_t limit; Evaluation result;
   // Declared before source roots so it closes after frames/packets are released.
   std::unique_ptr<nexrt::CellHeap> cellHeap;
+  nexrt::CellHeap *borrowedCells=nullptr;
   struct Scope {std::map<std::string,V> values;std::map<std::string,std::function<V()>> lazy;};
   std::vector<std::vector<Scope>> frames;
   std::vector<SourceException> caughtExceptions;
@@ -98,11 +99,11 @@ class Interpreter {
     if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return watch?watch->index(base,index.scalar):nexrt::get(base.object,index.scalar);}
     if(e->kind==Expr::Call) {
       std::vector<V> args;for(auto a:e->args)args.push_back(expression(a));
-      if(cellHeap){
-        if(e->text=="cell_new")return cellHeap->create(std::move(args[0]));
-        if(e->text=="cell_read")return cellHeap->read(args[0]);
-        if(e->text=="cell_write"){cellHeap->write(args[0],std::move(args[1]));return V();}
-        if(e->text=="cell_collect"){cellHeap->collect();return V();}
+      if(auto *cells=cellHeap?cellHeap.get():borrowedCells){
+        if(e->text=="cell_new")return cells->create(std::move(args[0]));
+        if(e->text=="cell_read")return cells->read(args[0]);
+        if(e->text=="cell_write"){cells->write(args[0],std::move(args[1]));return V();}
+        if(e->text=="cell_collect"){cells->collect();return V();}
       }
       if(auto variant=p.variant(e->text)){auto d=nexrt::Data::make(nexrt::Data::Enum);d->text=e->text;d->ordinal=variant->ordinal;d->values=std::move(args);for(const auto &field:variant->fields)d->names.push_back(field.name);return V(d);}
       if(p.hasStructure(e->text)){
@@ -341,7 +342,7 @@ class Interpreter {
     return value;
   }
 public:
-  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr,bool managedExecution=false):files(supportsManagedReferences(p)&&nexrt::inFileScope()?nullptr:std::make_unique<nexrt::FileScope>()),controlPoll(control),p(p),limit(limit),cellHeap(!atoms&&(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype||managedExecution)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr){if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
+  Interpreter(const Program &p,uint64_t limit,bool atoms=false,const TaskControlPoll *control=nullptr,const nexrt::CellHeapLimits *cellLimits=nullptr,bool managedExecution=false,nexrt::CellHeap *borrowed=nullptr):files(supportsManagedReferences(p)&&nexrt::inFileScope()?nullptr:std::make_unique<nexrt::FileScope>()),controlPoll(control),p(p),limit(limit),cellHeap(!atoms&&(p.sourceLanguage==SourceLanguage::ManagedReferencesPrototype||managedExecution)?std::make_unique<nexrt::CellHeap>(cellLimits?*cellLimits:nexrt::CellHeapLimits{}):nullptr),borrowedCells(borrowed){if(borrowedCells&&p.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","borrowed task cells require source0.30");if(!atoms&&p.sourceLanguage!=SourceLanguage::SourceExceptions025Prototype&&p.sourceLanguage!=SourceLanguage::ManagedReferencesPrototype&&(!p.taskPrototype||isPublicTaskLanguage(p)))for(const auto &f:p.functions)for(const auto &o:operationTree(p,f))if(o.ast)sites[o.ast]=o.site;}
   TaskAtomResult atom(E expression,const std::map<std::string,V> &values,unsigned depth){
     atomRoot=expression;outerDepth=depth;frames.emplace_back(1);frames.back().back().values=values;
     try{auto value=this->expression(expression);return {std::move(value),result.steps,result.output};}
@@ -385,11 +386,11 @@ ManagedReferenceEvaluation evaluateManagedReferencesPrototype(const Program &p,c
   for(const auto &function:p.functions)if(!function.checked&&!function.traitSignature)throw Error("E_CELL_STATE","private reference evaluation requires a fully checked program",function.span);
   return Interpreter(p,limit,false,nullptr,&limits).runManaged(entry);
 }
-TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth,const TaskControlPoll *controlPoll){
+TaskAtomResult evaluateTaskAtom(const Program &p,E atom,const std::map<std::string,nexrt::Value> &values,uint64_t limit,unsigned depth,const TaskControlPoll *controlPoll,nexrt::CellHeap *borrowedCells){
   if(!p.taskPrototype)throw Error("E_TASK_STATE","continuation atom execution requires private checked source");
   if(atom&&atom->kind==Expr::Call&&taskFileBuiltin(atom->text))
     throw Error("E_TASK_UNIMPLEMENTED","file operations cannot enter synchronous task atom evaluation",atom->span);
-  return Interpreter(p,limit,true,controlPoll).atom(std::move(atom),values,depth);
+  return Interpreter(p,limit,true,controlPoll,nullptr,false,borrowedCells).atom(std::move(atom),values,depth);
 }
 Evaluation evaluate(const Program &p,const std::string &entry,uint64_t stepLimit,const nexrt::TaskExecutionLimits *taskLimits){
   rejectUnloweredTasks(p,"reference execution");

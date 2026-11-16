@@ -23,7 +23,7 @@ class Tiers(unittest.TestCase):
         result=tool.inspect(POLICY,full);expected=set(result['tiers']['core']['selected_groups'])
         self.assertEqual({test['name']for test in selected['tests']},expected)
         self.assertFalse(result['tiers']['core']['fixture_groups_added']);self.assertGreaterEqual(len(expected),8)
-        self.assertLessEqual(len(expected),16);self.assertEqual(result['unlabelled_groups'],[])
+        self.assertLessEqual(len(expected),17);self.assertEqual(result['unlabelled_groups'],[])
 
     def test_unclassified_unlabelled_disabled_and_browser_core_commands_reject(self):
         value={'schema':'nex.ctest-tiers/1','labels':{x:x for x in tool.LABELS},'tests':{'quick':['core'],'long':['extended','browser']}}

@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.267.0"
+applies_to: "language 0.28; language 0.29; language 0.30; toolchain 0.268.0"
 owner: repository
 ---
 
@@ -148,6 +148,12 @@ This closes project selection, not the Java/Python object models or a new
 portable SDK release.
 
 ## Python-specific preparation
+
+Toolchain0.268 adds a private [AST reference-task context](reference-tasks.md)
+for shared cell identity through captures, waits, channels and source errors.
+It keeps the existing file/foreign region rules and owned-context teardown.
+This prepares logical semantics; ordinary backends, parallel transfer and the
+Java/Python object/concurrency models remain separate requirements.
 
 Toolchain0.267 adds the internal [IEEE numeric kernel](ieee-numeric.md).
 Its explicit binary32/binary64 operations, comparisons and Java casts are a

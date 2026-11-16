@@ -11,6 +11,7 @@ struct TaskAstMachine::Impl {
   size_t pending=0,maximumActions;
   unsigned outerDepth;
   TaskControlPoll controlPoll;
+  nexrt::CellHeap *borrowedCells;
   bool waiting=false,done=false,failed=false;
   Span activeSpan;
   Type response;
@@ -83,6 +84,7 @@ struct TaskAstMachine::Impl {
     case Type::Function:return actual==nexrt::Data::Closure;
     case Type::Bytes:return actual==nexrt::Data::Bytes;
     case Type::File:return actual==nexrt::Data::File;
+    case Type::Cell:return borrowedCells&&actual==nexrt::Data::Cell;
     case Type::TaskScope:return actual==nexrt::Data::TaskScope;
     case Type::Task:return actual==nexrt::Data::Task;
     case Type::Channel:return actual==nexrt::Data::Channel;
@@ -99,7 +101,7 @@ struct TaskAstMachine::Impl {
     const bool files=supportsTaskFileReads(program)&&function.realm=="server"&&
       function.effects.contains("task")&&function.effects.contains("fs");
     const bool foreign=supportsTaskForeignCalls(program)&&function.realm=="server"&&function.effects.contains("task")&&function.effects.contains("ffi");
-    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
+    for(const auto &effect:function.effects)if(effect!="task"&&effect!="io"&&!(borrowedCells&&effect=="state")&&!(supportsSourceExceptionTasks(program)&&effect=="throw")&&!(files&&effect=="fs")&&!(foreign&&effect=="ffi"))
       throw Error("E_TASK_UNIMPLEMENTED","AST continuation has no host resource bridge",function.span);
     auto unsupported=[&](const Type &type){return !supportsTaskFileStreams(program)&&(supportsTaskForeignCalls(program)?containsFile(program,type):containsNonTaskResource(program,type));};
     if(function.foreign||unsupported(Type::function({},function.result))||
@@ -294,7 +296,7 @@ struct TaskAstMachine::Impl {
             child->kind=Expr::Name;child->text=name;child->type=e->args[i]->type;
             atom->args.push_back(child);inputs.emplace(std::move(name),std::move(args[i]));
           }
-          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,outerDepth+unsigned(frames.size()-1),&controlPoll);
+          auto result=evaluateTaskAtom(program,atom,inputs,limit-used,outerDepth+unsigned(frames.size()-1),&controlPoll,borrowedCells);
           charge(e->span,result.steps);output+=result.output;frame.values.push_back(std::move(result.value));break;
         }
         case Action::Bind:{auto value=pop();frame.scopes.back()[s->name]=std::move(value);break;}
@@ -365,7 +367,8 @@ struct TaskAstMachine::Impl {
     }catch(...){failed=true;frames.clear();pending=0;throw;}
   }
   Impl(const Program &program,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
-       const AV &closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll):program(program),limit(limit),maximumActions(maximumActions),outerDepth(outerDepth),controlPoll(std::move(controlPoll)){
+       const AV &closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll,nexrt::CellHeap *borrowedCells):program(program),limit(limit),maximumActions(maximumActions),outerDepth(outerDepth),controlPoll(std::move(controlPoll)),borrowedCells(borrowedCells){
+    if(borrowedCells&&program.sourceLanguage!=SourceLanguage::References030)throw Error("E_LANGUAGE_VERSION","borrowed AST task cells require source0.30");
     if(!program.taskPrototype)throw Error("E_TASK_STATE","AST continuation requires private checked source");
     for(const auto &function:program.functions)functions.emplace(function.name,&function);
     if(maximumActions>262144)throw Error("E_LIMIT","AST action allowance exceeds262144");
@@ -373,8 +376,8 @@ struct TaskAstMachine::Impl {
   }
 };
 TaskAstMachine::TaskAstMachine(const Program &p,const std::string &entry,const std::vector<AV> &args,uint64_t limit,
-    AV closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll)
-  :impl(std::make_unique<Impl>(p,entry,args,limit,closure,outerDepth,maximumActions,std::move(controlPoll))){}
+    AV closure,unsigned outerDepth,size_t maximumActions,TaskControlPoll controlPoll,nexrt::CellHeap *borrowedCells)
+  :impl(std::make_unique<Impl>(p,entry,args,limit,closure,outerDepth,maximumActions,std::move(controlPoll),borrowedCells)){}
 TaskAstMachine::~TaskAstMachine()=default;
 TaskTransition TaskAstMachine::advance(){return impl->advance();}
 void TaskAstMachine::restrictBudget(uint64_t remaining){impl->limit=impl->used+std::min(remaining,impl->limit-impl->used);}

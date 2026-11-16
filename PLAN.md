@@ -1,3 +1,26 @@
+# Reference state across structured tasks — development0.268.0
+
+One owned cell heap now spans the independent AST task coordinator, suspended
+frames, futures, channels and typed source errors through a private source-build
+C++ entry. Source0.30 checks stateful callbacks when their caller declares state.
+The coordinator remains cooperative on one owner thread. Resource transfers
+retain task-region authority; the heap closes before root resource retirement.
+Read the [reference-task contract](docs/reference-tasks.md).
+
+The [focused receipt](docs/evidence/reference-tasks-0.268.0-2026-11-16.json)
+records21 source-build scenarios,17 core plus6 affected groups, descriptor/pack
+agreement and four ordinary-backend checks from a relocated normal installation.
+The standalone development probe also runs away from the checkout with absent
+resources. These are23 distinct passing CTest groups, not full release acceptance.
+
+Ordinary cell/task execution still rejects with `E_CELL_CONCURRENCY` in reference,
+native and TypeScript paths. Native task-frame/context integration is next, then
+TypeScript and persistent application/UI state. TaskIR, parallel transfer,
+debugger/profile coverage and matching complete platform/portable SDK delivery
+remain open. Source formats, selected languages and public ABIs stay unchanged;
+public SDK0.246.1 stays immutable. The preceding [hosted0.267 core](docs/evidence/core-ci-0.267.0-2026-11-16.json)
+passed macOS/Linux at its own16-group source cohort.
+
 # Internal IEEE numeric kernel — development0.267.0
 
 Separate binary32/binary64 C++ value domains provide raw bits, NaNs/infinities,

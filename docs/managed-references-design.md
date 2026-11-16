@@ -1,10 +1,18 @@
 ---
 status: current
-applies_to: "toolchain 0.260.0; no public source-language extension"
+applies_to: "toolchain 0.268.0; source0.30; historical private-kernel introductions"
 owner: repository
 ---
 
 # Managed references: runtime foundation and remaining language work
+
+Current ordinary [source0.30](references030.md) enables cells/state in sequential
+reference, native and TypeScript paths. The compiler-private candidate below
+retains its historical identity and separate C++ APIs. Toolchain0.268 adds a
+private [reference-task adapter](reference-tasks.md); ordinary task/parallel
+reference execution remains gated. The versioned introduction paragraphs below
+describe their original development scopes; query the selected compiler for
+current flags. The heap ownership/collection contract remains the foundation.
 
 NEX needs shared mutable objects to express Java object graphs and Python's
 mutable containers faithfully. Ordinary NEX records, lists, bytes and closure
@@ -16,11 +24,11 @@ Toolchain 0.249 introduced a **compiler-private C++ heap kernel**. Toolchain
 through dedicated C++ entry points; 0.251 adds a
 [private native candidate](managed-reference-native-prototype.md).
 Discover `managed_references` in `nex describe --json`:
-`public_source_enabled`, `source_type_enabled` and `state_effect_enabled` are
-false for ordinary published source languages. Ordinary project checking,
-evaluation, MLIR and TypeScript paths do not enable the candidate. There is no public cell syntax, state effect,
-wire representation, C ABI or new source-language version. Converters remain
-deferred. This kernel alone does not establish Java/Python compatibility.
+The original0.249/0.250 flags were false for ordinary published languages.
+The later030 promotion has its own versioned grammar, history migration and
+normal project paths. It does not relabel the older private candidate or enable
+a cell wire representation/public C ABI. Converters remain deferred; the heap
+kernel alone does not establish Java/Python compatibility.
 
 Toolchain0.257's [private source modules](managed-reference-modules.md) share one
 execution context across imported files in a generated application. Public
@@ -62,8 +70,10 @@ Supported payload graphs contain ordinary i64/bool/finite-f64 values, strings,
 bytes, lists, records, results, enums, closures and cells of this heap. Closures
 can retain cells through their immutable capture vector. Genuine files and
 external owners are supported as leaf nodes without tracing native object memory.
-Task scopes, tasks and channels are rejected. Parallel and task snapshot boundaries also reject cells;
-this is not a shared-memory concurrency implementation.
+Task scopes, tasks and channels are rejected inside payloads. Ordinary parallel
+and task snapshot boundaries also reject cells; the private reference-task
+adapter supplies its explicit same-heap transfer protocol. This is not a
+shared-memory concurrency implementation.
 
 ## Collection and deep teardown
 

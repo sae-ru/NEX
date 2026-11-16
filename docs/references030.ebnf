@@ -1,4 +1,6 @@
 (* Explicit source-language0.30 development additions to grammar.ebnf/0.29.
+   Toolchain0.268 type-checks stateful task callbacks with caller state;
+   execution is private to the independent C++ AST reference-task entry.
    Selected by parseVersioned(...,References030) or loadVersionedBundle(...,"0.30").
    Ordinary nex.json project selection is enabled by toolchain0.265; new init
    projects select0.30. Retained028/029 versions preserve their own grammar.

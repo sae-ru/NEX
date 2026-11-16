@@ -626,7 +626,8 @@
     "managed_reference_owned_payloads": "docs/managed-reference-owned-payloads.md",
     "standard_java_long_source": "lib/java_long.nex",
     "java_long": "docs/java-long.md",
-    "ieee_numeric_kernel": "docs/ieee-numeric.md"
+    "ieee_numeric_kernel": "docs/ieee-numeric.md",
+    "reference_tasks": "docs/reference-tasks.md"
   },
   "document_access": "nex guide --kind format|text-construction|bytes-construction|source-contract|source-contract-migration|typed-web-delivery|exception-module-debug|exception-module-profile|exception-module-http|exception-instances|exception-frontiers|exception-modules|exception-prototype|http-stream|http-client|dns|tcp|source-resources|gpu|compute|task-provider-debug|task-provider-profile|task-shared-providers|task-providers|task-debug|task-lifetime|result|prompt|lsp|language|grammar|protocol|web|server|api|debug|build|profile|verify|task|expression|operation|graph|linux|match|function|files|bytes|resources|ffi|history|snapshot|compatibility|frontend|query|string-debug|trait|editor --json",
   "context_command": "nex context --symbol NAME",
@@ -5529,7 +5530,30 @@
       "ordinary_CLI": true,
       "new_project_default": true,
       "SDK_delivery_accepted": false,
-      "full_platform_acceptance": false
+      "full_platform_acceptance": false,
+      "reference_tasks": {
+        "introduced_toolchain": "0.268.0",
+        "selection": "evaluateManagedTaskReferencePrototype",
+        "guide": "docs/reference-tasks.md",
+        "test": "tests/reference_tasks.cpp",
+        "boundary_test": "tests/reference_tasks_boundaries.py",
+        "frontend_state_callbacks": true,
+        "caller_state_required": true,
+        "reference_interpreter": true,
+        "machine": "independent checked AST continuations",
+        "context": "one owned thread-affine heap across captures, waits, channels and typed errors",
+        "execution_workers": 1,
+        "root_result": "unit or ordinary immutable wire value",
+        "cleanup": "close before root resource retirement; also close on fatal/control/observer failure",
+        "resource_authority": "existing task-region transfer and revocation; retention does not renew authority",
+        "public_source_enabled": false,
+        "ordinary_CLI": false,
+        "native": false,
+        "typescript": false,
+        "TaskIR": false,
+        "parallel_transfer": false,
+        "stable_public_ABI": false
+      }
     }
   },
   "ieee_numeric_kernel": {

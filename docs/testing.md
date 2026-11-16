@@ -19,7 +19,7 @@ The [development presets](development-build.md) also provide
 The [CI receipt runner](ci.md) also saves and validates the actual registry,
 JUnit, exit code and logs for core/full selections.
 
-The selected 16 groups cover frontend checking, typed reference evaluation,
+The selected 17 groups cover frontend checking, typed reference evaluation,
 checked float/byte runtimes, discovery/language-pack contracts and offline tool
 accounting/collection/CTest metadata and compiled diagnostic explanations. They require Python3.10+, the configured
 compiler and its selected native dependencies. They require no Node/npm, browser
@@ -29,6 +29,11 @@ reference frontend/interpreter probe, including effect/ownership failures and
 preserved 0.28/0.29 revision identities. It runs without Node and is built by
 `nex_core_tests`, so hosted core CI executes the same new source semantics.
 Earlier 11/12-group receipts below retain their original scopes.
+Toolchain0.268 adds the no-Node `reference_tasks_development` group and its
+source-build probe to core. Its21 source/control/resource scenarios exercise
+the [private reference-task context](reference-tasks.md). The explicit core
+policy grows from16 to17 groups; fixture/label and no-browser constraints stay
+active. Native/TypeScript execution of reference-bearing tasks remains gated.
 The core build also compiles the shipped `examples/ffi/scoped_host.cpp` against
 the current runtime. This build guard catches example/header ownership drift
 before the full installed workflow; it adds no CTest group and does not execute

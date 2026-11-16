@@ -82,6 +82,9 @@ TypeScript/task generator and reference/native task execution. Merely loading
 the030 version does not create a new heap for each continuation atom or select
 the boxed representation for reference-free task programs.
 
+Source0.30 task callbacks can declare state when the caller declares it.
+The [private reference-task entry](reference-tasks.md) executes these checked
+programs with one owned cooperative heap; ordinary backends retain their gate.
 Execution closures combining references with task/parallel execution currently
 receive `E_CELL_CONCURRENCY`. No cross-thread transfer or shared mutable memory
 model is inferred. Sequential code-only native libraries share one enclosing

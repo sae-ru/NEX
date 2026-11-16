@@ -344,6 +344,8 @@
     "task_provider_profile_lifetime_native": ["extended", "platform"],
     "task_provider_profile_native": ["extended", "browser", "platform", "scale"],
     "task_reference_native": ["extended", "platform"],
+    "reference_tasks_development": ["core"],
+    "reference_tasks_boundaries": ["extended", "browser", "platform"],
     "task_scheduler_runtime": ["extended", "platform"],
     "task_shared_provider_boundary_native": ["extended", "platform"],
     "task_shared_provider_lifetime_native": ["extended", "platform"],

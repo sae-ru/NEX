@@ -1,3 +1,11 @@
+# Task runtime integration
+
+Current development uses task ABI7 and ordinary project languages0.28/0.29/0.30.
+Toolchain0.268 adds a private [reference-task cell context](reference-tasks.md),
+without enabling reference-bearing native/TypeScript tasks. Query the compiled
+capabilities for current support. The versioned sections below retain their
+historical introduction scopes; they are not a current completion checklist.
+
 # Current025 native task IO contract
 
 The025 candidate uses public task ABI6, including ordinary HTTP request hosting.

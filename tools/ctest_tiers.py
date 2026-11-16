@@ -36,7 +36,7 @@ def policy(raw):
             raise ValueError('invalid labels for '+str(name))
         if 'core'in labels and labels!=['core']:raise ValueError('core must not depend on browser/platform/SDK/scale tiers')
     core=[name for name,labels in tests.items()if 'core'in labels]
-    if not 1<=len(core)<=16:raise ValueError('keep the explicit core tier small (1..16 groups)')
+    if not 1<=len(core)<=17:raise ValueError('keep the explicit core tier small (1..17 groups)')
     if set(value.get('labels',{}))!=LABELS:raise ValueError('declare every supported label')
     return value
 

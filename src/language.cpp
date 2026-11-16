@@ -1031,6 +1031,10 @@ class Checker {
     // Source errors travel through the future/drain channel. Spawning a child
     // does not deliver them; wait/with_tasks checks the caller's throw context.
     auto hostEffects=type.effects;if(supportsSourceExceptionTasks(p))hostEffects.erase("throw");
+    // Source030 can type-check stateful callbacks before their execution
+    // adapter is promoted. Ordinary backends retain E_CELL_CONCURRENCY.
+    if(supportsManagedReferences(p)&&hostEffects.erase("state")&&!allowsEffect("state"))
+      throw Error("E_EFFECT","a stateful task callback requires its caller's declared state effect",callback->span);
     const bool fileCallback=supportsTaskFileReads(p)&&type.realm=="server"&&
       hostEffects==std::set<std::string>{"fs","task"};
     const bool foreignCallback=supportsTaskForeignCalls(p)&&type.realm=="server"&&hostEffects.contains("task")&&hostEffects.contains("ffi")&&
@@ -1041,7 +1045,7 @@ class Checker {
     }else if(fileCallback){
       if(f->realm!="server"||!f->effects.contains("fs")||!f->effects.contains("task"))
         throw Error("E_EFFECT","a task/fs callback requires a server caller declaring task and fs",callback->span);
-    }else for(const auto &effect:type.effects)if(effect!="task"&&!(supportsSourceExceptionTasks(p)&&effect=="throw"))
+    }else for(const auto &effect:type.effects)if(effect!="task"&&!(supportsManagedReferences(p)&&effect=="state")&&!(supportsSourceExceptionTasks(p)&&effect=="throw"))
       throw Error("E_EFFECT",supportsTaskFileReads(p)?
         "task callbacks must be pure, task-only, or server task/fs with caller authorization":
         "task callbacks may declare only the task effect",callback->span);
