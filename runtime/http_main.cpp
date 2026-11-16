@@ -242,7 +242,7 @@ int main(int argc,char **argv){
 #endif
         bool writable=request.method!="GET"&&request.method!="HEAD"&&request.method!="OPTIONS";
         nexrt::Database db(c.database,*user,writable,nexrt::Database::TransactionStart::OnFirstOperation);nexrt::StorageScope capability(db);
-        auto input=std::make_shared<nexrt::Data>(nexrt::Data::Record);input->text="std::http::Request";
+        auto input=nexrt::Data::make(nexrt::Data::Record);input->text="std::http::Request";
         input->names={"method","path","query","body","user","request_id"};
         auto query=request.target.find('?');
         for(const auto &text:{request.method,request.path,query==std::string::npos?std::string():request.target.substr(query+1),request.body,*user,id})input->values.emplace_back(nexrt::string(text));

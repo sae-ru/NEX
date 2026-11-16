@@ -84,7 +84,7 @@ inline const Data &checkedSourceErrorRecord(const Value &value){
   return data;
 }
 inline Value nativeSourceErrorRecord(const NativeSourceException &error){
-  auto record=std::make_shared<Data>(Data::Record);
+  auto record=Data::make(Data::Record);
   record->text=(error.payload?sourceErrorRecordV2:sourceErrorRecordV1)+error.source;
   record->ordinal=error.line;
   record->values={Value(string(error.code)),Value(string(error.message))};

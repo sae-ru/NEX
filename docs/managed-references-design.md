@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.253.0; no public source-language extension"
+applies_to: "toolchain 0.254.0; no public source-language extension"
 owner: repository
 ---
 
@@ -80,9 +80,11 @@ interpreter and native candidate each own their sequential execution context;
 The private [TypeScript source candidate](managed-reference-typescript-prototype.md)
 now implements boxed values, explicit roots and logical collection. Public
 entry/module/host integration and migration remain pending.
-Deep immutable snapshots released after their heap has closed still use the
-ordinary value cleanup path. The deep-registry teardown checks do not qualify
-that separate external-root lifetime; public integration must address it.
+Toolchain 0.254 adds [iterative ordinary value retirement](value-retirement.md),
+including sequential snapshots released after heap close. Its exact-base factory
+keeps genuine host/owned destructors intact without enlarging `Data`. Universal
+concurrent retirement bounds and the public host-entry lifetime contract remain
+separate integration requirements.
 
 ## Limits, costs and failures
 

@@ -63,6 +63,9 @@ the helper prints the last 16 KiB of its complete saved build log to the console
 Two offline subprocess checks verify successful logging and failure-code/log
 preservation. The [corrected run](evidence/core-ci-0.251.0-corrected-2026-11-16.json)
 passed macOS/Linux at `279c15db`, including the unchanged 14-group core scope.
+The [0.253 run](evidence/core-ci-0.253.0-2026-11-16.json) subsequently passed
+both hosted jobs at `52a2f169`, retaining that 14-group scope. Toolchain 0.254
+adds the deep-value retirement probe to core; matching CI is a separate run.
 
 macOS selects native Homebrew `llvm@22`, `lld@22`, OpenSSL3, SQLite, Z3,
 Python3.14, Ninja and CMake. The package inventory and configure/build logs

@@ -1090,7 +1090,7 @@ TaskGroup::Ticket TaskGroup::spawnIn(size_t scope,Factory factory,Value input,Va
   return hostOperation({},[&]{
     impl->require();if(bool(factory)==bool(contextFactory))throw Trap("E_TASK_SCOPE","task factory is missing or ambiguous",0);auto targetScope=scope==none?Scope{}:Scope(impl,scope);
     bool resourceValues;{std::lock_guard lock(impl->mutex);resourceValues=impl->sourceResourceValues;}
-    if(resourceValues){auto combined=std::make_shared<Data>(Data::List);combined->values={input,captures};taskValue(*this,Value(std::move(combined)),targetScope);}
+    if(resourceValues){auto combined=Data::make(Data::List);combined->values={input,captures};taskValue(*this,Value(std::move(combined)),targetScope);}
     else{taskValue(*this,input,targetScope);taskValue(*this,captures,targetScope);}
     auto job=std::make_unique<Impl::Job>();job->group=this;job->cancellation=std::make_shared<task_detail::Cancellation>();
     bool resourcesEnabled;

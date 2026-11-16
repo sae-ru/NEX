@@ -1,3 +1,22 @@
+# Iterative sequential value retirement — development0.254.0
+
+Ordinary runtime factories now identify exact base allocations, allowing deep
+immutable values and closed-heap snapshots to retire through an allocation-free
+loop. Host/owned subtype destructors retain their order; `Value` and `Data`
+remain 32/104 bytes on the recorded macOS ARM64 cohort. Language 0.28/0.29,
+task ABI7 and graph formats are unchanged.
+
+The old 0.253 runtime fails eight of nine 256 KiB worker-stack scenarios and
+passes all nine with 32 MiB. The corrected runtime passes all nine at 256 KiB.
+Fifteen core groups, 18 affected groups, seven ownership/worker groups and the
+final two probe checks pass. The shared corpus includes deep normal/source-error/
+fatal exits: 72 native O0/O2 comparisons each run both a matching image and an
+independent executable; 38 strict executed TypeScript cases agree with reference.
+[Exact scope and controls](docs/evidence/value-retirement-0.254.0-2026-11-16.json).
+Universal concurrent-release stack bounds, public references/migration and
+matching full source/platform/SDK qualification remain open. SDK0.246.1 stays
+version-specific; the original PLAN remains active.
+
 # Source standard helpers — development0.167.0
 
 Text7/list9/math10 source functions now include split/replace/trim/find, ordered

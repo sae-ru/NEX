@@ -174,7 +174,7 @@ nex_ffi_status makeString(nex_ffi_call c,const uint8_t *p,uint64_t n,nex_ffi_ref
 nex_ffi_status makeBytes(nex_ffi_call c,const uint8_t *p,uint64_t n,nex_ffi_ref *o) noexcept {return guarded(c,[&](State &s){output(o);s.charge(n);*o=s.add(Value(bytes(ByteBuffer::copy(input(p,n)))));});}
 nex_ffi_status makeList(nex_ffi_call c,const nex_ffi_ref *p,uint64_t n,nex_ffi_ref *o) noexcept {return guarded(c,[&](State &s){
   output(o);require(!n||p,NEX_FFI_ARGUMENT);require(n<=s.limits.references,NEX_FFI_LIMIT);s.charge(n*sizeof(Value));
-  unsigned depth=1;auto value=std::make_shared<Data>(Data::List);value->values.reserve(size_t(n));
+  unsigned depth=1;auto value=Data::make(Data::List);value->values.reserve(size_t(n));
   for(uint64_t i=0;i<n;++i){auto &e=s.entry(p[i]);depth=std::max(depth,e.depth+1);value->values.push_back(e.value);}
   *o=s.add(Value(std::move(value)),depth);
 });}

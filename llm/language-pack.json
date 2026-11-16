@@ -5299,6 +5299,15 @@
     "task_transfer": false,
     "teardown": "detach mutable edges and release registry in reverse immutable-adoption order; no collector graph workspace allocated at close",
     "test": "tests/cells.cpp",
-    "typescript_source_enabled": false
+    "typescript_source_enabled": false,
+    "external_snapshot_teardown": {
+      "introduced_toolchain": "0.254.0",
+      "guide": "docs/value-retirement.md",
+      "test": "tests/value_retirement.py",
+      "sequential_ordinary_graphs": "iterative unique-owner descent; shared live values remain unchanged",
+      "cleanup_workspace_allocation": false,
+      "host_subclass_destructors": "run before their own child vector is retired",
+      "all_concurrent_release_schedules_stack_bound_proven": false
+    }
   }
 }

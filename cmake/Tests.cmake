@@ -557,6 +557,13 @@ set_tests_properties(resources_runtime_native PROPERTIES TIMEOUT 60)
 add_executable(nex_bytes_runtime_probe tests/bytes_runtime.cpp)
 add_executable(nex_cells_probe tests/cells.cpp)
 target_link_libraries(nex_cells_probe PRIVATE nex_frontend)
+add_executable(nex_value_retirement_probe tests/value_retirement.cpp)
+target_link_libraries(nex_value_retirement_probe PRIVATE nex_frontend Threads::Threads)
+target_compile_options(nex_value_retirement_probe PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME value_retirement_runtime COMMAND ${Python3_EXECUTABLE} -B
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/value_retirement.py $<TARGET_FILE:nex_value_retirement_probe>
+  --output ${CMAKE_CURRENT_BINARY_DIR}/value-retirement-${PROJECT_VERSION}-acceptance)
+set_tests_properties(value_retirement_runtime PROPERTIES TIMEOUT 120)
 add_test(NAME managed_cells_runtime COMMAND nex_cells_probe)
 set_tests_properties(managed_cells_runtime PROPERTIES TIMEOUT 120)
 add_executable(nex_managed_references_probe tests/managed_references.cpp src/typescript.cpp)
@@ -1566,7 +1573,7 @@ endif()
 # This target does not execute tests or prepare browser/package dependencies.
 add_custom_target(nex_core_tests DEPENDS nex nex_frontend_diagnostics_probe
   nex_float_runtime_probe nex_bytes_runtime_probe nex_task_frontend_probe nex_typed_source_probe
-  nex_managed_references_probe nex_managed_reference_native_probe)
+  nex_managed_references_probe nex_managed_reference_native_probe nex_value_retirement_probe)
 add_test(NAME test_tiers COMMAND ${Python3_EXECUTABLE} -B
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tiers.py --build ${CMAKE_CURRENT_BINARY_DIR}
   --ctest ${CMAKE_CTEST_COMMAND} --cmake ${CMAKE_COMMAND})

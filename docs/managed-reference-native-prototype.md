@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "toolchain 0.253.0; private 0.30-refs-prototype candidate"
+applies_to: "toolchain 0.254.0; private 0.30-refs-prototype candidate"
 owner: repository
 ---
 
@@ -48,7 +48,9 @@ A request context has no
 reference attachment contract yet; direct use there is rejected. Heap/thread
 checks and task/parallel rejection remain in force. Public module/DLL context
 ownership, host-returned references, synchronization, debugger/profile views and
-deep external snapshot lifetimes still need their own integration.
+universal concurrent snapshot-retirement bounds still need their own integration.
+The 0.254 [ordinary sequential cleanup](value-retirement.md) covers deep
+snapshots released after heap close.
 
 The base runtime stores a payload pointer and a no-throw destructor, so its
 ordinary native runtime has no link dependency on the private cell implementation.

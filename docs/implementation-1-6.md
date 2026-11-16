@@ -1,6 +1,6 @@
 ---
 status: current
-applies_to: "language 0.28; toolchain 0.253.0"
+applies_to: "language 0.28; toolchain 0.254.0"
 owner: repository
 ---
 
@@ -26,6 +26,11 @@ retain their exact source/platform scopes and do not qualify later changes.
 The old implementation worktree has no commits absent from current main.
 
 ## Executable backlog
+
+The 0.254 runtime block adds [iterative sequential value retirement](value-retirement.md)
+for ordinary deep values and snapshots released after heap close. Public reference
+migration and a universal concurrent-release stack bound remain open; the private
+candidate's thread/task restrictions are unchanged.
 
 | Item | Implemented baseline | Remaining result | Acceptance |
 |---|---|---|---|

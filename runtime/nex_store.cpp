@@ -104,7 +104,7 @@ Value Database::keys(const std::string &prefix){
   if(!validKey(prefix,true))return failure("VALIDATION","invalid storage prefix");
   try{
     impl->ensureStarted();Statement q(impl->connection.db,"SELECT key FROM nex_kv WHERE owner=? AND substr(key,1,length(?))=? ORDER BY key COLLATE BINARY LIMIT 10001");q.text(1,impl->principal);q.text(2,prefix);q.text(3,prefix);
-    auto data=std::make_shared<Data>(Data::List);while(q.row()){if(data->values.size()==10000)return failure("LIMIT","storage key result exceeds item limit");data->values.emplace_back(string(q.value(0)));}return success(Value(data));
+    auto data=Data::make(Data::List);while(q.row()){if(data->values.size()==10000)return failure("LIMIT","storage key result exceeds item limit");data->values.emplace_back(string(q.value(0)));}return success(Value(data));
   }catch(const DataError &e){impl->failed=true;return failure(e.code,e.message);}
 }
 StorageScope::StorageScope(Database &database):previous(currentDatabase){currentDatabase=&database;}

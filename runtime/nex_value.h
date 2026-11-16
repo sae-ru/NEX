@@ -8,6 +8,7 @@
 #include <limits>
 #include <charconv>
 #include <atomic>
+#include <cstring>
 #include "nex_profile.h"
 #include "nex_float.h"
 #include "nex_bytes.h"
@@ -36,7 +37,11 @@ struct Data {
   enum Kind { String, List, Record, Success, Failure, Enum, Closure, Bytes, File, TaskScope, Task, Channel, External, Cell } kind;
   enum class TaskOwnerFamily { None, Native, Reference };
 private:
-  const TaskOwnerFamily taskFamily=TaskOwnerFamily::None;
+  // Only allocations made by make() are known to be the exact base Data type.
+  // Host subclasses keep their genuine destructor before child retirement.
+  enum class AllocationFamily { Host, Ordinary, Owned, NativeTask, ReferenceTask };
+  const AllocationFamily allocationFamily=AllocationFamily::Host;
+  struct OrdinaryAllocation {};
 public:
   int64_t ordinal=0;
   std::string text;
@@ -51,7 +56,7 @@ private:
   friend struct TaskData;
   friend struct ReferenceTaskData;
   friend struct CellData;
-  Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),taskFamily(family){profileAllocate(this,allocatedSize,1);++liveObjects;}
+  Data(Kind kind,size_t allocatedSize,TaskOwnerFamily family=TaskOwnerFamily::None):kind(kind),allocationFamily(family==TaskOwnerFamily::Native?AllocationFamily::NativeTask:family==TaskOwnerFamily::Reference?AllocationFamily::ReferenceTask:AllocationFamily::Owned){profileAllocate(this,allocatedSize,1);++liveObjects;}
   static Kind copyKind(const Data &other){
     if(other.kind==External||other.kind==Bytes||other.kind==File||other.kind==TaskScope||other.kind==Task||other.kind==Channel||other.kind==Cell)throw DataError("E_RUNTIME","owned payloads cannot be copied as base Data");
     return other.kind;
@@ -60,12 +65,39 @@ private:
     if(kind==External||kind==Bytes||kind==File||kind==TaskScope||kind==Task||kind==Channel||kind==Cell)throw DataError("E_RUNTIME","value requires an owned payload");
     return kind;
   }
+  Data(const Data &other,AllocationFamily family):kind(copyKind(other)),allocationFamily(family),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  void retireValues()noexcept {
+    // Traverse uniquely owned, exact-base immutable nodes before dropping their
+    // last owner. Each suspended edge lends its otherwise unused Object scalar
+    // to the parent link. Live/shared nodes and host/owned subtypes are untouched.
+    // No recursion workspace, allocator call, object field or layout is added.
+    static_assert(sizeof(Value*)<=sizeof(Value::scalar));
+    Value sentinel;Value *owner=&sentinel;Data *current=this;
+    for(;;){
+      if(current->values.empty()){
+        if(owner==&sentinel)return;
+        Value *previous=nullptr;std::memcpy(&previous,&owner->scalar,sizeof(previous));
+        auto *parent=previous==&sentinel?this:previous->object.get();
+        parent->values.pop_back(); // The child's now-empty destructor has fixed depth.
+        owner=previous;current=parent;
+      }else{
+        auto &edge=current->values.back();auto *child=edge.object.get();
+        if(child&&child->allocationFamily==AllocationFamily::Ordinary&&edge.object.use_count()==1&&!child->values.empty()){
+          std::memcpy(&edge.scalar,&owner,sizeof(owner));owner=&edge;current=child;
+        }else current->values.pop_back();
+      }
+    }
+  }
 public:
-  TaskOwnerFamily taskOwnerFamily()const{return taskFamily;}
-  explicit Data(Kind kind):Data(ordinaryKind(kind),sizeof(Data)){}
-  Data(const Data &other):kind(copyKind(other)),ordinal(other.ordinal),text(other.text),values(other.values),names(other.names),code(other.code),taskCode(other.taskCode){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  TaskOwnerFamily taskOwnerFamily()const{return allocationFamily==AllocationFamily::NativeTask?TaskOwnerFamily::Native:allocationFamily==AllocationFamily::ReferenceTask?TaskOwnerFamily::Reference:TaskOwnerFamily::None;}
+  explicit Data(Kind kind):kind(ordinaryKind(kind)){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data(const Data &other):Data(other,AllocationFamily::Host){}
+  Data(Kind kind,OrdinaryAllocation):kind(ordinaryKind(kind)),allocationFamily(AllocationFamily::Ordinary){profileAllocate(this,sizeof(Data),1);++liveObjects;}
+  Data(const Data &other,OrdinaryAllocation):Data(other,AllocationFamily::Ordinary){}
+  static std::shared_ptr<Data> make(Kind kind){return std::make_shared<Data>(kind,OrdinaryAllocation{});}
+  static std::shared_ptr<Data> make(const Data &other){return std::make_shared<Data>(other,OrdinaryAllocation{});}
   Data &operator=(const Data&)=delete;
-  ~Data(){profileFree(this);--liveObjects;}
+  ~Data(){profileFree(this);--liveObjects;retireValues();}
 };
 // The shared-pointer control block retains ByteData's real destructor. Existing
 // string/list/record layouts do not pay for an unused binary payload or vtable.
@@ -134,11 +166,11 @@ inline std::vector<size_t> unicodeOffsets(const std::string &text,bool collect=t
   if(collect)offsets.push_back(text.size());return offsets;
 }
 inline std::shared_ptr<Data> string(std::string text) {
-  unicodeOffsets(text,false);auto d=std::make_shared<Data>(Data::String);d->text=std::move(text);return d;
+  unicodeOffsets(text,false);auto d=Data::make(Data::String);d->text=std::move(text);return d;
 }
-inline Value success(Value value){auto d=std::make_shared<Data>(Data::Success);d->values.push_back(std::move(value));return Value(d);}
+inline Value success(Value value){auto d=Data::make(Data::Success);d->values.push_back(std::move(value));return Value(d);}
 inline Value failure(std::string code,std::string message){
-  auto d=std::make_shared<Data>(Data::Failure);d->text=std::move(code);d->values.emplace_back(string(std::move(message)));return Value(d);
+  auto d=Data::make(Data::Failure);d->text=std::move(code);d->values.emplace_back(string(std::move(message)));return Value(d);
 }
 inline Value bytesFromIntegers(const Value &list){
   if(list.tag!=Value::Object||!list.object||list.object->kind!=Data::List)

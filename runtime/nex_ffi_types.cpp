@@ -163,7 +163,7 @@ uint64_t TypedContext::nominalBytes(size_t type,uint64_t variant)const{
 Value TypedContext::nominal(size_t type,uint64_t variant,std::span<const Value> values,const std::function<void()> &poll){
   if(!impl->bound)valueError("unbound foreign signature");const auto &t=impl->shape(type);const auto &fields=impl->fields(type,variant);
   if(values.size()!=fields.size())valueError("foreign nominal constructor arity differs");Impl::Validation validation{*impl,poll,false};for(size_t i=0;i<values.size();++i)validation.check(values[i],fields[i].type);
-  auto data=std::make_shared<Data>(t.kind==NEX_FFI_RECORD?Data::Record:Data::Enum);data->text=t.name;data->ordinal=int64_t(variant);
+  auto data=Data::make(t.kind==NEX_FFI_RECORD?Data::Record:Data::Enum);data->text=t.name;data->ordinal=int64_t(variant);
   if(t.kind==NEX_FFI_ENUM)data->text+="::"+t.variants[size_t(variant)].name;
   for(size_t i=0;i<values.size();++i){data->names.push_back(fields[i].name);data->values.push_back(values[i]);}return Value(std::move(data));
 }
@@ -256,7 +256,7 @@ struct TaskCodec::Impl {
     if(shape.kind!=NEX_FFI_LIST&&shape.kind!=NEX_FFI_RECORD&&shape.kind!=NEX_FFI_ENUM&&shape.kind!=NEX_FFI_RESULT)return value;
     // Failure contains only the checked error code/string, never a success owner.
     if(shape.kind==NEX_FFI_RESULT&&value.object->kind==Data::Failure)return value;
-    auto data=std::make_shared<Data>(*value.object);data->values.clear();
+    auto data=Data::make(*value.object);data->values.clear();
     for(size_t i=0;i<value.object->values.size();++i){
       size_t child=(shape.kind==NEX_FFI_LIST||shape.kind==NEX_FFI_RESULT)?shape.item:
         shape.kind==NEX_FFI_RECORD?shape.fields.at(i).type:shape.variants.at(size_t(value.object->ordinal)).fields.at(i).type;
@@ -275,7 +275,7 @@ struct TaskCodec::Impl {
 TaskCodec::TaskCodec(const ForeignSignature &signature,bool owned):impl(std::make_shared<Impl>(signature,owned)){}
 std::vector<uint8_t> TaskCodec::encodeArguments(std::span<const Value> values,const std::function<void()> &poll)const{
   TypedContext typed(impl->signature);typed.arguments(values,poll);
-  auto envelope=std::make_shared<Data>(Data::Record);envelope->text="$task_foreign_arguments";
+  auto envelope=Data::make(Data::Record);envelope->text="$task_foreign_arguments";
   for(size_t i=0;i<values.size();++i){envelope->names.push_back("a"+std::to_string(i));envelope->values.push_back(values[i]);}
   if(poll)poll();auto bytes=Impl::octets(Value(envelope));if(poll)poll();return bytes;
 }
@@ -294,7 +294,7 @@ Value TaskCodec::decodeResult(std::span<const uint8_t> bytes,const std::function
 }
 TaskForeignSnapshot TaskCodec::snapshotArguments(std::span<const Value> values,const ResourceRegionAuthority &region,const std::function<void()> &poll)const{
   TypedContext typed(impl->signature);typed.arguments(values,poll);TaskForeignSnapshot result;
-  auto envelope=std::make_shared<Data>(Data::Record);envelope->text="$task_foreign_arguments";
+  auto envelope=Data::make(Data::Record);envelope->text="$task_foreign_arguments";
   std::set<size_t> used;size_t nodes=0;
   for(size_t i=0;i<values.size();++i){envelope->names.push_back("a"+std::to_string(i));envelope->values.push_back(impl->convert(values[i],impl->signature.layout->parameters[i],result,false,region,poll,used,nodes));}
   result.bytes=Impl::octets(Value(envelope));impl->checkSnapshot(result);if(poll)poll();return result;

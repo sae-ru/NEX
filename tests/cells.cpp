@@ -13,17 +13,19 @@ template<class F>static void rejects(const char *code,F action){
   throw std::runtime_error("expected a managed heap error");
 }
 static Value record(std::vector<Value> fields){
-  auto data=std::make_shared<Data>(Data::Record);data->text="Node";data->values=std::move(fields);
+  auto data=Data::make(Data::Record);data->text="Node";data->values=std::move(fields);
   for(size_t i=0;i<data->values.size();++i)data->names.push_back("field"+std::to_string(i));
   return Value(data);
 }
-static Value list(std::vector<Value> values){auto data=std::make_shared<Data>(Data::List);data->values=std::move(values);return Value(data);}
+static Value list(std::vector<Value> values){auto data=Data::make(Data::List);data->values=std::move(values);return Value(data);}
 
 int main(){try{
   const auto baseline=liveObjects.load();unsigned cases=0;
   {
-    for(auto kind:{Data::Cell,Data::File,Data::External,Data::Bytes,Data::TaskScope,Data::Task,Data::Channel})
+    for(auto kind:{Data::Cell,Data::File,Data::External,Data::Bytes,Data::TaskScope,Data::Task,Data::Channel}){
       rejects("E_RUNTIME",[&]{(void)std::make_shared<Data>(kind);});
+      rejects("E_RUNTIME",[&]{(void)Data::make(kind);});
+    }
     require(liveObjects.load()==baseline,"rejected constructor changed live-value accounting");++cases;
   }
   {
@@ -58,7 +60,7 @@ int main(){try{
     alias=Value();auto result=heap.collect();require(result.reclaimedCells==2&&a.expired()&&b.expired(),"record/list cycle leaked");++cases;
   }
   {
-    CellHeap heap;auto cell=heap.create(Value(int64_t(0)));auto closure=std::make_shared<Data>(Data::Closure);
+    CellHeap heap;auto cell=heap.create(Value(int64_t(0)));auto closure=Data::make(Data::Closure);
     closure->values={cell};heap.write(cell,Value(closure));std::weak_ptr<Data> weak=closure;
     cell=Value();heap.collect();require(!weak.expired(),"external callable root lost");
     closure.reset();heap.collect();require(weak.expired()&&heap.stats().cells==0,"callable capture cycle leaked");++cases;
@@ -106,6 +108,7 @@ int main(){try{
     CellHeap heap;auto cell=heap.create(Value(int64_t(1)));
     rejects("E_PARALLEL_VALUE",[&]{validateParallelValue(cell,[]{});});
     auto nested=record({list({cell})});rejects("E_PARALLEL_VALUE",[&]{validateParallelValue(nested,[]{});});
+    rejects("E_RUNTIME",[&]{(void)Data::make(*cell.object);});
     rejects("E_RUNTIME",[&]{(void)std::make_shared<Data>(*cell.object);});
     require(heap.read(cell).scalar==1,"rejected transfer/clone changed cell");++cases;
   }

@@ -76,7 +76,7 @@ Value decode(const JSON &value,const JSON &type,const JSON &records,const JSON &
   }
   if(type.contains("list")){
     if(!value.is_array()||value.size()>maxItems)reject("expected JSON array within item limit");
-    auto data=std::make_shared<Data>(Data::List);for(const auto &item:value)data->values.push_back(decode(item,type.at("list"),records,enums,depth+1,nodes));return Value(data);
+    auto data=Data::make(Data::List);for(const auto &item:value)data->values.push_back(decode(item,type.at("list"),records,enums,depth+1,nodes));return Value(data);
   }
   if(type.contains("result")){
     if(!value.is_object()||value.size()!=1)reject("expected tagged JSON result");
@@ -90,7 +90,7 @@ Value decode(const JSON &value,const JSON &type,const JSON &records,const JSON &
     if(!value.is_object()||value.size()!=2||!value.contains("case")||!value.contains("fields")||!value.at("case").is_string()||!value.at("fields").is_object())reject("expected tagged JSON enum");
     const auto &tag=value.at("case");for(size_t ordinal=0;ordinal<cases.size();++ordinal){const auto &variant=cases[ordinal];if(tag!=variant.at("name"))continue;const auto &fields=variant.at("fields"),&payload=value.at("fields");
       if(payload.size()!=fields.size()||payload.size()>maxItems)reject("JSON enum has missing or unknown fields");
-      auto data=std::make_shared<Data>(Data::Enum);data->text=name+"::"+tag.get<std::string>();data->ordinal=ordinal;
+      auto data=Data::make(Data::Enum);data->text=name+"::"+tag.get<std::string>();data->ordinal=ordinal;
       for(const auto &field:fields){auto key=field.at("name").get<std::string>();if(!payload.contains(key))reject("JSON enum has missing or unknown fields");data->names.push_back(key);data->values.push_back(decode(payload.at(key),field.at("type"),records,enums,depth+2,nodes));}return Value(data);
     }
     reject("unknown JSON enum variant");
@@ -98,7 +98,7 @@ Value decode(const JSON &value,const JSON &type,const JSON &records,const JSON &
   if(type.contains("record")){
     auto name=type.at("record").get<std::string>();const auto &fields=records.at(name);
     if(!value.is_object()||value.size()!=fields.size())reject("JSON record has missing or unknown fields");
-    auto data=std::make_shared<Data>(Data::Record);data->text=name;
+    auto data=Data::make(Data::Record);data->text=name;
     for(const auto &field:fields){auto key=field.at("name").get<std::string>();if(!value.contains(key))reject("JSON record has missing or unknown fields");data->names.push_back(key);data->values.push_back(decode(value.at(key),field.at("type"),records,enums,depth+1,nodes));}
     return Value(data);
   }

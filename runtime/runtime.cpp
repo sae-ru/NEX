@@ -277,7 +277,7 @@ struct ParallelAccess {
       owner->checkExecution(location,true,false);
       parallelValueCheck(items);parallelValueCheck(environment);
       const Value inputs=items,captures=environment;
-      auto output=std::make_shared<Data>(Data::List);output->values.resize(inputs.object->values.size());
+      auto output=Data::make(Data::List);output->values.resize(inputs.object->values.size());
       std::vector<std::exception_ptr> failures(output->values.size());
       auto invoke=[&](size_t index){
         auto value=hostOperation(location,[&]{
@@ -414,7 +414,7 @@ Value parallelCompiledValues(const Value &items,const Value &environment,int64_t
       parallelKindCheck(items.object->values[i],input);
       if((i%64)==0)pollHostOperation(location);
     }
-    auto context=std::make_shared<Data>(Data::Closure);
+    auto context=Data::make(Data::Closure);
     context->code=reinterpret_cast<void*>(bridge);
     context->values={environment,Value(int64_t(output))};
     return parallelValues(items,Value(std::move(context)),workers,compiledParallelInvoke,location);
@@ -519,7 +519,7 @@ Handle *updated(Handle *list,int64_t index,nexrt::Value value,int64_t mode) {
     const auto &buffer=nexrt::byteBuffer(list->data);
     return owned(nexrt::bytes(mode?buffer.set(index,value.scalar):buffer.append(value.scalar)));
   }
-  auto data=std::make_shared<nexrt::Data>(*list->data);
+  auto data=nexrt::Data::make(*list->data);
   if(mode){nexrt::bounds(index,data->values.size());data->values[index]=std::move(value);}
   else data->values.push_back(std::move(value));
   return owned(data);
@@ -619,7 +619,7 @@ static Handle *impl_nex_source_error_new(Handle *code,Handle *message,SourceLoca
   return nexrt::hostOperation(location,[&]{
     if(!code||!message||code->data->kind!=nexrt::Data::String||message->data->kind!=nexrt::Data::String)
       throw nexrt::DataError("E_RUNTIME","source error payload must contain strings");
-    auto data=std::make_shared<nexrt::Data>(nexrt::Data::Record);
+    auto data=nexrt::Data::make(nexrt::Data::Record);
     data->text=sourceErrorMarker+nexrt::sourceRecord(location.site);data->ordinal=location.line;
     data->values={nexrt::Value(code->data),nexrt::Value(message->data)};return owned(std::move(data));
   });
@@ -804,17 +804,17 @@ static Handle * impl_nex_string_new(const char *text,int64_t size,nexrt::SourceL
 Handle * nex_string_new(const char *text,int64_t size,int64_t line){return impl_nex_string_new(text, size, line);}
 Handle * nex_string_new_at(const char *text,int64_t size,int64_t line, const nexrt::NativeSite *nex_site){return impl_nex_string_new(text, size, nexrt::SourceLocation{line,nex_site});}
 static Handle * impl_nex_list_new(nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[]{return owned(std::make_shared<nexrt::Data>(nexrt::Data::List));});});
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[]{return owned(nexrt::Data::make(nexrt::Data::List));});});
 }
 Handle * nex_list_new(){return impl_nex_list_new(nexrt::SourceLocation{});}
 Handle * nex_list_new_at(const nexrt::NativeSite *nex_site){return impl_nex_list_new(nexrt::SourceLocation{0,nex_site});}
 static Handle * impl_nex_record_new(int64_t count, nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->values.resize(count);d->names.resize(count);return owned(d);});});
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{auto d=nexrt::Data::make(nexrt::Data::Record);d->values.resize(count);d->names.resize(count);return owned(d);});});
 }
 Handle * nex_record_new(int64_t count){return impl_nex_record_new(count, nexrt::SourceLocation{});}
 Handle * nex_record_new_at(int64_t count, const nexrt::NativeSite *nex_site){return impl_nex_record_new(count, nexrt::SourceLocation{0,nex_site});}
 static Handle * impl_nex_closure_new(void *code,int64_t count, nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{if(!code||count<0||count>1024)throw nexrt::DataError("E_FUNCTION","invalid closure environment");auto d=std::make_shared<nexrt::Data>(nexrt::Data::Closure);d->code=code;d->values.resize(count);d->names.resize(count);return owned(d);});});
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{if(!code||count<0||count>1024)throw nexrt::DataError("E_FUNCTION","invalid closure environment");auto d=nexrt::Data::make(nexrt::Data::Closure);d->code=code;d->values.resize(count);d->names.resize(count);return owned(d);});});
 }
 Handle * nex_closure_new(void *code,int64_t count){return impl_nex_closure_new(code, count, nexrt::SourceLocation{});}
 Handle * nex_closure_new_at(void *code,int64_t count, const nexrt::NativeSite *nex_site){return impl_nex_closure_new(code, count, nexrt::SourceLocation{0,nex_site});}
@@ -824,7 +824,7 @@ static void * impl_nex_closure_code(Handle *value, nexrt::SourceLocation locatio
 void * nex_closure_code(Handle *value){return impl_nex_closure_code(value, nexrt::SourceLocation{});}
 void * nex_closure_code_at(Handle *value, const nexrt::NativeSite *nex_site){return impl_nex_closure_code(value, nexrt::SourceLocation{0,nex_site});}
 static Handle * impl_nex_enum_new(int64_t count,int64_t ordinal, nexrt::SourceLocation location){
-  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{auto d=std::make_shared<nexrt::Data>(nexrt::Data::Enum);d->ordinal=ordinal;d->values.resize(count);d->names.resize(count);return owned(d);});});
+  return nexrt::hostOperation(location,[&]() -> Handle * {return guarded(location,[&]{auto d=nexrt::Data::make(nexrt::Data::Enum);d->ordinal=ordinal;d->values.resize(count);d->names.resize(count);return owned(d);});});
 }
 Handle * nex_enum_new(int64_t count,int64_t ordinal){return impl_nex_enum_new(count, ordinal, nexrt::SourceLocation{});}
 Handle * nex_enum_new_at(int64_t count,int64_t ordinal, const nexrt::NativeSite *nex_site){return impl_nex_enum_new(count, ordinal, nexrt::SourceLocation{0,nex_site});}
@@ -913,7 +913,7 @@ static Handle * impl_nex_heap_concat(Handle *a,Handle *b,nexrt::SourceLocation l
   return nexrt::hostOperation(line,[&]() -> Handle * {return guarded(line,[&]{
   if(a->data->kind==nexrt::Data::Bytes)return owned(nexrt::bytes(nexrt::byteBuffer(a->data).concat(nexrt::byteBuffer(b->data))));
   if(a->data->kind==nexrt::Data::String)return owned(nexrt::string(a->data->text+b->data->text));
-  auto d=std::make_shared<nexrt::Data>(*a->data);d->values.insert(d->values.end(),b->data->values.begin(),b->data->values.end());return owned(d);
+  auto d=nexrt::Data::make(*a->data);d->values.insert(d->values.end(),b->data->values.begin(),b->data->values.end());return owned(d);
 });});
 }
 Handle * nex_heap_concat(Handle *a,Handle *b,int64_t line){return impl_nex_heap_concat(a, b, line);}

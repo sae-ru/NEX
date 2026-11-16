@@ -39,7 +39,7 @@ static nexrt::Handle * impl_nex_foreign_invoke(const char *binding,int64_t size,
     auto result=nexrt::invokeScopedForeign(std::string(binding,size_t(size)),values.object->values,[line]{nexrt::pollHostOperation(line);});
     // The generated adapter extracts its checked scalar/heap result and releases
     // this internal box. Even unit results never become a source value.
-    auto box=std::make_shared<nexrt::Data>(nexrt::Data::List);box->values.push_back(std::move(result));return nexrt::Value(std::move(box));
+    auto box=nexrt::Data::make(nexrt::Data::List);box->values.push_back(std::move(result));return nexrt::Value(std::move(box));
   });
 });
 }

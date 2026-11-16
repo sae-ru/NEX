@@ -83,9 +83,9 @@ TaskBody executeTaskClosure(TaskGroup &group,Value,Value closure,const void *con
   return executeTaskFrame(group,NativeTaskFrame(closureCode(closure),{},closure,spawn.host),spawn.observer);
 }
 Value channelResult(TaskEvent event){
-  auto data=std::make_shared<Data>(event.present?Data::Success:Data::Failure);
+  auto data=Data::make(event.present?Data::Success:Data::Failure);
   if(event.present)data->values={std::move(event.value)};
-  else{data->text="E_CHANNEL_CLOSED";auto text=std::make_shared<Data>(Data::String);text->text="channel is closed";data->values={Value(std::move(text))};}
+  else{data->text="E_CHANNEL_CLOSED";auto text=Data::make(Data::String);text->text="channel is closed";data->values={Value(std::move(text))};}
   return Value(std::move(data));
 }
 }
@@ -383,7 +383,7 @@ void nex_task_frame_call_at(void *p,void *code,nexrt::Handle *closure,nexrt::Han
   });
 }
 nexrt::Handle *nex_task_closure_new_at(void *code,int64_t count,const nexrt::NativeSite *site){
-  return nexrt::hostValue({0,site},[&]{const auto &d=nexrt::checkedCode(code);if(count!=d.captureCount)throw nexrt::DataError("E_TASK_STATE","compiled task closure capture count differs");auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->taskCode=&d;data->values.resize(count);data->names.resize(count);return nexrt::Value(data);});
+  return nexrt::hostValue({0,site},[&]{const auto &d=nexrt::checkedCode(code);if(count!=d.captureCount)throw nexrt::DataError("E_TASK_STATE","compiled task closure capture count differs");auto data=nexrt::Data::make(nexrt::Data::Closure);data->taskCode=&d;data->values.resize(count);data->names.resize(count);return nexrt::Value(data);});
 }
 void nex_task_closure_bind_at(nexrt::Handle *closure,void *code,const nexrt::NativeSite *site){
   nexrt::hostOperation({0,site},[&]{const auto &d=nexrt::checkedCode(code);auto value=nexrt::readHandle(closure);if(value.tag!=nexrt::Value::Object||!value.object||value.object->kind!=nexrt::Data::Closure||!value.object->code||value.object->taskCode||value.object->values.size()!=size_t(d.captureCount))throw nexrt::DataError("E_TASK_STATE","invalid compiled task callable binding");value.object->taskCode=&d;});

@@ -82,7 +82,7 @@ class Interpreter {
     }throw Error("E_MATCH","no checked match arm accepted the value",e->span);
   }
   V expr(E e) {
-    if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
+    if(e->kind==Expr::FunctionRef||e->kind==Expr::Lambda){auto data=nexrt::Data::make(nexrt::Data::Closure);data->text=e->text;const auto &fn=p.function(e->text);if(fn.captures.size()!=e->args.size())throw Error("E_FUNCTION","closure captures differ from the checked target",e->span);for(size_t i=0;i<e->args.size();++i){data->values.push_back(expression(e->args[i]));data->names.push_back(fn.captures[i].name);}return V(std::move(data));}
     if(e->kind==Expr::Invoke){auto target=expression(e->args[0]);std::vector<V> args;for(size_t i=1;i<e->args.size();++i)args.push_back(expression(e->args[i]));if(watch)target=watch->callable(target);return call(p.function(target.object->text),args,&target);}
     if(e->kind==Expr::Propagate){auto value=expression(e->args[0]);
       if(!(watch?watch->isSuccess(value):nexrt::isSuccess(value)))throw Returned{value};
@@ -93,7 +93,7 @@ class Interpreter {
     if(e->kind==Expr::Floating)return V::floating(nexrt::floatValue(e->number));
     if(e->kind==Expr::String)return V(nexrt::string(e->text));
     if(e->kind==Expr::Name)return local(e->text,e->span);
-    if(e->kind==Expr::List){auto d=std::make_shared<nexrt::Data>(nexrt::Data::List);for(auto a:e->args)d->values.push_back(expression(a));return V(d);}
+    if(e->kind==Expr::List){auto d=nexrt::Data::make(nexrt::Data::List);for(auto a:e->args)d->values.push_back(expression(a));return V(d);}
     if(e->kind==Expr::Field){auto base=expression(e->args[0]);return watch?watch->field(base,e->number):nexrt::get(base.object,e->number);}
     if(e->kind==Expr::Index){auto base=expression(e->args[0]);auto index=expression(e->args[1]);return watch?watch->index(base,index.scalar):nexrt::get(base.object,index.scalar);}
     if(e->kind==Expr::Call) {
@@ -104,12 +104,12 @@ class Interpreter {
         if(e->text=="cell_write"){cellHeap->write(args[0],std::move(args[1]));return V();}
         if(e->text=="cell_collect"){cellHeap->collect();return V();}
       }
-      if(auto variant=p.variant(e->text)){auto d=std::make_shared<nexrt::Data>(nexrt::Data::Enum);d->text=e->text;d->ordinal=variant->ordinal;d->values=std::move(args);for(const auto &field:variant->fields)d->names.push_back(field.name);return V(d);}
+      if(auto variant=p.variant(e->text)){auto d=nexrt::Data::make(nexrt::Data::Enum);d->text=e->text;d->ordinal=variant->ordinal;d->values=std::move(args);for(const auto &field:variant->fields)d->names.push_back(field.name);return V(d);}
       if(p.hasStructure(e->text)){
-        auto d=std::make_shared<nexrt::Data>(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
+        auto d=nexrt::Data::make(nexrt::Data::Record);d->text=e->text;d->values=std::move(args);
         for(const auto &field:p.structure(e->text).fields)d->names.push_back(field.name);return V(d);
       }
-      if(e->text=="$list_start")return V(std::make_shared<nexrt::Data>(nexrt::Data::List));
+      if(e->text=="$list_start")return V(nexrt::Data::make(nexrt::Data::List));
       if(e->text=="$list_append"){
         auto target=full(args[0]);target.object->values.push_back(args[1]);return V();
       }
@@ -137,7 +137,7 @@ class Interpreter {
         if(workers<1||workers>nexrt::parallelMaximumWorkers)throw Error("E_RANGE","parallel worker count must be in 1..16",e->span);
         if(items.object->values.size()>nexrt::parallelMaximumItems)throw Error("E_LIMIT","parallel input exceeds 65536 items",e->span);
         auto poll=[&]{step(e->span);};nexrt::validateParallelValue(items,poll);nexrt::validateParallelValue(callback,poll);
-        auto output=std::make_shared<nexrt::Data>(nexrt::Data::List);output->values.resize(items.object->values.size());std::exception_ptr failure;
+        auto output=nexrt::Data::make(nexrt::Data::List);output->values.resize(items.object->values.size());std::exception_ptr failure;
         for(size_t i=0;i<items.object->values.size();++i)try{
           poll();auto value=call(p.function(callback.object->text),{items.object->values[i]},&callback);
           nexrt::validateParallelValue(value,poll);output->values[i]=std::move(value);
@@ -206,7 +206,7 @@ class Interpreter {
       if(e->text=="push"||e->text=="set"){
         auto base=full(args[0]);
         if(base.object->kind==nexrt::Data::Bytes){const auto &buffer=nexrt::byteBuffer(base.object);return V(nexrt::bytes(e->text=="push"?buffer.append(full(args[1]).scalar):buffer.set(full(args[1]).scalar,full(args[2]).scalar)));}
-        auto d=std::make_shared<nexrt::Data>(*base.object);
+        auto d=nexrt::Data::make(*base.object);
         if(e->text=="push")d->values.push_back(args[1]);
         else{nexrt::bounds(args[1].scalar,d->values.size());d->values[args[1].scalar]=args[2];}return V(d);
       }
@@ -232,7 +232,7 @@ class Interpreter {
       left=full(left);right=full(right);
       if(left.object->kind==nexrt::Data::String)return V(nexrt::string(left.object->text+right.object->text));
       if(left.object->kind==nexrt::Data::Bytes)return V(nexrt::bytes(nexrt::byteBuffer(left.object).concat(nexrt::byteBuffer(right.object))));
-      auto d=std::make_shared<nexrt::Data>(*left.object);d->values.insert(d->values.end(),right.object->values.begin(),right.object->values.end());return V(d);
+      auto d=nexrt::Data::make(*left.object);d->values.insert(d->values.end(),right.object->values.begin(),right.object->values.end());return V(d);
     }
     if(op=="+"){if(__builtin_add_overflow(a,b,&out))overflow();return V(out);}
     if(op=="-"){if(__builtin_sub_overflow(a,b,&out))overflow();return V(out);}

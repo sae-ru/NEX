@@ -114,6 +114,29 @@ fn main()->unit!{state,io,throw}{
 }
 '''},
     ]
+    # These graphs are never adopted by a cell registry. Their source handles
+    # must retire correctly through the ordinary runtime on every exit path.
+    deep_prefix=r'''
+struct Deep{next:list<Deep>;}
+'''
+    deep_body=r'''
+var value:Deep=Deep([]);var i:i64=0;
+while i<65536{value=Deep([value]);i=i+1;}
+'''
+    cases += [
+        {'name':'deep-ordinary-retirement','output':'65536\nretired\n','source':deep_prefix+r'''
+fn build()->unit!{io}{'''+deep_body+r'''print(i);}
+fn main()->unit!{io}{build();print("retired");}
+'''},
+        {'name':'deep-source-unwind','output':'42\n','source':deep_prefix+r'''
+fn build()->unit!{throw}{'''+deep_body+r'''throw(42);}
+fn main()->unit!{io,throw}{try{build();}catch(value:i64){print(value);}}
+'''},
+        {'name':'deep-fatal-unwind','error':'E_OVERFLOW','source':deep_prefix+r'''
+fn build()->unit{'''+deep_body+r'''let bad:i64=9223372036854775807+1;}
+fn main()->unit{build();}
+'''},
+    ]
     return cases
 
 

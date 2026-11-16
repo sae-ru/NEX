@@ -31,7 +31,7 @@ WatchValues::V WatchValues::proxy(std::string binding,Type type,Array path,std::
   auto captured=reads.find(key(r.binding,r.path,"value"));
   if(captured!=reads.end()&&captured->second->get("value"))return decode(r,read(r,"value"));
   auto kind=r.type==Type::Str?nexrt::Data::String:r.type.kind==Type::List?nexrt::Data::List:r.type.kind==Type::Record?nexrt::Data::Record:r.type.kind==Type::Function?nexrt::Data::Closure:nexrt::Data::Success;
-  auto data=r.type==Type::Bytes?nexrt::bytes({}):r.type==Type::File?nexrt::fileValue({}):std::make_shared<nexrt::Data>(kind);r.owner=data;refs.emplace(data.get(),std::move(r));return V(data);
+  auto data=r.type==Type::Bytes?nexrt::bytes({}):r.type==Type::File?nexrt::fileValue({}):nexrt::Data::make(kind);r.owner=data;refs.emplace(data.get(),std::move(r));return V(data);
 }
 WatchValues::V WatchValues::local(const std::string &name){
   if(auto input=values.get(name)){bindings.insert(name);paths.emplace(key(name,{},"value"),Object{{"binding",name},{"path",Array{}},{"kind","value"}});Ref r{nullptr,name,types.at(name),{},"",{}, {}};return decode(r,*input);}
@@ -116,7 +116,7 @@ int64_t WatchValues::enumTag(const V &base){auto r=reference(base);if(!r)return 
 WatchValues::V WatchValues::enumField(const V &base,int64_t tag,size_t index){auto r=reference(base);if(!r)return nexrt::get(base.object,index);if(enumTag(base)!=tag)throw Error("E_DEBUG_VALUE","enum payload path has another variant");const auto &variant=program.structure(r->type.name).variants.at(tag);const auto &field=variant.fields.at(index);return child(*r,variant.name+"::"+field.name,field.type);}
 WatchValues::V WatchValues::callable(const V &value){
   auto r=reference(value);if(!r)return value;auto cached=callableValues.find(value.object.get());if(cached!=callableValues.end())return cached->second;
-  auto [name,identity]=codec.callableShape(r->type,Object(shape(*r)));const auto &fn=checkedDebugCallable(program,name,r->type,codec.compiledTargets());auto data=std::make_shared<nexrt::Data>(nexrt::Data::Closure);data->text=name;
+  auto [name,identity]=codec.callableShape(r->type,Object(shape(*r)));const auto &fn=checkedDebugCallable(program,name,r->type,codec.compiledTargets());auto data=nexrt::Data::make(nexrt::Data::Closure);data->text=name;
   if(std::find(r->lineage.begin(),r->lineage.end(),identity)!=r->lineage.end())throw Error("E_DEBUG_VALUE","stopped callable captures contain an identity cycle");
   for(const auto &capture:fn.captures)data->names.push_back(capture.name);data->values.resize(fn.captures.size());
   V result(data);codec.identify(result,identity);callableOrigins.emplace(data.get(),*r);callableValues.emplace(value.object.get(),result);return result;
@@ -146,7 +146,7 @@ WatchValues::V WatchValues::concrete(const V &value,unsigned depth){
   if(value.object->kind==nexrt::Data::Closure||value.object->kind==nexrt::Data::Bytes||value.object->kind==nexrt::Data::File)return value;
   // Computed containers may carry references through pure calls/constructors.
   // Rebuild them without mutating shared interpreter values or proxy objects.
-  auto data=std::make_shared<nexrt::Data>(*value.object);
+  auto data=nexrt::Data::make(*value.object);
   for(auto &item:data->values)item=concrete(item,depth+1);return V(data);
 }
 Array WatchValues::readBindings()const{Array a;for(const auto &s:bindings)a.push_back(s);return a;}

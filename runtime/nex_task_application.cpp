@@ -124,7 +124,7 @@ static int64_t executeTaskApplicationImpl(const TaskCodeDescriptor &code,const T
     auto configured=configuredTaskHost(code);auto context=configured.context;
     TaskGroup group(limits.workers,4096,{},bool(code.requirements&(taskCodeImageFileRead|taskCodeImageFileWrite|taskCodeImageForeign|taskCodeImageFileStream)),sourceErrors);
     if(code.requirements&(taskCodeImageForeign|taskCodeImageFileStream))group.enableResourceRegions({},true,bool(code.requirements&taskCodeImageFileStream));
-    auto environment=std::make_shared<Data>(Data::Closure);
+    auto environment=Data::make(Data::Closure);
     environment->taskCode=&code;
     std::shared_ptr<const TaskFrameHostContext> retained=context;
     auto root=group.spawnWithContext(applicationTask,&retained,{},Value(std::move(environment)));
